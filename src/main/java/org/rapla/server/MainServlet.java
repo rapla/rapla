@@ -110,17 +110,14 @@ public class MainServlet extends HttpServlet
             {
                 backendContext.addDbDatasource("jdbc/rapladb", (DataSource) database);
             }
-            else
+            String file = jndi.lookupEnvString("raplafile", true);
+            if (file != null)
             {
-                String file = jndi.lookupEnvString("raplafile", true);
-                if (file != null)
-                {
-                    backendContext.addFileDatasource("raplafile", file);
-                }
-                else
-                {
-                    logger.warn("Neither file nor database setup configured.");
-                }
+                backendContext.addFileDatasource("raplafile", file);
+            }
+            if ( file == null && database == null)
+            {
+                logger.warn("Neither file nor database setup configured.");
             }
         }
         {

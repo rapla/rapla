@@ -72,6 +72,12 @@ public abstract class AbstractHTMLCalendarPage  implements HTMLViewPage
         this.appointmentFormater = appointmentFormater;
     }
 
+    public List<Allocatable> getSortedAllocatables() throws RaplaException
+    {
+        List<Allocatable> sortedAllocatables = model.getSelectedAllocatablesSorted();
+        return sortedAllocatables;
+    }
+
     protected RaplaLocale getRaplaLocale()
     {
         return raplaLocale;

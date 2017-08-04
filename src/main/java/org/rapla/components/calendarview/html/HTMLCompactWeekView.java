@@ -17,7 +17,13 @@ import org.rapla.components.calendarview.Block;
 import org.rapla.components.calendarview.Builder;
 import org.rapla.components.calendarview.Builder.PreperationResult;
 import org.rapla.components.util.DateTools;
+import org.rapla.facade.CalendarModel;
 
+import javax.servlet.ServletContext;
+import javax.servlet.ServletException;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -96,11 +102,15 @@ public class HTMLCompactWeekView extends AbstractHTMLView {
         result.append("</th>");
         String percentage = "" + Math.round(95.0 / (Math.max(0, columns)));
          
+        int startRow = 0;
         int rowsize = rows.size();
+        rowsize -= startRow ;
+
+
         slots = new HTMLSmallDaySlot[rowsize * columns];
         for (int row=0;row<rowsize;row++) {
             for (int column=0;column < columns; column++) {
-                List<Block> blocks =  rows.get( row );
+                List<Block> blocks =  rows.get( row + startRow );
                 int fieldNumber = row * columns + column;
                 slots[fieldNumber] = createField( blocks, column );
             }

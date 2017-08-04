@@ -46,19 +46,24 @@ public class RaplaDateRenderer implements DateRenderer {
     public RaplaDateRenderer(RaplaFacade facade, RaplaLocale raplaLocale) {
         this.facade = facade;
         this.raplaLocale = raplaLocale;
-        periodModel = getPeriodModel();
+
     }
 
     protected PeriodModel getPeriodModel() {
+        if ( periodModel != null)
+        {
+            return periodModel;
+        }
         try {
             PeriodModel model = facade.getPeriodModel("feiertag");
             if ( model == null)
             {
-                return facade.getPeriodModel();
+                model= facade.getPeriodModel();
             }
+            periodModel = model;
             return model;
         } catch (RaplaException ex) {
-            throw new UnsupportedOperationException("Service not supported in this context: " );
+            throw new UnsupportedOperationException("Service not supported in this context: " + ex.getMessage(), ex );
         }
     }
 
@@ -66,6 +71,7 @@ public class RaplaDateRenderer implements DateRenderer {
     public RenderingInfo getRenderingInfo(int dayOfWeek,int day,int month, int year)
     {
         final Date date = raplaLocale.toRaplaDate(year, month, day);
+        PeriodModel periodModel = getPeriodModel();
         Period period = periodModel.getPeriodFor(date);
         final RenderingInfo renderingInfo = renderer.getRenderingInfo(dayOfWeek, day, month, year);
         if (period != null)

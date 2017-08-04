@@ -610,6 +610,7 @@
 			<scope>test</scope>
 			<optional>true</optional>
 		</dependency>
+		-->
 		<dependency>
 			<groupId>mysql</groupId>
 			<artifactId>mysql-connector-java</artifactId>
@@ -617,7 +618,6 @@
 			<scope>test</scope>
 			<optional>true</optional>
 		</dependency>
-		-->
 		<dependency>
 			<groupId>org.slf4j</groupId>
 			<artifactId>slf4j-api</artifactId>

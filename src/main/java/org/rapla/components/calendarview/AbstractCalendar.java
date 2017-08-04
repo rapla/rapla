@@ -101,7 +101,7 @@ public abstract class  AbstractCalendar {
     	{
     	     DateWithoutTimezone date2 = DateTools.toDate( date.getTime());
     	     this.startDate = new Date(DateTools.toDate( date2.year, date2.month, 1));
-    	     this.endDate = new Date(DateTools.toDate( date2.year, date2.month, daysInMonth));
+    	     this.endDate = new Date(DateTools.fillDate(DateTools.toDate( date2.year, date2.month, daysInMonth)));
     		 firstWeekday = getFirstWeekday();
     	}
     	else

@@ -18,6 +18,7 @@ import org.rapla.components.calendarview.Builder.PreperationResult;
 import org.rapla.components.layout.TableLayout;
 import org.rapla.components.util.DateTools;
 import org.rapla.components.util.DateTools.DateWithoutTimezone;
+import org.rapla.entities.domain.AppointmentBlock;
 
 import javax.swing.JComponent;
 import javax.swing.JLabel;
@@ -103,7 +104,8 @@ public class SwingMonthView extends AbstractSwingCalendar
     public void rebuild(Builder b) {
         // we need to clone the calendar, because we modify the calendar object in the getExclude() method 
         Date startDate = getStartDate();
-        PreperationResult prep = b.prepareBuild(startDate,getEndDate() );
+        final Date endDate = getEndDate();
+        PreperationResult prep = b.prepareBuild(startDate, endDate);
         
         // create fields
         slots = new SmallDaySlot[daysInMonth];
@@ -121,8 +123,9 @@ public class SwingMonthView extends AbstractSwingCalendar
        
         monthTitle.setText( monthname + " " + year);
         // build Blocks
-        b.build(this, prep.getBlocks());
-        
+        final Collection<AppointmentBlock> blocks = prep.getBlocks();
+        b.build(this, blocks);
+
         tableLayout= new TableLayout();
         jCenter.setLayout(tableLayout);
         counter = startDate; 

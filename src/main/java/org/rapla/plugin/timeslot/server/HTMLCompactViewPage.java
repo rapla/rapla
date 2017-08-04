@@ -19,6 +19,7 @@ import org.rapla.components.calendarview.html.AbstractHTMLView;
 import org.rapla.components.calendarview.html.HTMLCompactWeekView;
 import org.rapla.components.util.DateTools;
 import org.rapla.components.util.xml.XMLWriter;
+import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.AppointmentFormater;
 import org.rapla.facade.CalendarOptions;
 import org.rapla.facade.RaplaFacade;
@@ -85,13 +86,15 @@ public class HTMLCompactViewPage extends AbstractHTMLCalendarPage implements HTM
     		 startTimes.add( slot.getMinuteOfDay());
     	}
     	RaplaBuilder builder = super.createBuilder();
-    	builder.setSmallBlocks( true );
-    	GroupStartTimesStrategy strategy = new GroupStartTimesStrategy();
-    	strategy.setFixedSlotsEnabled( true);
-    	strategy.setResolveConflictsEnabled( false );
+        List<Allocatable> allocatables = getSortedAllocatables();
+        builder.setSmallBlocks( true );
+        GroupStartTimesStrategy strategy = new GroupStartTimesStrategy();
+        strategy.setFixedSlotsEnabled( true);
+        strategy.setResolveConflictsEnabled( false );
         strategy.setStartTimes( startTimes );
-    	builder.setBuildStrategy( strategy);    	
+        builder.setBuildStrategy( strategy);
         builder.setSplitByAllocatables( false );
+        strategy.setAllocatables(allocatables);
         String[] slotNames = new String[ timeslots.size() ];
         for (int i = 0; i <timeslots.size(); i++ ) {
         	slotNames[i] = XMLWriter.encode( timeslots.get( i ).getName());

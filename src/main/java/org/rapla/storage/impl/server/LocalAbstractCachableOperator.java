@@ -2800,6 +2800,12 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
         for (Iterator iterator = list.iterator(); iterator.hasNext(); )
         {
             Entity entity = (Entity) iterator.next();
+            final Class<? extends Entity> typeClass = entity.getTypeClass();
+            // Don't check types and categories for inconsistencies
+            if (typeClass == DynamicType.class || typeClass == Category.class )
+            {
+                continue;
+            }
             try
             {
                 checkConsitency(entity, cache);
