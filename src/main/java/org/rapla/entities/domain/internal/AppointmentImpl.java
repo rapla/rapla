@@ -513,7 +513,7 @@ public final class AppointmentImpl extends SimpleEntity implements Appointment
         return maxEnd;
     }
     
-    public boolean overlaps(Appointment a2) {
+    public boolean overlapsAppointment(Appointment a2) {
         if ( a2 == this)
             return true;
         Date start2 =a2.getStart(); 
@@ -867,7 +867,7 @@ public final class AppointmentImpl extends SimpleEntity implements Appointment
 		    	continue;
 		    }
 		    
-			if ( overlappingAppointment.overlaps( appointment) )
+			if ( overlappingAppointment.overlapsAppointment( appointment) )
 			{
 				if ( !RaplaComponent.isTemplate( overlappingAppointment))
 				{

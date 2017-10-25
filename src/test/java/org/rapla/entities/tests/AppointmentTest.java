@@ -76,12 +76,12 @@ public class AppointmentTest {
         assertTrue(comp.compare(a2,a1) == 1);
         assertTrue(comp.compare(a1,a3) == -1);
         assertTrue(comp.compare(a3,a1) == 1);
-        assertTrue(a1.overlaps(a3));
-        assertTrue(a3.overlaps(a1));
-        assertTrue(!a2.overlaps(a3));
-        assertTrue(!a3.overlaps(a2));
-        assertTrue(!a1.overlaps(a2));
-        assertTrue(!a2.overlaps(a1));
+        assertTrue(a1.overlapsAppointment(a3));
+        assertTrue(a3.overlapsAppointment(a1));
+        assertTrue(!a2.overlapsAppointment(a3));
+        assertTrue(!a3.overlapsAppointment(a2));
+        assertTrue(!a1.overlapsAppointment(a2));
+        assertTrue(!a2.overlapsAppointment(a1));
 
 
         // Now we test repeatings
@@ -108,20 +108,20 @@ public class AppointmentTest {
                                )
                    );
 
-        assertTrue(a1.overlaps(a2));
-        assertTrue("overlap is not symetric",a2.overlaps(a1));
+        assertTrue(a1.overlapsAppointment(a2));
+        assertTrue("overlap is not symetric",a2.overlapsAppointment(a1));
 
-        assertTrue(a1.overlaps(a3));
-        assertTrue("overlap is not symetric",a3.overlaps(a1));
+        assertTrue(a1.overlapsAppointment(a3));
+        assertTrue("overlap is not symetric",a3.overlapsAppointment(a1));
 
-        assertTrue(!a2.overlaps(a3));
-        assertTrue("overlap is not symetric",!a3.overlaps(a2));
+        assertTrue(!a2.overlapsAppointment(a3));
+        assertTrue("overlap is not symetric",!a3.overlapsAppointment(a2));
 
         // No appointment in first week of repeating
         repeating1.addException(createDate("2002-05-025"));
 
-        assertTrue("appointments should not overlap, because of exception", !a1.overlaps(a3));
-        assertTrue("overlap is not symetric",!a3.overlaps(a1));
+        assertTrue("appointments should not overlap, because of exception", !a1.overlapsAppointment(a3));
+        assertTrue("overlap is not symetric",!a3.overlapsAppointment(a1));
     }
 
     @Test
@@ -183,8 +183,8 @@ public class AppointmentTest {
         repeating2.setType(Repeating.DAILY);
         repeating2.setNumber(5);
 
-        assertTrue(a1.overlaps(a2));
-        assertTrue("overlap is not symetric",a2.overlaps(a1));
+        assertTrue(a1.overlapsAppointment(a2));
+        assertTrue("overlap is not symetric",a2.overlapsAppointment(a1));
     }
 
     @Test
@@ -216,8 +216,8 @@ public class AppointmentTest {
 	        repeating.addException(createDate("2012-03-16"));
 	        a2 = a;
     	}
-    	boolean overlap1 = a1.overlaps(a2);
-    	boolean overlap2 = a2.overlaps(a1);
+    	boolean overlap1 = a1.overlapsAppointment(a2);
+    	boolean overlap2 = a2.overlapsAppointment(a1);
 		assertTrue(overlap1);
 		assertTrue(overlap2);
         

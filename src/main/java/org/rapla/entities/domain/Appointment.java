@@ -74,7 +74,7 @@ public interface Appointment extends Entity<Appointment>, Comparable {
         The overlap-relation must be symmetric <code>a1.overlaps(a2) == a2.overlaps(a1)</code>
         @return true if the appointment overlaps the given appointment.
     */
-    boolean overlaps(Appointment appointment);
+    boolean overlapsAppointment(Appointment appointment);
 
 	boolean overlapsBlock(AppointmentBlock block);
     
