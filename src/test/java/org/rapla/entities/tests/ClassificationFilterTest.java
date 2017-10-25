@@ -104,10 +104,10 @@ public class ClassificationFilterTest  {
     	DynamicType dynamicType = raplaFacade.getDynamicType("room");
         //Issue 235 in rapla: Null date check in filter not working anymore
         ClassificationFilter classificationFilter = dynamicType.newClassificationFilter();
-        Allocatable[] allocatablesWithoutFilter = raplaFacade.getAllocatables( classificationFilter.toArray());
+        Allocatable[] allocatablesWithoutFilter = raplaFacade.getAllocatablesWithFilter( classificationFilter.toArray());
         Assert.assertTrue(allocatablesWithoutFilter.length > 0);
         classificationFilter.setRule(0, dynamicType.getAttribute("date"), new Object[][] { { "=", null } });
-        Allocatable[] allocatables = raplaFacade.getAllocatables( classificationFilter.toArray());
+        Allocatable[] allocatables = raplaFacade.getAllocatablesWithFilter( classificationFilter.toArray());
 
         Assert.assertTrue(allocatables.length > 0);
     }

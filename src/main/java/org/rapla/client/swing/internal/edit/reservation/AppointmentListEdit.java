@@ -368,7 +368,7 @@ class AppointmentListEdit extends AbstractAppointmentEditor
 			{
 				mutableReservation.addAppointment(appointment);
                 Allocatable[] removedAllocatables = list.get( appointment);
-				mutableReservation.setRestriction(appointment, removedAllocatables);
+				mutableReservation.setRestrictionForAppointment(appointment, removedAllocatables);
 			}
 			replaceList(mutableReservation);
 			fireAppointmentAdded(appointmentList);

@@ -51,10 +51,10 @@ public class ReservationTest {
         cal = Calendar.getInstance(IOUtil.getTimeZone());
 
         User user =clientFacade.getUser();
-        reserv1 = facade.newReservation();
+        reserv1 = facade.newReservationDeprecated();
         reserv1.getClassification().setValue("name","Test Reservation 1");
 
-        reserv2 = facade.newReservation();
+        reserv2 = facade.newReservationDeprecated();
         reserv2.getClassification().setValue("name","Test Reservation 2");
 
         allocatable1 = facade.newResource();
@@ -108,7 +108,7 @@ public class ReservationTest {
 	        cal = Calendar.getInstance(IOUtil.getTimeZone());
 	        cal.setTime(clonedAppointment.getStart());
 	        cal.set(Calendar.HOUR_OF_DAY, 12);
-	        clonedAppointment.move(cal.getTime());
+	        clonedAppointment.moveTo(cal.getTime());
 	
 	        // Add a new appointment
 	        cal.setTime(clonedAppointment.getStart());

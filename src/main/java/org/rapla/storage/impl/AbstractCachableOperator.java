@@ -235,7 +235,7 @@ public abstract class AbstractCachableOperator implements StorageOperator
                 for (Map.Entry<Appointment, Collection<Appointment>> appointmentEntry : appointmentMap.entrySet())
                 {
                     Appointment appointment = appointmentEntry.getKey();
-                    if (reservation.hasAllocated(allocatable, appointment))
+                    if (reservation.hasAllocatedOn(allocatable, appointment))
                     {
                         Collection<Appointment> conflictionAppointments = appointmentEntry.getValue();
                         if (conflictionAppointments != null)

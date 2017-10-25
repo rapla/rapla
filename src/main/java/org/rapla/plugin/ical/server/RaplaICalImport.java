@@ -433,7 +433,7 @@ public class RaplaICalImport implements ICalImport {
 //	}
 
 	private Appointment newAppointment(User user,Date begin, Date end) throws RaplaException {
-        Appointment appointment = facade.newAppointment(begin,end,user);
+        Appointment appointment = facade.newAppointmentWithUser(begin,end,user);
         return appointment;
     }
 
@@ -446,7 +446,7 @@ public class RaplaICalImport implements ICalImport {
         	// FIXME need to implement UTC mapping
 			ReferenceInfo<User> ownerId = start.getOwnerRef();
 			User owner = facade.tryResolve(ownerId) ;
-            final Appointment appointment = facade.newAppointment(start.getStart(), start.getEnd(), owner);
+            final Appointment appointment = facade.newAppointmentWithUser(start.getStart(), start.getEnd(), owner);
             appointment.setRepeatingEnabled(true);
             WeekDayList dayList = recur.getDayList();
             if (dayList.size() > 1 || (dayList.size() == 1 && !recur.getFrequency().equals(Recur.WEEKLY)  ))

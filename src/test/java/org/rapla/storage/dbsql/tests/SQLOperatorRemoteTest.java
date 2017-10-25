@@ -147,7 +147,7 @@ public class SQLOperatorRemoteTest extends ServerTest
 
         roomType = facade.getPersistant(roomType);
 
-        Allocatable[] allocatables = facade.getAllocatables(new ClassificationFilter[] { roomType.newClassificationFilter() });
+        Allocatable[] allocatables = facade.getAllocatablesWithFilter(new ClassificationFilter[] { roomType.newClassificationFilter() });
         Allocatable allocatable = facade.edit(allocatables[0]);
         allocatable.getClassification().setValue("color", "665532");
 
@@ -160,7 +160,7 @@ public class SQLOperatorRemoteTest extends ServerTest
         // The error shows when connect again
         operator.connect();
 
-        allocatables = facade.getAllocatables(new ClassificationFilter[] { roomType.newClassificationFilter() });
+        allocatables = facade.getAllocatablesWithFilter(new ClassificationFilter[] { roomType.newClassificationFilter() });
         allocatable = facade.edit(allocatables[0]);
         Assert.assertEquals(name, allocatable.getClassification().getValue("name"));
     }

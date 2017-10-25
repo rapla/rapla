@@ -335,7 +335,10 @@ public class Application implements ApplicationView.Presenter, ModificationListe
             mainView.setStatusMessage(message, admin);
         }
         mainView.updateView(evt);
-        placeTaskPresenter.updateView(evt);
+        if ( placeTaskPresenter != null)
+        {
+            placeTaskPresenter.updateView(evt);
+        }
         for (TaskPresenter p : openDialogsPresenter.values())
         {
             p.updateView(evt);

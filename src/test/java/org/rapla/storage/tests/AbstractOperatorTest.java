@@ -50,8 +50,8 @@ public abstract class AbstractOperatorTest  {
         {
 	        Reservation r = facade.newReservation(facade.getDynamicTypes(DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RESERVATION)[0].newClassification(), user);
 	        r.getClassification().setValue("name","myTest");
-	        Appointment app = facade.newAppointment( new Date(), new Date(), user);
-	        Appointment app2 = facade.newAppointment( new Date(), new Date(), user);
+	        Appointment app = facade.newAppointmentWithUser( new Date(), new Date(), user);
+	        Appointment app2 = facade.newAppointmentWithUser( new Date(), new Date(), user);
 	        Allocatable resource = facade.newAllocatable(facade.getDynamicTypes(DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RESOURCE)[0].newClassification(), user);
 	        r.addAppointment( app);
 	        r.addAppointment( app2);
@@ -151,8 +151,8 @@ public abstract class AbstractOperatorTest  {
 
 	        r.getClassification().setValue("name","myTest");
 	        r.getClassification().setValue("test-att","test-att-value");
-	        Appointment app = facade.newAppointment( new Date(), new Date(), user);
-	        Appointment app2 = facade.newAppointment( new Date(), new Date(), user);
+	        Appointment app = facade.newAppointmentWithUser( new Date(), new Date(), user);
+	        Appointment app2 = facade.newAppointmentWithUser( new Date(), new Date(), user);
 	        Allocatable resource = facade.newAllocatable(facade.getDynamicTypes(DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RESOURCE)[0].newClassification(), user);
 	        r.addAppointment( app);
 	        r.addAppointment( app2);

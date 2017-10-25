@@ -670,21 +670,21 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
                 Attribute attribute = classification.getAttribute("title");
                 if (attribute != null)
                 {
-                    classification.setValue(attribute, title);
+                    classification.setValueForAttribute(attribute, title);
                 }
             }
             {
                 Attribute attribute = classification.getAttribute("firstname");
                 if (attribute != null)
                 {
-                    classification.setValue(attribute, firstname);
+                    classification.setValueForAttribute(attribute, firstname);
                 }
             }
             {
                 Attribute attribute = classification.getAttribute("surname");
                 if (attribute != null)
                 {
-                    classification.setValue(attribute, surname);
+                    classification.setValueForAttribute(attribute, surname);
                 }
             }
             ArrayList<Entity> arrayList = new ArrayList<>();
@@ -815,7 +815,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
                 final Attribute attribute = classification.getAttribute("email");
                 if (attribute != null)
                 {
-                    final String email = (String) classification.getValue(attribute);
+                    final String email = (String) classification.getValueForAttribute(attribute);
                     if (email != null)
                     {
                         resolvingMap.put(email, allocatable);
@@ -963,7 +963,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
                 Attribute idAtt = classification.getAttribute("DualisId");
                 if (idAtt != null)
                 {
-                    final Object value = classification.getValue(idAtt);
+                    final Object value = classification.getValueForAttribute(idAtt);
                     if (value != null)
                     {
                         externalIds.put(value.toString(), alloc.getReference());
@@ -1997,7 +1997,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
                             appointmentSet.remove(app);
                             continue;
                         }
-                        else if (!reservation.hasAllocated(allocatable, app) && (template == null || !template.equals(allocatable)))
+                        else if (!reservation.hasAllocatedOn(allocatable, app) && (template == null || !template.equals(allocatable)))
                         {
                             logger.error(
                                     "Allocation is not stored correctly for " + reservation + " " + app + " " + allocatable + " removing binding for " + app);
@@ -3012,7 +3012,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
                     final Boolean belongsTo = (Boolean) att.getConstraint(ConstraintIds.KEY_BELONGS_TO);
                     if (belongsTo != null && belongsTo)
                     {
-                        final Object target = classification.getValue(att);
+                        final Object target = classification.getValueForAttribute(att);
                         if (target != null)
                         {
                             if (target.equals(entity))
@@ -3437,7 +3437,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
                     {
                         continue;
                     }
-                    newState.move(newStart);
+                    newState.moveTo(newStart);
                     if (!wholeDay && inWorktime && !inWorktime(newState, worktimeStartMinutes, worktimeEndMinutes))
                     {
                         continue;

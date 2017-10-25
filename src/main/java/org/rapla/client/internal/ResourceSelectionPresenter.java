@@ -121,7 +121,7 @@ public class ResourceSelectionPresenter implements Presenter
                 moveCategoryParent.removeCategory(categoryToMoveEdit);
                 categoriesToStore.add(moveCategoryParent);
             }
-            final Collection<Category> categories = raplaFacade.edit(Arrays.asList(targetParentCategoryEdit.getCategories()));
+            final Collection<Category> categories = raplaFacade.editList(Arrays.asList(targetParentCategoryEdit.getCategories()));
             for (Category category : categories)
             {
                 targetParentCategoryEdit.removeCategory(category);

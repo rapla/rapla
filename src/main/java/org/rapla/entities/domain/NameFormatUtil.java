@@ -14,7 +14,7 @@ public class NameFormatUtil
         final Reservation reservation = appointmentBlock.getAppointment().getReservation();
         if ( reservation.getClassification().getType().getAnnotation( DynamicTypeAnnotations.KEY_NAME_FORMAT_EXPORT) != null)
         {
-            return reservation.format( locale, DynamicTypeAnnotations.KEY_NAME_FORMAT_EXPORT, appointmentBlock);
+            return reservation.formatAppointmentBlock( locale, DynamicTypeAnnotations.KEY_NAME_FORMAT_EXPORT, appointmentBlock);
         }
         else
         {
@@ -29,7 +29,7 @@ public class NameFormatUtil
         String eventDescription;
         if ( reservation.getClassification().getType().getAnnotation( DynamicTypeAnnotations.KEY_NAME_FORMAT_EXPORT) != null)
         {
-            eventDescription = reservation.format(locale, DynamicTypeAnnotations.KEY_NAME_FORMAT_EXPORT, appointment);
+            eventDescription = reservation.formatAppointment(locale, DynamicTypeAnnotations.KEY_NAME_FORMAT_EXPORT, appointment);
         }
         else
         {
@@ -56,14 +56,14 @@ public class NameFormatUtil
     {
         String annotiationName = DynamicTypeAnnotations.KEY_NAME_FORMAT;
         final Reservation reservation = appointmentBlock.getAppointment().getReservation();
-        return reservation.format( locale, annotiationName, appointmentBlock);
+        return reservation.formatAppointmentBlock( locale, annotiationName, appointmentBlock);
     }
     
     public static String getName(Appointment appointment, Locale locale)
     {
         String annotiationName = DynamicTypeAnnotations.KEY_NAME_FORMAT;
         final Reservation reservation = appointment.getReservation();
-        return reservation.format( locale, annotiationName, appointment);
+        return reservation.formatAppointment( locale, annotiationName, appointment);
     }
 
     public static String getName(Classifiable reservation, Locale locale)

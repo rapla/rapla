@@ -1271,7 +1271,7 @@ import java.util.Vector;
         for (Appointment appointment : allAppointments)
         {
             Reservation reservation = appointment.getReservation();
-            if (reservation.hasAllocated(alloc, appointment))
+            if (reservation.hasAllocatedOn(alloc, appointment))
             {
                 result.add(appointment);
             }

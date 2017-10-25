@@ -333,7 +333,7 @@ public class ReservationInfoEdit extends RaplaGUIComponent
     			DynamicType oldDynamicType       = lastClassification.getType();
     			DynamicType newDynamicType       = (DynamicType) typeSelector.getSelectedItem();
     			Classification oldClassification = ((ClassificationImpl) lastClassification).clone();
-    			Classification newClassification = ((ClassificationImpl) newDynamicType.newClassification(classification)).clone();
+    			Classification newClassification = ((ClassificationImpl) newDynamicType.newClassificationFrom(classification)).clone();
     	        
             	UndoReservationTypeChange command = new UndoReservationTypeChange(oldClassification, newClassification, oldDynamicType, newDynamicType);
             	handleException(commandHistory.storeAndExecute(command));

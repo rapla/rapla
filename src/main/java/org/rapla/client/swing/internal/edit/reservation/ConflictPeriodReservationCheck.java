@@ -170,7 +170,7 @@ public class ConflictPeriodReservationCheck extends RaplaGUIComponent implements
     {
         Map<Appointment, Set<Period>>periodConflicts = new LinkedHashMap<>();
         final PeriodModel periodModel;
-        periodModel = getFacade().getPeriodModel("feiertag");
+        periodModel = getFacade().getPeriodModelFor("feiertag");
         if ( periodModel == null)
         {
             return periodConflicts;
@@ -188,9 +188,7 @@ public class ConflictPeriodReservationCheck extends RaplaGUIComponent implements
                 final List<Period> periodsFor = periodModel.getPeriodsFor(interval);
                 for (Period period : periodsFor)
                 {
-
-                    boolean excludeExceptions = true;
-                    final boolean overlaps = app.overlaps(period.getStart(), period.getEnd(), excludeExceptions);
+                    final boolean overlaps = app.overlaps(period.getStart(), period.getEnd());
                     if (overlaps)
                     {
                         Set<Period> periods = periodConflicts.get(app);

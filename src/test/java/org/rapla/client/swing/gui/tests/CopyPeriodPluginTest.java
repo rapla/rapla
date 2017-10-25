@@ -96,7 +96,7 @@ public class CopyPeriodPluginTest {
         final CalendarSelectionModel model = raplaFacade.newCalendarModel( facade.getUser());
         final ClassificationFilter filter = raplaFacade.getDynamicType("room").newClassificationFilter();
         filter.addEqualsRule("name","erwin");
-        Allocatable allocatable = raplaFacade.getAllocatables( new ClassificationFilter[] { filter})[0];
+        Allocatable allocatable = raplaFacade.getAllocatablesWithFilter( new ClassificationFilter[] { filter})[0];
         model.setSelectedObjects( Collections.singletonList(allocatable ));
 
         Period[] periods = raplaFacade.getPeriods();

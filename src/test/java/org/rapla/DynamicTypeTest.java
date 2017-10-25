@@ -108,7 +108,7 @@ public class DynamicTypeTest  {
 	@Test
 	public void testAttributeChange() throws Exception
     {
-	  Reservation event = facade.newReservation();
+	  Reservation event = facade.newReservationDeprecated();
     	event.getClassification().setValue("name", "test");
     	Appointment app = facade.newAppointment( new Date() , DateTools.addDay(new Date()));
     	event.addAppointment( app );

@@ -134,7 +134,7 @@ public class TestUpdateDataManager
                     Date startDate = new Date();
                     // half an hour duration
                     Date endDate = new Date(startDate.getTime() + 30000);
-                    newReservation.addAppointment(facade.newAppointment(startDate, endDate, writeUser));
+                    newReservation.addAppointment(facade.newAppointmentWithUser(startDate, endDate, writeUser));
                     // we take always another allocatable as we want no conflicts for now
                     newReservation.addAllocatable(allocatables[startAllocatables + i]);
                     entitiesToStore.add(newReservation);

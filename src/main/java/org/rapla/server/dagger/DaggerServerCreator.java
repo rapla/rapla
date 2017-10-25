@@ -40,7 +40,7 @@ public class DaggerServerCreator
     public static ServerContext create(Logger logger, ServerContainerContext containerContext) throws Exception
     {
         ServerContext result = new ServerContext();
-        if ( false )
+        if ( true )
         {
             SimpleRaplaInjector injector = new SimpleRaplaInjector(logger);
             injector.addComponentInstance(Logger.class, logger);

@@ -343,9 +343,9 @@ public class EditTaskPresenter implements TaskPresenter
                 toEdit.add(t);
             }
         }
-        toEdit.addAll(raplaFacade.edit(nonEditableObjects));
+        toEdit.addAll(raplaFacade.editList(nonEditableObjects));
         List<T> originals = new ArrayList<T>();
-        Map<T, T> persistant = raplaFacade.getPersistant(nonEditableObjects);
+        Map<T, T> persistant = raplaFacade.getPersistantForList(nonEditableObjects);
         for (T entity : toEdit)
         {
 

@@ -79,7 +79,7 @@ public class UndoTests extends GUITestCase {
 		final ReservationController control = getService(ReservationController.class);
 
         //Creating Event
-		final Reservation event = createEvent(facade.getRaplaFacade().newResource(), facade.getRaplaFacade().newReservation());
+		final Reservation event = createEvent(facade.getRaplaFacade().newResource(), facade.getRaplaFacade().newReservationDeprecated());
         final Appointment changedAppointment = changeTime( true);
 		int buttonNr = 1;
 		executeControlAndPressButton(new Runnable() {
@@ -134,7 +134,7 @@ public class UndoTests extends GUITestCase {
     	final ClientFacade facade = getFacade();
 		final ReservationController control = getService(ReservationController.class);
 
-		final Reservation event = createEvent(facade.getRaplaFacade().newResource(), facade.getRaplaFacade().newReservation());
+		final Reservation event = createEvent(facade.getRaplaFacade().newResource(), facade.getRaplaFacade().newReservationDeprecated());
         final Appointment changedAppointment = changeTime( false);
         //control.resizeAppointment(persistantEvent.getAppointments()[0], persistantEvent.getAppointments()[0].getStart(), changedAppointment.getStart(), changedAppointment.getEnd(), null, null, false);
         
@@ -193,7 +193,7 @@ public class UndoTests extends GUITestCase {
 		final ReservationController control = getService(ReservationController.class);
 
 		Allocatable nonPersistantAllocatable = facade.getRaplaFacade().newResource();
-        Reservation nonPersistantEvent = facade.getRaplaFacade().newReservation();
+        Reservation nonPersistantEvent = facade.getRaplaFacade().newReservationDeprecated();
         
         //Creating Event
         createEvent(nonPersistantAllocatable, nonPersistantEvent);

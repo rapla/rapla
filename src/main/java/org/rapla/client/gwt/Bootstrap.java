@@ -2,6 +2,7 @@ package org.rapla.client.gwt;
 
 import com.google.gwt.core.client.GWT;
 import com.google.gwt.user.client.Window;
+import jsinterop.annotations.JsType;
 import org.rapla.client.Application;
 import org.rapla.client.gwt.view.RaplaPopups;
 import org.rapla.entities.domain.Allocatable;
@@ -18,6 +19,7 @@ import javax.inject.Provider;
 import java.util.Arrays;
 import java.util.Collection;
 
+@JsType
 public class Bootstrap
 {
 
@@ -37,6 +39,16 @@ public class Bootstrap
         this.logger = logger;
         final String moduleBaseURL = GWT.getModuleBaseURL();
         this.remoteConnectionInfo.setServerURL(moduleBaseURL + "../rapla/");
+    }
+
+    public Application getApplication()
+    {
+        return application.get();
+    }
+
+    public RaplaFacade getFacade()
+    {
+        return facade.get();
     }
 
     public void load(String accessToken)

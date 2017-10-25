@@ -835,8 +835,7 @@ public class SynchronisationManager implements ServerExtension
 
     public void removeTasksAndExports(User user) throws RaplaException
     {
-        boolean createIfNotNull = false;
-        Preferences preferences = facade.getPreferences(user, createIfNotNull);
+        Preferences preferences = cachableStorageOperator.getPreferences(user, false);
         if (preferences == null)
         {
             return;
@@ -870,7 +869,7 @@ public class SynchronisationManager implements ServerExtension
                     newExportMap.put(key, newConfig);
                 }
             }
-            preferences.putEntry(EXPORT_ENTRY, facade.newRaplaMap(newExportMap));
+            preferences.putEntry(EXPORT_ENTRY, facade.newRaplaMapForMap(newExportMap));
         }
         facade.store(preferences);
     }

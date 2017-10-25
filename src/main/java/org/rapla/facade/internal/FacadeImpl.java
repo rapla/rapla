@@ -516,10 +516,10 @@ public class FacadeImpl implements RaplaFacade,ClientFacade,StorageUpdateListene
 	}
 
 	public Allocatable[] getAllocatables() throws RaplaException {
-		return getAllocatables(null);
+		return getAllocatablesWithFilter(null);
 	}
 
-	public Allocatable[] getAllocatables(ClassificationFilter[] filters) throws RaplaException {
+	public Allocatable[] getAllocatablesWithFilter(ClassificationFilter[] filters) throws RaplaException {
 		return getVisibleAllocatables(filters).toArray(	Allocatable.ALLOCATABLE_ARRAY);
 	}
 
@@ -529,7 +529,7 @@ public class FacadeImpl implements RaplaFacade,ClientFacade,StorageUpdateListene
 			return true;
 		}
 		try {
-			Allocatable[] all = getAllocatables(null);
+			Allocatable[] all = getAllocatablesWithFilter(null);
 			PermissionController permissionController = getPermissionController();
 			for (int i = 0; i < all.length; i++) {
 				if (permissionController.canModify(all[i], user)) {
@@ -545,13 +545,9 @@ public class FacadeImpl implements RaplaFacade,ClientFacade,StorageUpdateListene
 	{
         return operator.getPreferences(null, true);
 	}
-	
+
 	public Preferences getPreferences(User user) throws RaplaException {
 		return operator.getPreferences(user, true);
-	}
-	
-	public Preferences getPreferences(User user,boolean createIfNotNull) throws RaplaException {
-		return operator.getPreferences(user, createIfNotNull);
 	}
 	
 	public Category getSuperCategory() {
@@ -611,11 +607,11 @@ public class FacadeImpl implements RaplaFacade,ClientFacade,StorageUpdateListene
 
 	@Override
 	public PeriodModel getPeriodModel() throws RaplaException {
-		return  getPeriodModel( null);
+		return  getPeriodModelFor( null);
 	}
 
 	@Override
-	public PeriodModel getPeriodModel(String key) throws RaplaException {
+	public PeriodModel getPeriodModelFor(String key) throws RaplaException {
 		if ( key == null)
 		{
 			if (periodModel == null) {
@@ -690,7 +686,7 @@ public class FacadeImpl implements RaplaFacade,ClientFacade,StorageUpdateListene
 		return user;
 	}
 
-    public Promise<Collection<Conflict>> getConflicts(Reservation reservation)
+    public Promise<Collection<Conflict>> getConflictsForReservation(Reservation reservation)
     {
         return operator.getConflicts(reservation);
     }
@@ -963,7 +959,7 @@ public class FacadeImpl implements RaplaFacade,ClientFacade,StorageUpdateListene
 	}
 
 	@SuppressWarnings("unchecked")
-	public <T> RaplaMap<T> newRaplaMap(Map<String, T> map) {
+	public <T> RaplaMap<T> newRaplaMapForMap(Map<String, T> map) {
 		RaplaMapImpl impl = new RaplaMapImpl(map);
 		impl.setResolver( operator );
         RaplaMap<T> raplaMap = (RaplaMap<T>) impl;
@@ -980,10 +976,10 @@ public class FacadeImpl implements RaplaFacade,ClientFacade,StorageUpdateListene
 
 	public Appointment newAppointment(Date startDate, Date endDate) throws RaplaException {
 		User user = getUser();
-		return newAppointment(startDate, endDate, user);
+		return newAppointmentWithUser(startDate, endDate, user);
 	}
 	
-	public Reservation newReservation() throws RaplaException 
+	public Reservation newReservationDeprecated() throws RaplaException
     {
         Classification classification = getDynamicTypes(DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RESERVATION)[0].newClassification();
 		return newReservation( classification );
@@ -1047,7 +1043,7 @@ public class FacadeImpl implements RaplaFacade,ClientFacade,StorageUpdateListene
 		return classification;
 	}
 
-    public Appointment newAppointment(Date startDate, Date endDate, User user) throws RaplaException {
+    public Appointment newAppointmentWithUser(Date startDate, Date endDate, User user) throws RaplaException {
         AppointmentImpl appointment = new AppointmentImpl(startDate, endDate);
         setNew(appointment, user);
         return appointment;
@@ -1302,7 +1298,7 @@ public class FacadeImpl implements RaplaFacade,ClientFacade,StorageUpdateListene
 		if (obj == null)
 			throw new NullPointerException("Can't edit null objects");
 		Set<T> singleton = Collections.singleton( obj);
-		Collection<T> edit = edit(singleton);
+		Collection<T> edit = editList(singleton);
 		T result = edit.iterator().next();
 		return result;
 	}
@@ -1315,14 +1311,14 @@ public class FacadeImpl implements RaplaFacade,ClientFacade,StorageUpdateListene
 	}
 
 	@Override
-	public <T extends Entity> Promise<Collection<T>> editAsync(Collection<T> list) {
+	public <T extends Entity> Promise<Collection<T>> editAsyncList(Collection<T> list) {
 		if (list == null)
 			throw new NullPointerException("Can't edit null objects");
-		return getScheduler().supply(()-> edit( list));
+		return getScheduler().supply(()-> editList( list));
 	}
 
 
-	public <T extends Entity> Collection<T> edit(Collection<T> list) throws RaplaException
+	public <T extends Entity> Collection<T> editList(Collection<T> list) throws RaplaException
 	{
 		List<Entity> castedList = new ArrayList<Entity>();
 		for ( Entity entity:list)
@@ -1350,9 +1346,9 @@ public class FacadeImpl implements RaplaFacade,ClientFacade,StorageUpdateListene
 	}
 
 	@Override
-	public <T extends Entity> Promise<Void> update(Collection<T> list, Consumer<Collection<T>> updateFunction)
+	public <T extends Entity> Promise<Void> updateList(Collection<T> list, Consumer<Collection<T>> updateFunction)
 	{
-		Promise<Void> updatePromise = getScheduler().supply(()-> edit( list)).thenApply((editableObject)->{updateFunction.accept(editableObject); return editableObject;}
+		Promise<Void> updatePromise = getScheduler().supply(()-> editList( list)).thenApply((editableObject)->{updateFunction.accept(editableObject); return editableObject;}
 		).thenAccept((editableObject)->dispatch(editableObject, Collections.emptyList()));
 		return updatePromise;
 	}
@@ -1361,7 +1357,7 @@ public class FacadeImpl implements RaplaFacade,ClientFacade,StorageUpdateListene
 
 	public <T extends Entity> Map<T,T> checklastChanged(Collection<T> entities, boolean isNew) throws RaplaException
 	{
-		Map<T,T> persistantVersions= getPersistant(entities);
+		Map<T,T> persistantVersions= getPersistantForList(entities);
 		checklastChanged(entities, persistantVersions,isNew);
 		return persistantVersions;
 	}
@@ -1438,7 +1434,7 @@ public class FacadeImpl implements RaplaFacade,ClientFacade,StorageUpdateListene
 	                long offset = destStart.getTime() - firstStart.getTime();
 	                newStart = new Date(oldStart.getTime() + offset );
 	            }
-	            app.move( newStart) ;
+	            app.moveTo( newStart) ;
 	            if (repeating != null)
 	            {
 	                Date[] exceptions = repeating.getExceptions();
@@ -1577,7 +1573,7 @@ public class FacadeImpl implements RaplaFacade,ClientFacade,StorageUpdateListene
 
 	public <T extends Entity> T getPersistant(T entity) throws RaplaException {
 		Set<T> persistantList = Collections.singleton( entity);
-		Map<T,T> map = getPersistant( persistantList);
+		Map<T,T> map = getPersistantForList( persistantList);
 		T result = map.get( entity);
 		if ( result == null)
 		{
@@ -1586,7 +1582,7 @@ public class FacadeImpl implements RaplaFacade,ClientFacade,StorageUpdateListene
 		return result;
 	}
 	
-	public <T extends Entity> Map<T,T> getPersistant(Collection<T> list) throws RaplaException {
+	public <T extends Entity> Map<T,T> getPersistantForList(Collection<T> list) throws RaplaException {
 		Map<Entity,Entity> result = operator.getPersistant(list);
 		LinkedHashMap<T, T> castedResult = new LinkedHashMap<T, T>();
 		for ( Map.Entry<Entity,Entity> entry: result.entrySet())

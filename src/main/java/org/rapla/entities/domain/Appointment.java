@@ -12,6 +12,7 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.entities.domain;
 
+import jsinterop.annotations.JsType;
 import org.rapla.components.util.TimeInterval;
 import org.rapla.entities.Entity;
 import org.rapla.entities.User;
@@ -24,6 +25,7 @@ import java.util.Map;
 /** The basic building blocks of reservations.
     @see Reservation
     @see Repeating*/
+@JsType
 public interface Appointment extends Entity<Appointment>, Comparable {
     Date getStart();
     Date getEnd();
@@ -65,7 +67,7 @@ public interface Appointment extends Entity<Appointment>, Comparable {
     /** Moves the start-time of the appointment.
         The end-time will be adjusted accordingly to the duration of the appointment.
      */
-    void move(Date newStart);
+    void moveTo(Date newStart);
 
     /** Tests two appointments for overlap.
         Important:  Times like 13:00-14:00 and 14:00-15:00 do not overlap
@@ -74,7 +76,7 @@ public interface Appointment extends Entity<Appointment>, Comparable {
     */
     boolean overlaps(Appointment appointment);
 
-	boolean overlaps(AppointmentBlock block);
+	boolean overlapsBlock(AppointmentBlock block);
     
     /** Test for overlap with a period. 
      *  same as overlaps( start, end, true)
@@ -86,14 +88,8 @@ public interface Appointment extends Entity<Appointment>, Comparable {
      *  same as overlaps( start, end, true)
       * @return true if the overlaps with the given period.
     */
-    boolean overlaps(TimeInterval interval);
+    boolean overlapsTimeInterval(TimeInterval interval);
 
-    /** Test for overlap with a period. You can specify if exceptions should be considered in the overlapping algorithm.
-     * if excludeExceptions is set an overlap will return false if all dates are excluded by exceptions in the specfied start-end intervall
-    @return true if the overlaps with the given period.
-    */
-    boolean overlaps(Date start,Date end,  boolean excludeExceptions);
-    
     /** Returns if the exceptions, repeatings, start and end dates of the Appoinemnts are the same.*/
     boolean matches(Appointment appointment);
 
@@ -122,8 +118,8 @@ public interface Appointment extends Entity<Appointment>, Comparable {
     /** adds all Appointment-blocks in the given period to the blocks collection.
     A block is in the period if its starttime&lt;end or its endtime&gt;start. You can specify if exceptions should be excluded. If this is set no blocks are added on an exception date.
     */
-    void createBlocks(Date start,Date end,Collection<AppointmentBlock> blocks, boolean excludeExceptions);
-    
+    void createBlocksExcludeExceptions(Date start,Date end,Collection<AppointmentBlock> blocks);
+
     Appointment[] EMPTY_ARRAY = new Appointment[0];
     
     class AppointmentUtil

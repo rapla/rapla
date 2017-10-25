@@ -213,7 +213,7 @@ public class PermissionTest extends AbstractTestWithServer {
         Date end2 = new Date(start1.getTime() + DateTools.MILLISECONDS_PER_HOUR * 3);
         Assert.assertTrue(permissionController.canAllocate(allocatable, user, null, null, testFacade.today()));
 
-        Reservation r1 = testFacade.newReservation();
+        Reservation r1 = testFacade.newReservationDeprecated();
         final User owner = testFacade.tryResolve(r1.getOwnerRef());
         final String ownerUsername = owner.getUsername();
         Assert.assertEquals("test", ownerUsername);
@@ -224,7 +224,7 @@ public class PermissionTest extends AbstractTestWithServer {
 
 		testFacade.store( r1 );
 
-		Reservation r2 = testFacade.newReservation();
+		Reservation r2 = testFacade.newReservationDeprecated();
 		r2.getClassification().setValue("name","R2");
 		Appointment a2 = testFacade.newAppointment( start2, end2 );
 		r2.addAppointment( a2 );

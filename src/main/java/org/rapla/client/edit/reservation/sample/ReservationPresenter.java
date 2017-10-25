@@ -125,7 +125,7 @@ public class ReservationPresenter implements Presenter
         final Classification classification = editReservation.getClassification();
         if (isAllowedToWrite(attribute, classification))
         {
-            classification.setValue(attribute, newValue);
+            classification.setValueForAttribute(attribute, newValue);
         }
         else
         {

@@ -12,6 +12,7 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.entities.dynamictype;
 
+import jsinterop.annotations.JsType;
 import org.rapla.entities.Annotatable;
 import org.rapla.entities.Entity;
 import org.rapla.entities.MultiLanguageNamed;
@@ -26,6 +27,7 @@ Currently Rapla supports the following types:
         <li>rapla:category</li>
         </ul>
 @see DynamicType */
+@JsType
 public interface Attribute extends Entity<Attribute>, MultiLanguageNamed, Annotatable
 {
     AttributeType getType();

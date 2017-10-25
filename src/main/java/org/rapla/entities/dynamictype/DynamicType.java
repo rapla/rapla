@@ -12,6 +12,7 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.entities.dynamictype;
 
+import jsinterop.annotations.JsType;
 import org.rapla.entities.Annotatable;
 import org.rapla.entities.MultiLanguageNamed;
 import org.rapla.entities.Timestamp;
@@ -21,6 +22,7 @@ import org.rapla.entities.domain.EntityPermissionContainer;
     customized attributes. You can for example define a dynamicType called <em>room</em> with the
     attributes <em>name</em> and <em>seats</em> and classify all your room-resources as <em>room</em>.
  */
+@JsType
 public interface DynamicType extends  EntityPermissionContainer<DynamicType>,MultiLanguageNamed,Annotatable, Timestamp
 {
     Attribute[] getAttributes();
@@ -52,12 +54,9 @@ public interface DynamicType extends  EntityPermissionContainer<DynamicType>,Mul
     /* creates a new classification and initializes it with the attribute defaults
      * @throws IllegalStateException when called from a non persistant instance of DynamicType */
     Classification newClassification();
-    /* creates a new classification 
-     * @throws IllegalStateException when called from a non persistant instance of DynamicType */
-    Classification newClassification(boolean useDefaults);
     /* creates a new classification and tries to fill it with the values of the originalClassification.
     * @throws IllegalStateException when called from a non persistant instance of DynamicType */
-    Classification newClassification(Classification originalClassification);
+    Classification newClassificationFrom(Classification originalClassification);
     /* @throws IllegalStateException when called from a non persistant instance of DynamicType */
     ClassificationFilter newClassificationFilter();
     

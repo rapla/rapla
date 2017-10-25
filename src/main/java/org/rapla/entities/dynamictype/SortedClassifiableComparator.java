@@ -62,8 +62,8 @@ public class SortedClassifiableComparator implements Comparator<Classifiable>
                     }
                     if (order != 0)
                     {
-                        Object value1 = classification1.getValue(attribute);
-                        Object value2 = classification2.getValue(attribute);
+                        Object value1 = classification1.getValueForAttribute(attribute);
+                        Object value2 = classification2.getValueForAttribute(attribute);
                         if (value1 != null)
                         {
                             if (value2 == null)

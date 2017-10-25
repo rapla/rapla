@@ -186,7 +186,7 @@ final public class DynamicTypeImpl extends SimpleEntity implements DynamicType, 
 	            final Object defaultValue = att.defaultValue();
 	            if ( defaultValue != null)
 	            {
-	                classification.setValue(att, defaultValue);
+	                classification.setValueForAttribute(att, defaultValue);
 	            }   
 	        }
         }
@@ -220,7 +220,7 @@ final public class DynamicTypeImpl extends SimpleEntity implements DynamicType, 
         return casted;
     }
 
-    public Classification newClassification(Classification original) {
+    public Classification newClassificationFrom(Classification original) {
         if ( !isReadOnly()) {
             throw new IllegalStateException("You can only create Classifications from a persistant Version of DynamicType");
         }
@@ -239,11 +239,11 @@ final public class DynamicTypeImpl extends SimpleEntity implements DynamicType, 
                 	// If the default value of the new type differs from the old one and the value is the same as the old default then use the new default
                 	if (  newDefaultValue != null && ((defaultValue == null && originalValue == null )|| (defaultValue != null && originalValue != null && !newDefaultValue.equals(defaultValue) && (originalValue.equals( defaultValue)))))
                 	{
-                		newClassification.setValue( newAttribute, newDefaultValue);
+                		newClassification.setValueForAttribute( newAttribute, newDefaultValue);
                 	}
                 	else
                 	{
-                		newClassification.setValue( newAttribute, newAttribute.convertValue( originalValue ));
+                		newClassification.setValueForAttribute( newAttribute, newAttribute.convertValue( originalValue ));
                 	}
                 }
             }

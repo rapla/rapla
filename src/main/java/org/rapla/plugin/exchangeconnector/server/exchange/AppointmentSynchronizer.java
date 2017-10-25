@@ -522,7 +522,7 @@ public class AppointmentSynchronizer
         String content;
         if ( reservation.getClassification().getType().getAnnotation(DynamicTypeAnnotations.KEY_DESCRIPTION_FORMAT_EXPORT) != null)
         {
-            content = reservation.format(locale, DynamicTypeAnnotations.KEY_DESCRIPTION_FORMAT_EXPORT, raplaAppointment);
+            content = reservation.formatAppointment(locale, DynamicTypeAnnotations.KEY_DESCRIPTION_FORMAT_EXPORT, raplaAppointment);
         }
         else
         {

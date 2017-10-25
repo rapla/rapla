@@ -127,7 +127,7 @@ public final class ReservationControllerTest extends GUITestCase
         ClientFacade facade = getFacade();
         final RaplaFacade raplaFacade = facade.getRaplaFacade();
         ClassificationFilter[] filters = raplaFacade.getDynamicType(StorageOperator.PERIOD_TYPE).newClassificationFilter().toArray();
-        Allocatable[] periods = raplaFacade.getAllocatables(filters);
+        Allocatable[] periods = raplaFacade.getAllocatablesWithFilter(filters);
         raplaFacade.removeObjects(periods);
         Thread.sleep(500);
         Collection<Reservation> reservations = RaplaTestCase.waitForWithRaplaException(raplaFacade.getReservationsForAllocatable(null, null, null, null), 10000);

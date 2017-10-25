@@ -272,7 +272,7 @@ public class UserEditUI  extends AbstractEditUI<User> {
                     filters.add( filter);
                 }
             }
-            final Allocatable[] allocatables = getQuery().getAllocatables(filters.toArray(ClassificationFilter.CLASSIFICATIONFILTER_ARRAY));
+            final Allocatable[] allocatables = getQuery().getAllocatablesWithFilter(filters.toArray(ClassificationFilter.CLASSIFICATIONFILTER_ARRAY));
             List<Allocatable> allocatablesWithEmail = new ArrayList<Allocatable>();
             for ( Allocatable a: allocatables)
             {
@@ -280,7 +280,7 @@ public class UserEditUI  extends AbstractEditUI<User> {
                 final Attribute attribute = classification.getAttribute("email");
                 if ( attribute != null)
                 {
-	                final String email = (String)classification.getValue(attribute);
+	                final String email = (String)classification.getValueForAttribute(attribute);
 	                if (email != null && email.length() > 0)
 	                {
 	                    allocatablesWithEmail.add( a );

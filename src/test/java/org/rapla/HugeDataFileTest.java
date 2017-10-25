@@ -26,7 +26,7 @@ public class HugeDataFileTest
         
         for ( int i=0;i<RESERVATION_COUNT;i++)
         {
-            Reservation event = facade.newReservation();
+            Reservation event = facade.newReservationDeprecated();
             Appointment app1 = facade.newAppointment(new Date(), new Date());
             Appointment app2 = facade.newAppointment(new Date(), new Date());
             event.addAppointment( app1);

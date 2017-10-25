@@ -138,7 +138,7 @@ public class SQLOperatorTest extends AbstractOperatorTest
         final User user = facade.getUser("homer");
         CachableStorageOperator operator = getOperator();
         Reservation event = facade.newReservation(facade.getDynamicTypes(DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RESERVATION)[0].newClassification(), user);
-        Appointment appointment = facade.newAppointment(new Date(), new Date(), user);
+        Appointment appointment = facade.newAppointmentWithUser(new Date(), new Date(), user);
         event.getClassification().setValue("name", "test");
         appointment.setRepeatingEnabled(true);
         appointment.getRepeating().setEnd(null);
@@ -292,7 +292,7 @@ public class SQLOperatorTest extends AbstractOperatorTest
                 reservationId = newReservation.getId();
                 Date endDate = new Date();
                 Date startDate = new Date(endDate.getTime() - 120000);
-                final Appointment newAppointment = writeFacade.newAppointment(startDate, endDate, user);
+                final Appointment newAppointment = writeFacade.newAppointmentWithUser(startDate, endDate, user);
                 newAppointment.setRepeatingEnabled(true);
                 final Date exceptionDate = DateTools.cutDate(DateTools.addDays(startDate, 7));
                 newAppointment.getRepeating().addException(exceptionDate);
@@ -309,7 +309,7 @@ public class SQLOperatorTest extends AbstractOperatorTest
                 final Classification classification = newReservation.getClassification();
                 final Attribute attribute = classification.getAttributes()[0];
                 final String value = "TestName";
-                classification.setValue(attribute, value);
+                classification.setValueForAttribute(attribute, value);
                 newReservation.addAllocatable(facade.getAllocatables()[0]);
                 writeFacade.storeAndRemove(new Entity[]{newReservation}, Entity.ENTITY_ARRAY, user);
                 readFacade.refresh();
@@ -330,7 +330,7 @@ public class SQLOperatorTest extends AbstractOperatorTest
                 Reservation newReserv = (Reservation) second;
                 final Classification classification2 = newReserv.getClassification();
                 final Attribute attribute2 = classification2.getAttributes()[0];
-                final Object value2 = classification2.getValue(attribute2);
+                final Object value2 = classification2.getValueForAttribute(attribute2);
                 Assert.assertEquals(value, value2.toString());
                 final Appointment appointment = newReserv.getAppointments()[0];
                 Assert.assertEquals(startDate.getTime(), appointment.getStart().getTime());
@@ -369,7 +369,7 @@ public class SQLOperatorTest extends AbstractOperatorTest
             }
             {// check update of more entities
                 Map<String, String> rename = new HashMap<String, String>();
-                final Collection<Allocatable> allocatables = writeFacade.edit(Arrays.asList(writeFacade.getAllocatables()));
+                final Collection<Allocatable> allocatables = writeFacade.editList(Arrays.asList(writeFacade.getAllocatables()));
                 final Random random = new Random();
                 for (Allocatable allocatable : allocatables)
                 {
@@ -377,7 +377,7 @@ public class SQLOperatorTest extends AbstractOperatorTest
                     final Classification classification = allocatable.getClassification();
                     final Attribute attribute = classification.getAttributes()[0];
                     String newValue = "generated " + random.nextInt(100);
-                    classification.setValue(attribute, newValue);
+                    classification.setValueForAttribute(attribute, newValue);
                     rename.put(id, newValue);
                 }
                 writeFacade.storeAndRemove(allocatables.toArray(Entity.ENTITY_ARRAY), Entity.ENTITY_ARRAY, user);
@@ -397,7 +397,7 @@ public class SQLOperatorTest extends AbstractOperatorTest
                     final String renamedFirstAttribute = rename.get(alloc.getId());
                     final Classification classification = alloc.getClassification();
                     final Attribute attribute = classification.getAttributes()[0];
-                    final Object value = classification.getValue(attribute);
+                    final Object value = classification.getValueForAttribute(attribute);
                     Assert.assertEquals(renamedFirstAttribute, value.toString());
                 }
             }
@@ -611,7 +611,7 @@ public class SQLOperatorTest extends AbstractOperatorTest
                     facade.getDynamicTypes(DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RESOURCE)[0].newClassification(), user);
             final Classification classification = newResource.getClassification();
             final Attribute attribute = classification.getAttributes()[0];
-            classification.setValue(attribute, "newValue");
+            classification.setValueForAttribute(attribute, "newValue");
             facade.storeAndRemove(new Entity[] { newResource }, Entity.ENTITY_ARRAY, user);
             try (final Connection readConnection = operator.createConnection();final PreparedStatement stmt = readConnection.prepareStatement(select))
             {
@@ -628,10 +628,10 @@ public class SQLOperatorTest extends AbstractOperatorTest
             final Reservation newReservation = facade.newReservation(facade.getDynamicTypes(DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RESERVATION)[0].newClassification(), user);
             Date startDate = new Date();
             Date endDate = new Date(startDate.getTime() + 120000);
-            newReservation.addAppointment(facade.newAppointment(startDate, endDate, user));
+            newReservation.addAppointment(facade.newAppointmentWithUser(startDate, endDate, user));
             final Classification classification = newReservation.getClassification();
             final Attribute attribute = classification.getAttributes()[0];
-            classification.setValue(attribute, "newReservation");
+            classification.setValueForAttribute(attribute, "newReservation");
             newReservation.addAllocatable(facade.getAllocatables()[0]);
             facade.storeAndRemove(new Entity[] { newReservation }, Entity.ENTITY_ARRAY, user);
             try (final Connection readConnection = operator.createConnection();final PreparedStatement stmt = readConnection.prepareStatement(select))
@@ -697,7 +697,7 @@ public class SQLOperatorTest extends AbstractOperatorTest
         Date appStartDate = new Date();
         Date appEndDate = new Date(appStartDate.getTime() + 120000);
         reservation.addAllocatable(facade.getAllocatables()[0]);
-        reservation.addAppointment(facade.newAppointment(appStartDate, appEndDate, user));
+        reservation.addAppointment(facade.newAppointmentWithUser(appStartDate, appEndDate, user));
         facade.storeAndRemove(new Entity[]{reservation}, Entity.ENTITY_ARRAY, user);
         facade.storeAndRemove(Entity.ENTITY_ARRAY, new Entity[]{reservation} , user);
     }
@@ -739,7 +739,7 @@ public class SQLOperatorTest extends AbstractOperatorTest
     		reservation.addAllocatable(facade.getAllocatables()[0]);
     		Date appStartDate = new Date();
     		Date appEndDate = new Date(appStartDate.getTime() + 120000);
-    		reservation.addAppointment(facade.newAppointment(appStartDate, appEndDate, user));
+    		reservation.addAppointment(facade.newAppointmentWithUser(appStartDate, appEndDate, user));
     		facade.storeAndRemove(new Entity[]{reservation}, Entity.ENTITY_ARRAY, user);
     		operator.refresh();
     		final UpdateResult updates = operator.getUpdateResult(startDate);
@@ -847,7 +847,7 @@ public class SQLOperatorTest extends AbstractOperatorTest
     		final String attributeId = "name";
     		reservation.getClassification().setValue(attributeId, newValue);
     		final Date newAppStart = new Date();
-    		reservation.getAppointments()[0].move(newAppStart);
+    		reservation.getAppointments()[0].moveTo(newAppStart);
     		facade.storeAndRemove(new Entity[]{reservation}, Entity.ENTITY_ARRAY, user);
     		operator.refresh();
     		final UpdateResult updates = operator.getUpdateResult(startDate);

@@ -12,6 +12,7 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.facade;
 
+import jsinterop.annotations.JsType;
 import org.rapla.entities.Entity;
 import org.rapla.entities.Named;
 import org.rapla.entities.Timestamp;
@@ -32,6 +33,7 @@ import java.util.LinkedHashSet;
  * two allocating appointments. 
  */
 
+@JsType
 public interface Conflict extends Named, Entity<Conflict>, Timestamp
 {
     /** @return the allocatable, allocated for the same time by two different reservations. */

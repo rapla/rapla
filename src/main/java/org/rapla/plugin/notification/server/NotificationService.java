@@ -423,7 +423,7 @@ public class NotificationService implements ServerExtension
         Attribute[] attributes = classification.getAttributes();
         for (int i = 0; i < attributes.length; i++)
         {
-            Object value = classification.getValue(attributes[i]);
+            Object value = classification.getValueForAttribute(attributes[i]);
             if (value == null)
                 continue;
             buf.append("\n");

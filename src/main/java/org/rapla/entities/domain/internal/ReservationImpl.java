@@ -197,10 +197,10 @@ public final class ReservationImpl extends SimpleEntity implements Reservation, 
     
     public String format(Locale locale, String annotationName)
     {
-        return format( locale, annotationName, (Appointment)null);
+        return formatAppointment( locale, annotationName, (Appointment)null);
     }
 
-    public String format(Locale locale, String annotationName, Appointment appointment)
+    public String formatAppointment(Locale locale, String annotationName, Appointment appointment)
     {
         DynamicTypeImpl type = (DynamicTypeImpl)getClassification().getType();
         ParsedText parsedAnnotation = type.getParsedAnnotation( annotationName );
@@ -213,7 +213,7 @@ public final class ReservationImpl extends SimpleEntity implements Reservation, 
         return nameString;
     }
 
-    public String format(Locale locale, String annotationName, AppointmentBlock block)
+    public String formatAppointmentBlock(Locale locale, String annotationName, AppointmentBlock block)
     {
         DynamicTypeImpl type = (DynamicTypeImpl)getClassification().getType();
         ParsedText parsedAnnotation = type.getParsedAnnotation( annotationName );
@@ -427,7 +427,7 @@ public final class ReservationImpl extends SimpleEntity implements Reservation, 
         return isRefering("resources",allocatable.getId());
     }
 
-    public boolean hasAllocated(Allocatable allocatable,Appointment appointment) {
+    public boolean hasAllocatedOn(Allocatable allocatable,Appointment appointment) {
         if (!hasAllocated(allocatable))
             return false;
         if  (restrictions == null)
@@ -492,7 +492,7 @@ public final class ReservationImpl extends SimpleEntity implements Reservation, 
 	}
 
     
-    public void setRestriction(Appointment appointment, Allocatable[] restrictedAllocatables) {
+    public void setRestrictionForAppointment(Appointment appointment, Allocatable[] restrictedAllocatables) {
     	for ( Allocatable alloc: restrictedAllocatables)
         {
             List<String> restrictions = new ArrayList<String>();

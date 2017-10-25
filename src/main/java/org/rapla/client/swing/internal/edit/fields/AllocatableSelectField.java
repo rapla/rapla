@@ -84,7 +84,7 @@ public class AllocatableSelectField extends AbstractSelectField<Allocatable>
         {
 			ClassificationFilter filter = dynamicTypeConstraint.newClassificationFilter();
             ClassificationFilter[] filters = new ClassificationFilter[] {filter};
-            allocatables = raplaFacade.getAllocatables(filters);
+            allocatables = raplaFacade.getAllocatablesWithFilter(filters);
         }
         else
         {

@@ -398,7 +398,7 @@ public class PermissionController
             // 1. check if appointment is old,
             // 2. check if allocatable was already assigned to the appointment
             Appointment originalAppointment = original.findAppointment(appointment);
-            if (originalAppointment == null || !original.hasAllocated(allocatable, originalAppointment))
+            if (originalAppointment == null || !original.hasAllocatedOn(allocatable, originalAppointment))
             {
                 continue;
             }

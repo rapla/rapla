@@ -12,6 +12,7 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.entities.domain;
 
+import jsinterop.annotations.JsType;
 import org.rapla.components.util.TimeInterval;
 import org.rapla.entities.Annotatable;
 import org.rapla.entities.Named;
@@ -25,6 +26,7 @@ import java.util.Date;
 /** Objects that implement allocatable can be allocated by reservations.
     @see Reservation
  */
+@JsType
 public interface Allocatable extends EntityPermissionContainer<Allocatable>,Named,Classifiable,Ownable,Timestamp, Annotatable {
 
     /** Conflicts for this allocatable should be ignored, if this flag is enabled.

@@ -13,6 +13,7 @@
 
 package org.rapla.entities.domain;
 
+import jsinterop.annotations.JsType;
 import org.rapla.entities.Annotatable;
 import org.rapla.entities.Named;
 import org.rapla.entities.Ownable;
@@ -36,6 +37,7 @@ import java.util.Locale;
  *  @see Appointment
  *  @see Allocatable
  */
+@JsType
 public interface Reservation extends EntityPermissionContainer<Reservation>,Classifiable,Named,Ownable,Timestamp, Annotatable,Comparable
 {
     int MAX_RESERVATION_LENGTH = 100;
@@ -56,7 +58,7 @@ public interface Reservation extends EntityPermissionContainer<Reservation>,Clas
     */
     void setRestriction(Allocatable alloc,Appointment[] appointments);
     
-    void setRestriction(Appointment appointment, Allocatable[] restrictedAllocatables);
+    void setRestrictionForAppointment(Appointment appointment, Allocatable[] restrictedAllocatables);
     
     Appointment[] getRestriction(Allocatable alloc);
 
@@ -83,7 +85,7 @@ public interface Reservation extends EntityPermissionContainer<Reservation>,Clas
     boolean hasAllocated(Allocatable alloc);
 
     /** returns if the allocatable is reserved on the specified appointment. */
-    boolean hasAllocated(Allocatable alloc,Appointment appointment);
+    boolean hasAllocatedOn(Allocatable alloc,Appointment appointment);
 
     /** returns all persons that are associated with the reservation.
         Need not necessarily to be users of the System.
@@ -105,9 +107,9 @@ public interface Reservation extends EntityPermissionContainer<Reservation>,Clas
 
 	String format(Locale locale, String annotationName);
 
-	String format(Locale locale, String annotationName, Appointment appointment);
+	String formatAppointment(Locale locale, String annotationName, Appointment appointment);
 	
-	String format(Locale locale, String annotationName, AppointmentBlock block);
+	String formatAppointmentBlock(Locale locale, String annotationName, AppointmentBlock block);
 
 	int indexOf(Appointment a1);
 	

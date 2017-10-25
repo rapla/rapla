@@ -227,7 +227,6 @@ public abstract class RaplaBuilder
         return builderPromise;
     }
 
-
     public boolean isNonFilteredEventsVisible() {
 		return nonFilteredEventsVisible;
 	}
@@ -351,7 +350,7 @@ public abstract class RaplaBuilder
         }
         String color = null;
         if ( colorAttribute != null) {
-            Object hexValue = c.getValue( colorAttribute );
+            Object hexValue = c.getValueForAttribute( colorAttribute );
             if ( hexValue != null ) {
                 if ( hexValue instanceof Category) {
                     hexValue = ((Category) hexValue).getAnnotation( CategoryAnnotations.KEY_NAME_COLOR );
@@ -440,7 +439,14 @@ public abstract class RaplaBuilder
         final List<AppointmentBlock> blocks = new ArrayList<AppointmentBlock>();
         for (Appointment app:appointments)
         {
-            app.createBlocks(start, end, blocks, excludeExceptions);
+            if ( excludeExceptions)
+            {
+                app.createBlocksExcludeExceptions(start, end, blocks);
+            }
+            else
+            {
+                app.createBlocks(start, end, blocks);
+            }
         }
         List<AppointmentBlock> preparedBlocks = splitBlocks(blocks, start, end);
 
@@ -510,7 +516,7 @@ public abstract class RaplaBuilder
             {
 	            for (Appointment conflictingApp:collection)
 	            {
-                	if ( conflictingApp.overlaps( block))
+                	if ( conflictingApp.overlapsBlock( block))
                 	{
                 		found = true;
                 		break;
@@ -700,7 +706,7 @@ public abstract class RaplaBuilder
         	Appointment appointment =appointmentBlock.getAppointment();
         	for (Allocatable allocatable : allocatables)
             {
-        	    if(appointment.getReservation().hasAllocated(allocatable, appointment))
+        	    if(appointment.getReservation().hasAllocatedOn(allocatable, appointment))
         	    {
         	        matchingAllocatables.add(allocatable);
         	    }

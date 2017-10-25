@@ -99,7 +99,7 @@ public final class AppointmentImpl extends SimpleEntity implements Appointment
             repeating.setReadOnly(  );
     }
 
-    public void move(Date newStart) {
+    public void moveTo(Date newStart) {
         long diff = this.end.getTime() - this.start.getTime();
         move(newStart, new Date(newStart.getTime() + diff));
     }
@@ -344,8 +344,14 @@ public final class AppointmentImpl extends SimpleEntity implements Appointment
         boolean excludeExceptions = true;
         createBlocks(start,end, blocks, excludeExceptions);
     }
-    
-    
+
+
+    public void createBlocksExcludeExceptions(Date start,Date end,Collection<AppointmentBlock> blocks)
+    {
+        createBlocks(start, end, blocks, true);
+    }
+
+
     public void createBlocks(Date start,Date end,Collection<AppointmentBlock> blocks, boolean excludeExceptions) {
         Assert.notNull(blocks);
         Assert.notNull(start,"You must set a startDate");
@@ -442,7 +448,7 @@ public final class AppointmentImpl extends SimpleEntity implements Appointment
         return overlaps( start, end , true );
     }
     
-    public boolean overlaps(AppointmentBlock block)
+    public boolean overlapsBlock(AppointmentBlock block)
     {
     	long end = block.getEnd();
 		long start = block.getStart();
@@ -450,7 +456,7 @@ public final class AppointmentImpl extends SimpleEntity implements Appointment
     }
     
     
-	public boolean overlaps(TimeInterval interval) {
+	public boolean overlapsTimeInterval(TimeInterval interval) {
 		if ( interval == null)
 		{
 			return false;
@@ -458,7 +464,11 @@ public final class AppointmentImpl extends SimpleEntity implements Appointment
 		return overlaps( interval.getStart(), interval.getEnd());
 	}
 
-        
+
+    /** Test for overlap with a period. You can specify if exceptions should be considered in the overlapping algorithm.
+     * if excludeExceptions is set an overlap will return false if all dates are excluded by exceptions in the specfied start-end intervall
+     @return true if the overlaps with the given period.
+     */
     public boolean overlaps(Date start2,Date end2, boolean excludeExceptions) {
         if (start2 == null && end2 == null)
             return true;
@@ -804,7 +814,7 @@ public final class AppointmentImpl extends SimpleEntity implements Appointment
 	    }
 	
 	    while (it.hasNext()) {
-	        Appointment appointment = it.next();
+	        AppointmentImpl appointment = (AppointmentImpl) it.next();
 	        // test if appointment end before the start-date
 	        if (end != null && appointment.getStart().after(end))
 	            break;

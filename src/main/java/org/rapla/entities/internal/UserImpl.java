@@ -95,7 +95,7 @@ public class UserImpl extends SimpleEntity implements User, ModifiableTimestamp
         {
             final Classification classification = person.getClassification();
             final Attribute attribute = classification.getAttribute("email");
-            return attribute != null ? (String)classification.getValue(attribute) : null;
+            return attribute != null ? (String)classification.getValueForAttribute(attribute) : null;
         }
         return email;
     }
@@ -266,7 +266,7 @@ public class UserImpl extends SimpleEntity implements User, ModifiableTimestamp
         }
         final Classification classification = person.getClassification();
         final Attribute attribute = classification.getAttribute("email");
-        final String email = attribute != null ? (String)classification.getValue(attribute) : null;
+        final String email = attribute != null ? (String)classification.getValueForAttribute(attribute) : null;
         if ( email == null || email.length() == 0)
         {
         	throw new RaplaException("Email of " + person + " not set. Linking to user needs an email ");

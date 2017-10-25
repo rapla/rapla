@@ -192,7 +192,7 @@ public class ServerTest
     public void testChangeReservation() throws Exception
     {
         final RaplaFacade raplaFacade1 = getRaplaFacade1();
-        Reservation r1 = raplaFacade1.newReservation();
+        Reservation r1 = raplaFacade1.newReservationDeprecated();
         String typeKey = r1.getClassification().getType().getKey();
         r1.getClassification().setValue("name", "myGeneratedTestReservation");
         r1.addAppointment(raplaFacade1.newAppointment(raplaFacade1.today(), new Date()));
@@ -263,7 +263,7 @@ public class ServerTest
 
             ClassificationFilter filter = typeInSecondFacade.newClassificationFilter();
             filter.addEqualsRule("name", "test-resource");
-            Allocatable newResource = getRaplaFacade2().getAllocatables(filter.toArray())[0];
+            Allocatable newResource = getRaplaFacade2().getAllocatablesWithFilter(filter.toArray())[0];
             Classification classification = newResource.getClassification();
             Category userGroup = (Category) classification.getValue("test");
             final Category[] usergroups = getRaplaFacade2().getUserGroupsCategory().getCategories();
@@ -319,7 +319,7 @@ public class ServerTest
         ClassificationFilter filter = getRaplaFacade2().getDynamicType("room").newClassificationFilter();
         filter.addIsRule("name", "erwin");
         {
-            Allocatable rAfter = getRaplaFacade2().getAllocatables(filter.toArray())[0];
+            Allocatable rAfter = getRaplaFacade2().getAllocatablesWithFilter(filter.toArray())[0];
             final Attribute[] attributes1 = rAfter.getClassification().getAttributes();
             Assert.assertEquals(2, attributes1.length);
         }

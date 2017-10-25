@@ -112,7 +112,7 @@ public class InfoView implements ReservationViewPart
                 container.add(row);
             }
             final String attributeName = attribute.getName(locale);
-            final Object value = classification.getValue(attribute);
+            final Object value = classification.getValueForAttribute(attribute);
             if (InputUtils.isAttributeInt(attribute))
             {
                 final LongInputField input = new LongInputField(attributeName, (Long) value, new LongValueChange()

@@ -75,7 +75,7 @@ public final class PermissionEditTest extends GUITestCase
         LongFieldFactory longFieldFactory = new LongFieldFactory(facade, i18n, raplaLocale, logger, ioInterface);
         PermissionFieldFactory permissionFieldFactory = new PermissionFieldFactory(getFacade(), i18n, getRaplaLocale(), getLogger(), treeFactory, raplaImages, dateRenderer, dialogUiFactory, dateFieldFactory, longFieldFactory);
         PermissionListField editor = new PermissionListField(getFacade(), i18n, getRaplaLocale(), getLogger(),"permissions", raplaListEditFactory, permissionFieldFactory);
-        Allocatable a = facade.getRaplaFacade().getAllocatables(null)[0];
+        Allocatable a = facade.getRaplaFacade().getAllocatablesWithFilter(null)[0];
         Allocatable r = facade.getRaplaFacade().edit( a );
         Permission p1 = r.newPermission();
         p1.setUser(facade.getRaplaFacade().getUsers()[0]);

@@ -335,7 +335,7 @@ public class ClassificationImpl implements Classification,DynamicTypeDependant, 
     		throw new NoSuchElementException("No attribute found for key " + key);
     	}
 
-    	setValue( attribute,value);
+    	setValueForAttribute( attribute,value);
     }
 
     public Object getValue(String key) {
@@ -343,10 +343,10 @@ public class ClassificationImpl implements Classification,DynamicTypeDependant, 
     	if ( attribute == null ) {
     		throw new NoSuchElementException("No attribute found for key " + key);
     	}
-    	return getValue(attribute);
+    	return getValueForAttribute(attribute);
     }
 
-    public void setValue(Attribute attribute,Object value) {
+    public void setValueForAttribute(Attribute attribute,Object value) {
     	checkWritable();
     	if ( value != null && !(value instanceof Collection<?>))
     	{
@@ -513,7 +513,7 @@ public class ClassificationImpl implements Classification,DynamicTypeDependant, 
         return stringRep;
     }
     
-    public Object getValue(Attribute attribute) {
+    public Object getValueForAttribute(Attribute attribute) {
     	if ( attribute == null ) {
     		throw new NullPointerException("Attribute can't be null");
     	}

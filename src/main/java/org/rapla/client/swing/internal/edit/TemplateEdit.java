@@ -18,15 +18,19 @@ import org.rapla.entities.Named;
 import org.rapla.entities.NamedComparator;
 import org.rapla.entities.User;
 import org.rapla.entities.domain.Allocatable;
+import org.rapla.entities.domain.Appointment;
 import org.rapla.entities.domain.Permission;
 import org.rapla.entities.domain.RaplaObjectAnnotations;
 import org.rapla.entities.domain.Reservation;
 import org.rapla.entities.domain.ResourceAnnotations;
 import org.rapla.entities.dynamictype.Classification;
 import org.rapla.entities.dynamictype.DynamicType;
+import org.rapla.entities.dynamictype.DynamicTypeAnnotations;
 import org.rapla.entities.storage.ReferenceInfo;
 import org.rapla.facade.CalendarSelectionModel;
 import org.rapla.facade.ClientFacade;
+import org.rapla.facade.RaplaComponent;
+import org.rapla.facade.RaplaFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.logger.Logger;
@@ -351,7 +355,7 @@ public class TemplateEdit extends RaplaGUIComponent
                     nonEditables.add( template);
                 }
             }
-            Collection<Allocatable> copies = getFacade().edit(editableTemplates);
+            Collection<Allocatable> copies = getFacade().editList(editableTemplates);
             fillModel(nonEditables,copies);
             Collection<String> options = new ArrayList<String>();
             options.add(getString("apply"));
@@ -405,9 +409,10 @@ public class TemplateEdit extends RaplaGUIComponent
                             return null;
                         });
                     }
+                    final RaplaFacade facade = getFacade();
                     p = p.thenCompose((a) ->
                     {
-                        final Promise<Void> dispatch = getFacade().dispatch(toStoreObj, toRemoveObj);
+                        final Promise<Void> dispatch = facade.dispatch(toStoreObj, toRemoveObj);
                         return dispatch;
                     });
 
@@ -425,10 +430,24 @@ public class TemplateEdit extends RaplaGUIComponent
                         if (selectedTemplate != null)
                         {
                             final Boolean annotation = (Boolean)selectedTemplate.getClassification().getValue(ResourceAnnotations.FIXEDTIMEANDDURATION);
-                            boolean isOnlySingle = annotation != null && annotation;
+                            boolean isFixedTimeAndDate = annotation != null && annotation;
                             final int size = reservations.size();
-                            if ( !isOnlySingle)
+                            if ( !isFixedTimeAndDate)
                             {
+                                if (size == 0)
+                                {
+                                    final DynamicType[] dynamicTypes = facade
+                                            .getDynamicTypes(DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RESERVATION);
+                                    Classification classification = dynamicTypes[0].newClassification();
+                                    Reservation reservation = facade.newReservation( classification, user);
+                                    CalendarSelectionModel model = calendarSelectionModel;
+                                    Date startDate = RaplaComponent.getStartDate(model, facade, user);
+                                    Date endDate = RaplaComponent.calcEndDate(model, startDate);
+                                    Appointment appointment = facade.newAppointment(startDate, endDate);
+                                    reservation.addAppointment( appointment);
+                                    reservation.setAnnotation(RaplaObjectAnnotations.KEY_TEMPLATE,selectedTemplate.getId() );
+                                    editController.edit( reservation, null);
+                                }
                                 if (size == 1)
                                 {
                                     final Reservation next = reservations.iterator().next();

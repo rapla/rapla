@@ -137,16 +137,16 @@ public class ClassificationEditUI extends AbstractEditUI<Classification> {
                 }
     			else if ( collection.size() > 0) 
     			{
-    			     c.setValue(attribute, collection.iterator().next());
+    			     c.setValueForAttribute(attribute, collection.iterator().next());
     			}
     			else
     			{
-                    c.setValue(attribute, null);
+                    c.setValueForAttribute(attribute, null);
     			}
 			}
 			else
 			{
-			     c.setValue(attribute, value);
+			     c.setValueForAttribute(attribute, value);
 			}
     
 		}
@@ -165,7 +165,7 @@ public class ClassificationEditUI extends AbstractEditUI<Classification> {
 			}
 			else
 			{
-				value = c.getValue(attribute);
+				value = c.getValueForAttribute(attribute);
 			}
 			values.add(value);
 		}

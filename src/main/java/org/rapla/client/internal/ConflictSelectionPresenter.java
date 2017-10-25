@@ -209,7 +209,7 @@ public class ConflictSelectionPresenter implements Presenter
         {
             Collection<Conflict> conflictOrig = ConflictSelectionPresenter.this.conflicts.stream()
                     .filter((conflict) -> conflictStrings.contains(conflict.getId())).collect(Collectors.toList());
-            return raplaFacade.update(conflictOrig,
+            return raplaFacade.updateList(conflictOrig,
                     (editableConflicts) -> editableConflicts.stream().forEach((conflict) -> setEnabled(((ConflictImpl) conflict), newFlag)))
                     .thenRun(() -> updateTree());
         }

@@ -187,7 +187,7 @@ public class CopyPluginMenu  extends RaplaGUIComponent implements EditMenuExtens
 		    {
 		        newStart = getNewStartWeekly(oldStart, destWithOffset);
 		    }
-		    app.move( newStart) ;
+		    app.moveTo( newStart) ;
 		    if (repeating != null)
 		    {
 		    	Date[] exceptions = repeating.getExceptions();

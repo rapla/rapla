@@ -129,7 +129,7 @@ public class NotificationPluginTest
         reservationName = "Another name";
         r=facade1.edit( r);
         r.getClassification().setValue( "name", reservationName );
-        r.getAppointments()[0].move( new Date( new Date().getTime() + DateTools.MILLISECONDS_PER_HOUR ) );
+        r.getAppointments()[0].moveTo( new Date( new Date().getTime() + DateTools.MILLISECONDS_PER_HOUR ) );
         facade1.store( r );
 
         System.out.println( r.getLastChanged() );

@@ -352,7 +352,7 @@ public final class RaplaCalendarViewExample {
 
         public void moved(Block block, Point p, Date newStart, int slotNr) {
             Appointment appointment = ((MyBlock) block).getAppointment();
-            appointment.move( newStart);
+            appointment.moveTo( newStart);
             System.out.println("Block moved");
             view.rebuild(builder);
         }
@@ -382,7 +382,7 @@ public final class RaplaCalendarViewExample {
             cal.setTime( newStart );
             cal.set( Calendar.HOUR_OF_DAY, hour);
             cal.set( Calendar.MINUTE, minute);
-            appointment.move( cal.getTime());
+            appointment.moveTo( cal.getTime());
             System.out.println("Block moved to " + cal.getTime());
             view.rebuild(builder);
         }

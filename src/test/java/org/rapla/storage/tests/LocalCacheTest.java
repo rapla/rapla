@@ -213,7 +213,7 @@ public class LocalCacheTest  {
         final ClientFacade clientFacade = RaplaTestCase.createSimpleSimpsonsWithHomer();
         RaplaFacade facade = clientFacade.getRaplaFacade();
         CachableStorageOperator storage = (CachableStorageOperator) facade.getOperator();
-        Reservation reservation = facade.newReservation();
+        Reservation reservation = facade.newReservationDeprecated();
         //start is 13/4  original end = 28/4
         Date startDate = new Date(DateTools.toDate(2013, 4, 13));
         Date endDate = new Date(DateTools.toDate(2013, 4, 28));

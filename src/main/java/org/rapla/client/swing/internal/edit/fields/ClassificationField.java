@@ -323,7 +323,7 @@ public  class  ClassificationField<T extends Classifiable> extends AbstractEditF
 								newClassifications.add( classification );
 							} else {
 								// no: create new Classification
-								newClassifications.add( dynamicType.newClassification(classification));
+								newClassifications.add( dynamicType.newClassificationFrom(classification));
 							}
 						}
 						// set new Classifications in ClassificationEditUI

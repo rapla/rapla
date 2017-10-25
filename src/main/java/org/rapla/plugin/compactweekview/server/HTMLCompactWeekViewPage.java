@@ -87,9 +87,10 @@ public class HTMLCompactWeekViewPage extends AbstractHTMLCalendarPage implements
         builder.setSplitByAllocatables( true );
 
         GroupAllocatablesStrategy strategy;
-        if ( builder.getAllocatables().size() > 0) {
+        List<Allocatable> allocatables = getSortedAllocatables();
+        if ( allocatables.size() > 0) {
             strategy = new GroupAllocatablesStrategy( getRaplaLocale().getLocale() );
-            strategy.setAllocatables( builder.getAllocatables() ) ;
+            strategy.setAllocatables( allocatables ) ;
         } else {
             // put all Allocatables in the same group
             strategy = new GroupAllocatablesStrategy( getRaplaLocale().getLocale() ) {
@@ -103,7 +104,6 @@ public class HTMLCompactWeekViewPage extends AbstractHTMLCalendarPage implements
         strategy.setFixedSlotsEnabled( true );
         builder.setBuildStrategy( strategy );
 
-        Collection<Allocatable> allocatables = builder.getAllocatables();
         String[] slotNames = new String[ allocatables.size() ];
         Iterator<Allocatable> it = allocatables.iterator();
         for (int i = 0; i < slotNames.length; i++ ) {

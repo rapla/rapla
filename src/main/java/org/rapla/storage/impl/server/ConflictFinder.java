@@ -527,7 +527,7 @@ class ConflictFinder {
         {
             return false;
         }
-        return res1.hasAllocated(alloc, appointment1) && res2.hasAllocated(alloc, appointment2);
+        return res1.hasAllocatedOn(alloc, appointment1) && res2.hasAllocatedOn(alloc, appointment2);
     }
 	
 	private Appointment getAppointment(ReferenceInfo<Appointment> id)

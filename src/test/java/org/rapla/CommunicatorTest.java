@@ -115,7 +115,7 @@ public class CommunicatorTest extends AbstractTestWithServer
         filter.addEqualsRule("name", nameWithUmlaute);
         Allocatable[] allAllocs = facade.getAllocatables();
         Assert.assertEquals(allocSizeBefore + 1, allAllocs.length);
-        Allocatable[] allocs = facade.getAllocatables( new ClassificationFilter[] {filter});
+        Allocatable[] allocs = facade.getAllocatablesWithFilter( new ClassificationFilter[] {filter});
         Assert.assertEquals(1, allocs.length);
     }
 

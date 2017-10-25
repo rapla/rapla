@@ -355,7 +355,7 @@ public class ExchangeAppointmentStorage
             {
                 hashableString.append(hashEntry);
             }
-            final Preferences userPreferences = facade.getPreferences(user, true);
+            final Preferences userPreferences = facade.getPreferences(user);
             final String newHash = LocalAbstractCachableOperator.encrypt("sha-1", hashableString.toString());
             final String hash = userPreferences.getEntryAsString(LAST_SYNC_ERROR_CHANGE_HASH, null);
             if (hash == null || !newHash.equals(hash))

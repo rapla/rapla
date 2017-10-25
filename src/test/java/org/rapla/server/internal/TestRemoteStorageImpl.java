@@ -217,15 +217,15 @@ public class TestRemoteStorageImpl extends AbstractTestWithServer
             final Reservation newReservation = facade.newReservation(classification, user);
             final Allocatable montyAllocatable = facade.getOperator().tryResolve("r9b69d90-46a0-41bb-94fa-82079b424c03", Allocatable.class);//facade.getOperator().tryResolve("f92e9a11-c342-4413-a924-81eee17ccf92", Allocatable.class);
             newReservation.addAllocatable(montyAllocatable);
-            newReservation.addAppointment(facade.newAppointment(startDate, endDate, user));
+            newReservation.addAppointment(facade.newAppointmentWithUser(startDate, endDate, user));
             facade.store(newReservation);
         }
         // create reservation with group allocatable
         final Reservation newReservation = facade.newReservation(classification, user);
         final Allocatable dozGroupAllocatable = facade.getOperator().tryResolve("f92e9a11-c342-4413-a924-81eee17ccf92", Allocatable.class);//facade.getOperator().tryResolve("r9b69d90-46a0-41bb-94fa-82079b424c03", Allocatable.class);
         newReservation.addAllocatable(dozGroupAllocatable);
-        newReservation.addAppointment(facade.newAppointment(startDate, endDate, user));
-        final Collection<Conflict> conflicts = RaplaTestCase.waitForWithRaplaException(facade.getConflicts(newReservation), 10000);
+        newReservation.addAppointment(facade.newAppointmentWithUser(startDate, endDate, user));
+        final Collection<Conflict> conflicts = RaplaTestCase.waitForWithRaplaException(facade.getConflictsForReservation(newReservation), 10000);
         Assert.assertEquals(1, conflicts.size());
     }
     
@@ -241,15 +241,15 @@ public class TestRemoteStorageImpl extends AbstractTestWithServer
             final Reservation newReservation = facade.newReservation(classification, user);
             final Allocatable roomA66Allocatable = facade.getOperator().tryResolve("c24ce517-4697-4e52-9917-ec000c84563c", Allocatable.class);
             newReservation.addAllocatable(roomA66Allocatable);
-            newReservation.addAppointment(facade.newAppointment(startDate, endDate, user));
+            newReservation.addAppointment(facade.newAppointmentWithUser(startDate, endDate, user));
             facade.store(newReservation);
         }
         // create reservation with group allocatable
         final Reservation newReservation = facade.newReservation(classification, user);
         final Allocatable partRoomAllocatable = facade.getOperator().tryResolve("rdd6b473-7c77-4344-a73d-1f27008341cb", Allocatable.class);
         newReservation.addAllocatable(partRoomAllocatable);
-        newReservation.addAppointment(facade.newAppointment(startDate, endDate, user));
-        final Collection<Conflict> conflicts = RaplaTestCase.waitForWithRaplaException(facade.getConflicts(newReservation), 10000);
+        newReservation.addAppointment(facade.newAppointmentWithUser(startDate, endDate, user));
+        final Collection<Conflict> conflicts = RaplaTestCase.waitForWithRaplaException(facade.getConflictsForReservation(newReservation), 10000);
         Assert.assertEquals(1, conflicts.size());
     }
 

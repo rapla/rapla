@@ -432,7 +432,7 @@ public class SavedCalendarSwingView extends RaplaGUIComponent implements SavedCa
 				newMap.put( filename, entry);
             }
         }
-        preferences.putEntry(AutoExportPlugin.PLUGIN_ENTRY, facade.newRaplaMap(newMap));
+        preferences.putEntry(AutoExportPlugin.PLUGIN_ENTRY, facade.newRaplaMapForMap(newMap));
         // TODO Enable undo with a specific implementation, that does not overwrite all preference changes and regards dynamic type changes
         //        Collection<Preferences> originalList = Collections.singletonList(getQuery().getPreferences());
         //        Collection<Preferences> newList = Collections.singletonList(preferences);

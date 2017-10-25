@@ -99,9 +99,9 @@ public class ClientFacadeTest  {
     {
         Promise<Collection<Reservation>> all = facade.getReservationsForAllocatable(null, null, null, null);
         facade.removeObjects( RaplaTestCase.waitForWithRaplaException(all, 10000).toArray(Reservation.RESERVATION_ARRAY) );
-        Reservation orig =  facade.newReservation();
+        Reservation orig =  facade.newReservationDeprecated();
         final DynamicType resourceType = facade.getDynamicType("room");
-        final Allocatable parentResource = facade.getAllocatables(resourceType.newClassificationFilter().toArray())[0];
+        final Allocatable parentResource = facade.getAllocatablesWithFilter(resourceType.newClassificationFilter().toArray())[0];
         final User user = clientFacade.getUser();
         final DynamicType resourceBelongsTo = facade.newDynamicType(DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RESOURCE);
         resourceBelongsTo.setKey("roompart");
@@ -173,7 +173,7 @@ public class ClientFacadeTest  {
                     Assert.assertEquals(1, allocatedAppointments.size());
                 }
             }
-            firstAppointment.move( newAppointment.getEnd());
+            firstAppointment.moveTo( newAppointment.getEnd());
             {
                 final Promise<Map<Allocatable, Collection<Appointment>>> allocatableBindings = facade
                         .getAllocatableBindings(allocatables, Arrays.asList(newEvent.getAppointments()));
@@ -274,7 +274,7 @@ public class ClientFacadeTest  {
         final Classification packageClassification = newDynamicType.newClassification();
         final User user = clientFacade.getUser();
         final Allocatable packageAllocatable = facade.newAllocatable(packageClassification, user);
-        packageClassification.setValue(nameAttribute, "test package");
+        packageClassification.setValueForAttribute(nameAttribute, "test package");
         final Allocatable[] allocatables = facade.getAllocatables();
         Collection<Allocatable> referencedAllocatables = new ArrayList<Allocatable>();
         final Allocatable alloc1 = allocatables[0];
@@ -350,7 +350,7 @@ public class ClientFacadeTest  {
         Collection<Conflict> conflicts= facade.getConflicts( );
         Promise<Collection<Reservation>> all = facade.getReservationsForAllocatable(null, null, null, null);
         facade.removeObjects( RaplaTestCase.waitForWithRaplaException(all, 10000).toArray(Reservation.RESERVATION_ARRAY) );
-        Reservation orig =  facade.newReservation();
+        Reservation orig =  facade.newReservationDeprecated();
         orig.getClassification().setValue("name","new");
         Date start = DateTools.toDateTime(new Date(), new Date(DateTools.toTime(10, 0, 0)));
         Date end = DateTools.toDateTime( start,new Date(DateTools.toTime(  12,0,0)));
@@ -386,7 +386,7 @@ public class ClientFacadeTest  {
         Appointment a = clone.getAppointments()[0];
         Date newStart = new SerializableDateTimeFormat().parseDateTime("2005-10-10","10:20:00");
         Date newEnd = new SerializableDateTimeFormat().parseDateTime("2005-10-12", null);
-        a.move( newStart );
+        a.moveTo( newStart );
         a.getRepeating().setEnd( newEnd );
         facade.store( clone );
         Collection<Reservation> allPowerPlantings = RaplaTestCase
@@ -408,7 +408,7 @@ public class ClientFacadeTest  {
     		Allocatable nonPersistantAllocatable = facade.newResource();
     		nonPersistantAllocatable.getClassification().setValue("name", "Bla");
     		 
-    		Reservation nonPeristantEvent = facade.newReservation();
+    		Reservation nonPeristantEvent = facade.newReservationDeprecated();
     		nonPeristantEvent.getClassification().setValue("name", "dummy-event");
     		Assert.assertEquals("event", nonPeristantEvent.getClassification().getType().getKey());
     		nonPeristantEvent.addAllocatable( nonPersistantAllocatable );
@@ -426,7 +426,7 @@ public class ClientFacadeTest  {
         // query the allocatable from the store
         ClassificationFilter filter = facade.getDynamicType("room").newClassificationFilter();
         filter.addEqualsRule("name","Blubs");
-        Allocatable persistantAllocatable = facade.getAllocatables(new ClassificationFilter[] { filter })[0];
+        Allocatable persistantAllocatable = facade.getAllocatablesWithFilter(new ClassificationFilter[] { filter })[0];
 
         // query the event from the store
         ClassificationFilter eventFilter = facade.getDynamicType("event").newClassificationFilter();
@@ -523,7 +523,7 @@ public class ClientFacadeTest  {
 
     @Test
     public void testResourcesNotEmpty() throws RaplaException {
-        Allocatable[] resources = facade.getAllocatables(null);
+        Allocatable[] resources = facade.getAllocatablesWithFilter(null);
         Assert.assertTrue(resources.length > 0);
     }
 
@@ -578,7 +578,7 @@ public class ClientFacadeTest  {
                 final Date endAppointment = DateTools.toDateTime(today, new Date(DateTools.toTime(12, 00, 00)));
                 final Appointment newAppointment = facade.newAppointment(startAppointment, endAppointment);
                 reservation.addAppointment(newAppointment);
-                reservation.setRestriction(newAppointment, new Allocatable[]{allocatableWinsMerge});
+                reservation.setRestrictionForAppointment(newAppointment, new Allocatable[]{allocatableWinsMerge});
             }
             {// second appointment holding allocatableWillBeMerge
                 final Date today = DateTools.cutDate(new Date(System.currentTimeMillis()));
@@ -586,7 +586,7 @@ public class ClientFacadeTest  {
                 final Date endAppointment = DateTools.toDateTime(today, new Date(DateTools.toTime(14, 00, 00)));
                 final Appointment newAppointment = facade.newAppointment(startAppointment, endAppointment);
                 reservation.addAppointment(newAppointment);
-                reservation.setRestriction(newAppointment, new Allocatable[]{allocatableWillBeMerge});
+                reservation.setRestrictionForAppointment(newAppointment, new Allocatable[]{allocatableWillBeMerge});
             }
             {// third appointment no restriction
                 final Date today = DateTools.cutDate(new Date(System.currentTimeMillis()));
@@ -639,7 +639,7 @@ public class ClientFacadeTest  {
             facade.store(belongsToDynamicType);
             final Allocatable belongsToAllocatable = facade.newAllocatable(belongsToDynamicType.newClassification(), user);
             belongsToAllocatableReference = belongsToAllocatable.getReference();
-            belongsToAllocatable.getClassification().setValue(belongsToAttribute, allocatableWillBeMerge);
+            belongsToAllocatable.getClassification().setValueForAttribute(belongsToAttribute, allocatableWillBeMerge);
             facade.store(belongsToAllocatable);
         }
         {// CalendarModelConfiguration
@@ -676,7 +676,7 @@ public class ClientFacadeTest  {
                 classificationFilters.add((ClassificationFilterImpl) newClassificationFilter);
                 configurationClassificationFilterWithLoosesAllocatable.setClassificationFilter(classificationFilters);
             }
-            final Preferences preferences = facade.edit(facade.getPreferences(user, true));
+            final Preferences preferences = facade.edit(facade.getPreferences(user));
             Map<String,CalendarModelConfiguration> exportMap= preferences.getEntry(CalendarModelConfiguration.EXPORT_ENTRY);
             Map<String,CalendarModelConfiguration> newMap;
             if ( exportMap == null)
@@ -769,7 +769,7 @@ public class ClientFacadeTest  {
             final Classification classification = belongsToAllocatable.getClassification();
             final Attribute[] attributes = classification.getAttributes();
             Assert.assertEquals(1, attributes.length);
-            final Object value = classification.getValue(attributes[0]);
+            final Object value = classification.getValueForAttribute(attributes[0]);
             Assert.assertEquals(allocatableWinsMerge, value);
         }
         {// CalendarModelConfiguration
@@ -829,7 +829,7 @@ public class ClientFacadeTest  {
         final Allocatable dozGroupAllocatable = facade.getOperator().tryResolve("f92e9a11-c342-4413-a924-81eee17ccf92", Allocatable.class);//facade.getOperator().tryResolve("r9b69d90-46a0-41bb-94fa-82079b424c03", Allocatable.class);
         newReservation.addAllocatable(dozGroupAllocatable);
         newReservation.addAppointment(facade.newAppointment(startDate, endDate));
-        final Collection<Conflict> conflicts = RaplaTestCase.waitForWithRaplaException(facade.getConflicts(newReservation), 10000);
+        final Collection<Conflict> conflicts = RaplaTestCase.waitForWithRaplaException(facade.getConflictsForReservation(newReservation), 10000);
         Assert.assertEquals(1, conflicts.size());
     }
     
@@ -852,7 +852,7 @@ public class ClientFacadeTest  {
         final Allocatable partRoomAllocatable = facade.getOperator().tryResolve("rdd6b473-7c77-4344-a73d-1f27008341cb", Allocatable.class);
         newReservation.addAllocatable(partRoomAllocatable);
         newReservation.addAppointment(facade.newAppointment(startDate, endDate));
-        final Collection<Conflict> conflicts = RaplaTestCase.waitForWithRaplaException(facade.getConflicts(newReservation), 10000);
+        final Collection<Conflict> conflicts = RaplaTestCase.waitForWithRaplaException(facade.getConflictsForReservation(newReservation), 10000);
         Assert.assertEquals(1, conflicts.size());
     }
 

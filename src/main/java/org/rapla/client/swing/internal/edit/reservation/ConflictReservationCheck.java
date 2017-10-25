@@ -71,7 +71,7 @@ public class ConflictReservationCheck extends RaplaGUIComponent implements Event
         Promise<Void> p = null;
         for (Reservation reservation : reservations)
         {
-            Promise<Collection<Conflict>> promise = getQuery().getConflicts(reservation);
+            Promise<Collection<Conflict>> promise = getQuery().getConflictsForReservation(reservation);
             final Promise<Void> resultPromise = promise.thenAccept((conflicts) ->
             {
                 for (Conflict conflict : conflicts)

@@ -433,7 +433,7 @@ import java.util.List;
             {
                 Appointment appointment = appointments[j];
                 Date today = operator.today();
-                if (r.hasAllocated(allocatable, appointment) && !permissionController.hasPermissionToAllocate(user, appointment, allocatable, original, today))
+                if (r.hasAllocatedOn(allocatable, appointment) && !permissionController.hasPermissionToAllocate(user, appointment, allocatable, original, today))
                 {
                     String all = allocatable.getName(i18n.getLocale());
                     String app = appointmentFormater.getSummary(appointment);
@@ -457,7 +457,7 @@ import java.util.List;
             for (int j = 0; j < appointments.length; j++)
             {
                 Appointment appointment = appointments[j];
-                if (original.hasAllocated(allocatable, appointment) && !r.hasAllocated(allocatable, appointment))
+                if (original.hasAllocatedOn(allocatable, appointment) && !r.hasAllocatedOn(allocatable, appointment))
                 {
                     Date start = appointment.getStart();
                     Date end = appointment.getMaxEnd();

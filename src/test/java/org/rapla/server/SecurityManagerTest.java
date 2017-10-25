@@ -55,12 +55,12 @@ public class SecurityManagerTest extends AbstractTestWithServer {
 		DynamicType roomType = facade1.getDynamicType("room");
 		ClassificationFilter filter = roomType.newClassificationFilter();
 		filter.addEqualsRule("name", "erwin");
-		Allocatable resource = facade1.getAllocatables( filter.toArray())[0];
+		Allocatable resource = facade1.getAllocatablesWithFilter( filter.toArray())[0];
 		Appointment app1;
 		{
 			app1 = facade1.newAppointment( start, end ) ;
 			// First we create a reservation for the resource
-			Reservation event = facade1.newReservation();
+			Reservation event = facade1.newReservationDeprecated();
 			event.getClassification().setValue("name", "taken");
 			event.addAppointment( app1 );
 			event.addAllocatable( resource );
@@ -70,7 +70,7 @@ public class SecurityManagerTest extends AbstractTestWithServer {
 		// Now we login as a non admin user, who isnt allowed to create conflicts on the resource erwin
 		clientFacade1.login("monty", "burns".toCharArray());
 		{
-			Reservation event = facade1.newReservation();
+			Reservation event = facade1.newReservationDeprecated();
 			// A new event with the same time for the same resource should fail. 
 			event.getClassification().setValue("name", "conflicting event");
 			Appointment app = facade1.newAppointment( start, end ) ;
@@ -100,7 +100,7 @@ public class SecurityManagerTest extends AbstractTestWithServer {
 				}
 			}
 			// moving the start of the second appointment to the end of the first one should work 
-			app.move( end );
+			app.moveTo( end );
 			facade1.store( event );
 		}
 		{

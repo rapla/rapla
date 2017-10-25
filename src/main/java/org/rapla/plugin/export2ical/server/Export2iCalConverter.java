@@ -332,8 +332,8 @@ public class Export2iCalConverter
             }
             String email = null;
             Attribute attr = person.getClassification().getAttribute(exportAttendeesAttribute);
-            if (attr != null && person.getClassification().getValue(attr) != null)
-                email = person.getClassification().getValue(attr).toString().trim();
+            if (attr != null && person.getClassification().getValueForAttribute(attr) != null)
+                email = person.getClassification().getValueForAttribute(attr).toString().trim();
             // determine if person has email attribute
             if (email != null && email.length() > 0)
             {
@@ -649,7 +649,7 @@ public class Export2iCalConverter
         String eventDescription;
         if (reservation.getClassification().getType().getAnnotation(DynamicTypeAnnotations.KEY_DESCRIPTION_FORMAT_EXPORT) != null)
         {
-            eventDescription = reservation.format(raplaLocale.getLocale(), DynamicTypeAnnotations.KEY_DESCRIPTION_FORMAT_EXPORT, appointment);
+            eventDescription = reservation.formatAppointment(raplaLocale.getLocale(), DynamicTypeAnnotations.KEY_DESCRIPTION_FORMAT_EXPORT, appointment);
         }
         else
         {

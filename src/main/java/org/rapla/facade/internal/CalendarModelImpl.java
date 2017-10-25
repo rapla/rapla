@@ -1471,7 +1471,7 @@ import static org.rapla.entities.configuration.CalendarModelConfiguration.EXPORT
                                 boolean found = false;
                                 for (Appointment conflictingApp : conflictList)
                                 {
-                                    if (conflictingApp.overlaps(block))
+                                    if (conflictingApp.overlapsBlock(block))
                                     {
                                         found = true;
                                         break;

@@ -116,7 +116,7 @@ public class ParsedTextTest
         type.setReadOnly();
         Locale locale = Locale.GERMANY;
         Classification classification = type.newClassification();
-        classification.setValue(attribute, c2);
+        classification.setValueForAttribute(attribute, c2);
         final EvalContext evalContext = new EvalContext(locale,  annoName,permissionController, user, Collections.singletonList(classification));
         final ParsedText parsedAnnotation = type.getParsedAnnotation(annoName);
         final String formatName = parsedAnnotation.formatName(evalContext);
@@ -134,7 +134,7 @@ public class ParsedTextTest
         type.setReadOnly();
         Locale locale = Locale.GERMANY;
         Classification classification = type.newClassification();
-        classification.setValue(attribute, c2);
+        classification.setValueForAttribute(attribute, c2);
         final EvalContext evalContext = new EvalContext(locale,  annoName,permissionController, user, Collections.singletonList(classification));
         final ParsedText parsedAnnotation = type.getParsedAnnotation(annoName);
         final String formatName = parsedAnnotation.formatName(evalContext);
@@ -157,17 +157,17 @@ public class ParsedTextTest
         List<Classification>classifications= new ArrayList<Classification>();
         {
             Classification classification = type.newClassification();
-            classification.setValue(attribute, c2);
+            classification.setValueForAttribute(attribute, c2);
             classifications.add(classification);
         }
         {
             Classification classification = type.newClassification();
-            classification.setValue(attribute, c3);
+            classification.setValueForAttribute(attribute, c3);
             classifications.add(classification);
         }
         {
             Classification classification = type.newClassification();
-            classification.setValue(attribute, c4);
+            classification.setValueForAttribute(attribute, c4);
             classifications.add(classification);
         }
         final EvalContext evalContext = new EvalContext(locale,  annoName, permissionController,user,Collections.singletonList(classifications));
@@ -218,7 +218,7 @@ public class ParsedTextTest
         type.setReadOnly();
         Locale locale = Locale.GERMANY;
         Classification classification = type.newClassification();
-        classification.setValue(attribute, c2);
+        classification.setValueForAttribute(attribute, c2);
         {
             final EvalContext evalContext = new EvalContext(locale, annoName,permissionController, user, Collections.singletonList(classification));
             final String formatName = parsedAnnotation.formatName(evalContext);
@@ -240,7 +240,7 @@ public class ParsedTextTest
         type.setReadOnly();
         Locale locale = Locale.GERMANY;
         Classification classification = type.newClassification();
-        classification.setValue(attribute, c2);
+        classification.setValueForAttribute(attribute, c2);
         final ParsedText parsedAnnotation = type.getParsedAnnotation(annoName);
         final String externalRepresentation = type.getAnnotation(annoName);
         Assert.assertEquals(annotationContent, externalRepresentation);
@@ -270,17 +270,17 @@ public class ParsedTextTest
         List<Classification>classifications= new ArrayList<Classification>();
         {
             Classification classification = type.newClassification();
-            classification.setValue(attribute, c2);
+            classification.setValueForAttribute(attribute, c2);
             classifications.add(classification);
         }
         {
             Classification classification = type.newClassification();
-            classification.setValue(attribute, c3);
+            classification.setValueForAttribute(attribute, c3);
             classifications.add(classification);
         }
         {
             Classification classification = type.newClassification();
-            classification.setValue(attribute, c4);
+            classification.setValueForAttribute(attribute, c4);
             classifications.add(classification);
         }
         final EvalContext evalContext = new EvalContext(locale,  annoName, permissionController, user,Collections.singletonList(classifications));
@@ -302,17 +302,17 @@ public class ParsedTextTest
         List<Classification>classifications= new ArrayList<Classification>();
         {
             Classification classification = type.newClassification();
-            classification.setValue(attribute, c2);
+            classification.setValueForAttribute(attribute, c2);
             classifications.add(classification);
         }
         {
             Classification classification = type.newClassification();
-            classification.setValue(attribute, c3);
+            classification.setValueForAttribute(attribute, c3);
             classifications.add(classification);
         }
         {
             Classification classification = type.newClassification();
-            classification.setValue(attribute, c4);
+            classification.setValueForAttribute(attribute, c4);
             classifications.add(classification);
         }
         final EvalContext evalContext = new EvalContext(locale,  annoName, permissionController, user,Collections.singletonList(classifications));
@@ -335,17 +335,17 @@ public class ParsedTextTest
         List<Classification>classifications= new ArrayList<Classification>();
         {
             Classification classification = type.newClassification();
-            classification.setValue(attribute, c2);
+            classification.setValueForAttribute(attribute, c2);
             classifications.add(classification);
         }
         {
             Classification classification = type.newClassification();
-            classification.setValue(attribute, c3);
+            classification.setValueForAttribute(attribute, c3);
             classifications.add(classification);
         }
         {
             Classification classification = type.newClassification();
-            classification.setValue(attribute, c4);
+            classification.setValueForAttribute(attribute, c4);
             classifications.add(classification);
         }
         final EvalContext evalContext = new EvalContext(locale,  annoName, permissionController,user,Collections.singletonList(classifications));
@@ -367,17 +367,17 @@ public class ParsedTextTest
         List<Classification>classifications= new ArrayList<Classification>();
         {
             Classification classification = type.newClassification();
-            classification.setValue(attribute, c2);
+            classification.setValueForAttribute(attribute, c2);
             classifications.add(classification);
         }
         {
             Classification classification = type.newClassification();
-            classification.setValue(attribute, c3);
+            classification.setValueForAttribute(attribute, c3);
             classifications.add(classification);
         }
         {
             Classification classification = type.newClassification();
-            classification.setValue(attribute, c4);
+            classification.setValueForAttribute(attribute, c4);
             classifications.add(classification);
         }
         final EvalContext evalContext = new EvalContext(locale,  annoName, permissionController, user,Collections.singletonList(classifications));

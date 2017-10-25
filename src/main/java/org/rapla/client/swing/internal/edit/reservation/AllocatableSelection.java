@@ -484,7 +484,7 @@ public class AllocatableSelection extends RaplaGUIComponent implements Appointme
 
     private Set<Allocatable> getAllAllocatables() throws RaplaException
     {
-        Allocatable[] allocatables = getQuery().getAllocatables(calendarModel.getModel().getAllocatableFilter());
+        Allocatable[] allocatables = getQuery().getAllocatablesWithFilter(calendarModel.getModel().getAllocatableFilter());
         Set<Allocatable> rightsToAllocate = new HashSet<Allocatable>();
         Date today = getQuery().today();
         for (Allocatable alloc : allocatables)
@@ -1999,7 +1999,7 @@ public class AllocatableSelection extends RaplaGUIComponent implements Appointme
                 Appointment appointment = appointments[i];
                 for (Reservation r : mutableReservations)
                 {
-                    if (r.hasAllocated(allocatable, appointment) && !hasPermissionToAllocate(appointment, allocatable))
+                    if (r.hasAllocatedOn(allocatable, appointment) && !hasPermissionToAllocate(appointment, allocatable))
                     {
                         return forbiddenIcon;
                     }

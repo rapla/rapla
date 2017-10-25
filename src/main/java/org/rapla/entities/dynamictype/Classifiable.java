@@ -12,12 +12,14 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.entities.dynamictype;
 
+import jsinterop.annotations.JsType;
 import org.rapla.entities.Named;
 
 /** This Interfaces is implemented by all Rapla-Objects that can
  *  have classification information: Reservation, Resource, Person.
  *  @see Classification
  */
+@JsType
 public interface Classifiable extends Named
 {
     Classification getClassification();

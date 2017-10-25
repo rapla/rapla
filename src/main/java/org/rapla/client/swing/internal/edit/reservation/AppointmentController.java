@@ -1839,7 +1839,7 @@ public class AppointmentController extends RaplaGUIComponent implements Disposab
                 if (newStart != null)
                 {
                     Appointment oldState = ((AppointmentImpl) appointment).clone();
-                    appointment.move(newStart);
+                    appointment.moveTo(newStart);
                     Appointment newState = ((AppointmentImpl) appointment).clone();
                     UndoDataChange changeDataCommand = new UndoDataChange(oldState, newState);
                     commandHistory.storeAndExecute(changeDataCommand);

@@ -435,7 +435,7 @@ public class ImportTemplateMenu implements ImportMenuExtension, ActionListener
         private void map( final Collection<Reservation> reservations, final Map<String, String> entries ) throws RaplaException
         {
             final ArrayList<Reservation> toStore = new ArrayList<>();
-            final Collection<Reservation> editObjects = facade.edit(reservations);
+            final Collection<Reservation> editObjects = facade.editList(reservations);
             for ( final Reservation reservation : editObjects )
             {
                 map(reservation, entries);

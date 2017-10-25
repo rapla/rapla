@@ -143,7 +143,6 @@
                                 <exclude>org/rapla/bootstrap/*</exclude>
                                 <exclude>**/Slf4jAdapter**</exclude>
                                 <exclude>**/server/**</exclude>
-                                <exclude>**/server/**</exclude>
                                 <exclude>**/storage/xml/**</exclude>
                                 <exclude>**/storage/dbfile/**</exclude>
                                 <exclude>**/storage/dbsql/**</exclude>
@@ -281,6 +280,7 @@
                     </execution>
                 </executions>
             </plugin>
+            <!--
             <plugin>
                <groupId>org.apache.maven.plugins</groupId>
                <artifactId>maven-jar-plugin</artifactId>
@@ -293,6 +293,7 @@
                    </execution>
                </executions>
            </plugin>
+           -->
         </plugins>
     </build>
     <profiles>

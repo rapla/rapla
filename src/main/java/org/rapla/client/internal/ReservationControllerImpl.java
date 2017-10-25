@@ -299,7 +299,7 @@ public abstract class ReservationControllerImpl implements ReservationController
                 toEdit.add(reservation);
             }
             final RaplaFacade facade = getFacade();
-            final Promise<Map<ReferenceInfo<Reservation>, Reservation>> editablePromise = facade.editAsync(toEdit).thenApply((mutableReservations) ->
+            final Promise<Map<ReferenceInfo<Reservation>, Reservation>> editablePromise = facade.editAsyncList(toEdit).thenApply((mutableReservations) ->
             {
                 HashMap<ReferenceInfo<Reservation>, Reservation> toUpdate = new LinkedHashMap<>();
                 mutableReservations
@@ -374,7 +374,7 @@ public abstract class ReservationControllerImpl implements ReservationController
                     }
                     mutableReservation.addAppointment(appointment);
                     Allocatable[] removedAllocatables = allocatablesRemoved.get(appointment);
-                    mutableReservation.setRestriction(appointment, removedAllocatables);
+                    mutableReservation.setRestrictionForAppointment(appointment, removedAllocatables);
                 }
                 for (Appointment appointment : exceptionsToAdd.keySet())
                 {
@@ -699,7 +699,7 @@ public abstract class ReservationControllerImpl implements ReservationController
             Date date = DateTools.cutDate(copy.getStart());
             TimeWithoutTimezone time = DateTools.toTime(date.getTime());
             Date newStart = new Date(date.getTime() + time.getMilliseconds());
-            copy.move(newStart);
+            copy.moveTo(newStart);
             RaplaClipboard.CopyType copyType = deleteOriginal ? CopyType.CUT_BLOCK : CopyType.COPY_BLOCK;
             raplaClipboard.setAppointment(copy, sourceReservation, copyType, restrictedAllocatables, contextAllocatables);
         }
@@ -923,7 +923,7 @@ public abstract class ReservationControllerImpl implements ReservationController
             copy = copyAppointment(appointment);
             copy.setRepeatingEnabled(false);
             Date dateTime = DateTools.toDateTime(date, appointment.getStart());
-            copy.move(dateTime);
+            copy.moveTo(dateTime);
         }
 
         if (result == DialogAction.EVENT && includeEvent)
@@ -1148,11 +1148,11 @@ public abstract class ReservationControllerImpl implements ReservationController
             {
                 if (addAppointment != null)
                 {
-                    addAppointment.move(newStart);
+                    addAppointment.moveTo(newStart);
                 }
                 else if (existingAppointment != null)
                 {
-                    existingAppointment.move(newStart);
+                    existingAppointment.moveTo(newStart);
                 }
             }
             //            long startTime = (dialogResult == DialogAction.SINGLE) ? sourceStart.getTime() : ap.getStart().getTime();
@@ -1190,7 +1190,7 @@ public abstract class ReservationControllerImpl implements ReservationController
                 if (newStart != null)
                 {
                     Date oldStart = appointment.getStart();
-                    existingAppointment.move(oldStart);
+                    existingAppointment.moveTo(oldStart);
                 }
             }
             if (removeAllocatable)
@@ -1370,7 +1370,7 @@ public abstract class ReservationControllerImpl implements ReservationController
                     }
                     else
                     {
-                        ap.move(changeStart);
+                        ap.moveTo(changeStart);
                     }
                 }
 
@@ -1384,7 +1384,7 @@ public abstract class ReservationControllerImpl implements ReservationController
                         {
                             Allocatable[] restrictedAllocatables = mutableReservation.getRestrictedAllocatables(mutableAppointment);
                             mutableReservation.addAppointment(lastCopy);
-                            mutableReservation.setRestriction(lastCopy, restrictedAllocatables);
+                            mutableReservation.setRestrictionForAppointment(lastCopy, restrictedAllocatables);
                             repeating.addException(oldStart);
                         }
                     }
@@ -1496,7 +1496,7 @@ public abstract class ReservationControllerImpl implements ReservationController
                         {
                             if (saveReservation == null)
                             {
-                                app.move(new Date(app.getStart().getTime() + offset));
+                                app.moveTo(new Date(app.getStart().getTime() + offset));
                             }
                         }
                         else
@@ -1515,14 +1515,14 @@ public abstract class ReservationControllerImpl implements ReservationController
                     if (saveAppointment == null)
                     {
                         saveAppointment = copyAppointment(fromAppointment);
-                        saveAppointment.move(new Date(saveAppointment.getStart().getTime() + offset));
+                        saveAppointment.moveTo(new Date(saveAppointment.getStart().getTime() + offset));
                     }
                     else
                     {
                         saveAppointment = copyAppointment(saveAppointment);
                     }
                     mutableReservation.addAppointment(saveAppointment);
-                    mutableReservation.setRestriction(saveAppointment, restrictedAllocatables);
+                    mutableReservation.setRestrictionForAppointment(saveAppointment, restrictedAllocatables);
                 }
 
                 saveReservation = mutableReservation;

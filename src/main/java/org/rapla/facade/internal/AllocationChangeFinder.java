@@ -233,8 +233,8 @@ public class AllocationChangeFinder
             }
             for (Allocatable allocatable: allocatableList )
             {
-                boolean oldAllocated = oldRes.hasAllocated(allocatable, oldApp);
-                boolean newAllocated = newRes.hasAllocated(allocatable, newApp);
+                boolean oldAllocated = oldRes.hasAllocatedOn(allocatable, oldApp);
+                boolean newAllocated = newRes.hasAllocatedOn(allocatable, newApp);
                 if (!oldAllocated && !newAllocated) {
                     continue;
                 }
@@ -265,7 +265,7 @@ public class AllocationChangeFinder
         {
         	for (Appointment appointment:appointments)
             {
-                if (!newRes.hasAllocated(allocatable,appointment))
+                if (!newRes.hasAllocatedOn(allocatable,appointment))
                     continue;
 
                 changeList.add(new AllocationChangeEvent(AllocationChangeEvent.ADD,user, newRes,allocatable,appointment));
@@ -278,7 +278,7 @@ public class AllocationChangeFinder
          {
          	for (Appointment appointment:appointments)
              {
-                if (!oldRes.hasAllocated(allocatable,appointment))
+                if (!oldRes.hasAllocatedOn(allocatable,appointment))
                     continue;
 
                 changeList.add(new AllocationChangeEvent(AllocationChangeEvent.REMOVE,user, newRes,allocatable,appointment));

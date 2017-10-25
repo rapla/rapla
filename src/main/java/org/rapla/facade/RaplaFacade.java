@@ -13,6 +13,7 @@
 package org.rapla.facade;
 
 import io.reactivex.functions.Consumer;
+import jsinterop.annotations.JsType;
 import org.rapla.entities.Category;
 import org.rapla.entities.Entity;
 import org.rapla.entities.EntityNotFoundException;
@@ -43,6 +44,7 @@ import java.util.Set;
 
 /** A collection of all module-interfaces
 */
+@JsType
 public interface RaplaFacade
 {
     CommandScheduler getScheduler();
@@ -77,7 +79,7 @@ public interface RaplaFacade
     User getUser(String username) throws RaplaException;
 
     /** returns all allocatables that match the passed ClassificationFilter. If null all readable allocatables are returned*/
-    Allocatable[] getAllocatables(ClassificationFilter[] filters) throws RaplaException;
+    Allocatable[] getAllocatablesWithFilter(ClassificationFilter[] filters) throws RaplaException;
 
     /** returns all readable allocatables, same as getAllocatables(null)*/
     Allocatable[] getAllocatables() throws RaplaException;
@@ -112,7 +114,7 @@ public interface RaplaFacade
 
     /** returns an Interface for accessing the periods
      * @throws RaplaException */
-    PeriodModel getPeriodModel(String key) throws RaplaException;
+    PeriodModel getPeriodModelFor(String key) throws RaplaException;
 
     /** returns the current date in GMT+0 Timezone. If rapla operates
      in multi-user mode, the date should be calculated from the
@@ -126,7 +128,7 @@ public interface RaplaFacade
     Promise<Map<Allocatable, Collection<Appointment>>> getAllocatableBindings(Collection<Allocatable> allocatables, Collection<Appointment> forAppointment);
 
     /** returns all existing conflicts with the reservation */
-    Promise<Collection<Conflict>> getConflicts(Reservation reservation);
+    Promise<Collection<Conflict>> getConflictsForReservation(Reservation reservation);
 
     /** returns all existing conflicts that are visible for the user
      conflicts
@@ -144,9 +146,6 @@ public interface RaplaFacade
 
     /** returns the preferences for the passed user, must be admin todo this. creates a new prefence object if not set*/
     Preferences getPreferences(User user) throws RaplaException;
-
-    /** returns the preferences for the passed user, must be admin todo this.*/
-    Preferences getPreferences(User user, boolean createIfNotNull) throws RaplaException;
 
     Preferences getSystemPreferences() throws RaplaException;
 
@@ -171,7 +170,7 @@ public interface RaplaFacade
     /** Creates a new event,  Creates a new event from the first dynamic type found, basically a shortcut to newReservation(getDynamicType(VALUE_CLASSIFICATION_TYPE_RESERVATION)[0].newClassification())
      * This is a convenience method for testing.
      */
-    @Deprecated Reservation newReservation() throws RaplaException;
+    @Deprecated Reservation newReservationDeprecated() throws RaplaException;
 
     /** Creates a new resource from the first dynamic type found, basically a shortcut to newAlloctable(getDynamicType(VALUE_CLASSIFICATION_TYPE_RESOURCE)[0].newClassification()).
      * This is a convenience method for testing.
@@ -186,7 +185,7 @@ public interface RaplaFacade
     void checkReservation(Reservation reservation) throws RaplaException;
 
     /** creates a new Rapla Map. Keep in mind that only RaplaObjects and Strings are allowed as entries for a RaplaMap!*/
-    <T> RaplaMap<T> newRaplaMap( Map<String,T> map);
+    <T> RaplaMap<T> newRaplaMapForMap( Map<String,T> map);
     /** creates an ordered RaplaMap with the entries of the collection as values and their position in the collection from 1..n as keys*/
     <T> RaplaMap<T> newRaplaMap( Collection<T> col);
 
@@ -199,9 +198,7 @@ public interface RaplaFacade
      */
     Reservation newReservation(Classification classification,User user) throws RaplaException;
     Appointment newAppointment(Date startDate,Date endDate) throws RaplaException;
-    Appointment newAppointment(Date startDate,Date endDate, User user) throws RaplaException;
-    /** @deprecated use newAppointment and change the repeating type of the appointment afterwards*/
-    Appointment newAppointment(Date startDate,Date endDate, RepeatingType repeatingType, int repeatingDuration) throws RaplaException;
+    Appointment newAppointmentWithUser(Date startDate,Date endDate, User user) throws RaplaException;
 
     /** Creates a new allocatable from the classifcation object and with the passed user as its owner
      * You can create a new classification from a {@link DynamicType} with newClassification method.
@@ -231,11 +228,11 @@ public interface RaplaFacade
      * To get the persistant, non-editable version of a working copy use {@link #getPersistant} */
     <T extends Entity> T edit(T obj) throws RaplaException;
 
-    <T extends Entity> Collection<T> edit(Collection<T> list) throws RaplaException;
-    <T extends Entity> Promise<Collection<T>> editAsync(Collection<T> obj);
+    <T extends Entity> Collection<T> editList(Collection<T> list) throws RaplaException;
+    <T extends Entity> Promise<Collection<T>> editAsyncList(Collection<T> obj);
     <T extends Entity> Promise<T> editAsync(T obj);
     <T extends Entity> Promise<Void> update(T entity, Consumer<T> updateFunction);
-    <T extends Entity> Promise<Void> update(Collection<T> list, Consumer<Collection<T>> updateFunction);
+    <T extends Entity> Promise<Void> updateList(Collection<T> list, Consumer<Collection<T>> updateFunction);
 
     /** checks if the user that is logged into the facade is the user that last changed the entites
      *
@@ -258,7 +255,7 @@ public interface RaplaFacade
      */
     <T extends Entity> T getPersistant(T working) throws RaplaException;
 
-    <T extends Entity> Map<T,T> getPersistant(Collection<T> list) throws RaplaException;
+    <T extends Entity> Map<T,T> getPersistantForList(Collection<T> list) throws RaplaException;
 
     /** This call will be delegated to the {@link org.rapla.storage.StorageOperator} */
     <T extends Entity> void storeObjects(T[] obj) throws RaplaException;

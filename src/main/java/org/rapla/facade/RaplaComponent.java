@@ -155,12 +155,12 @@ public class RaplaComponent
             // check if user has calendar options
             if ( user != null)
             {
-                conf = raplaFacade.getPreferences( user, true ).getEntry(CalendarOptionsImpl.CALENDAR_OPTIONS);
+                conf = raplaFacade.getPreferences( user).getEntry(CalendarOptionsImpl.CALENDAR_OPTIONS);
             }
             // check if system has calendar options
             if ( conf == null)
             {
-                conf = raplaFacade.getPreferences( null, true ).getEntry(CalendarOptionsImpl.CALENDAR_OPTIONS);
+                conf = raplaFacade.getPreferences( null).getEntry(CalendarOptionsImpl.CALENDAR_OPTIONS);
             }
             if ( conf != null)
             {

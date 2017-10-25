@@ -55,7 +55,7 @@ public final class RapaBuilderTest
         // test 2 Blocks
         List<AppointmentBlock> blocks = new ArrayList<AppointmentBlock>();
         final RaplaFacade raplaFacade = facade.getRaplaFacade();
-        Reservation reservation = raplaFacade.newReservation();
+        Reservation reservation = raplaFacade.newReservationDeprecated();
         Appointment appointment = raplaFacade.newAppointment(formater().parseDateTime("2004-01-01", "18:30:00"), formater().parseDateTime("2004-01-02", "12:00:00"));
         reservation.addAppointment( appointment );
         appointment.createBlocks(start,end, blocks );
@@ -71,7 +71,7 @@ public final class RapaBuilderTest
 
         //      test 3 Blocks
         blocks.clear();
-        reservation = raplaFacade.newReservation();
+        reservation = raplaFacade.newReservationDeprecated();
         appointment = raplaFacade.newAppointment(formater().parseDateTime("2004-01-01", "18:30:00"), formater().parseDateTime("2004-01-04", "00:00:00"));
         reservation.addAppointment( appointment );
         appointment.createBlocks(start,end, blocks );
@@ -84,7 +84,7 @@ public final class RapaBuilderTest
 
         //      test 3 Blocks, but only the first two should show
         blocks.clear();
-        reservation = raplaFacade.newReservation();
+        reservation = raplaFacade.newReservationDeprecated();
         appointment = raplaFacade.newAppointment(formater().parseDateTime("2004-01-01", "18:30:00"), formater().parseDateTime("2004-01-04", "00:00:00"));
         reservation.addAppointment( appointment );
         appointment.createBlocks(start,end, blocks );

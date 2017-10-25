@@ -115,7 +115,7 @@ public class CopyUrlMenuFactory extends RaplaGUIComponent implements ObjectMenuF
                     {
                         if ( attribute.getType() == AttributeType.STRING)
                         {
-                            final Object value = classification.getValue( attribute );
+                            final Object value = classification.getValueForAttribute( attribute );
                             if ( value != null)
                             {
                                 final String url = Tools.getUrl( value.toString());

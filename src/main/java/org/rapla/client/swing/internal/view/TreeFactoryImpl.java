@@ -239,9 +239,9 @@ public class TreeFactoryImpl extends RaplaGUIComponent implements TreeFactory
             }
             Attribute categorizationAtt = getCategorizationAttribute(classification);
             Attribute belongsAtt = ((DynamicTypeImpl) classification.getType()).getBelongsToAttribute();
-            if (belongsAtt != null && classification.getValue(belongsAtt) != null)
+            if (belongsAtt != null && classification.getValueForAttribute(belongsAtt) != null)
             {
-                Classifiable parent = (Classifiable) classification.getValue(belongsAtt);
+                Classifiable parent = (Classifiable) classification.getValueForAttribute(belongsAtt);
                 Collection<Classifiable> parts = belongsToMap.get(parent);
                 if (parts == null)
                 {
@@ -521,7 +521,7 @@ public class TreeFactoryImpl extends RaplaGUIComponent implements TreeFactory
         treeNode.setFiltered(resourcesFiltered);
 
         // adds elements to typ folders
-        Allocatable[] filtered = getQuery().getAllocatables(filter);
+        Allocatable[] filtered = getQuery().getAllocatablesWithFilter(filter);
         //        Collection<Allocatable> filtered = new ArrayList<Allocatable>();
         //        for (Allocatable classifiable: allocatables) {
         //            if (!isInFilter(filter, classifiable)) {
@@ -650,7 +650,7 @@ public class TreeFactoryImpl extends RaplaGUIComponent implements TreeFactory
             DefaultMutableTreeNode periodRoot = new TypeNode(Period.class, getString("periods"));
             DynamicType periodType = getQuery().getDynamicType(StorageOperator.PERIOD_TYPE);
 
-            Allocatable[] periodList = getQuery().getAllocatables(periodType.newClassificationFilter().toArray());
+            Allocatable[] periodList = getQuery().getAllocatablesWithFilter(periodType.newClassificationFilter().toArray());
             Comparator<Classifiable> comp = new Comparator<Classifiable>()
             {
                 @Override

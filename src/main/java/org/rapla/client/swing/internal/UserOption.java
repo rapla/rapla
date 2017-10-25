@@ -207,7 +207,7 @@ public class UserOption extends RaplaGUIComponent implements UserOptionPanel
                             Locale locale = getLocale();
                             content.add(new JLabel(attribute.getName(locale)));
                             content.add(value);
-                            Object value2 = classification.getValue(attribute);
+                            Object value2 = classification.getValueForAttribute(attribute);
                             rows++;
                             if (value2 != null)
                             {
