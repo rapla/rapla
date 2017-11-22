@@ -14,11 +14,12 @@ package org.rapla.components.calendarview;
 
 import org.rapla.components.util.DateTools;
 import org.rapla.entities.domain.Allocatable;
-import org.rapla.plugin.abstractcalendar.AbstractRaplaBlock;
+import org.rapla.plugin.abstractcalendar.RaplaBlock;
 
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Date;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -40,15 +41,15 @@ public class GroupStartTimesStrategy extends AbstractGroupStrategy {
 	}
 	
 	@Override
-	protected Map<Block, Integer> getBlockMap(CalendarView wv,
-			List<Block> blocks) 
+	protected Map<Block, Integer> getBlockMap(BlockContainer blockContainer,
+			List<Block> blocks, Date startDate)
 	{
 		if (allocatables != null)
 		{
 			Map<Block,Integer> map = new LinkedHashMap<Block, Integer>(); 
 			for (Block block:blocks)
 			{
-				AbstractRaplaBlock b = (AbstractRaplaBlock)block;
+				RaplaBlock b = (RaplaBlock)block;
 				for (Allocatable a:b.getReservation().getAllocatablesFor(b.getAppointment()))
 				{
 					int index = allocatables.indexOf( a );
@@ -62,7 +63,7 @@ public class GroupStartTimesStrategy extends AbstractGroupStrategy {
 		}
 		else 
 		{
-			return super.getBlockMap(wv, blocks);
+			return super.getBlockMap(blockContainer, blocks, startDate);
 		}
 	}
 	

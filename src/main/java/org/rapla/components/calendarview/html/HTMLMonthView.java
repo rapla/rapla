@@ -71,12 +71,12 @@ public class HTMLMonthView extends AbstractHTMLView {
         }
         Date time = counter;
         offset = (int) DateTools.countDays(counter,startDate);
-        PreperationResult prep = b.prepareBuild(startDate,getEndDate());
         slots = new HTMLSmallDaySlot[ daysInMonth ];
         for (int i=0;i<slots.length;i++) {
             slots[i] = new HTMLSmallDaySlot(String.valueOf( i + 1));
         }
-        
+
+        PreperationResult prep = b.prepareBuild(startDate,getEndDate());
         b.build(this, prep.getBlocks());
         int lastRow = 0;
         HTMLSmallDaySlot[][] table = new HTMLSmallDaySlot[ROWS][COLUMNS];

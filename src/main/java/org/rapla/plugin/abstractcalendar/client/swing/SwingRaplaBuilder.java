@@ -36,11 +36,9 @@ public class SwingRaplaBuilder extends RaplaBuilder
     }
 
     protected Block createBlock(RaplaBlockContext blockContext, Date start, Date end) {
-        SwingRaplaBlock block = new SwingRaplaBlock();
-        block.contextualize(blockContext);
+        SwingRaplaBlock block = new SwingRaplaBlock( blockContext, start, end);
         block.setImages( images);
-        block.setStart(start);
-        block.setEnd(end);
+
         return block;
     }
 }

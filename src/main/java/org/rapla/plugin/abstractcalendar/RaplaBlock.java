@@ -13,6 +13,7 @@
 
 package org.rapla.plugin.abstractcalendar;
 
+import jsinterop.annotations.JsType;
 import org.rapla.components.calendarview.Block;
 import org.rapla.components.util.DateTools;
 import org.rapla.components.xmlbundle.I18nBundle;
@@ -31,7 +32,8 @@ import java.util.LinkedHashSet;
 import java.util.List;
 
 
-public abstract class AbstractRaplaBlock implements Block
+@JsType
+public class RaplaBlock implements Block
 {
     RaplaBuilder.RaplaBlockContext m_context;
     Date m_start;
@@ -39,16 +41,14 @@ public abstract class AbstractRaplaBlock implements Block
     RaplaLocale m_raplaLocale;
     protected String timeStringSeperator = " -";
 
-    protected AbstractRaplaBlock() {
-
-    }
-
-    public void contextualize(RaplaBuilder.RaplaBlockContext context) {
+    public RaplaBlock(RaplaBuilder.RaplaBlockContext context, Date start, Date end) {
+        m_start = start;
+        m_end = end;
         m_context = context;
         m_raplaLocale = getBuildContext().getRaplaLocale();
     }
 
-    public String getName(Named named) {
+    public String getNameFor(Named named) {
 
         return named.getName(m_raplaLocale.getLocale());
     }

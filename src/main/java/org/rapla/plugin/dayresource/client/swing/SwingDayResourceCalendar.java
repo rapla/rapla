@@ -27,6 +27,7 @@ import org.rapla.client.swing.images.RaplaImages;
 import org.rapla.client.swing.internal.SwingPopupContext;
 import org.rapla.components.calendar.DateRenderer;
 import org.rapla.components.calendarview.Block;
+import org.rapla.components.calendarview.BlockContainer;
 import org.rapla.components.calendarview.Builder;
 import org.rapla.components.calendarview.CalendarView;
 import org.rapla.components.calendarview.swing.AbstractSwingCalendar;
@@ -43,7 +44,7 @@ import org.rapla.facade.ClientFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.logger.Logger;
-import org.rapla.plugin.abstractcalendar.AbstractRaplaBlock;
+import org.rapla.plugin.abstractcalendar.RaplaBlock;
 import org.rapla.plugin.abstractcalendar.GroupAllocatablesStrategy;
 import org.rapla.plugin.abstractcalendar.RaplaBuilder;
 import org.rapla.plugin.abstractcalendar.RaplaCalendarViewListener;
@@ -126,7 +127,7 @@ public class SwingDayResourceCalendar extends SwingDayCalendar
             GroupAllocatablesStrategy strategy = new GroupAllocatablesStrategy(getRaplaLocale().getLocale())
             {
                 @Override
-                protected Map<Block, Integer> getBlockMap(CalendarView wv, List<Block> blocks)
+                protected Map<Block, Integer> getBlockMap(BlockContainer wv, List<Block> blocks, Date startDate)
                 {
                     if (allocatables != null)
                     {
@@ -144,7 +145,7 @@ public class SwingDayResourceCalendar extends SwingDayCalendar
                     }
                     else
                     {
-                        return super.getBlockMap(wv, blocks);
+                        return super.getBlockMap(wv, blocks, startDate);
                     }
                 }
 
@@ -193,7 +194,7 @@ public class SwingDayResourceCalendar extends SwingDayCalendar
 				 {
 					 final List<Allocatable> selectedAllocatables = getSortedAllocatables();
 					 Allocatable newAlloc = selectedAllocatables.get(column);
-					 AbstractRaplaBlock raplaBlock = (AbstractRaplaBlock)block;
+					 RaplaBlock raplaBlock = (RaplaBlock)block;
 					 Allocatable oldAlloc = raplaBlock.getGroupAllocatable();
 					 if ( newAlloc != null && oldAlloc != null && !newAlloc.equals(oldAlloc))
 					 {
@@ -220,7 +221,7 @@ public class SwingDayResourceCalendar extends SwingDayCalendar
     
     private int getIndex(final List<Allocatable> allocatables,
 			Block block) {
-		AbstractRaplaBlock b = (AbstractRaplaBlock)block;
+		RaplaBlock b = (RaplaBlock)block;
 		Allocatable a = b.getGroupAllocatable();
 		int index = a != null ? allocatables.indexOf( a ) : -1;
 		return index;

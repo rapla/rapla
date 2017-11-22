@@ -267,8 +267,8 @@ public class SwingCompactCalendar extends AbstractRaplaSwingCalendar
 //                  {
 //                      return result; 
 //                  }
-//                  Allocatable a1 = ((AbstractRaplaBlock) b1).getGroupAllocatable();
-//                  Allocatable a2 = ((AbstractRaplaBlock) b2).getGroupAllocatable();
+//                  Allocatable a1 = ((RaplaBlock) b1).getGroupAllocatable();
+//                  Allocatable a2 = ((RaplaBlock) b2).getGroupAllocatable();
 //                  if ( a1 != null && a2 != null)
 //                  {
 //                      String name1 = a1.getName( getLocale());

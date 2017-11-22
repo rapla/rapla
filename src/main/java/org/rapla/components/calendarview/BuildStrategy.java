@@ -13,10 +13,11 @@
 
 package org.rapla.components.calendarview;
 
+import java.util.Date;
 import java.util.List;
 
 public interface BuildStrategy {
-    void build(CalendarView wv, List<Block> blocks);
+    void build(BlockContainer wv, List<Block> blocks, Date startDate);
 }
 
 

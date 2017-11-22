@@ -14,6 +14,7 @@ package org.rapla.plugin.abstractcalendar;
 
 import org.rapla.components.calendarview.AbstractGroupStrategy;
 import org.rapla.components.calendarview.Block;
+import org.rapla.components.calendarview.BlockContainer;
 import org.rapla.components.calendarview.CalendarView;
 import org.rapla.entities.NamedComparator;
 import org.rapla.entities.domain.Allocatable;
@@ -40,12 +41,6 @@ public class GroupAllocatablesStrategy extends AbstractGroupStrategy {
     	this.allocatables = allocatables;
     }
     
-    @Override
-    protected Map<Block, Integer> getBlockMap(CalendarView wv,
-    		List<Block> blocks) {
-    	return super.getBlockMap(wv, blocks);
-    }
-    
     protected Collection<List<Block>> group(List<Block> list) {
     	
     	HashMap<Allocatable,List<Block>> groups = new HashMap<Allocatable,List<Block>>();
@@ -54,7 +49,7 @@ public class GroupAllocatablesStrategy extends AbstractGroupStrategy {
         }
         List<Block> noAllocatablesGroup = null;
         for (Iterator<Block> it = list.iterator();it.hasNext();) {
-            AbstractRaplaBlock block = (AbstractRaplaBlock) it.next();
+            RaplaBlock block = (RaplaBlock) it.next();
             Allocatable allocatable = block.getContext().getGroupAllocatable();
             if (allocatable ==  null) {
                 if (noAllocatablesGroup == null)

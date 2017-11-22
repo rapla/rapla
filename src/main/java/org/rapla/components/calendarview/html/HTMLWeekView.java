@@ -161,7 +161,7 @@ public class HTMLWeekView extends AbstractHTMLView {
 			boolean isLine = (minuteOfDay ) % (60 /  m_rowsPerHour) == 0;
             if ( fullHour || minuteOfDay == minMinute) {
             	int rowspan = calcRowspan(minuteOfDay, ((minuteOfDay  / 60) + 1) * 60);
-            	String timeString = getRaplaLocale().formatTime(minuteOfDay);
+            	String timeString = getRaplaLocale().formatMinuteOfDay(minuteOfDay);
                 result.append("<th class=\"week_times\" rowspan=\""+ rowspan  +"\"><nobr>");
                 result.append(timeString);
                 result.append("</nobr>");

@@ -13,7 +13,7 @@
 package org.rapla.components.calendarview;
 import java.util.Collection;
 import java.util.Date;
-public interface CalendarView
+public interface CalendarView extends BlockContainer
 {
     /** returns the first Date that will be displayed in the calendar */
     Date getStartDate();
@@ -28,13 +28,8 @@ public interface CalendarView
      * After all blocks are added the Calendarthat repaints the screen. 
      */
     void rebuild(Builder builder);
-    
-    /** Adds a block. You can optionaly specify a slot, if the day-view supports multiple slots (like in the weekview).
-     *  If the selected slot does not exist it will be created. This method is usually called by the builders.
-    */
-    void addBlock(Block bl, int column, int slot);
-    
-    /** returns a collection of all the added blocks 
+
+    /** returns a collection of all the added blocks
      * @see #addBlock*/
     Collection<Block> getBlocks();
 }

@@ -255,7 +255,8 @@ public final class RaplaCalendarViewExample {
                 Appointment appointment = block.getAppointment();
                 swingBlocks .add( new MyBlock(  appointment ));
             }
-            strategy.build( cv, swingBlocks);
+
+            strategy.build( cv, swingBlocks, cv.getStartDate());
         }
 
         public void setEnabled(boolean enable) {

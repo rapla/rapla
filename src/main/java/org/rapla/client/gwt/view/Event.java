@@ -35,7 +35,7 @@ public class Event extends Div
         {
             if (!htmlBlock.getContext().isVisible(resources[i]))
                 continue;
-            sb.append(htmlBlock.getName(resources[i]));
+            sb.append(htmlBlock.getNameFor(resources[i]));
             sb.append(", ");
         }
         final String string;
@@ -68,7 +68,7 @@ public class Event extends Div
         {
             if (!htmlBlock.getContext().isVisible(person) || !person.isPerson())
                 continue;
-            sb.append(htmlBlock.getName(person));
+            sb.append(htmlBlock.getNameFor(person));
             sb.append(", ");
         }
         final String string;

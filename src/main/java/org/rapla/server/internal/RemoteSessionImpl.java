@@ -62,7 +62,13 @@ public class RemoteSessionImpl implements RemoteSession
                         if (RaplaAuthRestPage.LOGIN_COOKIE.equals(cookie.getName()))
                         {
                             final String value = cookie.getValue();
-                            token = LoginTokens.fromString(value).getAccessToken();
+                            try
+                            {
+                                token = LoginTokens.fromString(value).getAccessToken();
+                            } catch (Exception ex)
+                            {
+                                throw new SecurityException("Invalid LoginToken " + value);
+                            }
                             break;
                         }
                     }

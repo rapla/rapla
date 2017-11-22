@@ -1,5 +1,7 @@
 package org.rapla.entities.storage;
 
+import jsinterop.annotations.JsMethod;
+import jsinterop.annotations.JsType;
 import org.rapla.entities.Entity;
 
 /** returns if the entity is refering to the Object. */
@@ -19,10 +21,12 @@ public class ReferenceInfo<T extends Entity> implements Comparable
         this.type = type;
     }
 
+    @JsMethod
     public String getId() {
         return id;
     }
 
+    @JsMethod
     public Class<? extends Entity> getType() {
         return type;
     }

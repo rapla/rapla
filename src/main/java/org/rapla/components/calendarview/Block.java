@@ -13,6 +13,8 @@
 
 package org.rapla.components.calendarview;
 
+import jsinterop.annotations.JsType;
+
 import java.util.Date;
 /**
 implementierung von block koennen in ein slot eingefuegt werden.
@@ -20,6 +22,7 @@ Sie dienen als modell fuer beliebige grafische komponenten.
 mit getStart() und getEnd() wird anfangs- und endzeit des blocks definiert
 (nur uhrzeit ist fuer positionierung in slots relevant).
 */
+@JsType
 public interface Block
 {
     Date getStart();

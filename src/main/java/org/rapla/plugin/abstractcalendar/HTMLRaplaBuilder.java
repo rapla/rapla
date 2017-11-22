@@ -75,13 +75,9 @@ public class HTMLRaplaBuilder extends RaplaBuilder {
 
     @Override
     protected Block createBlock(RaplaBlockContext blockContext, Date start, Date end) {
-        HTMLRaplaBlock block = createBlock();
+        HTMLRaplaBlock block = new HTMLRaplaBlock(blockContext, start, end);
         block.setIndex( index ++ );
-        block.setStart(start);
-        block.setEnd(end);
-        block.contextualize(blockContext);
 
-        
         int row = (int) (
             DateTools.getHourOfDay(start.getTime())* m_rowsPerHour
             + Math.round((DateTools.getMinuteOfHour(start.getTime()) * m_rowsPerHour)/60.0)
@@ -97,11 +93,6 @@ public class HTMLRaplaBuilder extends RaplaBuilder {
         //System.out.println("Start " + start + " End " + end);
         //System.out.println("Block " + block.getReservation().getName(null)
         //                   + " Row: " + row + " Endrow: " + endRow + " Rowcount " + rowCount );
-        return block;
-    }
-
-    protected HTMLRaplaBlock createBlock() {
-        HTMLRaplaBlock block = new HTMLRaplaBlock();
         return block;
     }
 

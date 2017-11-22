@@ -12,10 +12,12 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.facade;
 
+import jsinterop.annotations.JsType;
 import org.rapla.entities.dynamictype.ClassificationFilter;
 import org.rapla.framework.RaplaException;
 
 
+@JsType
 public interface ClassifiableFilter 
 {
     ClassificationFilter[] getReservationFilter() throws RaplaException ;

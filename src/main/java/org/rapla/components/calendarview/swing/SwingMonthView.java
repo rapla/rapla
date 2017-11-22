@@ -105,7 +105,7 @@ public class SwingMonthView extends AbstractSwingCalendar
         // we need to clone the calendar, because we modify the calendar object in the getExclude() method 
         Date startDate = getStartDate();
         final Date endDate = getEndDate();
-        PreperationResult prep = b.prepareBuild(startDate, endDate);
+
         
         // create fields
         slots = new SmallDaySlot[daysInMonth];
@@ -122,6 +122,7 @@ public class SwingMonthView extends AbstractSwingCalendar
         jCenter.removeAll();
        
         monthTitle.setText( monthname + " " + year);
+        PreperationResult prep = b.prepareBuild(startDate, endDate);
         // build Blocks
         final Collection<AppointmentBlock> blocks = prep.getBlocks();
         b.build(this, blocks);

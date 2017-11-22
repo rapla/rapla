@@ -12,24 +12,25 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.framework;
 
-
+import jsinterop.annotations.JsConstructor;
+import jsinterop.annotations.JsMethod;
+import jsinterop.annotations.JsType;
 
 /** the base-class for all Rapla specific Exceptions */
 public class RaplaException extends Exception {
     private static final long serialVersionUID = 1L;
-    
+
     public RaplaException(String text)  {
-    	super(text);
+    	this(text, null);
     }
 
     public RaplaException(Throwable throwable) {
-        super(throwable.getMessage(),throwable);
+        this(throwable.getMessage(),throwable);
     }
 
     public RaplaException(String text,Throwable ex) {
         super(text,ex);
     }
-    
 
 }
 

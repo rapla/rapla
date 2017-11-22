@@ -25,8 +25,8 @@ public class GwtBundleManager implements BundleManager
     {
         try
         {
-            String id = "123";
-            String localeParam = null;
+            String id = "org.rapla";//"123";
+            String localeParam = "en";
             localePackage = remoteLocaleService.locale(id, localeParam);
             String language = localePackage.getLanguage();
             String country = localePackage.getCountry();

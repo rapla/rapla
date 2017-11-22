@@ -63,7 +63,7 @@ public class DaggerServerCreator
         }
 
         final DaggerRaplaServerStartupModule startupModule = new DaggerRaplaServerStartupModule(containerContext, logger);
-        boolean useReflection = true;
+        boolean useReflection = false;
         if (useReflection)
         {
 
@@ -76,10 +76,10 @@ public class DaggerServerCreator
         }
         else
         {
-//            org.rapla.server.dagger.RaplaServerComponent component = org.rapla.server.dagger.DaggerRaplaServerComponent.builder().daggerRaplaServerStartupModule(startupModule).build();
-//            final ReflectionMembersInjector reflectionMembersInjector = new ReflectionMembersInjector(RaplaServerComponent.class, component);
-//            result.membersInjector = reflectionMembersInjector;
-//            result.serviceContainer = component.getServerServiceContainer();
+            org.rapla.server.dagger.RaplaServerComponent component = org.rapla.server.dagger.DaggerRaplaServerComponent.builder().daggerRaplaServerStartupModule(startupModule).build();
+            final ReflectionMembersInjector reflectionMembersInjector = new ReflectionMembersInjector(RaplaServerComponent.class, component);
+            result.membersInjector = reflectionMembersInjector;
+            result.serviceContainer = component.getServerServiceContainer();
         }
         return result;
     }

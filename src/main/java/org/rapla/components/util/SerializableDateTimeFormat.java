@@ -1,5 +1,7 @@
 package org.rapla.components.util;
 
+import jsinterop.annotations.JsMethod;
+import jsinterop.annotations.JsType;
 import org.rapla.components.util.DateTools.TimeWithoutTimezone;
 
 import java.util.Date;
@@ -13,6 +15,7 @@ and times in the following format: <br>
 This is according to the xschema specification for dates and time and
 ISO8601
 */
+@JsType
 public class SerializableDateTimeFormat
 {
 	public static SerializableDateTimeFormat INSTANCE = new SerializableDateTimeFormat();
@@ -199,6 +202,7 @@ public class SerializableDateTimeFormat
     This is usefull for end-dates: 2001-10-21 00:00 is then interpreted as
     2001-10-20 24:00.
     */
+    @JsMethod(name = "formatDate_")
     public String formatDate( Date date, boolean adaptDay ) {
     	StringBuilder buf = new StringBuilder();
     	DateTools.DateWithoutTimezone splitDate;

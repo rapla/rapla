@@ -53,10 +53,10 @@ public abstract class AbstractGroupStrategy implements BuildStrategy {
         
     
 
-    public void build(CalendarView wv, List<Block> blocks)
+    public void build(BlockContainer wv, List<Block> blocks, Date startDate)
     {
         LinkedHashMap<Integer,List<Block>> days = new LinkedHashMap<Integer,List<Block>>();
-        Map<Block, Integer> blockMap = getBlockMap(wv, blocks);
+        Map<Block, Integer> blockMap = getBlockMap(wv, blocks, startDate);
         for (Block b:blockMap.keySet()) {
         	Integer index = blockMap.get(b);
             List<Block> list = days.get(index);
@@ -79,17 +79,16 @@ public abstract class AbstractGroupStrategy implements BuildStrategy {
         }
     }
     
-    protected Map<Block,Integer> getBlockMap(CalendarView wv, List<Block> blocks) {
+    protected Map<Block,Integer> getBlockMap(BlockContainer blockContainer, List<Block> blocks, Date startDate) {
     	Map<Block,Integer> map = new LinkedHashMap<Block, Integer>(); 
-		Date startDate = wv.getStartDate();
-    	for  (Block block:blocks) {
+		for  (Block block:blocks) {
 	         int days = (int)DateTools.countDays(startDate, block.getStart());
 			 map.put(block, days);
 	     }
 	     return map;
 	}
 
-	protected void insertDay(CalendarView wv, int column,List<Block> blockList) {
+	protected void insertDay(BlockContainer wv, int column,List<Block> blockList) {
 		Iterator<List<Block>> it = getSortedSlots(blockList).iterator();
         int slotCount= 0;
         while (it.hasNext()) {

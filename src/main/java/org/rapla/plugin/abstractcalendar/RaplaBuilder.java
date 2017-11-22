@@ -16,6 +16,8 @@
 
 package org.rapla.plugin.abstractcalendar;
 
+import jsinterop.annotations.JsType;
+import org.jetbrains.annotations.NotNull;
 import org.rapla.RaplaResources;
 import org.rapla.client.internal.AppointmentInfoUI;
 import org.rapla.client.internal.RaplaColors;
@@ -73,7 +75,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 
-public abstract class RaplaBuilder 
+public class RaplaBuilder
     implements
         Builder
         ,Cloneable
@@ -472,10 +474,25 @@ public abstract class RaplaBuilder
     }
 
 
-    protected abstract Block createBlock(RaplaBlockContext blockContext, Date start, Date end);
+    protected Block createBlock(RaplaBlockContext blockContext, Date start, Date end)
+    {
+        return new RaplaBlock( blockContext, start, end);
+    }
 
-    public void build(CalendarView wv, Collection<AppointmentBlock> preparedBlocks) {
-        ArrayList<Block> blocks = new ArrayList<Block>();
+
+    public void build(CalendarView calendarView, Collection<AppointmentBlock> preparedBlocks) {
+        List<Block> blocks = getBlocks(preparedBlocks);
+        //long time = System.currentTimeMillis();
+        Date startDate = calendarView.getStartDate();
+        buildStrategy.build(calendarView, blocks, startDate);
+        //logger.info( "Build strategy took " + (System.currentTimeMillis() - time) + " ms.");
+
+    }
+
+    @NotNull
+    public List<Block> getBlocks(Collection<AppointmentBlock> preparedBlocks)
+    {
+        ArrayList<Block> blocks = new ArrayList<>();
         {
             //long time = System.currentTimeMillis();
             AppointmentInfoUI appointmentInfoUI = new AppointmentInfoUI(i18n,raplaLocale, raplaFacade,logger, appointmentFormater);
@@ -492,11 +509,7 @@ public abstract class RaplaBuilder
             }
             //logger.info( "Block creation took " + (System.currentTimeMillis() - time) + " ms.");
         }
-
-        //long time = System.currentTimeMillis();
-        buildStrategy.build(wv, blocks);
-        //logger.info( "Build strategy took " + (System.currentTimeMillis() - time) + " ms.");
-
+        return blocks;
     }
 
     private RaplaBlockContext[] getBlocksForAppointment(AppointmentBlock block, BuildContext buildContext) {
@@ -560,6 +573,7 @@ public abstract class RaplaBuilder
     }
 
     /** This context contains the shared information for all RaplaBlocks.*/
+    @JsType
     public static class BuildContext {
         boolean bResourceVisible = true;
         boolean bPersonVisible = true;
@@ -660,7 +674,7 @@ public abstract class RaplaBuilder
             return showTooltips;
         }
 
-        public AppointmentInfoUI getAppointmentInfo() 
+        AppointmentInfoUI getAppointmentInfo()
         {
             return appointmentInfoUI;
         }

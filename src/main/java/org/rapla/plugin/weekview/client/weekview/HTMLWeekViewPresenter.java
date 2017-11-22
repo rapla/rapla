@@ -196,7 +196,7 @@ public class HTMLWeekViewPresenter extends AbstractHTMLView
                 //                    boolean isLine = (minuteOfDay) % (60 / m_rowsPerHour) == 0;
                 if (fullHour || minuteOfDay == minMinute)
                 {
-                    String timeString = getRaplaLocale().formatTime(minuteOfDay);
+                    String timeString = getRaplaLocale().formatMinuteOfDay(minuteOfDay);
                     int rowspan = calcRowspan(minuteOfDay, ((minuteOfDay / 60) + 1) * 60);
                     List<HTMLWeekViewPresenter.SpanAndMinute> rowTimes = new ArrayList<HTMLWeekViewPresenter.SpanAndMinute>();
                     for (int i = 0; i < m_rowsPerHour; i++)

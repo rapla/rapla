@@ -8,7 +8,7 @@ import org.rapla.storage.RaplaSecurityException;
 import org.rapla.storage.dbrm.RaplaConnectException;
 import org.rapla.storage.dbrm.WrongRaplaVersionException;
 
-public interface DialogUiFactoryInterface
+public interface  DialogUiFactoryInterface
 {
 
     DialogInterface create(PopupContext popupContext, boolean modal, Object content, String[] options) throws RaplaException;

@@ -1,5 +1,7 @@
 package org.rapla.framework;
 
+import jsinterop.annotations.JsMethod;
+import jsinterop.annotations.JsType;
 import org.rapla.components.i18n.I18nLocaleFormats;
 import org.rapla.components.util.SerializableDateTimeFormat;
 
@@ -36,20 +38,24 @@ If country code is not set, the system default will be used.
 </p>
 
  */
+@JsType
 public interface RaplaLocale
 {
 	TypedComponentRole<String>  LANGUAGE_ENTRY = new TypedComponentRole<String>("org.rapla.language");
     
     Collection<String> getAvailableLanguages();
 
-    String formatTime( Date date );
-    
     Date fromUTCTimestamp(Date timestamp);
 
     I18nLocaleFormats getFormats();
 
     /** sets time to 0:00:00 or 24:00:00 */
+    @JsMethod(name = "toDate_")
     Date toDate( Date date, boolean fillDate );
+
+    /** Uses the first date parameter for year, month, date information and
+     the second for hour, minutes, second, millisecond information.*/
+    Date toDate( Date date, Date time );
 
     /**
      * month is 1-12 January is 1 
@@ -58,10 +64,6 @@ public interface RaplaLocale
 
     /** sets date to 0:00:00  */
     Date toTime( int hour, int minute, int second );
-
-    /** Uses the first date parameter for year, month, date information and
-     the second for hour, minutes, second, millisecond information.*/
-    Date toDate( Date date, Date time );
 
     /** format long with the local NumberFormat */
     String formatNumber( long number );
@@ -99,7 +101,9 @@ public interface RaplaLocale
 
     String getWeekdayName(int weekday);
 
-    String formatTime( int minuteOfDay );
+    String formatTime( Date date );
+
+    String formatMinuteOfDay( int minuteOfDay );
     
     String formatMonthYear(Date startDate);
 

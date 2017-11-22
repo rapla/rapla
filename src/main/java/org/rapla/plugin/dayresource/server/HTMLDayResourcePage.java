@@ -2,8 +2,8 @@ package org.rapla.plugin.dayresource.server;
 
 import org.rapla.RaplaResources;
 import org.rapla.components.calendarview.Block;
+import org.rapla.components.calendarview.BlockContainer;
 import org.rapla.components.calendarview.Builder;
-import org.rapla.components.calendarview.CalendarView;
 import org.rapla.components.calendarview.html.AbstractHTMLView;
 import org.rapla.components.calendarview.html.HTMLWeekView;
 import org.rapla.entities.domain.Allocatable;
@@ -13,8 +13,8 @@ import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.inject.Extension;
 import org.rapla.logger.Logger;
-import org.rapla.plugin.abstractcalendar.AbstractRaplaBlock;
 import org.rapla.plugin.abstractcalendar.GroupAllocatablesStrategy;
+import org.rapla.plugin.abstractcalendar.RaplaBlock;
 import org.rapla.plugin.abstractcalendar.RaplaBuilder;
 import org.rapla.plugin.dayresource.DayResourcePlugin;
 import org.rapla.plugin.weekview.server.HTMLDayViewPage;
@@ -22,6 +22,7 @@ import org.rapla.server.extensionpoints.HTMLViewPage;
 
 import javax.inject.Inject;
 import java.util.Collection;
+import java.util.Date;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -69,7 +70,7 @@ public class HTMLDayResourcePage extends HTMLDayViewPage
 	
 	private int getIndex(final List<Allocatable> allocatables,
 			Block block) {
-		AbstractRaplaBlock b = (AbstractRaplaBlock)block;
+		RaplaBlock b = (RaplaBlock)block;
 		Allocatable a = b.getGroupAllocatable();
 		int index = a != null ? allocatables.indexOf( a ) : -1;
 		return index;
@@ -86,8 +87,8 @@ public class HTMLDayResourcePage extends HTMLDayViewPage
         GroupAllocatablesStrategy strategy = new GroupAllocatablesStrategy( getRaplaLocale().getLocale() )
         {
         	@Override
-        	protected Map<Block, Integer> getBlockMap(CalendarView wv,
-        			List<Block> blocks) 
+        	protected Map<Block, Integer> getBlockMap(BlockContainer wv,
+        			List<Block> blocks, Date startDate)
         	{
         		if (allocatables != null)
         		{
@@ -105,7 +106,7 @@ public class HTMLDayResourcePage extends HTMLDayViewPage
         		}
         		else 
         		{
-        			return super.getBlockMap(wv, blocks);
+        			return super.getBlockMap(wv, blocks, startDate);
         		}
         	}
 

@@ -95,7 +95,7 @@ public abstract class AbstractRaplaLocale implements RaplaLocale {
 		return new SerializableDateTimeFormat();
 	}
 
-	public String formatTime(int minuteOfDay) {
+	public String formatMinuteOfDay(int minuteOfDay) {
 
         Date date = new Date(0 + minuteOfDay * DateTools.MILLISECONDS_PER_MINUTE);
         return formatTime(date);

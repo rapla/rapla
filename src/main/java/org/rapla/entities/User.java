@@ -12,6 +12,8 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.entities;
 
+import jsinterop.annotations.JsMethod;
+import jsinterop.annotations.JsType;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.framework.RaplaException;
 
@@ -22,11 +24,13 @@ import java.util.Comparator;
 /**
 The User-Class is mainly for authentication-purpose
 */
+@JsType
 public interface User extends Entity<User>, Named, Comparable, Timestamp
 {
     /** returns the loginname  */
     String getUsername();
     /** returns the complete name of user */
+    @JsMethod(name = "getName_")
     String getName();
     /** returns the email of the user */
     String getEmail();

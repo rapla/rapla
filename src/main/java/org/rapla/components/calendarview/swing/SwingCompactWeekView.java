@@ -91,13 +91,14 @@ public class SwingCompactWeekView extends AbstractSwingCalendar
             addRow();
         }
         
-        // calculate the blocks
-        PreperationResult prep = b.prepareBuild(getStartDate(), getEndDate());
+
         
         // clear everything
         jHeader.removeAll();
         jCenter.removeAll();
-        
+
+        // calculate the blocks
+        PreperationResult prep = b.prepareBuild(getStartDate(), getEndDate());
         b.build(this, prep.getBlocks());
         
         tableLayout= new TableLayout();

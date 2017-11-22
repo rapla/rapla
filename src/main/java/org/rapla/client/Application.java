@@ -236,6 +236,7 @@ public class Application implements ApplicationView.Presenter, ModificationListe
         });
 
         final RaplaFacade raplaFacade = clientFacade.getRaplaFacade();
+        raplaFacade.getReservations(clientFacade.getUser(), null, null, null);
         // start client provides
         for (ClientExtension ext : clientExtensions.get())
         {

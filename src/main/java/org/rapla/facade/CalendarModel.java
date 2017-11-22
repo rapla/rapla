@@ -17,7 +17,8 @@ import java.util.Date;
 import java.util.List;
 import java.util.Map;
 
-public interface CalendarModel extends Cloneable, ClassifiableFilter 
+
+public interface CalendarModel extends Cloneable, ClassifiableFilter
 {
     String SHOW_NAVIGATION_ENTRY = "org.rapla.plugin.abstractcalendar.show_navigation";
     String ONLY_ALLOCATION_INFO = "org.rapla.plugin.abstractcalendar.only_allocation_info";

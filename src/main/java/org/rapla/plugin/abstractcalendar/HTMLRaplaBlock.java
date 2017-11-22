@@ -21,15 +21,18 @@ import org.rapla.entities.domain.NameFormatUtil;
 import org.rapla.entities.dynamictype.Attribute;
 import org.rapla.plugin.abstractcalendar.RaplaBuilder.RaplaBlockContext;
 
+import java.util.Date;
 import java.util.List;
 
 
-public class HTMLRaplaBlock extends AbstractRaplaBlock implements HTMLBlock {
+public class HTMLRaplaBlock extends RaplaBlock implements HTMLBlock {
     private int m_day;
     private int m_row;
     private int m_rowCount;
     private int index = 0;
+    public HTMLRaplaBlock( RaplaBlockContext context, Date start, Date end)
     {
+        super( context, start, end);
     	timeStringSeperator ="&#160;-";
     }
 
@@ -77,7 +80,7 @@ public class HTMLRaplaBlock extends AbstractRaplaBlock implements HTMLBlock {
 
     public String toString() {
         StringBuffer buf = new StringBuffer();
-        String label = XMLWriter.encode(getName( getReservation()));
+        String label = XMLWriter.encode(getNameFor( getReservation()));
         String timeString = getTimeString(false);
 
         if ( getContext().isAnonymous()) {

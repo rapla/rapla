@@ -7,6 +7,7 @@ import com.google.gwt.user.client.Window;
 import org.rapla.client.gwt.view.RaplaPopups;
 import org.rapla.inject.DefaultImplementation;
 import org.rapla.inject.InjectionContext;
+import org.rapla.scheduler.Promise;
 import org.rapla.storage.dbrm.LoginTokens;
 
 import javax.inject.Inject;
@@ -20,11 +21,13 @@ public class RaplaGwtStarter implements GwtStarter
     public static final String LOGIN_COOKIE = "raplaLoginToken";
 
     Bootstrap bootstrapProvider;
+    JsApi api;
 
     @Inject
-    public RaplaGwtStarter(Bootstrap bootstrapProvider)
+    public RaplaGwtStarter(Bootstrap bootstrapProvider, JsApi api )
     {
         this.bootstrapProvider = bootstrapProvider;
+        this.api = api;
     }
 
 
@@ -68,25 +71,50 @@ public class RaplaGwtStarter implements GwtStarter
 
     public void startApplication()
     {
+//        final LoginTokens token = getValidToken();
+//        if (token != null)
+//        {
+//            RaplaPopups.getProgressBar().setPercent(20);
+//            //bootstrapProvider.load(token.getAccessToken());
+//            Scheduler.get().scheduleFixedDelay(new Scheduler.RepeatingCommand()
+//            {
+//                @Override
+//                public boolean execute()
+//                {
+//                    final Promise<Void> load = bootstrapProvider.load(token.getAccessToken());
+//                    bootstrapProvider.start( load);
+//                    return false;
+//                }
+//            }, 100);
+//        }
+//        else
+//        {
+//            redirectToStart();
+//        }
+    }
+
+    @Override
+    public void registerJavascriptApi()
+    {
+        System.out.println("Register Start");
         final LoginTokens token = getValidToken();
+
         if (token != null)
         {
-            RaplaPopups.getProgressBar().setPercent(20);
-            //bootstrapProvider.load(token.getAccessToken());
-            Scheduler.get().scheduleFixedDelay(new Scheduler.RepeatingCommand()
-            {
-                @Override
-                public boolean execute()
-                {
-                    bootstrapProvider.load(token.getAccessToken());
-                    return false;
-                }
-            }, 100);
+            System.out.println("Token found");
+            final String accessToken = token.getAccessToken();
+
+            final Promise<Void> load = bootstrapProvider.load(accessToken);
+            load.thenRun(() -> {
+                final JsApi api = bootstrapProvider.getAPI();
+                new RaplaCallback().callback(api);
+            });
         }
         else
         {
             redirectToStart();
         }
+
     }
 
     static public void redirectToStart()

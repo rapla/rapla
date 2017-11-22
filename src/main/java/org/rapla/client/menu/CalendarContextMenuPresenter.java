@@ -25,7 +25,7 @@ import org.rapla.facade.RaplaFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.logger.Logger;
-import org.rapla.plugin.abstractcalendar.AbstractRaplaBlock;
+import org.rapla.plugin.abstractcalendar.RaplaBlock;
 import org.rapla.storage.PermissionController;
 
 import javax.inject.Inject;
@@ -263,7 +263,7 @@ public class CalendarContextMenuPresenter extends RaplaComponent implements Menu
 
     public void blockPopup(final Block block, final PopupContext popupContext)
     {
-        AbstractRaplaBlock b = (AbstractRaplaBlock) block;
+        RaplaBlock b = (RaplaBlock) block;
         if (!b.isBlockSelected())
         {
             return;
@@ -274,7 +274,7 @@ public class CalendarContextMenuPresenter extends RaplaComponent implements Menu
     public void blockEdit(final Block block, final Point p)
     {
         // double click on block in view.
-        AbstractRaplaBlock b = (AbstractRaplaBlock) block;
+        RaplaBlock b = (RaplaBlock) block;
         if (!b.isBlockSelected())
         {
             return;
@@ -301,7 +301,7 @@ public class CalendarContextMenuPresenter extends RaplaComponent implements Menu
 
     protected void moved(Block block, Date newStart, final PopupContext popupContext)
     {
-        AbstractRaplaBlock b = (AbstractRaplaBlock) block;
+        RaplaBlock b = (RaplaBlock) block;
         try
         {
             long offset = newStart.getTime() - b.getStart().getTime();
@@ -326,7 +326,7 @@ public class CalendarContextMenuPresenter extends RaplaComponent implements Menu
 
     public void resized(Block block, Point p, Date newStart, Date newEnd, int slotNr, final PopupContext popupContext)
     {
-        AbstractRaplaBlock b = (AbstractRaplaBlock) block;
+        RaplaBlock b = (RaplaBlock) block;
         try
         {
             reservationController.resizeAppointment(b.getAppointmentBlock(), newStart, newEnd, popupContext, keepTime);
@@ -361,7 +361,7 @@ public class CalendarContextMenuPresenter extends RaplaComponent implements Menu
         return Collections.emptyList();
     }
 
-    protected void showPopupMenu(final AbstractRaplaBlock b, final PopupContext popupContext)
+    protected void showPopupMenu(final RaplaBlock b, final PopupContext popupContext)
     {
         final Map<MenuEntry, Runnable> mapping = new HashMap<MenuEntry, Runnable>();
         final AppointmentBlock appointmentBlock = b.getAppointmentBlock();

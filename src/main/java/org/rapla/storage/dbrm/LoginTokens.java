@@ -1,25 +1,32 @@
 package org.rapla.storage.dbrm;
 
+import jsinterop.annotations.JsConstructor;
+import jsinterop.annotations.JsMethod;
+import jsinterop.annotations.JsType;
+
 import java.util.Date;
 
+
 public class LoginTokens {
- 
     String accessToken;
     Date validUntil;
-    
+
     public LoginTokens() {
+        this("",null);
     }
-    
+
     public LoginTokens(String accessToken, Date validUntil) {
         this.accessToken = accessToken;
         this.validUntil = validUntil;
     }
-    
+
+    @JsMethod
     public String getAccessToken()
     {
         return accessToken;
     }
-    
+
+    @JsMethod
     public Date getValidUntil()
     {
         return validUntil;

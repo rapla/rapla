@@ -45,7 +45,7 @@ import org.rapla.facade.ClientFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.logger.Logger;
-import org.rapla.plugin.abstractcalendar.AbstractRaplaBlock;
+import org.rapla.plugin.abstractcalendar.RaplaBlock;
 import org.rapla.plugin.abstractcalendar.GroupAllocatablesStrategy;
 import org.rapla.plugin.abstractcalendar.RaplaBuilder;
 import org.rapla.plugin.abstractcalendar.RaplaCalendarViewListener;
@@ -179,7 +179,7 @@ public class SwingCompactWeekCalendar extends AbstractRaplaSwingCalendar
                      newStart = DateTools.toDateTime(newStart, (block.getStart()));
 					 final List<Allocatable> selectedAllocatables = getSortedAllocatables();
 					 Allocatable newAlloc = selectedAllocatables.get(index);
-					 AbstractRaplaBlock raplaBlock = (AbstractRaplaBlock)block;
+					 RaplaBlock raplaBlock = (RaplaBlock)block;
 					 Allocatable oldAlloc = raplaBlock.getGroupAllocatable();
 					 if ( newAlloc != null && oldAlloc != null && !newAlloc.equals(oldAlloc))
 					 {
