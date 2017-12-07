@@ -21,13 +21,11 @@ public class RaplaGwtStarter implements GwtStarter
     public static final String LOGIN_COOKIE = "raplaLoginToken";
 
     Bootstrap bootstrapProvider;
-    JsApi api;
 
     @Inject
-    public RaplaGwtStarter(Bootstrap bootstrapProvider, JsApi api )
+    public RaplaGwtStarter(Bootstrap bootstrapProvider )
     {
         this.bootstrapProvider = bootstrapProvider;
-        this.api = api;
     }
 
 
