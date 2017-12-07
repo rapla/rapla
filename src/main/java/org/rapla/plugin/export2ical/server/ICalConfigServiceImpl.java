@@ -32,7 +32,7 @@ public class ICalConfigServiceImpl implements ICalConfigService {
     }
 
     public DefaultConfiguration getConfig() throws RaplaException {
-        User user = remoteSession.getUser(request);
+        User user = remoteSession.checkAndGetUser(request);
         if ( !user.isAdmin())
         {
             throw new RaplaSecurityException("Access only for admin users");
@@ -48,10 +48,7 @@ public class ICalConfigServiceImpl implements ICalConfigService {
 
     @Override
     public DefaultConfiguration getUserDefaultConfig() throws RaplaException {
-        if ( !remoteSession.isAuthentified(request))
-        {
-            throw new RaplaSecurityException("user not authentified");
-        }
+        User user = remoteSession.checkAndGetUser( request);
         Preferences preferences = facade.getSystemPreferences();
         DefaultConfiguration config = preferences.getEntry( Export2iCalPlugin.ICAL_CONFIG);
         if ( config == null)

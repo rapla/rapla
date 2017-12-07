@@ -1,5 +1,6 @@
 package org.rapla.server.internal;
 
+import org.rapla.entities.EntityNotFoundException;
 import org.rapla.entities.User;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaInitializationException;
@@ -7,6 +8,7 @@ import org.rapla.rest.server.token.SignedToken;
 import org.rapla.rest.server.token.TokenInvalidException;
 import org.rapla.rest.server.token.ValidToken;
 import org.rapla.server.RaplaKeyStorage;
+import org.rapla.storage.RaplaInvalidTokenException;
 import org.rapla.storage.RaplaSecurityException;
 import org.rapla.storage.StorageOperator;
 import org.rapla.storage.dbrm.LoginTokens;
@@ -45,7 +47,7 @@ public class TokenHandler
 
     }
 
-    public User getUserWithAccessToken(String tokenString) throws RaplaException
+    public User getUserWithAccessToken(String tokenString) throws EntityNotFoundException, RaplaInvalidTokenException
     {
         return getUserWithToken(tokenString, accessTokenSigner);
     }
@@ -57,7 +59,7 @@ public class TokenHandler
     }
     */
 
-    private User getUserWithToken(String tokenString, SignedToken tokenSigner) throws RaplaException
+    private User getUserWithToken(String tokenString, SignedToken tokenSigner) throws EntityNotFoundException, RaplaInvalidTokenException
     {
         if (tokenString == null)
         {
@@ -76,12 +78,12 @@ public class TokenHandler
             ValidToken checkToken = tokenSigner.checkToken(tokenString, recvText, now);
             if (checkToken == null)
             {
-                throw new RaplaSecurityException(RemoteStorage.USER_WAS_NOT_AUTHENTIFIED + " InvalidToken " + tokenString);
+                throw new RaplaInvalidTokenException(RemoteStorage.USER_WAS_NOT_AUTHENTIFIED + " InvalidToken " + tokenString);
             }
         }
         catch (TokenInvalidException e)
         {
-            throw new RaplaSecurityException(e.getMessage(), e);
+            throw new RaplaInvalidTokenException(RemoteStorage.USER_WAS_NOT_AUTHENTIFIED + " InvalidToken " + tokenString);
         }
         String userId = recvText;
         User user = operator.resolve(userId, User.class);

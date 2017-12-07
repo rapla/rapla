@@ -1,5 +1,6 @@
 package org.rapla.server.internal;
 
+import org.rapla.entities.EntityNotFoundException;
 import org.rapla.entities.User;
 import org.rapla.framework.RaplaException;
 import org.rapla.inject.DefaultImplementation;
@@ -67,7 +68,7 @@ public class RemoteSessionImpl implements RemoteSession
                                 token = LoginTokens.fromString(value).getAccessToken();
                             } catch (Exception ex)
                             {
-                                throw new SecurityException("Invalid LoginToken " + value);
+                                throw new RaplaSecurityException("Invalid LoginToken " + value);
                             }
                             break;
                         }
@@ -98,9 +99,9 @@ public class RemoteSessionImpl implements RemoteSession
             {
                 user = tokenHandler.getUserWithAccessToken(token);
             }
-            catch(RaplaException e)
+            catch ( EntityNotFoundException ex)
             {
-                throw new RaplaSecurityException(e);
+                throw new RaplaSecurityException("User not found.");
             }
         }
         return user;
@@ -111,7 +112,7 @@ public class RemoteSessionImpl implements RemoteSession
         return logger;
     }
 
-    public User getUser(HttpServletRequest request) throws RaplaSecurityException
+    public User checkAndGetUser(HttpServletRequest request) throws RaplaSecurityException
     {
         if (user != null)
             return user;

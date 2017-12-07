@@ -9,9 +9,11 @@ import org.rapla.logger.Logger;
 import org.rapla.rest.SerializableExceptionInformation;
 import org.rapla.rest.client.AuthenticationException;
 import org.rapla.rest.client.CustomConnector;
+import org.rapla.rest.client.RemoteConnectException;
 import org.rapla.scheduler.CommandScheduler;
 import org.rapla.scheduler.CompletablePromise;
 import org.rapla.scheduler.Promise;
+import org.rapla.storage.RaplaInvalidTokenException;
 
 import javax.inject.Inject;
 import javax.inject.Provider;
@@ -55,7 +57,6 @@ public class MyCustomConnector implements CustomConnector
         final String username = connectInfo.getUsername();
         final String password = new String(connectInfo.getPassword());
         final String connectAs = connectInfo.getConnectAs();
-        LoginCredentials credentials = new LoginCredentials(username,password, connectAs);
         final LoginTokens loginTokens = remoteAuthentificationService.login(username, password, connectAs);
         final String accessToken = loginTokens.getAccessToken();
         remoteConnectionInfo.setAccessToken( accessToken);
@@ -65,11 +66,16 @@ public class MyCustomConnector implements CustomConnector
     @Override public Exception deserializeException(SerializableExceptionInformation exe, int statusCode)
     {
         final String message = exe.getMessage();
-        if (message != null && message.indexOf(RemoteStorage.USER_WAS_NOT_AUTHENTIFIED) >= 0 && remoteConnectionInfo != null)
+        final String exceptionClass = exe.getExceptionClass();
+        if ( exceptionClass == null)
+        {
+            return new RaplaException("An error occured. No additinal Exception information: "+ message);
+        }
+        if (exceptionClass.equals(RaplaInvalidTokenException.class.getName()))
         {
             return new AuthenticationException(message);
         }
-        if ( exe.getExceptionClass().equals(org.rapla.rest.client.RemoteConnectException.class.getName()))
+        if ( exceptionClass.equals(RemoteConnectException.class.getName()))
         {
             String server = remoteConnectionInfo.getServerURL();
             final RaplaResources raplaResources = i18n.get();

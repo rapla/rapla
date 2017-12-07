@@ -34,7 +34,7 @@ public class RaplaDynamicTypesRestPage
     @GET
     public List<DynamicTypeImpl> list(@QueryParam("classificationType") String classificationType) throws RaplaException
     {
-        final User user = session.getUser(request);
+        final User user = session.checkAndGetUser(request);
         DynamicType[] types = facade.getDynamicTypes(classificationType);
         List<DynamicTypeImpl> result = new ArrayList<DynamicTypeImpl>();
         final PermissionController controller  =   facade.getPermissionController();

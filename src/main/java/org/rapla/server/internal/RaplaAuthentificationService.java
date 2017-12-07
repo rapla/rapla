@@ -59,11 +59,7 @@ public class RaplaAuthentificationService
 
     protected User getValidUser(final RemoteSession session, HttpServletRequest request) throws RaplaSecurityException
     {
-        if (!session.isAuthentified(request))
-        {
-            throw new RaplaSecurityException(i18n.getString("error.login"));
-        }
-        User user = session.getUser(request);
+        User user = session.checkAndGetUser(request);
         return user;
     }
 

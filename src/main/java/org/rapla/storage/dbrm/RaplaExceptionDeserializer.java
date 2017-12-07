@@ -6,6 +6,7 @@ import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaSynchronizationException;
 import org.rapla.rest.SerializableExceptionInformation;
 import org.rapla.rest.client.ExceptionDeserializer;
+import org.rapla.storage.RaplaInvalidTokenException;
 import org.rapla.storage.RaplaNewVersionException;
 import org.rapla.storage.RaplaSecurityException;
 
@@ -28,6 +29,10 @@ public class RaplaExceptionDeserializer implements ExceptionDeserializer {
             else if ( classname.equals(RaplaNewVersionException.class.getName()))
             {
                 return new RaplaNewVersionException( message);
+            }
+            else if ( classname.equals(RaplaInvalidTokenException.class.getName()))
+            {
+                return new RaplaInvalidTokenException( message);
             }
             else if ( classname.equals( RaplaSecurityException.class.getName()))
             {

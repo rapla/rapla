@@ -114,7 +114,7 @@ public class RaplaResourcesRestPage  {
 	@GET
 	public List<AllocatableImpl> list( @QueryParam("resourceTypes") Collection<String> resourceTypes,
 			@QueryParam("attributeFilter") Map<String, String> simpleFilter) throws RaplaException {
-	    final User user = session.getUser(request);
+	    final User user = session.checkAndGetUser(request);
 		ClassificationFilter[] filters = getClassificationFilter(facade, simpleFilter, CLASSIFICATION_TYPES, resourceTypes);
 		Collection<Allocatable> resources = operator.getAllocatables(filters);
 		List<AllocatableImpl> result = new ArrayList<AllocatableImpl>();
@@ -130,7 +130,7 @@ public class RaplaResourcesRestPage  {
 	@GET
 	@Path("{id}")
 	public AllocatableImpl get( @PathParam("id") String id) throws RaplaException {
-        final User user = session.getUser(request);
+        final User user = session.checkAndGetUser(request);
 		AllocatableImpl resource = (AllocatableImpl) operator.resolve(id, Allocatable.class);
 		securityManager.checkRead( user, resource);
 		return resource;
@@ -139,7 +139,7 @@ public class RaplaResourcesRestPage  {
 	@DELETE
 	@Path("{id}")
 	public void delete( @PathParam("id") String id) throws RaplaException {
-		final User user = session.getUser(request);
+		final User user = session.checkAndGetUser(request);
 		AllocatableImpl resource = (AllocatableImpl) operator.resolve(id, Allocatable.class);
 		securityManager.checkDeletePermissions(user, resource);
 		Collection<ReferenceInfo<Allocatable>> removeObjects = Collections.singleton(resource.getReference());
@@ -149,7 +149,7 @@ public class RaplaResourcesRestPage  {
 
 	@PUT
 	public AllocatableImpl update( AllocatableImpl resource) throws RaplaException {
-        final User user = session.getUser(request);
+        final User user = session.checkAndGetUser(request);
 		securityManager.checkWritePermissions(user, resource);
 		PermissionController permissionController = facade.getPermissionController();
 		if (!permissionController.canModify(resource, user)) {
@@ -164,7 +164,7 @@ public class RaplaResourcesRestPage  {
 
 	@POST
 	public AllocatableImpl create(AllocatableImpl resource) throws RaplaException {
-        final User user = session.getUser(request);
+        final User user = session.checkAndGetUser(request);
 		resource.setResolver(operator);
 		Classification classification = resource.getClassification();
 		DynamicType type = classification.getType();

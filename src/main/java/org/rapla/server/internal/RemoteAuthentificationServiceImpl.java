@@ -39,7 +39,7 @@ public class RemoteAuthentificationServiceImpl extends RaplaAuthentificationServ
         {
             if (session.isAuthentified(request))
             {
-                User user = session.getUser(request);
+                User user = session.checkAndGetUser(request);
                 if (user != null)
                 {
                     getLogger().getChildLogger("login").info("Request Logout " + user.getUsername());

@@ -51,7 +51,7 @@ public class RaplaJNDITestOnLocalhost implements JNDIConfig
         DefaultConfiguration config = job.getConfig();
         String username = job.getUsername();
         String password = job.getPassword();
-        User user = remoteSession.getUser(request);
+        User user = remoteSession.checkAndGetUser(request);
         if (!user.isAdmin())
         {
             throw new RaplaSecurityException("Access only for admin users");
@@ -87,7 +87,7 @@ public class RaplaJNDITestOnLocalhost implements JNDIConfig
     @SuppressWarnings("deprecation") @Override public DefaultConfiguration getConfig() throws RaplaException
     {
 
-        User user = remoteSession.getUser(request);
+        User user = remoteSession.checkAndGetUser(request);
         if (!user.isAdmin())
         {
             throw new RaplaSecurityException("Access only for admin users");

@@ -85,8 +85,7 @@ import java.util.Set;
     @Override
     public UpdateEvent getResources() throws RaplaException
     {
-        checkAuthentified();
-        User user = getSessionUser();
+        User user = checkSessionUser();
         getLogger().debug("A RemoteAuthentificationService wants to get all resource-objects.");
         Date serverTime = operator.getCurrentTimestamp();
         Collection<Entity> visibleEntities = operator.getVisibleEntities(user);
@@ -129,9 +128,8 @@ import java.util.Set;
     @Override
     public UpdateEvent getEntityRecursive(UpdateEvent.SerializableReferenceInfo... ids) throws RaplaException
     {
-        checkAuthentified();
+        User sessionUser = checkSessionUser();
         Date repositoryVersion = operator.getCurrentTimestamp();
-        User sessionUser = getSessionUser();
 
         ArrayList<Entity> completeList = new ArrayList<Entity>();
         for (UpdateEvent.SerializableReferenceInfo id : ids)
@@ -175,13 +173,12 @@ import java.util.Set;
 
     @Override public Promise<AppointmentMap> queryAppointments(QueryAppointments job) throws RaplaException
     {
+        User sessionUser = checkSessionUser();
         String[] allocatableIds = job.getResources();
         Date start = job.getStart();
         Date end = job.getEnd();
         Map<String, String> annotationQuery = job.getAnnotations();
         getLogger().debug("A RemoteAuthentificationService wants to reservations from ." + start + " to " + end);
-        checkAuthentified();
-        User sessionUser = getSessionUser();
         User user = null;
         // Reservations and appointments
         List<Allocatable> allocatables = new ArrayList<Allocatable>();
@@ -226,8 +223,8 @@ import java.util.Set;
 
     public void restartServer() throws RaplaException
     {
-        checkAuthentified();
-        if (!getSessionUser().isAdmin())
+        final User user = checkSessionUser();
+        if (!user.isAdmin())
             throw new RaplaSecurityException("Only admins can restart the server");
 
         shutdownService.shutdown(true);
@@ -235,7 +232,7 @@ import java.util.Set;
 
     public UpdateEvent dispatch(UpdateEvent event) throws RaplaException
     {
-        checkAuthentified();
+        User sessionUser = checkSessionUser();
         Date currentTimestamp = operator.getCurrentTimestamp();
         Date lastSynced = event.getLastValidated();
         if (lastSynced == null)
@@ -250,7 +247,6 @@ import java.util.Set;
         }
         //   LocalCache cache = operator.getCache();
         //   UpdateEvent event = createUpdateEvent( context,xml, cache );
-        User sessionUser = getSessionUser();
         getLogger().info("Dispatching change for user " + sessionUser);
         if (sessionUser != null)
         {
@@ -269,7 +265,7 @@ import java.util.Set;
 
     public boolean canChangePassword() throws RaplaException
     {
-        checkAuthentified();
+        checkSessionUser();
         boolean result = operator.canChangePassword();
         return result;
     }
@@ -279,8 +275,7 @@ import java.util.Set;
         String username = job.getUsername();
         String oldPassword = job.getOldPassword();
         String newPassword = job.getNewPassword();
-        checkAuthentified();
-        User sessionUser = getSessionUser();
+        User sessionUser = checkSessionUser();
         User user = operator.getUser(username);
         if (!PermissionController.canAdminUser(sessionUser, user))
         {
@@ -295,8 +290,7 @@ import java.util.Set;
 
     public void changeName(String username, String newTitle, String newSurename, String newLastname) throws RaplaException
     {
-        checkAuthentified();
-        User changingUser = getSessionUser();
+        User changingUser = checkSessionUser();
         User user = operator.getUser(username);
         if (changingUser.isAdmin() || user.equals(changingUser))
         {
@@ -310,8 +304,7 @@ import java.util.Set;
 
     public void changeEmail(String username, String newEmail) throws RaplaException
     {
-        checkAuthentified();
-        User changingUser = getSessionUser();
+        User changingUser = checkSessionUser();
         User user = operator.getUser(username);
         if (changingUser.isAdmin() || user.equals(changingUser))
         {
@@ -325,15 +318,14 @@ import java.util.Set;
 
     public String getUsername(String userId) throws RaplaException
     {
-        checkAuthentified();
+        checkSessionUser();
         String username = operator.getUsername(new ReferenceInfo<User>(userId, User.class));
         return username;
     }
 
     public void confirmEmail(String username, String newEmail) throws RaplaException
     {
-        checkAuthentified();
-        User changingUser = getSessionUser();
+        User changingUser = checkSessionUser();
         User user = operator.getUser(username);
         if (changingUser.isAdmin() || user.equals(changingUser))
         {
@@ -367,10 +359,10 @@ import java.util.Set;
 
     public List<String> createIdentifier(String type, int count) throws RaplaException
     {
-        checkAuthentified();
+        checkSessionUser();
         Class<? extends Entity> typeClass = RaplaType.find(type);
         //User user =
-        getSessionUser(); //check if authenified
+        checkSessionUser(); //check if authenified
         ReferenceInfo[] refs = operator.createIdentifier(typeClass, count);
         List<String> result = new ArrayList<String>();
         for (ReferenceInfo ref : refs)
@@ -382,11 +374,11 @@ import java.util.Set;
 
     public UpdateEvent refresh(String lastSyncedTime) throws RaplaException
     {
-        checkAuthentified();
+        final User user = checkSessionUser();
         try
         {
             Date clientRepoVersion = SerializableDateTimeFormat.INSTANCE.parseTimestamp(lastSyncedTime);
-            UpdateEvent event = updateDataManager.createUpdateEvent(getSessionUser(), clientRepoVersion);
+            UpdateEvent event = updateDataManager.createUpdateEvent(user, clientRepoVersion);
             return event;
         }
         catch (ParseDateException e)
@@ -412,18 +404,9 @@ import java.util.Set;
         return session.getLogger();
     }
 
-    private void checkAuthentified() throws RaplaSecurityException
+    private User checkSessionUser() throws RaplaException
     {
-        boolean fail = false;
-        if (!session.isAuthentified(request) || fail)
-        {
-            throw new RaplaSecurityException(RemoteStorage.USER_WAS_NOT_AUTHENTIFIED);
-        }
-    }
-
-    private User getSessionUser() throws RaplaException
-    {
-        return session.getUser(request);
+        return session.checkAndGetUser(request);
     }
 
     private void dispatch_(UpdateEvent evt) throws RaplaException
@@ -437,7 +420,7 @@ import java.util.Set;
             }
             else
             {
-                user = getSessionUser();
+                user = checkSessionUser();
             }
             Collection<Entity> storeObjects = evt.getStoreObjects();
             EntityStore store = new EntityStore(operator);
@@ -511,9 +494,8 @@ import java.util.Set;
 
     public List<ConflictImpl> getConflicts() throws RaplaException
     {
-        checkAuthentified();
+        User sessionUser = checkSessionUser();
         Set<Entity> completeList = new HashSet<Entity>();
-        User sessionUser = getSessionUser();
         Collection<Conflict> conflicts = operator.getConflicts(sessionUser);
         List<ConflictImpl> result = new ArrayList<ConflictImpl>();
         for (Conflict conflict : conflicts)
@@ -537,7 +519,7 @@ import java.util.Set;
         List<Allocatable> allocatables;
         try
         {
-            checkAuthentified();
+            checkSessionUser();
             allocatables = resolveAllocatables(allocatableIds);
         }
         catch ( RaplaException ex)
@@ -559,7 +541,7 @@ import java.util.Set;
         List<Allocatable> allocatables;
         try
         {
-            checkAuthentified();
+            checkSessionUser();
             //Integer[][] result = new Integer[allocatableIds.length][];
            allocatables = resolveAllocatables(allocatableIds);
         } catch ( RaplaException ex)
@@ -615,7 +597,7 @@ import java.util.Set;
         List<Allocatable> allocatables;
         try
         {
-            checkAuthentified();
+            User user = checkSessionUser();
             //Integer[][] result = new Integer[allocatableIds.length][];
             allocatables = resolveAllocatables(allocatableIds);
         } catch ( RaplaException ex)
@@ -655,7 +637,7 @@ import java.util.Set;
     private List<Allocatable> resolveAllocatables(String[] allocatableIds) throws RaplaException, RaplaSecurityException
     {
         List<Allocatable> allocatables = new ArrayList<Allocatable>();
-        User sessionUser = getSessionUser();
+        User sessionUser = checkSessionUser();
         for (String id : allocatableIds)
         {
             Allocatable entity = operator.resolve(id, Allocatable.class);
@@ -685,10 +667,9 @@ import java.util.Set;
 
     @Override public void doMerge(MergeRequest job) throws RaplaException
     {
+        final User sessionUser = checkSessionUser();
         AllocatableImpl allocatable = job.getAllocatable();
         String[] allocatableIds = job.getAllocatableIds();
-        checkAuthentified();
-        final User sessionUser = getSessionUser();
         security.checkWritePermissions(sessionUser, allocatable);
         final Set<ReferenceInfo<Allocatable>> allocReferences = new LinkedHashSet<>();
         for (final String allocId : allocatableIds)

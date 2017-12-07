@@ -74,7 +74,7 @@ public class RaplaConfigServiceImpl implements MailConfigService
     @Override
     public DefaultConfiguration getConfig() throws RaplaException
     {
-        User user = remoteSession.getUser(request);
+        User user = remoteSession.checkAndGetUser(request);
         if (!user.isAdmin())
         {
             throw new RaplaSecurityException("Access only for admin users");
@@ -92,7 +92,7 @@ public class RaplaConfigServiceImpl implements MailConfigService
     public void testMail(DefaultConfiguration config, String defaultSender) throws RaplaException
     {
 
-        User user = remoteSession.getUser(request);
+        User user = remoteSession.checkAndGetUser(request);
         if (!user.isAdmin())
         {
             throw new RaplaSecurityException("Access only for admin users");

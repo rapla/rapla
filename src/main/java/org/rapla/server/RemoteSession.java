@@ -26,7 +26,7 @@ public interface RemoteSession
 
     Logger getLogger();
 
-    User getUser(HttpServletRequest request) throws RaplaSecurityException;
+    User checkAndGetUser(HttpServletRequest request) throws RaplaSecurityException;
 
     boolean isAuthentified(HttpServletRequest request);
 

@@ -106,7 +106,7 @@ public class RaplaICalImport implements ICalImport {
                     allocatables.add ( allocatable);
                 }
             }
-            User user = session.getUser(request);
+            User user = session.checkAndGetUser(request);
             final Promise<Integer[]> count = importCalendar(content, isURL, allocatables, user, eventTypeKey, eventTypeNameAttributeKey);
             return promiseWait.waitForWithRaplaException( count, 10000);
 

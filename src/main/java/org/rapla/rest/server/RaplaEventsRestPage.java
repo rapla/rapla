@@ -62,7 +62,7 @@ import java.util.Map;
             @QueryParam("end") Date end, @QueryParam("resources") Collection<String> resources, @QueryParam("eventTypes") Collection<String> eventTypes,
             @QueryParam("attributeFilter") Map<String, String> simpleFilter) throws Exception
     {
-        final User user = session.getUser(request);
+        final User user = session.checkAndGetUser(request);
         Collection<Allocatable> allocatables = new ArrayList<Allocatable>();
         for (String id : resources)
         {
@@ -92,7 +92,7 @@ import java.util.Map;
     @GET @Path("{id}") @Produces({ MediaType.APPLICATION_JSON, MediaType.APPLICATION_XML }) public ReservationImpl get(@PathParam("id") String id)
             throws RaplaException
     {
-        final User user = session.getUser(request);
+        final User user = session.checkAndGetUser(request);
         final StorageOperator operator = facade.getOperator();
         ReservationImpl event = (ReservationImpl) operator.resolve(id, Reservation.class);
         securityManager.checkRead(user, event);
@@ -101,7 +101,7 @@ import java.util.Map;
 
     @PATCH @Path("{id}") @Produces({ MediaType.APPLICATION_JSON, MediaType.APPLICATION_XML }) public ReservationImpl patch(@PathParam("id") String id,ReservationImpl event) throws RaplaException
     {
-        final User user = session.getUser(request);
+        final User user = session.checkAndGetUser(request);
         setResolver(event);
         securityManager.checkWritePermissions(user, event);
         facade.store(event);
@@ -117,7 +117,7 @@ import java.util.Map;
 
     @PUT @Produces({ MediaType.APPLICATION_JSON, MediaType.APPLICATION_XML }) public ReservationImpl update(ReservationImpl event) throws RaplaException
     {
-        final User user = session.getUser(request);
+        final User user = session.checkAndGetUser(request);
         setResolver(event);
         securityManager.checkWritePermissions(user, event);
         facade.store(event);
@@ -127,7 +127,7 @@ import java.util.Map;
 
     @DELETE @Produces({ MediaType.APPLICATION_JSON, MediaType.APPLICATION_XML }) public boolean delete(@PathParam("id") String id) throws RaplaException
     {
-        final User user = session.getUser(request);
+        final User user = session.checkAndGetUser(request);
         final Reservation event = facade.tryResolve(new ReferenceInfo<Reservation>(id, Reservation.class));
         if ( event == null)
         {
@@ -140,7 +140,7 @@ import java.util.Map;
 
     @POST @Produces({ MediaType.APPLICATION_JSON, MediaType.APPLICATION_XML }) public ReservationImpl create(ReservationImpl event) throws RaplaException
     {
-        final User user = session.getUser(request);
+        final User user = session.checkAndGetUser(request);
         setResolver( event);
         if (!facade.getPermissionController().canCreate(event.getClassification().getType(), user))
         {

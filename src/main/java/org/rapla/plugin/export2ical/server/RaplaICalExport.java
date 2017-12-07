@@ -25,7 +25,6 @@ import org.rapla.inject.DefaultImplementation;
 import org.rapla.inject.InjectionContext;
 import org.rapla.plugin.export2ical.ICalExport;
 import org.rapla.server.RemoteSession;
-import org.rapla.storage.RaplaSecurityException;
 
 import javax.inject.Inject;
 import javax.servlet.http.HttpServletRequest;
@@ -94,11 +93,7 @@ public class RaplaICalExport implements ICalExport
     @Override
 	public String export( Set<String> appointmentIds) throws RaplaException
     {
-        if (!session.isAuthentified(request))
-        {
-            throw new RaplaSecurityException("Not authentified");
-        }
-        User user = session.getUser(request);
+        User user = session.checkAndGetUser(request);
         ByteArrayOutputStream out = new ByteArrayOutputStream();
     	try {
 			export(user,appointmentIds, out);

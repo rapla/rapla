@@ -12,6 +12,7 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.plugin.mail.server;
 
+import org.rapla.entities.User;
 import org.rapla.framework.RaplaException;
 import org.rapla.inject.DefaultImplementation;
 import org.rapla.inject.InjectionContext;
@@ -38,10 +39,7 @@ public class RaplaMailToUserOnLocalhost implements MailToUserInterface
 
     @Override public void sendMail(String username, String subject, String body) throws RaplaException
     {
-        if (!session.isAuthentified(request))
-        {
-            throw new RaplaSecurityException("User needs to be authentified to use the service");
-        }
+        final User user = session.checkAndGetUser(request);
         mail.sendMail(username,subject, body);
     }
 }

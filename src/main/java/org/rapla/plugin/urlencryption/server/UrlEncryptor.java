@@ -59,7 +59,7 @@ public class UrlEncryptor
      */
     public synchronized String encrypt(String plain, HttpServletRequest request) throws RaplaException
     {
-        final User user = session.getUser(request);
+        final User user = session.checkAndGetUser(request);
         final String salt = Integer.toString(user.getId().hashCode());
         final Base64 base64 = initForRequest();
         try

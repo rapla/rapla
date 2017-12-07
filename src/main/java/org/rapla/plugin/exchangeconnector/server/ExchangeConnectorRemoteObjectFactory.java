@@ -42,14 +42,14 @@ public class ExchangeConnectorRemoteObjectFactory implements ExchangeConnectorRe
     @Override
     public SynchronizationStatus getSynchronizationStatus() throws RaplaException
     {
-        final User user = session.getUser(request);
+        final User user = session.checkAndGetUser(request);
         return manager.getSynchronizationStatus( user);
     }
 
     @Override
     public void synchronize() throws RaplaException
     {
-        final User user = session.getUser(request);
+        final User user = session.checkAndGetUser(request);
         // Synchronize this user after registering
         getLogger().debug("Invoked change sync for user " + user.getUsername());
         manager.synchronizeUser(user);
@@ -58,7 +58,7 @@ public class ExchangeConnectorRemoteObjectFactory implements ExchangeConnectorRe
     @Override
     public void changeUser(String exchangeUsername, String exchangePassword) throws RaplaException
     {
-        final User user = session.getUser(request);
+        final User user = session.checkAndGetUser(request);
         String raplaUsername = user.getUsername();
         getLogger().debug("Invoked add exchange user for rapla " + raplaUsername + " with exchange user " + exchangeUsername);
         manager.testConnection( exchangeUsername, exchangePassword, user);
@@ -69,7 +69,7 @@ public class ExchangeConnectorRemoteObjectFactory implements ExchangeConnectorRe
     @Override
     public void removeUser() throws RaplaException
     {
-        final User user = session.getUser(request);
+        final User user = session.checkAndGetUser(request);
         getLogger().info("Removing exchange connection for user " + user);
         keyStorage.removeLoginInfo(user, ExchangeConnectorServerPlugin.EXCHANGE_USER_STORAGE);
         manager.removeTasksAndExports(user);
@@ -78,7 +78,7 @@ public class ExchangeConnectorRemoteObjectFactory implements ExchangeConnectorRe
     @Override
     public void retry() throws RaplaException
     {
-        final User user = session.getUser(request);
+        final User user = session.checkAndGetUser(request);
         LoginInfo secrets = keyStorage.getSecrets(user, ExchangeConnectorServerPlugin.EXCHANGE_USER_STORAGE);
         if ( secrets != null)
         {

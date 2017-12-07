@@ -36,7 +36,7 @@ public class ExchangeConnectorRemoteConfigFactory implements ExchangeConnectorCo
     @Override
     public DefaultConfiguration getConfig() throws RaplaException
     {
-        User user = remoteSession.getUser(request);
+        User user = remoteSession.checkAndGetUser(request);
         if ( !user.isAdmin())
         {
             throw new RaplaSecurityException("Access only for admin users");
