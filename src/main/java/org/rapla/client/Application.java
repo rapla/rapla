@@ -1,11 +1,11 @@
 package org.rapla.client;
 
-import com.google.web.bindery.event.shared.EventBus;
 import org.rapla.RaplaResources;
 import org.rapla.client.dialog.DialogInterface;
 import org.rapla.client.dialog.DialogUiFactoryInterface;
 import org.rapla.client.event.AbstractActivityController;
 import org.rapla.client.event.ApplicationEvent;
+import org.rapla.client.event.ApplicationEventBus;
 import org.rapla.client.event.TaskPresenter;
 import org.rapla.client.extensionpoints.ClientExtension;
 import org.rapla.client.internal.CommandAbortedException;
@@ -49,7 +49,7 @@ public class Application implements ApplicationView.Presenter, ModificationListe
     private final ApplicationView mainView;
     private final RaplaResources i18n;
 
-    private final EventBus eventBus;
+    private final ApplicationEventBus eventBus;
     private final Map<String, Provider<TaskPresenter>> activityPresenters;
     final private Provider<Set<ClientExtension>> clientExtensions;
     final Provider<CalendarSelectionModel> calendarModelProvider;
@@ -59,10 +59,10 @@ public class Application implements ApplicationView.Presenter, ModificationListe
     private final Map<ApplicationEvent, TaskPresenter> openDialogsPresenter = new HashMap<>();
 
     @Inject
-    public Application(final ApplicationView mainView, EventBus eventBus, Logger logger, BundleManager bundleManager, ClientFacade clientFacade,
-            AbstractActivityController abstractActivityController, RaplaResources i18n, Map<String, Provider<TaskPresenter>> activityPresenters,
-            Provider<Set<ClientExtension>> clientExtensions, Provider<CalendarSelectionModel> calendarModel, CommandScheduler scheduler,
-            DialogUiFactoryInterface dialogUiFactory)
+    public Application(final ApplicationView mainView, ApplicationEventBus eventBus, Logger logger, BundleManager bundleManager, ClientFacade clientFacade,
+                       AbstractActivityController abstractActivityController, RaplaResources i18n, Map<String, Provider<TaskPresenter>> activityPresenters,
+                       Provider<Set<ClientExtension>> clientExtensions, Provider<CalendarSelectionModel> calendarModel, CommandScheduler scheduler,
+                       DialogUiFactoryInterface dialogUiFactory)
     {
         this.mainView = mainView;
         this.abstractActivityController = abstractActivityController;
@@ -155,7 +155,7 @@ public class Application implements ApplicationView.Presenter, ModificationListe
                     Promise<Void> promise = taskPresenter.processStop(event, widget).thenRun(() ->
                     {
                         event.setStop(true);
-                        eventBus.fireEvent(event);
+                        eventBus.publish(event);
                     });
                     handleException(promise, popupContext);
                     return false;
@@ -308,7 +308,7 @@ public class Application implements ApplicationView.Presenter, ModificationListe
             {
                 return;
             }
-            eventBus.fireEvent(new ApplicationEvent(CLOSE_ACTIVITY_ID, "", mainView.createPopupContext(), null));
+            eventBus.publish(new ApplicationEvent(CLOSE_ACTIVITY_ID, "", mainView.createPopupContext(), null));
         };
         scheduler.scheduleSynchronized(this, runnable, 0);
         return false;

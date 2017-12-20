@@ -540,11 +540,6 @@
 			<scope>test</scope>
 		</dependency>
 		<!-- GWT -->
-		<dependency>
-			<groupId>com.google.web.bindery</groupId>
-			<artifactId>requestfactory-server</artifactId>
-			<version>${requestfactory.version}</version>
-		</dependency>
 		<!--
 		<dependency>
 			<groupId>com.google.gwt</groupId>

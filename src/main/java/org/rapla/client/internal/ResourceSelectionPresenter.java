@@ -13,11 +13,11 @@
 
 package org.rapla.client.internal;
 
-import com.google.web.bindery.event.shared.EventBus;
 import org.rapla.client.EditController;
 import org.rapla.client.PopupContext;
 import org.rapla.client.RaplaWidget;
 import org.rapla.client.dialog.DialogUiFactoryInterface;
+import org.rapla.client.event.CalendarEventBus;
 import org.rapla.client.event.CalendarRefreshEvent;
 import org.rapla.client.internal.ResourceSelectionView.Presenter;
 import org.rapla.entities.Category;
@@ -38,11 +38,7 @@ import org.rapla.scheduler.Promise;
 import org.rapla.storage.PermissionController;
 
 import javax.inject.Inject;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashSet;
+import java.util.*;
 
 public class ResourceSelectionPresenter implements Presenter
 {
@@ -50,7 +46,7 @@ public class ResourceSelectionPresenter implements Presenter
 
     private final EditController editController;
     private final DialogUiFactoryInterface dialogUiFactory;
-    private final EventBus eventBus;
+    private final CalendarEventBus eventBus;
     private final ResourceSelectionView view;
     private final ClientFacade facade;
     private final Logger logger;
@@ -59,7 +55,7 @@ public class ResourceSelectionPresenter implements Presenter
 
     @Inject
     public ResourceSelectionPresenter(ClientFacade facade, Logger logger, CalendarSelectionModel model, EditController editController,
-            DialogUiFactoryInterface dialogUiFactory, EventBus eventBus, ResourceSelectionView view, CommandScheduler scheduler)
+            DialogUiFactoryInterface dialogUiFactory, CalendarEventBus eventBus, ResourceSelectionView view, CommandScheduler scheduler)
             throws RaplaInitializationException
     {
         this.facade = facade;
@@ -232,7 +228,7 @@ public class ResourceSelectionPresenter implements Presenter
     @Override
     public void applyFilter()
     {
-        eventBus.fireEvent(new CalendarRefreshEvent());
+        eventBus.publish(new CalendarRefreshEvent());
     }
 
     public void updateMenu() throws RaplaException

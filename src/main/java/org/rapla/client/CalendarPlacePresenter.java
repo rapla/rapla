@@ -1,13 +1,9 @@
 package org.rapla.client;
 
-import com.google.web.bindery.event.shared.EventBus;
 import org.rapla.RaplaResources;
 import org.rapla.client.CalendarPlaceView.Presenter;
 import org.rapla.client.dialog.DialogUiFactoryInterface;
-import org.rapla.client.event.ApplicationEvent;
-import org.rapla.client.event.CalendarRefreshEvent;
-import org.rapla.client.event.OwnReservationsEvent;
-import org.rapla.client.event.TaskPresenter;
+import org.rapla.client.event.*;
 import org.rapla.client.internal.ConflictSelectionPresenter;
 import org.rapla.client.internal.ResourceSelectionPresenter;
 import org.rapla.client.internal.SavedCalendarInterface;
@@ -47,7 +43,7 @@ import java.util.Date;
     private DialogUiFactoryInterface dialogUiFactory;
     private final RaplaFacade facade;
     private final CalendarSelectionModel model;
-    private final EventBus eventBus;
+    private final CalendarEventBus eventBus;
     private final RaplaResources i18n;
     private Logger logger;
 
@@ -58,7 +54,7 @@ import java.util.Date;
     final ClientFacade clientFacade;
 
     @SuppressWarnings({ "rawtypes", "unchecked" }) @Inject public CalendarPlacePresenter(final CalendarPlaceView view, final ClientFacade clientFacade,
-            final RaplaResources i18n, final CalendarSelectionModel model, final Logger logger, final EventBus eventBus,/*, Map<String, CalendarPlugin> views*/
+            final RaplaResources i18n, final CalendarSelectionModel model, final Logger logger, final CalendarEventBus eventBus,/*, Map<String, CalendarPlugin> views*/
             ResourceSelectionPresenter resourceSelectionPresenter, SavedCalendarInterface savedViews, ConflictSelectionPresenter conflictsView,
             CalendarContainer calendarContainer,final CommandScheduler scheduler, DialogUiFactoryInterface dialogUiFactory) throws RaplaInitializationException
     {
@@ -101,27 +97,25 @@ import java.util.Date;
             throw new RaplaInitializationException(e);
         }
         view.setPresenter(this);
-        eventBus.addHandler(CalendarRefreshEvent.TYPE, (evt) -> {
-            calendarContainer.update();
-        });
-
-        eventBus.addHandler(OwnReservationsEvent.TYPE, (evt) -> {
-            try
-            {
-                Entity preferences = facade.getPreferences(clientFacade.getUser());
-                ModificationEventImpl modificationEvt = new ModificationEventImpl();
-                modificationEvt.addChanged(preferences);
-                resourceSelectionPresenter.dataChanged(modificationEvt);
-                calendarContainer.update(modificationEvt);
-                conflictsView.dataChanged(modificationEvt);
-            }
-            catch (Exception ex)
-            {
-                dialogUiFactory.showException(ex, null);
-            }
-        });
-
-
+        eventBus.getCalendarRefreshObservable().subscribe((evt)->calendarContainer.update());
+        eventBus.getCalendarPreferencesObservable().subscribe((evt)
+        ->
+                {
+                    try
+                    {
+                        Entity preferences = facade.getPreferences(clientFacade.getUser());
+                        ModificationEventImpl modificationEvt = new ModificationEventImpl();
+                        modificationEvt.addChanged(preferences);
+                        resourceSelectionPresenter.dataChanged(modificationEvt);
+                        calendarContainer.update(modificationEvt);
+                        conflictsView.dataChanged(modificationEvt);
+                    }
+                    catch (Exception ex)
+                    {
+                        dialogUiFactory.showException(ex, null);
+                    }
+                }
+        );
         try
         {
             updateViews();

@@ -1,12 +1,12 @@
 package org.rapla.plugin.tableview.client;
 
-import com.google.web.bindery.event.shared.EventBus;
 import org.rapla.client.EditApplicationEventContext;
 import org.rapla.client.PopupContext;
 import org.rapla.client.base.CalendarPlugin;
 import org.rapla.client.edit.reservation.sample.ReservationPresenter;
 import org.rapla.client.event.ApplicationEvent;
 import org.rapla.client.event.ApplicationEvent.ApplicationEventContext;
+import org.rapla.client.event.ApplicationEventBus;
 import org.rapla.components.util.DateTools;
 import org.rapla.entities.domain.Reservation;
 import org.rapla.facade.CalendarSelectionModel;
@@ -27,12 +27,12 @@ public class CalendarTableViewPresenter implements Presenter, CalendarPlugin
     public static final String TABLE_VIEW = "table";
     private final CalendarTableView view;
     private final Logger logger;
-    private final EventBus eventBus;
+    private final ApplicationEventBus eventBus;
     private final CalendarSelectionModel model;
     
     @SuppressWarnings("unchecked")
     @Inject
-    public CalendarTableViewPresenter(CalendarTableView view, Logger logger, EventBus eventBus, CalendarSelectionModel model)
+    public CalendarTableViewPresenter(CalendarTableView view, Logger logger, ApplicationEventBus eventBus, CalendarSelectionModel model)
     {
         this.view = view;
         this.logger = logger;
@@ -77,7 +77,7 @@ public class CalendarTableViewPresenter implements Presenter, CalendarPlugin
     {
         ApplicationEventContext editContext = new EditApplicationEventContext<>(Collections.singletonList(selectedObject));
         final ApplicationEvent activity = new ApplicationEvent(ReservationPresenter.EDIT_ACTIVITY_ID, selectedObject.getId(),context, editContext);
-        eventBus.fireEvent(activity);
+        eventBus.publish(activity);
         logger.info("selection changed");
 
     }

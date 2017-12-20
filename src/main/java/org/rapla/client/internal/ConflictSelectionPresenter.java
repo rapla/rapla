@@ -16,6 +16,7 @@ import com.google.web.bindery.event.shared.EventBus;
 import org.rapla.client.PopupContext;
 import org.rapla.client.RaplaWidget;
 import org.rapla.client.dialog.DialogUiFactoryInterface;
+import org.rapla.client.event.CalendarEventBus;
 import org.rapla.client.event.CalendarRefreshEvent;
 import org.rapla.client.internal.ConflictSelectionView.Presenter;
 import org.rapla.components.util.TimeInterval;
@@ -53,14 +54,14 @@ public class ConflictSelectionPresenter implements Presenter
 {
     protected final CalendarSelectionModel model;
     private Collection<Conflict> conflicts;
-    private final EventBus eventBus;
+    private final CalendarEventBus eventBus;
     private final DialogUiFactoryInterface dialogUiFactory;
     private final ClientFacade facade;
     private final RaplaFacade raplaFacade;
     private final ConflictSelectionView<?> view;
 
     @Inject
-    public ConflictSelectionPresenter(ClientFacade facade, Logger logger, final CalendarSelectionModel model, EventBus eventBus,
+    public ConflictSelectionPresenter(ClientFacade facade, Logger logger, final CalendarSelectionModel model, CalendarEventBus eventBus,
             DialogUiFactoryInterface dialogUiFactory, ConflictSelectionView view) throws RaplaInitializationException
     {
         this.facade = facade;
@@ -321,7 +322,7 @@ public class ConflictSelectionPresenter implements Presenter
                 model.setSelectedDate(date);
             }
         }
-        eventBus.fireEvent(new CalendarRefreshEvent());
+        eventBus.publish(new CalendarRefreshEvent());
     }
 
     private Collection<Conflict> getSelectedConflictsInModel()

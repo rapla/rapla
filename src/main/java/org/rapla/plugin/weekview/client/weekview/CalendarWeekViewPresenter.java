@@ -1,6 +1,5 @@
 package org.rapla.plugin.weekview.client.weekview;
 
-import com.google.web.bindery.event.shared.EventBus;
 import org.rapla.RaplaResources;
 import org.rapla.client.EditApplicationEventContext;
 import org.rapla.client.PopupContext;
@@ -9,6 +8,7 @@ import org.rapla.client.base.CalendarPlugin;
 import org.rapla.client.edit.reservation.sample.ReservationPresenter;
 import org.rapla.client.event.ApplicationEvent;
 import org.rapla.client.event.ApplicationEvent.ApplicationEventContext;
+import org.rapla.client.event.ApplicationEventBus;
 import org.rapla.client.menu.CalendarContextMenuPresenter;
 import org.rapla.components.util.DateTools;
 import org.rapla.entities.domain.Appointment;
@@ -42,7 +42,7 @@ public class CalendarWeekViewPresenter implements Presenter, CalendarPlugin
     private final ReservationController reservationController;
 
     private final Logger logger;
-    private final EventBus eventBus;
+    private final ApplicationEventBus eventBus;
     private final CalendarSelectionModel model;
     private final ClientFacade facade;
     private final HTMLRaplaBuilder builder;
@@ -52,7 +52,7 @@ public class CalendarWeekViewPresenter implements Presenter, CalendarPlugin
 
     @SuppressWarnings("unchecked")
     @Inject
-    public CalendarWeekViewPresenter(CalendarWeekView view, ReservationController reservationController, Logger logger, EventBus eventBus,
+    public CalendarWeekViewPresenter(CalendarWeekView view, ReservationController reservationController, Logger logger, ApplicationEventBus eventBus,
             CalendarSelectionModel model, ClientFacade facade, HTMLRaplaBuilder builder, RaplaLocale raplaLocale, RaplaResources i18n, CalendarContextMenuPresenter presenter)
     {
         super();
@@ -107,7 +107,7 @@ public class CalendarWeekViewPresenter implements Presenter, CalendarPlugin
         final Appointment appointment = appointmentBlock.getAppointment();
         final Reservation reservation = appointment.getReservation();
         ApplicationEventContext eventContext = new EditApplicationEventContext<>(Collections.singletonList(appointment));
-        eventBus.fireEvent(new ApplicationEvent(ReservationPresenter.EDIT_ACTIVITY_ID, reservation.getId(), context, eventContext));
+        eventBus.publish(new ApplicationEvent(ReservationPresenter.EDIT_ACTIVITY_ID, reservation.getId(), context, eventContext));
     }
 
     @Override

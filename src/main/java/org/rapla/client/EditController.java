@@ -1,8 +1,8 @@
 package org.rapla.client;
 
-import com.google.web.bindery.event.shared.EventBus;
 import org.rapla.client.event.ApplicationEvent;
 import org.rapla.client.event.ApplicationEvent.ApplicationEventContext;
+import org.rapla.client.event.ApplicationEventBus;
 import org.rapla.client.internal.edit.EditTaskPresenter;
 import org.rapla.entities.Entity;
 import org.rapla.entities.domain.AppointmentBlock;
@@ -17,11 +17,11 @@ import java.util.List;
 @Singleton
 public class EditController
 {
-    private final EventBus eventBus;
+    private final ApplicationEventBus eventBus;
     private final RaplaFacade facade;
 
     @Inject
-    public EditController(EventBus eventBus, RaplaFacade facade)
+    public EditController(ApplicationEventBus eventBus, RaplaFacade facade)
     {
         this.eventBus = eventBus;
         this.facade = facade;
@@ -46,7 +46,7 @@ public class EditController
         EditApplicationEventContext context = new EditApplicationEventContext<Reservation>(appointmentBlocks);
         context.setAppointmentBlock(appointmentBlock);
         final ApplicationEvent event = new ApplicationEvent(applicationEventId, info, popupContext, context);
-        eventBus.fireEvent(event);
+        eventBus.publish(event);
     }
 
     public <T extends Entity> void edit( T obj, PopupContext popupContext )
@@ -80,6 +80,6 @@ public class EditController
         String info = sb.toString();
         ApplicationEventContext context = new EditApplicationEventContext(obj);
         final ApplicationEvent event = new ApplicationEvent(applicationEventId, info, popupContext, context);
-        eventBus.fireEvent(event);
+        eventBus.publish(event);
     }
 }

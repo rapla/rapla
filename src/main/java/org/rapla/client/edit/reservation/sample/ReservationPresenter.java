@@ -6,6 +6,7 @@ import org.rapla.client.PopupContext;
 import org.rapla.client.edit.reservation.sample.ReservationView.Presenter;
 import org.rapla.client.event.ApplicationEvent;
 import org.rapla.client.event.ApplicationEvent.ApplicationEventContext;
+import org.rapla.client.event.ApplicationEventBus;
 import org.rapla.entities.User;
 import org.rapla.entities.domain.Appointment;
 import org.rapla.entities.domain.RepeatingType;
@@ -34,7 +35,7 @@ public class ReservationPresenter implements Presenter
     private final RaplaFacade facade;
     private final Logger logger;
     private final RaplaLocale raplaLocale;
-    private final EventBus eventBus;
+    private final ApplicationEventBus eventBus;
     private final ReservationView view;
 
     private Reservation editReservation;
@@ -44,7 +45,7 @@ public class ReservationPresenter implements Presenter
     ClientFacade clientFacade;
 
     @Inject
-    protected ReservationPresenter(RaplaFacade facade, ClientFacade clientFacade,Logger logger, RaplaLocale raplaLocale, EventBus eventBus, ReservationView view)
+    protected ReservationPresenter(RaplaFacade facade, ClientFacade clientFacade,Logger logger, RaplaLocale raplaLocale, ApplicationEventBus eventBus, ReservationView view)
     {
         this.facade = facade;
         this.clientFacade = clientFacade;
@@ -116,7 +117,7 @@ public class ReservationPresenter implements Presenter
         ApplicationEventContext context = new EditApplicationEventContext<>(Collections.singletonList(editReservation));
         final ApplicationEvent event = new ApplicationEvent(EDIT_ACTIVITY_ID, editReservation.getId(), popupContext, context);
         event.setStop( true );
-        eventBus.fireEvent(event);
+        eventBus.publish(event);
         view.hide();
     }
 

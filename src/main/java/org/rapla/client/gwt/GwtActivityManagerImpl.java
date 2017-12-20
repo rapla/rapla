@@ -6,6 +6,7 @@ import com.google.gwt.user.client.History;
 import com.google.web.bindery.event.shared.EventBus;
 import org.rapla.client.event.AbstractActivityController;
 import org.rapla.client.event.ApplicationEvent;
+import org.rapla.client.event.ApplicationEventBus;
 import org.rapla.framework.RaplaException;
 import org.rapla.inject.DefaultImplementation;
 import org.rapla.inject.InjectionContext;
@@ -23,7 +24,7 @@ import java.util.Map.Entry;
 public class GwtActivityManagerImpl extends AbstractActivityController
 {
     @Inject
-    public GwtActivityManagerImpl( EventBus eventBus, final Logger logger)
+    public GwtActivityManagerImpl(ApplicationEventBus eventBus, final Logger logger)
     {
         super( eventBus, logger);
         History.addValueChangeHandler(new ValueChangeHandler<String>()

@@ -1,9 +1,8 @@
 package org.rapla.client.event;
 
-import com.google.web.bindery.event.shared.Event;
 import org.rapla.client.PopupContext;
 
-public class ApplicationEvent extends Event<ApplicationEvent.ApplicationEventHandler>
+public class ApplicationEvent
 {
     private final String info;
     private final ApplicationEventContext context;
@@ -15,13 +14,6 @@ public class ApplicationEvent extends Event<ApplicationEvent.ApplicationEventHan
     public interface ApplicationEventContext
     {
     }
-
-    public interface ApplicationEventHandler
-    {
-        void handle(ApplicationEvent event);
-    }
-
-    public static final Type<ApplicationEventHandler> TYPE = new Type<ApplicationEventHandler>();
 
     public ApplicationEvent(String applictionEventId, String info, PopupContext popupContext, ApplicationEventContext context)
     {
@@ -56,19 +48,9 @@ public class ApplicationEvent extends Event<ApplicationEvent.ApplicationEventHan
         return info;
     }
 
-    @Override public Type<ApplicationEventHandler> getAssociatedType()
-    {
-        return TYPE;
-    }
-
     @Override public String toString()
     {
         return applicationEventId + "=" + info;
-    }
-
-    @Override protected void dispatch(ApplicationEventHandler handler)
-    {
-        handler.handle(this);
     }
 
     public static ApplicationEvent fromString(final String activityString)

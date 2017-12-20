@@ -12,7 +12,6 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.client.swing.internal;
 
-import com.google.web.bindery.event.shared.EventBus;
 import org.jetbrains.annotations.NotNull;
 import org.rapla.RaplaResources;
 import org.rapla.RaplaSystemInfo;
@@ -26,7 +25,9 @@ import org.rapla.client.UserClientService;
 import org.rapla.client.dialog.DialogInterface;
 import org.rapla.client.dialog.DialogUiFactoryInterface;
 import org.rapla.client.event.ApplicationEvent;
+import org.rapla.client.event.CalendarEventBus;
 import org.rapla.client.event.OwnReservationsEvent;
+import org.rapla.client.event.ApplicationEventBus;
 import org.rapla.client.extensionpoints.AdminMenuExtension;
 import org.rapla.client.extensionpoints.EditMenuExtension;
 import org.rapla.client.extensionpoints.ExportMenuExtension;
@@ -104,7 +105,8 @@ public class RaplaMenuBar extends RaplaGUIComponent
     private final TemplateEditFactory templateEditFactory;
     private CalendarSelectionModel model;
     Provider<LicenseInfoUI> licenseInfoUIProvider;
-    final private EventBus eventBus;
+    final private CalendarEventBus eventBus;
+    final private ApplicationEventBus appEventBus;
     RaplaMenuItem ownReservationsMenu;
     private final RaplaSystemInfo systemInfo;
 
@@ -114,7 +116,7 @@ public class RaplaMenuBar extends RaplaGUIComponent
             Set<HelpMenuExtension> helpMenuExt, Set<ImportMenuExtension> importMenuExt, Set<ExportMenuExtension> exportMenuExt, MenuFactory menuFactory,
             EditController editController, CalendarSelectionModel model, UserClientService clientService, RestartServer restartServerService,
             RaplaImages raplaImages, DialogUiFactoryInterface dialogUiFactory, TemplateEditFactory templateEditFactory,
-            Provider<LicenseInfoUI> licenseInfoUIProvider, ReservationController reservationController, EventBus eventBus)            throws RaplaInitializationException
+            Provider<LicenseInfoUI> licenseInfoUIProvider, ReservationController reservationController, CalendarEventBus eventBus, ApplicationEventBus appEventBus)            throws RaplaInitializationException
     {
         super(clientFacade, i18n, raplaLocale, logger);
         this.systemInfo = systemInfo;
@@ -125,6 +127,7 @@ public class RaplaMenuBar extends RaplaGUIComponent
         this.dialogUiFactory = dialogUiFactory;
         this.templateEditFactory = templateEditFactory;
         this.eventBus = eventBus;
+        this.appEventBus = appEventBus;
 
 
         RaplaMenu editMenu = menuBarContainer.getEditMenu();
@@ -285,7 +288,7 @@ public class RaplaMenuBar extends RaplaGUIComponent
                 boolean isSelected = model.isOnlyCurrentUserSelected();
                 // switch selection options
                 model.setOption(CalendarModel.ONLY_MY_EVENTS, isSelected ? "false" : "true");
-                eventBus.fireEvent( new OwnReservationsEvent());
+                eventBus.publish( new OwnReservationsEvent());
             }
         });
 
@@ -376,7 +379,7 @@ public class RaplaMenuBar extends RaplaGUIComponent
             Object source = e.getSource();
             if (source == exit)
             {
-                eventBus.fireEvent( new ApplicationEvent(Application.CLOSE_ACTIVITY_ID,"", createPopupContext(),null));
+                appEventBus.publish( new ApplicationEvent(Application.CLOSE_ACTIVITY_ID,"", createPopupContext(),null));
             }
             else if (source == templateEdit)
             {

@@ -1,12 +1,12 @@
 package org.rapla.client.swing.internal;
 
-import com.google.web.bindery.event.shared.EventBus;
 import org.rapla.RaplaResources;
 import org.rapla.client.CalendarPlacePresenter;
 import org.rapla.client.PopupContext;
 import org.rapla.client.dialog.DialogInterface;
 import org.rapla.client.dialog.DialogUiFactoryInterface;
 import org.rapla.client.event.ApplicationEvent;
+import org.rapla.client.event.ApplicationEventBus;
 import org.rapla.client.extensionpoints.PublishExtensionFactory;
 import org.rapla.client.internal.SavedCalendarInterface;
 import org.rapla.client.swing.InfoFactory;
@@ -70,7 +70,7 @@ public class SavedCalendarSwingView extends RaplaGUIComponent implements SavedCa
 {
 
     JComboBox selectionBox;
-    private final EventBus eventBus;
+    private final ApplicationEventBus eventBus;
     private boolean listenersEnabled = true;
     List<FileEntry> filenames = new ArrayList<FileEntry>();
     final CalendarSelectionModel model;
@@ -103,7 +103,6 @@ public class SavedCalendarSwingView extends RaplaGUIComponent implements SavedCa
             putValue(SHORT_DESCRIPTION,name);
             putValue(SMALL_ICON,raplaImages.getIconFromKey("icon.export"));
             publishDialog = new PublishDialog(environment,facade, i18n, raplaLocale, logger, extensionFactories, raplaImages, dialogUiFactory);
-            
         }
 
         public void actionPerformed() {
@@ -226,8 +225,8 @@ public class SavedCalendarSwingView extends RaplaGUIComponent implements SavedCa
     }
 
     @Inject
-    public SavedCalendarSwingView(RaplaMenuBarContainer bar, ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, EventBus eventBus, final CalendarSelectionModel model, Set<PublishExtensionFactory> extensionFactories, StartupEnvironment environment, InfoFactory infoFactory,
-            RaplaImages raplaImages, DialogUiFactoryInterface dialogUiFactory, IOInterface ioInterface) throws RaplaInitializationException {
+    public SavedCalendarSwingView(RaplaMenuBarContainer bar, ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, ApplicationEventBus eventBus, final CalendarSelectionModel model, Set<PublishExtensionFactory> extensionFactories, StartupEnvironment environment, InfoFactory infoFactory,
+                                  RaplaImages raplaImages, DialogUiFactoryInterface dialogUiFactory, IOInterface ioInterface) throws RaplaInitializationException {
         super(facade, i18n, raplaLocale, logger);
         this.eventBus = eventBus;
         this.extensionFactories = extensionFactories;
@@ -337,7 +336,7 @@ public class SavedCalendarSwingView extends RaplaGUIComponent implements SavedCa
 
         String place = selectedFile.isDefault ? null: selectedFile.name;
 
-        eventBus.fireEvent( new ApplicationEvent( CalendarPlacePresenter.PLACE_ID, place, null, null));
+        eventBus.publish( new ApplicationEvent( CalendarPlacePresenter.PLACE_ID, place, null, null));
     }
 
     @Override

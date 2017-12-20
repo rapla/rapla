@@ -12,6 +12,7 @@ import org.rapla.client.dialog.DialogInterface;
 import org.rapla.client.dialog.DialogUiFactoryInterface;
 import org.rapla.client.event.ApplicationEvent;
 import org.rapla.client.event.ApplicationEvent.ApplicationEventContext;
+import org.rapla.client.event.ApplicationEventBus;
 import org.rapla.client.event.TaskPresenter;
 import org.rapla.client.extensionpoints.MergeCheckExtension;
 import org.rapla.client.internal.CommandAbortedException;
@@ -71,7 +72,7 @@ public class EditTaskPresenter implements TaskPresenter
     private final RaplaFacade raplaFacade;
     private final RaplaResources i18n;
     private final ClientFacade clientFacade;
-    private final EventBus eventBus;
+    private final ApplicationEventBus eventBus;
     private final CalendarSelectionModel model;
 
     public static final String CREATE_RESERVATION_FOR_DYNAMIC_TYPE = "createReservationFromDynamicType";
@@ -92,7 +93,7 @@ public class EditTaskPresenter implements TaskPresenter
     }
 
     @Inject
-    public EditTaskPresenter(ClientFacade clientFacade, EditTaskView editTaskView, DialogUiFactoryInterface dialogUiFactory, RaplaResources i18n, EventBus eventBus, CalendarSelectionModel model, Provider<ReservationEdit> reservationEditProvider,
+    public EditTaskPresenter(ClientFacade clientFacade, EditTaskView editTaskView, DialogUiFactoryInterface dialogUiFactory, RaplaResources i18n, ApplicationEventBus eventBus, CalendarSelectionModel model, Provider<ReservationEdit> reservationEditProvider,
             ReservationController reservationController, Set<MergeCheckExtension> mergeCheckers)
     {
         this.editTaskView = editTaskView;
@@ -453,7 +454,7 @@ public class EditTaskPresenter implements TaskPresenter
                         Promise<Void> pr = processStop(event,c).thenRun(() ->
                         {
                             event.setStop(true);
-                            eventBus.fireEvent(event);
+                            eventBus.publish(event);
                         });
                         handleException(pr, popupEditContext);
                     };
@@ -542,7 +543,7 @@ public class EditTaskPresenter implements TaskPresenter
     public void close(ApplicationEvent applicationEvent)
     {
         applicationEvent.setStop(true);
-        eventBus.fireEvent(applicationEvent);
+        eventBus.publish(applicationEvent);
     }
 
     @Override

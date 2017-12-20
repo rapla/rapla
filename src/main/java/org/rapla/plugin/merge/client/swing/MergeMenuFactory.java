@@ -1,11 +1,11 @@
 package org.rapla.plugin.merge.client.swing;
 
-import com.google.web.bindery.event.shared.EventBus;
 import org.rapla.RaplaResources;
 import org.rapla.client.EditApplicationEventContext;
 import org.rapla.client.PopupContext;
 import org.rapla.client.event.ApplicationEvent;
 import org.rapla.client.event.ApplicationEvent.ApplicationEventContext;
+import org.rapla.client.event.ApplicationEventBus;
 import org.rapla.client.extensionpoints.ObjectMenuFactory;
 import org.rapla.client.internal.edit.EditTaskPresenter;
 import org.rapla.client.swing.SwingMenuContext;
@@ -37,14 +37,14 @@ import java.util.Iterator;
     private final RaplaImages raplaImages;
     private final RaplaResources raplaResources;
     private final DialogUiFactory dialogUiFactory;
-    private final EventBus eventBus;
+    private final ApplicationEventBus eventBus;
     //    private final MergeDialogFactory mergeDialogFactory;
     //    private final EditController editController;
     private final PermissionController permissionController;
     private final User user;
 
     @Inject public MergeMenuFactory(RaplaResources raplaResources, RaplaImages raplaImages, ClientFacade facade, DialogUiFactory dialogUiFactory,
-            EventBus eventBus) throws RaplaInitializationException
+            ApplicationEventBus eventBus) throws RaplaInitializationException
     {
         this.raplaResources = raplaResources;
         this.raplaImages = raplaImages;
@@ -122,7 +122,7 @@ import java.util.Iterator;
                 }
                 final String info = ids.toString();
                 ApplicationEventContext context = new EditApplicationEventContext(new ArrayList( selectedObjects));
-                eventBus.fireEvent(new ApplicationEvent(EditTaskPresenter.MERGE_RESOURCES_ID, info, popupContext, context));
+                eventBus.publish(new ApplicationEvent(EditTaskPresenter.MERGE_RESOURCES_ID, info, popupContext, context));
             }
         });
 

@@ -12,12 +12,12 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.plugin.tempatewizard.client.swing;
 
-import com.google.web.bindery.event.shared.EventBus;
 import org.rapla.RaplaResources;
 import org.rapla.client.PopupContext;
 import org.rapla.client.dialog.DialogUiFactoryInterface;
 import org.rapla.client.event.ApplicationEvent;
 import org.rapla.client.event.ApplicationEvent.ApplicationEventContext;
+import org.rapla.client.event.ApplicationEventBus;
 import org.rapla.client.extensionpoints.ReservationWizardExtension;
 import org.rapla.client.internal.edit.EditTaskPresenter;
 import org.rapla.client.swing.images.RaplaImages;
@@ -65,7 +65,7 @@ import java.util.TreeSet;
     private final CalendarModel model;
     private final RaplaImages raplaImages;
     private final PermissionController permissionController;
-    private final EventBus eventBus;
+    private final ApplicationEventBus eventBus;
     protected final ClientFacade clientFacade;
     protected final RaplaFacade raplaFacade;
     protected final RaplaLocale raplaLocale;
@@ -74,7 +74,7 @@ import java.util.TreeSet;
     protected final DialogUiFactoryInterface dialogUiFactory;
 
     @Inject public TemplateWizard(ClientFacade clientFacade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, CalendarModel model,
-            RaplaImages raplaImages, EventBus eventBus, DialogUiFactoryInterface dialogUiFactory) throws RaplaInitializationException
+                                  RaplaImages raplaImages, ApplicationEventBus eventBus, DialogUiFactoryInterface dialogUiFactory) throws RaplaInitializationException
     {
         this.logger = logger;
         this.i18n = i18n;
@@ -327,7 +327,7 @@ import java.util.TreeSet;
         final String id = template.getId();
         PopupContext popupContext = dialogUiFactory.createPopupContext( null);
         ApplicationEventContext context = null;
-        eventBus.fireEvent(new ApplicationEvent(EditTaskPresenter.CREATE_RESERVATION_FROM_TEMPLATE, id, popupContext, context));
+        eventBus.publish(new ApplicationEvent(EditTaskPresenter.CREATE_RESERVATION_FROM_TEMPLATE, id, popupContext, context));
     }
 
 }

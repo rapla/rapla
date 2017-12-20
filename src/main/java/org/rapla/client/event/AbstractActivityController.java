@@ -1,6 +1,5 @@
 package org.rapla.client.event;
 
-import com.google.web.bindery.event.shared.EventBus;
 import org.rapla.client.Application;
 import org.rapla.client.RaplaWidget;
 import org.rapla.framework.RaplaException;
@@ -10,7 +9,7 @@ import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.Set;
 
-public abstract class AbstractActivityController implements ApplicationEvent.ApplicationEventHandler
+public abstract class AbstractActivityController
 {
     protected Place place;
     protected final Set<ApplicationEvent> activities = new LinkedHashSet<ApplicationEvent>();
@@ -29,13 +28,12 @@ public abstract class AbstractActivityController implements ApplicationEvent.App
 
     protected Application application;
 
-    public AbstractActivityController(EventBus eventBus, Logger logger)
+    public AbstractActivityController(ApplicationEventBus eventBus, Logger logger)
     {
         this.logger = logger;
-        eventBus.addHandler(ApplicationEvent.TYPE, this);
+        eventBus.getApplicationEventObservable().subscribe(this::handle);
     }
 
-    @Override
     public void handle(ApplicationEvent activity)
     {
         if ( activity.isStop())

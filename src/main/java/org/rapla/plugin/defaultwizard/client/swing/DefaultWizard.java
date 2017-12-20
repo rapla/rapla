@@ -12,11 +12,11 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.plugin.defaultwizard.client.swing;
 
-import com.google.web.bindery.event.shared.EventBus;
 import org.rapla.RaplaResources;
 import org.rapla.client.PopupContext;
 import org.rapla.client.event.ApplicationEvent;
 import org.rapla.client.event.ApplicationEvent.ApplicationEventContext;
+import org.rapla.client.event.ApplicationEventBus;
 import org.rapla.client.extensionpoints.ReservationWizardExtension;
 import org.rapla.client.internal.edit.EditTaskPresenter;
 import org.rapla.client.swing.RaplaGUIComponent;
@@ -56,10 +56,10 @@ import java.util.Map;
     private final PermissionController permissionController;
     private final CalendarModel model;
     private final RaplaImages raplaImages;
-    private final EventBus eventBus;
+    private final ApplicationEventBus eventBus;
 
     @Inject public DefaultWizard(ClientFacade clientFacade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, CalendarModel model,
-            RaplaImages raplaImages, EventBus eventBus)
+            RaplaImages raplaImages, ApplicationEventBus eventBus)
     {
         super(clientFacade, i18n, raplaLocale, logger);
         final RaplaFacade raplaFacade = clientFacade.getRaplaFacade();
@@ -163,7 +163,7 @@ import java.util.Map;
             return;
         }
         ApplicationEventContext context = null;
-        eventBus.fireEvent(new ApplicationEvent(EditTaskPresenter.CREATE_RESERVATION_FOR_DYNAMIC_TYPE, type.getId(), popupContext, context));
+        eventBus.publish(new ApplicationEvent(EditTaskPresenter.CREATE_RESERVATION_FOR_DYNAMIC_TYPE, type.getId(), popupContext, context));
     }
 
 

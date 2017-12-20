@@ -1,9 +1,9 @@
 package org.rapla.client.swing;
 
-import com.google.web.bindery.event.shared.EventBus;
 import org.rapla.client.CalendarPlacePresenter;
 import org.rapla.client.event.AbstractActivityController;
 import org.rapla.client.event.ApplicationEvent;
+import org.rapla.client.event.ApplicationEventBus;
 import org.rapla.framework.RaplaException;
 import org.rapla.inject.DefaultImplementation;
 import org.rapla.inject.InjectionContext;
@@ -26,7 +26,7 @@ public class SwingActivityController extends AbstractActivityController
 //    private final MergeController mergeController;
 
     @Inject
-    public SwingActivityController(EventBus eventBus, Logger logger)
+    public SwingActivityController(ApplicationEventBus eventBus, Logger logger)
     {
         super(eventBus, logger);
     }
