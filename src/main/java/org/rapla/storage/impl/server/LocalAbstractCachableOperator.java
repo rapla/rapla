@@ -13,7 +13,9 @@
 
 package org.rapla.storage.impl.server;
 
+import io.reactivex.Observer;
 import io.reactivex.functions.Action;
+import io.reactivex.functions.Consumer;
 import org.apache.commons.collections4.BidiMap;
 import org.apache.commons.collections4.SortedBidiMap;
 import org.apache.commons.collections4.bidimap.DualHashBidiMap;
@@ -88,8 +90,8 @@ import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.logger.Logger;
 import org.rapla.rest.JsonParserWrapper;
-import org.rapla.scheduler.Cancelable;
 import org.rapla.scheduler.CommandScheduler;
+import org.rapla.scheduler.Observable;
 import org.rapla.scheduler.Promise;
 import org.rapla.server.PromiseWait;
 import org.rapla.server.internal.TimeZoneConverterImpl;
@@ -169,7 +171,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 
     private TimeZone systemTimeZone = TimeZone.getDefault();
     private CommandScheduler scheduler;
-    private List<Cancelable> scheduledTasks = new ArrayList<Cancelable>();
+    private List<io.reactivex.disposables.Disposable> scheduledTasks = new ArrayList<>();
     private CalendarModelCache calendarModelCache;
     private Date connectStart;
     private final DefaultRaplaLock disconnectLock;
@@ -899,7 +901,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
     {
         //        if (true)
         //            return;
-        final Action wrapper = ()->
+        Consumer<Long> consumer = (time)->
         {
                 final RaplaLock.ReadLock lock = disconnectLock.readLock(3);
                 try
@@ -914,7 +916,8 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
                     disconnectLock.unlock(lock);
                 }
         };
-        final Cancelable schedule = scheduler.schedule(wrapper, delay, period);
+        final Observable<Long> intervall = scheduler.intervall(delay,period);
+        io.reactivex.disposables.Disposable schedule = intervall.subscribe(consumer);
         scheduledTasks.add(schedule);
     }
 
@@ -1120,9 +1123,9 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 
         try
         {
-            for (Cancelable task : scheduledTasks)
+            for (io.reactivex.disposables.Disposable task : scheduledTasks)
             {
-                task.cancel();
+                task.dispose();
             }
         }
         finally

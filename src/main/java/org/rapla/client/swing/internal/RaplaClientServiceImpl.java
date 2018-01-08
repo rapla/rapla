@@ -412,7 +412,7 @@ public class RaplaClientServiceImpl implements ClientService, UpdateErrorListene
 
     private void startLogin() throws Exception
     {
-        commandScheduler.schedule(()->startLoginInThread(), 0);
+        commandScheduler.scheduleSynchronized(this,()->startLoginInThread());
     }
 
     private void startLoginInThread()

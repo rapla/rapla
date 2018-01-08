@@ -51,7 +51,6 @@ import org.rapla.inject.DefaultImplementation;
 import org.rapla.inject.DefaultImplementationRepeatable;
 import org.rapla.inject.InjectionContext;
 import org.rapla.logger.Logger;
-import org.rapla.scheduler.Cancelable;
 import org.rapla.scheduler.CommandScheduler;
 import org.rapla.scheduler.Promise;
 import org.rapla.storage.PreferencePatch;
@@ -266,8 +265,8 @@ import java.util.Vector;
         return DateTools.cutDate(raplaTime);
     }
 
-    Cancelable timerTask;
     int intervalLength;
+
 
     public final void initRefresh()
     {
@@ -295,19 +294,12 @@ import java.util.Vector;
                 getLogger().error("Error refreshing.", e);
             }
         }
-        if (timerTask != null)
-        {
-            timerTask.cancel();
-        }
-        timerTask = commandQueue.schedule(refreshTask, 0, intervalLength);
+        commandQueue.intervall(0,intervalLength).subscribe((time)->refreshTask.run());
+        //timerTask = commandQueue.schedule(refreshTask, 0, intervalLength);
     }
 
     public void dispose()
     {
-        if (timerTask != null)
-        {
-            timerTask.cancel();
-        }
     }
 
     //    public String getConnectionName() {

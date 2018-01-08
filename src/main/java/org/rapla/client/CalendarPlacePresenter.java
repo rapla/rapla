@@ -1,5 +1,6 @@
 package org.rapla.client;
 
+import io.reactivex.functions.Action;
 import org.rapla.RaplaResources;
 import org.rapla.client.CalendarPlaceView.Presenter;
 import org.rapla.client.dialog.DialogUiFactoryInterface;
@@ -87,8 +88,8 @@ import java.util.Date;
             calendarContainer.init(true, () ->
             {
                 calendarUpdated();
-                Runnable runnable = () ->start();
-                scheduler.scheduleSynchronized(this,runnable, 100);
+                Action runnable = () ->start();
+                scheduler.scheduleSynchronized(this,runnable);
 
             });
         }

@@ -50,7 +50,7 @@ public class ArchiverServiceTask  implements ServerExtension
         if ( days != -20 || export)
         {
             // Call it each hour
-            timer.schedule(()->doArchive(export,days), 0, DateTools.MILLISECONDS_PER_HOUR);
+            timer.intervall(0,DateTools.MILLISECONDS_PER_HOUR).subscribe((time)->doArchive(export,days));
         }
     }
 

@@ -5,7 +5,6 @@ import org.rapla.framework.Disposable;
 import org.rapla.inject.DefaultImplementation;
 import org.rapla.inject.InjectionContext;
 import org.rapla.logger.Logger;
-import org.rapla.scheduler.Cancelable;
 import org.rapla.scheduler.CommandScheduler;
 import org.rapla.scheduler.client.gwt.SchedulerImpl;
 
@@ -34,38 +33,6 @@ public final class GwtCommandScheduler extends org.rapla.scheduler.client.gwt.Gw
     private void scheduleDeferred(SchedulerImpl.ScheduledCommand cmd)
     {
         SchedulerImpl.get(logger).scheduleDeferred(cmd);
-    }
-
-
-    @Override
-    public Cancelable schedule(Action command, long delay)
-    {
-        SchedulerImpl.ScheduledCommand entry = new SchedulerImpl.ScheduledCommand()
-        {
-
-            @Override
-            public void execute()
-            {
-                try
-                {
-                    //gwtLogger.info("Refreshing client without period ");
-                    command.run();
-                }
-                catch (Exception e)
-                {
-                    warn(e.getMessage(), e);
-                }
-
-            }
-        };
-        scheduleDeferred(entry);
-        return new Cancelable()
-        {
-
-            public void cancel()
-            {
-            }
-        };
     }
 
 

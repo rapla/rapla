@@ -98,7 +98,7 @@ public class NotificationService implements ServerExtension
     {
         getLogger().info("NotificationServer Plugin started");
         getLogger().info("scheduling command for NotificationSercice");
-        mailQueue.schedule(() ->
+        mailQueue.intervall( 0,30000l).subscribe((time) ->
         {
 
             Date lastUpdated = null;
@@ -122,8 +122,9 @@ public class NotificationService implements ServerExtension
                     operator.releaseLock(NOTIFICATION_LOCK_ID, updatedUntil);
                 }
             }
-        }, 0, 30000l);
-        mailQueue.schedule(() ->
+        });
+        mailQueue.intervall( 45000l,DateTools.MILLISECONDS_PER_MINUTE * 15 + 531l).subscribe(
+        (time) ->
         {
             Date lastUpdated = null;
             try
@@ -143,7 +144,7 @@ public class NotificationService implements ServerExtension
                     operator.releaseLock(NOTIFICATION_LOCK_ID, null);
                 }
             }
-        }, 45000l, DateTools.MILLISECONDS_PER_MINUTE * 15 + 531l);
+        });
     }
 
     protected Logger getLogger()

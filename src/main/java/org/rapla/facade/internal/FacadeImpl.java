@@ -12,6 +12,7 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.facade.internal;
 
+import io.reactivex.functions.Action;
 import io.reactivex.functions.Consumer;
 import org.rapla.ConnectInfo;
 import org.rapla.RaplaResources;
@@ -403,7 +404,7 @@ public class FacadeImpl implements RaplaFacade,ClientFacade,StorageUpdateListene
 //		}
 //	}
 	
-	final class UpdateCommandModification implements Runnable {
+	final class UpdateCommandModification implements Action {
 		ModificationListener listenerList;
 		ModificationEvent modificationEvent;
 
@@ -459,7 +460,7 @@ public class FacadeImpl implements RaplaFacade,ClientFacade,StorageUpdateListene
 			Collection<ModificationListener> modificationListeners = getModificationListeners();
             for (ModificationListener mod:modificationListeners)
             {
-				notifyQueue.scheduleSynchronized(mod,new UpdateCommandModification(mod, evt),0);
+				notifyQueue.scheduleSynchronized(mod,new UpdateCommandModification(mod, evt));
 			}
 //			Collection<AllocationChangeListener> allocationChangeListeners = getAllocationChangeListeners();
 //			if (allocationChangeListeners.size() > 0) {

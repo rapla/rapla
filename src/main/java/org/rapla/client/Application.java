@@ -1,5 +1,6 @@
 package org.rapla.client;
 
+import io.reactivex.functions.Action;
 import org.rapla.RaplaResources;
 import org.rapla.client.dialog.DialogInterface;
 import org.rapla.client.dialog.DialogUiFactoryInterface;
@@ -144,8 +145,8 @@ public class Application implements ApplicationView.Presenter, ModificationListe
                 mainView.updateContent(widget);
                 if (taskPresenter instanceof CalendarPlacePresenter)
                 {
-                    Runnable runnable = () -> ((CalendarPlacePresenter) taskPresenter).start();
-                    scheduler.scheduleSynchronized(this, runnable, 300);
+                    Action runnable = () -> ((CalendarPlacePresenter) taskPresenter).start();
+                    scheduler.delay(300).thenRun(()->scheduler.scheduleSynchronized(this, runnable));
                 }
             }
             else
@@ -265,10 +266,10 @@ public class Application implements ApplicationView.Presenter, ModificationListe
                 statusMessage += " " + i18n.getString("admin.login");
             }
             mainView.setStatusMessage(statusMessage, admin);
-            scheduler.schedule(() ->
+            scheduler.delay(2000).thenRun(() ->
             {
                 mainView.setStatusMessage(name, admin);
-            }, 2000);
+            });
 
         }
         catch (RaplaException e)
@@ -302,7 +303,7 @@ public class Application implements ApplicationView.Presenter, ModificationListe
     @Override
     public boolean mainClosing()
     {
-        Runnable runnable = () ->
+        Action runnable = () ->
         {
             if (!shouldExit())
             {
@@ -310,7 +311,7 @@ public class Application implements ApplicationView.Presenter, ModificationListe
             }
             eventBus.publish(new ApplicationEvent(CLOSE_ACTIVITY_ID, "", mainView.createPopupContext(), null));
         };
-        scheduler.scheduleSynchronized(this, runnable, 0);
+        scheduler.scheduleSynchronized(this, runnable);
         return false;
     }
 

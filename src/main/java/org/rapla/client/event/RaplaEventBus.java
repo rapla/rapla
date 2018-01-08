@@ -1,11 +1,11 @@
 package org.rapla.client.event;
 
-import io.reactivex.subjects.PublishSubject;
-import io.reactivex.subjects.Subject;
+
 import org.rapla.inject.DefaultImplementation;
 import org.rapla.inject.InjectionContext;
+import org.rapla.scheduler.CommandScheduler;
 import org.rapla.scheduler.Observable;
-import org.rapla.scheduler.sync.JavaObservable;
+import org.rapla.scheduler.Subject;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -15,12 +15,15 @@ import javax.inject.Singleton;
 @Singleton
 public class RaplaEventBus implements ApplicationEventBus, CalendarEventBus
 {
-    final PublishSubject<ApplicationEvent> applicationEventPublishSubject = PublishSubject.create();
-    final PublishSubject<CalendarRefreshEvent> calendarRefreshEventPublishSubject = PublishSubject.create();
-    final PublishSubject<OwnReservationsEvent> preferencesObservable = PublishSubject.create();
+    final Subject<ApplicationEvent> applicationEventPublishSubject;
+    final Subject<CalendarRefreshEvent> calendarRefreshEventPublishSubject;
+    final Subject<OwnReservationsEvent> preferencesObservable;
     @Inject
-    public RaplaEventBus()
+    public RaplaEventBus(CommandScheduler scheduler)
     {
+        applicationEventPublishSubject = scheduler.createPublisher();
+        calendarRefreshEventPublishSubject = scheduler.createPublisher();
+        preferencesObservable = scheduler.createPublisher();
     }
 
     @Override
@@ -40,18 +43,16 @@ public class RaplaEventBus implements ApplicationEventBus, CalendarEventBus
 
     @Override
     public Observable<ApplicationEvent> getApplicationEventObservable() {
-        return new JavaObservable<ApplicationEvent>(applicationEventPublishSubject);
+        return applicationEventPublishSubject;
     }
-
-
 
     @Override
     public Observable<CalendarRefreshEvent> getCalendarRefreshObservable() {
-        return new JavaObservable<CalendarRefreshEvent>(calendarRefreshEventPublishSubject);
+        return calendarRefreshEventPublishSubject;
     }
 
     @Override
     public Observable<OwnReservationsEvent> getCalendarPreferencesObservable() {
-        return new JavaObservable<OwnReservationsEvent>(preferencesObservable);
+        return preferencesObservable;
     }
 }

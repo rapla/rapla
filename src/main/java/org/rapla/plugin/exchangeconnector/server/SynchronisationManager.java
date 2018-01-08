@@ -129,32 +129,25 @@ public class SynchronisationManager implements ServerExtension
     {
         long delay = 0;
         logger.info("Scheduling Exchange synchronization tasks");
-        scheduler.schedule(new RetryCommand(), delay, SCHEDULE_PERIOD);
-
-        scheduler.schedule(() ->
-            {
-                Date lastUpdated = null;
-                Date updatedUntil = null;
-                try
-                {
-                    lastUpdated = cachableStorageOperator.requestLock(EXCHANGE_LOCK_ID, VALID_LOCK_DURATION);
-                    final UpdateResult updateResult = cachableStorageOperator.getUpdateResult(lastUpdated);
-                    synchronize(updateResult);
-                    // set it as last, so update must have been successful
-                    updatedUntil = updateResult.getUntil();
+        final Action synchronizeAction = () ->
+        {
+            Date lastUpdated = null;
+            Date updatedUntil = null;
+            try {
+                lastUpdated = cachableStorageOperator.requestLock(EXCHANGE_LOCK_ID, VALID_LOCK_DURATION);
+                final UpdateResult updateResult = cachableStorageOperator.getUpdateResult(lastUpdated);
+                synchronize(updateResult);
+                // set it as last, so update must have been successful
+                updatedUntil = updateResult.getUntil();
+            } catch (Throwable t) {
+                SynchronisationManager.this.logger.debug("Error updating exchange queue");
+            } finally {
+                if (lastUpdated != null) {
+                    cachableStorageOperator.releaseLock(EXCHANGE_LOCK_ID, updatedUntil);
                 }
-                catch (Throwable t)
-                {
-                    SynchronisationManager.this.logger.debug("Error updating exchange queue");
-                }
-                finally
-                {
-                    if (lastUpdated != null)
-                    {
-                        cachableStorageOperator.releaseLock(EXCHANGE_LOCK_ID, updatedUntil);
-                    }
-                }
-        }, delay, 20000);
+            }
+        };
+        scheduler.intervall(0,SCHEDULE_PERIOD).subscribe((time)->synchronizeAction.run());
     }
 
     class RetryCommand implements Action
