@@ -61,6 +61,7 @@ import java.util.TreeSet;
         implements ReservationWizardExtension, ModificationListener
 {
     final public static TypedComponentRole<Boolean> ENABLED = new TypedComponentRole<Boolean>("org.rapla.plugin.templatewizard.enabled");
+    boolean templateNamesValid = false;
     Collection<Allocatable> templateNames;
     private final CalendarModel model;
     private final RaplaImages raplaImages;
@@ -87,14 +88,7 @@ import java.util.TreeSet;
         this.permissionController = raplaFacade.getPermissionController();
         this.eventBus = eventBus;
         clientFacade.addModificationListener(this);
-        try
-        {
-            templateNames = updateTemplateNames();
-        }
-        catch (RaplaException e)
-        {
-            throw new RaplaInitializationException(e);
-        }
+
     }
 
     public String getId()
@@ -106,7 +100,7 @@ import java.util.TreeSet;
     {
         if (evt.getInvalidateInterval() != null)
         {
-            templateNames = updateTemplateNames();
+            templateNamesValid =false;
         }
     }
 
@@ -124,11 +118,17 @@ import java.util.TreeSet;
 
     private Collection<Allocatable> updateTemplateNames() throws RaplaException
     {
+        if ( templateNamesValid)
+        {
+            return templateNames;
+        }
         List<Allocatable> templates = new ArrayList<Allocatable>();
         for (Allocatable template : raplaFacade.getTemplates())
         {
             templates.add(template);
         }
+        templateNames = templates;
+        templateNamesValid = true;
         return templates;
     }
 
@@ -136,9 +136,11 @@ import java.util.TreeSet;
     {
         //final RaplaFacade clientFacade = getClientFacade();
         User user;
+        Collection<Allocatable> templateNames;
         try
         {
             user = clientFacade.getUser();
+            templateNames = updateTemplateNames();
         }
         catch (RaplaException e)
         {
@@ -146,6 +148,7 @@ import java.util.TreeSet;
             return null;
         }
         boolean canCreateReservation = permissionController.canCreateReservation(user);
+
         MenuElement element;
         if (templateNames.size() == 0)
         {

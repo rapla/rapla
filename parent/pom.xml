@@ -392,6 +392,13 @@
 			<scope>compile</scope>
 		</dependency>
 		<dependency>
+			<groupId>org.reactivestreams</groupId>
+			<artifactId>reactive-streams</artifactId>
+			<classifier>sources</classifier>
+			<version>1.0.0</version>
+			<scope>provided</scope>
+		</dependency>
+		<dependency>
 			<groupId>org.rapla</groupId>
 			<artifactId>restinject</artifactId>
 			<version>${restinject.version}</version>
