@@ -4,7 +4,6 @@ import org.rapla.inject.DefaultImplementation;
 import org.rapla.inject.InjectionContext;
 import org.rapla.logger.Logger;
 import org.rapla.scheduler.CommandScheduler;
-import org.rapla.scheduler.client.swing.SwingScheduler;
 import org.rapla.scheduler.sync.UtilConcurrentCommandScheduler;
 
 import javax.inject.Inject;
