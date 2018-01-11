@@ -217,7 +217,7 @@ public class InfoFactoryImpl extends RaplaGUIComponent implements InfoFactory
         ViewTable<Object[]> viewTable = new ViewTable<Object[]>(getClientFacade(), getI18n(), getRaplaLocale(), getLogger(), this, ioInterface, dialogUiFactory);
         DeleteInfoUI deleteView = new DeleteInfoUI(getI18n(), getRaplaLocale(), getFacade(), getLogger());
         DialogInterface dlg = dialogUiFactory.create(popupContext
-                                       ,true
+                                       ,false
                                        ,viewTable.getComponent()
                                        ,new String[] {
                                            getString( "delete.ok" )

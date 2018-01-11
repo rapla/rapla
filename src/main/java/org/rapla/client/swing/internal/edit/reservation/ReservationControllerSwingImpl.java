@@ -20,11 +20,11 @@ import org.rapla.framework.RaplaLocale;
 import org.rapla.inject.DefaultImplementation;
 import org.rapla.inject.InjectionContext;
 import org.rapla.logger.Logger;
+import org.rapla.scheduler.Promise;
 
 import javax.inject.Inject;
 import javax.inject.Provider;
 import javax.inject.Singleton;
-import java.awt.Point;
 import java.util.List;
 import java.util.Set;
 
@@ -36,60 +36,22 @@ public class ReservationControllerSwingImpl extends ReservationControllerImpl
     private final RaplaGUIComponent wrapper;
     private final RaplaImages images;
     private final Provider<Set<EventCheck>> checkers;
-    private final DialogUiFactoryInterface dialogUiFactory;
-    
+
     @Inject
     public ReservationControllerSwingImpl(ClientFacade facade, RaplaLocale raplaLocale, Logger logger, RaplaResources i18n,
             AppointmentFormater appointmentFormater, CalendarSelectionModel calendarModel, RaplaClipboard clipboard,Provider<Set<EventCheck>> checkers,InfoFactory infoFactory, RaplaImages images,DialogUiFactoryInterface dialogUiFactory)
     {
-        super(facade, raplaLocale, logger, i18n, appointmentFormater, calendarModel, clipboard);
+        super(facade, raplaLocale, logger, i18n, appointmentFormater, calendarModel, clipboard, dialogUiFactory);
         this.infoFactory = infoFactory;
-        this.dialogUiFactory = dialogUiFactory;
         this.wrapper = new RaplaGUIComponent(facade, i18n, raplaLocale, logger);
         this.images = images;
         this.checkers = checkers;
     }
 
-    protected boolean showDeleteDialog(PopupContext context, Object[] deletables) throws RaplaException
+    protected Promise<Boolean> showDeleteDialog(PopupContext context, Object[] deletables) throws RaplaException
     {
         DialogInterface dlg =infoFactory.createDeleteDialog(deletables, context);
-        dlg.start(true);
-        int result = dlg.getSelectedIndex();
-        return result == 0;
-    }
-
-    protected int showDialog(String action, PopupContext popupContext, List<String> optionList, List<String> iconList, String title, String content, String dialogIcon) throws RaplaException
-    {
-        Point point = null;
-        if ( popupContext instanceof SwingPopupContext)
-        {
-            SwingPopupContext casted = (SwingPopupContext)popupContext;
-            point = casted.getPoint();
-        }
-
-        DialogInterface dialog = dialogUiFactory.create(
-                popupContext
-                ,true
-                ,title
-                ,content
-                ,optionList.toArray(new String[] {})
-        );
-        if ( dialogIcon != null)
-        {
-            dialog.setIcon(dialogIcon);
-        }
-        for ( int i=0;i< optionList.size();i++)
-        {
-            final String string = iconList.get( i);
-            if ( string != null)
-            {
-                dialog.getAction(i).setIcon(string);
-            }
-        }
-        dialog.setPosition(point.getX(), point.getY());
-        dialog.start(true);
-        int index = dialog.getSelectedIndex();
-        return index;
+        return dlg.start(true).thenApply(result->result== 0 ? Boolean.TRUE : Boolean.FALSE);
     }
 
     @Override
@@ -102,12 +64,6 @@ public class ReservationControllerSwingImpl extends ReservationControllerImpl
     protected PopupContext getPopupContext()
     {
         return new SwingPopupContext(wrapper.getMainComponent(), null);
-    }
-
-    @Override
-    protected void showException(Throwable ex, PopupContext sourceComponent)
-    {
-        dialogUiFactory.showException(ex, sourceComponent);
     }
 
 

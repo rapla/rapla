@@ -9,4 +9,5 @@ import org.rapla.inject.InjectionContext;
 @ExtensionPoint(context = InjectionContext.server,id="serverextension")
 public interface ServerExtension {
     void start();
+    void stop();
 }

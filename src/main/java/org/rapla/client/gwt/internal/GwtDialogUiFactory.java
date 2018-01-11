@@ -24,7 +24,7 @@ import org.rapla.inject.DefaultImplementation;
 import org.rapla.inject.InjectionContext;
 import org.rapla.logger.Logger;
 import org.rapla.scheduler.Promise;
-import org.rapla.scheduler.UnsynchronizedCompletablePromise;
+import org.rapla.scheduler.UnsynchronizedPromise;
 import org.rapla.storage.dbrm.RaplaConnectException;
 import org.rapla.storage.dbrm.RaplaRestartingException;
 
@@ -130,7 +130,7 @@ public class GwtDialogUiFactory implements DialogUiFactoryInterface
             {
                 buttons[selectedIndex].setFocus(true);
             }
-            final UnsynchronizedCompletablePromise<Integer> integerUnsynchronizedCompletablePromise = new UnsynchronizedCompletablePromise<>();
+            final UnsynchronizedPromise<Integer> integerUnsynchronizedCompletablePromise = new UnsynchronizedPromise<>();
             return integerUnsynchronizedCompletablePromise;
         }
 

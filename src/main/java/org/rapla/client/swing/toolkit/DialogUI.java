@@ -513,6 +513,16 @@ public class DialogUI extends JDialog
         public DialogInterface create(PopupContext popupContext, boolean modal, String title, String text, String[] options) throws RaplaException
         {
             DialogUI dlg = (DialogUI) create(popupContext, modal, new JPanel(), options);
+            Point point = null;
+            if ( popupContext instanceof SwingPopupContext)
+            {
+                SwingPopupContext casted = (SwingPopupContext)popupContext;
+                point = casted.getPoint();
+                if ( point != null)
+                {
+                    dlg.setPosition( point.getX(), point.getY());
+                }
+            }
             dlg.createMessagePanel(text);
             dlg.setTitle(title);
             return dlg;

@@ -109,6 +109,7 @@ import java.util.Vector;
     int timezoneOffset;
     ConnectInfo connectInfo;
     RemoteConnectionInfo connectionInfo;
+    io.reactivex.disposables.Disposable schedule;
 
     @Inject public RemoteOperator(Logger logger, RaplaResources i18n, RaplaLocale locale, CommandScheduler scheduler,
             Map<String, FunctionFactory> functionFactoryMap, RemoteAuthentificationService remoteAuthentificationService, RemoteStorage remoteStorage,
@@ -119,6 +120,7 @@ import java.util.Vector;
         this.remoteStorage = remoteStorage;
         commandQueue = scheduler;
         this.connectionInfo = connectionInfo;
+        this.schedule = null;
         //    	this.connectionInfo = new RemoteConnectionInfo();
         //    	remoteStorage.setConnectInfo( connectionInfo );
         //    	remoteAuthentificationService.setConnectInfo( connectionInfo );
@@ -294,7 +296,7 @@ import java.util.Vector;
                 getLogger().error("Error refreshing.", e);
             }
         }
-        commandQueue.intervall(0,intervalLength).subscribe((time)->refreshTask.run());
+        schedule = commandQueue.schedule(refreshTask, 0, intervalLength);
         //timerTask = commandQueue.schedule(refreshTask, 0, intervalLength);
     }
 
@@ -431,6 +433,11 @@ import java.util.Vector;
     @Override synchronized public void disconnect() throws RaplaException
     {
         connectionInfo.setAccessToken(null);
+        if (schedule != null)
+        {
+            schedule.dispose();
+        }
+        this.schedule = null;
         this.connectInfo = null;
         connectionInfo.setReconnectInfo(null);
         disconnect("Disconnection from Server initiated");

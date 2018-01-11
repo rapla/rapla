@@ -177,9 +177,6 @@ public interface RaplaFacade
      *  */
     @Deprecated Allocatable newResource() throws RaplaException;
 
-
-
-
     // client/server
     /** check if the reservation can be saved */
     void checkReservation(Reservation reservation) throws RaplaException;

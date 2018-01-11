@@ -901,23 +901,22 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
     {
         //        if (true)
         //            return;
-        Consumer<Long> consumer = (time)->
+        Action task = ()->
         {
-                final RaplaLock.ReadLock lock = disconnectLock.readLock(3);
-                try
+            final RaplaLock.ReadLock lock = disconnectLock.readLock(3);
+            try
+            {
+                if (isConnected())
                 {
-                    if (isConnected())
-                    {
-                        command.run();
-                    }
+                    command.run();
                 }
-                finally
-                {
-                    disconnectLock.unlock(lock);
-                }
+            }
+            finally
+            {
+                disconnectLock.unlock(lock);
+            }
         };
-        final Observable<Long> intervall = scheduler.intervall(delay,period);
-        io.reactivex.disposables.Disposable schedule = intervall.subscribe(consumer);
+        io.reactivex.disposables.Disposable schedule = scheduler.schedule(task, delay,period);
         scheduledTasks.add(schedule);
     }
 

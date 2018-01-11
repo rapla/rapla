@@ -124,7 +124,6 @@ import java.util.TreeSet;
 
     private Collection<Allocatable> updateTemplateNames() throws RaplaException
     {
-
         List<Allocatable> templates = new ArrayList<Allocatable>();
         for (Allocatable template : raplaFacade.getTemplates())
         {

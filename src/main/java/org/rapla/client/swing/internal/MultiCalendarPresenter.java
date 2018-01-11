@@ -41,6 +41,7 @@ import org.rapla.inject.InjectionContext;
 import org.rapla.logger.Logger;
 
 import javax.inject.Inject;
+import javax.swing.*;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -304,7 +305,7 @@ public class MultiCalendarPresenter implements CalendarContainer,Presenter
     {
         if(currentView != null)
         {
-            currentView.scrollToStart();
+            SwingUtilities.invokeLater(()->currentView.scrollToStart());
         }
     }
 

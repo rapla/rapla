@@ -29,6 +29,7 @@ import org.rapla.logger.Logger;
 import org.rapla.plugin.abstractcalendar.RaplaBuilder;
 import org.rapla.scheduler.CommandScheduler;
 import org.rapla.scheduler.Promise;
+import org.rapla.scheduler.ResolvedPromise;
 
 import javax.inject.Inject;
 import javax.inject.Provider;
@@ -40,8 +41,7 @@ import java.util.Set;
 import java.util.function.Function;
 
 @Singleton
-public class Application implements ApplicationView.Presenter, ModificationListener
-{
+public class Application implements ApplicationView.Presenter, ModificationListener {
     public static final String CLOSE_ACTIVITY_ID = "close";
     private final Logger logger;
     private final BundleManager bundleManager;
@@ -63,8 +63,7 @@ public class Application implements ApplicationView.Presenter, ModificationListe
     public Application(final ApplicationView mainView, ApplicationEventBus eventBus, Logger logger, BundleManager bundleManager, ClientFacade clientFacade,
                        AbstractActivityController abstractActivityController, RaplaResources i18n, Map<String, Provider<TaskPresenter>> activityPresenters,
                        Provider<Set<ClientExtension>> clientExtensions, Provider<CalendarSelectionModel> calendarModel, CommandScheduler scheduler,
-                       DialogUiFactoryInterface dialogUiFactory)
-    {
+                       DialogUiFactoryInterface dialogUiFactory) {
         this.mainView = mainView;
         this.abstractActivityController = abstractActivityController;
         this.bundleManager = bundleManager;
@@ -80,15 +79,12 @@ public class Application implements ApplicationView.Presenter, ModificationListe
         mainView.setPresenter(this);
     }
 
-    public boolean stopAction(ApplicationEvent activity)
-    {
+    public boolean stopAction(ApplicationEvent activity) {
         final Allocatable template = clientFacade.getTemplate();
-        if ( template != null)
-        {
-            final Boolean annotation =  (Boolean)template.getClassification().getValue(ResourceAnnotations.FIXEDTIMEANDDURATION);
-            if (annotation != null && !annotation)
-            {
-                clientFacade.setTemplate( null);
+        if (template != null) {
+            final Boolean annotation = (Boolean) template.getClassification().getValue(ResourceAnnotations.FIXEDTIMEANDDURATION);
+            if (annotation != null && !annotation) {
+                clientFacade.setTemplate(null);
             }
         }
         mainView.removeWindow(activity);
@@ -96,26 +92,20 @@ public class Application implements ApplicationView.Presenter, ModificationListe
         return true;
     }
 
-    public boolean startAction(ApplicationEvent activity, boolean isPlace)
-    {
+    public boolean startAction(ApplicationEvent activity, boolean isPlace) {
         final String activityId = activity.getApplicationEventId();
-        if (activityId.equals(Application.CLOSE_ACTIVITY_ID))
-        {
+        if (activityId.equals(Application.CLOSE_ACTIVITY_ID)) {
             mainView.close();
             clientFacade.removeModificationListener(this);
-            try
-            {
+            try {
                 closeCallback.run();
-            }
-            catch (Exception ex)
-            {
+            } catch (Exception ex) {
                 logger.error(ex.getMessage(), ex);
             }
             return false;
         }
 
-        if (mainView.hasWindow(activity))
-        {
+        if (mainView.hasWindow(activity)) {
             mainView.requestFocus(activity);
             return false;
         }
@@ -123,34 +113,27 @@ public class Application implements ApplicationView.Presenter, ModificationListe
         final PopupContext popupContext = mainView.createPopupContext();//activity.getPopupContext();
 
         final Provider<TaskPresenter> taskPresenterProvider = activityPresenters.get(activityId);
-        if (taskPresenterProvider == null)
-        {
+        if (taskPresenterProvider == null) {
             return false;
         }
         final TaskPresenter taskPresenter = taskPresenterProvider.get();
-        if (taskPresenter == null)
-        {
+        if (taskPresenter == null) {
             return false;
         }
         final Promise<RaplaWidget> objectRaplaWidget = taskPresenter.startActivity(activity);
-        if (objectRaplaWidget == null)
-        {
+        if (objectRaplaWidget == null) {
             return false;
         }
         final Promise<Void> widgetPromise = objectRaplaWidget.thenAccept((widget) ->
         {
-            if (isPlace)
-            {
+            if (isPlace) {
                 placeTaskPresenter = taskPresenter;
                 mainView.updateContent(widget);
-                if (taskPresenter instanceof CalendarPlacePresenter)
-                {
-                    Action runnable = () -> ((CalendarPlacePresenter) taskPresenter).start();
-                    scheduler.delay(300).thenRun(()->scheduler.scheduleSynchronized(this, runnable));
+                if (taskPresenter instanceof CalendarPlacePresenter) {
+                    CalendarPlacePresenter calendarPlacePresenter = (CalendarPlacePresenter) taskPresenter;
+                    scheduler.delay(()->calendarPlacePresenter.start(),300);
                 }
-            }
-            else
-            {
+            } else {
                 Function<ApplicationEvent, Boolean> windowClosingFunction = (event) ->
                 {
                     Promise<Void> promise = taskPresenter.processStop(event, widget).thenRun(() ->
@@ -170,47 +153,38 @@ public class Application implements ApplicationView.Presenter, ModificationListe
         return true;
     }
 
-    private void handleException(Promise<Void> promise, PopupContext popupContext)
-    {
+    private void handleException(Promise<Void> promise, PopupContext popupContext) {
         promise.exceptionally(ex ->
         {
             final Throwable cause = ex.getCause();
-            if (cause != null)
-            {
+            if (cause != null) {
                 ex = cause;
             }
-            if (!(ex instanceof CommandAbortedException))
-            {
+            if (!(ex instanceof CommandAbortedException)) {
                 showException(ex, popupContext);
             }
             return Promise.VOID;
         });
     }
 
-    private void showException(Throwable ex, PopupContext popupContext)
-    {
+    private void showException(Throwable ex, PopupContext popupContext) {
         dialogUiFactory.showException(ex, popupContext);
     }
 
-    private void initLanguage(boolean defaultLanguageChosen) throws RaplaException
-    {
+    private void initLanguage(boolean defaultLanguageChosen) throws RaplaException {
         RaplaFacade facade = this.clientFacade.getRaplaFacade();
         User user = clientFacade.getUser();
-        if (!defaultLanguageChosen)
-        {
+        if (!defaultLanguageChosen) {
             facade.update(facade.getPreferences(user),
-            (prefs) ->
-            {
-                String currentLanguage = i18n.getLang();
-                prefs.putEntry(RaplaLocale.LANGUAGE_ENTRY, currentLanguage);
-            }).exceptionally((ex) -> logger.error("Can't  store language change", ex));
-        }
-        else
-        {
+                    (prefs) ->
+                    {
+                        String currentLanguage = i18n.getLang();
+                        prefs.putEntry(RaplaLocale.LANGUAGE_ENTRY, currentLanguage);
+                    }).exceptionally((ex) -> logger.error("Can't  store language change", ex));
+        } else {
             final String systemDefaultLang = facade.getSystemPreferences().getEntryAsString(RaplaLocale.LANGUAGE_ENTRY, null);
             String language = facade.getPreferences(user).getEntryAsString(RaplaLocale.LANGUAGE_ENTRY, systemDefaultLang);
-            if (language != null)
-            {
+            if (language != null) {
                 BundleManager localeSelector = (BundleManager) bundleManager;
                 localeSelector.setLanguage(language);
             }
@@ -221,17 +195,14 @@ public class Application implements ApplicationView.Presenter, ModificationListe
 
     private Runnable closeCallback;
 
-    public void start(boolean defaultLanguageChosen, Runnable closeCallback) throws RaplaException
-    {
+    public void start(boolean defaultLanguageChosen, Runnable closeCallback) throws RaplaException {
         this.closeCallback = closeCallback;
         initLanguage(defaultLanguageChosen);
 
         ModifiableCalendarState calendarState = new ModifiableCalendarState(clientFacade, calendarModelProvider);
 
-        ((FacadeImpl) clientFacade).addDirectModificationListener(new ModificationListener()
-        {
-            public void dataChanged(ModificationEvent evt) throws RaplaException
-            {
+        ((FacadeImpl) clientFacade).addDirectModificationListener(new ModificationListener() {
+            public void dataChanged(ModificationEvent evt) throws RaplaException {
                 calendarState.dataChanged(evt);
             }
         });
@@ -239,8 +210,7 @@ public class Application implements ApplicationView.Presenter, ModificationListe
         final RaplaFacade raplaFacade = clientFacade.getRaplaFacade();
         raplaFacade.getReservations(clientFacade.getUser(), null, null, null);
         // start client provides
-        for (ClientExtension ext : clientExtensions.get())
-        {
+        for (ClientExtension ext : clientExtensions.get()) {
             ext.start();
         }
 
@@ -248,8 +218,7 @@ public class Application implements ApplicationView.Presenter, ModificationListe
         String title = raplaFacade.getSystemPreferences().getEntryAsString(AbstractRaplaLocale.TITLE, i18n.getString("rapla.title"));
         mainView.init(showToolTips, title);
 
-        try
-        {
+        try {
             AbstractActivityController am = abstractActivityController;
             am.setApplication(this);
             am.init();
@@ -261,94 +230,73 @@ public class Application implements ApplicationView.Presenter, ModificationListe
             clientFacade.addModificationListener(this);
             final String name = user.getName() == null || user.getName().isEmpty() ? user.getUsername() : user.getName();
             String statusMessage = i18n.format("rapla.welcome", name);
-            if (admin)
-            {
+            if (admin) {
                 statusMessage += " " + i18n.getString("admin.login");
             }
             mainView.setStatusMessage(statusMessage, admin);
-            scheduler.delay(2000).thenRun(() ->
-            {
-                mainView.setStatusMessage(name, admin);
-            });
-
-        }
-        catch (RaplaException e)
-        {
+            scheduler.delay(()->mainView.setStatusMessage(name, admin),2000);
+        } catch (RaplaException e) {
             logger.error(e.getMessage(), e);
         }
     }
 
-    protected boolean shouldExit()
-    {
-        try
-        {
+    protected Promise<Boolean> shouldExit() {
+        try {
             PopupContext popupContext = mainView.createPopupContext();
-            DialogInterface dlg = dialogUiFactory.create(popupContext, true, i18n.getString("exit.title"), i18n.getString("exit.question"),
-                    new String[] { i18n.getString("exit.ok"), i18n.getString("exit.abort") });
+            DialogInterface dlg = dialogUiFactory.create(popupContext, false, i18n.getString("exit.title"), i18n.getString("exit.question"),
+                    new String[]{i18n.getString("exit.ok"), i18n.getString("exit.abort")});
             dlg.setIcon("icon.question");
             //dlg.getButton(0).setIcon(getIcon("icon.confirm"));
             dlg.getAction(0).setIcon("icon.abort");
             dlg.setDefault(1);
-            dlg.start(true);
-            return (dlg.getSelectedIndex() == 0);
-        }
-        catch (RaplaException e)
-        {
+            final Promise<Integer> start = dlg.start(true);
+            final Promise<Boolean> result = start.thenApply((index) -> index == 0);
+            return result;
+        } catch (RaplaException e) {
             logger.error(e.getMessage(), e);
-            return true;
+            return new ResolvedPromise<>(Boolean.TRUE);
         }
 
     }
 
     @Override
-    public boolean mainClosing()
-    {
-        Action runnable = () ->
-        {
-            if (!shouldExit())
-            {
-                return;
-            }
-            eventBus.publish(new ApplicationEvent(CLOSE_ACTIVITY_ID, "", mainView.createPopupContext(), null));
-        };
-        scheduler.scheduleSynchronized(this, runnable);
+    public boolean mainClosing() {
+        shouldExit().thenAccept((shouldExit) -> {
+                    if (shouldExit) {
+                        eventBus.publish(new ApplicationEvent(CLOSE_ACTIVITY_ID, "", mainView.createPopupContext(), null));
+                    }
+                }
+        );
         return false;
     }
 
     @Override
-    public void menuClicked(String action)
-    {
+    public void menuClicked(String action) {
     }
 
     @Override
-    public void dataChanged(ModificationEvent evt) throws RaplaException
-    {
-        if (evt.isSwitchTemplateMode())
-        {
+    public void dataChanged(ModificationEvent evt) throws RaplaException {
+        if (evt.isSwitchTemplateMode()) {
             User user = clientFacade.getUser();
             String message = i18n.getString("user") + " " + user.toString();
             Allocatable template = clientFacade.getTemplate();
             final boolean admin = user.isAdmin();
-            if (template != null)
-            {
+            if (template != null) {
                 Locale locale = i18n.getLocale();
                 message = i18n.getString("edit-templates") + " [" + template.getName(locale) + "] " + message;
             }
             mainView.setStatusMessage(message, admin);
         }
         mainView.updateView(evt);
-        if ( placeTaskPresenter != null)
-        {
+        if (placeTaskPresenter != null) {
             placeTaskPresenter.updateView(evt);
         }
-        for (TaskPresenter p : openDialogsPresenter.values())
-        {
+        for (TaskPresenter p : openDialogsPresenter.values()) {
             p.updateView(evt);
         }
     }
 
-    public void stop()
-    {
+    public void stop() {
         mainView.close();
     }
 }

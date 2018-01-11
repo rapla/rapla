@@ -12,7 +12,10 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.plugin.notification.server;
 
+import io.reactivex.disposables.Disposable;
+import io.reactivex.functions.Action;
 import org.rapla.RaplaResources;
+import org.rapla.client.swing.toolkit.FrameControllerList;
 import org.rapla.components.util.DateTools;
 import org.rapla.entities.User;
 import org.rapla.entities.configuration.Preferences;
@@ -65,7 +68,7 @@ public class NotificationService implements ServerExtension
     private static final long VALID_LOCK = DateTools.MILLISECONDS_PER_MINUTE * 5;
     private final RaplaFacade raplaFacade;
     private final Provider<MailToUserImpl> mailToUserInterface;
-    protected CommandScheduler mailQueue;
+    protected CommandScheduler scheduler;
     private final AppointmentFormater appointmentFormater;
     private final NotificationResources notificationI18n;
     private final RaplaResources raplaI18n;
@@ -73,10 +76,11 @@ public class NotificationService implements ServerExtension
 
     private final Logger logger;
     private final NotificationStorage notificationStorage;
+    private List<Disposable> scheduleList = new ArrayList<>();
 
     @Inject
     public NotificationService(RaplaFacade facade, RaplaResources i18nBundle, NotificationResources notificationI18n, AppointmentFormater appointmentFormater,
-            Provider<MailToUserImpl> mailToUserInterface, CommandScheduler mailQueue, Logger logger, NotificationStorage notificationStorage)
+                               Provider<MailToUserImpl> mailToUserInterface, CommandScheduler scheduler, Logger logger, NotificationStorage notificationStorage)
 
     {
         this.notificationI18n = notificationI18n;
@@ -86,7 +90,7 @@ public class NotificationService implements ServerExtension
         this.logger = logger.getChildLogger("notification");
         //setChildBundleName( NotificationPlugin.RESOURCE_FILE );
         this.mailToUserInterface = mailToUserInterface;
-        this.mailQueue = mailQueue;
+        this.scheduler = scheduler;
         //raplaFacade.addAllocationChangedListener(this);
         this.appointmentFormater = appointmentFormater;
         this.operator = (CachableStorageOperator) facade.getOperator();
@@ -98,9 +102,8 @@ public class NotificationService implements ServerExtension
     {
         getLogger().info("NotificationServer Plugin started");
         getLogger().info("scheduling command for NotificationSercice");
-        mailQueue.intervall( 0,30000l).subscribe((time) ->
+        Action sentUpdateMails = () ->
         {
-
             Date lastUpdated = null;
             Date updatedUntil = null;
             try
@@ -113,7 +116,7 @@ public class NotificationService implements ServerExtension
             }
             catch (Throwable t)
             {
-                NotificationService.this.logger.warn("Could not send mail: " + t.getMessage());
+                NotificationService.this.logger.warn("Could not prepare mail: " + t.getMessage());
             }
             finally
             {
@@ -122,9 +125,9 @@ public class NotificationService implements ServerExtension
                     operator.releaseLock(NOTIFICATION_LOCK_ID, updatedUntil);
                 }
             }
-        });
-        mailQueue.intervall( 45000l,DateTools.MILLISECONDS_PER_MINUTE * 15 + 531l).subscribe(
-        (time) ->
+        };
+        scheduleList.add( scheduler.schedule( sentUpdateMails,0,30000l));
+        Action retryMails = () ->
         {
             Date lastUpdated = null;
             try
@@ -144,7 +147,13 @@ public class NotificationService implements ServerExtension
                     operator.releaseLock(NOTIFICATION_LOCK_ID, null);
                 }
             }
-        });
+        };
+        scheduleList.add(scheduler.schedule( retryMails,45000l,DateTools.MILLISECONDS_PER_MINUTE * 15 + 531l));
+    }
+
+    public void stop()
+    {
+        scheduleList.forEach(Disposable::dispose);
     }
 
     protected Logger getLogger()

@@ -1,5 +1,6 @@
 package org.rapla.plugin.exchangeconnector.server;
 
+import io.reactivex.disposables.Disposable;
 import io.reactivex.functions.Action;
 import microsoft.exchange.webservices.data.core.exception.http.HttpErrorException;
 import org.rapla.RaplaResources;
@@ -93,6 +94,7 @@ public class SynchronisationManager implements ServerExtension
     CommandScheduler scheduler;
     private final Set<ExchangeConfigExtensionPoint> configExtensions;
     private final MailToUserImpl mailToUserInterface;
+    Disposable schedule;
 
     @Inject
     public SynchronisationManager(RaplaFacade facade, RaplaResources i18nRapla, ExchangeConnectorResources i18nExchange, Logger logger,
@@ -147,7 +149,14 @@ public class SynchronisationManager implements ServerExtension
                 }
             }
         };
-        scheduler.intervall(0,SCHEDULE_PERIOD).subscribe((time)->synchronizeAction.run());
+        schedule = scheduler.schedule(synchronizeAction, 0, SCHEDULE_PERIOD);
+    }
+
+    @Override
+    public void stop() {
+        if ( schedule != null) {
+            schedule.dispose();
+        }
     }
 
     class RetryCommand implements Action

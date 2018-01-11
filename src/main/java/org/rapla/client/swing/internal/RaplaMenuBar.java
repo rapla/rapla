@@ -597,7 +597,7 @@ public class RaplaMenuBar extends RaplaGUIComponent
                     // the following creates the dialog that pops up, when we click
                     // on the license entry within the help section of the menu menubar
                     // we call the create Method of the DialogUI class and give it all necessary things
-                    DialogInterface dialog = dialogUiFactory.create(createPopupContext(), true, new JScrollPane((Component) welcomeField.getComponent()),
+                    DialogInterface dialog = dialogUiFactory.create(createPopupContext(), false, new JScrollPane((Component) welcomeField.getComponent()),
                             new String[] { getString("ok") });
                     // setting the dialog's title
                     dialog.setTitle(name);

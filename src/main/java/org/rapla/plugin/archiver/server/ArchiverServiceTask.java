@@ -1,5 +1,6 @@
 package org.rapla.plugin.archiver.server;
 
+import io.reactivex.disposables.Disposable;
 import io.reactivex.functions.Action;
 import org.rapla.components.util.DateTools;
 import org.rapla.entities.configuration.RaplaConfiguration;
@@ -22,6 +23,7 @@ public class ArchiverServiceTask  implements ServerExtension
     final Logger logger;
     final RaplaFacade facade;
     final ImportExportManager importExportManager;
+    Disposable schedule;
     @Inject
 	public ArchiverServiceTask(  CommandScheduler timer, final Logger logger, final RaplaFacade facade, final ImportExportManager importExportManager)
             throws RaplaInitializationException
@@ -50,7 +52,15 @@ public class ArchiverServiceTask  implements ServerExtension
         if ( days != -20 || export)
         {
             // Call it each hour
-            timer.intervall(0,DateTools.MILLISECONDS_PER_HOUR).subscribe((time)->doArchive(export,days));
+            schedule = timer.schedule(() -> doArchive(export, days), 0, DateTools.MILLISECONDS_PER_HOUR);
+        }
+    }
+    
+    public void stop()
+    {
+        if ( schedule != null)
+        {
+            schedule.dispose();
         }
     }
 
@@ -67,7 +77,7 @@ public class ArchiverServiceTask  implements ServerExtension
                 ArchiverServiceImpl.delete(days,facade,logger);
             }
         }
-        catch (RaplaException e) {
+        catch (Exception e) {
             logger.error("Could not execute archiver task ", e);
         }
     }

@@ -62,7 +62,7 @@ public class ServerServiceImpl implements ServerServiceContainer
     private final CommandScheduler scheduler;
 
     final Set<ServletRequestPreprocessor> requestPreProcessors;
-
+    final Map<String, ServerExtension> stringServerExtensionMap;
     public Collection<ServletRequestPreprocessor> getServletRequestPreprocessors()
     {
         return requestPreProcessors;
@@ -155,7 +155,7 @@ public class ServerServiceImpl implements ServerServiceContainer
             }
             this.requestPreProcessors = requestPreProcessors.get();
 
-            final Map<String, ServerExtension> stringServerExtensionMap = serverExtensions.get();
+            stringServerExtensionMap = serverExtensions.get();
             for (Map.Entry<String, ServerExtension> extensionEntry : stringServerExtensionMap.entrySet())
             {
                 final String key = extensionEntry.getKey();
@@ -216,6 +216,12 @@ public class ServerServiceImpl implements ServerServiceContainer
 
     private void stop()
     {
+        for (Map.Entry<String, ServerExtension> extensionEntry : stringServerExtensionMap.entrySet())
+        {
+            final String key = extensionEntry.getKey();
+            ServerExtension extension = extensionEntry.getValue();
+            extension.stop();
+        }
         ((DefaultScheduler) scheduler).dispose();
         boolean wasConnected = operator.isConnected();
         Logger logger = getLogger();
@@ -230,6 +236,7 @@ public class ServerServiceImpl implements ServerServiceContainer
         finally
         {
         }
+
         if (wasConnected)
         {
             logger.info("Storage service stopped");

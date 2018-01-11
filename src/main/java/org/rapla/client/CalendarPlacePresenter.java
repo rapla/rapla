@@ -56,7 +56,7 @@ import java.util.Date;
 
     @SuppressWarnings({ "rawtypes", "unchecked" }) @Inject public CalendarPlacePresenter(final CalendarPlaceView view, final ClientFacade clientFacade,
             final RaplaResources i18n, final CalendarSelectionModel model, final Logger logger, final CalendarEventBus eventBus,/*, Map<String, CalendarPlugin> views*/
-            ResourceSelectionPresenter resourceSelectionPresenter, SavedCalendarInterface savedViews, ConflictSelectionPresenter conflictsView,
+            ResourceSelectionPresenter resourceSelectionPresenter, SavedCalendarInterface savedViews, ConflictSelectionPresenter conflictsSelectionPresenter,
             CalendarContainer calendarContainer,final CommandScheduler scheduler, DialogUiFactoryInterface dialogUiFactory) throws RaplaInitializationException
     {
         this.view = view;
@@ -69,7 +69,7 @@ import java.util.Date;
         this.eventBus = eventBus;
         this.resourceSelectionPresenter = resourceSelectionPresenter;
         this.savedViews = savedViews;
-        this.conflictsView = conflictsView;
+        this.conflictsView = conflictsSelectionPresenter;
         this.calendarContainer = calendarContainer;
         resourceSelectionPresenter.setCallback(() ->
         {
@@ -77,8 +77,8 @@ import java.util.Date;
         });
         view.addSavedViews(savedViews);
         view.addResourceSelectionView(resourceSelectionPresenter.provideContent());
-        view.addConflictsView(conflictsView.getConflictsView());
-        view.addSummaryView(conflictsView.getSummaryComponent());
+        view.addConflictsView(conflictsSelectionPresenter.getConflictsView());
+        view.addSummaryView(conflictsSelectionPresenter.getSummaryComponent());
         view.addCalendarView(calendarContainer.provideContent());
 
         updateOwnReservationsSelected();
@@ -88,9 +88,7 @@ import java.util.Date;
             calendarContainer.init(true, () ->
             {
                 calendarUpdated();
-                Action runnable = () ->start();
-                scheduler.scheduleSynchronized(this,runnable);
-
+                start();
             });
         }
         catch (RaplaException e)
@@ -109,7 +107,7 @@ import java.util.Date;
                         modificationEvt.addChanged(preferences);
                         resourceSelectionPresenter.dataChanged(modificationEvt);
                         calendarContainer.update(modificationEvt);
-                        conflictsView.dataChanged(modificationEvt);
+                        conflictsSelectionPresenter.dataChanged(modificationEvt);
                     }
                     catch (Exception ex)
                     {
