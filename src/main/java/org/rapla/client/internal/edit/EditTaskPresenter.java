@@ -2,6 +2,7 @@ package org.rapla.client.internal.edit;
 
 import com.google.web.bindery.event.shared.EventBus;
 import io.reactivex.functions.Consumer;
+import io.reactivex.functions.Function;
 import org.rapla.RaplaResources;
 import org.rapla.client.EditApplicationEventContext;
 import org.rapla.client.PopupContext;
@@ -393,16 +394,9 @@ public class EditTaskPresenter implements TaskPresenter
                     {
                         allocatableIds.add(allocatable.getReference());
                     }
-                    doMerge(selectedAllocatable, allocatableIds);
-                    close( applicationEvent);
-                    try
-                    {
-                        raplaFacade.refresh();
-                    }
-                    catch (RaplaException e)
-                    {
-                        dialogUiFactory.showException(e, null);
-                    }
+                    final Promise<Void> result = doMerge(selectedAllocatable, allocatableIds).thenRun(() -> close(applicationEvent)).thenCompose((t)
+                        -> raplaFacade.refreshAsync());
+                    handleException(result, popupContext);
                 }
                 else
                 {
@@ -526,17 +520,17 @@ public class EditTaskPresenter implements TaskPresenter
         );
     }
 
-    public void doMerge(Allocatable selectedObject, Set<ReferenceInfo<Allocatable>> allocatableIds)
+    private Promise<Allocatable> doMerge(Allocatable selectedObject, Set<ReferenceInfo<Allocatable>> allocatableIds)
     {
         try
         {
             allocatableIds.remove(selectedObject.getReference());
             final User user = clientFacade.getUser();
-            raplaFacade.doMerge(selectedObject, allocatableIds, user);
+            return raplaFacade.doMerge(selectedObject, allocatableIds, user);
         }
         catch (RaplaException e)
         {
-            dialogUiFactory.showWarning(e.getMessage(), null);
+            return new ResolvedPromise<>(e);
         }
     }
 

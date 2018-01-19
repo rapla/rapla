@@ -24,6 +24,8 @@ import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.TypedComponentRole;
 import org.rapla.logger.Logger;
 
+import java.util.Collections;
+
 public class SaveableToggleAction extends RaplaAction
 {
 
@@ -51,21 +53,15 @@ public class SaveableToggleAction extends RaplaAction
     {
         if (isModifyPreferencesAllowed())
         {
-            try
-            {
-                final User user = getUser();
-                final RaplaFacade facade = getFacade();
-                Preferences prefs = facade.edit( facade.getPreferences( user));
-                final boolean oldEntry = prefs.getEntryAsBoolean(configEntry, true);
-                boolean newSelected = !oldEntry;
-                prefs.putEntry(configEntry, newSelected);
-                facade.store(prefs);
-            }
-            catch (Exception ex)
-            {
-                dialogUiFactory.showException(ex, new SwingPopupContext(null, null));
-                return;
-            }
+            final RaplaFacade facade = getFacade();
+            facade.getScheduler().supply(
+                    ()->facade.getPreferences(getUser())).thenAccept(
+                            (preferences)->facade.editAsync(preferences).thenCompose(prefs-> {
+                            final boolean oldEntry = prefs.getEntryAsBoolean(configEntry, true);
+                            boolean newSelected = !oldEntry;
+                            prefs.putEntry(configEntry, newSelected);
+                            return facade.dispatch(Collections.singleton(prefs),Collections.emptySet());
+                        })).exceptionally(ex->dialogUiFactory.showException(ex, new SwingPopupContext(null, null)));
         }
     }
 

@@ -57,6 +57,8 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 public abstract class ReservationControllerImpl implements ReservationController {
     /**
@@ -356,41 +358,46 @@ public abstract class ReservationControllerImpl implements ReservationController
         public Promise<Void> undo() {
             return super.undo().thenCompose((unusedParam) ->
             {
-                HashMap<Reservation, Reservation> toUpdate = new LinkedHashMap<Reservation, Reservation>();
+                Set<Reservation> toUpdateRequest = new HashSet();
                 for (Appointment appointment : appointmentsToRemove) {
                     Reservation reservation = parentReservations.get(appointment);
                     if (reservationsToRemove.contains(reservation)) {
                         continue;
                     }
-                    Reservation mutableReservation = toUpdate.get(reservation);
-                    if (mutableReservation == null) {
-                        mutableReservation = getFacade().edit(reservation);
-                        toUpdate.put(reservation, mutableReservation);
-                    }
-                    mutableReservation.addAppointment(appointment);
-                    Allocatable[] removedAllocatables = allocatablesRemoved.get(appointment);
-                    mutableReservation.setRestrictionForAppointment(appointment, removedAllocatables);
+                    toUpdateRequest.add(reservation);
                 }
                 for (Appointment appointment : exceptionsToAdd.keySet()) {
                     Reservation reservation = appointment.getReservation();
-                    Reservation mutableReservation = toUpdate.get(reservation);
-                    if (mutableReservation == null) {
-                        mutableReservation = getFacade().edit(reservation);
-                        toUpdate.put(reservation, mutableReservation);
+                    toUpdateRequest.add( reservation);
+                }
+                final Promise<Map<ReferenceInfo<Reservation>, Reservation>> mapPromise = getFacade().editAsyncList(toUpdateRequest).thenApply(mutableReservations ->
+                        mutableReservations.stream().collect(Collectors.toMap(Reservation::getReference, Function.identity())));
+                return mapPromise.thenCompose( toUpdateMap-> {
+                    for (Appointment appointment : appointmentsToRemove) {
+                        final Reservation reservation = appointment.getReservation();
+                        if (reservationsToRemove.contains(reservation)) {
+                            continue;
+                        }
+                        Reservation mutableReservation = toUpdateMap.get(reservation.getReference());
+                        mutableReservation.addAppointment(appointment);
+                        Allocatable[] removedAllocatables = allocatablesRemoved.get(appointment);
+                        mutableReservation.setRestrictionForAppointment(appointment, removedAllocatables);
                     }
-                    Appointment found = mutableReservation.findAppointment(appointment);
-                    if (found != null) {
-                        Repeating repeating = found.getRepeating();
-                        if (repeating != null) {
-                            List<Date> list = exceptionsToAdd.get(appointment);
-                            for (Date exception : list) {
-                                repeating.removeException(exception);
+                    for (Appointment appointment : exceptionsToAdd.keySet()) {
+                        Reservation mutableReservation = toUpdateMap.get(appointment.getReservation().getReference());
+                        Appointment found = mutableReservation.findAppointment(appointment);
+                        if (found != null) {
+                            Repeating repeating = found.getRepeating();
+                            if (repeating != null) {
+                                List<Date> list = exceptionsToAdd.get(appointment);
+                                for (Date exception : list) {
+                                    repeating.removeException(exception);
+                                }
                             }
                         }
                     }
-                }
-                final Promise<Void> dispatch = facade.dispatch(toUpdate.values(), Collections.emptyList());
-                return dispatch;
+                    return facade.dispatch(toUpdateMap.values(), Collections.emptyList());
+                });
             });
         }
 

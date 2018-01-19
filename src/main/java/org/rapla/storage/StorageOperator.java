@@ -134,7 +134,7 @@ public interface StorageOperator extends EntityResolver {
 
     FunctionFactory getFunctionFactory(String functionName);
  //   List<Allocatable> queryDependent(Collection<Allocatable> allocatables);
-    void doMerge(Allocatable selectedObject, Set<ReferenceInfo<Allocatable>> allocatableIds, User user) throws RaplaException;
+    Promise<Allocatable> doMerge(Allocatable selectedObject, Set<ReferenceInfo<Allocatable>> allocatableIds, User user);
 
     Collection<Allocatable> getDependent(Collection<Allocatable> allocatables);
 

@@ -665,7 +665,7 @@ import java.util.Set;
         return ignoreConflictsWith;
     }
 
-    @Override public void doMerge(MergeRequest job) throws RaplaException
+    @Override public Promise<Allocatable> doMerge(MergeRequest job) throws RaplaException
     {
         final User sessionUser = checkSessionUser();
         AllocatableImpl allocatable = job.getAllocatable();
@@ -678,7 +678,7 @@ import java.util.Set;
             allocReferences.add(refInfo);
             // TODO check write permissions
         }
-        operator.doMerge(allocatable, allocReferences, sessionUser);
+        return operator.doMerge(allocatable, allocReferences, sessionUser);
     }
 
     //			public void logEntityNotFound(String logMessage,String... referencedIds)

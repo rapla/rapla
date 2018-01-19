@@ -66,6 +66,7 @@ import org.rapla.facade.PeriodModel;
 import org.rapla.facade.RaplaComponent;
 import org.rapla.facade.RaplaFacade;
 import org.rapla.facade.UpdateErrorListener;
+import org.rapla.facade.server.RaplaServerFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaInitializationException;
 import org.rapla.inject.DefaultImplementation;
@@ -108,7 +109,7 @@ import java.util.Vector;
  */
 @Singleton
 @DefaultImplementationRepeatable({ @DefaultImplementation(of = RaplaFacade.class, context = InjectionContext.all), @DefaultImplementation(of = ClientFacade.class, context = InjectionContext.client) })
-public class FacadeImpl implements RaplaFacade,ClientFacade,StorageUpdateListener {
+public class FacadeImpl implements RaplaFacade,ClientFacade,StorageUpdateListener, RaplaServerFacade {
 	protected CommandScheduler notifyQueue;
 	private String workingUserId = null;
 	private StorageOperator operator;
@@ -241,6 +242,18 @@ public class FacadeImpl implements RaplaFacade,ClientFacade,StorageUpdateListene
 		if (operator.supportsActiveMonitoring())
 		{
 			operator.refresh();
+		}
+	}
+
+	public Promise<Void> refreshAsync()  {
+		try {
+			if (operator.supportsActiveMonitoring()) {
+				operator.refresh();
+			}
+			return ResolvedPromise.VOID_PROMISE;
+		} catch (RaplaException ex)
+		{
+			return new ResolvedPromise<>(ex);
 		}
 	}
 
@@ -1290,10 +1303,6 @@ public class FacadeImpl implements RaplaFacade,ClientFacade,StorageUpdateListene
 		return operator.getUsername(userId);
 	}
 
-	public void checkReservation(Reservation reservation) throws RaplaException {
-		ReservationImpl.checkReservation(i18n, reservation, operator);
-	}
-
 	@Override
 	public <T extends Entity> T edit(T obj) throws RaplaException {
 		if (obj == null)
@@ -1664,7 +1673,7 @@ public class FacadeImpl implements RaplaFacade,ClientFacade,StorageUpdateListene
             }
             final Class typeClass = toStore.getTypeClass();
             if (typeClass == Reservation.class) {
-                checkReservation((Reservation) toStore);
+                ReservationImpl.checkReservation(i18n,(Reservation) toStore,operator);
             }
         }
 		List<T> transientCategories = new ArrayList<>();
@@ -1749,9 +1758,9 @@ public class FacadeImpl implements RaplaFacade,ClientFacade,StorageUpdateListene
 	}
 	
 	@Override
-	public void doMerge(Allocatable selectedObject, Set<ReferenceInfo<Allocatable>> allocatableIds, User user) throws RaplaException
+	public Promise<Allocatable> doMerge(Allocatable selectedObject, Set<ReferenceInfo<Allocatable>> allocatableIds, User user)
 	{
-	    operator.doMerge(selectedObject, allocatableIds, user);
+		return operator.doMerge(selectedObject, allocatableIds, user);
 	}
 
 

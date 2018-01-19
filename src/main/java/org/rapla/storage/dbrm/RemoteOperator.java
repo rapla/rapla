@@ -53,6 +53,7 @@ import org.rapla.inject.InjectionContext;
 import org.rapla.logger.Logger;
 import org.rapla.scheduler.CommandScheduler;
 import org.rapla.scheduler.Promise;
+import org.rapla.scheduler.ResolvedPromise;
 import org.rapla.storage.PreferencePatch;
 import org.rapla.storage.RaplaSecurityException;
 import org.rapla.storage.StorageOperator;
@@ -1310,26 +1311,25 @@ import java.util.Vector;
         }
     }
 
-    @Override public void doMerge(Allocatable selectedObject, Set<ReferenceInfo<Allocatable>> allocatableIds, User user) throws RaplaException
+    @Override public Promise<Allocatable> doMerge(Allocatable selectedObject, Set<ReferenceInfo<Allocatable>> allocatableIds, User user)
     {
-        checkConnected();
-        RemoteStorage serv = getRemoteStorage();
         try
         {
+            checkConnected();
+            RemoteStorage serv = getRemoteStorage();
             List<String> allocIds = new ArrayList<>(allocatableIds.size());
             for (ReferenceInfo<Allocatable> allocId : allocatableIds)
             {
                 allocIds.add(allocId.getId());
             }
             serv.doMerge(new MergeRequest((AllocatableImpl) selectedObject, allocIds.toArray(new String[allocatableIds.size()])));
-        }
-        catch (RaplaException ex)
-        {
-            throw ex;
+            refresh();
+            Allocatable newAlloc = resolve(selectedObject.getReference());
+            return new ResolvedPromise<>(newAlloc);
         }
         catch (Exception ex)
         {
-            throw new RaplaException(ex);
+            return new ResolvedPromise<>(ex);
         }
     }
 

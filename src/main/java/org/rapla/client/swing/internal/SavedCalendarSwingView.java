@@ -421,24 +421,25 @@ public class SavedCalendarSwingView extends RaplaGUIComponent implements SavedCa
         final User user = getUser();
         final RaplaFacade facade = getFacade();
 
-        final Preferences preferences = facade.edit(facade.getPreferences(user));
-        Map<String,CalendarModelConfiguration> exportMap= preferences.getEntry(AutoExportPlugin.PLUGIN_ENTRY);
-        Map<String,CalendarModelConfiguration> newMap = new TreeMap<String,CalendarModelConfiguration>();
-        for (Iterator<String> it= exportMap.keySet().iterator();it.hasNext();) {
-            String filename = it.next();
-            if (!filename.equals( selectedFile.name)) {
-            	CalendarModelConfiguration entry = exportMap.get( filename );
-				newMap.put( filename, entry);
-            }
-        }
-        preferences.putEntry(AutoExportPlugin.PLUGIN_ENTRY, facade.newRaplaMapForMap(newMap));
-        // TODO Enable undo with a specific implementation, that does not overwrite all preference changes and regards dynamic type changes
-        //        Collection<Preferences> originalList = Collections.singletonList(getQuery().getPreferences());
-        //        Collection<Preferences> newList = Collections.singletonList(preferences);
-        //        String commandoName = getString("delete")+ " " + getString("calendar") + " " +  selectedFile.name;
-        //        SaveUndo<Preferences> cmd = new SaveUndo<Preferences>(getContext(), newList, originalList, commandoName);
-        //        getModification().getCommandHistory().storeAndExecute( cmd);
-
+        facade.editAsync(facade.getPreferences(user)).thenApply(preferences -> {
+                    Map<String, CalendarModelConfiguration> exportMap = preferences.getEntry(AutoExportPlugin.PLUGIN_ENTRY);
+                    Map<String, CalendarModelConfiguration> newMap = new TreeMap<String, CalendarModelConfiguration>();
+                    for (Iterator<String> it = exportMap.keySet().iterator(); it.hasNext(); ) {
+                        String filename = it.next();
+                        if (!filename.equals(selectedFile.name)) {
+                            CalendarModelConfiguration entry = exportMap.get(filename);
+                            newMap.put(filename, entry);
+                        }
+                    }
+                    preferences.putEntry(AutoExportPlugin.PLUGIN_ENTRY, facade.newRaplaMapForMap(newMap));
+                    // TODO Enable undo with a specific implementation, that does not overwrite all preference changes and regards dynamic type changes
+                    //        Collection<Preferences> originalList = Collections.singletonList(getQuery().getPreferences());
+                    //        Collection<Preferences> newList = Collections.singletonList(preferences);
+                    //        String commandoName = getString("delete")+ " " + getString("calendar") + " " +  selectedFile.name;
+                    //        SaveUndo<Preferences> cmd = new SaveUndo<Preferences>(getContext(), newList, originalList, commandoName);
+                    //        getModification().getCommandHistory().storeAndExecute( cmd);
+                    return preferences;
+                }).thenCompose(preferences->
         //changeSelection();
         facade.dispatch(Collections.singleton(preferences),Collections.emptyList()).thenRun(()
         ->
@@ -449,9 +450,7 @@ public class SavedCalendarSwingView extends RaplaGUIComponent implements SavedCa
                     else
                         selectionBox.setSelectedIndex(0);
                 }
-        ).exceptionally((ex)->dialogUiFactory.showException(ex, null));
-
-
+        )).exceptionally((ex)->dialogUiFactory.showException(ex, null));
     }
 
 	private int getDefaultIndex() {

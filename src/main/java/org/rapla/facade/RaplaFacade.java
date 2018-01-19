@@ -104,7 +104,6 @@ public interface RaplaFacade
      **/
     Promise<Collection<Reservation>> getReservationsForAllocatable(Allocatable[] allocatables, Date start,Date end,ClassificationFilter[] filters);
 
-
     /** returns all available periods */
     Period[] getPeriods() throws RaplaException;
 
@@ -121,8 +120,6 @@ public interface RaplaFacade
      server date.
      */
     Date today();
-
-
 
     /** returns all allocatables from the set of passed allocatables, that are already allocated by different parallel reservations at the time-slices, that are described by the appointment */
     Promise<Map<Allocatable, Collection<Appointment>>> getAllocatableBindings(Collection<Allocatable> allocatables, Collection<Appointment> forAppointment);
@@ -162,10 +159,8 @@ public interface RaplaFacade
 
     boolean canAllocate(CalendarModel model,User user);
 
-
     /** All methods that allow modifing the entity-objects.
      */
-
 
     /** Creates a new event,  Creates a new event from the first dynamic type found, basically a shortcut to newReservation(getDynamicType(VALUE_CLASSIFICATION_TYPE_RESERVATION)[0].newClassification())
      * This is a convenience method for testing.
@@ -177,17 +172,12 @@ public interface RaplaFacade
      *  */
     @Deprecated Allocatable newResource() throws RaplaException;
 
-    // client/server
-    /** check if the reservation can be saved */
-    void checkReservation(Reservation reservation) throws RaplaException;
-
     /** creates a new Rapla Map. Keep in mind that only RaplaObjects and Strings are allowed as entries for a RaplaMap!*/
     <T> RaplaMap<T> newRaplaMapForMap( Map<String,T> map);
     /** creates an ordered RaplaMap with the entries of the collection as values and their position in the collection from 1..n as keys*/
     <T> RaplaMap<T> newRaplaMap( Collection<T> col);
 
     CalendarSelectionModel newCalendarModel( User user) throws RaplaException;
-
 
     /** Creates a new reservation from the classifcation object and with the passed user as its owner
      * You can create a new classification from a {@link DynamicType} with newClassification method.
@@ -219,17 +209,27 @@ public interface RaplaFacade
      can be editet.
      */
     <T extends Entity> T clone(T obj,User user) throws RaplaException;
-
-    /** This call will be delegated to the {@link org.rapla.storage.StorageOperator}. It
-     * returns an editable working copy of an object. Only objects return by this method and new objects are editable.
-     * To get the persistant, non-editable version of a working copy use {@link #getPersistant} */
-    <T extends Entity> T edit(T obj) throws RaplaException;
-
-    <T extends Entity> Collection<T> editList(Collection<T> list) throws RaplaException;
     <T extends Entity> Promise<Collection<T>> editAsyncList(Collection<T> obj);
     <T extends Entity> Promise<T> editAsync(T obj);
     <T extends Entity> Promise<Void> update(T entity, Consumer<T> updateFunction);
     <T extends Entity> Promise<Void> updateList(Collection<T> list, Consumer<Collection<T>> updateFunction);
+
+    /** copies a list of reservations to a new beginning. KeepTime specifies if the original time is used or the time of the new beginDate*/
+    Collection<Reservation> copy(Collection<Reservation> toCopy, Date beginn, boolean keepTime, User user) throws RaplaException;
+
+    <T extends Entity, S extends Entity> Promise<Void> dispatch( Collection<T> storeList, Collection<ReferenceInfo<S>> removeList);
+
+    /**
+     * Does a merge of allocatables. A merge is defined as the given object will be stored if writeable and then
+     * all references to the provided allocatableIds are replaced with the selected allocatable. Afterwards the
+     * allocatables with the given allocatableIds are deleted.
+     *
+     * @param selectedObject
+     *              the winning allocatable, which will replace all references of the allocatableIds
+     * @param allocatableIds
+     *              the ids for the allocatables to merge into the selectedObject
+     */
+    Promise<Allocatable> doMerge(Allocatable selectedObject, Set<ReferenceInfo<Allocatable>> allocatableIds, User user);
 
     /** checks if the user that is logged into the facade is the user that last changed the entites
      *
@@ -241,8 +241,12 @@ public interface RaplaFacade
      */
     <T extends Entity> Map<T,T> checklastChanged(Collection<T> entities, boolean isNew) throws RaplaException;
 
-    /** copies a list of reservations to a new beginning. KeepTime specifies if the original time is used or the time of the new beginDate*/
-    Collection<Reservation> copy(Collection<Reservation> toCopy, Date beginn, boolean keepTime, User user) throws RaplaException;
+    <T extends Entity> Collection<T> editList(Collection<T> list) throws RaplaException;
+
+    /** This call will be delegated to the {@link org.rapla.storage.StorageOperator}. It
+     * returns an editable working copy of an object. Only objects return by this method and new objects are editable.
+     * To get the persistant, non-editable version of a working copy use {@link #getPersistant} */
+    <T extends Entity> T edit(T obj) throws RaplaException;
 
     /** Returns the persistant version of a working copy.
      * Throws an {@link org.rapla.entities.EntityNotFoundException} when the
@@ -269,18 +273,8 @@ public interface RaplaFacade
      * @throws RaplaException */
     <T extends Entity, S extends Entity> void storeAndRemove( T[] storedObjects, S[] removedObjects, User user) throws RaplaException;
 
-    <T extends Entity, S extends Entity> Promise<Void> dispatch( Collection<T> storeList, Collection<ReferenceInfo<S>> removeList);
-    /**
-     * Does a merge of allocatables. A merge is defined as the given object will be stored if writeable and then 
-     * all references to the provided allocatableIds are replaced with the selected allocatable. Afterwards the
-     * allocatables with the given allocatableIds are deleted.
-     * 
-     * @param selectedObject
-     *              the winning allocatable, which will replace all references of the allocatableIds
-     * @param allocatableIds
-     *              the ids for the allocatables to merge into the selectedObject
-     */
-    void doMerge(Allocatable selectedObject, Set<ReferenceInfo<Allocatable>> allocatableIds, User user) throws RaplaException;
+
+
 
     /**
      *  Refreshes the data that is in the cache (or on the client)
@@ -312,9 +306,10 @@ public interface RaplaFacade
      You better re-get and re-draw all
      the information in the Frontend after a full refresh.
      </strong>
-
      */
     void refresh() throws RaplaException;
+
+    Promise<Void> refreshAsync();
 
     //<T> T  waitForWithRaplaException(Promise<T> promise, int millis) throws RaplaException;
 }

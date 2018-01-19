@@ -93,6 +93,7 @@ import org.rapla.rest.JsonParserWrapper;
 import org.rapla.scheduler.CommandScheduler;
 import org.rapla.scheduler.Observable;
 import org.rapla.scheduler.Promise;
+import org.rapla.scheduler.ResolvedPromise;
 import org.rapla.server.PromiseWait;
 import org.rapla.server.internal.TimeZoneConverterImpl;
 import org.rapla.storage.CachableStorageOperator;
@@ -3863,8 +3864,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
     /*
      * Dependencies for belongsTo and package
      */
-    @Override
-    public void doMerge(Allocatable selectedObject, Set<ReferenceInfo<Allocatable>> allocatableIds, User user) throws RaplaException
+    protected void merge(Allocatable selectedObject, Set<ReferenceInfo<Allocatable>> allocatableIds, User user) throws RaplaException
     {
         final RaplaLock.WriteLock writeLock = writeLockIfLoaded();
         try
@@ -3913,4 +3913,13 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
         }
     }
 
+    @Override
+    public Promise<Allocatable> doMerge(Allocatable selectedObject, Set<ReferenceInfo<Allocatable>> allocatableIds, User user) {
+        try {
+            merge(selectedObject,allocatableIds,user);
+            return new ResolvedPromise<>(resolve( selectedObject.getReference()));
+        } catch (RaplaException e) {
+            return new ResolvedPromise<>(e);
+        }
+    }
 }
