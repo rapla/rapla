@@ -18,7 +18,7 @@ import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.Reservation;
 import org.rapla.entities.dynamictype.Classification;
 import org.rapla.entities.dynamictype.DynamicTypeAnnotations;
-import org.rapla.facade.ClientFacade;
+import org.rapla.facade.client.ClientFacade;
 import org.rapla.facade.Conflict;
 import org.rapla.facade.ModificationEvent;
 import org.rapla.facade.ModificationListener;
@@ -46,7 +46,7 @@ public class TestRemoteStorageImpl extends AbstractTestWithServer
     public void setUp() throws Exception
     {
         clientFacade = createClientFacade();
-        clientFacade.login("homer", "duffs".toCharArray());
+        login(clientFacade,"homer", "duffs".toCharArray());
     }
 
     @Test

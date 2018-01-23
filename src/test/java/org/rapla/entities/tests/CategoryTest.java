@@ -23,7 +23,7 @@ import org.rapla.entities.DependencyException;
 import org.rapla.entities.Entity;
 import org.rapla.entities.User;
 import org.rapla.entities.internal.CategoryImpl;
-import org.rapla.facade.ClientFacade;
+import org.rapla.facade.client.ClientFacade;
 import org.rapla.facade.RaplaFacade;
 import org.rapla.test.util.RaplaTestCase;
 

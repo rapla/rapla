@@ -6,6 +6,7 @@ import org.rapla.components.xmlbundle.I18nBundle;
 import org.rapla.entities.Entity;
 import org.rapla.entities.EntityNotFoundException;
 import org.rapla.entities.RaplaType;
+import org.rapla.entities.User;
 import org.rapla.entities.dynamictype.Classifiable;
 import org.rapla.entities.internal.ModifiableTimestamp;
 import org.rapla.entities.storage.ReferenceInfo;
@@ -90,10 +91,12 @@ public class SaveUndo<T extends Entity> implements CommandUndo<RaplaException> {
 
 			List<T> toStore = new ArrayList<T>();
 			Map<T, T> newEntitiesPersistant = null;
+			User user = getUser();
 			// undo
+
 			if (!firstTimeCall)
 			{
-				newEntitiesPersistant = getFacade().checklastChanged(newEntities, isNew);
+				newEntitiesPersistant = getFacade().checklastChanged(newEntities, user , isNew);
 			}
 			else
 			{
@@ -124,17 +127,17 @@ public class SaveUndo<T extends Entity> implements CommandUndo<RaplaException> {
 		Promise<Void> promise = scheduler.run(() -> {
 
 			boolean isNew = oldEntities == null;
-
+			User user = getUser();
 			if (isNew)
 			{
-				getFacade().checklastChanged(newEntities, isNew);
+				getFacade().checklastChanged(newEntities, user, isNew);
 				Entity[] array = newEntities.toArray(new Entity[] {});
 				getFacade().removeObjects(array);
 			}
 			else
 			{
 				List<T> toStore = new ArrayList<T>();
-				Map<T, T> oldEntitiesPersistant = getFacade().checklastChanged(oldEntities, isNew);
+				Map<T, T> oldEntitiesPersistant = getFacade().checklastChanged(oldEntities, user, isNew);
 				for (T entity : oldEntities)
 				{
 					@SuppressWarnings("unchecked") T mutableEntity = (T) entity.clone();
@@ -178,6 +181,10 @@ public class SaveUndo<T extends Entity> implements CommandUndo<RaplaException> {
 			 Date version = ((ModifiableTimestamp)persistant).getLastChanged();
 			 ((ModifiableTimestamp)dest).setLastChanged(version);
 		 }
+	 }
+
+	 private User getUser() throws RaplaException {
+	 	return facade.getUser();
 	 }
 	 
 	 public String getCommandoName() 

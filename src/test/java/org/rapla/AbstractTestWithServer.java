@@ -11,7 +11,7 @@ import org.rapla.entities.domain.Reservation;
 import org.rapla.entities.dynamictype.Classification;
 import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.entities.dynamictype.DynamicTypeAnnotations;
-import org.rapla.facade.ClientFacade;
+import org.rapla.facade.client.ClientFacade;
 import org.rapla.facade.RaplaFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.logger.Logger;
@@ -42,6 +42,14 @@ public abstract class AbstractTestWithServer
         serviceContainer = (ServerServiceImpl) context.getServiceContainer();
         this.server = context.getServer();
         clientFacadeProvider = RaplaTestCase.createFacadeWithRemote(logger, port);
+    }
+
+    public boolean login(ClientFacade facade, String username,char[] password) throws RaplaException {
+        return facade.login(username,password);
+    }
+
+    public  void logout(ClientFacade facade) throws RaplaException {
+        facade.logout();
     }
 
     @After

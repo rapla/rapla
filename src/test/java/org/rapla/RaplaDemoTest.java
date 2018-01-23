@@ -16,7 +16,7 @@ import org.junit.Assert;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 import org.rapla.entities.domain.Allocatable;
-import org.rapla.facade.ClientFacade;
+import org.rapla.facade.client.ClientFacade;
 import org.rapla.test.util.RaplaTestCase;
 
 @RunWith(JUnit4.class)

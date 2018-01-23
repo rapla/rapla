@@ -42,6 +42,7 @@ import org.rapla.entities.storage.RefEntity;
 import org.rapla.entities.storage.ReferenceInfo;
 import org.rapla.entities.storage.internal.SimpleEntity;
 import org.rapla.facade.Conflict;
+import org.rapla.facade.PeriodModel;
 import org.rapla.facade.RaplaComponent;
 import org.rapla.facade.internal.ConflictImpl;
 import org.rapla.framework.RaplaException;
@@ -89,6 +90,9 @@ public abstract class AbstractCachableOperator implements StorageOperator
     final protected Map<String, FunctionFactory> functionFactoryMap;
     private volatile Date lastRefreshed;
     final protected PermissionController permissionController;
+    private PeriodModelImpl periodModel;
+    private PeriodModelImpl periodModelHoliday;
+
     protected RaplaLock lockManager;
 
     public AbstractCachableOperator(Logger logger, RaplaResources i18n, RaplaLocale raplaLocale, Map<String, FunctionFactory> functionFactoryMap,
@@ -350,6 +354,31 @@ public abstract class AbstractCachableOperator implements StorageOperator
             Promise<Map<Allocatable, Collection<Appointment>>> query = queryAppointments(callUser, allocList, start, end, reservationFilters, annotationQuery);
             return query;
         }
+    }
+
+    @Override
+    public PeriodModel getPeriodModelFor(String key) throws RaplaException {
+        if ( key == null)
+        {
+            if (periodModel == null) {
+                periodModel = new PeriodModelImpl(this, new Category[] {});
+            }
+            return periodModel;
+        }
+        if (periodModelHoliday == null) {
+            final Category timetablesCategory = getSuperCategory().getCategory("timetables");
+            if ( timetablesCategory == null)
+            {
+                return null;
+            }
+            Category[] timetables = timetablesCategory.getCategories();
+            if ( timetables.length == 0)
+            {
+                return null;
+            }
+            periodModelHoliday = new PeriodModelImpl(this, timetables);
+        }
+        return periodModelHoliday;
     }
 
 
@@ -878,9 +907,27 @@ public abstract class AbstractCachableOperator implements StorageOperator
             }
         }
         setResolver(updatedEntities);
+        updatePeriods(updatedEntities, toRemove);
         final UpdateResult updateResult = createUpdateResult(oldEntities, updatedEntities, toRemove, since, until);
         setLastRefreshed(until);
         return updateResult;
+    }
+
+    private void updatePeriods(Collection<Entity> updatedEntities,Collection<ReferenceInfo> toRemove) {
+        if (periodModel != null ) {
+            try {
+                periodModel.update(updatedEntities, toRemove);
+            } catch (RaplaException e) {
+                getLogger().error("Can't update Period Model", e);
+            }
+        }
+        if (periodModelHoliday != null ) {
+            try {
+                periodModelHoliday.update(updatedEntities, toRemove);
+            } catch (RaplaException e) {
+                getLogger().error("Can't update Period Model", e);
+            }
+        }
     }
 
     protected Entity findPersistant(Entity entity)

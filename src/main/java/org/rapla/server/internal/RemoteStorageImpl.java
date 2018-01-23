@@ -33,6 +33,7 @@ import org.rapla.plugin.mail.MailPlugin;
 import org.rapla.plugin.mail.server.MailInterface;
 import org.rapla.scheduler.Promise;
 import org.rapla.scheduler.ResolvedPromise;
+import org.rapla.scheduler.sync.SynchronizedCompletablePromise;
 import org.rapla.server.AuthenticationStore;
 import org.rapla.server.PrePostDispatchProcessor;
 import org.rapla.server.RemoteSession;
@@ -665,7 +666,7 @@ import java.util.Set;
         return ignoreConflictsWith;
     }
 
-    @Override public Promise<Allocatable> doMerge(MergeRequest job) throws RaplaException
+    @Override public UpdateEvent doMerge(MergeRequest job, String lastSyncedTime ) throws RaplaException
     {
         final User sessionUser = checkSessionUser();
         AllocatableImpl allocatable = job.getAllocatable();
@@ -673,12 +674,21 @@ import java.util.Set;
         security.checkWritePermissions(sessionUser, allocatable);
         final Set<ReferenceInfo<Allocatable>> allocReferences = new LinkedHashSet<>();
         for (final String allocId : allocatableIds)
-        {
-            final ReferenceInfo<Allocatable> refInfo = new ReferenceInfo<Allocatable>(allocId, Allocatable.class);
+            {
+                        final ReferenceInfo<Allocatable> refInfo = new ReferenceInfo<Allocatable>(allocId, Allocatable.class);
             allocReferences.add(refInfo);
             // TODO check write permissions
+                }
+        final Promise<Allocatable> promise = operator.doMerge(allocatable, allocReferences, sessionUser);
+        try {
+                SynchronizedCompletablePromise.waitFor(promise, 20000,getLogger());
+            } catch (RaplaException e) {
+                throw e;
+            } catch (Exception e)
+        {
+                    throw new RaplaException( e);
         }
-        return operator.doMerge(allocatable, allocReferences, sessionUser);
+        return refresh( lastSyncedTime);
     }
 
     //			public void logEntityNotFound(String logMessage,String... referencedIds)

@@ -1,29 +1,23 @@
 package org.rapla.client.gwt;
 
 import com.google.gwt.core.client.GWT;
-import com.google.gwt.user.client.Window;
 import jsinterop.annotations.JsType;
-import org.rapla.client.Application;
-import org.rapla.client.gwt.view.RaplaPopups;
-import org.rapla.entities.domain.Allocatable;
+import org.rapla.facade.client.ClientFacade;
 import org.rapla.facade.RaplaFacade;
-import org.rapla.facade.internal.FacadeImpl;
+import org.rapla.facade.internal.ClientFacadeImpl;
 import org.rapla.logger.Logger;
 import org.rapla.scheduler.Promise;
-import org.rapla.storage.RaplaSecurityException;
 import org.rapla.storage.StorageOperator;
 import org.rapla.storage.dbrm.RemoteAuthentificationService;
 import org.rapla.storage.dbrm.RemoteConnectionInfo;
 
 import javax.inject.Inject;
 import javax.inject.Provider;
-import java.util.Arrays;
-import java.util.Collection;
 
 @JsType
 public class Bootstrap
 {
-    private final Provider<RaplaFacade> facade;
+    private final Provider<ClientFacade> facade;
     private final Provider<StorageOperator> operator;
     private final Logger logger;
     private final RemoteConnectionInfo remoteConnectionInfo;
@@ -31,7 +25,7 @@ public class Bootstrap
     private final Provider<RemoteAuthentificationService> remoteAuthentificationService;
 
     @Inject
-    public Bootstrap(Provider<RaplaFacade> facade, Provider<StorageOperator> operator, Logger logger, RemoteConnectionInfo remoteConnectionInfo, Provider<JsApi> jsApi,
+    public Bootstrap(Provider<ClientFacade> facade, Provider<StorageOperator> operator, Logger logger, RemoteConnectionInfo remoteConnectionInfo, Provider<JsApi> jsApi,
             Provider<RemoteAuthentificationService> remoteAuthentificationService)
     {
         this.remoteConnectionInfo = remoteConnectionInfo;
@@ -48,7 +42,7 @@ public class Bootstrap
 
     public RaplaFacade getFacade()
     {
-        return facade.get();
+        return facade.get().getRaplaFacade();
     }
 
     public RemoteAuthentificationService getAuthentification()
@@ -59,9 +53,9 @@ public class Bootstrap
     public Promise<Void> load(String accessToken){
         logger.info("Starting GWT Client with accessToken" + accessToken);
         remoteConnectionInfo.setAccessToken(accessToken);
-        final FacadeImpl facadeImpl = (FacadeImpl) facade.get();
+        final ClientFacade facadeImpl =  facade.get();
         final StorageOperator operator = this.operator.get();
-        facadeImpl.setOperator(operator);
+        ((ClientFacadeImpl)facadeImpl).setOperator(operator);
         Promise<Void> load = facadeImpl.load();
         return load;
     }

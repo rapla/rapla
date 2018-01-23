@@ -2,7 +2,7 @@ package org.rapla.examples;
 
 import org.rapla.RaplaClient;
 import org.rapla.entities.domain.Allocatable;
-import org.rapla.facade.ClientFacade;
+import org.rapla.facade.client.ClientFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.StartupEnvironment;
 import org.rapla.logger.ConsoleLogger;

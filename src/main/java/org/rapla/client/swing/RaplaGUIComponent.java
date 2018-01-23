@@ -24,7 +24,7 @@ import org.rapla.components.util.IOUtil;
 import org.rapla.entities.User;
 import org.rapla.facade.CalendarModel;
 import org.rapla.facade.CalendarOptions;
-import org.rapla.facade.ClientFacade;
+import org.rapla.facade.client.ClientFacade;
 import org.rapla.facade.RaplaComponent;
 import org.rapla.facade.RaplaFacade;
 import org.rapla.framework.RaplaException;

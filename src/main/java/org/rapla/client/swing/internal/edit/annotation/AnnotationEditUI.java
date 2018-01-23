@@ -5,7 +5,7 @@ import org.rapla.client.extensionpoints.AnnotationEdit;
 import org.rapla.client.swing.EditField;
 import org.rapla.client.swing.internal.edit.AbstractEditUI;
 import org.rapla.entities.Annotatable;
-import org.rapla.facade.ClientFacade;
+import org.rapla.facade.client.ClientFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.logger.Logger;

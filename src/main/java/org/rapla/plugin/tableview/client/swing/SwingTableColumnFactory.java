@@ -1,7 +1,7 @@
 package org.rapla.plugin.tableview.client.swing;
 
 import org.rapla.entities.User;
-import org.rapla.facade.ClientFacade;
+import org.rapla.facade.client.ClientFacade;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.inject.DefaultImplementation;
 import org.rapla.inject.InjectionContext;

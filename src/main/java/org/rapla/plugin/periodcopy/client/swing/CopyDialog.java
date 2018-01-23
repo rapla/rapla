@@ -33,7 +33,7 @@ import org.rapla.entities.domain.Repeating;
 import org.rapla.entities.domain.Reservation;
 import org.rapla.entities.domain.internal.PeriodImpl;
 import org.rapla.facade.CalendarModel;
-import org.rapla.facade.ClientFacade;
+import org.rapla.facade.client.ClientFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaInitializationException;
 import org.rapla.framework.RaplaLocale;
@@ -102,7 +102,7 @@ public class CopyDialog extends RaplaGUIComponent implements RaplaWidget
         Period[] periods;
         try
         {
-            periods = getQuery().getPeriods();
+            periods = getFacade().getPeriods();
         }
         catch (RaplaException e1)
         {

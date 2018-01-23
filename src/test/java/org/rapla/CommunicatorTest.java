@@ -11,7 +11,7 @@ import org.rapla.entities.domain.Appointment;
 import org.rapla.entities.domain.Reservation;
 import org.rapla.entities.dynamictype.ClassificationFilter;
 import org.rapla.entities.dynamictype.DynamicType;
-import org.rapla.facade.ClientFacade;
+import org.rapla.facade.client.ClientFacade;
 import org.rapla.facade.RaplaFacade;
 import org.rapla.framework.TypedComponentRole;
 import org.rapla.test.util.RaplaTestCase;
@@ -28,7 +28,7 @@ public class CommunicatorTest extends AbstractTestWithServer
     {
         ClientFacade clientFacade = createClientFacade();
         RaplaFacade facade = clientFacade.getRaplaFacade();
-        clientFacade.login("homer","duffs".toCharArray());
+        login(clientFacade,"homer","duffs".toCharArray());
         Allocatable alloc = newResource(clientFacade);
         StringBuffer buf = new StringBuffer();
         int stringsize = 100000;
@@ -47,9 +47,9 @@ public class CommunicatorTest extends AbstractTestWithServer
     {
         ClientFacade clientFacade = createClientFacade();
         RaplaFacade facade = clientFacade.getRaplaFacade();
-       boolean success = clientFacade.login("admin","test".toCharArray());
+       boolean success = login(clientFacade,"admin","test".toCharArray());
        Assert.assertFalse("Login should fail", success);
-        clientFacade.login("homer","duffs".toCharArray());
+        login(clientFacade,"homer","duffs".toCharArray());
        try 
        {
            Preferences preferences = facade.edit( facade.getSystemPreferences());
@@ -83,7 +83,7 @@ public class CommunicatorTest extends AbstractTestWithServer
        }
        finally
        {
-           clientFacade.logout();
+           logout(clientFacade);
        }
     }
 
@@ -93,7 +93,7 @@ public class CommunicatorTest extends AbstractTestWithServer
     {
         ClientFacade clientFacade = createClientFacade();
         RaplaFacade facade = clientFacade.getRaplaFacade();
-        clientFacade.login("homer","duffs".toCharArray());
+        login(clientFacade,"homer","duffs".toCharArray());
         Allocatable alloc = newResource(clientFacade);
         String typeName = alloc.getClassification().getType().getKey();
         // AE = \u00C4
@@ -107,9 +107,9 @@ public class CommunicatorTest extends AbstractTestWithServer
         alloc.getClassification().setValue("name", nameWithUmlaute);
         int allocSizeBefore = facade.getAllocatables().length;
         facade.store( alloc);
-        
-        clientFacade.logout();
-        clientFacade.login("homer","duffs".toCharArray());
+
+        logout(clientFacade);
+        login(clientFacade,"homer","duffs".toCharArray());
         DynamicType type = facade.getDynamicType( typeName);
         ClassificationFilter filter = type.newClassificationFilter();
         filter.addEqualsRule("name", nameWithUmlaute);
@@ -129,7 +129,7 @@ public class CommunicatorTest extends AbstractTestWithServer
         for ( int i=0;i<clientNum;i++)
         {
             ClientFacade clientFacade = createClientFacade();
-            clientFacade.login("homer","duffs".toCharArray());
+            login(clientFacade,"homer","duffs".toCharArray());
             opts[i] = clientFacade;
             System.out.println("JavaClient " + i + " successfully subscribed");
         }
@@ -137,7 +137,7 @@ public class CommunicatorTest extends AbstractTestWithServer
         for ( int i=0;i<clientNum;i++)
         {
             ClientFacade opt = opts[i];
-            opt.logout();
+            logout(opt);
         }
     }
 }

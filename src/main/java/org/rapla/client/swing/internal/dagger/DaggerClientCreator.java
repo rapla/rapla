@@ -6,7 +6,7 @@ import org.rapla.client.swing.dagger.DaggerRaplaJavaClientStartupModule;
 import org.rapla.components.iolayer.DefaultIO;
 import org.rapla.components.iolayer.IOInterface;
 import org.rapla.components.iolayer.WebstartIO;
-import org.rapla.facade.ClientFacade;
+import org.rapla.facade.client.ClientFacade;
 import org.rapla.framework.StartupEnvironment;
 import org.rapla.inject.InjectionContext;
 import org.rapla.inject.dagger.DaggerReflectionStarter;

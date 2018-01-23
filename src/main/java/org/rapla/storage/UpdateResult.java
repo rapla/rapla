@@ -182,7 +182,6 @@ public class UpdateResult
         }
     }
     
-    
 
     public static class HistoryEntry
     {

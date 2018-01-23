@@ -12,32 +12,14 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.facade.internal;
 
-import io.reactivex.functions.Action;
 import io.reactivex.functions.Consumer;
-import org.rapla.ConnectInfo;
 import org.rapla.RaplaResources;
 import org.rapla.components.util.DateTools;
-import org.rapla.components.util.TimeInterval;
-import org.rapla.components.util.undo.CommandHistory;
-import org.rapla.entities.Category;
-import org.rapla.entities.Entity;
-import org.rapla.entities.EntityNotFoundException;
-import org.rapla.entities.MultiLanguageName;
-import org.rapla.entities.Named;
-import org.rapla.entities.User;
+import org.rapla.entities.*;
 import org.rapla.entities.configuration.Preferences;
 import org.rapla.entities.configuration.RaplaMap;
 import org.rapla.entities.configuration.internal.RaplaMapImpl;
-import org.rapla.entities.domain.Allocatable;
-import org.rapla.entities.domain.Appointment;
-import org.rapla.entities.domain.Period;
-import org.rapla.entities.domain.Permission;
-import org.rapla.entities.domain.PermissionContainer;
-import org.rapla.entities.domain.RaplaObjectAnnotations;
-import org.rapla.entities.domain.Repeating;
-import org.rapla.entities.domain.RepeatingType;
-import org.rapla.entities.domain.Reservation;
-import org.rapla.entities.domain.ReservationStartComparator;
+import org.rapla.entities.domain.*;
 import org.rapla.entities.domain.internal.AllocatableImpl;
 import org.rapla.entities.domain.internal.AppointmentImpl;
 import org.rapla.entities.domain.internal.ReservationImpl;
@@ -55,22 +37,11 @@ import org.rapla.entities.internal.UserImpl;
 import org.rapla.entities.storage.ParentEntity;
 import org.rapla.entities.storage.ReferenceInfo;
 import org.rapla.entities.storage.internal.SimpleEntity;
-import org.rapla.facade.CalendarModel;
-import org.rapla.facade.CalendarOptions;
-import org.rapla.facade.CalendarSelectionModel;
-import org.rapla.facade.ClientFacade;
-import org.rapla.facade.Conflict;
-import org.rapla.facade.ModificationEvent;
-import org.rapla.facade.ModificationListener;
-import org.rapla.facade.PeriodModel;
-import org.rapla.facade.RaplaComponent;
-import org.rapla.facade.RaplaFacade;
-import org.rapla.facade.UpdateErrorListener;
+import org.rapla.facade.*;
 import org.rapla.facade.server.RaplaServerFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaInitializationException;
 import org.rapla.inject.DefaultImplementation;
-import org.rapla.inject.DefaultImplementationRepeatable;
 import org.rapla.inject.InjectionContext;
 import org.rapla.logger.Logger;
 import org.rapla.scheduler.CommandScheduler;
@@ -79,8 +50,6 @@ import org.rapla.scheduler.ResolvedPromise;
 import org.rapla.storage.PermissionController;
 import org.rapla.storage.RaplaSecurityException;
 import org.rapla.storage.StorageOperator;
-import org.rapla.storage.StorageUpdateListener;
-import org.rapla.storage.dbrm.RemoteOperator;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -97,7 +66,6 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
-import java.util.Vector;
 
 /**
  * This is the default implementation of the necessary JavaClient-Facade to the
@@ -108,26 +76,20 @@ import java.util.Vector;
  * </p>
  */
 @Singleton
-@DefaultImplementationRepeatable({ @DefaultImplementation(of = RaplaFacade.class, context = InjectionContext.all), @DefaultImplementation(of = ClientFacade.class, context = InjectionContext.client) })
-public class FacadeImpl implements RaplaFacade,ClientFacade,StorageUpdateListener, RaplaServerFacade {
-	protected CommandScheduler notifyQueue;
-	private String workingUserId = null;
+@DefaultImplementation(of = RaplaFacade.class, context = InjectionContext.all)
+public class FacadeImpl implements RaplaFacade, RaplaServerFacade {
 	private StorageOperator operator;
-	private Vector<ModificationListener> modificatonListenerList = new Vector<ModificationListener>();
-	//private Vector<AllocationChangeListener> allocationListenerList = new Vector<AllocationChangeListener>();
-	private Vector<UpdateErrorListener> errorListenerList = new Vector<UpdateErrorListener>();
 	private RaplaResources i18n;
-	private PeriodModelImpl periodModel;
-	private PeriodModelImpl periodModelHoliday;
-//	private ConflictFinder conflictFinder;
-	private Vector<ModificationListener> directListenerList = new Vector<ModificationListener>();
-	public CommandHistory commandHistory = new CommandHistory();
 
 	Locale locale;
 
 	Logger logger;
-	
+
 	String templateId;
+	protected CommandScheduler notifyQueue;
+
+	String workingUserId;
+
 
 	@Inject
 	public FacadeImpl(RaplaResources i18n, CommandScheduler notifyQueue, Logger logger) {
@@ -143,14 +105,17 @@ public class FacadeImpl implements RaplaFacade,ClientFacade,StorageUpdateListene
 		return notifyQueue;
 	}
 
+	public void setWorkingUserId(String workingUserId) {
+		this.workingUserId = workingUserId;
+	}
+
+	public String getWorkingUserId() {
+		return workingUserId;
+	}
+
 	public RaplaResources getI18n()
 	{
 		return i18n;
-	}
-
-	@Override public RaplaFacade getRaplaFacade()
-	{
-		return this;
 	}
 
 	public boolean canAllocate(CalendarModel model,User user)
@@ -175,24 +140,11 @@ public class FacadeImpl implements RaplaFacade,ClientFacade,StorageUpdateListene
 	{
 		if ( operator== null)
 		{
-//		    throw new RaplaException("Dependency Cycle detected. Please use provider for facade ");
-			throw new RaplaInitializationException("Dependency Cycle detected. Please use provider for facade ");
+//		    throw new RaplaException("Dependency Cycle detected. Please use provider for operator ");
+			throw new RaplaInitializationException("Dependency Cycle detected. Please use provider for operator ");
 		}
 		return operator.getPermissionController() ;
 	}
-
-    public void setOperator(StorageOperator operator)
-    {
-        if (this.operator != null && this.operator instanceof RemoteOperator)
-        {
-			((RemoteOperator)this.operator).removeStorageUpdateListener( this );
-        }
-		if ( operator instanceof  RemoteOperator)
-		{
-			((RemoteOperator)operator).addStorageUpdateListener(this);
-		}
-        this.operator = operator;
-    }
 
     public Logger getLogger()
 	{
@@ -202,37 +154,9 @@ public class FacadeImpl implements RaplaFacade,ClientFacade,StorageUpdateListene
 	public StorageOperator getOperator() {
 		return operator;
 	}
-	
-	// Implementation of StorageUpdateListener.
-	/**
-	 * This method is called by the storage-operator, when stored objects have
-	 * changed.
-	 * 
-	 * <strong>Caution:</strong> You must not lock the storage operator during
-	 * processing of this call, because it could have been locked by the store
-	 * method, causing deadlocks
-	 */
-	public void objectsUpdated(ModificationEvent evt) {
-		if (getLogger().isDebugEnabled())
-			getLogger().debug("Objects updated");
 
-    	if (workingUserId != null)
-		{
-			if ( evt.isModified( User.class))
-			{
-			    if (operator.tryResolve( workingUserId, User.class) == null)
-			    {
-			        EntityNotFoundException ex = new EntityNotFoundException("User for id " + workingUserId + " not found. Maybe it was removed.");
-                    fireUpdateError(ex);
-			    }
-			}
-		}
-				
-		fireUpdateEvent(evt);
-	}
-
-	public void storageDisconnected(String message) {
-		fireStorageDisconnected(message);
+	public void setOperator(StorageOperator operator) {
+		this.operator = operator;
 	}
 
 	/******************************
@@ -272,214 +196,14 @@ public class FacadeImpl implements RaplaFacade,ClientFacade,StorageUpdateListene
 			// go on, if non is found
 		}
 	}
-	
-	public void addModificationListener(ModificationListener listener) {
-		if (!(operator instanceof RemoteOperator))
+
+	/** unlike getUserFromRequest this can be null if working user not set*/
+	private User getWorkingUser() throws EntityNotFoundException {
+		if ( workingUserId == null)
 		{
-			throw new IllegalStateException("only allowed with RemoteOpertator");
+			return null;
 		}
-		modificatonListenerList.add(listener);
-	}
-
-	/**
-	 * This will directly call the modificationListener in the refresh thread.
-	 * You must take care of synchronization issues. It's recommended to use addModifictationListener instead
-	 */
-	public void addDirectModificationListener(ModificationListener listener)
-	{
-		if (!(operator instanceof RemoteOperator))
-		{
-			throw new IllegalStateException("only allowed with RemoteOpertator");
-		}
-		directListenerList.add(listener);
-	}
-	
-	public void removeModificationListener(ModificationListener listener) {
-		directListenerList.remove(listener);
-		modificatonListenerList.remove(listener);
-	}
-
-	private Collection<ModificationListener> getModificationListeners() {
-		if (modificatonListenerList.size() == 0)
-		{
-			return Collections.emptyList();
-		}
-		synchronized (this) {
-			Collection<ModificationListener> list = new ArrayList<ModificationListener>(3);
-			if (periodModel != null) {
-				list.add(periodModel);
-			}
-			if (periodModelHoliday != null) {
-				list.add(periodModelHoliday);
-			}
-			Iterator<ModificationListener> it = modificatonListenerList.iterator();
-			while (it.hasNext()) {
-				ModificationListener listener =  it.next();
-				list.add(listener);
-			}
-			return list;
-		}
-	}
-
-	/*
-	public void addAllocationChangedListener(AllocationChangeListener listener) {
-		if ( operator instanceof RemoteOperator)
-		{
-			throw new IllegalStateException("You can't add an allocation listener to a client facade because reservation objects are not updated");
-		}
-		allocationListenerList.add(listener);
-	}
-
-	public void removeAllocationChangedListener(AllocationChangeListener listener) {
-		allocationListenerList.remove(listener);
-	}
-
-	private Collection<AllocationChangeListener> getAllocationChangeListeners() {
-		if (allocationListenerList.size() == 0)
-		{
-			return Collections.emptyList();
-		}
-		synchronized (this) {
-			Collection<AllocationChangeListener> list = new ArrayList<AllocationChangeListener>( 3);
-			Iterator<AllocationChangeListener> it = allocationListenerList.iterator();
-			while (it.hasNext()) {
-				AllocationChangeListener listener = it.next();
-				list.add(listener);
-			}
-			return list;
-		}
-	}
-	
-	public AllocationChangeEvent[] createAllocationChangeEvents(UpdateResult evt) {
-		Logger logger = getLogger().getChildLogger("trigger.allocation");
-		List<AllocationChangeEvent> triggerEvents = AllocationChangeFinder.getTriggerEvents(evt, logger);
-		return triggerEvents.toArray( new AllocationChangeEvent[0]);
-	}
-	*/
-
-	public void addUpdateErrorListener(UpdateErrorListener listener) {
-		errorListenerList.add(listener);
-	}
-
-	public void removeUpdateErrorListener(UpdateErrorListener listener) {
-		errorListenerList.remove(listener);
-	}
-
-	public UpdateErrorListener[] getUpdateErrorListeners() {
-		return errorListenerList.toArray(new UpdateErrorListener[] {});
-	}
-
-	protected void fireUpdateError(RaplaException ex) {
-		UpdateErrorListener[] listeners = getUpdateErrorListeners();
-		for (int i = 0; i < listeners.length; i++) {
-			listeners[i].updateError(ex);
-		}
-	}
-
-	protected void fireStorageDisconnected(String message) {
-		UpdateErrorListener[] listeners = getUpdateErrorListeners();
-		for (int i = 0; i < listeners.length; i++) {
-			listeners[i].disconnected(message);
-		}
-	}
-
-//	final class UpdateCommandAllocation implements Runnable, Command {
-//		Collection<AllocationChangeListener> listenerList;
-//		AllocationChangeEvent[] allocationChangeEvents;
-//
-//		public UpdateCommandAllocation(Collection<AllocationChangeListener> allocationChangeListeners, UpdateResult evt) {
-//			this.listenerList= new ArrayList<AllocationChangeListener>(allocationChangeListeners);
-//			if ( allocationChangeListeners.size() > 0)
-//			{
-//				allocationChangeEvents = createAllocationChangeEvents(evt);
-//			}
-//		}
-//
-//		public void execute() {
-//			run();
-//		}
-//
-//		public void run() {
-//			for (AllocationChangeListener listener: listenerList)
-//			{
-//				try {
-//					if (isAborting())
-//						return;
-//					if (getLogger().isDebugEnabled())
-//						getLogger().debug("Notifying " + listener);
-//					if (allocationChangeEvents.length > 0) {
-//						listener.changed(allocationChangeEvents);
-//					}
-//				} catch (Exception ex) {
-//					getLogger().error("update-exception", ex);
-//				}
-//			}
-//		}
-//	}
-	
-	final class UpdateCommandModification implements Action {
-		ModificationListener listenerList;
-		ModificationEvent modificationEvent;
-
-		public UpdateCommandModification(ModificationListener modificationListeners, ModificationEvent evt) {
-			this.listenerList = modificationListeners;
-			this.modificationEvent = evt;
-		}
-
-		public void run() {
-			//]for (ModificationListener listener: listenerList)
-		    ModificationListener listener = listenerList;
-			{
-				
-				try {
-					if (isAborting())
-						return;
-					if (getLogger().isDebugEnabled())
-						getLogger().debug("Notifying " + listener);
-					listener.dataChanged(modificationEvent);
-				} catch (Exception ex) {
-					getLogger().error("update-exception", ex);
-				}
-			}
-		}
-
-	}	/**
-	 * fires update event asynchronous.
-	 */
-	protected void fireUpdateEvent(ModificationEvent evt) {
-		if (periodModel != null && periodModel.isPeriodModified( evt)) {
-			try {
-				periodModel.update();
-			} catch (RaplaException e) {
-				getLogger().error("Can't update Period Model", e);
-			}
-		}
-		if (periodModelHoliday != null && periodModel.isPeriodModified(evt)) {
-			try {
-				periodModelHoliday.update() ;
-			} catch (RaplaException e) {
-				getLogger().error("Can't update Period Model", e);
-			}
-		}
-		{
-			Collection<ModificationListener> modificationListeners = directListenerList;
-			for (ModificationListener mod:modificationListeners)
-			{
-			//if (modificationListeners.size() > 0 ) {
-				new UpdateCommandModification(mod,evt).run();
-			}
-		}
-		{
-			Collection<ModificationListener> modificationListeners = getModificationListeners();
-            for (ModificationListener mod:modificationListeners)
-            {
-				notifyQueue.scheduleSynchronized(mod,new UpdateCommandModification(mod, evt));
-			}
-//			Collection<AllocationChangeListener> allocationChangeListeners = getAllocationChangeListeners();
-//			if (allocationChangeListeners.size() > 0) {
-//				notifyQueue.schedule(new UpdateCommandAllocation(allocationChangeListeners, evt),0);
-//			}
-		}
+		return operator.resolve( workingUserId, User.class);
 	}
 
 	/******************************
@@ -488,14 +212,14 @@ public class FacadeImpl implements RaplaFacade,ClientFacade,StorageUpdateListene
 	private Collection<Allocatable> getVisibleAllocatables(	ClassificationFilter[] filters) throws RaplaException {
         User workingUser = getWorkingUser();
 		Collection<Allocatable> objects = operator.getAllocatables(filters);
-		Iterator<Allocatable> it = objects.iterator();
-		PermissionController permissionController = getPermissionController();
-		while (it.hasNext()) {
-			Allocatable allocatable = it.next();
-			if (workingUser == null || workingUser.isAdmin())
-				continue;
-			if (!permissionController.canRead(allocatable, workingUser))
-				it.remove();
+		if (workingUser != null && !workingUser.isAdmin()) {
+			PermissionController permissionController = getPermissionController();
+			Iterator<Allocatable> it = objects.iterator();
+			while (it.hasNext()) {
+				Allocatable allocatable = it.next();
+				if (!permissionController.canRead(allocatable, workingUser))
+					it.remove();
+			}
 		}
 		return objects;
 	}
@@ -604,8 +328,8 @@ public class FacadeImpl implements RaplaFacade,ClientFacade,StorageUpdateListene
         return reservationPromise;
 	}
 	
-	public Promise<Collection<Reservation>> getReservations(User user, Date start, Date end,ClassificationFilter[] filters) {
-        Promise<Collection<Reservation>>collection = getReservationsAsync(user, null,start, end, filters);
+	public Promise<Collection<Reservation>> getReservations(User user, Date start, Date end,ClassificationFilter[] reservationFilters) {
+        Promise<Collection<Reservation>>collection = getReservationsAsync(user, null,start, end, reservationFilters);
         return collection;
 	}
 	
@@ -614,40 +338,7 @@ public class FacadeImpl implements RaplaFacade,ClientFacade,StorageUpdateListene
         return collection;
     }
 
-	public Period[] getPeriods() throws RaplaException {
-		Period[] result = getPeriodModel().getAllPeriods();
-		return result;
-	}
 
-	@Override
-	public PeriodModel getPeriodModel() throws RaplaException {
-		return  getPeriodModelFor( null);
-	}
-
-	@Override
-	public PeriodModel getPeriodModelFor(String key) throws RaplaException {
-		if ( key == null)
-		{
-			if (periodModel == null) {
-				periodModel = new PeriodModelImpl(this, new Category[] {});
-			}
-			return periodModel;
-		}
-		if (periodModelHoliday == null) {
-			final Category timetablesCategory = getSuperCategory().getCategory("timetables");
-			if ( timetablesCategory == null)
-			{
-				return null;
-			}
-			Category[] timetables = timetablesCategory.getCategories();
-			if ( timetables.length == 0)
-			{
-				return null;
-			}
-			periodModelHoliday = new PeriodModelImpl(this, timetables);
-		}
-		return periodModelHoliday;
-	}
 
 	public DynamicType[] getDynamicTypes(String classificationType)
 			throws RaplaException {
@@ -818,159 +509,10 @@ public class FacadeImpl implements RaplaFacade,ClientFacade,StorageUpdateListene
 		return operator.getNextAllocatableDate(allocatables, appointment,ignoreList, worktimeStartMinutes, worktimeEndMinutes, excludeDays, rowsPerHour);
 	}
 	
-	/******************************
-	 * Login - Module *
-	 ******************************/
-	public User getUser() throws RaplaException {
-		if (this.workingUserId == null) {
-			throw new RaplaException("no user loged in");
-		}
-	    return operator.resolve( workingUserId, User.class);
-	}
-
-	/** unlike getUserFromRequest this can be null if working user not set*/
-    private User getWorkingUser() throws EntityNotFoundException {
-        if ( workingUserId == null)
-        {
-            return null;
-        }
-        return operator.resolve( workingUserId, User.class);
-    }
-
-   public boolean login(String username, char[] password)
-            throws RaplaException {
-       return login( new ConnectInfo(username, password));
-   }
-   
-   public boolean login(ConnectInfo connectInfo)
-			throws RaplaException {
-       User user = null;
-       try {
-		   if ( operator instanceof RemoteOperator)
-		   {
-			   user = ((RemoteOperator)operator).connect(connectInfo);
-		   }
-		   else
-		   {
-			   final String username = connectInfo.getUsername();
-			   user = operator.getUser(username);
-			   if ( user == null)
-			   {
-				   throw new EntityNotFoundException("user with username " + username + " not found.");
-			   }
-		   }
-       } catch (RaplaSecurityException ex) {
-			return false;
-       } finally {
-			// Clear password
-//				for (int i = 0; i < password.length; i++)
-//					password[i] = 0;
-       }
-//       String username = connectInfo.getUsername();
-//       if  ( connectInfo.getConnectAs() != null)
-//       {
-//           username = connectInfo.getConnectAs();
-//       }
-
-	   if ( user != null)
-	   {
-		   getLogger().info("Login " + user.getUsername());
-		   this.workingUserId = user.getId();
-		   return true;
-	   }
-	   return false;
-   }
-   
-   public Promise<Void> load()
-   {
-	   if (!( operator instanceof RemoteOperator))
-	   {
-		   throw new IllegalStateException("Only RemoteOperator supports async loading");
-	   }
-       final Promise<User> connect = ((RemoteOperator)operator).connectAsync();
-       final Promise<Void> promise = connect.thenAccept((user) -> {
-           workingUserId = user.getId();
-       });
-       return promise;
-   }
-
-   public boolean canChangePassword() {
-		try {
-			return operator.canChangePassword();
-        } catch (RaplaException e) {
-            return false;
-        }
-	}
-
-	public boolean isSessionActive() {
-		return (this.workingUserId != null);
-	}
-
-	private boolean aborting;
-	public void logout() throws RaplaException {
-		
-		if (this.workingUserId == null )
-			return;
-		getLogger().info("Logout " + workingUserId);
-		aborting = true;
-			
-		try
-		{
-			// now we can add it again
-			this.workingUserId = null;
-			// we need to remove the storage update listener, because the disconnect
-			// would trigger a restart otherwise
-			if ( operator instanceof RemoteOperator)
-			{
-				RemoteOperator remoteOperator = (RemoteOperator)operator;
-				remoteOperator.removeStorageUpdateListener(this);
-				remoteOperator.disconnect();
-				remoteOperator.addStorageUpdateListener(this);
-			}
-		} 
-		finally
-		{
-			aborting = false;
-		}
-	}
-	
-	private boolean isAborting() {
-		return aborting || !operator.isConnected();
-	}
-
-	public void changePassword(User user, char[] oldPassword, char[] newPassword) throws RaplaException {
-		operator.changePassword( user, oldPassword, newPassword);
-	}
 
 	/******************************
 	 * Modification-module *
 	 ******************************/
-	public Allocatable getTemplate() 
-	{
-		if ( templateId != null)
-		{
-		    Allocatable template = operator.tryResolve( templateId, Allocatable.class);
-		    return template;
-		}
-		return null;
-	}
-
-	public void setTemplate(Allocatable template) 
-	{
-		this.templateId = template != null ? template.getId() : null;
-//		User workingUser;
-//        try {
-//            workingUser = getWorkingUser();
-//        } catch (EntityNotFoundException e) {
-//            // system user as change initiator won't hurt 
-//            workingUser = null;
-//            getLogger().error(e.getMessage(),e);
-//        }
-		ModificationEventImpl updateResult = new ModificationEventImpl();
-		updateResult.setSwitchTemplateMode(true);
-		updateResult.setInvalidateInterval( new TimeInterval(null, null));
-		fireUpdateEvent( updateResult);
-	}
 
 	@SuppressWarnings("unchecked")
 	public <T> RaplaMap<T> newRaplaMapForMap(Map<String, T> map) {
@@ -996,15 +538,10 @@ public class FacadeImpl implements RaplaFacade,ClientFacade,StorageUpdateListene
 	public Reservation newReservationDeprecated() throws RaplaException
     {
         Classification classification = getDynamicTypes(DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RESERVATION)[0].newClassification();
-		return newReservation( classification );
-    }
-	
-	public Reservation newReservation(Classification classification) throws RaplaException 
-    {
 		User user = getUser();
-        return newReservation( classification,user );
+		return newReservation( classification,user );
     }
-	
+
 	public Reservation newReservation(Classification classification,User user) throws RaplaException 
     {
         if (!getPermissionController().canCreate(classification.getType(), user))
@@ -1023,6 +560,16 @@ public class FacadeImpl implements RaplaFacade,ClientFacade,StorageUpdateListene
         }
         return reservation;
     }
+
+	public Allocatable getTemplate()
+	{
+		if ( templateId != null)
+		{
+			Allocatable template = operator.tryResolve( templateId, Allocatable.class);
+			return template;
+		}
+		return null;
+	}
 
     private void setTemplateParams(Reservation reservation) throws RaplaException {
         Allocatable template = getTemplate();
@@ -1062,6 +609,14 @@ public class FacadeImpl implements RaplaFacade,ClientFacade,StorageUpdateListene
         setNew(appointment, user);
         return appointment;
     }
+
+	public User getUser() throws RaplaException {
+		User user = getWorkingUser();
+		if (user == null) {
+			throw new RaplaException("no user loged in");
+		}
+		return user;
+	}
 
 	public Appointment newAppointment(Date startDate, Date endDate,	RepeatingType repeatingType, int repeatingDuration)	throws RaplaException {
 		AppointmentImpl appointment = new AppointmentImpl(startDate, endDate, repeatingType, repeatingDuration);
@@ -1365,47 +920,6 @@ public class FacadeImpl implements RaplaFacade,ClientFacade,StorageUpdateListene
 
 
 
-	public <T extends Entity> Map<T,T> checklastChanged(Collection<T> entities, boolean isNew) throws RaplaException
-	{
-		Map<T,T> persistantVersions= getPersistantForList(entities);
-		checklastChanged(entities, persistantVersions,isNew);
-		return persistantVersions;
-	}
-
-	private <T extends Entity> void checklastChanged(Collection<T> entities, Map<T,T> persistantVersions, boolean isNew) throws RaplaException
-	{
-		refresh();
-		for ( T entity:entities)
-		{
-			if ( entity instanceof ModifiableTimestamp)
-			{
-				T persistant = persistantVersions.get( entity);
-				if ( persistant != null)
-				{
-					ReferenceInfo<User> lastChangedBy = ((ModifiableTimestamp) persistant).getLastChangedBy();
-					if (lastChangedBy != null && !getUser().getReference().equals(lastChangedBy))
-					{
-						final Locale locale = i18n.getLocale();
-						String name = entity instanceof Named ? ((Named) entity).getName( locale) : entity.toString();
-						throw new RaplaException(i18n.format("error.new_version", name));
-					}
-				}
-				else
-				{
-					// if there exists an older version
-					if ( !isNew )
-					{
-						final Locale locale = i18n.getLocale();
-						String name = entity instanceof Named ? ((Named) entity).getName( locale) : entity.toString();
-						throw new RaplaException(i18n.format("error.new_version", name));
-					}
-					// otherwise we ignore it
-				}
-
-			}
-		}
-	}
-	
 	   public Collection<Reservation> copy(Collection<Reservation> toCopy, Date beginn, boolean keepTime, User user) throws RaplaException
 	    {
 	        List<Reservation> sortedReservations = new ArrayList<Reservation>(  toCopy);
@@ -1638,11 +1152,7 @@ public class FacadeImpl implements RaplaFacade,ClientFacade,StorageUpdateListene
 		long time = System.currentTimeMillis();
 		try
 		{
-			User user = null;
-			if ( workingUserId != null)
-			{
-				user = getWorkingUser();
-			}
+			User user = getWorkingUser();
 			dispatchSynchronized(storeList, removeList, user);
 			if (getLogger().isDebugEnabled())
 				getLogger().debug("Storing took " + (System.currentTimeMillis() - time) + " ms.");
@@ -1724,29 +1234,6 @@ public class FacadeImpl implements RaplaFacade,ClientFacade,StorageUpdateListene
         }
 	}
 
-	public CommandHistory getCommandHistory() 
-	{
-		return commandHistory;
-	}
-
-	public void changeName(String title, String firstname, String surname) throws RaplaException
-	{
-		User user = getUser();
-		operator.changeName(user, title, firstname, surname);
-	}
-
-	public void changeEmail(String newEmail)  throws RaplaException
-	{
-		User user = getUser();
-		operator.changeEmail(user, newEmail);
-	}
-
-	public void confirmEmail(String newEmail) throws RaplaException {
-		User user = getUser();
-		operator.confirmEmail(user, newEmail);
-	}
-
-
 	public <T extends Entity> T tryResolve( ReferenceInfo<T> info)
 	{
 		return operator.tryResolve( info);
@@ -1763,6 +1250,68 @@ public class FacadeImpl implements RaplaFacade,ClientFacade,StorageUpdateListene
 		return operator.doMerge(selectedObject, allocatableIds, user);
 	}
 
+
+	public void setTemplateId(String templateId) {
+		this.templateId = templateId;
+	}
+
+	@Override
+	public <T extends Entity> Map<T,T> checklastChanged(Collection<T> entities, User user,boolean isNew) throws RaplaException
+	{
+		Map<T,T> persistantVersions= getPersistantForList(entities);
+		checklastChanged(entities, persistantVersions,user,isNew);
+		return persistantVersions;
+	}
+
+	private <T extends Entity> void checklastChanged(Collection<T> entities, Map<T,T> persistantVersions, User user,boolean isNew) throws RaplaException
+	{
+		//refresh();
+		for ( T entity:entities)
+		{
+			if ( entity instanceof ModifiableTimestamp)
+			{
+				T persistant = persistantVersions.get( entity);
+				if ( persistant != null)
+				{
+					ReferenceInfo<User> lastChangedBy = ((ModifiableTimestamp) persistant).getLastChangedBy();
+					if (lastChangedBy != null && !user.getReference().equals(lastChangedBy))
+					{
+						final Locale locale = i18n.getLocale();
+						String name = entity instanceof Named ? ((Named) entity).getName( locale) : entity.toString();
+						throw new RaplaException(i18n.format("error.new_version", name));
+					}
+				}
+				else
+				{
+					// if there exists an older version
+					if ( !isNew )
+					{
+						final Locale locale = i18n.getLocale();
+						String name = entity instanceof Named ? ((Named) entity).getName( locale) : entity.toString();
+						throw new RaplaException(i18n.format("error.new_version", name));
+					}
+					// otherwise we ignore it
+				}
+
+			}
+		}
+	}
+
+	@Override
+	public Period[] getPeriods() throws RaplaException {
+		Period[] result = getPeriodModel().getAllPeriods();
+		return result;
+	}
+
+	@Override
+	public PeriodModel getPeriodModel() throws RaplaException {
+		return  getPeriodModelFor( null);
+	}
+
+	@Override
+	public PeriodModel getPeriodModelFor(String key) throws RaplaException {
+		return getOperator().getPeriodModelFor( key);
+	}
 
 
 }

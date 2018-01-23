@@ -1,6 +1,5 @@
 package org.rapla.client;
 
-import io.reactivex.functions.Action;
 import org.rapla.RaplaResources;
 import org.rapla.client.dialog.DialogInterface;
 import org.rapla.client.dialog.DialogUiFactoryInterface;
@@ -15,12 +14,9 @@ import org.rapla.entities.User;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.ResourceAnnotations;
 import org.rapla.entities.dynamictype.internal.AttributeImpl;
-import org.rapla.facade.CalendarSelectionModel;
-import org.rapla.facade.ClientFacade;
-import org.rapla.facade.ModificationEvent;
-import org.rapla.facade.ModificationListener;
-import org.rapla.facade.RaplaFacade;
-import org.rapla.facade.internal.FacadeImpl;
+import org.rapla.facade.*;
+import org.rapla.facade.client.ClientFacade;
+import org.rapla.facade.internal.ClientFacadeImpl;
 import org.rapla.facade.internal.ModifiableCalendarState;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
@@ -201,7 +197,7 @@ public class Application implements ApplicationView.Presenter, ModificationListe
 
         ModifiableCalendarState calendarState = new ModifiableCalendarState(clientFacade, calendarModelProvider);
 
-        ((FacadeImpl) clientFacade).addDirectModificationListener(new ModificationListener() {
+        ((ClientFacadeImpl) clientFacade).addDirectModificationListener(new ModificationListener() {
             public void dataChanged(ModificationEvent evt) throws RaplaException {
                 calendarState.dataChanged(evt);
             }

@@ -18,7 +18,7 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 import javax.swing.JFrame;
 import javax.swing.JRootPane;
-import java.awt.AWTEvent;
+import java.awt.*;
 import java.awt.event.WindowEvent;
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyVetoException;
@@ -58,6 +58,18 @@ public class RaplaFrame extends JFrame
         frameList.add(this);
         final JRootPane rootPane2 = getRootPane();
         rootPane2.setGlassPane(new DisabledGlassPane());
+    }
+
+    public void setActive(boolean active)
+    {
+        final DisabledGlassPane glassPane = (DisabledGlassPane) getRootPane().getGlassPane();
+        if ( active) {
+            glassPane.activate();
+        }
+        else
+        {
+            glassPane.deactivate();
+        }
     }
 
     @Override

@@ -31,9 +31,9 @@ import org.rapla.client.swing.toolkit.FrameControllerList;
 import org.rapla.components.i18n.BundleManager;
 import org.rapla.components.i18n.internal.DefaultBundleManager;
 import org.rapla.entities.User;
-import org.rapla.facade.ClientFacade;
+import org.rapla.facade.client.ClientFacade;
 import org.rapla.facade.UpdateErrorListener;
-import org.rapla.facade.internal.FacadeImpl;
+import org.rapla.facade.internal.ClientFacadeImpl;
 import org.rapla.framework.Disposable;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaInitializationException;
@@ -43,7 +43,11 @@ import org.rapla.inject.DefaultImplementation;
 import org.rapla.inject.InjectionContext;
 import org.rapla.logger.Logger;
 import org.rapla.scheduler.CommandScheduler;
+import org.rapla.scheduler.Promise;
+import org.rapla.storage.RaplaSecurityException;
 import org.rapla.storage.StorageOperator;
+import org.rapla.storage.dbrm.LoginTokens;
+import org.rapla.storage.dbrm.RemoteAuthentificationService;
 import org.rapla.storage.dbrm.RemoteConnectionInfo;
 
 import javax.inject.Inject;
@@ -84,13 +88,15 @@ public class RaplaClientServiceImpl implements ClientService, UpdateErrorListene
 
     Application application;
     final private Provider<Application> applicationProvider;
-
+    RemoteAuthentificationService authentificationService;
+    RemoteConnectionInfo connectionInfo;
     @Inject
-    public RaplaClientServiceImpl(StartupEnvironment env, Logger logger, DialogUiFactoryInterface dialogUiFactory, ClientFacade facade, RaplaResources i18n,RaplaSystemInfo systemInfo,
-            RaplaLocale raplaLocale, BundleManager bundleManager, CommandScheduler commandScheduler, final StorageOperator storageOperator,
-            RaplaImages raplaImages, Provider<Application> applicationProvider, RemoteConnectionInfo connectionInfo)
+    public RaplaClientServiceImpl(StartupEnvironment env, Logger logger, DialogUiFactoryInterface dialogUiFactory, ClientFacade facade, RaplaResources i18n, RaplaSystemInfo systemInfo,
+                                  RaplaLocale raplaLocale, BundleManager bundleManager, CommandScheduler commandScheduler, final StorageOperator storageOperator,
+                                  RaplaImages raplaImages, Provider<Application> applicationProvider, RemoteConnectionInfo connectionInfo, RemoteAuthentificationService authentificationService)
     {
         this.env = env;
+        this.authentificationService = authentificationService;
         this.i18n = i18n;
         String version = systemInfo.getString("rapla.version");
         logger.info("Rapla.Version=" + version);
@@ -112,8 +118,9 @@ public class RaplaClientServiceImpl implements ClientService, UpdateErrorListene
         this.bundleManager = bundleManager;
         this.commandScheduler = commandScheduler;
         this.applicationProvider = applicationProvider;
-        ((FacadeImpl) this.facade).setOperator(storageOperator);
+        ((ClientFacadeImpl) this.facade).setOperator(storageOperator);
         this.raplaImages = raplaImages;
+        this.connectionInfo = connectionInfo;
         try
         {
             URL downloadURL = env.getDownloadURL();
@@ -204,13 +211,16 @@ public class RaplaClientServiceImpl implements ClientService, UpdateErrorListene
             logoutAvailable = true;
             if (connectInfo != null && connectInfo.getUsername() != null)
             {
-                if (login(connectInfo))
-                {
-                    beginRaplaSession();
-                    return;
-                }
+                login(connectInfo).thenAccept( (result)-> {
+                    getLogger().info("Login successfull");
+                    if (result )
+                        beginRaplaSession();
+                    else
+                        startLogin();
+                });
+            } else {
+                startLogin();
             }
-            startLogin();
         }
         catch (Exception ex)
         {
@@ -253,20 +263,20 @@ public class RaplaClientServiceImpl implements ClientService, UpdateErrorListene
      */
     private void beginRaplaSession() throws Exception
     {
-        application = applicationProvider.get();
-        application.start(defaultLanguageChosen, () ->
+        getClientFacade().load().thenRun(()->
         {
-            if (!isRestartingGUI())
+            application = applicationProvider.get();
+            application.start(defaultLanguageChosen, () ->
             {
-                stop();
-            }
-            else
-            {
-                restartingGUI = false;
-            }
+                if (!isRestartingGUI()) {
+                    stop();
+                } else {
+                    restartingGUI = false;
+                }
+            });
+            started = true;
+            fireClientStarted();
         });
-        started = true;
-        fireClientStarted();
     }
 
     /*
@@ -463,37 +473,40 @@ public class RaplaClientServiceImpl implements ClientService, UpdateErrorListene
                 {
                     String username = dlg.getUsername();
                     char[] password = dlg.getPassword();
-                    boolean success = false;
-                    try
+                    String connectAs = null;
+                    reconnectInfo = new ConnectInfo(username, password, connectAs);
+                    dlg.setActive( true);
+                    login(reconnectInfo).thenAccept(
+                            (success) ->
                     {
-                        String connectAs = null;
-                        reconnectInfo = new ConnectInfo(username, password, connectAs);
-                        success = login(reconnectInfo);
                         if (!success)
                         {
                             dlg.resetPassword();
+                            dlg.setActive( true);
                             dialogUiFactory.showWarning(i18n.getString("error.login"), new SwingPopupContext(dlg, null));
                         }
-                    }
-                    catch (RaplaException ex)
+                        else
+                        {
+                            dlg.dispose();
+                            loginMutex.release();
+                            try
+                            {
+                                beginRaplaSession();
+                            }
+                            catch (Throwable ex)
+                            {
+                                dialogUiFactory.showException(ex, null);
+                                fireClientAborted();
+                            }
+                        }
+                    }).exceptionally((ex)->
                     {
                         dlg.resetPassword();
+                        dlg.setActive( false);
                         dialogUiFactory.showException(ex, new SwingPopupContext(dlg, null));
-                    }
-                    if (success)
-                    {
-                        dlg.dispose();
-                        loginMutex.release();
-                        try
-                        {
-                            beginRaplaSession();
-                        }
-                        catch (Throwable ex)
-                        {
-                            dialogUiFactory.showException(ex, null);
-                            fireClientAborted();
-                        }
-                    } // end of else
+                        return null;
+                    });
+
                 }
 
             };
@@ -590,18 +603,23 @@ public class RaplaClientServiceImpl implements ClientService, UpdateErrorListene
         stop(new ConnectInfo(null, "".toCharArray()));
     }
 
-    private boolean login(ConnectInfo connect) throws RaplaException
+    private Promise<Boolean> login(ConnectInfo connectInfo)
     {
-        ClientFacade facade = getClientFacade();
-        if (facade.login(connect))
+        String connectAs = connectInfo.getConnectAs();
+        String password = new String(connectInfo.getPassword());
+        String username = connectInfo.getUsername();
+        return commandScheduler.supply(()->
         {
-            this.reconnectInfo = connect;
+            LoginTokens loginToken = authentificationService.login(username, password, connectAs);
+            String accessToken = loginToken.getAccessToken();
+            if (accessToken != null) {
+                this.connectionInfo.setAccessToken(accessToken);
+                this.reconnectInfo = connectInfo;
+            } else {
+                throw new RaplaSecurityException("Invalid Access token");
+            }
             return true;
-        }
-        else
-        {
-            return false;
-        }
+        });
     }
 
     public boolean isLogoutAvailable()

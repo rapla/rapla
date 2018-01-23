@@ -25,7 +25,7 @@ import org.rapla.entities.domain.Appointment;
 import org.rapla.entities.domain.Permission;
 import org.rapla.entities.domain.Reservation;
 import org.rapla.entities.dynamictype.ClassificationFilter;
-import org.rapla.facade.ClientFacade;
+import org.rapla.facade.client.ClientFacade;
 import org.rapla.facade.RaplaFacade;
 import org.rapla.storage.PermissionController;
 import org.rapla.storage.RaplaSecurityException;
@@ -52,7 +52,7 @@ public class PermissionTest extends AbstractTestWithServer {
         testFacadeClient = createClientFacade();
         adminFacade = adminFacadeClient.getRaplaFacade();
         testFacade = testFacadeClient.getRaplaFacade();
-        adminFacadeClient.login("homer","duffs".toCharArray());
+        login(adminFacadeClient,"homer","duffs".toCharArray());
         try
         {
             Category userGroupsCategory = adminFacade.getUserGroupsCategory();
@@ -70,7 +70,7 @@ public class PermissionTest extends AbstractTestWithServer {
             user.addGroup( testGroup );
             adminFacade.store( user );
             adminFacadeClient.changePassword( user, new char[]{}, new char[] {});
-            testFacadeClient.login("test","".toCharArray());
+            login(testFacadeClient,"test","".toCharArray());
         }
         catch (Exception ex) {
             throw ex;

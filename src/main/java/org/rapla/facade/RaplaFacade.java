@@ -88,9 +88,9 @@ public interface RaplaFacade
      @param user  A user-object or null for all users
      @param start only reservations beginning after the start-date will be returned (can be null).
      @param end   only reservations beginning before the end-date will be returned (can be null).
-     @param filters  you can specify classificationfilters or null for all reservations .
+     @param reservationFilters  you can specify classificationfilters or null for all reservations .
      */
-    Promise<Collection<Reservation>> getReservations(User user,Date start,Date end,ClassificationFilter[] filters);
+    Promise<Collection<Reservation>> getReservations(User user,Date start,Date end,ClassificationFilter[] reservationFilters);
     Promise<Collection<Reservation>> getReservationsAsync(User user, Allocatable[] allocatables, Date start, Date end, ClassificationFilter[] reservationFilters);
 
 
@@ -104,17 +104,6 @@ public interface RaplaFacade
      **/
     Promise<Collection<Reservation>> getReservationsForAllocatable(Allocatable[] allocatables, Date start,Date end,ClassificationFilter[] filters);
 
-    /** returns all available periods */
-    Period[] getPeriods() throws RaplaException;
-
-    /** returns an Interface for accessing the periods
-     * @throws RaplaException */
-    PeriodModel getPeriodModel() throws RaplaException;
-
-    /** returns an Interface for accessing the periods
-     * @throws RaplaException */
-    PeriodModel getPeriodModelFor(String key) throws RaplaException;
-
     /** returns the current date in GMT+0 Timezone. If rapla operates
      in multi-user mode, the date should be calculated from the
      server date.
@@ -127,10 +116,6 @@ public interface RaplaFacade
     /** returns all existing conflicts with the reservation */
     Promise<Collection<Conflict>> getConflictsForReservation(Reservation reservation);
 
-    /** returns all existing conflicts that are visible for the user
-     conflicts
-     */
-    Collection<Conflict> getConflicts() throws RaplaException;
 
     /** returns if the user has the permissions to change/create an
      allocation on the passed appointment. Changes of an
@@ -231,16 +216,6 @@ public interface RaplaFacade
      */
     Promise<Allocatable> doMerge(Allocatable selectedObject, Set<ReferenceInfo<Allocatable>> allocatableIds, User user);
 
-    /** checks if the user that is logged into the facade is the user that last changed the entites
-     *
-     * @param entities
-     * @param isNew if new is set then this method does not throw an exception if the entities are not found in persistant store
-     * @param <T>
-     * @return the latest persistant map of the entities
-     * @throws RaplaException if the logged in user is not the lastChanged user of any entities. If isNew is false then an exception is also thrown, when an entity is not found in persistant storage
-     */
-    <T extends Entity> Map<T,T> checklastChanged(Collection<T> entities, boolean isNew) throws RaplaException;
-
     <T extends Entity> Collection<T> editList(Collection<T> list) throws RaplaException;
 
     /** This call will be delegated to the {@link org.rapla.storage.StorageOperator}. It
@@ -311,7 +286,37 @@ public interface RaplaFacade
 
     Promise<Void> refreshAsync();
 
+    /** returns all existing conflicts that are visible for the user
+     conflicts
+     */
+    Collection<Conflict> getConflicts() throws RaplaException;
+
+    /** returns all available periods */
+    Period[] getPeriods() throws RaplaException;
+
+    /** returns an Interface for accessing the periods
+     * @throws RaplaException */
+    PeriodModel getPeriodModel() throws RaplaException;
+
+    /** returns an Interface for accessing the periods
+     * @throws RaplaException */
+    PeriodModel getPeriodModelFor(String key) throws RaplaException;
+
+    /** checks if the user that  is the user that last changed the entites
+     *
+     * @param entities
+     * @param isNew if new is set then this method does not throw an exception if the entities are not found in persistant store
+     * @param <T>
+     * @return the latest persistant map of the entities
+     * @throws RaplaException if the logged in user is not the lastChanged user of any entities. If isNew is false then an exception is also thrown, when an entity is not found in persistant storage
+     */
+    <T extends Entity> Map<T,T> checklastChanged(Collection<T> entities, User user,boolean isNew) throws RaplaException;
+
+    /** returns the logged in user if the facade is on the client. Otherwise it will thrown an error*/
+    User getUser() throws RaplaException;
     //<T> T  waitForWithRaplaException(Promise<T> promise, int millis) throws RaplaException;
+
+
 }
 
 

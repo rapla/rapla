@@ -45,7 +45,7 @@ import org.rapla.entities.storage.ReferenceInfo;
 import org.rapla.facade.CalendarModel;
 import org.rapla.facade.CalendarNotFoundExeption;
 import org.rapla.facade.CalendarSelectionModel;
-import org.rapla.facade.ClientFacade;
+import org.rapla.facade.client.ClientFacade;
 import org.rapla.facade.Conflict;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaInitializationException;
@@ -108,7 +108,7 @@ import static org.rapla.entities.configuration.CalendarModelConfiguration.EXPORT
 
     @Inject public CalendarModelImpl(ClientFacade clientFacade, RaplaLocale locale) throws RaplaInitializationException
     {
-        this(locale.getLocale(), getUser(clientFacade), ((FacadeImpl)clientFacade).getOperator(), ((FacadeImpl) clientFacade).getLogger());
+        this(locale.getLocale(), getUser(clientFacade), ((ClientFacadeImpl)clientFacade).getOperator(), ((ClientFacadeImpl) clientFacade).getLogger());
         try
         {
             load(null);

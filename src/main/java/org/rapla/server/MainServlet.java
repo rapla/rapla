@@ -177,8 +177,7 @@ public class MainServlet extends HttpServlet
             }
             else if (startupMode.equals("standalone"))
             {
-                String realPath = context.getRealPath("/WEB-INF");
-                URL downloadUrl = new URL("http://localhost:8051/");//new File(realPath).toURI().toURL();
+                URL downloadUrl = new URL("http://localhost:8051/");
                 final Object localConnector;
                 if (jndi.hasContext())
                 {

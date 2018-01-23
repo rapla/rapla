@@ -36,7 +36,7 @@ import org.rapla.entities.domain.Repeating;
 import org.rapla.entities.domain.Reservation;
 import org.rapla.entities.storage.ReferenceInfo;
 import org.rapla.facade.CalendarSelectionModel;
-import org.rapla.facade.ClientFacade;
+import org.rapla.facade.client.ClientFacade;
 import org.rapla.facade.RaplaFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
@@ -1164,7 +1164,8 @@ public abstract class ReservationControllerImpl implements ReservationController
                     }
                 } else {
                     boolean isNew = false;
-                    getFacade().checklastChanged(Collections.singletonList(reservation), isNew);
+                    User user = getClientFacade().getUser();
+                    getFacade().checklastChanged(Collections.singletonList(reservation), user,isNew);
                 }
 
                 long offset = getOffset(sourceStart, destStart, keepTime);
@@ -1390,7 +1391,8 @@ public abstract class ReservationControllerImpl implements ReservationController
             promise = checkEvents(storeList, sourceComponent);
         } else {
             try {
-                facade.checklastChanged(storeList, false);
+                User user = getClientFacade().getUser();
+                getFacade().checklastChanged(storeList, user,false);
                 promise = new ResolvedPromise<Boolean>(true);
             } catch (Exception ex) {
                 promise = new ResolvedPromise<Boolean>(ex);

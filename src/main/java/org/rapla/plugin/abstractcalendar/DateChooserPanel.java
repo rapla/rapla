@@ -28,7 +28,7 @@ import org.rapla.components.layout.TableLayout;
 import org.rapla.components.util.DateTools;
 import org.rapla.entities.domain.Period;
 import org.rapla.facade.CalendarModel;
-import org.rapla.facade.ClientFacade;
+import org.rapla.facade.client.ClientFacade;
 import org.rapla.facade.PeriodModel;
 import org.rapla.framework.Disposable;
 import org.rapla.framework.RaplaException;
@@ -73,7 +73,7 @@ public class DateChooserPanel extends RaplaGUIComponent
         prevButton.setSize(30, 20);
         nextButton.setSize(30, 20);
         
-        periodChooser = new PeriodChooser(i18n, facade,PeriodChooser.START_ONLY);
+        periodChooser = new PeriodChooser(i18n, facade.getRaplaFacade(),PeriodChooser.START_ONLY);
         dateSelection = RaplaGUIComponent.createRaplaCalendar(dateRenderer, ioInterface,i18n,raplaLocale,logger);
 
         //prevButton.setText("<");

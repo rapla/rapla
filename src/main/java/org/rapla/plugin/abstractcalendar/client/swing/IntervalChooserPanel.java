@@ -28,7 +28,7 @@ import org.rapla.components.layout.TableLayout;
 import org.rapla.components.util.DateTools;
 import org.rapla.entities.domain.Period;
 import org.rapla.facade.CalendarModel;
-import org.rapla.facade.ClientFacade;
+import org.rapla.facade.client.ClientFacade;
 import org.rapla.facade.PeriodModel;
 import org.rapla.framework.RaplaInitializationException;
 import org.rapla.framework.RaplaLocale;
@@ -91,7 +91,7 @@ public class IntervalChooserPanel extends RaplaGUIComponent implements RaplaWidg
         super(facade, i18n, raplaLocale, logger);
         this.model = model;
 
-        periodChooser = new PeriodChooser(i18n, facade, PeriodChooser.START_AND_END);
+        periodChooser = new PeriodChooser(i18n, facade.getRaplaFacade(), PeriodChooser.START_AND_END);
         periodChooser.setWeekOfPeriodVisible(false);
 
         startDateSelection = RaplaGUIComponent.createRaplaCalendar(dateRenderer, ioInterface, i18n,raplaLocale, logger);

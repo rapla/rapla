@@ -17,7 +17,7 @@ import org.rapla.entities.domain.Appointment;
 import org.rapla.entities.domain.Reservation;
 import org.rapla.entities.dynamictype.ClassificationFilter;
 import org.rapla.entities.dynamictype.DynamicType;
-import org.rapla.facade.ClientFacade;
+import org.rapla.facade.client.ClientFacade;
 import org.rapla.facade.RaplaFacade;
 import org.rapla.storage.RaplaSecurityException;
 import org.rapla.test.util.RaplaTestCase;
@@ -50,8 +50,8 @@ public class SecurityManagerTest extends AbstractTestWithServer {
 		// We test conflict prevention for an appointment that is in the future
 		Date start = new Date(facade1.today().getTime() + DateTools.MILLISECONDS_PER_DAY  +  10 * DateTools.MILLISECONDS_PER_HOUR);
 		Date end = new Date( start.getTime() + 2 * DateTools.MILLISECONDS_PER_HOUR);
-		
-		clientFacade1.login("homer", "duffs".toCharArray());
+
+		login(clientFacade1,"homer", "duffs".toCharArray());
 		DynamicType roomType = facade1.getDynamicType("room");
 		ClassificationFilter filter = roomType.newClassificationFilter();
 		filter.addEqualsRule("name", "erwin");
@@ -66,9 +66,9 @@ public class SecurityManagerTest extends AbstractTestWithServer {
 			event.addAllocatable( resource );
 			facade1.store( event );
 		}
-		clientFacade1.logout();
+		logout(clientFacade1);
 		// Now we login as a non admin user, who isnt allowed to create conflicts on the resource erwin
-		clientFacade1.login("monty", "burns".toCharArray());
+		login(clientFacade1,"monty", "burns".toCharArray());
 		{
 			Reservation event = facade1.newReservationDeprecated();
 			// A new event with the same time for the same resource should fail. 
@@ -137,7 +137,7 @@ public class SecurityManagerTest extends AbstractTestWithServer {
 					Assert.fail("Exception expected but was not security exception");
 				}
 			}
-			clientFacade1.logout();
+			logout(clientFacade1);
 		    Thread.sleep(100);
 		}
 
@@ -146,7 +146,7 @@ public class SecurityManagerTest extends AbstractTestWithServer {
 	@Test
 	public void testUserAdminGroup() throws Exception
 	{
-		clientFacade1.login("monty", "burns".toCharArray());
+		login(clientFacade1,"monty", "burns".toCharArray());
 		final RaplaFacade raplaFacade = clientFacade1.getRaplaFacade();
 		final Category userGroupsCategory = raplaFacade.getUserGroupsCategory();
 		Category powerplant = userGroupsCategory.getCategory("powerplant");

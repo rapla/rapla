@@ -23,7 +23,7 @@ import org.rapla.components.layout.TableLayout;
 import org.rapla.components.util.LocaleTools;
 import org.rapla.entities.configuration.Preferences;
 import org.rapla.facade.CalendarModel;
-import org.rapla.facade.ClientFacade;
+import org.rapla.facade.client.ClientFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaInitializationException;
 import org.rapla.framework.RaplaLocale;

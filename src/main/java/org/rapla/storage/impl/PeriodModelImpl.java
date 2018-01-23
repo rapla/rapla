@@ -10,8 +10,9 @@
  | program with every library, which license fulfills the Open Source       |
  | Definition as published by the Open Source Initiative (OSI).             |
  *--------------------------------------------------------------------------*/
-package org.rapla.facade.internal;
+package org.rapla.storage.impl;
 
+import org.jetbrains.annotations.NotNull;
 import org.rapla.components.util.Assert;
 import org.rapla.components.util.DateTools;
 import org.rapla.components.util.TimeInterval;
@@ -25,17 +26,14 @@ import org.rapla.entities.dynamictype.Classification;
 import org.rapla.entities.dynamictype.ClassificationFilter;
 import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.entities.storage.ReferenceInfo;
-import org.rapla.facade.ModificationEvent;
-import org.rapla.facade.ModificationListener;
 import org.rapla.facade.PeriodModel;
-import org.rapla.facade.RaplaFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.storage.StorageOperator;
+import org.rapla.storage.UpdateResult;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.Comparator;
 import java.util.Date;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -45,30 +43,30 @@ import java.util.Set;
 import java.util.TreeSet;
 
 
-class PeriodModelImpl implements PeriodModel,ModificationListener
+class PeriodModelImpl implements PeriodModel
 {
-    TreeSet<PeriodImpl> m_periods = new TreeSet<PeriodImpl>(new Comparator<PeriodImpl>() {
-            public int compare(PeriodImpl o1, PeriodImpl o2) {
-				int compareTo = o1.compareTo(o2);
-				return -1 * compareTo;
-            }
-        }
-                                  );
-    RaplaFacade facade;
+    TreeSet<PeriodImpl> m_periods = createPeriodSet();
+
+    @NotNull
+    static private TreeSet<PeriodImpl> createPeriodSet() {
+        return new TreeSet<PeriodImpl>((o1, o2) -> -1 *o1.compareTo(o2));
+    }
+
+    StorageOperator operator;
     Period defaultPeriod;
     Set<Category> categories;
 
-    PeriodModelImpl( RaplaFacade query,Category[] keys) throws RaplaException {
-        this.facade = query;
+    PeriodModelImpl( StorageOperator query,Category[] keys) throws RaplaException {
+        this.operator = query;
         this.categories = new HashSet<>(Arrays.asList(keys));
         update();
     }
 
     public void update() throws RaplaException {
-        m_periods.clear();
-        DynamicType type = facade.getDynamicType(StorageOperator.PERIOD_TYPE);
+        TreeSet<PeriodImpl> newSet = createPeriodSet();
+        DynamicType type = operator.getDynamicType(StorageOperator.PERIOD_TYPE);
         ClassificationFilter[] filters = type.newClassificationFilter().toArray();
-        Collection<Allocatable> allocatables = facade.getOperator().getAllocatables( filters);
+        Collection<Allocatable> allocatables = operator.getAllocatables( filters);
         final Attribute categoryAtt = type.getAttribute("category");
         for ( Allocatable alloc:allocatables)
         {
@@ -82,8 +80,9 @@ class PeriodModelImpl implements PeriodModel,ModificationListener
                 continue;
             }
             PeriodImpl period = new PeriodImpl(name,start, DateTools.fillDate(end), alloc.getId(), new LinkedHashSet<>(categories));
-        	m_periods.add(period);
+            newSet.add(period);
         }
+        m_periods = newSet;
     }
 
     private boolean machtesKey(Collection<Category> categories)
@@ -100,19 +99,19 @@ class PeriodModelImpl implements PeriodModel,ModificationListener
             }
         }
         return  false;
-
     }
 
-    public void dataChanged(ModificationEvent evt) throws RaplaException
+    public void update(Collection<Entity> updatedEntities, Collection<ReferenceInfo> toRemove) throws RaplaException
 	{
-    	if (isPeriodModified(evt))
+
+    	if (isPeriodModified(updatedEntities, toRemove))
     	{
-    		update();
+    		update(updatedEntities, toRemove);
     	}
 	}
 
-	public boolean isPeriodModified(ModificationEvent evt) {
-		for (Entity changed:evt.getChanged())
+	private boolean isPeriodModified(Collection<Entity> updatedEntities, Collection<ReferenceInfo> toRemove) {
+		for (Entity changed:updatedEntities)
 		{
 			if ( isPeriod( changed))
 			{
@@ -120,7 +119,7 @@ class PeriodModelImpl implements PeriodModel,ModificationListener
 			}
 		}
 		
-		for (ReferenceInfo removed:evt.getRemovedReferences())
+		for (ReferenceInfo removed:toRemove)
 		{
 			if ( containsPeriodId(removed.getId()))
 			{

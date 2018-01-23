@@ -36,6 +36,7 @@ import org.rapla.entities.extensionpoints.FunctionFactory;
 import org.rapla.entities.storage.EntityResolver;
 import org.rapla.entities.storage.ReferenceInfo;
 import org.rapla.facade.Conflict;
+import org.rapla.facade.PeriodModel;
 import org.rapla.framework.RaplaException;
 import org.rapla.scheduler.Promise;
 
@@ -138,5 +139,8 @@ public interface StorageOperator extends EntityResolver {
 
     Collection<Allocatable> getDependent(Collection<Allocatable> allocatables);
 
+    /** returns an Interface for accessing the periods
+     * @throws RaplaException */
+    PeriodModel getPeriodModelFor(String key) throws RaplaException;
 
 }

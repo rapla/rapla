@@ -14,6 +14,7 @@ package org.rapla.client.internal;
 
 import org.rapla.RaplaResources;
 import org.rapla.client.swing.RaplaGUIComponent;
+import org.rapla.client.swing.toolkit.DisabledGlassPane;
 import org.rapla.components.i18n.internal.DefaultBundleManager;
 import org.rapla.components.iolayer.IOInterface;
 import org.rapla.components.layout.TableLayout;
@@ -83,6 +84,19 @@ public final class LoginDialog extends JFrame implements LocaleChangeListener
 		localeSelector.addLocaleChangeListener(this);
 		this.logger = logger;
 		this.raplaLocale = raplaLocale;
+		getRootPane().setGlassPane(new DisabledGlassPane());
+	}
+
+	public void setActive(boolean active)
+	{
+		final DisabledGlassPane glassPane = (DisabledGlassPane) getRootPane().getGlassPane();
+		if ( active) {
+			glassPane.activate();
+		}
+		else
+		{
+			glassPane.deactivate();
+		}
 	}
 	
 	public static LoginDialog create(StartupEnvironment env, RaplaResources i18n, DefaultBundleManager bundleManager, Logger logger, RaplaLocale raplaLocale, JComponent languageSelector) throws RaplaException

@@ -21,7 +21,7 @@ import org.junit.runners.JUnit4;
 import org.rapla.AbstractTestWithServer;
 import org.rapla.entities.Category;
 import org.rapla.entities.User;
-import org.rapla.facade.ClientFacade;
+import org.rapla.facade.client.ClientFacade;
 import org.rapla.facade.RaplaFacade;
 import org.rapla.framework.RaplaException;
 
@@ -37,7 +37,7 @@ public class UserTest extends AbstractTestWithServer {
     @Before
     public void setUp() throws Exception {
         adminFacade = createClientFacade();
-        adminFacade.login("homer","duffs".toCharArray());
+        login(adminFacade,"homer","duffs".toCharArray());
         locale = Locale.getDefault();
 
         try
@@ -49,19 +49,19 @@ public class UserTest extends AbstractTestWithServer {
             groups.addCategory( testGroup );
             raplaFacade.store( groups );
         } catch (RaplaException ex) {
-            adminFacade.logout();
+            logout(adminFacade);
             throw ex;
             
         }
         testFacade = createClientFacade();
-        boolean canLogin = testFacade.login("homer","duffs".toCharArray());
+        boolean canLogin = login(testFacade,"homer","duffs".toCharArray());
         Assert.assertTrue("Can't login", canLogin);
     }
 
     @After
     public void tearDown() throws Exception {
-        adminFacade.logout();
-        testFacade.logout();
+        logout(adminFacade);
+        logout(testFacade);
     }
 
     @Test

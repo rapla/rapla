@@ -28,8 +28,9 @@ import org.rapla.entities.domain.permission.PermissionExtension;
 import org.rapla.entities.domain.permission.impl.RaplaDefaultPermissionImpl;
 import org.rapla.entities.dynamictype.internal.StandardFunctions;
 import org.rapla.entities.extensionpoints.FunctionFactory;
-import org.rapla.facade.ClientFacade;
+import org.rapla.facade.client.ClientFacade;
 import org.rapla.facade.RaplaFacade;
+import org.rapla.facade.internal.ClientFacadeImpl;
 import org.rapla.facade.internal.FacadeImpl;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
@@ -450,7 +451,8 @@ public abstract class RaplaTestCase
                         remoteStorage, connectionInfo, permissionExtensionsList, lockManager);
                 FacadeImpl facade = new FacadeImpl(i18n, scheduler, logger);
                 facade.setOperator(remoteOperator);
-                return facade;
+                ClientFacade clientFacade = new ClientFacadeImpl(facade,logger,i18n);
+                return clientFacade;
             }
         };
         return clientFacadeProvider;

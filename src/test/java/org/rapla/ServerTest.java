@@ -41,7 +41,7 @@ import org.rapla.entities.dynamictype.ConstraintIds;
 import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.entities.dynamictype.DynamicTypeAnnotations;
 import org.rapla.facade.CalendarSelectionModel;
-import org.rapla.facade.ClientFacade;
+import org.rapla.facade.client.ClientFacade;
 import org.rapla.facade.RaplaFacade;
 import org.rapla.facade.internal.CalendarModelImpl;
 import org.rapla.framework.RaplaException;
@@ -115,9 +115,9 @@ public class ServerTest
         clientFacade1 = clientFacadeProvider.get();
         clientFacade2 = clientFacadeProvider.get();
         raplaLocale = serverService.getRaplaLocale();
-        clientFacade1.login("homer", "duffs".toCharArray());
+        login(clientFacade1,"homer", "duffs".toCharArray());
 
-        clientFacade2.login("homer", "duffs".toCharArray());
+        login(clientFacade2,"homer", "duffs".toCharArray());
         locale = Locale.getDefault();
     }
 
@@ -127,8 +127,8 @@ public class ServerTest
         RaplaTestCase.dispose(getServerFacade());
         RaplaTestCase.dispose(getRaplaFacade1());
         RaplaTestCase.dispose(getRaplaFacade2());
-        clientFacade1.logout();
-        clientFacade2.logout();
+        logout(clientFacade1);
+        logout(clientFacade2);
         server.stop();
 
         URL server = new URL("http://127.0.0.1:" + port + "/rapla/auth");
@@ -177,9 +177,9 @@ public class ServerTest
     @Test
     public void testLogin() throws Exception
     {
-        clientFacade1.logout();
-        Assert.assertEquals(false, clientFacade1.login("non_existant_user", "".toCharArray()));
-        Assert.assertEquals(false, clientFacade1.login("non_existant_user", "fake".toCharArray()));
+        logout(clientFacade1);
+        Assert.assertEquals(false, login(clientFacade1,"non_existant_user", "".toCharArray()));
+        Assert.assertEquals(false, login(clientFacade1,"non_existant_user", "fake".toCharArray()));
     }
 
     @Test
@@ -217,7 +217,7 @@ public class ServerTest
         // test for modify in second facade
         Reservation persistant = raplaFacade2.getPersistant(r2);
         Assert.assertEquals(2, persistant.getAllocatables().length);
-        clientFacade2.logout();
+        logout(clientFacade2);
     }
 
     public RaplaFacade getRaplaFacade2()
@@ -268,7 +268,7 @@ public class ServerTest
             Category userGroup = (Category) classification.getValue("test");
             final Category[] usergroups = getRaplaFacade2().getUserGroupsCategory().getCategories();
             Assert.assertEquals("Category attribute value is not stored", usergroups[0].getKey(), userGroup.getKey());
-            clientFacade2.logout();
+            logout(clientFacade2);
         }
         {
             Allocatable allocatable = getRaplaFacade1().getAllocatables()[0];
@@ -288,14 +288,22 @@ public class ServerTest
         user.setUsername("test-user");
         getRaplaFacade1().store(user);
 
-        clientFacade2.login("homer", "duffs".toCharArray());
+        login(clientFacade2,"homer", "duffs".toCharArray());
         removeAnAttribute();
         // Wait for the update
         {
-            clientFacade2.login("homer", "duffs".toCharArray());
+            login(clientFacade2,"homer", "duffs".toCharArray());
             getRaplaFacade2().getUser("test-user");
-            clientFacade2.logout();
+            logout(clientFacade2);
         }
+    }
+
+    public boolean login(ClientFacade facade, String username,char[] password) throws RaplaException {
+        return facade.login(username,password);
+    }
+
+    public  void logout(ClientFacade facade) throws RaplaException {
+        facade.logout();
     }
 
     public void removeAnAttribute() throws Exception
@@ -325,7 +333,7 @@ public class ServerTest
         }
         // facade2.getUserFromRequest("test-user");
         // Wait for the update
-        clientFacade2.logout();
+        logout(clientFacade2);
     }
 
     private static Reservation findReservation(RaplaFacade facade, String typeKey, String name) throws RaplaException
@@ -385,13 +393,13 @@ public class ServerTest
     @Test
     public void testChangeLogin() throws RaplaException
     {
-        clientFacade2.logout();
-        clientFacade2.login("monty", "burns".toCharArray());
+        logout(clientFacade2);
+        login(clientFacade2,"monty", "burns".toCharArray());
 
         // boolean canChangePassword = facade2.canChangePassword();
         User user = clientFacade2.getUser();
         clientFacade2.changePassword(user, "burns".toCharArray(), "newPassword".toCharArray());
-        clientFacade2.logout();
+        logout(clientFacade2);
     }
 
     @Ignore
@@ -541,7 +549,7 @@ public class ServerTest
             a.getRepeating().addException(start);
             a.getRepeating().addException(new Date(start.getTime() + DateTools.MILLISECONDS_PER_WEEK));
             raplaFacade1.store(r);
-            clientFacade1.logout();
+            logout(clientFacade1);
         }
         {
             final RaplaFacade raplaFacade2 = getRaplaFacade2();
@@ -549,7 +557,7 @@ public class ServerTest
                     raplaFacade2.getReservationsForAllocatable(null, start, new Date(start.getTime() + 8 * DateTools.MILLISECONDS_PER_WEEK), null), 10000);
             Assert.assertEquals(1, res.size());
             Thread.sleep(100);
-            clientFacade2.logout();
+            logout(clientFacade2);
         }
 
     }
@@ -631,8 +639,8 @@ public class ServerTest
         r.addAllocatable(allocatable);
         r.setRestriction(allocatable, new Appointment[] { app1, app2 });
         raplaFacade1.store(r);
-        clientFacade1.logout();
-        clientFacade1.login("homer", "duffs".toCharArray());
+        logout(clientFacade1);
+        login(clientFacade1,"homer", "duffs".toCharArray());
         ClassificationFilter f = r.getClassification().getType().newClassificationFilter();
         f.addEqualsRule("name", "newReservation");
         Collection<Reservation> allRes = RaplaTestCase
@@ -695,11 +703,11 @@ public class ServerTest
     @Test
     public void testSavePreferences() throws Exception
     {
-        clientFacade2.logout();
-        Assert.assertTrue(clientFacade2.login("monty", "burns".toCharArray()));
+        logout(clientFacade2);
+        Assert.assertTrue(login(clientFacade2,"monty", "burns".toCharArray()));
         Preferences prefs = getRaplaFacade2().edit(getRaplaFacade2().getPreferences(clientFacade2.getUser()));
         getRaplaFacade2().store(prefs);
-        clientFacade2.logout();
+        logout(clientFacade2);
     }
 
     // Make some Changes to the Reservation in another client

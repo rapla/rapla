@@ -45,7 +45,7 @@ import org.rapla.entities.domain.Reservation;
 import org.rapla.entities.domain.ReservationHelper;
 import org.rapla.entities.domain.internal.AppointmentImpl;
 import org.rapla.facade.CalendarOptions;
-import org.rapla.facade.ClientFacade;
+import org.rapla.facade.client.ClientFacade;
 import org.rapla.framework.Disposable;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
@@ -716,8 +716,8 @@ public class AppointmentController extends RaplaGUIComponent implements Disposab
 
         public RepeatingEditor() throws RaplaException
         {
-            startDatePeriod = new PeriodChooser(getI18n(), getClientFacade(), PeriodChooser.START_ONLY);
-            endDatePeriod = new PeriodChooser(getI18n(), getClientFacade(), PeriodChooser.END_ONLY);
+            startDatePeriod = new PeriodChooser(getI18n(), getFacade(), PeriodChooser.START_ONLY);
+            endDatePeriod = new PeriodChooser(getI18n(), getFacade(), PeriodChooser.END_ONLY);
             // Create a TableLayout for the frame
             double pre = TableLayout.PREFERRED;
             double fill = TableLayout.FILL;
@@ -1362,7 +1362,7 @@ public class AppointmentController extends RaplaGUIComponent implements Disposab
         {
             try
             {
-                return getQuery().getPeriodModel().getSize() > 0;
+                return getFacade().getPeriodModel().getSize() > 0;
             }
             catch (RaplaException e)
             {

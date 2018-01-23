@@ -47,6 +47,7 @@ public class DisabledGlassPane extends JComponent
         message.setOpaque(true);
         message.setBorder(MESSAGE_BORDER);
         message.setIcon(icon);
+        message.setText("Loading");
 
         //  Disable Mouse, Key and Focus events for the glass pane
 
@@ -103,7 +104,7 @@ public class DisabledGlassPane extends JComponent
      */
     public void activate()
     {
-        String text = "";
+        String text = "Loading";
 //        if  (text != null && text.length() > 0)
 //        {
             message.setVisible( true );
@@ -123,6 +124,7 @@ public class DisabledGlassPane extends JComponent
      */
     public void deactivate()
     {
+        message.setText("");
         setCursor(null);
         setVisible( false );
     }

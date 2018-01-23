@@ -16,7 +16,7 @@ import org.rapla.RaplaClient;
 import org.rapla.components.util.Tools;
 import org.rapla.entities.Category;
 import org.rapla.entities.User;
-import org.rapla.facade.ClientFacade;
+import org.rapla.facade.client.ClientFacade;
 import org.rapla.facade.RaplaFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.StartupEnvironment;

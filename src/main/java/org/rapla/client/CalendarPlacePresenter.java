@@ -1,6 +1,5 @@
 package org.rapla.client;
 
-import io.reactivex.functions.Action;
 import org.rapla.RaplaResources;
 import org.rapla.client.CalendarPlaceView.Presenter;
 import org.rapla.client.dialog.DialogUiFactoryInterface;
@@ -12,7 +11,7 @@ import org.rapla.entities.Entity;
 import org.rapla.entities.User;
 import org.rapla.facade.CalendarModel;
 import org.rapla.facade.CalendarSelectionModel;
-import org.rapla.facade.ClientFacade;
+import org.rapla.facade.client.ClientFacade;
 import org.rapla.facade.ModificationEvent;
 import org.rapla.facade.RaplaFacade;
 import org.rapla.facade.internal.ModificationEventImpl;
