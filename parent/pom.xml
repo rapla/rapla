@@ -257,9 +257,7 @@
 					<draftCompile>false</draftCompile>
 					<skipModuleMetadata>false</skipModuleMetadata>
 					<skipModule>false</skipModule>
-					<!--
 					<skipCompilation>${disableGwtCompile}</skipCompilation>
-					-->
 					<!--
 					<moduleShortName>Rapla</moduleShortName>
 -->
@@ -844,7 +842,6 @@
 			<snapshots><enabled>true</enabled></snapshots>
 		</pluginRepository>
 	</pluginRepositories>
-	<!--
 	<profiles>
 		<profile>
 			<id>enableGwtCompileProfile</id>
@@ -865,5 +862,4 @@
 			</properties>
 		</profile>
 	</profiles>
-	-->
 </project>

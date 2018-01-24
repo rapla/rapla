@@ -13,6 +13,7 @@
 package org.rapla.facade;
 
 import io.reactivex.functions.Consumer;
+import jsinterop.annotations.JsMethod;
 import jsinterop.annotations.JsType;
 import org.rapla.entities.Category;
 import org.rapla.entities.Entity;
@@ -76,6 +77,7 @@ public interface RaplaFacade
     User[] getUsers() throws RaplaException;
 
     /** returns the user with the specified username */
+    @JsMethod(name = "getUserForUsername")
     User getUser(String username) throws RaplaException;
 
     /** returns all allocatables that match the passed ClassificationFilter. If null all readable allocatables are returned*/
