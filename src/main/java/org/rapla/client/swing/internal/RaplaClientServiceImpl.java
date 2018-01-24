@@ -261,9 +261,9 @@ public class RaplaClientServiceImpl implements ClientService, UpdateErrorListene
      * @throws RaplaException
      *
      */
-    private void beginRaplaSession() throws Exception
+    private Promise<Void> beginRaplaSession()
     {
-        getClientFacade().load().thenRun(()->
+        return getClientFacade().load().thenRun(()->
         {
             application = applicationProvider.get();
             application.start(defaultLanguageChosen, () ->
@@ -475,34 +475,33 @@ public class RaplaClientServiceImpl implements ClientService, UpdateErrorListene
                     char[] password = dlg.getPassword();
                     String connectAs = null;
                     reconnectInfo = new ConnectInfo(username, password, connectAs);
-                    dlg.setActive( true);
+                    dlg.busy( "Login");
                     login(reconnectInfo).thenAccept(
                             (success) ->
                     {
                         if (!success)
                         {
                             dlg.resetPassword();
-                            dlg.setActive( true);
+                            dlg.idle();
                             dialogUiFactory.showWarning(i18n.getString("error.login"), new SwingPopupContext(dlg, null));
                         }
                         else
                         {
-                            dlg.dispose();
+                            dlg.idle();
                             loginMutex.release();
-                            try
-                            {
-                                beginRaplaSession();
-                            }
-                            catch (Throwable ex)
+                            dlg.busy("Daten werden geladen");
+                            beginRaplaSession().thenRun(()->dlg.dispose()).exceptionally( ex->
                             {
                                 dialogUiFactory.showException(ex, null);
                                 fireClientAborted();
+                                return null;
                             }
+                            );
                         }
                     }).exceptionally((ex)->
                     {
                         dlg.resetPassword();
-                        dlg.setActive( false);
+                        dlg.idle();
                         dialogUiFactory.showException(ex, new SwingPopupContext(dlg, null));
                         return null;
                     });

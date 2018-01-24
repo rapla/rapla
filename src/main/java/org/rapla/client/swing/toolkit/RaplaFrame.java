@@ -64,7 +64,7 @@ public class RaplaFrame extends JFrame
     {
         final DisabledGlassPane glassPane = (DisabledGlassPane) getRootPane().getGlassPane();
         if ( active) {
-            glassPane.activate();
+            glassPane.activate("Loading");
         }
         else
         {

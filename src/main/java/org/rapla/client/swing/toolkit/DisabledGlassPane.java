@@ -102,9 +102,8 @@ public class DisabledGlassPane extends JComponent
      *
      *  A message can be displayed and it will be centered on the frame.
      */
-    public void activate()
+    public void activate(String text)
     {
-        String text = "Loading";
 //        if  (text != null && text.length() > 0)
 //        {
             message.setVisible( true );

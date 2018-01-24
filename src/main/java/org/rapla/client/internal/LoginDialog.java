@@ -46,7 +46,9 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.FocusAdapter;
 import java.awt.event.FocusEvent;
+import java.awt.event.WindowEvent;
 import java.awt.image.ImageObserver;
+import java.beans.PropertyVetoException;
 import java.net.URL;
 
 public final class LoginDialog extends JFrame implements LocaleChangeListener
@@ -87,18 +89,17 @@ public final class LoginDialog extends JFrame implements LocaleChangeListener
 		getRootPane().setGlassPane(new DisabledGlassPane());
 	}
 
-	public void setActive(boolean active)
+	public void busy( String message)
 	{
 		final DisabledGlassPane glassPane = (DisabledGlassPane) getRootPane().getGlassPane();
-		if ( active) {
-			glassPane.activate();
-		}
-		else
-		{
-			glassPane.deactivate();
-		}
+		glassPane.activate(message);
 	}
-	
+
+	public void idle(){
+		final DisabledGlassPane glassPane = (DisabledGlassPane) getRootPane().getGlassPane();
+		glassPane.deactivate();
+	}
+
 	public static LoginDialog create(StartupEnvironment env, RaplaResources i18n, DefaultBundleManager bundleManager, Logger logger, RaplaLocale raplaLocale, JComponent languageSelector) throws RaplaException
 	{
 		LoginDialog dlg = new LoginDialog(env, i18n, bundleManager, logger, raplaLocale);
@@ -107,6 +108,15 @@ public final class LoginDialog extends JFrame implements LocaleChangeListener
 	}
 	
 	Action exitAction;
+
+	@Override
+	protected void processWindowEvent(WindowEvent e) {
+		final int id = e.getID();
+		if (id == WindowEvent.WINDOW_CLOSING) {
+			exitAction.actionPerformed(null);
+		}
+		super.processWindowEvent(e);
+	}
 
 	public void setLoginAction(Action action)
 	{
