@@ -100,6 +100,22 @@
                                             <outputDirectory>${project.build.directory}/${project.build.finalName}/webclient</outputDirectory>
                                         </artifactItem>
                                         <artifactItem>
+                                            <groupId>io.reactivex.rxjava2</groupId>
+                                            <artifactId>rxjava</artifactId>
+                                            <version>${rxjava.version}</version>
+                                            <type>jar</type>
+                                            <overWrite>true</overWrite>
+                                            <outputDirectory>${project.build.directory}/${project.build.finalName}/webclient</outputDirectory>
+                                        </artifactItem>
+                                        <artifactItem>
+                                            <groupId>org.reactivestreams</groupId>
+                                            <artifactId>reactive-streams</artifactId>
+                                            <version>1.0.0</version>
+                                            <type>jar</type>
+                                            <overWrite>true</overWrite>
+                                            <outputDirectory>${project.build.directory}/${project.build.finalName}/webclient</outputDirectory>
+                                        </artifactItem>
+                                        <artifactItem>
                                             <groupId>com.google.code.gson</groupId>
                                             <artifactId>gson</artifactId>
                                             <version>${gson.version}</version>

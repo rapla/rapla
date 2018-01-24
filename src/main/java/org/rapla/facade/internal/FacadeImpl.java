@@ -38,7 +38,6 @@ import org.rapla.entities.storage.ParentEntity;
 import org.rapla.entities.storage.ReferenceInfo;
 import org.rapla.entities.storage.internal.SimpleEntity;
 import org.rapla.facade.*;
-import org.rapla.facade.server.RaplaServerFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaInitializationException;
 import org.rapla.inject.DefaultImplementation;
@@ -77,7 +76,7 @@ import java.util.Set;
  */
 @Singleton
 @DefaultImplementation(of = RaplaFacade.class, context = InjectionContext.all)
-public class FacadeImpl implements RaplaFacade, RaplaServerFacade {
+public class FacadeImpl implements RaplaFacade {
 	private StorageOperator operator;
 	private RaplaResources i18n;
 
