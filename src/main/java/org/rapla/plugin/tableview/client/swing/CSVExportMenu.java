@@ -111,7 +111,7 @@ public class CSVExportMenu extends RaplaGUIComponent implements ExportMenuExtens
         else
         {
             columns = tableConfigLoader.loadColumns("appointments", getUser());
-            promise = model.getBlocks().thenApply((list) ->
+            promise = model.queryBlocks(model.getTimeIntervall()).thenApply((list) ->
             {
                 return new ArrayList<Object>(list);
             });

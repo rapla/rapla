@@ -1436,7 +1436,7 @@ import static org.rapla.entities.configuration.CalendarModelConfiguration.EXPORT
         return new ResolvedPromise<>(appointments);
     }
 
-    @Override public Promise<List<AppointmentBlock>> getBlocks()
+    @Override public Promise<List<AppointmentBlock>> queryBlocks(final TimeInterval timeInterval)
     {
         List<AppointmentBlock> appointments = new ArrayList<AppointmentBlock>();
         try
@@ -1444,8 +1444,7 @@ import static org.rapla.entities.configuration.CalendarModelConfiguration.EXPORT
             final Set<Allocatable> selectedAllocatables = isNoAllocatableSelected() ? null : new HashSet<Allocatable>(getSelectedAllocatablesAsList());
             Collection<Conflict> selectedConflicts = getSelectedConflicts();
             Promise<Collection<Appointment>> reservations = getAppointments(selectedConflicts);
-            final TimeInterval timeIntervall = getTimeIntervall();
-            final Promise<Collection<Appointment>> appointmentPromise = queryAppointments(timeIntervall);
+            final Promise<Collection<Appointment>> appointmentPromise = queryAppointments(timeInterval);
             return appointmentPromise.thenCombine(reservations, ( allAppointments, conflictAppointments) -> {
 
                 Map<Appointment, Set<Appointment>> conflictingAppointments = ConflictImpl.getMap(selectedConflicts, conflictAppointments);

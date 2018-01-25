@@ -75,7 +75,7 @@ public interface CalendarModel extends Cloneable, ClassifiableFilter
     Promise<Collection<Reservation>> queryReservations( TimeInterval interval );
     Promise<Collection<Appointment>> queryAppointments(TimeInterval interval);
     Promise<Map<Allocatable,Collection<Appointment>>> queryAppointmentBindings(TimeInterval interval);
-    Promise<List<AppointmentBlock>> getBlocks();
+    Promise<List<AppointmentBlock>> queryBlocks(TimeInterval timeInterval);
 
 	boolean isMatchingSelectionAndFilter(Reservation reservation, Appointment appointment) throws RaplaException;
 

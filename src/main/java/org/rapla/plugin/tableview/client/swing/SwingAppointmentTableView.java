@@ -230,7 +230,7 @@ public class SwingAppointmentTableView extends RaplaGUIComponent implements Swin
 //                disabledGlassPane.activate();
 //            }
 //        });
-        final Promise<List<AppointmentBlock>> blocksPromise = model.getBlocks();
+        final Promise<List<AppointmentBlock>> blocksPromise = model.queryBlocks(model.getTimeIntervall());
         final Promise<Void> voidPromise = blocksPromise.thenAccept((blocks) ->
         { 
         	

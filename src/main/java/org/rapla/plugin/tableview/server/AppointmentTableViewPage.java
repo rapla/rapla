@@ -47,7 +47,7 @@ import java.util.List;
             {
                 User user = model.getUser();
                 List<RaplaTableColumn<AppointmentBlock, TableColumn>> appointmentColumnPlugins = tableConfigLoader.loadColumns("appointments", user);
-                final List<AppointmentBlock> blocks = waiter.waitForWithRaplaException(model.getBlocks(), 10000);
+                final List<AppointmentBlock> blocks = waiter.waitForWithRaplaException(model.queryBlocks(model.getTimeIntervall()), 10000);
                 return getCalendarHTML(appointmentColumnPlugins, blocks, TableViewPlugin.BLOCKS_SORTING_STRING_OPTION);
             }
 
