@@ -48,10 +48,7 @@ public class AppointmentBlock implements Comparable<AppointmentBlock>
 	
 	protected AppointmentBlock(Appointment appointment)
 	{
-		this.start = appointment.getStart().getTime();
-		this.end = appointment.getEnd().getTime();
-		this.appointment = appointment;
-		this.isException = false;
+	    this(appointment.getStart().getTime(),appointment.getEnd().getTime(), appointment, false);
 	}
 	
 	public boolean includes(AppointmentBlock a2)
