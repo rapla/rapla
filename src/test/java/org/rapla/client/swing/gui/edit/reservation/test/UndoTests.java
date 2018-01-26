@@ -87,7 +87,7 @@ public class UndoTests extends GUITestCase {
 			public void run() {
 				try {
 					Appointment appOrig = event.getAppointments()[0];
-					AppointmentBlock appointmentBlock = new AppointmentBlock( appOrig);
+					AppointmentBlock appointmentBlock = AppointmentBlock.create( appOrig);
 					Date newStart = changedAppointment.getStart();
 					Date newEnd = changedAppointment.getEnd();
 					PopupContext popupContext = createPopupContext();
@@ -143,7 +143,7 @@ public class UndoTests extends GUITestCase {
 			
 			public void run() {
 				try {
-					AppointmentBlock appointmentBlock = new AppointmentBlock( event.getAppointments()[0]);
+					AppointmentBlock appointmentBlock = AppointmentBlock.create( event.getAppointments()[0]);
 					Date newStart = changedAppointment.getStart();
 					Date newEnd = changedAppointment.getEnd();
 					PopupContext popupContext= createPopupContext();
@@ -203,7 +203,7 @@ public class UndoTests extends GUITestCase {
 			
 			public void run() {
 				try {
-					AppointmentBlock appointmentBlock = new AppointmentBlock( persistantEvent.getAppointments()[0]);
+					AppointmentBlock appointmentBlock = AppointmentBlock.create( persistantEvent.getAppointments()[0]);
 					PopupContext popupContext = createPopupContext();
                     control.deleteAppointment(appointmentBlock, popupContext);
 				} catch (RaplaException e) {

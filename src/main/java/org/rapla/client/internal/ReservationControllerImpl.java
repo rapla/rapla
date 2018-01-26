@@ -737,7 +737,7 @@ public abstract class ReservationControllerImpl implements ReservationController
                 Allocatable oldAllocatable = previouslyMarked.iterator().next();
                 if (!newAllocatable.equals(oldAllocatable)) {
                     if (!reservation.hasAllocated(newAllocatable)) {
-                        AppointmentBlock appointmentBlock = new AppointmentBlock(appointment);
+                        AppointmentBlock appointmentBlock = AppointmentBlock.create(appointment);
                         pasteCommand = exchangeAllocatebleCmd(appointmentBlock, oldAllocatable, newAllocatable, null, popupContext).thenApply(cmd->
                         {
                             Reservation reservation1 = cmd.getModifiedReservationForExecute();

@@ -234,7 +234,7 @@ public final class RaplaCalendarViewExample {
                 Appointment appointment = it.next();
                 if ( !appointment.getStart().before( startDate) && !appointment.getEnd().after( endDate ))
                 {
-                    blocks.add( new AppointmentBlock(  appointment ));
+                    blocks.add( AppointmentBlock.create(  appointment ));
                 }
             }
             return new PreperationResult(0, 24*60, blocks);

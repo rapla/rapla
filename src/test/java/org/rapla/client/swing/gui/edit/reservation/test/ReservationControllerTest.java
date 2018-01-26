@@ -76,7 +76,7 @@ public final class ReservationControllerTest extends GUITestCase
             {
                 boolean keepTime = true;
                 Point p = null;
-                AppointmentBlock appointmentBlock = new AppointmentBlock(appointment);
+                AppointmentBlock appointmentBlock = AppointmentBlock.create(appointment);
                 Date newStart = DateTools.addDay(appointment.getStart());
                 try
                 {

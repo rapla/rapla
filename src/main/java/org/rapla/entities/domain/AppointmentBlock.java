@@ -41,8 +41,12 @@ public class AppointmentBlock implements Comparable<AppointmentBlock>
 		this.appointment = appointment;
 		this.isException = isException;
 	}
+	static public AppointmentBlock create(Appointment appointment)
+	{
+		return new AppointmentBlock(appointment);
+	}
 	
-	public AppointmentBlock(Appointment appointment)
+	protected AppointmentBlock(Appointment appointment)
 	{
 		this.start = appointment.getStart().getTime();
 		this.end = appointment.getEnd().getTime();
