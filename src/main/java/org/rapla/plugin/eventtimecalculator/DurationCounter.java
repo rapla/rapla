@@ -7,7 +7,6 @@ import org.rapla.entities.domain.Reservation;
 import org.rapla.facade.client.ClientFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.inject.Extension;
-import org.rapla.inject.ExtensionRepeatable;
 import org.rapla.plugin.tableview.client.swing.AppointmentTableModel;
 import org.rapla.plugin.tableview.client.swing.ReservationTableModel;
 import org.rapla.plugin.tableview.client.swing.extensionpoints.AppointmentSummaryExtension;
@@ -23,10 +22,8 @@ import javax.swing.event.ListSelectionListener;
 import javax.swing.table.TableModel;
 
 
-@ExtensionRepeatable({
-    @Extension(provides = ReservationSummaryExtension.class, id = EventTimeCalculatorPlugin.PLUGIN_ID),
-    @Extension(provides = AppointmentSummaryExtension.class, id = EventTimeCalculatorPlugin.PLUGIN_ID)
-})
+@Extension(provides = ReservationSummaryExtension.class, id = EventTimeCalculatorPlugin.PLUGIN_ID)
+@Extension(provides = AppointmentSummaryExtension.class, id = EventTimeCalculatorPlugin.PLUGIN_ID)
 public final class DurationCounter  implements ReservationSummaryExtension, AppointmentSummaryExtension
 {
     EventTimeCalculatorFactory factory;

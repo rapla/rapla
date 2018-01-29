@@ -12,6 +12,8 @@ import org.rapla.client.swing.InfoFactory;
 import org.rapla.client.swing.RaplaGUIComponent;
 import org.rapla.client.swing.images.RaplaImages;
 import org.rapla.client.swing.internal.SwingPopupContext;
+import org.rapla.client.swing.toolkit.FrameControllerList;
+import org.rapla.client.swing.toolkit.RaplaFrame;
 import org.rapla.entities.domain.AppointmentFormater;
 import org.rapla.facade.CalendarSelectionModel;
 import org.rapla.facade.client.ClientFacade;
@@ -35,12 +37,14 @@ public class ReservationControllerSwingImpl extends ReservationControllerImpl
     private final RaplaGUIComponent wrapper;
     private final RaplaImages images;
     private final Provider<Set<EventCheck>> checkers;
+    private final FrameControllerList frames;
 
     @Inject
-    public ReservationControllerSwingImpl(ClientFacade facade, RaplaLocale raplaLocale, Logger logger, RaplaResources i18n,
+    public ReservationControllerSwingImpl(FrameControllerList frames,ClientFacade facade, RaplaLocale raplaLocale, Logger logger, RaplaResources i18n,
             AppointmentFormater appointmentFormater, CalendarSelectionModel calendarModel, RaplaClipboard clipboard,Provider<Set<EventCheck>> checkers,InfoFactory infoFactory, RaplaImages images,DialogUiFactoryInterface dialogUiFactory)
     {
         super(facade, raplaLocale, logger, i18n, appointmentFormater, calendarModel, clipboard, dialogUiFactory);
+        this.frames = frames;
         this.infoFactory = infoFactory;
         this.wrapper = new RaplaGUIComponent(facade, i18n, raplaLocale, logger);
         this.images = images;
@@ -65,5 +69,15 @@ public class ReservationControllerSwingImpl extends ReservationControllerImpl
         return new SwingPopupContext(wrapper.getMainComponent(), null);
     }
 
+    @Override
+    protected void busy(String text)
+    {
+        ((RaplaFrame)frames.getMainWindow()).busy( text);
+    }
 
+    @Override
+    protected void idle()
+    {
+        ((RaplaFrame)frames.getMainWindow()).idle();
+    }
 }

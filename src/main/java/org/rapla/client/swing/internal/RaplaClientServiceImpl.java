@@ -558,7 +558,7 @@ public class RaplaClientServiceImpl implements ClientService, UpdateErrorListene
 
                 public void run()
                 {
-                    boolean modal = true;
+                    boolean modal = false;
                     String title = i18n.getString("restart_client");
                     try
                     {

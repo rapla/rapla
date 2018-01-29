@@ -98,39 +98,26 @@ public class ConflictReservationCheck extends RaplaGUIComponent implements Event
         {
             return new ResolvedPromise<Boolean>(true);
         }
-        return p.thenApply((a) ->
+        return p.thenCompose((a) ->
         {
             if (conflictList.size() == 0)
             {
-                return true;
+                return new ResolvedPromise(true);
             }
             boolean showWarning = getFacade().getPreferences( getClientFacade().getUser()).getEntryAsBoolean(CalendarOptionsImpl.SHOW_CONFLICT_WARNING, true);
             User user = getUser();
             if (!showWarning && canCreateConflicts(conflictList, user))
             {
-                return true;
+                return new ResolvedPromise(true);
             }
             JComponent content = getConflictPanel(conflictList);
-            DialogInterface dialog = dialogUiFactory.create(sourceComponent, true, content, new String[] { getString("continue"), getString("back") });
+            DialogInterface dialog = dialogUiFactory.create(sourceComponent, false, content, new String[] { getString("continue"), getString("back") });
             dialog.setDefault(1);
             dialog.setIcon("icon.big_folder_conflicts");
             dialog.getAction(0).setIcon("icon.save");
             dialog.getAction(1).setIcon("icon.cancel");
             dialog.setTitle(getString("warning.conflict"));
-            dialog.start(true);
-            if (dialog.getSelectedIndex() == 0)
-            {
-                try
-                {
-                    return true;
-                }
-                catch (Exception ex)
-                {
-                    dialogUiFactory.showException(ex, new SwingPopupContext((Component) sourceComponent, null));
-                    return false;
-                }
-            }
-            return false;
+            return dialog.start(true).thenApply((index)->index == 0);
         });
     }
 

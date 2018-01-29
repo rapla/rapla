@@ -298,16 +298,12 @@ public class ReservationInfoEdit extends RaplaGUIComponent
             return;
         }
         if (internalUpdate) return;
-        try {
-            PermissionContainer permissionContainer = (PermissionContainer)classifiable;
-            Collection<Permission> oldPermissions = permissionContainer.getPermissionList();
-            Collection<Permission> newPermissions = permissionListField.getPermissionList();
-            if ( PermissionContainer.Util.differs( oldPermissions, newPermissions)) {
-                UndoPermissionChange permissionChange = new UndoPermissionChange(oldPermissions, newPermissions);
-                handleException(commandHistory.storeAndExecute(permissionChange));
-            }
-        } catch (RaplaException ex) {
-            dialogUiFactory.showException(ex, new SwingPopupContext(this.getComponent(), null));
+        PermissionContainer permissionContainer = (PermissionContainer)classifiable;
+        Collection<Permission> oldPermissions = permissionContainer.getPermissionList();
+        Collection<Permission> newPermissions = permissionListField.getPermissionList();
+        if ( PermissionContainer.Util.differs( oldPermissions, newPermissions)) {
+            UndoPermissionChange permissionChange = new UndoPermissionChange(oldPermissions, newPermissions);
+            handleException(commandHistory.storeAndExecute(permissionChange));
         }
     }
 
@@ -528,7 +524,6 @@ public class ReservationInfoEdit extends RaplaGUIComponent
         
 
         public void stateChanged(ChangeEvent evt) {
-            try {
             	SetGetField<?> editField = (SetGetField<?>) evt.getSource();
             	String keyName   = getKey(editField);
             	Object oldValue = getAttValue(keyName); //this.classification.getValue(keyName);
@@ -542,9 +537,6 @@ public class ReservationInfoEdit extends RaplaGUIComponent
                 if (oldValue != newValue && (oldValue == null || newValue == null || !oldValue.equals(newValue))) {
                     handleException(commandHistory.storeAndExecute(classificationChange));
                 }
-            } catch (RaplaException ex) {
-                dialogUiFactory.showException(ex, new SwingPopupContext(this.getComponent(), null));
-            }
         }
         
         

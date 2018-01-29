@@ -274,8 +274,9 @@ public class DialogUI extends JDialog
                 }
             }
             selectedIndex = -1;
-            completable.completeExceptionally( new CommandAbortedException("dlg"));
+            //completable.completeExceptionally( new CommandAbortedException("dlg"));
             abortAction.run();//actionPerformed(new ActionEvent(DialogUI.this, ActionEvent.ACTION_PERFORMED,""));
+            completable.complete( -1);
         }
     }
 
@@ -439,6 +440,7 @@ public class DialogUI extends JDialog
     protected void processWindowEvent(WindowEvent e) {
         if (e.getID() == WindowEvent.WINDOW_CLOSING) {
             abortAction.run();//actionPerformed(new ActionEvent(this,ActionEvent.ACTION_PERFORMED,""));
+            completable.complete( -1);
         } else if (e.getID() == WindowEvent.WINDOW_CLOSED) {
             close();
         }

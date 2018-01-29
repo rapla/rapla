@@ -785,10 +785,15 @@ public abstract class ReservationControllerImpl implements ReservationController
                 newStart2 = newStart;
             }
             AppointmentResize resizeCommand = new AppointmentResize(appointment, oldStart, oldEnd, newStart2, newEnd, context, result, keepTime);
-            final Promise promise = getCommandHistory().storeAndExecute(resizeCommand);
+            busy(i18n.getString("move"));
+            final Promise promise = getCommandHistory().storeAndExecute(resizeCommand).whenComplete((a,b)->idle());
             handleException(promise, context);
         });
     }
+
+    protected abstract void idle();
+
+    protected abstract void busy(String text);
 
     protected Promise handleException(Promise promise, PopupContext context) {
         return promise.exceptionally(ex ->
@@ -1441,17 +1446,12 @@ public abstract class ReservationControllerImpl implements ReservationController
         }
 
         public Promise<Void> undo() {
-            try {
-                User user = getClientFacade().getUser();
-                Collection<ReferenceInfo<Reservation>> removeList = new ArrayList<>();
-                for (Reservation clone : clones) {
-                    removeList.add(clone.getReference());
-                }
-                Promise result = getFacade().dispatch(Collections.emptyList(), removeList);
-                return result;
-            } catch (RaplaException ex) {
-                return new ResolvedPromise<Void>(ex);
+            Collection<ReferenceInfo<Reservation>> removeList = new ArrayList<>();
+            for (Reservation clone : clones) {
+                removeList.add(clone.getReference());
             }
+            Promise result = getFacade().dispatch(Collections.emptyList(), removeList);
+            return result;
         }
 
         public String getCommandoName() {

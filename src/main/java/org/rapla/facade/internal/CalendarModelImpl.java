@@ -51,7 +51,6 @@ import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaInitializationException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.inject.DefaultImplementation;
-import org.rapla.inject.DefaultImplementationRepeatable;
 import org.rapla.inject.InjectionContext;
 import org.rapla.logger.Logger;
 import org.rapla.scheduler.Promise;
@@ -79,8 +78,10 @@ import java.util.TreeMap;
 
 import static org.rapla.entities.configuration.CalendarModelConfiguration.EXPORT_ENTRY;
 
-@Singleton @DefaultImplementationRepeatable({ @DefaultImplementation(of = CalendarSelectionModel.class, context = InjectionContext.client),
-        @DefaultImplementation(of = CalendarModel.class, context = InjectionContext.client) }) public class CalendarModelImpl implements CalendarSelectionModel
+@Singleton
+@DefaultImplementation(of = CalendarSelectionModel.class, context = InjectionContext.client)
+@DefaultImplementation(of = CalendarModel.class, context = InjectionContext.client)
+public class CalendarModelImpl implements CalendarSelectionModel
 {
     private static final String DEFAULT_VIEW = "week";//WeekViewFactory.WEEK_VIEW;
     private static final String ICAL_EXPORT_ENABLED = "org.rapla.plugin.export2ical" + ".selected";

@@ -60,4 +60,15 @@ public class ReservationControllerGwtImpl extends ReservationControllerImpl
         };
     }
 
+    @Override
+    protected void busy(String text)
+    {
+
+    }
+
+    @Override
+    protected void idle()
+    {
+
+    }
 }

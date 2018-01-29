@@ -125,36 +125,21 @@ public class ConflictSelectionPresenter implements Presenter
     @Override
     public void enableConflicts(PopupContext context)
     {
-        try
-        {
-            final List<Conflict> disabledConflicts = getConflicts(false);
-            CommandUndo<RaplaException> command = new ConflictEnable(disabledConflicts, true);
-            CommandHistory commanHistory = getCommandHistory();
-            final Promise promise = commanHistory.storeAndExecute(command);
-            handleException(promise, context);
-        }
-        catch (RaplaException ex)
-        {
-            dialogUiFactory.showException(ex, context);
-        }
+        final List<Conflict> disabledConflicts = getConflicts(false);
+        CommandUndo<RaplaException> command = new ConflictEnable(disabledConflicts, true);
+        CommandHistory commanHistory = getCommandHistory();
+        final Promise promise = commanHistory.storeAndExecute(command);
+        handleException(promise, context);
     }
 
     @Override
     public void disableConflicts(PopupContext context)
     {
-        try
-        {
-            List<Conflict> enabledConflicts = getConflicts(true);
-            CommandUndo<RaplaException> command = new ConflictEnable(enabledConflicts, false);
-            CommandHistory commanHistory = getCommandHistory();
-            final Promise promise = commanHistory.storeAndExecute(command);
-            handleException(promise, context);
-        }
-        catch (RaplaException ex)
-        {
-            dialogUiFactory.showException(ex, context);
-        }
-
+        List<Conflict> enabledConflicts = getConflicts(true);
+        CommandUndo<RaplaException> command = new ConflictEnable(enabledConflicts, false);
+        CommandHistory commanHistory = getCommandHistory();
+        final Promise promise = commanHistory.storeAndExecute(command);
+        handleException(promise, context);
     }
 
     protected Promise handleException(Promise promise, PopupContext context)

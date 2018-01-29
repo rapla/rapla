@@ -51,6 +51,7 @@ import javax.swing.DropMode;
 import javax.swing.JComponent;
 import javax.swing.JPanel;
 import javax.swing.JTree;
+import javax.swing.SwingUtilities;
 import javax.swing.TransferHandler;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
@@ -160,21 +161,23 @@ public class ResourceSelectionViewSwing implements ResourceSelectionView
     @Override
     public void update(ClassificationFilter[] filter, ClassifiableFilter model, Collection<Object> selectedObjects)
     {
-        try
-        {
-            if ( filterEdit == null)
+        SwingUtilities.invokeLater(() -> {
+            try
             {
-                filterEdit = filterEditButtonFactory.create(model, true, listener);
-                buttonsPanel.add(filterEdit.getButton(), BorderLayout.EAST);
+                if (filterEdit == null)
+                {
+                    filterEdit = filterEditButtonFactory.create(model, true, listener);
+                    buttonsPanel.add(filterEdit.getButton(), BorderLayout.EAST);
+                }
+                updateTree(filter, selectedObjects);
+                updateSelection(selectedObjects);
             }
-            updateTree(filter, selectedObjects);
-            updateSelection(selectedObjects);
-        }
-        catch (RaplaException e)
-        {
-            PopupContext popupContext = new SwingPopupContext(getComponent(), null);
-            dialogUiFactory.showException(e, popupContext);
-        }
+            catch (RaplaException e)
+            {
+                PopupContext popupContext = new SwingPopupContext(getComponent(), null);
+                dialogUiFactory.showException(e, popupContext);
+            }
+        });
     }
 
     public RaplaArrowButton getFilterButton()

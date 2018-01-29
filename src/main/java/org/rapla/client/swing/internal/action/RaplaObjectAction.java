@@ -32,17 +32,20 @@ import org.rapla.entities.dynamictype.Classifiable;
 import org.rapla.entities.dynamictype.Classification;
 import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.entities.dynamictype.DynamicTypeAnnotations;
-import org.rapla.facade.client.ClientFacade;
 import org.rapla.facade.RaplaFacade;
+import org.rapla.facade.client.ClientFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.logger.Logger;
+import org.rapla.scheduler.CompletablePromise;
 import org.rapla.scheduler.Promise;
+import org.rapla.scheduler.ResolvedPromise;
 import org.rapla.storage.PermissionController;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 
@@ -334,29 +337,25 @@ public class RaplaObjectAction extends RaplaAction {
     protected void delete() throws RaplaException {
         if (object == null)
             return;
-        Entity<?>[] objects = new Entity[] {  object};
-        DialogInterface dlg = infoFactory.createDeleteDialog( objects, popupContext);
-        dlg.start(true);
-        if (dlg.getSelectedIndex() != 0)
-            return;
-        List<Entity<?>> singletonList = Arrays.asList( objects);
-        delete(singletonList);
+        delete(Collections.singletonList( object));
     }
 
     protected void deleteSelection() throws RaplaException 
     {
         if (objectList == null || objectList.size() == 0)
             return;
-        DialogInterface dlg = infoFactory.createDeleteDialog(objectList.toArray(), popupContext);
-        dlg.start(true);
-        if (dlg.getSelectedIndex() != 0)
-            return;
-		delete(objectList);
+        delete(objectList);
     }
 
-	protected void delete(Collection<Entity<?>>  objects) throws RaplaException 
+    private void delete(List<Entity<?>> list) throws RaplaException
+    {
+        DialogInterface dlg = infoFactory.createDeleteDialog(objectList.toArray(), popupContext);
+        handleException(dlg.start(true).thenCompose((index)->index == 0 ? delete((Collection<Entity<?>>) list): ResolvedPromise.VOID_PROMISE));
+    }
+
+    protected Promise<Void> delete(Collection<Entity<?>>  objects) throws RaplaException
 	{
-		Collection<Entity<?>> entities = new ArrayList<Entity<?>>();    
+		Collection<Entity<?>> entities = new ArrayList<>();
 	    boolean undoable = true;
 	    for ( Entity<?> obj: objects)
 	    {
@@ -378,7 +377,7 @@ public class RaplaObjectAction extends RaplaAction {
 	    {
 	    	promise = deleteCommand.execute();
 	    }
-        handleException(promise);
+        return promise;
 	}
 
     protected Promise handleException(Promise promise)

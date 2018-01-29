@@ -149,10 +149,7 @@ public class SavedCalendarSwingView extends RaplaGUIComponent implements SavedCa
             {
                 String[] objects = new String[] { getSelectedFile().name};
                 DialogInterface dlg = infoFactory.createDeleteDialog( objects , null);
-                dlg.start(true);
-                if (dlg.getSelectedIndex() != 0)
-                    return;
-                delete();
+                dlg.start(true).thenAccept(index->{if (index ==0) delete();});
             }
             catch (RaplaException ex) {
                 dialogUiFactory.showException( ex, null);

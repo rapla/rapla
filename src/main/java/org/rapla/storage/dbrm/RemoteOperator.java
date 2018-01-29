@@ -48,7 +48,6 @@ import org.rapla.framework.Disposable;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.inject.DefaultImplementation;
-import org.rapla.inject.DefaultImplementationRepeatable;
 import org.rapla.inject.InjectionContext;
 import org.rapla.logger.Logger;
 import org.rapla.scheduler.CommandScheduler;
@@ -95,8 +94,8 @@ import java.util.function.Supplier;
  * network.  It needs an server-process providing the StorageService
  * (usually this is the default rapla-server).
  */
-@DefaultImplementationRepeatable({@DefaultImplementation(of = StorageOperator.class, context = InjectionContext.client),
-        @DefaultImplementation(of = RestartServer.class, context = InjectionContext.client)})
+@DefaultImplementation(of = StorageOperator.class, context = InjectionContext.client)
+@DefaultImplementation(of = RestartServer.class, context = InjectionContext.client)
 @Singleton
 public class RemoteOperator
         extends AbstractCachableOperator implements RestartServer, Disposable {
