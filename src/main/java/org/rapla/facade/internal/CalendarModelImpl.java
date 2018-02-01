@@ -1428,10 +1428,6 @@ public class CalendarModelImpl implements CalendarSelectionModel
         );
     }
 
-        }
-        return new ResolvedPromise<>(appointments);
-    }
-
     @Override public Promise<List<AppointmentBlock>> queryBlocks(final TimeInterval timeInterval)
     {
         List<AppointmentBlock> appointments = new ArrayList<AppointmentBlock>();
