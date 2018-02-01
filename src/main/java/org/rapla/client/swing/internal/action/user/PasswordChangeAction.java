@@ -118,7 +118,7 @@ public class PasswordChangeAction extends RaplaAction {
                 char[] p2= ui.getPasswordVerification();
                 if (!Tools.match(p1,p2))
                     throw new RaplaException(getString("error.passwords_dont_match"));
-                getUserModule().changePassword(user , oldPassword, p1);
+                getClientFacade().changePassword(user , oldPassword, p1);
                 dlg.close();
             } catch (RaplaException ex) {
                 dialogUiFactory.showException(ex,new SwingPopupContext((Component)dlg, null));

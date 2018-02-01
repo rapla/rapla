@@ -6,6 +6,8 @@ import org.rapla.scheduler.Promise;
 public interface DialogInterface
 {
     Promise<Integer> start(boolean pack);
+    void busy(String message);
+    void idle();
     int getSelectedIndex();
     void setTitle(String createTitle);
     void setIcon(String iconKey);

@@ -215,6 +215,36 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
         return promiseWait.waitForWithRaplaException(promise, timeoutInMillis);
     }
 
+    @SuppressWarnings("rawtypes")
+    @Override
+    public <T extends Entity,S extends Entity> Promise<Void> storeAndRemoveAsync(final Collection<T> storeObjects,
+                                                                                 final Collection<ReferenceInfo<S>> removeObjects, final User user)
+    {
+        return scheduler.run(()
+                ->
+        {
+            checkConnected();
+            UpdateEvent evt = createUpdateEvent(storeObjects, removeObjects, user);
+            dispatch(evt);
+        });
+    }
+
+    @Override
+    public <T extends Entity> Promise<Map<ReferenceInfo<T>,T>> getFromIdAsync(Collection<ReferenceInfo<T>> idSet, boolean throwEntityNotFound)
+    {
+        return scheduler.supply(()->getFromId( idSet, throwEntityNotFound));
+    }
+
+    @Override
+    public Promise<Map<Entity,Entity>> editObjectsAsync(Collection<Entity> list, User user) {
+        try {
+            final Map<Entity,Entity> entities = editObjects(list, user);
+            return new ResolvedPromise<>(entities);
+        } catch (RaplaException ex) {
+            return new ResolvedPromise<>(ex);
+        }
+    }
+
     public CommandScheduler getScheduler()
     {
         return scheduler;
@@ -356,6 +386,42 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
         return name;
     }
 
+    @SuppressWarnings("rawtypes")
+    @Override
+    public <T extends Entity,S extends Entity> void storeAndRemove(final Collection<T> storeObjects,
+                                                                   final Collection<ReferenceInfo<S>> removeObjects, final User user) throws RaplaException
+    {
+        checkConnected();
+
+        UpdateEvent evt = new UpdateEvent();
+        if (user != null)
+        {
+            evt.setUserId(user.getId());
+        }
+        for (Entity obj : storeObjects)
+        {
+            if (obj instanceof Preferences)
+            {
+                PreferencePatch patch = ((PreferencesImpl) obj).getPatch();
+                evt.putPatch(patch);
+            }
+            else
+            {
+                evt.addStore(obj);
+            }
+        }
+        for (ReferenceInfo<?> entity : removeObjects)
+        {
+            Class<? extends Entity> type = entity.getType();
+            if (Appointment.class == type || Attribute.class == type)
+            {
+                String name = getName(entity);
+                throw new RaplaException(getI18n().format("error.remove_object", name));
+            }
+            evt.putRemoveId(entity);
+        }
+        dispatch(evt);
+    }
     @Override
     public Date getConnectStart()
     {
@@ -441,7 +507,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
             boolean excludeExceptions = false;
             final Collection<Allocatable> allocs = (allocatables == null || allocatables.size() == 0) ? getAllocatables(null) : allocatables;
             Map<Allocatable, Collection<Appointment>> result = new LinkedHashMap<Allocatable, Collection<Appointment>>();
-            boolean isResourceTemplate = allocs.size() == 1 && (allocs.iterator().next().getClassification().getType().getKey().equals(RAPLA_TEMPLATE));
+            boolean isResourceTemplate = containsResourceTemplate(allocs);
             for (Allocatable allocatable : allocs)
             {
                 RaplaLock.ReadLock readLock = lockManager.readLock();
@@ -463,7 +529,9 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
                         continue;
                     }
                     // Ignore Templates if not explicitly requested
-                    else if (RaplaComponent.isTemplate(reservation) && !isResourceTemplate)
+
+                    final boolean isTemplate = RaplaComponent.isTemplate(reservation);
+                    if ((isTemplate != isResourceTemplate) )
                     {
                         // FIXME this special case should be refactored, so one can get all reservations in one method
                         continue;
@@ -484,6 +552,15 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
             return result;
         });
         return promise;
+    }
+
+    private boolean containsResourceTemplate(Collection<Allocatable> allocs) {
+        for ( Allocatable alloc:allocs) {
+            if (alloc.getClassification().getType().getKey().equals(RAPLA_TEMPLATE)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     public boolean match(Reservation reservation, Map<String, String> annotationQuery)

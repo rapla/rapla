@@ -475,7 +475,7 @@ public class RaplaClientServiceImpl implements ClientService, UpdateErrorListene
                     char[] password = dlg.getPassword();
                     String connectAs = null;
                     reconnectInfo = new ConnectInfo(username, password, connectAs);
-                    dlg.busy( "Login");
+                    dlg.busy( i18n.getString("login"));
                     login(reconnectInfo).thenAccept(
                             (success) ->
                     {
@@ -489,7 +489,8 @@ public class RaplaClientServiceImpl implements ClientService, UpdateErrorListene
                         {
                             dlg.idle();
                             loginMutex.release();
-                            dlg.busy("Daten werden geladen");
+
+                            dlg.busy(i18n.getString("load"));
                             beginRaplaSession().thenRun(()->dlg.dispose()).exceptionally( ex->
                             {
                                 dialogUiFactory.showException(ex, null);

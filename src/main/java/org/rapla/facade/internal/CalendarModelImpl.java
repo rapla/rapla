@@ -75,6 +75,8 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static org.rapla.entities.configuration.CalendarModelConfiguration.EXPORT_ENTRY;
 
@@ -1251,34 +1253,42 @@ public class CalendarModelImpl implements CalendarSelectionModel
         return defaultResourceTypes;
     }
 
-    public void save(final String filename) throws RaplaException
+    public Promise<Void> save(final String filename)
     {
-        final CalendarModelConfiguration conf = createConfiguration();
-        final Preferences preferences = operator.getPreferences(user, true);
-        final Collection toEdit = Collections.singleton(preferences);
-        final Collection<Entity> editables = operator.editObjects(toEdit, user);
-        Preferences clone = (Preferences) editables.iterator().next();
-        if (filename == null)
-        {
-            clone.putEntry(CalendarModelConfiguration.CONFIG_ENTRY, conf);
+
+        final CalendarModelConfiguration conf;
+        final Collection toEdit;
+        try {
+            conf = createConfiguration();
+            final Preferences preferences = operator.getPreferences(user, true);
+            toEdit = Collections.singleton(preferences);
         }
-        else
+        catch (RaplaException ex)
         {
-            Map<String, CalendarModelConfiguration> exportMap = clone.getEntry(EXPORT_ENTRY);
-            Map<String, CalendarModelConfiguration> newMap;
-            if (exportMap == null)
-                newMap = new TreeMap<String, CalendarModelConfiguration>();
-            else
-                newMap = new TreeMap<String, CalendarModelConfiguration>(exportMap);
-            newMap.put(filename, conf);
-            RaplaMapImpl map = new RaplaMapImpl(newMap);
-            map.setResolver(operator);
-            clone.putEntry(EXPORT_ENTRY, map);
+            return new ResolvedPromise<>(ex);
         }
-        final Collection<ReferenceInfo<Entity>> toRemove = Collections.emptyList();
-        final Collection<Preferences> singleton = Collections.singleton(clone);
-        final Collection toStore = singleton;
-        operator.storeAndRemove(toStore, toRemove, user);
+        final Promise<Collection<Entity>>  editPromise = operator.editObjectsAsync(toEdit, user);
+        final Promise<Set<Preferences>> modifyPromise = editPromise.thenApply((editables) ->
+        {
+            Preferences clone = (Preferences) editables.iterator().next();
+            if (filename == null) {
+                clone.putEntry(CalendarModelConfiguration.CONFIG_ENTRY, conf);
+            } else {
+                Map<String, CalendarModelConfiguration> exportMap = clone.getEntry(EXPORT_ENTRY);
+                Map<String, CalendarModelConfiguration> newMap;
+                if (exportMap == null)
+                    newMap = new TreeMap<String, CalendarModelConfiguration>();
+                else
+                    newMap = new TreeMap<String, CalendarModelConfiguration>(exportMap);
+                newMap.put(filename, conf);
+                RaplaMapImpl map = new RaplaMapImpl(newMap);
+                map.setResolver(operator);
+                clone.putEntry(EXPORT_ENTRY, map);
+            }
+            return Collections.singleton(clone);
+        });
+        Promise<Void> result = modifyPromise.thenCompose((toStore) -> operator.storeAndRemoveAsync(toStore, Collections.emptyList(), user));
+        return result;
     }
 
     // Old defaultname behaviour. Duplication of language resource names. But the system has to be replaced anyway in the future, because it doesnt allow for multiple language outputs on the server.
@@ -1401,8 +1411,8 @@ public class CalendarModelImpl implements CalendarSelectionModel
 
     private Promise<Collection<Appointment>> getAppointments(Collection<Conflict> conflicts)
     {
-        Collection<ReferenceInfo<Reservation>> ids = new LinkedHashSet<ReferenceInfo<Reservation>>();
-        Collection<ReferenceInfo<Appointment>> appointmentIds = new LinkedHashSet<ReferenceInfo<Appointment>>();
+        Collection<ReferenceInfo<Reservation>> ids = new HashSet<ReferenceInfo<Reservation>>();
+        Collection<ReferenceInfo<Appointment>> appointmentIds = new HashSet<ReferenceInfo<Appointment>>();
         for (Conflict conflict : conflicts)
         {
             ids.add(conflict.getReservation1());
@@ -1410,28 +1420,13 @@ public class CalendarModelImpl implements CalendarSelectionModel
             appointmentIds.add(conflict.getAppointment1());
             appointmentIds.add(conflict.getAppointment2());
         }
-
-        Collection<Reservation> values = null;
-        try
-        {
-            values = operator.getFromId(ids, true).values();
-        }
-        catch (RaplaException e)
-        {
-            return new ResolvedPromise<>(e);
-        }
-        @SuppressWarnings("unchecked") ArrayList<Reservation> converted = new ArrayList(values);
-        List<Appointment> appointments = new ArrayList<Appointment>();
-        for (Reservation reservation : converted)
-        {
-            for (Appointment app : reservation.getAppointments())
-            {
-                final ReferenceInfo<Appointment> reference = app.getReference();
-                if (appointmentIds.contains(reference))
+        return operator.getFromIdAsync(ids, true).thenApply(values->
                 {
-                    appointments.add(app);
+                    Stream<Appointment> appointments = values.values().stream().flatMap(Reservation::getAppointmentStream).filter( (app)->appointmentIds.contains(app.getReference()));
+                    return  appointments.collect(Collectors.toList());
                 }
-            }
+        );
+    }
 
         }
         return new ResolvedPromise<>(appointments);

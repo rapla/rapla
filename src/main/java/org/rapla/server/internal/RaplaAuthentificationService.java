@@ -19,12 +19,7 @@ import org.rapla.storage.dbrm.LoginCredentials;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import javax.servlet.http.HttpServletRequest;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Date;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
 @Singleton
 public class RaplaAuthentificationService
@@ -147,8 +142,8 @@ public class RaplaAuthentificationService
             else
             {
                 Set<Entity> singleton = Collections.singleton((Entity) user);
-                Collection<Entity> editList = operator.editObjects(singleton, null);
-                user = (User) editList.iterator().next();
+                Map<Entity,Entity> editList = operator.editObjects(singleton, null);
+                user = (User) editList.values().iterator().next();
             }
 
             boolean initUser;

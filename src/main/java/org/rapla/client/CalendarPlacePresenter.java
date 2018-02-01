@@ -9,6 +9,7 @@ import org.rapla.client.internal.ResourceSelectionPresenter;
 import org.rapla.client.internal.SavedCalendarInterface;
 import org.rapla.entities.Entity;
 import org.rapla.entities.User;
+import org.rapla.entities.configuration.Preferences;
 import org.rapla.facade.CalendarModel;
 import org.rapla.facade.CalendarSelectionModel;
 import org.rapla.facade.client.ClientFacade;
@@ -23,6 +24,7 @@ import org.rapla.logger.Logger;
 import org.rapla.scheduler.CommandScheduler;
 import org.rapla.scheduler.Promise;
 import org.rapla.scheduler.ResolvedPromise;
+import org.rapla.scheduler.Subject;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -37,6 +39,7 @@ import java.util.Date;
     public static final String SHOW_SELECTION_MENU_ENTRY = "show_resource_selection";
     public static final String SHOW_CONFLICTS_MENU_ENTRY = "show_conflicts";
     private static final String TODAY_DATE = "today";
+    private final Subject<String> busyIdleObservable;
     boolean listenersDisabled = false;
 
     private final CalendarPlaceView view;
@@ -70,6 +73,7 @@ import java.util.Date;
         this.savedViews = savedViews;
         this.conflictsView = conflictsSelectionPresenter;
         this.calendarContainer = calendarContainer;
+        this.busyIdleObservable = scheduler.createPublisher();
         resourceSelectionPresenter.setCallback(() ->
         {
             resourceSelectionChanged();
@@ -123,6 +127,11 @@ import java.util.Date;
             throw new RaplaInitializationException(e);
         }
 
+    }
+
+    @Override
+    public Subject<String> getBusyIdleObservable() {
+        return busyIdleObservable;
     }
 
     public String getTitle(ApplicationEvent event)
@@ -259,8 +268,9 @@ import java.util.Date;
     private void updateViews() throws RaplaException
     {
         User user = clientFacade.getUser();
-        boolean showConflicts = facade.getPreferences(user).getEntryAsBoolean(CalendarPlacePresenter.SHOW_CONFLICTS_CONFIG_ENTRY, true);
-        boolean showSelection = facade.getPreferences(user).getEntryAsBoolean(CalendarPlacePresenter.SHOW_SELECTION_CONFIG_ENTRY, true);
+        final Preferences preferences = facade.getPreferences(user);
+        boolean showConflicts = preferences.getEntryAsBoolean(CalendarPlacePresenter.SHOW_CONFLICTS_CONFIG_ENTRY, true);
+        boolean showSelection = preferences.getEntryAsBoolean(CalendarPlacePresenter.SHOW_SELECTION_CONFIG_ENTRY, true);
         boolean templateMode = clientFacade.getTemplate() != null;
         view.updateView(showConflicts, showSelection, templateMode);
     }

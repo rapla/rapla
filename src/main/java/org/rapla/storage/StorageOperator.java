@@ -65,16 +65,24 @@ public interface StorageOperator extends EntityResolver {
 
     /** should return a clone of the object. <strong>Never</strong> edit the
         original, <strong>always</strong> edit the object returned by editObject.*/
-    Collection<Entity> editObjects(Collection<Entity> obj, User user) throws RaplaException;
+    Map<Entity,Entity> editObjects(Collection<Entity> objList, User user) throws RaplaException;
+
+    /** should return a clone of the object. <strong>Never</strong> edit the
+     original, <strong>always</strong> edit the object returned by editObject.*/
+    Promise<Map<Entity,Entity>> editObjectsAsync(Collection<Entity> objList, User user);
 
     /** if an id is not found and throwEntityNotFound is set to false then the resulting map does not contain an entry for the missing id*/
-    <T extends Entity> Map<ReferenceInfo<T>,T> getFromId(Collection<ReferenceInfo<T>> idSet, boolean throwEntityNotFound) throws RaplaException;
+    <T extends Entity> Promise<Map<ReferenceInfo<T>,T>> getFromIdAsync(Collection<ReferenceInfo<T>> idSet, boolean throwEntityNotFound);
     
     Map<Entity,Entity> getPersistant(Collection<? extends Entity> entity) throws RaplaException;
+
+    //Promise<Map<Entity,Entity>> getPersistantAsync(Collection<? extends Entity> entity);
     /** Stores and/or removes entities and specifies a user that is responsible for the changes.
      * Notifies  all registered StorageUpdateListeners after a successful
      storage.*/
     <T extends Entity, S extends Entity> void storeAndRemove(Collection<T> storeObjects,Collection<ReferenceInfo<S>> removeObjects,User user) throws RaplaException;
+
+    <T extends Entity, S extends Entity> Promise<Void> storeAndRemoveAsync(Collection<T> storeObjects,Collection<ReferenceInfo<S>> removeObjects,User user);
 
     <T extends Entity> ReferenceInfo<T>[] createIdentifier(Class<T> raplaType, int count) throws RaplaException;
 

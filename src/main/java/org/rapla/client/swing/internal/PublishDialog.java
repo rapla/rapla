@@ -151,19 +151,12 @@ public class PublishDialog extends RaplaGUIComponent
             private static final long serialVersionUID = 1L;
 
 			public void run() {
-                dlg.close();
-                try 
+                for (PublishExtension extension :extensions)
                 {
-                	for (PublishExtension extension :extensions)
-                    {
-                		extension.mapOptionTo();
-                    }
-                    model.save( filename);
-                } 
-                catch (RaplaException ex) 
-                {
-                    dialogUiFactory.showException( ex, popupContext);
+                    extension.mapOptionTo();
                 }
+                dlg.busy(getI18n().getString("save"));
+                model.save( filename).whenComplete((d,ex)->dlg.idle()).exceptionally((ex)->dialogUiFactory.showException( ex, popupContext)).thenRun(()->dlg.close());
             }
         });
         dlg.start(true);

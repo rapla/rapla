@@ -357,7 +357,7 @@ public final class ReservationEditImpl extends AbstractAppointmentEditor impleme
         // we can't edit the same Reservation in different windows
         reservationInfo.requestFocus();
         getLogger().debug("New Reservation-Window created");
-        final User user = getUserModule().getUser();
+        final User user = getUser();
         deleteButton.setEnabled(permissionController.canDelete(reservation, user));
         if (!permissionController.canModify(reservation, user))
         {
@@ -531,7 +531,7 @@ public final class ReservationEditImpl extends AbstractAppointmentEditor impleme
 
     public CommandHistory getCommandHistory()
     {
-        return getUpdateModule().getCommandHistory();
+        return getClientFacade().getCommandHistory();
     }
 
 

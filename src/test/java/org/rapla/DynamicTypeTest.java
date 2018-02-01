@@ -57,6 +57,7 @@ import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.internal.RaplaLocaleImpl;
 import org.rapla.logger.Logger;
 import org.rapla.scheduler.CommandScheduler;
+import org.rapla.scheduler.sync.SynchronizedCompletablePromise;
 import org.rapla.test.util.RaplaTestCase;
 
 import java.util.Date;
@@ -135,7 +136,7 @@ public class DynamicTypeTest  {
 	    	Assert.assertNotNull(firstFilter);
 	    	firstFilter.addRule(key, new Object[][] {{"=",Boolean.TRUE}});
 	    	model.setReservationFilter( new ClassificationFilter[] { firstFilter});
-	    	model.save("test");
+	    	SynchronizedCompletablePromise.waitFor(model.save("test"),500, logger);
 			Thread.sleep(100);
     	}   	
     	{

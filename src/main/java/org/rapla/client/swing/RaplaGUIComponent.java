@@ -84,18 +84,6 @@ public class RaplaGUIComponent extends RaplaComponent
         return clientFacade.getUser();
     }
 
-    /** lookupDeprecated UpdateModule from the serviceManager */
-    protected ClientFacade getUpdateModule()
-    {
-        return clientFacade;
-    }
-
-    /** lookupDeprecated UserModule from the serviceManager */
-    protected ClientFacade getUserModule()
-    {
-        return clientFacade;
-    }
-
     public CalendarOptions getCalendarOptions()
     {
         User user;

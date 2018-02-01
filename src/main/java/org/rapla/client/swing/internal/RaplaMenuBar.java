@@ -322,7 +322,7 @@ public class RaplaMenuBar extends RaplaGUIComponent
 
     public CommandHistory getCommandHistory()
     {
-        return getUpdateModule().getCommandHistory();
+        return getClientFacade().getCommandHistory();
     }
 
     private RaplaMenuItem createMenuItem(SaveableToggleAction action) throws RaplaException
@@ -358,7 +358,7 @@ public class RaplaMenuBar extends RaplaGUIComponent
 
     protected boolean isTemplateEdit()
     {
-        return getUpdateModule().getTemplate() != null;
+        return getClientFacade().getTemplate() != null;
     }
 
 
@@ -385,7 +385,7 @@ public class RaplaMenuBar extends RaplaGUIComponent
             {
                 if (isTemplateEdit())
                 {
-                    getUpdateModule().setTemplate(null);
+                    getClientFacade().setTemplate(null);
                 }
                 else
                 {

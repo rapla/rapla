@@ -161,6 +161,12 @@ public interface RemoteStorage
     UpdateEvent getEntityRecursive(UpdateEvent.SerializableReferenceInfo... infos) throws RaplaException;
 
     @POST
+    @Path("entity/recursiveAsync")
+    @Consumes({ MediaType.APPLICATION_JSON, MediaType.APPLICATION_XML })
+    @Produces({ MediaType.APPLICATION_JSON, MediaType.APPLICATION_XML })
+    Promise<UpdateEvent> getEntityRecursiveAsync(UpdateEvent.SerializableReferenceInfo... infos);
+
+    @POST
     @Path("refresh")
     @Produces({ MediaType.APPLICATION_JSON, MediaType.APPLICATION_XML })
     UpdateEvent refresh(@QueryParam("lastSynched") String lastSyncedTime) throws RaplaException;
@@ -177,7 +183,12 @@ public interface RemoteStorage
     @POST
     @Path("dispatch")
     @Produces({ MediaType.APPLICATION_JSON, MediaType.APPLICATION_XML })
-    UpdateEvent dispatch(UpdateEvent event) throws RaplaException;
+    UpdateEvent store(UpdateEvent event) throws RaplaException;
+
+    @POST
+    @Path("dispatchAsnc")
+    @Produces({ MediaType.APPLICATION_JSON, MediaType.APPLICATION_XML })
+    Promise<UpdateEvent> dispatch(UpdateEvent event);
 
     //	@ResultType(value=String.class,container=List.class)
     //	FutureResult<List<String>> getTemplateNames();

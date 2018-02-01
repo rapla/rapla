@@ -23,9 +23,7 @@ import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.internal.AbstractRaplaLocale;
 import org.rapla.logger.Logger;
 import org.rapla.plugin.abstractcalendar.RaplaBuilder;
-import org.rapla.scheduler.CommandScheduler;
-import org.rapla.scheduler.Promise;
-import org.rapla.scheduler.ResolvedPromise;
+import org.rapla.scheduler.*;
 
 import javax.inject.Inject;
 import javax.inject.Provider;
@@ -116,6 +114,7 @@ public class Application implements ApplicationView.Presenter, ModificationListe
         if (taskPresenter == null) {
             return false;
         }
+
         final Promise<RaplaWidget> objectRaplaWidget = taskPresenter.startActivity(activity);
         if (objectRaplaWidget == null) {
             return false;
@@ -127,7 +126,7 @@ public class Application implements ApplicationView.Presenter, ModificationListe
                 mainView.updateContent(widget);
                 if (taskPresenter instanceof CalendarPlacePresenter) {
                     CalendarPlacePresenter calendarPlacePresenter = (CalendarPlacePresenter) taskPresenter;
-                    scheduler.delay(()->calendarPlacePresenter.start(),300);
+                    scheduler.delay(()->calendarPlacePresenter.start(),500);
                 }
             } else {
                 Function<ApplicationEvent, Boolean> windowClosingFunction = (event) ->
@@ -141,7 +140,8 @@ public class Application implements ApplicationView.Presenter, ModificationListe
                     return false;
                 };
                 String title = taskPresenter.getTitle(activity);
-                mainView.openWindow(activity, popupContext, widget, title, windowClosingFunction);
+                final Observable<String> busyIdleObservable = taskPresenter.getBusyIdleObservable();
+                mainView.openWindow(activity, popupContext, widget, title, windowClosingFunction, busyIdleObservable);
                 openDialogsPresenter.put(activity, taskPresenter);
             }
         });

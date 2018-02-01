@@ -13,6 +13,7 @@
 
 package org.rapla.storage.impl;
 
+import org.jetbrains.annotations.NotNull;
 import org.rapla.RaplaResources;
 import org.rapla.components.util.Assert;
 import org.rapla.entities.Category;
@@ -135,22 +136,28 @@ public abstract class AbstractCachableOperator implements StorageOperator
     public <T extends Entity> T editObject(T o, User user) throws RaplaException
     {
         Set<Entity> singleton = Collections.singleton((Entity) o);
-        Collection<Entity> list = editObjects(singleton, user);
-        Entity first = list.iterator().next();
+        Map<Entity,Entity> list = editObjects(singleton, user);
+        Entity first = list.values().iterator().next();
         @SuppressWarnings("unchecked") T casted = (T) first;
         return casted;
     }
 
-    public Collection<Entity> editObjects(Collection<Entity> list, User user) throws RaplaException
+    public Map<Entity,Entity> editObjects(Collection<Entity> list, User user) throws RaplaException
     {
-        Collection<Entity> toEdit = new LinkedHashSet<Entity>();
-        Map<Entity, Entity> persistantMap = getPersistant(list);
-        // read unlock
+        Map<ReferenceInfo<Entity>, Entity> idMap = createReferenceInfoMap(list);
+        Map<ReferenceInfo<Entity>, Entity> resolvedList = getFromId(idMap.keySet(), false);
+        return editObjects(list, user, resolvedList);
+    }
+
+    @NotNull
+    protected Map<Entity, Entity> editObjects(Collection<Entity> list, User user, Map<ReferenceInfo<Entity>, Entity> resolvedList) {
+        Map<Entity,Entity> toEdit = new LinkedHashMap<>();
         for (Entity o : list)
         {
-            Entity persistant = persistantMap.get(o);
+            Entity persistant = resolvedList.get(o.getReference());
             Entity refEntity = editObject(o, persistant, user);
-            toEdit.add(refEntity);
+            Entity key = persistant != null ? persistant : o;
+            toEdit.put(key,refEntity);
         }
         return toEdit;
     }
@@ -180,7 +187,12 @@ public abstract class AbstractCachableOperator implements StorageOperator
             final Collection<ReferenceInfo<S>> removeObjects, final User user) throws RaplaException
     {
         checkConnected();
+        UpdateEvent evt = createUpdateEvent(storeObjects, removeObjects, user);
+        dispatch(evt);
+    }
 
+    @NotNull
+    protected <T extends Entity, S extends Entity> UpdateEvent createUpdateEvent(Collection<T> storeObjects, Collection<ReferenceInfo<S>> removeObjects, User user) throws RaplaException {
         UpdateEvent evt = new UpdateEvent();
         if (user != null)
         {
@@ -208,8 +220,10 @@ public abstract class AbstractCachableOperator implements StorageOperator
             }
             evt.putRemoveId(entity);
         }
-        dispatch(evt);
+        return evt;
     }
+
+
 
     public Promise<Collection<Conflict>> getConflicts(Reservation reservation)
     {
@@ -545,7 +559,7 @@ public abstract class AbstractCachableOperator implements StorageOperator
 
     public abstract boolean isLoaded();
 
-    @Override public <T extends Entity> Map<ReferenceInfo<T>, T> getFromId(Collection<ReferenceInfo<T>> idSet, boolean throwEntityNotFound)
+    protected <T extends Entity> Map<ReferenceInfo<T>, T> getFromId(Collection<ReferenceInfo<T>> idSet, boolean throwEntityNotFound)
             throws RaplaException
     {
         checkLoaded();
@@ -593,15 +607,9 @@ public abstract class AbstractCachableOperator implements StorageOperator
 
     @Override public Map<Entity, Entity> getPersistant(Collection<? extends Entity> list) throws RaplaException
     {
-        Map<ReferenceInfo<Entity>, Entity> idMap = new LinkedHashMap<ReferenceInfo<Entity>, Entity>();
-        for (Entity key : list)
-        {
-            ReferenceInfo id = key.getReference();
-            idMap.put(id, key);
-        }
-        Map<Entity, Entity> result = new LinkedHashMap<Entity, Entity>();
-        Set<ReferenceInfo<Entity>> keySet = idMap.keySet();
-        Map<ReferenceInfo<Entity>, Entity> resolvedList = getFromId(keySet, false);
+        Map<ReferenceInfo<Entity>, Entity> idMap = createReferenceInfoMap(list);
+        Map<ReferenceInfo<Entity>, Entity> resolvedList = getFromId(idMap.keySet(), false);
+        Map<Entity, Entity> result = new LinkedHashMap<>();
         for (Entity entity : resolvedList.values())
         {
             ReferenceInfo reference = entity.getReference();
@@ -612,6 +620,17 @@ public abstract class AbstractCachableOperator implements StorageOperator
             }
         }
         return result;
+    }
+
+    @NotNull
+    protected Map<ReferenceInfo<Entity>, Entity> createReferenceInfoMap(Collection<? extends Entity> list) {
+        Map<ReferenceInfo<Entity>, Entity> idMap = new LinkedHashMap<>();
+        for (Entity key : list)
+        {
+            ReferenceInfo id = key.getReference();
+            idMap.put(id, key);
+        }
+        return idMap;
     }
 
     /**

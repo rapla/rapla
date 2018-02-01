@@ -1,5 +1,6 @@
 package org.rapla.client.swing.internal;
 
+import io.reactivex.disposables.Disposable;
 import org.rapla.RaplaResources;
 import org.rapla.client.ApplicationView;
 import org.rapla.client.PopupContext;
@@ -18,6 +19,7 @@ import org.rapla.inject.DefaultImplementation;
 import org.rapla.inject.InjectionContext;
 import org.rapla.logger.Logger;
 import org.rapla.scheduler.CommandScheduler;
+import org.rapla.scheduler.Observable;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -44,6 +46,7 @@ import java.beans.VetoableChangeListener;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 
 @DefaultImplementation(of = ApplicationView.class, context = InjectionContext.swing)
@@ -293,10 +296,19 @@ public class ApplicationViewSwing implements ApplicationView<JComponent>
     }
 
     @Override
-    public void openWindow(ApplicationEvent windowId, PopupContext popupContext, RaplaWidget<JComponent> objectRaplaWidget,String title,
-            Function<ApplicationEvent, Boolean> windowClosing)
+    public void openWindow(ApplicationEvent windowId, PopupContext popupContext, RaplaWidget<JComponent> objectRaplaWidget, String title,
+                           Function<ApplicationEvent, Boolean> windowClosing, Observable<String> busyIdleObservable)
     {
-        final RaplaFrame dialog = new RaplaFrame(frameControllerList);
+        AtomicReference<RaplaFrame> frame = new AtomicReference<>();
+        final Disposable subscribe = busyIdleObservable.subscribe((message) -> {if ( message!= null) frame.get().busy( message); else frame.get().idle();});
+        final RaplaFrame dialog = new RaplaFrame(frameControllerList) {
+            @Override
+            public void dispose() {
+                subscribe.dispose();
+                super.dispose();
+            }
+        };
+        frame.set(dialog);
         final Container component = (Container) objectRaplaWidget.getComponent();
         dialog.setContentPane(component);
         dialog.setTitle( title);

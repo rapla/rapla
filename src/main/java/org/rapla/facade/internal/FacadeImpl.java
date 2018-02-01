@@ -13,6 +13,7 @@
 package org.rapla.facade.internal;
 
 import io.reactivex.functions.Consumer;
+import org.jetbrains.annotations.NotNull;
 import org.rapla.RaplaResources;
 import org.rapla.components.util.DateTools;
 import org.rapla.entities.*;
@@ -871,26 +872,51 @@ public class FacadeImpl implements RaplaFacade {
 	public <T extends Entity> Promise<T> editAsync(T obj) {
 		if (obj == null)
 			throw new NullPointerException("Can't edit null objects");
-		return getScheduler().supply(()-> edit( obj));
+		Set<T> singleton = Collections.singleton( obj);
+		return editListAsync(singleton).thenApply((collection)->collection.values().iterator().next());
 	}
 
 	@Override
-	public <T extends Entity> Promise<Collection<T>> editAsyncList(Collection<T> list) {
+	public <T extends Entity> Promise<Map<T,T>> editListAsync(Collection<T> list) {
 		if (list == null)
 			throw new NullPointerException("Can't edit null objects");
-		return getScheduler().supply(()-> editList( list));
+		List<Entity> castedList = cast2Entity(list);
+		User workingUser = null;
+		try {
+			workingUser = getWorkingUser();
+		} catch (EntityNotFoundException e) {
+			return new ResolvedPromise<>(e);
+		}
+		return operator.editObjectsAsync(castedList,	workingUser).thenApply((result)->castEntity(result));
 	}
 
+	@NotNull
+	private <T extends Entity> Map<T,T> castEntity(Map<Entity,Entity> result) {
+		final Map<T,T> castedResult = new LinkedHashMap<>();
+		result.entrySet().stream().forEach( (entry)->castedResult.put((T)entry.getKey(),(T)entry.getValue()));
+		return castedResult;
+	}
 
 	public <T extends Entity> Collection<T> editList(Collection<T> list) throws RaplaException
 	{
+		List<Entity> castedList = cast2Entity(list);
+		User workingUser = getWorkingUser();
+		Map<Entity,Entity> result = operator.editObjects(castedList,	workingUser);
+		return castEntity(result.values());
+	}
+
+	@NotNull
+	private <T extends Entity> List<Entity> cast2Entity(Collection<T> list) {
 		List<Entity> castedList = new ArrayList<Entity>();
 		for ( Entity entity:list)
 		{
 			castedList.add( entity);
 		}
-		User workingUser = getWorkingUser();
-		Collection<Entity> result = operator.editObjects(castedList,	workingUser);
+		return castedList;
+	}
+
+	@NotNull
+	private <T extends Entity> List<T> castEntity(Collection<Entity> result) {
 		List<T> castedResult = new ArrayList<T>();
 		for ( Entity entity:result)
 		{
@@ -1148,19 +1174,21 @@ public class FacadeImpl implements RaplaFacade {
 	@Override
 	public <T extends Entity,S extends Entity> Promise<Void> dispatch( Collection<T> storeList, Collection<ReferenceInfo<S>> removeList)
 	{
-		long time = System.currentTimeMillis();
+		User user;
 		try
 		{
-			User user = getWorkingUser();
-			dispatchSynchronized(storeList, removeList, user);
-			if (getLogger().isDebugEnabled())
-				getLogger().debug("Storing took " + (System.currentTimeMillis() - time) + " ms.");
+			user = getWorkingUser();
+			if (storeList.size() == 0 && removeList.size() == 0)
+			{
+				return new ResolvedPromise<Void>((Void)null);
+			}
+			storeList = checkAndAddTransientCategories(storeList, removeList);
 		}
 		catch ( Exception ex)
 		{
 			return new ResolvedPromise<Void>(ex);
 		}
-		return ResolvedPromise.VOID_PROMISE;
+		return operator.storeAndRemoveAsync(storeList, removeList, user);
 	}
 
 	private <T extends Entity, S extends Entity> void dispatchSynchronized(Collection<T> storeList, Collection<ReferenceInfo<S>> removeList, User user)
@@ -1170,7 +1198,12 @@ public class FacadeImpl implements RaplaFacade {
 		{
 			return;
 		}
+		storeList = checkAndAddTransientCategories(storeList, removeList);
+		operator.storeAndRemove(storeList, removeList, user);
+	}
 
+	@NotNull
+	private <T extends Entity, S extends Entity> Collection<T> checkAndAddTransientCategories(Collection<T> storeList, Collection<ReferenceInfo<S>> removeList) throws RaplaException {
 		for (ReferenceInfo<?> removedObject:removeList) {
             if (removedObject == null) {
                 throw new RaplaException("Removed Objects cant be null");
@@ -1199,8 +1232,7 @@ public class FacadeImpl implements RaplaFacade {
             storeList = new ArrayList<>(storeList);
             storeList.addAll( transientCategories);
         }
-
-		operator.storeAndRemove(storeList, removeList, user);
+		return storeList;
 	}
 
 	@Override

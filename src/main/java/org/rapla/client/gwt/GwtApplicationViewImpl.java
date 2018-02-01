@@ -32,6 +32,7 @@ import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaInitializationException;
 import org.rapla.inject.DefaultImplementation;
 import org.rapla.inject.InjectionContext;
+import org.rapla.scheduler.Observable;
 
 import javax.inject.Inject;
 import java.util.function.Function;
@@ -198,7 +199,7 @@ public class GwtApplicationViewImpl implements ApplicationView<IsWidget>
     }
 
     @Override
-    public void openWindow(ApplicationEvent windowId, PopupContext popupContext, RaplaWidget<IsWidget> component, String title,Function<ApplicationEvent,Boolean> windowClosingFunction)
+    public void openWindow(ApplicationEvent windowId, PopupContext popupContext, RaplaWidget<IsWidget> component, String title, Function<ApplicationEvent, Boolean> windowClosingFunction, Observable<String> busyIdleObservable)
     {
 
     }

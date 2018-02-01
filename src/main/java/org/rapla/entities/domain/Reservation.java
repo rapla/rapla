@@ -23,6 +23,7 @@ import org.rapla.entities.dynamictype.Classifiable;
 import java.util.Collection;
 import java.util.Date;
 import java.util.Locale;
+import java.util.stream.Stream;
 
 /** The <code>Reservation</code> interface is the central interface of
  *  Rapla.  Objects implementing this interface are the courses or
@@ -47,6 +48,8 @@ public interface Reservation extends EntityPermissionContainer<Reservation>,Clas
     /** returns all appointments that are part off the reservation.*/
     
     Collection<Appointment> getSortedAppointments();
+
+    Stream<Appointment> getAppointmentStream();
     
     Appointment[] getAppointments();
    /** Restrict an allocation to one ore more appointments.

@@ -172,6 +172,17 @@ import java.util.Set;
         return evt;
     }
 
+    @Override
+    public Promise<UpdateEvent> getEntityRecursiveAsync(UpdateEvent.SerializableReferenceInfo... ids)  {
+        try {
+            return new ResolvedPromise<>(getEntityRecursive(ids));
+        }
+        catch (RaplaException ex)
+        {
+            return new ResolvedPromise<>(ex);
+        }
+    }
+
     @Override public Promise<AppointmentMap> queryAppointments(QueryAppointments job) throws RaplaException
     {
         User sessionUser = checkSessionUser();
@@ -231,7 +242,7 @@ import java.util.Set;
         shutdownService.shutdown(true);
     }
 
-    public UpdateEvent dispatch(UpdateEvent event) throws RaplaException
+    public UpdateEvent store(UpdateEvent event) throws RaplaException
     {
         User sessionUser = checkSessionUser();
         Date currentTimestamp = operator.getCurrentTimestamp();
@@ -262,6 +273,16 @@ import java.util.Set;
             processor.postProcess(sessionUser, result);
         }
         return result;
+    }
+
+    public Promise<UpdateEvent> dispatch(UpdateEvent event)
+    {
+        try {
+            final UpdateEvent result = store(event);
+            return new ResolvedPromise<>(result);
+        } catch (RaplaException ex) {
+            return new ResolvedPromise<>(ex);
+        }
     }
 
     public boolean canChangePassword() throws RaplaException

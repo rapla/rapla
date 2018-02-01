@@ -292,6 +292,7 @@ public class DialogUI extends JDialog
 
     private void service(RaplaResources i18n, RaplaImages images, BundleManager bundleManager, FrameControllerList frameList) throws RaplaInitializationException {
         this.i18n = i18n;
+        setGlassPane(new DisabledGlassPane());
         if (useDefaultOptions) {
     		if (buttons.length > 1) {
     			getButton(0).setText(i18n.getString("ok"));
@@ -435,6 +436,16 @@ public class DialogUI extends JDialog
 
 
         return completable;
+    }
+
+    @Override
+    public void busy(String message) {
+        ((DisabledGlassPane)getGlassPane()).activate(message);
+    }
+
+    @Override
+    public void idle() {
+        ((DisabledGlassPane)getGlassPane()).deactivate();
     }
 
     protected void processWindowEvent(WindowEvent e) {

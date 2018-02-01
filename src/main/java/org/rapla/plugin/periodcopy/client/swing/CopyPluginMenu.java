@@ -151,7 +151,7 @@ public class CopyPluginMenu  extends RaplaGUIComponent implements EditMenuExtens
         }
         Collection<Reservation> originalEntity = null;
 		SaveUndo<Reservation> cmd = new SaveUndo<Reservation>(getFacade(), getI18n(), newReservations, originalEntity);
-        getUpdateModule().getCommandHistory().storeAndExecute( cmd);
+        getClientFacade().getCommandHistory().storeAndExecute( cmd);
     }
 
 	public Reservation copy(Reservation reservation, Date destStart,

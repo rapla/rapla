@@ -176,7 +176,7 @@ public class UserOption extends RaplaGUIComponent implements UserOptionPanel
                 content.setLayout(layout);
                 test.add(new JLabel(getString("enter_name")), BorderLayout.NORTH);
                 test.add(content, BorderLayout.CENTER);
-                User user = getUserModule().getUser();
+                User user = getUser();
 
                 Allocatable person = user.getPerson();
                 JTextField inputSurname = new JTextField();
@@ -232,7 +232,7 @@ public class UserOption extends RaplaGUIComponent implements UserOptionPanel
                     String title = inputTitle.getText();
                     String firstname = inputFirstname.getText();
                     String surname = inputSurname.getText();
-                    getUserModule().changeName(title, firstname, surname);
+                    getClientFacade().changeName(title, firstname, surname);
 
                     nameLabel.setText(user.getName());
                 }
@@ -281,7 +281,7 @@ public class UserOption extends RaplaGUIComponent implements UserOptionPanel
                 validate.setEnabled(false);
                 dlg.setDefault(0);
                 dlg.setTitle("Email");
-                dlg.getButton(0).setAction(new EmailChangeActionC(getUserModule().getUser(), dlg));
+                dlg.getButton(0).setAction(new EmailChangeActionC(getUser(), dlg));
                 dlg.getButton(0).setEnabled(false);
                 dlg.start(true);
             }
@@ -309,7 +309,7 @@ public class UserOption extends RaplaGUIComponent implements UserOptionPanel
                 PopupContext popupContext = dialogUiFactory.createPopupContext( ()->getComponent());
                 try
                 {
-                    User user = getUserModule().getUser();
+                    User user = getUser();
                     boolean correct;
                     try
                     {
@@ -359,7 +359,7 @@ public class UserOption extends RaplaGUIComponent implements UserOptionPanel
                 try
                 {
                     String recepient = rec.getText();
-                    getUserModule().confirmEmail(recepient);
+                    getClientFacade().confirmEmail(recepient);
 
                     button.setEnabled(true);
                     code.setEnabled(true);
@@ -391,7 +391,7 @@ public class UserOption extends RaplaGUIComponent implements UserOptionPanel
                 try
                 {
                     String newMail = emailField.getText();
-                    getUserModule().changeEmail(newMail);
+                    getClientFacade().changeEmail(newMail);
                     emailLabel.setText(user.getEmail());
                     dlg.close();
                 }

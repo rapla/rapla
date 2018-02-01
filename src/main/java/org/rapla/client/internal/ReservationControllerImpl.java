@@ -308,10 +308,10 @@ public abstract class ReservationControllerImpl implements ReservationController
                 toEdit.add(reservation);
             }
             final RaplaFacade facade = getFacade();
-            final Promise<Map<ReferenceInfo<Reservation>, Reservation>> editablePromise = facade.editAsyncList(toEdit).thenApply((mutableReservations) ->
+            final Promise<Map<ReferenceInfo<Reservation>, Reservation>> editablePromise = facade.editListAsync(toEdit).thenApply((mutableReservations) ->
             {
                 HashMap<ReferenceInfo<Reservation>, Reservation> toUpdate = new LinkedHashMap<>();
-                mutableReservations
+                mutableReservations.values()
                         .forEach((mutableReservation) -> toUpdate.put(mutableReservation.getReference(), mutableReservation));
                 return toUpdate;
             });
@@ -370,8 +370,8 @@ public abstract class ReservationControllerImpl implements ReservationController
                     Reservation reservation = appointment.getReservation();
                     toUpdateRequest.add( reservation);
                 }
-                final Promise<Map<ReferenceInfo<Reservation>, Reservation>> mapPromise = getFacade().editAsyncList(toUpdateRequest).thenApply(mutableReservations ->
-                        mutableReservations.stream().collect(Collectors.toMap(Reservation::getReference, Function.identity())));
+                final Promise<Map<ReferenceInfo<Reservation>, Reservation>> mapPromise = getFacade().editListAsync(toUpdateRequest).thenApply(mutableReservations ->
+                        mutableReservations.values().stream().collect(Collectors.toMap(Reservation::getReference, Function.identity())));
                 return mapPromise.thenCompose( toUpdateMap-> {
                     for (Appointment appointment : appointmentsToRemove) {
                         final Reservation reservation = appointment.getReservation();

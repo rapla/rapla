@@ -18,22 +18,15 @@ import java.util.List;
 public class EditController
 {
     private final ApplicationEventBus eventBus;
-    private final RaplaFacade facade;
-
     @Inject
-    public EditController(ApplicationEventBus eventBus, RaplaFacade facade)
+    public EditController(ApplicationEventBus eventBus)
     {
         this.eventBus = eventBus;
-        this.facade = facade;
     }
 
     public ReservationEdit[] getEditWindows()
     {
         return new ReservationEdit[] {};
-
-    }
-    public void newObject( Object contextObject, PopupContext popupContext )
-    {
 
     }
 
@@ -54,6 +47,7 @@ public class EditController
         List<T> list = Collections.singletonList(obj);
         edit( list, popupContext);
     }
+
 //  neue Methoden zur Bearbeitung von mehreren gleichartigen Elementen (Entities-Array)
 //  orientieren sich an den oberen beiden Methoden zur Bearbeitung von einem Element
     public <T extends Entity> void edit( List<T> obj, PopupContext popupContext )

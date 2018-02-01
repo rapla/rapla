@@ -14,6 +14,7 @@
 package org.rapla.storage.dbrm;
 
 import io.reactivex.functions.Action;
+import org.jetbrains.annotations.NotNull;
 import org.rapla.ConnectInfo;
 import org.rapla.RaplaResources;
 import org.rapla.components.util.Assert;
@@ -532,8 +533,46 @@ public class RemoteOperator
         return getAllocatables(filters, -1);
     }
 
+    @Override
+    public <T extends Entity, S extends Entity> Promise<Void> storeAndRemoveAsync(Collection<T> storeObjects, Collection<ReferenceInfo<S>> removeObjects, User user) {
+        final UpdateEvent evt;
+        try {
+            evt = createUpdateEvent(storeObjects, removeObjects, user);
+            logEvent(evt);
+        } catch (RaplaException ex)
+        {
+            return new ResolvedPromise<>(ex);
+        }
+        evt.setLastValidated(lastSyncedTime);
+
+        RemoteStorage serv = getRemoteStorage();
+        return serv.dispatch(evt).thenAccept((serverEvent)->refresh(serverEvent));
+    }
+
+    @Override
+    public Promise<Map<Entity,Entity>> editObjectsAsync(Collection<Entity> objList, User user) {
+
+        Map<ReferenceInfo<Entity>, Entity> idMap = createReferenceInfoMap(objList);
+        return getFromIdAsync(idMap.keySet(), false).thenApply(map->editObjects(objList, user,map));
+    }
+
+    @Override
     public void dispatch(UpdateEvent evt) throws RaplaException {
         checkConnected();
+        logEvent(evt);
+        RemoteStorage serv = getRemoteStorage();
+        evt.setLastValidated(lastSyncedTime);
+        try {
+            UpdateEvent serverClosure = serv.store(evt);
+            refresh(serverClosure);
+        } catch (RaplaException ex) {
+            throw ex;
+        } catch (Exception ex) {
+            throw new RaplaException(ex);
+        }
+    }
+
+    private void logEvent(UpdateEvent evt) throws RaplaException {
         // Store on server
         if (getLogger().isDebugEnabled()) {
             for (Entity entity : evt.getStoreObjects()) {
@@ -547,16 +586,6 @@ public class RemoteOperator
             //                Entity entity = it.next();
             //                getLogger().debug("dispatching remove for: " + entity);
             //            }
-        }
-        RemoteStorage serv = getRemoteStorage();
-        evt.setLastValidated(lastSyncedTime);
-        try {
-            UpdateEvent serverClosure = serv.dispatch(evt);
-            refresh(serverClosure);
-        } catch (RaplaException ex) {
-            throw ex;
-        } catch (Exception ex) {
-            throw new RaplaException(ex);
         }
     }
 
@@ -674,40 +703,69 @@ public class RemoteOperator
     }
 
     @Override
+    public <T extends Entity> Promise<Map<ReferenceInfo<T>, T>> getFromIdAsync(Collection<ReferenceInfo<T>> idSet, boolean throwEntityNotFound) {
+        UpdateEvent.SerializableReferenceInfo[] array = createReferenceInfos(idSet);
+        final Promise<Map<ReferenceInfo<T>, T>> mapPromise = getRemoteStorage().getEntityRecursiveAsync(array).thenApply(entityList -> resolveLocal(entityList, idSet)).exceptionally((ex)-> {
+            if (ex instanceof EntityNotFoundException && !throwEntityNotFound)
+                return Collections.emptyMap();
+            else if ( ex instanceof RaplaException)
+                throw (RaplaException)ex;
+            else
+            {
+                throw new RaplaException(ex);
+            }
+        });
+        return mapPromise;
+    }
+
+    @Override
     public <T extends Entity> Map<ReferenceInfo<T>, T> getFromId(Collection<ReferenceInfo<T>> idSet, boolean throwEntityNotFound)
             throws RaplaException {
-        RemoteStorage serv = getRemoteStorage();
+        UpdateEvent.SerializableReferenceInfo[] array = createReferenceInfos(idSet);
+        UpdateEvent entityList;
+        try {
+            RemoteStorage serv = getRemoteStorage();
+            entityList = serv.getEntityRecursive(array);
+            return resolveLocal(entityList, idSet);
+        } catch (EntityNotFoundException ex) {
+            if (throwEntityNotFound) {
+                throw ex;
+            }
+            return Collections.emptyMap();
+        } catch (RaplaException ex) {
+            throw ex;
+        } catch (Exception ex) {
+            throw new RaplaException(ex);
+        }
+    }
+
+    @NotNull
+    private <T extends Entity> UpdateEvent.SerializableReferenceInfo[] createReferenceInfos(Collection<ReferenceInfo<T>> idSet) {
         UpdateEvent.SerializableReferenceInfo[] array = new UpdateEvent.SerializableReferenceInfo[idSet.size()];
         int i = 0;
         for (ReferenceInfo<T> ref : idSet) {
             final UpdateEvent.SerializableReferenceInfo serializableReferenceInfo = new UpdateEvent.SerializableReferenceInfo(ref);
             array[i++] = serializableReferenceInfo;
         }
+        return array;
+    }
+
+    @NotNull
+    private <T extends Entity> Map<ReferenceInfo<T>, T> resolveLocal(UpdateEvent entityList, Collection<ReferenceInfo<T>> idSet) throws RaplaException {
         Map<ReferenceInfo<T>, T> result = new HashMap();
+        Collection<Entity> list = entityList.getStoreObjects();
+        RaplaLock.ReadLock lock = lockManager.readLock();
         try {
-            UpdateEvent entityList = serv.getEntityRecursive(array);
-            Collection<Entity> list = entityList.getStoreObjects();
-            RaplaLock.ReadLock lock = lockManager.readLock();
-            try {
-                testResolve(list);
-                setResolver(list);
-            } finally {
-                lockManager.unlock(lock);
+            testResolve(list);
+            setResolver(list);
+        } finally {
+            lockManager.unlock(lock);
+        }
+        for (Entity entity : list) {
+            ReferenceInfo<T> ref = entity.getReference();
+            if (idSet.contains(ref)) {
+                result.put(ref, (T) entity);
             }
-            for (Entity entity : list) {
-                ReferenceInfo<T> ref = entity.getReference();
-                if (idSet.contains(ref)) {
-                    result.put(ref, (T) entity);
-                }
-            }
-        } catch (EntityNotFoundException ex) {
-            if (throwEntityNotFound) {
-                throw ex;
-            }
-        } catch (RaplaException ex) {
-            throw ex;
-        } catch (Exception ex) {
-            throw new RaplaException(ex);
         }
         return result;
     }

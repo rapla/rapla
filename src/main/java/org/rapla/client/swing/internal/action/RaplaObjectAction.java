@@ -371,7 +371,7 @@ public class RaplaObjectAction extends RaplaAction {
         final Promise<Void> promise;
 	    if ( undoable)
 	    {
-            promise = getUpdateModule().getCommandHistory().storeAndExecute(deleteCommand);
+            promise = getClientFacade().getCommandHistory().storeAndExecute(deleteCommand);
 	    }
 	    else
 	    {

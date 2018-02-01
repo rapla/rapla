@@ -135,6 +135,16 @@ public class GwtDialogUiFactory implements DialogUiFactoryInterface
         }
 
         @Override
+        public void busy(String message) {
+
+        }
+
+        @Override
+        public void idle() {
+
+        }
+
+        @Override
         public int getSelectedIndex()
         {
             return selectedIndex;

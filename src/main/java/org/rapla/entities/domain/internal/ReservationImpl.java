@@ -56,6 +56,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.stream.Stream;
 
 public final class ReservationImpl extends SimpleEntity implements Reservation, ModifiableTimestamp, DynamicTypeDependant, ParentEntity
 {
@@ -260,7 +261,12 @@ public final class ReservationImpl extends SimpleEntity implements Reservation, 
     {
     	return appointments;
     }
-    
+
+    @Override
+    public Stream<Appointment> getAppointmentStream() {
+        return (Stream)appointments.stream();
+    }
+
     @SuppressWarnings("unchecked")
 	public Collection<AppointmentImpl> getSubEntities()
     {

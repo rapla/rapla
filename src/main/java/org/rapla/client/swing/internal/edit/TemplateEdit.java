@@ -469,7 +469,7 @@ public class TemplateEdit extends RaplaGUIComponent
                                 }
                             }
                         }
-                        getUpdateModule().setTemplate(selectedTemplate);
+                        getClientFacade().setTemplate(selectedTemplate);
                     }).whenComplete((a, ex) ->
                     {
                         if (ex != null)

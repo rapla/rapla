@@ -435,7 +435,7 @@ public class ClientFacadeImpl implements ClientFacade, StorageUpdateListener {
 
     public void setTemplate(Allocatable template)
     {
-        ((FacadeImpl)template).setTemplateId(template != null ? template.getId() : null);
+        ((FacadeImpl)raplaFacade).setTemplateId(template != null ? template.getId() : null);
 //		User workingUser;
 //        try {
 //            workingUser = getWorkingUser();
