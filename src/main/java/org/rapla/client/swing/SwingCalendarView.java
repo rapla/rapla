@@ -20,12 +20,13 @@ import org.rapla.inject.InjectionContext;
 
 import javax.swing.JComponent;
 import java.awt.Component;
+import java.util.Observable;
 
 @ExtensionPoint(context = InjectionContext.swing, id=SwingCalendarView.ID)
 public interface SwingCalendarView extends RaplaWidget<Component>
 {
     String ID = "org.rapla.client.swing.calendarview";
-    void triggerUpdate();
+    org.rapla.scheduler.Observable triggerUpdate();
     /** you can provide a DateSelection component if you want */
     JComponent getDateSelection();
     /** Most times you can only scroll programaticaly if the window is visible and the size of

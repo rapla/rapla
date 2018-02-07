@@ -39,6 +39,8 @@ import org.rapla.plugin.jndi.JNDIPlugin;
 import org.rapla.plugin.jndi.internal.JNDIConf;
 import org.rapla.plugin.jndi.internal.JNDIConfig;
 import org.rapla.plugin.jndi.internal.JNDIConfig.MailTestRequest;
+import org.rapla.scheduler.Promise;
+import org.rapla.scheduler.ResolvedPromise;
 import org.rapla.storage.RaplaSecurityException;
 
 import javax.inject.Inject;
@@ -171,39 +173,36 @@ public class JNDIOption implements JNDIConf, PluginOptionPanel
     	{
 
             public void actionPerformed(ActionEvent e) {
+                PasswordEnterUI testUser;
+                DialogInterface dialog;
                 try
                 {
-                    DefaultConfiguration conf = new DefaultConfiguration("test");
-                    addChildren(conf);
-                    String username = "admin";
-                    String password ="";
-                    {
-                        PasswordEnterUI testUser = new PasswordEnterUI(raplaResources);
-                        DialogInterface dialog =dialogUiFactory.create( new SwingPopupContext(getComponent(), null), true,testUser.getComponent(),new String[] {"test","abort"});
-                        dialog.setTitle("Please enter valid user!");
-                        dialog.start(true);
-                        username = testUser.getUsername();
-                        password = new String(testUser.getNewPassword());
-                        int index=dialog.getSelectedIndex();
-                        if ( index > 0)
-                        {
-                            return;
-                        }
-                    }
-                    configService.test(new MailTestRequest(conf,username,password));
-                    {
-                        DialogInterface dialog = dialogUiFactory.create( new SwingPopupContext(getComponent(), null), true, "JNDI","JNDI Authentification successfull");
-                        dialog.start(true); 
-                    }
-                } 
-                catch (RaplaSecurityException ex)
-                {
-                    dialogUiFactory.showWarning(ex.getMessage(), new SwingPopupContext(getComponent(), null));
+
+                    testUser = new PasswordEnterUI(raplaResources);
+                    dialog =dialogUiFactory.create( new SwingPopupContext(getComponent(), null), false,testUser.getComponent(),new String[] {"test","abort"});
+                    dialog.setTitle("Please enter valid user!");
+
                 }
                 catch (Exception ex)
                 {
                     dialogUiFactory.showException(ex, new SwingPopupContext(getComponent(), null));
+                    return;
                 }
+                dialog.start(true).thenCompose((index) ->
+                    {
+                        DefaultConfiguration conf = new DefaultConfiguration("test");
+                        addChildren(conf);
+                        if (index > 0) {
+                            return new ResolvedPromise<>((Void) null);
+                        }
+                        String username = testUser.getUsername();
+                        String password = new String(testUser.getNewPassword());
+                        final Promise<Boolean> testPromise = configService.test(new MailTestRequest(conf, username, password));
+                        return testPromise.thenCompose((dummy) ->
+                                dialogUiFactory.create(new SwingPopupContext(getComponent(), null), false, "JNDI", "JNDI Authentification successfull").start(true)
+                        ).thenApply((index2) -> null);
+                    }
+                ).exceptionally((ex)->dialogUiFactory.showException(ex, new SwingPopupContext(getComponent(), null)));
             }
     	    
     	});

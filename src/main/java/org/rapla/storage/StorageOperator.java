@@ -61,6 +61,9 @@ public interface StorageOperator extends EntityResolver {
      * operator uses a cache and does not support "Active Monitoring"
      * of the original data */
     void refresh() throws RaplaException;
+
+    Promise<Void> refreshAsync();
+
     void disconnect() throws RaplaException;
 
     /** should return a clone of the object. <strong>Never</strong> edit the
@@ -134,7 +137,7 @@ public interface StorageOperator extends EntityResolver {
 
     Promise<Date> getNextAllocatableDate(Collection<Allocatable> allocatables,Appointment appointment, Collection<Reservation> ignoreList, Integer worktimeStartMinutes,Integer worktimeEndMinutes, Integer[] excludedDays, Integer rowsPerHour);
     
-    Collection<Conflict> getConflicts(User user) throws RaplaException;
+    Promise<Collection<Conflict>> getConflicts(User user);
 
     Promise<Collection<Conflict>> getConflicts(Reservation reservation);
 

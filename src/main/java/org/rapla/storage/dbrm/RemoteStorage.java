@@ -12,7 +12,6 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.storage.dbrm;
 
-import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.internal.AllocatableImpl;
 import org.rapla.entities.domain.internal.AppointmentImpl;
 import org.rapla.entities.domain.internal.ReservationImpl;
@@ -201,7 +200,7 @@ public interface RemoteStorage
     @GET
     @Path("conflicts")
     @Produces({ MediaType.APPLICATION_JSON, MediaType.APPLICATION_XML })
-    List<ConflictImpl> getConflicts() throws RaplaException;
+    Promise<List<ConflictImpl>> getConflicts() ;
 
     @POST
     @Path("allocatable/bindings/first")
@@ -331,7 +330,7 @@ public interface RemoteStorage
     @POST
     @Path("merge")
     @Consumes({ MediaType.APPLICATION_JSON, MediaType.APPLICATION_XML })
-    UpdateEvent doMerge(MergeRequest job, @QueryParam("lastSynched") String lastSyncedTime) throws RaplaException;
+    Promise<UpdateEvent> doMerge(MergeRequest job, @QueryParam("lastSynched") String lastSyncedTime);
 
     @XmlRootElement
     @XmlAccessorType(XmlAccessType.FIELD)

@@ -11,7 +11,7 @@ import java.util.Collection;
 /** performs a check, if the reservation is entered correctly. An example of a reservation check is the conflict checker
  *  you can add an interactive check when the user stores a reservation
  **/
-@ExtensionPoint(context = InjectionContext.swing, id = EventCheck.ID)
+@ExtensionPoint(context = InjectionContext.client, id = EventCheck.ID)
 public interface EventCheck 
 {
     String ID="eventcheck";

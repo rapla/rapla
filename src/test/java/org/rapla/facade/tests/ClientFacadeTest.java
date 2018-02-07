@@ -347,7 +347,7 @@ public class ClientFacadeTest  {
     
     @Test
     public void testConflicts() throws Exception {
-        Collection<Conflict> conflicts= facade.getConflicts( );
+        Collection<Conflict> conflicts= RaplaTestCase.waitForWithRaplaException(facade.getConflicts( ), 5000);
         Promise<Collection<Reservation>> all = facade.getReservationsForAllocatable(null, null, null, null);
         facade.removeObjects( RaplaTestCase.waitForWithRaplaException(all, 10000).toArray(Reservation.RESERVATION_ARRAY) );
         Reservation orig =  facade.newReservationDeprecated();
@@ -368,7 +368,7 @@ public class ClientFacadeTest  {
             final Map<Allocatable, Collection<Appointment>> allocatableCollectionMap = RaplaTestCase.waitForWithRaplaException(allocatableBindings, 10000);
             facade.store(newEvent);
         }
-        Collection<Conflict> conflictsAfter = facade.getConflicts( );
+        Collection<Conflict> conflictsAfter = RaplaTestCase.waitForWithRaplaException(facade.getConflicts( ), 5000);
         Assert.assertEquals(1, conflictsAfter.size() - conflicts.size());
         HashSet<Conflict> set = new HashSet<Conflict>( conflictsAfter );
 

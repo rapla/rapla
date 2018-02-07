@@ -291,7 +291,7 @@ public interface RaplaFacade
     /** returns all existing conflicts that are visible for the user
      conflicts
      */
-    Collection<Conflict> getConflicts() throws RaplaException;
+    Promise<Collection<Conflict>> getConflicts();
 
     /** returns all available periods */
     Period[] getPeriods() throws RaplaException;

@@ -49,7 +49,9 @@ import org.rapla.plugin.abstractcalendar.GroupAllocatablesStrategy;
 import org.rapla.plugin.abstractcalendar.MultiCalendarPrint;
 import org.rapla.plugin.abstractcalendar.RaplaBuilder;
 import org.rapla.plugin.abstractcalendar.RaplaCalendarViewListener;
+import org.rapla.scheduler.Observable;
 import org.rapla.scheduler.Promise;
+import org.rapla.scheduler.ResolvedPromise;
 
 import javax.inject.Provider;
 import javax.swing.BorderFactory;
@@ -184,27 +186,18 @@ public abstract class AbstractRaplaSwingCalendar extends RaplaGUIComponent
         triggerUpdate();
     }
 
-    public void triggerUpdate()
+    public Observable triggerUpdate()
     {
-        PopupContext popupContext = new SwingPopupContext(view.getComponent(), null);
-        try
+        Promise<Void> result = initializeBuilder().thenAccept((builder) -> SwingUtilities.invokeLater(() ->
         {
-            initializeBuilder().thenAccept((builder) -> SwingUtilities.invokeLater(() ->
-            {
-                try
-                {
-                    update(builder);
-                }
-                catch (RaplaException e)
-                {
-                    dialogUiFactory.showException(e, popupContext);
-                }
-            })).exceptionally((ex) -> dialogUiFactory.showException(ex, popupContext));
-        }
-        catch (RaplaException ex)
-        {
-            dialogUiFactory.showException(ex, popupContext);
-        }
+            try {
+                update(builder);
+            } catch (RaplaException e) {
+                PopupContext popupContext = new SwingPopupContext(view.getComponent(), null);
+                dialogUiFactory.showException(e, popupContext);
+            }
+        }));
+        return getFacade().getScheduler().toObservable( result);
     }
 
     public void update(RaplaBuilder builder) throws RaplaException
@@ -228,9 +221,13 @@ public abstract class AbstractRaplaSwingCalendar extends RaplaGUIComponent
         }
     }
 
-    private Promise<RaplaBuilder> initializeBuilder() throws RaplaException
+    private Promise<RaplaBuilder> initializeBuilder()
     {
-        configureView();
+        try {
+            configureView();
+        } catch (RaplaException e) {
+            return new ResolvedPromise<>(e);
+        }
         Date startDate = getStartDate();
         Date endDate = getEndDate();
         ensureViewTimeframeIsInModel(startDate, endDate);

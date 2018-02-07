@@ -32,11 +32,7 @@ import org.rapla.inject.InjectionContext;
 import org.rapla.logger.Logger;
 
 import javax.inject.Inject;
-import javax.swing.BorderFactory;
-import javax.swing.JComponent;
-import javax.swing.JLabel;
-import javax.swing.JPanel;
-import javax.swing.JTree;
+import javax.swing.*;
 import javax.swing.event.TreeSelectionEvent;
 import javax.swing.event.TreeSelectionListener;
 import javax.swing.tree.TreeModel;
@@ -191,9 +187,13 @@ public class ConflictSelectionViewSwing implements ConflictSelectionView<Compone
             dialogUiFactory.showException(e, new SwingPopupContext(getComponent(), null));
             return;
         }
-        treeSelection.exchangeTreeModel(treeModel);
-        treeSelection.getTree().expandRow(0);
-        summary.setText(i18n.getString("conflicts") + " (" + conflicts.size() + ") ");
+        SwingUtilities.invokeLater( ()->
+                {
+                    treeSelection.exchangeTreeModel(treeModel);
+                    treeSelection.getTree().expandRow(0);
+                    summary.setText(i18n.getString("conflicts") + " (" + conflicts.size() + ") ");
+                }
+        );
     }
 
     public void clearSelection()

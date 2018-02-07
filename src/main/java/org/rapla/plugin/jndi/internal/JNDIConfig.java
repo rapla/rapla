@@ -2,6 +2,7 @@ package org.rapla.plugin.jndi.internal;
 
 import org.rapla.framework.DefaultConfiguration;
 import org.rapla.framework.RaplaException;
+import org.rapla.scheduler.Promise;
 
 import javax.ws.rs.Consumes;
 import javax.ws.rs.GET;
@@ -18,7 +19,7 @@ public interface JNDIConfig
 {
     @POST
     @Consumes({MediaType.APPLICATION_JSON, MediaType.APPLICATION_XML})
-    void test(MailTestRequest job) throws RaplaException;
+    Promise<Boolean> test(MailTestRequest job) throws RaplaException;
 
     @XmlRootElement
     @XmlAccessorType(XmlAccessType.FIELD)

@@ -424,12 +424,6 @@ public class DialogUI extends JDialog
     }
     
     @Override
-    public void addWindowListener(Disposable disposable)
-    {
-        this.addWindowListener(new DisposingTool(disposable));
-    }
-
-    @Override
     public Promise<Integer> start(boolean pack) {
         packFrame = pack;
         start(p);
@@ -734,6 +728,18 @@ public class DialogUI extends JDialog
             {
                 logger.error(ex2.getMessage(), ex2);
             }
+        }
+
+        @Override
+        public void busy(String text)
+        {
+            ((RaplaFrame)frameList.getMainWindow()).busy( text);
+        }
+
+        @Override
+        public void idle()
+        {
+            ((RaplaFrame)frameList.getMainWindow()).idle();
         }
 
     }

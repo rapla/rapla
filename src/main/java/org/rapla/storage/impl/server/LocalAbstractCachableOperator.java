@@ -929,26 +929,24 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
     /**
      * Determines all conflicts the user can modify. if no user is passed all conflicts are returned
      */
-    public Collection<Conflict> getConflicts(User user) throws RaplaException
+    public Promise<Collection<Conflict>> getConflicts(User user)
     {
-        checkConnected();
-        RaplaLock.ReadLock readLock = lockManager.readLock();
-        try
-        {
-            Collection<Conflict> conflictList = new HashSet<Conflict>();
-            final Collection<Conflict> conflicts = conflictFinder.getConflicts(user);
-            for (Conflict conflict : conflicts)
-            {
-                // conflict is filled with disable/enable status from cache
-                Conflict conflictClone = cache.fillConflictDisableInformation(user, conflict);
-                conflictList.add(conflictClone);
+        return scheduler.supply(()-> {
+            checkConnected();
+            RaplaLock.ReadLock readLock = lockManager.readLock();
+            try {
+                Collection<Conflict> conflictList = new HashSet<Conflict>();
+                final Collection<Conflict> conflicts = conflictFinder.getConflicts(user);
+                for (Conflict conflict : conflicts) {
+                    // conflict is filled with disable/enable status from cache
+                    Conflict conflictClone = cache.fillConflictDisableInformation(user, conflict);
+                    conflictList.add(conflictClone);
+                }
+                return conflictList;
+            } finally {
+                lockManager.unlock(readLock);
             }
-            return conflictList;
-        }
-        finally
-        {
-            lockManager.unlock(readLock);
-        }
+        });
     }
 
     boolean disposing;
@@ -1158,6 +1156,11 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
         {
             lockManager.unlock(lock);
         }
+    }
+
+    @Override
+    public Promise<Void> refreshAsync() {
+        return scheduler.supply(()->{refresh(); return null;});
     }
 
     abstract protected void refreshWithoutLock();

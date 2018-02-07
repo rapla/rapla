@@ -311,23 +311,20 @@ public class RaplaObjectAction extends RaplaAction {
     }
 
     // creates a new Category
-    private Category createNewNodeAt(Category parent) throws RaplaException {
+    private Promise<Category> createNewNodeAt(Category parent) throws RaplaException {
         Category newCategory = getFacade().newCategory();
         newCategory.setKey(createNewKey(parent.getCategories()));
         newCategory.getName().setName(getI18n().getLang(), getString("new_category") );
-        getFacade().edit(parent).addCategory(newCategory);
-        getLogger().debug(" new category " + newCategory + " added to " + parent);
-        return newCategory;
+        return getFacade().editAsync(parent).thenApply((editableCategore)->{editableCategore.addCategory(newCategory);return  newCategory;});
     }
 
 	protected  void newEntity() throws RaplaException {
-        final Entity<? extends Entity> obj;
     	if ( Category.class == raplaType ) {
-        	obj = createNewNodeAt((Category)object);
+        	createNewNodeAt((Category)object).thenAccept( category -> editController.edit(category, popupContext));
         } else {
-			obj = newEntity(raplaType);
+            final Entity<? extends Entity> obj = newEntity(raplaType);
+            editController.edit(obj, popupContext);
         }
-        editController.edit(obj, popupContext);
     }
 
 	protected void edit() throws RaplaException {

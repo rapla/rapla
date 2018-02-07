@@ -62,6 +62,7 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 @DefaultImplementation(context = InjectionContext.server, of = RemoteStorage.class) public class RemoteStorageImpl implements RemoteStorage
 {
@@ -514,19 +515,15 @@ import java.util.Set;
         }
     }
 
-    public List<ConflictImpl> getConflicts() throws RaplaException
+    public Promise<List<ConflictImpl>> getConflicts()
     {
-        User sessionUser = checkSessionUser();
-        Set<Entity> completeList = new HashSet<Entity>();
-        Collection<Conflict> conflicts = operator.getConflicts(sessionUser);
-        List<ConflictImpl> result = new ArrayList<ConflictImpl>();
-        for (Conflict conflict : conflicts)
-        {
-            result.add((ConflictImpl) conflict);
-            Entity conflictRef = conflict;
-            completeList.add(conflictRef);
+        User sessionUser;
+        try {
+            sessionUser = checkSessionUser();
+        } catch (RaplaException e) {
+            return new ResolvedPromise<>(e);
         }
-        return result;
+        return operator.getConflicts(sessionUser).thenApply((conflicts) -> conflicts.stream().map(conflict -> (ConflictImpl) conflict).collect(Collectors.toList()));
     }
 
     @Override public Promise<Date> getNextAllocatableDate(NextAllocatableDateRequest job)
@@ -687,29 +684,25 @@ import java.util.Set;
         return ignoreConflictsWith;
     }
 
-    @Override public UpdateEvent doMerge(MergeRequest job, String lastSyncedTime ) throws RaplaException
+    @Override public Promise<UpdateEvent> doMerge(MergeRequest job, String lastSyncedTime )
     {
-        final User sessionUser = checkSessionUser();
         AllocatableImpl allocatable = job.getAllocatable();
         String[] allocatableIds = job.getAllocatableIds();
-        security.checkWritePermissions(sessionUser, allocatable);
         final Set<ReferenceInfo<Allocatable>> allocReferences = new LinkedHashSet<>();
-        for (final String allocId : allocatableIds)
-            {
-                        final ReferenceInfo<Allocatable> refInfo = new ReferenceInfo<Allocatable>(allocId, Allocatable.class);
-            allocReferences.add(refInfo);
-            // TODO check write permissions
-                }
-        final Promise<Allocatable> promise = operator.doMerge(allocatable, allocReferences, sessionUser);
+        final User sessionUser;
         try {
-                SynchronizedCompletablePromise.waitFor(promise, 20000,getLogger());
-            } catch (RaplaException e) {
-                throw e;
-            } catch (Exception e)
-        {
-                    throw new RaplaException( e);
+            sessionUser = checkSessionUser();
+            security.checkWritePermissions(sessionUser, allocatable);
+            for (final String allocId : allocatableIds) {
+                final ReferenceInfo<Allocatable> refInfo = new ReferenceInfo<Allocatable>(allocId, Allocatable.class);
+                allocReferences.add(refInfo);
+                // TODO check write permissions
+            }
+        } catch (RaplaException e) {
+            return new ResolvedPromise<>(e);
         }
-        return refresh( lastSyncedTime);
+        final Promise<Allocatable> promise = operator.doMerge(allocatable, allocReferences, sessionUser);
+        return promise.thenApply( ( allocatable1)->refresh( lastSyncedTime));
     }
 
     //			public void logEntityNotFound(String logMessage,String... referencedIds)

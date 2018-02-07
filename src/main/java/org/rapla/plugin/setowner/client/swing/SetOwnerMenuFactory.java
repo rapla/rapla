@@ -28,6 +28,8 @@ import org.rapla.framework.RaplaLocale;
 import org.rapla.inject.Extension;
 import org.rapla.logger.Logger;
 import org.rapla.plugin.setowner.SetOwnerResources;
+import org.rapla.scheduler.Promise;
+import org.rapla.scheduler.ResolvedPromise;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -42,11 +44,8 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.HashSet;
-import java.util.TreeSet;
+import java.util.*;
+import java.util.stream.Collectors;
 
 @Singleton
 @Extension(provides = ObjectMenuFactory.class, id="setowner")
@@ -142,93 +141,78 @@ public class SetOwnerMenuFactory implements ObjectMenuFactory
         {
             public void actionPerformed( ActionEvent e )
             {
-                try 
-                {
-                	User newOwner = showAddDialog();
-                	if(newOwner != null) {
-                		ArrayList<Entity<?>> toStore = new ArrayList<Entity<?>>();
-                		for ( Entity<? extends Entity> ownable: ownables)
-                		{
-                			Entity<?> editableOwnables = facade.edit( ownable);
-	                		Ownable casted = (Ownable)editableOwnables;
-							casted.setOwner(newOwner);
-	                		toStore.add( editableOwnables);
-                		}
-	                		//((SimpleEntity) editableEvent).setLastChangedBy(newOwner);
-                		facade.storeObjects(toStore.toArray(Entity.ENTITY_ARRAY));
-                	}
-                }
-                catch (RaplaException ex )
-                {
-                    dialogUiFactory.showException( ex, menuContext.getPopupContext());
-                } 
+                showAddDialog().thenCompose((newOwner)->
+                    (newOwner != null) ?
+                        facade.editListAsync(ownables).thenApply((editableOwnables) ->
+                                editableOwnables.values().stream().map((editableOwnable) -> {
+                                    ((Ownable) editableOwnable).setOwner(newOwner);
+                                    return editableOwnable;
+                                }).collect(Collectors.toList())).thenCompose((toStore) -> {dialogUiFactory.busy(i18n.getString("save"));
+                                return facade.dispatch(toStore, Collections.emptyList());
+                                })
+                            :ResolvedPromise.VOID_PROMISE
+                ).exceptionally((ex)->dialogUiFactory.showException( ex, menuContext.getPopupContext())).whenComplete((a,b)->dialogUiFactory.idle());
             }
          });
-
         return new RaplaMenuItem[] {setOwnerItem };
     }
     
-    
-    final private TreeFactory getTreeFactory() {
-        return  treeFactory;
-    }
-    
-    private User showAddDialog() throws RaplaException {
+    private Promise<User> showAddDialog() {
         final DialogInterface dialog;
-        RaplaTree treeSelection = new RaplaTree();
-        treeSelection.setMultiSelect(true);
-        treeSelection.getTree().setCellRenderer(getTreeFactory().createRenderer());
-        
-        DefaultMutableTreeNode userRoot = new DefaultMutableTreeNode("ROOT");
-        //DefaultMutableTreeNode userRoot = TypeNode(User.TYPE, getString("users"));
-        User[] userList = facade.getUsers();
-        for (final User user: sorted(userList)) {
-            DefaultMutableTreeNode node = new DefaultMutableTreeNode();
-            node.setUserObject( user );
-            userRoot.add(node); 
-        }
-        
-        treeSelection.exchangeTreeModel(new DefaultTreeModel(userRoot));
-        treeSelection.setMinimumSize(new java.awt.Dimension(300, 200));
-        treeSelection.setPreferredSize(new java.awt.Dimension(400, 260));
-        dialog = dialogUiFactory.create(
-                new SwingPopupContext(old.getMainComponent(), null)
-                ,true
-                ,treeSelection
-                ,new String[] { i18n.getString("apply"),i18n.getString("cancel")});
-        dialog.setTitle(setOwnerI18n.getString("changeownerto"));
-        dialog.getAction(0).setEnabled(false);
-        
-        final JTree tree = treeSelection.getTree(); 
-        tree.getSelectionModel().setSelectionMode(TreeSelectionModel.SINGLE_TREE_SELECTION);
-        tree.addMouseListener(new MouseAdapter() { 
-            // End dialog when a leaf is double clicked
-            public void mousePressed(MouseEvent e) {
-                TreePath selPath = tree.getPathForLocation(e.getX(), e.getY());
-                if (selPath != null && e.getClickCount() == 2) {
-                    final Object lastPathComponent = selPath.getLastPathComponent();
-                    if (((TreeNode) lastPathComponent).isLeaf() ) {
-                        dialog.getAction(0).execute();
-                        return;
-                    }
-                }
-                else
-                	if (selPath != null && e.getClickCount() == 1) {
+        final RaplaTree treeSelection = new RaplaTree();
+        try {
+            treeSelection.setMultiSelect(true);
+            treeSelection.getTree().setCellRenderer(treeFactory.createRenderer());
+
+            DefaultMutableTreeNode userRoot = new DefaultMutableTreeNode("ROOT");
+            //DefaultMutableTreeNode userRoot = TypeNode(User.TYPE, getString("users"));
+            User[] userList = facade.getUsers();
+            for (final User user : sorted(userList)) {
+                DefaultMutableTreeNode node = new DefaultMutableTreeNode();
+                node.setUserObject(user);
+                userRoot.add(node);
+            }
+
+            treeSelection.exchangeTreeModel(new DefaultTreeModel(userRoot));
+            treeSelection.setMinimumSize(new java.awt.Dimension(300, 200));
+            treeSelection.setPreferredSize(new java.awt.Dimension(400, 260));
+            dialog = dialogUiFactory.create(
+                    new SwingPopupContext(old.getMainComponent(), null)
+                    , false
+                    , treeSelection
+                    , new String[]{i18n.getString("apply"), i18n.getString("cancel")});
+            dialog.setTitle(setOwnerI18n.getString("changeownerto"));
+            dialog.getAction(0).setEnabled(false);
+
+            final JTree tree = treeSelection.getTree();
+            tree.getSelectionModel().setSelectionMode(TreeSelectionModel.SINGLE_TREE_SELECTION);
+            tree.addMouseListener(new MouseAdapter() {
+                // End dialog when a leaf is double clicked
+                public void mousePressed(MouseEvent e) {
+                    TreePath selPath = tree.getPathForLocation(e.getX(), e.getY());
+                    if (selPath != null && e.getClickCount() == 2) {
                         final Object lastPathComponent = selPath.getLastPathComponent();
-                        if (((TreeNode) lastPathComponent).isLeaf() ) {
+                        if (((TreeNode) lastPathComponent).isLeaf()) {
+                            dialog.getAction(0).execute();
+                            return;
+                        }
+                    } else if (selPath != null && e.getClickCount() == 1) {
+                        final Object lastPathComponent = selPath.getLastPathComponent();
+                        if (((TreeNode) lastPathComponent).isLeaf()) {
                             dialog.getAction(0).setEnabled(true);
                             return;
                         }
-                	}
-                tree.removeSelectionPath(selPath);
-            }
-        });
-        
-        dialog.start(true); 
-        if (dialog.getSelectedIndex() != 0) {
-        	return null;
+                    }
+                    tree.removeSelectionPath(selPath);
+                }
+            });
+        } catch (RaplaException ex)
+        {
+            return new ResolvedPromise<>(ex);
         }
-		return (User) treeSelection.getSelectedElement();
+        return dialog.start(true).thenApply((index)->
+            index == 0 ? (User) treeSelection.getSelectedElement():null
+            );
     }
     
     private <T extends Named> Collection<T> sorted(T[] allocatables) {

@@ -3,34 +3,33 @@ package org.rapla.client.gwt;
 import org.rapla.RaplaResources;
 import org.rapla.client.PopupContext;
 import org.rapla.client.ReservationController;
-import org.rapla.client.dialog.DialogUiFactoryInterface;
 import org.rapla.client.extensionpoints.EventCheck;
 import org.rapla.client.internal.RaplaClipboard;
 import org.rapla.client.internal.ReservationControllerImpl;
 import org.rapla.entities.domain.AppointmentFormater;
 import org.rapla.facade.CalendarSelectionModel;
-import org.rapla.facade.client.ClientFacade;
+import org.rapla.facade.ClientFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.inject.DefaultImplementation;
 import org.rapla.inject.InjectionContext;
 import org.rapla.logger.Logger;
-import org.rapla.scheduler.Promise;
-import org.rapla.scheduler.ResolvedPromise;
 
 import javax.inject.Inject;
 import javax.inject.Provider;
 import java.util.Collections;
+import java.util.List;
 import java.util.Set;
 
 @DefaultImplementation(of= ReservationController.class, context = InjectionContext.gwt)
 public class ReservationControllerGwtImpl extends ReservationControllerImpl
 {
+
     @Inject
     public ReservationControllerGwtImpl(ClientFacade facade, RaplaLocale raplaLocale, Logger logger, RaplaResources i18n,
-            AppointmentFormater appointmentFormater, CalendarSelectionModel calendarModel, RaplaClipboard clipboard, DialogUiFactoryInterface dialogUiFactory)
+            AppointmentFormater appointmentFormater, CalendarSelectionModel calendarModel, RaplaClipboard clipboard)
     {
-        super(facade, raplaLocale, logger, i18n, appointmentFormater, calendarModel, clipboard, dialogUiFactory);
+        super(facade, raplaLocale, logger, i18n, appointmentFormater, calendarModel, clipboard);
     }
 
 
@@ -40,11 +39,23 @@ public class ReservationControllerGwtImpl extends ReservationControllerImpl
         return new GwtPopupContext(null);
     }
 
+    @Override
+    protected void showException(Exception ex, PopupContext sourceComponent)
+    {
+        getLogger().error(ex.getMessage(), ex);
+    }
 
     @Override
-    protected Promise<Boolean> showDeleteDialog(PopupContext context, Object[] deletables) throws RaplaException
+    protected int showDialog(String action, PopupContext context, List<String> optionList, List<String> iconList, String title, String content,
+            String dialogIcon) throws RaplaException
     {
-        return new ResolvedPromise(Boolean.TRUE);
+        return 0;
+    }
+    
+    @Override
+    protected boolean showDeleteDialog(PopupContext context, Object[] deletables) throws RaplaException
+    {
+        return false;
     }
 
     @Override
@@ -60,15 +71,4 @@ public class ReservationControllerGwtImpl extends ReservationControllerImpl
         };
     }
 
-    @Override
-    protected void busy(String text)
-    {
-
-    }
-
-    @Override
-    protected void idle()
-    {
-
-    }
 }

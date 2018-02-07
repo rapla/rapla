@@ -42,4 +42,8 @@ public interface  DialogUiFactoryInterface
     }
 
     PopupContext createPopupContext(RaplaWidget widget);
+
+    void busy(String message);
+    void idle();
+
 }

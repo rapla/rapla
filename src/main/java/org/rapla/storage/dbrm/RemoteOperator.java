@@ -13,7 +13,6 @@
 
 package org.rapla.storage.dbrm;
 
-import io.reactivex.functions.Action;
 import org.jetbrains.annotations.NotNull;
 import org.rapla.ConnectInfo;
 import org.rapla.RaplaResources;
@@ -112,7 +111,6 @@ public class RemoteOperator
     Date lastSyncedTime;
     int timezoneOffset;
     RemoteConnectionInfo connectionInfo;
-    io.reactivex.disposables.Disposable schedule;
 
     @Inject
     public RemoteOperator(Logger logger, RaplaResources i18n, RaplaLocale locale, CommandScheduler scheduler,
@@ -123,7 +121,6 @@ public class RemoteOperator
         this.remoteStorage = remoteStorage;
         commandQueue = scheduler;
         this.connectionInfo = connectionInfo;
-        this.schedule = null;
         //    	this.connectionInfo = new RemoteConnectionInfo();
         //    	remoteStorage.setConnectInfo( connectionInfo );
         //    	remoteAuthentificationService.setConnectInfo( connectionInfo );
@@ -140,6 +137,7 @@ public class RemoteOperator
     }
 
     User user;
+    int intervalLength;
 
     public CommandScheduler getScheduler() {
         return commandQueue;
@@ -174,7 +172,6 @@ public class RemoteOperator
             connectionInfo.setReconnectInfo(connectInfo);
         }
         user = loadData();
-        initRefresh();
         return user;
     }
 
@@ -188,7 +185,6 @@ public class RemoteOperator
             RaplaLock.WriteLock writeLock = lockManager.writeLock(10);
             try {
                 user = loadData(evt);
-                initRefresh();
                 return user;
             } finally {
                 lockManager.unlock(writeLock);
@@ -217,29 +213,7 @@ public class RemoteOperator
         return DateTools.cutDate(raplaTime);
     }
 
-    int intervalLength;
 
-    public final void initRefresh() {
-        Action refreshTask = new Action() {
-            public void run() {
-                // test if the remote operator is writable
-                // if not we skip until the next update cycle
-                if (lockManager.isWriteLocked() && isConnected()) {
-                    refreshAsync();
-                }
-            }
-        };
-        intervalLength = ClientFacade.REFRESH_INTERVAL_DEFAULT;
-        if (isConnected()) {
-            try {
-                intervalLength = getPreferences(null, true).getEntryAsInteger(ClientFacade.REFRESH_INTERVAL_ENTRY, ClientFacade.REFRESH_INTERVAL_DEFAULT);
-            } catch (RaplaException e) {
-                getLogger().error("Error refreshing.", e);
-            }
-        }
-        schedule = commandQueue.schedule(refreshTask, 0, intervalLength);
-        //timerTask = commandQueue.schedule(refreshTask, 0, intervalLength);
-    }
 
     public void dispose() {
     }
@@ -301,27 +275,35 @@ public class RemoteOperator
 
     boolean refreshInProgress;
 
-    synchronized private void refreshAsync() {
+    public void triggerRefresh()
+    {
         if (refreshInProgress) {
             return;
         }
+        // if not we skip until the next update cycle
+        if (lockManager.isWriteLocked() && !isConnected()) {
+            return;
+        }
+        refreshAsync();
+    }
+    @Override
+     public Promise<Void> refreshAsync() {
+
         String clientRepoVersion = getLastSyncedTime();
         RemoteStorage serv = getRemoteStorage();
         refreshInProgress = true;
         final Promise<UpdateEvent> updateEventPromise = serv.refreshAsync(clientRepoVersion);
-        updateEventPromise.thenAccept((evt) -> {
-            refreshInProgress = false;
+        final Promise<Void> returnPromise = updateEventPromise.thenAccept((evt) -> {
             try {
                 refresh(evt);
             } catch (EntityNotFoundException ex) {
                 getLogger().error("Refreshing all resources due to " + ex.getMessage(), ex);
                 refreshAll();
             }
-        }).exceptionally((caught) -> {
+        }).whenComplete((result,caught) -> {
             refreshInProgress = false;
-            getLogger().error("Error refreshing.", caught);
-            return null;
         });
+        return returnPromise;
     }
 
     private String getLastSyncedTime() {
@@ -355,10 +337,6 @@ public class RemoteOperator
     @Override
     synchronized public void disconnect() throws RaplaException {
         connectionInfo.setAccessToken(null);
-        if (schedule != null) {
-            schedule.dispose();
-        }
-        this.schedule = null;
         connectionInfo.setReconnectInfo(null);
         disconnect("Disconnection from Server initiated");
     }
@@ -499,6 +477,7 @@ public class RemoteOperator
             getLogger().debug("Data flushed");
             bSessionActive = true;
             User user = cache.resolve(userId, User.class);
+            intervalLength = getPreferences(null,true).getEntryAsInteger(ClientFacade.REFRESH_INTERVAL_ENTRY, ClientFacade.REFRESH_INTERVAL_DEFAULT);
             return user;
         }
 
@@ -773,18 +752,7 @@ public class RemoteOperator
     public Promise<Map<Allocatable, Collection<Appointment>>> queryAppointments(User user, Collection<Allocatable> allocatables, Date start, Date end,
                                                                                 final ClassificationFilter[] filters, Map<String, String> annotationQuery) {
         final RemoteStorage serv = getRemoteStorage();
-        final CommandScheduler scheduler = getScheduler();
-        Promise<Map<Allocatable, Collection<Appointment>>> result = scheduler.supply(() -> {
-            // if a refresh is due, we assume the system went to sleep so we refresh before we continue
-            // TODO we should make a refresh async as well
-            if (intervalLength > 0 && lastSyncedTime != null && (lastSyncedTime.getTime() + intervalLength * 2) < getCurrentTimestamp().getTime()) {
-                getLogger().info("cache not uptodate. Refreshing first.");
-                refresh();
-                return true;
-            } else {
-                return false;
-            }
-        }).thenCompose((refreshed) -> {
+        Promise<Map<Allocatable, Collection<Appointment>>> result = refreshIfIdle().thenCompose((refreshed) -> {
             String[] allocatableId = getIdList(allocatables);
             return serv.queryAppointments(new QueryAppointments(allocatableId, start, end, annotationQuery)).thenApply(list -> {
                 Map<Allocatable, Collection<Appointment>> filtered;
@@ -802,6 +770,18 @@ public class RemoteOperator
             });
         });
         return result;
+    }
+
+    protected Promise<Promise<Boolean>> refreshIfIdle() {
+        return getScheduler().supply(() -> {
+            // if a refresh is due, we assume the system went to sleep so we refresh before we continue
+            if (intervalLength > 0 && lastSyncedTime != null && (lastSyncedTime.getTime() + intervalLength * 2) < getCurrentTimestamp().getTime()) {
+                getLogger().info("cache not uptodate. Refreshing first.");
+                return refreshAsync().thenApply((dummy)->true);
+            } else {
+                return new ResolvedPromise<>(false);
+            }
+        });
     }
 
     private Map<Allocatable, Collection<Appointment>> processReservationResult(AppointmentMap appointmentMap, ClassificationFilter[] filters)
@@ -893,6 +873,16 @@ public class RemoteOperator
         } finally {
             lockManager.unlock(readLock);
         }
+        RemoteStorage serv = getRemoteStorage();
+        UpdateEvent evt;
+        try {
+            getLogger().debug("Loading Data from server");
+            evt = serv.getResources();
+            getLogger().debug("Data loaded");
+        } catch (RaplaException ex)
+        {
+
+        }
         RaplaLock.WriteLock writeLock = writeLockIfLoaded();
         try {
             loadData();
@@ -923,7 +913,6 @@ public class RemoteOperator
                 oldEntityMap.put(newEntity.getReference(), oldEntity);
             }
         }
-        TimeInterval invalidateInterval = new TimeInterval(null, null);
         Collection<ReferenceInfo> removeInfo = new ArrayList<ReferenceInfo>();
         for (Entity entity : toRemove) {
             removeInfo.add(new ReferenceInfo(entity.getId(), entity.getTypeClass()));
@@ -931,7 +920,8 @@ public class RemoteOperator
         Date since = null;
         Date until = getLastRefreshed();
         result = createUpdateResult(oldEntityMap, updated, removeInfo, since, until);
-        fireStorageUpdated(result, new TimeInterval(null, null));
+        TimeInterval invalidateInterval = new TimeInterval(null, null);
+        fireStorageUpdated(result, invalidateInterval);
     }
 
     public synchronized void addStorageUpdateListener(StorageUpdateListener listener) {
@@ -1071,11 +1061,10 @@ public class RemoteOperator
     }
 
     @Override
-    public Collection<Conflict> getConflicts(User user) throws RaplaException {
-        checkConnected();
+    public Promise<Collection<Conflict>> getConflicts(User user) {
         RemoteStorage serv = getRemoteStorage();
-        try {
-            List<ConflictImpl> list = serv.getConflicts();
+        return serv.getConflicts().thenApply( list->
+        {
             testResolve(list);
             setResolver(list);
             List<Conflict> result = new ArrayList<Conflict>();
@@ -1088,30 +1077,24 @@ public class RemoteOperator
                 }
             }
             return result;
-        } catch (RaplaException ex) {
-            throw ex;
-        } catch (Exception ex) {
-            throw new RaplaException(ex);
-        }
+        });
     }
 
     @Override
     public Promise<Allocatable> doMerge(Allocatable selectedObject, Set<ReferenceInfo<Allocatable>> allocatableIds, User user) {
-        try {
-            String lastSyncedTime = getLastSyncedTime();
-            List<String> allocIds = new ArrayList<>(allocatableIds.size());
-            for (ReferenceInfo<Allocatable> allocId : allocatableIds) {
-                allocIds.add(allocId.getId());
-            }
-            RemoteStorage serv = getRemoteStorage();
-            final MergeRequest job = new MergeRequest((AllocatableImpl) selectedObject, allocIds.toArray(new String[allocatableIds.size()]));
-            final UpdateEvent updateEvent = serv.doMerge(job, lastSyncedTime);
-            refresh(updateEvent);
-            Allocatable newAlloc = resolve(selectedObject.getReference());
-            return new ResolvedPromise<>(newAlloc);
-        } catch (Exception e) {
-            return new ResolvedPromise<>(e);
+        String lastSyncedTime = getLastSyncedTime();
+        List<String> allocIds = new ArrayList<>(allocatableIds.size());
+        for (ReferenceInfo<Allocatable> allocId : allocatableIds) {
+            allocIds.add(allocId.getId());
         }
+        RemoteStorage serv = getRemoteStorage();
+        final MergeRequest job = new MergeRequest((AllocatableImpl) selectedObject, allocIds.toArray(new String[allocatableIds.size()]));
+        return serv.doMerge(job, lastSyncedTime).thenApply( (updateEvent)->
+                {
+                    refresh(updateEvent);
+                    return resolve(selectedObject.getReference());
+                }
+        );
     }
 
     //	@Override

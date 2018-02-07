@@ -16,6 +16,7 @@ import io.reactivex.functions.Consumer;
 import org.rapla.RaplaResources;
 import org.rapla.client.PopupContext;
 import org.rapla.client.ReservationController;
+import org.rapla.client.dialog.DeleteDialogInterface;
 import org.rapla.client.dialog.DialogInterface;
 import org.rapla.client.dialog.DialogUiFactoryInterface;
 import org.rapla.client.extensionpoints.EventCheck;
@@ -40,10 +41,13 @@ import org.rapla.facade.client.ClientFacade;
 import org.rapla.facade.RaplaFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
+import org.rapla.inject.DefaultImplementation;
+import org.rapla.inject.InjectionContext;
 import org.rapla.logger.Logger;
 import org.rapla.scheduler.Promise;
 import org.rapla.scheduler.ResolvedPromise;
 
+import javax.inject.Inject;
 import javax.inject.Provider;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -60,7 +64,8 @@ import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-public abstract class ReservationControllerImpl implements ReservationController {
+@DefaultImplementation(of= ReservationController.class,context = InjectionContext.client)
+public class ReservationControllerImpl implements ReservationController {
     /**
      * We store all open ReservationEditWindows with their reservationId
      * in a map, to lookupDeprecated if the reservation is already beeing edited.
@@ -69,14 +74,18 @@ public abstract class ReservationControllerImpl implements ReservationController
     AppointmentFormater appointmentFormater;
     ClientFacade facade;
     private RaplaLocale raplaLocale;
-    private Logger logger;
-    private RaplaResources i18n;
-    private CalendarSelectionModel calendarModel;
-    private RaplaClipboard clipboard;
-    private final DialogUiFactoryInterface dialogUiFactory;
+    private final Logger logger;
+    private final RaplaResources i18n;
+    private final CalendarSelectionModel calendarModel;
+    private final RaplaClipboard clipboard;
+    private final DialogUiFactoryInterface dialogUI;
+    private final DeleteDialogInterface deleteDialog;
 
+    private final Provider<Set<EventCheck>> eventCheckers;
+
+    @Inject
     public ReservationControllerImpl(ClientFacade facade, RaplaLocale raplaLocale, Logger logger, RaplaResources i18n, AppointmentFormater appointmentFormater,
-                                     CalendarSelectionModel calendarModel, RaplaClipboard clipboard, DialogUiFactoryInterface dialogUiFactory) {
+                                     CalendarSelectionModel calendarModel, RaplaClipboard clipboard, DialogUiFactoryInterface dialogUI, DeleteDialogInterface deleteDialog, Provider<Set<EventCheck>> eventCheckers) {
         this.facade = facade;
         this.raplaLocale = raplaLocale;
         this.logger = logger;
@@ -84,7 +93,9 @@ public abstract class ReservationControllerImpl implements ReservationController
         this.calendarModel = calendarModel;
         this.appointmentFormater = appointmentFormater;
         this.clipboard = clipboard;
-        this.dialogUiFactory = dialogUiFactory;
+        this.dialogUI = dialogUI;
+        this.deleteDialog = deleteDialog;
+        this.eventCheckers = eventCheckers;
     }
 
     protected RaplaFacade getFacade() {
@@ -110,36 +121,32 @@ public abstract class ReservationControllerImpl implements ReservationController
 
     @Override
     public Promise<Void> deleteReservation(Reservation reservation, PopupContext context) {
-        try {
-            final Promise<Boolean> booleanPromise = showDeleteDialog(context, new Reservation[]{reservation});
-            final Promise<Void> no_delete = booleanPromise.thenCompose(deleted -> {
-                final Promise promise;
-                Set<Reservation> reservationsToRemove = Collections.singleton(reservation);
-                Set<Appointment> appointmentsToRemove = Collections.emptySet();
-                Map<Appointment, List<Date>> exceptionsToAdd = Collections.emptyMap();
-                CommandUndo<RaplaException> command = new DeleteBlocksCommand(getClientFacade(), i18n, reservationsToRemove,
-                        appointmentsToRemove, exceptionsToAdd) {
-                    public String getCommandoName() {
-                        return i18n.getString("delete") + " " + i18n.getString("reservation");
-                    }
-                };
-                if (deleted) {
-
-                    CommandHistory commanHistory = getCommandHistory();
-                    promise = commanHistory.storeAndExecute(command);
-                } else {
-                    promise = new ResolvedPromise<Void>(new CommandAbortedException("No delete"));
+        final Promise<Boolean> booleanPromise = deleteDialog.showDeleteDialog(context, new Reservation[]{reservation});
+        final Promise<Void> no_delete = booleanPromise.thenCompose(deleted -> {
+            final Promise promise;
+            Set<Reservation> reservationsToRemove = Collections.singleton(reservation);
+            Set<Appointment> appointmentsToRemove = Collections.emptySet();
+            Map<Appointment, List<Date>> exceptionsToAdd = Collections.emptyMap();
+            CommandUndo<RaplaException> command = new DeleteBlocksCommand(getClientFacade(), i18n, reservationsToRemove,
+                    appointmentsToRemove, exceptionsToAdd) {
+                public String getCommandoName() {
+                    return i18n.getString("delete") + " " + i18n.getString("reservation");
                 }
-                return promise;
-            });
-            return no_delete;
-        } catch (RaplaException e) {
-            return new ResolvedPromise<>(e);
-        }
+            };
+            if (deleted) {
+
+                CommandHistory commanHistory = getCommandHistory();
+                promise = commanHistory.storeAndExecute(command);
+            } else {
+                promise = new ResolvedPromise<Void>(new CommandAbortedException("No delete"));
+            }
+            return promise;
+        });
+        return no_delete;
     }
 
     public void deleteBlocks(Collection<AppointmentBlock> blockList, PopupContext context) throws RaplaException {
-        showDeleteDialog(context, blockList.toArray()).thenAccept(deleted -> {
+        deleteDialog.showDeleteDialog(context, blockList.toArray()).thenAccept(deleted -> {
             if (!deleted)
                 return;
 
@@ -199,21 +206,16 @@ public abstract class ReservationControllerImpl implements ReservationController
         });
     }
 
-    abstract protected Promise<Boolean> showDeleteDialog(PopupContext context, Object[] deletables) throws RaplaException;
-
-    abstract protected PopupContext getPopupContext();
-
-
     protected void showException(Throwable ex, PopupContext sourceComponent)
     {
-        dialogUiFactory.showException(ex, sourceComponent);
+        dialogUI.showException(ex, sourceComponent);
         getLogger().error(ex.getMessage(), ex);
     }
 
     protected Promise<Integer> showDialog(String action, PopupContext popupContext, List<String> optionList, List<String> iconList, String title, String content,
                                           String dialogIcon) throws RaplaException
     {
-        DialogInterface dialog = dialogUiFactory.create(
+        DialogInterface dialog = dialogUI.create(
                 popupContext
                 ,true
                 ,title
@@ -235,7 +237,7 @@ public abstract class ReservationControllerImpl implements ReservationController
         return dialog.start(true);
     }
 
-    abstract protected Provider<Set<EventCheck>> getEventChecks();
+
 /*
     protected boolean showDeleteDialog(PopupContext context, Object[] deletables)
     {
@@ -269,8 +271,8 @@ public abstract class ReservationControllerImpl implements ReservationController
     
     protected Collection<EventCheck> getEventChecks()
     {
-        Collection<EventCheck> checkers = getContainer().lookupServicesFor(EventCheck.class);
-        return checkers;
+        Collection<EventCheck> eventCheckers = getContainer().lookupServicesFor(EventCheck.class);
+        return eventCheckers;
     }
 */
 
@@ -469,7 +471,7 @@ public abstract class ReservationControllerImpl implements ReservationController
         };
         CommandHistory commandHistory = getCommandHistory();
         final Promise promise = commandHistory.storeAndExecute(command);
-        handleException(promise, getPopupContext());
+        handleException(promise, dialogUI.createPopupContext(null));
     }
 
     private boolean isNotEmptyWithExceptions(Appointment appointment, List<Date> exceptions) {
@@ -556,7 +558,7 @@ public abstract class ReservationControllerImpl implements ReservationController
             return showDialog(action, context, optionList, iconList, title, content, dialogIcon).thenApply((index) -> index < 0 ? DialogAction.CANCEL : actionList.get(index));
         } else {
             if (action.equals("delete")) {
-                return showDeleteDialog(context, new Object[]{appointment.getReservation()}).thenApply(result -> {
+                return deleteDialog.showDeleteDialog(context, new Object[]{appointment.getReservation()}).thenApply(result -> {
                     if (!result) {
                         return DialogAction.CANCEL;
                     } else {
@@ -605,7 +607,7 @@ public abstract class ReservationControllerImpl implements ReservationController
         };
         CommandHistory commandHistory = getCommandHistory();
         final Promise promise = commandHistory.storeAndExecute(command);
-        handleException(promise, getPopupContext());
+        handleException(promise, dialogUI.createPopupContext(null));
     }
 
     private void copyCutAppointment(AppointmentBlock appointmentBlock, PopupContext context, Collection<Allocatable> contextAllocatables, String action,
@@ -722,10 +724,12 @@ public abstract class ReservationControllerImpl implements ReservationController
             if (appointment == null) {
                 return;
             }
+
             final Reservation reservation = clipboard.getReservation();
             final boolean copyWholeReservation = clipboard.isWholeReservation();
             final Allocatable[] restrictedAllocatables = clipboard.getRestrictedAllocatables();
             final long offset = getOffset(appointment.getStart(), start, keepTime);
+            final ResolvedPromise<CommandUndo<RaplaException>> defaultPastCommand = new ResolvedPromise<>(new AppointmentPaste(appointment, reservation, restrictedAllocatables, asNewReservation, copyWholeReservation, offset, popupContext));
 
             getLogger().debug("Paste appointment '" + appointment + "' for reservation '" + reservation + "' at " + start);
 
@@ -737,17 +741,25 @@ public abstract class ReservationControllerImpl implements ReservationController
                 Allocatable oldAllocatable = previouslyMarked.iterator().next();
                 if (!newAllocatable.equals(oldAllocatable)) {
                     if (!reservation.hasAllocated(newAllocatable)) {
-                        AppointmentBlock appointmentBlock = AppointmentBlock.create(appointment);
-                        pasteCommand = exchangeAllocatebleCmd(appointmentBlock, oldAllocatable, newAllocatable, null, popupContext).thenApply(cmd->
-                        {
-                            Reservation reservation1 = cmd.getModifiedReservationForExecute();
-                            Appointment appointment1 = reservation1.getAppointments()[0];
-                            return new AppointmentPaste(appointment1, reservation1, restrictedAllocatables, asNewReservation, copyWholeReservation, offset, popupContext);
-                        });
+                        pasteCommand = exchangeAllocatebleCmd(AppointmentBlock.create(appointment), oldAllocatable, newAllocatable, null, popupContext).thenCompose(cmd ->
+                            cmd.getModifiedReservationForExecute().thenApply(reservation1 ->
+                                    new AppointmentPaste(reservation1.getAppointments()[0], reservation1, restrictedAllocatables, asNewReservation, copyWholeReservation, offset, popupContext))
+                        );
+                    }
+                    else
+                    {
+                        pasteCommand = defaultPastCommand;
                     }
                 }
+                else
+                {
+                    pasteCommand = defaultPastCommand;
+                }
             }
-            pasteCommand = new ResolvedPromise<>(new AppointmentPaste(appointment, reservation, restrictedAllocatables, asNewReservation, copyWholeReservation, offset, popupContext));
+            else
+            {
+                pasteCommand = defaultPastCommand;
+            }
         }
         Promise<Void> promise = pasteCommand.thenCompose(command -> getCommandHistory().storeAndExecute(command));
         handleException(promise, popupContext);
@@ -785,15 +797,11 @@ public abstract class ReservationControllerImpl implements ReservationController
                 newStart2 = newStart;
             }
             AppointmentResize resizeCommand = new AppointmentResize(appointment, oldStart, oldEnd, newStart2, newEnd, context, result, keepTime);
-            busy(i18n.getString("move"));
-            final Promise promise = getCommandHistory().storeAndExecute(resizeCommand).whenComplete((a,b)->idle());
+            dialogUI.busy(i18n.getString("move"));
+            final Promise promise = getCommandHistory().storeAndExecute(resizeCommand).whenComplete((a,b)-> dialogUI.idle());
             handleException(promise, context);
         });
     }
-
-    protected abstract void idle();
-
-    protected abstract void busy(String text);
 
     protected Promise handleException(Promise promise, PopupContext context) {
         return promise.exceptionally(ex ->
@@ -976,121 +984,110 @@ public abstract class ReservationControllerImpl implements ReservationController
         }
 
         public Promise<Void> execute() {
-            try {
-                Reservation mutableReservation = getModifiedReservationForExecute();
-                Collection<Reservation> reservations = Collections.singleton(mutableReservation);
-                // checker
-                try {
-                    return checkAndDistpatch(reservations, Collections.emptyList(), firstTimeCall, sourceComponent);
-                } finally {
-                    firstTimeCall = false;
-                }
-            } catch (RaplaException ex) {
-                return new ResolvedPromise<Void>(ex);
-            }
+            return getModifiedReservationForExecute().thenCompose(mutableReservation->
+                    checkAndDistpatch(Collections.singleton(mutableReservation), Collections.emptyList(), firstTimeCall, sourceComponent)).thenRun(()->firstTimeCall = false);
         }
 
         public Promise<Void> undo() {
-            try {
-                Reservation mutableReservation = getModifiedReservationForUndo();
-                Collection<Reservation> reservations = Collections.singleton(mutableReservation);
-                return checkAndDistpatch(reservations, Collections.emptyList(), false, sourceComponent);
-            } catch (RaplaException ex) {
-                return new ResolvedPromise<Void>(ex);
-            }
+            return getModifiedReservationForUndo().thenCompose(mutableReservation->
+                            checkAndDistpatch(Collections.singleton(mutableReservation), Collections.emptyList(), false, sourceComponent));
         }
 
-        protected Reservation getModifiedReservationForExecute() throws RaplaException {
+        protected Promise<Reservation> getModifiedReservationForExecute()  {
             Reservation reservation = appointment.getReservation();
-            Reservation modifiableReservation = getFacade().edit(reservation);
-            if (addAppointment != null) {
-                modifiableReservation.addAppointment(addAppointment);
-            }
-            Appointment existingAppointment = modifiableReservation.findAppointment(appointment);
-            if (existingAppointment != null) {
-                for (Date exception : exceptionsAdded) {
-                    existingAppointment.getRepeating().addException(exception);
+            return getFacade().editAsync(reservation).thenApply(modifiableReservation ->
+            {
+                if (addAppointment != null) {
+                    modifiableReservation.addAppointment(addAppointment);
                 }
-            }
-            if (removeAllocatable) {
-                modifiableReservation.removeAllocatable(oldAllocatable);
-            }
-            if (addAllocatable) {
-                modifiableReservation.addAllocatable(newAllocatable);
-            }
-            oldRestrictions = new HashMap<Allocatable, Appointment[]>();
-            for (Allocatable alloc : reservation.getAllocatables()) {
-                oldRestrictions.put(alloc, reservation.getRestriction(alloc));
-            }
-            for (Allocatable alloc : newRestrictions.keySet()) {
-                Appointment[] restrictions = newRestrictions.get(alloc);
-                ArrayList<Appointment> foundAppointments = new ArrayList<Appointment>();
-                for (Appointment app : restrictions) {
-                    Appointment found = modifiableReservation.findAppointment(app);
-                    if (found != null) {
-                        foundAppointments.add(found);
+                Appointment existingAppointment = modifiableReservation.findAppointment(appointment);
+                if (existingAppointment != null) {
+                    for (Date exception : exceptionsAdded) {
+                        existingAppointment.getRepeating().addException(exception);
                     }
                 }
-                modifiableReservation.setRestriction(alloc, foundAppointments.toArray(Appointment.EMPTY_ARRAY));
-            }
-            if (newStart != null) {
-                if (addAppointment != null) {
-                    addAppointment.moveTo(newStart);
-                } else if (existingAppointment != null) {
-                    existingAppointment.moveTo(newStart);
+                if (removeAllocatable) {
+                    modifiableReservation.removeAllocatable(oldAllocatable);
                 }
-            }
-            //            long startTime = (dialogResult == DialogAction.SINGLE) ? sourceStart.getTime() : ap.getStart().getTime();
-            //
-            //            changeStart = new Date(startTime + offset);
-            //
-            //            if (resizing) {
-            //                changeEnd = new Date(changeStart.getTime() + (destEnd.getTime() - destStart.getTime()));
-            //                ap.move(changeStart, changeEnd);
-            //            } else {
-            //                ap.move(changeStart);
-            //            }
-            return modifiableReservation;
-        }
-
-        protected Reservation getModifiedReservationForUndo() throws RaplaException {
-            Reservation modifiableReservation = getFacade().edit(appointment.getReservation());
-            if (addAppointment != null) {
-                Appointment found = modifiableReservation.findAppointment(addAppointment);
-                if (found != null) {
-                    modifiableReservation.removeAppointment(found);
+                if (addAllocatable) {
+                    modifiableReservation.addAllocatable(newAllocatable);
                 }
-            }
-
-            Appointment existingAppointment = modifiableReservation.findAppointment(appointment);
-            if (existingAppointment != null) {
-                for (Date exception : exceptionsAdded) {
-                    existingAppointment.getRepeating().removeException(exception);
+                oldRestrictions = new HashMap<Allocatable, Appointment[]>();
+                for (Allocatable alloc : reservation.getAllocatables()) {
+                    oldRestrictions.put(alloc, reservation.getRestriction(alloc));
+                }
+                for (Allocatable alloc : newRestrictions.keySet()) {
+                    Appointment[] restrictions = newRestrictions.get(alloc);
+                    ArrayList<Appointment> foundAppointments = new ArrayList<Appointment>();
+                    for (Appointment app : restrictions) {
+                        Appointment found = modifiableReservation.findAppointment(app);
+                        if (found != null) {
+                            foundAppointments.add(found);
+                        }
+                    }
+                    modifiableReservation.setRestriction(alloc, foundAppointments.toArray(Appointment.EMPTY_ARRAY));
                 }
                 if (newStart != null) {
-                    Date oldStart = appointment.getStart();
-                    existingAppointment.moveTo(oldStart);
-                }
-            }
-            if (removeAllocatable) {
-                modifiableReservation.addAllocatable(oldAllocatable);
-            }
-            if (addAllocatable) {
-                modifiableReservation.removeAllocatable(newAllocatable);
-            }
-
-            for (Allocatable alloc : oldRestrictions.keySet()) {
-                Appointment[] restrictions = oldRestrictions.get(alloc);
-                ArrayList<Appointment> foundAppointments = new ArrayList<Appointment>();
-                for (Appointment app : restrictions) {
-                    Appointment found = modifiableReservation.findAppointment(app);
-                    if (found != null) {
-                        foundAppointments.add(found);
+                    if (addAppointment != null) {
+                        addAppointment.moveTo(newStart);
+                    } else if (existingAppointment != null) {
+                        existingAppointment.moveTo(newStart);
                     }
                 }
-                modifiableReservation.setRestriction(alloc, foundAppointments.toArray(Appointment.EMPTY_ARRAY));
-            }
-            return modifiableReservation;
+                //            long startTime = (dialogResult == DialogAction.SINGLE) ? sourceStart.getTime() : ap.getStart().getTime();
+                //
+                //            changeStart = new Date(startTime + offset);
+                //
+                //            if (resizing) {
+                //                changeEnd = new Date(changeStart.getTime() + (destEnd.getTime() - destStart.getTime()));
+                //                ap.move(changeStart, changeEnd);
+                //            } else {
+                //                ap.move(changeStart);
+                //            }
+                return modifiableReservation;
+            });
+        }
+
+        protected Promise<Reservation> getModifiedReservationForUndo() {
+            return getFacade().editAsync(appointment.getReservation()).thenApply((modifiableReservation )->
+            {
+                if (addAppointment != null) {
+                    Appointment found = modifiableReservation.findAppointment(addAppointment);
+                    if (found != null) {
+                        modifiableReservation.removeAppointment(found);
+                    }
+                }
+
+                Appointment existingAppointment = modifiableReservation.findAppointment(appointment);
+                if (existingAppointment != null) {
+                    for (Date exception : exceptionsAdded) {
+                        existingAppointment.getRepeating().removeException(exception);
+                    }
+                    if (newStart != null) {
+                        Date oldStart = appointment.getStart();
+                        existingAppointment.moveTo(oldStart);
+                    }
+                }
+                if (removeAllocatable) {
+                    modifiableReservation.addAllocatable(oldAllocatable);
+                }
+                if (addAllocatable) {
+                    modifiableReservation.removeAllocatable(newAllocatable);
+                }
+
+                for (Allocatable alloc : oldRestrictions.keySet()) {
+                    Appointment[] restrictions = oldRestrictions.get(alloc);
+                    ArrayList<Appointment> foundAppointments = new ArrayList<Appointment>();
+                    for (Appointment app : restrictions) {
+                        Appointment found = modifiableReservation.findAppointment(app);
+                        if (found != null) {
+                            foundAppointments.add(found);
+                        }
+                    }
+                    modifiableReservation.setRestriction(alloc, foundAppointments.toArray(Appointment.EMPTY_ARRAY));
+                }
+                return modifiableReservation;
+            });
         }
 
         public String getCommandoName() {
@@ -1257,7 +1254,7 @@ public abstract class ReservationControllerImpl implements ReservationController
     }
 
     Promise<Boolean> checkEvents(Collection<? extends Entity> entities, PopupContext sourceComponent) {
-        return checkEvents(getEventChecks(), entities, sourceComponent);
+        return checkEvents(eventCheckers, entities, sourceComponent);
     }
 
     public static Promise<Boolean> checkEvents(Provider<Set<EventCheck>> checkers, Collection<? extends Entity> entities, PopupContext sourceComponent) {
@@ -1314,30 +1311,8 @@ public abstract class ReservationControllerImpl implements ReservationController
         }
 
         public Promise<Void> execute() {
-            Reservation mutableReservation;
-            try {
-                final RaplaFacade facade = getFacade();
-                if (asNewReservation) {
-                    final Reservation reservation = saveReservation != null ? saveReservation : fromReservation;
-                    mutableReservation = ReservationControllerImpl.this.clone(reservation);
-
-                    // Alle anderen Appointments verschieben / entfernen
-                    Appointment[] appointments = mutableReservation.getAppointments();
-
-                    for (int i = 0; i < appointments.length; i++) {
-                        Appointment app = appointments[i];
-
-                        if (copyWholeReservation) {
-                            if (saveReservation == null) {
-                                app.moveTo(new Date(app.getStart().getTime() + offset));
-                            }
-                        } else {
-                            mutableReservation.removeAppointment(app);
-                        }
-                    }
-                } else {
-                    mutableReservation = facade.edit(fromReservation);
-                }
+            return getMutableReservationForExecute().thenApply((mutableReservation)->
+            {
 
                 if (!copyWholeReservation) {
                     if (saveAppointment == null) {
@@ -1349,36 +1324,51 @@ public abstract class ReservationControllerImpl implements ReservationController
                     mutableReservation.addAppointment(saveAppointment);
                     mutableReservation.setRestrictionForAppointment(saveAppointment, restrictedAllocatables);
                 }
-
                 saveReservation = mutableReservation;
-            } catch (RaplaException ex) {
-                return new ResolvedPromise<Void>(ex);
-            }
+                return mutableReservation;
+            }).thenCompose((mutableReservation)->
+                    checkAndDistpatch(Collections.singleton(mutableReservation), Collections.emptyList(), firstTimeCall, sourceComponent)
+            ).thenRun(()->firstTimeCall = false);
+        }
 
-            final Collection<Reservation> storeList = Collections.singleton(mutableReservation);
-            try {
-                return checkAndDistpatch(storeList, Collections.emptyList(), firstTimeCall, sourceComponent);
-            } finally {
-                firstTimeCall = false;
+        protected Promise<Reservation> getMutableReservationForExecute()  {
+            if (asNewReservation) {
+                return getFacade().getScheduler().supply(()->
+                {
+                    final Reservation reservation = saveReservation != null ? saveReservation : fromReservation;
+                    Reservation mutableReservation = ReservationControllerImpl.this.clone(reservation);
+
+                    // Alle anderen Appointments verschieben / entfernen
+                    Appointment[] appointments = mutableReservation.getAppointments();
+
+                    for (int i = 0; i < appointments.length; i++) {
+                        Appointment app = appointments[i];
+                        if (copyWholeReservation) {
+                            if (saveReservation == null) {
+                                app.moveTo(new Date(app.getStart().getTime() + offset));
+                            }
+                        } else {
+                            mutableReservation.removeAppointment(app);
+                        }
+                    }
+                    return mutableReservation;
+                });
+            } else {
+                return getFacade().editAsync(fromReservation);
             }
         }
 
         public Promise<Void> undo() {
-            try {
-                final Collection<Reservation> storeList;
-                final Collection<ReferenceInfo<Reservation>> removeList;
-                if (asNewReservation) {
-                    removeList = Collections.singleton(saveReservation.getReference());
-                    storeList = Collections.emptyList();
-                } else {
-                    Reservation mutableReservation = getFacade().edit(saveReservation);
-                    mutableReservation.removeAppointment(saveAppointment);
-                    storeList = Collections.singleton(mutableReservation);
-                    removeList = Collections.emptyList();
-                }
+            if (asNewReservation) {
+                Collection<ReferenceInfo<Reservation>> removeList = Collections.singleton(saveReservation.getReference());
+                Collection<Reservation> storeList = Collections.emptyList();
                 return checkAndDistpatch(storeList, removeList, false, sourceComponent);
-            } catch (RaplaException ex) {
-                return new ResolvedPromise<Void>(ex);
+            } else {
+                return getFacade().editAsync(saveReservation).thenCompose((mutableReservation)->
+                {
+                    mutableReservation.removeAppointment(saveAppointment);
+                    return checkAndDistpatch(Collections.singleton(mutableReservation), Collections.emptyList(), false, sourceComponent);
+                });
             }
         }
 

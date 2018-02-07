@@ -44,6 +44,7 @@ import org.rapla.plugin.tableview.TableViewPlugin;
 import org.rapla.plugin.tableview.client.swing.extensionpoints.AppointmentSummaryExtension;
 import org.rapla.plugin.tableview.client.swing.extensionpoints.SummaryExtension;
 import org.rapla.plugin.tableview.internal.TableConfig;
+import org.rapla.scheduler.Observable;
 import org.rapla.scheduler.Promise;
 import org.rapla.storage.PermissionController;
 
@@ -69,12 +70,7 @@ import java.awt.print.PageFormat;
 import java.awt.print.Printable;
 import java.awt.print.PrinterException;
 import java.text.MessageFormat;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Date;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
 public class SwingAppointmentTableView extends RaplaGUIComponent implements SwingCalendarView, Printable, VisibleTimeInterval
 {
@@ -242,13 +238,14 @@ public class SwingAppointmentTableView extends RaplaGUIComponent implements Swin
         return voidPromise;
     }
 
-    public void triggerUpdate()
+    public Observable triggerUpdate()
     {
         final Promise<Void> voidPromise = update(model);
-        voidPromise.thenAccept((a) ->
+        final Promise<Void> resultPromise = voidPromise.thenAccept((a) ->
         {
             dateChooser.update();
-        }).exceptionally((ex) -> dialogUiFactory.showException(ex, new SwingPopupContext(getComponent(), null)));
+        });
+        return getFacade().getScheduler().toObservable( resultPromise);
     }
 
     public JComponent getDateSelection()

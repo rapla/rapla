@@ -214,22 +214,6 @@ public class GwtDialogUiFactory implements DialogUiFactoryInterface
             selectedIndex = commandIndex;
         }
 
-        @Override
-        public void addWindowListener(Disposable disposable)
-        {
-            this.disposable = disposable;
-        }
-
-        @Override
-        public void requestFocus()
-        {
-            if (isVisible())
-            {
-                super.getElement().focus();
-            }
-        }
-
-        @Override
         public void toFront()
         {
             if (isVisible())
@@ -413,6 +397,16 @@ public class GwtDialogUiFactory implements DialogUiFactoryInterface
         final Object component = widget.getComponent();
         // todo maybe add component here
         return new GwtPopupContext(null);
+    }
+
+    @Override
+    public void busy(String message) {
+
+    }
+
+    @Override
+    public void idle() {
+
     }
 
 }

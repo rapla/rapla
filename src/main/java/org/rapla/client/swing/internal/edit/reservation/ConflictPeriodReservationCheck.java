@@ -70,9 +70,8 @@ import java.util.TreeSet;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
-//@Extension(provides = EventCheck.class,id="conflictperiodcheck")
 @Extension(provides = ReservationToolbarExtension.class, id = "holidayexception")
-public class ConflictPeriodReservationCheck extends RaplaGUIComponent implements EventCheck, ReservationToolbarExtension
+public class ConflictPeriodReservationCheck extends RaplaGUIComponent implements ReservationToolbarExtension
 {
     private final DialogUiFactoryInterface dialogUiFactory;
     private final TreeFactory treeFactory;

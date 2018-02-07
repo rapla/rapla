@@ -37,6 +37,7 @@ import org.rapla.plugin.tableview.TableViewPlugin;
 import org.rapla.plugin.tableview.client.swing.extensionpoints.ReservationSummaryExtension;
 import org.rapla.plugin.tableview.client.swing.extensionpoints.SummaryExtension;
 import org.rapla.plugin.tableview.internal.TableConfig;
+import org.rapla.scheduler.Observable;
 import org.rapla.scheduler.Promise;
 import org.rapla.storage.PermissionController;
 
@@ -314,14 +315,15 @@ public class SwingReservationTableView extends RaplaGUIComponent implements Swin
 		}
 	}
     
-    public void triggerUpdate() 
+    public Observable triggerUpdate()
     {
         final Promise<Collection<Reservation>> promise = model.queryReservations(model.getTimeIntervall());
-        promise.thenAccept((reservations) ->
+        final Promise<Void> result = promise.thenAccept((reservations) ->
         {
-            reservationTableModel.setReservations(reservations.toArray(new Reservation[] {}));
+            reservationTableModel.setReservations(reservations.toArray(new Reservation[]{}));
             dateChooser.update();
-        }).exceptionally((ex)-> dialogUiFactory.showException( ex, new SwingPopupContext(getComponent(), null)));
+        });
+        return getFacade().getScheduler().toObservable(result);
     }
 
     public JComponent getDateSelection()

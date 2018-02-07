@@ -14,6 +14,7 @@
 
 package org.rapla.client.swing.internal;
 
+import io.reactivex.functions.Consumer;
 import org.rapla.RaplaResources;
 import org.rapla.client.CalendarContainer;
 import org.rapla.client.PopupContext;
@@ -39,6 +40,10 @@ import org.rapla.framework.RaplaLocale;
 import org.rapla.inject.DefaultImplementation;
 import org.rapla.inject.InjectionContext;
 import org.rapla.logger.Logger;
+import org.rapla.scheduler.CommandScheduler;
+import org.rapla.scheduler.Observable;
+import org.rapla.scheduler.ResolvedPromise;
+import org.rapla.scheduler.Subject;
 
 import javax.inject.Inject;
 import javax.swing.*;
@@ -76,12 +81,16 @@ public class MultiCalendarPresenter implements CalendarContainer,Presenter
     boolean listenersEnabled = true;
     private SwingCalendarView currentView;
     private PresenterChangeCallback callback;
-    
+    final Subject<ClassificationFilter[]> filterChanged;
+    final CommandScheduler scheduler;
+
     @Inject
     public MultiCalendarPresenter(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, CalendarSelectionModel model,
             RaplaImages raplaImages, DialogUiFactoryInterface dialogUiFactory, final Set<SwingViewFactory> factoryList,
             FilterEditButtonFactory filterEditButtonFactory, MultiCalendarView view) throws RaplaInitializationException
     {
+        scheduler = facade.getRaplaFacade().getScheduler();
+        filterChanged = scheduler.createPublisher();
         this.logger = logger;
         this.raplaImages = raplaImages;
         this.dialogUiFactory = dialogUiFactory;
@@ -120,6 +129,11 @@ public class MultiCalendarPresenter implements CalendarContainer,Presenter
         view.setSelectedViewId(model.getViewId());
         view.setFilterModel(model);
         this.view.setSelectableViews(ids);
+        final Observable<Object> objectObservable = filterChanged.debounce(500).switchMap((newFilter) -> {
+            model.setReservationFilter(newFilter);
+            return update();
+        });
+        objectObservable.doOnError((ex)->logger.error(ex.getMessage(),ex)).subscribe();
     }
     
     @Override
@@ -142,8 +156,7 @@ public class MultiCalendarPresenter implements CalendarContainer,Presenter
     public void onFilterChange()
     {
         final ClassificationFilter[] filters = view.getFilters();
-        model.setReservationFilter( filters );
-        update();
+        filterChanged.onNext( filters);
     }
 
     public void init(boolean editable, PresenterChangeCallback callback) throws RaplaException
@@ -283,11 +296,15 @@ public class MultiCalendarPresenter implements CalendarContainer,Presenter
         }
     }
 
-    public void update()
+    public Observable update()
     {
         if (currentView != null)
         {
-            currentView.triggerUpdate();
+            return currentView.triggerUpdate();
+        }
+        else
+        {
+            return scheduler.toObservable(ResolvedPromise.VOID_PROMISE);
         }
     }
 

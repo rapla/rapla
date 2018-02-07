@@ -31,6 +31,7 @@ import org.rapla.client.swing.toolkit.FrameControllerList;
 import org.rapla.components.i18n.BundleManager;
 import org.rapla.components.i18n.internal.DefaultBundleManager;
 import org.rapla.entities.User;
+import org.rapla.facade.RaplaFacade;
 import org.rapla.facade.client.ClientFacade;
 import org.rapla.facade.UpdateErrorListener;
 import org.rapla.facade.internal.ClientFacadeImpl;
@@ -45,10 +46,10 @@ import org.rapla.logger.Logger;
 import org.rapla.scheduler.CommandScheduler;
 import org.rapla.scheduler.Promise;
 import org.rapla.storage.RaplaSecurityException;
-import org.rapla.storage.StorageOperator;
 import org.rapla.storage.dbrm.LoginTokens;
 import org.rapla.storage.dbrm.RemoteAuthentificationService;
 import org.rapla.storage.dbrm.RemoteConnectionInfo;
+import org.rapla.storage.dbrm.RemoteOperator;
 
 import javax.inject.Inject;
 import javax.inject.Provider;
@@ -69,6 +70,7 @@ import java.util.concurrent.Semaphore;
 public class RaplaClientServiceImpl implements ClientService, UpdateErrorListener, Disposable, UserClientService
 {
 
+    private final RemoteOperator operator;
     Vector<RaplaClientListener> listenerList = new Vector<RaplaClientListener>();
     RaplaResources i18n;
     boolean started;
@@ -84,6 +86,7 @@ public class RaplaClientServiceImpl implements ClientService, UpdateErrorListene
     final BundleManager bundleManager;
     final CommandScheduler commandScheduler;
     final RaplaImages raplaImages;
+    io.reactivex.disposables.Disposable schedule;
     //final Provider<RaplaFrame> raplaFrameProvider;
 
     Application application;
@@ -92,7 +95,7 @@ public class RaplaClientServiceImpl implements ClientService, UpdateErrorListene
     RemoteConnectionInfo connectionInfo;
     @Inject
     public RaplaClientServiceImpl(StartupEnvironment env, Logger logger, DialogUiFactoryInterface dialogUiFactory, ClientFacade facade, RaplaResources i18n, RaplaSystemInfo systemInfo,
-                                  RaplaLocale raplaLocale, BundleManager bundleManager, CommandScheduler commandScheduler, final StorageOperator storageOperator,
+                                  RaplaLocale raplaLocale, BundleManager bundleManager, CommandScheduler commandScheduler, final RemoteOperator storageOperator,
                                   RaplaImages raplaImages, Provider<Application> applicationProvider, RemoteConnectionInfo connectionInfo, RemoteAuthentificationService authentificationService)
     {
         this.env = env;
@@ -114,6 +117,7 @@ public class RaplaClientServiceImpl implements ClientService, UpdateErrorListene
         this.logger = logger;
         this.dialogUiFactory = dialogUiFactory;
         this.facade = facade;
+        this.operator = storageOperator;
         this.raplaLocale = raplaLocale;
         this.bundleManager = bundleManager;
         this.commandScheduler = commandScheduler;
@@ -265,6 +269,7 @@ public class RaplaClientServiceImpl implements ClientService, UpdateErrorListene
     {
         return getClientFacade().load().thenRun(()->
         {
+            initRefresh();
             application = applicationProvider.get();
             application.start(defaultLanguageChosen, () ->
             {
@@ -545,6 +550,12 @@ public class RaplaClientServiceImpl implements ClientService, UpdateErrorListene
         }
     }
 
+
+    private final void initRefresh() throws RaplaException {
+        int intervalLength = facade.getRaplaFacade().getSystemPreferences().getEntryAsInteger(ClientFacade.REFRESH_INTERVAL_ENTRY, ClientFacade.REFRESH_INTERVAL_DEFAULT);
+        schedule = commandScheduler.schedule(()->operator.triggerRefresh(), 0, intervalLength);
+    }
+
     public void updateError(RaplaException ex)
     {
         getLogger().error("Error updating data", ex);
@@ -552,6 +563,10 @@ public class RaplaClientServiceImpl implements ClientService, UpdateErrorListene
 
     public void disconnected(final String message)
     {
+        if (schedule != null) {
+            schedule.dispose();
+        }
+        this.schedule = null;
         if (started)
         {
             SwingUtilities.invokeLater(new Runnable()

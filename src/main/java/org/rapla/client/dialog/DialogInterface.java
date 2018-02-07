@@ -18,10 +18,7 @@ public interface DialogInterface
     DialogAction getAction(int commandIndex);
     void setAbortAction(Runnable abortAction);
     void setDefault(int commandIndex);
-    void addWindowListener(Disposable disposable);
-    void requestFocus();
-    void toFront();
-    
+
     interface DialogAction
     {
         void setEnabled(boolean enabled);

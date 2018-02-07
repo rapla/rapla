@@ -52,6 +52,7 @@ import java.util.stream.Collectors;
 public class ConflictSelectionPresenter implements Presenter
 {
     protected final CalendarSelectionModel model;
+    private final Logger logger;
     private Collection<Conflict> conflicts;
     private final CalendarEventBus eventBus;
     private final DialogUiFactoryInterface dialogUiFactory;
@@ -59,26 +60,20 @@ public class ConflictSelectionPresenter implements Presenter
     private final RaplaFacade raplaFacade;
     private final ConflictSelectionView<?> view;
 
+
     @Inject
     public ConflictSelectionPresenter(ClientFacade facade, Logger logger, final CalendarSelectionModel model, CalendarEventBus eventBus,
             DialogUiFactoryInterface dialogUiFactory, ConflictSelectionView view) throws RaplaInitializationException
     {
         this.facade = facade;
+        this.logger = logger;
         this.model = model;
         this.eventBus = eventBus;
         this.dialogUiFactory = dialogUiFactory;
         this.view = view;
         raplaFacade = facade.getRaplaFacade();
         view.setPresenter(this);
-        try
-        {
-            conflicts = new LinkedHashSet<Conflict>(raplaFacade.getConflicts());
-            updateTree();
-        }
-        catch (RaplaException e)
-        {
-            throw new RaplaInitializationException(e);
-        }
+        queryAllConflicts();
     }
 
     @Override
@@ -196,7 +191,7 @@ public class ConflictSelectionPresenter implements Presenter
                     .filter((conflict) -> conflictStrings.contains(conflict.getId())).collect(Collectors.toList());
             return raplaFacade.updateList(conflictOrig,
                     (editableConflicts) -> editableConflicts.stream().forEach((conflict) -> setEnabled(((ConflictImpl) conflict), newFlag)))
-                    .thenRun(() -> updateTree());
+                    .thenRun(() -> updateTree(conflicts));
         }
     }
 
@@ -226,9 +221,7 @@ public class ConflictSelectionPresenter implements Presenter
         TimeInterval invalidateInterval = evt.getInvalidateInterval();
         if (invalidateInterval != null && invalidateInterval.getStart() == null)
         {
-            Collection<Conflict> conflictArray = raplaFacade.getConflicts();
-            conflicts = new LinkedHashSet<Conflict>(conflictArray);
-            updateTree();
+            queryAllConflicts();
         }
         else if (evt.isModified())
         {
@@ -246,12 +239,16 @@ public class ConflictSelectionPresenter implements Presenter
                     conflicts.add(conflict);
                 }
             }
-            updateTree();
+            updateTree(conflicts);
         }
         else
         {
             view.redraw();
         }
+    }
+
+    protected void queryAllConflicts()  {
+        raplaFacade.getConflicts().thenAccept(conflicts->updateTree(conflicts)).exceptionally( ex -> {logger.error(ex.getMessage(),ex); return null;} );
     }
 
     private void removeConflict(Collection<Conflict> conflicts, Set<ReferenceInfo> removedReferences)
@@ -336,9 +333,9 @@ public class ConflictSelectionPresenter implements Presenter
         return selectedConflicts;
     }
 
-    private void updateTree() throws RaplaException
+    private void updateTree(Collection<Conflict> newConflicts) throws RaplaException
     {
-
+        this.conflicts = newConflicts;
         Collection<Conflict> selectedConflicts = new ArrayList<Conflict>(getSelectedConflicts());
         Collection<Conflict> conflicts = getConflicts();
         view.updateTree(selectedConflicts, conflicts);

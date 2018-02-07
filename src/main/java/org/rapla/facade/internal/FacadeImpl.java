@@ -170,15 +170,10 @@ public class FacadeImpl implements RaplaFacade {
 	}
 
 	public Promise<Void> refreshAsync()  {
-		try {
-			if (operator.supportsActiveMonitoring()) {
-				operator.refresh();
-			}
-			return ResolvedPromise.VOID_PROMISE;
-		} catch (RaplaException ex)
-		{
-			return new ResolvedPromise<>(ex);
+		if (operator.supportsActiveMonitoring()) {
+			return operator.refreshAsync();
 		}
+		return ResolvedPromise.VOID_PROMISE;
 	}
 
 	void setName(MultiLanguageName name, String to)
@@ -396,25 +391,18 @@ public class FacadeImpl implements RaplaFacade {
         return operator.getConflicts(reservation);
     }
 
-	public Collection<Conflict> getConflicts() throws RaplaException {
-	    
-		final User user;
-        User workingUser = getWorkingUser();
-		if ( workingUser != null && !workingUser.isAdmin())
-		{
-			user = workingUser;
-		}
-		else
-		{
-			user = null;
-		}
-		Collection<Conflict> conflicts = operator.getConflicts(  user);
-		if (getLogger().isDebugEnabled())
-		{
-			getLogger().debug("getConflits called. Returned " + conflicts.size() + " conflicts.");
-		}
-	
-		return conflicts;
+	public Promise<Collection<Conflict>> getConflicts() {
+
+		final User user = null;
+		return	operator.getConflicts(user).thenApply(conflicts->
+				{
+					if (getLogger().isDebugEnabled())
+					{
+						getLogger().debug("getConflits called. Returned " + conflicts.size() + " conflicts.");
+					}
+					return conflicts;
+				}
+			);
 	}
 	
 //	public boolean canReadReservationsFromOthers(User user) {
