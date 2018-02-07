@@ -59,6 +59,7 @@ import org.rapla.logger.Logger;
 import org.rapla.scheduler.Promise;
 import org.rapla.storage.PermissionController;
 
+import javax.inject.Inject;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -114,6 +115,7 @@ public class RaplaBuilder
 	final private Logger logger;
 	final private AppointmentFormater appointmentFormater;
 
+	@Inject
 	public RaplaBuilder(RaplaLocale raplaLocale, RaplaFacade raplaFacade, RaplaResources i18n, Logger logger, AppointmentFormater appointmentFormater) {
         Locale locale = raplaLocale.getLocale();
         buildStrategy = new GroupAllocatablesStrategy( locale );

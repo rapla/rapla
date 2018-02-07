@@ -17,7 +17,6 @@ import org.rapla.RaplaResources;
 import org.rapla.client.EditController;
 import org.rapla.client.PopupContext;
 import org.rapla.client.dialog.DeleteDialogInterface;
-import org.rapla.client.dialog.DialogInterface;
 import org.rapla.client.dialog.DialogUiFactoryInterface;
 import org.rapla.client.internal.DeleteUndo;
 import org.rapla.client.dialog.InfoFactory;
@@ -232,7 +231,7 @@ public class RaplaObjectActions extends RaplaComponent{
         <li>null if none of the above criterias matched.
     */
     private DynamicType guessType(Object object) throws RaplaException {
-        DynamicType[] types = guessTypes(object);
+        DynamicType[] types = guessTypesFor(object);
         if ( types.length > 0)
         {
             return types[0];
@@ -242,11 +241,12 @@ public class RaplaObjectActions extends RaplaComponent{
             return null;
         }
     }
-    public DynamicType[] guessTypes() throws RaplaException {
-        return guessTypes( object);
+
+    public DynamicType[] guessTypesFor() throws RaplaException {
+        return guessTypesFor( object);
     }
 
-    public DynamicType[] guessTypes(Object object) throws RaplaException {
+    public DynamicType[] guessTypesFor(Object object) throws RaplaException {
         DynamicType dynamicType = null;
         getLogger().debug("Guessing DynamicType from " + object);
         if (object instanceof DynamicType)

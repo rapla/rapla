@@ -5,7 +5,7 @@ import org.rapla.framework.RaplaException;
 
 public interface InfoFactory
 {
-    String getToolTip(Object obj);
+    String getToolTip(Object t);
 
     String getToolTip(Object obj, boolean wrapHtml);
 
