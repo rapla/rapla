@@ -18,7 +18,7 @@ import org.rapla.client.PopupContext;
 import org.rapla.client.ReservationController;
 import org.rapla.client.ReservationEdit;
 import org.rapla.client.dialog.DialogUiFactoryInterface;
-import org.rapla.client.swing.InfoFactory;
+import org.rapla.client.dialog.InfoFactory;
 import org.rapla.client.swing.RaplaAction;
 import org.rapla.client.swing.images.RaplaImages;
 import org.rapla.entities.User;

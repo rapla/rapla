@@ -125,7 +125,7 @@ public class SwingMonthView extends AbstractSwingCalendar
         PreperationResult prep = b.prepareBuild(startDate, endDate);
         // build Blocks
         final Collection<AppointmentBlock> blocks = prep.getBlocks();
-        b.build(this, blocks);
+        b.build(this, getStartDate(),blocks);
 
         tableLayout= new TableLayout();
         jCenter.setLayout(tableLayout);

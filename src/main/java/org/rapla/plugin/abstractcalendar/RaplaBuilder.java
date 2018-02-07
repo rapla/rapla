@@ -16,15 +16,13 @@
 
 package org.rapla.plugin.abstractcalendar;
 
+import jsinterop.annotations.JsIgnore;
 import jsinterop.annotations.JsType;
 import org.jetbrains.annotations.NotNull;
 import org.rapla.RaplaResources;
 import org.rapla.client.internal.AppointmentInfoUI;
 import org.rapla.client.internal.RaplaColors;
-import org.rapla.components.calendarview.Block;
-import org.rapla.components.calendarview.BuildStrategy;
-import org.rapla.components.calendarview.Builder;
-import org.rapla.components.calendarview.CalendarView;
+import org.rapla.components.calendarview.*;
 import org.rapla.components.util.Assert;
 import org.rapla.components.util.DateTools;
 import org.rapla.components.util.TimeInterval;
@@ -74,6 +72,8 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Function;
+import java.util.function.Supplier;
 
 public class RaplaBuilder
     implements
@@ -95,6 +95,7 @@ public class RaplaBuilder
     private boolean isResourceColoring;
     private boolean isEventColoring;
     private boolean nonFilteredEventsVisible;
+    private BlockCreator blockCreator = (blockContext, start, end) -> new RaplaBlock(blockContext, start, end);
     Map<Allocatable,Collection<Appointment>> bindings;
 
     /** default buildStrategy is {@link GroupAllocatablesStrategy}.*/
@@ -122,9 +123,12 @@ public class RaplaBuilder
         this.logger = logger;
         this.appointmentFormater = appointmentFormater;
 	}
-	    
 
-    protected RaplaLocale getRaplaLocale() 
+    public void setBlockCreator(BlockCreator blockCreator) {
+        this.blockCreator = blockCreator;
+    }
+
+    protected RaplaLocale getRaplaLocale()
     {
         return raplaLocale;
     }
@@ -166,7 +170,7 @@ public class RaplaBuilder
             else
             {
                 Collection<Appointment> all = new LinkedHashSet<Appointment>();
-                allocatables = new ArrayList<Allocatable>(bindings.keySet());
+                allocatables = new ArrayList<>(bindings.keySet());
                 Collections.sort( (List)allocatables, new SortedClassifiableComparator(raplaLocale.getLocale()));
                 for ( Collection<Appointment> appointments: bindings.values())
                 {
@@ -384,6 +388,7 @@ public class RaplaBuilder
 		AppointmentBlock original;
     }
 
+    @JsIgnore
     static public List<AppointmentBlock> splitBlocks(Collection<AppointmentBlock> preparedBlocks, Date startDate, Date endDate) {
         List<AppointmentBlock> result = new ArrayList<AppointmentBlock>();
         for (AppointmentBlock block:preparedBlocks) {
@@ -473,24 +478,22 @@ public class RaplaBuilder
         return new PreperationResult( min, max,preparedBlocks);
     }
 
+    public void build(BlockContainer blockContainer, Date startDate, Collection<AppointmentBlock> preparedBlocks) {
 
-    protected Block createBlock(RaplaBlockContext blockContext, Date start, Date end)
-    {
-        return new RaplaBlock( blockContext, start, end);
-    }
-
-
-    public void build(CalendarView calendarView, Collection<AppointmentBlock> preparedBlocks) {
-        List<Block> blocks = getBlocks(preparedBlocks);
+        List<Block> blocks = createBlocks(preparedBlocks, blockCreator);
         //long time = System.currentTimeMillis();
-        Date startDate = calendarView.getStartDate();
-        buildStrategy.build(calendarView, blocks, startDate);
+        buildStrategy.build(blockContainer, blocks, startDate);
         //logger.info( "Build strategy took " + (System.currentTimeMillis() - time) + " ms.");
 
     }
 
+    public interface BlockCreator
+    {
+        Block createBlock(RaplaBlockContext blockContext, Date start, Date end);
+    }
+
     @NotNull
-    public List<Block> getBlocks(Collection<AppointmentBlock> preparedBlocks)
+    public List<Block> createBlocks(Collection<AppointmentBlock> preparedBlocks, BlockCreator blockCreator)
     {
         ArrayList<Block> blocks = new ArrayList<>();
         {
@@ -504,7 +507,7 @@ public class RaplaBuilder
                 Date end = new Date( block.getEnd() );
                 RaplaBlockContext[] blockContext = getBlocksForAppointment( block, buildContext );
                 for ( int j=0;j< blockContext.length; j++) {
-                    blocks.add( createBlock(blockContext[j], start, end));
+                    blocks.add( blockCreator.createBlock(blockContext[j], start, end));
                 }
             }
             //logger.info( "Block creation took " + (System.currentTimeMillis() - time) + " ms.");

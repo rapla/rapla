@@ -127,7 +127,7 @@ public class RaplaBlock implements Block
         ;
     }
 
-    protected String[] getColorsAsHex() {
+    public String[] getColorsAsHex() {
         BuildContext buildContext = getBuildContext();
     	LinkedHashSet<String> colorList = new LinkedHashSet<String>();
         if ( buildContext.isEventColoringEnabled())
@@ -162,7 +162,7 @@ public class RaplaBlock implements Block
         return colorList.toArray(new String[] {});
     }
 
-    protected String getTimeString(boolean small) {
+    public String getTimeString(boolean small) {
         RaplaLocale loc = getBuildContext().getRaplaLocale();
         String timeString = null;
         if ( getBuildContext().isTimeVisible()) {

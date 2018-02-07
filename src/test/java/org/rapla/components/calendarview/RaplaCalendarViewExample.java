@@ -20,6 +20,7 @@ import org.rapla.components.calendarview.swing.ViewListener;
 import org.rapla.entities.domain.Appointment;
 import org.rapla.entities.domain.AppointmentBlock;
 import org.rapla.framework.internal.RaplaLocaleImpl;
+import org.rapla.plugin.abstractcalendar.RaplaBuilder;
 
 import javax.swing.BorderFactory;
 import javax.swing.JFrame;
@@ -248,7 +249,7 @@ public final class RaplaCalendarViewExample {
             return 0;
         }
 
-        public void build(CalendarView cv,Collection<AppointmentBlock> blocks ) {
+        public void build(BlockContainer  cv,Date startDate, Collection<AppointmentBlock> blocks ) {
             List<Block> swingBlocks = new ArrayList<Block>();
             for ( AppointmentBlock block:blocks)
             {
@@ -256,7 +257,7 @@ public final class RaplaCalendarViewExample {
                 swingBlocks .add( new MyBlock(  appointment ));
             }
 
-            strategy.build( cv, swingBlocks, cv.getStartDate());
+            strategy.build( cv, swingBlocks, startDate);
         }
 
         public void setEnabled(boolean enable) {

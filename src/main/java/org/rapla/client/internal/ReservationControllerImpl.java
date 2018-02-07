@@ -120,11 +120,10 @@ public class ReservationControllerImpl implements ReservationController {
 
 
     @Override
-    public Promise<Void> deleteReservation(Reservation reservation, PopupContext context) {
-        final Promise<Boolean> booleanPromise = deleteDialog.showDeleteDialog(context, new Reservation[]{reservation});
+    public Promise<Void> deleteReservations(Set<Reservation> reservationsToRemove, PopupContext context) {
+        final Promise<Boolean> booleanPromise = deleteDialog.showDeleteDialog(context, reservationsToRemove.toArray(Reservation.RESERVATION_ARRAY));
         final Promise<Void> no_delete = booleanPromise.thenCompose(deleted -> {
             final Promise promise;
-            Set<Reservation> reservationsToRemove = Collections.singleton(reservation);
             Set<Appointment> appointmentsToRemove = Collections.emptySet();
             Map<Appointment, List<Date>> exceptionsToAdd = Collections.emptyMap();
             CommandUndo<RaplaException> command = new DeleteBlocksCommand(getClientFacade(), i18n, reservationsToRemove,
@@ -1377,6 +1376,31 @@ public class ReservationControllerImpl implements ReservationController {
         }
 
     }
+    @Override
+    public Promise<Void> saveReservations(Collection<Reservation> storeList,Collection<Reservation> originals, PopupContext context) {
+        SaveReservationCmd cmd = new SaveReservationCmd(facade.getRaplaFacade(), i18n, storeList, originals, context);
+        return facade.getCommandHistory().storeAndExecute( cmd);
+    }
+
+    class SaveReservationCmd extends SaveUndo
+    {
+        private PopupContext context;
+
+        public SaveReservationCmd(RaplaFacade facade, RaplaResources i18n, Collection<Reservation> newEntity, Collection<Reservation> originalEntity, PopupContext context) {
+            super(facade, i18n, newEntity, originalEntity);
+            this.context = context;
+        }
+
+        @Override
+        public Promise<Void> execute() {
+            if (firstTimeCall)
+            {
+                return checkEvents(newEntities, context).thenCompose(b->b== Boolean.TRUE ? super.execute():ResolvedPromise.VOID_PROMISE);
+            }
+            return super.execute();
+        }
+    }
+
 
     public Promise<Void> checkAndDistpatch(Collection<Reservation> storeList, Collection<ReferenceInfo<Reservation>> removeList, boolean firstTime,
                                            PopupContext sourceComponent) {

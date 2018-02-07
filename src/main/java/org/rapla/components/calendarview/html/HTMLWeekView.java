@@ -115,7 +115,7 @@ public class HTMLWeekView extends AbstractHTMLView {
             multSlots[i] = new HTMLDaySlot(2);
         }
 
-        b.build(this, prep.getBlocks());
+        b.build(this, getStartDate(),prep.getBlocks());
         boolean useAM_PM = getRaplaLocale().isAmPmFormat(  );
         for (int minuteOfDay = minMinute;minuteOfDay<maxMinute;minuteOfDay++) {
             boolean isLine = (minuteOfDay ) % (60 /  m_rowsPerHour) == 0;

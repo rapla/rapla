@@ -88,7 +88,7 @@ public class HTMLCompactWeekView extends AbstractHTMLView {
         PreperationResult prep = b.prepareBuild(getStartDate(),getEndDate());
         
         // build Blocks
-        b.build(this, prep.getBlocks()); 
+        b.build(this,this.getStartDate(), prep.getBlocks());
         
         // resource header
 

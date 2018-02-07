@@ -403,10 +403,9 @@ public class EditTaskPresenter implements TaskPresenter
                 PopupContext popupEditContext = dialogUiFactory.createPopupContext( c);
                 Runnable reservationSaveCmd = () -> {
                     this.bSaving = true;
-                    boolean firstTime = true;
                     busyIdleObservable.onNext(i18n.getString("save"));
                     final Promise promise = reservationController
-                            .checkAndDistpatch((Collection<Reservation>) editValues, Collections.EMPTY_LIST, firstTime, popupEditContext).thenRun(()->closeCmd.run());
+                            .saveReservations((Collection<Reservation>) editValues,(Collection<Reservation>)origs,  popupEditContext).thenRun(()->closeCmd.run());
 
                     handleException( promise,popupEditContext).whenComplete((t,ex)->{bSaving = false;busyIdleObservable.onNext(null);});
                 };
@@ -414,7 +413,7 @@ public class EditTaskPresenter implements TaskPresenter
                     this.bDeleting = true;
                     busyIdleObservable.onNext(i18n.getString("delete"));
                     final Reservation original = (Reservation) origs.iterator().next();
-                    final Promise<Void> promise = reservationController.deleteReservation(original, popupContext);
+                    final Promise<Void> promise = reservationController.deleteReservations(Collections.singleton(original), popupContext);
                     promise.thenRun( () ->closeCmd.run()).whenComplete((t,ex) ->  {bDeleting = false;busyIdleObservable.onNext(null);});
                 };
                 Runnable closeCmd2 = () ->

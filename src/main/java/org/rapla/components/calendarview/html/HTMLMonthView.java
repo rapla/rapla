@@ -77,7 +77,7 @@ public class HTMLMonthView extends AbstractHTMLView {
         }
 
         PreperationResult prep = b.prepareBuild(startDate,getEndDate());
-        b.build(this, prep.getBlocks());
+        b.build(this,getStartDate(), prep.getBlocks());
         int lastRow = 0;
         HTMLSmallDaySlot[][] table = new HTMLSmallDaySlot[ROWS][COLUMNS];
         

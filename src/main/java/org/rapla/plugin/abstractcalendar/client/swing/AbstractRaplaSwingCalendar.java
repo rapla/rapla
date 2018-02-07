@@ -20,7 +20,7 @@ import org.rapla.client.ReservationController;
 import org.rapla.client.dialog.DialogUiFactoryInterface;
 import org.rapla.client.extensionpoints.ObjectMenuFactory;
 import org.rapla.client.internal.RaplaClipboard;
-import org.rapla.client.swing.InfoFactory;
+import org.rapla.client.dialog.InfoFactory;
 import org.rapla.client.swing.MenuFactory;
 import org.rapla.client.swing.RaplaGUIComponent;
 import org.rapla.client.swing.SwingCalendarView;
@@ -52,6 +52,7 @@ import org.rapla.plugin.abstractcalendar.RaplaCalendarViewListener;
 import org.rapla.scheduler.Observable;
 import org.rapla.scheduler.Promise;
 import org.rapla.scheduler.ResolvedPromise;
+import org.rapla.scheduler.sync.SynchronizedCompletablePromise;
 
 import javax.inject.Provider;
 import javax.swing.BorderFactory;
@@ -75,8 +76,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.TimeUnit;
 
 public abstract class AbstractRaplaSwingCalendar extends RaplaGUIComponent
         implements SwingCalendarView, DateChangeListener, MultiCalendarPrint, VisibleTimeInterval, Printable
@@ -352,10 +351,10 @@ public abstract class AbstractRaplaSwingCalendar extends RaplaGUIComponent
                 {
                     // get all reservations
                     final Promise<RaplaBuilder> builderPromise = initializeBuilder();
-                    RaplaBuilder builder = waitForWithRaplaException(builderPromise, 5000);
+                    RaplaBuilder builder = SynchronizedCompletablePromise.waitFor(builderPromise, 5000, getLogger());
                     update(builder);
                 }
-                catch (RaplaException e)
+                catch (Exception e)
                 {
                     getLogger().error(e.getMessage(), e);
                     throw new PrinterException(e.getMessage());
@@ -375,10 +374,10 @@ public abstract class AbstractRaplaSwingCalendar extends RaplaGUIComponent
                 try
                 {
                     final Promise<RaplaBuilder> builderPromise = initializeBuilder();
-                    RaplaBuilder builder = waitForWithRaplaException(builderPromise, 5000);
+                    RaplaBuilder builder = SynchronizedCompletablePromise.waitFor(builderPromise, 5000, getLogger());
                     update(builder);
                 }
-                catch (RaplaException e)
+                catch (Exception e)
                 {
                     getLogger().error(e.getMessage(), e);
                     throw new PrinterException(e.getMessage());
@@ -436,41 +435,6 @@ public abstract class AbstractRaplaSwingCalendar extends RaplaGUIComponent
                 model.setEndDate(endDate);
                 model.setSelectedDate(selectedDate);
             }
-        }
-    }
-
-    // This should be the only place on the client where we want to wait for Promises
-    private <T> T waitForWithRaplaException(Promise<T> promise, int timeoutMillis) throws RaplaException
-    {
-        final CompletableFuture<T> future = new CompletableFuture<>();
-        promise.whenComplete((t, ex) ->
-        {
-            if (ex != null)
-            {
-                future.completeExceptionally(ex);
-            }
-            else
-            {
-                future.complete(t);
-            }
-        });
-        try
-        {
-            T t = future.get(timeoutMillis, TimeUnit.MILLISECONDS);
-            return t;
-        }
-        catch (Exception ex)
-        {
-            final Throwable cause = ex.getCause();
-            if (cause instanceof RaplaException)
-            {
-                throw (RaplaException) cause;
-            }
-            if (cause instanceof Error)
-            {
-                throw (Error) cause;
-            }
-            throw new RaplaException(cause);
         }
     }
 

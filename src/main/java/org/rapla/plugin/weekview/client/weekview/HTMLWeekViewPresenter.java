@@ -136,7 +136,7 @@ public class HTMLWeekViewPresenter extends AbstractHTMLView
                 }
             }
             {
-                b.build(this, prepareBuild.getBlocks());
+                b.build(this, getStartDate(),prepareBuild.getBlocks());
             }
             logger.info("building took  " + (System.currentTimeMillis() - time) + " ms");
         }

@@ -10,7 +10,7 @@ import org.rapla.client.ReservationEdit;
 import org.rapla.client.dialog.DialogUiFactoryInterface;
 import org.rapla.client.extensionpoints.ObjectMenuFactory;
 import org.rapla.client.internal.RaplaClipboard;
-import org.rapla.client.swing.InfoFactory;
+import org.rapla.client.dialog.InfoFactory;
 import org.rapla.client.swing.MenuFactory;
 import org.rapla.client.swing.RaplaGUIComponent;
 import org.rapla.client.swing.SwingMenuContext;

@@ -17,6 +17,7 @@ import org.rapla.RaplaResources;
 import org.rapla.client.MenuContext;
 import org.rapla.client.PopupContext;
 import org.rapla.client.dialog.DialogUiFactoryInterface;
+import org.rapla.client.dialog.InfoFactory;
 import org.rapla.client.internal.ResourceSelectionView;
 import org.rapla.client.swing.images.RaplaImages;
 import org.rapla.client.swing.internal.FilterEditButton;
@@ -97,9 +98,9 @@ public class ResourceSelectionViewSwing implements ResourceSelectionView
     private final MenuFactory menuFactory;
 
     @Inject
-    public ResourceSelectionViewSwing(RaplaMenuBarContainer menuBar,  RaplaResources i18n, Logger logger,
-            TreeFactory treeFactory, MenuFactory menuFactory,  InfoFactory infoFactory, RaplaImages raplaImages,
-            DialogUiFactoryInterface dialogUiFactory, FilterEditButtonFactory filterEditButtonFactory) throws RaplaInitializationException
+    public ResourceSelectionViewSwing(RaplaMenuBarContainer menuBar, RaplaResources i18n, Logger logger,
+                                      TreeFactory treeFactory, MenuFactory menuFactory, InfoFactory infoFactory, RaplaImages raplaImages,
+                                      DialogUiFactoryInterface dialogUiFactory, FilterEditButtonFactory filterEditButtonFactory) throws RaplaInitializationException
     {
 
         this.menuBar = menuBar;

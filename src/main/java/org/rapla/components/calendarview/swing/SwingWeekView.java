@@ -296,7 +296,7 @@ public class SwingWeekView extends AbstractSwingCalendar
         }
 
         // build Blocks
-        b.build(this, prep.getBlocks());
+        b.build(this, getStartDate(),prep.getBlocks());
 
         // add Slots
         for (int i = 0; i < daySlots.length; i++)

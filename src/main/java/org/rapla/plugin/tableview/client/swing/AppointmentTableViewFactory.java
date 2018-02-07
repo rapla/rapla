@@ -17,7 +17,7 @@ import org.rapla.client.EditController;
 import org.rapla.client.ReservationController;
 import org.rapla.client.dialog.DialogUiFactoryInterface;
 import org.rapla.client.extensionpoints.ObjectMenuFactory;
-import org.rapla.client.swing.InfoFactory;
+import org.rapla.client.dialog.InfoFactory;
 import org.rapla.client.swing.MenuFactory;
 import org.rapla.client.swing.SwingCalendarView;
 import org.rapla.client.swing.extensionpoints.SwingViewFactory;

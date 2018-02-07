@@ -23,6 +23,7 @@ import org.rapla.facade.CalendarModel;
 import org.rapla.facade.RaplaFacade;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.logger.Logger;
+import org.rapla.plugin.abstractcalendar.client.swing.SwingRaplaBlock;
 import org.rapla.scheduler.Promise;
 
 import javax.inject.Inject;
@@ -41,6 +42,7 @@ public class HTMLRaplaBuilder extends RaplaBuilder {
     @Inject
     public HTMLRaplaBuilder(RaplaLocale raplaLocale, RaplaFacade raplaFacade, RaplaResources i18n, Logger logger, AppointmentFormater appointmentFormater) {
         super(raplaLocale, raplaFacade, i18n, logger, appointmentFormater);
+        this.setBlockCreator(( blockContext, start, end)->createBlock(blockContext,start,end));
     }
 
     
@@ -73,8 +75,8 @@ public class HTMLRaplaBuilder extends RaplaBuilder {
         return true;
     }
 
-    @Override
-    protected Block createBlock(RaplaBlockContext blockContext, Date start, Date end) {
+
+    private Block createBlock(RaplaBlockContext blockContext, Date start, Date end) {
         HTMLRaplaBlock block = new HTMLRaplaBlock(blockContext, start, end);
         block.setIndex( index ++ );
 

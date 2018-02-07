@@ -13,7 +13,7 @@
 package org.rapla.client.swing.internal.view;
 
 import org.rapla.RaplaResources;
-import org.rapla.client.swing.InfoFactory;
+import org.rapla.client.dialog.InfoFactory;
 import org.rapla.client.swing.RaplaGUIComponent;
 import org.rapla.client.swing.TreeFactory;
 import org.rapla.client.swing.images.RaplaImages;

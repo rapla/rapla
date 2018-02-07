@@ -55,9 +55,10 @@ public class SwingRaplaBlock extends RaplaBlock implements SwingBlock
     RaplaBlockView m_view = new RaplaBlockView();
     private RaplaImages images;
 
-    public SwingRaplaBlock(RaplaBuilder.RaplaBlockContext blockContext, Date start, Date end)
+    public SwingRaplaBlock(RaplaBuilder.RaplaBlockContext blockContext, Date start, Date end, RaplaImages images)
     {
         super(blockContext, start, end);
+        this.images = images;
     }
 
     public Icon getRepeatingIcon() {

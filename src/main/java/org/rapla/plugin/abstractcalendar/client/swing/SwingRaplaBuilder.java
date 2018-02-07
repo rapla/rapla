@@ -27,18 +27,10 @@ import java.util.Date;
 
 public class SwingRaplaBuilder extends RaplaBuilder
 {
-    RaplaImages images;
-    
     public SwingRaplaBuilder(RaplaFacade raplaFacade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, AppointmentFormater appointmentFormater, RaplaImages raplaImages)
     {
         super(raplaLocale, raplaFacade, i18n, logger, appointmentFormater);
-        this.images= raplaImages;
+        this.setBlockCreator(( blockContext, start, end)->new SwingRaplaBlock( blockContext, start, end, raplaImages));
     }
 
-    protected Block createBlock(RaplaBlockContext blockContext, Date start, Date end) {
-        SwingRaplaBlock block = new SwingRaplaBlock( blockContext, start, end);
-        block.setImages( images);
-
-        return block;
-    }
 }

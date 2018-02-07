@@ -19,12 +19,12 @@ import org.rapla.client.UserClientService;
 import org.rapla.client.dialog.DialogUiFactoryInterface;
 import org.rapla.client.extensionpoints.ObjectMenuFactory;
 import org.rapla.client.extensionpoints.ReservationWizardExtension;
-import org.rapla.client.swing.InfoFactory;
+import org.rapla.client.dialog.InfoFactory;
+import org.rapla.client.menu.RaplaObjectActions;
 import org.rapla.client.swing.MenuFactory;
 import org.rapla.client.swing.RaplaGUIComponent;
 import org.rapla.client.swing.SwingMenuContext;
 import org.rapla.client.swing.images.RaplaImages;
-import org.rapla.client.swing.internal.action.DynamicTypeAction;
 import org.rapla.client.swing.internal.action.RaplaObjectAction;
 import org.rapla.client.swing.internal.action.user.PasswordChangeAction;
 import org.rapla.client.swing.internal.action.user.UserAction;
@@ -35,10 +35,7 @@ import org.rapla.client.swing.toolkit.RaplaMenuItem;
 import org.rapla.client.swing.toolkit.RaplaSeparator;
 import org.rapla.components.util.DateTools;
 import org.rapla.components.util.TimeInterval;
-import org.rapla.entities.Category;
-import org.rapla.entities.Entity;
-import org.rapla.entities.RaplaObject;
-import org.rapla.entities.User;
+import org.rapla.entities.*;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.Period;
 import org.rapla.entities.domain.Reservation;
@@ -85,6 +82,7 @@ import java.util.TreeMap;
         }
     }
 
+    private final Provider<RaplaObjectActions> actionsProvider;
     private final Set<ReservationWizardExtension> reservationWizards;
     private final Set<ObjectMenuFactory> objectMenuFactories;
     private final PermissionController permissionController;
@@ -96,10 +94,11 @@ import java.util.TreeMap;
     private final DialogUiFactoryInterface dialogUiFactory;
 
     @Inject public MenuFactoryImpl(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger,
-            Set<ReservationWizardExtension> reservationWizards, Set<ObjectMenuFactory> objectMenuFactories, CalendarSelectionModel model,
-            UserClientService service, InfoFactory infoFactory, RaplaImages raplaImages, DialogUiFactoryInterface dialogUiFactory, Provider<EditController> editControllerProvider)
+                                   Provider<RaplaObjectActions> actionsProvider, Set<ReservationWizardExtension> reservationWizards, Set<ObjectMenuFactory> objectMenuFactories, CalendarSelectionModel model,
+                                   UserClientService service, InfoFactory infoFactory, RaplaImages raplaImages, DialogUiFactoryInterface dialogUiFactory, Provider<EditController> editControllerProvider)
     {
         super(facade, i18n, raplaLocale, logger);
+        this.actionsProvider = actionsProvider;
         this.reservationWizards = reservationWizards;
         this.objectMenuFactories = objectMenuFactories;
         this.permissionController = facade.getRaplaFacade().getPermissionController();
@@ -450,9 +449,10 @@ import java.util.TreeMap;
 
     private void addTypeMenuNew(MenuInterface menu, String classificationType, PopupContext popupContext)
     {
-        DynamicTypeAction newReservationType = newDynamicTypeAction(popupContext);
+        RaplaObjectAction newReservationType = newObjectAction(popupContext);
         menu.add(newReservationType);
-        newReservationType.setNewClassificationType(classificationType);
+
+        newReservationType.setNewClassificationType(classificationType );
         newReservationType.putValue(Action.NAME, getString(classificationType + "_type"));
     }
 
@@ -517,16 +517,8 @@ import java.util.TreeMap;
     private RaplaObjectAction newObjectAction(PopupContext popupContext)
     {
         final EditController editController = editControllerProvider.get();
-        RaplaObjectAction action = new RaplaObjectAction(getClientFacade(), getI18n(), getRaplaLocale(), getLogger(), popupContext, editController, infoFactory,
-                raplaImages, dialogUiFactory);
-        return action;
-    }
-
-    private DynamicTypeAction newDynamicTypeAction(PopupContext popupContext)
-    {
-        final EditController editController = editControllerProvider.get();
-        DynamicTypeAction action = new DynamicTypeAction(getClientFacade(), getI18n(), getRaplaLocale(), getLogger(), popupContext, editController, infoFactory,
-                raplaImages, dialogUiFactory);
+        RaplaObjectAction action = new RaplaObjectAction(getClientFacade(), getI18n(), getRaplaLocale(), getLogger(), popupContext,
+                raplaImages, actionsProvider);
         return action;
     }
 

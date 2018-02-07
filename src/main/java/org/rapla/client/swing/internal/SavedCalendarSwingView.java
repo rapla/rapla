@@ -4,13 +4,14 @@ import io.reactivex.functions.Action;
 import org.rapla.RaplaResources;
 import org.rapla.client.CalendarPlacePresenter;
 import org.rapla.client.PopupContext;
+import org.rapla.client.dialog.DeleteDialogInterface;
 import org.rapla.client.dialog.DialogInterface;
 import org.rapla.client.dialog.DialogUiFactoryInterface;
 import org.rapla.client.event.ApplicationEvent;
 import org.rapla.client.event.ApplicationEventBus;
 import org.rapla.client.extensionpoints.PublishExtensionFactory;
 import org.rapla.client.internal.SavedCalendarInterface;
-import org.rapla.client.swing.InfoFactory;
+import org.rapla.client.dialog.InfoFactory;
 import org.rapla.client.swing.RaplaAction;
 import org.rapla.client.swing.RaplaGUIComponent;
 import org.rapla.client.swing.images.RaplaImages;
@@ -147,15 +148,9 @@ public class SavedCalendarSwingView extends RaplaGUIComponent implements SavedCa
         }
 
         public void actionPerformed() {
-            try 
-            {
-                String[] objects = new String[] { getSelectedFile().name};
-                DialogInterface dlg = infoFactory.createDeleteDialog( objects , null);
-                dlg.start(true).thenAccept(index->{if (index ==0) delete();});
-            }
-            catch (RaplaException ex) {
-                dialogUiFactory.showException( ex, null);
-            }
+            String[] objects = new String[] { getSelectedFile().name};
+            PopupContext popupContext = null;
+            deleteDialogInterface.showDeleteDialog(popupContext,objects).thenAccept(result->{if (result) delete();}).exceptionally((ex)->dialogUiFactory.showException(ex,popupContext));
         }
     }
     
@@ -163,7 +158,7 @@ public class SavedCalendarSwingView extends RaplaGUIComponent implements SavedCa
     final PublishAction publishAction;
     final DeleteAction deleteAction;
 
-    private final InfoFactory infoFactory;
+    private final DeleteDialogInterface deleteDialogInterface;
 
     private final RaplaImages raplaImages;
 
@@ -224,13 +219,13 @@ public class SavedCalendarSwingView extends RaplaGUIComponent implements SavedCa
     }
 
     @Inject
-    public SavedCalendarSwingView(RaplaMenuBarContainer bar, ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, ApplicationEventBus eventBus, final CalendarSelectionModel model, Set<PublishExtensionFactory> extensionFactories, StartupEnvironment environment, InfoFactory infoFactory,
-                                  RaplaImages raplaImages, DialogUiFactoryInterface dialogUiFactory, IOInterface ioInterface) throws RaplaInitializationException {
+    public SavedCalendarSwingView(RaplaMenuBarContainer bar, ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, ApplicationEventBus eventBus, final CalendarSelectionModel model, Set<PublishExtensionFactory> extensionFactories, StartupEnvironment environment,
+                                  DeleteDialogInterface deleteDialogInterface, RaplaImages raplaImages, DialogUiFactoryInterface dialogUiFactory, IOInterface ioInterface) throws RaplaInitializationException {
         super(facade, i18n, raplaLocale, logger);
         this.eventBus = eventBus;
         this.extensionFactories = extensionFactories;
         this.environment = environment;
-        this.infoFactory = infoFactory;
+        this.deleteDialogInterface = deleteDialogInterface;
         this.raplaImages = raplaImages;
         this.dialogUiFactory = dialogUiFactory;
         this.ioInterface = ioInterface;

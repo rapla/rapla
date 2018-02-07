@@ -16,7 +16,7 @@ import org.rapla.RaplaResources;
 import org.rapla.client.dialog.DialogUiFactoryInterface;
 import org.rapla.client.swing.EditComponent;
 import org.rapla.client.swing.EditField;
-import org.rapla.client.swing.InfoFactory;
+import org.rapla.client.dialog.InfoFactory;
 import org.rapla.client.swing.MenuFactory;
 import org.rapla.client.swing.TreeFactory;
 import org.rapla.client.swing.images.RaplaImages;
