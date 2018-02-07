@@ -53,9 +53,12 @@
     <source path='framework' includes="Container.java" />
     <source path='framework' includes="DefaultConfiguration_JsonSerializer.java" />
     <source path='framework/internal' includes="GwtRaplaLocale.java" />
-    <source path='logger' includes="Logger.java" />
+	<source path='logger' includes="Logger.java" />
+	<source path='logger' includes="ConsoleLogger.java" />
+	<source path='logger' includes="AbstractLogger.java" />
 	<source path='logger/internal' includes="JavaUtilLoggerForGwt.java" />
 	<source path='logger/internal' includes="AbstractJavaUtilLogger*" />
+
 	<source path='facade' />
 	<source path='common' >
 	</source>

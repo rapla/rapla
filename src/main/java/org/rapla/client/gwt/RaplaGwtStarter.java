@@ -106,7 +106,7 @@ public class RaplaGwtStarter implements GwtStarter
             load.thenRun(() -> {
                 final JsApi api = bootstrapProvider.getAPI();
                 new RaplaCallback().callback(api);
-            });
+            }).exceptionally((ex)->{bootstrapProvider.getLogger().error(ex.getMessage(),ex);return  null;});
         }
         else
         {

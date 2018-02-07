@@ -38,6 +38,8 @@ public class Bootstrap
         this.remoteConnectionInfo.setServerURL(moduleBaseURL + "../rapla");
     }
 
+    public Logger getLogger() { return  logger;}
+
     public JsApi getAPI() { return  jsApi.get();}
 
     public RaplaFacade getFacade()

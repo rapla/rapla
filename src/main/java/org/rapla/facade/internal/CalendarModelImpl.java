@@ -1267,10 +1267,10 @@ public class CalendarModelImpl implements CalendarSelectionModel
         {
             return new ResolvedPromise<>(ex);
         }
-        final Promise<Collection<Entity>>  editPromise = operator.editObjectsAsync(toEdit, user);
+        final Promise<Map<Entity,Entity>>  editPromise = operator.editObjectsAsync(toEdit, user);
         final Promise<Set<Preferences>> modifyPromise = editPromise.thenApply((editables) ->
         {
-            Preferences clone = (Preferences) editables.iterator().next();
+            Preferences clone = (Preferences) editables.values().iterator().next();
             if (filename == null) {
                 clone.putEntry(CalendarModelConfiguration.CONFIG_ENTRY, conf);
             } else {

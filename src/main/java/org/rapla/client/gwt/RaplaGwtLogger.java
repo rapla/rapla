@@ -7,11 +7,20 @@ import org.rapla.logger.Logger;
 import javax.inject.Inject;
 
 @DefaultImplementation(of= Logger.class,context = InjectionContext.gwt)
-public class RaplaGwtLogger extends org.rapla.logger.internal.JavaUtilLoggerForGwt
+public class RaplaGwtLogger extends org.rapla.logger.ConsoleLogger
 {
     @Inject
     public RaplaGwtLogger()
     {
-        super("rapla");
+        super("rapla", LEVEL_INFO);
     }
-};
+
+    @Override
+    protected void writeln(String message)
+    {
+        nativeConsoleLog(message);
+    }
+
+    private static native void nativeConsoleLog( String s )
+        /*-{ console.log( s ); }-*/;
+}
