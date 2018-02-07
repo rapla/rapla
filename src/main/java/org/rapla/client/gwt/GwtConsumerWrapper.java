@@ -1,37 +1,40 @@
 package org.rapla.client.gwt;
 
 import io.reactivex.functions.Action;
+import io.reactivex.functions.Consumer;
 import jsinterop.annotations.JsFunction;
 import jsinterop.annotations.JsType;
 
 @JsType
-public class GwtActionWrapper implements Action
+public class GwtConsumerWrapper implements Consumer
 {
     @JsFunction
     @FunctionalInterface
-    interface Runnable
+    interface Consumer
     {
-        void run();
+        void accept(Object accept);
     }
 
-    public Runnable getRunnable()
+    public Consumer getRunnable()
     {
         return runnable;
     }
 
-    public void setRunnable(Runnable runnable)
+    public void setRunnable(Consumer runnable)
     {
         this.runnable = runnable;
     }
 
-    private Runnable runnable;
+    private Consumer runnable;
 
     @Override
-    public void run() throws Exception
+    public void accept(Object t) throws Exception
     {
         if ( runnable != null)
         {
-            runnable.run();
+            runnable.accept( t);
         }
     }
+
+
 }
