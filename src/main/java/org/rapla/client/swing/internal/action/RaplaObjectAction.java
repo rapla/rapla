@@ -129,6 +129,6 @@ public class RaplaObjectAction extends RaplaAction {
 	}
 
     public DynamicType[] guessTypes() throws RaplaException {
-        return actions.guessTypesFor();
+        return actions.guessTypes();
     }
 }

@@ -242,7 +242,7 @@ public class RaplaObjectActions extends RaplaComponent{
         }
     }
 
-    public DynamicType[] guessTypesFor() throws RaplaException {
+    public DynamicType[] guessTypes() throws RaplaException {
         return guessTypesFor( object);
     }
 
