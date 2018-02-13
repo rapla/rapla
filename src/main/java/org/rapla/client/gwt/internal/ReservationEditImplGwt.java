@@ -1,6 +1,7 @@
 package org.rapla.client.gwt.internal;
 
 import com.google.gwt.user.client.ui.IsWidget;
+import io.reactivex.functions.Consumer;
 import org.rapla.client.AppointmentListener;
 import org.rapla.client.ReservationEdit;
 import org.rapla.components.util.undo.CommandHistory;
@@ -51,9 +52,7 @@ public class ReservationEditImplGwt implements ReservationEdit<IsWidget>
     }
 
     @Override
-    public void editReservation(Reservation reservation, Reservation original,AppointmentBlock appointmentBlock, Runnable saveCmd, Runnable closeCmd, Runnable deleteCmd)
-            throws RaplaException
-    {
+    public void editReservation(Reservation reservation, Reservation original, AppointmentBlock appointmentBlock) throws RaplaException {
 
     }
 
@@ -110,6 +109,11 @@ public class ReservationEditImplGwt implements ReservationEdit<IsWidget>
     }
 
     {
+
+    }
+
+    @Override
+    public void start(Consumer<Collection<Reservation>> save, Runnable close, Runnable deleteCmd) {
 
     }
 }

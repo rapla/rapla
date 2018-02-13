@@ -12,6 +12,7 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.client.swing.internal.edit.reservation;
 
+import io.reactivex.functions.Consumer;
 import org.rapla.RaplaResources;
 import org.rapla.client.AppointmentListener;
 import org.rapla.client.RaplaWidget;
@@ -28,6 +29,7 @@ import org.rapla.client.swing.toolkit.EmptyLineBorder;
 import org.rapla.client.swing.toolkit.RaplaButton;
 import org.rapla.components.layout.TableLayout;
 import org.rapla.components.util.undo.CommandHistory;
+import org.rapla.entities.Entity;
 import org.rapla.entities.User;
 import org.rapla.entities.domain.Appointment;
 import org.rapla.entities.domain.AppointmentBlock;
@@ -134,7 +136,7 @@ public final class ReservationEditImpl extends AbstractAppointmentEditor impleme
     private final PermissionController permissionController;
     private final Set<ReservationToolbarExtension> reservationToolbarExtensions;
     private final JPanel contentPane;
-    Runnable saveCmd;
+    Consumer<Collection<Reservation>> saveCmd;
     Runnable closeCmd;
     Runnable deleteCmd;
 
@@ -327,13 +329,17 @@ public final class ReservationEditImpl extends AbstractAppointmentEditor impleme
     }
 
     @Override
-    public void editReservation(Reservation reservation, Reservation original,AppointmentBlock appointmentBlock, Runnable saveCmd, Runnable closeCmd, Runnable deleteCmd)
-            throws RaplaException
-    {
+    public void start(Consumer<Collection<Reservation>> saveCmd, Runnable closeCmd, Runnable deleteCmd) {
         this.saveCmd = saveCmd;
         this.closeCmd = closeCmd;
         this.deleteCmd = deleteCmd;
-        boolean bNew = original == null;
+    }
+
+    @Override
+    public void editReservation(Reservation reservation, Reservation original,AppointmentBlock appointmentBlock)
+            throws RaplaException
+    {
+        boolean bNew = !original.isReadOnly();
         this.original = original;
         mutableReservation = reservation;
         setHasChanged(bNew);
@@ -516,7 +522,11 @@ public final class ReservationEditImpl extends AbstractAppointmentEditor impleme
         {
             if (evt.getSource() == saveButton || evt.getSource() == saveButtonTop)
             {
-                saveCmd.run();
+                try {
+                    saveCmd.accept(Collections.singleton(mutableReservation));
+                } catch (Exception ex) {
+                    dialogUiFactory.showException( ex,null);
+                }
             }
             if (evt.getSource() == deleteButton)
             {

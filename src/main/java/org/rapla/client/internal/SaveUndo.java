@@ -1,6 +1,7 @@
 package org.rapla.client.internal;
 
 import org.rapla.RaplaResources;
+import org.rapla.client.PopupContext;
 import org.rapla.components.util.undo.CommandUndo;
 import org.rapla.components.xmlbundle.I18nBundle;
 import org.rapla.entities.Entity;
@@ -15,58 +16,41 @@ import org.rapla.facade.RaplaFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.scheduler.CommandScheduler;
 import org.rapla.scheduler.Promise;
+import org.rapla.scheduler.ResolvedPromise;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Date;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
+import java.util.*;
+import java.util.stream.Collectors;
 
 public class SaveUndo<T extends Entity> implements CommandUndo<RaplaException> {
-	protected final List<T> newEntities;
-	protected final List<T> oldEntities;
+	final Map<T,T> storeListCopy;
+	final private Map<T,Boolean> isNew;
 	protected final String commandoName;
-   	protected boolean firstTimeCall = true;
    	private RaplaFacade facade;
    	RaplaResources i18n;
 
-	public SaveUndo(RaplaFacade facade, RaplaResources i18n,Collection<T> newEntity,Collection<T> originalEntity)
+
+	public SaveUndo(RaplaFacade facade, RaplaResources i18n,Map<T,T> storeList)
 	{
-		this( facade, i18n,newEntity, originalEntity, null);
+		this( facade, i18n,storeList, null);
 	}
 
-	public SaveUndo(RaplaFacade facade, RaplaResources i18n,Collection<T> newEntity,Collection<T> originalEntity, String commandoName)
+	public SaveUndo(RaplaFacade facade, RaplaResources i18n,Map<T,T> storeList, String commandoName)
 	{
 	    this.facade = facade;
 	    this.i18n = i18n;
 	    this.commandoName = commandoName;
-	    this.newEntities = new ArrayList<T>();
-		for ( T entity: newEntity)
-		{
-            @SuppressWarnings("unchecked")
-			T clone = (T) entity.clone();
-			this.newEntities.add(clone);
-		}
-		if (originalEntity !=null)
-		{
-			if ( originalEntity.size() != newEntity.size() )
-			{
-				throw new IllegalArgumentException("Original and new list need the same size");
-			}
-			this.oldEntities = new ArrayList<T>();
-			for ( T entity: originalEntity)
-    		{
-                @SuppressWarnings("unchecked")
-				T clone = (T) entity.clone();
-                this.oldEntities.add( clone);
-    		}
-		}
-		else
-		{
-			this.oldEntities = null;
-		}
+	    storeListCopy = new LinkedHashMap<>();
+	    isNew = new LinkedHashMap<>();
+	    storeList.entrySet().stream().forEach((entry)->
+				{
+					final T key = (T) entry.getKey().clone();
+					final T value = (T) entry.getValue().clone();
+					final boolean isNew = !entry.getKey().isReadOnly();
+					this.isNew.put (key, isNew);
+					storeListCopy.put(key, value);
+				}
+		
+		);
 	}
 
 	protected RaplaFacade getFacade()
@@ -85,73 +69,57 @@ public class SaveUndo<T extends Entity> implements CommandUndo<RaplaException> {
 	}
 	
 	public Promise<Void> execute() {
-		CommandScheduler scheduler =facade.getScheduler();
-		Promise<Void> promise = scheduler.run(() -> {
-			final boolean isNew = oldEntities == null;
+
 
 			List<T> toStore = new ArrayList<T>();
-			Map<T, T> newEntitiesPersistant = null;
-			User user = getUser();
-			// undo
+			final Set<T> oldEntities = storeListCopy.keySet();
 
-			if (!firstTimeCall)
+			return getFacade().editListAsync(oldEntities).thenCompose( (newEntitiesPersistant)->
 			{
-				newEntitiesPersistant = getFacade().checklastChanged(newEntities, user , isNew);
-			}
-			else
-			{
-				// FIXME CHECK EVENTS
-				//checkEvents(newEntitiesPersistant.values(), popupContext);
-				firstTimeCall = false;
-			}
-			for (T entity : newEntities)
-			{
-				@SuppressWarnings("unchecked") T mutableEntity = (T) entity.clone();
-				if (newEntitiesPersistant != null)
-				{
-					@SuppressWarnings("null") Entity persistant = newEntitiesPersistant.get(entity);
-					checkConsistency(mutableEntity);
-					setNewTimestamp(mutableEntity, persistant);
+				Collection<T> newEntities = storeListCopy.values();
+				for (T entity : newEntities) {
+					@SuppressWarnings("unchecked") T mutableEntity = (T) entity.clone();
+					if (newEntitiesPersistant != null) {
+						@SuppressWarnings("null") Entity persistant = newEntitiesPersistant.get(entity);
+						try {
+							checkConsistency(mutableEntity);
+						} catch (EntityNotFoundException ex) {
+							return new ResolvedPromise<>(ex);
+						}
+						setNewTimestamp(mutableEntity, persistant);
+					}
+					toStore.add(mutableEntity);
 				}
-				toStore.add(mutableEntity);
-			}
-			@SuppressWarnings("unchecked") Entity<T>[] array = toStore.toArray(new Entity[] {});
+				return facade.dispatch(toStore, Collections.emptyList());
+			});
 
-			facade.storeObjects(array);
-		});
-		return promise;
 	}
 
 	public Promise<Void> undo()  {
-		CommandScheduler scheduler =facade.getScheduler();
-		Promise<Void> promise = scheduler.run(() -> {
 
-			boolean isNew = oldEntities == null;
-			User user = getUser();
-			if (isNew)
-			{
-				getFacade().checklastChanged(newEntities, user, isNew);
-				Entity[] array = newEntities.toArray(new Entity[] {});
-				getFacade().removeObjects(array);
-			}
-			else
-			{
-				List<T> toStore = new ArrayList<T>();
-				Map<T, T> oldEntitiesPersistant = getFacade().checklastChanged(oldEntities, user, isNew);
-				for (T entity : oldEntities)
-				{
-					@SuppressWarnings("unchecked") T mutableEntity = (T) entity.clone();
-					T persistantVersion = oldEntitiesPersistant.get(entity);
-					checkConsistency(mutableEntity);
-					setNewTimestamp(mutableEntity, persistantVersion);
-					toStore.add(mutableEntity);
-				}
-				@SuppressWarnings("unchecked") Entity<T>[] array = toStore.toArray(new Entity[] {});
-				getFacade().storeObjects(array);
-
-			}
-		});
-		return promise;
+		final Set<T> oldEntities = storeListCopy.keySet();
+		return getFacade().editListAsync(oldEntities).thenCompose(map ->
+					{
+						List<T> toStore = new ArrayList<T>();
+						List<ReferenceInfo<T>> toRemove = new ArrayList<>();
+						Map<T, T> oldEntitiesPersistant = map;
+						for (T entity : oldEntities)
+						{
+							if ( !isNew.get( entity)) {
+								@SuppressWarnings("unchecked") T mutableEntity = (T) entity.clone();
+								T persistantVersion = oldEntitiesPersistant.get(entity);
+								checkConsistency(mutableEntity);
+								setNewTimestamp(mutableEntity, persistantVersion);
+								toStore.add(mutableEntity);
+							}
+							else
+							{
+								toRemove.add( entity.getReference());
+							}
+						}
+						return getFacade().dispatch(toStore, toRemove);
+					}
+			);
 	}
 	
 	private void checkConsistency(Entity entity) throws EntityNotFoundException {
@@ -193,9 +161,9 @@ public class SaveUndo<T extends Entity> implements CommandUndo<RaplaException> {
 		 {
 			 return commandoName;
 		 }
-	     boolean isNew = oldEntities == null;     
-         Iterator<T> iterator = newEntities.iterator();
+         Iterator<T> iterator = storeListCopy.values().iterator();
          StringBuffer buf = new StringBuffer();
+         boolean isNew = this.isNew.values().stream().allMatch(Boolean::booleanValue);
          buf.append(isNew ? i18n.getString("new"): i18n.getString("edit") );
          if ( iterator.hasNext())
          {

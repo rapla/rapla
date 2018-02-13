@@ -1275,48 +1275,6 @@ public class FacadeImpl implements RaplaFacade {
 	}
 
 	@Override
-	public <T extends Entity> Map<T,T> checklastChanged(Collection<T> entities, User user,boolean isNew) throws RaplaException
-	{
-		Map<T,T> persistantVersions= getPersistantForList(entities);
-		checklastChanged(entities, persistantVersions,user,isNew);
-		return persistantVersions;
-	}
-
-	private <T extends Entity> void checklastChanged(Collection<T> entities, Map<T,T> persistantVersions, User user,boolean isNew) throws RaplaException
-	{
-		//refresh();
-		for ( T entity:entities)
-		{
-			if ( entity instanceof ModifiableTimestamp)
-			{
-				T persistant = persistantVersions.get( entity);
-				if ( persistant != null)
-				{
-					ReferenceInfo<User> lastChangedBy = ((ModifiableTimestamp) persistant).getLastChangedBy();
-					if (lastChangedBy != null && !user.getReference().equals(lastChangedBy))
-					{
-						final Locale locale = i18n.getLocale();
-						String name = entity instanceof Named ? ((Named) entity).getName( locale) : entity.toString();
-						throw new RaplaException(i18n.format("error.new_version", name));
-					}
-				}
-				else
-				{
-					// if there exists an older version
-					if ( !isNew )
-					{
-						final Locale locale = i18n.getLocale();
-						String name = entity instanceof Named ? ((Named) entity).getName( locale) : entity.toString();
-						throw new RaplaException(i18n.format("error.new_version", name));
-					}
-					// otherwise we ignore it
-				}
-
-			}
-		}
-	}
-
-	@Override
 	public Period[] getPeriods() throws RaplaException {
 		Period[] result = getPeriodModel().getAllPeriods();
 		return result;

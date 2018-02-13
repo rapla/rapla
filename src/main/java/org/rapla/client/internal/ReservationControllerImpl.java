@@ -1163,12 +1163,7 @@ public class ReservationControllerImpl implements ReservationController {
                         getFacade().refresh();
                         throw new RaplaException(getI18n().format("error.new_version", reservation.toString()));
                     }
-                } else {
-                    boolean isNew = false;
-                    User user = getClientFacade().getUser();
-                    getFacade().checklastChanged(Collections.singletonList(reservation), user,isNew);
                 }
-
                 long offset = getOffset(sourceStart, destStart, keepTime);
 
                 Collection<Appointment> appointments;
@@ -1268,7 +1263,7 @@ public class ReservationControllerImpl implements ReservationController {
         for (EventCheck eventCheck : set) {
             check = check.thenCompose((result) ->
             {
-                final Promise<Boolean> promise = result ? eventCheck.check(reservations, sourceComponent) : new ResolvedPromise<Boolean>(false);
+                final Promise<Boolean> promise = result ? eventCheck.check(reservations, sourceComponent) : new ResolvedPromise<>(false);
                 return promise;
             });
         }
@@ -1377,30 +1372,10 @@ public class ReservationControllerImpl implements ReservationController {
 
     }
     @Override
-    public Promise<Void> saveReservations(Collection<Reservation> storeList,Collection<Reservation> originals, PopupContext context) {
-        SaveReservationCmd cmd = new SaveReservationCmd(facade.getRaplaFacade(), i18n, storeList, originals, context);
-        return facade.getCommandHistory().storeAndExecute( cmd);
+    public Promise<Void> saveReservations(Map<Reservation,Reservation> storeList, PopupContext context) {
+        SaveUndo<Reservation> cmd = new SaveUndo<>(facade.getRaplaFacade(), i18n, storeList);
+        return checkEvents(storeList.values(),context).thenCompose((result)-> facade.getCommandHistory().storeAndExecute( cmd));
     }
-
-    class SaveReservationCmd extends SaveUndo
-    {
-        private PopupContext context;
-
-        public SaveReservationCmd(RaplaFacade facade, RaplaResources i18n, Collection<Reservation> newEntity, Collection<Reservation> originalEntity, PopupContext context) {
-            super(facade, i18n, newEntity, originalEntity);
-            this.context = context;
-        }
-
-        @Override
-        public Promise<Void> execute() {
-            if (firstTimeCall)
-            {
-                return checkEvents(newEntities, context).thenCompose(b->b== Boolean.TRUE ? super.execute():ResolvedPromise.VOID_PROMISE);
-            }
-            return super.execute();
-        }
-    }
-
 
     public Promise<Void> checkAndDistpatch(Collection<Reservation> storeList, Collection<ReferenceInfo<Reservation>> removeList, boolean firstTime,
                                            PopupContext sourceComponent) {
@@ -1409,13 +1384,7 @@ public class ReservationControllerImpl implements ReservationController {
         if (firstTime) {
             promise = checkEvents(storeList, sourceComponent);
         } else {
-            try {
-                User user = getClientFacade().getUser();
-                getFacade().checklastChanged(storeList, user,false);
-                promise = new ResolvedPromise<Boolean>(true);
-            } catch (Exception ex) {
-                promise = new ResolvedPromise<Boolean>(ex);
-            }
+            promise = new ResolvedPromise<Boolean>(true);
         }
         Promise<Void> result = promise.thenCompose((checkResult) ->
         {

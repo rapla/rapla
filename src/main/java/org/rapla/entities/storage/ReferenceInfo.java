@@ -4,6 +4,8 @@ import jsinterop.annotations.JsMethod;
 import jsinterop.annotations.JsType;
 import org.rapla.entities.Entity;
 
+import java.util.Collection;
+
 /** returns if the entity is refering to the Object. */
 
 public class ReferenceInfo<T extends Entity> implements Comparable

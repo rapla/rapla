@@ -20,10 +20,7 @@ import org.rapla.components.util.Assert;
 import org.rapla.components.util.DateTools;
 import org.rapla.components.util.SerializableDateTimeFormat;
 import org.rapla.components.util.TimeInterval;
-import org.rapla.entities.Entity;
-import org.rapla.entities.EntityNotFoundException;
-import org.rapla.entities.RaplaType;
-import org.rapla.entities.User;
+import org.rapla.entities.*;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.Appointment;
 import org.rapla.entities.domain.AppointmentStartComparator;
@@ -37,6 +34,7 @@ import org.rapla.entities.dynamictype.ClassificationFilter;
 import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.entities.dynamictype.internal.DynamicTypeImpl;
 import org.rapla.entities.extensionpoints.FunctionFactory;
+import org.rapla.entities.internal.ModifiableTimestamp;
 import org.rapla.entities.storage.EntityReferencer;
 import org.rapla.entities.storage.EntityResolver;
 import org.rapla.entities.storage.ReferenceInfo;
@@ -532,7 +530,39 @@ public class RemoteOperator
     public Promise<Map<Entity,Entity>> editObjectsAsync(Collection<Entity> objList, User user) {
 
         Map<ReferenceInfo<Entity>, Entity> idMap = createReferenceInfoMap(objList);
-        return getFromIdAsync(idMap.keySet(), false).thenApply(map->editObjects(objList, user,map));
+        return getFromIdAsync(idMap.keySet(), false).thenApply(
+                map->
+                {
+                    checkLastChanged(objList, user, map);
+                    return editObjects(objList, user,map);}
+        );
+    }
+
+    /** checks if the user that  is the user that last changed the entites
+     *
+     * @param entities
+     * @param <T>
+     * @return the latest persistant map of the entities
+     * @throws RaplaException if the logged in user is not the lastChanged user of any entities. If isNew is false then an exception is also thrown, when an entity is not found in persistant storage
+     */
+    private void checkLastChanged(Collection<Entity> objList, User user, Map<ReferenceInfo<Entity>, Entity> map) throws RaplaException {
+        for ( Entity entity:objList)
+        {
+            if ( entity instanceof ModifiableTimestamp)
+            {
+                Entity persistant = map.get( entity.getReference());
+                if ( persistant != null)
+                {
+                    ReferenceInfo<User> lastChangedBy = ((ModifiableTimestamp) persistant).getLastChangedBy();
+                    if (lastChangedBy != null && !user.getReference().equals(lastChangedBy))
+                    {
+                        final Locale locale = i18n.getLocale();
+                        String name = entity instanceof Named ? ((Named) entity).getName( locale) : entity.toString();
+                        throw new RaplaException(i18n.format("error.new_version", name));
+                    }
+                }
+            }
+        }
     }
 
     @Override

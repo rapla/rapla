@@ -1,7 +1,6 @@
 package org.rapla.client.internal.edit;
 
 import io.reactivex.functions.Consumer;
-import io.reactivex.functions.Function;
 import org.jetbrains.annotations.Nullable;
 import org.rapla.RaplaResources;
 import org.rapla.client.EditApplicationEventContext;
@@ -45,13 +44,11 @@ import org.rapla.scheduler.*;
 
 import javax.inject.Inject;
 import javax.inject.Provider;
-import javax.inject.Singleton;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
@@ -77,24 +74,28 @@ public class EditTaskPresenter implements TaskPresenter
     final static public String MERGE_RESOURCES_ID = "mergeResources";
     final static public String EDIT_RESOURCES_ID = "editResources";
     private final Provider<ReservationEdit> reservationEditProvider;
-    private final EditTaskView editTaskView;
+    private final EditTaskViewFactory editTaskViewFactory;
     AppointmentBlock appointmentBlock= null;
-    boolean bSaving = false;
     boolean bDeleting = false;
     final ReservationController reservationController;
     private final Set<MergeCheckExtension> mergeCheckers;
     Subject<String> busyIdleObservable;
 
-    public interface EditTaskView
+    public interface EditTaskViewFactory<C>
     {
-        <T  extends Entity> RaplaWidget doSomething(Collection<T> toEdit,Consumer<Collection<T>> save, Runnable close, boolean isMerge) throws RaplaException;
+        <T  extends Entity> EditTaskView<T,C> create(Collection<T> toEdit, boolean isMerge) throws RaplaException;
+    }
+
+    public interface EditTaskView<T extends Entity,C> extends  RaplaWidget<C>
+    {
+        void start(Consumer<Collection<T>> save, Runnable close, Runnable deleteCmd);
     }
 
     @Inject
-    public EditTaskPresenter(ClientFacade clientFacade, EditTaskView editTaskView, DialogUiFactoryInterface dialogUiFactory, RaplaResources i18n, ApplicationEventBus eventBus, CalendarSelectionModel model, Provider<ReservationEdit> reservationEditProvider,
+    public EditTaskPresenter(ClientFacade clientFacade, EditTaskViewFactory editTaskViewFactory, DialogUiFactoryInterface dialogUiFactory, RaplaResources i18n, ApplicationEventBus eventBus, CalendarSelectionModel model, Provider<ReservationEdit> reservationEditProvider,
                              ReservationController reservationController, Set<MergeCheckExtension> mergeCheckers, CommandScheduler scheduler)
     {
-        this.editTaskView = editTaskView;
+        this.editTaskViewFactory = editTaskViewFactory;
         this.dialogUiFactory = dialogUiFactory;
         this.i18n = i18n;
         this.clientFacade = clientFacade;
@@ -342,8 +343,34 @@ public class EditTaskPresenter implements TaskPresenter
         if (editMap.size() == 0) {
             return new ResolvedPromise<>(new RaplaException("No object to edit passed"));
         }
+        boolean allReservations = editMap.values().stream().allMatch(entity->(entity instanceof Reservation));
+        final Collection<T> editValues = editMap.values();
+        final EditTaskView editTaskView;
+        if ( allReservations && editValues.size() == 1)
+        {
+            final ReservationEdit editTaskView1 = reservationEditProvider.get();
+            final Reservation original = (Reservation) editMap.keySet().iterator().next();
+            final Reservation toEdit = (Reservation) editMap.get( original);
+            editTaskView1.editReservation( toEdit, original,appointmentBlock);
+            editTaskView = editTaskView1;
+        }
+        else {
+            editTaskView = this.editTaskViewFactory.create(editValues, isMerge);
+        }
+        PopupContext popupEditContext = dialogUiFactory.createPopupContext( editTaskView);
+        Runnable closeCmd = () ->
+        {
+            ApplicationEvent event = new ApplicationEvent(applicationEvent.getApplicationEventId(), applicationEvent.getInfo(), popupEditContext, null);
+            Promise<Void> pr = processStop(event,editTaskView).thenRun(() ->
+            {
+                event.setStop(true);
+                eventBus.publish(event);
+            });
+            handleException(pr, popupEditContext);
+        };
         Consumer<Collection<T>> saveCmd =  (saveObjects) ->
         {
+            Promise<Void> promise;
             Collection<T> entities = new ArrayList<T>();
             entities.addAll(saveObjects);
             boolean canUndo = true;
@@ -365,18 +392,20 @@ public class EditTaskPresenter implements TaskPresenter
                     allocatableIds.add(allocatable.getReference());
                 }
                 busyIdleObservable.onNext(i18n.getString("merge"));
-                final Promise<Void> result = doMerge(selectedAllocatable, allocatableIds).thenRun(() -> close(applicationEvent)).thenCompose((t)
-                    -> raplaFacade.refreshAsync());
-                handleException(result, popupContext).thenRun(()->busyIdleObservable.onNext(null));
+                promise = doMerge(selectedAllocatable, allocatableIds).thenApply( (allocatable -> null));
             }
             else
             {
-                Promise<Void> promise;
                 busyIdleObservable.onNext(i18n.getString("save"));
-                if (canUndo)
+                if ( allReservations) {
+                    promise = reservationController
+                            .saveReservations((Map<Reservation,Reservation>) editMap,  popupEditContext);
+
+                }
+                else if (canUndo)
                 {
                     @SuppressWarnings({ "unchecked", "rawtypes" })
-                    SaveUndo<T> saveCommand = new SaveUndo(raplaFacade, i18n, entities, origs);
+                    SaveUndo<T> saveCommand = new SaveUndo(raplaFacade, i18n, editMap);
                     CommandHistory commandHistory = clientFacade.getCommandHistory();
                     promise = commandHistory.storeAndExecute(saveCommand);
                 }
@@ -384,56 +413,18 @@ public class EditTaskPresenter implements TaskPresenter
                 {
                     promise = raplaFacade.dispatch(saveObjects, Collections.emptyList());
                 }
-                handleException(promise.thenRun(() ->
-                {
-                    close(applicationEvent);
-                }), popupContext).thenRun(()->busyIdleObservable.onNext(null));
             }
+            handleException(promise.thenRun(()->close(applicationEvent)), popupContext).thenRun(()->busyIdleObservable.onNext(null)).thenCompose((t)
+                -> raplaFacade.refreshAsync());
+
         };
-
-        Runnable closeCmd = () -> close(applicationEvent);
-
-        final Collection<T> editValues = editMap.values();
-        if (editValues.size() == 1)
-        {
-            final Entity<?> testObj = (Entity<?>) editValues.iterator().next();
-            if (testObj instanceof Reservation)
-            {
-                ReservationEdit<?> c = reservationEditProvider.get();
-                PopupContext popupEditContext = dialogUiFactory.createPopupContext( c);
-                Runnable reservationSaveCmd = () -> {
-                    this.bSaving = true;
-                    busyIdleObservable.onNext(i18n.getString("save"));
-                    final Promise promise = reservationController
-                            .saveReservations((Collection<Reservation>) editValues,(Collection<Reservation>)origs,  popupEditContext).thenRun(()->closeCmd.run());
-
-                    handleException( promise,popupEditContext).whenComplete((t,ex)->{bSaving = false;busyIdleObservable.onNext(null);});
-                };
-                Runnable deleteCmd = () -> {
-                    this.bDeleting = true;
-                    busyIdleObservable.onNext(i18n.getString("delete"));
-                    final Reservation original = (Reservation) origs.iterator().next();
-                    final Promise<Void> promise = reservationController.deleteReservations(Collections.singleton(original), popupContext);
-                    promise.thenRun( () ->closeCmd.run()).whenComplete((t,ex) ->  {bDeleting = false;busyIdleObservable.onNext(null);});
-                };
-                Runnable closeCmd2 = () ->
-                {
-                    ApplicationEvent event = new ApplicationEvent(applicationEvent.getApplicationEventId(), applicationEvent.getInfo(), popupEditContext, null);
-                    Promise<Void> pr = processStop(event,c).thenRun(() ->
-                    {
-                        event.setStop(true);
-                        eventBus.publish(event);
-                    });
-                    handleException(pr, popupEditContext);
-                };
-                final Reservation original = origs != null ? (Reservation)  origs.iterator().next() : null;
-                c.editReservation((Reservation) testObj, original,appointmentBlock, reservationSaveCmd, closeCmd2, deleteCmd);
-                //c.addAppointmentListener();
-                return new ResolvedPromise<>(c);
-            }
-        }
-        final RaplaWidget raplaWidget = editTaskView.doSomething(editValues, saveCmd, closeCmd, isMerge);
-        return new ResolvedPromise<>(raplaWidget);
+        Runnable deleteCmd = () -> {
+            busyIdleObservable.onNext(i18n.getString("delete"));
+            final Promise<Void> promise = reservationController.deleteReservations(new HashSet(origs), popupContext);
+            promise.thenRun( () ->closeCmd.run()).whenComplete((t,ex) ->  busyIdleObservable.onNext(null));
+        };
+        editTaskView.start( saveCmd, closeCmd, deleteCmd);
+        return new ResolvedPromise<>(editTaskView);
     }
 
     @Override

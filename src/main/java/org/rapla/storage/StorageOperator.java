@@ -71,7 +71,9 @@ public interface StorageOperator extends EntityResolver {
     Map<Entity,Entity> editObjects(Collection<Entity> objList, User user) throws RaplaException;
 
     /** should return a clone of the object. <strong>Never</strong> edit the
-     original, <strong>always</strong> edit the object returned by editObject.*/
+     original, <strong>always</strong> edit the object returned by editObject.
+     The Map keys are the original Versions of the Object and the values are the editable versions
+     */
     Promise<Map<Entity,Entity>> editObjectsAsync(Collection<Entity> objList, User user);
 
     /** if an id is not found and throwEntityNotFound is set to false then the resulting map does not contain an entry for the missing id*/

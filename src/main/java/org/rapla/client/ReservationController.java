@@ -10,6 +10,7 @@ import org.rapla.scheduler.Promise;
 
 import java.util.Collection;
 import java.util.Date;
+import java.util.Map;
 import java.util.Set;
 
 /** Use the ReservationController to modify or create a {@link Reservation}.
@@ -67,5 +68,5 @@ public interface ReservationController
 	void deleteBlocks(Collection<AppointmentBlock> blockList, PopupContext context) throws RaplaException;
 
 	Promise<Void> deleteReservations(Set<Reservation> reservation, PopupContext context);
-    Promise<Void> saveReservations(Collection<Reservation> reservation,Collection<Reservation> originals, PopupContext context);
+    Promise<Void> saveReservations(Map<Reservation,Reservation> reservation, PopupContext context);
 }

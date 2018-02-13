@@ -41,11 +41,7 @@ import javax.inject.Provider;
 import javax.swing.JMenuItem;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Date;
-import java.util.List;
+import java.util.*;
 
 @Extension(provides = EditMenuExtension.class,id="org.rapla.plugin.periodcopy")
 public class CopyPluginMenu  extends RaplaGUIComponent implements EditMenuExtension, ActionListener
@@ -132,7 +128,7 @@ public class CopyPluginMenu  extends RaplaGUIComponent implements EditMenuExtens
     }
     
     public void copy(  Collection<Reservation> reservations , Date destStart, Date destEnd,boolean includeSingleAppointmentsAndExceptions) throws RaplaException {
-        List<Reservation> newReservations = new ArrayList<Reservation>();
+        Map<Reservation,Reservation> newReservations = new LinkedHashMap<>();
         List<Reservation> sortedReservations = new ArrayList<Reservation>( reservations);
         Collections.sort( sortedReservations, new ReservationStartComparator(getLocale()));
         Date firstStart = null;
@@ -145,12 +141,11 @@ public class CopyPluginMenu  extends RaplaGUIComponent implements EditMenuExtens
 					destEnd, includeSingleAppointmentsAndExceptions,
 					firstStart);
             if ( r.getAppointments().length > 0) {
-                newReservations.add( r );
+                newReservations.put( r, r );
             }
 
         }
-        Collection<Reservation> originalEntity = null;
-		SaveUndo<Reservation> cmd = new SaveUndo<Reservation>(getFacade(), getI18n(), newReservations, originalEntity);
+		SaveUndo<Reservation> cmd = new SaveUndo<>(getFacade(), getI18n(), newReservations);
         getClientFacade().getCommandHistory().storeAndExecute( cmd);
     }
 

@@ -1,5 +1,6 @@
 package org.rapla.client;
 
+import org.rapla.client.internal.edit.EditTaskPresenter;
 import org.rapla.components.util.undo.CommandHistory;
 import org.rapla.entities.domain.Appointment;
 import org.rapla.entities.domain.AppointmentBlock;
@@ -10,7 +11,7 @@ import org.rapla.framework.RaplaException;
 import java.util.Collection;
 import java.util.Date;
 
-public interface ReservationEdit<T> extends RaplaWidget<T>
+public interface ReservationEdit<T> extends EditTaskPresenter.EditTaskView<Reservation,T>
 {
     void addAppointment( Date start, Date end) throws RaplaException;
 	
@@ -21,7 +22,7 @@ public interface ReservationEdit<T> extends RaplaWidget<T>
    
     Collection<Appointment> getSelectedAppointments();
 
-    void editReservation(Reservation reservation, Reservation original,AppointmentBlock appointmentBlock, Runnable saveCmd, Runnable closeCmd, Runnable deleteCmd) throws RaplaException;
+    void editReservation(Reservation reservation, Reservation original,AppointmentBlock appointmentBlock) throws RaplaException;
 
     Reservation getOriginal();
 

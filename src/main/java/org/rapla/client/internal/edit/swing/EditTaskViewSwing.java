@@ -19,14 +19,14 @@ import javax.inject.Inject;
 import javax.inject.Provider;
 import javax.swing.JComponent;
 import javax.swing.JPanel;
-import java.awt.BorderLayout;
+import java.awt.*;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 
-@DefaultImplementation(of = EditTaskPresenter.EditTaskView.class, context = InjectionContext.swing)
-public class EditTaskViewSwing implements EditTaskPresenter.EditTaskView
+@DefaultImplementation(of = EditTaskPresenter.EditTaskViewFactory.class, context = InjectionContext.swing)
+public class EditTaskViewSwing implements EditTaskPresenter.EditTaskViewFactory<Component>
 {
     protected final Map<String, Provider<EditComponent>> editUiProvider;
     private final DialogUiFactoryInterface dialogUiFactory;
@@ -44,8 +44,7 @@ public class EditTaskViewSwing implements EditTaskPresenter.EditTaskView
     }
 
     @Override
-    public <T extends Entity> RaplaWidget doSomething(Collection<T> toEdit, Consumer<Collection<T>> save, Runnable close, boolean isMerge) throws RaplaException
-    {
+    public <T extends Entity> EditTaskPresenter.EditTaskView<T,Component> create(Collection<T> toEdit, boolean isMerge) throws RaplaException {
         final EditComponent<T, JComponent> ui;
         {
             T obj = toEdit.iterator().next();
@@ -77,34 +76,43 @@ public class EditTaskViewSwing implements EditTaskPresenter.EditTaskView
         RaplaButton saveButton = new RaplaButton(confirmText, RaplaButton.DEFAULT);
         final RaplaWidget raplaWidget = () -> jPanel;
         final PopupContext popupContext = dialogUiFactory.createPopupContext(raplaWidget);
-        saveButton.addActionListener((evt) ->
-        {
-            try
-            {
-                ui.mapToObjects();
-                List<T> saveObjects = ui.getObjects();
-                save.accept( saveObjects);
-            }
-            catch (IllegalAnnotationException ex)
-            {
-                dialogUiFactory.showWarning(ex.getMessage(), popupContext);
-            }
-            catch (Exception ex)
-            {
-                dialogUiFactory.showException(ex, popupContext);
-            }
-        });
         RaplaButton cancelButton = new RaplaButton(i18n.getString("cancel"), RaplaButton.DEFAULT);
-        cancelButton.addActionListener((evt) ->
-        {
-            close.run();
-        });
-
         saveButton.setDefaultCapable(true);
         buttonsPanel.add(saveButton);
         buttonsPanel.add(cancelButton);
         jPanel.add(buttonsPanel, BorderLayout.SOUTH);
-        return raplaWidget;
+
+        return new EditTaskPresenter.EditTaskView<T,Component>() {
+            @Override
+            public Component getComponent() {
+                return (Component) raplaWidget.getComponent();
+            }
+
+            @Override
+            public void start(Consumer<Collection<T>> save, Runnable close, Runnable delete) {
+                saveButton.addActionListener((evt) ->
+                {
+                    try
+                    {
+                        ui.mapToObjects();
+                        List<T> saveObjects = ui.getObjects();
+                        save.accept( saveObjects);
+                    }
+                    catch (IllegalAnnotationException ex)
+                    {
+                        dialogUiFactory.showWarning(ex.getMessage(), popupContext);
+                    }
+                    catch (Exception ex)
+                    {
+                        dialogUiFactory.showException(ex, popupContext);
+                    }
+                });
+                cancelButton.addActionListener((evt) ->
+                {
+                    close.run();
+                });
+            }
+        };
     }
 
 }

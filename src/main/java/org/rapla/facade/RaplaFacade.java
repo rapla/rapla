@@ -304,16 +304,6 @@ public interface RaplaFacade
      * @throws RaplaException */
     PeriodModel getPeriodModelFor(String key) throws RaplaException;
 
-    /** checks if the user that  is the user that last changed the entites
-     *
-     * @param entities
-     * @param isNew if new is set then this method does not throw an exception if the entities are not found in persistant store
-     * @param <T>
-     * @return the latest persistant map of the entities
-     * @throws RaplaException if the logged in user is not the lastChanged user of any entities. If isNew is false then an exception is also thrown, when an entity is not found in persistant storage
-     */
-    <T extends Entity> Map<T,T> checklastChanged(Collection<T> entities, User user,boolean isNew) throws RaplaException;
-
     /** returns the logged in user if the facade is on the client. Otherwise it will thrown an error*/
     User getUser() throws RaplaException;
     //<T> T  waitForWithRaplaException(Promise<T> promise, int millis) throws RaplaException;
