@@ -252,7 +252,7 @@ public class AppointmentAction extends RaplaAction {
 
     private void copy() throws RaplaException 
     {
-       getReservationController().copyAppointment(appointmentBlock,popupContext, contextAllocatables);
+       getReservationController().copyAppointmentBlock(appointmentBlock,popupContext, contextAllocatables);
     }
     
     private void cut() throws RaplaException 

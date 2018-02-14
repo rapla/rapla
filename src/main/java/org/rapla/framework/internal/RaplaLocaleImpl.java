@@ -56,7 +56,7 @@ public class RaplaLocaleImpl extends AbstractRaplaLocale  {
     }
 
 
-    public String formatNumber( long number ) {
+    public String formatNumber( Long number ) {
         Locale locale = getLocale();
 		return NumberFormat.getInstance( locale).format(number );
     }

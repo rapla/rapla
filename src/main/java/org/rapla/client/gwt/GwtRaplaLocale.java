@@ -1,6 +1,7 @@
 package org.rapla.client.gwt;
 
 import com.google.gwt.i18n.client.NumberFormat;
+import jsinterop.annotations.JsIgnore;
 import org.rapla.components.i18n.BundleManager;
 import org.rapla.components.i18n.client.GwtBundleManager;
 import org.rapla.framework.RaplaLocale;
@@ -19,12 +20,13 @@ public class GwtRaplaLocale extends AbstractRaplaLocale {
 	static String GMT_STRING = "{\"transitions\": [], \"names\": [\"GMT\", \"Greenwich Mean Time\"], \"id\": \"Africa/Dakar\", \"std_offset\": 0}";
 	com.google.gwt.i18n.shared.TimeZone timezoneG = com.google.gwt.i18n.client.TimeZone.createTimeZone(GMT_STRING);
 
+	@JsIgnore
 	@Inject
 	public GwtRaplaLocale(BundleManager bundleManager) {
 		super(bundleManager);
 	}
 
-	public String formatNumber(long number) {
+	public String formatNumber(Long number) {
 		String result = NumberFormat.getDecimalFormat().format( number);
 		return result;
 	}

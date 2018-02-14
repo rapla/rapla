@@ -12,6 +12,8 @@ import org.rapla.framework.RaplaLocale;
 import org.rapla.inject.DefaultImplementation;
 import org.rapla.inject.InjectionContext;
 import org.rapla.logger.Logger;
+import org.rapla.scheduler.Promise;
+import org.rapla.scheduler.ResolvedPromise;
 import org.rapla.server.RemoteSession;
 import org.rapla.storage.RemoteLocaleService;
 import org.rapla.storage.StorageOperator;
@@ -47,18 +49,25 @@ public class RemoteLocaleServiceImpl implements RemoteLocaleService
     }
 
     @Override
-    public LocalePackage locale(String id, String localeString) throws RaplaException
+    public Promise<LocalePackage> locale(String id, String localeString)
     {
         if (localeString == null)
         {
             if (session.isAuthentified(request))
             {
-                final User validUser = session.checkAndGetUser(request);
-                final Preferences preferences = operator.getPreferences(validUser, true);
-                final String entry = preferences.getEntryAsString(RaplaLocale.LANGUAGE_ENTRY, null);
-                if (entry != null)
+                try
                 {
-                    localeString = new Locale(entry).toString();
+                    final User validUser = session.checkAndGetUser(request);
+                    final Preferences preferences = operator.getPreferences(validUser, true);
+                    final String entry = preferences.getEntryAsString(RaplaLocale.LANGUAGE_ENTRY, null);
+                    if (entry != null)
+                    {
+                        localeString = new Locale(entry).toString();
+                    }
+                }
+                catch (RaplaException ex)
+                {
+                    return new ResolvedPromise<>(ex);
                 }
             }
             if (localeString == null)
@@ -74,13 +83,14 @@ public class RemoteLocaleServiceImpl implements RemoteLocaleService
         String country = locale.getCountry();
         Set<String> availableLanguages = defBundleManager.getAvailableLanguages();
         final LocalePackage localePackage = new LocalePackage(formats, language, country, bundles, availableLanguages);
-        return localePackage;
+
+        return new ResolvedPromise<>(localePackage);
     }
 
     @Override
-    public Map<String, Set<String>> countries(Set<String> languages)
+    public Promise<Map<String, Set<String>>> countries(Set<String> languages)
     {
         Map<String, Set<String>> result = ((DefaultBundleManager) bundleManager).getCountriesForLanguage(languages);
-        return result;
+        return new ResolvedPromise<>(result);
     }
 }

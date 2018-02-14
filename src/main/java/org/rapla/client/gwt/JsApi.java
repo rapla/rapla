@@ -1,10 +1,14 @@
 package org.rapla.client.gwt;
 
+import jsinterop.annotations.JsIgnore;
 import jsinterop.annotations.JsType;
 import org.rapla.client.ReservationController;
 import org.rapla.client.menu.RaplaObjectActions;
+import org.rapla.entities.User;
 import org.rapla.facade.CalendarSelectionModel;
 import org.rapla.facade.RaplaFacade;
+import org.rapla.facade.client.ClientFacade;
+import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.logger.Logger;
 import org.rapla.plugin.abstractcalendar.RaplaBuilder;
@@ -22,15 +26,18 @@ public class JsApi
     private final CalendarSelectionModel calendarModel;
     private final RemoteAuthentificationService remoteAuthentificationService;
     private final RaplaLocale raplaLocale;
+    private final ClientFacade clientFacade;
     private final Provider<RaplaBuilder> raplaBuilder;
     private final Provider<RaplaObjectActions> raplaObjectActionsProvider;
 
+    @JsIgnore
     @Inject
-    public JsApi(RaplaFacade facade, Logger logger, ReservationController reservationController, CalendarSelectionModel calendarModel,
+    public JsApi(ClientFacade facade, Logger logger, ReservationController reservationController, CalendarSelectionModel calendarModel,
             RemoteAuthentificationService remoteAuthentificationService, RaplaLocale raplaLocale, Provider<RaplaBuilder> raplaBuilder,
             Provider<RaplaObjectActions> raplaObjectActionsProvider)
     {
-        this.facade = facade;
+        this.clientFacade = facade;
+        this.facade = clientFacade.getRaplaFacade();
         this.logger = logger;
         this.reservationController = reservationController;
         this.calendarModel = calendarModel;
@@ -38,6 +45,11 @@ public class JsApi
         this.raplaLocale = raplaLocale;
         this.raplaBuilder = raplaBuilder;
         this.raplaObjectActionsProvider = raplaObjectActionsProvider;
+    }
+
+    public User getUser( ) throws RaplaException
+    {
+        return clientFacade.getUser();
     }
 
     public RaplaFacade getFacade()

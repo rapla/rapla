@@ -24,7 +24,7 @@ import java.util.Collection;
 import java.util.Date;
 import java.util.Locale;
 
-@DefaultImplementation(of = CalendarPlaceView.class, context = InjectionContext.gwt)
+//@DefaultImplementation(of = CalendarPlaceView.class, context = InjectionContext.gwt)
 public class CalendarPlaceViewGwt implements CalendarPlaceView<IsWidget>, NavigatorAction
 {
     private static final int OFFSET_NAVIGATION = 50;

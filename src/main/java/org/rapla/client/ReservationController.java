@@ -1,5 +1,6 @@
 package org.rapla.client;
 
+import jsinterop.annotations.JsType;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.Appointment;
 import org.rapla.entities.domain.AppointmentBlock;
@@ -31,6 +32,7 @@ import java.util.Set;
     </li>
     </ul>
  */
+@JsType
 public interface ReservationController
 {
 //    void edit( Reservation reservation ) throws RaplaException;
@@ -43,7 +45,7 @@ public interface ReservationController
 
     void deleteAppointment( AppointmentBlock appointmentBlock, PopupContext context )  throws RaplaException;
 
-    void copyAppointment( AppointmentBlock appointmentBlock, PopupContext context,Collection<Allocatable> contextAllocatables ) throws RaplaException;
+    void copyAppointmentBlock( AppointmentBlock appointmentBlock, PopupContext context,Collection<Allocatable> contextAllocatables ) throws RaplaException;
     void cutAppointment(AppointmentBlock appointmentBlock, PopupContext context, Collection<Allocatable> contextAllocatables) throws RaplaException;
 
     void pasteAppointment( Date start, PopupContext context, boolean asNewReservation, boolean keepTime ) throws RaplaException;
@@ -69,4 +71,5 @@ public interface ReservationController
 
 	Promise<Void> deleteReservations(Set<Reservation> reservation, PopupContext context);
     Promise<Void> saveReservations(Map<Reservation,Reservation> reservation, PopupContext context);
+    Promise<Void> saveReservation( Reservation origReservation, Reservation reservation);
 }

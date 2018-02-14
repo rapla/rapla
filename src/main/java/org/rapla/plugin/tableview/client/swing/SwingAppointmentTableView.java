@@ -325,7 +325,7 @@ public class SwingAppointmentTableView extends RaplaGUIComponent implements Swin
                     }
                     else
                     {
-                        reservationController.copyAppointment(appointmentBlock, popupContext, contextAllocatables);
+                        reservationController.copyAppointmentBlock(appointmentBlock, popupContext, contextAllocatables);
                     }
                 }
                 catch (RaplaException e)

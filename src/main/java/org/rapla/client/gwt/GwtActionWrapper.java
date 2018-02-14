@@ -4,24 +4,18 @@ import io.reactivex.functions.Action;
 import jsinterop.annotations.JsFunction;
 import jsinterop.annotations.JsType;
 
-@JsType
+@JsType(namespace = "rapla",name = "Action")
 public class GwtActionWrapper implements Action
 {
+    public GwtActionWrapper(Runnable runnable)
+    {
+        this.runnable = runnable;
+    }
     @JsFunction
     @FunctionalInterface
     interface Runnable
     {
         void run();
-    }
-
-    public Runnable getRunnable()
-    {
-        return runnable;
-    }
-
-    public void setRunnable(Runnable runnable)
-    {
-        this.runnable = runnable;
     }
 
     private Runnable runnable;

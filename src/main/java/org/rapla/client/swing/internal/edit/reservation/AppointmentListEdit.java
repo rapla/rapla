@@ -220,7 +220,7 @@ class AppointmentListEdit extends AbstractAppointmentEditor
         }
 
         public void setAppointment(Appointment appointment,int index) {
-            identifier.setText(getRaplaLocale().formatNumber(index + 1));
+            identifier.setText(getRaplaLocale().formatNumber(new Long(index + 1)));
             identifier.setIndex(index);
             content.setLayout(new BoxLayout(content,BoxLayout.Y_AXIS));
             content.removeAll();

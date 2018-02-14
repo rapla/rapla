@@ -66,7 +66,7 @@ public interface RaplaLocale
     Date toTime( int hour, int minute, int second );
 
     /** format long with the local NumberFormat */
-    String formatNumber( long number );
+    String formatNumber( Long number );
 
     /** format without year */
     String formatDateShort( Date date );

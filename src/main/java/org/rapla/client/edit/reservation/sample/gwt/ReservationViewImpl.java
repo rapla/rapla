@@ -33,7 +33,7 @@ import org.rapla.inject.InjectionContext;
 import javax.inject.Inject;
 import java.util.ArrayList;
 
-@DefaultImplementation(of = ReservationView.class, context = InjectionContext.client)
+//@DefaultImplementation(of = ReservationView.class, context = InjectionContext.client)
 public class ReservationViewImpl implements ReservationView
 {
 

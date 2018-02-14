@@ -572,7 +572,7 @@ public class ReservationControllerImpl implements ReservationController {
         }
     }
 
-    public void copyAppointment(AppointmentBlock appointmentBlock, PopupContext context, Collection<Allocatable> contextAllocatables) throws RaplaException {
+    public void copyAppointmentBlock(AppointmentBlock appointmentBlock, PopupContext context, Collection<Allocatable> contextAllocatables) throws RaplaException {
         copyCutAppointment(appointmentBlock, context, contextAllocatables, "copy", false);
     }
 
@@ -1375,6 +1375,16 @@ public class ReservationControllerImpl implements ReservationController {
     public Promise<Void> saveReservations(Map<Reservation,Reservation> storeList, PopupContext context) {
         SaveUndo<Reservation> cmd = new SaveUndo<>(facade.getRaplaFacade(), i18n, storeList);
         return checkEvents(storeList.values(),context).thenCompose((result)-> facade.getCommandHistory().storeAndExecute( cmd));
+    }
+
+    @Override
+    public Promise<Void> saveReservation(Reservation origReservation,Reservation newReservation) {
+        LinkedHashMap<Reservation, Reservation> storeList = new LinkedHashMap<>();
+        Reservation key = origReservation != null ? origReservation:  newReservation;
+        storeList.put(key, newReservation);
+        SaveUndo<Reservation> cmd = new SaveUndo<>(facade.getRaplaFacade(), i18n, storeList);
+        PopupContext popupContext = null;
+        return checkEvents(storeList.values(),popupContext).thenCompose((result)-> facade.getCommandHistory().storeAndExecute( cmd));
     }
 
     public Promise<Void> checkAndDistpatch(Collection<Reservation> storeList, Collection<ReferenceInfo<Reservation>> removeList, boolean firstTime,

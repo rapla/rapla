@@ -563,7 +563,7 @@ public class AllocatableSelection extends RaplaGUIComponent implements Appointme
         for (int i = 0; i < appointments.length; i++)
         {
             this.appointmentStrings[i] = appointmentFormater.getVeryShortSummary(appointments[i]);
-            this.appointmentIndexStrings[i] = getRaplaLocale().formatNumber(i + 1);
+            this.appointmentIndexStrings[i] = getRaplaLocale().formatNumber(new Long(i + 1));
         }
     }
 

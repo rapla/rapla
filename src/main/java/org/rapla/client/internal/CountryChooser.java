@@ -21,10 +21,12 @@ import org.rapla.storage.RemoteLocaleService;
 
 import javax.inject.Inject;
 import javax.swing.Action;
+import javax.swing.DefaultComboBoxModel;
 import javax.swing.DefaultListCellRenderer;
 import javax.swing.JComboBox;
 import javax.swing.JComponent;
 import javax.swing.JList;
+import javax.swing.SwingUtilities;
 import java.awt.Component;
 import java.util.Collection;
 import java.util.LinkedHashSet;
@@ -44,23 +46,24 @@ final public class CountryChooser implements RaplaWidget
         this.logger = logger;
         language = raplaLocale.getLocale().getLanguage();
         Collection<String> languages = raplaLocale.getAvailableLanguages();
-        try
+        remoteLocaleService.countries(new LinkedHashSet<String>(languages)).thenAccept(( countries)->
         {
-            this.countries = remoteLocaleService.countries(new LinkedHashSet<String>(languages));
-        }
-        catch (Exception e)
-        {
-            throw new RaplaInitializationException(e.getMessage(), e);
-        }
-        String[] entries = createCountryArray();
+            this.countries = countries;
+            String[] entries = createCountryArray();
+            SwingUtilities.invokeLater(()->
+            jComboBox.setModel( new DefaultComboBoxModel(entries)));
+        }).exceptionally(e->
+             logger.error(e.getMessage(), e)
+        );
+
         @SuppressWarnings("unchecked")
-		JComboBox jComboBox2 = new JComboBox(entries);
-        final String localeCountry = raplaLocale.getLocale().getCountry();
+		final String localeCountry = raplaLocale.getLocale().getCountry();
         if(localeCountry != null)
         {
-            jComboBox2.setSelectedItem(localeCountry);
+            jComboBox.setSelectedItem(localeCountry);
         }
-		jComboBox = jComboBox2;
+		jComboBox = new JComboBox();
+
         DefaultListCellRenderer aRenderer = new DefaultListCellRenderer() {
             private static final long serialVersionUID = 1L;
             public Component getListCellRendererComponent(

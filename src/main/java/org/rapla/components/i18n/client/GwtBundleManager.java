@@ -21,21 +21,17 @@ public class GwtBundleManager implements BundleManager
     Locale locale;
 
     @Inject
-    public GwtBundleManager(RemoteLocaleService remoteLocaleService)
+    public GwtBundleManager()
     {
-        try
-        {
-            String id = "org.rapla";//"123";
-            String localeParam = "en";
-            localePackage = remoteLocaleService.locale(id, localeParam);
-            String language = localePackage.getLanguage();
-            String country = localePackage.getCountry();
-            locale = newLocale(language, country);
-        }
-        catch (Exception e)
-        {
-            throw new IllegalStateException("Could not load language pack",e);
-        }
+        setLocalPackage(new LocalePackage());
+    }
+
+    public void setLocalPackage(LocalePackage localePackage)
+    {
+        this.localePackage = localePackage;
+        String language = localePackage.getLanguage();
+        String country = localePackage.getCountry();
+        locale = newLocale(language, country);
     }
 
     @Override
@@ -52,8 +48,11 @@ public class GwtBundleManager implements BundleManager
     @Override
     public String getString(String packageId, String key)
     {
-        final Map<String, Map<String, String>> bundles = localePackage.getBundles();
-        final Map<String, String> language = bundles.get(packageId);
+        final Map<String, String> language = localePackage.getBundle(packageId);
+        if ( language == null)
+        {
+            return key;
+        }
         String result = language.get(key);
         return result;
     }
@@ -73,7 +72,7 @@ public class GwtBundleManager implements BundleManager
     @Override
     public Collection<String> getKeys(String packageId)
     {
-        return localePackage.getBundles().get(packageId).keySet();
+        return localePackage.getBundle(packageId).keySet();
     }
 
     @Override

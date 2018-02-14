@@ -2,14 +2,17 @@ package org.rapla.client.gwt;
 
 import com.google.gwt.core.client.EntryPoint;
 import com.google.gwt.core.client.GWT;
+import org.rapla.logger.Logger;
 
 public class Rapla implements EntryPoint
 {
+    @Override
     public void onModuleLoad()
     {
-        //RaplaPopups.getProgressBar().setPercent(10);
-        //GwtStarter starter = org.rapla.client.gwt.dagger.DaggerRaplaGwtComponent.create().getGwtStarter();
         GwtStarter starter = GWT.create(GwtStarter.class);
-        starter.registerJavascriptApi();
+        Logger logger = new RaplaGwtLogger();
+        logger.info("GWT Started. Calling gwtLoaded");
+        new RaplaCallback().gwtLoaded(starter);
     }
+
 }

@@ -5,5 +5,5 @@ import jsinterop.annotations.JsType;
 @JsType(isNative = true,namespace = "rapla",name = "RaplaCallback")
 public class RaplaCallback
 {
-    public native void callback(JsApi apiObject);
+    public native void gwtLoaded(GwtStarter starter);
 }

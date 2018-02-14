@@ -403,7 +403,7 @@ public class CalendarContextMenuPresenter extends RaplaComponent implements Menu
                 {
                     try
                     {
-                        reservationController.copyAppointment(appointmentBlock, popupContext, copyContextAllocatables);
+                        reservationController.copyAppointmentBlock(appointmentBlock, popupContext, copyContextAllocatables);
                     }
                     catch (RaplaException e)
                     {

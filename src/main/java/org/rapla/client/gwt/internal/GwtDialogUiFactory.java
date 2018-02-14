@@ -5,10 +5,9 @@ import com.google.gwt.event.dom.client.ClickHandler;
 import com.google.gwt.event.logical.shared.CloseEvent;
 import com.google.gwt.event.logical.shared.CloseHandler;
 import com.google.gwt.event.shared.HandlerRegistration;
+import com.google.gwt.user.client.ui.Button;
+import com.google.gwt.user.client.ui.Label;
 import com.google.gwt.user.client.ui.PopupPanel;
-import org.gwtbootstrap3.client.ui.Button;
-import org.gwtbootstrap3.client.ui.Label;
-import org.gwtbootstrap3.client.ui.constants.ButtonType;
 import org.rapla.RaplaResources;
 import org.rapla.client.PopupContext;
 import org.rapla.client.RaplaWidget;
@@ -106,7 +105,6 @@ public class GwtDialogUiFactory implements DialogUiFactoryInterface
                 final int index = i;
                 buttons[i] = new Button(options[i]);
                 actions[i] = new GwtDialogAction(buttons[i]);
-                buttons[i].setType(ButtonType.INFO);
                 handlers.add(buttons[i].addClickHandler(new ClickHandler()
                 {
                     @Override

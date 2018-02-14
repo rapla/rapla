@@ -37,7 +37,7 @@ import org.rapla.scheduler.Observable;
 import javax.inject.Inject;
 import java.util.function.Function;
 
-@DefaultImplementation(of =ApplicationView.class,context= InjectionContext.gwt)
+//@DefaultImplementation(of =ApplicationView.class,context= InjectionContext.gwt)
 public class GwtApplicationViewImpl implements ApplicationView<IsWidget>
 {
     private static final String MENU_ACTION = "RAPLA_MENU_ACTION";
