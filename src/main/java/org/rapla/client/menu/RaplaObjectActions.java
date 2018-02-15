@@ -223,6 +223,8 @@ public class RaplaObjectActions extends RaplaComponent{
                 entity= m.newUser();
             else if (Period.class == raplaType)
                 entity = m.newPeriod(user);
+            else if (DynamicType.class == raplaType)
+                entity = m.newDynamicType( classificationType);
             else
                 throw new RaplaException("Can't create Entity for " + raplaType + "!");
             return new ResolvedPromise<>(entity);

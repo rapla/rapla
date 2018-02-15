@@ -75,7 +75,7 @@ public interface StorageOperator extends EntityResolver {
      original, <strong>always</strong> edit the object returned by editObject.
      The Map keys are the original Versions of the Object and the values are the editable versions
      */
-    Promise<Map<Entity,Entity>> editObjectsAsync(Collection<Entity> objList, User user);
+    Promise<Map<Entity,Entity>> editObjectsAsync(Collection<Entity> objList, User user, boolean checkLastChanged);
 
     /** if an id is not found and throwEntityNotFound is set to false then the resulting map does not contain an entry for the missing id*/
     <T extends Entity> Promise<Map<ReferenceInfo<T>,T>> getFromIdAsync(Collection<ReferenceInfo<T>> idSet, boolean throwEntityNotFound);

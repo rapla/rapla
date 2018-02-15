@@ -69,6 +69,7 @@ import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 
@@ -147,6 +148,47 @@ public abstract class AbstractCachableOperator implements StorageOperator
         Map<ReferenceInfo<Entity>, Entity> idMap = createReferenceInfoMap(list);
         Map<ReferenceInfo<Entity>, Entity> resolvedList = getFromId(idMap.keySet(), false);
         return editObjects(list, user, resolvedList);
+    }
+
+    @Override
+    public Promise<Map<Entity,Entity>> editObjectsAsync(Collection<Entity> objList, User user, boolean checkLastChanged) {
+
+        Map<ReferenceInfo<Entity>, Entity> idMap = createReferenceInfoMap(objList);
+        return getFromIdAsync(idMap.keySet(), false).thenApply(
+                map->
+                {
+                    if ( checkLastChanged)
+                    {
+                        checkLastChanged(objList, user, map);
+                    }
+                    return editObjects(objList, user,map);}
+        );
+    }
+
+
+    /** checks if the user that  is the user that last changed the entites
+     *
+     * @return the latest persistant map of the entities
+     * @throws RaplaException if the logged in user is not the lastChanged user of any entities. If isNew is false then an exception is also thrown, when an entity is not found in persistant storage
+     */
+     protected void checkLastChanged(Collection<Entity> objList, User user, Map<ReferenceInfo<Entity>, Entity> map) throws RaplaException {
+        for ( Entity entity:objList)
+        {
+            if ( entity instanceof ModifiableTimestamp)
+            {
+                Entity persistant = map.get( entity.getReference());
+                if ( persistant != null)
+                {
+                    ReferenceInfo<User> lastChangedBy = ((ModifiableTimestamp) persistant).getLastChangedBy();
+                    if (lastChangedBy != null && !user.getReference().equals(lastChangedBy))
+                    {
+                        final Locale locale = i18n.getLocale();
+                        String name = entity instanceof Named ? ((Named) entity).getName( locale) : entity.toString();
+                        throw new RaplaException(i18n.format("error.new_version", name));
+                    }
+                }
+            }
+        }
     }
 
     @NotNull

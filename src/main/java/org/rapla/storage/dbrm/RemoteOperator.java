@@ -527,43 +527,6 @@ public class RemoteOperator
     }
 
     @Override
-    public Promise<Map<Entity,Entity>> editObjectsAsync(Collection<Entity> objList, User user) {
-
-        Map<ReferenceInfo<Entity>, Entity> idMap = createReferenceInfoMap(objList);
-        return getFromIdAsync(idMap.keySet(), false).thenApply(
-                map->
-                {
-                    checkLastChanged(objList, user, map);
-                    return editObjects(objList, user,map);}
-        );
-    }
-
-    /** checks if the user that  is the user that last changed the entites
-     *
-     * @return the latest persistant map of the entities
-     * @throws RaplaException if the logged in user is not the lastChanged user of any entities. If isNew is false then an exception is also thrown, when an entity is not found in persistant storage
-     */
-    private void checkLastChanged(Collection<Entity> objList, User user, Map<ReferenceInfo<Entity>, Entity> map) throws RaplaException {
-        for ( Entity entity:objList)
-        {
-            if ( entity instanceof ModifiableTimestamp)
-            {
-                Entity persistant = map.get( entity.getReference());
-                if ( persistant != null)
-                {
-                    ReferenceInfo<User> lastChangedBy = ((ModifiableTimestamp) persistant).getLastChangedBy();
-                    if (lastChangedBy != null && !user.getReference().equals(lastChangedBy))
-                    {
-                        final Locale locale = i18n.getLocale();
-                        String name = entity instanceof Named ? ((Named) entity).getName( locale) : entity.toString();
-                        throw new RaplaException(i18n.format("error.new_version", name));
-                    }
-                }
-            }
-        }
-    }
-
-    @Override
     public void dispatch(UpdateEvent evt) throws RaplaException {
         checkConnected();
         logEvent(evt);

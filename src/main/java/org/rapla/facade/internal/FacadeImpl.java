@@ -887,11 +887,20 @@ public class FacadeImpl implements RaplaFacade {
 		if (obj == null)
 			throw new NullPointerException("Can't edit null objects");
 		Set<T> singleton = Collections.singleton( obj);
-		return editListAsync(singleton).thenApply((collection)->collection.values().iterator().next());
+		return editListAsync(singleton, false).thenApply((collection)->collection.values().iterator().next());
 	}
 
 	@Override
-	public <T extends Entity> Promise<Map<T,T>> editListAsync(Collection<T> list) {
+	public   <T extends Entity> Promise<Map<T,T>> editListAsync(Collection<T> list) {
+		return  editListAsync( list, false);
+	}
+
+	@Override
+	public   <T extends Entity> Promise<Map<T,T>> editListAsyncForUndo(Collection<T> list) {
+		return  editListAsync( list, true);
+	}
+
+	private  <T extends Entity> Promise<Map<T,T>> editListAsync(Collection<T> list, boolean checkLastChanged) {
 		if (list == null)
 			throw new NullPointerException("Can't edit null objects");
 		List<Entity> castedList = cast2Entity(list);
@@ -901,7 +910,7 @@ public class FacadeImpl implements RaplaFacade {
 		} catch (EntityNotFoundException e) {
 			return new ResolvedPromise<>(e);
 		}
-		return operator.editObjectsAsync(castedList,	workingUser).thenApply((result)->castEntity(result));
+		return operator.editObjectsAsync(castedList,	workingUser, checkLastChanged).thenApply((result)->castEntity(result));
 	}
 
 	@NotNull

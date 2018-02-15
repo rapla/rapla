@@ -263,16 +263,6 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
         return scheduler.supply(()->getFromId( idSet, throwEntityNotFound));
     }
 
-    @Override
-    public Promise<Map<Entity,Entity>> editObjectsAsync(Collection<Entity> list, User user) {
-        try {
-            final Map<Entity,Entity> entities = editObjects(list, user);
-            return new ResolvedPromise<>(entities);
-        } catch (RaplaException ex) {
-            return new ResolvedPromise<>(ex);
-        }
-    }
-
     public CommandScheduler getScheduler()
     {
         return scheduler;

@@ -371,7 +371,7 @@ public class ReservationControllerImpl implements ReservationController {
                     Reservation reservation = appointment.getReservation();
                     toUpdateRequest.add( reservation);
                 }
-                final Promise<Map<ReferenceInfo<Reservation>, Reservation>> mapPromise = getFacade().editListAsync(toUpdateRequest).thenApply(mutableReservations ->
+                final Promise<Map<ReferenceInfo<Reservation>, Reservation>> mapPromise = getFacade().editListAsyncForUndo(toUpdateRequest).thenApply(mutableReservations ->
                         mutableReservations.values().stream().collect(Collectors.toMap(Reservation::getReference, Function.identity())));
                 return mapPromise.thenCompose( toUpdateMap-> {
                     for (Appointment appointment : appointmentsToRemove) {
@@ -1152,7 +1152,16 @@ public class ReservationControllerImpl implements ReservationController {
 
         private Promise<Void> doMove(boolean resizing, Date sourceStart, Date destStart, Date destEnd, boolean undo) {
             Reservation reservation = appointment.getReservation();
-            Promise<Void> resultPromise = getFacade().editAsync(reservation).thenApply((mutableReservation) ->
+            final Promise<Map<Reservation,Reservation>> reservationPromise;
+            if ( undo)
+            {
+                reservationPromise = getFacade().editListAsyncForUndo(Collections.singletonList(reservation));
+            }
+            else
+            {
+                reservationPromise = getFacade().editListAsync(Collections.singletonList(reservation));
+            }
+            Promise<Void> resultPromise = reservationPromise.thenApply((map) -> map.values().iterator().next()).thenApply((mutableReservation) ->
             {
                 Appointment mutableAppointment = mutableReservation.findAppointment(appointment);
                 if (mutableAppointment == null) {

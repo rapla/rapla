@@ -364,6 +364,7 @@ public class SavedCalendarSwingView extends RaplaGUIComponent implements SavedCa
 		filenames.clear();
          
 		if ( exportMap != null) {
+		    exportMap.keySet().toArray(new String[]{});
 		    for (Iterator<String> it= exportMap.keySet().iterator();it.hasNext();) {
 		        String filename = it.next();
 		        filenames.add( new FileEntry(filename));

@@ -200,6 +200,7 @@ public interface RaplaFacade
      */
     <T extends Entity> T clone(T obj,User user) throws RaplaException;
     <T extends Entity> Promise<Map<T,T>> editListAsync(Collection<T> obj);
+    <T extends Entity> Promise<Map<T,T>> editListAsyncForUndo(Collection<T> obj);
     <T extends Entity> Promise<T> editAsync(T obj);
     <T extends Entity> Promise<Void> update(T entity, Consumer<T> updateFunction);
     <T extends Entity> Promise<Void> updateList(Collection<T> list, Consumer<Collection<T>> updateFunction);

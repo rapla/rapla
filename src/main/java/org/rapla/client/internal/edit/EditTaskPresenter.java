@@ -333,6 +333,7 @@ public class EditTaskPresenter implements TaskPresenter
             return null;
         }
         Collection<T> toEdit = new ArrayList<>(list);
+
         return raplaFacade.editListAsync(toEdit).thenCompose((editMap) -> getEditWidget(popupContext, applicationEvent, isMerge, editMap));
     }
 

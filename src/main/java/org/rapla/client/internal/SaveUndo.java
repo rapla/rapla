@@ -98,7 +98,7 @@ public class SaveUndo<T extends Entity> implements CommandUndo<RaplaException> {
 	public Promise<Void> undo()  {
 
 		final Set<T> oldEntities = storeListCopy.keySet();
-		return getFacade().editListAsync(oldEntities).thenCompose(map ->
+		return getFacade().editListAsyncForUndo(oldEntities).thenCompose(map ->
 					{
 						List<T> toStore = new ArrayList<T>();
 						List<ReferenceInfo<T>> toRemove = new ArrayList<>();
@@ -121,7 +121,7 @@ public class SaveUndo<T extends Entity> implements CommandUndo<RaplaException> {
 					}
 			);
 	}
-	
+
 	private void checkConsistency(Entity entity) throws EntityNotFoundException {
 		// this will also be checked by the server but we try to avoid
 		

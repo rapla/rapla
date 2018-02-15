@@ -1267,7 +1267,8 @@ public class CalendarModelImpl implements CalendarSelectionModel
         {
             return new ResolvedPromise<>(ex);
         }
-        final Promise<Map<Entity,Entity>>  editPromise = operator.editObjectsAsync(toEdit, user);
+        boolean isUndo = false;
+        final Promise<Map<Entity,Entity>>  editPromise = operator.editObjectsAsync(toEdit, user, isUndo);
         final Promise<Set<Preferences>> modifyPromise = editPromise.thenApply((editables) ->
         {
             Preferences clone = (Preferences) editables.values().iterator().next();
