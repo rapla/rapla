@@ -17,7 +17,7 @@ var apiCallback = (api) =>
           var eventType = facade.getDynamicTypes("reservation")[0];
           var classification = eventType.newClassification();
           var newReservation = facade.newReservation(classification, api.getUser());
-          classification.setValue("name","Test");
+          classification.setValue("name","Test")
           var dateParse = rapla.DateParse.INSTANCE;
           var startDate = dateParse.parseDateTime("2018-01-03","12:00");
           var endDate = dateParse.parseDateTime("2018-01-03","14:00");

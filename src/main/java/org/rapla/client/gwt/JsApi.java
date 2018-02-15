@@ -2,6 +2,7 @@ package org.rapla.client.gwt;
 
 import jsinterop.annotations.JsIgnore;
 import jsinterop.annotations.JsType;
+import org.rapla.RaplaResources;
 import org.rapla.client.ReservationController;
 import org.rapla.client.menu.RaplaObjectActions;
 import org.rapla.entities.User;
@@ -29,14 +30,16 @@ public class JsApi
     private final ClientFacade clientFacade;
     private final Provider<RaplaBuilder> raplaBuilder;
     private final Provider<RaplaObjectActions> raplaObjectActionsProvider;
+    private final RaplaResources i18n;
 
     @JsIgnore
     @Inject
     public JsApi(ClientFacade facade, Logger logger, ReservationController reservationController, CalendarSelectionModel calendarModel,
-            RemoteAuthentificationService remoteAuthentificationService, RaplaLocale raplaLocale, Provider<RaplaBuilder> raplaBuilder,
-            Provider<RaplaObjectActions> raplaObjectActionsProvider)
+                 RemoteAuthentificationService remoteAuthentificationService, RaplaLocale raplaLocale, Provider<RaplaBuilder> raplaBuilder,
+                 Provider<RaplaObjectActions> raplaObjectActionsProvider, RaplaResources i18n)
     {
         this.clientFacade = facade;
+        this.i18n = i18n;
         this.facade = clientFacade.getRaplaFacade();
         this.logger = logger;
         this.reservationController = reservationController;
@@ -82,5 +85,9 @@ public class JsApi
     public RaplaObjectActions createActions()
     {
         return raplaObjectActionsProvider.get();
+    }
+
+    public RaplaResources getI18n() {
+        return i18n;
     }
 }
