@@ -145,7 +145,21 @@
 	     </Arg>
 	   </Call>
 	  -->
-   
+
+    <!-- Configure Proxy if you want to use nodejs server in dev mode-->
+    <New id="proxy" class="org.eclipse.jetty.servlet.ServletContextHandler">
+        <Set name="contextPath">/proxy</Set>
+        <Call name="getServletHandler">
+            <Call name="addServletWithMapping">
+                <Arg>org.eclipse.jetty.proxy.ProxyServlet$Transparent</Arg>
+                <Arg>/*</Arg>
+                <Call name="setInitParameter">
+                    <Arg>proxyTo</Arg>
+                    <Arg>http://localhost:8051/rapla/</Arg>
+                </Call>
+            </Call>
+        </Call>
+    </New>
     
     <!-- =========================================================== -->
     <!-- Set handler Collection Structure                            --> 
@@ -155,7 +169,13 @@
         <Set name="handlers">
          <Array type="org.eclipse.jetty.server.Handler">
            <Item>
-             <New id="contexts" class="org.eclipse.jetty.server.handler.ContextHandlerCollection"/>
+             <New id="contexts" class="org.eclipse.jetty.server.handler.ContextHandlerCollection">
+                 <Call name="addHandler">
+                    <Arg>
+                        <Ref id="proxy"/>
+                    </Arg>
+                 </Call>
+             </New>
            </Item>
            <Item>
              <New id="defaultHandler" class="org.eclipse.jetty.server.handler.DefaultHandler"/>
