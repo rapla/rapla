@@ -15,13 +15,9 @@ import org.rapla.storage.dbrm.LoginCredentials;
 import org.rapla.storage.dbrm.LoginTokens;
 
 import javax.inject.Inject;
+import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletResponse;
-import javax.ws.rs.FormParam;
-import javax.ws.rs.GET;
-import javax.ws.rs.POST;
-import javax.ws.rs.Path;
-import javax.ws.rs.Produces;
-import javax.ws.rs.QueryParam;
+import javax.ws.rs.*;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import java.io.IOException;
@@ -108,9 +104,9 @@ public class RaplaAuthRestPage
                     newUrl = targetUrl + "#"+LOGIN_COOKIE + "=" + accessToken;
                 }
                 newUrl+="&valid_until="+token.getValidUntil().getTime();
-                //final Cookie cookie = new Cookie(LOGIN_COOKIE, token.toString());
-                //cookie.setPath("");
-                //response.addCookie(cookie);
+                final Cookie cookie = new Cookie(LOGIN_COOKIE, token.toString());
+                cookie.setPath("/");
+                response.addCookie(cookie);
                 response.sendRedirect(newUrl);
                 final PrintWriter writer = response.getWriter();
                 writer.println(accessToken);
