@@ -157,13 +157,13 @@ public interface RemoteStorage
     @Path("entity/recursiveSync")
     @Consumes({ MediaType.APPLICATION_JSON, MediaType.APPLICATION_XML })
     @Produces({ MediaType.APPLICATION_JSON, MediaType.APPLICATION_XML })
-    UpdateEvent getEntityRecursive(UpdateEvent.SerializableReferenceInfo... infos) throws RaplaException;
+    UpdateEvent getEntityRecursive(@QueryParam("errorIfNotFound")Boolean errorIfNotFound,UpdateEvent.SerializableReferenceInfo... infos) throws RaplaException;
 
     @POST
     @Path("entity/dependent")
     @Consumes({ MediaType.APPLICATION_JSON, MediaType.APPLICATION_XML })
     @Produces({ MediaType.APPLICATION_JSON, MediaType.APPLICATION_XML })
-    Promise<UpdateEvent> getEntityDependencies(UpdateEvent.SerializableReferenceInfo... infos);
+    Promise<UpdateEvent> getEntityDependencies(@QueryParam("errorIfNotFound")Boolean errorIfNotFound,UpdateEvent.SerializableReferenceInfo... infos);
 
     @POST
     @Path("refreshSync")

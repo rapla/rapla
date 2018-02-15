@@ -126,7 +126,7 @@ import java.util.stream.Collectors;
     }
 
     @Override
-    public UpdateEvent getEntityRecursive(UpdateEvent.SerializableReferenceInfo... ids) throws RaplaException
+    public UpdateEvent getEntityRecursive(Boolean errorUpdateEvent,UpdateEvent.SerializableReferenceInfo... ids) throws RaplaException
     {
         User sessionUser = checkSessionUser();
         Date repositoryVersion = operator.getCurrentTimestamp();
@@ -135,7 +135,22 @@ import java.util.stream.Collectors;
         for (UpdateEvent.SerializableReferenceInfo id : ids)
         {
             final ReferenceInfo reference = id.getReference();
-            Entity entity = operator.resolve(reference);
+            Entity entity ;
+            try
+            {
+                entity = operator.resolve(reference);
+            }
+            catch (EntityNotFoundException ex)
+            {
+                if ( errorUpdateEvent == null || errorUpdateEvent)
+                {
+                    throw ex;
+                }
+                else
+                {
+                    continue;
+                }
+            }
             if (entity instanceof Classifiable)
             {
                 if (!DynamicTypeImpl.isTransferedToClient((Classifiable) entity))
@@ -172,9 +187,10 @@ import java.util.stream.Collectors;
     }
 
     @Override
-    public Promise<UpdateEvent> getEntityDependencies(UpdateEvent.SerializableReferenceInfo... ids)  {
+    public Promise<UpdateEvent> getEntityDependencies(Boolean errorIfNotFound,UpdateEvent.SerializableReferenceInfo... ids)  {
+
         try {
-            return new ResolvedPromise<>(getEntityRecursive(ids));
+            return new ResolvedPromise<>(getEntityRecursive( errorIfNotFound,ids));
         }
         catch (RaplaException ex)
         {

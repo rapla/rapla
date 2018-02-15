@@ -712,35 +712,28 @@ public class RemoteOperator
     }
 
     @Override
-    public <T extends Entity> Promise<Map<ReferenceInfo<T>, T>> getFromIdAsync(Collection<ReferenceInfo<T>> idSet, boolean throwEntityNotFound) {
+    public <T extends Entity> Promise<Map<ReferenceInfo<T>, T>> getFromIdAsync(Collection<ReferenceInfo<T>> idSet,final boolean throwEntityNotFound) {
+        if ( idSet.isEmpty())
+        {
+            return new ResolvedPromise<>(Collections.emptyMap());
+        }
         UpdateEvent.SerializableReferenceInfo[] array = createReferenceInfos(idSet);
-        final Promise<Map<ReferenceInfo<T>, T>> mapPromise = getRemoteStorage().getEntityDependencies(array).thenApply(entityList -> resolveLocal(entityList, idSet)).exceptionally((ex)-> {
-            if (ex instanceof EntityNotFoundException && !throwEntityNotFound)
-                return Collections.emptyMap();
-            else if ( ex instanceof RaplaException)
-                throw (RaplaException)ex;
-            else
-            {
-                throw new RaplaException(ex);
-            }
-        });
-        return mapPromise;
+        return getRemoteStorage().getEntityDependencies(throwEntityNotFound,array).thenApply(entityList -> resolveLocal(entityList, idSet));
     }
 
     @Override
     public <T extends Entity> Map<ReferenceInfo<T>, T> getFromId(Collection<ReferenceInfo<T>> idSet, boolean throwEntityNotFound)
             throws RaplaException {
+        if ( idSet.isEmpty())
+        {
+            return Collections.emptyMap();
+        }
         UpdateEvent.SerializableReferenceInfo[] array = createReferenceInfos(idSet);
         UpdateEvent entityList;
         try {
             RemoteStorage serv = getRemoteStorage();
-            entityList = serv.getEntityRecursive(array);
+            entityList = serv.getEntityRecursive(throwEntityNotFound,array);
             return resolveLocal(entityList, idSet);
-        } catch (EntityNotFoundException ex) {
-            if (throwEntityNotFound) {
-                throw ex;
-            }
-            return Collections.emptyMap();
         } catch (RaplaException ex) {
             throw ex;
         } catch (Exception ex) {

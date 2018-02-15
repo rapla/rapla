@@ -1,7 +1,5 @@
 package org.rapla.client.gwt.view;
 
-import io.reactivex.functions.Consumer;
-import org.rapla.client.RaplaWidget;
 import org.rapla.client.internal.edit.EditTaskPresenter;
 import org.rapla.entities.Entity;
 import org.rapla.framework.RaplaException;
@@ -9,8 +7,6 @@ import org.rapla.inject.DefaultImplementation;
 import org.rapla.inject.InjectionContext;
 
 import javax.inject.Inject;
-import java.awt.*;
-import java.util.Collection;
 import java.util.Map;
 
 @DefaultImplementation(of= EditTaskPresenter.EditTaskViewFactory.class,context = InjectionContext.gwt)
