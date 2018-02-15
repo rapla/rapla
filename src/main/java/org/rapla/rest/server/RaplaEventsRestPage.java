@@ -150,14 +150,14 @@ import java.util.Map;
         {
             throw new RaplaException("Id has to be null for new events");
         }
-        ReferenceInfo<Reservation> eventId = operator.createIdentifier(Reservation.class, 1)[0];
+        ReferenceInfo<Reservation> eventId = operator.createIdentifier(Reservation.class, 1).get(0);
         event.setId(eventId.getId());
         Appointment[] appointments = event.getAppointments();
-        ReferenceInfo<Appointment>[] appointmentIds = operator.createIdentifier(Appointment.class, 1);
+        List<ReferenceInfo<Appointment>> appointmentIds = operator.createIdentifier(Appointment.class, 1);
         for (int i = 0; i < appointments.length; i++)
         {
             AppointmentImpl app = (AppointmentImpl) appointments[i];
-            String id = appointmentIds[i].getId();
+            String id = appointmentIds.get(i).getId();
             app.setId(id);
         }
         event.setOwner(user);

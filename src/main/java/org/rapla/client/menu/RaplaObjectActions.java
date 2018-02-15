@@ -197,30 +197,40 @@ public class RaplaObjectActions extends RaplaComponent{
     }
 
 
-    protected Entity<? extends Entity<?>> newEntity(Class<? extends RaplaObject> raplaType) throws RaplaException {
+    protected Promise<? extends Entity> newEntityAsyc(Class<? extends RaplaObject> raplaType){
         RaplaFacade m = getFacade();
-        final User user = clientFacade.getUser();
-        if ( Reservation.class == raplaType )
+        try
         {
-            DynamicType type = guessType(object);
-            final Classification newClassification = type.newClassification();
-            Reservation newReservation = m.newReservation( newClassification, user);
-            return newReservation;
-        }
-        if ( Allocatable.class == raplaType )
+            final User user = clientFacade.getUser();
+            if (Reservation.class == raplaType)
+            {
+                DynamicType type = guessType(object);
+                final Classification newClassification = type.newClassification();
+                Promise<Reservation> newReservation = m.newReservationAsync(newClassification);
+                return newReservation;
+            }
+            final Entity entity;
+            if (Allocatable.class == raplaType)
+            {
+                DynamicType type = guessType(object);
+                final Classification newClassification = type.newClassification();
+                Allocatable allocatable = m.newAllocatable(newClassification, user);
+                entity = allocatable;
+            }
+            else if (Category.class == raplaType)
+                entity = m.newCategory(); //will probably never happen
+            else if (User.class == raplaType)
+                entity= m.newUser();
+            else if (Period.class == raplaType)
+                entity = m.newPeriod(user);
+            else
+                throw new RaplaException("Can't create Entity for " + raplaType + "!");
+            return new ResolvedPromise<>(entity);
+        } catch (Exception ex)
         {
-        	DynamicType type = guessType(object);
-            final Classification newClassification = type.newClassification();
-            Allocatable allocatable = m.newAllocatable( newClassification, user );
-        	return allocatable ;
+            return new ResolvedPromise<>(ex);
         }
-       if ( Category.class ==  raplaType)
-            return m.newCategory(); //will probably never happen
-       if ( User.class ==  raplaType )
-    	   return m.newUser();
-       if ( Period.class == raplaType )
-             return m.newPeriod(user);
-       throw new RaplaException("Can't create Entity for " + raplaType + "!");
+
     }
 
 
@@ -310,22 +320,21 @@ public class RaplaObjectActions extends RaplaComponent{
             DynamicType newDynamicType = getFacade().newDynamicType(classificationType);
             editController.edit(newDynamicType, popupContext);
         } else {
-            final Entity<? extends Entity> obj = newEntity(raplaType);
-            editController.edit(obj, popupContext);
+            handleException(newEntityAsyc(raplaType).thenAccept(entity->editController.edit( entity, popupContext)));
         }
     }
 
-	protected void edit() throws RaplaException {
+	protected void edit()  {
         editController.edit(object, popupContext);
     }
 
-    protected void delete() throws RaplaException {
+    protected void delete()  {
         if (object == null)
             return;
         delete(Collections.singletonList( object));
     }
 
-    protected void deleteSelection() throws RaplaException 
+    protected void deleteSelection()
     {
         if (objectList == null || objectList.size() == 0)
             return;

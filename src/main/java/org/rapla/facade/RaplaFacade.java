@@ -171,7 +171,10 @@ public interface RaplaFacade
      * @see DynamicType#newClassification()
      */
     Reservation newReservation(Classification classification,User user) throws RaplaException;
+    Promise<Reservation> newReservationAsync(Classification classification);
+
     Appointment newAppointment(Date startDate,Date endDate) throws RaplaException;
+    Promise<Appointment> newAppointmentAsync(Date startDate, Date endDate);
     Appointment newAppointmentWithUser(Date startDate,Date endDate, User user) throws RaplaException;
 
     /** Creates a new allocatable from the classifcation object and with the passed user as its owner
@@ -306,7 +309,9 @@ public interface RaplaFacade
 
     /** returns the logged in user if the facade is on the client. Otherwise it will thrown an error*/
     User getUser() throws RaplaException;
-    //<T> T  waitForWithRaplaException(Promise<T> promise, int millis) throws RaplaException;
+
+
+
 
 
 }

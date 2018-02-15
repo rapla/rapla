@@ -175,13 +175,14 @@ public class EditTaskPresenter implements TaskPresenter
                 final DynamicType type = (DynamicType) resolve;
                 Classification newClassification = type.newClassification();
                 final User user = clientFacade.getUser();
-                Reservation r = raplaFacade.newReservation(newClassification, user);
-                Appointment appointment = createAppointment();
-                r.addAppointment(appointment);
-                final List<Reservation> singletonList = Collections.singletonList(r);
-                List<Reservation> list = RaplaComponent.addAllocatables(model, singletonList, user);
-                String title = null;
-                return createEditDialog(list,  popupContext, applicationEvent);
+                return raplaFacade.newReservationAsync(newClassification)
+                        .thenCombine(createAppointment(), (r, a) -> {
+                                    r.addAppointment(a);
+                                    final List<Reservation> singletonList = Collections.singletonList(r);
+                                    List<Reservation> list = RaplaComponent.addAllocatables(model, singletonList, user);
+                                    return list;
+                                }).thenCompose( list->createEditDialog(list, popupContext, applicationEvent));
+
             }
             else if (CREATE_RESERVATION_FROM_TEMPLATE.equals(taskId))
             {
@@ -273,13 +274,12 @@ public class EditTaskPresenter implements TaskPresenter
         }
     }
 
-    protected Appointment createAppointment() throws RaplaException
+    protected Promise<Appointment> createAppointment() throws RaplaException
     {
 
         Date startDate = RaplaComponent.getStartDate(model, raplaFacade, clientFacade.getUser());
         Date endDate = RaplaComponent.calcEndDate(model, startDate);
-        Appointment appointment = raplaFacade.newAppointment(startDate, endDate);
-        return appointment;
+        return raplaFacade.newAppointmentAsync(startDate, endDate);
     }
 
     //	enhancement of the method to deal with arrays

@@ -522,6 +522,14 @@ public class FacadeImpl implements RaplaFacade {
 		User user = getUser();
 		return newAppointmentWithUser(startDate, endDate, user);
 	}
+
+	@Override
+	public Promise<Appointment> newAppointmentAsync(Date startDate, Date endDate)
+	{
+		AppointmentImpl appointment = new AppointmentImpl(startDate, endDate);
+		return operator.createIdentifierAsync(Appointment.class,1).thenApply(ids->
+						setNew(Collections.singletonList( appointment),  ids,getUser()).get(0));
+	}
 	
 	public Reservation newReservationDeprecated() throws RaplaException
     {
@@ -532,22 +540,33 @@ public class FacadeImpl implements RaplaFacade {
 
 	public Reservation newReservation(Classification classification,User user) throws RaplaException 
     {
-        if (!getPermissionController().canCreate(classification.getType(), user))
-        {
-            throw new RaplaException("User not allowed to create events");
-        }
-    	Date now = operator.getCurrentTimestamp();
-        ReservationImpl reservation = new ReservationImpl(now ,now );
-        
-        reservation.setClassification(classification);
-        PermissionContainer.Util.copyPermissions(classification.getType(), reservation);
-        setNew(reservation, user);
-        if ( templateId != null )
+		List<ReferenceInfo<Reservation>> ids = operator.createIdentifier( Reservation.class, 1);
+		return newReservation(classification, user, ids);
+    }
+
+	@Override
+	public Promise<Reservation> newReservationAsync(final Classification classification)
+	{
+		return operator.createIdentifierAsync(Reservation.class, 1).thenApply(ids->newReservation( classification, getUser(),ids ));
+	}
+	@NotNull
+	private Reservation newReservation(Classification classification, User user, List<ReferenceInfo<Reservation>> ids) throws RaplaException
+	{
+		if (!getPermissionController().canCreate(classification.getType(), user))
+		{
+			throw new RaplaException("User not allowed to create events");
+		}
+		Date now = operator.getCurrentTimestamp();
+		ReservationImpl reservation = new ReservationImpl(now ,now );
+		reservation.setClassification(classification);
+		PermissionContainer.Util.copyPermissions(classification.getType(), reservation);
+		setNew(Collections.singletonList(reservation),ids, user);
+		if ( templateId != null )
         {
             setTemplateParams(reservation );
         }
-        return reservation;
-    }
+		return reservation;
+	}
 
 	public Allocatable getTemplate()
 	{
@@ -803,14 +822,21 @@ public class FacadeImpl implements RaplaFacade {
 	}
 	
 	private void setNew(Entity entity,User user) throws RaplaException {
-	    ArrayList<Entity> arrayList = new ArrayList<Entity>();
-	    arrayList.add( entity );
-	    setNew(arrayList, entity.getTypeClass(), user);
+	    setNew(Collections.singletonList( entity), entity.getTypeClass(), user);
 	}
 
 
-	private <T extends Entity> void setNew(Collection<T> entities, Class<T> raplaType,User user)
+	private <T extends Entity> List<T> setNew(List<T> entities, Class<T> raplaType,User user)
+			throws RaplaException
+	{
+		List<ReferenceInfo<T>> ids = operator.createIdentifier(raplaType, entities.size());
+		return setNew( entities,  ids, user);
+	}
+
+	private <T extends Entity> List<T> setNew(List<T> entities,List<ReferenceInfo<T>> ids ,User user)
 			throws RaplaException {
+
+
 
 		for ( T entity: entities)
 		{
@@ -818,11 +844,10 @@ public class FacadeImpl implements RaplaFacade {
 				throw new RaplaException("The current Rapla Version doesnt support cloning entities with sub-entities. (Except reservations)");
 			}
 		}
-		ReferenceInfo<T>[] ids = operator.createIdentifier(raplaType, entities.size());
 		int i = 0;
 		for ( T uncasted: entities)
 		{
-			ReferenceInfo id = ids[i++];
+			ReferenceInfo id = ids.get(i++);
 			SimpleEntity entity = (SimpleEntity) uncasted;
 			entity.setId(id.getId());
 			entity.setResolver(operator);
@@ -839,6 +864,7 @@ public class FacadeImpl implements RaplaFacade {
 	             entity.setOwner(user);
 			}
 		}
+		return entities;
 	}
 
 	public String getUsername(ReferenceInfo<User> userId) throws RaplaException

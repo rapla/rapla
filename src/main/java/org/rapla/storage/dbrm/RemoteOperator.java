@@ -40,7 +40,6 @@ import org.rapla.entities.storage.EntityResolver;
 import org.rapla.entities.storage.ReferenceInfo;
 import org.rapla.facade.client.ClientFacade;
 import org.rapla.facade.Conflict;
-import org.rapla.facade.internal.ConflictImpl;
 import org.rapla.facade.internal.ModificationEventImpl;
 import org.rapla.framework.Disposable;
 import org.rapla.framework.RaplaException;
@@ -86,6 +85,7 @@ import java.util.SortedSet;
 import java.util.TreeSet;
 import java.util.Vector;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
 
 /**
  * This operator can be used to modify and access data over the
@@ -179,7 +179,7 @@ public class RemoteOperator
 
     public Promise<User> connectAsync() {
         RemoteStorage serv = getRemoteStorage();
-        Promise<User> userPromise = serv.getResourcesAsync().thenApply((evt) -> {
+        Promise<User> userPromise = serv.getResources().thenApply((evt) -> {
             RaplaLock.WriteLock writeLock = lockManager.writeLock(10);
             try {
                 user = loadData(evt);
@@ -259,7 +259,7 @@ public class RemoteOperator
         String clientRepoVersion = getLastSyncedTime();
         RemoteStorage serv = getRemoteStorage();
         try {
-            UpdateEvent evt = serv.refresh(clientRepoVersion);
+            UpdateEvent evt = serv.refreshSync(clientRepoVersion);
             refresh(evt);
         } catch (EntityNotFoundException ex) {
             getLogger().error("Refreshing all resources due to " + ex.getMessage(), ex);
@@ -290,7 +290,7 @@ public class RemoteOperator
         String clientRepoVersion = getLastSyncedTime();
         RemoteStorage serv = getRemoteStorage();
         refreshInProgress = true;
-        final Promise<UpdateEvent> updateEventPromise = serv.refreshAsync(clientRepoVersion);
+        final Promise<UpdateEvent> updateEventPromise = serv.refresh(clientRepoVersion);
         final Promise<Void> returnPromise = updateEventPromise.thenAccept((evt) -> {
             try {
                 refresh(evt);
@@ -443,7 +443,7 @@ public class RemoteOperator
         RemoteStorage serv = getRemoteStorage();
         try {
             getLogger().debug("Loading Data from server");
-            UpdateEvent evt = serv.getResources();
+            UpdateEvent evt = serv.getResourcesSync();
             getLogger().debug("Data loaded");
             return loadData(evt);
         } catch (RaplaException ex) {
@@ -540,8 +540,6 @@ public class RemoteOperator
 
     /** checks if the user that  is the user that last changed the entites
      *
-     * @param entities
-     * @param <T>
      * @return the latest persistant map of the entities
      * @throws RaplaException if the logged in user is not the lastChanged user of any entities. If isNew is false then an exception is also thrown, when an entity is not found in persistant storage
      */
@@ -598,21 +596,23 @@ public class RemoteOperator
         }
     }
 
-    public <T extends Entity> ReferenceInfo<T>[] createIdentifier(Class<T> raplaType, int count) throws RaplaException {
-        RemoteStorage serv = getRemoteStorage();
+    public <T extends Entity> List<ReferenceInfo<T>> createIdentifier(final Class<T> raplaType, int count) throws RaplaException {
         try {
             String localname = RaplaType.getLocalName(raplaType);
-            List<String> ids = serv.createIdentifier(localname, count);
-            List<ReferenceInfo<T>> result = new ArrayList<ReferenceInfo<T>>();
-            for (String id : ids) {
-                result.add(new ReferenceInfo<T>(id, raplaType));
-            }
-            return result.toArray(new ReferenceInfo[]{});
+            List<String> ids = getRemoteStorage().createIdentifierSync(localname, count);
+            return createReferenceInfos(raplaType, ids);
         } catch (RaplaException ex) {
             throw ex;
         } catch (Exception ex) {
             throw new RaplaException(ex);
         }
+    }
+
+    @Override
+    public <T extends Entity> Promise<List<ReferenceInfo<T>>> createIdentifierAsync(Class<T> raplaType, int count)
+    {
+        String localname = RaplaType.getLocalName(raplaType);
+        return getRemoteStorage().createIdentifier(localname, count).thenApply( (ids)->createReferenceInfos(raplaType, ids));
     }
 
     private RemoteStorage getRemoteStorage() {
@@ -714,7 +714,7 @@ public class RemoteOperator
     @Override
     public <T extends Entity> Promise<Map<ReferenceInfo<T>, T>> getFromIdAsync(Collection<ReferenceInfo<T>> idSet, boolean throwEntityNotFound) {
         UpdateEvent.SerializableReferenceInfo[] array = createReferenceInfos(idSet);
-        final Promise<Map<ReferenceInfo<T>, T>> mapPromise = getRemoteStorage().getEntityRecursiveAsync(array).thenApply(entityList -> resolveLocal(entityList, idSet)).exceptionally((ex)-> {
+        final Promise<Map<ReferenceInfo<T>, T>> mapPromise = getRemoteStorage().getEntityDependencies(array).thenApply(entityList -> resolveLocal(entityList, idSet)).exceptionally((ex)-> {
             if (ex instanceof EntityNotFoundException && !throwEntityNotFound)
                 return Collections.emptyMap();
             else if ( ex instanceof RaplaException)
@@ -758,6 +758,13 @@ public class RemoteOperator
         }
         return array;
     }
+
+    @NotNull
+    private <T extends Entity> List<ReferenceInfo<T>> createReferenceInfos(Class<T> raplaType, List<String> ids)
+    {
+        return ids.stream().map(( id)->new ReferenceInfo<T>(id, raplaType)).collect(Collectors.toList());
+    }
+
 
     @NotNull
     private <T extends Entity> Map<ReferenceInfo<T>, T> resolveLocal(UpdateEvent entityList, Collection<ReferenceInfo<T>> idSet) throws RaplaException {
@@ -907,7 +914,7 @@ public class RemoteOperator
         UpdateEvent evt;
         try {
             getLogger().debug("Loading Data from server");
-            evt = serv.getResources();
+            evt = serv.getResourcesSync();
             getLogger().debug("Data loaded");
         } catch (RaplaException ex)
         {

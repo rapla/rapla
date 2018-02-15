@@ -42,6 +42,7 @@ import org.rapla.scheduler.Promise;
 
 import java.util.Collection;
 import java.util.Date;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -89,7 +90,9 @@ public interface StorageOperator extends EntityResolver {
 
     <T extends Entity, S extends Entity> Promise<Void> storeAndRemoveAsync(Collection<T> storeObjects,Collection<ReferenceInfo<S>> removeObjects,User user);
 
-    <T extends Entity> ReferenceInfo<T>[] createIdentifier(Class<T> raplaType, int count) throws RaplaException;
+    <T extends Entity> List<ReferenceInfo<T>> createIdentifier(Class<T> raplaType, int count) throws RaplaException;
+
+    <T extends Entity> Promise<List<ReferenceInfo<T>>> createIdentifierAsync(Class<T> raplaType, int count);
 
     Collection<User> getUsers() throws RaplaException;
 

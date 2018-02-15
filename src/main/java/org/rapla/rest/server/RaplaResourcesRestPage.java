@@ -174,7 +174,7 @@ public class RaplaResourcesRestPage  {
 		if (resource.getId() != null) {
 			throw new RaplaException("Id has to be null for new resources");
 		}
-		ReferenceInfo<Allocatable> resourceRef = operator.createIdentifier(Allocatable.class, 1)[0];
+		ReferenceInfo<Allocatable> resourceRef = operator.createIdentifier(Allocatable.class, 1).get(0);
 		resource.setId(resourceRef.getId());
 		resource.setResolver(operator);
 		resource.setOwner(user);

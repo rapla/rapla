@@ -95,14 +95,14 @@ public interface RemoteStorage
     void confirmEmail(@QueryParam("username") String username, String newEmail) throws RaplaException;
 
     @GET
-    @Path("resources")
+    @Path("resourcesSync")
     @Produces({ MediaType.APPLICATION_JSON, MediaType.APPLICATION_XML })
-    UpdateEvent getResources() throws RaplaException;
+    UpdateEvent getResourcesSync() throws RaplaException;
 
-    @POST
+    @GET
     @Path("resources")
     @Produces({ MediaType.APPLICATION_JSON, MediaType.APPLICATION_XML })
-    Promise<UpdateEvent> getResourcesAsync();
+    Promise<UpdateEvent> getResources();
 
     /** delegates the corresponding method in the StorageOperator. */
     //    FutureResult<List<ReservationImpl>> getReservations(@WebParam(name="resources")String[] allocatableIds,@WebParam(name="start")Date start,@WebParam(name="end")Date end, @WebParam(name="annotations")Map<String, String> annotationQuery);
@@ -154,38 +154,38 @@ public interface RemoteStorage
     }
 
     @POST
-    @Path("entity/recursive")
+    @Path("entity/recursiveSync")
     @Consumes({ MediaType.APPLICATION_JSON, MediaType.APPLICATION_XML })
     @Produces({ MediaType.APPLICATION_JSON, MediaType.APPLICATION_XML })
     UpdateEvent getEntityRecursive(UpdateEvent.SerializableReferenceInfo... infos) throws RaplaException;
 
     @POST
-    @Path("entity/recursiveAsync")
+    @Path("entity/dependent")
     @Consumes({ MediaType.APPLICATION_JSON, MediaType.APPLICATION_XML })
     @Produces({ MediaType.APPLICATION_JSON, MediaType.APPLICATION_XML })
-    Promise<UpdateEvent> getEntityRecursiveAsync(UpdateEvent.SerializableReferenceInfo... infos);
+    Promise<UpdateEvent> getEntityDependencies(UpdateEvent.SerializableReferenceInfo... infos);
+
+    @POST
+    @Path("refreshSync")
+    @Produces({ MediaType.APPLICATION_JSON, MediaType.APPLICATION_XML })
+    UpdateEvent refreshSync(@QueryParam("lastSynched") String lastSyncedTime) throws RaplaException;
 
     @POST
     @Path("refresh")
     @Produces({ MediaType.APPLICATION_JSON, MediaType.APPLICATION_XML })
-    UpdateEvent refresh(@QueryParam("lastSynched") String lastSyncedTime) throws RaplaException;
-
-    @POST
-    @Path("refreshAsync")
-    @Produces({ MediaType.APPLICATION_JSON, MediaType.APPLICATION_XML })
-    Promise<UpdateEvent> refreshAsync(@QueryParam("lastSynched") String lastSyncedTime);
+    Promise<UpdateEvent> refresh(@QueryParam("lastSynched") String lastSyncedTime);
 
     @POST
     @Path("restart")
     void restartServer() throws RaplaException;
 
     @POST
-    @Path("dispatch")
+    @Path("dispatchSync")
     @Produces({ MediaType.APPLICATION_JSON, MediaType.APPLICATION_XML })
     UpdateEvent store(UpdateEvent event) throws RaplaException;
 
     @POST
-    @Path("dispatchAsnc")
+    @Path("dispatch")
     @Produces({ MediaType.APPLICATION_JSON, MediaType.APPLICATION_XML })
     Promise<UpdateEvent> dispatch(UpdateEvent event);
 
@@ -193,9 +193,14 @@ public interface RemoteStorage
     //	FutureResult<List<String>> getTemplateNames();
 
     @POST
+    @Path("identifierSync")
+    @Produces({ MediaType.APPLICATION_JSON, MediaType.APPLICATION_XML })
+    List<String> createIdentifierSync(@QueryParam("raplaType") String raplaType, @QueryParam("count") int count) throws RaplaException;
+
+    @POST
     @Path("identifier")
     @Produces({ MediaType.APPLICATION_JSON, MediaType.APPLICATION_XML })
-    List<String> createIdentifier(@QueryParam("raplaType") String raplaType, @QueryParam("count") int count) throws RaplaException;
+    Promise<List<String>> createIdentifier(@QueryParam("raplaType") String raplaType, @QueryParam("count") int count);
 
     @GET
     @Path("conflicts")

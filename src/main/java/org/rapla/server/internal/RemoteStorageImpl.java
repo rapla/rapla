@@ -22,7 +22,6 @@ import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.entities.dynamictype.internal.DynamicTypeImpl;
 import org.rapla.entities.storage.EntityReferencer;
 import org.rapla.entities.storage.ReferenceInfo;
-import org.rapla.facade.Conflict;
 import org.rapla.facade.internal.ConflictImpl;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.internal.AbstractRaplaLocale;
@@ -33,7 +32,6 @@ import org.rapla.plugin.mail.MailPlugin;
 import org.rapla.plugin.mail.server.MailInterface;
 import org.rapla.scheduler.Promise;
 import org.rapla.scheduler.ResolvedPromise;
-import org.rapla.scheduler.sync.SynchronizedCompletablePromise;
 import org.rapla.server.AuthenticationStore;
 import org.rapla.server.PrePostDispatchProcessor;
 import org.rapla.server.RemoteSession;
@@ -85,7 +83,7 @@ import java.util.stream.Collectors;
     }
 
     @Override
-    public UpdateEvent getResources() throws RaplaException
+    public UpdateEvent getResourcesSync() throws RaplaException
     {
         User user = checkSessionUser();
         getLogger().debug("A RemoteAuthentificationService wants to get all resource-objects.");
@@ -114,11 +112,11 @@ import java.util.stream.Collectors;
     }
 
     @Override
-    public Promise<UpdateEvent> getResourcesAsync()
+    public Promise<UpdateEvent> getResources()
     {
         try
         {
-            final UpdateEvent resources = getResources();
+            final UpdateEvent resources = getResourcesSync();
             return new ResolvedPromise<UpdateEvent>(resources);
         }
         catch (Exception ex)
@@ -174,7 +172,7 @@ import java.util.stream.Collectors;
     }
 
     @Override
-    public Promise<UpdateEvent> getEntityRecursiveAsync(UpdateEvent.SerializableReferenceInfo... ids)  {
+    public Promise<UpdateEvent> getEntityDependencies(UpdateEvent.SerializableReferenceInfo... ids)  {
         try {
             return new ResolvedPromise<>(getEntityRecursive(ids));
         }
@@ -380,22 +378,29 @@ import java.util.stream.Collectors;
         return i18n;
     }
 
-    public List<String> createIdentifier(String type, int count) throws RaplaException
+    public List<String> createIdentifierSync(String type, int count) throws RaplaException
     {
         checkSessionUser();
         Class<? extends Entity> typeClass = RaplaType.find(type);
         //User user =
         checkSessionUser(); //check if authenified
-        ReferenceInfo[] refs = operator.createIdentifier(typeClass, count);
-        List<String> result = new ArrayList<String>();
-        for (ReferenceInfo ref : refs)
-        {
-            result.add(ref.getId());
-        }
+        List<String> result = operator.createIdentifier(typeClass, count).stream().map(ReferenceInfo::getId).collect(Collectors.toList());
         return result;
     }
 
-    public UpdateEvent refresh(String lastSyncedTime) throws RaplaException
+    public Promise<List<String>> createIdentifier(String type, int count)
+    {
+        try
+        {
+            return new ResolvedPromise<>(createIdentifierSync(type, count));
+        }
+        catch (RaplaException e)
+        {
+            return new ResolvedPromise<>(e);
+        }
+    }
+
+    public UpdateEvent refreshSync(String lastSyncedTime) throws RaplaException
     {
         final User user = checkSessionUser();
         try
@@ -410,15 +415,15 @@ import java.util.stream.Collectors;
         }
     }
 
-    public Promise<UpdateEvent> refreshAsync(String lastSyncedTime)
+    public Promise<UpdateEvent> refresh(String lastSyncedTime)
     {
         try
         {
-            return new ResolvedPromise<>(refresh(lastSyncedTime));
+            return new ResolvedPromise<>(refreshSync(lastSyncedTime));
         }
         catch (RaplaException e)
         {
-            return new ResolvedPromise<UpdateEvent>(e);
+            return new ResolvedPromise<>(e);
         }
     }
 
@@ -702,7 +707,7 @@ import java.util.stream.Collectors;
             return new ResolvedPromise<>(e);
         }
         final Promise<Allocatable> promise = operator.doMerge(allocatable, allocReferences, sessionUser);
-        return promise.thenApply( ( allocatable1)->refresh( lastSyncedTime));
+        return promise.thenCompose( ( allocatable1)->refresh( lastSyncedTime));
     }
 
     //			public void logEntityNotFound(String logMessage,String... referencedIds)

@@ -20,6 +20,7 @@ import org.apache.commons.collections4.BidiMap;
 import org.apache.commons.collections4.SortedBidiMap;
 import org.apache.commons.collections4.bidimap.DualHashBidiMap;
 import org.apache.commons.collections4.bidimap.DualTreeBidiMap;
+import org.jetbrains.annotations.NotNull;
 import org.rapla.RaplaResources;
 import org.rapla.components.util.Assert;
 import org.rapla.components.util.DateTools;
@@ -208,6 +209,33 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
         connectStatus = status;
         getLogger().debug("Initstatus " + status);
     }
+
+    @Override
+    public <T extends Entity> List<ReferenceInfo<T>> createIdentifier(Class<T> raplaType, int count) throws RaplaException
+    {
+        List<ReferenceInfo<T>> ids = new ArrayList<>(count);
+        for (int i = 0; i < count; i++)
+        {
+            final String id = createId(raplaType);
+            ids.add(new ReferenceInfo<T>(id, raplaType));
+        }
+        return ids;
+    }
+
+
+    @Override
+    public <T extends Entity> Promise<List<ReferenceInfo<T>>> createIdentifierAsync(Class<T> raplaType, int count)
+    {
+        try
+        {
+            return new ResolvedPromise<>(createIdentifier(raplaType, count));
+        }
+        catch (RaplaException e)
+        {
+            return new ResolvedPromise<>(e);
+        }
+    }
+
 
     @Override
     public <T> T waitForWithRaplaException(Promise<T> promise, int timeoutInMillis) throws RaplaException
@@ -644,16 +672,6 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
         return result;
     }
 
-    public <T extends Entity> ReferenceInfo<T>[] createIdentifier(Class<T> raplaType, int count) throws RaplaException
-    {
-        ReferenceInfo<T>[] ids = new ReferenceInfo[count];
-        for (int i = 0; i < count; i++)
-        {
-            final String id = createId(raplaType);
-            ids[i] = new ReferenceInfo<T>(id, raplaType);
-        }
-        return ids;
-    }
 
     public Date today()
     {
@@ -3794,7 +3812,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
     {
 
         Class<T> raplaType = entity.getTypeClass();
-        ReferenceInfo<T> id = createIdentifier(raplaType, 1)[0];
+        ReferenceInfo<T> id = createIdentifier(raplaType, 1).get(0);
         ((RefEntity) entity).setId(id.getId());
     }
 

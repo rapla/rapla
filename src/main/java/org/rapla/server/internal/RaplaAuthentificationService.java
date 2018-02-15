@@ -135,7 +135,7 @@ public class RaplaAuthentificationService
                 logger.info("Successfull for User " + username + ".Creating new Rapla user.");
                 Date now = operator.getCurrentTimestamp();
                 UserImpl newUser = new UserImpl(now, now);
-                final ReferenceInfo<User> userReferenceInfo = operator.createIdentifier(User.class, 1)[0];
+                final ReferenceInfo<User> userReferenceInfo = operator.createIdentifier(User.class, 1).get(0);
                 newUser.setId(userReferenceInfo.getId());
                 user = newUser;
             }
