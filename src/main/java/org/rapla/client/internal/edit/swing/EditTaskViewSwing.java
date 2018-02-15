@@ -44,7 +44,8 @@ public class EditTaskViewSwing implements EditTaskPresenter.EditTaskViewFactory<
     }
 
     @Override
-    public <T extends Entity> EditTaskPresenter.EditTaskView<T,Component> create(Collection<T> toEdit, boolean isMerge) throws RaplaException {
+    public <T extends Entity> EditTaskPresenter.EditTaskView<T,Component> create(Map<T,T> editMap, boolean isMerge) throws RaplaException {
+        final Collection<T> toEdit = editMap.values();
         final EditComponent<T, JComponent> ui;
         {
             T obj = toEdit.iterator().next();

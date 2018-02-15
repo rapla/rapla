@@ -3967,10 +3967,17 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
         final RaplaLock.WriteLock writeLock = writeLockIfLoaded();
         try
         {
+            final ReferenceInfo<Allocatable> newRef = selectedObject.getReference();
+            selectedObject.getReference();
             // FIXME check write permissions
             Set<Allocatable> allocatables = new LinkedHashSet<>();
             for (ReferenceInfo<Allocatable> allocatableId : allocatableIds)
             {
+                // Ignore the allocatable we want to merge into
+                if ( newRef.equals( allocatableId))
+                {
+                    continue;
+                }
                 final Allocatable resolve = resolve(allocatableId);
                 allocatables.add(resolve);
             }
@@ -3987,7 +3994,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
                     {
                         final Entity editObject = editObject(entity, user);
                         final ReferenceInfo<Allocatable> oldRef = allocatable.getReference();
-                        final ReferenceInfo<Allocatable> newRef = selectedObject.getReference();
+
                         ((EntityReferencer) editObject).replace(oldRef, newRef);
                         storeObjects.add(editObject);
                     }

@@ -9,10 +9,12 @@ import org.rapla.inject.DefaultImplementation;
 import org.rapla.inject.InjectionContext;
 
 import javax.inject.Inject;
+import java.awt.*;
 import java.util.Collection;
+import java.util.Map;
 
 @DefaultImplementation(of= EditTaskPresenter.EditTaskViewFactory.class,context = InjectionContext.gwt)
-public class EditTaskViewGwt implements EditTaskPresenter.EditTaskViewFactory
+public class EditTaskViewGwt implements EditTaskPresenter.EditTaskViewFactory<Object>
 {
     @Inject
     public EditTaskViewGwt()
@@ -20,9 +22,8 @@ public class EditTaskViewGwt implements EditTaskPresenter.EditTaskViewFactory
 
     }
 
-
     @Override
-    public EditTaskPresenter.EditTaskView create(Collection toEdit, boolean isMerge) throws RaplaException {
+    public <T extends Entity> EditTaskPresenter.EditTaskView<T,Object> create(Map<T,T> editMap, boolean isMerge) throws RaplaException {
         return null;
     }
 }

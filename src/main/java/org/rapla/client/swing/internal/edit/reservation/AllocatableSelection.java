@@ -2115,7 +2115,7 @@ public class AllocatableSelection extends RaplaGUIComponent implements Appointme
         }
         else
         {
-            for (Reservation r : mutableReservations)
+            for (Reservation r : originalReservation)
             {
                 if (!permissionController.hasPermissionToAllocate(workingUser, appointment, allocatable, r, today))
                 {

@@ -76,14 +76,13 @@ public class EditTaskPresenter implements TaskPresenter
     private final Provider<ReservationEdit> reservationEditProvider;
     private final EditTaskViewFactory editTaskViewFactory;
     AppointmentBlock appointmentBlock= null;
-    boolean bDeleting = false;
     final ReservationController reservationController;
     private final Set<MergeCheckExtension> mergeCheckers;
     Subject<String> busyIdleObservable;
 
     public interface EditTaskViewFactory<C>
     {
-        <T  extends Entity> EditTaskView<T,C> create(Collection<T> toEdit, boolean isMerge) throws RaplaException;
+        <T  extends Entity> EditTaskView<T,C> create(Map<T,T> toEdit, boolean isMerge) throws RaplaException;
     }
 
     public interface EditTaskView<T extends Entity,C> extends  RaplaWidget<C>
@@ -355,7 +354,7 @@ public class EditTaskPresenter implements TaskPresenter
             editTaskView = editTaskView1;
         }
         else {
-            editTaskView = this.editTaskViewFactory.create(editValues, isMerge);
+            editTaskView = this.editTaskViewFactory.create(editMap, isMerge);
         }
         PopupContext popupEditContext = dialogUiFactory.createPopupContext( editTaskView);
         Runnable closeCmd = () ->
@@ -392,7 +391,7 @@ public class EditTaskPresenter implements TaskPresenter
                     allocatableIds.add(allocatable.getReference());
                 }
                 busyIdleObservable.onNext(i18n.getString("merge"));
-                promise = doMerge(selectedAllocatable, allocatableIds).thenApply( (allocatable -> null));
+                promise = raplaFacade.doMerge(selectedAllocatable, allocatableIds, raplaFacade.getUser()).thenApply( (allocatable -> null));
             }
             else
             {
@@ -481,20 +480,6 @@ public class EditTaskPresenter implements TaskPresenter
                     return Promise.VOID;
                 }
         );
-    }
-
-    private Promise<Allocatable> doMerge(Allocatable selectedObject, Set<ReferenceInfo<Allocatable>> allocatableIds)
-    {
-        try
-        {
-            allocatableIds.remove(selectedObject.getReference());
-            final User user = clientFacade.getUser();
-            return raplaFacade.doMerge(selectedObject, allocatableIds, user);
-        }
-        catch (RaplaException e)
-        {
-            return new ResolvedPromise<>(e);
-        }
     }
 
     public void close(ApplicationEvent applicationEvent)
