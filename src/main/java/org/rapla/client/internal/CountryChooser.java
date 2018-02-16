@@ -58,11 +58,12 @@ final public class CountryChooser implements RaplaWidget
 
         @SuppressWarnings("unchecked")
 		final String localeCountry = raplaLocale.getLocale().getCountry();
+        jComboBox = new JComboBox();
         if(localeCountry != null)
         {
             jComboBox.setSelectedItem(localeCountry);
         }
-		jComboBox = new JComboBox();
+
 
         DefaultListCellRenderer aRenderer = new DefaultListCellRenderer() {
             private static final long serialVersionUID = 1L;
