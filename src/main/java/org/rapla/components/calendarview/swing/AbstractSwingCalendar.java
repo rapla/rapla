@@ -46,8 +46,7 @@ public abstract class AbstractSwingCalendar extends AbstractCalendar implements 
     boolean bEditable = true;
     protected int minBlockWidth = 3;
 
- 
-	ArrayList<ViewListener> listenerList = new ArrayList<ViewListener>();
+    ArrayList<ViewListener> listenerList = new ArrayList<ViewListener>();
 
     JScrollPane scrollPane = new JScrollPane();
     JPanel jHeader = new JPanel();

@@ -16,11 +16,23 @@ public class LinearRowScale implements IRowScale
     private int maxtime;
     private int workstartMinutes;
     private int workendMinutes;
+    private int offsetMinutes;
     
     public LinearRowScale()
     {
     }
-    
+
+    @Override
+    public void setOffsetMinutes(int offsetMinutes)
+    {
+        this.offsetMinutes = offsetMinutes;
+    }
+
+    public int getOffsetMinutes()
+    {
+        return offsetMinutes;
+    }
+
     public int getRowsPerDay()
     {
         return rowsPerHour * 24;
@@ -47,7 +59,12 @@ public class LinearRowScale implements IRowScale
     }
     
     public int calcHour(int index) {
-        return index / rowsPerHour;
+        int i = (index / rowsPerHour) + getOffsetMinutes()/ 60;
+        if ( i>24)
+        {
+            i-=24;
+        }
+        return i;
     }
 
     public int calcMinute(int index) {
@@ -81,18 +98,34 @@ public class LinearRowScale implements IRowScale
    public int getStartWorktimePixel()
    {
        int pixelPerHour= rowSize * rowsPerHour;
-       int starty = (int) (pixelPerHour * workstartMinutes / 60.);
+       int diff = normalizeHour(workstartMinutes - offsetMinutes);
+       int starty = (int) (pixelPerHour * diff   / 60.);
        return starty;   
    }
 
-   public int getEndWorktimePixel()
+
+    public int getEndWorktimePixel()
    {
        int pixelPerHour= rowSize * rowsPerHour;
-       int endy = (int) (pixelPerHour * workendMinutes / 60.);
+       int diff = normalizeHour(workendMinutes - offsetMinutes);
+       int endy = (int) (pixelPerHour * diff / 60.);
        return endy;
    }
 
- 
+    private int normalizeHour(int diff)
+    {
+        if ( diff < 0)
+        {
+            diff += 24*60;
+        }
+        if ( diff > 24*60)
+        {
+            diff -=24*60;
+        }
+        return diff;
+    }
+
+
     public boolean isPaintRowThick( int row )
     {
         return  row % rowsPerHour == 0;

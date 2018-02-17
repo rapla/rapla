@@ -13,6 +13,7 @@
 
 package org.rapla.plugin.abstractcalendar.client.swing;
 
+import org.jetbrains.annotations.NotNull;
 import org.rapla.RaplaResources;
 import org.rapla.client.EditController;
 import org.rapla.client.PopupContext;
@@ -30,6 +31,7 @@ import org.rapla.client.swing.internal.SwingPopupContext;
 import org.rapla.components.calendar.DateChangeEvent;
 import org.rapla.components.calendar.DateChangeListener;
 import org.rapla.components.calendar.DateRenderer;
+import org.rapla.components.calendarview.BuildStrategy;
 import org.rapla.components.calendarview.CalendarView;
 import org.rapla.components.calendarview.swing.AbstractSwingCalendar;
 import org.rapla.components.calendarview.swing.ViewListener;
@@ -273,14 +275,22 @@ public abstract class AbstractRaplaSwingCalendar extends RaplaGUIComponent
         final Promise<RaplaBuilder> nextBuilderPromise = builderPromise.thenApply((initializedBuilder) ->
         {
             initializedBuilder.setRepeatingVisible(view.isEditable());
-            GroupAllocatablesStrategy strategy = new GroupAllocatablesStrategy(getRaplaLocale().getLocale());
-            boolean compactColumns = getCalendarOptions().isCompactColumns() || initializedBuilder.getAllocatables().size() == 0;
-            strategy.setFixedSlotsEnabled(!compactColumns);
-            strategy.setResolveConflictsEnabled(true);
+            BuildStrategy strategy = createStrategy(initializedBuilder);
             initializedBuilder.setBuildStrategy(strategy);
             return initializedBuilder;
         });
         return nextBuilderPromise;
+    }
+
+    @NotNull
+    protected BuildStrategy createStrategy(RaplaBuilder initializedBuilder) throws  RaplaException
+    {
+        GroupAllocatablesStrategy strategy = new GroupAllocatablesStrategy(getRaplaLocale().getLocale());
+        boolean compactColumns = getCalendarOptions().isCompactColumns() || initializedBuilder.getAllocatables().size() == 0;
+        strategy.setFixedSlotsEnabled(!compactColumns);
+        strategy.setResolveConflictsEnabled(true);
+        strategy.setOffsetMinutes( view.getOffsetMinutes());
+        return strategy;
     }
 
     public JComponent getComponent()

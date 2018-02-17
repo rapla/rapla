@@ -111,19 +111,26 @@ public class VariableRowScale implements IRowScale
     {
         return  true;
     }
-/*
-    public void setTimeIntervall( int startHour, int endHour )
+
+    @Override
+    public void setOffsetMinutes(int offsetMinutes)
     {
-        mintime = startHour;
-        maxtime = endHour;
+
     }
 
-    public void setWorktime( int startHour, int endHour )
-    {
-        workstart = startHour;
-        workend = endHour;
-    }
-*/
+    /*
+        public void setTimeIntervall( int startHour, int endHour )
+        {
+            mintime = startHour;
+            maxtime = endHour;
+        }
+
+        public void setWorktime( int startHour, int endHour )
+        {
+            workstart = startHour;
+            workend = endHour;
+        }
+    */
     public int getYCoordForRow( int row )
     {
         if ( row < 0 || row >= periodRows.length)

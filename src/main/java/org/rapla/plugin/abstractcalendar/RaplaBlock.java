@@ -167,13 +167,11 @@ public class RaplaBlock implements Block
         String timeString = null;
         if ( getBuildContext().isTimeVisible()) {
             timeString = "";
-            // Don't show startTime if its 00:00
-            /* TODO nicht sinnvoll auch 0:00 als Start und Endzeit anzuzeigen?*/
-            if ( !DateTools.isMidnight(getStart()) ) {
+            if ( !getContext().isSplitStart() ) {
                 timeString = loc.formatTime( getStart() );
             }
-            if ( !small && !DateTools.isMidnight(getEnd().getTime() + 1))  {
-				timeString = timeString + timeStringSeperator;
+            timeString = timeString + timeStringSeperator;
+            if ( !small && !getContext().isSplitEnd())  {
                 timeString = timeString + loc.formatTime( getEnd());
            }
         }

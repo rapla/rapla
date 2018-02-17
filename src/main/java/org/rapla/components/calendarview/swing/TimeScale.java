@@ -172,7 +172,8 @@ public class TimeScale extends JComponent
                     if ( prefix != null ) {           
                         g.drawString(prefix, (indent[0]-fm.stringWidth(prefix)+1)/2,y + heightEnding);
                     }
-                    g.drawString(hours[i],(hour < 10) ? indent[1]+2:indent[0]+2,y + ( smallSize ? heightEnding : heightHour));
+                    int hourIndex = i%24;
+                    g.drawString(hours[hourIndex],(hour < 10) ? indent[1]+2:indent[0]+2,y + ( smallSize ? heightEnding : heightHour));
                     if ( !smallSize ) {
                         g.setFont(fontSmall);
                     }

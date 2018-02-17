@@ -118,11 +118,17 @@ public class SwingWeekCalendar extends AbstractRaplaSwingCalendar
     @Override
     protected void configureView() {
         SwingWeekView view = (SwingWeekView) this.view;
+
         CalendarOptions calendarOptions = getCalendarOptions();
         int rowsPerHour = calendarOptions.getRowsPerHour();
         int startMinutes = calendarOptions.getWorktimeStartMinutes();
         int endMinutes = calendarOptions.getWorktimeEndMinutes();
-        int hours = Math.max(1, (endMinutes - startMinutes) / 60);
+        final int diffMinutes = endMinutes - startMinutes;
+        int hours = Math.max(1, Math.abs(diffMinutes) / 60);
+        if (diffMinutes < 0)
+        {
+            view.setOffsetMinutes(-diffMinutes);
+        }
         view.setRowsPerHour( rowsPerHour );
         if ( rowsPerHour == 1 ) {
             if ( hours < 10)

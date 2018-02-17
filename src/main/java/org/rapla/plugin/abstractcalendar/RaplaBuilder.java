@@ -73,8 +73,8 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.BiFunction;
 import java.util.function.Function;
-import java.util.function.Supplier;
 
 public class RaplaBuilder
     implements
@@ -377,11 +377,15 @@ public class RaplaBuilder
 
     static public class SplittedBlock extends AppointmentBlock
     {
-    	public SplittedBlock(AppointmentBlock original,long start, long end, Appointment appointment,
-				boolean isException) {
+        final private boolean splitStart;
+        final private boolean splitEnd;
+    	public SplittedBlock(AppointmentBlock original, long start, long end, Appointment appointment, boolean isException, boolean splitStart,
+                boolean splitEnd) {
 			super(start, end, appointment, isException);
 			this.original = original;
-    	}
+            this.splitStart = splitStart;
+            this.splitEnd = splitEnd;
+        }
     	
     	public AppointmentBlock getOriginal() {
 			return original;
@@ -391,36 +395,34 @@ public class RaplaBuilder
     }
 
     @JsIgnore
-    static public List<AppointmentBlock> splitBlocks(Collection<AppointmentBlock> preparedBlocks, Date startDate, Date endDate) {
+    static public List<AppointmentBlock> splitBlocks(Collection<AppointmentBlock> preparedBlocks, Date startDate, Date endDate, int offsetMinutes) {
         List<AppointmentBlock> result = new ArrayList<AppointmentBlock>();
         for (AppointmentBlock block:preparedBlocks) {
             long blockStart = block.getStart();
             long blockEnd = block.getEnd();
             Appointment appointment = block.getAppointment();
             boolean isException = block.isException();
-            if (DateTools.isSameDay(blockStart, blockEnd)) {
-                result.add( block);
-            } else {
+            final long offsetMillis = offsetMinutes * DateTools.MILLISECONDS_PER_MINUTE;
+            BiFunction<Long, Long, Boolean> shouldSplit = ( start, end) -> !DateTools.isSameDay( start -offsetMillis, end- offsetMillis);
+            Function<Long, Long> minStart = ( date) -> DateTools.cutDate( date -offsetMillis ) + offsetMillis;
+            Function<Long, Long> maxEnd = ( date) -> DateTools.fillDate( date  - offsetMillis)-1 + offsetMillis;
+
+
+            if (shouldSplit.apply(blockStart, blockEnd) ) {
                 long firstBlockDate = Math.max(blockStart, startDate.getTime());
                 long lastBlockDate = Math.min(blockEnd, endDate.getTime());
                 long currentBlockDate = firstBlockDate;
-                while ( currentBlockDate >= blockStart && DateTools.cutDate( currentBlockDate ) < lastBlockDate) {
-                    long start;
-                    long end;
-                    if (DateTools.isSameDay(blockStart, currentBlockDate)) {
-                        start= blockStart;
-                    } else {
-                        start = DateTools.cutDate(currentBlockDate);
-                    }
-                    if (DateTools.isSameDay(blockEnd, currentBlockDate) && !DateTools.isMidnight(blockEnd)) {
-                        end = blockEnd;
-                    }else {
-                        end = DateTools.fillDate( currentBlockDate ) -1;
-                    }
+                while ( currentBlockDate >= blockStart && minStart.apply( currentBlockDate )  < lastBlockDate) {
+                    final boolean splitStart =shouldSplit.apply(blockStart, currentBlockDate);
+                    final long start = splitStart ? minStart.apply(currentBlockDate): blockStart;
+                    final boolean splitEnd = shouldSplit.apply(blockEnd, currentBlockDate) || minStart.apply(blockEnd) == blockEnd;
+                    final long end = splitEnd ? maxEnd.apply( currentBlockDate ): blockEnd;
                     //System.out.println("Adding Block " + new Date(start) + " - " + new Date(end));
-                    result.add ( new SplittedBlock(block,start, end, appointment,isException));
+                    result.add ( new SplittedBlock(block,start, end, appointment,isException, splitStart, splitEnd));
                     currentBlockDate+= DateTools.MILLISECONDS_PER_DAY;
                 }
+            } else {
+                result.add( block);
             }
         }
         return result;
@@ -429,7 +431,9 @@ public class RaplaBuilder
 
     /** selects all blocks that should be visible and calculates the max start- and end-time  */
     public PreperationResult prepareBuild(Date start,Date end) {
-    	boolean excludeExceptions = isExceptionsExcluded();
+        start = new Date( start.getTime() );
+        end = new Date( end.getTime() );
+        boolean excludeExceptions = isExceptionsExcluded();
     	boolean nonFilteredEventsVisible = isNonFilteredEventsVisible();
 
         //long time = System.currentTimeMillis();
@@ -457,11 +461,13 @@ public class RaplaBuilder
                 app.createBlocks(start, end, blocks);
             }
         }
-        List<AppointmentBlock> preparedBlocks = splitBlocks(blocks, start, end);
-
+        int offsetMinutes = buildStrategy.getOffsetMinutes();
+        List<AppointmentBlock> preparedBlocks = splitBlocks(blocks, start, end, offsetMinutes);
+        int minHour = 0 + offsetMinutes * 60;
+        int maxHour = 24 + offsetMinutes * 60;
         // calculate new start and end times
-        int max =0;
-        int min =24*60;
+        int max =minHour * 60;
+        int min =maxHour*60;
         for (AppointmentBlock block:blocks)
         {
             int starthour = DateTools.getHourOfDay(block.getStart());
@@ -471,11 +477,11 @@ public class RaplaBuilder
             if ((starthour != 0 || startminute != 0)  && starthour*60 + startminute<min)
                 min = starthour * 60 + startminute;
             if ((endhour >0 || endminute>0) && (endhour *60 + endminute)<min  )
-                min = Math.max(0,endhour-1) * 60 + endminute;
+                min = Math.max(minHour,endhour-1) * 60 + endminute;
             if ((endhour != 0 || endminute != 0) && (endhour != 23 || endminute!=59) && (endhour *60 + endminute)>max)
-                max = Math.min(24*60 , endhour  * 60 + endminute);
+                max = Math.min(maxHour*60 , endhour  * 60 + endminute);
             if (starthour>=max)
-                max = Math.min(24*60 , starthour *60 + startminute);
+                max = Math.min(maxHour*60 , starthour *60 + startminute);
         }
         return new PreperationResult( min, max,preparedBlocks);
     }
@@ -699,13 +705,18 @@ public class RaplaBuilder
         BuildContext buildContext;
         boolean isBlockSelected;
         boolean isAnonymous;
+        boolean splitStart = false;
+        boolean splitEnd = false;
 
         public RaplaBlockContext(AppointmentBlock appointmentBlock,RaplaBuilder builder,BuildContext buildContext, Allocatable selectedAllocatable, boolean isBlockSelected, boolean isAnonymous) {
             this.buildContext = buildContext;
             this.isAnonymous = isAnonymous;
             if ( appointmentBlock instanceof SplittedBlock)
             {
-            	this.appointmentBlock = ((SplittedBlock)appointmentBlock).getOriginal();
+                final SplittedBlock splittedBlock = (SplittedBlock) appointmentBlock;
+                this.appointmentBlock = splittedBlock.getOriginal();
+                splitStart = splittedBlock.splitStart;
+                splitEnd = splittedBlock.splitEnd;
             }
             else
             {
@@ -719,6 +730,16 @@ public class RaplaBuilder
             // Prefer resources when grouping
             addAllocatables(builder, reservation.getResources(), selectedAllocatable);
             addAllocatables(builder, reservation.getPersons(), selectedAllocatable);
+        }
+
+        public boolean isSplitStart()
+        {
+            return splitStart;
+        }
+
+        public boolean isSplitEnd()
+        {
+            return splitEnd;
         }
 
         private void addAllocatables(RaplaBuilder builder, Allocatable[] allocatables,Allocatable selectedAllocatable) {

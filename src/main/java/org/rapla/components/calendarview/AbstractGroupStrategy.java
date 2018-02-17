@@ -33,7 +33,8 @@ public abstract class AbstractGroupStrategy implements BuildStrategy {
     public static long MILLISECONDS_PER_DAY = 24 * 3600 * 1000;
     private boolean m_fixedSlots;
     private boolean m_conflictResolving;
-    
+    private int offsetMinutes = 0 * 60;
+
     protected Comparator<Block> blockComparator = new BlockComparator();
 
 	protected Comparator<List<Block>> slotComparator = new Comparator<List<Block>>() {
@@ -78,12 +79,29 @@ public abstract class AbstractGroupStrategy implements BuildStrategy {
         	insertDay( wv, day,list );
         }
     }
-    
+
+    public void setOffsetMinutes(int offsetMinutes)
+    {
+        this.offsetMinutes = offsetMinutes;
+    }
+
+    @Override
+    public int getOffsetMinutes()
+    {
+        return offsetMinutes;
+    }
+
     protected Map<Block,Integer> getBlockMap(BlockContainer blockContainer, List<Block> blocks, Date startDate) {
-    	Map<Block,Integer> map = new LinkedHashMap<Block, Integer>(); 
-		for  (Block block:blocks) {
-	         int days = (int)DateTools.countDays(startDate, block.getStart());
-			 map.put(block, days);
+    	Map<Block,Integer> map = new LinkedHashMap<Block, Integer>();
+    	for  (Block block:blocks) {
+            final Date start = block.getStart();
+            int intoDay = (int)DateTools.countDays(startDate, start);
+            final int minuteOfDay = DateTools.getMinuteOfDay(start.getTime());
+            if ( minuteOfDay <offsetMinutes)
+            {
+                intoDay --;
+            }
+			 map.put(block, intoDay);
 	     }
 	     return map;
 	}

@@ -59,9 +59,11 @@ public final class RapaBuilderTest
         Appointment appointment = raplaFacade.newAppointment(formater().parseDateTime("2004-01-01", "18:30:00"), formater().parseDateTime("2004-01-02", "12:00:00"));
         reservation.addAppointment( appointment );
         appointment.createBlocks(start,end, blocks );
+        int offset = 0;
         blocks = RaplaBuilder.splitBlocks( blocks
                     ,start
                     ,end
+                , offset
         );
 
         Assert.assertEquals("Blocks are not split in two", 2, blocks.size());
@@ -78,6 +80,7 @@ public final class RapaBuilderTest
         blocks = RaplaBuilder.splitBlocks( blocks
                                            ,start
                                            ,end
+                , offset
                                          );
         Assert.assertEquals("Blocks are not split in three", 3, blocks.size());
         Assert.assertEquals(formater().parseDateTime("2004-01-03", "23:59:59").getTime() / 1000, blocks.get(2).getEnd() / 1000);
@@ -91,6 +94,7 @@ public final class RapaBuilderTest
         blocks = RaplaBuilder.splitBlocks( blocks
                 ,start
                 ,formater().parseDateTime("2004-01-03","00:00:00")
+                ,offset
 
         );
         Assert.assertEquals("Blocks are not split in two", 2, blocks.size());

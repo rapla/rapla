@@ -14,6 +14,7 @@
 
 package org.rapla.plugin.dayresource.client.swing;
 
+import org.jetbrains.annotations.NotNull;
 import org.rapla.RaplaResources;
 import org.rapla.client.EditController;
 import org.rapla.client.PopupContext;
@@ -122,42 +123,46 @@ public class SwingDayResourceCalendar extends SwingDayCalendar
         final Promise<RaplaBuilder> nextBuilderPromise = builderPromise.thenApply((builder) ->
         {
             builder.setSplitByAllocatables(true);
-            final List<Allocatable> allocatables = getSortedAllocatables();
-            GroupAllocatablesStrategy strategy = new GroupAllocatablesStrategy(getRaplaLocale().getLocale())
-            {
-                @Override
-                protected Map<Block, Integer> getBlockMap(BlockContainer wv, List<Block> blocks, Date startDate)
-                {
-                    if (allocatables != null)
-                    {
-                        Map<Block, Integer> map = new LinkedHashMap<Block, Integer>();
-                        for (Block block : blocks)
-                        {
-                            int index = getIndex(allocatables, block);
-
-                            if (index >= 0)
-                            {
-                                map.put(block, index);
-                            }
-                        }
-                        return map;
-                    }
-                    else
-                    {
-                        return super.getBlockMap(wv, blocks, startDate);
-                    }
-                }
-
-            };
-
-            strategy.setResolveConflictsEnabled(true);
-            builder.setBuildStrategy(strategy);
             return builder;
         });
         return nextBuilderPromise;
     }
-    
-  
+
+    @NotNull
+    @Override
+    protected GroupAllocatablesStrategy createStrategy(RaplaBuilder builder) throws RaplaException
+    {
+        final List<Allocatable> allocatables = getSortedAllocatables();
+        GroupAllocatablesStrategy strategy = new GroupAllocatablesStrategy(getRaplaLocale().getLocale())
+        {
+            @Override
+            protected Map<Block, Integer> getBlockMap(BlockContainer wv, List<Block> blocks, Date startDate)
+            {
+                if (allocatables != null)
+                {
+                    Map<Block, Integer> map = new LinkedHashMap<>();
+                    for (Block block : blocks)
+                    {
+                        int index = getIndex(allocatables, block);
+
+                        if (index >= 0)
+                        {
+                            map.put(block, index);
+                        }
+                    }
+                    return map;
+                }
+                else
+                {
+                    return super.getBlockMap(wv, blocks, startDate);
+                }
+            }
+        };
+        strategy.setResolveConflictsEnabled(true);
+        strategy.setOffsetMinutes( view.getOffsetMinutes());
+        return strategy;
+    }
+
     protected ViewListener createListener() throws RaplaException {
     	return  new RaplaCalendarViewListener(getClientFacade(), getI18n(), getRaplaLocale(), getLogger(), model, view.getComponent(), objectMenuFactories, menuFactory, calendarSelectionModel, clipboard, reservationController, infoFactory, raplaImages, dialogUiFactory, editController) {
             

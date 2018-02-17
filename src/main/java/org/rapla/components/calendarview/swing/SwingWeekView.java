@@ -40,11 +40,11 @@ public class SwingWeekView extends AbstractSwingCalendar
 {
     public final static int SLOT_GAP = 5;
     LargeDaySlot[] daySlots = new LargeDaySlot[] {};
-    private int startMinutes = 0;
+    private int startMinutes = 0*60;
     private int endMinutes = 24 * 60;
     BoxLayout boxLayout2 = new BoxLayout(jCenter, BoxLayout.X_AXIS);
     TimeScale timeScale = new TimeScale();
-    IRowScale rowScale = new LinearRowScale();
+    final IRowScale rowScale = new LinearRowScale();
 
     protected JLabel weekTitle;
     protected SelectionHandler selectionHandler;
@@ -78,6 +78,12 @@ public class SwingWeekView extends AbstractSwingCalendar
         }
         selectionHandler = new SelectionHandler(this);
 
+    }
+
+    public void setOffsetMinutes(int offsetMinutes)
+    {
+        this.offsetMinutes = offsetMinutes;
+        rowScale.setOffsetMinutes(offsetMinutes);
     }
 
     public void updateSize(int width)
@@ -261,6 +267,8 @@ public class SwingWeekView extends AbstractSwingCalendar
                 throw new IllegalStateException("builder.getMax() is greater than 24");
         }
 
+        int minHour = 0 + offsetMinutes / 60;
+        int maxHour = 24 + offsetMinutes / 60;
         //rowScale = new VariableRowScale();
         if (rowScale instanceof LinearRowScale)
         {
@@ -268,23 +276,25 @@ public class SwingWeekView extends AbstractSwingCalendar
             int pixelPerHour = linearScale.getRowsPerHour() * linearScale.getRowSize();
 
             timeScale.setBackground(component.getBackground());
+
             if (isEditable())
             {
-                timeScale.setTimeIntervall(0, 24, pixelPerHour);
-                linearScale.setTimeIntervall(0, 24 * 60);
+                timeScale.setTimeIntervall(minHour, maxHour, pixelPerHour);
+                linearScale.setTimeIntervall(minHour*60, maxHour * 60);
             }
             else
             {
-                timeScale.setTimeIntervall(start / 60, Math.min(24, (int) Math.ceil(end / 60.0)), pixelPerHour);
-                final int endMinute = Math.min(24 * 60, ((end / 60) + ((end % 60 != 0) ? 1 : 0)) * 60);
-                linearScale.setTimeIntervall((start / 60) * 60, endMinute);
+                timeScale.setTimeIntervall(start / 60, Math.min(maxHour, (int) Math.ceil(end / 60.0)), pixelPerHour);
+                final int endMinute = Math.min(maxHour * 60, ((end / 60) + ((end % 60 != 0) ? 1 : 0)) * 60);
+                final int startMinutes = Math.max(minHour,(start / 60) * 60);
+                linearScale.setTimeIntervall(startMinutes, endMinute);
             }
             linearScale.setWorktimeMinutes(this.startMinutes, this.endMinutes);
         }
         else
         {
             timeScale.setBackground(component.getBackground());
-            timeScale.setTimeIntervall(0, 24, 60);
+            timeScale.setTimeIntervall(minHour, maxHour, 60);
         }
 
         // create Slots
@@ -452,7 +462,12 @@ public class SwingWeekView extends AbstractSwingCalendar
             index++;
         int calcHour = rowScale.calcHour(index);
         int calcMinute = rowScale.calcMinute(index);
+        boolean addDay = (calcHour * 60 + calcMinute)< offsetMinutes;
         date = new Date(date.getTime() + calcHour * DateTools.MILLISECONDS_PER_HOUR + calcMinute * DateTools.MILLISECONDS_PER_MINUTE);
+        if ( addDay)
+        {
+            date = DateTools.addDay( date);
+        }
         return date;
     }
 
