@@ -1433,18 +1433,17 @@ public class ReservationControllerImpl implements ReservationController {
         }
 
         public Promise<Void> execute() {
+            User user;
             try {
-                User user = getClientFacade().getUser();
-                clones = getFacade().copy(fromReservations, start, keepTime, user);
+                 user = getClientFacade().getUser();
             } catch (RaplaException ex) {
                 return new ResolvedPromise<Void>(ex);
             }
-            // checker
-            try {
-                return checkAndDistpatch(clones, Collections.emptyList(), firstTimeCall, popupContext);
-            } finally {
-                firstTimeCall = false;
-            }
+            return getFacade().copy(fromReservations, start, keepTime, user).thenCompose(clones-> {
+                        this.clones = clones;
+                        return checkAndDistpatch(clones, Collections.emptyList(), firstTimeCall, popupContext);
+                    }
+            ).thenRun(()->firstTimeCall = false);
         }
 
         public Promise<Void> undo() {

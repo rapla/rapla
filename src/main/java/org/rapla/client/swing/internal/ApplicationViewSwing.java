@@ -7,8 +7,10 @@ import org.rapla.client.PopupContext;
 import org.rapla.client.RaplaWidget;
 import org.rapla.client.dialog.DialogUiFactoryInterface;
 import org.rapla.client.event.ApplicationEvent;
+import org.rapla.client.internal.RaplaColors;
 import org.rapla.client.swing.RaplaGUIComponent;
 import org.rapla.client.swing.images.RaplaImages;
+import org.rapla.client.swing.toolkit.AWTColorUtil;
 import org.rapla.client.swing.toolkit.FrameControllerList;
 import org.rapla.client.swing.toolkit.RaplaFrame;
 import org.rapla.facade.ModificationEvent;
@@ -181,7 +183,8 @@ public class ApplicationViewSwing implements ApplicationView<JComponent>
             statusBar.setFont(boldFont);
             if (highlight)
             {
-                statusBar.setForeground(new Color(220, 30, 30));
+                final Color highlightColor = AWTColorUtil.getColorForHex(RaplaColors.HIGHLICHT_COLOR);
+                statusBar.setForeground(highlightColor);
             }
             else
             {

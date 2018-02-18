@@ -15,6 +15,7 @@ package org.rapla.facade;
 import io.reactivex.functions.Consumer;
 import jsinterop.annotations.JsMethod;
 import jsinterop.annotations.JsType;
+import org.rapla.components.util.TimeInterval;
 import org.rapla.entities.Category;
 import org.rapla.entities.Entity;
 import org.rapla.entities.EntityNotFoundException;
@@ -174,7 +175,7 @@ public interface RaplaFacade
     Promise<Reservation> newReservationAsync(Classification classification);
 
     Appointment newAppointment(Date startDate,Date endDate) throws RaplaException;
-    Promise<Appointment> newAppointmentAsync(Date startDate, Date endDate);
+    Promise<Appointment> newAppointmentAsync(TimeInterval interval);
     Appointment newAppointmentWithUser(Date startDate,Date endDate, User user) throws RaplaException;
 
     /** Creates a new allocatable from the classifcation object and with the passed user as its owner
@@ -206,7 +207,7 @@ public interface RaplaFacade
     <T extends Entity> Promise<Void> updateList(Collection<T> list, Consumer<Collection<T>> updateFunction);
 
     /** copies a list of reservations to a new beginning. KeepTime specifies if the original time is used or the time of the new beginDate*/
-    Collection<Reservation> copy(Collection<Reservation> toCopy, Date beginn, boolean keepTime, User user) throws RaplaException;
+    Promise<Collection<Reservation>> copy(Collection<Reservation> toCopy, Date beginn, boolean keepTime, User user);
 
     <T extends Entity, S extends Entity> Promise<Void> dispatch( Collection<T> storeList, Collection<ReferenceInfo<S>> removeList);
 

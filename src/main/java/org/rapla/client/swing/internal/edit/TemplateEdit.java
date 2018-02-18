@@ -1,5 +1,6 @@
 package org.rapla.client.swing.internal.edit;
 
+import org.jetbrains.annotations.NotNull;
 import org.rapla.RaplaResources;
 import org.rapla.client.EditController;
 import org.rapla.client.dialog.DialogInterface;
@@ -409,10 +410,9 @@ public class TemplateEdit extends RaplaGUIComponent
                             return null;
                         });
                     }
-                    final RaplaFacade facade = getFacade();
                     p = p.thenCompose((a) ->
                     {
-                        final Promise<Void> dispatch = facade.dispatch(toStoreObj, toRemoveObj);
+                        final Promise<Void> dispatch = getFacade().dispatch(toStoreObj, toRemoveObj);
                         return dispatch;
                     });
 
@@ -436,24 +436,31 @@ public class TemplateEdit extends RaplaGUIComponent
                             {
                                 if (size == 0)
                                 {
+                                    RaplaFacade facade = getFacade();
                                     final DynamicType[] dynamicTypes = facade
                                             .getDynamicTypes(DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RESERVATION);
-                                    Classification classification = dynamicTypes[0].newClassification();
-                                    Reservation reservation = facade.newReservation( classification, user);
+                                    final DynamicType dynamicType = dynamicTypes[0];
                                     CalendarSelectionModel model = calendarSelectionModel;
-                                    Date startDate = RaplaComponent.getStartDate(model, facade, user);
-                                    Date endDate = RaplaComponent.calcEndDate(model, startDate);
-                                    Appointment appointment = facade.newAppointment(startDate, endDate);
-                                    reservation.addAppointment( appointment);
-                                    reservation.setAnnotation(RaplaObjectAnnotations.KEY_TEMPLATE,selectedTemplate.getId() );
-                                    editController.edit( reservation, null);
+
+                                    RaplaComponent.newReservation(dynamicType, user, facade, model).thenAccept((reservation)
+                                            -> {
+                                        reservation.setAnnotation(RaplaObjectAnnotations.KEY_TEMPLATE, selectedTemplate.getId());
+                                        editController.edit(reservation, null);
+                                    });
+                                    getClientFacade().setTemplate(null);
                                 }
-                                if (size == 1)
+                                else if (size == 1)
                                 {
                                     final Reservation next = reservations.iterator().next();
                                     editController.edit( next, null);
+                                    getClientFacade().setTemplate(null);
+                                }
+                                else
+                                {
+                                    getClientFacade().setTemplate(selectedTemplate);
                                 }
                             }
+                            else
                             {
                                 for (Reservation r : reservations)
                                 {
@@ -467,9 +474,14 @@ public class TemplateEdit extends RaplaGUIComponent
                                 {
                                     calendarSelectionModel.setSelectedDate(start);
                                 }
+                                getClientFacade().setTemplate(selectedTemplate);
                             }
                         }
-                        getClientFacade().setTemplate(selectedTemplate);
+                        else
+                        {
+                            getClientFacade().setTemplate(null);
+                        }
+
                     }).whenComplete((a, ex) ->
                     {
                         if (ex != null)
@@ -501,6 +513,18 @@ public class TemplateEdit extends RaplaGUIComponent
         {
             dialogUiFactory.showException(ex, new SwingPopupContext(parentComponent, null));
         }
+    }
+
+    @NotNull
+    private Reservation newReservation(RaplaFacade facade, DynamicType dynamicType, CalendarSelectionModel model, User user) throws RaplaException
+    {
+        Classification classification = dynamicType.newClassification();
+        Reservation reservation = facade.newReservation( classification, user);
+        Date startDate = RaplaComponent.getStartDate(model, facade, user);
+        Date endDate = RaplaComponent.calcEndDate(model, startDate);
+        Appointment appointment = facade.newAppointment(startDate, endDate);
+        reservation.addAppointment( appointment);
+        return reservation;
     }
 
     @SuppressWarnings("unchecked")

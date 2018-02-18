@@ -43,6 +43,7 @@ final public class RaplaColors {
     };
 
     public final static String DEFAULT_COLOR_AS_STRING =  COLORS[0];
+    public final static String HIGHLICHT_COLOR = "#DC1E1E";
 
 
     private static ArrayList<String> colors = new ArrayList<String>(Arrays.asList(COLORS));

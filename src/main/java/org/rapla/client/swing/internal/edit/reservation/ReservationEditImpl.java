@@ -19,12 +19,14 @@ import org.rapla.client.RaplaWidget;
 import org.rapla.client.ReservationEdit;
 import org.rapla.client.dialog.DialogUiFactoryInterface;
 import org.rapla.client.extensionpoints.AppointmentStatusFactory;
+import org.rapla.client.internal.RaplaColors;
 import org.rapla.client.swing.ReservationToolbarExtension;
 import org.rapla.client.swing.images.RaplaImages;
 import org.rapla.client.swing.internal.SwingPopupContext;
 import org.rapla.client.swing.internal.edit.reservation.AllocatableSelection.AllocatableSelectionFactory;
 import org.rapla.client.swing.internal.edit.reservation.AppointmentListEdit.AppointmentListEditFactory;
 import org.rapla.client.swing.internal.edit.reservation.ReservationInfoEdit.ReservationInfoEditFactory;
+import org.rapla.client.swing.toolkit.AWTColorUtil;
 import org.rapla.client.swing.toolkit.EmptyLineBorder;
 import org.rapla.client.swing.toolkit.RaplaButton;
 import org.rapla.components.layout.TableLayout;
@@ -33,6 +35,7 @@ import org.rapla.entities.Entity;
 import org.rapla.entities.User;
 import org.rapla.entities.domain.Appointment;
 import org.rapla.entities.domain.AppointmentBlock;
+import org.rapla.entities.domain.RaplaObjectAnnotations;
 import org.rapla.entities.domain.Repeating;
 import org.rapla.entities.domain.Reservation;
 import org.rapla.facade.client.ClientFacade;
@@ -50,10 +53,12 @@ import javax.swing.AbstractAction;
 import javax.swing.Action;
 import javax.swing.ActionMap;
 import javax.swing.BorderFactory;
+import javax.swing.Box;
 import javax.swing.ComponentInputMap;
 import javax.swing.InputMap;
 import javax.swing.JButton;
 import javax.swing.JComponent;
+import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JToolBar;
 import javax.swing.KeyStroke;
@@ -82,6 +87,7 @@ public final class ReservationEditImpl extends AbstractAppointmentEditor impleme
 
     CommandHistory commandHistory;
     JToolBar toolBar = new JToolBar();
+    JLabel statusLabel = new JLabel();
     RaplaButton saveButtonTop = new RaplaButton();
     RaplaButton saveButton = new RaplaButton();
     RaplaButton deleteButton = new RaplaButton();
@@ -163,7 +169,6 @@ public final class ReservationEditImpl extends AbstractAppointmentEditor impleme
             throw new RaplaInitializationException(ex);
         }
         allocatableEdit = allocatableSelectionFactory.create(true, commandHistory);
-
         mainContent.setLayout(tableLayout);
         mainContent.add(reservationInfo.getComponent(), "0,0");
         mainContent.add(appointmentEdit.getComponent(), "0,1");
@@ -222,6 +227,8 @@ public final class ReservationEditImpl extends AbstractAppointmentEditor impleme
                 }
             }
         }
+
+
         closeButton.addActionListener(listener);
         appointmentEdit.addAppointmentListener(allocatableEdit);
         appointmentEdit.addAppointmentListener(listener);
@@ -229,10 +236,19 @@ public final class ReservationEditImpl extends AbstractAppointmentEditor impleme
         reservationInfo.addChangeListener(listener);
         reservationInfo.addDetailListener(listener);
 
+        JPanel toolBarPanel = new JPanel();
+        statusLabel.setForeground( AWTColorUtil.getColorForHex(RaplaColors.HIGHLICHT_COLOR));
+        toolBar.addSeparator();
+        toolBar.add(Box.createHorizontalGlue());
+        toolBar.add( statusLabel);
+        toolBarPanel.setLayout( new BorderLayout());
+        toolBarPanel.add( toolBar, BorderLayout.CENTER);
+        //toolBarPanel.add( statusLabel, BorderLayout.EAST);
+
         contentPane = new JPanel();
         contentPane.setLayout(new BorderLayout());
         mainContent.setBorder(BorderFactory.createLoweredBevelBorder());
-        contentPane.add(toolBar, BorderLayout.NORTH);
+        contentPane.add(toolBarPanel, BorderLayout.NORTH);
         contentPane.add(buttonsPanel, BorderLayout.SOUTH);
         contentPane.add(mainContent, BorderLayout.CENTER);
 
@@ -339,6 +355,7 @@ public final class ReservationEditImpl extends AbstractAppointmentEditor impleme
     public void editReservation(Reservation reservation, Reservation original,AppointmentBlock appointmentBlock)
             throws RaplaException
     {
+        statusLabel.setText( reservation.getAnnotation(RaplaObjectAnnotations.KEY_TEMPLATE) != null ? getI18n().getString("edit-templates") : "");
         boolean bNew = !original.isReadOnly();
         this.original = original;
         mutableReservation = reservation;

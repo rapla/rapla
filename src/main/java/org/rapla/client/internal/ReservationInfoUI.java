@@ -17,6 +17,7 @@ import org.rapla.entities.User;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.Appointment;
 import org.rapla.entities.domain.AppointmentFormater;
+import org.rapla.entities.domain.NameFormatUtil;
 import org.rapla.entities.domain.Period;
 import org.rapla.entities.domain.Repeating;
 import org.rapla.entities.domain.Reservation;
@@ -62,16 +63,27 @@ public class ReservationInfoUI extends ClassificationInfoUI<Reservation> {
             Allocatable allocatable = allocatables[i];
             if ( user != null && !permissionController.canReadOnlyInformation(allocatable, user))
                 continue;
+            final String name = getAllocatableName(allocatable);
+            if ( name == null || name.isEmpty())
+            {
+                continue;
+            }
             if (controller != null)
-                controller.createLink(allocatable,getName(allocatable),buf);
+                controller.createLink(allocatable, name,buf);
             else
-                encode(getName(allocatable), buf);
+                encode(name, buf);
             addRestriction(reservation, allocatable, buf);
             if (i<allocatables.length-1) {
                 buf.append (",");
             }
         }
         return buf.toString();
+    }
+
+    protected String getAllocatableName(Allocatable allocatable)
+    {
+        final String exportName = NameFormatUtil.getExportName(allocatable, getRaplaLocale().getLocale());
+        return exportName;
     }
     
     @Override

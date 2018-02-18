@@ -16,6 +16,7 @@ import io.reactivex.functions.Consumer;
 import org.jetbrains.annotations.NotNull;
 import org.rapla.RaplaResources;
 import org.rapla.components.util.DateTools;
+import org.rapla.components.util.TimeInterval;
 import org.rapla.entities.*;
 import org.rapla.entities.configuration.Preferences;
 import org.rapla.entities.configuration.RaplaMap;
@@ -65,7 +66,10 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Optional;
+import java.util.Queue;
 import java.util.Set;
+import java.util.stream.Stream;
 
 /**
  * This is the default implementation of the necessary JavaClient-Facade to the
@@ -524,11 +528,11 @@ public class FacadeImpl implements RaplaFacade {
 	}
 
 	@Override
-	public Promise<Appointment> newAppointmentAsync(Date startDate, Date endDate)
+	public Promise<Appointment> newAppointmentAsync(TimeInterval interval)
 	{
-		AppointmentImpl appointment = new AppointmentImpl(startDate, endDate);
+		AppointmentImpl appointment = new AppointmentImpl(interval.getStart(), interval.getEnd());
 		return operator.createIdentifierAsync(Appointment.class,1).thenApply(ids->
-						setNew(Collections.singletonList( appointment),  ids,getUser()).get(0));
+						setNew(Collections.singletonList( appointment),  ids.iterator(),getUser()).get(0));
 	}
 	
 	public Reservation newReservationDeprecated() throws RaplaException
@@ -541,16 +545,16 @@ public class FacadeImpl implements RaplaFacade {
 	public Reservation newReservation(Classification classification,User user) throws RaplaException 
     {
 		List<ReferenceInfo<Reservation>> ids = operator.createIdentifier( Reservation.class, 1);
-		return newReservation(classification, user, ids);
+		return newReservation(classification, user, ids.iterator());
     }
 
 	@Override
 	public Promise<Reservation> newReservationAsync(final Classification classification)
 	{
-		return operator.createIdentifierAsync(Reservation.class, 1).thenApply(ids->newReservation( classification, getUser(),ids ));
+		return operator.createIdentifierAsync(Reservation.class, 1).thenApply(ids->newReservation( classification, getUser(),ids.iterator() ));
 	}
 	@NotNull
-	private Reservation newReservation(Classification classification, User user, List<ReferenceInfo<Reservation>> ids) throws RaplaException
+	private Reservation newReservation(Classification classification, User user, Iterator<ReferenceInfo<Reservation>> ids) throws RaplaException
 	{
 		if (!getPermissionController().canCreate(classification.getType(), user))
 		{
@@ -830,10 +834,10 @@ public class FacadeImpl implements RaplaFacade {
 			throws RaplaException
 	{
 		List<ReferenceInfo<T>> ids = operator.createIdentifier(raplaType, entities.size());
-		return setNew( entities,  ids, user);
+		return setNew( entities,  ids.iterator(), user);
 	}
 
-	private <T extends Entity> List<T> setNew(List<T> entities,List<ReferenceInfo<T>> ids ,User user)
+	private <T extends Entity> List<T> setNew(List<T> entities,Iterator<ReferenceInfo<T>> ids ,User user)
 			throws RaplaException {
 
 
@@ -844,10 +848,9 @@ public class FacadeImpl implements RaplaFacade {
 				throw new RaplaException("The current Rapla Version doesnt support cloning entities with sub-entities. (Except reservations)");
 			}
 		}
-		int i = 0;
 		for ( T uncasted: entities)
 		{
-			ReferenceInfo id = ids.get(i++);
+			ReferenceInfo id = ids.next();
 			SimpleEntity entity = (SimpleEntity) uncasted;
 			entity.setId(id.getId());
 			entity.setResolver(operator);
@@ -968,71 +971,73 @@ public class FacadeImpl implements RaplaFacade {
 
 
 
-	   public Collection<Reservation> copy(Collection<Reservation> toCopy, Date beginn, boolean keepTime, User user) throws RaplaException
-	    {
-	        List<Reservation> sortedReservations = new ArrayList<Reservation>(  toCopy);
-	        Collections.sort( sortedReservations, new ReservationStartComparator(i18n.getLocale()));
-	        List<Reservation> copies = new ArrayList<Reservation>();
-	        Date firstStart = null;
-	        for (Reservation reservation: sortedReservations) {
-	            if ( firstStart == null )
-	            {
-	                firstStart = ReservationStartComparator.getStart( reservation);
-	            }
-	            Reservation copy = copy(reservation, beginn, firstStart, keepTime, user);
-	            copies.add( copy);
-	        }
-	        return copies;
-	    }
-	    
-	    private  Reservation copy(Reservation reservation, Date destStart,Date firstStart, boolean keepTime, User user) throws RaplaException {
-	        Reservation r =  clone( reservation, user);
-	        Appointment[] appointments = r.getAppointments();
-	    
-	        for ( Appointment app :appointments) {
-	            Repeating repeating = app.getRepeating();
-	            
-	            Date oldStart = app.getStart();
-	            Date newStart ;
-	            // we need to calculate an offset so that the reservations will place themself relativ to the first reservation in the list
-	            if ( keepTime)
-	            {
-	                long offset = DateTools.countDays( firstStart, oldStart) * DateTools.MILLISECONDS_PER_DAY;
-	                Date destWithOffset = new Date(destStart.getTime() + offset );
-	                newStart = DateTools.toDateTime(  destWithOffset  , oldStart );
-	            }
-	            else
-	            {
-	                long offset = destStart.getTime() - firstStart.getTime();
-	                newStart = new Date(oldStart.getTime() + offset );
-	            }
-	            app.moveTo( newStart) ;
-	            if (repeating != null)
-	            {
-	                Date[] exceptions = repeating.getExceptions();
-	                repeating.clearExceptions();
-	                for (Date exc: exceptions)
-	                {
-	                    long days = DateTools.countDays(oldStart, exc);
-	                    Date newDate = DateTools.addDays(newStart, days);
-	                    repeating.addException( newDate);
-	                }
-	                
-	                if ( !repeating.isFixedNumber())
-	                {
-	                    Date oldEnd = repeating.getEnd();
-	                    if ( oldEnd != null)
-	                    {
-	                        // If we don't have and ending destination, just make the repeating to the original length
-	                        long days = DateTools.countDays(oldStart, oldEnd);
-	                        Date end = DateTools.addDays(newStart, days);
-	                        repeating.setEnd( end);
-	                    }
-	                }       
-	            }
-	        }
-	        return r;
-	    }
+    public Promise<Collection<Reservation>> copy(Collection<Reservation> toCopy, Date beginn, boolean keepTime, User user)
+	{
+		// create ids for reservation and appointments first
+		return operator.createIdentifierAsync(Reservation.class, toCopy.size()).thenCombine(
+				operator.createIdentifierAsync(Appointment.class, countAppointments( toCopy.stream())),
+				( reservationIds, appoimtmentIds) -> {
+					// find the first start of the reservations
+					Optional<Date> firstStart = toCopy.stream().sorted(new ReservationStartComparator(i18n.getLocale())).findFirst().map( ReservationStartComparator::getStart);
+					List copies = new ArrayList();
+					for (Reservation reservation : toCopy)
+					{
+						// copy each reservation
+						Reservation copy = copy(reservation, beginn, firstStart.get(), keepTime, reservationIds.iterator(), appoimtmentIds.iterator(), user);
+						copies.add(copy);
+					}
+					return copies;
+				});
+	}
+
+	private  Reservation copy(Reservation reservation, Date destStart,Date firstStart, boolean keepTime, Iterator<ReferenceInfo<Reservation>> reservationIds,Iterator<ReferenceInfo<Appointment>> appoimtmentIds,User user) throws RaplaException {
+		Reservation r =  cloneReservation( reservation, reservationIds, appoimtmentIds,user);
+		Appointment[] appointments = r.getAppointments();
+
+		for ( Appointment app :appointments) {
+			Repeating repeating = app.getRepeating();
+
+			Date oldStart = app.getStart();
+			Date newStart ;
+			// we need to calculate an offset so that the reservations will place themself relativ to the first reservation in the list
+			if ( keepTime)
+			{
+				long offset = DateTools.countDays( firstStart, oldStart) * DateTools.MILLISECONDS_PER_DAY;
+				Date destWithOffset = new Date(destStart.getTime() + offset );
+				newStart = DateTools.toDateTime(  destWithOffset  , oldStart );
+			}
+			else
+			{
+				long offset = destStart.getTime() - firstStart.getTime();
+				newStart = new Date(oldStart.getTime() + offset );
+			}
+			app.moveTo( newStart) ;
+			if (repeating != null)
+			{
+				Date[] exceptions = repeating.getExceptions();
+				repeating.clearExceptions();
+				for (Date exc: exceptions)
+				{
+					long days = DateTools.countDays(oldStart, exc);
+					Date newDate = DateTools.addDays(newStart, days);
+					repeating.addException( newDate);
+				}
+
+				if ( !repeating.isFixedNumber())
+				{
+					Date oldEnd = repeating.getEnd();
+					if ( oldEnd != null)
+					{
+						// If we don't have and ending destination, just make the repeating to the original length
+						long days = DateTools.countDays(oldStart, oldEnd);
+						Date end = DateTools.addDays(newStart, days);
+						repeating.setEnd( end);
+					}
+				}
+			}
+		}
+		return r;
+	}
 
 	@SuppressWarnings("unchecked")
 	private <T extends Entity> T _clone(T obj) throws RaplaException {
@@ -1068,29 +1073,10 @@ public class FacadeImpl implements RaplaFacade {
 			((AppointmentImpl) _clone).setParent(null);
 			result = _clone;
 		} else if (raplaType == Reservation.class) {
-			Reservation clonedReservation = cloneReservation((Reservation) obj);
-			Reservation r = clonedReservation;
-			if ( user != null)
-			{
-				r.setOwner( user );
-				((ReservationImpl)r).setLastChangedBy( user);
-				((ReservationImpl)r).setLastChanged( null);
-			}
-			if ( templateId != null )
-			{
-				setTemplateParams(r );
-			}
-			else
-			{
-				String originalTemplate = r.getAnnotation( RaplaObjectAnnotations.KEY_TEMPLATE);
-				if (originalTemplate != null)
-				{
-					r.setAnnotation(RaplaObjectAnnotations.KEY_TEMPLATE_COPYOF, originalTemplate);
-				}
-				r.setAnnotation(RaplaObjectAnnotations.KEY_TEMPLATE, null);
-			}
-			result = (T)r;
-			
+			final Reservation original = (Reservation) obj;
+			Iterator<ReferenceInfo<Reservation>> reservationIds = operator.createIdentifier(Reservation.class, 1).iterator();
+			Iterator<ReferenceInfo<Appointment>> appointmentIds = operator.createIdentifier(Appointment.class, countAppointments(Stream.of( original))).iterator();
+			result = (T)cloneReservation(original,reservationIds, appointmentIds, user);
 		}
 		else
 		{
@@ -1103,13 +1089,16 @@ public class FacadeImpl implements RaplaFacade {
 			}
 		}
 		return result;
+	}
 
+	private int countAppointments(Stream<Reservation> reservation)
+	{
+		return (int) reservation.flatMap( Reservation::getAppointmentStream).count();
 	}
 
 	/** Clones a reservation and sets new ids for all appointments and the reservation itsel
 	 */
-	private Reservation cloneReservation(Reservation obj) throws RaplaException {
-	    User workingUser = getWorkingUser();
+	private Reservation cloneReservation(Reservation obj,Iterator<ReferenceInfo<Reservation>> reservationIds,Iterator<ReferenceInfo<Appointment>> appoimtmentIds, User user) throws RaplaException {
 		// first we do a reservation deep clone
 		Reservation clone =  obj.clone();
 		HashMap<Allocatable, Appointment[]> restrictions = new HashMap<Allocatable, Appointment[]>();
@@ -1121,14 +1110,14 @@ public class FacadeImpl implements RaplaFacade {
 
 		// then we set new ids for all appointments
 		Appointment[] clonedAppointments = clone.getAppointments();
-		setNew(Arrays.asList(clonedAppointments),Appointment.class, workingUser);
+		setNew(Arrays.asList(clonedAppointments),appoimtmentIds, user);
 		
 		for (Appointment clonedAppointment:clonedAppointments) {
 			clone.removeAppointment(clonedAppointment);
 		}
 
 		// and now a new id for the reservation
-		setNew( clone, workingUser);
+		setNew( Collections.singletonList(clone), reservationIds,user );
 		for (Appointment clonedAppointment:clonedAppointments) {
 			clone.addAppointment(clonedAppointment);
 		}
@@ -1139,6 +1128,27 @@ public class FacadeImpl implements RaplaFacade {
 			if (appointments != null) {
 				clone.setRestriction(allocatable, appointments);
 			}
+		}
+
+		Reservation r = clone;
+		if ( user != null)
+		{
+			r.setOwner( user );
+			((ReservationImpl)r).setLastChangedBy( user);
+			((ReservationImpl)r).setLastChanged( null);
+		}
+		if ( templateId != null )
+		{
+			setTemplateParams(r );
+		}
+		else
+		{
+			String originalTemplate = r.getAnnotation( RaplaObjectAnnotations.KEY_TEMPLATE);
+			if (originalTemplate != null)
+			{
+				r.setAnnotation(RaplaObjectAnnotations.KEY_TEMPLATE_COPYOF, originalTemplate);
+			}
+			r.setAnnotation(RaplaObjectAnnotations.KEY_TEMPLATE, null);
 		}
 		return clone;
 	}

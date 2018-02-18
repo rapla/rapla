@@ -30,7 +30,6 @@ import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.Appointment;
 import org.rapla.entities.domain.AppointmentBlock;
 import org.rapla.entities.domain.Reservation;
-import org.rapla.entities.dynamictype.Classification;
 import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.entities.storage.ReferenceInfo;
 import org.rapla.facade.CalendarSelectionModel;
@@ -172,15 +171,10 @@ public class EditTaskPresenter implements TaskPresenter
                 final String dynamicTypeId = info;
                 final Entity resolve = raplaFacade.resolve(new ReferenceInfo<Entity>(dynamicTypeId, DynamicType.class));
                 final DynamicType type = (DynamicType) resolve;
-                Classification newClassification = type.newClassification();
                 final User user = clientFacade.getUser();
-                return raplaFacade.newReservationAsync(newClassification)
-                        .thenCombine(createAppointment(), (r, a) -> {
-                                    r.addAppointment(a);
-                                    final List<Reservation> singletonList = Collections.singletonList(r);
-                                    List<Reservation> list = RaplaComponent.addAllocatables(model, singletonList, user);
-                                    return list;
-                                }).thenCompose( list->createEditDialog(list, popupContext, applicationEvent));
+                final Promise<List<Reservation>> newReservations = RaplaComponent.newReservation(type, user, raplaFacade, model)
+                        .thenApply(r->RaplaComponent.addAllocatables(model, Collections.singletonList(r), user));
+                return newReservations.thenCompose( list->createEditDialog(list, popupContext, applicationEvent));
 
             }
             else if (CREATE_RESERVATION_FROM_TEMPLATE.equals(taskId))
@@ -201,25 +195,26 @@ public class EditTaskPresenter implements TaskPresenter
                     boolean markedIntervalTimeEnabled = model.isMarkedIntervalTimeEnabled();
                     boolean keepTime = !markedIntervalTimeEnabled || (keepOrig == null || keepOrig);
                     Date beginn = RaplaComponent.getStartDate(model, raplaFacade, user);
-                    Collection<Reservation> newReservations = raplaFacade.copy(reservations, beginn, keepTime, user);
-                    if (markedIntervals.size() > 0 && reservations.size() == 1 && reservations.iterator().next().getAppointments().length == 1
-                            && keepOrig == Boolean.FALSE)
-                    {
-                        Appointment app = newReservations.iterator().next().getAppointments()[0];
-                        TimeInterval first = markedIntervals.iterator().next();
-                        Date end = first.getEnd();
-                        if (!markedIntervalTimeEnabled)
+                    return raplaFacade.copy(reservations, beginn, keepTime, user).thenCompose((newReservations)-> {
+                        if (markedIntervals.size() > 0 && reservations.size() == 1 && reservations.iterator().next().getAppointments().length == 1
+                                && keepOrig == Boolean.FALSE)
                         {
-                            end = DateTools.toDateTime(end, app.getEnd());
+                            Appointment app = newReservations.iterator().next().getAppointments()[0];
+                            TimeInterval first = markedIntervals.iterator().next();
+                            Date end = first.getEnd();
+                            if (!markedIntervalTimeEnabled)
+                            {
+                                end = DateTools.toDateTime(end, app.getEnd());
+                            }
+                            if (!beginn.before(end))
+                            {
+                                end = new Date(app.getStart().getTime() + DateTools.MILLISECONDS_PER_HOUR);
+                            }
+                            app.move(app.getStart(), end);
                         }
-                        if (!beginn.before(end))
-                        {
-                            end = new Date(app.getStart().getTime() + DateTools.MILLISECONDS_PER_HOUR);
-                        }
-                        app.move(app.getStart(), end);
-                    }
-                    List<Reservation> list = RaplaComponent.addAllocatables(model, newReservations, user);
-                    return createEditDialog(list, popupContext, applicationEvent);
+                        List<Reservation> list = RaplaComponent.addAllocatables(model, newReservations, user);
+                        return createEditDialog(list, popupContext, applicationEvent);
+                    });
                 });
                 return widgetPromise;
             }
@@ -250,6 +245,7 @@ public class EditTaskPresenter implements TaskPresenter
     public String getTitle(ApplicationEvent event)
     {
         final String applicationEventId = event.getApplicationEventId();
+        event.getContext();
         if (applicationEventId.equals(MERGE_RESOURCES_ID))
         {
             return i18n.getString("merge");
@@ -271,14 +267,6 @@ public class EditTaskPresenter implements TaskPresenter
             String titleI18n = i18n.getString("new_reservation");
             return  titleI18n;
         }
-    }
-
-    protected Promise<Appointment> createAppointment() throws RaplaException
-    {
-
-        Date startDate = RaplaComponent.getStartDate(model, raplaFacade, clientFacade.getUser());
-        Date endDate = RaplaComponent.calcEndDate(model, startDate);
-        return raplaFacade.newAppointmentAsync(startDate, endDate);
     }
 
     //	enhancement of the method to deal with arrays

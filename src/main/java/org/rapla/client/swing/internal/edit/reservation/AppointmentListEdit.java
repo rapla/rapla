@@ -97,16 +97,13 @@ class AppointmentListEdit extends AbstractAppointmentEditor
     SortedListModel sortedModel = new SortedListModel(model, SortedListModel.SortOrder.ASCENDING,comp );
     RaplaButton freeButtonNext = new RaplaButton();
     AppointmentFormater appointmentFormater;
-    private final ReservationController reservationController;
     private final RaplaImages raplaImages;
     private final DialogUiFactoryInterface dialogUiFactory;
 	@SuppressWarnings("unchecked")
-	AppointmentListEdit(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, AppointmentFormater appointmentFormater, ReservationController reservationController, CommandHistory commandHistory, RaplaImages raplaImages, DateRenderer dateRenderer, DialogUiFactoryInterface dialogUiFactory, IOInterface ioInterface)
+	AppointmentListEdit(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, AppointmentFormater appointmentFormater, CommandHistory commandHistory, RaplaImages raplaImages, DateRenderer dateRenderer, DialogUiFactoryInterface dialogUiFactory, IOInterface ioInterface)
 			throws RaplaException {
 		super(facade, i18n, raplaLocale, logger);
         this.appointmentFormater = appointmentFormater;
-        this.reservationController = reservationController;
-
 		this.commandHistory = commandHistory;
         this.raplaImages = raplaImages;
         this.dialogUiFactory = dialogUiFactory;
@@ -402,7 +399,7 @@ class AppointmentListEdit extends AbstractAppointmentEditor
 			final Appointment toClone = (Appointment)sortedModel.getElementAt( index);
              //= appointments[index];
 			// this allows each appointment as template
-			appointment = reservationController.copyAppointment(toClone);
+			appointment = getFacade().clone(toClone, getClientFacade().getUser());
 			Repeating repeating = appointment.getRepeating();
 			if (repeating != null) {
 				repeating.clearExceptions();
@@ -598,7 +595,6 @@ class AppointmentListEdit extends AbstractAppointmentEditor
         private final RaplaLocale raplaLocale;
         private final Logger logger;
         private final AppointmentFormater appointmentFormater;
-        private final ReservationController reservationController;
         private final RaplaImages raplaImages;
         private final DateRenderer dateRenderer;
         private final DialogUiFactoryInterface dialogUiFactory;
@@ -606,7 +602,7 @@ class AppointmentListEdit extends AbstractAppointmentEditor
 
         @Inject
         public AppointmentListEditFactory(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger,
-                AppointmentFormater appointmentFormater, ReservationController reservationController, RaplaImages raplaImages, DateRenderer dateRenderer,
+                AppointmentFormater appointmentFormater, RaplaImages raplaImages, DateRenderer dateRenderer,
                 DialogUiFactoryInterface dialogUiFactory, IOInterface ioInterface)
         {
             super();
@@ -615,7 +611,6 @@ class AppointmentListEdit extends AbstractAppointmentEditor
             this.raplaLocale = raplaLocale;
             this.logger = logger;
             this.appointmentFormater = appointmentFormater;
-            this.reservationController = reservationController;
             this.raplaImages = raplaImages;
             this.dateRenderer = dateRenderer;
             this.dialogUiFactory = dialogUiFactory;
@@ -624,7 +619,7 @@ class AppointmentListEdit extends AbstractAppointmentEditor
 
         public AppointmentListEdit create(CommandHistory commandHistory) throws RaplaException
         {
-            return new AppointmentListEdit(facade, i18n, raplaLocale, logger, appointmentFormater, reservationController, commandHistory, raplaImages,
+            return new AppointmentListEdit(facade, i18n, raplaLocale, logger, appointmentFormater, commandHistory, raplaImages,
                     dateRenderer, dialogUiFactory, ioInterface);
         }
     }

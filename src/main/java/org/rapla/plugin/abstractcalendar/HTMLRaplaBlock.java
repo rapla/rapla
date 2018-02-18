@@ -144,7 +144,7 @@ public class HTMLRaplaBlock extends RaplaBlock implements HTMLBlock {
             if ( url != null) {
                 buf.append( "</span>");
             }
-        if (getBuildContext().isShowToolTips())
+        if (getBuildContext().isShowToolTips() && !getContext().isAnonymous())
         {
 
             buf.append( "<span class=\"tooltip\">");

@@ -12,10 +12,6 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.components.util;
 
- import org.rapla.rest.GwtIncompatible;
-
- import java.io.IOException;
- import java.io.Reader;
  import java.util.ArrayList;
  import java.util.List;
 
@@ -190,38 +186,7 @@ public abstract class Tools
 //        }
 //    }
 
-    /** reads a table from a csv file. You can specify a minimum number of columns */
-    @GwtIncompatible
-    public static String[][] csvRead(Reader reader, int expectedColumns) throws IOException {
-    	return csvRead(reader, ';', expectedColumns);
-    }
-    /** reads a table from a csv file. You can specify the seperator and a minimum number of columns */
-    @GwtIncompatible
-    public static String[][] csvRead(Reader reader, char seperator,int expectedColumns) throws IOException {
-        //System.out.println( "Using Encoding " + reader.getEncoding() );
-        StringBuffer buf = new StringBuffer();
-        while (true) {
-            int c = reader.read();
-            if ( c == -1 )
-                break;
-            buf.append( (char) c );
-        }
-        String[] lines = buf.toString().split(System.getProperty("line.separator")); //BJO
-        //String[] lines = split( buf.toString(),'\n');
-        String[][] lineEntries = new String[ lines.length ][];
-        for ( int i=0;i<lines.length; i++ ) {
-        	
-            String stringToSplit = lines[i];
-            //String firstIterator =stringToSplit.replaceAll("\"\"", "DOUBLEQUOTEQUOTE");
-            lineEntries[i] = split( stringToSplit,seperator);
-            if ( lineEntries[i].length < expectedColumns ) {
-                throw new IOException("Can't parse line " + i + ":" + stringToSplit + "Expected " + expectedColumns + " Entries. Found " + lineEntries[i].length); // BJO
-            }
-        }
-        return lineEntries;
-    }
-
-	public static String createXssSafeString(String value) {
+    public static String createXssSafeString(String value) {
 	    return value != null ? value.replaceAll("<","&lt;").replaceAll(">", "&gt;").replaceAll("\"", "'") : null;
 	}
 

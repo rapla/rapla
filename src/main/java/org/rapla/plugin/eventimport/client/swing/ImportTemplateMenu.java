@@ -407,11 +407,7 @@ public class ImportTemplateMenu implements ImportMenuExtension, ActionListener
         {
 
             final Promise<Collection<Reservation>> templateReservations = getTemplateReservations();
-            templateReservations.thenAccept(( reservations ) -> {
-                final User user = clientFacade.getUser();
-                this.reservations = facade.copy(reservations, getBeginn(), true, user);
-                map(reservations, entries);
-            }).exceptionally(( ex ) -> {
+            templateReservations.thenCompose(( reservations ) -> facade.copy(reservations, getBeginn(), true, clientFacade.getUser())).thenAccept((clones)->map(clones, entries)).exceptionally(( ex ) -> {
                 dialogFactory.showException(ex, popupContext);
                 return Promise.VOID;
             });
@@ -434,6 +430,7 @@ public class ImportTemplateMenu implements ImportMenuExtension, ActionListener
 
         private void map( final Collection<Reservation> reservations, final Map<String, String> entries ) throws RaplaException
         {
+            this.reservations = reservations;
             final ArrayList<Reservation> toStore = new ArrayList<>();
             final Collection<Reservation> editObjects = facade.editList(reservations);
             for ( final Reservation reservation : editObjects )
