@@ -221,7 +221,7 @@ public class AppointmentAction extends RaplaAction {
             case DELETE_SELECTION: deleteSelection();break;
             }
         } catch (RaplaException ex) {
-            dialogUiFactory.showError(ex,popupContext);
+            dialogUiFactory.showException(ex,popupContext);
         } // end of try-catch
     }
     

@@ -13,6 +13,7 @@ import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.inject.Extension;
 import org.rapla.logger.Logger;
+import org.rapla.scheduler.ResolvedPromise;
 
 import javax.inject.Inject;
 import javax.inject.Provider;
@@ -54,17 +55,12 @@ public class RightsReportMenu extends RaplaGUIComponent implements AdminMenuExte
 	
 	public void actionPerformed( ActionEvent e )
     {
-        try {
-           
-        	RaplaRightsReport report = rightsReportProvider.get();
-            DialogInterface dialog = dialogUiFactory.create( new SwingPopupContext(getMainComponent(), null),true, report.getComponent(), new String[] {getString("ok")});
-            dialog.setTitle( name);
-            dialog.setSize( 650, 550);
-            report.show();
-            dialog.start(false);
-        } catch (RaplaException ex) {
-            dialogUiFactory.showException( ex, new SwingPopupContext(getMainComponent(), null));
-        }
+        DialogInterface dialog = dialogUiFactory.create( new SwingPopupContext(getMainComponent(), null),true, report.getComponent(), new String[] {getString("ok")});
+		dialog.setTitle( name);
+		RaplaRightsReport report = rightsReportProvider.get();
+		dialog.setSize( 650, 550);
+		report.show();
+        dialog.start(false).thenApply(index-> ResolvedPromise.VOID).exceptionally( ex -> dialogUiFactory.showException( ex, null));
     }
 
 }

@@ -324,7 +324,7 @@ import java.util.Date;
     }
 
     @Override
-    public Promise<Void> processStop(ApplicationEvent event, RaplaWidget widget)
+    public Promise<Void> processStop(ApplicationEvent event)
     {
         return new ResolvedPromise<Void>(Promise.VOID);
     }

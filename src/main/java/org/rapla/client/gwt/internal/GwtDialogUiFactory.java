@@ -18,7 +18,6 @@ import org.rapla.client.gwt.GwtPopupContext;
 import org.rapla.client.menu.data.Point;
 import org.rapla.entities.DependencyException;
 import org.rapla.framework.Disposable;
-import org.rapla.framework.RaplaException;
 import org.rapla.inject.DefaultImplementation;
 import org.rapla.inject.InjectionContext;
 import org.rapla.logger.Logger;
@@ -247,7 +246,7 @@ public class GwtDialogUiFactory implements DialogUiFactoryInterface
     }
 
     @Override
-    public DialogInterface create(PopupContext popupContext, boolean modal, Object content, String[] options) throws RaplaException
+    public DialogInterface create(PopupContext popupContext, boolean modal, Object content, String[] options)
     {
         final GwtDialog gwtDialog = new GwtDialog(modal, options);
         final Point point = GwtPopupContext.extractPoint(popupContext);
@@ -259,17 +258,17 @@ public class GwtDialogUiFactory implements DialogUiFactoryInterface
     }
 
     @Override
-    public DialogInterface create(PopupContext popupContext, boolean modal, String title, String text, String[] options) throws RaplaException
+    public DialogInterface create(PopupContext popupContext, String title, String text, String[] options)
     {
-        final DialogInterface di = create(popupContext, modal, new Label(text), options);
+        final DialogInterface di = create(popupContext, false, new Label(text), options);
         di.setTitle(title);
         return di;
     }
 
     @Override
-    public DialogInterface create(PopupContext popupContext, boolean modal, String title, String text) throws RaplaException
+    public DialogInterface create(PopupContext popupContext, String title, String text)
     {
-        final DialogInterface di = create(popupContext, modal, title, text, DialogUiFactoryInterface.Util.getDefaultOptions());
+        final DialogInterface di = create(popupContext, title, text, DialogUiFactoryInterface.Util.getDefaultOptions());
         return di;
     }
 
@@ -295,11 +294,8 @@ public class GwtDialogUiFactory implements DialogUiFactoryInterface
             {
                 final String key = "error";
                 final String title = i18n.format("exclamation.format", i18n.getString(key));
-                final DialogInterface di = create(popupContext, true, title, message);
+                final DialogInterface di = create(popupContext, title, message);
                 di.start(true);
-            }
-            catch (RaplaException e)
-            {
             }
             catch (Throwable e)
             {
@@ -325,12 +321,8 @@ public class GwtDialogUiFactory implements DialogUiFactoryInterface
                 }
                 final String key = "error";
                 final String title = i18n.format("exclamation.format", i18n.getString(key));
-                DialogInterface di = create(popupContext, true, title, message);
+                DialogInterface di = create(popupContext, title, message);
                 di.start(true);
-            }
-            catch (RaplaException ex2)
-            {
-                logger.error(ex2.getMessage(), ex2);
             }
             catch (Throwable ex2)
             {
@@ -376,12 +368,6 @@ public class GwtDialogUiFactory implements DialogUiFactoryInterface
             }
         }
         return buf.toString();
-    }
-
-    @Override
-    public Void showError(Exception ex, PopupContext context)
-    {
-        return showException(ex, context);
     }
 
     @Override

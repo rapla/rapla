@@ -16,5 +16,5 @@ public interface TaskPresenter
     void updateView(ModificationEvent event);
     String getTitle(ApplicationEvent activity);
     Observable<String> getBusyIdleObservable();
-    Promise<Void> processStop(ApplicationEvent event, RaplaWidget widget);
+    Promise<Void> processStop(ApplicationEvent event);
 }

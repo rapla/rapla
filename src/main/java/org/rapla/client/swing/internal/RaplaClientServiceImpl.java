@@ -31,7 +31,6 @@ import org.rapla.client.swing.toolkit.FrameControllerList;
 import org.rapla.components.i18n.BundleManager;
 import org.rapla.components.i18n.internal.DefaultBundleManager;
 import org.rapla.entities.User;
-import org.rapla.facade.RaplaFacade;
 import org.rapla.facade.client.ClientFacade;
 import org.rapla.facade.UpdateErrorListener;
 import org.rapla.facade.internal.ClientFacadeImpl;
@@ -579,7 +578,7 @@ public class RaplaClientServiceImpl implements ClientService, UpdateErrorListene
                     try
                     {
                         Component owner = null;
-                        final DialogInterface dialog = dialogUiFactory.create(new SwingPopupContext(owner, null), modal, title, message);
+                        final DialogInterface dialog = dialogUiFactory.create(new SwingPopupContext(owner, null), title, message);
                         Runnable action = new Runnable()
                         {
                             private static final long serialVersionUID = 1L;

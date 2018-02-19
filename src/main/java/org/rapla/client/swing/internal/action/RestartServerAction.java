@@ -35,15 +35,7 @@ public class RestartServerAction extends RaplaAction {
     }
     
     public void actionPerformed() {
-        SwingUtilities.invokeLater( new Runnable() {
-            public void run() {
-                try {
-					service.restartServer();
-                } catch (RaplaException ex) {
-                    getLogger().error("Error restarting ", ex);
-                }
-            }
-        });
+        service.restartServer().exceptionally( (ex)->getLogger().error("Error restarting ", ex));
     }
 
 

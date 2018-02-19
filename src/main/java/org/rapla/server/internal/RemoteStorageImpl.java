@@ -248,13 +248,19 @@ import java.util.stream.Collectors;
         }
     }
 
-    public void restartServer() throws RaplaException
+    public Promise<Void> restartServer()
     {
-        final User user = checkSessionUser();
-        if (!user.isAdmin())
-            throw new RaplaSecurityException("Only admins can restart the server");
+        try
+        {
+            final User user = checkSessionUser();
+            if (!user.isAdmin())
+                throw new RaplaSecurityException("Only admins can restart the server");
 
-        shutdownService.shutdown(true);
+            shutdownService.shutdown(true);
+            return ResolvedPromise.VOID_PROMISE;
+        } catch (RaplaException ex) {
+            return new ResolvedPromise(ex);
+        }
     }
 
     public UpdateEvent store(UpdateEvent event) throws RaplaException

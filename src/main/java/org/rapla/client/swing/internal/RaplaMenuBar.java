@@ -472,8 +472,6 @@ public class RaplaMenuBar extends RaplaGUIComponent
 
             public void actionPerformed(ActionEvent e)
             {
-                try
-                {
                     HTMLView infoText = new HTMLView();
                     infoText.setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
                     String javaversion;
@@ -552,11 +550,6 @@ public class RaplaMenuBar extends RaplaGUIComponent
                         }
 
                     });
-                }
-                catch (RaplaException ex)
-                {
-                    dialogUiFactory.showException(ex, createPopupContext());
-                }
             }
 
         };
@@ -584,32 +577,25 @@ public class RaplaMenuBar extends RaplaGUIComponent
             // overwrite the actionPerformed method that is called on click
             public void actionPerformed(ActionEvent e)
             {
-                try
-                {
-                    // we need a new instance of HTMLView to visualize the short
-                    // version of the license text including the two links
-                    HTMLView licenseText = new HTMLView();
-                    // giving the gui element some borders
-                    licenseText.setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
-                    // we look up the text was originally meant for the welcome field
-                    // and put it into a new instance of RaplaWidget
-                    RaplaWidget welcomeField = licenseInfoUIProvider.get();
-                    // the following creates the dialog that pops up, when we click
-                    // on the license entry within the help section of the menu menubar
-                    // we call the create Method of the DialogUI class and give it all necessary things
-                    DialogInterface dialog = dialogUiFactory.create(createPopupContext(), false, new JScrollPane((Component) welcomeField.getComponent()),
-                            new String[] { getString("ok") });
-                    // setting the dialog's title
-                    dialog.setTitle(name);
-                    // and the size of the popup window
-                    dialog.setSize(550, 250);
-                    // but I honestly have no clue what this startNoPack() does
-                    dialog.start(false);
-                }
-                catch (RaplaException ex)
-                {
-                    dialogUiFactory.showException(ex, createPopupContext());
-                }
+                // we need a new instance of HTMLView to visualize the short
+                // version of the license text including the two links
+                HTMLView licenseText = new HTMLView();
+                // giving the gui element some borders
+                licenseText.setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
+                // we look up the text was originally meant for the welcome field
+                // and put it into a new instance of RaplaWidget
+                RaplaWidget welcomeField = licenseInfoUIProvider.get();
+                // the following creates the dialog that pops up, when we click
+                // on the license entry within the help section of the menu menubar
+                // we call the create Method of the DialogUI class and give it all necessary things
+                DialogInterface dialog = dialogUiFactory.create(createPopupContext(), false, new JScrollPane((Component) welcomeField.getComponent()),
+                        new String[] { getString("ok") });
+                // setting the dialog's title
+                dialog.setTitle(name);
+                // and the size of the popup window
+                dialog.setSize(550, 250);
+                // but I honestly have no clue what this startNoPack() does
+                dialog.start(false);
             }
         };
 

@@ -11,6 +11,7 @@ import org.rapla.inject.DefaultImplementation;
 import org.rapla.inject.InjectionContext;
 import org.rapla.logger.Logger;
 import org.rapla.plugin.archiver.ArchiverService;
+import org.rapla.scheduler.CommandScheduler;
 import org.rapla.scheduler.Promise;
 import org.rapla.server.RemoteSession;
 import org.rapla.storage.ImportExportManager;
@@ -31,6 +32,8 @@ public class ArchiverServiceImpl  implements ArchiverService
 {
     @Inject
     RemoteSession session;
+    @Inject
+    CommandScheduler scheduler;
     @Inject
     RaplaFacade raplaFacade;
     @Inject
@@ -68,31 +71,36 @@ public class ArchiverServiceImpl  implements ArchiverService
         return enabled;
     }
 
-    public void backupNow() throws RaplaException {
-		checkAccess();
-		if (!isExportEnabled())
-		{
-			throw new RaplaException("Export not enabled");
-		}
-
-		importExportManager.doExport();
+    public Promise<Void> backupNow() {
+        return scheduler.run(() ->{
+            checkAccess();
+            if (!isExportEnabled())
+            {
+                throw new RaplaException("Export not enabled");
+            }
+            importExportManager.doExport();
+        });
 	}
 
-	public void restore() throws RaplaException {
-		checkAccess();
-		if (!isExportEnabled())
-		{
-			throw new RaplaException("Export not enabled");
-		}
-		// We only do an import here 
-		importExportManager.doImport();
+	public Promise<Void> restore() {
+	    return scheduler.run( ()-> {
+            checkAccess();
+            if (!isExportEnabled())
+            {
+                throw new RaplaException("Export not enabled");
+            }
+            // We only do an import here
+            importExportManager.doImport();
+        });
 	}
 
-	public void delete(Integer removeOlderInDays) throws RaplaException {
-		checkAccess();
-        final RaplaFacade raplaFacade = this.raplaFacade;
-        final Logger logger = this.logger;
-        delete(removeOlderInDays, raplaFacade, logger);
+	public Promise<Void> delete(Integer removeOlderInDays)  {
+        return scheduler.run( ()-> {
+            checkAccess();
+            final RaplaFacade raplaFacade = this.raplaFacade;
+            final Logger logger = this.logger;
+            delete(removeOlderInDays, raplaFacade, logger);
+        });
 	}
 
     static public void delete(Integer removeOlderInDays, RaplaFacade raplaFacade, Logger logger) throws RaplaException

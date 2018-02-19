@@ -11,6 +11,7 @@ import org.rapla.client.swing.internal.edit.AllocatableMergeEditUI;
 import org.rapla.client.swing.toolkit.RaplaButton;
 import org.rapla.entities.Entity;
 import org.rapla.entities.IllegalAnnotationException;
+import org.rapla.facade.ModificationEvent;
 import org.rapla.framework.RaplaException;
 import org.rapla.inject.DefaultImplementation;
 import org.rapla.inject.InjectionContext;
@@ -113,6 +114,7 @@ public class EditTaskViewSwing implements EditTaskPresenter.EditTaskViewFactory<
                     close.run();
                 });
             }
+
         };
     }
 

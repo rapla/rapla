@@ -36,6 +36,7 @@ import org.rapla.framework.RaplaLocale;
 import org.rapla.logger.Logger;
 import org.rapla.plugin.abstractcalendar.MultiCalendarPrint;
 import org.rapla.scheduler.CommandScheduler;
+import org.rapla.scheduler.Promise;
 
 import javax.inject.Inject;
 import javax.inject.Provider;
@@ -409,10 +410,7 @@ public class CalendarPrintDialog extends DialogUI
                     Component topLevel = getParent();
 					if(success )
 					{
-						if (confirmPrint(topLevel))
-						{
-							close();
-						}
+						confirmPrint(topLevel).thenAccept(( confirmed) -> {if (confirmed) close();} );
 					}
                 }
 
@@ -422,23 +420,16 @@ public class CalendarPrintDialog extends DialogUI
         }
     }
     
-    protected boolean confirmPrint(Component topLevel) {
-		try {
-			DialogInterface dlg = dialogUiFactory.create(
-                    		new SwingPopupContext(topLevel, null)
-                            ,true
-                            ,i18n.getString("print")
-                            ,i18n.getString("file_saved")
-                            ,new String[] { i18n.getString("ok")}
-                            );
-			dlg.setIcon("icon.pdf");
-            dlg.setDefault(0);
-            dlg.start(true);
-            return (dlg.getSelectedIndex() == 0);
-		} catch (RaplaException e) {
-			return true;
-		}
-
+    protected Promise<Boolean> confirmPrint(Component topLevel) {
+        DialogInterface dlg = dialogUiFactory.create(
+                        new SwingPopupContext(topLevel, null)
+                        , i18n.getString("print")
+                        ,i18n.getString("file_saved")
+                        ,new String[] { i18n.getString("ok")}
+                        );
+        dlg.setIcon("icon.pdf");
+        dlg.setDefault(0);
+        return dlg.start(true).thenApply( index -> index ==0);
     }
 
     public void showException(Exception ex) {

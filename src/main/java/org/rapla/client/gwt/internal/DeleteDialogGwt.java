@@ -27,24 +27,20 @@ public class DeleteDialogGwt implements DeleteDialogInterface {
     @Override
     public Promise<Boolean> showDeleteDialog(PopupContext context, Object[] deletables) {
         DialogInterface dlg = null;
-        try {
-            String[] options = new String[] {i18n.getString("delete"), i18n.getString("abort")};
-            String title = i18n.getString("delete");
-            StringBuilder deletablesText = new StringBuilder();
-            boolean first = true;
-            for (Object deletable: deletables)
+        String[] options = new String[] {i18n.getString("delete"), i18n.getString("abort")};
+        String title = i18n.getString("delete");
+        StringBuilder deletablesText = new StringBuilder();
+        boolean first = true;
+        for (Object deletable: deletables)
+        {
+            if (first)
             {
-                if (first)
-                {
-                    first = false;
-                    deletablesText.append(", ");
-                }
-                deletablesText.append(deletable);
+                first = false;
+                deletablesText.append(", ");
             }
-            dlg = dialogUiFactory.create(context,false,title,deletablesText.toString(), options);
-        } catch (RaplaException ex) {
-            return new ResolvedPromise<>(ex);
+            deletablesText.append(deletable);
         }
+        dlg = dialogUiFactory.create(context, title,deletablesText.toString(), options);
         return dlg.start(true).thenApply(result->result== 0 ? Boolean.TRUE : Boolean.FALSE);
 
     }

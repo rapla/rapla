@@ -107,14 +107,7 @@ public class MultiLanguageField extends AbstractEditField implements ChangeListe
         editorDialog = new MultiLanguageEditorDialog(button);
         editorDialog.addCellEditorListener(this);
         editorDialog.setEditorValue(name);
-        try
-        {
-            editorDialog.show();
-        }
-        catch (RaplaException ex)
-        {
-            dialogUiFactory.showException(ex, new SwingPopupContext(getComponent(), null));
-        }
+        editorDialog.show();
     }
 
     public void editingStopped(ChangeEvent e)
@@ -181,7 +174,7 @@ public class MultiLanguageField extends AbstractEditField implements ChangeListe
             return getEditorValue();
         }
 
-        public void show() throws RaplaException
+        public void show()
         {
             PopupContext popupContext = dialogUiFactory.createPopupContext( ()->owner);
             DialogInterface dlg = dialogUiFactory.create(popupContext, true, comp, new String[] { i18n.getString("ok"), i18n.getString("cancel") });

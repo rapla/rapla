@@ -131,7 +131,7 @@ public class Application implements ApplicationView.Presenter, ModificationListe
             } else {
                 Function<ApplicationEvent, Boolean> windowClosingFunction = (event) ->
                 {
-                    Promise<Void> promise = taskPresenter.processStop(event, widget).thenRun(() ->
+                    Promise<Void> promise = taskPresenter.processStop(event).thenRun(() ->
                     {
                         event.setStop(true);
                         eventBus.publish(event);
@@ -237,22 +237,16 @@ public class Application implements ApplicationView.Presenter, ModificationListe
     }
 
     protected Promise<Boolean> shouldExit() {
-        try {
-            PopupContext popupContext = mainView.createPopupContext();
-            DialogInterface dlg = dialogUiFactory.create(popupContext, false, i18n.getString("exit.title"), i18n.getString("exit.question"),
-                    new String[]{i18n.getString("exit.ok"), i18n.getString("exit.abort")});
-            dlg.setIcon("icon.question");
-            //dlg.getButton(0).setIcon(getIcon("icon.confirm"));
-            dlg.getAction(0).setIcon("icon.abort");
-            dlg.setDefault(1);
-            final Promise<Integer> start = dlg.start(true);
-            final Promise<Boolean> result = start.thenApply((index) -> index == 0);
-            return result;
-        } catch (RaplaException e) {
-            logger.error(e.getMessage(), e);
-            return new ResolvedPromise<>(Boolean.TRUE);
-        }
-
+        PopupContext popupContext = mainView.createPopupContext();
+        DialogInterface dlg = dialogUiFactory.create(popupContext, i18n.getString("exit.title"), i18n.getString("exit.question"),
+                new String[]{i18n.getString("exit.ok"), i18n.getString("exit.abort")});
+        dlg.setIcon("icon.question");
+        //dlg.getButton(0).setIcon(getIcon("icon.confirm"));
+        dlg.getAction(0).setIcon("icon.abort");
+        dlg.setDefault(1);
+        final Promise<Integer> start = dlg.start(true);
+        final Promise<Boolean> result = start.thenApply((index) -> index == 0);
+        return result;
     }
 
     @Override

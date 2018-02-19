@@ -14,10 +14,10 @@
 package org.rapla.storage.dbrm;
 
 import org.rapla.framework.RaplaException;
+import org.rapla.scheduler.Promise;
 
-
-public interface RestartServer 
+public interface RestartServer
 {
     boolean isRestartPossible();
-    void restartServer() throws RaplaException;
+    Promise<Void> restartServer();
 }

@@ -31,6 +31,7 @@ import org.rapla.logger.Logger;
 import org.rapla.plugin.tableview.RaplaTableColumn;
 import org.rapla.plugin.tableview.internal.TableConfig;
 import org.rapla.scheduler.Promise;
+import org.rapla.scheduler.ResolvedPromise;
 
 import javax.inject.Inject;
 import javax.swing.JMenuItem;
@@ -116,7 +117,7 @@ public class CSVExportMenu extends RaplaGUIComponent implements ExportMenuExtens
                 return new ArrayList<Object>(list);
             });
         }
-        promise.thenAccept((objects) ->
+        promise.thenCompose((objects) ->
         {
             StringBuffer buf = new StringBuffer();
             for (RaplaTableColumn column : columns)
@@ -159,7 +160,11 @@ public class CSVExportMenu extends RaplaGUIComponent implements ExportMenuExtens
             String filename = calendarName + "-" + sdfyyyyMMdd.format(model.getStartDate()) + "-" + sdfyyyyMMdd.format(model.getEndDate()) + ".csv";
             if (saveFile(bytes, filename, "csv"))
             {
-                exportFinished(getMainComponent());
+                return exportFinished(getMainComponent());
+            }
+            else
+            {
+                return ResolvedPromise.VOID_PROMISE;
             }
         }).exceptionally((ex) ->
         {
@@ -168,23 +173,16 @@ public class CSVExportMenu extends RaplaGUIComponent implements ExportMenuExtens
         });
     }	
 	
-	 protected boolean exportFinished(Component topLevel) {
-			try {
-				DialogInterface dlg = dialogUiFactory.create(
-				                new SwingPopupContext(topLevel, null)
-	                            ,true
-	                            ,getString("export")
-	                            ,getString("file_saved")
-	                            ,new String[] { getString("ok")}
-	                            );
-				dlg.setIcon("icon.export");
-	            dlg.setDefault(0);
-	            dlg.start(true);
-	            return (dlg.getSelectedIndex() == 0);
-			} catch (RaplaException e) {
-				return true;
-			}
-
+	 protected Promise<Void> exportFinished(Component topLevel) {
+            DialogInterface dlg = dialogUiFactory.create(
+                            new SwingPopupContext(topLevel, null)
+                            , getString("export")
+                            ,getString("file_saved")
+                            ,new String[] { getString("ok")}
+                            );
+            dlg.setIcon("icon.export");
+            dlg.setDefault(0);
+            return dlg.start(true).thenApply((index)->null);
 	    }
 
 	private String escape(Object cell) { 

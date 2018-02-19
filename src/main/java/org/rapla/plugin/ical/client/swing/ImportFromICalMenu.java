@@ -317,7 +317,7 @@ public class ImportFromICalMenu extends RaplaGUIComponent implements ImportMenuE
                         {
                             text += ".";
                         }
-                        DialogInterface okDlg = dialogUiFactory.create(new SwingPopupContext(getMainComponent(), null), false, title, text);
+                        DialogInterface okDlg = dialogUiFactory.create(new SwingPopupContext(getMainComponent(), null), title, text);
                         okDlg.start(true);
 
 				} catch (Exception e1) {

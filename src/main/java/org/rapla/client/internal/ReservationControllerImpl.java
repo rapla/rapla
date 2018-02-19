@@ -212,12 +212,11 @@ public class ReservationControllerImpl implements ReservationController {
     }
 
     protected Promise<Integer> showDialog(String action, PopupContext popupContext, List<String> optionList, List<String> iconList, String title, String content,
-                                          String dialogIcon) throws RaplaException
+                                          String dialogIcon)
     {
         DialogInterface dialog = dialogUI.create(
                 popupContext
-                ,true
-                ,title
+                , title
                 ,content
                 ,optionList.toArray(new String[] {})
         );
@@ -553,7 +552,6 @@ public class ReservationControllerImpl implements ReservationController {
             String title = i18n.getString(action);
             String content = i18n.getString(action + "_appointment.format");
             String dialogIcon = "icon.question";
-
             return showDialog(action, context, optionList, iconList, title, content, dialogIcon).thenApply((index) -> index < 0 ? DialogAction.CANCEL : actionList.get(index));
         } else {
             if (action.equals("delete")) {

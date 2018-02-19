@@ -177,7 +177,7 @@ public interface RemoteStorage
 
     @POST
     @Path("restart")
-    void restartServer() throws RaplaException;
+    Promise<Void> restartServer();
 
     @POST
     @Path("dispatchSync")

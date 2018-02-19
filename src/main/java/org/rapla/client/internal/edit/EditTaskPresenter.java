@@ -78,6 +78,7 @@ public class EditTaskPresenter implements TaskPresenter
     final ReservationController reservationController;
     private final Set<MergeCheckExtension> mergeCheckers;
     Subject<String> busyIdleObservable;
+    EditTaskView editTaskView;
 
     public interface EditTaskViewFactory<C>
     {
@@ -118,6 +119,7 @@ public class EditTaskPresenter implements TaskPresenter
         final String taskId = applicationEvent.getApplicationEventId();
         String info = applicationEvent.getInfo();
         PopupContext popupContext = applicationEvent.getPopupContext();
+        final Promise<EditTaskView> editTaskView;
         try
         {
             final boolean isMerge = taskId.equals(MERGE_RESOURCES_ID);
@@ -164,7 +166,7 @@ public class EditTaskPresenter implements TaskPresenter
                     }
                 }
 
-                return createEditDialog(entities,  popupContext, applicationEvent);
+                editTaskView = createEditDialog(entities,  popupContext, applicationEvent);
             }
             else if (CREATE_RESERVATION_FOR_DYNAMIC_TYPE.equals(taskId))
             {
@@ -174,7 +176,7 @@ public class EditTaskPresenter implements TaskPresenter
                 final User user = clientFacade.getUser();
                 final Promise<List<Reservation>> newReservations = RaplaComponent.newReservation(type, user, raplaFacade, model)
                         .thenApply(r->RaplaComponent.addAllocatables(model, Collections.singletonList(r), user));
-                return newReservations.thenCompose( list->createEditDialog(list, popupContext, applicationEvent));
+                editTaskView = newReservations.thenCompose( list->createEditDialog(list, popupContext, applicationEvent));
 
             }
             else if (CREATE_RESERVATION_FROM_TEMPLATE.equals(taskId))
@@ -184,7 +186,7 @@ public class EditTaskPresenter implements TaskPresenter
                 User user = clientFacade.getUser();
                 Allocatable template = findTemplate(templateId);
                 final Promise<Collection<Reservation>> templatePromise = raplaFacade.getTemplateReservations(template);
-                Promise<RaplaWidget> widgetPromise = templatePromise.thenCompose((reservations) ->
+                Promise<EditTaskView> widgetPromise = templatePromise.thenCompose((reservations) ->
                 {
                     if (reservations.size() == 0)
                     {
@@ -216,7 +218,7 @@ public class EditTaskPresenter implements TaskPresenter
                         return createEditDialog(list, popupContext, applicationEvent);
                     });
                 });
-                return widgetPromise;
+                editTaskView = widgetPromise;
             }
             else
             {
@@ -227,6 +229,7 @@ public class EditTaskPresenter implements TaskPresenter
         {
             return new ResolvedPromise<>(e);
         }
+        return editTaskView.thenApply(( view) -> this.editTaskView = view);
     }
 
     private Allocatable findTemplate(String templateId) throws RaplaException
@@ -306,7 +309,7 @@ public class EditTaskPresenter implements TaskPresenter
             return null;
     }
 
-    private <T extends Entity> Promise<RaplaWidget> createEditDialog(Collection<T> list,  PopupContext popupContext, ApplicationEvent applicationEvent)
+    private <T extends Entity> Promise<EditTaskView> createEditDialog(Collection<T> list,  PopupContext popupContext, ApplicationEvent applicationEvent)
             throws RaplaException
     {
         boolean isMerge = applicationEvent.getApplicationEventId().equals(MERGE_RESOURCES_ID);
@@ -326,7 +329,7 @@ public class EditTaskPresenter implements TaskPresenter
     }
 
     @Nullable
-    private <T extends Entity> Promise<RaplaWidget> getEditWidget(PopupContext popupContext, ApplicationEvent applicationEvent, boolean isMerge, Map<T, T> editMap) throws RaplaException {
+    private <T extends Entity> Promise<EditTaskView> getEditWidget(PopupContext popupContext, ApplicationEvent applicationEvent, boolean isMerge, Map<T, T> editMap) throws RaplaException {
         final Collection<T> origs = editMap.keySet();
         if (editMap.size() == 0) {
             return new ResolvedPromise<>(new RaplaException("No object to edit passed"));
@@ -336,11 +339,10 @@ public class EditTaskPresenter implements TaskPresenter
         final EditTaskView editTaskView;
         if ( allReservations && editValues.size() == 1)
         {
-            final ReservationEdit editTaskView1 = reservationEditProvider.get();
+            editTaskView = reservationEditProvider.get();
             final Reservation original = (Reservation) editMap.keySet().iterator().next();
             final Reservation toEdit = (Reservation) editMap.get( original);
-            editTaskView1.editReservation( toEdit, original,appointmentBlock);
-            editTaskView = editTaskView1;
+            ((ReservationEdit)editTaskView).editReservation( toEdit, original,appointmentBlock);
         }
         else {
             editTaskView = this.editTaskViewFactory.create(editMap, isMerge);
@@ -416,12 +418,17 @@ public class EditTaskPresenter implements TaskPresenter
     }
 
     @Override
-    public Promise<Void> processStop(ApplicationEvent event, RaplaWidget widget)
+    public Promise<Void> processStop(ApplicationEvent event)
+    {
+        return processStop(event,  this.editTaskView);
+    }
+
+    private Promise<Void> processStop(ApplicationEvent event, EditTaskView editTaskView)
     {
         PopupContext popupContext = event.getPopupContext();
-        if ( widget != null && widget instanceof ReservationEdit)
+        if ( editTaskView != null && editTaskView instanceof ReservationEdit)
         {
-            if (!((ReservationEdit) widget).hasChanged())
+            if (!((ReservationEdit) editTaskView).hasChanged())
             {
                 return new ResolvedPromise<>(Promise.VOID);
             }
@@ -431,9 +438,7 @@ public class EditTaskPresenter implements TaskPresenter
 
     private Promise<Void> processStop(PopupContext popupContext)
     {
-        try
-        {
-            DialogInterface dlg = dialogUiFactory.create(popupContext, false, i18n.getString("confirm-close.title"), i18n.getString("confirm-close.question"),
+            DialogInterface dlg = dialogUiFactory.create(popupContext, i18n.getString("confirm-close.title"), i18n.getString("confirm-close.question"),
                     new String[] { i18n.getString("confirm-close.ok"), i18n.getString("back") });
             dlg.setIcon("icon.question");
             dlg.setDefault(1);
@@ -446,11 +451,6 @@ public class EditTaskPresenter implements TaskPresenter
                         }
                     }
             );
-        }
-        catch (RaplaException ex)
-        {
-            return new ResolvedPromise<Void>(ex);
-        }
     }
 
     Promise handleException(Promise promise,PopupContext popupContext)
@@ -480,68 +480,72 @@ public class EditTaskPresenter implements TaskPresenter
     @Override
     public void updateView(ModificationEvent event)
     {
+        if ( editTaskView != null)
+        {
+            if (editTaskView instanceof  ReservationEdit)
+            {
+                ReservationEdit c = (ReservationEdit)editTaskView;
+                c.updateView(event);
+                TimeInterval invalidateInterval = event.getInvalidateInterval();
+                Reservation original = c.getOriginal();
+                if (invalidateInterval != null && original != null)
+                {
+                    boolean test = false;
+                    for (Appointment app : original.getAppointments())
+                    {
+                        if (app.overlapsTimeInterval(invalidateInterval))
+                        {
+                            test = true;
+                        }
+
+                    }
+                    if (test)
+                    {
+                        ((ReservationEdit) editTaskView).updateView( event);
+                    }
+                }
+                Reservation persistant;
+                try
+                {
+                    persistant =   raplaFacade.getPersistant(original);
+                    Date version = persistant.getLastChanged();
+                    Date originalVersion = original.getLastChanged();
+                    if (originalVersion != null && version != null && originalVersion.before(version))
+                    {
+                        updateReservation(persistant);
+                    }
+                }
+                catch (EntityNotFoundException ex)
+                {
+                    deleteReservation();
+                    return;
+                }
+                catch (RaplaException e)
+                {
+                    dialogUiFactory.showException(e, null);
+                }
+
+            }
+
+        }
         // FIXME
 //
 //        ArrayList<ReservationEdit> clone = new ArrayList<ReservationEdit>(editWindowList);
 //        for (ReservationEdit edit : clone)
 //        {
-//            ReservationEdit c = edit;
-//            c.updateView(evt);
-//            TimeInterval invalidateInterval = event.getInvalidateInterval();
-//            Reservation original = c.getOriginal();
-//            if (invalidateInterval != null && original != null)
-//            {
-//                boolean test = false;
-//                for (Appointment app : original.getAppointments())
-//                {
-//                    if (app.overlaps(invalidateInterval))
-//                    {
-//                        test = true;
-//                    }
-//
-//                }
-//                if (test)
-//                {
-//                    try
-//                    {
-//                        Reservation persistant = getFacade().getPersistant(original);
-//                        Date version = persistant.getLastChanged();
-//                        Date originalVersion = original.getLastChanged();
-//                        if (originalVersion != null && version != null && originalVersion.before(version))
-//                        {
-//                            c.updateReservation(persistant);
-//                        }
-//                    }
-//                    catch (EntityNotFoundException ex)
-//                    {
-//                        c.deleteReservation();
-//                    }
-//
-//                }
-//            }
+//          
 //
 //        }
     }
 
-//    public void deleteReservation() throws RaplaException
-//    {
-//        if (bDeleting)
-//            return;
-//        getLogger().debug("Reservation has been deleted.");
-//        DialogInterface dlg = dialogUiFactory
-//                .create(new SwingPopupContext(mainContent, null), true, getString("warning"), getString("warning.reservation.delete"));
-//        dlg.setIcon("icon.warning");
-//        dlg.start(true);
-//        closeWindow();
-//    }
-//
-//    public void updateReservation(Reservation newReservation) throws RaplaException
-//    {
+    public void updateReservation(Reservation newReservation) throws RaplaException
+    {
 //        if (bSaving)
 //            return;
 //        getLogger().debug("Reservation has been changed.");
+//        final PopupContext popupContext = dialogUiFactory.createPopupContext(()->contentPane);
 //        DialogInterface dlg = dialogUiFactory
-//                .create(new SwingPopupContext(mainContent, null), true, getString("warning"), getString("warning.reservation.update"));
+//                .create(popupContext, true, getI18n().getString("warning"), getI18n().getString("warning.reservation.update"));
 //        commandHistory.clear();
 //        try
 //        {
@@ -554,9 +558,27 @@ public class EditTaskPresenter implements TaskPresenter
 //        {
 //            dialogUiFactory.showException(ex, new SwingPopupContext(mainContent, null));
 //        }
-//    }
+    }
 
-//     if (bSaving || dlg == null || !dlg.isVisible() || ui == null)
+
+    public void deleteReservation()
+    {
+//        if (bDeleting)
+//            return;
+//        getLogger().debug("Reservation has been deleted.");
+//        DialogInterface dlg = dialogUiFactory
+//                .create(new SwingPopupContext(mainContent, null), true, getI18n().getString("warning"), getI18n().getString("warning.reservation.delete"));
+//        dlg.setIcon("icon.warning");
+//        dlg.start(true);
+//        closeWindow();
+    }
+
+
+
+
+
+
+    //     if (bSaving || dlg == null || !dlg.isVisible() || ui == null)
 //        return;
 //        if (shouldCancelOnModification(evt))
 //    {

@@ -197,7 +197,7 @@ final public class ErrorDialog {
 
     private void showDialog(String title, String message,Component owner) {
         try {
-            DialogInterface dlg = dialogUiFactory.create(new SwingPopupContext(owner, null),false,title,message);
+            DialogInterface dlg = dialogUiFactory.create(new SwingPopupContext(owner, null), title,message);
             dlg.setIcon("icon.error");
             dlg.start(true);
         } catch (Exception ex2) {
@@ -207,7 +207,7 @@ final public class ErrorDialog {
 
     public void showWarningDialog(String title, String message,Component owner) {
         try {
-            DialogInterface dlg = dialogUiFactory.create(new SwingPopupContext(owner, null),false,title,message);
+            DialogInterface dlg = dialogUiFactory.create(new SwingPopupContext(owner, null), title,message);
             dlg.setIcon("icon.warning");
             dlg.start(true);
         } catch (Exception ex2) {

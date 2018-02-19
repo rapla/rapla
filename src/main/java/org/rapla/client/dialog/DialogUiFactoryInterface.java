@@ -2,7 +2,6 @@ package org.rapla.client.dialog;
 
 import org.rapla.client.PopupContext;
 import org.rapla.client.RaplaWidget;
-import org.rapla.framework.RaplaException;
 import org.rapla.storage.RaplaNewVersionException;
 import org.rapla.storage.RaplaSecurityException;
 import org.rapla.storage.dbrm.RaplaConnectException;
@@ -11,18 +10,16 @@ import org.rapla.storage.dbrm.WrongRaplaVersionException;
 public interface  DialogUiFactoryInterface
 {
 
-    DialogInterface create(PopupContext popupContext, boolean modal, Object content, String[] options) throws RaplaException;
+    DialogInterface create(PopupContext popupContext, boolean modal, Object content, String[] options);
 
-    DialogInterface create(PopupContext popupContext, boolean modal, String title, String text, String[] options) throws RaplaException;
+    DialogInterface create(PopupContext popupContext, String title, String text, String[] options);
 
-    DialogInterface create(PopupContext popupContext, boolean modal, String title, String text) throws RaplaException;
+    DialogInterface create(PopupContext popupContext, String title, String text);
 
     /** Creates a new ErrorDialog with the specified owner and displays the exception
     @param ex the exception that should be displayed.
     */
     Void showException(Throwable ex, PopupContext popupContext);
-
-    Void showError(Exception ex, PopupContext context);
 
     /** Creates a new ErrorDialog with the specified owner and displays the waring */
     Void showWarning(String warning, PopupContext popupContext);

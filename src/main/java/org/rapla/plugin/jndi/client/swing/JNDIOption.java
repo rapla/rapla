@@ -41,7 +41,6 @@ import org.rapla.plugin.jndi.internal.JNDIConfig;
 import org.rapla.plugin.jndi.internal.JNDIConfig.MailTestRequest;
 import org.rapla.scheduler.Promise;
 import org.rapla.scheduler.ResolvedPromise;
-import org.rapla.storage.RaplaSecurityException;
 
 import javax.inject.Inject;
 import javax.inject.Provider;
@@ -199,7 +198,7 @@ public class JNDIOption implements JNDIConf, PluginOptionPanel
                         String password = new String(testUser.getNewPassword());
                         final Promise<Boolean> testPromise = configService.test(new MailTestRequest(conf, username, password));
                         return testPromise.thenCompose((dummy) ->
-                                dialogUiFactory.create(new SwingPopupContext(getComponent(), null), false, "JNDI", "JNDI Authentification successfull").start(true)
+                                dialogUiFactory.create(new SwingPopupContext(getComponent(), null), "JNDI", "JNDI Authentification successfull").start(true)
                         ).thenApply((index2) -> null);
                     }
                 ).exceptionally((ex)->dialogUiFactory.showException(ex, new SwingPopupContext(getComponent(), null)));

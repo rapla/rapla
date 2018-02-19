@@ -316,20 +316,10 @@ public class RemoteOperator
         return !isStandalone;
     }
 
-    synchronized public void restartServer() throws RaplaException {
+    synchronized public Promise<Void> restartServer()  {
         getLogger().info("Restart in progress ...");
         String message = i18n.getString("restart_server");
-        //      isRestarting = true;
-        try {
-            RemoteStorage serv = getRemoteStorage();
-            serv.restartServer();
-            fireStorageDisconnected(message);
-        } catch (RaplaException ex) {
-            throw ex;
-        } catch (Exception ex) {
-            throw new RaplaException(ex);
-        }
-
+        return getRemoteStorage().restartServer().thenRun(()->fireStorageDisconnected(message));
     }
 
     @Override

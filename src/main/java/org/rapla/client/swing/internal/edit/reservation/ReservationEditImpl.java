@@ -15,8 +15,10 @@ package org.rapla.client.swing.internal.edit.reservation;
 import io.reactivex.functions.Consumer;
 import org.rapla.RaplaResources;
 import org.rapla.client.AppointmentListener;
+import org.rapla.client.PopupContext;
 import org.rapla.client.RaplaWidget;
 import org.rapla.client.ReservationEdit;
+import org.rapla.client.dialog.DialogInterface;
 import org.rapla.client.dialog.DialogUiFactoryInterface;
 import org.rapla.client.extensionpoints.AppointmentStatusFactory;
 import org.rapla.client.internal.RaplaColors;
@@ -32,6 +34,7 @@ import org.rapla.client.swing.toolkit.RaplaButton;
 import org.rapla.components.layout.TableLayout;
 import org.rapla.components.util.undo.CommandHistory;
 import org.rapla.entities.Entity;
+import org.rapla.entities.EntityNotFoundException;
 import org.rapla.entities.User;
 import org.rapla.entities.domain.Appointment;
 import org.rapla.entities.domain.AppointmentBlock;
@@ -350,6 +353,7 @@ public final class ReservationEditImpl extends AbstractAppointmentEditor impleme
         this.closeCmd = closeCmd;
         this.deleteCmd = deleteCmd;
     }
+
 
     @Override
     public void editReservation(Reservation reservation, Reservation original,AppointmentBlock appointmentBlock)

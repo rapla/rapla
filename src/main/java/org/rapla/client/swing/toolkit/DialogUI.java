@@ -26,8 +26,6 @@ import org.rapla.components.xmlbundle.I18nBundle;
 import org.rapla.components.xmlbundle.LocaleChangeEvent;
 import org.rapla.components.xmlbundle.LocaleChangeListener;
 import org.rapla.entities.DependencyException;
-import org.rapla.framework.Disposable;
-import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaInitializationException;
 import org.rapla.inject.DefaultImplementation;
 import org.rapla.inject.InjectionContext;
@@ -513,13 +511,10 @@ public class DialogUI extends JDialog
             return dlg;
         }
 
-        /* (non-Javadoc)
-         * @see org.rapla.client.swing.toolkit.DialogUiFactoryInterface#create(org.rapla.client.PopupContext, boolean, java.lang.String, java.lang.String, java.lang.String[])
-         */
         @Override
-        public DialogInterface create(PopupContext popupContext, boolean modal, String title, String text, String[] options) throws RaplaException
+        public DialogInterface create(PopupContext popupContext, String title, String text, String[] options)
         {
-            DialogUI dlg = (DialogUI) create(popupContext, modal, new JPanel(), options);
+            DialogUI dlg = (DialogUI) create(popupContext, false, new JPanel(), options);
             Point point = null;
             if ( popupContext instanceof SwingPopupContext)
             {
@@ -535,20 +530,14 @@ public class DialogUI extends JDialog
             return dlg;
         }
 
-        /* (non-Javadoc)
-         * @see org.rapla.client.swing.toolkit.DialogUiFactoryInterface#create(org.rapla.client.PopupContext, boolean, java.lang.String, java.lang.String)
-         */
         @Override
-        public DialogInterface create(PopupContext popupContext, boolean modal, String title, String text) throws RaplaException
+        public DialogInterface create(PopupContext popupContext, String title, String text)
         {
-            DialogUI dlg = (DialogUI) create(popupContext, modal, title, text, DialogUiFactoryInterface.Util.getDefaultOptions());
+            DialogUI dlg = (DialogUI) create(popupContext, title, text, DialogUiFactoryInterface.Util.getDefaultOptions());
             dlg.useDefaultOptions = true;
             return dlg;
         }
 
-        /* (non-Javadoc)
-         * @see org.rapla.client.swing.toolkit.DialogUiFactoryInterface#showException(java.lang.Throwable, org.rapla.client.PopupContext)
-         */
         @Override
         public Void showException(Throwable ex, PopupContext popupContext)
         {
@@ -557,15 +546,6 @@ public class DialogUI extends JDialog
                 popupContext = createPopupContext( null);
             }
             return showException(ex, popupContext, i18n, getImages(), logger);
-        }
-
-        /* (non-Javadoc)
-         * @see org.rapla.client.swing.toolkit.DialogUiFactoryInterface#showError(java.lang.Exception, org.rapla.client.PopupContext)
-         */
-        @Override
-        public Void showError(Exception ex, PopupContext context)
-        {
-            return showException(ex, context);
         }
 
         private Void showException(Throwable ex, PopupContext popupContext, RaplaResources i18n, RaplaImages raplaImages, Logger logger)

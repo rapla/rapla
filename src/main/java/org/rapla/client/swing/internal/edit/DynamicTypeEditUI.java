@@ -227,7 +227,7 @@ public class DynamicTypeEditUI extends RaplaGUIComponent
                                 colorChooser.setSelectedIndex(2);
                                 return;
                             }
-                            DialogInterface ui = dialogUiFactory.create(new SwingPopupContext(getMainComponent(), null), true, getString("color.manual"), getString("attribute_color_dialog"), new String[]{getString("yes"),getString("no")});
+                            DialogInterface ui = dialogUiFactory.create(new SwingPopupContext(getMainComponent(), null), getString("color.manual"), getString("attribute_color_dialog"), new String[]{getString("yes"),getString("no")});
                             ui.start(true);
                             if (ui.getSelectedIndex() == 0)
                             {
@@ -241,7 +241,7 @@ public class DynamicTypeEditUI extends RaplaGUIComponent
                         }
                         else
                         {
-                            DialogInterface ui = dialogUiFactory.create(new SwingPopupContext(getMainComponent(), null), true, getString("color.manual"), getString("attribute_color_dialog"), new String[]{getString("yes"),getString("no")});
+                            DialogInterface ui = dialogUiFactory.create(new SwingPopupContext(getMainComponent(), null), getString("color.manual"), getString("attribute_color_dialog"), new String[]{getString("yes"),getString("no")});
     						ui.start(true);
     						if (ui.getSelectedIndex() == 0)
     						{

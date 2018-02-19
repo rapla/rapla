@@ -456,8 +456,7 @@ public class SavedCalendarSwingView extends RaplaGUIComponent implements SavedCa
         final FileEntry selectedFile = getSelectedFile();
         
         final Component parentComponent = getMainComponent();
-        try {
-            
+
    
         JPanel panel = new JPanel();
         final JTextField textField = new JTextField(20);
@@ -607,10 +606,7 @@ public class SavedCalendarSwingView extends RaplaGUIComponent implements SavedCa
 
 
         });
-        dlg.start(true);
-        } catch (RaplaException ex) {
-            dialogUiFactory.showException( ex, new SwingPopupContext(parentComponent, null));
-        }
+        dlg.start(true).thenApply((index) -> Promise.VOID).exceptionally((ex)->dialogUiFactory.showException( ex, null));
     }
 
     private void handleException(Promise<Void> promise) {
