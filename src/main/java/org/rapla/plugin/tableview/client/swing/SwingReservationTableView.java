@@ -200,7 +200,12 @@ public class SwingReservationTableView extends RaplaGUIComponent implements Swin
             table.addFocusListener(listener);
         });
     }
-    
+
+    void handleException(Promise<Void> promise)
+    {
+        PopupContext popupContext = dialogUiFactory.createPopupContext( ()->getComponent());
+        promise.exceptionally(ex->dialogUiFactory.showException(ex, popupContext));
+    }
 
     
     private final class CopyListener implements ActionListener {
@@ -209,19 +214,16 @@ public class SwingReservationTableView extends RaplaGUIComponent implements Swin
 		{
 	        List<Reservation> selectedEvents = getSelectedEvents();
 	        Collection<Allocatable> markedAllocatables = model.getMarkedAllocatables();
-	        try {
-                if ( isCut())
-	            {
-                    reservationController.cutReservations(selectedEvents, markedAllocatables);
-	            }
-	            else
-	            {
-	                reservationController.copyReservations(selectedEvents, markedAllocatables);
-	            }
-            } catch (RaplaException ex) {
-                dialogUiFactory.showException(ex, new SwingPopupContext(getComponent(), null));
+	        final Promise<Void> ready;
+            if ( isCut())
+            {
+                ready =  reservationController.cutReservations(selectedEvents, markedAllocatables);
             }
-	        copy(table, evt, ioInterface, getRaplaLocale());            
+            else
+            {
+                ready = reservationController.copyReservations(selectedEvents, markedAllocatables);
+            }
+            handleException( ready.thenRun(()->copy(table, evt, ioInterface, getRaplaLocale())));
 		}
         
         public boolean isCut() {

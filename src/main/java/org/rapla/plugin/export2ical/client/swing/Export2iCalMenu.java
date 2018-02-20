@@ -91,10 +91,9 @@ public class Export2iCalMenu extends RaplaGUIComponent implements ExportMenuExte
                 String name =nonEmptyTitle +".ics";
 		        export(result, name);
 		    }
-		}).exceptionally((ex) -> {
-	          dialogUiFactory.showException(ex, new SwingPopupContext(getMainComponent(), null));
-	          return null;
-		});
+		}).exceptionally((ex) ->
+	          dialogUiFactory.showException(ex, dialogUiFactory.createPopupContext(()->getMainComponent()))
+		);
 	}
 	private void export(String result, String name) throws RaplaException {
 		final byte[] bytes = result.getBytes();

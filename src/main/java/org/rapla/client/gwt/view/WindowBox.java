@@ -342,7 +342,7 @@ public class WindowBox extends DialogBox implements HasOpenHandlers<WindowBox>
 
                     if (this.dragMode >= 0 || calcDragMode(event.getClientX(), event.getClientY()) >= 0)
                     {
-                        // paste'n'copy from Widget.onBrowserEvent
+                        // paste'n'copyReservations from Widget.onBrowserEvent
                         switch (DOM.eventGetType(event))
                         {
                             case Event.ONMOUSEOVER:

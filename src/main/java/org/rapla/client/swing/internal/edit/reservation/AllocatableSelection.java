@@ -459,10 +459,8 @@ public class AllocatableSelection extends RaplaGUIComponent implements Appointme
                 completeModel.treeDidChange();
                 selectedModel.treeDidChange();
             }).exceptionally( (ex) ->
-        {
-            dialogUiFactory.showException(ex, new SwingPopupContext(content, null));
-            return null;
-        });
+            dialogUiFactory.showException(ex, new SwingPopupContext(content, null))
+        );
     }
 
     private void removeFromBindings(Collection<Appointment> appointments)

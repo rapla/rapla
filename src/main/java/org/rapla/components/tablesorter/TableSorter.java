@@ -50,12 +50,12 @@ import java.util.Map;
  * <p>
  * TableSorter is a decorator for TableModels; adding sorting
  * functionality to a supplied TableModel. TableSorter does
- * not store or copy the data in its TableModel; instead it maintains
+ * not store or copyReservations the data in its TableModel; instead it maintains
  * a map from the row indexes of the view to the row indexes of the
  * model. As requests are made of the sorter (like getValueAt(row, col))
  * they are passed to the underlying model after the row numbers
  * have been translated via the internal mapping array. This way,
- * the TableSorter appears to hold another copy of the table
+ * the TableSorter appears to hold another copyReservations of the table
  * with the rows in a different order.
  * </p>
  * <p>

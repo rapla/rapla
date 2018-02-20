@@ -314,24 +314,19 @@ public class SwingAppointmentTableView extends RaplaGUIComponent implements Swin
             if (selectedEvents.size() == 1)
             {
                 AppointmentBlock appointmentBlock = selectedEvents.get(0);
-                try
+                Point p = null;
+                PopupContext popupContext = createPopupContext(table, p);
+                Collection<Allocatable> contextAllocatables = model.getMarkedAllocatables();
+                Promise<Void> ready;
+                if (isCut())
                 {
-                    Point p = null;
-                    PopupContext popupContext = createPopupContext(table, p);
-                    Collection<Allocatable> contextAllocatables = model.getMarkedAllocatables();
-                    if (isCut())
-                    {
-                        reservationController.cutAppointment(appointmentBlock, popupContext, contextAllocatables);
-                    }
-                    else
-                    {
-                        reservationController.copyAppointmentBlock(appointmentBlock, popupContext, contextAllocatables);
-                    }
+                    ready = reservationController.cutAppointment(appointmentBlock, popupContext, contextAllocatables);
                 }
-                catch (RaplaException e)
+                else
                 {
-                    dialogUiFactory.showException(e, new SwingPopupContext(getComponent(), null));
+                    ready = reservationController.copyAppointmentBlock(appointmentBlock, popupContext, contextAllocatables);
                 }
+                handleException(ready);
             }
             copy(table, evt, ioInterface, getRaplaLocale());
         }
@@ -345,6 +340,12 @@ public class SwingAppointmentTableView extends RaplaGUIComponent implements Swin
         {
             this.cut = cut;
         }
+    }
+
+    void handleException(Promise<Void> promise)
+    {
+        PopupContext popupContext = dialogUiFactory.createPopupContext( ()->getComponent());
+        promise.exceptionally(ex->dialogUiFactory.showException(ex, popupContext));
     }
 
     class PopupTableHandler extends MouseAdapter
@@ -428,7 +429,7 @@ public class SwingAppointmentTableView extends RaplaGUIComponent implements Swin
         {
             menuFactory.addReservationWizards(newMenu, menuContext, null);
         }
-        //TODO add cut and copy for more then 1 block
+        //TODO add cut and copyReservations for more then 1 block
         if (selectedEvents.size() == 1)
         {
             {

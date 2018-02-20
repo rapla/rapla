@@ -310,11 +310,7 @@ public class ReservationInfoEdit extends RaplaGUIComponent
     protected Promise handleException(Promise promise)
     {
         return promise.exceptionally(ex->
-                {
-                    PopupContext context = null;
-                    dialogUiFactory.showException((Throwable)ex,context);
-                    return Promise.VOID;
-                }
+                dialogUiFactory.showException((Throwable)ex,null)
         );
     }
 

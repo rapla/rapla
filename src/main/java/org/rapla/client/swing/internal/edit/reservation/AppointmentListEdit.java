@@ -24,6 +24,7 @@ import org.rapla.components.calendar.DateRenderer;
 import org.rapla.components.iolayer.IOInterface;
 import org.rapla.components.layout.TableLayout;
 import org.rapla.components.util.DateTools;
+import org.rapla.components.util.TimeInterval;
 import org.rapla.components.util.undo.CommandHistory;
 import org.rapla.components.util.undo.CommandUndo;
 import org.rapla.entities.domain.Allocatable;
@@ -254,14 +255,8 @@ class AppointmentListEdit extends AbstractAppointmentEditor
 			} 
 			else if (evt.getActionCommand().equals("new")) 
 			{
-				try {
-					Appointment appointment = createAppointmentFromSelected();
-					NewAppointment 	command = new NewAppointment(appointment);
-					commandHistory.storeAndExecute(command);
-				} catch (RaplaException ex) {
-				    dialogUiFactory.showException(ex, new SwingPopupContext(getMainComponent(), null));
-				}
-			} 
+				handleException(createAppointmentFromSelected().thenAccept( appointment->commandHistory.storeAndExecute(new NewAppointment(appointment))));
+			}
 			else if (evt.getActionCommand().equals("split")) 
 			{
 				AppointmentSplit command = new AppointmentSplit();
@@ -310,6 +305,11 @@ class AppointmentListEdit extends AbstractAppointmentEditor
 			listEdit.updateSort( selectedValues);
 			fireAppointmentChanged(Collections.singleton(appointment));
 		}
+
+	}
+
+	private void handleException(Promise<Void> promise) {
+		promise.exceptionally((ex)->dialogUiFactory.showException(ex, dialogUiFactory.createPopupContext(()->getMainComponent())));
 
 	}
 
@@ -383,29 +383,34 @@ class AppointmentListEdit extends AbstractAppointmentEditor
 		}
 	}
 
-	protected Appointment createAppointmentFromSelected()
-			throws RaplaException {
+	protected Promise<Appointment> createAppointmentFromSelected()
+	{
 //		Appointment[] appointments = mutableReservation.getAppointments();
-		Appointment appointment;
+		Promise<Appointment> appointment;
 		if (sortedModel.getSize() == 0) {
 			Date start = new Date(DateTools.cutDate(new Date()).getTime()+ getCalendarOptions().getWorktimeStartMinutes()	* DateTools.MILLISECONDS_PER_MINUTE);
 			Date end = new Date(start.getTime()+ DateTools.MILLISECONDS_PER_HOUR);
-			appointment = getFacade().newAppointment(start, end);
+			appointment = getFacade().newAppointmentAsync(new TimeInterval(start, end));
 		} else { 
-			// copy the selected appointment as template
+			// copyReservations the selected appointment as template
 			// if no appointment is selected use the last
 			final int selectedIndex = listEdit.getSelectedIndex();
 			final int index = selectedIndex > -1 ? selectedIndex : sortedModel.getSize() - 1;
 			final Appointment toClone = (Appointment)sortedModel.getElementAt( index);
              //= appointments[index];
 			// this allows each appointment as template
-			appointment = getFacade().clone(toClone, getClientFacade().getUser());
-			Repeating repeating = appointment.getRepeating();
-			if (repeating != null) {
-				repeating.clearExceptions();
-			}
+			appointment = getFacade().copyAppointment(toClone).thenApply(AppointmentListEdit::clearExceptions);
 		}
 		return appointment;
+	}
+
+	public static Appointment clearExceptions(Appointment app)
+	{
+		Repeating repeating = app.getRepeating();
+		if (repeating != null) {
+			repeating.clearExceptions();
+		}
+		return app;
 	}
 	
 	/**

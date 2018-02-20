@@ -78,18 +78,15 @@ public final class ReservationControllerTest extends GUITestCase
                 Point p = null;
                 AppointmentBlock appointmentBlock = AppointmentBlock.create(appointment);
                 Date newStart = DateTools.addDay(appointment.getStart());
-                try
-                {
-                    c.moveAppointment(appointmentBlock, newStart, createPopupContext(), keepTime);
-                    Appointment app = raplaFacade.getPersistant(reservation).getAppointments()[0];
-                    Assert.assertEquals(DateTools.addDay(from), app.getStart());
-                    // Now the test can end
-                    mutex.release();
-                }
-                catch (RaplaException e)
-                {
-                    e.printStackTrace();
-                }
+                c.moveAppointment(appointmentBlock, newStart, createPopupContext(), keepTime).
+                        thenRun( ()->
+                        {
+                            Appointment app = raplaFacade.getPersistant(reservation).getAppointments()[0];
+                            Assert.assertEquals(DateTools.addDay(from), app.getStart());
+                        })
+                        .exceptionally(
+                            ex->Assert.fail( ex.getMessage()))
+                        .finally_( ()->mutex.release());
             }
 
         });

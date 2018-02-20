@@ -558,7 +558,7 @@ public class SavedCalendarSwingView extends RaplaGUIComponent implements SavedCa
                 dlg.busy(getI18n().getString("save"));
                 if ( isDefault)
                 {
-                    promise = save(null).whenComplete((a, ex) -> { listenersEnabled = true;dlg.idle();}).thenRun(() -> selectionBox.setSelectedIndex(0));
+                    promise = save(null).finally_(() -> { listenersEnabled = true;dlg.idle();}).thenRun(() -> selectionBox.setSelectedIndex(0));
                     handleException(promise);
                 }
                 else
@@ -584,7 +584,7 @@ public class SavedCalendarSwingView extends RaplaGUIComponent implements SavedCa
                             selectionBox.setSelectedIndex(0);
                         }
                     };
-                    promise =save(filename).thenRun(update).whenComplete((a,ex)->{ listenersEnabled = true;dlg.idle();});
+                    promise =save(filename).thenRun(update).finally_(()->{ listenersEnabled = true;dlg.idle();});
                 }
                 handleException(promise.thenRun(()->dlg.close()));
             }

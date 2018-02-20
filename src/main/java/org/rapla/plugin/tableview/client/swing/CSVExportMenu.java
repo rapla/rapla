@@ -167,10 +167,8 @@ public class CSVExportMenu extends RaplaGUIComponent implements ExportMenuExtens
                 return ResolvedPromise.VOID_PROMISE;
             }
         }).exceptionally((ex) ->
-        {
-            dialogUiFactory.showException(ex, new SwingPopupContext(getMainComponent(), null));
-            return null;
-        });
+            dialogUiFactory.showException(ex, new SwingPopupContext(getMainComponent(), null))
+        );
     }	
 	
 	 protected Promise<Void> exportFinished(Component topLevel) {

@@ -31,6 +31,7 @@ import org.rapla.facade.RaplaFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.logger.Logger;
+import org.rapla.scheduler.Promise;
 import org.rapla.storage.PermissionController;
 
 import java.util.Collection;
@@ -57,7 +58,7 @@ public class AppointmentAction extends RaplaAction {
 //    ReservationWizard wizard;
 	private Collection<Allocatable> contextAllocatables;
 	private final CalendarSelectionModel calendarSelectionModel;
-    private final ReservationController reservationController;
+    protected final ReservationController reservationController;
     private final EditController editController;
     private final InfoFactory infoFactory;
     private final RaplaImages raplaImages;
@@ -230,11 +231,11 @@ public class AppointmentAction extends RaplaAction {
         return reservationController;
     }
 
-    private void deleteSelection() throws RaplaException {
+    private void deleteSelection() {
     	if ( this.blockList == null){
     		return;
     	}
-    	 getReservationController().deleteBlocks(blockList,popupContext);
+    	handleException(reservationController.deleteBlocks(blockList,popupContext));
 	}
 
     public void view() throws RaplaException {
@@ -242,22 +243,29 @@ public class AppointmentAction extends RaplaAction {
     	infoFactory.showInfoDialog(appointment.getReservation(), popupContext);
     }
 
-    public void edit() throws RaplaException {
+    public void edit()  {
         editController.edit( appointmentBlock, popupContext);
     }
 
-    private void delete() throws RaplaException {
-        getReservationController().deleteAppointment(appointmentBlock,popupContext);
+    private void delete()  {
+        handleException(reservationController.deleteAppointment(appointmentBlock,popupContext));
     }
 
-    private void copy() throws RaplaException 
+    private void copy()
     {
-       getReservationController().copyAppointmentBlock(appointmentBlock,popupContext, contextAllocatables);
+        handleException(reservationController.copyAppointmentBlock(appointmentBlock,popupContext, contextAllocatables));
     }
     
-    private void cut() throws RaplaException 
+    private void cut()
     {
-       getReservationController().cutAppointment(appointmentBlock,popupContext, contextAllocatables);
+       handleException(reservationController.cutAppointment(appointmentBlock,popupContext, contextAllocatables));
+    }
+
+    protected Promise handleException(Promise promise)
+    {
+        return promise.exceptionally(ex->
+                    dialogUiFactory.showException((Throwable)ex,popupContext)
+        );
     }
 
     private void paste(boolean asNewReservation) throws RaplaException {
@@ -265,9 +273,9 @@ public class AppointmentAction extends RaplaAction {
 		ReservationController reservationController = getReservationController();
         Date start = getStartDate(calendarSelectionModel);
     	boolean keepTime = !calendarSelectionModel.isMarkedIntervalTimeEnabled();
-    	reservationController.pasteAppointment(	start
+    	handleException(reservationController.pasteAppointment(	start
                                                ,popupContext
-                                               ,asNewReservation, keepTime);
+                                               ,asNewReservation, keepTime));
     }
 
     private void addToReservation() throws RaplaException 

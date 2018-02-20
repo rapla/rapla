@@ -49,7 +49,7 @@ public class  CommandHistory {
 				{
 					current--;
 				}
-			).whenComplete((t,ex)-> {fireChangeEvent();});
+			).finally_(()-> fireChangeEvent());
 			return undo;
 		}
 		return ResolvedPromise.VOID_PROMISE;
@@ -59,7 +59,7 @@ public class  CommandHistory {
 		if (!history.isEmpty() && (current < history.size() - 1)) {
 			final Promise<Void> execute = history.get(current + 1).execute();
 			execute.thenRun(() -> {	current++;
-			}).whenComplete((t,ex) ->  {fireChangeEvent();});
+			}).finally_(() -> fireChangeEvent());
 			return execute;
 		};
 		return ResolvedPromise.VOID_PROMISE;

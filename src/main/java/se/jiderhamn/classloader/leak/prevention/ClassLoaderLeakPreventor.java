@@ -690,7 +690,7 @@ public class ClassLoaderLeakPreventor implements javax.servlet.ServletContextLis
     @SuppressWarnings("unchecked")
 	Map<Thread, Thread> shutdownHooks = getStaticFieldValue("java.lang.ApplicationShutdownHooks", "hooks");
     if(shutdownHooks != null) { // Could be null during JVM shutdown, which we already avoid, but be extra precautious
-      // Iterate copy to avoid ConcurrentModificationException
+      // Iterate copyReservations to avoid ConcurrentModificationException
       for(Thread shutdownHook : new ArrayList<Thread>(shutdownHooks.keySet())) {
         if(isThreadInWebApplication(shutdownHook)) { // Planned to run in web app          
           removeShutdownHook(shutdownHook);

@@ -13,6 +13,8 @@
 package org.rapla.facade.internal;
 
 import io.reactivex.functions.Consumer;
+import io.reactivex.functions.Function;
+import io.reactivex.functions.Function3;
 import org.jetbrains.annotations.NotNull;
 import org.rapla.RaplaResources;
 import org.rapla.components.util.DateTools;
@@ -69,6 +71,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Queue;
 import java.util.Set;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 /**
@@ -838,29 +841,17 @@ public class FacadeImpl implements RaplaFacade {
 	}
 
 	private <T extends Entity> List<T> setNew(List<T> entities,Iterator<ReferenceInfo<T>> ids ,User user)
-			throws RaplaException {
-
-
-
-		for ( T entity: entities)
-		{
-			if ((entity instanceof ParentEntity) && (((ParentEntity)entity).getSubEntities().iterator().hasNext()) && ! (entity instanceof Reservation) ) {
-				throw new RaplaException("The current Rapla Version doesnt support cloning entities with sub-entities. (Except reservations)");
-			}
-		}
+	{
 		for ( T uncasted: entities)
 		{
 			ReferenceInfo id = ids.next();
 			SimpleEntity entity = (SimpleEntity) uncasted;
 			entity.setId(id.getId());
 			entity.setResolver(operator);
+			if ((entity instanceof Reservation) && user == null)
+				throw new IllegalStateException("The reservation " + entity + " needs an owner but user specified is null ");
 			if (getLogger() != null && getLogger().isDebugEnabled()) {
 				getLogger().debug("new " + entity.getId());
-			}
-	
-			if (entity instanceof Reservation) {
-				if (user == null)
-					throw new RaplaException("The reservation " + entity + " needs an owner but user specified is null ");
 			}
 			if ( entity instanceof Reservation || entity instanceof Allocatable)
 			{
@@ -969,28 +960,34 @@ public class FacadeImpl implements RaplaFacade {
 		return updatePromise;
 	}
 
-
-
-    public Promise<Collection<Reservation>> copy(Collection<Reservation> toCopy, Date beginn, boolean keepTime, User user)
+	@FunctionalInterface
+	interface CopyFunction
 	{
+		Reservation copy(Reservation reservation,Iterator<ReferenceInfo<Reservation>> reservationIds,Iterator<ReferenceInfo<Appointment>> appointmentIds) throws RaplaException;
+	}
+	@Override
+    public Promise<Collection<Reservation>> copyReservations(Collection<Reservation> toCopy, Date beginn, boolean keepTime, User user)
+	{
+		Optional<Date> firstStart = toCopy.stream().sorted(new ReservationStartComparator(i18n.getLocale())).findFirst().map( ReservationStartComparator::getStart);
+		CopyFunction copyFunction = (reservation,reservationIds,appointmentIds)  -> copy(reservation, beginn, firstStart.get(), keepTime, reservationIds, appointmentIds, user);
+		return copyReservations(toCopy, copyFunction);
 		// create ids for reservation and appointments first
+	}
+
+	private Promise<Collection<Reservation>> copyReservations(Collection<Reservation> toCopy, CopyFunction copyFunction) {
 		return operator.createIdentifierAsync(Reservation.class, toCopy.size()).thenCombine(
-				operator.createIdentifierAsync(Appointment.class, countAppointments( toCopy.stream())),
-				( reservationIds, appoimtmentIds) -> {
-					// find the first start of the reservations
-					Optional<Date> firstStart = toCopy.stream().sorted(new ReservationStartComparator(i18n.getLocale())).findFirst().map( ReservationStartComparator::getStart);
-					List copies = new ArrayList();
-					for (Reservation reservation : toCopy)
-					{
-						// copy each reservation
-						Reservation copy = copy(reservation, beginn, firstStart.get(), keepTime, reservationIds.iterator(), appoimtmentIds.iterator(), user);
-						copies.add(copy);
+				operator.createIdentifierAsync(Appointment.class, countAppointments(toCopy.stream())),
+				(reservationIds, appoimtmentIds) ->
+				{
+					List result = new ArrayList();
+					for (Reservation reservation : toCopy) {
+						result.add(copyFunction.copy(reservation, reservationIds.iterator(), appoimtmentIds.iterator()));
 					}
-					return copies;
+					return result;
 				});
 	}
 
-	private  Reservation copy(Reservation reservation, Date destStart,Date firstStart, boolean keepTime, Iterator<ReferenceInfo<Reservation>> reservationIds,Iterator<ReferenceInfo<Appointment>> appoimtmentIds,User user) throws RaplaException {
+	private  Reservation copy(Reservation reservation, Date destStart, Date firstStart, boolean keepTime, Iterator<ReferenceInfo<Reservation>> reservationIds, Iterator<ReferenceInfo<Appointment>> appoimtmentIds, User user)  throws  RaplaException{
 		Reservation r =  cloneReservation( reservation, reservationIds, appoimtmentIds,user);
 		Appointment[] appointments = r.getAppointments();
 
@@ -1040,27 +1037,52 @@ public class FacadeImpl implements RaplaFacade {
 	}
 
 	@SuppressWarnings("unchecked")
-	private <T extends Entity> T _clone(T obj) throws RaplaException {
-		T deepClone =  (T) obj.clone();
-		T clone = deepClone;
+	private <T extends Entity> T _clone(T entity,Iterator<ReferenceInfo<T>> idList, User user) throws RaplaException {
+		if ((entity instanceof ParentEntity) && (((ParentEntity)entity).getSubEntities().iterator().hasNext()) && ! (entity instanceof Reservation) ) {
+			throw new RaplaException("The current Rapla Version doesnt support cloning entities with sub-entities. (Except reservations)");
+		}
 
+		T clone =  (T) entity.clone();
 		Class<? extends Entity> raplaType = clone.getTypeClass();
 		if (raplaType == Appointment.class) {
-			// Hack for 1.6 compiler compatibility
-			Object temp = clone;
-			((AppointmentImpl) temp).removeParent();
+			((AppointmentImpl) clone).removeParent();
 		}
 		if (raplaType == Category.class) {
-			// Hack for 1.6 compiler compatibility
-			Object temp = clone;
-			((CategoryImpl) temp).removeParent();
+			((CategoryImpl) clone).removeParent();
 		}
-		User workingUser = getWorkingUser();
-        setNew(clone, workingUser);
+        setNew(Collections.singletonList(clone), idList,user );
 		return clone;
 	}
 
+	@Override
+	public <T extends Entity> Promise<Collection<T>> cloneList(Collection<T> objList,User user) {
+		if (objList == null)
+			throw new NullPointerException("Can't clone null objects");
+		if ( objList.isEmpty())
+		{
+			return new ResolvedPromise<>(Collections.emptyList());
+		}
+		Class<T> raplaType = objList.stream().findFirst().get().getTypeClass();
+		if (raplaType == Reservation.class) {
 
+			CopyFunction copyFunction = (original,reservationIds, appointmentIds)->cloneReservation(original, reservationIds, appointmentIds, user);
+			final Collection<Reservation> reservationList = (Collection<Reservation>) objList;
+			return (Promise)copyReservations(reservationList, copyFunction);
+		}
+		else
+		{
+			return operator.createIdentifierAsync(raplaType, objList.size()).thenApply(ids->
+			{
+				Iterator<ReferenceInfo<T>> idProvider = ids.iterator();
+				List result = new ArrayList(objList.size());
+				for (T entity:objList)
+				{
+					result.add(_clone(entity,idProvider,user));
+				}
+				return result;
+			});
+		}
+	}
 	@SuppressWarnings("unchecked")
 	public <T extends Entity> T clone(T obj, User user) throws RaplaException {
 		if (obj == null)
@@ -1068,27 +1090,28 @@ public class FacadeImpl implements RaplaFacade {
 
 		T result;
 		Class<T> raplaType = obj.getTypeClass();
-		if (raplaType == Appointment.class ){
-			T _clone = _clone(obj);
-			((AppointmentImpl) _clone).setParent(null);
-			result = _clone;
-		} else if (raplaType == Reservation.class) {
+		if (raplaType == Reservation.class) {
 			final Reservation original = (Reservation) obj;
-			Iterator<ReferenceInfo<Reservation>> reservationIds = operator.createIdentifier(Reservation.class, 1).iterator();
-			Iterator<ReferenceInfo<Appointment>> appointmentIds = operator.createIdentifier(Appointment.class, countAppointments(Stream.of( original))).iterator();
-			result = (T)cloneReservation(original,reservationIds, appointmentIds, user);
+			Iterator<ReferenceInfo<Appointment>> appointmentIds = operator.createIdentifier(Appointment.class, countAppointments(Stream.of(original))).iterator();
+			final Iterator<ReferenceInfo<Reservation>> reservationIds = operator.createIdentifier(Reservation.class, 1).iterator();
+			result = (T) cloneReservation(original, reservationIds, appointmentIds, user);
 		}
 		else
 		{
 			try {
-				T _clone = _clone(obj);
-				result = _clone;
+				Iterator<ReferenceInfo<T>> idProvider = operator.createIdentifier(raplaType, 1).iterator();
+				result = _clone(obj,idProvider,user);
 			} catch (ClassCastException ex) {
 				throw new RaplaException("This entity can't be cloned ", ex);
 			} finally {
 			}
 		}
 		return result;
+	}
+
+	public Promise<Appointment> copyAppointment(Appointment appointment)
+	{
+		return operator.createIdentifierAsync(Appointment.class, 1).thenApply( ids->_clone( appointment, ids.iterator(), getUser()));
 	}
 
 	private int countAppointments(Stream<Reservation> reservation)
@@ -1098,7 +1121,7 @@ public class FacadeImpl implements RaplaFacade {
 
 	/** Clones a reservation and sets new ids for all appointments and the reservation itsel
 	 */
-	private Reservation cloneReservation(Reservation obj,Iterator<ReferenceInfo<Reservation>> reservationIds,Iterator<ReferenceInfo<Appointment>> appoimtmentIds, User user) throws RaplaException {
+	private Reservation cloneReservation(Reservation obj,Iterator<ReferenceInfo<Reservation>> reservationIds,Iterator<ReferenceInfo<Appointment>> appoimtmentIds, User user)  throws RaplaException{
 		// first we do a reservation deep clone
 		Reservation clone =  obj.clone();
 		HashMap<Allocatable, Appointment[]> restrictions = new HashMap<Allocatable, Appointment[]>();

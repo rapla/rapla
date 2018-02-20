@@ -151,7 +151,7 @@ public class SetOwnerMenuFactory implements ObjectMenuFactory
                                 return facade.dispatch(toStore, Collections.emptyList());
                                 })
                             :ResolvedPromise.VOID_PROMISE
-                ).exceptionally((ex)->dialogUiFactory.showException( ex, menuContext.getPopupContext())).whenComplete((a,b)->dialogUiFactory.idle());
+                ).exceptionally((ex)->dialogUiFactory.showException( ex, menuContext.getPopupContext())).finally_(()->dialogUiFactory.idle());
             }
          });
         return new RaplaMenuItem[] {setOwnerItem };

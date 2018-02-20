@@ -71,7 +71,7 @@ public interface Reservation extends EntityPermissionContainer<Reservation>,Clas
     Appointment[] getAppointmentsFor(Allocatable alloc);
 
     /** find an appointment in the reservation that equals the specified appointment. This is usefull if you have the
-     * persistant version of an appointment and want to discover the editable appointment in the working copy of a reservation. 
+     * persistant version of an appointment and want to discover the editable appointment in the working copyReservations of a reservation.
      * This does only work with persistant appointments, that have an id.*/
     Appointment findAppointment(Appointment appointment);
 

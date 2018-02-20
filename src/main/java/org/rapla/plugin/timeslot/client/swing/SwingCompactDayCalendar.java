@@ -245,58 +245,51 @@ public class SwingCompactDayCalendar extends AbstractRaplaSwingCalendar
                 {
                     return;
                 }
-
-                try
+                final List<Allocatable> selectedAllocatables = getSortedAllocatables();
+                int columns = selectedAllocatables.size();
+                int column = index % columns;
+                Allocatable newAlloc = selectedAllocatables.get(column);
+                RaplaBlock raplaBlock = (RaplaBlock) block;
+                Allocatable oldAlloc = raplaBlock.getGroupAllocatable();
+                int rowIndex = index / columns;
+                Timeslot timeslot = timeslots.get(rowIndex);
+                int time = timeslot.getMinuteOfDay();
+                int minuteOfDayBefore;
+                final DateTools.TimeWithoutTimezone timeWithoutTimezone = DateTools.toTime(block.getStart().getTime());
+                minuteOfDayBefore = timeWithoutTimezone.hour * 60 + timeWithoutTimezone.minute;
+                boolean sameTimeSlot = true;
+                if (minuteOfDayBefore != time)
                 {
-                    final List<Allocatable> selectedAllocatables = getSortedAllocatables();
-                    int columns = selectedAllocatables.size();
-                    int column = index % columns;
-                    Allocatable newAlloc = selectedAllocatables.get(column);
-                    RaplaBlock raplaBlock = (RaplaBlock) block;
-                    Allocatable oldAlloc = raplaBlock.getGroupAllocatable();
-                    int rowIndex = index / columns;
-                    Timeslot timeslot = timeslots.get(rowIndex);
-                    int time = timeslot.getMinuteOfDay();
-                    int minuteOfDayBefore;
-                    final DateTools.TimeWithoutTimezone timeWithoutTimezone = DateTools.toTime(block.getStart().getTime());
-                    minuteOfDayBefore = timeWithoutTimezone.hour * 60 + timeWithoutTimezone.minute;
-                    boolean sameTimeSlot = true;
-                    if (minuteOfDayBefore != time)
+                    sameTimeSlot = false;
+                }
+                if (rowIndex + 1 < timeslots.size())
+                {
+                    Timeslot nextTimeslot = timeslots.get(rowIndex + 1);
+                    if (minuteOfDayBefore >= nextTimeslot.getMinuteOfDay())
                     {
                         sameTimeSlot = false;
                     }
-                    if (rowIndex + 1 < timeslots.size())
-                    {
-                        Timeslot nextTimeslot = timeslots.get(rowIndex + 1);
-                        if (minuteOfDayBefore >= nextTimeslot.getMinuteOfDay())
-                        {
-                            sameTimeSlot = false;
-                        }
-                    }
-
-                    if (sameTimeSlot)
-                    {
-                        time = minuteOfDayBefore;
-                    }
-                    final long l = DateTools.toTime(time / 60, time % 60, 0);
-                    newStart = DateTools.toDateTime(newStart, new Date(l));
-                    if (newAlloc != null && oldAlloc != null && !newAlloc.equals(oldAlloc))
-                    {
-                        AppointmentBlock appointmentBlock = raplaBlock.getAppointmentBlock();
-                        PopupContext popupContext = createPopupContext(getMainComponent(), p);
-                        reservationController.exchangeAllocatable(appointmentBlock, oldAlloc, newAlloc, newStart, popupContext);
-                    }
-                    else
-                    {
-
-                        moved(block, p, newStart);
-                    }
                 }
-                catch (RaplaException ex)
+
+                if (sameTimeSlot)
                 {
-                    dialogUiFactory.showException(ex, new SwingPopupContext(getMainComponent(), null));
+                    time = minuteOfDayBefore;
                 }
+                final long l = DateTools.toTime(time / 60, time % 60, 0);
+                newStart = DateTools.toDateTime(newStart, new Date(l));
+                Promise<Void> ready;
+                if (newAlloc != null && oldAlloc != null && !newAlloc.equals(oldAlloc))
+                {
+                    AppointmentBlock appointmentBlock = raplaBlock.getAppointmentBlock();
+                    PopupContext popupContext = createPopupContext(getMainComponent(), p);
+                    ready = reservationController.exchangeAllocatable(appointmentBlock, oldAlloc, newAlloc, newStart, popupContext);
+                }
+                else
+                {
 
+                    ready = moved(block, p, newStart);
+                }
+                handleException( ready);
             }
 
         };

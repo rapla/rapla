@@ -84,9 +84,9 @@ public class CopyPluginMenu  extends RaplaGUIComponent implements EditMenuExtens
     
   
  
-//    public void copy(CalendarModel model, Period sourcePeriod, Period destPeriod,boolean includeSingleAppointments) throws RaplaException {
+//    public void copyReservations(CalendarModel model, Period sourcePeriod, Period destPeriod,boolean includeSingleAppointments) throws RaplaException {
 //    	Reservation[] reservations = model.getReservations( sourcePeriod.getStart(), sourcePeriod.getEnd() );
-//        copy( reservations, destPeriod.getStart(), destPeriod.getEnd(),includeSingleAppointments);
+//        copyReservations( reservations, destPeriod.getStart(), destPeriod.getEnd(),includeSingleAppointments);
 //    }
     
     public void actionPerformed(ActionEvent evt) {
@@ -117,10 +117,8 @@ public class CopyPluginMenu  extends RaplaGUIComponent implements EditMenuExtens
                 {
                     copy(reservations, useCase.getDestStart(), useCase.getDestEnd(), includeSingleAppointments);
                 }).exceptionally((ex) ->
-                {
-                    dialogUiFactory.showException(ex, popupContext);
-                    return null;
-                });
+                    dialogUiFactory.showException(ex, popupContext)
+                );
             }
          } catch (Exception ex) {
              dialogUiFactory.showException( ex, popupContext );

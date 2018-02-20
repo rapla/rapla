@@ -13,6 +13,7 @@ import org.rapla.client.menu.data.Point;
 import org.rapla.framework.RaplaException;
 import org.rapla.inject.DefaultImplementation;
 import org.rapla.inject.InjectionContext;
+import org.rapla.scheduler.Promise;
 
 import javax.inject.Inject;
 import java.util.List;
@@ -38,12 +39,13 @@ public class MenuViewImpl  implements MenuView<IsWidget>
     }
 
     @Override
-    public void showException(RaplaException ex)
+    public Void showException(Throwable ex)
     {
         final PopupPanel popupPanel = new PopupPanel(true, true);
         popupPanel.add(new HTML(ex.getMessage()));
         popupPanel.center();
         popupPanel.show();
+        return Promise.VOID;
     }
 
     @Override

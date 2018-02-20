@@ -156,7 +156,7 @@ public class PublishDialog extends RaplaGUIComponent
                     extension.mapOptionTo();
                 }
                 dlg.busy(getI18n().getString("save"));
-                model.save( filename).whenComplete((d,ex)->dlg.idle()).exceptionally((ex)->dialogUiFactory.showException( ex, popupContext)).thenRun(()->dlg.close());
+                model.save( filename).finally_(()->dlg.idle()).exceptionally((ex)->dialogUiFactory.showException( ex, popupContext)).thenRun(()->dlg.close());
             }
         });
         dlg.start(true);

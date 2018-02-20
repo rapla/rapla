@@ -26,6 +26,7 @@ import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.logger.Logger;
 import org.rapla.plugin.abstractcalendar.RaplaBlock;
+import org.rapla.scheduler.Promise;
 import org.rapla.storage.PermissionController;
 
 import javax.inject.Inject;
@@ -208,14 +209,7 @@ public class CalendarContextMenuPresenter extends RaplaComponent implements Menu
                         {
                             Date start = getStartDate(model, raplaFacade,user);
                             boolean keepTime = !model.isMarkedIntervalTimeEnabled();
-                            try
-                            {
-                                reservationController.pasteAppointment(start, popupContext, false, keepTime);
-                            }
-                            catch (RaplaException e)
-                            {
-                                view.showException(e);
-                            }
+                            handleException(reservationController.pasteAppointment(start, popupContext, false, keepTime));
                         }
                     });
                 }
@@ -231,14 +225,7 @@ public class CalendarContextMenuPresenter extends RaplaComponent implements Menu
                     {
                         Date start = getStartDate(model, raplaFacade, user);
                         boolean keepTime = !model.isMarkedIntervalTimeEnabled();
-                        try
-                        {
-                            reservationController.pasteAppointment(start, popupContext, true, keepTime);
-                        }
-                        catch (RaplaException e)
-                        {
-                            view.showException(e);
-                        }
+                        handleException(reservationController.pasteAppointment(start, popupContext, true, keepTime));
                     }
                 });
             }
@@ -302,16 +289,9 @@ public class CalendarContextMenuPresenter extends RaplaComponent implements Menu
     protected void moved(Block block, Date newStart, final PopupContext popupContext)
     {
         RaplaBlock b = (RaplaBlock) block;
-        try
-        {
-            long offset = newStart.getTime() - b.getStart().getTime();
-            Date newStartWithOffset = new Date(b.getAppointmentBlock().getStart() + offset);
-            reservationController.moveAppointment(b.getAppointmentBlock(), newStartWithOffset, popupContext, keepTime);
-        }
-        catch (RaplaException ex)
-        {
-            view.showException(ex);
-        }
+        long offset = newStart.getTime() - b.getStart().getTime();
+        Date newStartWithOffset = new Date(b.getAppointmentBlock().getStart() + offset);
+        handleException(reservationController.moveAppointment(b.getAppointmentBlock(), newStartWithOffset, popupContext, keepTime));
     }
 
     public boolean isKeepTime()
@@ -327,14 +307,12 @@ public class CalendarContextMenuPresenter extends RaplaComponent implements Menu
     public void resized(Block block, Point p, Date newStart, Date newEnd, int slotNr, final PopupContext popupContext)
     {
         RaplaBlock b = (RaplaBlock) block;
-        try
-        {
-            reservationController.resizeAppointment(b.getAppointmentBlock(), newStart, newEnd, popupContext, keepTime);
-        }
-        catch (RaplaException ex)
-        {
-            view.showException(ex);
-        }
+        handleException(reservationController.resizeAppointment(b.getAppointmentBlock(), newStart, newEnd, popupContext, keepTime));
+    }
+
+    private void handleException(Promise<Void> promise)
+    {
+        promise.exceptionally((ex)->view.showException(ex));
     }
 
     public Collection<Allocatable> getSelectedAllocatables()
@@ -401,14 +379,7 @@ public class CalendarContextMenuPresenter extends RaplaComponent implements Menu
             {
                 public void run()
                 {
-                    try
-                    {
-                        reservationController.copyAppointmentBlock(appointmentBlock, popupContext, copyContextAllocatables);
-                    }
-                    catch (RaplaException e)
-                    {
-                        view.showException(e);
-                    }
+                    handleException(reservationController.copyAppointmentBlock(appointmentBlock, popupContext, copyContextAllocatables));
                 }
             });
         }
@@ -423,14 +394,7 @@ public class CalendarContextMenuPresenter extends RaplaComponent implements Menu
             {
                 public void run()
                 {
-                    try
-                    {
-                        reservationController.cutAppointment(appointmentBlock, popupContext, copyContextAllocatables);
-                    }
-                    catch (RaplaException e)
-                    {
-                        view.showException(e);
-                    }
+                    handleException(reservationController.cutAppointment(appointmentBlock, popupContext, copyContextAllocatables));
                 }
             });
         }
@@ -461,14 +425,7 @@ public class CalendarContextMenuPresenter extends RaplaComponent implements Menu
             {
                 public void run()
                 {
-                    try
-                    {
-                        reservationController.deleteAppointment(appointmentBlock, popupContext);
-                    }
-                    catch (RaplaException e)
-                    {
-                        view.showException(e);
-                    }
+                    handleException(reservationController.deleteAppointment(appointmentBlock, popupContext));
                 }
             });
         }

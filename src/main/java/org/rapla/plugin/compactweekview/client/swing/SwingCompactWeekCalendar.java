@@ -4,7 +4,7 @@
  |                                                                          |
  | This program is free software; you can redistribute it and/or modify     |
  | it under the terms of the GNU General Public License as published by the |
- | Free Software Foundation. A copy of the license has been included with   |
+ | Free Software Foundation. A copyReservations of the license has been included with   |
  | these distribution in the COPYING file, if not go to www.fsf.org         |
  |                                                                          |
  | As a special exception, you are granted the permissions to link this     |
@@ -173,30 +173,24 @@ public class SwingCompactWeekCalendar extends AbstractRaplaSwingCalendar
 				 {
 					 return;
 				 }
-				 
-				 try 
-				 {
-                     newStart = DateTools.toDateTime(newStart, (block.getStart()));
-					 final List<Allocatable> selectedAllocatables = getSortedAllocatables();
-					 Allocatable newAlloc = selectedAllocatables.get(index);
-					 RaplaBlock raplaBlock = (RaplaBlock)block;
-					 Allocatable oldAlloc = raplaBlock.getGroupAllocatable();
-					 if ( newAlloc != null && oldAlloc != null && !newAlloc.equals(oldAlloc))
-					 {
-						 AppointmentBlock appointmentBlock = raplaBlock.getAppointmentBlock();
-						 PopupContext popupContext = createPopupContext(getMainComponent(),p);
-						 reservationController.exchangeAllocatable(appointmentBlock, oldAlloc,newAlloc, newStart,popupContext);
-					 }
-					 else
-					 {
-						 super.moved(block, p, newStart, slotNr);
-					 }
-					 
-				 } 
-				 catch (RaplaException ex) {
-				     dialogUiFactory.showException(ex, new SwingPopupContext(getMainComponent(), null));
-				}
-			
+                 newStart = DateTools.toDateTime(newStart, (block.getStart()));
+                 final List<Allocatable> selectedAllocatables = getSortedAllocatables();
+                 Allocatable newAlloc = selectedAllocatables.get(index);
+                 RaplaBlock raplaBlock = (RaplaBlock)block;
+                 Allocatable oldAlloc = raplaBlock.getGroupAllocatable();
+                 final Promise<Void> result;
+
+                 if ( newAlloc != null && oldAlloc != null && !newAlloc.equals(oldAlloc))
+                 {
+                     AppointmentBlock appointmentBlock = raplaBlock.getAppointmentBlock();
+                     PopupContext popupContext = createPopupContext(getMainComponent(),p);
+                     result = reservationController.exchangeAllocatable(appointmentBlock, oldAlloc,newAlloc, newStart,popupContext);
+                 }
+                 else
+                 {
+                     result = super.moved(block, p, newStart);
+                 }
+                 handleException( result);
 			 }
 
         };

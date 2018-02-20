@@ -235,7 +235,7 @@ public class MinPQ<Key> implements Iterable<Key> {
         // create a new pq
         private MinPQ<Key> copy;
 
-        // add all items to copy of heap
+        // add all items to copyReservations of heap
         // takes linear time since already in heap order so no keys move
         public HeapIterator() {
             if (comparator == null) copy = new MinPQ<Key>(size());

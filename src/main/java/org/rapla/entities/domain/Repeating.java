@@ -93,7 +93,7 @@ public interface Repeating {
      */
     Appointment getAppointment();
     
-    /** copy the values from another repeating */
+    /** copyReservations the values from another repeating */
     void setFrom(Repeating repeating);
 
     /** tests if an exception is added for the given date */

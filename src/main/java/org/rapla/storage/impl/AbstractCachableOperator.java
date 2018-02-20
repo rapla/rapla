@@ -884,7 +884,7 @@ public abstract class AbstractCachableOperator implements StorageOperator
             Collection<ReferenceInfo> removedIds) throws RaplaException
     {
         HashMap<ReferenceInfo, Entity> oldEntities = new HashMap<ReferenceInfo, Entity>();
-        // First make a copy of the old entities
+        // First make a copyReservations of the old entities
         Collection<Entity> storeObjects = new LinkedHashSet<Entity>(storeObjects1);
         for (Entity entity : storeObjects)
         {
@@ -902,7 +902,7 @@ public abstract class AbstractCachableOperator implements StorageOperator
             if (persistantEntity instanceof Appointment)// || ((persistantEntity instanceof Category) && storeObjects.contains( ((Category) persistantEntity).getParent())))
             {
                 throw new RaplaException(persistantEntity.getTypeClass() + " can only be stored via parent entity ");
-                // we ingore subentities, because these are added as bellow via addSubentites. The originals will be contain false parent references (to the new parents) when copy is called
+                // we ingore subentities, because these are added as bellow via addSubentites. The originals will be contain false parent references (to the new parents) when copyReservations is called
             }
             else
             {

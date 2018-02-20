@@ -231,13 +231,8 @@ public class ArchiverOption  implements PluginOptionPanel,ActionListener  {
             {
                 throw new IllegalStateException("Unknown button " + source);
             }
-            result.whenComplete((dummy, ex) -> {
-                content.setEnabled( true);
-                if (ex != null)
-                {
-                    dialogUiFactory.showException(ex, popupContext);
-                }
-            });
+            result.exceptionally((ex) -> dialogUiFactory.showException(ex, popupContext))
+                    .finally_(()->content.setEnabled( true));
         }
 	}
 

@@ -292,7 +292,6 @@ public class ResourceSelectionViewSwing implements ResourceSelectionView
                             dialogUiFactory.showException(ex, null);
                             dtde.dropComplete(false);
                             logger.error("Error performing drag and drop operation: "+ex.getMessage(), ex);
-                            return Promise.VOID;
                         });
                     }
                     else

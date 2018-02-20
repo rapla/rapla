@@ -16,7 +16,7 @@ public interface MenuView<W>
     
     public void setPresenter(Presenter presenter);
 
-    void showException(RaplaException ex);
+    Void showException(Throwable ex);
 
     void showMenuPopup(List<MenuEntry> menu, PopupContext popupContext, MenuCallback menuCallback);
 

@@ -159,7 +159,6 @@ public class Application implements ApplicationView.Presenter, ModificationListe
             if (!(ex instanceof CommandAbortedException)) {
                 showException(ex, popupContext);
             }
-            return Promise.VOID;
         });
     }
 

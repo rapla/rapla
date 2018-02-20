@@ -101,7 +101,7 @@ public abstract class RaplaTestCase
     public static <T> T  waitForWithRaplaException(Promise<T> promise, int timeout) throws RaplaException
     {
         final CompletableFuture<T> future = new CompletableFuture<>();
-        promise.whenComplete((t, ex) ->
+        promise.handle((t, ex) ->
         {
             if (ex != null)
             {
@@ -111,6 +111,7 @@ public abstract class RaplaTestCase
             {
                 future.complete(t);
             }
+            return t;
         });
         try
         {
@@ -495,8 +496,8 @@ public abstract class RaplaTestCase
             File testFolder = new File(TEST_FOLDER_NAME);
             System.setProperty("jetty.home", testFolder.getPath());
             testFolder.mkdir();
-            IOUtil.copy(TEST_SRC_FOLDER_NAME + "/test.xconf", TEST_FOLDER_NAME + "/test.xconf");
-            //IOUtil.copy( "test-src/test.xlog", TEST_FOLDER_NAME + "/test.xlog" );
+            IOUtil.copyReservations(TEST_SRC_FOLDER_NAME + "/test.xconf", TEST_FOLDER_NAME + "/test.xconf");
+            //IOUtil.copyReservations( "test-src/test.xlog", TEST_FOLDER_NAME + "/test.xlog" );
         }
         catch (IOException ex)
         {
@@ -521,11 +522,11 @@ public abstract class RaplaTestCase
     {
         try
         {
-            IOUtil.copy(testFile, TEST_FOLDER_NAME + "/test.xml");
+            IOUtil.copyReservations(testFile, TEST_FOLDER_NAME + "/test.xml");
         }
         catch (IOException ex)
         {
-            throw new IOException("Failed to copy TestFile '" + testFile + "': " + ex.getMessage());
+            throw new IOException("Failed to copyReservations TestFile '" + testFile + "': " + ex.getMessage());
         }
     }
 

@@ -298,9 +298,7 @@ public class RemoteOperator
                 getLogger().error("Refreshing all resources due to " + ex.getMessage(), ex);
                 refreshAll();
             }
-        }).whenComplete((result,caught) -> {
-            refreshInProgress = false;
-        });
+        }).finally_(() -> refreshInProgress = false);
         return returnPromise;
     }
 

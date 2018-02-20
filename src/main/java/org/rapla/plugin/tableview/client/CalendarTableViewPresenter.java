@@ -91,10 +91,6 @@ public class CalendarTableViewPresenter implements Presenter, CalendarPlugin
         {
             logger.info(result.size() + " Reservations loaded.");
             view.update(result);
-        }).exceptionally((e) ->
-        {
-            logger.error(e.getMessage(), e);
-            return null;
-        });
+        }).exceptionally((e) -> logger.error(e.getMessage(), e));
     }
 }

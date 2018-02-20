@@ -197,7 +197,7 @@ public class EditTaskPresenter implements TaskPresenter
                     boolean markedIntervalTimeEnabled = model.isMarkedIntervalTimeEnabled();
                     boolean keepTime = !markedIntervalTimeEnabled || (keepOrig == null || keepOrig);
                     Date beginn = RaplaComponent.getStartDate(model, raplaFacade, user);
-                    return raplaFacade.copy(reservations, beginn, keepTime, user).thenCompose((newReservations)-> {
+                    return raplaFacade.copyReservations(reservations, beginn, keepTime, user).thenCompose((newReservations)-> {
                         if (markedIntervals.size() > 0 && reservations.size() == 1 && reservations.iterator().next().getAppointments().length == 1
                                 && keepOrig == Boolean.FALSE)
                         {
@@ -411,7 +411,7 @@ public class EditTaskPresenter implements TaskPresenter
         Runnable deleteCmd = () -> {
             busyIdleObservable.onNext(i18n.getString("delete"));
             final Promise<Void> promise = reservationController.deleteReservations(new HashSet(origs), popupContext);
-            promise.thenRun( () ->closeCmd.run()).whenComplete((t,ex) ->  busyIdleObservable.onNext(null));
+            promise.thenRun( () ->closeCmd.run()).finally_(() ->  busyIdleObservable.onNext(null));
         };
         editTaskView.start( saveCmd, closeCmd, deleteCmd);
         return new ResolvedPromise<>(editTaskView);
@@ -466,7 +466,6 @@ public class EditTaskPresenter implements TaskPresenter
                     {
                         dialogUiFactory.showException((Throwable) ex, popupContext);
                     }
-                    return Promise.VOID;
                 }
         );
     }

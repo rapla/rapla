@@ -482,14 +482,8 @@ public class TemplateEdit extends RaplaGUIComponent
                             getClientFacade().setTemplate(null);
                         }
 
-                    }).whenComplete((a, ex) ->
-                    {
-                        if (ex != null)
-                        {
-                            dialogUiFactory.showException(ex, new SwingPopupContext(getMainComponent(), null));
-                        }
-                        dlg.close();
-                    });
+                    }).exceptionally((ex) ->
+                        dialogUiFactory.showException(ex, new SwingPopupContext(getMainComponent(), null))).finally_(()->dlg.close());
                 }
             };
             final JList list = templateList.getList();

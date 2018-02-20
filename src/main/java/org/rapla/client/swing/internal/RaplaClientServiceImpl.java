@@ -499,17 +499,14 @@ public class RaplaClientServiceImpl implements ClientService, UpdateErrorListene
                             {
                                 dialogUiFactory.showException(ex, null);
                                 fireClientAborted();
-                                return null;
                             }
                             );
                         }
                     }).exceptionally((ex)->
                     {
                         dlg.resetPassword();
-                        dlg.idle();
                         dialogUiFactory.showException(ex, new SwingPopupContext(dlg, null));
-                        return null;
-                    });
+                    }).finally_(()->dlg.idle());
 
                 }
 

@@ -144,10 +144,10 @@ public class ReservationControllerImpl implements ReservationController {
         return no_delete;
     }
 
-    public void deleteBlocks(Collection<AppointmentBlock> blockList, PopupContext context) throws RaplaException {
-        deleteDialog.showDeleteDialog(context, blockList.toArray()).thenAccept(deleted -> {
+    public Promise<Void> deleteBlocks(Collection<AppointmentBlock> blockList, PopupContext context) {
+        return deleteDialog.showDeleteDialog(context, blockList.toArray()).thenCompose(deleted -> {
             if (!deleted)
-                return;
+                return ResolvedPromise.VOID_PROMISE;
 
 
             Set<Appointment> appointmentsToRemove = new LinkedHashSet<Appointment>();
@@ -200,8 +200,7 @@ public class ReservationControllerImpl implements ReservationController {
 
             DeleteBlocksCommand command = new DeleteBlocksCommand(getClientFacade(), i18n, reservationsToRemove, appointmentsToRemove, exceptionsToAdd);
             CommandHistory commanHistory = getCommandHistory();
-            final Promise promise = commanHistory.storeAndExecute(command);
-            handleException(promise, context);
+            return commanHistory.storeAndExecute(command);
         });
     }
 
@@ -416,13 +415,13 @@ public class ReservationControllerImpl implements ReservationController {
         }
     }
 
-    public void deleteAppointment(AppointmentBlock appointmentBlock, PopupContext context) throws RaplaException {
+    public Promise<Void> deleteAppointment(AppointmentBlock appointmentBlock, PopupContext context) {
         boolean includeEvent = true;
-        showDialog(appointmentBlock, "delete", includeEvent, context).thenAccept(dialogResult ->
+        return showDialog(appointmentBlock, "delete", includeEvent, context).thenAccept(dialogResult ->
                 deleteAppointment(appointmentBlock, dialogResult, false));
     }
 
-    private void deleteAppointment(AppointmentBlock appointmentBlock, final DialogAction dialogResult, final boolean isCut) throws RaplaException {
+    private Promise<Void> deleteAppointment(AppointmentBlock appointmentBlock, final DialogAction dialogResult, final boolean isCut)  {
         Appointment appointment = appointmentBlock.getAppointment();
         final Date startDate = new Date(appointmentBlock.getStart());
         Set<Appointment> appointmentsToRemove = new LinkedHashSet<Appointment>();
@@ -449,27 +448,32 @@ public class ReservationControllerImpl implements ReservationController {
                 appointmentsToRemove.add(appointment);
                 break;
             case CANCEL:
-                return;
+                return ResolvedPromise.VOID_PROMISE;
         }
 
-        DeleteBlocksCommand command = new DeleteBlocksCommand(getClientFacade(), i18n, reservationsToRemove, appointmentsToRemove, exceptionsToAdd) {
-            public String getCommandoName() {
-                String name;
-                I18nBundle i18n = getI18n();
-                if (dialogResult == DialogAction.SINGLE)
-                    name = i18n.format("single_appointment.format", startDate);
-                else if (dialogResult == DialogAction.EVENT)
-                    name = i18n.getString("reservation");
-                else if (dialogResult == DialogAction.SERIE)
-                    name = i18n.getString("serie");
-                else
-                    name = i18n.getString("appointment");
-                return i18n.getString(isCut ? "cut" : "delete") + " " + name;
-            }
-        };
+        final DeleteBlocksCommand command;
+        try {
+            command = new DeleteBlocksCommand(getClientFacade(), i18n, reservationsToRemove, appointmentsToRemove, exceptionsToAdd) {
+                public String getCommandoName() {
+                    String name;
+                    I18nBundle i18n = getI18n();
+                    if (dialogResult == DialogAction.SINGLE)
+                        name = i18n.format("single_appointment.format", startDate);
+                    else if (dialogResult == DialogAction.EVENT)
+                        name = i18n.getString("reservation");
+                    else if (dialogResult == DialogAction.SERIE)
+                        name = i18n.getString("serie");
+                    else
+                        name = i18n.getString("appointment");
+                    return i18n.getString(isCut ? "cut" : "delete") + " " + name;
+                }
+            };
+        } catch (RaplaException ex)
+        {
+            return new ResolvedPromise<>(ex);
+        }
         CommandHistory commandHistory = getCommandHistory();
-        final Promise promise = commandHistory.storeAndExecute(command);
-        handleException(promise, dialogUI.createPopupContext(null));
+        return commandHistory.storeAndExecute(command);
     }
 
     private boolean isNotEmptyWithExceptions(Appointment appointment, List<Date> exceptions) {
@@ -505,11 +509,11 @@ public class ReservationControllerImpl implements ReservationController {
         return true;
     }
 
-    public Appointment copyAppointment(Appointment appointment) throws RaplaException {
-        return clone(appointment);
+    private Appointment cloneAppointment(Appointment appointment) throws RaplaException {
+        return getFacade().clone(appointment, getClientFacade().getUser());
     }
 
-    <T extends Entity> T clone(T obj) throws RaplaException {
+    private Reservation cloneReservation(Reservation obj) throws RaplaException {
         return getFacade().clone(obj, getClientFacade().getUser());
     }
 
@@ -520,7 +524,7 @@ public class ReservationControllerImpl implements ReservationController {
         CANCEL
     }
 
-    private Promise<DialogAction> showDialog(AppointmentBlock appointmentBlock, String action, boolean includeEvent, PopupContext context) throws RaplaException {
+    private Promise<DialogAction> showDialog(AppointmentBlock appointmentBlock, String action, boolean includeEvent, PopupContext context)  {
         Appointment appointment = appointmentBlock.getAppointment();
         Date from = new Date(appointmentBlock.getStart());
         Reservation reservation = appointment.getReservation();
@@ -570,45 +574,50 @@ public class ReservationControllerImpl implements ReservationController {
         }
     }
 
-    public void copyAppointmentBlock(AppointmentBlock appointmentBlock, PopupContext context, Collection<Allocatable> contextAllocatables) throws RaplaException {
-        copyCutAppointment(appointmentBlock, context, contextAllocatables, "copy", false);
+    @Override
+    public Promise<Void> copyAppointmentBlock(AppointmentBlock appointmentBlock, PopupContext context, Collection<Allocatable> contextAllocatables)  {
+        return copyCutAppointment(appointmentBlock, context, contextAllocatables, "copy", false);
     }
 
-    public void cutAppointment(AppointmentBlock appointmentBlock, PopupContext context, Collection<Allocatable> contextAllocatables) throws RaplaException {
-        copyCutAppointment(appointmentBlock, context, contextAllocatables, "cut", false);
+    @Override
+    public Promise<Void> cutAppointment(AppointmentBlock appointmentBlock, PopupContext context, Collection<Allocatable> contextAllocatables) {
+        return copyCutAppointment(appointmentBlock, context, contextAllocatables, "cut", false);
     }
 
-    public void copyReservations(Collection<Reservation> reservations, Collection<Allocatable> contextAllocatables) throws RaplaException {
-        List<Reservation> clones = new ArrayList<Reservation>();
-        for (Reservation r : reservations) {
-            Reservation copyReservation = clone(r);
-            clones.add(copyReservation);
+    @Override
+    public Promise<Void> copyReservations(Collection<Reservation> reservations, Collection<Allocatable> contextAllocatables)  {
+        return cloneList(reservations).thenAccept(clones ->getClipboard().setReservation(clones, contextAllocatables));
+    }
+
+    protected Promise<Collection<Reservation>> cloneList(Collection<Reservation> reservations) {
+        final User user;
+        try {
+            user = getClientFacade().getUser();
+        } catch (RaplaException e) {
+            return new ResolvedPromise<>(e);
         }
-        getClipboard().setReservation(clones, contextAllocatables);
+        return getFacade().cloneList(reservations, user);
     }
 
-    public void cutReservations(Collection<Reservation> reservations, Collection<Allocatable> contextAllocatables) throws RaplaException {
-        List<Reservation> clones = new ArrayList<Reservation>();
-        for (Reservation r : reservations) {
-            Reservation copyReservation = clone(r);
-            clones.add(copyReservation);
-        }
-        getClipboard().setReservation(clones, contextAllocatables);
-        Set<Reservation> reservationsToRemove = new HashSet<Reservation>(reservations);
-        Set<Appointment> appointmentsToRemove = Collections.emptySet();
-        Map<Appointment, List<Date>> exceptionsToAdd = Collections.emptyMap();
-        DeleteBlocksCommand command = new DeleteBlocksCommand(getClientFacade(), i18n, reservationsToRemove, appointmentsToRemove, exceptionsToAdd) {
-            public String getCommandoName() {
-                return getI18n().getString("cut");
-            }
-        };
-        CommandHistory commandHistory = getCommandHistory();
-        final Promise promise = commandHistory.storeAndExecute(command);
-        handleException(promise, dialogUI.createPopupContext(null));
+    public Promise<Void> cutReservations(Collection<Reservation> reservations, Collection<Allocatable> contextAllocatables) {
+        return cloneList(reservations).thenCompose( clones->
+            {
+                getClipboard().setReservation(clones, contextAllocatables);
+                Set<Reservation> reservationsToRemove = new HashSet<Reservation>(reservations);
+                Set<Appointment> appointmentsToRemove = Collections.emptySet();
+                Map<Appointment, List<Date>> exceptionsToAdd = Collections.emptyMap();
+                DeleteBlocksCommand command = new DeleteBlocksCommand(getClientFacade(), i18n, reservationsToRemove, appointmentsToRemove, exceptionsToAdd) {
+                    public String getCommandoName() {
+                        return getI18n().getString("cut");
+                    }
+                };
+                CommandHistory commandHistory = getCommandHistory();
+                return commandHistory.storeAndExecute(command);
+            });
     }
 
-    private void copyCutAppointment(AppointmentBlock appointmentBlock, PopupContext context, Collection<Allocatable> contextAllocatables, String action,
-                                    boolean skipDialog) throws RaplaException {
+    private Promise<Void> copyCutAppointment(AppointmentBlock appointmentBlock, PopupContext context, Collection<Allocatable> contextAllocatables, String action,
+                                    boolean skipDialog)  {
         boolean deleteOriginal = action.equals("cut");
         RaplaClipboard raplaClipboard = getClipboard();
         Appointment appointment = appointmentBlock.getAppointment();
@@ -616,7 +625,7 @@ public class ReservationControllerImpl implements ReservationController {
 
         Reservation sourceReservation = appointment.getReservation();
 
-        // copy info text to system clipboard
+        // copyReservations info text to system clipboard
         {
             StringBuffer buf = new StringBuffer();
             ReservationInfoUI reservationInfoUI = new ReservationInfoUI(getI18n(), getRaplaLocale(), getFacade(), logger, appointmentFormater);
@@ -636,7 +645,7 @@ public class ReservationControllerImpl implements ReservationController {
             Appointment copy;
 
             if (dialogResult == DialogAction.SINGLE) {
-                copy = copyAppointment(appointment);
+                copy = cloneAppointment(appointment);
                 copy.setRepeatingEnabled(false);
                 Date date = DateTools.cutDate(copy.getStart());
                 TimeWithoutTimezone time = DateTools.toTime(date.getTime());
@@ -646,7 +655,7 @@ public class ReservationControllerImpl implements ReservationController {
                 raplaClipboard.setAppointment(copy, sourceReservation, copyType, restrictedAllocatables, contextAllocatables);
             } else if (dialogResult == DialogAction.EVENT && appointment.getReservation().getAppointments().length > 1) {
                 Reservation reservation = appointment.getReservation();
-                Reservation clone = clone(reservation);
+                Reservation clone = cloneReservation(reservation);
                 int num = getAppointmentIndex(appointment);
                 Appointment[] clonedAppointments = clone.getAppointments();
                 if (num >= clonedAppointments.length) {
@@ -655,10 +664,10 @@ public class ReservationControllerImpl implements ReservationController {
                 }
                 Appointment clonedAppointment = clonedAppointments[num];
                 RaplaClipboard.CopyType copyType = deleteOriginal ? CopyType.CUT_RESERVATION : CopyType.COPY_RESERVATION;
-                raplaClipboard.setAppointment(clonedAppointment, clone, copyType, restrictedAllocatables, contextAllocatables);
                 copy = clonedAppointment;
+                raplaClipboard.setAppointment(copy, clone, copyType, restrictedAllocatables, contextAllocatables);
             } else {
-                copy = copyAppointment(appointment);
+                copy = cloneAppointment(appointment);
                 RaplaClipboard.CopyType copyType;
                 if (deleteOriginal) {
                     copyType = sourceReservation.getAppointments().length == 1 ? CopyType.CUT_RESERVATION : CopyType.CUT_BLOCK;
@@ -675,16 +684,15 @@ public class ReservationControllerImpl implements ReservationController {
         if (skipDialog) {
             try {
                 copyCutAction.accept(DialogAction.EVENT);
-            } catch (RaplaException e) {
-                throw e;
             } catch ( Exception e)
             {
-                throw new RaplaException(e);
+                return new ResolvedPromise<>(e);
             }
+            return  ResolvedPromise.VOID_PROMISE;
         } else {
-            showDialog(appointmentBlock, action, true, context).thenAccept(copyCutAction);
+            return showDialog(appointmentBlock, action, true, context).thenAccept(copyCutAction);
         }
-        //return copy;
+        //return copyReservations;
     }
 
     public int getAppointmentIndex(Appointment appointment) {
@@ -709,7 +717,7 @@ public class ReservationControllerImpl implements ReservationController {
         return (getClipboard().getAppointment() != null || !getClipboard().getReservations().isEmpty());
     }
 
-    public void pasteAppointment(Date start, PopupContext popupContext, boolean asNewReservation, boolean keepTime) throws RaplaException {
+    public Promise<Void> pasteAppointment(Date start, PopupContext popupContext, boolean asNewReservation, boolean keepTime) {
         RaplaClipboard clipboard = getClipboard();
 
         Collection<Reservation> reservations = clipboard.getReservations();
@@ -719,7 +727,7 @@ public class ReservationControllerImpl implements ReservationController {
         } else {
             Appointment appointment = clipboard.getAppointment();
             if (appointment == null) {
-                return;
+                return ResolvedPromise.VOID_PROMISE;
             }
 
             final Reservation reservation = clipboard.getReservation();
@@ -758,31 +766,30 @@ public class ReservationControllerImpl implements ReservationController {
                 pasteCommand = defaultPastCommand;
             }
         }
-        Promise<Void> promise = pasteCommand.thenCompose(command -> getCommandHistory().storeAndExecute(command));
-        handleException(promise, popupContext);
+        return  pasteCommand.thenCompose(command -> getCommandHistory().storeAndExecute(command));
     }
 
     public CommandHistory getCommandHistory() {
         return getClientFacade().getCommandHistory();
     }
 
-    public void moveAppointment(AppointmentBlock appointmentBlock, Date newStart, PopupContext context, boolean keepTime) throws RaplaException {
+    public Promise<Void> moveAppointment(AppointmentBlock appointmentBlock, Date newStart, PopupContext context, boolean keepTime)  {
         Date from = new Date(appointmentBlock.getStart());
         if (newStart.equals(from))
-            return;
+            return ResolvedPromise.VOID_PROMISE;
         getLogger().info("Moving appointment " + appointmentBlock.getAppointment() + " from " + from + " to " + newStart);
-        resizeAppointment(appointmentBlock, newStart, null, context, keepTime);
+        return resizeAppointment(appointmentBlock, newStart, null, context, keepTime);
     }
 
-    public void resizeAppointment(AppointmentBlock appointmentBlock, Date newStart, Date newEnd, final PopupContext context, boolean keepTime)
-            throws RaplaException {
+    public Promise<Void> resizeAppointment(AppointmentBlock appointmentBlock, Date newStart, Date newEnd, final PopupContext context, boolean keepTime)
+             {
         boolean includeEvent = newEnd == null;
         Appointment appointment = appointmentBlock.getAppointment();
         Date from = new Date(appointmentBlock.getStart());
-        showDialog(appointmentBlock, "move", includeEvent, context).thenAccept(result ->
+        return showDialog(appointmentBlock, "move", includeEvent, context).thenCompose(result ->
         {
             if (result == DialogAction.CANCEL) {
-                return;
+                return ResolvedPromise.VOID_PROMISE;
             }
 
             Date oldStart = from;
@@ -795,8 +802,7 @@ public class ReservationControllerImpl implements ReservationController {
             }
             AppointmentResize resizeCommand = new AppointmentResize(appointment, oldStart, oldEnd, newStart2, newEnd, context, result, keepTime);
             dialogUI.busy(i18n.getString("move"));
-            final Promise promise = getCommandHistory().storeAndExecute(resizeCommand).whenComplete((a,b)-> dialogUI.idle());
-            handleException(promise, context);
+            return getCommandHistory().storeAndExecute(resizeCommand).finally_(()-> dialogUI.idle());
         });
     }
 
@@ -806,7 +812,6 @@ public class ReservationControllerImpl implements ReservationController {
             if (!(ex instanceof CommandAbortedException)) {
                 showException((Throwable) ex, context);
             }
-            return Promise.VOID;
         });
     }
 
@@ -823,9 +828,9 @@ public class ReservationControllerImpl implements ReservationController {
     }
 
     @Override
-    public void exchangeAllocatable(final AppointmentBlock appointmentBlock, final Allocatable oldAllocatable, final Allocatable newAllocatable,
-                                    final Date newStart, PopupContext context) throws RaplaException {
-        exchangeAllocatebleCmd(appointmentBlock, oldAllocatable, newAllocatable, newStart, context).thenAccept(command ->
+    public Promise<Void> exchangeAllocatable(final AppointmentBlock appointmentBlock, final Allocatable oldAllocatable, final Allocatable newAllocatable,
+                                    final Date newStart, PopupContext context) {
+        return exchangeAllocatebleCmd(appointmentBlock, oldAllocatable, newAllocatable, newStart, context).thenAccept(command ->
         {
             if (command != null) {
                 CommandHistory commandHistory = getCommandHistory();
@@ -836,7 +841,7 @@ public class ReservationControllerImpl implements ReservationController {
     }
 
     private Promise<AllocatableExchangeCommand> exchangeAllocatebleCmd(AppointmentBlock appointmentBlock, final Allocatable oldAllocatable,
-                                                                       final Allocatable newAllocatable, final Date newStart, PopupContext context) throws RaplaException {
+                                                                       final Allocatable newAllocatable, final Date newStart, PopupContext context)  {
         Map<Allocatable, Appointment[]> newRestrictions = new HashMap<Allocatable, Appointment[]>();
         //Appointment appointment;
         //Allocatable oldAllocatable;
@@ -858,7 +863,7 @@ public class ReservationControllerImpl implements ReservationController {
                 return null;
 
             if (result == DialogAction.SINGLE && appointment.getRepeating() != null) {
-                copy = copyAppointment(appointment);
+                copy = cloneAppointment(appointment);
                 copy.setRepeatingEnabled(false);
                 Date dateTime = DateTools.toDateTime(date, appointment.getStart());
                 copy.moveTo(dateTime);
@@ -881,7 +886,7 @@ public class ReservationControllerImpl implements ReservationController {
                     exceptionsAdded.add(date);
                     //Appointment existingAppointment = modifiableReservation.findAppointment( appointment);
                     //existingAppointment.getRepeating().addException( date );
-                    //modifiableReservation.addAppointment( copy);
+                    //modifiableReservation.addAppointment( copyReservations);
                     addAppointment = copy;
 
                     List<Allocatable> all = new ArrayList<Allocatable>(Arrays.asList(reservation.getAllocatablesFor(appointment)));
@@ -1198,7 +1203,7 @@ public class ReservationControllerImpl implements ReservationController {
                                 lastCopy = null;
                                 appointments = Collections.emptyList();
                             } else {
-                                lastCopy = copyAppointment(mutableAppointment);
+                                lastCopy = cloneAppointment(mutableAppointment);
                                 lastCopy.setRepeatingEnabled(false);
                                 appointments = Arrays.asList(lastCopy);
                             }
@@ -1300,7 +1305,7 @@ public class ReservationControllerImpl implements ReservationController {
         private boolean firstTimeCall = true;
 
         public AppointmentPaste(Appointment fromAppointment, Reservation fromReservation, Allocatable[] restrictedAllocatables, boolean asNewReservation,
-                                boolean copyWholeReservation, long offset, PopupContext sourceComponent) throws RaplaException {
+                                boolean copyWholeReservation, long offset, PopupContext sourceComponent) {
             this.fromAppointment = fromAppointment;
             this.fromReservation = fromReservation;
             this.restrictedAllocatables = restrictedAllocatables;
@@ -1317,10 +1322,10 @@ public class ReservationControllerImpl implements ReservationController {
 
                 if (!copyWholeReservation) {
                     if (saveAppointment == null) {
-                        saveAppointment = copyAppointment(fromAppointment);
+                        saveAppointment = cloneAppointment(fromAppointment);
                         saveAppointment.moveTo(new Date(saveAppointment.getStart().getTime() + offset));
                     } else {
-                        saveAppointment = copyAppointment(saveAppointment);
+                        saveAppointment = cloneAppointment(saveAppointment);
                     }
                     mutableReservation.addAppointment(saveAppointment);
                     mutableReservation.setRestrictionForAppointment(saveAppointment, restrictedAllocatables);
@@ -1334,14 +1339,11 @@ public class ReservationControllerImpl implements ReservationController {
 
         protected Promise<Reservation> getMutableReservationForExecute()  {
             if (asNewReservation) {
-                return getFacade().getScheduler().supply(()->
+                final Reservation reservation = saveReservation != null ? saveReservation : fromReservation;
+                return cloneList(Collections.singletonList(reservation)).thenApply((list)->list.iterator().next()).thenApply(mutableReservation->
                 {
-                    final Reservation reservation = saveReservation != null ? saveReservation : fromReservation;
-                    Reservation mutableReservation = ReservationControllerImpl.this.clone(reservation);
-
                     // Alle anderen Appointments verschieben / entfernen
                     Appointment[] appointments = mutableReservation.getAppointments();
-
                     for (int i = 0; i < appointments.length; i++) {
                         Appointment app = appointments[i];
                         if (copyWholeReservation) {
@@ -1437,7 +1439,7 @@ public class ReservationControllerImpl implements ReservationController {
             } catch (RaplaException ex) {
                 return new ResolvedPromise<Void>(ex);
             }
-            return getFacade().copy(fromReservations, start, keepTime, user).thenCompose(clones-> {
+            return getFacade().copyReservations(fromReservations, start, keepTime, user).thenCompose(clones-> {
                         this.clones = clones;
                         return checkAndDistpatch(clones, Collections.emptyList(), firstTimeCall, popupContext);
                     }

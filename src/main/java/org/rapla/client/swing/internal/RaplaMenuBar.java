@@ -417,10 +417,7 @@ public class RaplaMenuBar extends RaplaGUIComponent
                     promise = null;
                 }
                 promise.exceptionally( (ex) ->
-                {
-                    dialogUiFactory.showException(ex, createPopupContext());
-                    return null;
-                }
+                    dialogUiFactory.showException(ex, createPopupContext())
                 );
             }
         }

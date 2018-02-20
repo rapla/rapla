@@ -378,10 +378,7 @@ public class RaplaObjectActions extends RaplaComponent{
     protected Promise handleException(Promise promise)
     {
         return promise.exceptionally(ex->
-                {
-                    dialogUiFactory.showException((Throwable)ex,popupContext);
-                    return Promise.VOID;
-                }
+                dialogUiFactory.showException((Throwable)ex,popupContext)
         );
     }
 	

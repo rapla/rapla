@@ -85,16 +85,12 @@ public class UndoTests extends GUITestCase {
 		executeControlAndPressButton(new Runnable() {
 			
 			public void run() {
-				try {
-					Appointment appOrig = event.getAppointments()[0];
-					AppointmentBlock appointmentBlock = AppointmentBlock.create( appOrig);
-					Date newStart = changedAppointment.getStart();
-					Date newEnd = changedAppointment.getEnd();
-					PopupContext popupContext = createPopupContext();
-                    control.resizeAppointment(appointmentBlock, newStart, newEnd, popupContext, false);
-				} catch (RaplaException e) {
-					Assert.fail(e.getMessage());
-				}
+				Appointment appOrig = event.getAppointments()[0];
+				AppointmentBlock appointmentBlock = AppointmentBlock.create( appOrig);
+				Date newStart = changedAppointment.getStart();
+				Date newEnd = changedAppointment.getEnd();
+				PopupContext popupContext = createPopupContext();
+				control.resizeAppointment(appointmentBlock, newStart, newEnd, popupContext, false).exceptionally(e->Assert.fail(e.getMessage()));
 			}
 		}, buttonNr);
        
@@ -142,15 +138,11 @@ public class UndoTests extends GUITestCase {
 		executeControlAndPressButton(new Runnable() {
 			
 			public void run() {
-				try {
-					AppointmentBlock appointmentBlock = AppointmentBlock.create( event.getAppointments()[0]);
-					Date newStart = changedAppointment.getStart();
-					Date newEnd = changedAppointment.getEnd();
-					PopupContext popupContext= createPopupContext();
-                    control.resizeAppointment(appointmentBlock, newStart, newEnd, popupContext, false);
-				} catch (RaplaException e) {
-					Assert.fail(e.getMessage());
-				}
+				AppointmentBlock appointmentBlock = AppointmentBlock.create( event.getAppointments()[0]);
+				Date newStart = changedAppointment.getStart();
+				Date newEnd = changedAppointment.getEnd();
+				PopupContext popupContext= createPopupContext();
+				control.resizeAppointment(appointmentBlock, newStart, newEnd, popupContext, false).exceptionally(e->Assert.fail(e.getMessage()));
 			}
 		}, buttonNr);
         
@@ -202,13 +194,9 @@ public class UndoTests extends GUITestCase {
 		executeControlAndPressButton(new Runnable() {
 			
 			public void run() {
-				try {
-					AppointmentBlock appointmentBlock = AppointmentBlock.create( persistantEvent.getAppointments()[0]);
-					PopupContext popupContext = createPopupContext();
-                    control.deleteAppointment(appointmentBlock, popupContext);
-				} catch (RaplaException e) {
-					Assert.fail(e.getMessage());
-				}
+				AppointmentBlock appointmentBlock = AppointmentBlock.create( persistantEvent.getAppointments()[0]);
+				PopupContext popupContext = createPopupContext();
+				control.deleteAppointment(appointmentBlock, popupContext).exceptionally(e->Assert.fail(e.getMessage()));
 			}
 		}, buttonNr);
         Reservation exist=null;

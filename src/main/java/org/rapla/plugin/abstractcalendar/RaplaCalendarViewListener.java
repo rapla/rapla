@@ -5,6 +5,7 @@ package org.rapla.plugin.abstractcalendar;
 
 import org.rapla.RaplaResources;
 import org.rapla.client.EditController;
+import org.rapla.client.PopupContext;
 import org.rapla.client.ReservationController;
 import org.rapla.client.ReservationEdit;
 import org.rapla.client.dialog.DialogUiFactoryInterface;
@@ -35,6 +36,7 @@ import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.logger.Logger;
 import org.rapla.plugin.abstractcalendar.client.swing.SwingRaplaBlock;
+import org.rapla.scheduler.Promise;
 import org.rapla.storage.PermissionController;
 
 import javax.swing.JComponent;
@@ -216,23 +218,28 @@ public class RaplaCalendarViewListener extends RaplaGUIComponent implements View
 
     public void moved(Block block, Point p, Date newStart, int slotNr)
     {
-        moved(block, p, newStart);
+        handleException(moved(block, p, newStart));
     }
 
-    protected void moved(Block block, Point p, Date newStart)
+    protected Promise<Void> moved(Block block, Point p, Date newStart)
     {
         SwingRaplaBlock b = (SwingRaplaBlock) block;
-        try
-        {
-            long offset = newStart.getTime() - b.getStart().getTime();
-            Date newStartWithOffset = new Date(b.getAppointmentBlock().getStart() + offset);
-            reservationController.moveAppointment(b.getAppointmentBlock(), newStartWithOffset, createPopupContext(calendarContainerComponent, p),
-                    keepTime);
-        }
-        catch (RaplaException ex)
-        {
-            dialogUiFactory.showException(ex, new SwingPopupContext(b.getView(), null));
-        }
+        final PopupContext popupContext = getPopupContext(p);
+        long offset = newStart.getTime() - b.getStart().getTime();
+        Date newStartWithOffset = new Date(b.getAppointmentBlock().getStart() + offset);
+        return reservationController.moveAppointment(b.getAppointmentBlock(), newStartWithOffset, popupContext,
+                keepTime);
+
+    }
+
+    protected void handleException(Promise<Void> promise)
+    {
+        final PopupContext popupContext = getPopupContext(null);
+        promise.exceptionally((ex)->dialogUiFactory.showException(ex, popupContext));
+    }
+
+    private PopupContext getPopupContext(Point p) {
+        return createPopupContext(calendarContainerComponent, p);
     }
 
     public boolean isKeepTime()
@@ -248,15 +255,7 @@ public class RaplaCalendarViewListener extends RaplaGUIComponent implements View
     public void resized(Block block, Point p, Date newStart, Date newEnd, int slotNr)
     {
         SwingRaplaBlock b = (SwingRaplaBlock) block;
-        try
-        {
-            reservationController.resizeAppointment(b.getAppointmentBlock(), newStart, newEnd, createPopupContext(calendarContainerComponent, p),
-                    keepTime);
-        }
-        catch (RaplaException ex)
-        {
-            dialogUiFactory.showException(ex, new SwingPopupContext(b.getView(), null));
-        }
+         handleException(reservationController.resizeAppointment(b.getAppointmentBlock(), newStart, newEnd, getPopupContext(p), keepTime));
     }
 
     public List<Allocatable> getSortedAllocatables()

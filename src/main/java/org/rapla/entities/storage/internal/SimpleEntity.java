@@ -257,7 +257,7 @@ public abstract class SimpleEntity extends ReferenceHandler implements RefEntity
         }
     }
 
-    /** find the sub-entity that has the same id as the passed copy. Returns null, if the entity was not found. */
+    /** find the sub-entity that has the same id as the passed copyReservations. Returns null, if the entity was not found. */
 	public Entity findEntity(Entity copy) {
         for (Entity entity:getSubEntities())
         {
@@ -268,7 +268,7 @@ public abstract class SimpleEntity extends ReferenceHandler implements RefEntity
         return null;
     }
 
-    /** find the sub-entity that has the same id as the passed copy. Returns null, if the entity was not found. */
+    /** find the sub-entity that has the same id as the passed copyReservations. Returns null, if the entity was not found. */
 	public Entity findEntityForId(String id) {
         for (Entity entity:getSubEntities())
         {

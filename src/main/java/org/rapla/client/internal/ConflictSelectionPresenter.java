@@ -140,10 +140,8 @@ public class ConflictSelectionPresenter implements Presenter
     protected Promise handleException(Promise promise, PopupContext context)
     {
         return promise.exceptionally(ex ->
-        {
-            dialogUiFactory.showException((Throwable) ex, context);
-            return Promise.VOID;
-        });
+            dialogUiFactory.showException((Throwable) ex, context)
+        );
     }
 
     public CommandHistory getCommandHistory()
@@ -248,7 +246,7 @@ public class ConflictSelectionPresenter implements Presenter
     }
 
     protected void queryAllConflicts()  {
-        raplaFacade.getConflicts().thenAccept(conflicts->updateTree(conflicts)).exceptionally( ex -> {logger.error(ex.getMessage(),ex); return null;} );
+        raplaFacade.getConflicts().thenAccept(conflicts->updateTree(conflicts)).exceptionally( ex -> logger.error(ex.getMessage(),ex) );
     }
 
     private void removeConflict(Collection<Conflict> conflicts, Set<ReferenceInfo> removedReferences)

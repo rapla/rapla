@@ -466,7 +466,7 @@ public class ClientFacadeTest  {
         } catch (ReadOnlyException ex) {
         }
 
-        // now we get a second edit copy of the event
+        // now we get a second edit copyReservations of the event
         Reservation nonPersistantEventVersion2 =  facade.edit(persistantEvent);
         Assert.assertTrue(nonPersistantEventVersion2 != event);
 
