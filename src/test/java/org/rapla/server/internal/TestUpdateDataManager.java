@@ -112,7 +112,7 @@ public class TestUpdateDataManager
                 {
                     Classification classification = facade.getDynamicTypes(DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RESOURCE)[0].newClassification();
                     final Allocatable newResource = facade.newAllocatable(classification, writeUser);
-                    newResource.getClassification().setValue("name", "newResource" + i);
+                    newResource.getClassification().setValue("name", "newResourceDeprecated" + i);
                     entitiesToStore.add(newResource);
                 }
                 storedAllocatables = entitiesToStore.size();
@@ -162,7 +162,7 @@ public class TestUpdateDataManager
                 if (storeObject instanceof Allocatable)
                 {
                     final Object value = ((Allocatable) storeObject).getClassification().getValue("name");
-                    Assert.assertTrue("name should start with newResource but found " + value, value.toString().startsWith("newResource"));
+                    Assert.assertTrue("name should start with newResourceDeprecated but found " + value, value.toString().startsWith("newResourceDeprecated"));
                 }
                 //                else if (storeObject instanceof Reservation)
                 //                {
@@ -294,7 +294,7 @@ public class TestUpdateDataManager
         lastSynced = updateEvent.getLastValidated();
         Classification classification = facade.getDynamicTypes(DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RESOURCE)[0].newClassification();
         final Allocatable newResource = facade.newAllocatable(classification, writeUser);
-        newResource.getClassification().setValue("name", "newResource");
+        newResource.getClassification().setValue("name", "newResourceDeprecated");
         facade.storeAndRemove(new Entity[]{newResource}, Entity.ENTITY_ARRAY, writeUser);
         final UpdateEvent updateWithInsert = updateManager.createUpdateEvent(readUser, lastSynced);
         final Date lastValidatedAfterInsert = updateWithInsert.getLastValidated();

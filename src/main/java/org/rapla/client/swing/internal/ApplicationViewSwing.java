@@ -11,7 +11,7 @@ import org.rapla.client.internal.RaplaColors;
 import org.rapla.client.swing.RaplaGUIComponent;
 import org.rapla.client.swing.images.RaplaImages;
 import org.rapla.client.swing.toolkit.AWTColorUtil;
-import org.rapla.client.swing.toolkit.FrameControllerList;
+import org.rapla.client.swing.toolkit.DialogUI;
 import org.rapla.client.swing.toolkit.RaplaFrame;
 import org.rapla.facade.ModificationEvent;
 import org.rapla.framework.RaplaException;
@@ -25,15 +25,7 @@ import org.rapla.scheduler.Observable;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import javax.swing.Box;
-import javax.swing.JComponent;
-import javax.swing.JLabel;
-import javax.swing.JMenuBar;
-import javax.swing.JPanel;
-import javax.swing.JPopupMenu;
-import javax.swing.SwingUtilities;
-import javax.swing.UIDefaults;
-import javax.swing.UIManager;
+import javax.swing.*;
 import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Component;
@@ -62,17 +54,16 @@ public class ApplicationViewSwing implements ApplicationView<JComponent>
     private final Logger logger;
     RaplaMenuBar menuBar;
     private final RaplaFrame frame;
-    private final Map<ApplicationEvent, RaplaFrame> childFrames = new HashMap<ApplicationEvent, RaplaFrame>();
+    private final Map<ApplicationEvent, DialogUI> childFrames = new HashMap<>();
     //CalendarPlaceViewSwing cal;
     JLabel statusBar = new JLabel("");
     private final RaplaImages raplaImages;
-    private final FrameControllerList frameControllerList;
     private final DialogUiFactoryInterface dialogUiFactory;
     CommandScheduler scheduler;
 
     @Inject
     public ApplicationViewSwing(RaplaMenuBarContainer menuBarContainer, RaplaResources i18n, RaplaFrame frame, RaplaLocale raplaLocale, Logger logger,
-            RaplaMenuBar raplaMenuBar, CommandScheduler scheduler, RaplaImages raplaImages, FrameControllerList frameControllerList,
+            RaplaMenuBar raplaMenuBar, CommandScheduler scheduler, RaplaImages raplaImages,
             DialogUiFactoryInterface dialogUiFactory) throws RaplaInitializationException
     {
         this.i18n = i18n;
@@ -80,7 +71,6 @@ public class ApplicationViewSwing implements ApplicationView<JComponent>
         this.logger = logger;
         this.menuBar = raplaMenuBar;
         this.raplaImages = raplaImages;
-        this.frameControllerList = frameControllerList;
         this.dialogUiFactory = dialogUiFactory;
         this.frame = frame;
         // CKO TODO Title should be set in config along with the facade used
@@ -120,7 +110,6 @@ public class ApplicationViewSwing implements ApplicationView<JComponent>
                 throw new PropertyVetoException("Should not close", evt);
             }
         });
-        frameControllerList.setMainWindow(frame);
         Dimension dimension = Toolkit.getDefaultToolkit().getScreenSize();
         frame.setPreferredSize(new Dimension(Math.min(dimension.width, 1200), Math.min(dimension.height - 20, 900)));
         //frame.setPreferredSize(new Dimension(1280, 1000));
@@ -268,10 +257,10 @@ public class ApplicationViewSwing implements ApplicationView<JComponent>
     public void close()
     {
         frame.close();
-        final Collection<RaplaFrame> openDialogs = this.childFrames.values();
-        for (RaplaFrame di : openDialogs)
+        final Collection<DialogUI> openDialogs = this.childFrames.values();
+        for (DialogUI di : openDialogs)
         {
-            di.close();
+            di.dispose();
         }
     }
 
@@ -284,7 +273,7 @@ public class ApplicationViewSwing implements ApplicationView<JComponent>
     @Override
     public void removeWindow(ApplicationEvent windowId)
     {
-        final RaplaFrame dialogInterface = childFrames.remove(windowId);
+        final DialogUI dialogInterface = childFrames.remove(windowId);
         if (dialogInterface != null)
         {
             dialogInterface.close();
@@ -302,17 +291,13 @@ public class ApplicationViewSwing implements ApplicationView<JComponent>
     public void openWindow(ApplicationEvent windowId, PopupContext popupContext, RaplaWidget<JComponent> objectRaplaWidget, String title,
                            Function<ApplicationEvent, Boolean> windowClosing, Observable<String> busyIdleObservable)
     {
-        AtomicReference<RaplaFrame> frame = new AtomicReference<>();
+        AtomicReference<DialogUI> frame = new AtomicReference<>();
         final Disposable subscribe = busyIdleObservable.subscribe((message) -> {if ( message!= null) frame.get().busy( message); else frame.get().idle();});
-        final RaplaFrame dialog = new RaplaFrame(frameControllerList) {
-            @Override
-            public void dispose() {
-                subscribe.dispose();
-                super.dispose();
-            }
-        };
-        frame.set(dialog);
         final Container component = (Container) objectRaplaWidget.getComponent();
+        String[] options = new String[] {"ok"};
+        final DialogUI dialog = (DialogUI) dialogUiFactory.create( popupContext, false,component, options);
+        frame.set(dialog);
+
         dialog.setContentPane(component);
         dialog.setTitle( title);
         dialog.setIconImage(raplaImages.getIconFromKey("icon.edit_window_small").getImage());
@@ -329,6 +314,7 @@ public class ApplicationViewSwing implements ApplicationView<JComponent>
                 logger.debug("Closing");
                 if (windowClosing.apply(applicationEvent))
                 {
+                    subscribe.dispose();
                     dialog.dispose();
                 }
                 else
@@ -337,13 +323,13 @@ public class ApplicationViewSwing implements ApplicationView<JComponent>
                 }
             }
         });
-        dialog.setVisible(true);
+        dialog.start( null);
     }
 
     @Override
     public void requestFocus(ApplicationEvent windowId)
     {
-        final RaplaFrame dialogInterface = childFrames.get(windowId);
+        final DialogUI dialogInterface = childFrames.get(windowId);
         if (dialogInterface != null)
         {
             dialogInterface.toFront();

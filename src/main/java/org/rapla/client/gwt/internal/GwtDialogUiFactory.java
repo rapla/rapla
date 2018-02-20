@@ -31,6 +31,7 @@ import javax.inject.Singleton;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+import java.util.function.Supplier;
 
 @Singleton
 @DefaultImplementation(context = InjectionContext.gwt, of = DialogUiFactoryInterface.class)
@@ -222,14 +223,15 @@ public class GwtDialogUiFactory implements DialogUiFactoryInterface
         @Override
         public void onClose(CloseEvent<PopupPanel> event)
         {
-            if (disposable != null)
-            {
-                disposable.dispose();
-            }
             if (abortAction != null)
             {
                 abortAction.run();
             }
+            if (disposable != null)
+            {
+                disposable.dispose();
+            }
+
             selectedIndex = -1;
             removeHandlers();
         }

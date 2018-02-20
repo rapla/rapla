@@ -23,7 +23,6 @@ import org.rapla.client.swing.images.RaplaImages;
 import org.rapla.client.swing.internal.SwingPopupContext;
 import org.rapla.client.swing.toolkit.DialogUI;
 import org.rapla.client.swing.toolkit.ErrorDialog;
-import org.rapla.client.swing.toolkit.FrameControllerList;
 import org.rapla.client.swing.toolkit.RaplaButton;
 import org.rapla.client.swing.toolkit.RaplaFrame;
 import org.rapla.components.i18n.BundleManager;
@@ -172,9 +171,9 @@ public class CalendarPrintDialog extends DialogUI
     private final Logger logger;
 
     @Inject
-    public CalendarPrintDialog(RaplaFrame owner, RaplaLocale raplaLocale,CommandScheduler scheduler, Logger logger, IOInterface printInterface, RaplaImages raplaImages, RaplaResources i18n, BundleManager bundleManager, FrameControllerList frameList, DialogUiFactoryInterface dialogUiFactory, ExportServiceList exportServiceList, Provider<ErrorDialog> errorDialogProvider) throws
+    public CalendarPrintDialog(RaplaFrame owner, RaplaLocale raplaLocale,CommandScheduler scheduler, Logger logger, IOInterface printInterface, RaplaImages raplaImages, RaplaResources i18n, BundleManager bundleManager, DialogUiFactoryInterface dialogUiFactory, ExportServiceList exportServiceList, Provider<ErrorDialog> errorDialogProvider) throws
             RaplaInitializationException {
-        super(i18n, raplaImages, bundleManager, scheduler,frameList, owner);
+        super(i18n, raplaImages, bundleManager, scheduler, owner);
         this.raplaLocale = raplaLocale;
         this.logger = logger;
         this.i18n = i18n;

@@ -42,7 +42,6 @@ import org.rapla.client.swing.internal.action.RestartServerAction;
 import org.rapla.client.swing.internal.action.SaveableToggleAction;
 import org.rapla.client.swing.internal.action.user.UserAction;
 import org.rapla.client.swing.internal.edit.TemplateEdit;
-import org.rapla.client.swing.internal.edit.TemplateEdit.TemplateEditFactory;
 import org.rapla.client.swing.internal.print.PrintAction;
 import org.rapla.client.swing.internal.view.LicenseInfoUI;
 import org.rapla.client.swing.toolkit.ActionWrapper;
@@ -102,7 +101,7 @@ public class RaplaMenuBar extends RaplaGUIComponent
     private final EditController editController;
     private final RaplaImages raplaImages;
     private final DialogUiFactoryInterface dialogUiFactory;
-    private final TemplateEditFactory templateEditFactory;
+    private final Provider<TemplateEdit> templateEditFactory;
     private CalendarSelectionModel model;
     Provider<LicenseInfoUI> licenseInfoUIProvider;
     final private CalendarEventBus eventBus;
@@ -115,7 +114,7 @@ public class RaplaMenuBar extends RaplaGUIComponent
             PrintAction printAction, Set<AdminMenuExtension> adminMenuExt, Set<EditMenuExtension> editMenuExt, Set<ViewMenuExtension> viewMenuExt,
             Set<HelpMenuExtension> helpMenuExt, Set<ImportMenuExtension> importMenuExt, Set<ExportMenuExtension> exportMenuExt, MenuFactory menuFactory,
             EditController editController, CalendarSelectionModel model, UserClientService clientService, RestartServer restartServerService,
-            RaplaImages raplaImages, DialogUiFactoryInterface dialogUiFactory, TemplateEditFactory templateEditFactory,
+            RaplaImages raplaImages, DialogUiFactoryInterface dialogUiFactory, Provider<TemplateEdit> templateEditFactory,
             Provider<LicenseInfoUI> licenseInfoUIProvider, ReservationController reservationController, CalendarEventBus eventBus, ApplicationEventBus appEventBus)            throws RaplaInitializationException
     {
         super(clientFacade, i18n, raplaLocale, logger);
@@ -391,7 +390,7 @@ public class RaplaMenuBar extends RaplaGUIComponent
                 {
                     try
                     {
-                        TemplateEdit edit = templateEditFactory.create();
+                        TemplateEdit edit = templateEditFactory.get();
                         edit.startTemplateEdit();
                         updateTemplateText();
                     }

@@ -92,6 +92,7 @@ public class EditTaskViewSwing implements EditTaskPresenter.EditTaskViewFactory<
 
             @Override
             public void start(Consumer<Collection<T>> save, Runnable close, Runnable delete) {
+
                 saveButton.addActionListener((evt) ->
                 {
                     try
@@ -115,6 +116,16 @@ public class EditTaskViewSwing implements EditTaskPresenter.EditTaskViewFactory<
                 });
             }
 
+            @Override
+            public Map<T,T> getEditMap()
+            {
+                return editMap;
+            }
+
+            @Override
+            public boolean hasChanged() {
+                return true;
+            }
         };
     }
 

@@ -15,10 +15,8 @@ package org.rapla.client.swing.internal.edit.reservation;
 import io.reactivex.functions.Consumer;
 import org.rapla.RaplaResources;
 import org.rapla.client.AppointmentListener;
-import org.rapla.client.PopupContext;
 import org.rapla.client.RaplaWidget;
 import org.rapla.client.ReservationEdit;
-import org.rapla.client.dialog.DialogInterface;
 import org.rapla.client.dialog.DialogUiFactoryInterface;
 import org.rapla.client.extensionpoints.AppointmentStatusFactory;
 import org.rapla.client.internal.RaplaColors;
@@ -32,9 +30,8 @@ import org.rapla.client.swing.toolkit.AWTColorUtil;
 import org.rapla.client.swing.toolkit.EmptyLineBorder;
 import org.rapla.client.swing.toolkit.RaplaButton;
 import org.rapla.components.layout.TableLayout;
+import org.rapla.components.util.TimeInterval;
 import org.rapla.components.util.undo.CommandHistory;
-import org.rapla.entities.Entity;
-import org.rapla.entities.EntityNotFoundException;
 import org.rapla.entities.User;
 import org.rapla.entities.domain.Appointment;
 import org.rapla.entities.domain.AppointmentBlock;
@@ -49,6 +46,7 @@ import org.rapla.framework.RaplaLocale;
 import org.rapla.inject.DefaultImplementation;
 import org.rapla.inject.InjectionContext;
 import org.rapla.logger.Logger;
+import org.rapla.scheduler.Promise;
 import org.rapla.storage.PermissionController;
 
 import javax.inject.Inject;
@@ -75,12 +73,7 @@ import java.awt.Component;
 import java.awt.Container;
 import java.awt.event.ActionEvent;
 import java.awt.event.KeyEvent;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Date;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
 @DefaultImplementation(context = InjectionContext.swing, of = ReservationEdit.class)
 public final class ReservationEditImpl extends AbstractAppointmentEditor implements ReservationEdit<Component>
@@ -307,17 +300,19 @@ public final class ReservationEditImpl extends AbstractAppointmentEditor impleme
         saveButtonTop.setEnabled(flag);
     }
 
-    public void addAppointment(Date start, Date end) throws RaplaException
+    public Promise<Void> addAppointment(Date start, Date end)
     {
-        Appointment appointment = getFacade().newAppointment(start, end);
-        AppointmentController controller = appointmentEdit.getAppointmentController();
-        Repeating repeating = controller.getRepeating();
-        if (repeating != null)
+        return getFacade().newAppointmentAsync(new TimeInterval(start, end)).thenAccept( (appointment)->
         {
-            appointment.setRepeatingEnabled(true);
-            appointment.getRepeating().setFrom(repeating);
-        }
-        appointmentEdit.addAppointment(appointment);
+            AppointmentController controller = appointmentEdit.getAppointmentController();
+            Repeating repeating = controller.getRepeating();
+            if (repeating != null)
+            {
+                appointment.setRepeatingEnabled(true);
+                appointment.getRepeating().setFrom(repeating);
+            }
+            appointmentEdit.addAppointment(appointment);
+        });
     }
 
     @Override
@@ -572,4 +567,8 @@ public final class ReservationEditImpl extends AbstractAppointmentEditor impleme
         //fireReservationChanged(new ChangeEvent(appointmentEdit));
     }
 
+    @Override
+    public Map<Reservation, Reservation> getEditMap() {
+        return Collections.singletonMap( original, mutableReservation);
+    }
 }

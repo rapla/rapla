@@ -151,11 +151,7 @@ public class SaveUndo<T extends Entity> implements CommandUndo<RaplaException> {
 		 }
 	 }
 
-	 private User getUser() throws RaplaException {
-	 	return facade.getUser();
-	 }
-	 
-	 public String getCommandoName() 
+	 public String getCommandoName()
      {
 		 if ( commandoName != null)
 		 {

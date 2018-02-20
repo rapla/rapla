@@ -456,8 +456,6 @@ public class SavedCalendarSwingView extends RaplaGUIComponent implements SavedCa
         final FileEntry selectedFile = getSelectedFile();
         
         final Component parentComponent = getMainComponent();
-
-   
         JPanel panel = new JPanel();
         final JTextField textField = new JTextField(20);
         addCopyPaste( textField, getI18n(), getRaplaLocale(), ioInterface, getLogger());

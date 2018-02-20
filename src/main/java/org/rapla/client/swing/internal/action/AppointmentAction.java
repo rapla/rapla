@@ -278,11 +278,11 @@ public class AppointmentAction extends RaplaAction {
                                                ,asNewReservation, keepTime));
     }
 
-    private void addToReservation() throws RaplaException 
+    private void addToReservation() throws RaplaException
     {
     	Date start = getStartDate(calendarSelectionModel);
     	Date end = getEndDate(calendarSelectionModel, start);
-    	reservationEdit.addAppointment(start,end);
+    	handleException(reservationEdit.addAppointment(start,end));
     }
 
     public boolean isAppointmentOnClipboard() {

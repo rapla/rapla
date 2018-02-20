@@ -79,7 +79,6 @@ public class EditTaskPresenter implements TaskPresenter
     private final Set<MergeCheckExtension> mergeCheckers;
     Subject<String> busyIdleObservable;
     EditTaskView editTaskView;
-
     public interface EditTaskViewFactory<C>
     {
         <T  extends Entity> EditTaskView<T,C> create(Map<T,T> toEdit, boolean isMerge) throws RaplaException;
@@ -88,6 +87,10 @@ public class EditTaskPresenter implements TaskPresenter
     public interface EditTaskView<T extends Entity,C> extends  RaplaWidget<C>
     {
         void start(Consumer<Collection<T>> save, Runnable close, Runnable deleteCmd);
+
+        Map<T,T> getEditMap();
+
+        boolean hasChanged();
     }
 
     @Inject
@@ -116,7 +119,7 @@ public class EditTaskPresenter implements TaskPresenter
     public Promise<RaplaWidget> startActivity(ApplicationEvent applicationEvent)
     {
         appointmentBlock = null;
-        final String taskId = applicationEvent.getApplicationEventId();
+        String taskId = applicationEvent.getApplicationEventId();
         String info = applicationEvent.getInfo();
         PopupContext popupContext = applicationEvent.getPopupContext();
         final Promise<EditTaskView> editTaskView;
@@ -171,7 +174,7 @@ public class EditTaskPresenter implements TaskPresenter
             else if (CREATE_RESERVATION_FOR_DYNAMIC_TYPE.equals(taskId))
             {
                 final String dynamicTypeId = info;
-                final Entity resolve = raplaFacade.resolve(new ReferenceInfo<Entity>(dynamicTypeId, DynamicType.class));
+                final Entity resolve = raplaFacade.resolve(new ReferenceInfo<>(dynamicTypeId, DynamicType.class));
                 final DynamicType type = (DynamicType) resolve;
                 final User user = clientFacade.getUser();
                 final Promise<List<Reservation>> newReservations = RaplaComponent.newReservation(type, user, raplaFacade, model)
@@ -382,7 +385,7 @@ public class EditTaskPresenter implements TaskPresenter
                     allocatableIds.add(allocatable.getReference());
                 }
                 busyIdleObservable.onNext(i18n.getString("merge"));
-                promise = raplaFacade.doMerge(selectedAllocatable, allocatableIds, raplaFacade.getUser()).thenApply( (allocatable -> null));
+                promise = raplaFacade.doMerge(selectedAllocatable, allocatableIds, clientFacade.getUser()).thenApply( (allocatable -> null));
             }
             else
             {
@@ -404,14 +407,14 @@ public class EditTaskPresenter implements TaskPresenter
                     promise = raplaFacade.dispatch(saveObjects, Collections.emptyList());
                 }
             }
-            handleException(promise.thenRun(()->close(applicationEvent)), popupContext).thenRun(()->busyIdleObservable.onNext(null)).thenCompose((t)
+            handleException(promise.thenRun(()->close(applicationEvent)), popupContext).thenRun(()->busyIdleObservable.onComplete()).thenCompose((t)
                 -> raplaFacade.refreshAsync());
 
         };
         Runnable deleteCmd = () -> {
             busyIdleObservable.onNext(i18n.getString("delete"));
             final Promise<Void> promise = reservationController.deleteReservations(new HashSet(origs), popupContext);
-            promise.thenRun( () ->closeCmd.run()).finally_(() ->  busyIdleObservable.onNext(null));
+            promise.thenRun( () ->closeCmd.run()).finally_(() ->  busyIdleObservable.onComplete());
         };
         editTaskView.start( saveCmd, closeCmd, deleteCmd);
         return new ResolvedPromise<>(editTaskView);
@@ -426,9 +429,9 @@ public class EditTaskPresenter implements TaskPresenter
     private Promise<Void> processStop(ApplicationEvent event, EditTaskView editTaskView)
     {
         PopupContext popupContext = event.getPopupContext();
-        if ( editTaskView != null && editTaskView instanceof ReservationEdit)
+        if ( editTaskView != null)
         {
-            if (!((ReservationEdit) editTaskView).hasChanged())
+            if (!editTaskView.hasChanged())
             {
                 return new ResolvedPromise<>(Promise.VOID);
             }
@@ -481,65 +484,43 @@ public class EditTaskPresenter implements TaskPresenter
     {
         if ( editTaskView != null)
         {
+            PopupContext popupContext = dialogUiFactory.createPopupContext( editTaskView);
             if (editTaskView instanceof  ReservationEdit)
             {
                 ReservationEdit c = (ReservationEdit)editTaskView;
                 c.updateView(event);
                 TimeInterval invalidateInterval = event.getInvalidateInterval();
                 Reservation original = c.getOriginal();
-                if (invalidateInterval != null && original != null)
+                if (invalidateInterval != null && original != null && invalidateInterval.overlaps( new TimeInterval( original.getFirstDate(), original.getMaxEnd())))
                 {
-                    boolean test = false;
-                    for (Appointment app : original.getAppointments())
-                    {
-                        if (app.overlapsTimeInterval(invalidateInterval))
-                        {
-                            test = true;
-                        }
 
-                    }
-                    if (test)
-                    {
-                        ((ReservationEdit) editTaskView).updateView( event);
-                    }
+                    handleException(raplaFacade.getUpdateState( original ).thenAccept(state-> {
+                        if ( state== RaplaFacade.ChangeState.newerVersionAvailable)  updateReservation( original);
+                        if ( state== RaplaFacade.ChangeState.deleted)  deleteReservation();
+                    }),popupContext);
                 }
-                Reservation persistant;
-                try
-                {
-                    persistant =   raplaFacade.getPersistant(original);
-                    Date version = persistant.getLastChanged();
-                    Date originalVersion = original.getLastChanged();
-                    if (originalVersion != null && version != null && originalVersion.before(version))
-                    {
-                        updateReservation(persistant);
-                    }
+            }
+            else
+            {
+                final Set<Entity> set = editTaskView.getEditMap().keySet();
+                if (set.stream().anyMatch( event::isModified)) {
+//                    DialogInterface warning = dialogUiFactory.create(popupContext,  i18n.getString("warning"), i18n.format("warning.update",set.toArray()));
+//                    warning.start(true);
+                    //applicationEvent.setStop( true );
+                    //processStop( applicationEvent);
                 }
-                catch (EntityNotFoundException ex)
-                {
-                    deleteReservation();
-                    return;
-                }
-                catch (RaplaException e)
-                {
-                    dialogUiFactory.showException(e, null);
-                }
-
             }
 
         }
-        // FIXME
-//
-//        ArrayList<ReservationEdit> clone = new ArrayList<ReservationEdit>(editWindowList);
-//        for (ReservationEdit edit : clone)
-//        {
-//          
-//
-//        }
     }
 
     public void updateReservation(Reservation newReservation) throws RaplaException
     {
-//        if (bSaving)
+        if ( true)
+        {
+            return;
+        }
+        //        if (bSaving)
 //            return;
 //        getLogger().debug("Reservation has been changed.");
 //        final PopupContext popupContext = dialogUiFactory.createPopupContext(()->contentPane);
@@ -624,23 +605,6 @@ public class EditTaskPresenter implements TaskPresenter
 //    }
 
 
-
-    //    public void dataChanged(ModificationEvent evt) throws RaplaException
-    //    {
-    //        super.dataChanged(evt);
-    //        if (bSaving || dlg == null || !dlg.isVisible() || ui == null)
-    //            return;
-    //        if (shouldCancelOnModification(evt))
-    //        {
-    //            getPrivateEditDialog().removeEditDialog(this);
-    //        }
-    //    }
-    //
-    //    @Override
-    //    protected void cleanupAfterClose()
-    //    {
-    //        getPrivateEditDialog().removeEditDialog(EditDialog.this);
-    //    }
 
 
 

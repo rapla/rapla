@@ -566,11 +566,11 @@ public class SQLOperatorTest extends AbstractOperatorTest
             classification.setValue(attribute, "generated-reserv-" + i);
             Date endDate = new Date();
             Date startDate = new Date(endDate.getTime() - 120000);
-            final Appointment newAppointment = writeFacade.newAppointment(startDate, endDate);
-            reservation.addAppointment(newAppointment);
-            newAppointment.setRepeatingEnabled(true);
-            newAppointment.getRepeating().setType(RepeatingType.DAILY);
-            newAppointment.getRepeating().setInterval(i);
+            final Appointment newAppointmentDeprecated = writeFacade.newAppointmentDeprecated(startDate, endDate);
+            reservation.addAppointment(newAppointmentDeprecated);
+            newAppointmentDeprecated.setRepeatingEnabled(true);
+            newAppointmentDeprecated.getRepeating().setType(RepeatingType.DAILY);
+            newAppointmentDeprecated.getRepeating().setInterval(i);
             reservation.addAllocatable(storedAllocatables[i * 3]);
             reservation.addAllocatable(storedAllocatables[i * 3 + 1]);
             reservation.addAllocatable(storedAllocatables[i * 3 + 2]);

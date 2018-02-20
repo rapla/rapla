@@ -13,6 +13,8 @@
 package org.rapla.client.swing.internal.common;
 
 import org.rapla.RaplaResources;
+import org.rapla.client.PopupContext;
+import org.rapla.client.dialog.DialogInterface;
 import org.rapla.client.dialog.DialogUiFactoryInterface;
 import org.rapla.client.swing.RaplaAction;
 import org.rapla.client.swing.images.RaplaImages;
@@ -40,14 +42,12 @@ public class CalendarAction extends RaplaAction {
     Date start;
     private final Provider<MultiCalendarPresenter> multiCalendarViewFactory;
     private final DialogUiFactoryInterface dialogUiFactory;
-    private final FrameControllerList frameControllerList;
 
-    public CalendarAction(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, Component parent, CalendarModel selectionModel, RaplaImages raplaImages, Provider<MultiCalendarPresenter> multiCalendarViewFactory, DialogUiFactoryInterface dialogUiFactory, FrameControllerList frameControllerList)
+    public CalendarAction(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, Component parent, CalendarModel selectionModel, RaplaImages raplaImages, Provider<MultiCalendarPresenter> multiCalendarViewFactory, DialogUiFactoryInterface dialogUiFactory)
     {
         super(facade, i18n, raplaLocale, logger);
         this.multiCalendarViewFactory = multiCalendarViewFactory;
         this.dialogUiFactory = dialogUiFactory;
-        this.frameControllerList = frameControllerList;
         this.model = (CalendarSelectionModel)selectionModel.clone();
         this.parent = parent;
         putValue(NAME,getString("calendar"));
@@ -66,12 +66,13 @@ public class CalendarAction extends RaplaAction {
 
     public void actionPerformed() {
         try {
-            RaplaFrame frame = new RaplaFrame(frameControllerList);
+            MultiCalendarPresenter cal = multiCalendarViewFactory.get();
+            final PopupContext popupContext = dialogUiFactory.createPopupContext(() -> parent);
+            DialogInterface frame = dialogUiFactory.create(popupContext, false, cal.provideContent().getComponent(), new String[]{});
             Dimension dimension = java.awt.Toolkit.getDefaultToolkit().getScreenSize();
-            frame.setSize(new Dimension(
+            frame.setSize(
                                         Math.min(dimension.width,800)
                                         ,Math.min(dimension.height-10,630)
-                                        )
                           );
             if (start != null)
                 model.setSelectedDate(start);
@@ -86,13 +87,9 @@ public class CalendarAction extends RaplaAction {
             model.setReservationFilter( null);
             frame.setTitle("Rapla "  + getString("calendar"));
 
-            MultiCalendarPresenter cal = multiCalendarViewFactory.get();
             cal.init( false,()->{ getLogger().debug("CalendarChangeCallback");});
-            frame.setContentPane((Container) cal.provideContent().getComponent());
-            //frame.addWindowListener(new DisposingTool(cal));
             boolean packFrame = false;
-            frame.place( true, packFrame );
-            frame.setVisible(true);
+            frame.start(  packFrame );
             cal.scrollToStart();
         } catch (Exception ex) {
             dialogUiFactory.showException(ex, new SwingPopupContext(parent, null));

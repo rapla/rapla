@@ -56,7 +56,7 @@ public final class RapaBuilderTest
         List<AppointmentBlock> blocks = new ArrayList<AppointmentBlock>();
         final RaplaFacade raplaFacade = facade.getRaplaFacade();
         Reservation reservation = raplaFacade.newReservationDeprecated();
-        Appointment appointment = raplaFacade.newAppointment(formater().parseDateTime("2004-01-01", "18:30:00"), formater().parseDateTime("2004-01-02", "12:00:00"));
+        Appointment appointment = raplaFacade.newAppointmentDeprecated(formater().parseDateTime("2004-01-01", "18:30:00"), formater().parseDateTime("2004-01-02", "12:00:00"));
         reservation.addAppointment( appointment );
         appointment.createBlocks(start,end, blocks );
         int offset = 0;
@@ -74,7 +74,7 @@ public final class RapaBuilderTest
         //      test 3 Blocks
         blocks.clear();
         reservation = raplaFacade.newReservationDeprecated();
-        appointment = raplaFacade.newAppointment(formater().parseDateTime("2004-01-01", "18:30:00"), formater().parseDateTime("2004-01-04", "00:00:00"));
+        appointment = raplaFacade.newAppointmentDeprecated(formater().parseDateTime("2004-01-01", "18:30:00"), formater().parseDateTime("2004-01-04", "00:00:00"));
         reservation.addAppointment( appointment );
         appointment.createBlocks(start,end, blocks );
         blocks = RaplaBuilder.splitBlocks( blocks
@@ -88,7 +88,7 @@ public final class RapaBuilderTest
         //      test 3 Blocks, but only the first two should show
         blocks.clear();
         reservation = raplaFacade.newReservationDeprecated();
-        appointment = raplaFacade.newAppointment(formater().parseDateTime("2004-01-01", "18:30:00"), formater().parseDateTime("2004-01-04", "00:00:00"));
+        appointment = raplaFacade.newAppointmentDeprecated(formater().parseDateTime("2004-01-01", "18:30:00"), formater().parseDateTime("2004-01-04", "00:00:00"));
         reservation.addAppointment( appointment );
         appointment.createBlocks(start,end, blocks );
         blocks = RaplaBuilder.splitBlocks( blocks

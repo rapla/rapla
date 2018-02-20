@@ -169,11 +169,11 @@ public class SQLOperatorRemoteTest extends ServerTest
     public void testCreateResourceAndRemoveAttribute() throws RaplaException
     {
         final RaplaFacade clientFacade = getRaplaFacade1();
-        Allocatable newResource = clientFacade.newResource();
+        Allocatable newResource = clientFacade.newResourceDeprecated();
         newResource.setClassification(clientFacade.getDynamicType("room").newClassification());
         newResource.getClassification().setValue("name", "test-resource");
         //If commented in it works
-        //newResource.getClassification().setValue("belongsto", facade1.getSuperCategory().getCategory("department").getCategories()[0]);
+        //newResourceDeprecated.getClassification().setValue("belongsto", facade1.getSuperCategory().getCategory("department").getCategories()[0]);
         clientFacade.store(newResource);
 
         DynamicType typeEdit3 = clientFacade.edit(clientFacade.getDynamicType("room"));

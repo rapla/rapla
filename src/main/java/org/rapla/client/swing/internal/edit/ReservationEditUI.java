@@ -86,7 +86,7 @@ public class ReservationEditUI  extends AbstractEditUI<Reservation>  {
 
         allocatableSelection = new AllocatableSelection(facade, i18n, raplaLocale, logger, false, new CommandHistory(), treeFactory, originalModel,
                 appointmentFormater, menuFactory, infoFactory, raplaImages, dialogUiFactory, dateFieldFactory, multiCalendarViewFactory,
-                booleanFieldFactory, filterEditButtonFactory, frameControllerList)
+                booleanFieldFactory, filterEditButtonFactory)
         {
             public boolean isRestrictionVisible() {return false;}
         };

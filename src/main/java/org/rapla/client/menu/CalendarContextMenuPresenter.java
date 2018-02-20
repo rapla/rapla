@@ -173,14 +173,7 @@ public class CalendarContextMenuPresenter extends RaplaComponent implements Menu
                                 {
                                     Date start = getStartDate(model,raplaFacade,user);
                                     Date end = getEndDate(model, start);
-                                    try
-                                    {
-                                        reservationEdit.addAppointment(start, end);
-                                    }
-                                    catch (RaplaException e)
-                                    {
-                                        view.showException(e);
-                                    }
+                                    reservationEdit.addAppointment(start, end);
                                 }
                             });
                         }

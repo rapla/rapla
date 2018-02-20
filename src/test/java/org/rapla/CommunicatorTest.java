@@ -65,7 +65,7 @@ public class CommunicatorTest extends AbstractTestWithServer
            Assert.assertTrue(allocatables.length > 0);
 
            Reservation newEvent = newReservation(clientFacade);
-           Appointment newApp = facade.newAppointment( new Date(), new Date());
+           Appointment newApp = facade.newAppointmentDeprecated( new Date(), new Date());
            newEvent.addAppointment( newApp );
            newEvent.getClassification().setValue("name","Test Reservation");
            newEvent.addAllocatable( allocatables[0]);

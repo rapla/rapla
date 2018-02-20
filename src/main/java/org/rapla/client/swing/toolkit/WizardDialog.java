@@ -49,13 +49,13 @@ public class WizardDialog extends DialogUI {
     };
 
 
-    protected WizardDialog(RaplaResources i18n, RaplaImages raplaImages, BundleManager bundleManager,CommandScheduler scheduler, FrameControllerList frameList, Dialog owner) throws
+    protected WizardDialog(RaplaResources i18n, RaplaImages raplaImages, BundleManager bundleManager,CommandScheduler scheduler,  Dialog owner) throws
             RaplaInitializationException {
-        super(i18n, raplaImages, bundleManager, scheduler,frameList,owner);
+        super(i18n, raplaImages, bundleManager, scheduler,owner);
     }
 
-    protected WizardDialog(RaplaResources i18n, RaplaImages raplaImages, BundleManager bundleManager,CommandScheduler scheduler, FrameControllerList frameList, Frame owner) throws RaplaInitializationException {
-        super(i18n, raplaImages, bundleManager, scheduler,frameList,owner);
+    protected WizardDialog(RaplaResources i18n, RaplaImages raplaImages, BundleManager bundleManager,CommandScheduler scheduler,  Frame owner) throws RaplaInitializationException {
+        super(i18n, raplaImages, bundleManager, scheduler,owner);
     }
 
     private void init(boolean modal) {
@@ -139,16 +139,14 @@ public class WizardDialog extends DialogUI {
         private final RaplaResources i18n;
         private final RaplaImages raplaImages;
         private final BundleManager bundleManager;
-        private final FrameControllerList frameList;
         private final CommandScheduler scheduler;
 
         @Inject
-        public WizardDialogFactory(RaplaResources i18n, RaplaImages raplaImages, BundleManager bundleManager,CommandScheduler scheduler, FrameControllerList frameList)
+        public WizardDialogFactory(RaplaResources i18n, RaplaImages raplaImages, BundleManager bundleManager,CommandScheduler scheduler)
         {
             this.i18n = i18n;
             this.raplaImages = raplaImages;
             this.bundleManager = bundleManager;
-            this.frameList = frameList;
             this.scheduler = scheduler;
         }
 
@@ -157,9 +155,9 @@ public class WizardDialog extends DialogUI {
             WizardDialog dlg;
             Component topLevel = getOwnerWindow(owner);
             if (topLevel instanceof Dialog)
-                dlg = new WizardDialog(i18n, raplaImages, bundleManager,scheduler, frameList, (Dialog) topLevel);
+                dlg = new WizardDialog(i18n, raplaImages, bundleManager,scheduler,  (Dialog) topLevel);
             else
-                dlg = new WizardDialog(i18n, raplaImages, bundleManager,scheduler, frameList, (Frame) topLevel);
+                dlg = new WizardDialog(i18n, raplaImages, bundleManager,scheduler, (Frame) topLevel);
             dlg.init(modal);
             return dlg;
         }

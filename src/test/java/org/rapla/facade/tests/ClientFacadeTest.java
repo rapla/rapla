@@ -134,7 +134,7 @@ public class ClientFacadeTest  {
         orig.getClassification().setValue("name", "new");
         Date start = DateTools.toDateTime(new Date(), new Date(DateTools.toTime(10, 0, 0)));
         Date end = DateTools.toDateTime( start,new Date(DateTools.toTime(  12,0,0)));
-        orig.addAppointment( facade.newAppointment( start, end));
+        orig.addAppointment( facade.newAppointmentDeprecated( start, end));
 
         orig.addAllocatable(parentResource);
         facade.store(orig);
@@ -159,7 +159,7 @@ public class ClientFacadeTest  {
         {
             newEvent = facade.clone(newEvent, user);
             Appointment firstAppointment = newEvent.getAppointments()[0];
-            final Appointment newAppointment = facade.newAppointment(DateTools.addDay(start), DateTools.addDay(end));
+            final Appointment newAppointment = facade.newAppointmentDeprecated(DateTools.addDay(start), DateTools.addDay(end));
             newEvent.addAppointment(newAppointment);
             final Collection<Allocatable> allocatables = Arrays.asList(newEvent.getAllocatables());
             {
@@ -287,7 +287,7 @@ public class ClientFacadeTest  {
         Classification classification = facade.getDynamicTypes(DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RESERVATION)[0].newClassification();
         final Reservation reservation1 = facade.newReservation(classification, user);
         {
-            reservation1.addAppointment(facade.newAppointment(DateTools.toDateTime(new Date(), new Date(DateTools.toTime(10, 00, 00))), DateTools.toDateTime(new Date(), new Date(DateTools.toTime(12, 00, 00)))));
+            reservation1.addAppointment(facade.newAppointmentDeprecated(DateTools.toDateTime(new Date(), new Date(DateTools.toTime(10, 00, 00))), DateTools.toDateTime(new Date(), new Date(DateTools.toTime(12, 00, 00)))));
             reservation1.addAllocatable(alloc1);
             {
                 Collection<Allocatable> allocatablesFromAppointment = Arrays.asList(reservation1.getAllocatables()[0]);
@@ -354,7 +354,7 @@ public class ClientFacadeTest  {
         orig.getClassification().setValue("name","new");
         Date start = DateTools.toDateTime(new Date(), new Date(DateTools.toTime(10, 0, 0)));
         Date end = DateTools.toDateTime( start,new Date(DateTools.toTime(  12,0,0)));
-        orig.addAppointment( facade.newAppointment( start, end));
+        orig.addAppointment( facade.newAppointmentDeprecated( start, end));
 
         orig.addAllocatable( facade.getAllocatables()[0]);
         facade.store(orig);
@@ -405,14 +405,14 @@ public class ClientFacadeTest  {
     	String allocatableId;
     	String eventId;
     	{
-    		Allocatable nonPersistantAllocatable = facade.newResource();
+    		Allocatable nonPersistantAllocatable = facade.newResourceDeprecated();
     		nonPersistantAllocatable.getClassification().setValue("name", "Bla");
     		 
     		Reservation nonPeristantEvent = facade.newReservationDeprecated();
     		nonPeristantEvent.getClassification().setValue("name", "dummy-event");
     		Assert.assertEquals("event", nonPeristantEvent.getClassification().getType().getKey());
     		nonPeristantEvent.addAllocatable( nonPersistantAllocatable );
-    		nonPeristantEvent.addAppointment( facade.newAppointment(new Date(), new Date()));
+    		nonPeristantEvent.addAppointment( facade.newAppointmentDeprecated(new Date(), new Date()));
     		facade.storeObjects(new Entity[] { nonPersistantAllocatable, nonPeristantEvent });
     		allocatableId = nonPersistantAllocatable.getId();
     		eventId = nonPeristantEvent.getId();
@@ -492,7 +492,7 @@ public class ClientFacadeTest  {
 
     @Test
     public void testPreferenceDependencies() throws RaplaException {
-        Allocatable allocatable = facade.newResource();
+        Allocatable allocatable = facade.newResourceDeprecated();
         facade.store( allocatable);
 
         CalendarSelectionModel calendar = facade.newCalendarModel(clientFacade.getUser() );
@@ -576,7 +576,7 @@ public class ClientFacadeTest  {
                 final Date today = DateTools.cutDate(new Date(System.currentTimeMillis()));
                 final Date startAppointment = DateTools.toDateTime(today, new Date(DateTools.toTime(10, 00, 00)));
                 final Date endAppointment = DateTools.toDateTime(today, new Date(DateTools.toTime(12, 00, 00)));
-                final Appointment newAppointment = facade.newAppointment(startAppointment, endAppointment);
+                final Appointment newAppointment = facade.newAppointmentDeprecated(startAppointment, endAppointment);
                 reservation.addAppointment(newAppointment);
                 reservation.setRestrictionForAppointment(newAppointment, new Allocatable[]{allocatableWinsMerge});
             }
@@ -584,7 +584,7 @@ public class ClientFacadeTest  {
                 final Date today = DateTools.cutDate(new Date(System.currentTimeMillis()));
                 final Date startAppointment = DateTools.toDateTime(today, new Date(DateTools.toTime(13, 00, 00)));
                 final Date endAppointment = DateTools.toDateTime(today, new Date(DateTools.toTime(14, 00, 00)));
-                final Appointment newAppointment = facade.newAppointment(startAppointment, endAppointment);
+                final Appointment newAppointment = facade.newAppointmentDeprecated(startAppointment, endAppointment);
                 reservation.addAppointment(newAppointment);
                 reservation.setRestrictionForAppointment(newAppointment, new Allocatable[]{allocatableWillBeMerge});
             }
@@ -592,7 +592,7 @@ public class ClientFacadeTest  {
                 final Date today = DateTools.cutDate(new Date(System.currentTimeMillis()));
                 final Date startAppointment = DateTools.toDateTime(today, new Date(DateTools.toTime(13, 00, 00)));
                 final Date endAppointment = DateTools.toDateTime(today, new Date(DateTools.toTime(14, 00, 00)));
-                final Appointment newAppointment = facade.newAppointment(startAppointment, endAppointment);
+                final Appointment newAppointment = facade.newAppointmentDeprecated(startAppointment, endAppointment);
                 reservation.addAppointment(newAppointment);
             }
             facade.store(reservation);
@@ -821,14 +821,14 @@ public class ClientFacadeTest  {
             final Reservation newReservation = facade.newReservation(classification, user);
             final Allocatable montyAllocatable = facade.getOperator().tryResolve("r9b69d90-46a0-41bb-94fa-82079b424c03", Allocatable.class);//facade.getOperator().tryResolve("f92e9a11-c342-4413-a924-81eee17ccf92", Allocatable.class);
             newReservation.addAllocatable(montyAllocatable);
-            newReservation.addAppointment(facade.newAppointment(startDate, endDate));
+            newReservation.addAppointment(facade.newAppointmentDeprecated(startDate, endDate));
             facade.store(newReservation);
         }
         // create reservation with group allocatable
         final Reservation newReservation = facade.newReservation(classification, user);
         final Allocatable dozGroupAllocatable = facade.getOperator().tryResolve("f92e9a11-c342-4413-a924-81eee17ccf92", Allocatable.class);//facade.getOperator().tryResolve("r9b69d90-46a0-41bb-94fa-82079b424c03", Allocatable.class);
         newReservation.addAllocatable(dozGroupAllocatable);
-        newReservation.addAppointment(facade.newAppointment(startDate, endDate));
+        newReservation.addAppointment(facade.newAppointmentDeprecated(startDate, endDate));
         final Collection<Conflict> conflicts = RaplaTestCase.waitForWithRaplaException(facade.getConflictsForReservation(newReservation), 10000);
         Assert.assertEquals(1, conflicts.size());
     }
@@ -844,14 +844,14 @@ public class ClientFacadeTest  {
             final Reservation newReservation = facade.newReservation(classification, user);
             final Allocatable roomA66Allocatable = facade.getOperator().tryResolve("c24ce517-4697-4e52-9917-ec000c84563c", Allocatable.class);
             newReservation.addAllocatable(roomA66Allocatable);
-            newReservation.addAppointment(facade.newAppointment(startDate, endDate));
+            newReservation.addAppointment(facade.newAppointmentDeprecated(startDate, endDate));
             facade.store(newReservation);
         }
         // create reservation with group allocatable
         final Reservation newReservation = facade.newReservation(classification, user);
         final Allocatable partRoomAllocatable = facade.getOperator().tryResolve("rdd6b473-7c77-4344-a73d-1f27008341cb", Allocatable.class);
         newReservation.addAllocatable(partRoomAllocatable);
-        newReservation.addAppointment(facade.newAppointment(startDate, endDate));
+        newReservation.addAppointment(facade.newAppointmentDeprecated(startDate, endDate));
         final Collection<Conflict> conflicts = RaplaTestCase.waitForWithRaplaException(facade.getConflictsForReservation(newReservation), 10000);
         Assert.assertEquals(1, conflicts.size());
     }

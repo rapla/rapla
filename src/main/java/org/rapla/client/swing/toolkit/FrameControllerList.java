@@ -18,6 +18,7 @@ import org.rapla.logger.Logger;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
+import javax.swing.*;
 import java.awt.Component;
 import java.awt.Container;
 import java.awt.Cursor;
@@ -202,26 +203,13 @@ final public class FrameControllerList {
         @param owner the window to place into
      */
     public static void placeRelativeToWindow(Window newWindow,Window owner) {
-        placeRelativeToComponent(newWindow,owner,null);
+        placeRelativeToComponent(newWindow,owner);
     }
 
-    public static void placeRelativeToComponent(Window newWindow,Component component,Point point) {
-        if (component == null)
+    public static void placeRelativeToComponent(Window newWindow,Component component) {
+        if (component == null )
             return;
-        Dimension dlgSize = newWindow.getSize();
-        Dimension parentSize = component.getSize();
-        Point loc = component.getLocationOnScreen();
-
-        if (point != null) {
-            int x = loc.x + point.x - (dlgSize.width) / 2;
-            int y = loc.y + point.y - ((dlgSize.height) * 2) / 3;
-            //System.out.println (loc + ",  " + point + " x: " + x + " y: " + y);
-            fitIntoScreen(x,y,newWindow);
-        } else {
-            int x = (parentSize.width - dlgSize.width) / 2 + loc.x;
-            int y = loc.y + 10;
-            fitIntoScreen(x,y,newWindow);
-        }
+        newWindow.setLocationRelativeTo(component);
     }
 
 

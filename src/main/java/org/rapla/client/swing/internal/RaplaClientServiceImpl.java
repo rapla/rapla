@@ -576,19 +576,13 @@ public class RaplaClientServiceImpl implements ClientService, UpdateErrorListene
                     {
                         Component owner = null;
                         final DialogInterface dialog = dialogUiFactory.create(new SwingPopupContext(owner, null), title, message);
-                        Runnable action = new Runnable()
+                        dialog.setAbortAction(()->
                         {
-                            private static final long serialVersionUID = 1L;
-
-                            public void run()
-                            {
-                                getLogger().warn("restart");
-                                dialog.close();
-                                restart();
-                            }
-                        };
-                        dialog.setAbortAction(action);
-                        dialog.getAction(0).setRunnable(action);
+                            getLogger().warn("restart");
+                            dialog.close();
+                            restart();
+                        }
+                        );
                         dialog.start(true);
                     }
                     catch (Throwable e)

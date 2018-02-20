@@ -8,6 +8,7 @@ import org.rapla.entities.domain.AppointmentBlock;
 import org.rapla.entities.domain.Reservation;
 import org.rapla.facade.ModificationEvent;
 import org.rapla.framework.RaplaException;
+import org.rapla.scheduler.Promise;
 
 import java.util.Collection;
 import java.util.Date;
@@ -15,7 +16,7 @@ import java.util.Date;
 @JsType
 public interface ReservationEdit<T> extends EditTaskPresenter.EditTaskView<Reservation,T>
 {
-    void addAppointment( Date start, Date end) throws RaplaException;
+    Promise<Void> addAppointment(Date start, Date end);
 	
     Reservation getReservation();
 

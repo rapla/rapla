@@ -64,9 +64,8 @@ public final class PermissionEditTest extends GUITestCase
         IOInterface ioInterface = new DefaultIO(logger);
         ClientFacade facade = getFacade();
         final RaplaImages raplaImages = new RaplaImages(logger);
-        FrameControllerList frameList = new FrameControllerList(logger);
         CommandScheduler scheduler = new SwingSchedulerImpl(logger);
-        DialogUiFactoryInterface dialogUiFactory = new DialogUiFactory(i18n, raplaImages, scheduler,bundleManager, frameList, logger );
+        DialogUiFactoryInterface dialogUiFactory = new DialogUiFactory(i18n, raplaImages, scheduler,bundleManager,  logger );
         InfoFactory infoFactory = new InfoFactoryImpl(getFacade(), i18n, getRaplaLocale(), getLogger(), appointmentFormater, ioInterface, raplaImages, dialogUiFactory);
         TreeFactory treeFactory = new TreeFactoryImpl(getFacade(), i18n, getRaplaLocale(), getLogger(), infoFactory, raplaImages);
         DateRenderer dateRenderer = new RaplaDateRenderer(getFacade().getRaplaFacade(),  getRaplaLocale());

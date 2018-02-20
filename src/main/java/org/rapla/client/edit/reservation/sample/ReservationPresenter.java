@@ -182,7 +182,7 @@ public class ReservationPresenter implements Presenter
         Date endDate = new Date();
         try
         {
-            Appointment newAppointment = facade.newAppointment(startDate, endDate);
+            Appointment newAppointment = facade.newAppointmentDeprecated(startDate, endDate);
             editReservation.addAppointment(newAppointment);
             this.selectedAppointment = newAppointment;
             view.updateAppointments(newAppointment);

@@ -39,10 +39,7 @@ import org.rapla.scheduler.Promise;
 import org.rapla.storage.PermissionController;
 import org.rapla.storage.StorageOperator;
 
-import java.util.Collection;
-import java.util.Date;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 /** A collection of all module-interfaces
 */
@@ -158,7 +155,7 @@ public interface RaplaFacade
     /** Creates a new resource from the first dynamic type found, basically a shortcut to newAlloctable(getDynamicType(VALUE_CLASSIFICATION_TYPE_RESOURCE)[0].newClassification()).
      * This is a convenience method for testing.
      *  */
-    @Deprecated Allocatable newResource() throws RaplaException;
+    @Deprecated Allocatable newResourceDeprecated() throws RaplaException;
 
     /** creates a new Rapla Map. Keep in mind that only RaplaObjects and Strings are allowed as entries for a RaplaMap!*/
     <T> RaplaMap<T> newRaplaMapForMap( Map<String,T> map);
@@ -172,10 +169,14 @@ public interface RaplaFacade
      * @see DynamicType#newClassification()
      */
     Reservation newReservation(Classification classification,User user) throws RaplaException;
-    Promise<Reservation> newReservationAsync(Classification classification);
 
-    Appointment newAppointment(Date startDate,Date endDate) throws RaplaException;
+    /** @deprecated use #newAppointmentWithUser or #newAppointmentAsync (on the client) instead */
+    @Deprecated
+    Appointment newAppointmentDeprecated(Date startDate, Date endDate) throws RaplaException;
+
+    Promise<Reservation> newReservationAsync(Classification classification);
     Promise<Appointment> newAppointmentAsync(TimeInterval interval);
+    Promise<Collection<Appointment>> newAppointmentsAsync(Collection<TimeInterval> interval);
     Appointment newAppointmentWithUser(Date startDate,Date endDate, User user) throws RaplaException;
 
     /** Creates a new allocatable from the classifcation object and with the passed user as its owner
@@ -200,7 +201,8 @@ public interface RaplaFacade
      can be editet.
      */
     <T extends Entity> T clone(T obj,User user) throws RaplaException;
-    <T extends Entity> Promise<Collection<T>> cloneList(Collection<T> obj, User user);
+    <T extends Entity> Promise<T> cloneAsync(T obj);
+    <T extends Entity> Promise<Collection<T>> cloneList(Collection<T> obj);
     <T extends Entity> Promise<Map<T,T>> editListAsync(Collection<T> obj);
     <T extends Entity> Promise<Map<T,T>> editListAsyncForUndo(Collection<T> obj);
     <T extends Entity> Promise<T> editAsync(T obj);
@@ -209,8 +211,6 @@ public interface RaplaFacade
 
     /** copies a list of reservations to a new beginning. KeepTime specifies if the original time is used or the time of the new beginDate*/
     Promise<Collection<Reservation>> copyReservations(Collection<Reservation> toCopy, Date beginn, boolean keepTime, User user);
-
-    Promise<Appointment> copyAppointment(Appointment appointment);
 
     <T extends Entity, S extends Entity> Promise<Void> dispatch( Collection<T> storeList, Collection<ReferenceInfo<S>> removeList);
 
@@ -312,13 +312,11 @@ public interface RaplaFacade
      * @throws RaplaException */
     PeriodModel getPeriodModelFor(String key) throws RaplaException;
 
-    /** returns the logged in user if the facade is on the client. Otherwise it will thrown an error*/
-    User getUser() throws RaplaException;
-
-
-
-
-
+    enum ChangeState
+    {
+        latest,newerVersionAvailable,deleted;
+    }
+    Promise<ChangeState> getUpdateState(Entity original);
 }
 
 

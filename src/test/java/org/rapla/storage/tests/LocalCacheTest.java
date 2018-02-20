@@ -217,7 +217,7 @@ public class LocalCacheTest  {
         //start is 13/4  original end = 28/4
         Date startDate = new Date(DateTools.toDate(2013, 4, 13));
         Date endDate = new Date(DateTools.toDate(2013, 4, 28));
-        Appointment appointment = facade.newAppointment(startDate, endDate);
+        Appointment appointment = facade.newAppointmentDeprecated(startDate, endDate);
         reservation.addAppointment(appointment);
         reservation.getClassification().setValue("name", "test");
         facade.store( reservation);

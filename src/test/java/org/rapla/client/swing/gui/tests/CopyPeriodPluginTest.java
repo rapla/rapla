@@ -120,9 +120,8 @@ public class CopyPeriodPluginTest {
         final DateRenderer dateRenderer = new RaplaDateRenderer(raplaFacade, getRaplaLocale());
         final RaplaResources raplaResources = rr;
         final RaplaImages raplaImages = new RaplaImages(logger);
-        final FrameControllerList frameList = new FrameControllerList(logger);
         CommandScheduler scheduler = new SwingSchedulerImpl(logger);
-        final DialogUiFactoryInterface dialogUiFactory = new DialogUiFactory(raplaResources, raplaImages,scheduler, bundleManager, frameList, logger );
+        final DialogUiFactoryInterface dialogUiFactory = new DialogUiFactory(raplaResources, raplaImages,scheduler, bundleManager,  logger );
         final BooleanFieldFactory booleanFieldFactory = new BooleanFieldFactory(facade, raplaResources, raplaLocale, logger);
         final IOInterface t = new DefaultIO(logger);
         Provider<CopyDialog> copyDialogProvider = new Provider<CopyDialog>(){

@@ -251,6 +251,11 @@ public class RaplaGUIComponent extends RaplaComponent
         return mainComponent;
     }
 
+    static public Component getMainComponentDeprecated()
+    {
+        return mainComponent;
+    }
+
     public static void addCopyPaste( final JComponent component, final RaplaResources i18n, final RaplaLocale raplaLocale, final IOInterface service, final Logger logger )
     {
         final ActionListener pasteListener = new ActionListener()

@@ -195,7 +195,7 @@ public class ServerTest
         Reservation r1 = raplaFacade1.newReservationDeprecated();
         String typeKey = r1.getClassification().getType().getKey();
         r1.getClassification().setValue("name", "myGeneratedTestReservation");
-        r1.addAppointment(raplaFacade1.newAppointment(raplaFacade1.today(), new Date()));
+        r1.addAppointment(raplaFacade1.newAppointmentDeprecated(raplaFacade1.today(), new Date()));
         r1.addAllocatable(raplaFacade1.getAllocatables()[0]);
         raplaFacade1.store(r1);
         // Wait for the update
@@ -505,7 +505,7 @@ public class ServerTest
         final RaplaFacade raplaFacade1 = getRaplaFacade1();
         Date futureDate = new Date(raplaFacade1.today().getTime() + DateTools.MILLISECONDS_PER_WEEK * 10);
         Reservation r = newReservation( clientFacade1);
-        r.addAppointment(raplaFacade1.newAppointment(futureDate, futureDate));
+        r.addAppointment(raplaFacade1.newAppointmentDeprecated(futureDate, futureDate));
         r.getClassification().setValue("name", "Test");
         r.addAllocatable(raplaFacade1.getAllocatables()[0]);
 
@@ -539,7 +539,7 @@ public class ServerTest
         {
             Reservation r = newReservation( clientFacade1);
             r.getClassification().setValue("name", "test-reservation");
-            Appointment a = raplaFacade1.newAppointment(start, end);
+            Appointment a = raplaFacade1.newAppointmentDeprecated(start, end);
             a.setRepeatingEnabled(true);
             a.getRepeating().setType(Repeating.WEEKLY);
             a.getRepeating().setInterval(2);
@@ -602,7 +602,7 @@ public class ServerTest
         Date end = getRaplaLocale().toRaplaDate(2005, 11, 15);
         Reservation r = newReservation(clientFacade1);
         r.getClassification().setValue("name", "newReservation");
-        r.addAppointment(raplaFacade1.newAppointment(start, end));
+        r.addAppointment(raplaFacade1.newAppointmentDeprecated(start, end));
         r.addAllocatable(allocatables[0]);
         ClassificationFilter f = r.getClassification().getType().newClassificationFilter();
         f.addEqualsRule("name", "newReservation");
@@ -625,14 +625,14 @@ public class ServerTest
         {
             Date start = raplaLocale.toRaplaDate(2005, 11, 10);
             Date end = raplaLocale.toRaplaDate(2005, 10, 15);
-            app1 = raplaFacade1.newAppointment(start, end);
+            app1 = raplaFacade1.newAppointmentDeprecated(start, end);
             r.addAppointment(app1);
         }
         Appointment app2;
         {
             Date start = raplaLocale.toRaplaDate(2008, 11, 10);
             Date end = raplaLocale.toRaplaDate(2008, 11, 15);
-            app2 = raplaFacade1.newAppointment(start, end);
+            app2 = raplaFacade1.newAppointmentDeprecated(start, end);
             r.addAppointment(app2);
         }
         Allocatable allocatable = raplaFacade1.getAllocatables()[0];

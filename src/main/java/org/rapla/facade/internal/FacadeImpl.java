@@ -69,7 +69,6 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
-import java.util.Queue;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -525,10 +524,7 @@ public class FacadeImpl implements RaplaFacade {
 		return raplaMap;
 	}
 
-	public Appointment newAppointment(Date startDate, Date endDate) throws RaplaException {
-		User user = getUser();
-		return newAppointmentWithUser(startDate, endDate, user);
-	}
+
 
 	@Override
 	public Promise<Appointment> newAppointmentAsync(TimeInterval interval)
@@ -537,12 +533,38 @@ public class FacadeImpl implements RaplaFacade {
 		return operator.createIdentifierAsync(Appointment.class,1).thenApply(ids->
 						setNew(Collections.singletonList( appointment),  ids.iterator(),getUser()).get(0));
 	}
-	
+
+    @Override
+    public Promise<Collection<Appointment>> newAppointmentsAsync(Collection<TimeInterval> intervals)
+    {
+        final int size = intervals.size();
+        List<Appointment> appointments = intervals.stream().map( interval-> new AppointmentImpl(interval.getStart(), interval.getEnd())).collect(Collectors.toList());
+        return operator.createIdentifierAsync(Appointment.class, size).thenApply(ids->setNew(appointments,  ids.iterator(),getUser()));
+    }
+
+
+    @Deprecated
+    public Appointment newAppointmentDeprecated(Date startDate, Date endDate) throws RaplaException {
+        User user = getUser();
+        return newAppointmentWithUser(startDate, endDate, user);
+    }
+
+	@Deprecated
 	public Reservation newReservationDeprecated() throws RaplaException
     {
         Classification classification = getDynamicTypes(DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RESERVATION)[0].newClassification();
 		User user = getUser();
 		return newReservation( classification,user );
+    }
+
+    @Deprecated
+    public Allocatable newResourceDeprecated() throws RaplaException {
+        RaplaFacade facade = this;
+        User user = getUser();
+        DynamicType[] dynamicTypes = facade.getDynamicTypes(DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RESOURCE);
+        DynamicType dynamicType = dynamicTypes[0];
+        Classification classification = dynamicType.newClassification();
+        return facade.newAllocatable(classification, user);
     }
 
 	public Reservation newReservation(Classification classification,User user) throws RaplaException 
@@ -594,11 +616,6 @@ public class FacadeImpl implements RaplaFacade {
         reservation.setAnnotation(RaplaObjectAnnotations.KEY_TEMPLATE, template.getId());
     }
 
-    public Allocatable newAllocatable( Classification classification) throws RaplaException 
-	{
-		return newAllocatable(classification, getUser());
-	}
-	
 	public Allocatable newAllocatable( Classification classification, User user) throws RaplaException {
         Date now = operator.getCurrentTimestamp();
         AllocatableImpl allocatable = new AllocatableImpl(now, now);
@@ -609,14 +626,6 @@ public class FacadeImpl implements RaplaFacade {
     }
 
 
-
-	private Classification newClassification(String classificationType)
-			throws RaplaException {
-		DynamicType[] dynamicTypes = getDynamicTypes(classificationType);
-        DynamicType dynamicType = dynamicTypes[0];
-        Classification classification = dynamicType.newClassification();
-		return classification;
-	}
 
     public Appointment newAppointmentWithUser(Date startDate, Date endDate, User user) throws RaplaException {
         AppointmentImpl appointment = new AppointmentImpl(startDate, endDate);
@@ -639,18 +648,9 @@ public class FacadeImpl implements RaplaFacade {
 		return appointment;
 	}
 
-	public Allocatable newResource() throws RaplaException {
-		User user = getUser();
-		Classification classification = newClassification(DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RESOURCE);
-		return newAllocatable(classification, user);
-	}
 
-	public Allocatable newPerson() throws RaplaException {
-		User user = getUser();
-		Classification classification = newClassification(DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_PERSON);
-		return newAllocatable(classification, user);
-	}
 
+    @Override
 	public Allocatable newPeriod(User user) throws RaplaException {
 		DynamicType periodType = getDynamicType(StorageOperator.PERIOD_TYPE);
 		Classification classification = periodType.newClassification();
@@ -663,11 +663,12 @@ public class FacadeImpl implements RaplaFacade {
 		return period;
 	}
 
-
+    @Override
 	public Date today() {
 		return operator.today();
 	}
 
+    @Override
 	public Category newCategory() throws RaplaException {
 		Date now = operator.getCurrentTimestamp();
         CategoryImpl category = new CategoryImpl(now, now);
@@ -682,6 +683,7 @@ public class FacadeImpl implements RaplaFacade {
 		return attribute;
 	}
 
+	@Override
 	public DynamicType newDynamicType(String classificationType) throws RaplaException {
 		Date now = operator.getCurrentTimestamp();
 		DynamicTypeImpl dynamicType = new DynamicTypeImpl(now,now);
@@ -861,11 +863,6 @@ public class FacadeImpl implements RaplaFacade {
 		return entities;
 	}
 
-	public String getUsername(ReferenceInfo<User> userId) throws RaplaException
-	{
-		return operator.getUsername(userId);
-	}
-
 	@Override
 	public <T extends Entity> T edit(T obj) throws RaplaException {
 		if (obj == null)
@@ -914,6 +911,7 @@ public class FacadeImpl implements RaplaFacade {
 		return castedResult;
 	}
 
+	@Override
 	public <T extends Entity> Collection<T> editList(Collection<T> list) throws RaplaException
 	{
 		List<Entity> castedList = cast2Entity(list);
@@ -1036,6 +1034,41 @@ public class FacadeImpl implements RaplaFacade {
 		return r;
 	}
 
+	@Override
+	public <T extends Entity> Promise<Collection<T>> cloneList(Collection<T> objList) {
+		if (objList == null)
+			throw new NullPointerException("Can't clone null objects");
+		if ( objList.isEmpty())
+		{
+			return new ResolvedPromise<>(Collections.emptyList());
+		}
+		final User user;
+		try {
+			user = getUser();
+		} catch (RaplaException e) {
+			return new ResolvedPromise<>(e);
+		}
+		Class<T> raplaType = objList.stream().findFirst().get().getTypeClass();
+		if (raplaType == Reservation.class) {
+
+			CopyFunction copyFunction = (original,reservationIds, appointmentIds)->cloneReservation(original, reservationIds, appointmentIds, user);
+			final Collection<Reservation> reservationList = (Collection<Reservation>) objList;
+			return (Promise)copyReservations(reservationList, copyFunction);
+		}
+		else
+		{
+			return operator.createIdentifierAsync(raplaType, objList.size()).thenApply(ids->
+			{
+				Iterator<ReferenceInfo<T>> idProvider = ids.iterator();
+				List result = new ArrayList(objList.size());
+				for (T entity:objList)
+				{
+					result.add(_clone(entity,idProvider,user));
+				}
+				return result;
+			});
+		}
+	}
 	@SuppressWarnings("unchecked")
 	private <T extends Entity> T _clone(T entity,Iterator<ReferenceInfo<T>> idList, User user) throws RaplaException {
 		if ((entity instanceof ParentEntity) && (((ParentEntity)entity).getSubEntities().iterator().hasNext()) && ! (entity instanceof Reservation) ) {
@@ -1084,6 +1117,7 @@ public class FacadeImpl implements RaplaFacade {
 		}
 	}
 	@SuppressWarnings("unchecked")
+	@Override
 	public <T extends Entity> T clone(T obj, User user) throws RaplaException {
 		if (obj == null)
 			throw new NullPointerException("Can't clone null objects");
@@ -1176,6 +1210,7 @@ public class FacadeImpl implements RaplaFacade {
 		return clone;
 	}
 
+	@Override
 	public <T extends Entity> T getPersistant(T entity) throws RaplaException {
 		Set<T> persistantList = Collections.singleton( entity);
 		Map<T,T> map = getPersistantForList( persistantList);
@@ -1186,7 +1221,8 @@ public class FacadeImpl implements RaplaFacade {
 		}
 		return result;
 	}
-	
+
+	@Override
 	public <T extends Entity> Map<T,T> getPersistantForList(Collection<T> list) throws RaplaException {
 		Map<Entity,Entity> result = operator.getPersistant(list);
 		LinkedHashMap<T, T> castedResult = new LinkedHashMap<T, T>();
@@ -1321,11 +1357,13 @@ public class FacadeImpl implements RaplaFacade {
         }
 	}
 
+	@Override
 	public <T extends Entity> T tryResolve( ReferenceInfo<T> info)
 	{
 		return operator.tryResolve( info);
 	}
 
+	@Override
     public  <T extends Entity> T resolve( ReferenceInfo<T> info) throws EntityNotFoundException
 	{
 		return operator.resolve(info);
@@ -1337,6 +1375,10 @@ public class FacadeImpl implements RaplaFacade {
 		return operator.doMerge(selectedObject, allocatableIds, user);
 	}
 
+	@Override
+	public <T extends Entity> Promise<T> cloneAsync(T obj) {
+		return cloneList(Collections.singletonList(obj)).thenApply( (list)->list.iterator().next());
+	}
 
 	public void setTemplateId(String templateId) {
 		this.templateId = templateId;
@@ -1358,5 +1400,16 @@ public class FacadeImpl implements RaplaFacade {
 		return getOperator().getPeriodModelFor( key);
 	}
 
+	@Override
+    public Promise<ChangeState> getUpdateState(Entity entity)
+    {
+        try {
+            final Map<Entity, Entity> persistant = operator.getPersistant(Collections.singletonList(entity));
+            return new ResolvedPromise<>(ChangeState.latest);
+        } catch (RaplaException e) {
+            return new ResolvedPromise<>(e);
+        }
+
+    }
 
 }

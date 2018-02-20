@@ -14,6 +14,7 @@ package org.rapla.entities.domain;
 
 import jsinterop.annotations.JsType;
 import org.rapla.components.util.DateTools;
+import org.rapla.components.util.TimeInterval;
 
 import java.util.Date;
 
@@ -142,6 +143,11 @@ public class AppointmentBlock implements Comparable<AppointmentBlock>
         final String startDate = DateTools.formatDateTime(new Date(start));
         final String endDate = DateTools.formatDateTime(new Date(end));
         return startDate + " - " + endDate;
+	}
+
+	public TimeInterval toInterval()
+	{
+		return new TimeInterval(new Date(getStart()), new Date(getEnd()));
 	}
 
     

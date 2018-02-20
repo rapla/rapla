@@ -1,7 +1,7 @@
 package org.rapla.client.dialog;
 
-import org.rapla.framework.Disposable;
 import org.rapla.scheduler.Promise;
+
 
 public interface DialogInterface
 {

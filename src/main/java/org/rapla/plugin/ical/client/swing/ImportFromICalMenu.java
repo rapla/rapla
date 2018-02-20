@@ -306,20 +306,17 @@ public class ImportFromICalMenu extends RaplaGUIComponent implements ImportMenuE
                         int eventsImported = status[1];
                         int eventsPresent = status[2];
                         int eventsSkipped = status[3];
-                        getFacade().refresh();
-                        dlg.close();
-                        String text = "Imported " + eventsImported + "/" + eventsInICal + ". " + eventsPresent + " present";
-                        if (eventsSkipped > 0)
-                        {
-                            text += " and " + eventsSkipped + " skipped ";
-                        }
-                        else
-                        {
-                            text += ".";
-                        }
-                        DialogInterface okDlg = dialogUiFactory.create(new SwingPopupContext(getMainComponent(), null), title, text);
-                        okDlg.start(true);
-
+                        getFacade().refreshAsync().finally_( ()->dlg.close()).thenRun(()->
+						{
+							String text = "Imported " + eventsImported + "/" + eventsInICal + ". " + eventsPresent + " present";
+							if (eventsSkipped > 0) {
+								text += " and " + eventsSkipped + " skipped ";
+							} else {
+								text += ".";
+							}
+							DialogInterface okDlg = dialogUiFactory.create(new SwingPopupContext(getMainComponent(), null), title, text);
+							okDlg.start(true);
+						});
 				} catch (Exception e1) {
 				    dialogUiFactory.showException(e1, new SwingPopupContext(getMainComponent(), null));
 				}

@@ -13,6 +13,7 @@
 package org.rapla.client.swing.internal.edit.reservation;
 
 import org.rapla.RaplaResources;
+import org.rapla.client.PopupContext;
 import org.rapla.client.RaplaWidget;
 import org.rapla.client.dialog.DialogInterface;
 import org.rapla.client.dialog.DialogUiFactoryInterface;
@@ -1830,6 +1831,7 @@ public class AppointmentController extends RaplaGUIComponent implements Disposab
     {
         Reservation reservation = appointment.getReservation();
         Allocatable[] allocatables = reservation.getAllocatablesFor(appointment);
+        PopupContext popupContext = dialogUiFactory.createPopupContext( this);
         try
         {
             CalendarOptions options = getCalendarOptions();
@@ -1846,13 +1848,13 @@ public class AppointmentController extends RaplaGUIComponent implements Disposab
                 }
                 else
                 {
-                    dialogUiFactory.showWarning("No free appointment found", new SwingPopupContext(getMainComponent(), null));
+                    dialogUiFactory.showWarning("No free appointment found",popupContext);
                 }
             });
         }
         catch (Exception ex)
         {
-            dialogUiFactory.showException(ex, new SwingPopupContext(getMainComponent(), null));
+            dialogUiFactory.showException(ex, popupContext);
         }
     }
 

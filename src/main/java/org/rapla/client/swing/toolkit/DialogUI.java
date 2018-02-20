@@ -12,12 +12,15 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.client.swing.toolkit;
 
+import org.apache.xpath.operations.Bool;
+import org.jetbrains.annotations.NotNull;
 import org.rapla.RaplaResources;
 import org.rapla.client.PopupContext;
 import org.rapla.client.RaplaWidget;
 import org.rapla.client.dialog.DialogInterface;
 import org.rapla.client.dialog.DialogUiFactoryInterface;
 import org.rapla.client.internal.CommandAbortedException;
+import org.rapla.client.swing.RaplaGUIComponent;
 import org.rapla.client.swing.images.RaplaImages;
 import org.rapla.client.swing.internal.SwingPopupContext;
 import org.rapla.components.i18n.BundleManager;
@@ -38,18 +41,7 @@ import org.rapla.storage.dbrm.RaplaRestartingException;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import javax.swing.AbstractAction;
-import javax.swing.BorderFactory;
-import javax.swing.BoxLayout;
-import javax.swing.Icon;
-import javax.swing.JComponent;
-import javax.swing.JDialog;
-import javax.swing.JFrame;
-import javax.swing.JLabel;
-import javax.swing.JPanel;
-import javax.swing.KeyStroke;
-import javax.swing.LayoutFocusTraversalPolicy;
-import javax.swing.SwingUtilities;
+import javax.swing.*;
 import java.awt.AWTEvent;
 import java.awt.BorderLayout;
 import java.awt.Component;
@@ -62,16 +54,20 @@ import java.awt.Point;
 import java.awt.event.ActionEvent;
 import java.awt.event.KeyEvent;
 import java.awt.event.WindowEvent;
+import java.beans.PropertyChangeEvent;
+import java.beans.PropertyVetoException;
+import java.beans.VetoableChangeListener;
+import java.util.ArrayList;
 import java.util.Iterator;
 
 
 public class DialogUI extends JDialog
     implements
-        FrameController,LocaleChangeListener
+        LocaleChangeListener
         ,DialogInterface
-{ 
+{
     private static final long serialVersionUID = 1L;
-    
+
     protected RaplaButton[] buttons;
     protected JComponent content;
     private JPanel jPanelButtonFrame = new JPanel();
@@ -81,7 +77,6 @@ public class DialogUI extends JDialog
     private Component parent;
     CompletablePromise<Integer> completable;
     private int selectedIndex = -1;
-    private FrameControllerList frameList = null;
     protected boolean packFrame = true;
     private DefaultBundleManager localeSelector;
     private RaplaResources i18n;
@@ -90,14 +85,7 @@ public class DialogUI extends JDialog
     private ButtonListener buttonListener = new ButtonListener();
     private boolean m_modal;
 
-    private Runnable abortAction = new Runnable()
-    {
-        @Override
-        public void run()
-        {
-            close();
-        }
-    };
+    private Runnable abortAction = () -> close();
     private final RaplaImages images;
 
     protected Point p = null;
@@ -105,7 +93,10 @@ public class DialogUI extends JDialog
 
     public static Component getOwnerWindow(Component component) {
         if (component == null)
-            return getInvisibleSharedFrame();
+        {
+            RaplaGUIComponent.getMainComponentDeprecated();
+        }
+//            return getInvisibleSharedFrame();
         if (component instanceof Dialog)
             return component;
         if (component instanceof Frame)
@@ -114,42 +105,19 @@ public class DialogUI extends JDialog
         return getOwnerWindow(owner);
     }
 
-    public DialogUI(RaplaResources i18n, RaplaImages images, BundleManager bundleManager,CommandScheduler scheduler, FrameControllerList frameList, Dialog parent) throws RaplaInitializationException {
+    public DialogUI(RaplaResources i18n, RaplaImages images, BundleManager bundleManager,CommandScheduler scheduler, Dialog parent) throws RaplaInitializationException {
         super( parent );
         this.scheduler = scheduler;
         this.images = images;
-        service( i18n, images, bundleManager, frameList );
+        service( i18n, images, bundleManager );
     }
 
-    public DialogUI(RaplaResources i18n, RaplaImages images, BundleManager bundleManager, CommandScheduler scheduler,FrameControllerList frameList, Frame parent) throws
+    public DialogUI(RaplaResources i18n, RaplaImages images, BundleManager bundleManager, CommandScheduler scheduler, Frame parent) throws
             RaplaInitializationException {
         super( parent );
         this.images = images;
         this.scheduler = scheduler;
-        service( i18n, images, bundleManager, frameList );
-    }
-
-    /** @see #getInvisibleSharedFrame */
-    private static JFrame invisibleSharedFrame;
-
-    /** @see #getInvisibleSharedFrame */
-    private static int referenceCounter = 0;
-
-    /** If a dialogs owner is null this frame will be used as owner.
-        A call to this method will increase the referenceCounter.
-        A new shared frame is created when the referenceCounter is 1.
-        The frame gets disposed if the refernceCounter is 0.
-        The referenceCounter is decreased in the dispose method.
-     */
-    private static Frame getInvisibleSharedFrame() {
-        referenceCounter ++;
-        if (referenceCounter == 1)
-        {
-            invisibleSharedFrame = new JFrame();
-            invisibleSharedFrame.setSize(400,400);
-            FrameControllerList.centerWindowOnScreen(invisibleSharedFrame);
-        }
-        return invisibleSharedFrame;
+        service( i18n, images, bundleManager );
     }
 
     public RaplaButton getButton(int index) {
@@ -158,7 +126,7 @@ public class DialogUI extends JDialog
 
     protected void init(boolean modal,JComponent content,String[] options) {
 
-        super.setModal(modal);
+        //super.setModal(modal);
         completable = scheduler.createCompletable();
         m_modal = modal;
         this.setFocusTraversalPolicy( new LayoutFocusTraversalPolicy()
@@ -191,9 +159,9 @@ public class DialogUI extends JDialog
         contentPane.getActionMap().put("abort",buttonListener);
         contentPane.getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW).put(stroke,"abort");
     }
-    
+
     private static class UiDialogAction extends AbstractAction implements DialogAction{
-        
+
         private final RaplaImages raplaImages;
         private Runnable action;
 
@@ -212,7 +180,7 @@ public class DialogUI extends JDialog
         public void setRunnable(Runnable action)
         {
             this.action = action;
-            
+
         }
 
         @Override
@@ -226,7 +194,7 @@ public class DialogUI extends JDialog
         {
             action.run();
         }
-        
+
     }
 
     protected void setButtons(String[] options) {
@@ -288,7 +256,7 @@ public class DialogUI extends JDialog
     }
 
 
-    private void service(RaplaResources i18n, RaplaImages images, BundleManager bundleManager, FrameControllerList frameList) throws RaplaInitializationException {
+    private void service(RaplaResources i18n, RaplaImages images, BundleManager bundleManager) throws RaplaInitializationException {
         this.i18n = i18n;
         setGlassPane(new DisabledGlassPane());
         if (useDefaultOptions) {
@@ -302,8 +270,6 @@ public class DialogUI extends JDialog
     	}
     	localeSelector = (DefaultBundleManager) bundleManager;
     	localeSelector.addLocaleChangeListener(this);
-    	this.frameList = frameList;
-    	frameList.add(this);
     }
 
     protected I18nBundle getI18n() {
@@ -321,17 +287,13 @@ public class DialogUI extends JDialog
     {
         setIcon(images.getIconFromKey(iconKey));
     }
-    
+
     public void setIcon(Icon icon) {
         try {
             if (label != null)
                 label.setIcon(icon);
         } catch (Exception ex) {
         }
-    }
-
-    FrameControllerList getFrameList() {
-        return frameList;
     }
 
     /** close and set the selectedIndex to the index Value. Usefull for modal dialogs*/
@@ -350,13 +312,7 @@ public class DialogUI extends JDialog
     public void dispose() {
         bClosed = true;
         try {
-            if (getOwner() == invisibleSharedFrame)
-                referenceCounter --;
             super.dispose();
-            if (referenceCounter == 0 && invisibleSharedFrame!= null)
-                invisibleSharedFrame.dispose();
-            if (frameList != null)
-                frameList.remove(this);
             if ( localeSelector != null )
                 localeSelector.removeLocaleChangeListener(this);
         } catch (Exception ex) {
@@ -372,7 +328,7 @@ public class DialogUI extends JDialog
 
     @Override
     public void setTitle(String title) {
-        super.setTitle(title);
+        //super.setTitle(title);
     }
 
     public boolean isClosed() {
@@ -384,7 +340,7 @@ public class DialogUI extends JDialog
     {
         this.p = new Point((int)x, (int)y);
     }
-    
+
     public void start(Point p) {
         //Validate frames that have preset sizes
         //Pack frames that have useful preferred size info, e.g. from their layout
@@ -393,11 +349,9 @@ public class DialogUI extends JDialog
         } else {
             this.validate();
         }
-        if (parent != null) {
-            FrameControllerList.placeRelativeToComponent(this,parent,p);
-        } else {
-            getFrameList().placeRelativeToMain(this);
-        }
+        if (parent != null )
+            setLocationRelativeTo(parent);
+
         if ( initFocusComponent != null)
         {
             initFocusComponent.requestFocus();
@@ -409,7 +363,7 @@ public class DialogUI extends JDialog
             dispose();
         }
     }
-    
+
     Component initFocusComponent;
     public void setInitFocus(Component component)
     {
@@ -420,13 +374,11 @@ public class DialogUI extends JDialog
     {
         return (DialogAction) buttons[commandIndex].getAction();
     }
-    
+
     @Override
     public Promise<Integer> start(boolean pack) {
         packFrame = pack;
         start(p);
-
-
         return completable;
     }
 
@@ -440,12 +392,59 @@ public class DialogUI extends JDialog
         ((DisabledGlassPane)getGlassPane()).deactivate();
     }
 
+//    protected void processWindowEvent(WindowEvent e) {
+//        if (e.getID() == WindowEvent.WINDOW_CLOSING) {
+//            abortAction.run();//actionPerformed(new ActionEvent(this,ActionEvent.ACTION_PERFORMED,""));
+//            completable.complete( -1);
+//        } else if (e.getID() == WindowEvent.WINDOW_CLOSED) {
+//            close();
+//        }
+//    }
+
+    ArrayList<VetoableChangeListener> listenerList = new ArrayList<VetoableChangeListener>();
+    @Override
     protected void processWindowEvent(WindowEvent e) {
-        if (e.getID() == WindowEvent.WINDOW_CLOSING) {
-            abortAction.run();//actionPerformed(new ActionEvent(this,ActionEvent.ACTION_PERFORMED,""));
-            completable.complete( -1);
-        } else if (e.getID() == WindowEvent.WINDOW_CLOSED) {
-            close();
+        final int id = e.getID();
+        if (id == WindowEvent.WINDOW_CLOSING) {
+            try {
+                fireFrameClosing();
+                close();
+            } catch (PropertyVetoException ex) {
+                return;
+            }
+        }
+        super.processWindowEvent(e);
+    }
+
+    public void addVetoableChangeListener(VetoableChangeListener listener) {
+        listenerList.add(listener);
+    }
+
+    public void removeVetoableChangeListener(VetoableChangeListener listener) {
+        listenerList.remove(listener);
+    }
+
+    public VetoableChangeListener[] getVetoableChangeListeners() {
+        return listenerList.toArray(new VetoableChangeListener[]{});
+    }
+
+
+
+    protected void fireFrameClosing() throws PropertyVetoException {
+        if (listenerList.size() == 0)
+            return;
+        // The propterychange event indicates that the window
+        // is closing.
+        PropertyChangeEvent evt = new PropertyChangeEvent(
+                this
+                ,"visible"
+                ,new Boolean(true)
+                ,new Boolean(false)
+        )
+                ;
+        VetoableChangeListener[] listeners = getVetoableChangeListeners();
+        for (int i = 0;i<listeners.length; i++) {
+            listeners[i].vetoableChange(evt);
         }
     }
 
@@ -470,18 +469,16 @@ public class DialogUI extends JDialog
         private final RaplaResources i18n;
         private final RaplaImages images;
         private final BundleManager bundleManager;
-        private final FrameControllerList frameList;
         private final Logger logger;
         private final CommandScheduler scheduler;
 
         @Inject
-        public DialogUiFactory(RaplaResources i18n, RaplaImages images, CommandScheduler scheduler,BundleManager bundleManager, FrameControllerList frameList, Logger logger)
+        public DialogUiFactory(RaplaResources i18n, RaplaImages images, CommandScheduler scheduler,BundleManager bundleManager, Logger logger)
         {
             this.i18n = i18n;
             this.images = images;
             this.scheduler = scheduler;
             this.bundleManager = bundleManager;
-            this.frameList = frameList;
             this.logger = logger;
         }
 
@@ -502,9 +499,9 @@ public class DialogUI extends JDialog
             Component parent = SwingPopupContext.extractParent(popupContext);
             Component topLevel = getOwnerWindow(parent);
             if (topLevel instanceof Dialog)
-                dlg = new DialogUI(i18n, images, bundleManager, scheduler,frameList, (Dialog) topLevel);
+                dlg = new DialogUI(i18n, images, bundleManager, scheduler, (Dialog) topLevel);
             else
-                dlg = new DialogUI(i18n, images, bundleManager, scheduler,frameList, (Frame) topLevel);
+                dlg = new DialogUI(i18n, images, bundleManager, scheduler, (Frame) topLevel);
             
             dlg.parent = parent;
             dlg.init(modal, (JComponent)content, options);
@@ -685,7 +682,7 @@ public class DialogUI extends JDialog
         	final Component component;
         	if ( widget == null)
         	{
-        		component = frameList.getMainWindow();
+        		component = getMainWindow();
         	}
         	else
         	{
@@ -713,15 +710,19 @@ public class DialogUI extends JDialog
         @Override
         public void busy(String text)
         {
-            ((RaplaFrame)frameList.getMainWindow()).busy( text);
+
+            ((RaplaFrame)getMainWindow()).busy( text);
         }
 
         @Override
         public void idle()
         {
-            ((RaplaFrame)frameList.getMainWindow()).idle();
+            ((RaplaFrame)getMainWindow()).idle();
         }
 
+        public Component getMainWindow() {
+            return RaplaGUIComponent.getMainComponentDeprecated();
+        }
     }
 
 }

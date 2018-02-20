@@ -57,10 +57,10 @@ public class ReservationTest {
         reserv2 = facade.newReservationDeprecated();
         reserv2.getClassification().setValue("name","Test Reservation 2");
 
-        allocatable1 = facade.newResource();
+        allocatable1 = facade.newResourceDeprecated();
         allocatable1.getClassification().setValue("name", "Test Resource 1");
 
-        allocatable2 = facade.newResource();
+        allocatable2 = facade.newResourceDeprecated();
         allocatable2.getClassification().setValue("name", "Test Resource 2");
 
         cal.set(Calendar.DAY_OF_WEEK,Calendar.TUESDAY);
@@ -69,7 +69,7 @@ public class ReservationTest {
         Date startDate = cal.getTime();
         cal.set(Calendar.HOUR_OF_DAY,16);
         Date endDate = cal.getTime();
-        Appointment appointment = facade.newAppointment(startDate, endDate);
+        Appointment appointment = facade.newAppointmentDeprecated(startDate, endDate);
         reserv1.addAppointment(appointment);
         reserv1.addAllocatable(allocatable1);
     }
@@ -117,7 +117,7 @@ public class ReservationTest {
 	        Date startDate2 = cal.getTime();
 	        cal.set(Calendar.HOUR_OF_DAY,17);
 	        Date endDate2 = cal.getTime();
-	        Appointment newAppointment = facade.newAppointment(startDate2, endDate2);
+	        Appointment newAppointment = facade.newAppointmentDeprecated(startDate2, endDate2);
 	        clone.addAppointment(newAppointment);
 	
 	        // store clone
@@ -131,7 +131,7 @@ public class ReservationTest {
         Assert.assertTrue(cal.get(Calendar.DAY_OF_WEEK) == Calendar.TUESDAY);
         Assert.assertTrue(cal.get(Calendar.HOUR_OF_DAY) == 12);
 
-        // Check if newAppointment has been added
+        // Check if newAppointmentDeprecated has been added
         Assert.assertTrue(appointments.length == 2);
         cal.setTime(appointments[1].getEnd());
         Assert.assertEquals(17, cal.get(Calendar.HOUR_OF_DAY));

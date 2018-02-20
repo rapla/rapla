@@ -5,12 +5,12 @@ import org.rapla.client.EditApplicationEventContext;
 import org.rapla.client.PopupContext;
 import org.rapla.client.ReservationController;
 import org.rapla.client.base.CalendarPlugin;
+import org.rapla.client.dialog.DialogUiFactoryInterface;
 import org.rapla.client.edit.reservation.sample.ReservationPresenter;
 import org.rapla.client.event.ApplicationEvent;
 import org.rapla.client.event.ApplicationEvent.ApplicationEventContext;
 import org.rapla.client.event.ApplicationEventBus;
 import org.rapla.client.menu.CalendarContextMenuPresenter;
-import org.rapla.client.swing.toolkit.DialogUI;
 import org.rapla.components.util.DateTools;
 import org.rapla.entities.domain.Appointment;
 import org.rapla.entities.domain.AppointmentBlock;
@@ -51,12 +51,12 @@ public class CalendarWeekViewPresenter implements Presenter, CalendarPlugin
     private final RaplaLocale raplaLocale;
     private final RaplaResources i18n;
     private final CalendarContextMenuPresenter presenter;
-    private final DialogUI.DialogUiFactory dialogUiFactory;
+    private final DialogUiFactoryInterface dialogUiFactory;
 
     @SuppressWarnings("unchecked")
     @Inject
     public CalendarWeekViewPresenter(CalendarWeekView view, ReservationController reservationController, Logger logger, ApplicationEventBus eventBus,
-                                     CalendarSelectionModel model, ClientFacade facade, HTMLRaplaBuilder builder, RaplaLocale raplaLocale, RaplaResources i18n, CalendarContextMenuPresenter presenter, DialogUI.DialogUiFactory dialogUiFactory)
+                                     CalendarSelectionModel model, ClientFacade facade, HTMLRaplaBuilder builder, RaplaLocale raplaLocale, RaplaResources i18n, CalendarContextMenuPresenter presenter, DialogUiFactoryInterface dialogUiFactory)
     {
         super();
         this.view = view;

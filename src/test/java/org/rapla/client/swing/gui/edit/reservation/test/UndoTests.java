@@ -79,7 +79,7 @@ public class UndoTests extends GUITestCase {
 		final ReservationController control = getService(ReservationController.class);
 
         //Creating Event
-		final Reservation event = createEvent(facade.getRaplaFacade().newResource(), facade.getRaplaFacade().newReservationDeprecated());
+		final Reservation event = createEvent(facade.getRaplaFacade().newResourceDeprecated(), facade.getRaplaFacade().newReservationDeprecated());
         final Appointment changedAppointment = changeTime( true);
 		int buttonNr = 1;
 		executeControlAndPressButton(new Runnable() {
@@ -130,7 +130,7 @@ public class UndoTests extends GUITestCase {
     	final ClientFacade facade = getFacade();
 		final ReservationController control = getService(ReservationController.class);
 
-		final Reservation event = createEvent(facade.getRaplaFacade().newResource(), facade.getRaplaFacade().newReservationDeprecated());
+		final Reservation event = createEvent(facade.getRaplaFacade().newResourceDeprecated(), facade.getRaplaFacade().newReservationDeprecated());
         final Appointment changedAppointment = changeTime( false);
         //control.resizeAppointment(persistantEvent.getAppointments()[0], persistantEvent.getAppointments()[0].getStart(), changedAppointment.getStart(), changedAppointment.getEnd(), null, null, false);
         
@@ -184,7 +184,7 @@ public class UndoTests extends GUITestCase {
     	final ClientFacade facade = getFacade();
 		final ReservationController control = getService(ReservationController.class);
 
-		Allocatable nonPersistantAllocatable = facade.getRaplaFacade().newResource();
+		Allocatable nonPersistantAllocatable = facade.getRaplaFacade().newResourceDeprecated();
         Reservation nonPersistantEvent = facade.getRaplaFacade().newReservationDeprecated();
         
         //Creating Event
@@ -239,12 +239,12 @@ public class UndoTests extends GUITestCase {
 		nonPersistantEvent.getClassification().setValue("name","dummy-event");
 		Assert.assertEquals( "event", nonPersistantEvent.getClassification().getType().getKey());
         nonPersistantEvent.addAllocatable( nonPersistantAllocatable );
-        Appointment appointment = getFacade().getRaplaFacade().newAppointment( new Date(), new Date());
+        Appointment appointment = getFacade().getRaplaFacade().newAppointmentDeprecated( new Date(), new Date());
         appointment.setRepeatingEnabled( true);
         appointment.getRepeating().setType(RepeatingType.DAILY);
         appointment.getRepeating().setNumber( 3 );
 		nonPersistantEvent.addAppointment( appointment);
-//        getFacade().newAppointment(new Date(), new Date(),RepeatingType.findForString("weekly"), 5);
+//        getFacade().newAppointmentDeprecated(new Date(), new Date(),RepeatingType.findForString("weekly"), 5);
         getFacade().getRaplaFacade().storeObjects( new Entity[] { nonPersistantAllocatable, nonPersistantEvent} );
         return nonPersistantEvent;
 	}
@@ -259,7 +259,7 @@ public class UndoTests extends GUITestCase {
 			newStart = new Date(newStart.getTime() + DateTools.MILLISECONDS_PER_HOUR * 2);
 			newEnd = new Date(newEnd.getTime() + DateTools.MILLISECONDS_PER_HOUR * 2);
 		}
-		Appointment retAppointment = getFacade().getRaplaFacade().newAppointment(newStart, newEnd);
+		Appointment retAppointment = getFacade().getRaplaFacade().newAppointmentDeprecated(newStart, newEnd);
 		return retAppointment;
 	}
 }

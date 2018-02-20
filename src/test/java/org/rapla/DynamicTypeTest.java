@@ -111,7 +111,7 @@ public class DynamicTypeTest  {
     {
 	  Reservation event = facade.newReservationDeprecated();
     	event.getClassification().setValue("name", "test");
-    	Appointment app = facade.newAppointment( new Date() , DateTools.addDay(new Date()));
+    	Appointment app = facade.newAppointmentDeprecated( new Date() , DateTools.addDay(new Date()));
     	event.addAppointment( app );
     	
     	DynamicType eventType = event.getClassification().getType();
@@ -193,9 +193,8 @@ public class DynamicTypeTest  {
             AppointmentFormater appointmentFormater = new AppointmentFormaterImpl(i18n, raplaLocale);
             IOInterface ioInterface = new DefaultIO(logger);
             final RaplaImages raplaImages = new RaplaImages(logger);
-            FrameControllerList frameList = new FrameControllerList(logger);
 			CommandScheduler scheduler = new SwingSchedulerImpl(logger);
-            DialogUiFactoryInterface dialogUiFactory = new DialogUiFactory(i18n, raplaImages, scheduler,bundleManager, frameList, logger);
+            DialogUiFactoryInterface dialogUiFactory = new DialogUiFactory(i18n, raplaImages, scheduler,bundleManager,  logger);
             InfoFactory infoFactory = new InfoFactoryImpl(clientFacade, i18n, raplaLocale, logger, appointmentFormater, ioInterface, raplaImages, dialogUiFactory);
    	        TreeFactory treeFactory = new TreeFactoryImpl(clientFacade, i18n, raplaLocale, logger, infoFactory, raplaImages);
 	    	model.queryReservations(model.getTimeIntervall());

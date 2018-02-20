@@ -30,13 +30,12 @@ public class ErrorDialogTest extends GUITestCase {
     public void testError() throws Exception {
         ErrorDialog.THROW_ERROR_DIALOG_EXCEPTION = false;
         final Logger logger = getLogger();
-        FrameControllerList frameList = new FrameControllerList(logger);
         BundleManager bundleManager = new DefaultBundleManager();
         RaplaResources i18n = new RaplaResources(bundleManager);
         RaplaImages raplaImages = new RaplaImages(logger);
         RaplaResources raplaResources = new RaplaResources(bundleManager);
         CommandScheduler scheduler = new DefaultScheduler(logger);
-        DialogUiFactoryInterface dialogUiFactory = new DialogUiFactory(i18n, raplaImages,scheduler, bundleManager,frameList, logger );
+        DialogUiFactoryInterface dialogUiFactory = new DialogUiFactory(i18n, raplaImages,scheduler, bundleManager, logger );
         ErrorDialog dialog = new ErrorDialog(logger, raplaResources, raplaImages, dialogUiFactory);
         dialog.show("This is a very long sample error-text for our error-message-displaying-test"
                         + " it should be wrapped so that the whole text is diplayed.");

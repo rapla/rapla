@@ -58,7 +58,7 @@ public class SecurityManagerTest extends AbstractTestWithServer {
 		Allocatable resource = facade1.getAllocatablesWithFilter( filter.toArray())[0];
 		Appointment app1;
 		{
-			app1 = facade1.newAppointment( start, end ) ;
+			app1 = facade1.newAppointmentDeprecated( start, end ) ;
 			// First we create a reservation for the resource
 			Reservation event = facade1.newReservationDeprecated();
 			event.getClassification().setValue("name", "taken");
@@ -73,7 +73,7 @@ public class SecurityManagerTest extends AbstractTestWithServer {
 			Reservation event = facade1.newReservationDeprecated();
 			// A new event with the same time for the same resource should fail. 
 			event.getClassification().setValue("name", "conflicting event");
-			Appointment app = facade1.newAppointment( start, end ) ;
+			Appointment app = facade1.newAppointmentDeprecated( start, end ) ;
 			event.addAppointment( app);
 			event.addAllocatable( resource );
 			try 
