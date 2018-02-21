@@ -43,13 +43,13 @@ public class SaveUndo<T extends Entity> implements CommandUndo<RaplaException> {
 	    isNew = new LinkedHashMap<>();
 	    storeList.entrySet().stream().forEach((entry)->
 				{
-					final T key = (T) entry.getKey().clone();
+					final T key = (T)entry.getKey().clone();
 					final T value = (T) entry.getValue().clone();
 					final boolean isNew = !entry.getKey().isReadOnly();
 					this.isNew.put (key, isNew);
 					storeListCopy.put(key, value);
 				}
-		
+
 		);
 	}
 
@@ -69,14 +69,12 @@ public class SaveUndo<T extends Entity> implements CommandUndo<RaplaException> {
 	}
 	
 	public Promise<Void> execute() {
+		final Set<T> oldEntities = storeListCopy.keySet();
+ 		final Collection<T> newEntities = storeListCopy.values();
 
-
-			List<T> toStore = new ArrayList<T>();
-			final Set<T> oldEntities = storeListCopy.keySet();
-
-			return getFacade().editListAsync(oldEntities).thenCompose( (newEntitiesPersistant)->
+		return getFacade().editListAsync(oldEntities).thenCompose( (newEntitiesPersistant)->
 			{
-				Collection<T> newEntities = storeListCopy.values();
+				List<T> toStore = new ArrayList<T>();
 				for (T entity : newEntities) {
 					@SuppressWarnings("unchecked") T mutableEntity = (T) entity.clone();
 					if (newEntitiesPersistant != null) {

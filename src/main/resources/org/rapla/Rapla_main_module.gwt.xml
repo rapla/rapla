@@ -86,9 +86,5 @@
 	<inherits name='org.rapla.rest.rest'/>
 	<inherits name='org.rapla.inject.inject'/>
 	<inherits name='org.rapla.scheduler.scheduler'/>
-	<inherits name='io.reactivex.Rx'/>
-	<!--
-	<inherits name='org.rapla.Rapla_generated'/>
-	-->
 	<inherits name="RestinjectExternal"/>
 </module>

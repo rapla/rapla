@@ -981,12 +981,12 @@ public class ReservationControllerImpl implements ReservationController {
 
         public Promise<Void> execute() {
             return getModifiedReservationForExecute().thenCompose(mutableReservation->
-                    checkAndDistpatch(Collections.singleton(mutableReservation), Collections.emptyList(), firstTimeCall, sourceComponent)).thenRun(()->firstTimeCall = false);
+                    checkAndDispatch(Collections.singleton(mutableReservation), Collections.emptyList(), firstTimeCall, sourceComponent)).thenRun(()->firstTimeCall = false);
         }
 
         public Promise<Void> undo() {
             return getModifiedReservationForUndo().thenCompose(mutableReservation->
-                            checkAndDistpatch(Collections.singleton(mutableReservation), Collections.emptyList(), false, sourceComponent));
+                            checkAndDispatch(Collections.singleton(mutableReservation), Collections.emptyList(), false, sourceComponent));
         }
 
         protected Promise<Reservation> getModifiedReservationForExecute()  {
@@ -1160,7 +1160,7 @@ public class ReservationControllerImpl implements ReservationController {
             }
             return reservationPromise.thenApply(ReservationControllerImpl::getFirstValue)
                     .thenCompose((mutableReservation) -> change(resizing, sourceStart, destStart, destEnd, undo, mutableReservation, findAppointment(reservation, mutableReservation)))
-                    .thenCompose((modifiedReservation) -> checkAndDistpatch(Collections.singleton(modifiedReservation), Collections.emptyList(), firstTimeCall, sourceComponent))
+                    .thenCompose((modifiedReservation) -> checkAndDispatch(Collections.singleton(modifiedReservation), Collections.emptyList(), firstTimeCall, sourceComponent))
                     .finally_( ()->firstTimeCall = false);
         }
 
@@ -1345,7 +1345,7 @@ public class ReservationControllerImpl implements ReservationController {
                     return new ResolvedPromise<>(mutableReservation);
                 }
             }).thenCompose((mutableReservation)->
-                    checkAndDistpatch(Collections.singleton(mutableReservation), Collections.emptyList(), firstTimeCall, sourceComponent)
+                    checkAndDispatch(Collections.singleton(mutableReservation), Collections.emptyList(), firstTimeCall, sourceComponent)
             ).thenRun(()->firstTimeCall = false);
         }
 
@@ -1377,12 +1377,12 @@ public class ReservationControllerImpl implements ReservationController {
             if (asNewReservation) {
                 Collection<ReferenceInfo<Reservation>> removeList = Collections.singleton(saveReservation.getReference());
                 Collection<Reservation> storeList = Collections.emptyList();
-                return checkAndDistpatch(storeList, removeList, false, sourceComponent);
+                return checkAndDispatch(storeList, removeList, false, sourceComponent);
             } else {
                 return getFacade().editAsync(saveReservation).thenCompose((mutableReservation)->
                 {
                     mutableReservation.removeAppointment(saveAppointment);
-                    return checkAndDistpatch(Collections.singleton(mutableReservation), Collections.emptyList(), false, sourceComponent);
+                    return checkAndDispatch(Collections.singleton(mutableReservation), Collections.emptyList(), false, sourceComponent);
                 });
             }
         }
@@ -1405,10 +1405,21 @@ public class ReservationControllerImpl implements ReservationController {
         storeList.put(key, newReservation);
         SaveUndo<Reservation> cmd = new SaveUndo<>(facade.getRaplaFacade(), i18n, storeList);
         PopupContext popupContext = null;
-        return checkEvents(storeList.values(),popupContext).thenCompose((result)-> facade.getCommandHistory().storeAndExecute( cmd));
+        final Promise<Boolean> booleanPromise = checkEvents(storeList.values(), popupContext);
+        return booleanPromise.thenCompose(result-> {
+            if (result)
+            {
+                return facade.getCommandHistory().storeAndExecute(cmd);
+            }
+            else
+            {
+                return new ResolvedPromise<Void>(new CommandAbortedException("Command Aborted"));
+            }
+           }
+        );
     }
 
-    public Promise<Void> checkAndDistpatch(Collection<Reservation> storeList, Collection<ReferenceInfo<Reservation>> removeList, boolean firstTime,
+    public Promise<Void> checkAndDispatch(Collection<Reservation> storeList, Collection<ReferenceInfo<Reservation>> removeList, boolean firstTime,
                                            PopupContext sourceComponent) {
         final RaplaFacade facade = getFacade();
         Promise<Boolean> promise;
@@ -1453,7 +1464,7 @@ public class ReservationControllerImpl implements ReservationController {
             }
             return getFacade().copyReservations(fromReservations, start, keepTime, user).thenCompose(clones-> {
                         this.clones = clones;
-                        return checkAndDistpatch(clones, Collections.emptyList(), firstTimeCall, popupContext);
+                        return checkAndDispatch(clones, Collections.emptyList(), firstTimeCall, popupContext);
                     }
             ).thenRun(()->firstTimeCall = false);
         }
