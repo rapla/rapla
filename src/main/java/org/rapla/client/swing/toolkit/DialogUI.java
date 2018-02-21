@@ -126,7 +126,7 @@ public class DialogUI extends JDialog
 
     protected void init(boolean modal,JComponent content,String[] options) {
 
-        //super.setModal(modal);
+        super.setModal(modal);
         completable = scheduler.createCompletable();
         m_modal = modal;
         this.setFocusTraversalPolicy( new LayoutFocusTraversalPolicy()
@@ -328,7 +328,7 @@ public class DialogUI extends JDialog
 
     @Override
     public void setTitle(String title) {
-        //super.setTitle(title);
+        super.setTitle(title);
     }
 
     public boolean isClosed() {
