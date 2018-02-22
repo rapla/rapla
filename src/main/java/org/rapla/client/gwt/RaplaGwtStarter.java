@@ -101,14 +101,14 @@ public class RaplaGwtStarter implements GwtStarter
         logger.info(Cookies.getCookieNames().toString());
         String hashToken = Window.Location.getHash();
         String tokenString = null;
-        if (hashToken != null && !hashToken.isEmpty()) {
+        if (hashToken != null && !hashToken.isEmpty() ) {
             final int indexOf = hashToken.indexOf(LOGIN_COOKIE);
             if ( indexOf >= 0)
             {
                 final String encodedToken = hashToken.substring(indexOf + LOGIN_COOKIE.length() + 1);
                 tokenString = encodedToken.replaceAll("&valid_until=","#");
+                Cookies.setCookie(LOGIN_COOKIE, tokenString);
             }
-            Cookies.setCookie(LOGIN_COOKIE, tokenString);
         }
         if ( tokenString == null)
         {

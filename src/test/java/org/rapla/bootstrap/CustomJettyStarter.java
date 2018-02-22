@@ -9,6 +9,7 @@ import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
 import java.net.URL;
+import java.nio.ByteBuffer;
 import java.security.AccessController;
 import java.security.PrivilegedAction;
 import java.util.ArrayList;
@@ -36,7 +37,8 @@ public class CustomJettyStarter
             + "the config file is jetty.xml generally located in etc/jetty.xml"
             );
 
-	
+
+
 	public static void main(final String[] args) throws Exception
     {
 		String property = System.getProperty("org.rapla.disableHostChecking");
@@ -51,7 +53,8 @@ public class CustomJettyStarter
 		}
 		new CustomJettyStarter().start( args);
     }
-	
+
+
 	Class ServerC ;
 	Class ConfigurationC;
     Class ConnectorC; 
@@ -60,7 +63,8 @@ public class CustomJettyStarter
 	Class ResourceC; 
 	Class EnvEntryC; 
 	Class LifeCyleC; 
-	Class LifeCyleListenerC; 
+	Class LifeCyleListenerC;
+
 //	Class DeploymentManagerC;
 //	Class ContextHandlerC;
 //	Class WebAppContextC;
@@ -207,7 +211,8 @@ public class CustomJettyStarter
                 	ResourceC = loader.loadClass("org.eclipse.jetty.util.resource.Resource");
                 	EnvEntryC = loader.loadClass("org.eclipse.jetty.plus.jndi.EnvEntry");
                 	LifeCyleC = loader.loadClass( "org.eclipse.jetty.util.component.LifeCycle");
-                	LifeCyleListenerC = loader.loadClass( "org.eclipse.jetty.util.component.LifeCycle$Listener");
+
+					LifeCyleListenerC = loader.loadClass( "org.eclipse.jetty.util.component.LifeCycle$Listener");
 //                	DeploymentManagerC = loader.loadClass("org.eclipse.jetty.deploy.DeploymentManager");
 //        			ContextHandlerC = loader.loadClass("org.eclipse.jetty.server.handler.ContextHandler");
 //        			WebAppContextC = loader.loadClass("org.eclipse.jetty.webapp.WebAppContext");
@@ -260,8 +265,10 @@ public class CustomJettyStarter
 								Object localConnector;
 								if(isStandalone)
 								{
-									localConnector = LocalConnectorC.getConstructor(ServerC).newInstance(server);
-									ServerC.getMethod("addConnector", ConnectorC).invoke(server, localConnector);
+									Object connector = LocalConnectorC.getConstructor(ServerC).newInstance(server);
+									ServerC.getMethod("addConnector", ConnectorC).invoke(server, connector);
+									Method toArrayMethod = loader.loadClass("org.eclipse.jetty.util.BufferUtil").getMethod("toArray", ByteBuffer.class);
+									localConnector = new StandaloneConnector(connector,toArrayMethod);
 								}
 								else
 								{
