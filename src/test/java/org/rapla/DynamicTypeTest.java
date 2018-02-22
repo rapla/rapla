@@ -33,7 +33,6 @@ import org.rapla.client.swing.internal.edit.fields.TextField.TextFieldFactory;
 import org.rapla.client.swing.internal.view.InfoFactoryImpl;
 import org.rapla.client.swing.internal.view.TreeFactoryImpl;
 import org.rapla.client.swing.toolkit.DialogUI.DialogUiFactory;
-import org.rapla.client.swing.toolkit.FrameControllerList;
 import org.rapla.components.calendar.DateRenderer;
 import org.rapla.components.i18n.internal.DefaultBundleManager;
 import org.rapla.components.iolayer.DefaultIO;

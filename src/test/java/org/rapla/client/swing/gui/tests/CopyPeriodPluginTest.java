@@ -21,7 +21,6 @@ import org.rapla.client.swing.images.RaplaImages;
 import org.rapla.client.swing.internal.RaplaDateRenderer;
 import org.rapla.client.swing.internal.edit.fields.BooleanField.BooleanFieldFactory;
 import org.rapla.client.swing.toolkit.DialogUI.DialogUiFactory;
-import org.rapla.client.swing.toolkit.FrameControllerList;
 import org.rapla.components.calendar.DateRenderer;
 import org.rapla.components.i18n.BundleManager;
 import org.rapla.components.i18n.internal.DefaultBundleManager;

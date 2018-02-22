@@ -27,7 +27,6 @@ import org.rapla.client.internal.LoginDialog;
 import org.rapla.client.swing.RaplaGUIComponent;
 import org.rapla.client.swing.SwingSchedulerImpl;
 import org.rapla.client.swing.images.RaplaImages;
-import org.rapla.client.swing.toolkit.FrameControllerList;
 import org.rapla.components.i18n.BundleManager;
 import org.rapla.components.i18n.internal.DefaultBundleManager;
 import org.rapla.entities.User;
@@ -57,6 +56,9 @@ import javax.swing.AbstractAction;
 import javax.swing.Action;
 import javax.swing.SwingUtilities;
 import java.awt.Component;
+import java.awt.Dimension;
+import java.awt.Toolkit;
+import java.awt.Window;
 import java.awt.event.ActionEvent;
 import java.net.URL;
 import java.util.Vector;
@@ -529,7 +531,7 @@ public class RaplaClientServiceImpl implements ClientService, UpdateErrorListene
             dlg.setLoginAction(loginAction);
             dlg.setExitAction(exitAction);
             //dlg.setSize( 480, 270);
-            FrameControllerList.centerWindowOnScreen(dlg);
+            centerWindowOnScreen(dlg);
             dlg.setVisible(true);
 
             loginMutex.acquire();
@@ -544,6 +546,30 @@ public class RaplaClientServiceImpl implements ClientService, UpdateErrorListene
         {
             loginMutex.release();
         }
+    }
+
+    /** centers the window around the specified center */
+    static public void centerWindowOnScreen(Window window) {
+        Dimension screenSize = Toolkit.getDefaultToolkit().getScreenSize();
+        Dimension preferredSize = window.getSize();
+        int x = screenSize.width/2 - (preferredSize.width / 2);
+        int y = screenSize.height/2 - (preferredSize.height / 2);
+        fitIntoScreen(x,y,window);
+    }
+
+    /** Tries to place the window, that it fits into the screen. */
+    static public void fitIntoScreen(int x, int y, Component window) {
+        Dimension screenSize = Toolkit.getDefaultToolkit().getScreenSize();
+        Dimension windowSize = window.getSize();
+        if (x + windowSize.width > screenSize.width)
+            x =  screenSize.width - windowSize.width;
+
+        if (y + windowSize.height > screenSize.height)
+            y =  screenSize.height - windowSize.height;
+
+        if (x<0) x = 0;
+        if (y<0) y = 0;
+        window.setLocation(x,y);
     }
 
 

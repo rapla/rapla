@@ -113,8 +113,7 @@ public abstract class GUITestCase  {
         Use this method for testing new GUI-Components.
      */
     public void testComponent(JComponent component,int x,int y) throws Exception{
-        FrameControllerList frameControllerList = getService(FrameControllerList.class);
-        RaplaFrame frame = new RaplaFrame(frameControllerList);
+        RaplaFrame frame = new RaplaFrame();
         frame.getContentPane().setLayout(new BorderLayout());
         frame.getContentPane().add(component, BorderLayout.CENTER);
         frame.setSize(x,y);

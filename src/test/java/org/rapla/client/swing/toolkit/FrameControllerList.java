@@ -36,7 +36,6 @@ import java.util.Stack;
 @Singleton
 final public class FrameControllerList {
     private Stack<FrameController> openFrameController = new Stack<FrameController>();
-    private Window mainWindow = null;
     Point center;
     Logger logger = null;
     ArrayList<FrameControllerListener> listenerList = new ArrayList<FrameControllerListener>();
@@ -69,30 +68,6 @@ final public class FrameControllerList {
         this.center = center;
     }
 
-    /** the main-window will be used by the
-        <code>placeRelativeToMain(Window)</code> function.
-        @see #placeRelativeToMain(Window)
-    */
-    public void setMainWindow(Window window) {
-        this.mainWindow = window;
-    }
-
-    public Window getMainWindow() {
-        return mainWindow;
-    }
-
-    /** places the window relative to the main-window if set.
-        Otherwise the the <code>centerWindow(Window)</code> method is called.
-        @param newWindow the window to place
-     */
-    public void placeRelativeToMain(Window newWindow) {
-        if (getLogger() != null && getLogger().isDebugEnabled() && mainWindow != null)
-            getLogger().debug("placeRelativeToMainWindow(" + Tools.left(mainWindow.toString(),60) + ")");
-        if (mainWindow ==null)
-            centerWindow(newWindow);
-        else
-            placeRelativeToWindow(newWindow,mainWindow);
-    }
 
     /** adds a window to the FrameControllerList */
     synchronized public void add(FrameController c) {
@@ -164,38 +139,6 @@ final public class FrameControllerList {
         }
     }
 
-
-    /** centers the window around the specified center */
-    public void centerWindow(Window window) {
-        Dimension preferredSize = window.getSize();
-        int x = center.x - (preferredSize.width / 2);
-        int y = center.y - (preferredSize.height / 2);
-        fitIntoScreen(x,y,window);
-    }
-
-    /** centers the window around the specified center */
-    static public void centerWindowOnScreen(Window window) {
-        Dimension screenSize = Toolkit.getDefaultToolkit().getScreenSize();
-        Dimension preferredSize = window.getSize();
-        int x = screenSize.width/2 - (preferredSize.width / 2);
-        int y = screenSize.height/2 - (preferredSize.height / 2);
-        fitIntoScreen(x,y,window);
-    }
-
-    /** Tries to place the window, that it fits into the screen. */
-    static public void fitIntoScreen(int x, int y, Component window) {
-        Dimension screenSize = Toolkit.getDefaultToolkit().getScreenSize();
-        Dimension windowSize = window.getSize();
-        if (x + windowSize.width > screenSize.width)
-            x =  screenSize.width - windowSize.width;
-
-        if (y + windowSize.height > screenSize.height)
-            y =  screenSize.height - windowSize.height;
-
-        if (x<0) x = 0;
-        if (y<0) y = 0;
-        window.setLocation(x,y);
-    }
 
     /** places the window relative to the owner-window.
         The newWindow will be placed in the middle of the owner-window.

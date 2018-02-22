@@ -20,8 +20,6 @@ import org.rapla.client.swing.RaplaAction;
 import org.rapla.client.swing.images.RaplaImages;
 import org.rapla.client.swing.internal.MultiCalendarPresenter;
 import org.rapla.client.swing.internal.SwingPopupContext;
-import org.rapla.client.swing.toolkit.FrameControllerList;
-import org.rapla.client.swing.toolkit.RaplaFrame;
 import org.rapla.facade.CalendarModel;
 import org.rapla.facade.CalendarSelectionModel;
 import org.rapla.facade.client.ClientFacade;
@@ -30,7 +28,6 @@ import org.rapla.logger.Logger;
 
 import javax.inject.Provider;
 import java.awt.Component;
-import java.awt.Container;
 import java.awt.Dimension;
 import java.util.Date;
 import java.util.List;

@@ -21,7 +21,6 @@ import org.rapla.client.swing.images.RaplaImages;
 import org.rapla.client.swing.internal.edit.AttributeEdit;
 import org.rapla.client.swing.internal.edit.RaplaListEdit.RaplaListEditFactory;
 import org.rapla.client.swing.toolkit.DialogUI.DialogUiFactory;
-import org.rapla.client.swing.toolkit.FrameControllerList;
 import org.rapla.components.i18n.BundleManager;
 import org.rapla.components.i18n.internal.DefaultBundleManager;
 import org.rapla.entities.dynamictype.Attribute;

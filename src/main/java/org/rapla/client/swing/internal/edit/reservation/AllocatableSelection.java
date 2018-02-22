@@ -32,7 +32,6 @@ import org.rapla.client.swing.internal.edit.ClassifiableFilterEdit;
 import org.rapla.client.swing.internal.edit.fields.BooleanField.BooleanFieldFactory;
 import org.rapla.client.swing.internal.edit.fields.DateField.DateFieldFactory;
 import org.rapla.client.swing.toolkit.AWTColorUtil;
-import org.rapla.client.swing.toolkit.FrameControllerList;
 import org.rapla.client.swing.toolkit.MenuScroller;
 import org.rapla.client.swing.toolkit.PopupEvent;
 import org.rapla.client.swing.toolkit.PopupListener;

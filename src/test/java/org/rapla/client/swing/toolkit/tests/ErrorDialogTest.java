@@ -18,7 +18,6 @@ import org.rapla.client.swing.gui.tests.GUITestCase;
 import org.rapla.client.swing.images.RaplaImages;
 import org.rapla.client.swing.toolkit.DialogUI.DialogUiFactory;
 import org.rapla.client.swing.toolkit.ErrorDialog;
-import org.rapla.client.swing.toolkit.FrameControllerList;
 import org.rapla.components.i18n.BundleManager;
 import org.rapla.components.i18n.internal.DefaultBundleManager;
 import org.rapla.framework.internal.DefaultScheduler;

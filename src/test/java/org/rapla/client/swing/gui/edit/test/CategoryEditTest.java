@@ -22,7 +22,6 @@ import org.rapla.client.swing.internal.edit.CategoryEditUI;
 import org.rapla.client.swing.internal.edit.fields.MultiLanguageField.MultiLanguageFieldFactory;
 import org.rapla.client.swing.internal.edit.fields.TextField.TextFieldFactory;
 import org.rapla.client.swing.toolkit.DialogUI.DialogUiFactory;
-import org.rapla.client.swing.toolkit.FrameControllerList;
 import org.rapla.components.i18n.internal.DefaultBundleManager;
 import org.rapla.components.iolayer.DefaultIO;
 import org.rapla.components.iolayer.IOInterface;

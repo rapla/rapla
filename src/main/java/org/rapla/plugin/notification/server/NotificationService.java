@@ -15,7 +15,6 @@ package org.rapla.plugin.notification.server;
 import io.reactivex.disposables.Disposable;
 import io.reactivex.functions.Action;
 import org.rapla.RaplaResources;
-import org.rapla.client.swing.toolkit.FrameControllerList;
 import org.rapla.components.util.DateTools;
 import org.rapla.entities.User;
 import org.rapla.entities.configuration.Preferences;
