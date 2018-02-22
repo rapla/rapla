@@ -62,7 +62,6 @@ final public class FrameControllerList {
 
     /** the center will be used by the
         <code>centerWindow(Window)</code> function.
-        @see #centerWindow(Window)
     */
     public void setCenter(Point center) {
         this.center = center;
