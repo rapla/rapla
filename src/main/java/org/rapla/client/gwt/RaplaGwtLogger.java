@@ -22,5 +22,8 @@ public class RaplaGwtLogger extends org.rapla.logger.ConsoleLogger
     }
 
     private static native void nativeConsoleLog( String s )
-        /*-{ console.log( s ); }-*/;
+        /*-{
+        var d = new Date();
+        console.log(d.getHours() +":"+d.getMinutes()+":" + d.getSeconds() + "." + d.getMilliseconds() +" "+ s );
+        }-*/;
 }
