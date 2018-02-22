@@ -153,7 +153,10 @@ final public class RaplaListEdit<T> implements
         toolbar.add(createNewButton);
         toolbar.add(removeButton);
         toolbar.add(Box.createHorizontalStrut(5));
-        toolbar.add(copyButton);
+        if ( hasCopy)
+        {
+            toolbar.add(copyButton);
+        }
         toolbar.add(Box.createHorizontalStrut(5));
         toolbar.add(moveUpButton);
         toolbar.add(moveDownButton);
@@ -275,7 +278,10 @@ final public class RaplaListEdit<T> implements
             }
         });
     }
-    
+
+
+
+
     @SuppressWarnings("unchecked")
     public void setNameProvider(final NameProvider<T> nameProvider) 
     {

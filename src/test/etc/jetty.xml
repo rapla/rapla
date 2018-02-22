@@ -155,7 +155,7 @@
                 <Arg>/*</Arg>
                 <Call name="setInitParameter">
                     <Arg>proxyTo</Arg>
-                    <Arg>http://localhost:8080/</Arg>
+                    <Arg>http://localhost:8080/proxy</Arg>
                 </Call>
             </Call>
         </Call>
