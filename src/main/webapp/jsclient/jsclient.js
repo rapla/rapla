@@ -1,9 +1,10 @@
+var errorFunction = (info) =>
+          {
+            console.log("Error: " + info);
+          };
 var apiCallback = (api) =>
         {
-          var errorFunction = (info) =>
-          {
-            console.log(info);
-          };
+
           var facade = api.getFacade();
           var resources = facade.getAllocatables();
           var resource = resources[0];
@@ -15,7 +16,16 @@ var apiCallback = (api) =>
           console.log( "Calendar Model loaded: " + calendar);
           var timeIntervall =calendar.getTimeIntervall();
           var blocksPromise = calendar.queryBlocks( timeIntervall);
-          blocksPromise.thenRun(()=> console.log("Hallo blocks"));
+          blocksPromise.thenRun(()=> console.log("Hallo blocks")).exceptionally(errorFunction);
+          //blocksPromise.thenRun(()=> console.log("Hallo blocks")).exceptionally(new rapla.Error(errorFunction).get());
+          createReservation( api,resource);
+        };
+
+
+
+var createReservation = (api,resource) =>
+{
+          var facade = api.getFacade();
           console.log( "New Reservation ");/**/
           var eventType = facade.getDynamicTypes("reservation")[0];
           var classification = eventType.newClassification();
@@ -33,6 +43,8 @@ var apiCallback = (api) =>
                   newReservation.addAppointment( appointment);
                   newReservation.addAllocatable(resource);
                   console.log( "Saving Reservation ");
+                  // Next Method will cause an error so it will prevent Reservation from saving. And test the error Method;"
+                  facade.getPersistant( newReservation);
                   return newReservation;
               });
            })
@@ -41,7 +53,9 @@ var apiCallback = (api) =>
            )
            .thenRun(()=>console.log("Reservation saved"))
            .exceptionally(errorFunction);
-        };
+
+};
+
 
 var rapla = {
   RaplaCallback : function() {
