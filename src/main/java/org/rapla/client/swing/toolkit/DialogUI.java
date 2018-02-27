@@ -94,7 +94,7 @@ public class DialogUI extends JDialog
     public static Component getOwnerWindow(Component component) {
         if (component == null)
         {
-            RaplaGUIComponent.getMainComponentDeprecated();
+            return RaplaGUIComponent.getMainComponentDeprecated();
         }
 //            return getInvisibleSharedFrame();
         if (component instanceof Dialog)

@@ -389,7 +389,7 @@ public class ResourceSelectionViewSwing implements ResourceSelectionView
             Object selectedObject = evt.getSelectedObject();
             Collection<?> selectedElements = treeSelection.getSelectedElements();
             JComponent component = (JComponent) evt.getSource();
-            PopupContext popupContext = new SwingPopupContext(null, p);
+            PopupContext popupContext = new SwingPopupContext(getComponent(), p);
             final SwingMenuContext menuContext = new SwingMenuContext(selectedObject, popupContext, component, p);
             menuContext.setSelectedObjects(selectedElements);
 
@@ -469,7 +469,8 @@ public class ResourceSelectionViewSwing implements ResourceSelectionView
         RaplaMenu newMenu = menuBar.getNewMenu();
         editMenu.removeAllBetween("EDIT_BEGIN", "EDIT_END");
         newMenu.removeAll();
-        SwingMenuContext menuContext = new SwingMenuContext(focusedObject);
+        PopupContext popupContext = new SwingPopupContext(getComponent(), null);
+        SwingMenuContext menuContext = new SwingMenuContext(focusedObject,popupContext, null, null);
         menuContext.setSelectedObjects(list);
         if (hasFocus())
         {

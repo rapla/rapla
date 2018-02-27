@@ -27,4 +27,10 @@ public class DefaultCheckViewGwt implements CheckView {
     public boolean hasMessages() {
         return false;
     }
+
+    @Override
+    public Object getComponent()
+    {
+        return null;
+    }
 }

@@ -292,7 +292,7 @@ public class ApplicationViewSwing implements ApplicationView<JComponent>
                            Function<ApplicationEvent, Boolean> windowClosing, Observable<String> busyIdleObservable)
     {
         AtomicReference<DialogUI> frame = new AtomicReference<>();
-        final Disposable subscribe = busyIdleObservable.subscribe((message) -> {if ( message!= null) frame.get().busy( message); else frame.get().idle();});
+        final Disposable subscribe = busyIdleObservable.subscribe((message) -> {if ( message!= null && message.length() > 0) frame.get().busy( message); else frame.get().idle();});
         final Container component = (Container) objectRaplaWidget.getComponent();
         String[] options = new String[] {"ok"};
         final DialogUI dialog = (DialogUI) dialogUiFactory.create( popupContext, false,component, options);

@@ -1,5 +1,6 @@
 package org.rapla.client.internal.check.swing;
 
+import org.rapla.client.RaplaWidget;
 import org.rapla.client.internal.check.CheckView;
 import org.rapla.inject.DefaultImplementation;
 import org.rapla.inject.InjectionContext;
@@ -8,7 +9,8 @@ import javax.inject.Inject;
 import javax.swing.*;
 
 @DefaultImplementation(of=CheckView.class,context = InjectionContext.swing)
-public class DefaultCheckViewSwing implements CheckView {
+public class DefaultCheckViewSwing implements CheckView, RaplaWidget
+{
     JPanel warningPanel = new JPanel();
 
     @Inject
@@ -28,5 +30,11 @@ public class DefaultCheckViewSwing implements CheckView {
     @Override
     public boolean hasMessages() {
         return warningPanel.getComponentCount() > 0;
+    }
+
+    @Override
+    public Object getComponent()
+    {
+        return warningPanel;
     }
 }

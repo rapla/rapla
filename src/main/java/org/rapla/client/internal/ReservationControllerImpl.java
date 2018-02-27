@@ -1395,7 +1395,14 @@ public class ReservationControllerImpl implements ReservationController {
     @Override
     public Promise<Void> saveReservations(Map<Reservation,Reservation> storeList, PopupContext context) {
         SaveUndo<Reservation> cmd = new SaveUndo<>(facade.getRaplaFacade(), i18n, storeList);
-        return checkEvents(storeList.values(),context).thenCompose((result)-> facade.getCommandHistory().storeAndExecute( cmd));
+        return checkEvents(storeList.values(),context).thenCompose((result)-> {
+                    if (result)
+                    {
+                        return facade.getCommandHistory().storeAndExecute(cmd);
+                    }
+                    return new ResolvedPromise<>(new CommandAbortedException(cmd.commandoName));
+                }
+            );
     }
 
     @Override

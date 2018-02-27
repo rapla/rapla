@@ -97,7 +97,7 @@ public class RaplaObjectActions extends RaplaComponent{
     public void setPopupContext(PopupContext popupContext)
     {
         this.popupContext = popupContext;
-    }
+}
 
     public void setClassificationType(String classificationType) {
         this.classificationType = classificationType;

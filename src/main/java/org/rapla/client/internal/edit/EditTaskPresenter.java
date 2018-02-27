@@ -407,9 +407,12 @@ public class EditTaskPresenter implements TaskPresenter
                     promise = raplaFacade.dispatch(saveObjects, Collections.emptyList());
                 }
             }
-            handleException(promise.thenRun(()->close(applicationEvent)), popupContext).thenRun(()->busyIdleObservable.onComplete()).thenCompose((t)
-                -> raplaFacade.refreshAsync());
-
+            handleExceptionCommandAbort(
+                    promise.thenRun(
+                            ()->close(applicationEvent))
+                            .thenCompose(
+                                    (t) -> raplaFacade.refreshAsync()),
+                    popupContext);
         };
         Runnable deleteCmd = () -> {
             busyIdleObservable.onNext(i18n.getString("delete"));
@@ -456,7 +459,21 @@ public class EditTaskPresenter implements TaskPresenter
             );
     }
 
-    Promise handleException(Promise promise,PopupContext popupContext)
+    void handleException(Promise promise,PopupContext popupContext)
+    {
+        promise.exceptionally(ex->
+                {
+                    final Throwable cause = ((Throwable) ex).getCause();
+                    if ( cause != null)
+                    {
+                        ex = cause;
+                    }
+                    dialogUiFactory.showException((Throwable) ex, popupContext);
+                }
+        );
+    }
+
+    Promise handleExceptionCommandAbort(Promise promise,PopupContext popupContext)
     {
         return promise.exceptionally(ex->
                 {
@@ -468,6 +485,10 @@ public class EditTaskPresenter implements TaskPresenter
                     if (!(ex instanceof CommandAbortedException))
                     {
                         dialogUiFactory.showException((Throwable) ex, popupContext);
+                    }
+                    else
+                    {
+                        busyIdleObservable.onNext("");
                     }
                 }
         );

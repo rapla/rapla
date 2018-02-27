@@ -41,7 +41,8 @@ public class Application implements ApplicationView.Presenter, ModificationListe
     private final BundleManager bundleManager;
     private final ClientFacade clientFacade;
     private final AbstractActivityController abstractActivityController;
-    private final ApplicationView mainView;
+    private ApplicationView mainView;
+    private Provider<ApplicationView> mainViewProvider;
     private final RaplaResources i18n;
 
     private final ApplicationEventBus eventBus;
@@ -54,12 +55,12 @@ public class Application implements ApplicationView.Presenter, ModificationListe
     private final Map<ApplicationEvent, TaskPresenter> openDialogsPresenter = new HashMap<>();
 
     @Inject
-    public Application(final ApplicationView mainView, ApplicationEventBus eventBus, Logger logger, BundleManager bundleManager, ClientFacade clientFacade,
+    public Application(final Provider<ApplicationView> mainViewProvider, ApplicationEventBus eventBus, Logger logger, BundleManager bundleManager, ClientFacade clientFacade,
                        AbstractActivityController abstractActivityController, RaplaResources i18n, Map<String, Provider<TaskPresenter>> activityPresenters,
                        Provider<Set<ClientExtension>> clientExtensions, Provider<CalendarSelectionModel> calendarModel, CommandScheduler scheduler,
                        DialogUiFactoryInterface dialogUiFactory) {
-        this.mainView = mainView;
         this.abstractActivityController = abstractActivityController;
+        this.mainViewProvider = mainViewProvider;
         this.bundleManager = bundleManager;
         this.clientFacade = clientFacade;
         this.logger = logger;
@@ -70,7 +71,6 @@ public class Application implements ApplicationView.Presenter, ModificationListe
         this.calendarModelProvider = calendarModel;
         this.scheduler = scheduler;
         this.dialogUiFactory = dialogUiFactory;
-        mainView.setPresenter(this);
     }
 
     public boolean stopAction(ApplicationEvent activity) {
@@ -211,6 +211,8 @@ public class Application implements ApplicationView.Presenter, ModificationListe
 
         boolean showToolTips = raplaFacade.getPreferences(clientFacade.getUser()).getEntryAsBoolean(RaplaBuilder.SHOW_TOOLTIP_CONFIG_ENTRY, true);
         String title = raplaFacade.getSystemPreferences().getEntryAsString(AbstractRaplaLocale.TITLE, i18n.getString("rapla.title"));
+        mainView = mainViewProvider.get();
+        mainView.setPresenter( this);
         mainView.init(showToolTips, title);
 
         try {

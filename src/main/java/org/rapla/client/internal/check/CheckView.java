@@ -1,6 +1,8 @@
 package org.rapla.client.internal.check;
 
-public interface CheckView
+import org.rapla.client.RaplaWidget;
+
+public interface CheckView extends RaplaWidget
 {
     void addWarning(String warning);
     boolean hasMessages();
