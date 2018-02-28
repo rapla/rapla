@@ -13,10 +13,12 @@
 
 package org.rapla.entities;
 
+import jsinterop.annotations.JsType;
 import org.rapla.entities.storage.ReferenceInfo;
 
 import java.util.Date;
 
+@JsType
 public interface Timestamp extends LastChangedTimestamp {
     /** returns the creation date of the object. */
     Date getCreateDate();

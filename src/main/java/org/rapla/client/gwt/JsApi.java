@@ -1,5 +1,6 @@
 package org.rapla.client.gwt;
 
+import com.google.gwt.core.client.JsDate;
 import jsinterop.annotations.JsIgnore;
 import jsinterop.annotations.JsType;
 import org.rapla.RaplaResources;
@@ -22,6 +23,8 @@ import org.rapla.storage.dbrm.RemoteAuthentificationService;
 
 import javax.inject.Inject;
 import javax.inject.Provider;
+import java.util.Collection;
+import java.util.Date;
 import java.util.Map;
 
 @JsType
@@ -103,4 +106,13 @@ public class JsApi {
         return new String[]{};
     }
 
+    public JsDate toJsDate(Date date) {
+      if (date != null)
+        return JsDate.create(date.getTime());
+      return null;
+    }
+
+    public Object[] toArray(Collection<?> collection) {
+        return collection.toArray();
+    }
 }
