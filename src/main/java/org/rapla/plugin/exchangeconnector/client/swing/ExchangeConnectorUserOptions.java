@@ -189,7 +189,7 @@ public class ExchangeConnectorUserOptions implements UserOptionPanel
                     String text = usernameLabel.getText();
                     content.init(text);
                 }
-                final DialogInterface dialog = dialogUiFactory.createContextDialog(popupContext, content, options);
+                final DialogInterface dialog = dialogUiFactory.createContentDialog(popupContext, content, options);
                 dialog.setTitle("Exchange Login");
                 dialog.getAction(0).setRunnable(new Runnable()
                 {

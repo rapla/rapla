@@ -519,7 +519,7 @@ public class SavedCalendarSwingView extends RaplaGUIComponent implements SavedCa
             }
         });
 
-        final DialogInterface dlg = dialogUiFactory.createContextDialog(
+        final DialogInterface dlg = dialogUiFactory.createContentDialog(
                 popupContext, panel,
                                        new String[] {
                                            getString("save")

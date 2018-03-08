@@ -180,7 +180,7 @@ public class JNDIOption implements JNDIConf, PluginOptionPanel
                 {
 
                     testUser = new PasswordEnterUI(raplaResources);
-                    dialog =dialogUiFactory.createContextDialog(popupContext, testUser.getComponent(),new String[] {"test","abort"});
+                    dialog =dialogUiFactory.createContentDialog(popupContext, testUser.getComponent(),new String[] {"test","abort"});
                     dialog.setTitle("Please enter valid user!");
 
                 }

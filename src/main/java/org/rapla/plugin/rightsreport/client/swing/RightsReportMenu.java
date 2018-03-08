@@ -55,7 +55,7 @@ public class RightsReportMenu extends RaplaGUIComponent implements AdminMenuExte
 	public void actionPerformed( ActionEvent e )
     {
 		final SwingPopupContext popupContext = new SwingPopupContext(getMainComponent(), null);
-		DialogInterface dialog = dialogUiFactory.createContextDialog(popupContext, report.getComponent(), new String[] {getString("ok")});
+		DialogInterface dialog = dialogUiFactory.createContentDialog(popupContext, report.getComponent(), new String[] {getString("ok")});
 		dialog.setTitle( name);
 		RaplaRightsReport report = rightsReportProvider.get();
 		dialog.setSize( 650, 550);

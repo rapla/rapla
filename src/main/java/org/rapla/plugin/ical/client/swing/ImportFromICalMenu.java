@@ -199,7 +199,7 @@ public class ImportFromICalMenu extends RaplaGUIComponent implements ImportMenuE
 		container.add( warning, BorderLayout.NORTH);
 		container.add( superpanel, BorderLayout.CENTER);
 		
-		final DialogInterface dlg = dialogUiFactory.createContextDialog(
+		final DialogInterface dlg = dialogUiFactory.createContentDialog(
 		        new SwingPopupContext(getMainComponent(), null), container, new String[] { getString("import"), getString("cancel") });
 		
         final ActionListener radioListener = new ActionListener() {

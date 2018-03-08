@@ -34,7 +34,7 @@ public class SyncResultDialog extends RaplaGUIComponent
         final JLabel info = new JLabel(exchangeConnectorResources.getString("exchange.sync.mail"));
         content.add( info, BorderLayout.CENTER);
         final SwingPopupContext popupContext = new SwingPopupContext(getMainComponent(), null);
-        DialogInterface dialog = dialogUiFactory.createContextDialog(popupContext, content, new String[] {getString("close")});
+        DialogInterface dialog = dialogUiFactory.createContentDialog(popupContext, content, new String[] {getString("close")});
         dialog.setTitle( title);
         dialog.start(true);
     }

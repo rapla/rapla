@@ -290,7 +290,7 @@ public class UserEditUI  extends AbstractEditUI<User> {
             treeSelection.setPreferredSize(new java.awt.Dimension(400, 260));
             
            
-            dialog = dialogUiFactory.createContextDialog(
+            dialog = dialogUiFactory.createContentDialog(
                     new SwingPopupContext(getComponent(), null)
                     ,
                     treeSelection

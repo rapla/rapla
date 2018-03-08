@@ -349,7 +349,7 @@ public class DynamicTypeEditUI extends RaplaGUIComponent
             dialog.close();
         }
         final SwingPopupContext popupContext = new SwingPopupContext(getComponent(), null);
-        dialog = dialogUiFactory.createContextDialog(
+        dialog = dialogUiFactory.createContentDialog(
                 popupContext
                 ,
                 annotationEdit.getComponent()

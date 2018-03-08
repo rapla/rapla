@@ -59,7 +59,7 @@ public class DeleteDialogSwing extends RaplaGUIComponent implements DeleteDialog
 
         ViewTable<Object[]> viewTable = new ViewTable<Object[]>(getClientFacade(), getI18n(), getRaplaLocale(), getLogger(), infoFactory, ioInterface, dialogUiFactory);
         DeleteInfoUI deleteView = new DeleteInfoUI(getI18n(), getRaplaLocale(), getFacade(), getLogger());
-        DialogInterface dlg = dialogUiFactory.createContextDialog(popupContext
+        DialogInterface dlg = dialogUiFactory.createContentDialog(popupContext
                 ,
                 viewTable.getComponent()
                 ,new String[] {

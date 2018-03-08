@@ -674,7 +674,7 @@ public class ImportTemplateMenu implements ImportMenuExtension, ActionListener
         everythingButton.addActionListener(listener);
         nothingButton.addActionListener(listener);
         // pane.setPreferredSize( new Dimension(2000,800));
-        final DialogInterface dialog2 = dialogFactory.createContextDialog(popupContext, content, new String[] { i18n.getString("ok"), i18n.getString("back") });
+        final DialogInterface dialog2 = dialogFactory.createContentDialog(popupContext, content, new String[] { i18n.getString("ok"), i18n.getString("back") });
         pane.setPreferredSize(new Dimension(1024, 700));
         dialog2.setDefault(0);
         final boolean pack = false;

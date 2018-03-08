@@ -75,7 +75,7 @@ public class ExportServiceList   {
         list.setSelectedIndex(0);
         list.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
         final SwingPopupContext popupContext = new SwingPopupContext(parentComponent, null);
-        DialogInterface dlg = dialogUiFactory.createContextDialog(popupContext, panel,
+        DialogInterface dlg = dialogUiFactory.createContentDialog(popupContext, panel,
                                        new String[] {
                                            i18n.getString("export")
                                            ,i18n.getString("cancel")

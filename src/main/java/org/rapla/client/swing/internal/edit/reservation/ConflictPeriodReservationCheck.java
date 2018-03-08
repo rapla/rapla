@@ -117,7 +117,7 @@ public class ConflictPeriodReservationCheck extends RaplaGUIComponent implements
         AtomicReference<Set> selectedSetStorage = new AtomicReference<>();
         selectedSetStorage.set(Collections.emptySet());
         JComponent content = getConflictPanel(periodConflicts, atomicBoolean, selectedSetStorage);
-        DialogInterface dialog = dialogUiFactory.createContextDialog(sourceComponent, content, new String[] { getString("continue"), getString("cancel") });
+        DialogInterface dialog = dialogUiFactory.createContentDialog(sourceComponent, content, new String[] { getString("continue"), getString("cancel") });
         dialog.setDefault(1);
         dialog.setIcon("icon.big_folder_conflicts");
         dialog.getAction(0).setIcon("icon.save");

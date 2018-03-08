@@ -223,7 +223,7 @@ public class UserOption extends RaplaGUIComponent implements UserOptionPanel
                     layout.setRows(1);
                 }
                 DialogInterface dlg = dialogUiFactory
-                        .createContextDialog(popupContext, test, new String[] { getString("save"), getString("abort") });
+                        .createContentDialog(popupContext, test, new String[] { getString("save"), getString("abort") });
                 dlg.start(true).execOn(SwingUtilities::invokeLater).thenAccept( index->
                         {
                             if (index == 0) {
@@ -275,7 +275,7 @@ public class UserOption extends RaplaGUIComponent implements UserOptionPanel
                 content.add(validate);
                 addCopyPaste(emailField, getI18n(), getRaplaLocale(), ioInterface, getLogger());
                 addCopyPaste(codeField, getI18n(), getRaplaLocale(), ioInterface, getLogger());
-                dlg = (DialogUI) dialogUiFactory.createContextDialog(popupContext, content, new String[] { getString("save"), getString("abort") });
+                dlg = (DialogUI) dialogUiFactory.createContentDialog(popupContext, content, new String[] { getString("save"), getString("abort") });
                 validate.setAction(new EmailChangeActionA(dlg));
                 validate.setEnabled(false);
                 dlg.setDefault(0);

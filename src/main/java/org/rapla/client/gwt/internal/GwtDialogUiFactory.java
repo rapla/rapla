@@ -247,7 +247,7 @@ public class GwtDialogUiFactory implements DialogUiFactoryInterface
     }
 
     @Override
-    public DialogInterface createContextDialog(PopupContext popupContext, Object content, String[] options)
+    public DialogInterface createContentDialog(PopupContext popupContext, Object content, String[] options)
     {
         final GwtDialog gwtDialog = new GwtDialog(false, options);
         final Point point = GwtPopupContext.extractPoint(popupContext);
@@ -261,7 +261,7 @@ public class GwtDialogUiFactory implements DialogUiFactoryInterface
     @Override
     public DialogInterface createTextDialog(PopupContext popupContext, String title, String text, String[] options)
     {
-        final DialogInterface di = createContextDialog(popupContext, new Label(text), options);
+        final DialogInterface di = createContentDialog(popupContext, new Label(text), options);
         di.setTitle(title);
         return di;
     }

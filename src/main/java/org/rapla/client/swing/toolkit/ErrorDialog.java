@@ -186,7 +186,7 @@ final public class ErrorDialog {
             }
 
             final SwingPopupContext popupContext = new SwingPopupContext(owner, null);
-            DialogInterface dlg = dialogUiFactory.createContextDialog(popupContext, component, new String[] {getI18n().getString("ok")});
+            DialogInterface dlg = dialogUiFactory.createContentDialog(popupContext, component, new String[] {getI18n().getString("ok")});
             dlg.setTitle(createTitle("error"));
             dlg.setIcon("icon.error");
             dlg.start(true);

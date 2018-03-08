@@ -85,7 +85,7 @@ final public class LicenseInfoUI
         final SwingPopupContext popupContext = new SwingPopupContext(owner, null);
         try {
             LicenseUI license =  licenseUiProvider.get();
-            DialogInterface dialog = dialogUiFactory.createContextDialog(popupContext, license.getComponent(), new String[] {i18n.getString("ok")} );
+            DialogInterface dialog = dialogUiFactory.createContentDialog(popupContext, license.getComponent(), new String[] {i18n.getString("ok")} );
             dialog.setTitle(systemInfoI18n.getString("licensedialog.title"));
             dialog.setSize(600,400);
             if (link.equals("warranty")) {

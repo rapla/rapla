@@ -357,7 +357,7 @@ public class TemplateEdit extends RaplaGUIComponent
             options.add(getString("cancel"));
 
             final DialogInterface dlg = dialogUiFactory
-                    .createContextDialog(popupContext, templateList.getComponent(), options.toArray(new String[] {}));
+                    .createContentDialog(popupContext, templateList.getComponent(), options.toArray(new String[] {}));
             dlg.setTitle(getString("edit-templates"));
             dlg.setSize(1000, 800);
             dlg.getAction(options.size() - 1).setIcon("icon.cancel");

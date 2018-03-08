@@ -65,7 +65,7 @@ public class CalendarAction extends RaplaAction {
         try {
             MultiCalendarPresenter cal = multiCalendarViewFactory.get();
             final PopupContext popupContext = dialogUiFactory.createPopupContext(() -> parent);
-            DialogInterface frame = dialogUiFactory.createContextDialog(popupContext, cal.provideContent().getComponent(), new String[]{});
+            DialogInterface frame = dialogUiFactory.createContentDialog(popupContext, cal.provideContent().getComponent(), new String[]{});
             Dimension dimension = java.awt.Toolkit.getDefaultToolkit().getScreenSize();
             frame.setSize(
                                         Math.min(dimension.width,800)

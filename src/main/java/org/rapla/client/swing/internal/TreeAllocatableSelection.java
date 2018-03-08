@@ -195,7 +195,7 @@ public class TreeAllocatableSelection extends RaplaGUIComponent implements Chang
             treeSelection.setMinimumSize(new java.awt.Dimension(300, 200));
             treeSelection.setPreferredSize(new java.awt.Dimension(400, 260));
             final PopupContext popupContext = new SwingPopupContext(getComponent(), null);
-            dialog = dialogUiFactory.createContextDialog(
+            dialog = dialogUiFactory.createContentDialog(
                     popupContext
                     ,
                     treeSelection

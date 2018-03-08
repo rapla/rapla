@@ -175,7 +175,7 @@ public class MultiLanguageField extends AbstractEditField implements ChangeListe
         public void show()
         {
             PopupContext popupContext = dialogUiFactory.createPopupContext( ()->owner);
-            DialogInterface dlg = dialogUiFactory.createContextDialog(popupContext, comp, new String[] { i18n.getString("ok"), i18n.getString("cancel") });
+            DialogInterface dlg = dialogUiFactory.createContentDialog(popupContext, comp, new String[] { i18n.getString("ok"), i18n.getString("cancel") });
             dlg.setTitle(i18n.getString("translation"));
             // Workaround for Bug ID  4480264 on developer.java.sun.com
             if (table.getRowCount() > 0)

@@ -496,7 +496,7 @@ public class AttributeDefaultConstraints extends AbstractEditField implements Ac
             dialog.close();
         }
         final PopupContext popupContext = dialogUiFactory.createPopupContext(AttributeDefaultConstraints.this);
-        dialog = dialogUiFactory.createContextDialog(popupContext, annotationEdit.getComponent(), new String[] { i18n.getString("close") });
+        dialog = dialogUiFactory.createContentDialog(popupContext, annotationEdit.getComponent(), new String[] { i18n.getString("close") });
 
         dialog.getAction(0).setRunnable(new Runnable()
         {

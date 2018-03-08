@@ -1379,7 +1379,7 @@ public class AppointmentController extends RaplaGUIComponent implements Disposab
             exceptionEditor.getComponent().setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
             final PopupContext popupContext = new SwingPopupContext(getComponent(), null);
             exceptionDlg = dialogUiFactory
-                    .createContextDialog(popupContext, exceptionEditor.getComponent(), new String[] { getString("close") });
+                    .createContentDialog(popupContext, exceptionEditor.getComponent(), new String[] { getString("close") });
             exceptionDlg.setTitle(getString("appointment.exceptions"));
             exceptionDlg.start(true).thenRun(this::updateExceptionCount);
         }

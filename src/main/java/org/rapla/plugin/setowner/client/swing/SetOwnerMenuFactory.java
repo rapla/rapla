@@ -178,7 +178,7 @@ public class SetOwnerMenuFactory implements ObjectMenuFactory
             treeSelection.setMinimumSize(new java.awt.Dimension(300, 200));
             treeSelection.setPreferredSize(new java.awt.Dimension(400, 260));
             final PopupContext popupContext = new SwingPopupContext(old.getMainComponent(), null);
-            dialog = dialogUiFactory.createContextDialog(
+            dialog = dialogUiFactory.createContentDialog(
                     popupContext
                     ,
                     treeSelection

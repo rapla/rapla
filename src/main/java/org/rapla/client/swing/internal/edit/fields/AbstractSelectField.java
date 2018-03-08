@@ -297,7 +297,7 @@ public abstract class AbstractSelectField<T> extends AbstractEditField implement
         }
 
         final PopupContext popupContext = new SwingPopupContext(parent, null);
-        dialog = dialogUiFactory.createContextDialog(
+        dialog = dialogUiFactory.createContentDialog(
                 popupContext
                                  ,
                 panel
