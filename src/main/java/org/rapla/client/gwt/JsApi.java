@@ -90,6 +90,26 @@ public class JsApi {
         return i18n;
     }
 
+    public void warn(String message)
+    {
+        logger.warn( message);
+    }
+
+    public void info(String message)
+    {
+        logger.info( message);
+    }
+
+    public void error(String message)
+    {
+        logger.error( message);
+    }
+
+    public void debug(String message)
+    {
+        logger.debug( message);
+    }
+
     public CalendarOptions getCalendarOptions() throws RaplaException {
         return RaplaComponent.getCalendarOptions(getUser(), facade);
     }

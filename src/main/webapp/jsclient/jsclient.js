@@ -1,22 +1,18 @@
-var errorFunction = (info) =>
-          {
-            console.log("Error: " + info);
-          };
 var apiCallback = (api) =>
         {
-
+          var errorFunction = (message) =>  api.error("Error: " + message);
           var facade = api.getFacade();
           var resources = facade.getAllocatables();
           var resource = resources[0];
           var raplaLocalce = api.getRaplaLocale();
-          console.log( "Starting js-demo");
-          console.log( resource.getName(null));
+          api.info( "Starting js-demo");
+          api.info( resource.getName(null));
           var calendar = api.getCalendarModel();
           calendar.load(null);
-          console.log( "Calendar Model loaded: " + calendar);
+          api.info( "Calendar Model loaded: " + calendar);
           var timeIntervall =calendar.getTimeIntervall();
           var blocksPromise = calendar.queryBlocks( timeIntervall);
-          blocksPromise.thenRun(()=> console.log("Hallo blocks")).exceptionally(errorFunction);
+          blocksPromise.thenRun(()=> api.info("Hallo blocks")).exceptionally(errorFunction);
           //blocksPromise.thenRun(()=> console.log("Hallo blocks")).exceptionally(new rapla.Error(errorFunction).get());
           createReservation( api,resource);
         };
@@ -25,8 +21,9 @@ var apiCallback = (api) =>
 
 var createReservation = (api,resource) =>
 {
+          var errorFunction = (message) =>  api.error("Error: " + message);
           var facade = api.getFacade();
-          console.log( "New Reservation ");/**/
+          api.info( "New Reservation ");/**/
           var eventType = facade.getDynamicTypes("reservation")[0];
           var classification = eventType.newClassification();
           var reservationController = api.getReservationController();
@@ -36,13 +33,13 @@ var createReservation = (api,resource) =>
               var dateParse = rapla.DateParse.INSTANCE;
               var startDate = dateParse.parseDateTime("2018-01-03","12:00");
               var endDate = dateParse.parseDateTime("2018-01-03","14:00");
-              console.log( "New Appointment: " + dateParse.formatTimestamp( startDate) + " - " + dateParse.formatTimestamp( endDate));
+              api.info( "New Appointment: " + dateParse.formatTimestamp( startDate) + " - " + dateParse.formatTimestamp( endDate));
               var timeIntervall = new rapla.TimeInterval( startDate, endDate );
               return facade.newAppointmentAsync(timeIntervall).thenApply( appointment =>
               {
                   newReservation.addAppointment( appointment);
                   newReservation.addAllocatable(resource);
-                  console.log( "Saving Reservation ");
+                  api.info( "Saving Reservation ");
                   // Next Method will cause an error so it will prevent Reservation from saving. And test the error Method;"
                   facade.getPersistant( newReservation);
                   return newReservation;
@@ -51,7 +48,7 @@ var createReservation = (api,resource) =>
            .thenCompose((reservationWithAppointment)=>
              reservationController.saveReservation(null, reservationWithAppointment)
            )
-           .thenRun(()=>console.log("Reservation saved"))
+           .thenRun(()=>api.info("Reservation saved"))
            .exceptionally(errorFunction);
 
 };
@@ -61,7 +58,7 @@ var rapla = {
   RaplaCallback : function() {
    this.gwtLoaded = (starter) =>
       {
-         var errorFunction = (info) => console.log(info);
+         var errorFunction = (info) => console.error(info);
          var registerAction = ()=> {
                              var loginToken = starter.getValidToken();
                              if ( loginToken != null)

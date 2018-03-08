@@ -16,14 +16,30 @@ public class RaplaGwtLogger extends org.rapla.logger.ConsoleLogger
     }
 
     @Override
-    protected void writeln(String message)
+    protected void writeln(int logLevel,StringBuffer buffer)
     {
-        nativeConsoleLog(message);
+        String message = buffer.toString();
+        nativeConsoleLog(logLevel,message);
     }
 
-    private static native void nativeConsoleLog( String s )
+    private static native void nativeConsoleLog( int logLevel,String string )
         /*-{
-        var d = new Date();
-        console.log(d.getHours() +":"+d.getMinutes()+":" + d.getSeconds() + "." + d.getMilliseconds() +" "+ s );
+var d = new Date();
+var message = d.getHours() +":"+d.getMinutes()+":" + d.getSeconds() + "." + d.getMilliseconds() +" "+ string ;
+switch ( logLevel) {
+case -1:
+    console.trace( message ); break;
+case 0:
+    console.log( message ); break;
+case 1:
+    console.info( message ); break;
+case 2:
+    console.warn( message ); break;
+case 3:
+case 4:
+    console.error( message ); break;
+default:
+     console.log( message);
+   }
         }-*/;
 }
