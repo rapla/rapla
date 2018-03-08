@@ -11,6 +11,7 @@
  | Definition as published by the Open Source Initiative (OSI).             |
  *--------------------------------------------------------------------------*/
 package org.rapla.entities.domain;
+import jsinterop.annotations.JsType;
 import org.rapla.components.util.TimeInterval;
 
 import java.util.Date;
@@ -18,12 +19,13 @@ import java.util.Set;
 
 /** Encapsulates the repeating rule for an appointment.
     @see Appointment*/
+@JsType
 public interface Repeating {
 	RepeatingType DAILY = RepeatingType.DAILY;
 	RepeatingType WEEKLY = RepeatingType.WEEKLY;
     RepeatingType MONTHLY = RepeatingType.MONTHLY;
     RepeatingType YEARLY = RepeatingType.YEARLY;
-    
+
     void setInterval(int interval);
     /** returns the number of intervals between two repeatings.
      * That are in the selected context:
@@ -36,7 +38,7 @@ public interface Repeating {
     /** The value returned depends which method was called last.
      *  If <code>setNumber()</code> has been called with a parameter
      *  &gt;=0 <code>fixedNumber()</code> will return true. If
-     *  <code>setEnd()</code> has been called 
+     *  <code>setEnd()</code> has been called
      *  <code>fixedNumber()</code> will return false.
      *  @see #setEnd
      *  @see #setNumber
@@ -92,7 +94,7 @@ public interface Repeating {
         @see Appointment
      */
     Appointment getAppointment();
-    
+
     /** copyReservations the values from another repeating */
     void setFrom(Repeating repeating);
 

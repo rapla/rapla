@@ -942,12 +942,7 @@ public class CalendarModelImpl implements CalendarSelectionModel
 
     public static Collection<Reservation> getAllReservations(Collection<Appointment> appointments)
     {
-        Collection<Reservation> asList = new LinkedHashSet<Reservation>();
-        for (Appointment appointment : appointments)
-        {
-            asList.add(appointment.getReservation());
-        }
-        return asList;
+        return appointments.stream().map(Appointment::getReservation).distinct().collect(Collectors.toList());
     }
 
     public static Collection<Reservation> getAllReservations(Map<Allocatable, Collection<Appointment>> appointmentMap)
@@ -993,7 +988,7 @@ public class CalendarModelImpl implements CalendarSelectionModel
 		User user = null;
         final Promise<Map<Allocatable, Collection<Appointment>>> reservationsAsync = operator
                 .queryAppointments(user, allocatables, start, end, reservationFilters, templateId);
-        
+
         return reservationsAsync.thenApply((map) -> {
             if (cachingEnabled)
             {
