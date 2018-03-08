@@ -283,7 +283,7 @@ public class ResourceSelectionViewSwing implements ResourceSelectionView
                         DefaultMutableTreeNode targetParentNode = (DefaultMutableTreeNode) targetPath.getLastPathComponent();
                         final Category categoryToMove = (Category) selectedNode.getUserObject();
                         final Category targetCategory = (Category) targetParentNode.getUserObject();
-                        getPresenter().moveCategory(categoryToMove, targetCategory).thenRun(() ->{
+                        getPresenter().moveCategory(categoryToMove, targetCategory).execOn(SwingUtilities::invokeLater).thenRun(() ->{
                             dtde.dropComplete(true);
                             updateTree(filter, selectedObjects);
                         }).exceptionally( (ex)->
@@ -300,8 +300,8 @@ public class ResourceSelectionViewSwing implements ResourceSelectionView
                         dtde.dropComplete(false);
                     }
                 }
-
             }
+
 
             private boolean isDropAllowed(TreePath sourcePath, TreePath targetPath, DefaultMutableTreeNode selectedNode)
             {

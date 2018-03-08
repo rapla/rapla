@@ -239,7 +239,7 @@ public class Application implements ApplicationView.Presenter, ModificationListe
 
     protected Promise<Boolean> shouldExit() {
         PopupContext popupContext = mainView.createPopupContext();
-        DialogInterface dlg = dialogUiFactory.create(popupContext, i18n.getString("exit.title"), i18n.getString("exit.question"),
+        DialogInterface dlg = dialogUiFactory.createTextDialog(popupContext, i18n.getString("exit.title"), i18n.getString("exit.question"),
                 new String[]{i18n.getString("exit.ok"), i18n.getString("exit.abort")});
         dlg.setIcon("icon.question");
         //dlg.getButton(0).setIcon(getIcon("icon.confirm"));

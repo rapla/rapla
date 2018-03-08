@@ -297,7 +297,7 @@ public class SwingWeekView extends AbstractSwingCalendar
             timeScale.setTimeIntervall(minHour, maxHour, 60);
         }
 
-        // create Slots
+        // createInfoDialog Slots
         DraggingHandler draggingHandler = new DraggingHandler(this, rowScale, true);
 
         for (int i = 0; i < getColumnCount(); i++)
@@ -345,7 +345,7 @@ public class SwingWeekView extends AbstractSwingCalendar
         return DateTools.addDays(getStartDate(), column);
     }
 
-    /** override this method, if you want to create your own slot header. */
+    /** override this method, if you want to createInfoDialog your own slot header. */
     protected JComponent createSlotHeader(Integer column)
     {
         JLabel jLabel = new JLabel();

@@ -80,7 +80,7 @@ public class PreferencesEditUI extends RaplaGUIComponent
     private final TreeFactory treeFactory;
     private final DialogUiFactoryInterface dialogUiFactory;
 
-    /** called during initialization to create the info component 
+    /** called during initialization to createInfoDialog the info component
      */
     @Inject
     public PreferencesEditUI( TreeFactory treeFactory, Provider<Set<UserOptionPanel>> userOptionPanel,

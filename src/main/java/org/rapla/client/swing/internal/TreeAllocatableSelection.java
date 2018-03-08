@@ -13,6 +13,7 @@
 package org.rapla.client.swing.internal;
 
 import org.rapla.RaplaResources;
+import org.rapla.client.PopupContext;
 import org.rapla.client.dialog.DialogInterface;
 import org.rapla.client.dialog.DialogUiFactoryInterface;
 import org.rapla.client.swing.RaplaGUIComponent;
@@ -193,10 +194,11 @@ public class TreeAllocatableSelection extends RaplaGUIComponent implements Chang
             treeSelection.exchangeTreeModel(getTreeFactory().createClassifiableModel(getQuery().getAllocatables(),true));
             treeSelection.setMinimumSize(new java.awt.Dimension(300, 200));
             treeSelection.setPreferredSize(new java.awt.Dimension(400, 260));
-            dialog = dialogUiFactory.create(
-                    new SwingPopupContext(getComponent(), null)
-                    ,true
-                    ,treeSelection
+            final PopupContext popupContext = new SwingPopupContext(getComponent(), null);
+            dialog = dialogUiFactory.createContextDialog(
+                    popupContext
+                    ,
+                    treeSelection
                     ,new String[] { getString("add"),getString("cancel")});
             dialog.setTitle(addDialogTitle);
             dialog.getAction(0).setEnabled(false);
@@ -225,12 +227,14 @@ public class TreeAllocatableSelection extends RaplaGUIComponent implements Chang
                 }
             });
             
-            dialog.start(true); 
-            if (dialog.getSelectedIndex() == 0) {
-                List<Allocatable> selected = getSelectedAllocatables(treeSelection);
-                allocatables.addAll(selected);
-                update();
-            }
+            dialog.start(true).thenAccept( index->
+            {
+                if (index == 0) {
+                    List<Allocatable> selected = getSelectedAllocatables(treeSelection);
+                    allocatables.addAll(selected);
+                    update();
+                }
+            });
         }
     }
 }

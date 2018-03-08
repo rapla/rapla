@@ -207,7 +207,7 @@ public class RaplaICalImport implements ICalImport {
 
                 	if ( lookupEvent == null)
     				{
-    					// create the reservation
+    					// createInfoDialog the reservation
     					Classification classification = facade.getDynamicType(eventTypeKey).newClassification();
     				    lookupEvent = facade.newReservation(classification,user);
     				    if ( uid != null)
@@ -248,7 +248,7 @@ public class RaplaICalImport implements ICalImport {
 		            if (duration_millis == 0 && enddate != null) {
                         duration_millis = enddate.getTime() - startdate.getTime();
                     }
-		            // create appointment
+		            // createInfoDialog appointment
 		            
 
 		            Appointment appointment;

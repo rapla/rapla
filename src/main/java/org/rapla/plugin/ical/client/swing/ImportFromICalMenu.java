@@ -199,8 +199,8 @@ public class ImportFromICalMenu extends RaplaGUIComponent implements ImportMenuE
 		container.add( warning, BorderLayout.NORTH);
 		container.add( superpanel, BorderLayout.CENTER);
 		
-		final DialogInterface dlg = dialogUiFactory.create(
-		        new SwingPopupContext(getMainComponent(), null), false, container, new String[] { getString("import"), getString("cancel") });
+		final DialogInterface dlg = dialogUiFactory.createContextDialog(
+		        new SwingPopupContext(getMainComponent(), null), container, new String[] { getString("import"), getString("cancel") });
 		
         final ActionListener radioListener = new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
@@ -314,7 +314,7 @@ public class ImportFromICalMenu extends RaplaGUIComponent implements ImportMenuE
 							} else {
 								text += ".";
 							}
-							DialogInterface okDlg = dialogUiFactory.create(new SwingPopupContext(getMainComponent(), null), title, text);
+							DialogInterface okDlg = dialogUiFactory.createInfoDialog(new SwingPopupContext(getMainComponent(), null), title, text);
 							okDlg.start(true);
 						});
 				} catch (Exception e1) {

@@ -601,7 +601,7 @@ public class RaplaClientServiceImpl implements ClientService, UpdateErrorListene
                     try
                     {
                         Component owner = null;
-                        final DialogInterface dialog = dialogUiFactory.create(new SwingPopupContext(owner, null), title, message);
+                        final DialogInterface dialog = dialogUiFactory.createInfoDialog(new SwingPopupContext(owner, null), title, message);
                         dialog.setAbortAction(()->
                         {
                             getLogger().warn("restart");

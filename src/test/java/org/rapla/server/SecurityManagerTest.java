@@ -59,7 +59,7 @@ public class SecurityManagerTest extends AbstractTestWithServer {
 		Appointment app1;
 		{
 			app1 = facade1.newAppointmentDeprecated( start, end ) ;
-			// First we create a reservation for the resource
+			// First we createInfoDialog a reservation for the resource
 			Reservation event = facade1.newReservationDeprecated();
 			event.getClassification().setValue("name", "taken");
 			event.addAppointment( app1 );
@@ -67,7 +67,7 @@ public class SecurityManagerTest extends AbstractTestWithServer {
 			facade1.store( event );
 		}
 		logout(clientFacade1);
-		// Now we login as a non admin user, who isnt allowed to create conflicts on the resource erwin
+		// Now we login as a non admin user, who isnt allowed to createInfoDialog conflicts on the resource erwin
 		login(clientFacade1,"monty", "burns".toCharArray());
 		{
 			Reservation event = facade1.newReservationDeprecated();

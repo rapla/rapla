@@ -264,7 +264,7 @@ import java.util.concurrent.atomic.AtomicReference;
     {
         final Semaphore semaphore = new Semaphore(0);
         // Both threads will try to do a update 
-        // so every thread will first delete the entry with its time stamp and then create a new one
+        // so every thread will first delete the entry with its time stamp and then createInfoDialog a new one
         final Thread t1 = new Thread(new Runnable()
         {
             private Connection con = con1;
@@ -490,7 +490,7 @@ import java.util.concurrent.atomic.AtomicReference;
         con3.setTransactionIsolation(Connection.TRANSACTION_SERIALIZABLE);
         final Semaphore semaphore = new Semaphore(0);
         // Both threads will try to do a update
-        // so every thread will first delete the entry with its time stamp and then create a new one
+        // so every thread will first delete the entry with its time stamp and then createInfoDialog a new one
 
         final Runnable writer = new Runnable()
         {
@@ -573,7 +573,7 @@ import java.util.concurrent.atomic.AtomicReference;
         final AtomicReference<Timestamp> at = new AtomicReference<Timestamp>();
         final AtomicReference<Throwable> error  = new AtomicReference<Throwable>();
         // Both threads will try to do a update
-        // so every thread will first delete the entry with its time stamp and then create a new one
+        // so every thread will first delete the entry with its time stamp and then createInfoDialog a new one
         final Thread t1 = new Thread(new Runnable()
         {
             private Connection con = con1;

@@ -9,7 +9,6 @@ import org.rapla.client.swing.images.RaplaImages;
 import org.rapla.client.swing.internal.SwingPopupContext;
 import org.rapla.client.swing.toolkit.RaplaMenuItem;
 import org.rapla.facade.client.ClientFacade;
-import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.inject.Extension;
 import org.rapla.logger.Logger;
@@ -55,7 +54,8 @@ public class RightsReportMenu extends RaplaGUIComponent implements AdminMenuExte
 	
 	public void actionPerformed( ActionEvent e )
     {
-        DialogInterface dialog = dialogUiFactory.create( new SwingPopupContext(getMainComponent(), null),true, report.getComponent(), new String[] {getString("ok")});
+		final SwingPopupContext popupContext = new SwingPopupContext(getMainComponent(), null);
+		DialogInterface dialog = dialogUiFactory.createContextDialog(popupContext, report.getComponent(), new String[] {getString("ok")});
 		dialog.setTitle( name);
 		RaplaRightsReport report = rightsReportProvider.get();
 		dialog.setSize( 650, 550);

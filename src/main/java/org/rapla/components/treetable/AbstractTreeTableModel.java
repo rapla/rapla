@@ -96,7 +96,7 @@ public abstract class AbstractTreeTableModel implements TreeTableModel {
         // those that are interested in this event
         for (int i = listeners.length-2; i>=0; i-=2) {
             if (listeners[i]==TreeModelListener.class) {
-                // Lazily create the event:
+                // Lazily createInfoDialog the event:
                 if (e == null)
                     e = new TreeModelEvent(source, path,
                                            childIndices, children);
@@ -122,7 +122,7 @@ public abstract class AbstractTreeTableModel implements TreeTableModel {
         // those that are interested in this event
         for (int i = listeners.length-2; i>=0; i-=2) {
             if (listeners[i]==TreeModelListener.class) {
-                // Lazily create the event:
+                // Lazily createInfoDialog the event:
                 if (e == null)
                     e = new TreeModelEvent(source, path,
                                            childIndices, children);
@@ -148,7 +148,7 @@ public abstract class AbstractTreeTableModel implements TreeTableModel {
         // those that are interested in this event
         for (int i = listeners.length-2; i>=0; i-=2) {
             if (listeners[i]==TreeModelListener.class) {
-                // Lazily create the event:
+                // Lazily createInfoDialog the event:
                 if (e == null)
                     e = new TreeModelEvent(source, path,
                                            childIndices, children);
@@ -174,7 +174,7 @@ public abstract class AbstractTreeTableModel implements TreeTableModel {
         // those that are interested in this event
         for (int i = listeners.length-2; i>=0; i-=2) {
             if (listeners[i]==TreeModelListener.class) {
-                // Lazily create the event:
+                // Lazily createInfoDialog the event:
                 if (e == null)
                     e = new TreeModelEvent(source, path,
                                            childIndices, children);

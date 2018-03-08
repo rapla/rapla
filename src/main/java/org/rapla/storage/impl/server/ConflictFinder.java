@@ -274,7 +274,7 @@ class ConflictFinder {
         Set<String> foundConflictIds = new HashSet<String>();
         // generate N random intervals
 
-        // create events
+        // createInfoDialog events
         MinPQ<Event> pq = new MinPQ<Event>();
         for (AppointmentBlock block:intervals) {
             Event e1 = new Event(block.getStart(),  block);
@@ -313,7 +313,7 @@ class ConflictFinder {
                         // Add appointments to conflict list
                         if (ConflictImpl.isConflictWithoutCheck(appointment1, appointment2, today))
                         {
-                            // create a new conflict
+                            // createInfoDialog a new conflict
                             final ConflictImpl conflict = new ConflictImpl(allocatable,appointment1, appointment2, today, id);
                             conflictList.put(conflict.getReference(), conflict);
                             foundConflictIds.add( id);
@@ -448,7 +448,7 @@ class ConflictFinder {
 	        }
 			/*
 			 * If the appointment has a repeating, get all single time blocks of it. If it is no
-			 * repeating, this will just create one block, which is equal to the appointment
+			 * repeating, this will just createInfoDialog one block, which is equal to the appointment
 			 * itself.
 			 */
 			Date start = appointment.getStart();
@@ -650,7 +650,7 @@ class ConflictFinder {
     	// the conflict is still the same but the name could change, so we must somehow indicate the clients displaying that conflict, that they need to refresh the name,
     	// because the involving reservations are not automatically pushed to the client
     	
-    	// first we create a list with all changed appointments. Notice if a reservation is changed all the appointments will change to
+    	// first we createInfoDialog a list with all changed appointments. Notice if a reservation is changed all the appointments will change to
     	Map<ReferenceInfo<Allocatable>, Set<ReferenceInfo<Appointment>>> appointmentUpdateMap = new LinkedHashMap<ReferenceInfo<Allocatable>, Set<ReferenceInfo<Appointment>>>();
     	for (Change change:currentUpdateResult.getOperations(UpdateResult.Change.class))
     	{
@@ -674,7 +674,7 @@ class ConflictFinder {
     			}
     		}
     	}
-    	// then we create a map and look for any conflict that has changed appointment. This could still contain old appointment references  
+    	// then we createInfoDialog a map and look for any conflict that has changed appointment. This could still contain old appointment references
     	Map<Conflict,Conflict> toUpdateConflicts = new LinkedHashMap<Conflict, Conflict>();
     	for ( ReferenceInfo<Allocatable> allocRef: appointmentUpdateMap.keySet())
     	{

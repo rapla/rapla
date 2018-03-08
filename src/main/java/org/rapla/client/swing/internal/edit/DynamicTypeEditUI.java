@@ -227,7 +227,7 @@ public class DynamicTypeEditUI extends RaplaGUIComponent
                                 colorChooser.setSelectedIndex(2);
                                 return;
                             }
-                            DialogInterface ui = dialogUiFactory.create(new SwingPopupContext(getMainComponent(), null), getString("color.manual"), getString("attribute_color_dialog"), new String[]{getString("yes"),getString("no")});
+                            DialogInterface ui = dialogUiFactory.createTextDialog(new SwingPopupContext(getMainComponent(), null), getString("color.manual"), getString("attribute_color_dialog"), new String[]{getString("yes"),getString("no")});
                             ui.start(true);
                             if (ui.getSelectedIndex() == 0)
                             {
@@ -241,7 +241,7 @@ public class DynamicTypeEditUI extends RaplaGUIComponent
                         }
                         else
                         {
-                            DialogInterface ui = dialogUiFactory.create(new SwingPopupContext(getMainComponent(), null), getString("color.manual"), getString("attribute_color_dialog"), new String[]{getString("yes"),getString("no")});
+                            DialogInterface ui = dialogUiFactory.createTextDialog(new SwingPopupContext(getMainComponent(), null), getString("color.manual"), getString("attribute_color_dialog"), new String[]{getString("yes"),getString("no")});
     						ui.start(true);
     						if (ui.getSelectedIndex() == 0)
     						{
@@ -344,15 +344,15 @@ public class DynamicTypeEditUI extends RaplaGUIComponent
     
     private void showAnnotationDialog() throws RaplaException
     {
-        boolean modal = false;
         if (dialog != null)
         {
             dialog.close();
         }
-        dialog = dialogUiFactory.create(
-                new SwingPopupContext(getComponent(), null)
-                ,modal
-                ,annotationEdit.getComponent()
+        final SwingPopupContext popupContext = new SwingPopupContext(getComponent(), null);
+        dialog = dialogUiFactory.createContextDialog(
+                popupContext
+                ,
+                annotationEdit.getComponent()
                 ,new String[] { getString("close")});
 
         dialog.getAction(0).setRunnable( new Runnable() {

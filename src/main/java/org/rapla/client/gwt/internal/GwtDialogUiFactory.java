@@ -31,7 +31,6 @@ import javax.inject.Singleton;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
-import java.util.function.Supplier;
 
 @Singleton
 @DefaultImplementation(context = InjectionContext.gwt, of = DialogUiFactoryInterface.class)
@@ -248,9 +247,9 @@ public class GwtDialogUiFactory implements DialogUiFactoryInterface
     }
 
     @Override
-    public DialogInterface create(PopupContext popupContext, boolean modal, Object content, String[] options)
+    public DialogInterface createContextDialog(PopupContext popupContext, Object content, String[] options)
     {
-        final GwtDialog gwtDialog = new GwtDialog(modal, options);
+        final GwtDialog gwtDialog = new GwtDialog(false, options);
         final Point point = GwtPopupContext.extractPoint(popupContext);
         if (point != null)
         {
@@ -260,17 +259,17 @@ public class GwtDialogUiFactory implements DialogUiFactoryInterface
     }
 
     @Override
-    public DialogInterface create(PopupContext popupContext, String title, String text, String[] options)
+    public DialogInterface createTextDialog(PopupContext popupContext, String title, String text, String[] options)
     {
-        final DialogInterface di = create(popupContext, false, new Label(text), options);
+        final DialogInterface di = createContextDialog(popupContext, new Label(text), options);
         di.setTitle(title);
         return di;
     }
 
     @Override
-    public DialogInterface create(PopupContext popupContext, String title, String text)
+    public DialogInterface createInfoDialog(PopupContext popupContext, String title, String text)
     {
-        final DialogInterface di = create(popupContext, title, text, DialogUiFactoryInterface.Util.getDefaultOptions());
+        final DialogInterface di = createTextDialog(popupContext, title, text, DialogUiFactoryInterface.Util.getDefaultOptions());
         return di;
     }
 
@@ -296,7 +295,7 @@ public class GwtDialogUiFactory implements DialogUiFactoryInterface
             {
                 final String key = "error";
                 final String title = i18n.format("exclamation.format", i18n.getString(key));
-                final DialogInterface di = create(popupContext, title, message);
+                final DialogInterface di = createInfoDialog(popupContext, title, message);
                 di.start(true);
             }
             catch (Throwable e)
@@ -323,7 +322,7 @@ public class GwtDialogUiFactory implements DialogUiFactoryInterface
                 }
                 final String key = "error";
                 final String title = i18n.format("exclamation.format", i18n.getString(key));
-                DialogInterface di = create(popupContext, title, message);
+                DialogInterface di = createInfoDialog(popupContext, title, message);
                 di.start(true);
             }
             catch (Throwable ex2)

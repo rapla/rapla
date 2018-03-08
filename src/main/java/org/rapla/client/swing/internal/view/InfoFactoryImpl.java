@@ -19,7 +19,6 @@ import org.rapla.client.dialog.DialogUiFactoryInterface;
 import org.rapla.client.internal.AllocatableInfoUI;
 import org.rapla.client.internal.AppointmentInfoUI;
 import org.rapla.client.internal.CategoryInfoUI;
-import org.rapla.client.internal.DeleteInfoUI;
 import org.rapla.client.internal.DynamicTypeInfoUI;
 import org.rapla.client.internal.HTMLInfo;
 import org.rapla.client.internal.PeriodInfoUI;
@@ -88,18 +87,18 @@ public class InfoFactoryImpl extends RaplaGUIComponent implements InfoFactory
         views.put( Category.class, new CategoryInfoUI(facade, i18n, raplaLocale, logger) );
     }
 
-    /** this method is used by the viewtable to dynamicaly create an
+    /** this method is used by the viewtable to dynamicaly createInfoDialog an
      * appropriate HTMLInfo for the passed object
      */
     <T extends RaplaObject> HTMLInfo<T> createView( T object ) throws RaplaException {
         if ( object == null )
-            throw new RaplaException( "Could not create view for null object" );
+            throw new RaplaException( "Could not createInfoDialog view for null object" );
 
         @SuppressWarnings("unchecked")
 		HTMLInfo<T> result =  views.get( object.getTypeClass() );
         if (result != null)
                 return result;
-        throw new RaplaException( "Could not create view for this object: " + object.getClass() );
+        throw new RaplaException( "Could not createInfoDialog view for this object: " + object.getClass() );
     }
 
     @Override
@@ -141,9 +140,9 @@ public class InfoFactoryImpl extends RaplaGUIComponent implements InfoFactory
     {
 
         final ViewTable<T> viewTable = new ViewTable<T>(getClientFacade(), getI18n(), getRaplaLocale(), getLogger(), this, ioInterface, dialogUiFactory);
-        final DialogInterface dlg = dialogUiFactory.create(popupContext
-                ,false
-                ,viewTable.getComponent()
+        final DialogInterface dlg = dialogUiFactory.createContextDialog(popupContext
+                ,
+                viewTable.getComponent()
                 ,new String[] {
                         getString( "copy_to_clipboard" )
                         ,getString( "print" )

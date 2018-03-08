@@ -20,7 +20,6 @@ import org.rapla.client.RaplaWidget;
 import org.rapla.client.ReservationEdit;
 import org.rapla.client.dialog.DialogInterface;
 import org.rapla.client.dialog.DialogUiFactoryInterface;
-import org.rapla.client.extensionpoints.EventCheck;
 import org.rapla.client.swing.RaplaGUIComponent;
 import org.rapla.client.swing.ReservationToolbarExtension;
 import org.rapla.client.swing.TreeFactory;
@@ -114,54 +113,44 @@ public class ConflictPeriodReservationCheck extends RaplaGUIComponent implements
     @NotNull
     private Promise<DialogResult> showPeriodConflicts(PopupContext sourceComponent, Map<Appointment, Set<Period>> periodConflicts)
     {
-        try
+        AtomicBoolean atomicBoolean = new AtomicBoolean(false);
+        AtomicReference<Set> selectedSetStorage = new AtomicReference<>();
+        selectedSetStorage.set(Collections.emptySet());
+        JComponent content = getConflictPanel(periodConflicts, atomicBoolean, selectedSetStorage);
+        DialogInterface dialog = dialogUiFactory.createContextDialog(sourceComponent, content, new String[] { getString("continue"), getString("cancel") });
+        dialog.setDefault(1);
+        dialog.setIcon("icon.big_folder_conflicts");
+        dialog.getAction(0).setIcon("icon.save");
+        dialog.getAction(1).setIcon("icon.cancel");
+        dialog.setTitle("Wiederholungstermine überschneiden sich mit");
+        return dialog.start(true).thenApply(index->
         {
-            AtomicBoolean atomicBoolean = new AtomicBoolean(false);
-            AtomicReference<Set> selectedSetStorage = new AtomicReference<>();
-            selectedSetStorage.set(Collections.emptySet());
-            JComponent content = getConflictPanel(periodConflicts, atomicBoolean, selectedSetStorage);
-            DialogInterface dialog = dialogUiFactory.create(sourceComponent, true, content, new String[] { getString("continue"), getString("cancel") });
-            dialog.setDefault(1);
-            dialog.setIcon("icon.big_folder_conflicts");
-            dialog.getAction(0).setIcon("icon.save");
-            dialog.getAction(1).setIcon("icon.cancel");
-            dialog.setTitle("Wiederholungstermine überschneiden sich mit");
-            dialog.start(true);
-            if (dialog.getSelectedIndex() == 0)
-            {
+            if (index == 0) {
                 boolean modified = false;
-                if (atomicBoolean.get())
-                {
+                if (atomicBoolean.get()) {
                     final Set selecteSet = selectedSetStorage.get();
-                    for (Map.Entry<Appointment, Set<Period>> entry : periodConflicts.entrySet())
-                    {
+                    for (Map.Entry<Appointment, Set<Period>> entry : periodConflicts.entrySet()) {
                         final Appointment appointment = entry.getKey();
                         final Set<Period> periods = entry.getValue();
                         final Repeating repeating = appointment.getRepeating();
-                        for (Period period : periods)
-                        {
+                        for (Period period : periods) {
 
-                            if (selecteSet.contains(period) || !Collections.disjoint(period.getCategories(), selecteSet))
-                            {
+                            if (selecteSet.contains(period) || !Collections.disjoint(period.getCategories(), selecteSet)) {
                                 final Date[] exceptionsBefore = repeating.getExceptions();
                                 repeating.addExceptions(period.getInterval());
                                 final Date[] exceptionsAfter = repeating.getExceptions();
-                                if (!Arrays.equals( exceptionsAfter, exceptionsBefore))
-                                {
+                                if (!Arrays.equals(exceptionsAfter, exceptionsBefore)) {
                                     modified = true;
                                 }
                             }
                         }
                     }
                 }
-                return new ResolvedPromise<>(modified?DialogResult.OK_MODIFIED:DialogResult.OK);
+                return modified ? DialogResult.OK_MODIFIED : DialogResult.OK;
+            } else {
+                return DialogResult.CANCEL;
             }
-        }
-        catch (RaplaException ex)
-        {
-            dialogUiFactory.showException(ex, new SwingPopupContext((Component) sourceComponent, null));
-        }
-        return new ResolvedPromise<>(DialogResult.CANCEL);
+        });
     }
 
     @NotNull
@@ -205,7 +194,6 @@ public class ConflictPeriodReservationCheck extends RaplaGUIComponent implements
     }
 
     private JComponent getConflictPanel(Map<Appointment, Set<Period>> conflicts, AtomicBoolean atomicBoolean, AtomicReference<Set> selectedItems)
-            throws RaplaException
     {
         JPanel panel = new JPanel();
         BorderLayout layout = new BorderLayout();

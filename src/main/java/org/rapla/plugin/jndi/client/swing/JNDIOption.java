@@ -13,6 +13,7 @@
 package org.rapla.plugin.jndi.client.swing;
 
 import org.rapla.RaplaResources;
+import org.rapla.client.PopupContext;
 import org.rapla.client.dialog.DialogInterface;
 import org.rapla.client.dialog.DialogUiFactoryInterface;
 import org.rapla.client.extensionpoints.PluginOptionPanel;
@@ -174,17 +175,18 @@ public class JNDIOption implements JNDIConf, PluginOptionPanel
             public void actionPerformed(ActionEvent e) {
                 PasswordEnterUI testUser;
                 DialogInterface dialog;
+                final PopupContext popupContext = new SwingPopupContext(getComponent(), null);
                 try
                 {
 
                     testUser = new PasswordEnterUI(raplaResources);
-                    dialog =dialogUiFactory.create( new SwingPopupContext(getComponent(), null), false,testUser.getComponent(),new String[] {"test","abort"});
+                    dialog =dialogUiFactory.createContextDialog(popupContext, testUser.getComponent(),new String[] {"test","abort"});
                     dialog.setTitle("Please enter valid user!");
 
                 }
                 catch (Exception ex)
                 {
-                    dialogUiFactory.showException(ex, new SwingPopupContext(getComponent(), null));
+                    dialogUiFactory.showException(ex, popupContext);
                     return;
                 }
                 dialog.start(true).thenCompose((index) ->
@@ -198,10 +200,10 @@ public class JNDIOption implements JNDIConf, PluginOptionPanel
                         String password = new String(testUser.getNewPassword());
                         final Promise<Boolean> testPromise = configService.test(new MailTestRequest(conf, username, password));
                         return testPromise.thenCompose((dummy) ->
-                                dialogUiFactory.create(new SwingPopupContext(getComponent(), null), "JNDI", "JNDI Authentification successfull").start(true)
+                                dialogUiFactory.createInfoDialog(popupContext, "JNDI", "JNDI Authentification successfull").start(true)
                         ).thenApply((index2) -> null);
                     }
-                ).exceptionally((ex)->dialogUiFactory.showException(ex, new SwingPopupContext(getComponent(), null)));
+                ).exceptionally((ex)->dialogUiFactory.showException(ex, popupContext));
             }
     	    
     	});

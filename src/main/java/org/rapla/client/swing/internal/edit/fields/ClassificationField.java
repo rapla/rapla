@@ -322,7 +322,7 @@ public  class  ClassificationField<T extends Classifiable> extends AbstractEditF
 								// yes: adopt Classification
 								newClassifications.add( classification );
 							} else {
-								// no: create new Classification
+								// no: createInfoDialog new Classification
 								newClassifications.add( dynamicType.newClassificationFrom(classification));
 							}
 						}

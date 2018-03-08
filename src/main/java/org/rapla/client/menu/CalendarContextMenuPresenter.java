@@ -451,7 +451,7 @@ public class CalendarContextMenuPresenter extends RaplaComponent implements Menu
         //                MenuContext menuContext = new MenuContext(getContext(), appointment);
         //                menuContext.put(SELECTED_DATE, start);
         //
-        //                RaplaMenuItem[] items = objectMenuFact.create(menuContext, appointment);
+        //                RaplaMenuItem[] items = objectMenuFact.createInfoDialog(menuContext, appointment);
         //                for (int i = 0; i < items.length; i++)
         //                {
         //                    RaplaMenuItem item = items[i];

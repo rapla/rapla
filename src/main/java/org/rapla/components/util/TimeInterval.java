@@ -14,7 +14,7 @@ public final class TimeInterval implements Serializable
 
 	TimeInterval()
 	{
-		this( new Date(), new Date());
+		this( null, null);
 	}
 	public TimeInterval(Date start, Date end) {
 		this.start = start;

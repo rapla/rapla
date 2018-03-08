@@ -212,7 +212,7 @@ public class ReservationControllerImpl implements ReservationController {
     protected Promise<Integer> showDialog(String action, PopupContext popupContext, List<String> optionList, List<String> iconList, String title, String content,
                                           String dialogIcon)
     {
-        DialogInterface dialog = dialogUI.create(
+        DialogInterface dialog = dialogUI.createTextDialog(
                 popupContext
                 , title
                 ,content
@@ -246,7 +246,7 @@ public class ReservationControllerImpl implements ReservationController {
 
     private int showDialog(String action, PopupContext context, List<String> optionList, List<Icon> iconList, String title, String content, ImageIcon dialogIcon) throws RaplaException
     {
-        DialogUI dialog = DialogUI.create(
+        DialogUI dialog = DialogUI.createInfoDialog(
                 getContext()
                 ,context
                 ,true

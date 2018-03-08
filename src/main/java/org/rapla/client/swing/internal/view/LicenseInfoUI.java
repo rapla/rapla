@@ -73,7 +73,7 @@ final public class LicenseInfoUI
     public void hyperlinkUpdate(HyperlinkEvent e) {
         if (e.getEventType() == HyperlinkEvent.EventType.ACTIVATED) {
             String link = e.getDescription();
-            viewLicense(getComponent(), false, link);
+            viewLicense(getComponent(),  link);
         }
     }
 
@@ -81,10 +81,11 @@ final public class LicenseInfoUI
         return scrollPane;
     }
 
-    public void viewLicense(Component owner,boolean modal,String link) {
+    public void viewLicense(Component owner,String link) {
+        final SwingPopupContext popupContext = new SwingPopupContext(owner, null);
         try {
             LicenseUI license =  licenseUiProvider.get();
-            DialogInterface dialog = dialogUiFactory.create(new SwingPopupContext(owner, null),modal,license.getComponent(), new String[] {i18n.getString("ok")} );
+            DialogInterface dialog = dialogUiFactory.createContextDialog(popupContext, license.getComponent(), new String[] {i18n.getString("ok")} );
             dialog.setTitle(systemInfoI18n.getString("licensedialog.title"));
             dialog.setSize(600,400);
             if (link.equals("warranty")) {
@@ -97,7 +98,7 @@ final public class LicenseInfoUI
                 license.showTop();
             }
         } catch (Exception ex) {
-            dialogUiFactory.showException(ex,new SwingPopupContext(owner, null));
+            dialogUiFactory.showException(ex, popupContext);
         }
     }
 

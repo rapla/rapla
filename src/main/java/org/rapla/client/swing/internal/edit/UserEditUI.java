@@ -43,10 +43,7 @@ import org.rapla.inject.Extension;
 import org.rapla.logger.Logger;
 
 import javax.inject.Inject;
-import javax.swing.JComponent;
-import javax.swing.JPanel;
-import javax.swing.JToolBar;
-import javax.swing.JTree;
+import javax.swing.*;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
 import javax.swing.tree.TreeNode;
@@ -293,10 +290,10 @@ public class UserEditUI  extends AbstractEditUI<User> {
             treeSelection.setPreferredSize(new java.awt.Dimension(400, 260));
             
            
-            dialog = dialogUiFactory.create(
+            dialog = dialogUiFactory.createContextDialog(
                     new SwingPopupContext(getComponent(), null)
-                    ,true
-                    ,treeSelection
+                    ,
+                    treeSelection
                     ,new String[] { getString("apply"),getString("cancel")});
             final JTree tree = treeSelection.getTree();
             tree.addMouseListener(new MouseAdapter() {
@@ -318,16 +315,18 @@ public class UserEditUI  extends AbstractEditUI<User> {
                 }
             });
             dialog.setTitle(getName());
-            dialog.start(true);
-            if (dialog.getSelectedIndex() == 0) {
-                Iterator<?> it = treeSelection.getSelectedElements().iterator();
-                while (it.hasNext()) {
-                    user.setPerson((Allocatable) it.next());
-                    nameField.setValue( user.getName());
-                    emailField.setValue( user.getEmail());
-                    updateButton();
+            dialog.start(true).execOn(SwingUtilities::invokeLater).thenAccept( index->
+            {
+                if (index == 0) {
+                    Iterator<?> it = treeSelection.getSelectedElements().iterator();
+                    while (it.hasNext()) {
+                        user.setPerson((Allocatable) it.next());
+                        nameField.setValue(user.getName());
+                        emailField.setValue(user.getEmail());
+                        updateButton();
+                    }
                 }
-            }
+            });
         }
 
     }

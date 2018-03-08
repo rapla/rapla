@@ -10,11 +10,11 @@ import org.rapla.storage.dbrm.WrongRaplaVersionException;
 public interface  DialogUiFactoryInterface
 {
 
-    DialogInterface create(PopupContext popupContext, boolean modal, Object content, String[] options);
+    DialogInterface createContextDialog(PopupContext popupContext, Object content, String[] options);
 
-    DialogInterface create(PopupContext popupContext, String title, String text, String[] options);
+    DialogInterface createTextDialog(PopupContext popupContext, String title, String text, String[] options);
 
-    DialogInterface create(PopupContext popupContext, String title, String text);
+    DialogInterface createInfoDialog(PopupContext popupContext, String title, String text);
 
     /** Creates a new ErrorDialog with the specified owner and displays the exception
     @param ex the exception that should be displayed.

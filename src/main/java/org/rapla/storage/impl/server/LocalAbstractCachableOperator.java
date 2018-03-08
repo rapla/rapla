@@ -2564,7 +2564,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
         DynamicTypeDependant dependant = (DynamicTypeDependant) evt.findEntity(entity);
         if (dependant == null)
         {
-            // no, then create a clone of the classfiable object and add to list
+            // no, then createInfoDialog a clone of the classfiable object and add to list
 
             Class<Entity> entityType = entity.getTypeClass();
             Entity persistant = store.tryResolve(entity.getId(), entityType);
@@ -3035,21 +3035,21 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
                 }
             }
         }
-        checkBelongsTo(entity, 0);
-        checkPackages(entity, 0);
+        checkBelongsTo(entity, entity,0);
+        checkPackages(entity, entity,0);
     }
 
-    private void checkPackages(final Object entity, final int depth) throws RaplaException
+    private void checkPackages(final Object originalEntity,final Object currentEntity, final int depth) throws RaplaException
     {
         if (depth > 20)
         {
-            final String name = getName(entity);
+            final String name = getName(currentEntity);
             final String format = i18n.format("error.packageCycle", name);
             throw new RaplaException(format);
         }
-        if (entity instanceof Classifiable)
+        if (currentEntity instanceof Classifiable)
         {
-            final Classifiable classifiable = (Classifiable) entity;
+            final Classifiable classifiable = (Classifiable) currentEntity;
             final Classification classification = classifiable.getClassification();
             if (classification != null)
             {
@@ -3064,15 +3064,15 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
                         {
                             for (Object target : targets)
                             {
-                                if (target.equals(entity))
+                                if (target.equals(originalEntity))
                                 {
-                                    final String name = getName(entity);
+                                    final String name = getName(originalEntity);
                                     final String format = getI18n().format("error.packageCantReferToSelf", name);
                                     throw new RaplaException(format);
                                 }
                                 else
                                 {
-                                    checkPackages(target, depth + 1);
+                                    checkPackages(originalEntity,target, depth + 1);
                                 }
                             }
                         }
@@ -3082,18 +3082,18 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
         }
     }
 
-    private void checkBelongsTo(final Object entity, final int depth) throws RaplaException
+    private void checkBelongsTo(final Object originalEntity,final Object currentEntity, final int depth) throws RaplaException
     {
         if (depth > 20)
         {
-            final String name = getName(entity);
+            final String name = getName(originalEntity);
             final String format = i18n.format("error.belongsToCycle", name);
             throw new RaplaException(format);
         }
 
-        if (entity instanceof Classifiable)
+        if (currentEntity instanceof Classifiable)
         {
-            final Classifiable classifiable = (Classifiable) entity;
+            final Classifiable classifiable = (Classifiable) currentEntity;
             final Classification classification = classifiable.getClassification();
             if (classification != null)
             {
@@ -3106,15 +3106,15 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
                         final Object target = classification.getValueForAttribute(att);
                         if (target != null)
                         {
-                            if (target.equals(entity))
+                            if (target.equals(originalEntity))
                             {
-                                final String name = getName(entity);
+                                final String name = getName(originalEntity);
                                 final String format = getI18n().format("error.belongsToCantReferToSelf", name);
                                 throw new RaplaException(format);
                             }
                             else
                             {
-                                checkBelongsTo(target, depth + 1);
+                                checkBelongsTo(originalEntity,target, depth + 1);
                             }
                         }
                     }

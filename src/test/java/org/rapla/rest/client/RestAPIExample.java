@@ -90,7 +90,7 @@ public class RestAPIExample {
                 eventType =casted.get("key").getAsString();
             }
         }
-        //  we create a new resource
+        //  we createInfoDialog a new resource
         String resourceId = null;
         String resourceName;
         {
@@ -137,7 +137,7 @@ public class RestAPIExample {
             }
         }
 
-        // we create a new event for the resource
+        // we createInfoDialog a new event for the resource
         String eventId = null;
         String eventName = null;
         {

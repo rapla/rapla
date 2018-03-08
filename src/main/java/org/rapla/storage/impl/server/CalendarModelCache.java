@@ -69,7 +69,7 @@ public class CalendarModelCache
         return option != null && option.equals("true");
     }
 
-    /** this method does not update the appointments only create new or remove existing appointments.
+    /** this method does not update the appointments only createInfoDialog new or remove existing appointments.
      New exchange appointments are added if the rapla appointment is in an exported calendar view but not in exchange.
      Exchange appointments are removed if the rapla appointment is not in an exported calendar view anymore.
      */

@@ -39,11 +39,7 @@ import org.rapla.inject.Extension;
 import org.rapla.logger.Logger;
 
 import javax.inject.Inject;
-import javax.swing.AbstractAction;
-import javax.swing.JComponent;
-import javax.swing.JLabel;
-import javax.swing.JPanel;
-import javax.swing.JTextField;
+import javax.swing.*;
 import java.awt.BorderLayout;
 import java.awt.GridLayout;
 import java.awt.event.ActionEvent;
@@ -162,6 +158,8 @@ public class UserOption extends RaplaGUIComponent implements UserOptionPanel
 
         public void actionPerformed(ActionEvent arg0)
         {
+            final PopupContext popupContext = new SwingPopupContext(getComponent(), null);
+
             try
             {
                 JPanel test = new JPanel();
@@ -225,21 +223,22 @@ public class UserOption extends RaplaGUIComponent implements UserOptionPanel
                     layout.setRows(1);
                 }
                 DialogInterface dlg = dialogUiFactory
-                        .create(new SwingPopupContext(getComponent(), null), true, test, new String[] { getString("save"), getString("abort") });
-                dlg.start(true);
-                if (dlg.getSelectedIndex() == 0)
-                {
-                    String title = inputTitle.getText();
-                    String firstname = inputFirstname.getText();
-                    String surname = inputSurname.getText();
-                    getClientFacade().changeName(title, firstname, surname);
-
-                    nameLabel.setText(user.getName());
-                }
+                        .createContextDialog(popupContext, test, new String[] { getString("save"), getString("abort") });
+                dlg.start(true).execOn(SwingUtilities::invokeLater).thenAccept( index->
+                        {
+                            if (index == 0) {
+                                String title = inputTitle.getText();
+                                String firstname = inputFirstname.getText();
+                                String surname = inputSurname.getText();
+                                getClientFacade().changeName(title, firstname, surname);
+                                nameLabel.setText(user.getName());
+                            }
+                        }
+                    ).exceptionally(ex->dialogUiFactory.showException(ex, popupContext));
             }
             catch (RaplaException ex)
             {
-                dialogUiFactory.showException(ex, null);
+                dialogUiFactory.showException(ex, popupContext);
             }
         }
     }
@@ -276,14 +275,14 @@ public class UserOption extends RaplaGUIComponent implements UserOptionPanel
                 content.add(validate);
                 addCopyPaste(emailField, getI18n(), getRaplaLocale(), ioInterface, getLogger());
                 addCopyPaste(codeField, getI18n(), getRaplaLocale(), ioInterface, getLogger());
-                dlg = (DialogUI) dialogUiFactory.create(popupContext, true, content, new String[] { getString("save"), getString("abort") });
+                dlg = (DialogUI) dialogUiFactory.createContextDialog(popupContext, content, new String[] { getString("save"), getString("abort") });
                 validate.setAction(new EmailChangeActionA(dlg));
                 validate.setEnabled(false);
                 dlg.setDefault(0);
                 dlg.setTitle("Email");
                 dlg.getButton(0).setAction(new EmailChangeActionC(getUser(), dlg));
                 dlg.getButton(0).setEnabled(false);
-                dlg.start(true);
+                dlg.start(true).exceptionally( ex->dialogUiFactory.showException( ex,popupContext));
             }
             catch (RaplaException ex)
             {

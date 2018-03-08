@@ -58,7 +58,7 @@ import java.util.TreeSet;
 
 /******* USAGE: ************
  * ReadOnly calendarview view.
- * You will need the autoexport plugin to create a calendarview-view.
+ * You will need the autoexport plugin to createInfoDialog a calendarview-view.
  *
  * Call:
  * rapla/calendar?user=<username>&file=<export_name>

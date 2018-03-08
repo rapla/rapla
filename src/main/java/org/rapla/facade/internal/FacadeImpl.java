@@ -583,7 +583,7 @@ public class FacadeImpl implements RaplaFacade {
 	{
 		if (!getPermissionController().canCreate(classification.getType(), user))
 		{
-			throw new RaplaException("User not allowed to create events");
+			throw new RaplaException("User not allowed to createInfoDialog events");
 		}
 		Date now = operator.getCurrentTimestamp();
 		ReservationImpl reservation = new ReservationImpl(now ,now );
@@ -777,7 +777,7 @@ public class FacadeImpl implements RaplaFacade {
 				final Collection<Category> adminGroups = PermissionController.getGroupsToAdmin(workingUser);
 				if ( adminGroups.size() == 0)
 				{
-					throw new RaplaSecurityException("User " + workingUser +" can't create a new User " );
+					throw new RaplaSecurityException("User " + workingUser +" can't createInfoDialog a new User " );
 				}
 				else {
 					// add first admin group to user
@@ -793,7 +793,7 @@ public class FacadeImpl implements RaplaFacade {
 	    User workingUser = getWorkingUser();
         if ( workingUser != null && !workingUser.isAdmin() && !user.equals(workingUser))
 	    {
-	        throw new RaplaException("Can't create a calendar model for a different user.");
+	        throw new RaplaException("Can't createInfoDialog a calendar model for a different user.");
 	    }
 	    return new CalendarModelImpl( locale, user, operator, logger);
     }
@@ -963,7 +963,7 @@ public class FacadeImpl implements RaplaFacade {
 		Optional<Date> firstStart = toCopy.stream().sorted(new ReservationStartComparator(i18n.getLocale())).findFirst().map( ReservationStartComparator::getStart);
 		CopyFunction copyFunction = (reservation,reservationIds,appointmentIds)  -> copy(reservation, beginn, firstStart.get(), keepTime, reservationIds, appointmentIds, user);
 		return copyReservations(toCopy, copyFunction);
-		// create ids for reservation and appointments first
+		// createInfoDialog ids for reservation and appointments first
 	}
 
 	private Promise<Collection<Reservation>> copyReservations(Collection<Reservation> toCopy, CopyFunction copyFunction) {

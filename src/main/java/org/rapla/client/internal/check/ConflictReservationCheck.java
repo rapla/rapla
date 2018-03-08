@@ -88,7 +88,7 @@ public class ConflictReservationCheck implements EventCheck
             }
             Object content = conflictDialogView.getConflictPanel(conflictList);
             DialogInterface dialog = dialogUiFactory
-                    .create(sourceComponent, false, content, new String[] { i18n.getString("continue"), i18n.getString("back") });
+                    .createContextDialog(sourceComponent, content, new String[] { i18n.getString("continue"), i18n.getString("back") });
             dialog.setDefault(1);
             dialog.setIcon("icon.big_folder_conflicts");
             dialog.getAction(0).setIcon("icon.save");

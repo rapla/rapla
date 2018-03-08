@@ -18,7 +18,7 @@ public class ConflictDialogViewGwt implements ConflictDialogView {
     }
 
     public Object getConflictPanel(Collection<Conflict> conflicts)  {
-        // FIXME create conflictList
+        // FIXME createInfoDialog conflictList
         return null;
     }
 }

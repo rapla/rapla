@@ -91,7 +91,7 @@ public class TestUpdateDataManager
 
     private void testInsertChangeAndDelete(final int countInsert, final int countDelete) throws RaplaException
     {
-        // create second user first
+        // createInfoDialog second user first
         final User readUser = facade.getUser("monty");
         final User writeUser = facade.getUser("homer");
         // do an init so we don't get the resources and reservations from the test data
@@ -102,7 +102,7 @@ public class TestUpdateDataManager
         final int storedReservations;
         final int maxNumberGeneratedItems = countInsert;
         final int storedAllocatables;
-        {// create some Data
+        {// createInfoDialog some Data
             List<Entity> entitiesToStore = new ArrayList<Entity>();
             Allocatable[] allocatables = facade.getAllocatables();
             startAllocatables = allocatables.length;
@@ -285,7 +285,7 @@ public class TestUpdateDataManager
     @Test
     public void testInsertDeleteInOne() throws Exception
     {
-        // create second user first
+        // createInfoDialog second user first
         Date lastSynced = new Date();
         final User readUser = facade.getUser("monty");
         //facade.logout();

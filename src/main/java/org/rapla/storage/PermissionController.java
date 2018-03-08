@@ -601,7 +601,7 @@ public class PermissionController
         if (type == Allocatable.class ||  type == Reservation.class)
         {
             Annotatable annotatable = (Annotatable) entity;
-            String templateId = annotatable.getAnnotation(RaplaObjectAnnotations.KEY_TEMPLATE, null);
+            String templateId = annotatable.getAnnotation(RaplaObjectAnnotations.KEY_TEMPLATE);
             if (templateId != null)
             {
                 Allocatable template = resolver.tryResolve(templateId, Allocatable.class);
@@ -619,7 +619,7 @@ public class PermissionController
 
     public boolean canReadTemplate(Annotatable entity, User user)
     {
-        String templateId = entity.getAnnotation(RaplaObjectAnnotations.KEY_TEMPLATE, null);
+        String templateId = entity.getAnnotation(RaplaObjectAnnotations.KEY_TEMPLATE);
         EntityResolver resolver = this.operator;
         if (templateId != null)
         {

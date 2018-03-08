@@ -405,12 +405,16 @@ public class CalendarPrintDialog extends DialogUI
                 }
 
                 if (evt.getSource()==savebutton) {
-                	boolean success = exportServiceList.export(printable, m_format, scrollPane);
                     Component topLevel = getParent();
-					if(success )
-					{
-						confirmPrint(topLevel).thenAccept(( confirmed) -> {if (confirmed) close();} );
-					}
+                    exportServiceList.export(printable, m_format, scrollPane).
+                            thenAccept(success->
+                            {
+                                if (success) {
+                                    confirmPrint(topLevel).thenAccept((confirmed) -> {
+                                        if (confirmed) close();
+                                    });
+                                }
+                            }).exceptionally( ex->showException(ex));
                 }
 
             } catch (Exception ex) {
@@ -420,7 +424,7 @@ public class CalendarPrintDialog extends DialogUI
     }
     
     protected Promise<Boolean> confirmPrint(Component topLevel) {
-        DialogInterface dlg = dialogUiFactory.create(
+        DialogInterface dlg = dialogUiFactory.createTextDialog(
                         new SwingPopupContext(topLevel, null)
                         , i18n.getString("print")
                         ,i18n.getString("file_saved")
@@ -431,7 +435,7 @@ public class CalendarPrintDialog extends DialogUI
         return dlg.start(true).thenApply( index -> index ==0);
     }
 
-    public void showException(Exception ex) {
+    public void showException(Throwable ex) {
         ErrorDialog dialog;
         dialog = errorDialogProvider.get();
         dialog.showExceptionDialog(ex,this);

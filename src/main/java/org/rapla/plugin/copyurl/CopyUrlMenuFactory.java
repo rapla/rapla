@@ -136,7 +136,7 @@ public class CopyUrlMenuFactory extends RaplaGUIComponent implements ObjectMenuF
             return RaplaMenuItem.EMPTY_ARRAY;
         }
         final String url = link;
-        // create the menu entry
+        // createInfoDialog the menu entry
         final RaplaMenuItem setOwnerItem = new RaplaMenuItem("copylink");
         setOwnerItem.setText("Copy Link");
         setOwnerItem.addActionListener(new ActionListener()

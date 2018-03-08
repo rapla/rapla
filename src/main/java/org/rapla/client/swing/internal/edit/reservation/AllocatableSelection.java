@@ -1228,7 +1228,7 @@ public class AllocatableSelection extends RaplaGUIComponent implements Appointme
     private AllocationRendering calcConflictingAppointments(Allocatable allocatable)
     {
         AllocationRendering result = new AllocationRendering();
-        String annotation = allocatable.getAnnotation(ResourceAnnotations.KEY_CONFLICT_CREATION, null);
+        String annotation = allocatable.getAnnotation(ResourceAnnotations.KEY_CONFLICT_CREATION);
         boolean holdBackConflicts = annotation != null && annotation.equals(ResourceAnnotations.VALUE_CONFLICT_CREATION_IGNORE);
         for (int i = 0; i < appointments.length; i++)
         {

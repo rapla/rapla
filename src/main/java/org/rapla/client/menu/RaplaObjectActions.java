@@ -226,7 +226,7 @@ public class RaplaObjectActions extends RaplaComponent{
             else if (DynamicType.class == raplaType)
                 entity = m.newDynamicType( classificationType);
             else
-                throw new RaplaException("Can't create Entity for " + raplaType + "!");
+                throw new RaplaException("Can't createInfoDialog Entity for " + raplaType + "!");
             return new ResolvedPromise<>(entity);
         } catch (Exception ex)
         {

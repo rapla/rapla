@@ -128,7 +128,7 @@ public class ServerServiceImpl implements ServerServiceContainer
                 TimeZone timeZone = registry.getTimeZone(timezoneId);
                 if (timeZone == null)
                 {
-                    // FIXME create VTimezones for GMT+1-12 and GMT-1-12 
+                    // FIXME createInfoDialog VTimezones for GMT+1-12 and GMT-1-12
                     // if ( timezoneId.startsWith("GMT") )
                     String fallback = "Etc/GMT";
                     logger.error("Timezone " + timezoneId + " not found in ical registry. " + " Using " + fallback);

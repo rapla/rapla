@@ -74,7 +74,7 @@ public class UserTest extends AbstractTestWithServer {
         final RaplaFacade raplaFacade = testFacade.getRaplaFacade();
         User newUser = raplaFacade.getUser("test");
         raplaFacade.remove( newUser );
-        // first create a new resource and set the permissions
+        // first createInfoDialog a new resource and set the permissions
     }
 
 

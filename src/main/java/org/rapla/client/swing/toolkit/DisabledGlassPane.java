@@ -23,7 +23,7 @@ import java.awt.event.MouseMotionAdapter;
  *  events as well paint the glass pane to give the frame a "disabled" look.
  *
  *  The background color of the glass pane should use a color with an
- *  alpha value to create the disabled look.
+ *  alpha value to createInfoDialog the disabled look.
  */
 public class DisabledGlassPane extends JComponent
     implements KeyListener

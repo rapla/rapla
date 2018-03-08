@@ -18,13 +18,11 @@ import org.rapla.client.dialog.DialogInterface;
 import org.rapla.client.dialog.DialogUiFactoryInterface;
 import org.rapla.client.swing.RaplaGUIComponent;
 import org.rapla.client.swing.images.RaplaImages;
-import org.rapla.client.swing.internal.SwingPopupContext;
 import org.rapla.client.swing.internal.edit.fields.TextField.TextFieldFactory;
 import org.rapla.client.swing.toolkit.RaplaButton;
 import org.rapla.components.iolayer.IOInterface;
 import org.rapla.entities.MultiLanguageName;
 import org.rapla.facade.client.ClientFacade;
-import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.logger.Logger;
 
@@ -177,7 +175,7 @@ public class MultiLanguageField extends AbstractEditField implements ChangeListe
         public void show()
         {
             PopupContext popupContext = dialogUiFactory.createPopupContext( ()->owner);
-            DialogInterface dlg = dialogUiFactory.create(popupContext, true, comp, new String[] { i18n.getString("ok"), i18n.getString("cancel") });
+            DialogInterface dlg = dialogUiFactory.createContextDialog(popupContext, comp, new String[] { i18n.getString("ok"), i18n.getString("cancel") });
             dlg.setTitle(i18n.getString("translation"));
             // Workaround for Bug ID  4480264 on developer.java.sun.com
             if (table.getRowCount() > 0)
@@ -185,32 +183,28 @@ public class MultiLanguageField extends AbstractEditField implements ChangeListe
                 table.editCellAt(0, 0);
                 table.editCellAt(0, 1);
             }
-            dlg.start(true);
-            if (dlg.getSelectedIndex() == 0)
+            dlg.start(true).thenAccept( index->
             {
-                for (int i = 0; i < availableLanguages.length; i++)
-                {
-                    String value = (String) table.getValueAt(i, 1);
-                    if (value != null)
-                        editorValue.setName(availableLanguages[i], value);
-                }
-                if (table.isEditing())
-                {
-                    if (table.getEditingColumn() == 1)
-                    {
-                        JTextField textField = (JTextField) table.getEditorComponent();
-                        RaplaGUIComponent.addCopyPaste(textField, i18n, raplaLocale, ioInterface, logger);
-                        int row = table.getEditingRow();
-                        String value = textField.getText();
-                        editorValue.setName(availableLanguages[row], value);
+                if (index == 0) {
+                    for (int i = 0; i < availableLanguages.length; i++) {
+                        String value = (String) table.getValueAt(i, 1);
+                        if (value != null)
+                            editorValue.setName(availableLanguages[i], value);
                     }
+                    if (table.isEditing()) {
+                        if (table.getEditingColumn() == 1) {
+                            JTextField textField = (JTextField) table.getEditorComponent();
+                            RaplaGUIComponent.addCopyPaste(textField, i18n, raplaLocale, ioInterface, logger);
+                            int row = table.getEditingRow();
+                            String value = textField.getText();
+                            editorValue.setName(availableLanguages[row], value);
+                        }
+                    }
+                    fireEditingStopped();
+                } else {
+                    fireEditingCanceled();
                 }
-                fireEditingStopped();
-            }
-            else
-            {
-                fireEditingCanceled();
-            }
+            }).exceptionally( ex->dialogUiFactory.showException(ex,popupContext));
         }
     }
 

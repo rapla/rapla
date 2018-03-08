@@ -232,7 +232,7 @@ public class MinPQ<Key> implements Iterable<Key> {
     public Iterator<Key> iterator() { return new HeapIterator(); }
 
     private class HeapIterator implements Iterator<Key> {
-        // create a new pq
+        // createInfoDialog a new pq
         private MinPQ<Key> copy;
 
         // add all items to copyReservations of heap

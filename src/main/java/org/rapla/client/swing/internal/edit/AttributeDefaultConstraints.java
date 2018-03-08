@@ -1,6 +1,7 @@
 package org.rapla.client.swing.internal.edit;
 
 import org.rapla.RaplaResources;
+import org.rapla.client.PopupContext;
 import org.rapla.client.dialog.DialogInterface;
 import org.rapla.client.dialog.DialogUiFactoryInterface;
 import org.rapla.client.extensionpoints.AnnotationEditAttributeExtension;
@@ -490,12 +491,12 @@ public class AttributeDefaultConstraints extends AbstractEditField implements Ac
 
     private void showAnnotationDialog() throws RaplaException
     {
-        boolean modal = false;
         if (dialog != null)
         {
             dialog.close();
         }
-        dialog = dialogUiFactory.create(new SwingPopupContext(getComponent(), null), modal, annotationEdit.getComponent(), new String[] { i18n.getString("close") });
+        final PopupContext popupContext = dialogUiFactory.createPopupContext(AttributeDefaultConstraints.this);
+        dialog = dialogUiFactory.createContextDialog(popupContext, annotationEdit.getComponent(), new String[] { i18n.getString("close") });
 
         dialog.getAction(0).setRunnable(new Runnable()
         {

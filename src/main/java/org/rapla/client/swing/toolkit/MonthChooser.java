@@ -49,7 +49,7 @@ public final class MonthChooser extends JComboBox
 
     public void selectMonth( int month )
     {
-        setSelectedIndex( month );
+        setSelectedIndex( month -1);
     }
 
     /** returns the selected day or -1 if no day is selected.
@@ -60,7 +60,7 @@ public final class MonthChooser extends JComboBox
         if ( getSelectedIndex() == -1 )
             return -1;
         else
-            return getSelectedIndex();
+            return getSelectedIndex() + 1;
     }
 
 }

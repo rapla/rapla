@@ -98,7 +98,7 @@ public class UserAction extends RaplaAction {
                 }
             } else if (type == NEW) {
                 User newUser = getFacade().newUser();
-                // create new user dialog and show password dialog if user is created successfully
+                // createInfoDialog new user dialog and show password dialog if user is created successfully
                 final String title = getString("user");
                 editController.edit( newUser, /*title,*/popupContext);//,new EditController.EditCallback<User>()
 /*

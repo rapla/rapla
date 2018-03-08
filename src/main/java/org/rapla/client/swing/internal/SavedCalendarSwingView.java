@@ -11,7 +11,6 @@ import org.rapla.client.event.ApplicationEvent;
 import org.rapla.client.event.ApplicationEventBus;
 import org.rapla.client.extensionpoints.PublishExtensionFactory;
 import org.rapla.client.internal.SavedCalendarInterface;
-import org.rapla.client.dialog.InfoFactory;
 import org.rapla.client.swing.RaplaAction;
 import org.rapla.client.swing.RaplaGUIComponent;
 import org.rapla.client.swing.images.RaplaImages;
@@ -491,6 +490,8 @@ public class SavedCalendarSwingView extends RaplaGUIComponent implements SavedCa
         	list.setSelectedValue( selectedItem,true);
         }
         textField.setText( selectedFile.toString());
+        final SwingPopupContext popupContext = new SwingPopupContext(parentComponent, null);
+
         list.addListSelectionListener( new ListSelectionListener() {
 
             public void valueChanged( ListSelectionEvent e )
@@ -512,16 +513,14 @@ public class SavedCalendarSwingView extends RaplaGUIComponent implements SavedCa
                         if( entry != null)
                         	saveSelectedDateField.setSelected(entry.equals("true"));
                     } catch (RaplaException ex) {
-                        dialogUiFactory.showException( ex, dialogUiFactory.createPopupContext( null));
+                        dialogUiFactory.showException( ex, popupContext);
                     }
                 }
-              
             }
-
         });
-        
-        final DialogInterface dlg = dialogUiFactory.create(
-                                        new SwingPopupContext(parentComponent, null),false,panel,
+
+        final DialogInterface dlg = dialogUiFactory.createContextDialog(
+                popupContext, panel,
                                        new String[] {
                                            getString("save")
                                            ,getString("cancel")
@@ -536,7 +535,7 @@ public class SavedCalendarSwingView extends RaplaGUIComponent implements SavedCa
                 String filename = textField.getText().trim();
                 if (filename.length() == 0)
                 {
-                    dialogUiFactory.showWarning(getString("error.no_name"), new SwingPopupContext(parentComponent, null));
+                    dialogUiFactory.showWarning(getString("error.no_name"), popupContext);
                     return;
                 }
                 String saveSelectedDate = saveSelectedDateField.isSelected() ? "true" : "false";

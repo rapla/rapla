@@ -189,16 +189,17 @@ public abstract class AbstractRaplaSwingCalendar extends RaplaGUIComponent
 
     public Observable triggerUpdate()
     {
-        Promise<Void> result = initializeBuilder().thenAccept((builder) -> SwingUtilities.invokeLater(() ->
-        {
-            try {
-                update(builder);
-            } catch (RaplaException e) {
-                PopupContext popupContext = new SwingPopupContext(view.getComponent(), null);
-                dialogUiFactory.showException(e, popupContext);
-            }
-        }));
+        Promise<Void> result = initializeBuilder()
+                .execOn(SwingUtilities::invokeLater)
+                .thenAccept(this::update)
+                .exceptionally(this::handleException);
         return getFacade().getScheduler().toObservable( result);
+    }
+
+    public void handleException(Throwable ex)
+    {
+        PopupContext popupContext = dialogUiFactory.createPopupContext(()->view.getComponent());
+        dialogUiFactory.showException(ex, popupContext);
     }
 
     public void update(RaplaBuilder builder) throws RaplaException

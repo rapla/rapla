@@ -308,7 +308,7 @@ public class ClassificationEditUI extends AbstractEditUI<Classification> {
 		    fieldKeyMap.clear();
 			// read out attributes for this DynmicType
 			Attribute[] attributes = types.iterator().next().getAttributes();
-			// create fields for attributes
+			// createInfoDialog fields for attributes
 			List<SetGetField<?>> fields= new ArrayList<SetGetField<?>>();
 			for (Attribute attribute:attributes) {
 			    boolean isVisible = isVisible(attribute);

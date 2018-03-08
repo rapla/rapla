@@ -182,8 +182,6 @@ public class ExchangeConnectorUserOptions implements UserOptionPanel
             @Override
             public void actionPerformed(ActionEvent e)
             {
-
-                boolean modal = true;
                 String[] options = new String[] { getConnectButtonString(), i18n.getString("abort") };
                 final SyncDialog content = new SyncDialog();
                 if (connected)
@@ -191,40 +189,33 @@ public class ExchangeConnectorUserOptions implements UserOptionPanel
                     String text = usernameLabel.getText();
                     content.init(text);
                 }
-                try
+                final DialogInterface dialog = dialogUiFactory.createContextDialog(popupContext, content, options);
+                dialog.setTitle("Exchange Login");
+                dialog.getAction(0).setRunnable(new Runnable()
                 {
-                    final DialogInterface dialog = dialogUiFactory.create(popupContext, modal, content, options);
-                    dialog.setTitle("Exchange Login");
-                    dialog.getAction(0).setRunnable(new Runnable()
+
+                    private static final long serialVersionUID = 1L;
+
+                    @Override
+                    public void run()
                     {
-
-                        private static final long serialVersionUID = 1L;
-
-                        @Override
-                        public void run()
+                        String username = content.getUsername();
+                        String password = content.getPassword();
+                        try
                         {
-                            String username = content.getUsername();
-                            String password = content.getPassword();
-                            try
-                            {
-                                service.changeUser(username, password);
-                            }
-                            catch (RaplaException ex)
-                            {
-                                dialogUiFactory.showException(ex, popupContext);
-                                return;
-                            }
-                            dialog.close();
+                            service.changeUser(username, password);
                         }
-                    });
-                    dialog.start(true);
-                    updateComponentState();
-                }
-                catch (RaplaException ex)
-                {
-                    dialogUiFactory.showException(ex, popupContext);
-                    logger.error("The operation was not successful!", ex);
-                }
+                        catch (RaplaException ex)
+                        {
+                            dialogUiFactory.showException(ex, popupContext);
+                            return;
+                        }
+                        dialog.close();
+                    }
+                });
+                dialog.start(true).thenRun( ()->updateComponentState()).exceptionally((ex)
+                ->dialogUiFactory.showException(ex, popupContext)
+                );
             }
 
         });

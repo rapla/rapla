@@ -95,7 +95,7 @@ public class UndoTests extends GUITestCase {
 		}, buttonNr);
        
         //need to use the last event, because if you change only one appointment within the repeating
-        //it will create a new appointment and add it to the end of the array
+        //it will createInfoDialog a new appointment and add it to the end of the array
         //Then comparing the starttimes of the nonPersistantEvent-Appointment and the PersistantEvent-Appointment
 		{
 			Reservation persistant = facade.getRaplaFacade().getPersistant( event );
@@ -147,7 +147,7 @@ public class UndoTests extends GUITestCase {
 		}, buttonNr);
         
         //need to use the last event, because if you change only one appointment within the repeating
-        //it will create a new appointment and add it to the end of the array.
+        //it will createInfoDialog a new appointment and add it to the end of the array.
         //Then comparing the starttimes of the nonPersistantEvent-Appointment and the PersistantEvent-Appointment
 		{
 			Reservation persistant = facade.getRaplaFacade().getPersistant( event );

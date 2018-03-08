@@ -89,6 +89,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeSet;
+import java.util.stream.Stream;
 
 @Singleton
 @DefaultImplementation(of = TreeFactory.class, context = InjectionContext.swing)
@@ -190,18 +191,18 @@ public class TreeFactoryImpl extends RaplaGUIComponent implements TreeFactory
         }
         List<DynamicType> typeList = new ArrayList<DynamicType>(typeSet);
         Collections.sort(typeList, new DynamicTypeComperator());
-        Map<DynamicType, DefaultMutableTreeNode> nodeMap = new HashMap<DynamicType, DefaultMutableTreeNode>();
+        Map<DynamicType, NamedNode> nodeMap = new HashMap<>();
         for (DynamicType type : typeList)
         {
-            DefaultMutableTreeNode node = new NamedNode(type);
+            NamedNode node = newNamedNode(type);
             nodeMap.put(type, node);
         }
 
-        DefaultMutableTreeNode root = new DefaultMutableTreeNode("ROOT");
         Set<Classifiable> sortedClassifiable = new TreeSet<Classifiable>(comp);
         sortedClassifiable.addAll(Arrays.asList(classifiables));
         addClassifiables(nodeMap, sortedClassifiable, useCategorizations);
         int count = 0;
+        DefaultMutableTreeNode root = new DefaultMutableTreeNode("ROOT");
         for (DynamicType type : typeList)
         {
             DefaultMutableTreeNode typeNode = nodeMap.get(type);
@@ -210,18 +211,18 @@ public class TreeFactoryImpl extends RaplaGUIComponent implements TreeFactory
         return new DefaultTreeModel(root);
     }
 
-    private Map<Classifiable, Collection<NamedNode>> addClassifiables(Map<DynamicType, DefaultMutableTreeNode> nodeMap,
+    private Map<Classifiable, Collection<NamedNode>> addClassifiables(Map<DynamicType, NamedNode> nodeMap,
             Collection<? extends Classifiable> classifiables, boolean useCategorizations)
     {
-        Map<DynamicType, Map<Object, DefaultMutableTreeNode>> categorization = new LinkedHashMap<DynamicType, Map<Object, DefaultMutableTreeNode>>();
+        Map<DynamicType, Map<Object, NamedNode>> categorization = new LinkedHashMap<>();
         Map<Classifiable, Collection<NamedNode>> childMap = new HashMap<Classifiable, Collection<NamedNode>>();
         Map<Classifiable, Collection<Classifiable>> belongsToMap = new HashMap<Classifiable, Collection<Classifiable>>();
-        Map<Classifiable, NamedNode> objectToNamedNode = new HashMap<Classifiable, NamedNode>();
+        Map<Classifiable, NamedNode> objectToNamedNode = new HashMap<>();
         Map<DynamicType, Collection<NamedNode>> uncategorized = new LinkedHashMap<DynamicType, Collection<NamedNode>>();
         for (DynamicType type : nodeMap.keySet())
         {
-            categorization.put(type, new LinkedHashMap<Object, DefaultMutableTreeNode>());
-            uncategorized.put(type, new ArrayList<NamedNode>());
+            categorization.put(type, new LinkedHashMap<>());
+            uncategorized.put(type, new ArrayList<>());
         }
         for (Iterator<? extends Classifiable> it = classifiables.iterator(); it.hasNext(); )
         {
@@ -231,7 +232,7 @@ public class TreeFactoryImpl extends RaplaGUIComponent implements TreeFactory
             childMap.put(classifiable, childNodes);
             DynamicType type = classification.getType();
             Assert.notNull(type);
-            DefaultMutableTreeNode typeNode = nodeMap.get(type);
+            NamedNode typeNode = nodeMap.get(type);
             // type not found, could be because type is not visible
             if (typeNode == null)
             {
@@ -255,14 +256,14 @@ public class TreeFactoryImpl extends RaplaGUIComponent implements TreeFactory
                 Collection<Object> values = classification.getValues(categorizationAtt);
                 for (Object value : values)
                 {
-                    NamedNode childNode = new NamedNode((Named) classifiable);
+                    NamedNode childNode = newNamedNode(classifiable);
                     childNodes.add(childNode);
-                    Map<Object, DefaultMutableTreeNode> map = categorization.get(type);
-                    DefaultMutableTreeNode parentNode = map.get(value);
+                    Map<Object, NamedNode> map = categorization.get(type);
+                    NamedNode parentNode = map.get(value);
                     if (parentNode == null)
                     {
                         String name = getName(value);
-                        parentNode = new DefaultMutableTreeNode(new Categorization(name));
+                        parentNode = newNamedNode(new Categorization(name));
                         map.put(value, parentNode);
                     }
                     parentNode.add(childNode);
@@ -270,7 +271,7 @@ public class TreeFactoryImpl extends RaplaGUIComponent implements TreeFactory
             }
             else
             {
-                NamedNode childNode = new NamedNode((Named) classifiable);
+                NamedNode childNode = newNamedNode( classifiable);
                 objectToNamedNode.put(classifiable, childNode);
                 childNodes.add(childNode);
                 Assert.notNull(typeNode);
@@ -286,18 +287,18 @@ public class TreeFactoryImpl extends RaplaGUIComponent implements TreeFactory
         {
             DefaultMutableTreeNode parentNode = nodeMap.get(type);
             //Attribute categorizationAtt = type.getAttribute("categorization");
-            Map<Object, DefaultMutableTreeNode> map = categorization.get(type);
+            Map<Object, NamedNode> map = categorization.get(type);
             Collection<Object> sortedCats = getSortedCategorizations(map.keySet());
             for (Object cat : sortedCats)
             {
-                DefaultMutableTreeNode childNode = map.get(cat);
+                NamedNode childNode = map.get(cat);
                 parentNode.add(childNode);
             }
         }
 
         for (DynamicType type : uncategorized.keySet())
         {
-            DefaultMutableTreeNode parentNode = nodeMap.get(type);
+            NamedNode parentNode = nodeMap.get(type);
             for (NamedNode node : uncategorized.get(type))
             {
                 parentNode.add(node);
@@ -328,7 +329,7 @@ public class TreeFactoryImpl extends RaplaGUIComponent implements TreeFactory
                 if (target instanceof Classifiable)
                 {
                     final Classifiable classifiable = (Classifiable) target;
-                    NamedNode childNode = new NamedNode((Named) classifiable);
+                    NamedNode childNode = newNamedNode((Named) classifiable);
                     node.add(childNode);
                     final Classification childClassification = classifiable.getClassification();
                     fillPackages(childClassification, childNode);
@@ -344,7 +345,7 @@ public class TreeFactoryImpl extends RaplaGUIComponent implements TreeFactory
         {
             for (Classifiable belongsTo : parts)
             {
-                final NamedNode newChildNode = new NamedNode((Named) belongsTo);
+                final NamedNode newChildNode = newNamedNode(belongsTo);
                 node.add(newChildNode);
                 addBelongsToNodes(belongsToMap, belongsTo, newChildNode);
             }
@@ -387,7 +388,7 @@ public class TreeFactoryImpl extends RaplaGUIComponent implements TreeFactory
         return allCats;
     }
 
-    class Categorization implements Comparable<Categorization>
+    class Categorization implements Comparable<Categorization>,Named
     {
         String cat;
 
@@ -416,25 +417,15 @@ public class TreeFactoryImpl extends RaplaGUIComponent implements TreeFactory
             return cat.compareTo(o.cat);
         }
 
+        @Override
+        public String getName(Locale locale) {
+            return cat;
+        }
     }
 
     public TreeCellRenderer createConflictRenderer()
     {
         return new ConflictTreeCellRenderer();
-    }
-
-    private boolean isInFilter(ClassificationFilter[] filter, Classifiable classifiable)
-    {
-        if (filter == null)
-            return true;
-        for (int i = 0; i < filter.length; i++)
-        {
-            if (filter[i].matches(classifiable.getClassification()))
-            {
-                return true;
-            }
-        }
-        return false;
     }
 
     private boolean isInFilter(ClassificationFilter[] filter, DynamicType type)
@@ -475,7 +466,7 @@ public class TreeFactoryImpl extends RaplaGUIComponent implements TreeFactory
     public TypeNode createResourcesModel(ClassificationFilter[] filter) throws RaplaException
     {
         TypeNode treeNode = new TypeNode(Allocatable.class, CalendarModelImpl.ALLOCATABLES_ROOT, getString("resources"));
-        Map<DynamicType, DefaultMutableTreeNode> nodeMap = new HashMap<DynamicType, DefaultMutableTreeNode>();
+        Map<DynamicType, NamedNode> nodeMap = new HashMap<>();
 
         boolean resourcesFiltered = false;
 
@@ -493,7 +484,7 @@ public class TreeFactoryImpl extends RaplaGUIComponent implements TreeFactory
                 continue;
             }
 
-            NamedNode node = new NamedNode(type);
+            NamedNode node = newNamedNode(type);
             treeNode.add(node);
             nodeMap.put(type, node);
         }
@@ -513,7 +504,7 @@ public class TreeFactoryImpl extends RaplaGUIComponent implements TreeFactory
                 continue;
             }
 
-            NamedNode node = new NamedNode(type);
+            NamedNode node = newNamedNode(type);
             treeNode.add(node);
             nodeMap.put(type, node);
         }
@@ -522,26 +513,8 @@ public class TreeFactoryImpl extends RaplaGUIComponent implements TreeFactory
 
         // adds elements to typ folders
         Allocatable[] filtered = getQuery().getAllocatablesWithFilter(filter);
-        //        Collection<Allocatable> filtered = new ArrayList<Allocatable>();
-        //        for (Allocatable classifiable: allocatables) {
-        //            if (!isInFilter(filter, classifiable)) {
-        //                continue;
-        //            }
-        //            filtered.add( classifiable);
-        //        }
         Collection<Allocatable> sorted = sorted(filtered, new SortedClassifiableComparator(getLocale()));
         addClassifiables(nodeMap, sorted, true);
-
-        // CK we disable the feature that we dont show empty resource nodes. Resource nodes visibility can be regulated by types
-        //        for (Map.Entry<DynamicType, DefaultMutableTreeNode> entry: nodeMap.entrySet())
-        //        {
-        //            DynamicType key = entry.getKey();
-        //        	MutableTreeNode value = entry.getValue();
-        //        	if  (value.getChildCount() == 0 && (!isAdmin() && !isRegisterer(key)))
-        //        	{
-        //        		treeNode.remove( value);
-        //        	}
-        //        }
         return treeNode;
     }
 
@@ -568,7 +541,7 @@ public class TreeFactoryImpl extends RaplaGUIComponent implements TreeFactory
         return sortedList;
     }
 
-    public TypeNode createReservationsModel() throws RaplaException
+    public TypeNode createReservationTypeModel() throws RaplaException
     {
         TypeNode treeNode = new TypeNode(Reservation.class, getString("reservation_type"));
 
@@ -578,7 +551,7 @@ public class TreeFactoryImpl extends RaplaGUIComponent implements TreeFactory
         {
             DynamicType type = types[i];
 
-            NamedNode node = new NamedNode(type);
+            NamedNode node = newNamedNode(type);
             treeNode.add(node);
         }
         treeNode.setFiltered(false);
@@ -632,7 +605,7 @@ public class TreeFactoryImpl extends RaplaGUIComponent implements TreeFactory
         }
         if (isAdmin)
         {
-            TypeNode reservationsRoot = createReservationsModel();
+            TypeNode reservationsRoot = createReservationTypeModel();
             root.add(reservationsRoot);
             NamedNode categoryRoot = createRootNode(Collections.singleton(getQuery().getSuperCategory()), true);
             root.add(categoryRoot);
@@ -672,7 +645,7 @@ public class TreeFactoryImpl extends RaplaGUIComponent implements TreeFactory
             };
             for (final Allocatable period : sorted(periodList, comp))
             {
-                NamedNode node = new NamedNode(period);
+                NamedNode node = newNamedNode(period);
                 periodRoot.add(node);
             }
             root.add(periodRoot);
@@ -771,7 +744,6 @@ public class TreeFactoryImpl extends RaplaGUIComponent implements TreeFactory
             {
                 boolean inIterator = ((Conflict) obj).checkEnabled() == enabledState;
                 return inIterator;
-                //                return true;
             }
         };
     }
@@ -779,26 +751,18 @@ public class TreeFactoryImpl extends RaplaGUIComponent implements TreeFactory
     private int addConflicts(Iterable<Conflict> conflicts, DefaultMutableTreeNode treeNode) throws RaplaException
     {
         int conflictsAdded = 0;
-        Map<DynamicType, DefaultMutableTreeNode> nodeMap = new LinkedHashMap<DynamicType, DefaultMutableTreeNode>();
-        DynamicType[] types = getQuery().getDynamicTypes(DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RESOURCE);
-        for (int i = 0; i < types.length; i++)
-        {
-            DynamicType type = types[i];
-            NamedNode node = new NamedNode(type);
-            treeNode.add(node);
-            nodeMap.put(type, node);
+        Map<DynamicType, NamedNode> nodeMap = new LinkedHashMap<>();
+
+        String[] classificationTypes = new String[] {DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RESOURCE,DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_PERSON};
+        for (String classificationType: classificationTypes) {
+            final DynamicType[] dynamicTypes = getQuery().getDynamicTypes(classificationType);
+            for (DynamicType type: dynamicTypes) {
+                NamedNode node = newNamedNode(type);
+                nodeMap.put(type, node);
+            }
         }
 
-        // creates typ folders
-        types = getQuery().getDynamicTypes(DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_PERSON);
-        for (int i = 0; i < types.length; i++)
-        {
-            DynamicType type = types[i];
-            NamedNode node = new NamedNode(type);
-            treeNode.add(node);
-            nodeMap.put(type, node);
-        }
-        Collection<Allocatable> allocatables = new LinkedHashSet<Allocatable>();
+        Collection<Allocatable> allocatables = new LinkedHashSet<>();
         for (Iterator<Conflict> it = conflicts.iterator(); it.hasNext(); )
         {
             Conflict conflict = it.next();
@@ -814,15 +778,13 @@ public class TreeFactoryImpl extends RaplaGUIComponent implements TreeFactory
             Allocatable allocatable = conflict.getAllocatable();
             for (NamedNode allocatableNode : childMap.get(allocatable))
             {
-                allocatableNode.add(new NamedNode(conflict));
+                allocatableNode.add(newNamedNode(conflict));
             }
         }
-        for (Map.Entry<DynamicType, DefaultMutableTreeNode> entry : nodeMap.entrySet())
+        for ( DefaultMutableTreeNode node:nodeMap.values())
         {
-            MutableTreeNode value = entry.getValue();
-            if (value.getChildCount() == 0)
-            {
-                treeNode.remove(value);
+            if ( node.getChildCount() > 0) {
+                treeNode.add(node);
             }
         }
         return conflictsAdded;
@@ -877,7 +839,7 @@ public class TreeFactoryImpl extends RaplaGUIComponent implements TreeFactory
 
     }
 
-    public DefaultMutableTreeNode newNamedNode(Named element)
+    public NamedNode newNamedNode(Named element)
     {
         return new NamedNode(element);
     }
@@ -911,7 +873,7 @@ public class TreeFactoryImpl extends RaplaGUIComponent implements TreeFactory
                 superCategory = persistantSuperCategory;
             }
         }
-        nodeMap.put(superCategory, new NamedNode(superCategory));
+        nodeMap.put(superCategory, newNamedNode(superCategory));
         LinkedHashSet<Category> uniqueCategegories = new LinkedHashSet<Category>();
         for (Category cat : categories)
         {
@@ -929,7 +891,7 @@ public class TreeFactoryImpl extends RaplaGUIComponent implements TreeFactory
             NamedNode node = nodeMap.get(cat);
             if (node == null)
             {
-                node = new NamedNode(cat);
+                node = newNamedNode(cat);
                 nodeMap.put(cat, node);
             }
         }
@@ -942,7 +904,7 @@ public class TreeFactoryImpl extends RaplaGUIComponent implements TreeFactory
             NamedNode node = nodeMap.get(cat);
             if (node == null)
             {
-                node = new NamedNode(cat);
+                node = newNamedNode(cat);
                 nodeMap.put(cat, node);
             }
             Category parent = cat.getParent();
@@ -951,7 +913,7 @@ public class TreeFactoryImpl extends RaplaGUIComponent implements TreeFactory
                 NamedNode parentNode = nodeMap.get(parent);
                 if (parentNode == null)
                 {
-                    parentNode = new NamedNode(parent);
+                    parentNode = newNamedNode(parent);
                     nodeMap.put(parent, parentNode);
                     list.push(parent);
                 }
@@ -996,7 +958,7 @@ public class TreeFactoryImpl extends RaplaGUIComponent implements TreeFactory
         DefaultMutableTreeNode root = new DefaultMutableTreeNode("");
         for (int i = 0; i < element.length; i++)
         {
-            root.add(new NamedNode(element[i]));
+            root.add(newNamedNode(element[i]));
         }
         return new DefaultTreeModel(root);
     }

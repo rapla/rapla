@@ -107,7 +107,8 @@ public class ResourceSelectionPresenter implements Presenter
     public Promise<Void> moveCategory(Category categoryToMove, Category targetCategory)
     {
         final RaplaFacade raplaFacade = getRaplaFacade();
-        final Promise<Collection<Category>> categoriesToStorePromise = raplaFacade.editListAsync(Stream.of(categoryToMove, targetCategory.getParent(), categoryToMove.getParent()).collect(Collectors.toList())).thenCompose(
+        final List<Category> categoryList = Stream.of(categoryToMove, targetCategory.getParent(), categoryToMove.getParent()).collect(Collectors.toList());
+        final Promise<Collection<Category>> categoriesToStorePromise = raplaFacade.editListAsync(categoryList).thenApply(map->map.values().stream().collect(Collectors.toList())).thenCompose(
                 (editableCategories) ->
                 {
                     final Category categoryToMoveEdit = editableCategories.get(0);

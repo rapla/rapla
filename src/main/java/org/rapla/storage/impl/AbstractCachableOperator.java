@@ -1052,7 +1052,7 @@ public abstract class AbstractCachableOperator implements StorageOperator
             }
             else
             {
-                getLogger().warn("No create date set for entity " + newEntity.getReference());
+                getLogger().warn("No createInfoDialog date set for entity " + newEntity.getReference());
                 createdBeforeSince = true;
             }
         }

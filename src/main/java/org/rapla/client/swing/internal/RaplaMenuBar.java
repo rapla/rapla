@@ -533,7 +533,7 @@ public class RaplaMenuBar extends RaplaGUIComponent
                     String body = completeText.toString();
                     infoText.setBody(body);
                     final JScrollPane content = new JScrollPane(infoText);
-                    DialogInterface dialog = dialogUiFactory.create(createPopupContext(), false, content, new String[] { getString("ok") });
+                    DialogInterface dialog = dialogUiFactory.createContextDialog(createPopupContext(), content, new String[] { getString("ok") });
                     dialog.setTitle(name);
                     dialog.setSize(780, 580);
                     dialog.start(false);
@@ -583,8 +583,8 @@ public class RaplaMenuBar extends RaplaGUIComponent
                 RaplaWidget welcomeField = licenseInfoUIProvider.get();
                 // the following creates the dialog that pops up, when we click
                 // on the license entry within the help section of the menu menubar
-                // we call the create Method of the DialogUI class and give it all necessary things
-                DialogInterface dialog = dialogUiFactory.create(createPopupContext(), false, new JScrollPane((Component) welcomeField.getComponent()),
+                // we call the createInfoDialog Method of the DialogUI class and give it all necessary things
+                DialogInterface dialog = dialogUiFactory.createContextDialog(createPopupContext(), new JScrollPane((Component) welcomeField.getComponent()),
                         new String[] { getString("ok") });
                 // setting the dialog's title
                 dialog.setTitle(name);

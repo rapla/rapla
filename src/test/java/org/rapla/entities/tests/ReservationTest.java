@@ -89,7 +89,7 @@ public class ReservationTest {
 
     @Test
     public void testEdit() throws RaplaException {
-        // store the reservation to create the id's
+        // store the reservation to createInfoDialog the id's
         facade.storeObjects(new Entity[] { allocatable1, allocatable2, reserv1 });
         String eventId;
         {

@@ -295,7 +295,7 @@ public class ApplicationViewSwing implements ApplicationView<JComponent>
         final Disposable subscribe = busyIdleObservable.subscribe((message) -> {if ( message!= null && message.length() > 0) frame.get().busy( message); else frame.get().idle();});
         final Container component = (Container) objectRaplaWidget.getComponent();
         String[] options = new String[] {"ok"};
-        final DialogUI dialog = (DialogUI) dialogUiFactory.create( popupContext, false,component, options);
+        final DialogUI dialog = (DialogUI) dialogUiFactory.createContextDialog( popupContext, component, options);
         frame.set(dialog);
 
         dialog.setContentPane(component);

@@ -5,11 +5,9 @@ import org.rapla.client.PopupContext;
 import org.rapla.client.dialog.DeleteDialogInterface;
 import org.rapla.client.dialog.DialogInterface;
 import org.rapla.client.dialog.DialogUiFactoryInterface;
-import org.rapla.framework.RaplaException;
 import org.rapla.inject.DefaultImplementation;
 import org.rapla.inject.InjectionContext;
 import org.rapla.scheduler.Promise;
-import org.rapla.scheduler.ResolvedPromise;
 
 import javax.inject.Inject;
 
@@ -40,7 +38,7 @@ public class DeleteDialogGwt implements DeleteDialogInterface {
             }
             deletablesText.append(deletable);
         }
-        dlg = dialogUiFactory.create(context, title,deletablesText.toString(), options);
+        dlg = dialogUiFactory.createTextDialog(context, title,deletablesText.toString(), options);
         return dlg.start(true).thenApply(result->result== 0 ? Boolean.TRUE : Boolean.FALSE);
 
     }

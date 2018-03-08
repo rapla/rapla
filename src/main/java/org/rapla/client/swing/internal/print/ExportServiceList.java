@@ -22,6 +22,7 @@ import org.rapla.components.iolayer.IOInterface;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaInitializationException;
 import org.rapla.framework.StartupEnvironment;
+import org.rapla.scheduler.Promise;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -59,7 +60,7 @@ public class ExportServiceList   {
         }
     }
 
-    public boolean export(Printable printable,PageFormat pageFormat,Component parentComponent) throws Exception
+    public Promise<Boolean> export(Printable printable, PageFormat pageFormat, Component parentComponent)
     {
         Collection<ExportService> services = exporters.values();
         Object[] serviceArray = services.toArray();
@@ -73,7 +74,8 @@ public class ExportServiceList   {
         setRenderer(list);
         list.setSelectedIndex(0);
         list.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
-        DialogInterface dlg = dialogUiFactory.create(new SwingPopupContext(parentComponent, null),true,panel,
+        final SwingPopupContext popupContext = new SwingPopupContext(parentComponent, null);
+        DialogInterface dlg = dialogUiFactory.createContextDialog(popupContext, panel,
                                        new String[] {
                                            i18n.getString("export")
                                            ,i18n.getString("cancel")
@@ -81,13 +83,15 @@ public class ExportServiceList   {
         dlg.setTitle(i18n.getString("weekview.print.choose_export"));
         dlg.getAction(0).setIcon("icon.save");
         dlg.getAction(1).setIcon("icon.cancel");
-        dlg.start(true);
-        if (dlg.getSelectedIndex() != 0 || list.getSelectedIndex() == -1)
-            return false;
-
-        ExportService selectedService = (ExportService)serviceArray[list.getSelectedIndex()];
-        boolean result = selectedService.export(printable,pageFormat, parentComponent);
-		return result;
+        return dlg.start(true).thenApply( index->
+        {
+            if (index != 0 || list.getSelectedIndex() == -1) {
+                return false;
+            }
+            ExportService selectedService = (ExportService) serviceArray[list.getSelectedIndex()];
+            boolean result = selectedService.export(printable, pageFormat, parentComponent);
+            return result;
+        });
     }
 
 	@SuppressWarnings("unchecked")

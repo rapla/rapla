@@ -1,6 +1,7 @@
 package org.rapla.plugin.setowner.client.swing;
 
 import org.rapla.RaplaResources;
+import org.rapla.client.PopupContext;
 import org.rapla.client.dialog.DialogInterface;
 import org.rapla.client.dialog.DialogUiFactoryInterface;
 import org.rapla.client.extensionpoints.ObjectMenuFactory;
@@ -132,7 +133,7 @@ public class SetOwnerMenuFactory implements ObjectMenuFactory
     		return RaplaMenuItem.EMPTY_ARRAY;
     	}
         
-        // create the menu entry
+        // createInfoDialog the menu entry
         final RaplaMenuItem setOwnerItem = new RaplaMenuItem("SETOWNER");
         setOwnerItem.setText(setOwnerI18n.getString("changeowner"));
         ImageIcon icon = raplaImages.getIconFromKey( "icon.tree.persons");
@@ -176,10 +177,11 @@ public class SetOwnerMenuFactory implements ObjectMenuFactory
             treeSelection.exchangeTreeModel(new DefaultTreeModel(userRoot));
             treeSelection.setMinimumSize(new java.awt.Dimension(300, 200));
             treeSelection.setPreferredSize(new java.awt.Dimension(400, 260));
-            dialog = dialogUiFactory.create(
-                    new SwingPopupContext(old.getMainComponent(), null)
-                    , false
-                    , treeSelection
+            final PopupContext popupContext = new SwingPopupContext(old.getMainComponent(), null);
+            dialog = dialogUiFactory.createContextDialog(
+                    popupContext
+                    ,
+                    treeSelection
                     , new String[]{i18n.getString("apply"), i18n.getString("cancel")});
             dialog.setTitle(setOwnerI18n.getString("changeownerto"));
             dialog.getAction(0).setEnabled(false);

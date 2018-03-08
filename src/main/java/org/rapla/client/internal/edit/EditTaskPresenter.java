@@ -193,7 +193,7 @@ public class EditTaskPresenter implements TaskPresenter
                 {
                     if (reservations.size() == 0)
                     {
-                        throw new EntityNotFoundException("Template " + template + " is empty. Please create events in template first.");
+                        throw new EntityNotFoundException("Template " + template + " is empty. Please createInfoDialog events in template first.");
                     }
                     Boolean keepOrig = (Boolean) template.getClassification().getValue("fixedtimeandduration");
                     Collection<TimeInterval> markedIntervals = model.getMarkedIntervals();
@@ -444,7 +444,7 @@ public class EditTaskPresenter implements TaskPresenter
 
     private Promise<Void> processStop(PopupContext popupContext)
     {
-            DialogInterface dlg = dialogUiFactory.create(popupContext, i18n.getString("confirm-close.title"), i18n.getString("confirm-close.question"),
+            DialogInterface dlg = dialogUiFactory.createTextDialog(popupContext, i18n.getString("confirm-close.title"), i18n.getString("confirm-close.question"),
                     new String[] { i18n.getString("confirm-close.ok"), i18n.getString("back") });
             dlg.setIcon("icon.question");
             dlg.setDefault(1);
@@ -486,10 +486,7 @@ public class EditTaskPresenter implements TaskPresenter
                     {
                         dialogUiFactory.showException((Throwable) ex, popupContext);
                     }
-                    else
-                    {
-                        busyIdleObservable.onNext("");
-                    }
+                     busyIdleObservable.onNext("");
                 }
         );
     }
@@ -525,7 +522,7 @@ public class EditTaskPresenter implements TaskPresenter
             {
                 final Set<Entity> set = editTaskView.getEditMap().keySet();
                 if (set.stream().anyMatch( event::isModified)) {
-//                    DialogInterface warning = dialogUiFactory.create(popupContext,  i18n.getString("warning"), i18n.format("warning.update",set.toArray()));
+//                    DialogInterface warning = dialogUiFactory.createInfoDialog(popupContext,  i18n.getString("warning"), i18n.format("warning.update",set.toArray()));
 //                    warning.start(true);
                     //applicationEvent.setStop( true );
                     //processStop( applicationEvent);
@@ -546,7 +543,7 @@ public class EditTaskPresenter implements TaskPresenter
 //        getLogger().debug("Reservation has been changed.");
 //        final PopupContext popupContext = dialogUiFactory.createPopupContext(()->contentPane);
 //        DialogInterface dlg = dialogUiFactory
-//                .create(popupContext, true, getI18n().getString("warning"), getI18n().getString("warning.reservation.update"));
+//                .createInfoDialog(popupContext, true, getI18n().getString("warning"), getI18n().getString("warning.reservation.update"));
 //        commandHistory.clear();
 //        try
 //        {
@@ -568,7 +565,7 @@ public class EditTaskPresenter implements TaskPresenter
 //            return;
 //        getLogger().debug("Reservation has been deleted.");
 //        DialogInterface dlg = dialogUiFactory
-//                .create(new SwingPopupContext(mainContent, null), true, getI18n().getString("warning"), getI18n().getString("warning.reservation.delete"));
+//                .createInfoDialog(new SwingPopupContext(mainContent, null), true, getI18n().getString("warning"), getI18n().getString("warning.reservation.delete"));
 //        dlg.setIcon("icon.warning");
 //        dlg.start(true);
 //        closeWindow();
@@ -585,7 +582,7 @@ public class EditTaskPresenter implements TaskPresenter
 //    {
 //        getLogger().warn("Object has been changed outside.");
 //        final Component component = ui.getComponent();
-//        DialogInterface warning = dialogUiFactory.create(new SwingPopupContext(component, null), true, getString("warning"), getI18n().format("warning.update", ui.getObjects()));
+//        DialogInterface warning = dialogUiFactory.createInfoDialog(new SwingPopupContext(component, null), true, getString("warning"), getI18n().format("warning.update", ui.getObjects()));
 //        warning.start(true);
 //        dlg.close();
 //    }
@@ -606,7 +603,7 @@ public class EditTaskPresenter implements TaskPresenter
 //        try
 //        {
 //            DialogInterface dlg = dialogUiFactory
-//                    .create(new SwingPopupContext(mainContent, null), true, getString("confirm-close.title"), getString("confirm-close.question"),
+//                    .createInfoDialog(new SwingPopupContext(mainContent, null), true, getString("confirm-close.title"), getString("confirm-close.question"),
 //                            new String[] { getString("confirm-close.ok"), getString("back") });
 //            dlg.setIcon("icon.question");
 //            dlg.setDefault(1);

@@ -172,7 +172,7 @@ public class CSVExportMenu extends RaplaGUIComponent implements ExportMenuExtens
     }	
 	
 	 protected Promise<Void> exportFinished(Component topLevel) {
-            DialogInterface dlg = dialogUiFactory.create(
+            DialogInterface dlg = dialogUiFactory.createTextDialog(
                             new SwingPopupContext(topLevel, null)
                             , getString("export")
                             ,getString("file_saved")

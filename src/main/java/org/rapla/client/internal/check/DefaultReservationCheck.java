@@ -95,7 +95,7 @@ public class DefaultReservationCheck implements EventCheck
         }
         if (view.hasMessages())
         {
-            DialogInterface dialog = dialogUiFactory.create(sourceComponent, false, view.getComponent(), new String[] { i18n.getString("continue"), i18n.getString("back") });
+            DialogInterface dialog = dialogUiFactory.createContextDialog(sourceComponent, view.getComponent(), new String[] { i18n.getString("continue"), i18n.getString("back") });
             dialog.setTitle( i18n.getString("warning"));
             dialog.getAction(0).setIcon("icon.save");
             dialog.getAction(1).setIcon("icon.cancel");

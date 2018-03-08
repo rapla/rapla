@@ -57,7 +57,7 @@ public class RaplaRpcAndRestProcessor
 //        JsonServlet servlet = servletMap.get(serviceClass);
 //        if (servlet == null)
 //        {
-//            // try to create one from the service interface
+//            // try to createInfoDialog one from the service interface
 //            try
 //            {
 //                servlet = new RaplaJsonServlet(logger, serviceClass);
@@ -75,7 +75,7 @@ public class RaplaRpcAndRestProcessor
 //        Object impl;
 //        try
 //        {
-//            impl = webserviceCreator.create(request, response);
+//            impl = webserviceCreator.createInfoDialog(request, response);
 //        }
 //        catch (RaplaSecurityException ex)
 //        {

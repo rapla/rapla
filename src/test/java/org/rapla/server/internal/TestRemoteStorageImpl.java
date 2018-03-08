@@ -220,7 +220,7 @@ public class TestRemoteStorageImpl extends AbstractTestWithServer
             newReservation.addAppointment(facade.newAppointmentWithUser(startDate, endDate, user));
             facade.store(newReservation);
         }
-        // create reservation with group allocatable
+        // createInfoDialog reservation with group allocatable
         final Reservation newReservation = facade.newReservation(classification, user);
         final Allocatable dozGroupAllocatable = facade.getOperator().tryResolve("f92e9a11-c342-4413-a924-81eee17ccf92", Allocatable.class);//facade.getOperator().tryResolve("r9b69d90-46a0-41bb-94fa-82079b424c03", Allocatable.class);
         newReservation.addAllocatable(dozGroupAllocatable);
@@ -244,7 +244,7 @@ public class TestRemoteStorageImpl extends AbstractTestWithServer
             newReservation.addAppointment(facade.newAppointmentWithUser(startDate, endDate, user));
             facade.store(newReservation);
         }
-        // create reservation with group allocatable
+        // createInfoDialog reservation with group allocatable
         final Reservation newReservation = facade.newReservation(classification, user);
         final Allocatable partRoomAllocatable = facade.getOperator().tryResolve("rdd6b473-7c77-4344-a73d-1f27008341cb", Allocatable.class);
         newReservation.addAllocatable(partRoomAllocatable);

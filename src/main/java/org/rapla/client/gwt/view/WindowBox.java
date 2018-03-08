@@ -48,7 +48,7 @@ import com.google.gwt.user.client.ui.Widget;
  *  .gwt-extras-WindowBox .gwt-extras-dialog-controls a.gwt-extras-dialog-minimize:hover
  *  .gwt-extras-WindowBox .gwt-extras-dialog-controls a.gwt-extras-dialog-maximize
  *  .gwt-extras-WindowBox .gwt-extras-dialog-controls a.gwt-extras-dialog-maximize:hover
- *      the controls in the header. A background image sprite is used to create the mouseover- and clicking-effects.
+ *      the controls in the header. A background image sprite is used to createInfoDialog the mouseover- and clicking-effects.
  *      When the window is minimized, the style-name of the corresponding control changes to "gwt-extras-dialog-maximize"
  *      and vice-versa   
  * </pre>

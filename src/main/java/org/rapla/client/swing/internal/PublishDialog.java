@@ -138,8 +138,8 @@ public class PublishDialog extends RaplaGUIComponent
         
         updateAddress(filename, extensions);
         
-        final DialogInterface dlg = dialogUiFactory.create(
-                                        popupContext,false,panel,
+        final DialogInterface dlg = dialogUiFactory.createContextDialog(
+                                        popupContext, panel,
                                        new String[] {
                                            getString("save")
                                            ,getString("cancel")

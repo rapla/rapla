@@ -117,11 +117,11 @@ public interface RaplaFacade
     Promise<Collection<Conflict>> getConflictsForReservation(Reservation reservation);
 
 
-    /** returns if the user has the permissions to change/create an
+    /** returns if the user has the permissions to change/createInfoDialog an
      allocation on the passed appointment. Changes of an
      existing appointment that are in an permisable
      timeframe are allowed. Example: The extension of an exisiting appointment,
-     doesn't affect allocations in the past and should not create a
+     doesn't affect allocations in the past and should not createInfoDialog a
      conflict with the permissions.
      */
     //boolean hasPermissionToAllocate( Appointment appointment, Allocatable allocatable );
@@ -165,7 +165,7 @@ public interface RaplaFacade
     CalendarSelectionModel newCalendarModel( User user) throws RaplaException;
 
     /** Creates a new reservation from the classifcation object and with the passed user as its owner
-     * You can create a new classification from a {@link DynamicType} with newClassification method.
+     * You can createInfoDialog a new classification from a {@link DynamicType} with newClassification method.
      * @see DynamicType#newClassification()
      */
     Reservation newReservation(Classification classification,User user) throws RaplaException;
@@ -180,7 +180,7 @@ public interface RaplaFacade
     Appointment newAppointmentWithUser(Date startDate,Date endDate, User user) throws RaplaException;
 
     /** Creates a new allocatable from the classifcation object and with the passed user as its owner
-     * You can create a new classification from a {@link DynamicType} with newClassification method.
+     * You can createInfoDialog a new classification from a {@link DynamicType} with newClassification method.
      * @see DynamicType#newClassification()*/
     Allocatable newAllocatable( Classification classification, User user) throws RaplaException;
     Allocatable newPeriod(User user) throws RaplaException;

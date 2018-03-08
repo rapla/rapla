@@ -126,7 +126,7 @@ public final class RaplaCalendarViewExample {
         //      set weekview date to Today
         wv.setToDate( today );
         
-        // create blocks for today
+        // createInfoDialog blocks for today
         final MyBuilder myBuilder = new MyBuilder(  appointments );
         
         wv.rebuild(myBuilder);
@@ -169,7 +169,7 @@ public final class RaplaCalendarViewExample {
         //      set weekview date to monday
         dv.setToDate( mondayOfWeek ) ;
         
-        // create blocks for today
+        // createInfoDialog blocks for today
         final MyBuilder myBuilder = new MyBuilder(  appointments );
         
         dv.rebuild(myBuilder);
@@ -201,7 +201,7 @@ public final class RaplaCalendarViewExample {
         //      set weekview date to Today
         mv.setToDate( today );
         
-        // create blocks for today
+        // createInfoDialog blocks for today
 
         final MyBuilder b = new MyBuilder(  appointments );
         mv.rebuild(b);

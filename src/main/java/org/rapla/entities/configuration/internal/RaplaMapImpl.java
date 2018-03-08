@@ -324,7 +324,7 @@ public class RaplaMapImpl implements EntityReferencer, DynamicTypeDependant, Rap
 
     protected ReadOnlyException createReadOnlyException()
     {
-        return new ReadOnlyException("RaplaMap is readonly you must create a new Object");
+        return new ReadOnlyException("RaplaMap is readonly you must createInfoDialog a new Object");
     }
 
     /**

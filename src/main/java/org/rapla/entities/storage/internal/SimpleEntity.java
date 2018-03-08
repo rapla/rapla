@@ -330,7 +330,7 @@ public abstract class SimpleEntity extends ReferenceHandler implements RefEntity
         if ( o1.equals( o2))
             return 0;
  
-        // first try to compare the entities with their create time
+        // first try to compare the entities with their createInfoDialog time
         if ( o1 instanceof Timestamp && o2 instanceof Timestamp)
         {
         	Date c1 = ((Timestamp)o1).getCreateDate();

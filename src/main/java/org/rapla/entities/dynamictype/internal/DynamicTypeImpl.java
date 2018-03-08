@@ -166,7 +166,7 @@ final public class DynamicTypeImpl extends SimpleEntity implements DynamicType, 
     
     public Classification newClassification(boolean useDefaults) {
         if ( !isReadOnly()) {
-            throw new IllegalStateException("You can only create Classifications from a persistant Version of DynamicType");
+            throw new IllegalStateException("You can only createInfoDialog Classifications from a persistant Version of DynamicType");
         }
         return newClassificationWithoutCheck( useDefaults);
     }
@@ -222,7 +222,7 @@ final public class DynamicTypeImpl extends SimpleEntity implements DynamicType, 
 
     public Classification newClassificationFrom(Classification original) {
         if ( !isReadOnly()) {
-            throw new IllegalStateException("You can only create Classifications from a persistant Version of DynamicType");
+            throw new IllegalStateException("You can only createInfoDialog Classifications from a persistant Version of DynamicType");
         }
         final ClassificationImpl newClassification = (ClassificationImpl) newClassification(true);
         {
@@ -253,7 +253,7 @@ final public class DynamicTypeImpl extends SimpleEntity implements DynamicType, 
 
     public ClassificationFilter newClassificationFilter() {
     	if ( !isReadOnly()) {
-    		throw new IllegalStateException("You can only create ClassificationFilters from a persistant Version of DynamicType");
+    		throw new IllegalStateException("You can only createInfoDialog ClassificationFilters from a persistant Version of DynamicType");
     	}
         return newClassificationFilterWithoutCheck();
     }

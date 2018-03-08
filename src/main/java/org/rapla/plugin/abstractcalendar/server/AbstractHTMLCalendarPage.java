@@ -201,7 +201,7 @@ public abstract class AbstractHTMLCalendarPage  implements HTMLViewPage
         try {
             builder = createBuilder();
         } catch (RaplaException ex) {
-            logger.error("Can't create builder ", ex);
+            logger.error("Can't createInfoDialog builder ", ex);
             out.close();
             throw new ServletException( ex );
         }

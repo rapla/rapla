@@ -35,6 +35,7 @@ import org.rapla.inject.Extension;
 import org.rapla.logger.Logger;
 import org.rapla.plugin.periodcopy.PeriodCopyResources;
 import org.rapla.scheduler.Promise;
+import org.rapla.scheduler.ResolvedPromise;
 
 import javax.inject.Inject;
 import javax.inject.Provider;
@@ -92,10 +93,9 @@ public class CopyPluginMenu  extends RaplaGUIComponent implements EditMenuExtens
     public void actionPerformed(ActionEvent evt) {
 		PopupContext popupContext = dialogUiFactory.createPopupContext( null);
 
-		try {
             final CopyDialog useCase = copyDialogProvider.get();
             String[] buttons = new String[]{getString("abort"), getString("copy") };
-			final DialogInterface dialog = dialogUiFactory.create( popupContext,true, useCase.getComponent(), buttons);
+			final DialogInterface dialog = dialogUiFactory.createContextDialog( popupContext, useCase.getComponent(), buttons);
             dialog.setTitle( label);
             dialog.setSize( 600, 500);
             dialog.getAction( 0).setIcon( "icon.abort");
@@ -106,23 +106,21 @@ public class CopyPluginMenu  extends RaplaGUIComponent implements EditMenuExtens
 //                    dialog.getButton( 1).setEnabled( useCase.isSourceDifferentFromDest() );
 //                }
 //            };
-//          
-            dialog.start(false);
-            final boolean includeSingleAppointments = useCase.isSingleAppointments();
-            
-            if ( dialog.getSelectedIndex() == 1) {
-            	
-            	Promise<List<Reservation>> reservationsPromise = useCase.getReservations();
-                reservationsPromise.thenAccept((reservations) ->
-                {
-                    copy(reservations, useCase.getDestStart(), useCase.getDestEnd(), includeSingleAppointments);
-                }).exceptionally((ex) ->
-                    dialogUiFactory.showException(ex, popupContext)
-                );
-            }
-         } catch (Exception ex) {
-             dialogUiFactory.showException( ex, popupContext );
-        }
+            dialog.start(false).thenCompose( index->
+			{
+				final boolean includeSingleAppointments = useCase.isSingleAppointments();
+				if (index == 1) {
+
+					Promise<List<Reservation>> reservationsPromise = useCase.getReservations();
+					return reservationsPromise.thenAccept((reservations) ->
+						copy(reservations, useCase.getDestStart(), useCase.getDestEnd(), includeSingleAppointments)
+					);
+				}
+				else
+				{
+					return ResolvedPromise.VOID_PROMISE;
+				}
+			}).exceptionally( ex ->dialogUiFactory.showException( ex, popupContext ));
     }
     
     public void copy(  Collection<Reservation> reservations , Date destStart, Date destEnd,boolean includeSingleAppointmentsAndExceptions) throws RaplaException {
@@ -141,7 +139,6 @@ public class CopyPluginMenu  extends RaplaGUIComponent implements EditMenuExtens
             if ( r.getAppointments().length > 0) {
                 newReservations.put( r, r );
             }
-
         }
 		SaveUndo<Reservation> cmd = new SaveUndo<>(getFacade(), getI18n(), newReservations);
         getClientFacade().getCommandHistory().storeAndExecute( cmd);

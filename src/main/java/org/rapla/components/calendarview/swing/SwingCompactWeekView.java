@@ -190,7 +190,7 @@ public class SwingCompactWeekView extends AbstractSwingCalendar
 		 return slot.isSelected();
 	}
 
-    /** override this method, if you want to create your own slot header. */
+    /** override this method, if you want to createInfoDialog your own slot header. */
     protected JComponent createColumnHeader(Integer column) {
         JLabel jLabel = new JLabel();
         jLabel.setFont(new Font("SansSerif", Font.PLAIN, 13));

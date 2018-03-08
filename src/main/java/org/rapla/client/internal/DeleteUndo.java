@@ -74,7 +74,7 @@ public class DeleteUndo<T extends Entity<T>>  implements CommandUndo<RaplaExcept
 		for ( T entity: entities)
 		{
             Entity<T>  mutableEntity = entity.clone();
-            // we change the owner of deleted entities because we can't create new objects with owners others than the current user
+            // we change the owner of deleted entities because we can't createInfoDialog new objects with owners others than the current user
             if ( mutableEntity instanceof Ownable)
             {
                 ((Ownable) mutableEntity).setOwner( user);

@@ -422,7 +422,7 @@ import java.util.TreeMap;
         else
         {
             //user has clicked on top "resources" folder :
-            //add an entry to create a new resource and another to create a new person
+            //add an entry to createInfoDialog a new resource and another to createInfoDialog a new person
             DynamicType[] resourceType = getQuery().getDynamicTypes(DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RESOURCE);
             if (resourceType.length == 1)
             {

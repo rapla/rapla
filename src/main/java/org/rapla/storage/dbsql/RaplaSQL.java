@@ -2684,7 +2684,7 @@ class HistoryStorage<T extends Entity<T>> extends RaplaTypeStorage<T>
             }
             else
             {
-                getLogger().error("can't create resolve event for remove entity with id " + ref);
+                getLogger().error("can't createInfoDialog resolve event for remove entity with id " + ref);
             }
         }
         return resolvedEntities;

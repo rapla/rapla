@@ -12,7 +12,7 @@ import java.util.Date;
 import java.util.Map;
 import java.util.Set;
 
-/** Use the ReservationController to modify or create a {@link Reservation}.
+/** Use the ReservationController to modify or createInfoDialog a {@link Reservation}.
     This class handles all interactions with the user. Examples:
     <ul>
     <li>

@@ -102,7 +102,7 @@ public class PasswordChangeAction extends RaplaAction {
         public void start() throws RaplaException
         {
             ui = new PasswordChangeUI(getClientFacade(), getI18n(), getRaplaLocale(), getLogger(), showOld);
-            dlg = dialogUiFactory.create(popupContext,true,ui.getComponent(),new String[] {getString("change"),getString("cancel")});
+            dlg = dialogUiFactory.createContextDialog(popupContext, ui.getComponent(),new String[] {getString("change"),getString("cancel")});
             dlg.setDefault(0);
             dlg.setTitle(getI18n().format("change.format",getString("password")));
             dlg.getAction(0).setRunnable(this);

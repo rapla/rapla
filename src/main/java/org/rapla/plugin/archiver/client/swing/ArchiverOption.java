@@ -16,7 +16,6 @@ import org.rapla.client.PopupContext;
 import org.rapla.client.dialog.DialogInterface;
 import org.rapla.client.dialog.DialogUiFactoryInterface;
 import org.rapla.client.extensionpoints.PluginOptionPanel;
-import org.rapla.client.swing.internal.SwingPopupContext;
 import org.rapla.client.swing.toolkit.RaplaButton;
 import org.rapla.components.calendar.RaplaNumber;
 import org.rapla.components.layout.TableLayout;
@@ -221,7 +220,7 @@ public class ArchiverOption  implements PluginOptionPanel,ActionListener  {
             }
             else if (source == restoreButton)
             {
-                DialogInterface dialog = dialogUiFactory.create(popupContext, "Warning", "The current data will be overwriten by the backup version. Do you want to proceed?", new String[]{"restore data","abort"});
+                DialogInterface dialog = dialogUiFactory.createTextDialog(popupContext, "Warning", "The current data will be overwriten by the backup version. Do you want to proceed?", new String[]{"restore data","abort"});
                 dialog.setDefault( 1);
                 result = dialog.start(true).thenCompose((index) -> (index == null) ?
                         archiver.restore().thenCompose((dummy) -> restartServer.restartServer()) :

@@ -182,7 +182,7 @@ public class JTreeTable extends JTable {
     }
 
     /**
-     * create treepath from treenode
+     * createInfoDialog treepath from treenode
      * @param treeNode  Treenode
      * @return treepath object
      */

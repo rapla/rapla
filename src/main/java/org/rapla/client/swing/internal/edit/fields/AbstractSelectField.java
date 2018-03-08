@@ -13,6 +13,7 @@
 package org.rapla.client.swing.internal.edit.fields;
 
 import org.rapla.RaplaResources;
+import org.rapla.client.PopupContext;
 import org.rapla.client.dialog.DialogInterface;
 import org.rapla.client.dialog.DialogUiFactoryInterface;
 import org.rapla.client.swing.TreeFactory;
@@ -295,10 +296,11 @@ public abstract class AbstractSelectField<T> extends AbstractEditField implement
             });
         }
 
-        dialog = dialogUiFactory.create(
-                new SwingPopupContext(parent, null)
-                                 ,true
-                                 ,panel
+        final PopupContext popupContext = new SwingPopupContext(parent, null);
+        dialog = dialogUiFactory.createContextDialog(
+                popupContext
+                                 ,
+                panel
                                  ,new String[] { i18n.getString("apply"),i18n.getString("cancel")});
 
         final Collection<T> newValues = new LinkedHashSet<T>();
@@ -322,25 +324,24 @@ public abstract class AbstractSelectField<T> extends AbstractEditField implement
             }
         });
         dialog.setTitle(i18n.getString("select"));
-        dialog.start(true);
+        dialog.start(true).thenAccept(index->
+                {
+                    // we did a double clidk
+                    if (!newValues.isEmpty()) {
+                        if (!newValues.equals(selectedValues)) {
+                            setValues(newValues);
+                            fireContentChanged();
+                        }
+                    } else if (dialog.getSelectedIndex() == 0) {
+                        newValues.addAll(getValues(tree));
+                        if (!newValues.equals(selectedValues)) {
+                            setValues(newValues);
+                            fireContentChanged();
+                        }
+                    }
+                }).exceptionally(ex->dialogUiFactory.showException(ex,popupContext));
         tree.requestFocus();
-        // we did a double clidk
-        if ( !newValues.isEmpty())
-        {
-            if ( !newValues.equals(selectedValues))
-            {
-                setValues(newValues);
-                fireContentChanged();
-            }
-        }
-        else if (dialog.getSelectedIndex() == 0 ) {
-            newValues.addAll(getValues(tree));
-            if ( !newValues.equals(selectedValues))
-            {
-                setValues(newValues);
-                fireContentChanged();
-            }
-        }
+
     }
 
     private Collection<T> getValues(JTree tree)

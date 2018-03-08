@@ -44,7 +44,7 @@ import java.util.NoSuchElementException;
 import java.util.Set;
 
 /** Use the method <code>newClassification()</code> of class <code>DynamicType</code> to
- *  create a classification. Once created it is not possible to change the
+ *  createInfoDialog a classification. Once created it is not possible to change the
  *  type of a classifiction. But you can replace the classification of an
  *  object implementing <code>Classifiable</code> with a new one.
  *  @see DynamicType

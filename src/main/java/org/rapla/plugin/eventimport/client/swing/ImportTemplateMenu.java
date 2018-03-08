@@ -674,30 +674,27 @@ public class ImportTemplateMenu implements ImportMenuExtension, ActionListener
         everythingButton.addActionListener(listener);
         nothingButton.addActionListener(listener);
         // pane.setPreferredSize( new Dimension(2000,800));
-        final DialogInterface dialog2 = dialogFactory.create(popupContext, true, content, new String[] { i18n.getString("ok"), i18n.getString("back") });
+        final DialogInterface dialog2 = dialogFactory.createContextDialog(popupContext, content, new String[] { i18n.getString("ok"), i18n.getString("back") });
         pane.setPreferredSize(new Dimension(1024, 700));
         dialog2.setDefault(0);
         final boolean pack = false;
-        dialog2.start(pack);
-
-        if ( dialog2.getSelectedIndex() == 0 )
+        dialog2.start(pack).thenAccept((index)->
         {
-            for ( int i = 0; i < entries.size(); i++ )
-            {
-                final Entry entry = entries.get(i);
-                final Boolean selected = (Boolean) table.getValueAt(i, selectCol);
-                if ( selected == null || !selected )
-                {
-                    continue;
-                }
-                final Allocatable template = (Allocatable) table.getValueAt(i, templateCol);
-                if ( template != null )
-                {
-                    entry.template = template;
-                }
-                entry.process(popupContext);
-            } // TODO Auto-generated method stub
-        }
+            if (index == 0) {
+                for (int i = 0; i < entries.size(); i++) {
+                    final Entry entry = entries.get(i);
+                    final Boolean selected = (Boolean) table.getValueAt(i, selectCol);
+                    if (selected == null || !selected) {
+                        continue;
+                    }
+                    final Allocatable template = (Allocatable) table.getValueAt(i, templateCol);
+                    if (template != null) {
+                        entry.template = template;
+                    }
+                    entry.process(popupContext);
+                } // TODO Auto-generated method stub
+            }
+        }).exceptionally( ex->dialogFactory.showException(ex,popupContext));
     }
 
 //         dialog2.getButton( 0 ).addActionListener( new ActionListener() {

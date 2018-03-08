@@ -12,8 +12,6 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.client.swing.toolkit;
 
-import org.apache.xpath.operations.Bool;
-import org.jetbrains.annotations.NotNull;
 import org.rapla.RaplaResources;
 import org.rapla.client.PopupContext;
 import org.rapla.client.RaplaWidget;
@@ -490,10 +488,10 @@ public class DialogUI extends JDialog
         
 
         /* (non-Javadoc)
-         * @see org.rapla.client.swing.toolkit.DialogUiFactoryInterface#create(org.rapla.client.PopupContext, boolean, javax.swing.JComponent, java.lang.String[])
+         * @see org.rapla.client.swing.toolkit.DialogUiFactoryInterface#createInfoDialog(org.rapla.client.PopupContext, boolean, javax.swing.JComponent, java.lang.String[])
          */
         @Override
-        public DialogInterface create(PopupContext popupContext, boolean modal, Object content, String[] options)
+        public DialogInterface createContextDialog(PopupContext popupContext, Object content, String[] options)
         {
             DialogUI dlg;
             Component parent = SwingPopupContext.extractParent(popupContext);
@@ -504,14 +502,14 @@ public class DialogUI extends JDialog
                 dlg = new DialogUI(i18n, images, bundleManager, scheduler, (Frame) topLevel);
             
             dlg.parent = parent;
-            dlg.init(modal, (JComponent)content, options);
+            dlg.init(false, (JComponent)content, options);
             return dlg;
         }
 
         @Override
-        public DialogInterface create(PopupContext popupContext, String title, String text, String[] options)
+        public DialogInterface createTextDialog(PopupContext popupContext, String title, String text, String[] options)
         {
-            DialogUI dlg = (DialogUI) create(popupContext, false, new JPanel(), options);
+            DialogUI dlg = (DialogUI) createContextDialog(popupContext, new JPanel(), options);
             Point point = null;
             if ( popupContext instanceof SwingPopupContext)
             {
@@ -528,9 +526,9 @@ public class DialogUI extends JDialog
         }
 
         @Override
-        public DialogInterface create(PopupContext popupContext, String title, String text)
+        public DialogInterface createInfoDialog(PopupContext popupContext, String title, String text)
         {
-            DialogUI dlg = (DialogUI) create(popupContext, title, text, DialogUiFactoryInterface.Util.getDefaultOptions());
+            DialogUI dlg = (DialogUI) createTextDialog(popupContext, title, text, DialogUiFactoryInterface.Util.getDefaultOptions());
             dlg.useDefaultOptions = true;
             return dlg;
         }

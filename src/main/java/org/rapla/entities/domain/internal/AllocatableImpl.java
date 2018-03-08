@@ -56,7 +56,7 @@ public final class AllocatableImpl extends SimpleEntity implements Allocatable,D
     }
     
     public AllocatableImpl(Date createDate, Date lastChanged ) {
-// No create date should be possible and time should always be set through storage operators as they now the timezone settings
+// No createInfoDialog date should be possible and time should always be set through storage operators as they now the timezone settings
 //        if (createDate == null) {
 //        	Calendar calendar = Calendar.inject();
 //            this.createDate = calendar.getTime();

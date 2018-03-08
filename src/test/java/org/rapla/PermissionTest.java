@@ -79,7 +79,7 @@ public class PermissionTest extends AbstractTestWithServer {
 
     @Test
     public void testReadPermissions() throws Exception {
-        // first create a new resource and set the permissions
+        // first createInfoDialog a new resource and set the permissions
 
         Allocatable allocatable = adminFacade.newResourceDeprecated();
         allocatable.getClassification().setValue("name","test-allocatable");
@@ -100,7 +100,7 @@ public class PermissionTest extends AbstractTestWithServer {
 
     @Test
     public void testAllocatePermissions() throws Exception {
-        // first create a new resource and set the permissions
+        // first createInfoDialog a new resource and set the permissions
 
         Allocatable allocatable = adminFacade.newResourceDeprecated();
         allocatable.getClassification().setValue("name","test-allocatable");
