@@ -28,7 +28,6 @@ var d = new Date();
 var message = d.getHours() +":"+d.getMinutes()+":" + d.getSeconds() + "." + d.getMilliseconds() +" "+ string ;
 switch ( logLevel) {
 case -1:
-    console.trace( message ); break;
 case 0:
     console.log( message ); break;
 case 1:
