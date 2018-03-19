@@ -173,7 +173,8 @@ public class RaplaCalendarViewListener extends RaplaGUIComponent implements View
         }
         catch (RaplaException ex)
         {
-            dialogUiFactory.showException(ex, new SwingPopupContext(calendarContainerComponent, null));
+            PopupContext popupContext = dialogUiFactory.createPopupContext( ()->calendarContainerComponent);
+            dialogUiFactory.showException(ex, popupContext);
         }
 
     }

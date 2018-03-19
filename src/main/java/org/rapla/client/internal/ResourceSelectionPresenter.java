@@ -103,50 +103,6 @@ public class ResourceSelectionPresenter implements Presenter
         return facade.getRaplaFacade();
     }
 
-    @Override
-    public Promise<Void> moveCategory(Category categoryToMove, Category targetCategory)
-    {
-        final RaplaFacade raplaFacade = getRaplaFacade();
-        final List<Category> categoryList = Stream.of(categoryToMove, targetCategory.getParent(), categoryToMove.getParent()).collect(Collectors.toList());
-        final Promise<Collection<Category>> categoriesToStorePromise = raplaFacade.editListAsync(categoryList).thenApply(map->map.values().stream().collect(Collectors.toList())).thenCompose(
-                (editableCategories) ->
-                {
-                    final Category categoryToMoveEdit = editableCategories.get(0);
-                    final Category targetParentCategoryEdit = editableCategories.get(1);
-
-                    final Collection<Category> categoriesToStore = new ArrayList<>();
-                    if (!targetParentCategoryEdit.hasCategory(categoryToMoveEdit)) {
-                        final Category moveCategoryParent = editableCategories.get(2);
-                        // remove from old parent
-                        moveCategoryParent.removeCategory(categoryToMoveEdit);
-                        categoriesToStore.add(moveCategoryParent);
-                    }
-                    final Promise<Collection<Category>> editedCategories = raplaFacade.editListAsync(Arrays.asList(targetParentCategoryEdit.getCategories())).thenApply(
-                            (categoryMap) ->
-                            {
-                                Collection<Category> categories = categoryMap.values();
-                                for (Category category : categories) {
-                                    targetParentCategoryEdit.removeCategory(category);
-                                }
-
-                                for (Category category : categories) {
-                                    if (category.equals(targetCategory)) {
-                                        targetParentCategoryEdit.addCategory(categoryToMoveEdit);
-                                    } else if (category.equals(categoryToMoveEdit)) {
-                                        continue;
-                                    }
-                                    targetParentCategoryEdit.addCategory(category);
-                                }
-                                categoriesToStore.add(targetParentCategoryEdit);
-                                categoriesToStore.add(categoryToMoveEdit);
-                                return categoriesToStore;
-                            }
-                    );
-                    return editedCategories;
-                });
-        Promise<Void> result = categoriesToStorePromise.thenCompose((categoriesToStore) -> raplaFacade.dispatch(categoriesToStore, Collections.emptyList()));
-        return result.exceptionally((ex) -> dialogUiFactory.showException(ex, null));
-    }
 
     @Override
     public void mouseOverResourceSelection()

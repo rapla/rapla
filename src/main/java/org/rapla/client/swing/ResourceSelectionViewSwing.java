@@ -209,116 +209,6 @@ public class ResourceSelectionViewSwing implements ResourceSelectionView
         treeSelection.getTree().setRootVisible(false);
         final JTree tree = treeSelection.getTree();
         tree.setShowsRootHandles(true);
-        tree.setDragEnabled(true);
-        tree.setDropMode(DropMode.ON);
-        tree.setDropTarget(new DropTarget(tree, TransferHandler.MOVE, new DropTargetAdapter()
-        {
-            private final Rectangle _raCueLine = new Rectangle();
-            private final Color _colorCueLine = Color.blue;
-            private TreePath lastPath = null;
-
-            @Override
-            public void dragOver(DropTargetDragEvent dtde)
-            {
-                TreePath selectionPath = tree.getSelectionPath();
-                TreePath sourcePath = selectionPath.getParentPath();
-                DefaultMutableTreeNode selectedNode = (DefaultMutableTreeNode) selectionPath.getLastPathComponent();
-                Graphics2D g2 = (Graphics2D) tree.getGraphics();
-                final Point dropLocation = dtde.getLocation();
-                TreePath path = tree.getClosestPathForLocation(dropLocation.x, dropLocation.y);
-                if(isDropAllowed(sourcePath, path, selectedNode))
-                {
-                    if (lastPath == null || !lastPath.equals(path))
-                    {
-                        if(lastPath != null)
-                        {
-                            drawLine(g2, lastPath, Color.white);
-                        }
-                        lastPath = path;
-                        drawLine(g2, path, _colorCueLine);
-                    }
-                }
-                else
-                {
-                    if(lastPath != null)
-                    {
-                        drawLine(g2, lastPath, Color.white);
-                    }
-                    lastPath = null;
-                }
-            }
-
-            private void drawLine(Graphics2D g2, TreePath path, Color color)
-            {
-                Rectangle raPath = tree.getPathBounds(path);
-                _raCueLine.setRect(0, raPath.y, tree.getWidth(), 2);
-                g2.setColor(color);
-                g2.fill(_raCueLine);
-            }
-
-            @Override
-            public void dragEnter(DropTargetDragEvent dtde)
-            {
-                TreePath selectionPath = tree.getSelectionPath();
-                DefaultMutableTreeNode selectedNode = (DefaultMutableTreeNode) selectionPath.getLastPathComponent();
-                if (!(selectedNode.getUserObject() instanceof Category))
-                {
-                    dtde.rejectDrag();
-                    return;
-                }
-                dtde.acceptDrag(DnDConstants.ACTION_MOVE);
-            }
-
-            @Override
-            public void drop(DropTargetDropEvent dtde)
-            {
-                {
-                    TreePath selectionPath = tree.getSelectionPath();
-                    TreePath sourcePath = selectionPath.getParentPath();
-                    DefaultMutableTreeNode selectedNode = (DefaultMutableTreeNode) selectionPath.getLastPathComponent();
-                    Point dropLocation = dtde.getLocation();
-                    TreePath targetPath = tree.getClosestPathForLocation(dropLocation.x, dropLocation.y);
-                    if (isDropAllowed(sourcePath, targetPath, selectedNode))
-                    {
-                        DefaultMutableTreeNode targetParentNode = (DefaultMutableTreeNode) targetPath.getLastPathComponent();
-                        final Category categoryToMove = (Category) selectedNode.getUserObject();
-                        final Category targetCategory = (Category) targetParentNode.getUserObject();
-                        getPresenter().moveCategory(categoryToMove, targetCategory).execOn(SwingUtilities::invokeLater).thenRun(() ->{
-                            dtde.dropComplete(true);
-                            updateTree(filter, selectedObjects);
-                        }).exceptionally( (ex)->
-                        {
-                            dtde.rejectDrop();
-                            dialogUiFactory.showException(ex, null);
-                            dtde.dropComplete(false);
-                            logger.error("Error performing drag and drop operation: "+ex.getMessage(), ex);
-                        });
-                    }
-                    else
-                    {
-                        dtde.rejectDrop();
-                        dtde.dropComplete(false);
-                    }
-                }
-            }
-
-
-            private boolean isDropAllowed(TreePath sourcePath, TreePath targetPath, DefaultMutableTreeNode selectedNode)
-            {
-                if (selectedNode.getUserObject() instanceof Category
-                        && ((DefaultMutableTreeNode) targetPath.getLastPathComponent()).getUserObject() instanceof Category)
-                {
-                    Category targetCategory = (Category) ((DefaultMutableTreeNode) targetPath.getLastPathComponent()).getUserObject();
-                    if(targetCategory.getId().equals(Category.SUPER_CATEGORY_REF.getId()))
-                    {
-                        return false;
-                    }
-                    return true;
-                }
-                return false;
-            }
-
-        }));
         DefaultTreeModel treeModel = generateTree(filter);
         try
         {
@@ -480,7 +370,7 @@ public class ResourceSelectionViewSwing implements ResourceSelectionView
         newMenu.setEnabled(newMenu.getMenuComponentCount() > 0);
     }
 
-    public void updateChange() throws RaplaException
+    public void updateChange()
     {
         final Collection<Object> elements = treeSelection.getSelectedElements();
         getPresenter().updateSelectedObjects(elements);

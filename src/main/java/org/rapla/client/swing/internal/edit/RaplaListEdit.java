@@ -1,5 +1,6 @@
 package org.rapla.client.swing.internal.edit;
 
+import org.rapla.RaplaResources;
 import org.rapla.client.RaplaWidget;
 import org.rapla.client.swing.images.RaplaImages;
 import org.rapla.client.swing.toolkit.AWTColorUtil;
@@ -7,23 +8,10 @@ import org.rapla.client.swing.toolkit.RaplaButton;
 import org.rapla.components.calendar.NavButton;
 import org.rapla.components.calendar.RaplaArrowButton;
 import org.rapla.components.layout.TableLayout;
-import org.rapla.components.xmlbundle.I18nBundle;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import javax.swing.BorderFactory;
-import javax.swing.Box;
-import javax.swing.BoxLayout;
-import javax.swing.DefaultListCellRenderer;
-import javax.swing.DefaultListModel;
-import javax.swing.JComponent;
-import javax.swing.JLabel;
-import javax.swing.JList;
-import javax.swing.JPanel;
-import javax.swing.JScrollPane;
-import javax.swing.ListCellRenderer;
-import javax.swing.ListModel;
-import javax.swing.UIManager;
+import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
@@ -68,6 +56,7 @@ final public class RaplaListEdit<T> implements
 
     Color selectionBackground = UIManager.getColor("List.selectionBackground");
     Color background = UIManager.getColor("List.background");
+    RaplaResources i18n;
 
     public void resort()
     {
@@ -146,9 +135,10 @@ final public class RaplaListEdit<T> implements
     JPanel toolbar = new JPanel();
     
     
-    public RaplaListEdit(I18nBundle i18n, RaplaImages images,JComponent detailContent,ActionListener callback, boolean hasCopy)
+    public RaplaListEdit(RaplaResources i18n, RaplaImages images,JComponent detailContent,ActionListener callback, boolean hasCopy)
     {
         this.callback = callback;
+        this.i18n = i18n;
         toolbar.setLayout( new BoxLayout( toolbar, BoxLayout.X_AXIS));
         toolbar.add(createNewButton);
         toolbar.add(removeButton);
@@ -375,15 +365,15 @@ final public class RaplaListEdit<T> implements
         {
             return;
         }
-        Object selected = list.getSelectedValue();
-        if (selected == null) {
+        final int size = list.getSelectedValuesList().size();
+         if (size > 1  || size == 0) {
             cardLayout.first(editPanel);
-            
             callback.actionPerformed(new ActionEvent(this
                     ,ActionEvent.ACTION_PERFORMED
                     ,"select"
                     )
             );
+             nothingSelectedLabel.setText(size ==  0 ? i18n.getString("nothing_selected") : i18n.getString("multi_select"));
             return;
         } else {
             cardLayout.last(editPanel);
@@ -509,25 +499,22 @@ final public class RaplaListEdit<T> implements
 		return (T) list.getSelectedValue();
 	}
 
-    public int indexOf(T a) 
-    {
-        return ((DefaultListModel)list.getModel()).indexOf( a);    
-    }
-    
     @Singleton
     public static class RaplaListEditFactory
     {
 
         private final RaplaImages images;
+        private final RaplaResources i18n;
 
         @Inject
-        public RaplaListEditFactory(RaplaImages images)
+        public RaplaListEditFactory(RaplaImages images, RaplaResources i18n)
         {
             super();
             this.images = images;
+            this.i18n = i18n;
         }
 
-        public RaplaListEdit create(I18nBundle i18n, JComponent detailContent, ActionListener callback, boolean hasCopy)
+        public RaplaListEdit create( JComponent detailContent, ActionListener callback, boolean hasCopy)
         {
             return new RaplaListEdit(i18n, images, detailContent, callback, hasCopy);
         }

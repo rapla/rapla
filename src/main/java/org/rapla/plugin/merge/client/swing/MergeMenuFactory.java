@@ -68,12 +68,12 @@ import java.util.Iterator;
         {
             return new RaplaMenuItem[0];
         }
-        Iterator<?> it = selectedObjects.iterator();
-        Object last = it.next();
-        if (!(last instanceof Allocatable) || !permissionController.canAdmin((Allocatable) last, user))
+        if ( !canAdmin(selectedObjects))
         {
             return new RaplaMenuItem[0];
         }
+        Iterator<?> it = selectedObjects.iterator();
+        Object last = it.next();
         while (it.hasNext())
         {
             final Object next = it.next();
@@ -127,6 +127,16 @@ import java.util.Iterator;
         });
 
         return menuItem;
+    }
+
+    private boolean canAdmin(Collection<?> selectedObjects) {
+        for ( Object last:selectedObjects) {
+            if (!(last instanceof Allocatable) || !permissionController.canAdmin((Allocatable) last, user))
+            {
+                return false;
+            }
+        }
+        return true;
     }
 
 }

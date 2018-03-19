@@ -353,18 +353,22 @@ public class FacadeImpl implements RaplaFacade {
 		PermissionController permissionController = operator.getPermissionController();
 		for (DynamicType type: collection) {
 			String classificationTypeAnno = type.getAnnotation(DynamicTypeAnnotations.KEY_CLASSIFICATION_TYPE);
-			// ignore internal types for backward compatibility
-			if ((( DynamicTypeImpl)type).isInternal())
-			{
+			if ( classificationType != null ) {
+				if ( !classificationType.equals(classificationTypeAnno)) {
+					continue;
+				}
+			}
+				// ignore internal types for backward compatibility
+			if ((( DynamicTypeImpl)type).isInternal() && !type.equals(DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RAPLATYPE)) {
 				continue;
 			}
+
 			if ( user != null && !permissionController.canRead(type, user))
 			{
 				continue;
 			}
-			if ( classificationType == null || classificationType.equals(classificationTypeAnno)) {
-				result.add(type);
-			}
+			result.add(type);
+
 		}
 		return result.toArray(DynamicType.DYNAMICTYPE_ARRAY);
 	}
@@ -1187,6 +1191,48 @@ public class FacadeImpl implements RaplaFacade {
 			throw new EntityNotFoundException(	"There is no persistant version of " + entity);
 		}
 		return result;
+	}
+
+	public Promise<Void> moveCategory(Category categoryToMove, Category targetCategory)
+	{
+		final List<Category> categoryList = Stream.of(categoryToMove, targetCategory.getParent(), categoryToMove.getParent()).collect(Collectors.toList());
+		final Promise<Collection<Category>> categoriesToStorePromise = editListAsync(categoryList).thenApply(map->map.values().stream().collect(Collectors.toList())).thenCompose(
+				(editableCategories) ->
+				{
+					final Category categoryToMoveEdit = editableCategories.get(0);
+					final Category targetParentCategoryEdit = editableCategories.get(1);
+
+					final Collection<Category> categoriesToStore = new ArrayList<>();
+					if (!targetParentCategoryEdit.hasCategory(categoryToMoveEdit)) {
+						final Category moveCategoryParent = editableCategories.get(2);
+						// remove from old parent
+						moveCategoryParent.removeCategory(categoryToMoveEdit);
+						categoriesToStore.add(moveCategoryParent);
+					}
+					final Promise<Collection<Category>> editedCategories = editListAsync(Arrays.asList(targetParentCategoryEdit.getCategories())).thenApply(
+							(categoryMap) ->
+							{
+								Collection<Category> categories = categoryMap.values();
+								for (Category category : categories) {
+									targetParentCategoryEdit.removeCategory(category);
+								}
+
+								for (Category category : categories) {
+									if (category.equals(targetCategory)) {
+										targetParentCategoryEdit.addCategory(categoryToMoveEdit);
+									} else if (category.equals(categoryToMoveEdit)) {
+										continue;
+									}
+									targetParentCategoryEdit.addCategory(category);
+								}
+								categoriesToStore.add(targetParentCategoryEdit);
+								categoriesToStore.add(categoryToMoveEdit);
+								return categoriesToStore;
+							}
+					);
+					return editedCategories;
+				});
+		return categoriesToStorePromise.thenCompose((categoriesToStore) -> dispatch(categoriesToStore, Collections.emptyList()));
 	}
 
 	@Override

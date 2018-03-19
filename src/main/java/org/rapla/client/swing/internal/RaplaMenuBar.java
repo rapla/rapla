@@ -20,7 +20,6 @@ import org.rapla.client.CalendarPlacePresenter;
 import org.rapla.client.EditController;
 import org.rapla.client.PopupContext;
 import org.rapla.client.RaplaWidget;
-import org.rapla.client.ReservationController;
 import org.rapla.client.UserClientService;
 import org.rapla.client.dialog.DialogInterface;
 import org.rapla.client.dialog.DialogUiFactoryInterface;
@@ -34,7 +33,6 @@ import org.rapla.client.extensionpoints.ExportMenuExtension;
 import org.rapla.client.extensionpoints.HelpMenuExtension;
 import org.rapla.client.extensionpoints.ImportMenuExtension;
 import org.rapla.client.extensionpoints.ViewMenuExtension;
-import org.rapla.client.swing.MenuFactory;
 import org.rapla.client.swing.RaplaGUIComponent;
 import org.rapla.client.swing.images.RaplaImages;
 import org.rapla.client.swing.internal.action.RestartRaplaAction;
@@ -63,7 +61,9 @@ import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.internal.ConfigTools;
 import org.rapla.logger.Logger;
 import org.rapla.plugin.abstractcalendar.RaplaBuilder;
+import org.rapla.plugin.rightsreport.client.AdminUserTask;
 import org.rapla.scheduler.Promise;
+import org.rapla.storage.PermissionController;
 import org.rapla.storage.dbrm.RestartServer;
 
 import javax.inject.Inject;
@@ -104,18 +104,17 @@ public class RaplaMenuBar extends RaplaGUIComponent
     private final Provider<TemplateEdit> templateEditFactory;
     private CalendarSelectionModel model;
     Provider<LicenseInfoUI> licenseInfoUIProvider;
-    final private CalendarEventBus eventBus;
     final private ApplicationEventBus appEventBus;
     RaplaMenuItem ownReservationsMenu;
     private final RaplaSystemInfo systemInfo;
 
 
-    @Inject public RaplaMenuBar(RaplaMenuBarContainer menuBarContainer, ClientFacade clientFacade, RaplaSystemInfo systemInfo,RaplaResources i18n, RaplaLocale raplaLocale, Logger logger,
-            PrintAction printAction, Set<AdminMenuExtension> adminMenuExt, Set<EditMenuExtension> editMenuExt, Set<ViewMenuExtension> viewMenuExt,
-            Set<HelpMenuExtension> helpMenuExt, Set<ImportMenuExtension> importMenuExt, Set<ExportMenuExtension> exportMenuExt, MenuFactory menuFactory,
-            EditController editController, CalendarSelectionModel model, UserClientService clientService, RestartServer restartServerService,
-            RaplaImages raplaImages, DialogUiFactoryInterface dialogUiFactory, Provider<TemplateEdit> templateEditFactory,
-            Provider<LicenseInfoUI> licenseInfoUIProvider, ReservationController reservationController, CalendarEventBus eventBus, ApplicationEventBus appEventBus)            throws RaplaInitializationException
+    @Inject public RaplaMenuBar(RaplaMenuBarContainer menuBarContainer, ClientFacade clientFacade, RaplaSystemInfo systemInfo, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger,
+                                PrintAction printAction, Set<AdminMenuExtension> adminMenuExt, Set<EditMenuExtension> editMenuExt, Set<ViewMenuExtension> viewMenuExt,
+                                Set<HelpMenuExtension> helpMenuExt, Set<ImportMenuExtension> importMenuExt, Set<ExportMenuExtension> exportMenuExt,
+                                EditController editController, CalendarSelectionModel model, UserClientService clientService, RestartServer restartServerService,
+                                RaplaImages raplaImages, DialogUiFactoryInterface dialogUiFactory, Provider<TemplateEdit> templateEditFactory,
+                                Provider<LicenseInfoUI> licenseInfoUIProvider, CalendarEventBus eventBus, ApplicationEventBus appEventBus)            throws RaplaInitializationException
     {
         super(clientFacade, i18n, raplaLocale, logger);
         this.systemInfo = systemInfo;
@@ -125,7 +124,6 @@ public class RaplaMenuBar extends RaplaGUIComponent
         this.raplaImages = raplaImages;
         this.dialogUiFactory = dialogUiFactory;
         this.templateEditFactory = templateEditFactory;
-        this.eventBus = eventBus;
         this.appEventBus = appEventBus;
 
 
@@ -261,6 +259,25 @@ public class RaplaMenuBar extends RaplaGUIComponent
             throw new RaplaInitializationException(e);
         }
 
+        boolean canAdminUsers = PermissionController.canAdminUsers(user);
+        if (canAdminUsers)
+        {
+            RaplaMenuItem  userEditAction = new RaplaMenuItem("useradmin");
+            final String name = getString("user") +"/"+ getString("groups") ;
+            userEditAction.setText( name);
+            final Icon icon = raplaImages.getIconFromKey("icon.tree.persons");
+            userEditAction.setIcon( icon);
+            userEditAction.addActionListener((evt)->
+                    {
+                        final PopupContext popupContext = dialogUiFactory.createPopupContext(() -> getMainComponent());
+                        ApplicationEvent.ApplicationEventContext context = null;
+                        String applicationEventId = AdminUserTask.USER_ADMIN_ID;
+                        String info = applicationEventId;
+                        final ApplicationEvent event = new ApplicationEvent(applicationEventId, info, popupContext, context);
+                        appEventBus.publish(event);
+                    });
+            adminMenu.add( userEditAction  );
+        }
         if (isAdmin())
         {
             RaplaMenuItem adminOptions = new RaplaMenuItem("adminOptions");
@@ -273,8 +290,8 @@ public class RaplaMenuBar extends RaplaGUIComponent
                 throw new RaplaInitializationException(e);
             }
             adminMenu.add(adminOptions);
-
         }
+
 
         ownReservationsMenu = new RaplaMenuItem("only_own_reservations");
         ownReservationsMenu.setText(i18n.getString("only_own_reservations"));

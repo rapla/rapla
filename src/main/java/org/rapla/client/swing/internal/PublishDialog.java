@@ -31,8 +31,6 @@ import javax.swing.BoxLayout;
 import javax.swing.JPanel;
 import javax.swing.JTextField;
 import java.awt.Dimension;
-import java.beans.PropertyChangeEvent;
-import java.beans.PropertyChangeListener;
 import java.net.URL;
 import java.net.URLEncoder;
 import java.util.ArrayList;
@@ -106,13 +104,7 @@ public class PublishDialog extends RaplaGUIComponent
                 continue;
             }
         	PublishExtensionFactory extensionFactory = entry;
-        	PublishExtension extension = extensionFactory.creatExtension(model, new PropertyChangeListener() {
-				
-				public void propertyChange(PropertyChangeEvent evt) 
-				{
-					updateAddress(filename, extensions);
-				}
-			});
+        	PublishExtension extension = extensionFactory.creatExtension(model, (evt)->	updateAddress(filename, extensions));
 			JTextField urlField = extension.getURLField();
 			String generator = extension.getGenerator();
 			if ( urlField != null)
@@ -159,7 +151,7 @@ public class PublishDialog extends RaplaGUIComponent
                 model.save( filename).finally_(()->dlg.idle()).exceptionally((ex)->dialogUiFactory.showException( ex, popupContext)).thenRun(()->dlg.close());
             }
         });
-        dlg.start(true);
+        dlg.start(true).exceptionally(ex->dialogUiFactory.showException( ex,popupContext));
     }
 
 	protected void updateAddress(final String filename,

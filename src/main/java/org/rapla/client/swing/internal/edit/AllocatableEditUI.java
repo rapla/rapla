@@ -24,6 +24,7 @@ import org.rapla.entities.User;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.Permission;
 import org.rapla.entities.domain.ResourceAnnotations;
+import org.rapla.entities.dynamictype.Classifiable;
 import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.entities.dynamictype.DynamicTypeAnnotations;
 import org.rapla.entities.dynamictype.internal.DynamicTypeImpl;
@@ -133,10 +134,8 @@ public class AllocatableEditUI  extends AbstractEditUI<Allocatable>  {
         }
     }
 
-    private boolean isInternalType(Allocatable alloc) {
-        DynamicType type = alloc.getClassification().getType();
-        String annotation = type.getAnnotation(DynamicTypeAnnotations.KEY_CLASSIFICATION_TYPE);
-        return annotation != null && annotation.equals( DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RAPLATYPE);
+    public static boolean isInternalType(Classifiable alloc) {
+        return ((DynamicTypeImpl)alloc.getClassification().getType()).isInternal();
     }
 
     private boolean canAdmin()

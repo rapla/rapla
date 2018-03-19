@@ -40,6 +40,7 @@ public interface DynamicTypeAnnotations
 	String VALUE_TRANSFERED_TO_CLIENT_NEVER = "never";
 	
 	String KEY_LOCATION="location";
+
 }
 
 

@@ -14,9 +14,6 @@ public interface ResourceSelectionView extends RaplaWidget
 
     public interface Presenter
     {
-
-        Promise<Void> moveCategory(Category categoryToMove, Category targetCategory);
-
         void selectResource(Object focusedObject);
 
         void updateSelectedObjects(Collection<Object> elements);

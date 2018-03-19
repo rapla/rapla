@@ -35,9 +35,9 @@ public final class AttributeEditTest extends GUITestCase
         RaplaFacade facade = null;
         final Logger logger = getLogger();
         RaplaImages raplaImages = new RaplaImages(logger);
-        final RaplaListEditFactory raplaListEditFactory = new RaplaListEditFactory (raplaImages);
         BundleManager bundleManager = new DefaultBundleManager();
         RaplaResources i18n = new RaplaResources(bundleManager);
+        final RaplaListEditFactory raplaListEditFactory = new RaplaListEditFactory (raplaImages, i18n);
         CommandScheduler scheduler = new SwingSchedulerImpl(logger);
         DialogUiFactoryInterface dialogUiFactory = new DialogUiFactory(i18n, raplaImages, scheduler,bundleManager,  logger);
         AttributeEdit editor = new AttributeEdit(getFacade(), i18n, getRaplaLocale(), getLogger(), null, raplaListEditFactory, dialogUiFactory);
@@ -50,9 +50,9 @@ public final class AttributeEditTest extends GUITestCase
         RaplaFacade facade = null;
         final Logger logger = getLogger();
         RaplaImages raplaImages = new RaplaImages(logger);
-        final RaplaListEditFactory raplaListEditFactory = new RaplaListEditFactory (raplaImages);
         BundleManager bundleManager = new DefaultBundleManager();
         RaplaResources i18n = new RaplaResources(bundleManager);
+        final RaplaListEditFactory raplaListEditFactory = new RaplaListEditFactory (raplaImages, i18n);
         CommandScheduler scheduler = new SwingSchedulerImpl(logger);
         DialogUiFactoryInterface dialogUiFactory = new DialogUiFactory(i18n, raplaImages, scheduler,bundleManager,  logger);
         AttributeEdit editor = new AttributeEdit(getFacade(), i18n, getRaplaLocale(), getLogger(), null, raplaListEditFactory, dialogUiFactory);

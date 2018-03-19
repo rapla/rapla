@@ -12,11 +12,13 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.client.swing.toolkit;
 
+import io.reactivex.functions.BiFunction;
 import org.rapla.components.util.Tools;
+import org.rapla.entities.Category;
+import org.rapla.scheduler.Observable;
+import org.rapla.scheduler.Promise;
 
-import javax.swing.BorderFactory;
-import javax.swing.JScrollPane;
-import javax.swing.JTree;
+import javax.swing.*;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
 import javax.swing.event.TreeSelectionEvent;
@@ -27,8 +29,8 @@ import javax.swing.tree.TreeModel;
 import javax.swing.tree.TreeNode;
 import javax.swing.tree.TreePath;
 import javax.swing.tree.TreeSelectionModel;
-import java.awt.Color;
-import java.awt.Point;
+import java.awt.*;
+import java.awt.dnd.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.MouseEvent;
@@ -486,6 +488,128 @@ final public class RaplaTree extends JScrollPane {
             i++;
         }
     }
+
+    public void addDragAndDrop(BiFunction<Object,Object,Promise<Void>> moveFunction)
+    {
+        JTree tree = getTree();
+        tree.setDragEnabled(true);
+        tree.setDropMode(DropMode.ON);
+        tree.setDropTarget(new DropTarget(tree, TransferHandler.MOVE, new DropTargetAdapter()
+        {
+            private final Rectangle _raCueLine = new Rectangle();
+            private final Color _colorCueLine = Color.blue;
+            private TreePath lastPath = null;
+
+            @Override
+            public void dragOver(DropTargetDragEvent dtde)
+            {
+                TreePath selectionPath = tree.getSelectionPath();
+                TreePath sourcePath = selectionPath.getParentPath();
+                DefaultMutableTreeNode selectedNode = (DefaultMutableTreeNode) selectionPath.getLastPathComponent();
+                Graphics2D g2 = (Graphics2D) tree.getGraphics();
+                final Point dropLocation = dtde.getLocation();
+                TreePath path = tree.getClosestPathForLocation(dropLocation.x, dropLocation.y);
+                if(isDropAllowed(sourcePath, path, selectedNode))
+                {
+                    if (lastPath == null || !lastPath.equals(path))
+                    {
+                        Rectangle raPath;
+                        Color color;
+                        if ( lastPath != null )
+                        {
+                            raPath  = tree.getPathBounds(lastPath);
+                            if (raPath != null) {
+                                color = Color.white;
+                                drawLine(g2, raPath, color);
+                            }
+                        }
+                        raPath = tree.getPathBounds(path);
+                        color = _colorCueLine;
+                        drawLine(g2, raPath, color);
+                        lastPath = path;
+                    }
+                }
+                else
+                {
+                    if(lastPath != null)
+                    {
+                        Rectangle raPath = tree.getPathBounds(path);
+                        if (raPath != null) {
+                            drawLine(g2, raPath, Color.white);
+                        }
+                    }
+                    lastPath = null;
+                }
+            }
+
+            private void drawLine(Graphics2D g2, Rectangle raPath, Color color)
+            {
+                _raCueLine.setRect(0, raPath.y, tree.getWidth(), 2);
+                g2.setColor(color);
+                g2.fill(_raCueLine);
+            }
+
+            @Override
+            public void dragEnter(DropTargetDragEvent dtde)
+            {
+                TreePath selectionPath = tree.getSelectionPath();
+                DefaultMutableTreeNode selectedNode = (DefaultMutableTreeNode) selectionPath.getLastPathComponent();
+                if (!(selectedNode.getUserObject() instanceof Category))
+                {
+                    dtde.rejectDrag();
+                    return;
+                }
+                dtde.acceptDrag(DnDConstants.ACTION_MOVE);
+            }
+
+            @Override
+            public void drop(DropTargetDropEvent dtde)
+            {
+                TreePath selectionPath = tree.getSelectionPath();
+                TreePath sourcePath = selectionPath.getParentPath();
+                DefaultMutableTreeNode selectedNode = (DefaultMutableTreeNode) selectionPath.getLastPathComponent();
+                Point dropLocation = dtde.getLocation();
+                TreePath targetPath = tree.getClosestPathForLocation(dropLocation.x, dropLocation.y);
+                if (isDropAllowed(sourcePath, targetPath, selectedNode))
+                {
+                    DefaultMutableTreeNode targetParentNode = (DefaultMutableTreeNode) targetPath.getLastPathComponent();
+                    try {
+                        final Promise<Void> voidPromise;
+                        voidPromise = moveFunction.apply(selectedNode.getUserObject(), targetParentNode.getUserObject());
+                        voidPromise.execOn(SwingUtilities::invokeLater).thenRun(() ->{
+                            dtde.dropComplete(true);
+                        });
+                    } catch (Exception e) {
+                        throw new IllegalStateException(e);
+                    }
+
+                }
+                else
+                {
+                    dtde.rejectDrop();
+                    dtde.dropComplete(false);
+                }
+            }
+
+
+            private boolean isDropAllowed(TreePath sourcePath, TreePath targetPath, DefaultMutableTreeNode selectedNode)
+            {
+                if (selectedNode.getUserObject() instanceof Category
+                        && ((DefaultMutableTreeNode) targetPath.getLastPathComponent()).getUserObject() instanceof Category)
+                {
+                    Category targetCategory = (Category) ((DefaultMutableTreeNode) targetPath.getLastPathComponent()).getUserObject();
+                    if(targetCategory.getId().equals(Category.SUPER_CATEGORY_REF.getId()))
+                    {
+                        return false;
+                    }
+                    return true;
+                }
+                return false;
+            }
+
+        }));
+    }
+
 }
 
 

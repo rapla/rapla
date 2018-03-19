@@ -96,7 +96,7 @@ public class CalendarOption extends RaplaGUIComponent implements UserOptionPanel
         worktimeStart.setRowsPerHour( 1 );
         worktimeEnd = createRaplaTime(ioInterface);
         worktimeEnd.setRowsPerHour( 1 );
-        double pre = TableLayout.PREFERRED;
+               double pre = TableLayout.PREFERRED;
         double fill = TableLayout.FILL;
         // rows = 8 columns = 4
         panel.setLayout( new TableLayout(new double[][] {{pre, 5, pre, 5 , pre, 5, pre}, {pre,5,pre,5,pre,5,pre,5,pre,5,pre,5,pre,5,pre,5,pre,5,pre,5,pre,5,pre,5,pre,5,fill}}));

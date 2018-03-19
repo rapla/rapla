@@ -617,8 +617,13 @@ public class AllocatableSelection extends RaplaGUIComponent implements Appointme
             DefaultMutableTreeNode node = (DefaultMutableTreeNode) p.getLastPathComponent();
             {
                 Object obj = node.getUserObject();
-                if (obj != null)
+                if (obj != null ) {
+                    if ( obj instanceof DynamicType)
+                    {
+                        continue;
+                    }
                     list.add(obj);
+                }
             }
             Enumeration<?> tt = node.children();
             for (; tt.hasMoreElements();)

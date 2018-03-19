@@ -160,6 +160,7 @@ public class DynamicTypeEditUI extends RaplaGUIComponent
         editPanel.add(attributeEdit.getComponent(),"1,14,3,14");
 
 
+        final SwingPopupContext popupContext = new SwingPopupContext(getComponent(), null);
         annotationButton.addActionListener(new ActionListener() {
             
             @Override
@@ -167,7 +168,7 @@ public class DynamicTypeEditUI extends RaplaGUIComponent
                 try {
                     showAnnotationDialog();
                 } catch (RaplaException ex) {
-                    dialogUiFactory.showException(ex, new SwingPopupContext(getComponent(), null));
+                    dialogUiFactory.showException(ex, popupContext);
                 }
                 
             }
@@ -192,7 +193,7 @@ public class DynamicTypeEditUI extends RaplaGUIComponent
                 try {
                     updateAnnotations();
                 } catch (RaplaException ex) {
-                    dialogUiFactory.showException(ex, new SwingPopupContext(getComponent(), null));
+                    dialogUiFactory.showException(ex, popupContext);
                 }
             }
 
@@ -205,57 +206,51 @@ public class DynamicTypeEditUI extends RaplaGUIComponent
     			    {
     			        return;
     			    }
-    			    try {
-    					int selectedIndex = colorChooser.getSelectedIndex();
-                        Attribute firstAttributeWithAnnotation = ((DynamicTypeImpl)dynamicType).getFirstAttributeWithAnnotation(AttributeAnnotations.KEY_COLOR);
-                        if ( firstAttributeWithAnnotation != null || selectedIndex != 1)
-    					{
-    						return;
-    					}
-                        Attribute attribute = dynamicType.getAttribute("color");
-                        if ( attribute == null)
-                        {
-                            attribute = attributeEdit.getSelectedAttribute();
-                        }
+                    int selectedIndex = colorChooser.getSelectedIndex();
+                    Attribute firstAttributeWithAnnotation = ((DynamicTypeImpl)dynamicType).getFirstAttributeWithAnnotation(AttributeAnnotations.KEY_COLOR);
+                    if ( firstAttributeWithAnnotation != null || selectedIndex != 1)
+                    {
+                        return;
+                    }
+                    Attribute colorAttribute = dynamicType.getAttribute("color");
+                    if ( colorAttribute == null)
+                    {
+                        colorAttribute = attributeEdit.getSelectedAttribute();
+                    }
+                    final Attribute attribute = colorAttribute;
 
-                        if ( attribute != null)
+                    if ( attribute != null)
+                    {
+                        AttributeType type = attribute.getType();
+                        if ( type != AttributeType.STRING  && type != AttributeType.CATEGORY)
                         {
-                            AttributeType type = attribute.getType();
-                            if ( type != AttributeType.STRING  && type != AttributeType.CATEGORY)
-                            {
-                                dialogUiFactory.showWarning("Only string or category types are allowed for color attribute", new SwingPopupContext(getComponent(), null));
-                                colorChooser.setSelectedIndex(2);
-                                return;
-                            }
-                            DialogInterface ui = dialogUiFactory.createTextDialog(new SwingPopupContext(getMainComponent(), null), getString("color.manual"), getString("attribute_color_dialog"), new String[]{getString("yes"),getString("no")});
-                            ui.start(true);
-                            if (ui.getSelectedIndex() == 0)
-                            {
+                            dialogUiFactory.showWarning("Only string or category types are allowed for color attribute", popupContext);
+                            colorChooser.setSelectedIndex(2);
+                            return;
+                        }
+                        DialogInterface ui = dialogUiFactory.createTextDialog(popupContext, getString("color.manual"), getString("attribute_color_dialog"), new String[]{getString("yes"),getString("no")});
+                        ui.start(true).thenAccept( index->
+                        {
+                            if (index == 0) {
                                 attribute.setAnnotation(AttributeAnnotations.KEY_COLOR, "true");
-                                attributeEdit.setDynamicType( dynamicType);
-                            }
-                            else
-                            {
+                                attributeEdit.setDynamicType(dynamicType);
+                            } else {
                                 colorChooser.setSelectedIndex(2);
                             }
-                        }
-                        else
+                        });
+                    }
+                    else
+                    {
+                        DialogInterface ui = dialogUiFactory.createTextDialog(popupContext, getString("color.manual"), getString("attribute_color_dialog"), new String[]{getString("yes"),getString("no")});
+                        ui.start(true).thenAccept( index->
                         {
-                            DialogInterface ui = dialogUiFactory.createTextDialog(new SwingPopupContext(getMainComponent(), null), getString("color.manual"), getString("attribute_color_dialog"), new String[]{getString("yes"),getString("no")});
-    						ui.start(true);
-    						if (ui.getSelectedIndex() == 0)
-    						{
-    							createNewColorAttribute();
-    						}
-    						else
-    						{
-    							colorChooser.setSelectedIndex(2);
-    						}
-                        }
-    				} catch (RaplaException ex) {
-    				    dialogUiFactory.showException(ex, new SwingPopupContext(getMainComponent(), null));
-					}
-    				
+                            if (index == 0) {
+                                createNewColorAttribute();
+                            } else {
+                                colorChooser.setSelectedIndex(2);
+                            }
+                        }).exceptionally( (ex)->dialogUiFactory.showException(ex, popupContext));
+                    }
     			}
 
                 private void createNewColorAttribute() throws RaplaException

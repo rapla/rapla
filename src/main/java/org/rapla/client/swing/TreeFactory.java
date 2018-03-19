@@ -1,5 +1,6 @@
 package org.rapla.client.swing;
 
+import org.rapla.client.swing.internal.view.TreeFactoryImpl;
 import org.rapla.client.swing.toolkit.TreeToolTipRenderer;
 import org.rapla.entities.Category;
 import org.rapla.entities.Named;
@@ -18,14 +19,12 @@ public interface TreeFactory {
 
 	TreeModel createConflictModel(Collection<Conflict> conflicts ) throws RaplaException;
 	
-    DefaultMutableTreeNode newNamedNode(Named element);
+    TreeFactoryImpl.NamedNode newNamedNode(Named element);
 
 	TreeModel createModel(Category category);
 	
 	TreeModel createModel(Collection<Category> categories, boolean includeChildren);
 	
-	TreeModel createModelFlat(Named[] element);
-
 	TreeToolTipRenderer createTreeToolTipRenderer();
 	TreeCellRenderer createConflictRenderer();
 	TreeCellRenderer createRenderer();

@@ -312,6 +312,8 @@ public interface RaplaFacade
      * @throws RaplaException */
     PeriodModel getPeriodModelFor(String key) throws RaplaException;
 
+    Promise<Void> moveCategory(Category categoryToMove, Category targetCategory);
+
     enum ChangeState
     {
         latest,newerVersionAvailable,deleted;

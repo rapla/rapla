@@ -277,7 +277,7 @@ import java.util.TreeMap;
         }
         if (isAdmin)
         {
-            if (allocatableNodeContext)
+            if (allocatableNodeContext && addNewReservationMenu)
             {
                 addTypeMenuNew(menu, DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RESOURCE, popupContext);
                 addTypeMenuNew(menu, DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_PERSON, popupContext);
@@ -302,11 +302,6 @@ import java.util.TreeMap;
             }
         }
         return menu;
-    }
-
-    public MenuInterface addObjectMenu(MenuInterface menu, SwingMenuContext context) throws RaplaException
-    {
-        return addObjectMenu(menu, context, "EDIT_BEGIN");
     }
 
     public MenuInterface addObjectMenu(MenuInterface menu, SwingMenuContext context, String afterId) throws RaplaException
@@ -347,7 +342,6 @@ import java.util.TreeMap;
         }
         else if (isMultiEditSupported(editableObjects))
         {
-
             addAction(menu, popupContext, afterId).setEditSelection(editObjects);
         }
         if (editableObjects.size() == 1)
@@ -516,7 +510,6 @@ import java.util.TreeMap;
 
     private RaplaObjectAction newObjectAction(PopupContext popupContext)
     {
-        final EditController editController = editControllerProvider.get();
         RaplaObjectAction action = new RaplaObjectAction(getClientFacade(), getI18n(), getRaplaLocale(), getLogger(), popupContext,
                 raplaImages, actionsProvider);
         return action;

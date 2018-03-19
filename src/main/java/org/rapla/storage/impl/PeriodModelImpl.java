@@ -106,7 +106,7 @@ class PeriodModelImpl implements PeriodModel
 
     	if (isPeriodModified(updatedEntities, toRemove))
     	{
-    		update(updatedEntities, toRemove);
+    		update();
     	}
 	}
 

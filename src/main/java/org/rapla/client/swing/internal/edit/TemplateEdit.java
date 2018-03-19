@@ -168,7 +168,7 @@ public class TemplateEdit extends RaplaGUIComponent
                 }
             }
         };
-        templateList = raplaListEditFactory.create(i18n, allocatableEdit.getComponent(), callback, true);
+        templateList = raplaListEditFactory.create( allocatableEdit.getComponent(), callback, true);
         templateList.setNameProvider((object)->object.getName(getLocale()));
         templateList.getList().addListSelectionListener(e->
             {

@@ -18,6 +18,7 @@ import org.rapla.client.swing.TreeFactory;
 import org.rapla.client.swing.images.RaplaImages;
 import org.rapla.client.swing.internal.SwingPopupContext;
 import org.rapla.client.swing.internal.common.NamedListCellRenderer;
+import org.rapla.client.swing.internal.edit.AllocatableEditUI;
 import org.rapla.client.swing.internal.edit.ClassificationEditUI;
 import org.rapla.client.swing.internal.edit.fields.BooleanField.BooleanFieldFactory;
 import org.rapla.client.swing.internal.edit.fields.DateField.DateFieldFactory;
@@ -35,6 +36,7 @@ import org.rapla.entities.dynamictype.Classifiable;
 import org.rapla.entities.dynamictype.Classification;
 import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.entities.dynamictype.DynamicTypeAnnotations;
+import org.rapla.entities.dynamictype.internal.DynamicTypeImpl;
 import org.rapla.facade.client.ClientFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
@@ -126,10 +128,10 @@ public  class  ClassificationField<T extends Classifiable> extends AbstractEditF
 	
 	public void setTypeChooserVisible( boolean visible)
 	{
-	    if ( typeSelector != null)
-	    {
-	        typeSelector.setVisible( visible);
-	    }
+//	    if ( typeSelector != null)
+//	    {
+//	        typeSelector.setVisible( visible);
+//	    }
 	}
 
 	@SuppressWarnings("unchecked")
@@ -163,6 +165,7 @@ public  class  ClassificationField<T extends Classifiable> extends AbstractEditF
 		}
 
 		String classificationType = null;
+		boolean isInternal = false;
 		if (Reservation.class == raplaType) {
 			classificationType = DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RESERVATION;
 		} else if (Allocatable.class == raplaType) {
@@ -170,12 +173,18 @@ public  class  ClassificationField<T extends Classifiable> extends AbstractEditF
 			boolean arePersons = true;
 			// checks if Classifiables are person
 			for (Classifiable c : classifiables) {
-				if (!((Allocatable) c).isPerson()) {
+				if (((DynamicTypeImpl)c.getClassification().getType()).isInternal())
+				{
+					isInternal = true;
+				}
+				else if (!((Allocatable) c).isPerson()) {
 					arePersons = false;
 				}
 			}
 
-			if (arePersons) {
+			if (isInternal) {
+				classificationType = DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RAPLATYPE;
+			} else if (arePersons) {
 				classificationType = DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_PERSON;
 			} else {
 				classificationType = DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RESOURCE;
@@ -196,22 +205,19 @@ public  class  ClassificationField<T extends Classifiable> extends AbstractEditF
 		else
 			dynamicType = null;
 		oldDynamicType = dynamicType;
-
 		RaplaListComboBox jComboBox = new RaplaListComboBox(raplaLocale,types);
 		typeSelector = jComboBox;
-		typeSelector.setEnabled( types.length > 1);
-		if (dynamicType != null)
+		if (dynamicType != null) {
 			// set common dynamicType of the Classifications in ComboBox
 			typeSelector.setSelectedItem(dynamicType);
-		else {
+		} else {
 			// ... otherwise set place holder for the several values
 			typeSelector.addItem(multipleValues);
 			typeSelector.setSelectedItem(multipleValues);
 		}
 		typeSelector.setRenderer(new NamedListCellRenderer(i18n.getLocale()));
 		typeSelector.addActionListener(this);
-		typeSelector.setEnabled(!canNotWriteOneAttribute(list));
-		
+		typeSelector.setEnabled(types.length>1 && !isInternal && !canNotWriteOneAttribute(list));
 		content.setLayout(new BorderLayout());
 		JPanel header = new JPanel();
 		header.setLayout(new BoxLayout(header, BoxLayout.X_AXIS));
@@ -224,7 +230,6 @@ public  class  ClassificationField<T extends Classifiable> extends AbstractEditF
         header.add(tabSelector);
         header.add(Box.createHorizontalGlue());
         tabSelector.addActionListener( this);
-        
         updateTabSelectionText();
         
 		content.add(header, BorderLayout.NORTH);

@@ -368,6 +368,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
             String key = RAPLA_TEMPLATE;
             type.setKey(key);
             type.setId(key);
+            type.getName().setName("en","template");
             type.setAnnotation(DynamicTypeAnnotations.KEY_CLASSIFICATION_TYPE, DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RAPLATYPE);
             addAttributeWithInternalId(type, "name", AttributeType.STRING);
             {

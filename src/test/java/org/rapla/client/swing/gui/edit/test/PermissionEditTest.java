@@ -68,7 +68,7 @@ public final class PermissionEditTest extends GUITestCase
         InfoFactory infoFactory = new InfoFactoryImpl(getFacade(), i18n, getRaplaLocale(), getLogger(), appointmentFormater, ioInterface, raplaImages, dialogUiFactory);
         TreeFactory treeFactory = new TreeFactoryImpl(getFacade(), i18n, getRaplaLocale(), getLogger(), infoFactory, raplaImages);
         DateRenderer dateRenderer = new RaplaDateRenderer(getFacade().getRaplaFacade(),  getRaplaLocale());
-        RaplaListEditFactory raplaListEditFactory = new RaplaListEditFactory(raplaImages);
+        RaplaListEditFactory raplaListEditFactory = new RaplaListEditFactory(raplaImages, i18n);
         DateFieldFactory dateFieldFactory = new DateFieldFactory(getFacade(), i18n, getRaplaLocale(), getLogger(), dateRenderer, ioInterface);
         LongFieldFactory longFieldFactory = new LongFieldFactory(facade, i18n, raplaLocale, logger, ioInterface);
         PermissionFieldFactory permissionFieldFactory = new PermissionFieldFactory(getFacade(), i18n, getRaplaLocale(), getLogger(), treeFactory, raplaImages, dateRenderer, dialogUiFactory, dateFieldFactory, longFieldFactory);
