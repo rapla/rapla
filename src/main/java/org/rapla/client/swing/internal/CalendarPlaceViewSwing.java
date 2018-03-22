@@ -49,7 +49,7 @@ import java.awt.event.ActionListener;
     GridBagConstraints c = new GridBagConstraints();
     RaplaResources i18n;
 
-    @Inject public CalendarPlaceViewSwing(RaplaResources i18n, final RaplaImages raplaImages)
+    @Inject public CalendarPlaceViewSwing(RaplaResources i18n)
     {
         this.i18n = i18n;
 
@@ -69,7 +69,7 @@ import java.awt.event.ActionListener;
         minimized.add(tree);
 
         max.setIcon(UIManager.getDefaults().getIcon("InternalFrame.maximizeIcon"));
-        tree.setIcon(raplaImages.getIconFromKey("icon.tree"));
+        tree.setIcon(RaplaImages.getIcon(i18n.getIcon("icon.tree")));
         JButton min = new RaplaButton(RaplaButton.SMALL);
         ActionListener minmaxAction = new ActionListener()
         {

@@ -18,7 +18,6 @@ import org.rapla.client.swing.TreeFactory;
 import org.rapla.client.swing.images.RaplaImages;
 import org.rapla.client.swing.internal.SwingPopupContext;
 import org.rapla.client.swing.internal.common.NamedListCellRenderer;
-import org.rapla.client.swing.internal.edit.AllocatableEditUI;
 import org.rapla.client.swing.internal.edit.ClassificationEditUI;
 import org.rapla.client.swing.internal.edit.fields.BooleanField.BooleanFieldFactory;
 import org.rapla.client.swing.internal.edit.fields.DateField.DateFieldFactory;
@@ -83,14 +82,12 @@ public  class  ClassificationField<T extends Classifiable> extends AbstractEditF
 	RaplaButton tabSelector;
 	
     boolean mainTabSelected = true;
-    private final RaplaImages raplaImages;
     private final DialogUiFactoryInterface dialogUiFactory;
     
-	ClassificationField(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, TreeFactory treeFactory, RaplaImages raplaImages, DateFieldFactory dateFieldFactory, DialogUiFactoryInterface dialogUiFactory, BooleanFieldFactory booleanFieldFactory, TextFieldFactory textFieldFactory, LongFieldFactory longFieldFactory)  {
+	ClassificationField(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, TreeFactory treeFactory, DateFieldFactory dateFieldFactory, DialogUiFactoryInterface dialogUiFactory, BooleanFieldFactory booleanFieldFactory, TextFieldFactory textFieldFactory, LongFieldFactory longFieldFactory)  {
 		super(facade, i18n, raplaLocale, logger);
-        this.raplaImages = raplaImages;
         this.dialogUiFactory = dialogUiFactory;
-		editUI = new ClassificationEditUI(facade, i18n, raplaLocale, logger, treeFactory, raplaImages, dateFieldFactory, dialogUiFactory, booleanFieldFactory, textFieldFactory, longFieldFactory);
+		editUI = new ClassificationEditUI(facade, i18n, raplaLocale, logger, treeFactory, dateFieldFactory, dialogUiFactory, booleanFieldFactory, textFieldFactory, longFieldFactory);
 		editUI.addChangeListener( new ChangeListener() { 
             
             @Override
@@ -272,7 +269,7 @@ public  class  ClassificationField<T extends Classifiable> extends AbstractEditF
                 );
         tabSelector.setIcon( mainTabSelected ?
                 null
-                : raplaImages.getIconFromKey("icon.list")
+                : RaplaImages.getIcon(i18n.getIcon("icon.list"))
                 );
     }
 
@@ -349,7 +346,6 @@ public  class  ClassificationField<T extends Classifiable> extends AbstractEditF
 	public static class ClassificationFieldFactory{
 	    
 	    private final TreeFactory treeFactory;
-	    private final RaplaImages raplaImages;
 	    private final DateFieldFactory dateFieldFactory;
 	    private final DialogUiFactoryInterface dialogUiFactory;
         private final BooleanFieldFactory booleanFieldFactory;
@@ -361,7 +357,7 @@ public  class  ClassificationField<T extends Classifiable> extends AbstractEditF
         private final LongFieldFactory longFieldFactory;
 
 	    @Inject
-        public ClassificationFieldFactory(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, TreeFactory treeFactory, RaplaImages raplaImages, DateFieldFactory dateFieldFactory,
+        public ClassificationFieldFactory(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, TreeFactory treeFactory,  DateFieldFactory dateFieldFactory,
                 DialogUiFactoryInterface dialogUiFactory, BooleanFieldFactory booleanFieldFactory, TextFieldFactory textFieldFactory, LongFieldFactory longFieldFactory)
         {
             super();
@@ -370,7 +366,6 @@ public  class  ClassificationField<T extends Classifiable> extends AbstractEditF
             this.raplaLocale = raplaLocale;
             this.logger = logger;
             this.treeFactory = treeFactory;
-            this.raplaImages = raplaImages;
             this.dateFieldFactory = dateFieldFactory;
             this.dialogUiFactory = dialogUiFactory;
             this.booleanFieldFactory = booleanFieldFactory;
@@ -380,7 +375,7 @@ public  class  ClassificationField<T extends Classifiable> extends AbstractEditF
 
         public ClassificationField create()
 	    {
-	        return new ClassificationField(facade, i18n, raplaLocale, logger, treeFactory, raplaImages, dateFieldFactory, dialogUiFactory, booleanFieldFactory, textFieldFactory, longFieldFactory);
+	        return new ClassificationField(facade, i18n, raplaLocale, logger, treeFactory,  dateFieldFactory, dialogUiFactory, booleanFieldFactory, textFieldFactory, longFieldFactory);
 	    }
 	}
 }

@@ -18,7 +18,7 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 import javax.swing.JFrame;
 import javax.swing.JRootPane;
-import java.awt.*;
+import java.awt.AWTEvent;
 import java.awt.event.WindowEvent;
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyVetoException;

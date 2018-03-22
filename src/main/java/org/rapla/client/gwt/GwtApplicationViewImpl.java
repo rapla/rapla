@@ -30,8 +30,6 @@ import org.rapla.client.gwt.view.RaplaPopups;
 import org.rapla.facade.ModificationEvent;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaInitializationException;
-import org.rapla.inject.DefaultImplementation;
-import org.rapla.inject.InjectionContext;
 import org.rapla.scheduler.Observable;
 
 import javax.inject.Inject;

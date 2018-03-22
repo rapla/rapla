@@ -13,6 +13,11 @@
 package org.rapla.client.swing;
 
 import org.rapla.RaplaResources;
+import org.rapla.client.menu.IdentifiableMenuEntry;
+import org.rapla.client.menu.MenuInterface;
+import org.rapla.client.menu.MenuItemFactory;
+import org.rapla.client.swing.images.RaplaImages;
+import org.rapla.components.i18n.I18nIcon;
 import org.rapla.facade.client.ClientFacade;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.logger.Logger;
@@ -26,6 +31,7 @@ import java.util.Map;
 public abstract class RaplaAction extends RaplaGUIComponent implements Action {
     private Map<String,Object> values = new HashMap<String,Object>();
     private ArrayList<PropertyChangeListener> listenerList = new ArrayList<PropertyChangeListener>();
+    I18nIcon icon;
 
     public RaplaAction(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger)
     {
@@ -40,6 +46,11 @@ public abstract class RaplaAction extends RaplaGUIComponent implements Action {
         Object oldValue = getValue(key);
         values.put(key,value);
         firePropertyChange(key,oldValue,value);
+    }
+
+    public void setIcon(I18nIcon icon) {
+        this.icon = icon;
+        putValue(SMALL_ICON , RaplaImages.getIcon( icon));
     }
 
     public void addPropertyChangeListener(PropertyChangeListener listener) {
@@ -79,4 +90,19 @@ public abstract class RaplaAction extends RaplaGUIComponent implements Action {
         return (enabled != null && enabled.booleanValue());
     }
 
+    public String getName()
+    {
+        return (String) getValue(NAME);
+    }
+
+    public I18nIcon getIcon()
+    {
+        return icon;
+    }
+
+    public RaplaAction addTo(MenuInterface menu, MenuItemFactory menuItemFactory) {
+        final IdentifiableMenuEntry menuItem = menuItemFactory.createMenuItem(getName(), getIcon(), (context) -> actionPerformed());
+        menu.addMenuItem(menuItem);
+        return this;
+    }
 }

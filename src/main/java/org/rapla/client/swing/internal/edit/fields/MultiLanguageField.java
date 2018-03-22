@@ -58,14 +58,14 @@ public class MultiLanguageField extends AbstractEditField implements ChangeListe
     private final DialogUiFactoryInterface dialogUiFactory;
     private final IOInterface ioInterface;
 
-    private MultiLanguageField(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, RaplaImages raplaImages,
+    private MultiLanguageField(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger,
             IOInterface ioInterface, DialogUiFactoryInterface dialogUiFactory, TextFieldFactory textFieldFactory, String fieldName)
     {
-        this(facade, i18n, raplaLocale, logger, raplaImages, ioInterface, dialogUiFactory, textFieldFactory);
+        this(facade, i18n, raplaLocale, logger,  ioInterface, dialogUiFactory, textFieldFactory);
         setFieldName(fieldName);
     }
 
-    private MultiLanguageField(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, RaplaImages raplaImages,
+    private MultiLanguageField(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger,
             IOInterface ioInterface, DialogUiFactoryInterface dialogUiFactory, TextFieldFactory textFieldFactory)
     {
         super(facade, i18n, raplaLocale, logger);
@@ -77,7 +77,7 @@ public class MultiLanguageField extends AbstractEditField implements ChangeListe
         panel.add(textField.getComponent(), BorderLayout.CENTER);
         panel.add(button, BorderLayout.EAST);
         button.addActionListener(this);
-        button.setIcon(raplaImages.getIconFromKey("icon.language-select"));
+        button.setIcon(RaplaImages.getIcon(i18n.getIcon("icon.language-select")));
         textField.addChangeListener(this);
     }
 
@@ -244,20 +244,18 @@ public class MultiLanguageField extends AbstractEditField implements ChangeListe
         private final RaplaResources i18n;
         private final RaplaLocale raplaLocale;
         private final Logger logger;
-        private final RaplaImages raplaImages;
         private final DialogUiFactoryInterface dialogUiFactory;
         private final TextFieldFactory textFieldFactory;
         private final IOInterface ioInterface;
 
         @Inject
-        public MultiLanguageFieldFactory(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, RaplaImages raplaImages,
+        public MultiLanguageFieldFactory(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger,
                 DialogUiFactoryInterface dialogUiFactory, TextFieldFactory textFieldFactory, IOInterface ioInterface)
         {
             this.facade = facade;
             this.i18n = i18n;
             this.raplaLocale = raplaLocale;
             this.logger = logger;
-            this.raplaImages = raplaImages;
             this.dialogUiFactory = dialogUiFactory;
             this.textFieldFactory = textFieldFactory;
             this.ioInterface = ioInterface;
@@ -265,12 +263,12 @@ public class MultiLanguageField extends AbstractEditField implements ChangeListe
 
         public MultiLanguageField create()
         {
-            return new MultiLanguageField(facade, i18n, raplaLocale, logger, raplaImages, ioInterface, dialogUiFactory, textFieldFactory);
+            return new MultiLanguageField(facade, i18n, raplaLocale, logger,  ioInterface, dialogUiFactory, textFieldFactory);
         }
 
         public MultiLanguageField create(String fieldName)
         {
-            return new MultiLanguageField(facade, i18n, raplaLocale, logger, raplaImages, ioInterface, dialogUiFactory, textFieldFactory, fieldName);
+            return new MultiLanguageField(facade, i18n, raplaLocale, logger,  ioInterface, dialogUiFactory, textFieldFactory, fieldName);
         }
     }
 

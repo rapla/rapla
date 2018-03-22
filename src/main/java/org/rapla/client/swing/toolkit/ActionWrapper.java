@@ -1,9 +1,9 @@
 package org.rapla.client.swing.toolkit;
 
+import org.rapla.RaplaResources;
 import org.rapla.client.swing.Action;
 import org.rapla.client.swing.images.RaplaImages;
 import org.rapla.client.swing.internal.action.SaveableToggleAction;
-import org.rapla.components.xmlbundle.I18nBundle;
 
 import javax.swing.JMenuItem;
 import java.awt.event.ActionEvent;
@@ -12,19 +12,17 @@ import java.beans.PropertyChangeListener;
 public class ActionWrapper implements javax.swing.Action
 {
     private final Action delegate;
-    private final I18nBundle locale;
-    RaplaImages images;
+    private final RaplaResources i18n;
 
     public ActionWrapper(Action delegate)
     {
-        this(delegate, null, null);
+        this(delegate, null);
     }
 
-    public ActionWrapper(Action delegate, I18nBundle locale, RaplaImages images)
+    public ActionWrapper(Action delegate, RaplaResources i18n)
     {
         this.delegate = delegate;
-        this.locale = locale;
-        this.images = images;
+        this.i18n = i18n;
     }
 
     @Override
@@ -39,7 +37,7 @@ public class ActionWrapper implements javax.swing.Action
                 final boolean newSelected = !component.isSelected();
                 component.setSelected(newSelected);
                 javax.swing.ToolTipManager.sharedInstance().setEnabled(newSelected);
-                component.setIcon(newSelected ? images.getIconFromKey("icon.checked") : images.getIconFromKey("icon.unchecked"));
+                component.setIcon(RaplaImages.getIcon(newSelected ? i18n.getIcon("icon.checked") : i18n.getIcon("icon.unchecked")));
             }
         }
     }

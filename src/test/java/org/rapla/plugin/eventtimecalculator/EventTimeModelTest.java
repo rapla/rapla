@@ -4,12 +4,12 @@ import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
-import org.rapla.components.i18n.internal.DefaultBundleManager;
+import org.rapla.components.i18n.server.ServerBundleManager;
 
 @RunWith(JUnit4.class)
 public class EventTimeModelTest {
 
-	EventTimeCalculatorResources i18n = new EventTimeCalculatorResources(new DefaultBundleManager());
+	EventTimeCalculatorResources i18n = new EventTimeCalculatorResources(new ServerBundleManager());
     EventTimeModel model = new EventTimeModel(i18n);
 	{
 		model.setDurationOfBreak(15);

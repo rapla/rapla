@@ -3,7 +3,7 @@ package org.rapla.client.gwt;
 import com.google.gwt.i18n.client.NumberFormat;
 import jsinterop.annotations.JsIgnore;
 import org.rapla.components.i18n.BundleManager;
-import org.rapla.components.i18n.client.GwtBundleManager;
+import org.rapla.components.i18n.client.gwt.GwtBundleManager;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.internal.AbstractRaplaLocale;
 import org.rapla.inject.DefaultImplementation;

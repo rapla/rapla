@@ -53,30 +53,19 @@ public class SwingRaplaBlock extends RaplaBlock implements SwingBlock
 {
     private static BufferedImage exceptionImage;
     RaplaBlockView m_view = new RaplaBlockView();
-    private RaplaImages images;
 
-    public SwingRaplaBlock(RaplaBuilder.RaplaBlockContext blockContext, Date start, Date end, RaplaImages images)
+    public SwingRaplaBlock(RaplaBuilder.RaplaBlockContext blockContext, Date start, Date end)
     {
         super(blockContext, start, end);
-        this.images = images;
     }
 
     public Icon getRepeatingIcon() {
-        if ( images == null)
-        {
-            return null;
-        }
-        return images.getIconFromKey("icon.repeating");
-
+        return RaplaImages.getIcon(getI18n().getIcon("icon.repeating"));
     }
     
 
     public ImageIcon getExceptionBackgroundIcon() {
-        if ( images == null)
-        {
-            return null;
-        }
-        return images.getIconFromKey("icon.exceptionBackground");
+        return RaplaImages.getIcon(getI18n().getIcon("icon.exceptionBackground"));
     }
     
     private BufferedImage getExceptionImage()
@@ -563,12 +552,6 @@ public class SwingRaplaBlock extends RaplaBlock implements SwingBlock
     public String toString()
     {
     	return getName() + " " + getStart() + " - " + getEnd();
-    }
-
-
-    public void setImages(RaplaImages images)
-    {
-        this.images = images;
     }
 
 }

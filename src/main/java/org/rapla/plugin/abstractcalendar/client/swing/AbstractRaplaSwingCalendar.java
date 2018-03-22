@@ -19,15 +19,13 @@ import org.rapla.client.EditController;
 import org.rapla.client.PopupContext;
 import org.rapla.client.ReservationController;
 import org.rapla.client.dialog.DialogUiFactoryInterface;
+import org.rapla.client.dialog.InfoFactory;
 import org.rapla.client.extensionpoints.ObjectMenuFactory;
 import org.rapla.client.internal.RaplaClipboard;
-import org.rapla.client.dialog.InfoFactory;
-import org.rapla.client.swing.MenuFactory;
+import org.rapla.client.menu.MenuFactory;
 import org.rapla.client.swing.RaplaGUIComponent;
 import org.rapla.client.swing.SwingCalendarView;
 import org.rapla.client.swing.VisibleTimeInterval;
-import org.rapla.client.swing.images.RaplaImages;
-import org.rapla.client.swing.internal.SwingPopupContext;
 import org.rapla.components.calendar.DateChangeEvent;
 import org.rapla.components.calendar.DateChangeListener;
 import org.rapla.components.calendar.DateRenderer;
@@ -95,7 +93,6 @@ public abstract class AbstractRaplaSwingCalendar extends RaplaGUIComponent
     protected final RaplaClipboard clipboard;
     protected final ReservationController reservationController;
     protected final InfoFactory infoFactory;
-    protected final RaplaImages raplaImages;
     protected final DialogUiFactoryInterface dialogUiFactory;
     protected final AppointmentFormater appointmentFormater;
     protected final EditController editController;
@@ -104,7 +101,7 @@ public abstract class AbstractRaplaSwingCalendar extends RaplaGUIComponent
     public AbstractRaplaSwingCalendar(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, CalendarModel model, boolean editable,
             boolean printing, final Set<ObjectMenuFactory> objectMenuFactories, MenuFactory menuFactory, Provider<DateRenderer> dateRendererProvider,
             CalendarSelectionModel calendarSelectionModel, RaplaClipboard clipboard, ReservationController reservationController, InfoFactory infoFactory,
-            RaplaImages raplaImages, DateRenderer dateRenderer, DialogUiFactoryInterface dialogUiFactory, IOInterface ioInterface,
+            DateRenderer dateRenderer, DialogUiFactoryInterface dialogUiFactory, IOInterface ioInterface,
             AppointmentFormater appointmentFormater, EditController editController) throws RaplaException
     {
         super(facade, i18n, raplaLocale, logger);
@@ -117,7 +114,6 @@ public abstract class AbstractRaplaSwingCalendar extends RaplaGUIComponent
         this.clipboard = clipboard;
         this.reservationController = reservationController;
         this.infoFactory = infoFactory;
-        this.raplaImages = raplaImages;
         this.dialogUiFactory = dialogUiFactory;
         this.appointmentFormater = appointmentFormater;
         this.editController = editController;
@@ -174,7 +170,7 @@ public abstract class AbstractRaplaSwingCalendar extends RaplaGUIComponent
     protected ViewListener createListener() throws RaplaException
     {
         return new RaplaCalendarViewListener(getClientFacade(), getI18n(), getRaplaLocale(), getLogger(), model, view.getComponent(), objectMenuFactories,
-                menuFactory, calendarSelectionModel, clipboard, reservationController, infoFactory, raplaImages, dialogUiFactory, editController);
+                menuFactory, calendarSelectionModel, clipboard, reservationController, infoFactory,  dialogUiFactory, editController);
     }
 
     public JComponent getDateSelection()
@@ -269,7 +265,7 @@ public abstract class AbstractRaplaSwingCalendar extends RaplaGUIComponent
 
     protected Promise<RaplaBuilder> createBuilder()
     {
-        RaplaBuilder builder = new SwingRaplaBuilder(getFacade(), getI18n(), getRaplaLocale(), getLogger(), appointmentFormater, raplaImages);
+        RaplaBuilder builder = new SwingRaplaBuilder(getFacade(), getI18n(), getRaplaLocale(), getLogger(), appointmentFormater);
         Date startDate = getStartDate();
         Date endDate = getEndDate();
         final Promise<RaplaBuilder> builderPromise = builder.initFromModel(model, startDate, endDate);

@@ -193,9 +193,6 @@ public class ExchangeConnectorUserOptions implements UserOptionPanel
                 dialog.setTitle("Exchange Login");
                 dialog.getAction(0).setRunnable(new Runnable()
                 {
-
-                    private static final long serialVersionUID = 1L;
-
                     @Override
                     public void run()
                     {

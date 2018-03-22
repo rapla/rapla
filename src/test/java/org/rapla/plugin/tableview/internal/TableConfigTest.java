@@ -6,7 +6,7 @@ import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
-import org.rapla.components.i18n.internal.DefaultBundleManager;
+import org.rapla.components.i18n.server.ServerBundleManager;
 import org.rapla.entities.MultiLanguageName;
 import org.rapla.entities.configuration.RaplaConfiguration;
 import org.rapla.framework.ConfigurationException;
@@ -108,7 +108,7 @@ public class TableConfigTest
         final Transport fromXml = (Transport) unmarshaller.unmarshal(new ByteArrayInputStream(out.toByteArray()));
 
         final RaplaConfiguration raplaConfig = TableConfig.print(fromXml.config);
-        final TableConfig test = TableConfig.read(raplaConfig, new RaplaLocaleImpl(new DefaultBundleManager()));
+        final TableConfig test = TableConfig.read(raplaConfig, new RaplaLocaleImpl(new ServerBundleManager()));
         final String json2 = gson.toJson(test);
         //System.out.println(json2);
         Assert.assertEquals(json, json2);

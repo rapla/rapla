@@ -21,8 +21,8 @@ import org.junit.runners.JUnit4;
 import org.rapla.AbstractTestWithServer;
 import org.rapla.entities.Category;
 import org.rapla.entities.User;
-import org.rapla.facade.client.ClientFacade;
 import org.rapla.facade.RaplaFacade;
+import org.rapla.facade.client.ClientFacade;
 import org.rapla.framework.RaplaException;
 
 import java.util.Locale;

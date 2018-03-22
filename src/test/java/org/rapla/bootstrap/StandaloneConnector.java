@@ -1,7 +1,6 @@
 package org.rapla.bootstrap;
 
 import java.lang.reflect.Method;
-
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 

@@ -1,10 +1,7 @@
 package org.rapla.reactivex;
 
-
-import io.reactivex.Completable;
 import io.reactivex.Flowable;
 import io.reactivex.Scheduler;
-import io.reactivex.Single;
 import io.reactivex.disposables.Disposable;
 import io.reactivex.processors.PublishProcessor;
 import io.reactivex.schedulers.Schedulers;
@@ -16,7 +13,6 @@ import org.rapla.scheduler.Observable;
 import org.rapla.scheduler.Promise;
 import org.rapla.scheduler.Subject;
 import org.rapla.scheduler.sync.UtilConcurrentCommandScheduler;
-import org.rapla.storage.impl.RaplaLock;
 
 import java.util.concurrent.TimeUnit;
 

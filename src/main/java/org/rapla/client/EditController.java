@@ -7,7 +7,6 @@ import org.rapla.client.internal.edit.EditTaskPresenter;
 import org.rapla.entities.Entity;
 import org.rapla.entities.domain.AppointmentBlock;
 import org.rapla.entities.domain.Reservation;
-import org.rapla.facade.RaplaFacade;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;

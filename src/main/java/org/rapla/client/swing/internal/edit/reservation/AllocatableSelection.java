@@ -14,12 +14,13 @@ package org.rapla.client.swing.internal.edit.reservation;
 
 import org.rapla.RaplaResources;
 import org.rapla.client.AppointmentListener;
+import org.rapla.client.PopupContext;
 import org.rapla.client.RaplaWidget;
 import org.rapla.client.dialog.DialogUiFactoryInterface;
 import org.rapla.client.dialog.InfoFactory;
-import org.rapla.client.swing.MenuFactory;
+import org.rapla.client.menu.MenuFactory;
+import org.rapla.client.menu.SelectionMenuContext;
 import org.rapla.client.swing.RaplaGUIComponent;
-import org.rapla.client.swing.SwingMenuContext;
 import org.rapla.client.swing.TreeFactory;
 import org.rapla.client.swing.images.RaplaImages;
 import org.rapla.client.swing.internal.FilterEditButton;
@@ -46,6 +47,7 @@ import org.rapla.components.treetable.TableToolTipRenderer;
 import org.rapla.components.treetable.TreeTableModel;
 import org.rapla.components.util.undo.CommandHistory;
 import org.rapla.components.util.undo.CommandUndo;
+import org.rapla.components.i18n.I18nIcon;
 import org.rapla.entities.Named;
 import org.rapla.entities.User;
 import org.rapla.entities.domain.Allocatable;
@@ -60,9 +62,9 @@ import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.entities.dynamictype.DynamicTypeAnnotations;
 import org.rapla.facade.CalendarModel;
 import org.rapla.facade.CalendarSelectionModel;
-import org.rapla.facade.client.ClientFacade;
 import org.rapla.facade.ModificationEvent;
 import org.rapla.facade.RaplaComponent;
+import org.rapla.facade.client.ClientFacade;
 import org.rapla.facade.internal.ModifiableCalendarState;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
@@ -201,13 +203,12 @@ public class AllocatableSelection extends RaplaGUIComponent implements Appointme
     private final CalendarModel model;
     private final MenuFactory menuFactory;
     private final InfoFactory infoFactory;
-    private final RaplaImages raplaImages;
     private final Provider<MultiCalendarPresenter> multiCalendarViewFactory;
     private final DialogUiFactoryInterface dialogUiFactory;
 
     public AllocatableSelection(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, boolean addCalendarButton,
             CommandHistory commandHistory, TreeFactory treeFactory, CalendarSelectionModel originalModel, AppointmentFormater appointmentFormater,
-            MenuFactory menuFactory, InfoFactory infoFactory, RaplaImages raplaImages,
+            MenuFactory menuFactory, InfoFactory infoFactory,
             DialogUiFactoryInterface dialogUiFactory, DateFieldFactory dateFieldFactory, Provider<MultiCalendarPresenter> multiCalendarViewFactory,
             BooleanFieldFactory booleanFieldFactory, FilterEditButtonFactory filterEditButtonFactory)
     {
@@ -220,7 +221,6 @@ public class AllocatableSelection extends RaplaGUIComponent implements Appointme
         this.permissionController = facade.getRaplaFacade().getPermissionController();
         this.menuFactory = menuFactory;
         this.infoFactory = infoFactory;
-        this.raplaImages = raplaImages;
         this.dialogUiFactory = dialogUiFactory;
         this.multiCalendarViewFactory = multiCalendarViewFactory;
         double pre = TableLayout.PREFERRED;
@@ -793,9 +793,9 @@ public class AllocatableSelection extends RaplaGUIComponent implements Appointme
         {
             Point p = evt.getPoint();
             Object selectedObject = evt.getSelectedObject();
-
+            PopupContext popupContext = new SwingPopupContext(getComponent(), p);
             JTreeTable table = ((JTreeTable) evt.getSource());
-            RaplaPopupMenu menu = new RaplaPopupMenu();
+            RaplaPopupMenu menu = new RaplaPopupMenu(popupContext);
             if (table == completeTable)
             {
                 menu.add(new JMenuItem(addAction));
@@ -808,7 +808,7 @@ public class AllocatableSelection extends RaplaGUIComponent implements Appointme
             }
             String seperatorId = "ADD_REMOVE_SEPERATOR";
             menu.add(new RaplaSeparator(seperatorId));
-            SwingMenuContext menuContext = createMenuContext(p, selectedObject, table);
+            SelectionMenuContext menuContext = new SelectionMenuContext( selectedObject, popupContext);
             Collection<?> list = getSelectedAllocatables(table.getTree());
             menuContext.setSelectedObjects(list);
             RaplaMenu newMenu = new RaplaMenu("new");
@@ -828,9 +828,10 @@ public class AllocatableSelection extends RaplaGUIComponent implements Appointme
         }
     }
 
-    protected SwingMenuContext createMenuContext(Point p, Object obj, JComponent table)
+    protected SelectionMenuContext createMenuContext(Point p, Object obj, JComponent table)
     {
-        SwingMenuContext menuContext = new SwingMenuContext( obj, new SwingPopupContext(getComponent(), p), table, p);
+        final SwingPopupContext popupContext = new SwingPopupContext(getComponent(), p);
+        SelectionMenuContext menuContext = new SelectionMenuContext( obj, popupContext);
         return menuContext;
     }
 
@@ -1540,7 +1541,7 @@ public class AllocatableSelection extends RaplaGUIComponent implements Appointme
                 Allocatable allocatable = (Allocatable) selectedObject;
                 allocBinding = calcConflictingAppointments(allocatable);
             }
-            Icon conflictIcon = raplaImages.getIconFromKey("icon.allocatable_taken");
+            Icon conflictIcon = RaplaImages.getIcon(i18n.getIcon("icon.allocatable_taken"));
             allMenu.setText(getString("every_appointment"));
             selectedMenu.setText(getString("selected_on"));
             appointmentList.clear();
@@ -1855,7 +1856,7 @@ public class AllocatableSelection extends RaplaGUIComponent implements Appointme
                     if (allocBinding.conflictingAppointments[i])
                     {
                         item.setText((i + 1) + ": " + appointmentSummary);
-                        Icon conflictIcon = raplaImages.getIconFromKey("icon.allocatable_taken");
+                        Icon conflictIcon = RaplaImages.getIcon(i18n.getIcon("icon.allocatable_taken"));
                         item.setIcon(conflictIcon);
                     }
                     else
@@ -1935,21 +1936,16 @@ public class AllocatableSelection extends RaplaGUIComponent implements Appointme
 
         public AllocationTreeCellRenderer(boolean checkRestrictions)
         {
-            forbiddenIcon = getIconFromKey("icon.no_perm");
-            conflictIcon = getIconFromKey("icon.allocatable_taken");
-            freeIcon = getIconFromKey("icon.allocatable_available");
-            notAlwaysAvailableIcon = getIconFromKey("icon.allocatable_not_always_available");
-            personIcon = getIconFromKey("icon.tree.persons");
-            personNotAlwaysAvailableIcon = getIconFromKey("icon.tree.person_not_always_available");
+            forbiddenIcon = RaplaImages.getIcon(i18n.getIcon("icon.no_perm"));
+            conflictIcon = RaplaImages.getIcon(i18n.getIcon("icon.allocatable_taken"));
+            freeIcon = RaplaImages.getIcon(i18n.getIcon("icon.allocatable_available"));
+            notAlwaysAvailableIcon = RaplaImages.getIcon(i18n.getIcon("icon.allocatable_not_always_available"));
+            personIcon = RaplaImages.getIcon(i18n.getIcon("icon.tree.persons"));
+            personNotAlwaysAvailableIcon = RaplaImages.getIcon(i18n.getIcon("icon.tree.person_not_always_available"));
             this.checkRestrictions = checkRestrictions;
-            setOpenIcon(getIconFromKey("icon.folder"));
-            setClosedIcon(getIconFromKey("icon.folder"));
+            setOpenIcon(RaplaImages.getIcon(i18n.getIcon("icon.folder")));
+            setClosedIcon(RaplaImages.getIcon(i18n.getIcon("icon.folder")));
             setLeafIcon(freeIcon);
-        }
-
-        public Icon getIconFromKey(String key)
-        {
-            return raplaImages.getIconFromKey(key);
         }
 
         public Icon getAvailableIcon(Allocatable allocatable)
@@ -2057,8 +2053,8 @@ public class AllocatableSelection extends RaplaGUIComponent implements Appointme
                 }
                 else
                 {
-                    setOpenIcon(getIconFromKey("icon.folder"));
-                    setClosedIcon(getIconFromKey("icon.folder"));
+                    setOpenIcon(RaplaImages.getIcon(i18n.getIcon("icon.folder")));
+                    setClosedIcon(RaplaImages.getIcon(i18n.getIcon("icon.folder")));
                 }
             }
             Component component = super.getTreeCellRendererComponent(tree, value, sel, expanded, leaf, row, hasFocus);
@@ -2146,20 +2142,26 @@ public class AllocatableSelection extends RaplaGUIComponent implements Appointme
             if (command.equals("add"))
             {
                 putValue(NAME, getString("add"));
-                putValue(SMALL_ICON, raplaImages.getIconFromKey("icon.arrow_right"));
+                setIcon(i18n.getIcon("icon.arrow_right"));
 
             }
             if (command.equals("remove"))
             {
                 putValue(NAME, getString("remove"));
-                putValue(SMALL_ICON, raplaImages.getIconFromKey("icon.arrow_left"));
+                setIcon(i18n.getIcon("icon.arrow_left"));
             }
             if (command.equals("calendar1") || command.equals("calendar2"))
             {
                 putValue(NAME, getString("calendar"));
-                putValue(SMALL_ICON, raplaImages.getIconFromKey("icon.calendar"));
+                setIcon(i18n.getIcon("icon.calendar"));
             }
         }
+
+
+        public void setIcon(I18nIcon icon) {
+            putValue(SMALL_ICON , RaplaImages.getIcon( icon));
+        }
+
 
         public void actionPerformed(ActionEvent evt)
         {
@@ -2177,7 +2179,7 @@ public class AllocatableSelection extends RaplaGUIComponent implements Appointme
             {
                 JTreeTable tree = (command.equals("calendar1") ? completeTable : selectedTable);
                 CalendarAction calendarAction = new CalendarAction(getClientFacade(), getI18n(), getRaplaLocale(), getLogger(), getComponent(), calendarModel.getModel(),
-                        raplaImages, multiCalendarViewFactory, dialogUiFactory);
+                         multiCalendarViewFactory, dialogUiFactory);
                 calendarAction.changeObjects(new ArrayList<Object>(getSelectedAllocatables(tree.getTree())));
                 Collection<Appointment> appointments = Arrays.asList(AllocatableSelection.this.appointments);
                 calendarAction.setStart(findFirstStart(appointments));
@@ -2349,7 +2351,6 @@ public class AllocatableSelection extends RaplaGUIComponent implements Appointme
         private final CalendarSelectionModel model;
         private final MenuFactory menuFactory;
         private final InfoFactory infoFactory;
-        private final RaplaImages raplaImages;
         private final DialogUiFactoryInterface dialogUiFactory;
         private final DateFieldFactory dateFieldFactory;
         private final Provider<MultiCalendarPresenter> multiCalendarViewFactory;
@@ -2359,7 +2360,7 @@ public class AllocatableSelection extends RaplaGUIComponent implements Appointme
         @Inject
         public AllocatableSelectionFactory(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger,
                 AppointmentFormater appointmentFormater, TreeFactory treeFactory, CalendarSelectionModel model,
-                MenuFactory menuFactory, InfoFactory infoFactory, RaplaImages raplaImages, DialogUiFactoryInterface dialogUiFactory,
+                MenuFactory menuFactory, InfoFactory infoFactory,  DialogUiFactoryInterface dialogUiFactory,
                 DateFieldFactory dateFieldFactory, Provider<MultiCalendarPresenter> multiCalendarViewFactory, BooleanFieldFactory booleanFieldFactory,
                 FilterEditButtonFactory filterEditButtonFactory)
         {
@@ -2374,7 +2375,6 @@ public class AllocatableSelection extends RaplaGUIComponent implements Appointme
             this.model = model;
             this.menuFactory = menuFactory;
             this.infoFactory = infoFactory;
-            this.raplaImages = raplaImages;
             this.dialogUiFactory = dialogUiFactory;
             this.dateFieldFactory = dateFieldFactory;
             this.booleanFieldFactory = booleanFieldFactory;
@@ -2384,7 +2384,7 @@ public class AllocatableSelection extends RaplaGUIComponent implements Appointme
         public AllocatableSelection create(boolean addCalendarButton, CommandHistory commandHistory)
         {
             return new AllocatableSelection(facade, i18n, raplaLocale, logger, addCalendarButton, commandHistory, treeFactory, model, appointmentFormater,
-                    menuFactory, infoFactory, raplaImages, dialogUiFactory, dateFieldFactory, multiCalendarViewFactory,
+                    menuFactory, infoFactory, dialogUiFactory, dateFieldFactory, multiCalendarViewFactory,
                     booleanFieldFactory, filterEditButtonFactory);
         }
     }

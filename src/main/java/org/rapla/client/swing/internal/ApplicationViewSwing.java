@@ -6,12 +6,12 @@ import org.rapla.client.ApplicationView;
 import org.rapla.client.PopupContext;
 import org.rapla.client.RaplaWidget;
 import org.rapla.client.dialog.DialogUiFactoryInterface;
+import org.rapla.client.dialog.swing.DialogUI;
 import org.rapla.client.event.ApplicationEvent;
 import org.rapla.client.internal.RaplaColors;
 import org.rapla.client.swing.RaplaGUIComponent;
 import org.rapla.client.swing.images.RaplaImages;
 import org.rapla.client.swing.toolkit.AWTColorUtil;
-import org.rapla.client.swing.toolkit.DialogUI;
 import org.rapla.client.swing.toolkit.RaplaFrame;
 import org.rapla.facade.ModificationEvent;
 import org.rapla.framework.RaplaException;
@@ -25,7 +25,15 @@ import org.rapla.scheduler.Observable;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import javax.swing.*;
+import javax.swing.Box;
+import javax.swing.JComponent;
+import javax.swing.JLabel;
+import javax.swing.JMenuBar;
+import javax.swing.JPanel;
+import javax.swing.JPopupMenu;
+import javax.swing.SwingUtilities;
+import javax.swing.UIDefaults;
+import javax.swing.UIManager;
 import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Component;
@@ -57,20 +65,18 @@ public class ApplicationViewSwing implements ApplicationView<JComponent>
     private final Map<ApplicationEvent, DialogUI> childFrames = new HashMap<>();
     //CalendarPlaceViewSwing cal;
     JLabel statusBar = new JLabel("");
-    private final RaplaImages raplaImages;
     private final DialogUiFactoryInterface dialogUiFactory;
     CommandScheduler scheduler;
 
     @Inject
     public ApplicationViewSwing(RaplaMenuBarContainer menuBarContainer, RaplaResources i18n, RaplaFrame frame, RaplaLocale raplaLocale, Logger logger,
-            RaplaMenuBar raplaMenuBar, CommandScheduler scheduler, RaplaImages raplaImages,
+            RaplaMenuBar raplaMenuBar, CommandScheduler scheduler,
             DialogUiFactoryInterface dialogUiFactory) throws RaplaInitializationException
     {
         this.i18n = i18n;
         this.scheduler = scheduler;
         this.logger = logger;
         this.menuBar = raplaMenuBar;
-        this.raplaImages = raplaImages;
         this.dialogUiFactory = dialogUiFactory;
         this.frame = frame;
         // CKO TODO Title should be set in config along with the facade used
@@ -116,7 +122,7 @@ public class ApplicationViewSwing implements ApplicationView<JComponent>
         frame.pack();
         frame.requestFocus();
         frame.setVisible(true);
-        frame.setIconImage(raplaImages.getIconFromKey("icon.rapla_small").getImage());
+        frame.setIconImage(RaplaImages.getImage( i18n.getIcon("icon.rapla_small")));
     }
 
     public void setPresenter(Presenter presenter)
@@ -215,8 +221,8 @@ public class ApplicationViewSwing implements ApplicationView<JComponent>
         defaults.put("CheckBoxMenuItem.font", textFont);
         defaults.put("CheckBox.font", textFont);
         defaults.put("ComboBox.font", textFont);
-        defaults.put("Tree.expandedIcon", RaplaImages.getIcon("/org/rapla/client/swing/gui/images/eclipse-icons/tree_minus.gif"));
-        defaults.put("Tree.collapsedIcon", RaplaImages.getIcon("/org/rapla/client/swing/gui/images/eclipse-icons/tree_plus.gif"));
+        defaults.put("Tree.expandedIcon", RaplaImages.getIcon("/org/rapla/gui/images/eclipse-icons/tree_minus.gif"));
+        defaults.put("Tree.collapsedIcon", RaplaImages.getIcon("/org/rapla/gui/images/eclipse-icons/tree_plus.gif"));
         defaults.put("TitledBorder.font", textFont.deriveFont(Font.PLAIN, (float) 10.));
         lookAndFeelSet = true;
 
@@ -300,7 +306,7 @@ public class ApplicationViewSwing implements ApplicationView<JComponent>
 
         dialog.setContentPane(component);
         dialog.setTitle( title);
-        dialog.setIconImage(raplaImages.getIconFromKey("icon.edit_window_small").getImage());
+        dialog.setIconImage(RaplaImages.getImage(i18n.getIcon("icon.edit_window_small")));
         dialog.setSize(1050, 700);
         childFrames.put(windowId, dialog);
         dialog.addVetoableChangeListener(new VetoableChangeListener()

@@ -16,7 +16,7 @@ import org.jetbrains.annotations.PropertyKey;
 import org.rapla.RaplaResources;
 import org.rapla.components.util.DateTools;
 import org.rapla.components.util.TimeInterval;
-import org.rapla.components.xmlbundle.I18nBundle;
+import org.rapla.components.i18n.I18nBundle;
 import org.rapla.entities.Annotatable;
 import org.rapla.entities.Category;
 import org.rapla.entities.Named;
@@ -53,7 +53,7 @@ public class RaplaComponent
 	public static final TypedComponentRole<RaplaConfiguration> PLUGIN_CONFIG= new TypedComponentRole<RaplaConfiguration>("org.rapla.plugin");
     private Logger logger;
     RaplaLocale raplaLocale;
-    RaplaResources i18n;
+    protected RaplaResources i18n;
     RaplaFacade facade;
 
     public RaplaComponent(RaplaFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger) {

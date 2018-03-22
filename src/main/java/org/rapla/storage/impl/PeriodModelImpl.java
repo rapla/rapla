@@ -29,7 +29,6 @@ import org.rapla.entities.storage.ReferenceInfo;
 import org.rapla.facade.PeriodModel;
 import org.rapla.framework.RaplaException;
 import org.rapla.storage.StorageOperator;
-import org.rapla.storage.UpdateResult;
 
 import java.util.ArrayList;
 import java.util.Arrays;

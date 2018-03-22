@@ -14,7 +14,6 @@
 
 package org.rapla.client.swing.internal;
 
-import io.reactivex.functions.Consumer;
 import org.rapla.RaplaResources;
 import org.rapla.client.CalendarContainer;
 import org.rapla.client.PopupContext;
@@ -32,8 +31,8 @@ import org.rapla.client.swing.toolkit.RaplaMenuItem;
 import org.rapla.components.util.TimeInterval;
 import org.rapla.entities.dynamictype.ClassificationFilter;
 import org.rapla.facade.CalendarSelectionModel;
-import org.rapla.facade.client.ClientFacade;
 import org.rapla.facade.ModificationEvent;
+import org.rapla.facade.client.ClientFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaInitializationException;
 import org.rapla.framework.RaplaLocale;
@@ -46,7 +45,7 @@ import org.rapla.scheduler.ResolvedPromise;
 import org.rapla.scheduler.Subject;
 
 import javax.inject.Inject;
-import javax.swing.*;
+import javax.swing.SwingUtilities;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -67,7 +66,6 @@ public class MultiCalendarPresenter implements CalendarContainer,Presenter
     private final Map<String,RaplaMenuItem> viewMenuItems = new HashMap<String,RaplaMenuItem>();
     private final CalendarSelectionModel model;
     private final Set<SwingViewFactory> factoryList;
-    private final RaplaImages raplaImages;
     private final DialogUiFactoryInterface dialogUiFactory;
     private final MultiCalendarView view;
     private final Logger logger;
@@ -83,16 +81,18 @@ public class MultiCalendarPresenter implements CalendarContainer,Presenter
     private PresenterChangeCallback callback;
     final Subject<ClassificationFilter[]> filterChanged;
     final CommandScheduler scheduler;
+    final RaplaResources i18n;
+
 
     @Inject
     public MultiCalendarPresenter(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, CalendarSelectionModel model,
-            RaplaImages raplaImages, DialogUiFactoryInterface dialogUiFactory, final Set<SwingViewFactory> factoryList,
+            DialogUiFactoryInterface dialogUiFactory, final Set<SwingViewFactory> factoryList,
             FilterEditButtonFactory filterEditButtonFactory, MultiCalendarView view) throws RaplaInitializationException
     {
         scheduler = facade.getRaplaFacade().getScheduler();
+        this.i18n = i18n;
         filterChanged = scheduler.createPublisher();
         this.logger = logger;
-        this.raplaImages = raplaImages;
         this.dialogUiFactory = dialogUiFactory;
         this.factoryList = factoryList;
         this.model = model;
@@ -134,6 +134,7 @@ public class MultiCalendarPresenter implements CalendarContainer,Presenter
             return update();
         });
         objectObservable.doOnError((ex)->logger.error(ex.getMessage(),ex)).subscribe();
+
     }
     
     @Override
@@ -185,10 +186,10 @@ public class MultiCalendarPresenter implements CalendarContainer,Presenter
             	for ( Iterator<RaplaMenuItem> it = viewMenuItems.values().iterator();it.hasNext();) 
                 {
                     RaplaMenuItem item =  it.next();
-                    item.setIcon( raplaImages.getIconFromKey("icon.empty"));
+                    item.setIcon( RaplaImages.getIcon(i18n.getIcon("icon.empty")));
                 }
                 RaplaMenuItem item = viewMenuItems.get( viewId );
-                item.setIcon( raplaImages.getIconFromKey("icon.radio"));
+                item.setIcon( RaplaImages.getIcon(i18n.getIcon("icon.radio")));
             }
         	callback.onChange();
         	view.setSelectedViewId(viewId);

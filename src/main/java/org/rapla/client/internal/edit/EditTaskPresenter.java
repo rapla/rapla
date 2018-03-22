@@ -33,13 +33,17 @@ import org.rapla.entities.domain.Reservation;
 import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.entities.storage.ReferenceInfo;
 import org.rapla.facade.CalendarSelectionModel;
-import org.rapla.facade.client.ClientFacade;
 import org.rapla.facade.ModificationEvent;
 import org.rapla.facade.RaplaComponent;
 import org.rapla.facade.RaplaFacade;
+import org.rapla.facade.client.ClientFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.inject.Extension;
-import org.rapla.scheduler.*;
+import org.rapla.scheduler.CommandScheduler;
+import org.rapla.scheduler.Observable;
+import org.rapla.scheduler.Promise;
+import org.rapla.scheduler.ResolvedPromise;
+import org.rapla.scheduler.Subject;
 
 import javax.inject.Inject;
 import javax.inject.Provider;
@@ -79,10 +83,6 @@ public class EditTaskPresenter implements TaskPresenter
     private final Set<MergeCheckExtension> mergeCheckers;
     Subject<String> busyIdleObservable;
     EditTaskView editTaskView;
-    public interface EditTaskViewFactory<C>
-    {
-        <T  extends Entity> EditTaskView<T,C> create(Map<T,T> toEdit, boolean isMerge) throws RaplaException;
-    }
 
     public interface EditTaskView<T extends Entity,C> extends  RaplaWidget<C>
     {
@@ -446,7 +446,7 @@ public class EditTaskPresenter implements TaskPresenter
     {
             DialogInterface dlg = dialogUiFactory.createTextDialog(popupContext, i18n.getString("confirm-close.title"), i18n.getString("confirm-close.question"),
                     new String[] { i18n.getString("confirm-close.ok"), i18n.getString("back") });
-            dlg.setIcon("icon.question");
+            dlg.setIcon(i18n.getIcon("icon.question"));
             dlg.setDefault(1);
             final Promise<Integer> start = dlg.start(true);
             return start.thenAccept((integer)->

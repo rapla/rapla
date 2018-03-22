@@ -8,7 +8,6 @@ import org.rapla.entities.domain.Allocatable;
 import org.rapla.facade.Conflict;
 import org.rapla.framework.RaplaException;
 
-import javax.swing.tree.DefaultMutableTreeNode;
 import javax.swing.tree.TreeCellRenderer;
 import javax.swing.tree.TreeModel;
 import java.util.Collection;

@@ -14,26 +14,20 @@ package org.rapla.client.swing;
 
 import org.rapla.RaplaResources;
 import org.rapla.client.PopupContext;
-import org.rapla.client.dialog.DialogInterface;
-import org.rapla.client.internal.HTMLInfo;
 import org.rapla.client.swing.internal.SwingPopupContext;
-import org.rapla.client.swing.internal.view.ViewTable;
-import org.rapla.client.swing.toolkit.HTMLView;
 import org.rapla.components.calendar.DateRenderer;
 import org.rapla.components.calendar.RaplaCalendar;
 import org.rapla.components.calendar.RaplaTime;
 import org.rapla.components.calendar.TimeRenderer;
-import org.rapla.components.iolayer.ComponentPrinter;
+import org.rapla.components.i18n.I18nBundle;
 import org.rapla.components.iolayer.IOInterface;
 import org.rapla.components.util.IOUtil;
-import org.rapla.entities.Named;
-import org.rapla.entities.RaplaObject;
 import org.rapla.entities.User;
 import org.rapla.facade.CalendarModel;
 import org.rapla.facade.CalendarOptions;
-import org.rapla.facade.client.ClientFacade;
 import org.rapla.facade.RaplaComponent;
 import org.rapla.facade.RaplaFacade;
+import org.rapla.facade.client.ClientFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.logger.Logger;
@@ -66,7 +60,7 @@ import java.util.List;
 
 /**
     Base class for most components in the gui package. Eases
-    access to frequently used services, e.g. {@link org.rapla.components.xmlbundle.I18nBundle}.
+    access to frequently used services, e.g. {@link I18nBundle}.
     It also provides some methods for Exception displaying.
  */
 public class RaplaGUIComponent extends RaplaComponent

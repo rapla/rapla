@@ -32,8 +32,8 @@ import org.rapla.entities.domain.Appointment;
 import org.rapla.entities.domain.Period;
 import org.rapla.entities.domain.Repeating;
 import org.rapla.entities.domain.Reservation;
-import org.rapla.facade.client.ClientFacade;
 import org.rapla.facade.PeriodModel;
+import org.rapla.facade.client.ClientFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.inject.Extension;
@@ -119,9 +119,9 @@ public class ConflictPeriodReservationCheck extends RaplaGUIComponent implements
         JComponent content = getConflictPanel(periodConflicts, atomicBoolean, selectedSetStorage);
         DialogInterface dialog = dialogUiFactory.createContentDialog(sourceComponent, content, new String[] { getString("continue"), getString("cancel") });
         dialog.setDefault(1);
-        dialog.setIcon("icon.big_folder_conflicts");
-        dialog.getAction(0).setIcon("icon.save");
-        dialog.getAction(1).setIcon("icon.cancel");
+        dialog.setIcon(i18n.getIcon("icon.big_folder_conflicts"));
+        dialog.getAction(0).setIcon(i18n.getIcon("icon.save"));
+        dialog.getAction(1).setIcon(i18n.getIcon("icon.cancel"));
         dialog.setTitle("Wiederholungstermine überschneiden sich mit");
         return dialog.start(true).thenApply(index->
         {

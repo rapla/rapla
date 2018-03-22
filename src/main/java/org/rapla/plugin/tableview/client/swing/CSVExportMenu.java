@@ -55,20 +55,18 @@ public class CSVExportMenu extends RaplaGUIComponent implements ExportMenuExtens
 	private final TableConfig.TableConfigLoader tableConfigLoader;
     private final CalendarSelectionModel model;
     private final IOInterface io;
-    private final RaplaImages raplaImages;
     private final DialogUiFactoryInterface dialogUiFactory;
 
 	@Inject
-	public CSVExportMenu(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, TableConfig.TableConfigLoader tableConfigLoader, CalendarSelectionModel model, IOInterface io, RaplaImages raplaImages, DialogUiFactoryInterface dialogUiFactory)
+	public CSVExportMenu(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, TableConfig.TableConfigLoader tableConfigLoader, CalendarSelectionModel model, IOInterface io, DialogUiFactoryInterface dialogUiFactory)
     {
         super(facade, i18n, raplaLocale, logger);
 		this.tableConfigLoader = tableConfigLoader;
         this.model = model;
         this.io = io;
-        this.raplaImages = raplaImages;
         this.dialogUiFactory = dialogUiFactory;
 		exportEntry = new JMenuItem(getString("csv.export"));
-        exportEntry.setIcon( raplaImages.getIconFromKey("icon.export") );
+        exportEntry.setIcon( RaplaImages.getIcon(i18n.getIcon("icon.export") ));
         exportEntry.addActionListener(this);
     }
 	
@@ -83,12 +81,14 @@ public class CSVExportMenu extends RaplaGUIComponent implements ExportMenuExtens
             dialogUiFactory.showException(ex, new SwingPopupContext(getMainComponent(), null));
         }
     }
-    
+
+    @Override
 	public String getId() {
 		return PLUGIN_ID;
 	}
 
-	public JMenuItem getMenuElement() {
+	@Override
+	public JMenuItem getComponent() {
 		return exportEntry;
 	}
 	
@@ -178,7 +178,7 @@ public class CSVExportMenu extends RaplaGUIComponent implements ExportMenuExtens
                             ,getString("file_saved")
                             ,new String[] { getString("ok")}
                             );
-            dlg.setIcon("icon.export");
+            dlg.setIcon(i18n.getIcon("icon.export"));
             dlg.setDefault(0);
             return dlg.start(true).thenApply((index)->null);
 	    }

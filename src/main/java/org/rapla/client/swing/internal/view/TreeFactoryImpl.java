@@ -40,8 +40,8 @@ import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.entities.dynamictype.DynamicTypeAnnotations;
 import org.rapla.entities.dynamictype.SortedClassifiableComparator;
 import org.rapla.entities.dynamictype.internal.DynamicTypeImpl;
-import org.rapla.facade.client.ClientFacade;
 import org.rapla.facade.Conflict;
+import org.rapla.facade.client.ClientFacade;
 import org.rapla.facade.internal.CalendarModelImpl;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
@@ -62,7 +62,6 @@ import javax.swing.tree.DefaultMutableTreeNode;
 import javax.swing.tree.DefaultTreeCellRenderer;
 import javax.swing.tree.DefaultTreeModel;
 import javax.swing.tree.DefaultTreeSelectionModel;
-import javax.swing.tree.MutableTreeNode;
 import javax.swing.tree.TreeCellRenderer;
 import javax.swing.tree.TreeModel;
 import javax.swing.tree.TreeNode;
@@ -76,7 +75,6 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.Date;
-import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -87,16 +85,13 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
-import java.util.SortedSet;
 import java.util.TreeSet;
-import java.util.stream.Stream;
 
 @Singleton
 @DefaultImplementation(of = TreeFactory.class, context = InjectionContext.swing)
 public class TreeFactoryImpl extends RaplaGUIComponent implements TreeFactory
 {
     private final InfoFactory infoFactory;
-    private final RaplaImages raplaImages;
 
     Icon bigFolderPeriods;
     Icon bigFolderResourcesFiltered;
@@ -113,23 +108,21 @@ public class TreeFactoryImpl extends RaplaGUIComponent implements TreeFactory
     Font bigFont = normalFont.deriveFont(Font.BOLD, (float) (normalFont.getSize() * 1.2));
 
     @Inject
-    public TreeFactoryImpl(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, InfoFactory infoFactory, RaplaImages raplaImages)
+    public TreeFactoryImpl(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, InfoFactory infoFactory)
     {
         super(facade, i18n, raplaLocale, logger);
         this.infoFactory = infoFactory;
-        this.raplaImages = raplaImages;
-        bigFolderPeriods = raplaImages.getIconFromKey("icon.big_folder_periods");
-        bigFolderResourcesFiltered = raplaImages.getIconFromKey("icon.big_folder_resources_filtered");
-        bigFolderResourcesUnfiltered = raplaImages.getIconFromKey("icon.big_folder_resources");
-        bigFolderEvents = raplaImages.getIconFromKey("icon.big_folder_events");
-        bigFolderCategories = raplaImages.getIconFromKey("icon.big_folder_categories");
-        bigFolderConflicts = raplaImages.getIconFromKey("icon.big_folder_conflicts");
-        defaultIcon = raplaImages.getIconFromKey("icon.tree.default");
-        personIcon = raplaImages.getIconFromKey("icon.tree.persons");
-        folderClosedIcon = raplaImages.getIconFromKey("icon.folder");
-        folderOpenIcon = raplaImages.getIconFromKey("icon.folder");
-        forbiddenIcon = raplaImages.getIconFromKey("icon.no_perm");
-
+        bigFolderPeriods = RaplaImages.getIcon(i18n.getIcon("icon.big_folder_periods"));
+        bigFolderResourcesFiltered = RaplaImages.getIcon(i18n.getIcon("icon.big_folder_resources_filtered"));
+        bigFolderResourcesUnfiltered = RaplaImages.getIcon(i18n.getIcon("icon.big_folder_resources"));
+        bigFolderEvents = RaplaImages.getIcon(i18n.getIcon("icon.big_folder_events"));
+        bigFolderCategories = RaplaImages.getIcon(i18n.getIcon("icon.big_folder_categories"));
+        bigFolderConflicts = RaplaImages.getIcon(i18n.getIcon("icon.big_folder_conflicts"));
+        defaultIcon = RaplaImages.getIcon(i18n.getIcon("icon.tree.default"));
+        personIcon = RaplaImages.getIcon(i18n.getIcon("icon.tree.persons"));
+        folderClosedIcon = RaplaImages.getIcon(i18n.getIcon("icon.folder"));
+        folderOpenIcon = RaplaImages.getIcon(i18n.getIcon("icon.folder"));
+        forbiddenIcon = RaplaImages.getIcon(i18n.getIcon("icon.no_perm"));
     }
 
     class DynamicTypeComperator implements Comparator<DynamicType>

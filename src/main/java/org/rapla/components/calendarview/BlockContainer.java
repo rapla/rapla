@@ -1,8 +1,5 @@
 package org.rapla.components.calendarview;
 
-import jsinterop.annotations.JsFunction;
-import jsinterop.annotations.JsType;
-
 @FunctionalInterface
 public interface BlockContainer
 {

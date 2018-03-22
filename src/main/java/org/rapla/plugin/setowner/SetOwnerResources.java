@@ -3,7 +3,7 @@ package org.rapla.plugin.setowner;
 import org.jetbrains.annotations.PropertyKey;
 import org.rapla.components.i18n.AbstractBundle;
 import org.rapla.components.i18n.BundleManager;
-import org.rapla.components.xmlbundle.I18nBundle;
+import org.rapla.components.i18n.I18nBundle;
 import org.rapla.inject.Extension;
 
 import javax.inject.Inject;

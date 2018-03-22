@@ -13,7 +13,6 @@ import org.rapla.client.extensionpoints.PublishExtensionFactory;
 import org.rapla.client.internal.SavedCalendarInterface;
 import org.rapla.client.swing.RaplaAction;
 import org.rapla.client.swing.RaplaGUIComponent;
-import org.rapla.client.swing.images.RaplaImages;
 import org.rapla.client.swing.toolkit.ActionWrapper;
 import org.rapla.client.swing.toolkit.RaplaMenu;
 import org.rapla.components.iolayer.IOInterface;
@@ -23,8 +22,8 @@ import org.rapla.entities.configuration.CalendarModelConfiguration;
 import org.rapla.entities.configuration.Preferences;
 import org.rapla.facade.CalendarModel;
 import org.rapla.facade.CalendarSelectionModel;
-import org.rapla.facade.client.ClientFacade;
 import org.rapla.facade.RaplaFacade;
+import org.rapla.facade.client.ClientFacade;
 import org.rapla.facade.internal.CalendarModelImpl;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaInitializationException;
@@ -87,7 +86,7 @@ public class SavedCalendarSwingView extends RaplaGUIComponent implements SavedCa
             final String name = getString("save") ;
             putValue(NAME,name);
             putValue(SHORT_DESCRIPTION,name);
-            putValue(SMALL_ICON,raplaImages.getIconFromKey("icon.save"));
+            setIcon(i18n.getIcon("icon.save"));
         }
 
         public void actionPerformed() {
@@ -103,8 +102,8 @@ public class SavedCalendarSwingView extends RaplaGUIComponent implements SavedCa
             final String name = getString("publish") ;
             putValue(NAME,name);
             putValue(SHORT_DESCRIPTION,name);
-            putValue(SMALL_ICON,raplaImages.getIconFromKey("icon.export"));
-            publishDialog = new PublishDialog(environment,facade, i18n, raplaLocale, logger, extensionFactories, raplaImages, dialogUiFactory);
+            setIcon(i18n.getIcon("icon.export"));
+            publishDialog = new PublishDialog(environment,facade, i18n, raplaLocale, logger, extensionFactories,  dialogUiFactory);
         }
 
         public void actionPerformed() {
@@ -142,7 +141,7 @@ public class SavedCalendarSwingView extends RaplaGUIComponent implements SavedCa
             final String name = getString("delete");
             putValue(NAME,name);
             putValue(SHORT_DESCRIPTION,name);
-            putValue(SMALL_ICON,raplaImages.getIconFromKey("icon.delete"));
+            setIcon(i18n.getIcon("icon.delete"));
             
         }
 
@@ -158,8 +157,6 @@ public class SavedCalendarSwingView extends RaplaGUIComponent implements SavedCa
     final DeleteAction deleteAction;
 
     private final DeleteDialogInterface deleteDialogInterface;
-
-    private final RaplaImages raplaImages;
 
     private final DialogUiFactoryInterface dialogUiFactory;
 
@@ -219,13 +216,12 @@ public class SavedCalendarSwingView extends RaplaGUIComponent implements SavedCa
 
     @Inject
     public SavedCalendarSwingView(RaplaMenuBarContainer bar, ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, ApplicationEventBus eventBus, final CalendarSelectionModel model, Set<PublishExtensionFactory> extensionFactories, StartupEnvironment environment,
-                                  DeleteDialogInterface deleteDialogInterface, RaplaImages raplaImages, DialogUiFactoryInterface dialogUiFactory, IOInterface ioInterface) throws RaplaInitializationException {
+                                  DeleteDialogInterface deleteDialogInterface,  DialogUiFactoryInterface dialogUiFactory, IOInterface ioInterface) throws RaplaInitializationException {
         super(facade, i18n, raplaLocale, logger);
         this.eventBus = eventBus;
         this.extensionFactories = extensionFactories;
         this.environment = environment;
         this.deleteDialogInterface = deleteDialogInterface;
-        this.raplaImages = raplaImages;
         this.dialogUiFactory = dialogUiFactory;
         this.ioInterface = ioInterface;
         // I18nBundle i18n = getI18n();
@@ -252,12 +248,12 @@ public class SavedCalendarSwingView extends RaplaGUIComponent implements SavedCa
         save.setAction(new ActionWrapper(saveAction));
         publish.setAction(new ActionWrapper(publishAction));
         RaplaMenu settingsMenu = bar.getSettingsMenu();
-        settingsMenu.insertAfterId(new JMenuItem(new ActionWrapper(saveAction)), null);
+        settingsMenu.insertAfterId(()->new JMenuItem(new ActionWrapper(saveAction)), null);
         if ( publishAction.hasPublishActions())
         {
-            settingsMenu.insertAfterId(new JMenuItem(new ActionWrapper(publishAction)), null);
+            settingsMenu.insertAfterId(()->new JMenuItem(new ActionWrapper(publishAction)), null);
         }
-        settingsMenu.insertAfterId(new JMenuItem(new ActionWrapper(deleteAction)),null);
+        settingsMenu.insertAfterId(()->new JMenuItem(new ActionWrapper(deleteAction)),null);
         
         delete.setAction(new ActionWrapper(deleteAction));
        // toolbar.add(new JLabel(getString("calendar")));
@@ -526,8 +522,8 @@ public class SavedCalendarSwingView extends RaplaGUIComponent implements SavedCa
                                            ,getString("cancel")
                                        });
         dlg.setTitle(getString("save") + " " +getString("calendar_settings"));
-        dlg.getAction(0).setIcon("icon.save");
-        dlg.getAction(1).setIcon("icon.cancel");
+        dlg.getAction(0).setIcon(i18n.getIcon("icon.save"));
+        dlg.getAction(1).setIcon(i18n.getIcon("icon.cancel"));
         dlg.getAction(0).setRunnable( new Runnable() {
             private static final long serialVersionUID = 1L;
 

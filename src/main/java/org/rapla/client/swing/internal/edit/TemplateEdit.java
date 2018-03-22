@@ -27,9 +27,9 @@ import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.entities.dynamictype.DynamicTypeAnnotations;
 import org.rapla.entities.storage.ReferenceInfo;
 import org.rapla.facade.CalendarSelectionModel;
-import org.rapla.facade.client.ClientFacade;
 import org.rapla.facade.RaplaComponent;
 import org.rapla.facade.RaplaFacade;
+import org.rapla.facade.client.ClientFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.logger.Logger;
@@ -41,6 +41,7 @@ import org.rapla.storage.StorageOperator;
 import javax.inject.Inject;
 import javax.swing.DefaultListCellRenderer;
 import javax.swing.DefaultListModel;
+import javax.swing.JComponent;
 import javax.swing.JList;
 import javax.swing.ListSelectionModel;
 import javax.swing.event.ChangeEvent;
@@ -356,11 +357,12 @@ public class TemplateEdit extends RaplaGUIComponent
             options.add(getString("apply"));
             options.add(getString("cancel"));
 
+            final JComponent component = templateList.getComponent();
+            component.setSize(1000, 800);
             final DialogInterface dlg = dialogUiFactory
-                    .createContentDialog(popupContext, templateList.getComponent(), options.toArray(new String[] {}));
+                    .createContentDialog(popupContext, component, options.toArray(new String[] {}));
             dlg.setTitle(getString("edit-templates"));
-            dlg.setSize(1000, 800);
-            dlg.getAction(options.size() - 1).setIcon("icon.cancel");
+            dlg.getAction(options.size() - 1).setIcon(i18n.getIcon("icon.cancel"));
 
             final Runnable action = new Runnable()
             {
@@ -477,7 +479,8 @@ public class TemplateEdit extends RaplaGUIComponent
                         }
 
                     }).exceptionally((ex) ->
-                        dialogUiFactory.showException(ex, new SwingPopupContext(getMainComponent(), null))).finally_(()->dlg.close());
+                        dialogUiFactory.showException(ex, popupContext)
+                    ).finally_(()->dlg.close());
                 }
             };
             final JList list = templateList.getList();
@@ -493,7 +496,7 @@ public class TemplateEdit extends RaplaGUIComponent
             });
             editAction = dlg.getAction(0);
             editAction.setRunnable(action);
-            editAction.setIcon("icon.confirm");
+            editAction.setIcon(i18n.getIcon("icon.confirm"));
             editAction.setEnabled( false);
             dlg.start(true);
         }

@@ -14,7 +14,10 @@ import org.rapla.entities.User;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.ResourceAnnotations;
 import org.rapla.entities.dynamictype.internal.AttributeImpl;
-import org.rapla.facade.*;
+import org.rapla.facade.CalendarSelectionModel;
+import org.rapla.facade.ModificationEvent;
+import org.rapla.facade.ModificationListener;
+import org.rapla.facade.RaplaFacade;
 import org.rapla.facade.client.ClientFacade;
 import org.rapla.facade.internal.ClientFacadeImpl;
 import org.rapla.facade.internal.ModifiableCalendarState;
@@ -23,7 +26,9 @@ import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.internal.AbstractRaplaLocale;
 import org.rapla.logger.Logger;
 import org.rapla.plugin.abstractcalendar.RaplaBuilder;
-import org.rapla.scheduler.*;
+import org.rapla.scheduler.CommandScheduler;
+import org.rapla.scheduler.Observable;
+import org.rapla.scheduler.Promise;
 
 import javax.inject.Inject;
 import javax.inject.Provider;
@@ -215,35 +220,31 @@ public class Application implements ApplicationView.Presenter, ModificationListe
         mainView.setPresenter( this);
         mainView.init(showToolTips, title);
 
-        try {
-            AbstractActivityController am = abstractActivityController;
-            am.setApplication(this);
-            am.init();
+        AbstractActivityController am = abstractActivityController;
+        am.setApplication(this);
+        am.init();
 
-            User user = clientFacade.getUser();
-            final boolean admin = user.isAdmin();
-            mainView.updateMenu();
-            // Test for the resources
-            clientFacade.addModificationListener(this);
-            final String name = user.getName() == null || user.getName().isEmpty() ? user.getUsername() : user.getName();
-            String statusMessage = i18n.format("rapla.welcome", name);
-            if (admin) {
-                statusMessage += " " + i18n.getString("admin.login");
-            }
-            mainView.setStatusMessage(statusMessage, admin);
-            scheduler.delay(()->mainView.setStatusMessage(name, admin),2000);
-        } catch (RaplaException e) {
-            logger.error(e.getMessage(), e);
+        User user = clientFacade.getUser();
+        final boolean admin = user.isAdmin();
+        mainView.updateMenu();
+        // Test for the resources
+        clientFacade.addModificationListener(this);
+        final String name = user.getName() == null || user.getName().isEmpty() ? user.getUsername() : user.getName();
+        String statusMessage = i18n.format("rapla.welcome", name);
+        if (admin) {
+            statusMessage += " " + i18n.getString("admin.login");
         }
+        mainView.setStatusMessage(statusMessage, admin);
+        scheduler.delay(()->mainView.setStatusMessage(name, admin),2000);
     }
 
     protected Promise<Boolean> shouldExit() {
         PopupContext popupContext = mainView.createPopupContext();
         DialogInterface dlg = dialogUiFactory.createTextDialog(popupContext, i18n.getString("exit.title"), i18n.getString("exit.question"),
                 new String[]{i18n.getString("exit.ok"), i18n.getString("exit.abort")});
-        dlg.setIcon("icon.question");
+        dlg.setIcon(i18n.getIcon("icon.question"));
         //dlg.getButton(0).setIcon(getIcon("icon.confirm"));
-        dlg.getAction(0).setIcon("icon.abort");
+        dlg.getAction(0).setIcon(i18n.getIcon("icon.abort"));
         dlg.setDefault(1);
         final Promise<Integer> start = dlg.start(true);
         final Promise<Boolean> result = start.thenApply((index) -> index == 0);

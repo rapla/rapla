@@ -12,20 +12,26 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.client.swing.toolkit;
 
-import org.rapla.client.swing.RaplaAction;
+import org.rapla.client.PopupContext;
+import org.rapla.client.RaplaWidget;
+import org.rapla.client.menu.IdentifiableMenuEntry;
+import org.rapla.client.menu.MenuInterface;
 
-import javax.swing.JComponent;
-import javax.swing.JMenuItem;
 import javax.swing.JPopupMenu;
 import java.awt.Component;
-import java.util.HashMap;
-import java.util.Map;
 
 public class RaplaPopupMenu extends JPopupMenu implements MenuInterface {
     private static final long serialVersionUID = 1L;
-    private Map<RaplaAction, JMenuItem> mapping = new HashMap<RaplaAction, JMenuItem>();
-    public RaplaPopupMenu() {
+    private final String id;
+    PopupContext popupContext;
+    public RaplaPopupMenu(PopupContext popupContext) {
         super();
+        this.popupContext = popupContext;
+        this.id = "popup";
+    }
+
+    public PopupContext getPopupContext() {
+        return popupContext;
     }
 
     private int getIndexOfEntryWithId(String id) {
@@ -44,6 +50,7 @@ public class RaplaPopupMenu extends JPopupMenu implements MenuInterface {
         return -1;
     }
 
+    @Override
     public void removeAllBetween(String startId, String endId) {
         int startIndex = getIndexOfEntryWithId( startId );
         int endIndex = getIndexOfEntryWithId( endId);
@@ -57,7 +64,9 @@ public class RaplaPopupMenu extends JPopupMenu implements MenuInterface {
 
     }
 
-    public void insertAfterId(Component component,String id) {
+    @Override
+    public void insertAfterId(RaplaWidget menu, String id) {
+        Component component = (Component) menu.getComponent();
         if ( id == null) {
             add ( component );
         } else {
@@ -66,28 +75,26 @@ public class RaplaPopupMenu extends JPopupMenu implements MenuInterface {
         }
     }
 
-    public void insertBeforeId(JComponent component,String id) {
-        int index = getIndexOfEntryWithId( id );
-        insert( component, index);
-    }
-
-    public void remove( RaplaAction item )
-    {
-    	final JMenuItem menuItem = mapping.get(item);
-    	if(menuItem != null){
-    	    super.remove( menuItem );
-    	}
-    }
-    
     @Override
-    public void add(RaplaAction menuItem)
-    {
-        final JMenuItem item = new JMenuItem(new ActionWrapper(menuItem));
-        mapping.put(menuItem, item);
-        super.add(item);
+    public void insertBeforeId(RaplaWidget component,String id) {
+        int index = getIndexOfEntryWithId( id );
+        final Component component1 = (Component)component.getComponent();
+        insert(component1, index);
     }
 
 
+    @Override
+    public void addMenuItem(IdentifiableMenuEntry item) {
+        //final JMenuItem item = new JMenuItem(new ActionWrapper(menuItem));
+        //mapping.put(menuItem, item);
+        super.add((Component)item.getComponent());
+    }
+
+
+    @Override
+    public String getId() {
+        return id;
+    }
 }
 
 

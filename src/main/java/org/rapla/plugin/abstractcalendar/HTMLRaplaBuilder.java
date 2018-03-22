@@ -23,7 +23,6 @@ import org.rapla.facade.CalendarModel;
 import org.rapla.facade.RaplaFacade;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.logger.Logger;
-import org.rapla.plugin.abstractcalendar.client.swing.SwingRaplaBlock;
 import org.rapla.scheduler.Promise;
 
 import javax.inject.Inject;

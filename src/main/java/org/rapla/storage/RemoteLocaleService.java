@@ -1,7 +1,6 @@
 package org.rapla.storage;
 
 import org.rapla.components.i18n.LocalePackage;
-import org.rapla.framework.RaplaException;
 import org.rapla.scheduler.Promise;
 
 import javax.ws.rs.GET;

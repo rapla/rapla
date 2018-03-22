@@ -20,6 +20,7 @@ import org.rapla.client.swing.RaplaGUIComponent;
 import org.rapla.client.swing.TreeFactory;
 import org.rapla.client.swing.images.RaplaImages;
 import org.rapla.client.swing.toolkit.RaplaTree;
+import org.rapla.components.i18n.I18nIcon;
 import org.rapla.entities.NamedComparator;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.facade.client.ClientFacade;
@@ -62,14 +63,12 @@ public class TreeAllocatableSelection extends RaplaGUIComponent implements Chang
     NotificationAction addAction;
     String addDialogTitle;
     private final TreeFactory treeFactory;
-    private final RaplaImages raplaImages;
     private final DialogUiFactoryInterface dialogUiFactory;
 
     @Inject
-	public TreeAllocatableSelection(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, TreeFactory treeFactory, RaplaImages raplaImages, DialogUiFactoryInterface dialogUiFactory) {
+	public TreeAllocatableSelection(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, TreeFactory treeFactory, DialogUiFactoryInterface dialogUiFactory) {
         super(facade, i18n, raplaLocale, logger);
         this.treeFactory = treeFactory;
-        this.raplaImages = raplaImages;
         this.dialogUiFactory = dialogUiFactory;
         treeSelection = new RaplaTree();
         TitledBorder border = BorderFactory.createTitledBorder(BorderFactory.createEtchedBorder(Color.white,new Color(178, 178, 178)),getString("selection_resource"));
@@ -145,7 +144,7 @@ public class TreeAllocatableSelection extends RaplaGUIComponent implements Chang
 
         NotificationAction setDelete() {
             putValue(NAME,getString("delete"));
-            putValue(SMALL_ICON,raplaImages.getIconFromKey("icon.delete"));
+            setIcon(i18n.getIcon("icon.delete"));
             setEnabled(false);
             type = DELETE;
             return this;
@@ -153,9 +152,13 @@ public class TreeAllocatableSelection extends RaplaGUIComponent implements Chang
 
         NotificationAction setAdd() {
             putValue(NAME,getString("add"));
-            putValue(SMALL_ICON,raplaImages.getIconFromKey("icon.new"));
+            setIcon(i18n.getIcon("icon.new"));
             type = ADD;
             return this;
+        }
+
+        public void setIcon(I18nIcon icon) {
+            putValue(SMALL_ICON , RaplaImages.getIcon( icon));
         }
 
 		protected List<Allocatable> getSelected() {

@@ -13,7 +13,7 @@
 package org.rapla;
 
 import org.rapla.client.swing.internal.dagger.DaggerClientCreator;
-import org.rapla.components.xmlbundle.I18nBundle;
+import org.rapla.components.i18n.I18nBundle;
 import org.rapla.entities.domain.AppointmentFormater;
 import org.rapla.facade.client.ClientFacade;
 import org.rapla.framework.RaplaException;

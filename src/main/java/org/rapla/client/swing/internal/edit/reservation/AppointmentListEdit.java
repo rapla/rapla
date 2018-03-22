@@ -43,7 +43,14 @@ import org.rapla.scheduler.ResolvedPromise;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import javax.swing.*;
+import javax.swing.BoxLayout;
+import javax.swing.DefaultListModel;
+import javax.swing.JComponent;
+import javax.swing.JLabel;
+import javax.swing.JList;
+import javax.swing.JPanel;
+import javax.swing.ListCellRenderer;
+import javax.swing.UIManager;
 import javax.swing.border.Border;
 import javax.swing.border.EmptyBorder;
 import javax.swing.event.ChangeEvent;
@@ -90,18 +97,16 @@ class AppointmentListEdit extends AbstractAppointmentEditor
 	SortedListModel sortedModel = new SortedListModel(model, SortedListModel.SortOrder.ASCENDING,comp );
     RaplaButton freeButtonNext = new RaplaButton();
     AppointmentFormater appointmentFormater;
-    private final RaplaImages raplaImages;
     private final DialogUiFactoryInterface dialogUiFactory;
 	@SuppressWarnings("unchecked")
-	AppointmentListEdit(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, AppointmentFormater appointmentFormater, CommandHistory commandHistory, RaplaImages raplaImages, DateRenderer dateRenderer, DialogUiFactoryInterface dialogUiFactory, IOInterface ioInterface)
+	AppointmentListEdit(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, AppointmentFormater appointmentFormater, CommandHistory commandHistory, DateRenderer dateRenderer, DialogUiFactoryInterface dialogUiFactory, IOInterface ioInterface)
 			throws RaplaException {
 		super(facade, i18n, raplaLocale, logger);
         this.appointmentFormater = appointmentFormater;
 		this.commandHistory = commandHistory;
-        this.raplaImages = raplaImages;
         this.dialogUiFactory = dialogUiFactory;
-        appointmentController = new AppointmentController(facade, i18n, raplaLocale, logger, commandHistory, raplaImages, dateRenderer, dialogUiFactory, ioInterface);
-        listEdit = new RaplaListEdit<Appointment>(getI18n(), raplaImages, appointmentController.getComponent(), listener, false);
+        appointmentController = new AppointmentController(facade, i18n, raplaLocale, logger, commandHistory,  dateRenderer, dialogUiFactory, ioInterface);
+        listEdit = new RaplaListEdit<Appointment>(getI18n(),  appointmentController.getComponent(), listener, false);
         listEdit.getToolbar().add( freeButtonNext);
 
         freeButtonNext.setText(getString("appointment.search_free"));
@@ -219,7 +224,7 @@ class AppointmentListEdit extends AbstractAppointmentEditor
             JLabel label1 = new JLabel(appointmentFormater.getSummary(appointment));
             content.add( label1 );
             if (appointment.getRepeating() != null) {
-                label1.setIcon( raplaImages.getIconFromKey("icon.repeating") );
+                label1.setIcon( RaplaImages.getIcon(i18n.getIcon("icon.repeating") ));
                 Repeating r = appointment.getRepeating();
                 List<Period> periods = getPeriodModel().getPeriodsFor(appointment.getStart());
                 String repeatingString = appointmentFormater.getSummary(r,periods);
@@ -228,7 +233,7 @@ class AppointmentListEdit extends AbstractAppointmentEditor
                     content.add(new JLabel( appointmentFormater.getExceptionSummary( r ) ) );
                 }
             } else {
-                label1.setIcon( raplaImages.getIconFromKey("icon.single") );
+                label1.setIcon( RaplaImages.getIcon(i18n.getIcon("icon.single") ));
             }
         }
     }
@@ -586,14 +591,13 @@ class AppointmentListEdit extends AbstractAppointmentEditor
         private final RaplaLocale raplaLocale;
         private final Logger logger;
         private final AppointmentFormater appointmentFormater;
-        private final RaplaImages raplaImages;
         private final DateRenderer dateRenderer;
         private final DialogUiFactoryInterface dialogUiFactory;
         private final IOInterface ioInterface;
 
         @Inject
         public AppointmentListEditFactory(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger,
-                AppointmentFormater appointmentFormater, RaplaImages raplaImages, DateRenderer dateRenderer,
+                AppointmentFormater appointmentFormater, DateRenderer dateRenderer,
                 DialogUiFactoryInterface dialogUiFactory, IOInterface ioInterface)
         {
             super();
@@ -602,7 +606,6 @@ class AppointmentListEdit extends AbstractAppointmentEditor
             this.raplaLocale = raplaLocale;
             this.logger = logger;
             this.appointmentFormater = appointmentFormater;
-            this.raplaImages = raplaImages;
             this.dateRenderer = dateRenderer;
             this.dialogUiFactory = dialogUiFactory;
             this.ioInterface = ioInterface;
@@ -610,7 +613,7 @@ class AppointmentListEdit extends AbstractAppointmentEditor
 
         public AppointmentListEdit create(CommandHistory commandHistory) throws RaplaException
         {
-            return new AppointmentListEdit(facade, i18n, raplaLocale, logger, appointmentFormater, commandHistory, raplaImages,
+            return new AppointmentListEdit(facade, i18n, raplaLocale, logger, appointmentFormater, commandHistory,
                     dateRenderer, dialogUiFactory, ioInterface);
         }
     }

@@ -11,7 +11,18 @@ import org.rapla.components.layout.TableLayout;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import javax.swing.*;
+import javax.swing.BorderFactory;
+import javax.swing.Box;
+import javax.swing.BoxLayout;
+import javax.swing.DefaultListCellRenderer;
+import javax.swing.JComponent;
+import javax.swing.JLabel;
+import javax.swing.JList;
+import javax.swing.JPanel;
+import javax.swing.JScrollPane;
+import javax.swing.ListCellRenderer;
+import javax.swing.ListModel;
+import javax.swing.UIManager;
 import javax.swing.border.EmptyBorder;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
@@ -135,7 +146,7 @@ final public class RaplaListEdit<T> implements
     JPanel toolbar = new JPanel();
     
     
-    public RaplaListEdit(RaplaResources i18n, RaplaImages images,JComponent detailContent,ActionListener callback, boolean hasCopy)
+    public RaplaListEdit(RaplaResources i18n, JComponent detailContent,ActionListener callback, boolean hasCopy)
     {
         this.callback = callback;
         this.i18n = i18n;
@@ -199,13 +210,13 @@ final public class RaplaListEdit<T> implements
         modelUpdate();
 
         createNewButton.setText(i18n.getString("new"));
-        createNewButton.setIcon(images.getIconFromKey("icon.new"));
+        createNewButton.setIcon(RaplaImages.getIcon(i18n.getIcon("icon.new")));
 
-        removeButton.setIcon(images.getIconFromKey("icon.delete"));
+        removeButton.setIcon(RaplaImages.getIcon(i18n.getIcon("icon.delete")));
         removeButton.setText(i18n.getString("delete"));
 
         copyButton.setText(i18n.getString("copy"));
-        copyButton.setIcon(images.getIconFromKey("icon.copy"));
+        copyButton.setIcon(RaplaImages.getIcon(i18n.getIcon("icon.copy")));
 
         nothingSelectedLabel.setHorizontalAlignment(JLabel.CENTER);
         nothingSelectedLabel.setText(i18n.getString("nothing_selected"));
@@ -503,20 +514,18 @@ final public class RaplaListEdit<T> implements
     public static class RaplaListEditFactory
     {
 
-        private final RaplaImages images;
         private final RaplaResources i18n;
 
         @Inject
-        public RaplaListEditFactory(RaplaImages images, RaplaResources i18n)
+        public RaplaListEditFactory(RaplaResources i18n)
         {
             super();
-            this.images = images;
             this.i18n = i18n;
         }
 
         public RaplaListEdit create( JComponent detailContent, ActionListener callback, boolean hasCopy)
         {
-            return new RaplaListEdit(i18n, images, detailContent, callback, hasCopy);
+            return new RaplaListEdit(i18n,  detailContent, callback, hasCopy);
         }
     }
 	

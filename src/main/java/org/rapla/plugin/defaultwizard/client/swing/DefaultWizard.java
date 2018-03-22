@@ -12,6 +12,7 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.plugin.defaultwizard.client.swing;
 
+import io.reactivex.functions.Consumer;
 import org.rapla.RaplaResources;
 import org.rapla.client.PopupContext;
 import org.rapla.client.event.ApplicationEvent;
@@ -19,16 +20,15 @@ import org.rapla.client.event.ApplicationEvent.ApplicationEventContext;
 import org.rapla.client.event.ApplicationEventBus;
 import org.rapla.client.extensionpoints.ReservationWizardExtension;
 import org.rapla.client.internal.edit.EditTaskPresenter;
-import org.rapla.client.swing.RaplaGUIComponent;
-import org.rapla.client.swing.images.RaplaImages;
-import org.rapla.client.swing.toolkit.RaplaMenu;
-import org.rapla.client.swing.toolkit.RaplaMenuItem;
+import org.rapla.client.menu.IdentifiableMenuEntry;
+import org.rapla.client.menu.MenuInterface;
+import org.rapla.client.menu.MenuItemFactory;
 import org.rapla.entities.User;
 import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.entities.dynamictype.DynamicTypeAnnotations;
 import org.rapla.facade.CalendarModel;
-import org.rapla.facade.client.ClientFacade;
 import org.rapla.facade.RaplaFacade;
+import org.rapla.facade.client.ClientFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.TypedComponentRole;
@@ -37,43 +37,43 @@ import org.rapla.logger.Logger;
 import org.rapla.storage.PermissionController;
 
 import javax.inject.Inject;
-import javax.swing.MenuElement;
-import java.awt.Component;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
+
+import static org.hsqldb.resources.ResourceBundleHandler.getLocale;
 
 /** This ReservationWizard displays no wizard and directly opens a ReservationEdit Window
  */
-@Extension(provides = ReservationWizardExtension.class, id = "defaultWizard") public class DefaultWizard extends RaplaGUIComponent
-        implements ReservationWizardExtension, ActionListener
+@Extension(provides = ReservationWizardExtension.class, id = "defaultWizard") public class DefaultWizard
+        implements ReservationWizardExtension
 {
     final public static TypedComponentRole<Boolean> ENABLED = new TypedComponentRole<Boolean>("org.rapla.plugin.defaultwizard.enabled");
-    Map<Component, DynamicType> typeMap = new HashMap<Component, DynamicType>();
     private final PermissionController permissionController;
     private final CalendarModel model;
-    private final RaplaImages raplaImages;
     private final ApplicationEventBus eventBus;
+    private final MenuItemFactory menuItemFactory;
+    private final RaplaResources i18n;
+    RaplaFacade raplaFacade;
+    private ClientFacade clientFacade;
 
     @Inject public DefaultWizard(ClientFacade clientFacade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, CalendarModel model,
-            RaplaImages raplaImages, ApplicationEventBus eventBus)
+                                  ApplicationEventBus eventBus, MenuItemFactory menuFactory)
     {
-        super(clientFacade, i18n, raplaLocale, logger);
+        this.clientFacade = clientFacade;
+        this.i18n = i18n;
+        raplaFacade = clientFacade.getRaplaFacade();
+        this.menuItemFactory = menuFactory;
         final RaplaFacade raplaFacade = clientFacade.getRaplaFacade();
         this.permissionController = raplaFacade.getPermissionController();
         this.model = model;
         this.eventBus = eventBus;
-        this.raplaImages = raplaImages;
     }
 
     @Override public boolean isEnabled()
     {
         try
         {
-            return getFacade().getSystemPreferences().getEntryAsBoolean(ENABLED, true);
+            return raplaFacade.getSystemPreferences().getEntryAsBoolean(ENABLED, true);
         }
         catch (RaplaException e)
         {
@@ -81,20 +81,21 @@ import java.util.Map;
         }
     }
 
+    @Override
     public String getId()
     {
         return "000_defaultWizard";
     }
 
-    public MenuElement getMenuElement()
+    @Override
+    public Object getComponent()
     {
-        typeMap.clear();
         List<DynamicType> eventTypes = new ArrayList<DynamicType>();
         User user;
         try
         {
-            user = getUser();
-            DynamicType[] types = getQuery().getDynamicTypes(DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RESERVATION);
+            user = clientFacade.getUser();
+            DynamicType[] types = raplaFacade.getDynamicTypes(DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RESERVATION);
             for (DynamicType type : types)
             {
                 if (permissionController.canCreate(type, user))
@@ -108,60 +109,44 @@ import java.util.Map;
             return null;
         }
         boolean canCreateReservation = eventTypes.size() > 0;
-        MenuElement element;
-        String newEventText = getString("new_reservation");
-        final RaplaFacade raplaFacade = getFacade();
-        final RaplaLocale raplaLocale = getRaplaLocale();
+        IdentifiableMenuEntry element;
+        String newEventText = i18n.getString("new_reservation");
+        final boolean enabled = raplaFacade.canAllocate(model, user) && canCreateReservation;
+
         if (eventTypes.size() == 1)
         {
-            RaplaMenuItem item = new RaplaMenuItem(getId());
-            item.setEnabled(raplaFacade.canAllocate(model, user) && canCreateReservation);
-            DynamicType type = eventTypes.get(0);
+            final DynamicType type = eventTypes.get(0);
             String name = type.getName(getLocale());
+            String text;
             if (newEventText.endsWith(name))
             {
-                item.setText(newEventText);
+                text = newEventText;
             }
             else
             {
-                item.setText(newEventText + " " + name);
+                text = newEventText + " " + name;
             }
-            item.setIcon(raplaImages.getIconFromKey("icon.new"));
-            item.addActionListener(this);
-
-            typeMap.put(item, type);
-            element = item;
+            Consumer<PopupContext> action = enabled ?  (popupContext) -> actionPerformed(popupContext, type): null;
+            element = menuItemFactory.createMenuItem(text,i18n.getIcon("icon.new"),action);
         }
         else
         {
-            RaplaMenu item = new RaplaMenu(getId());
-            item.setEnabled(getFacade().canAllocate(model, user) && canCreateReservation);
-            item.setText(newEventText);
-            item.setIcon(raplaImages.getIconFromKey("icon.new"));
-            for (DynamicType type : eventTypes)
-            {
-                RaplaMenuItem newItem = new RaplaMenuItem(type.getKey());
-                String name = type.getName(getLocale());
-                newItem.setText(name);
-                item.add(newItem);
-                newItem.addActionListener(this);
-                typeMap.put(newItem, type);
+            MenuInterface container = menuItemFactory.createMenu(newEventText, i18n.getIcon("icon.new"));
+            if ( enabled) {
+                for (DynamicType type : eventTypes) {
+                    String name = type.getName(getLocale());
+                    Consumer<PopupContext> action =(popupContext) -> actionPerformed(popupContext, type);
+                    IdentifiableMenuEntry newItem = menuItemFactory.createMenuItem(name, null, action);
+                    container.addMenuItem(newItem);
+                }
             }
-            element = item;
+            element = container;
         }
-        return element;
+        return element.getComponent();
     }
 
-    public void actionPerformed(ActionEvent e)
+    public void actionPerformed(final PopupContext popupContext, DynamicType type)
     {
-        Object source = e.getSource();
-        final PopupContext popupContext = createPopupContext((Component) source, null);
-        DynamicType type = typeMap.get(source);
-        if (type == null)
-        {
-            getLogger().warn("Type not found for " + source + " in map " + typeMap);
-            return;
-        }
         ApplicationEventContext context = null;
         eventBus.publish(new ApplicationEvent(EditTaskPresenter.CREATE_RESERVATION_FOR_DYNAMIC_TYPE, type.getId(), popupContext, context));
     }

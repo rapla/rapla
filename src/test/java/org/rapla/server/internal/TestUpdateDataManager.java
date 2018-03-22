@@ -9,7 +9,8 @@ import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 import org.rapla.AppointmentFormaterImpl;
 import org.rapla.RaplaResources;
-import org.rapla.components.i18n.internal.DefaultBundleManager;
+import org.rapla.components.i18n.internal.AbstractBundleManager;
+import org.rapla.components.i18n.server.ServerBundleManager;
 import org.rapla.entities.Entity;
 import org.rapla.entities.User;
 import org.rapla.entities.domain.Allocatable;
@@ -55,7 +56,7 @@ public class TestUpdateDataManager
                 facade = RaplaTestCase.createFacadeWithDatasource(logger, datasource, xmlFile);
 //        facade = RaplaTestCase.createFacadeWithFile(logger, xmlFile);
         operator = (CachableStorageOperator) facade.getOperator();
-        DefaultBundleManager bundleManager = new DefaultBundleManager();
+        AbstractBundleManager bundleManager = new ServerBundleManager();
         RaplaResources i18n = new RaplaResources(bundleManager);
         final RaplaLocaleImpl raplaLocale = new RaplaLocaleImpl(bundleManager);
         AppointmentFormater appointmentFormater = new AppointmentFormaterImpl(i18n, raplaLocale);

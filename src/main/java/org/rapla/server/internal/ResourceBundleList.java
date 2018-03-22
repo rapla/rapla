@@ -1,7 +1,7 @@
 package org.rapla.server.internal;
 
 import org.rapla.components.i18n.BundleManager;
-import org.rapla.components.xmlbundle.I18nBundle;
+import org.rapla.components.i18n.I18nBundle;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;

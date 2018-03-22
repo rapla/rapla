@@ -1,12 +1,13 @@
 package org.rapla.plugin.ical.client.swing;
 
 import org.rapla.RaplaResources;
+import org.rapla.client.PopupContext;
 import org.rapla.client.dialog.DialogInterface;
 import org.rapla.client.dialog.DialogUiFactoryInterface;
 import org.rapla.client.extensionpoints.ImportMenuExtension;
+import org.rapla.client.menu.IdentifiableMenuEntry;
+import org.rapla.client.menu.MenuItemFactory;
 import org.rapla.client.swing.RaplaGUIComponent;
-import org.rapla.client.swing.images.RaplaImages;
-import org.rapla.client.swing.internal.SwingPopupContext;
 import org.rapla.client.swing.internal.TreeAllocatableSelection;
 import org.rapla.components.iolayer.FileContent;
 import org.rapla.components.iolayer.IOInterface;
@@ -17,7 +18,8 @@ import org.rapla.entities.dynamictype.Attribute;
 import org.rapla.entities.dynamictype.AttributeType;
 import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.entities.dynamictype.DynamicTypeAnnotations;
-import org.rapla.facade.client.ClientFacade;
+import org.rapla.facade.RaplaComponent;
+import org.rapla.facade.RaplaFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.inject.Extension;
@@ -37,7 +39,6 @@ import javax.swing.DefaultListCellRenderer;
 import javax.swing.JComboBox;
 import javax.swing.JLabel;
 import javax.swing.JList;
-import javax.swing.JMenuItem;
 import javax.swing.JPanel;
 import javax.swing.JRadioButton;
 import javax.swing.JTextField;
@@ -68,46 +69,37 @@ import java.util.List;
  * @author Jan Fischer
  */
 @Extension(provides=ImportMenuExtension.class, id= ImportFromICalPlugin.PLUGIN_ID)
-public class ImportFromICalMenu extends RaplaGUIComponent implements ImportMenuExtension, ActionListener {
+public class ImportFromICalMenu extends RaplaComponent implements ImportMenuExtension {
 
-	JMenuItem item;
+	IdentifiableMenuEntry item;
 	String id = "ical";
 	ICalImport importService;
 	ImportFromICalResources i18n;
     private final Provider<TreeAllocatableSelection> treeAllocatableSelectionProvider;
     private final IOInterface io;
-    private final RaplaImages raplaImages;
     private final DialogUiFactoryInterface dialogUiFactory;
 	@Inject
-	public ImportFromICalMenu(ClientFacade facade, RaplaResources i18n, ImportFromICalResources iCalResources,RaplaLocale raplaLocale, Logger logger, ICalImport importService, ImportFromICalResources icalImportResources, Provider<TreeAllocatableSelection>treeAllocatableSelectionProvider, IOInterface io, RaplaImages raplaImages, DialogUiFactoryInterface dialogUiFactory)
+	public ImportFromICalMenu(RaplaFacade facade, RaplaResources i18n, ImportFromICalResources iCalResources, RaplaLocale raplaLocale, Logger logger, ICalImport importService, ImportFromICalResources icalImportResources, Provider<TreeAllocatableSelection> treeAllocatableSelectionProvider, IOInterface io, MenuItemFactory menuItemFactory, DialogUiFactoryInterface dialogUiFactory)
 	{
-		super(facade, i18n, raplaLocale, logger);
+		super( facade,i18n, raplaLocale, logger);
 		this.importService = importService;
 		this.i18n = icalImportResources;
         this.treeAllocatableSelectionProvider = treeAllocatableSelectionProvider;
         this.io = io;
-        this.raplaImages = raplaImages;
         this.dialogUiFactory = dialogUiFactory;
-		item = new JMenuItem(iCalResources.getString("ical.import"));
-		item.setIcon(raplaImages.getIconFromKey("icon.import"));
-		item.addActionListener(this);
+		item = menuItemFactory.createMenuItem( iCalResources.getString("ical.import"), i18n.getIcon( "icon.import"),(popupContext)->show());
 	}
-	
-	public JMenuItem getMenuElement()  {
-        return item;
+
+	@Override
+	public Component getComponent()  {
+        return (Component) item.getComponent();
     }
-	
+
+    @Override
 	public String getId() {
 		return id;
 	}
 	
-	public void actionPerformed(ActionEvent evt) {
-        try {
-        	show();
-        } catch (Exception ex) {
-            dialogUiFactory.showException(ex, new SwingPopupContext(getMainComponent(), null));
-        }
-    }
 
 	String bufferedICal;
 
@@ -145,7 +137,7 @@ public class ImportFromICalMenu extends RaplaGUIComponent implements ImportMenuE
 
 		final String urlText = i18n.getString("enter_url");
 		final JTextField urlField = new JTextField(urlText);
-		addCopyPaste(urlField, getI18n(), getRaplaLocale(), io, getLogger());
+		RaplaGUIComponent.addCopyPaste(urlField, getI18n(), getRaplaLocale(), io, getLogger());
 		panel1.add(urlField, "2,0");
 
 		final JTextField fileField = new JTextField(i18n.getString("click_for_file"));
@@ -198,9 +190,11 @@ public class ImportFromICalMenu extends RaplaGUIComponent implements ImportMenuE
 		warning.setForeground( Color.RED);
 		container.add( warning, BorderLayout.NORTH);
 		container.add( superpanel, BorderLayout.CENTER);
-		
+		container.setSize(850, 100);
+		final Component mainComponent = RaplaGUIComponent.getMainComponentDeprecated();
+		final PopupContext popupContext = dialogUiFactory.createPopupContext(()->mainComponent);
 		final DialogInterface dlg = dialogUiFactory.createContentDialog(
-		        new SwingPopupContext(getMainComponent(), null), container, new String[] { getString("import"), getString("cancel") });
+				popupContext, container, new String[] { getString("import"), getString("cancel") });
 		
         final ActionListener radioListener = new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
@@ -229,7 +223,7 @@ public class ImportFromICalMenu extends RaplaGUIComponent implements ImportMenuE
 				{
 					dlg.getAction(0).setEnabled( bufferedICal != null );
 	                if (fileField.isEnabled()) {
-	                    final Frame frame = (Frame) SwingUtilities.getRoot(getMainComponent());
+						final Frame frame = (Frame) SwingUtilities.getRoot(mainComponent);
 	                    try {
 	                        FileContent file = io.openFile( frame, null, new String[] {".ics"});
 	                        if ( file != null) 
@@ -253,7 +247,7 @@ public class ImportFromICalMenu extends RaplaGUIComponent implements ImportMenuE
 	                    } catch (IOException ex) {
 	                        bufferedICal = null;
 	                        dlg.getAction(0).setEnabled( false );
-	                        dialogUiFactory.showException(ex, new SwingPopupContext(getMainComponent(), null));
+	                        dialogUiFactory.showException(ex, popupContext);
 	                    }
 	             
 	                }
@@ -265,10 +259,10 @@ public class ImportFromICalMenu extends RaplaGUIComponent implements ImportMenuE
 		
 		final String title = "iCal-" + getString("import");
 		dlg.setTitle(title);
-		dlg.setSize(850, 100);
+
 		// dlg.setResizable(false);
-		dlg.getAction(0).setIcon("icon.import");
-		dlg.getAction(1).setIcon("icon.cancel");
+		dlg.getAction(0).setIcon(i18n.getIcon("icon.import"));
+		dlg.getAction(1).setIcon(i18n.getIcon("icon.cancel"));
 
 		dlg.getAction(0).setRunnable(new Runnable() {
 			private static final long serialVersionUID = 1L;
@@ -314,11 +308,11 @@ public class ImportFromICalMenu extends RaplaGUIComponent implements ImportMenuE
 							} else {
 								text += ".";
 							}
-							DialogInterface okDlg = dialogUiFactory.createInfoDialog(new SwingPopupContext(getMainComponent(), null), title, text);
+							DialogInterface okDlg = dialogUiFactory.createInfoDialog(popupContext, title, text);
 							okDlg.start(true);
 						});
 				} catch (Exception e1) {
-				    dialogUiFactory.showException(e1, new SwingPopupContext(getMainComponent(), null));
+				    dialogUiFactory.showException(e1, popupContext);
 				}
 
 			}

@@ -4,9 +4,9 @@ import com.google.gwt.core.client.Scheduler.ScheduledCommand;
 import com.google.gwt.user.client.ui.MenuBar;
 import com.google.gwt.user.client.ui.MenuItem;
 import com.google.gwt.user.client.ui.PopupPanel;
-import org.rapla.client.menu.data.MenuCallback;
-import org.rapla.client.menu.data.MenuEntry;
-import org.rapla.client.menu.data.Point;
+import org.rapla.client.menu.sandbox.data.MenuCallback;
+import org.rapla.client.menu.sandbox.data.MenuEntry;
+import org.rapla.client.menu.sandbox.data.Point;
 
 import java.util.List;
 

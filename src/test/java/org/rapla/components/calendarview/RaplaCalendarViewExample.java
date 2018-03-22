@@ -20,7 +20,6 @@ import org.rapla.components.calendarview.swing.ViewListener;
 import org.rapla.entities.domain.Appointment;
 import org.rapla.entities.domain.AppointmentBlock;
 import org.rapla.framework.internal.RaplaLocaleImpl;
-import org.rapla.plugin.abstractcalendar.RaplaBuilder;
 
 import javax.swing.BorderFactory;
 import javax.swing.JFrame;

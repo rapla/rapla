@@ -2,7 +2,7 @@ package org.rapla.client.internal;
 
 import org.rapla.RaplaResources;
 import org.rapla.components.util.undo.CommandUndo;
-import org.rapla.components.xmlbundle.I18nBundle;
+import org.rapla.components.i18n.I18nBundle;
 import org.rapla.entities.Category;
 import org.rapla.entities.Entity;
 import org.rapla.entities.Ownable;

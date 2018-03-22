@@ -27,6 +27,7 @@ import org.rapla.client.swing.internal.edit.fields.TextField;
 import org.rapla.client.swing.internal.edit.fields.TextField.TextFieldFactory;
 import org.rapla.client.swing.toolkit.RaplaButton;
 import org.rapla.client.swing.toolkit.RaplaTree;
+import org.rapla.components.i18n.I18nIcon;
 import org.rapla.entities.Category;
 import org.rapla.entities.User;
 import org.rapla.entities.domain.Allocatable;
@@ -43,7 +44,12 @@ import org.rapla.inject.Extension;
 import org.rapla.logger.Logger;
 
 import javax.inject.Inject;
-import javax.swing.*;
+import javax.swing.JButton;
+import javax.swing.JComponent;
+import javax.swing.JPanel;
+import javax.swing.JToolBar;
+import javax.swing.JTree;
+import javax.swing.SwingUtilities;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
 import javax.swing.tree.TreeNode;
@@ -77,17 +83,15 @@ public class UserEditUI  extends AbstractEditUI<User> {
     AdminBooleanField adminField;
     GroupListField groupField;
     private final TreeFactory treeFactory;
-    private final RaplaImages raplaImages;
     private final DialogUiFactoryInterface dialogUiFactory;
     /**
      * @throws RaplaException
      */
     @Inject
-    public UserEditUI(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, TreeFactory treeFactory, RaplaImages raplaImages, DialogUiFactoryInterface dialogUiFactory, GroupListField groupField, TextFieldFactory textFieldFactory) throws
+    public UserEditUI(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, TreeFactory treeFactory, DialogUiFactoryInterface dialogUiFactory, GroupListField groupField, TextFieldFactory textFieldFactory) throws
             RaplaInitializationException {
         super(facade, i18n, raplaLocale, logger);
         this.treeFactory = treeFactory;
-        this.raplaImages = raplaImages;
         this.dialogUiFactory = dialogUiFactory;
         List<EditField> fields = new ArrayList<EditField>();
         usernameField = textFieldFactory.create(getString("username"));
@@ -103,6 +107,11 @@ public class UserEditUI  extends AbstractEditUI<User> {
         this.groupField = groupField;
         fields.add(this.groupField);
         setFields(fields);
+    }
+
+    public void setIcon(JButton button, I18nIcon icon)
+    {
+        button.setIcon(RaplaImages.getIcon( icon));
     }
     
     class AdminBooleanField extends BooleanField implements ChangeListener {
@@ -193,9 +202,9 @@ public class UserEditUI  extends AbstractEditUI<User> {
             newButton.addActionListener( this );
             removeButton.addActionListener( this );
             removeButton.setText( getString("remove") );
-            removeButton.setIcon( raplaImages.getIconFromKey( "icon.remove" ) );
+            setIcon( removeButton,i18n.getIcon( "icon.remove" ) );
             newButton.setText( getString("bind_with_person") );
-            newButton.setIcon( raplaImages.getIconFromKey( "icon.new" ) );
+            setIcon(newButton, i18n.getIcon( "icon.new" ) );
 
         }
 

@@ -15,7 +15,6 @@ package org.rapla.client.swing.internal.action;
 import org.rapla.RaplaResources;
 import org.rapla.client.UserClientService;
 import org.rapla.client.swing.RaplaAction;
-import org.rapla.client.swing.images.RaplaImages;
 import org.rapla.facade.client.ClientFacade;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.logger.Logger;
@@ -24,7 +23,7 @@ import org.rapla.logger.Logger;
 public class RestartRaplaAction extends RaplaAction{
     private final UserClientService clientService;
 
-    public RestartRaplaAction(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, UserClientService clientService, RaplaImages raplaImages)
+    public RestartRaplaAction(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, UserClientService clientService)
     {
         super(facade, i18n, raplaLocale, logger);
         this.clientService = clientService;
@@ -35,7 +34,7 @@ public class RestartRaplaAction extends RaplaAction{
         	string = getString("logout") +" / " + string;
         }
         putValue(NAME,string);
-        putValue(SMALL_ICON,raplaImages.getIconFromKey("icon.restart"));
+        setIcon(i18n.getIcon("icon.restart"));
     }
 
     public void actionPerformed() {

@@ -26,7 +26,8 @@ import org.rapla.components.util.DateTools;
 import org.rapla.components.util.DateTools.TimeWithoutTimezone;
 import org.rapla.components.util.undo.CommandHistory;
 import org.rapla.components.util.undo.CommandUndo;
-import org.rapla.components.xmlbundle.I18nBundle;
+import org.rapla.components.i18n.I18nBundle;
+import org.rapla.components.i18n.I18nIcon;
 import org.rapla.entities.Entity;
 import org.rapla.entities.User;
 import org.rapla.entities.domain.Allocatable;
@@ -37,8 +38,8 @@ import org.rapla.entities.domain.Repeating;
 import org.rapla.entities.domain.Reservation;
 import org.rapla.entities.storage.ReferenceInfo;
 import org.rapla.facade.CalendarSelectionModel;
-import org.rapla.facade.client.ClientFacade;
 import org.rapla.facade.RaplaFacade;
+import org.rapla.facade.client.ClientFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.inject.DefaultImplementation;
@@ -209,8 +210,8 @@ public class ReservationControllerImpl implements ReservationController {
         getLogger().error(ex.getMessage(), ex);
     }
 
-    protected Promise<Integer> showDialog(String action, PopupContext popupContext, List<String> optionList, List<String> iconList, String title, String content,
-                                          String dialogIcon)
+    protected Promise<Integer> showDialog( PopupContext popupContext, List<String> optionList, List<I18nIcon> iconList, String title, String content,
+                                          I18nIcon dialogIcon)
     {
         DialogInterface dialog = dialogUI.createTextDialog(
                 popupContext
@@ -224,7 +225,7 @@ public class ReservationControllerImpl implements ReservationController {
         }
         for ( int i=0;i< optionList.size();i++)
         {
-            final String string = iconList.get( i);
+            final I18nIcon string = iconList.get( i);
             if ( string != null)
             {
                 dialog.getAction(i).setIcon(string);
@@ -521,33 +522,33 @@ public class ReservationControllerImpl implements ReservationController {
         Reservation reservation = appointment.getReservation();
         getLogger().debug(action + " '" + appointment + "' for reservation '" + reservation + "'");
         List<String> optionList = new ArrayList<String>();
-        List<String> iconList = new ArrayList<String>();
+        List<I18nIcon> iconList = new ArrayList<>();
         List<DialogAction> actionList = new ArrayList<ReservationControllerImpl.DialogAction>();
         String dateString = getRaplaLocale().formatDate(from);
         if (reservation.getAppointments().length <= 1 || includeEvent) {
             optionList.add(i18n.getString("reservation"));
-            iconList.add("icon.edit_window_small");
+            iconList.add(i18n.getIcon("icon.edit_window_small"));
             actionList.add(DialogAction.EVENT);
         }
         if (appointment.getRepeating() != null && reservation.getAppointments().length > 1) {
             String shortSummary = appointmentFormater.getShortSummary(appointment);
             optionList.add(i18n.getString("serie") + ": " + shortSummary);
-            iconList.add("icon.repeating");
+            iconList.add(i18n.getIcon("icon.repeating"));
             actionList.add(DialogAction.SERIE);
         }
         // more then one block for the appointment exisst
         if ((appointment.getRepeating() != null && isNotEmptyWithExceptions(appointment, Collections.singletonList(from)))
                 || reservation.getAppointments().length > 1) {
             optionList.add(i18n.format("single_appointment.format", dateString));
-            iconList.add("icon.single");
+            iconList.add(i18n.getIcon("icon.single"));
             actionList.add(DialogAction.SINGLE);
         }
         if (optionList.size() > 1) {
 
             String title = i18n.getString(action);
             String content = i18n.getString(action + "_appointment.format");
-            String dialogIcon = "icon.question";
-            return showDialog(action, context, optionList, iconList, title, content, dialogIcon).thenApply((index) -> index < 0 ? DialogAction.CANCEL : actionList.get(index));
+            I18nIcon dialogIcon = i18n.getIcon("icon.question");
+            return showDialog( context, optionList, iconList, title, content, dialogIcon).thenApply((index) -> index < 0 ? DialogAction.CANCEL : actionList.get(index));
         } else {
             if (action.equals("delete")) {
                 return deleteDialog.showDeleteDialog(context, new Object[]{appointment.getReservation()}).thenApply(result -> {

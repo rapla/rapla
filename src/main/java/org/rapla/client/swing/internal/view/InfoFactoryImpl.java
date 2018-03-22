@@ -16,6 +16,7 @@ import org.rapla.RaplaResources;
 import org.rapla.client.PopupContext;
 import org.rapla.client.dialog.DialogInterface;
 import org.rapla.client.dialog.DialogUiFactoryInterface;
+import org.rapla.client.dialog.InfoFactory;
 import org.rapla.client.internal.AllocatableInfoUI;
 import org.rapla.client.internal.AppointmentInfoUI;
 import org.rapla.client.internal.CategoryInfoUI;
@@ -24,9 +25,7 @@ import org.rapla.client.internal.HTMLInfo;
 import org.rapla.client.internal.PeriodInfoUI;
 import org.rapla.client.internal.ReservationInfoUI;
 import org.rapla.client.internal.UserInfoUI;
-import org.rapla.client.dialog.InfoFactory;
 import org.rapla.client.swing.RaplaGUIComponent;
-import org.rapla.client.swing.images.RaplaImages;
 import org.rapla.client.swing.internal.SwingPopupContext;
 import org.rapla.client.swing.toolkit.HTMLView;
 import org.rapla.components.iolayer.ComponentPrinter;
@@ -41,8 +40,8 @@ import org.rapla.entities.domain.AppointmentFormater;
 import org.rapla.entities.domain.Period;
 import org.rapla.entities.domain.Reservation;
 import org.rapla.entities.dynamictype.DynamicType;
-import org.rapla.facade.client.ClientFacade;
 import org.rapla.facade.RaplaFacade;
+import org.rapla.facade.client.ClientFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.inject.DefaultImplementation;
@@ -52,7 +51,6 @@ import org.rapla.logger.Logger;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import java.awt.Component;
-import java.awt.Point;
 import java.awt.datatransfer.DataFlavor;
 import java.awt.datatransfer.StringSelection;
 import java.util.HashMap;
@@ -68,15 +66,13 @@ public class InfoFactoryImpl extends RaplaGUIComponent implements InfoFactory
 {
     Map<Class,HTMLInfo> views = new HashMap<Class,HTMLInfo>();
     private final IOInterface ioInterface;
-    private final RaplaImages raplaImages;
     private final DialogUiFactoryInterface dialogUiFactory;
 
     @Inject
-    public InfoFactoryImpl(ClientFacade clientFacade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, AppointmentFormater appointmentFormater, IOInterface ioInterface, RaplaImages raplaImages, DialogUiFactoryInterface dialogUiFactory) {
+    public InfoFactoryImpl(ClientFacade clientFacade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, AppointmentFormater appointmentFormater, IOInterface ioInterface,  DialogUiFactoryInterface dialogUiFactory) {
         super(clientFacade, i18n, raplaLocale, logger);
         RaplaFacade facade = clientFacade.getRaplaFacade();
         this.ioInterface = ioInterface;
-        this.raplaImages = raplaImages;
         this.dialogUiFactory = dialogUiFactory;
         views.put( DynamicType.class, new DynamicTypeInfoUI(clientFacade, i18n, raplaLocale, logger) );
         views.put( Reservation.class, new ReservationInfoUI(i18n, raplaLocale, facade, logger, appointmentFormater) );
@@ -162,8 +158,6 @@ public class InfoFactoryImpl extends RaplaGUIComponent implements InfoFactory
         }
         dlg.setTitle( viewTable.getDialogTitle() );
         dlg.setDefault(2);
-        final Point point = SwingPopupContext.extractPoint(popupContext);
-        dlg.setPosition(point.getX(), point.getY());
         dlg.start( true );
 
         dlg.getAction(0).setRunnable( new Runnable() {

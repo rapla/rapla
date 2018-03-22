@@ -7,9 +7,9 @@ import org.rapla.client.dialog.DialogUiFactoryInterface;
 import org.rapla.client.extensionpoints.EventCheck;
 import org.rapla.entities.User;
 import org.rapla.entities.domain.Reservation;
+import org.rapla.facade.Conflict;
 import org.rapla.facade.RaplaFacade;
 import org.rapla.facade.client.ClientFacade;
-import org.rapla.facade.Conflict;
 import org.rapla.facade.internal.CalendarOptionsImpl;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.inject.Extension;
@@ -90,9 +90,9 @@ public class ConflictReservationCheck implements EventCheck
             DialogInterface dialog = dialogUiFactory
                     .createContentDialog(sourceComponent, content, new String[] { i18n.getString("continue"), i18n.getString("back") });
             dialog.setDefault(1);
-            dialog.setIcon("icon.big_folder_conflicts");
-            dialog.getAction(0).setIcon("icon.save");
-            dialog.getAction(1).setIcon("icon.cancel");
+            dialog.setIcon(i18n.getIcon("icon.big_folder_conflicts"));
+            dialog.getAction(0).setIcon(i18n.getIcon("icon.save"));
+            dialog.getAction(1).setIcon(i18n.getIcon("icon.cancel"));
             dialog.setTitle(i18n.getString("warning.conflict"));
             return dialog.start(true).thenApply((index) -> index == 0);
         });

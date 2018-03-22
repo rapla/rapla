@@ -15,11 +15,11 @@ package org.rapla.plugin.eventimport.client.swing;
 import org.rapla.RaplaResources;
 import org.rapla.client.PopupContext;
 import org.rapla.client.dialog.DialogInterface;
+import org.rapla.client.dialog.swing.DialogUI.DialogUiFactory;
 import org.rapla.client.extensionpoints.ImportMenuExtension;
 import org.rapla.client.swing.RaplaGUIComponent;
 import org.rapla.client.swing.images.RaplaImages;
 import org.rapla.client.swing.internal.common.NamedListCellRenderer;
-import org.rapla.client.swing.toolkit.DialogUI.DialogUiFactory;
 import org.rapla.client.swing.toolkit.RaplaButton;
 import org.rapla.components.iolayer.IOInterface;
 import org.rapla.components.util.IOUtil;
@@ -32,8 +32,8 @@ import org.rapla.entities.domain.RaplaObjectAnnotations;
 import org.rapla.entities.domain.Reservation;
 import org.rapla.entities.dynamictype.Attribute;
 import org.rapla.entities.dynamictype.Classification;
-import org.rapla.facade.client.ClientFacade;
 import org.rapla.facade.RaplaFacade;
+import org.rapla.facade.client.ClientFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.inject.Extension;
@@ -91,7 +91,6 @@ public class ImportTemplateMenu implements ImportMenuExtension, ActionListener
     @Inject
     public ImportTemplateMenu(
         final RaplaResources i18n,
-        final RaplaImages images,
         final TemplateImport importService,
         final ClientFacade clientFacade,
         final RaplaLocale raplaLocale,
@@ -105,13 +104,13 @@ public class ImportTemplateMenu implements ImportMenuExtension, ActionListener
         this.clientFacade = clientFacade;
         this.i18n = i18n;
         item = new JMenuItem(id);
-        item.setIcon(images.getIconFromKey("icon.import"));
+        item.setIcon(RaplaImages.getIcon(i18n.getIcon("icon.import")));
         item.addActionListener(this);
         this.dialogFactory = dialogFactory;
     }
 
     @Override
-    public JMenuItem getMenuElement()
+    public JMenuItem getComponent()
     {
         return item;
     }

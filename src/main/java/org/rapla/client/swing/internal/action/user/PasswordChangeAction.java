@@ -17,7 +17,6 @@ import org.rapla.client.PopupContext;
 import org.rapla.client.dialog.DialogInterface;
 import org.rapla.client.dialog.DialogUiFactoryInterface;
 import org.rapla.client.swing.RaplaAction;
-import org.rapla.client.swing.images.RaplaImages;
 import org.rapla.client.swing.internal.SwingPopupContext;
 import org.rapla.components.util.Tools;
 import org.rapla.entities.User;
@@ -34,13 +33,11 @@ public class PasswordChangeAction extends RaplaAction {
     
     Object object;
     PopupContext popupContext;
-    private final RaplaImages raplaImages;
     private final DialogUiFactoryInterface dialogUiFactory;
 
-    public PasswordChangeAction(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger,PopupContext popupContext, RaplaImages raplaImages, DialogUiFactoryInterface dialogUiFactory) {
+    public PasswordChangeAction(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger,PopupContext popupContext, DialogUiFactoryInterface dialogUiFactory) {
         super(facade, i18n, raplaLocale, logger);
         this.popupContext = popupContext;
-        this.raplaImages = raplaImages;
         this.dialogUiFactory = dialogUiFactory;
         putValue(NAME, getI18n().format("change.format",getString("password")));
     }
@@ -106,7 +103,7 @@ public class PasswordChangeAction extends RaplaAction {
             dlg.setDefault(0);
             dlg.setTitle(getI18n().format("change.format",getString("password")));
             dlg.getAction(0).setRunnable(this);
-            dlg.getAction(1).setIcon("icon.cancel");
+            dlg.getAction(1).setIcon(i18n.getIcon("icon.cancel"));
             dlg.start(true);
         }
         

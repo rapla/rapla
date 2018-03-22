@@ -16,12 +16,12 @@ package org.rapla.client.swing.internal.print;
 import org.rapla.RaplaResources;
 import org.rapla.client.dialog.DialogInterface;
 import org.rapla.client.dialog.DialogUiFactoryInterface;
+import org.rapla.client.dialog.swing.DialogUI;
 import org.rapla.client.swing.RaplaGUIComponent;
 import org.rapla.client.swing.SwingCalendarView;
 import org.rapla.client.swing.extensionpoints.SwingViewFactory;
 import org.rapla.client.swing.images.RaplaImages;
 import org.rapla.client.swing.internal.SwingPopupContext;
-import org.rapla.client.swing.toolkit.DialogUI;
 import org.rapla.client.swing.toolkit.ErrorDialog;
 import org.rapla.client.swing.toolkit.RaplaButton;
 import org.rapla.client.swing.toolkit.RaplaFrame;
@@ -99,8 +99,7 @@ public class CalendarPrintDialog extends DialogUI
     JButton previousPage = new JButton("<");
     JLabel pageLabel = new JLabel();
     JButton nextPage =  new JButton(">");
-    RaplaImages images;
-    
+
     boolean updatePageCount = true;
     int pageCount;
 
@@ -171,16 +170,15 @@ public class CalendarPrintDialog extends DialogUI
     private final Logger logger;
 
     @Inject
-    public CalendarPrintDialog(RaplaFrame owner, RaplaLocale raplaLocale,CommandScheduler scheduler, Logger logger, IOInterface printInterface, RaplaImages raplaImages, RaplaResources i18n, BundleManager bundleManager, DialogUiFactoryInterface dialogUiFactory, ExportServiceList exportServiceList, Provider<ErrorDialog> errorDialogProvider) throws
+    public CalendarPrintDialog(RaplaFrame owner, RaplaLocale raplaLocale,CommandScheduler scheduler, Logger logger, IOInterface printInterface, RaplaResources i18n, BundleManager bundleManager, DialogUiFactoryInterface dialogUiFactory, ExportServiceList exportServiceList, Provider<ErrorDialog> errorDialogProvider) throws
             RaplaInitializationException {
-        super(i18n, raplaImages, bundleManager, scheduler, owner);
+        super(i18n,  bundleManager, scheduler, owner);
         this.raplaLocale = raplaLocale;
         this.logger = logger;
         this.i18n = i18n;
         this.printTool = printInterface;
         this.dialogUiFactory = dialogUiFactory;
         this.exportServiceList = exportServiceList;
-        images = raplaImages;
         this.errorDialogProvider = errorDialogProvider;
     }
     
@@ -272,13 +270,13 @@ public class CalendarPrintDialog extends DialogUI
         //sizeLabel.setText("Endedatum:");
         titleLabel.setText(i18n.getString("weekview.print.title_textfield")+":");
         setTitle(i18n.getString("weekview.print.dialog_title"));
-        printbutton.setIcon(images.getIconFromKey("icon.print"));
+        printbutton.setIcon(RaplaImages.getIcon(i18n.getIcon("icon.print")));
         savebutton.setText(i18n.getString("print_to_file"));
-        savebutton.setIcon(images.getIconFromKey("icon.pdf"));
+        savebutton.setIcon(RaplaImages.getIcon(i18n.getIcon("icon.pdf")));
         printbutton.setText(i18n.getString("print"));
         formatbutton.setText(i18n.getString("weekview.print.format_button"));
         cancelbutton.setText(i18n.getString("cancel"));
-        cancelbutton.setIcon(images.getIconFromKey("icon.cancel"));
+        cancelbutton.setIcon(RaplaImages.getIcon(i18n.getIcon("icon.cancel")));
         pageLabel.setText(""+1);
         /*
         if (getSession().getValue(LAST_SELECTED_SIZE) != null)
@@ -430,7 +428,7 @@ public class CalendarPrintDialog extends DialogUI
                         ,i18n.getString("file_saved")
                         ,new String[] { i18n.getString("ok")}
                         );
-        dlg.setIcon("icon.pdf");
+        dlg.setIcon(i18n.getIcon("icon.pdf"));
         dlg.setDefault(0);
         return dlg.start(true).thenApply( index -> index ==0);
     }

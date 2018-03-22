@@ -2,7 +2,7 @@ package org.rapla.plugin.tableview.internal;
 
 import org.jetbrains.annotations.NotNull;
 import org.rapla.RaplaResources;
-import org.rapla.components.xmlbundle.I18nBundle;
+import org.rapla.components.i18n.I18nBundle;
 import org.rapla.entities.MultiLanguageName;
 import org.rapla.entities.Named;
 import org.rapla.entities.User;

@@ -66,9 +66,9 @@ public class DeleteDialogSwing extends RaplaGUIComponent implements DeleteDialog
                         getString( "delete.ok" )
                         ,getString( "delete.abort" )
                 });
-        dlg.setIcon( "icon.warning" );
-        dlg.getAction(0).setIcon("icon.delete");
-        dlg.getAction(1).setIcon("icon.abort");
+        dlg.setIcon( i18n.getIcon("icon.warning" ));
+        dlg.getAction(0).setIcon(i18n.getIcon("icon.delete"));
+        dlg.getAction(1).setIcon(i18n.getIcon("icon.abort"));
         dlg.setDefault(1);
         viewTable.updateInfo( deletables, deleteView );
         dlg.setTitle( viewTable.getDialogTitle() );

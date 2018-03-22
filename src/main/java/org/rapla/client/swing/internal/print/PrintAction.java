@@ -16,7 +16,6 @@ import org.rapla.RaplaResources;
 import org.rapla.client.dialog.DialogUiFactoryInterface;
 import org.rapla.client.swing.RaplaAction;
 import org.rapla.client.swing.extensionpoints.SwingViewFactory;
-import org.rapla.client.swing.images.RaplaImages;
 import org.rapla.client.swing.internal.SwingPopupContext;
 import org.rapla.facade.CalendarSelectionModel;
 import org.rapla.facade.client.ClientFacade;
@@ -39,14 +38,14 @@ public class PrintAction extends RaplaAction {
     private final Provider<CalendarPrintDialog> calendarPringDialogProvider;
     private final DialogUiFactoryInterface dialogUiFactory;
     @Inject
-    public PrintAction(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, Map<String, SwingViewFactory> factoryMap, RaplaImages raplaImages, Provider<CalendarPrintDialog> calendarPringDialogProvider, DialogUiFactoryInterface dialogUiFactory) {
+    public PrintAction(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, Map<String, SwingViewFactory> factoryMap,Provider<CalendarPrintDialog> calendarPringDialogProvider, DialogUiFactoryInterface dialogUiFactory) {
         super(facade, i18n, raplaLocale, logger);
         this.factoryMap = factoryMap;
         this.calendarPringDialogProvider = calendarPringDialogProvider;
         this.dialogUiFactory = dialogUiFactory;
         setEnabled(false);
         putValue(NAME,getString("print"));
-        putValue(SMALL_ICON, raplaImages.getIconFromKey("icon.print"));
+        setIcon(i18n.getIcon("icon.print"));
     }
 
     public void setModel(CalendarSelectionModel settings) {
