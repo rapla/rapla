@@ -6,6 +6,7 @@ import jsinterop.annotations.JsType;
 import org.rapla.RaplaResources;
 import org.rapla.client.ReservationController;
 import org.rapla.client.menu.RaplaObjectActions;
+import org.rapla.components.util.TimeInterval;
 import org.rapla.entities.User;
 import org.rapla.entities.configuration.CalendarModelConfiguration;
 import org.rapla.entities.configuration.Preferences;
@@ -23,9 +24,12 @@ import org.rapla.storage.dbrm.RemoteAuthentificationService;
 
 import javax.inject.Inject;
 import javax.inject.Provider;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Date;
 import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 @JsType
 public class JsApi {
@@ -135,4 +139,13 @@ public class JsApi {
     public Object[] toArray(Collection<?> collection) {
         return collection.toArray();
     }
+
+    public Set<Object> asSet(Object[] elements) {
+        return Arrays.stream(elements).collect(Collectors.toSet());
+    }
+
+    public TimeInterval createInterval(Date from, Date to) {
+        return new TimeInterval(from, to);
+    }
+
 }

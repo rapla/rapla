@@ -15,7 +15,7 @@ import org.rapla.client.dialog.DialogInterface;
 import org.rapla.client.dialog.DialogInterface.DialogAction;
 import org.rapla.client.dialog.DialogUiFactoryInterface;
 import org.rapla.client.gwt.GwtPopupContext;
-import org.rapla.client.menu.data.Point;
+import org.rapla.client.internal.check.gwt.VueDialog;
 import org.rapla.entities.DependencyException;
 import org.rapla.framework.Disposable;
 import org.rapla.inject.DefaultImplementation;
@@ -249,13 +249,16 @@ public class GwtDialogUiFactory implements DialogUiFactoryInterface
     @Override
     public DialogInterface createContentDialog(PopupContext popupContext, Object content, String[] options)
     {
-        final GwtDialog gwtDialog = new GwtDialog(false, options);
-        final Point point = GwtPopupContext.extractPoint(popupContext);
-        if (point != null)
-        {
-            gwtDialog.setPopupPosition(point.getX(), point.getY());
-        }
-        return gwtDialog;
+        logger.info("createContentDialog");
+//        final GwtDialog gwtDialog = new GwtDialog(false, options);
+//        final Point point = GwtPopupContext.extractPoint(popupContext);
+//        if (point != null)
+//        {
+//            gwtDialog.setPopupPosition(point.getX(), point.getY());
+//        }
+        logger.info("createContentDialog: return a thing: " + content);
+        return new VueDialog(content); // TODO: add other parameters
+//        return gwtDialog;
     }
 
     @Override
