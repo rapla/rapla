@@ -1,4 +1,4 @@
-package org.rapla.client.gwt.internal;
+package org.rapla.client.dialog.gwt;
 
 import com.google.gwt.event.dom.client.ClickEvent;
 import com.google.gwt.event.dom.client.ClickHandler;
@@ -15,7 +15,8 @@ import org.rapla.client.dialog.DialogInterface;
 import org.rapla.client.dialog.DialogInterface.DialogAction;
 import org.rapla.client.dialog.DialogUiFactoryInterface;
 import org.rapla.client.gwt.GwtPopupContext;
-import org.rapla.client.menu.data.Point;
+import org.rapla.client.menu.sandbox.data.Point;
+import org.rapla.components.i18n.I18nIcon;
 import org.rapla.entities.DependencyException;
 import org.rapla.framework.Disposable;
 import org.rapla.inject.DefaultImplementation;
@@ -62,7 +63,7 @@ public class GwtDialogUiFactory implements DialogUiFactoryInterface
         }
 
         @Override
-        public void setIcon(String iconKey)
+        public void setIcon(I18nIcon iconKey)
         {
             // FIXME GWT
         }
@@ -142,27 +143,15 @@ public class GwtDialogUiFactory implements DialogUiFactoryInterface
         }
 
         @Override
-        public int getSelectedIndex()
-        {
-            return selectedIndex;
-        }
-
-        @Override
         public void setTitle(String createTitle)
         {
             super.setTitle(createTitle);
         }
 
         @Override
-        public void setIcon(String iconKey)
+        public void setIcon(I18nIcon iconKey)
         {
             // FIXME GWT
-        }
-
-        @Override
-        public void setSize(int width, int height)
-        {
-            super.setSize(width + "px", height + "px");
         }
 
         @Override
@@ -181,16 +170,9 @@ public class GwtDialogUiFactory implements DialogUiFactoryInterface
             }
         }
 
-        @Override
         public boolean isVisible()
         {
             return super.isVisible();
-        }
-
-        @Override
-        public void setPosition(double left, double top)
-        {
-            super.setPopupPosition((int) left, (int) top);
         }
 
         @Override
