@@ -13,56 +13,19 @@
 
 package org.rapla.client.swing.images;
 
-import org.jetbrains.annotations.PropertyKey;
-import org.rapla.RaplaResources;
-import org.rapla.components.util.IOUtil;
-import org.rapla.components.xmlbundle.impl.PropertyResourceBundleWrapper;
-import org.rapla.components.xmlbundle.impl.ResourceBundleLoader;
-import org.rapla.framework.RaplaInitializationException;
-import org.rapla.logger.Logger;
+import org.rapla.components.i18n.I18nIcon;
+import org.rapla.components.i18n.client.swing.SwingIcon;
 
-import javax.inject.Inject;
-import javax.inject.Singleton;
-import javax.swing.Icon;
 import javax.swing.ImageIcon;
 import java.awt.Image;
 import java.awt.Toolkit;
-import java.io.IOException;
-import java.io.InputStream;
 import java.net.URL;
-import java.util.Collections;
-import java.util.Map;
-import java.util.MissingResourceException;
-import java.util.ResourceBundle;
-import java.util.TreeMap;
 
 /**
  * Offers direct access to the images. 
  */
-@Singleton
 public class RaplaImages
 {
-    Map<String, Icon> iconCache = Collections.synchronizedMap(new TreeMap<String, Icon>());
-    final Logger logger;
-    final ResourceBundle resourceBundle;
-    final String className = "org.rapla.client.swing.gui.images.RaplaImages";
-
-    @Inject
-    public RaplaImages(Logger logger) throws RaplaInitializationException
-    {
-        this.logger = logger;
-        resourceBundle = ResourceBundleLoader.loadBundle(className);
-        if ( resourceBundle == null)
-        {
-            throw new RaplaInitializationException("Can't find ResourceBundle for class " + className);
-        }
-    }
-    
-    public static InputStream getInputStream(String filename)
-    {
-        return RaplaImages.class.getResourceAsStream(filename);
-    }
-
     public static Image getImage(String filename)
     {
         try
@@ -91,64 +54,17 @@ public class RaplaImages
         }
     }
 
-    public ImageIcon getIconFromKey(@PropertyKey(resourceBundle = RaplaResources.BUNDLENAME) String key)
-    {
-        String iconfile;
-        try
+    public static ImageIcon getIcon(I18nIcon icon) {
+        if ( icon == null)
         {
-            iconfile = resourceBundle.getString(key);
+            throw new NullPointerException("icon can't be null");
         }
-        catch (MissingResourceException ex)
-        {
-            logger.debug(ex.getMessage()); //BJO
-            throw ex;
-        }
-        try
-        {
-            ImageIcon icon = (ImageIcon) iconCache.get(iconfile);
-            if (icon == null)
-            {
-                icon = new ImageIcon(loadResource(iconfile), key);
-                iconCache.put(iconfile, icon);
-            } // end of if ()
-            return icon;
-        }
-        catch (Exception ex)
-        {
-            String message = "Icon " + iconfile + " can't be created: " + ex.getMessage();
-            logger.error(message);
-            throw new MissingResourceException(message, className, key);
-        }
+        return ((SwingIcon)icon).getIcon();
     }
 
-    private final byte[] loadResource(String fileName) throws IOException
-    {
-        return IOUtil.readBytes(getResourceFromFile(fileName));
+    public static Image getImage(I18nIcon icon) {
+        return getIcon(icon).getImage();
     }
 
-    private URL getResourceFromFile(String fileName) throws IOException
-    {
-        URL resource = null;
-        String base;
-        if (resourceBundle == null)
-        {
-            throw new IOException("Resource Bundle for icons is missing while looking up " + fileName);
-        }
-        if (resourceBundle instanceof PropertyResourceBundleWrapper)
-        {
-            base = ((PropertyResourceBundleWrapper) resourceBundle).getName();
-        }
-        else
-        {
-            base = resourceBundle.getClass().getName();
-        }
-        base = base.substring(0, base.lastIndexOf("."));
-        base = base.replaceAll("\\.", "/");
-        String file = "/" + base + "/" + fileName;
-        resource = RaplaImages.class.getResource(file);
-        if (resource == null)
-            throw new IOException("File '" + fileName + "' not found. " + " in bundle " + className + " It must be in the same location as '" + base + "'");
-        return resource;
-    }
 
 }

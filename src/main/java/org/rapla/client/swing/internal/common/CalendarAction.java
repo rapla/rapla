@@ -17,7 +17,6 @@ import org.rapla.client.PopupContext;
 import org.rapla.client.dialog.DialogInterface;
 import org.rapla.client.dialog.DialogUiFactoryInterface;
 import org.rapla.client.swing.RaplaAction;
-import org.rapla.client.swing.images.RaplaImages;
 import org.rapla.client.swing.internal.MultiCalendarPresenter;
 import org.rapla.client.swing.internal.SwingPopupContext;
 import org.rapla.facade.CalendarModel;
@@ -27,6 +26,7 @@ import org.rapla.framework.RaplaLocale;
 import org.rapla.logger.Logger;
 
 import javax.inject.Provider;
+import javax.swing.JComponent;
 import java.awt.Component;
 import java.awt.Dimension;
 import java.util.Date;
@@ -40,7 +40,7 @@ public class CalendarAction extends RaplaAction {
     private final Provider<MultiCalendarPresenter> multiCalendarViewFactory;
     private final DialogUiFactoryInterface dialogUiFactory;
 
-    public CalendarAction(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, Component parent, CalendarModel selectionModel, RaplaImages raplaImages, Provider<MultiCalendarPresenter> multiCalendarViewFactory, DialogUiFactoryInterface dialogUiFactory)
+    public CalendarAction(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, Component parent, CalendarModel selectionModel, Provider<MultiCalendarPresenter> multiCalendarViewFactory, DialogUiFactoryInterface dialogUiFactory)
     {
         super(facade, i18n, raplaLocale, logger);
         this.multiCalendarViewFactory = multiCalendarViewFactory;
@@ -48,7 +48,7 @@ public class CalendarAction extends RaplaAction {
         this.model = (CalendarSelectionModel)selectionModel.clone();
         this.parent = parent;
         putValue(NAME,getString("calendar"));
-        putValue(SMALL_ICON,raplaImages.getIconFromKey("icon.calendar"));
+        setIcon(i18n.getIcon("icon.calendar"));
     }
 
 
@@ -65,12 +65,13 @@ public class CalendarAction extends RaplaAction {
         try {
             MultiCalendarPresenter cal = multiCalendarViewFactory.get();
             final PopupContext popupContext = dialogUiFactory.createPopupContext(() -> parent);
-            DialogInterface frame = dialogUiFactory.createContentDialog(popupContext, cal.provideContent().getComponent(), new String[]{});
+            final Object component = cal.provideContent().getComponent();
             Dimension dimension = java.awt.Toolkit.getDefaultToolkit().getScreenSize();
-            frame.setSize(
-                                        Math.min(dimension.width,800)
-                                        ,Math.min(dimension.height-10,630)
-                          );
+            ((JComponent)component).setSize(
+                    Math.min(dimension.width,800)
+                    ,Math.min(dimension.height-10,630)
+            );
+            DialogInterface frame = dialogUiFactory.createContentDialog(popupContext, component, new String[]{});
             if (start != null)
                 model.setSelectedDate(start);
             if (objects != null && objects.size() > 0)

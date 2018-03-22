@@ -12,19 +12,17 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.client.swing.toolkit;
 
-import org.rapla.client.swing.RaplaAction;
+import org.rapla.client.RaplaWidget;
+import org.rapla.client.menu.IdentifiableMenuEntry;
+import org.rapla.client.menu.MenuInterface;
 
-import javax.swing.JComponent;
 import javax.swing.JMenu;
 import javax.swing.JMenuItem;
 import java.awt.Component;
-import java.util.HashMap;
-import java.util.Map;
 
 public class RaplaMenu extends JMenu implements IdentifiableMenuEntry, MenuInterface {
     private static final long serialVersionUID = 1L;
     
-    private final Map<RaplaAction, JMenuItem> mapping = new HashMap<RaplaAction, JMenuItem>();
     String id;
 
     public RaplaMenu(String id) {
@@ -69,7 +67,9 @@ public class RaplaMenu extends JMenu implements IdentifiableMenuEntry, MenuInter
         return getIndexOfEntryWithId( id )>=0; 
     }
 
-    public void insertAfterId(Component component,String id) {
+    @Override
+    public void insertAfterId(RaplaWidget widget, String id) {
+        Component component = (Component) widget.getComponent();
         if ( id == null) {
             getPopupMenu().add( component );
         } else {
@@ -78,32 +78,25 @@ public class RaplaMenu extends JMenu implements IdentifiableMenuEntry, MenuInter
         }
     }
 
-    public void insertBeforeId(JComponent component,String id) {
+    @Override
+    public void insertBeforeId(RaplaWidget component,String id) {
         int index = getIndexOfEntryWithId( id );
-        getPopupMenu().insert( component, index);
+        getPopupMenu().insert( (Component)component.getComponent(), index);
     }
 
 	@Override
-	public JMenuItem getMenuElement() {
+	public JMenuItem getComponent() {
 		return this;
 	}
 	
-	@Override
-	public void add(RaplaAction item)
-	{
-	    final JMenuItem menuItem = new JMenuItem(new ActionWrapper(item));
-	    mapping.put(item, menuItem);
-        super.add(menuItem);
-	}
-	
-	@Override
-	public void remove(RaplaAction item)
-	{
-	    final JMenuItem menuItem = mapping.get(item);
-	    if(menuItem != null){
-	        super.remove(menuItem);
-	    }
-	}
+
+    @Override
+    public void addMenuItem(IdentifiableMenuEntry item) {
+        //final JMenuItem item = new JMenuItem(new ActionWrapper(menuItem));
+        //mapping.put(menuItem, item);
+        super.add((Component)item.getComponent());
+    }
+
 }
 
 

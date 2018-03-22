@@ -16,13 +16,12 @@ import org.rapla.RaplaResources;
 import org.rapla.client.PopupContext;
 import org.rapla.client.dialog.DialogInterface;
 import org.rapla.client.dialog.DialogUiFactoryInterface;
+import org.rapla.client.dialog.swing.DialogUI;
 import org.rapla.client.extensionpoints.UserOptionPanel;
 import org.rapla.client.internal.LanguageChooser;
 import org.rapla.client.swing.RaplaGUIComponent;
-import org.rapla.client.swing.images.RaplaImages;
 import org.rapla.client.swing.internal.action.user.PasswordChangeAction;
 import org.rapla.client.swing.toolkit.ActionWrapper;
-import org.rapla.client.swing.toolkit.DialogUI;
 import org.rapla.client.swing.toolkit.RaplaButton;
 import org.rapla.components.iolayer.IOInterface;
 import org.rapla.components.layout.TableLayout;
@@ -39,7 +38,12 @@ import org.rapla.inject.Extension;
 import org.rapla.logger.Logger;
 
 import javax.inject.Inject;
-import javax.swing.*;
+import javax.swing.AbstractAction;
+import javax.swing.JComponent;
+import javax.swing.JLabel;
+import javax.swing.JPanel;
+import javax.swing.JTextField;
+import javax.swing.SwingUtilities;
 import java.awt.BorderLayout;
 import java.awt.GridLayout;
 import java.awt.event.ActionEvent;
@@ -61,18 +65,16 @@ public class UserOption extends RaplaGUIComponent implements UserOptionPanel
 
     Preferences preferences;
 
-    private final RaplaImages raplaImages;
 
     private final DialogUiFactoryInterface dialogUiFactory;
 
     private final IOInterface ioInterface;
 
     @Inject
-    public UserOption(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, RaplaImages raplaImages,
+    public UserOption(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger,
             DialogUiFactoryInterface dialogUiFactory, IOInterface ioInterface)
     {
         super(facade, i18n, raplaLocale, logger);
-        this.raplaImages = raplaImages;
         this.dialogUiFactory = dialogUiFactory;
         this.ioInterface = ioInterface;
     }
@@ -117,7 +119,7 @@ public class UserOption extends RaplaGUIComponent implements UserOptionPanel
         superPanel.add(new JLabel("****"), "2,8");
         superPanel.add(changePasswordButton, "4,8");
         PasswordChangeAction passwordChangeAction = new PasswordChangeAction(getClientFacade(), getI18n(), getRaplaLocale(), getLogger(),
-                createPopupContext(getComponent(), null), raplaImages, dialogUiFactory);
+                createPopupContext(getComponent(), null),  dialogUiFactory);
         User user = getUser();
         passwordChangeAction.changeObject(user);
         changePasswordButton.setAction(new ActionWrapper(passwordChangeAction));

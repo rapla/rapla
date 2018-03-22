@@ -19,23 +19,24 @@ import org.rapla.client.UserClientService;
 import org.rapla.client.dialog.DialogUiFactoryInterface;
 import org.rapla.client.extensionpoints.ObjectMenuFactory;
 import org.rapla.client.extensionpoints.ReservationWizardExtension;
-import org.rapla.client.dialog.InfoFactory;
+import org.rapla.client.menu.IdentifiableMenuEntry;
+import org.rapla.client.menu.MenuFactory;
+import org.rapla.client.menu.MenuInterface;
+import org.rapla.client.menu.MenuItemFactory;
 import org.rapla.client.menu.RaplaObjectActions;
-import org.rapla.client.swing.MenuFactory;
+import org.rapla.client.menu.SelectionMenuContext;
 import org.rapla.client.swing.RaplaGUIComponent;
-import org.rapla.client.swing.SwingMenuContext;
-import org.rapla.client.swing.images.RaplaImages;
 import org.rapla.client.swing.internal.action.RaplaObjectAction;
 import org.rapla.client.swing.internal.action.user.PasswordChangeAction;
 import org.rapla.client.swing.internal.action.user.UserAction;
 import org.rapla.client.swing.toolkit.ActionWrapper;
-import org.rapla.client.swing.toolkit.IdentifiableMenuEntry;
-import org.rapla.client.swing.toolkit.MenuInterface;
-import org.rapla.client.swing.toolkit.RaplaMenuItem;
 import org.rapla.client.swing.toolkit.RaplaSeparator;
 import org.rapla.components.util.DateTools;
 import org.rapla.components.util.TimeInterval;
-import org.rapla.entities.*;
+import org.rapla.entities.Category;
+import org.rapla.entities.Entity;
+import org.rapla.entities.RaplaObject;
+import org.rapla.entities.User;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.Period;
 import org.rapla.entities.domain.Reservation;
@@ -44,8 +45,8 @@ import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.entities.dynamictype.DynamicTypeAnnotations;
 import org.rapla.facade.CalendarModel;
 import org.rapla.facade.CalendarSelectionModel;
-import org.rapla.facade.client.ClientFacade;
 import org.rapla.facade.RaplaFacade;
+import org.rapla.facade.client.ClientFacade;
 import org.rapla.facade.internal.CalendarModelImpl;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
@@ -59,7 +60,7 @@ import javax.inject.Provider;
 import javax.inject.Singleton;
 import javax.swing.Action;
 import javax.swing.JMenuItem;
-import javax.swing.MenuElement;
+import java.awt.Component;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Date;
@@ -73,15 +74,8 @@ import java.util.TreeMap;
 @Singleton @DefaultImplementation(of = MenuFactory.class, context = InjectionContext.swing) public class MenuFactoryImpl extends RaplaGUIComponent
         implements MenuFactory
 {
-    public void addReservationWizards(MenuInterface menu, SwingMenuContext context, String afterId) throws RaplaException
-    {
-        final User user = getUser();
-        if (permissionController.canCreateReservation(user))
-        {
-            addNewMenus(menu, afterId);
-        }
-    }
 
+    private final MenuItemFactory menuItemFactory;
     private final Provider<RaplaObjectActions> actionsProvider;
     private final Set<ReservationWizardExtension> reservationWizards;
     private final Set<ObjectMenuFactory> objectMenuFactories;
@@ -89,23 +83,20 @@ import java.util.TreeMap;
     private final CalendarSelectionModel model;
     private final UserClientService service;
     private final Provider<EditController> editControllerProvider;
-    private final InfoFactory infoFactory;
-    private final RaplaImages raplaImages;
     private final DialogUiFactoryInterface dialogUiFactory;
 
     @Inject public MenuFactoryImpl(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger,
-                                   Provider<RaplaObjectActions> actionsProvider, Set<ReservationWizardExtension> reservationWizards, Set<ObjectMenuFactory> objectMenuFactories, CalendarSelectionModel model,
-                                   UserClientService service, InfoFactory infoFactory, RaplaImages raplaImages, DialogUiFactoryInterface dialogUiFactory, Provider<EditController> editControllerProvider)
+                                   MenuItemFactory menuItemFactory, Provider<RaplaObjectActions> actionsProvider, Set<ReservationWizardExtension> reservationWizards, Set<ObjectMenuFactory> objectMenuFactories, CalendarSelectionModel model,
+                                   UserClientService service, DialogUiFactoryInterface dialogUiFactory, Provider<EditController> editControllerProvider)
     {
         super(facade, i18n, raplaLocale, logger);
+        this.menuItemFactory = menuItemFactory;
         this.actionsProvider = actionsProvider;
         this.reservationWizards = reservationWizards;
         this.objectMenuFactories = objectMenuFactories;
         this.permissionController = facade.getRaplaFacade().getPermissionController();
         this.model = model;
         this.service = service;
-        this.infoFactory = infoFactory;
-        this.raplaImages = raplaImages;
         this.dialogUiFactory = dialogUiFactory;
         this.editControllerProvider = editControllerProvider;
     }
@@ -170,11 +161,8 @@ import java.util.TreeMap;
             }
             for (IdentifiableMenuEntry wizard : sortedMap.values())
             {
-                MenuElement menuElement = wizard.getMenuElement();
-                if (menuElement != null)
-                {
-                    menu.insertAfterId(menuElement.getComponent(), afterId);
-                }
+                IdentifiableMenuEntry menuElement = wizard;
+                menu.insertAfterId(menuElement, afterId);
             }
         }
         //        else
@@ -202,12 +190,12 @@ import java.util.TreeMap;
         return canAllocateSelected;
     }
 
-    public MenuInterface addNew(MenuInterface menu, SwingMenuContext context, String afterId) throws RaplaException
+    public MenuInterface addNew(MenuInterface menu, SelectionMenuContext context, String afterId) throws RaplaException
     {
         return addNew(menu, context, afterId, false);
     }
 
-    public MenuInterface addNew(MenuInterface menu, SwingMenuContext context, String afterId, boolean addNewReservationMenu) throws RaplaException
+    public MenuInterface addNew(MenuInterface menu, SelectionMenuContext context, String afterId, boolean addNewReservationMenu) throws RaplaException
     {
         // Do nothing if the user can't allocate anything
         User user = getUser();
@@ -277,7 +265,7 @@ import java.util.TreeMap;
         }
         if (isAdmin)
         {
-            if (allocatableNodeContext)
+            if (allocatableNodeContext && addNewReservationMenu)
             {
                 addTypeMenuNew(menu, DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RESOURCE, popupContext);
                 addTypeMenuNew(menu, DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_PERSON, popupContext);
@@ -304,12 +292,18 @@ import java.util.TreeMap;
         return menu;
     }
 
-    public MenuInterface addObjectMenu(MenuInterface menu, SwingMenuContext context) throws RaplaException
+    @Override
+    public void addReservationWizards(MenuInterface menu, SelectionMenuContext context, String afterId) throws RaplaException
     {
-        return addObjectMenu(menu, context, "EDIT_BEGIN");
+        final User user = getUser();
+        if (permissionController.canCreateReservation(user))
+        {
+            addNewMenus(menu, afterId);
+        }
     }
 
-    public MenuInterface addObjectMenu(MenuInterface menu, SwingMenuContext context, String afterId) throws RaplaException
+    @Override
+    public MenuInterface addObjectMenu(MenuInterface menu, SelectionMenuContext context, String afterId) throws RaplaException
     {
         Object focusedObject = context.getFocusedObject();
         final PopupContext popupContext = context.getPopupContext();
@@ -319,7 +313,8 @@ import java.util.TreeMap;
         {
             Entity<?> obj = (Entity<?>) focusedObject;
             list.add(obj);
-            addAction(menu, popupContext, afterId).setView(obj);
+            final RaplaObjectAction action = newObjectAction(popupContext).setView(obj);
+            addAction(menu, action, afterId);
         }
 
         for (Object obj : context.getSelectedObjects())
@@ -334,7 +329,8 @@ import java.util.TreeMap;
             List<Entity<?>> deletableObjects = getDeletableObjects(list);
             if (deletableObjects.size() > 0)
             {
-                addAction(menu, popupContext, afterId).setDeleteSelection(deletableObjects);
+                final RaplaObjectAction action = newObjectAction(popupContext).setDeleteSelection(deletableObjects);
+                addAction(menu, action, afterId);
             }
         }
 
@@ -343,12 +339,13 @@ import java.util.TreeMap;
         if (editableObjects.size() == 1)
         {
             Entity<?> first = editObjects.iterator().next();
-            addAction(menu, popupContext, afterId).setEdit(first);
+            final RaplaObjectAction action = newObjectAction(popupContext).setEdit(first);
+            addAction(menu, action, afterId);
         }
         else if (isMultiEditSupported(editableObjects))
         {
-
-            addAction(menu, popupContext, afterId).setEditSelection(editObjects);
+            final RaplaObjectAction action = newObjectAction(popupContext).setEditSelection(editObjects);
+            addAction(menu, action, afterId);
         }
         if (editableObjects.size() == 1)
         {
@@ -364,14 +361,12 @@ import java.util.TreeMap;
         {
             ObjectMenuFactory objectMenuFact = it.next();
             RaplaObject obj = focusedObject instanceof RaplaObject ? (RaplaObject) focusedObject : null;
-            RaplaMenuItem[] items = objectMenuFact.create(context, obj);
-            for (int i = 0; i < items.length; i++)
+            IdentifiableMenuEntry[] items = objectMenuFact.create(context, obj);
+            for (IdentifiableMenuEntry item:items)
             {
-                RaplaMenuItem item = items[i];
                 menu.insertAfterId(item, afterId);
             }
         }
-
         return menu;
     }
 
@@ -390,7 +385,8 @@ import java.util.TreeMap;
 
     private void addAllocatableMenuNew(MenuInterface menu, PopupContext popupContext, Object focusedObj) throws RaplaException
     {
-        RaplaObjectAction newResource = addAction(menu, popupContext).setNew(Allocatable.class);
+        MenuItemFactory f = getItemFactory();
+        RaplaObjectAction newResource = newObjectAction( popupContext).setNew(Allocatable.class);
         if (focusedObj != CalendarModelImpl.ALLOCATABLES_ROOT)
         {
             if (focusedObj instanceof DynamicType)
@@ -416,7 +412,6 @@ import java.util.TreeMap;
             {
                 DynamicType type = types[0];
                 newResource.putValue(Action.NAME, type.getName(getLocale()));
-                return;
             }
         }
         else
@@ -433,7 +428,7 @@ import java.util.TreeMap;
                 newResource.putValue(Action.NAME, getString("resource"));
             }
 
-            RaplaObjectAction newPerson = addAction(menu, popupContext).setNew(Allocatable.class);
+            RaplaObjectAction newPerson = newObjectAction(popupContext).setNew(Allocatable.class).addTo( menu, f);
             newPerson.setPerson(true);
             DynamicType[] personType = getQuery().getDynamicTypes(DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_PERSON);
             if (personType.length == 1)
@@ -445,15 +440,15 @@ import java.util.TreeMap;
                 newPerson.putValue(Action.NAME, getString("person"));
             }
         }
+        newResource.addTo( menu,f );
     }
 
     private void addTypeMenuNew(MenuInterface menu, String classificationType, PopupContext popupContext)
     {
         RaplaObjectAction newReservationType = newObjectAction(popupContext);
-        menu.add(newReservationType);
-
         newReservationType.setNewClassificationType(classificationType );
-        newReservationType.putValue(Action.NAME, getString(classificationType + "_type"));
+        final IdentifiableMenuEntry menuItem = menuItemFactory.createMenuItem(getString(classificationType + "_type"), null, (popupContext1) -> newReservationType.actionPerformed());
+        menu.addMenuItem(menuItem);
     }
 
     private void addUserMenuEdit(MenuInterface menu, PopupContext popupContext, User obj, String afterId)
@@ -462,26 +457,28 @@ import java.util.TreeMap;
         menu.insertAfterId(new RaplaSeparator("sep1"), afterId);
         menu.insertAfterId(new RaplaSeparator("sep2"), afterId);
         PasswordChangeAction passwordChangeAction = new PasswordChangeAction(getClientFacade(), getI18n(), getRaplaLocale(), getLogger(), popupContext,
-                raplaImages, dialogUiFactory);
+                 dialogUiFactory);
         passwordChangeAction.changeObject(obj);
-        menu.insertAfterId(new JMenuItem(new ActionWrapper(passwordChangeAction)), "sep2");
+        menu.insertAfterId(()->new JMenuItem(new ActionWrapper(passwordChangeAction)), "sep2");
 
         UserAction switchUserAction = newUserAction(popupContext);
         switchUserAction.setSwitchToUser();
         switchUserAction.changeObject(obj);
-        menu.insertAfterId(new JMenuItem(new ActionWrapper(switchUserAction)), "sep2");
+        menu.insertAfterId(()->new JMenuItem(new ActionWrapper(switchUserAction)), "sep2");
     }
 
     private void addUserMenuNew(MenuInterface menu, PopupContext popupContext)
     {
         UserAction newUserAction = newUserAction(popupContext);
         newUserAction.setNew();
-        menu.add(newUserAction);
+        final String name = newUserAction.getName();
+        final IdentifiableMenuEntry menuItem = menuItemFactory.createMenuItem(name, null, (popupContext1) -> newUserAction.actionPerformed());
+        menu.addMenuItem( menuItem);
     }
 
     private void addCategoryMenuNew(MenuInterface menu, PopupContext popupContext, Object obj)
     {
-        RaplaObjectAction newAction = addAction(menu, popupContext).setNew(Category.class);
+        RaplaObjectAction newAction = newObjectAction(popupContext).setNew(Category.class);
         if (obj instanceof Category)
         {
             newAction.changeObject((Category) obj);
@@ -491,41 +488,35 @@ import java.util.TreeMap;
             newAction.changeObject(getQuery().getSuperCategory());
         }
         newAction.putValue(Action.NAME, getString("category"));
+        newAction.addTo( menu, getItemFactory());
     }
 
     private void addPeriodMenuNew(MenuInterface menu, PopupContext popupContext)
     {
-        Action newAction = new ActionWrapper(addAction(menu, popupContext).setNew(Period.class));
+        RaplaObjectAction action = newObjectAction(popupContext).setNew(Period.class).addTo( menu, getItemFactory());
+        Action newAction = new ActionWrapper(action);
         newAction.putValue(Action.NAME, getString("period"));
 
     }
 
-    private RaplaObjectAction addAction(MenuInterface menu, PopupContext popupContext)
+    private RaplaObjectAction addAction(MenuInterface menu,  RaplaObjectAction action, String id)
     {
-        RaplaObjectAction action = newObjectAction(popupContext);
-        menu.add(action);
-        return action;
-    }
-
-    private RaplaObjectAction addAction(MenuInterface menu, PopupContext popupContext, String id)
-    {
-        RaplaObjectAction action = newObjectAction(popupContext);
-        menu.insertAfterId(new JMenuItem(new ActionWrapper(action)), id);
+        Component component = new JMenuItem(new ActionWrapper(action));
+        menu.insertAfterId( ()->component, id);
         return action;
     }
 
     private RaplaObjectAction newObjectAction(PopupContext popupContext)
     {
-        final EditController editController = editControllerProvider.get();
         RaplaObjectAction action = new RaplaObjectAction(getClientFacade(), getI18n(), getRaplaLocale(), getLogger(), popupContext,
-                raplaImages, actionsProvider);
+                 actionsProvider);
         return action;
     }
 
     private UserAction newUserAction(PopupContext popupContext)
     {
         final EditController editController = editControllerProvider.get();
-        UserAction action = new UserAction(getClientFacade(), getI18n(), getRaplaLocale(), getLogger(), popupContext, service, editController, raplaImages,
+        UserAction action = new UserAction(getClientFacade(), getI18n(), getRaplaLocale(), getLogger(), popupContext, service, editController,
                 dialogUiFactory);
         return action;
     }
@@ -599,6 +590,10 @@ import java.util.TreeMap;
         return getObjectsWithSameType(list, raplaType, isPerson);
     }
 
+    @Override
+    public MenuItemFactory getItemFactory() {
+        return menuItemFactory;
+    }
 }
 
 

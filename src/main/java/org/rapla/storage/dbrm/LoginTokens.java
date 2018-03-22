@@ -1,9 +1,6 @@
 package org.rapla.storage.dbrm;
 
-import jsinterop.annotations.JsConstructor;
-import jsinterop.annotations.JsIgnore;
 import jsinterop.annotations.JsMethod;
-import jsinterop.annotations.JsType;
 
 import java.util.Date;
 

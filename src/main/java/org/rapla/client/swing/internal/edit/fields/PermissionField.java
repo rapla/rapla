@@ -15,10 +15,8 @@ package org.rapla.client.swing.internal.edit.fields;
 import org.rapla.RaplaResources;
 import org.rapla.client.dialog.DialogUiFactoryInterface;
 import org.rapla.client.swing.TreeFactory;
-import org.rapla.client.swing.images.RaplaImages;
 import org.rapla.client.swing.internal.edit.fields.DateField.DateFieldFactory;
 import org.rapla.client.swing.internal.edit.fields.LongField.LongFieldFactory;
-import org.rapla.components.calendar.DateRenderer;
 import org.rapla.components.layout.TableLayout;
 import org.rapla.entities.Category;
 import org.rapla.entities.NamedComparator;
@@ -76,7 +74,7 @@ public class PermissionField extends AbstractEditField implements  ChangeListene
     
   
     @SuppressWarnings("unchecked")
-	public PermissionField(ClientFacade clientFacade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, TreeFactory treeFactory, RaplaImages raplaImages, DialogUiFactoryInterface dialogUiFactory, DateFieldFactory dateFieldFactory, LongFieldFactory longFieldFactory) throws RaplaException {
+	public PermissionField(ClientFacade clientFacade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, TreeFactory treeFactory, DialogUiFactoryInterface dialogUiFactory, DateFieldFactory dateFieldFactory, LongFieldFactory longFieldFactory) throws RaplaException {
         super(clientFacade, i18n, raplaLocale, logger);
 
         panel.setBorder(BorderFactory.createEmptyBorder(5,8,5,8));
@@ -104,7 +102,7 @@ public class PermissionField extends AbstractEditField implements  ChangeListene
         if ( rootCategory != null) {
             AbstractEditField groupSelect;
             if (rootCategory.getDepth() > 2) {
-                CategorySelectField field= new CategorySelectField(clientFacade, i18n, raplaLocale, logger, treeFactory, raplaImages, dialogUiFactory, rootCategory);
+                CategorySelectField field= new CategorySelectField(clientFacade, i18n, raplaLocale, logger, treeFactory,  dialogUiFactory, rootCategory);
                 this.groupSelect = field;
                 groupSelect = field;
             } else {
@@ -408,21 +406,19 @@ public class PermissionField extends AbstractEditField implements  ChangeListene
         private final RaplaLocale raplaLocale;
         private final Logger logger;
         private final TreeFactory treeFactory;
-        private final RaplaImages raplaImages;
         private final DialogUiFactoryInterface dialogUiFactory;
         private final DateFieldFactory dateFieldFactory;
         private final LongFieldFactory longFieldFactory;
 
         @Inject
         public PermissionFieldFactory(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, TreeFactory treeFactory,
-                RaplaImages raplaImages, DateRenderer dateRenderer, DialogUiFactoryInterface dialogUiFactory, DateFieldFactory dateFieldFactory, LongFieldFactory longFieldFactory)
+                  DialogUiFactoryInterface dialogUiFactory, DateFieldFactory dateFieldFactory, LongFieldFactory longFieldFactory)
         {
             this.facade = facade;
             this.i18n = i18n;
             this.raplaLocale = raplaLocale;
             this.logger = logger;
             this.treeFactory = treeFactory;
-            this.raplaImages = raplaImages;
             this.dialogUiFactory = dialogUiFactory;
             this.dateFieldFactory = dateFieldFactory;
             this.longFieldFactory = longFieldFactory;
@@ -430,7 +426,7 @@ public class PermissionField extends AbstractEditField implements  ChangeListene
 
         public PermissionField create() throws RaplaException
         {
-            return new PermissionField(facade, i18n, raplaLocale, logger, treeFactory, raplaImages, dialogUiFactory, dateFieldFactory, longFieldFactory);
+            return new PermissionField(facade, i18n, raplaLocale, logger, treeFactory,  dialogUiFactory, dateFieldFactory, longFieldFactory);
         }
     }
 

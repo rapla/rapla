@@ -26,10 +26,10 @@ import org.rapla.entities.RaplaType;
 import org.rapla.entities.User;
 import org.rapla.entities.storage.ReferenceInfo;
 import org.rapla.facade.CalendarSelectionModel;
-import org.rapla.facade.client.ClientFacade;
 import org.rapla.facade.Conflict;
 import org.rapla.facade.ModificationEvent;
 import org.rapla.facade.RaplaFacade;
+import org.rapla.facade.client.ClientFacade;
 import org.rapla.facade.internal.ConflictImpl;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaInitializationException;
@@ -88,7 +88,7 @@ public class ConflictSelectionPresenter implements Presenter
     {
         try
         {
-            // Object obj = evt.getSelectedObject();
+            // Object obj = evt.getSelected();
             final List<Conflict> enabledConflicts = getConflicts(true);
             final List<Conflict> disabledConflicts = getConflicts(false);
             view.showMenuPopup(c, !disabledConflicts.isEmpty(), !enabledConflicts.isEmpty());

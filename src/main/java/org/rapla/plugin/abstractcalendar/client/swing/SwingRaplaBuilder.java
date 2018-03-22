@@ -15,22 +15,18 @@
 package org.rapla.plugin.abstractcalendar.client.swing;
 
 import org.rapla.RaplaResources;
-import org.rapla.client.swing.images.RaplaImages;
-import org.rapla.components.calendarview.Block;
 import org.rapla.entities.domain.AppointmentFormater;
 import org.rapla.facade.RaplaFacade;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.logger.Logger;
 import org.rapla.plugin.abstractcalendar.RaplaBuilder;
 
-import java.util.Date;
-
 public class SwingRaplaBuilder extends RaplaBuilder
 {
-    public SwingRaplaBuilder(RaplaFacade raplaFacade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, AppointmentFormater appointmentFormater, RaplaImages raplaImages)
+    public SwingRaplaBuilder(RaplaFacade raplaFacade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, AppointmentFormater appointmentFormater)
     {
         super(raplaLocale, raplaFacade, i18n, logger, appointmentFormater);
-        this.setBlockCreator(( blockContext, start, end)->new SwingRaplaBlock( blockContext, start, end, raplaImages));
+        this.setBlockCreator(( blockContext, start, end)->new SwingRaplaBlock( blockContext, start, end));
     }
 
 }

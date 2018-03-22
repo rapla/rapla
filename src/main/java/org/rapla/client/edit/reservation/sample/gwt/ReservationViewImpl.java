@@ -27,8 +27,6 @@ import org.rapla.components.i18n.BundleManager;
 import org.rapla.entities.domain.Appointment;
 import org.rapla.entities.domain.Reservation;
 import org.rapla.framework.RaplaLocale;
-import org.rapla.inject.DefaultImplementation;
-import org.rapla.inject.InjectionContext;
 
 import javax.inject.Inject;
 import java.util.ArrayList;

@@ -27,8 +27,8 @@ import org.rapla.entities.domain.Appointment;
 import org.rapla.entities.domain.Repeating;
 import org.rapla.entities.domain.Reservation;
 import org.rapla.entities.domain.ReservationStartComparator;
-import org.rapla.facade.client.ClientFacade;
 import org.rapla.facade.RaplaFacade;
+import org.rapla.facade.client.ClientFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.inject.Extension;
@@ -39,10 +39,17 @@ import org.rapla.scheduler.ResolvedPromise;
 
 import javax.inject.Inject;
 import javax.inject.Provider;
+import javax.swing.JComponent;
 import javax.swing.JMenuItem;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Date;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
 
 @Extension(provides = EditMenuExtension.class,id="org.rapla.plugin.periodcopy")
 public class CopyPluginMenu  extends RaplaGUIComponent implements EditMenuExtension, ActionListener
@@ -52,15 +59,13 @@ public class CopyPluginMenu  extends RaplaGUIComponent implements EditMenuExtens
 	final String label ;
     private final PeriodCopyResources periodCopyI18n;
     private final Provider<CopyDialog> copyDialogProvider;
-    private final RaplaImages raplaImages;
     private final DialogUiFactoryInterface dialogUiFactory;
 	@Inject
-    public CopyPluginMenu(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, PeriodCopyResources periodCopyI18n, Provider<CopyDialog> copyDialogProvider, RaplaImages raplaImages, DialogUiFactoryInterface dialogUiFactory)  {
+    public CopyPluginMenu(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, PeriodCopyResources periodCopyI18n, Provider<CopyDialog> copyDialogProvider,  DialogUiFactoryInterface dialogUiFactory)  {
         super(facade, i18n, raplaLocale, logger);
         //menu.insert( new RaplaSeparator("info_end"));
         this.periodCopyI18n = periodCopyI18n;
         this.copyDialogProvider = copyDialogProvider;
-        this.raplaImages = raplaImages;
         this.dialogUiFactory = dialogUiFactory;
 
         label =periodCopyI18n.getString(id) ;
@@ -69,17 +74,19 @@ public class CopyPluginMenu  extends RaplaGUIComponent implements EditMenuExtens
 //      ResourceBundle bundle = ResourceBundle.getBundle( "org.rapla.plugin.periodcopy.PeriodCopy");
        
         item.setText( label );
-        item.setIcon( raplaImages.getIconFromKey("icon.copy") );
+        item.setIcon( RaplaImages.getIcon(i18n.getIcon("icon.copy") ));
         item.addActionListener(this);
     }
 
-    
+
+    @Override
 	public String getId() {
 		return id;
 	}
 
 
-	public JMenuItem getMenuElement() {
+	@Override
+	public JMenuItem getComponent() {
 		return item;
 	}
     
@@ -95,11 +102,12 @@ public class CopyPluginMenu  extends RaplaGUIComponent implements EditMenuExtens
 
             final CopyDialog useCase = copyDialogProvider.get();
             String[] buttons = new String[]{getString("abort"), getString("copy") };
-			final DialogInterface dialog = dialogUiFactory.createContentDialog( popupContext, useCase.getComponent(), buttons);
+		final JComponent component = useCase.getComponent();
+		component.setSize( 600, 500);
+		final DialogInterface dialog = dialogUiFactory.createContentDialog( popupContext, component, buttons);
             dialog.setTitle( label);
-            dialog.setSize( 600, 500);
-            dialog.getAction( 0).setIcon( "icon.abort");
-            dialog.getAction( 1).setIcon( "icon.copy");
+            dialog.getAction( 0).setIcon( i18n.getIcon("icon.abort"));
+            dialog.getAction( 1).setIcon( i18n.getIcon("icon.copy"));
             
 //            ActionListener listener = new ActionListener() {
 //                public void actionPerformed(ActionEvent arg0) {

@@ -16,7 +16,6 @@ import org.rapla.RaplaResources;
 import org.rapla.client.dialog.DialogUiFactoryInterface;
 import org.rapla.client.swing.EditComponent;
 import org.rapla.client.swing.RaplaGUIComponent;
-import org.rapla.client.swing.images.RaplaImages;
 import org.rapla.client.swing.internal.edit.fields.MultiLanguageField;
 import org.rapla.client.swing.internal.edit.fields.MultiLanguageField.MultiLanguageFieldFactory;
 import org.rapla.client.swing.internal.edit.fields.TextField;
@@ -60,11 +59,11 @@ public class CategoryEditUI extends RaplaGUIComponent implements EditComponent<C
     boolean editKeys = true;
 
     @Inject
-    public CategoryEditUI(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, RaplaImages raplaImages,
+    public CategoryEditUI(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger,
             DialogUiFactoryInterface dialogUiFactory, MultiLanguageFieldFactory multiLanguageFieldFactory, TextFieldFactory textFieldFactory)
     {
         super(facade, i18n, raplaLocale, logger);
-        detailPanel = new CategoryDetail(facade, i18n, raplaLocale, logger, raplaImages, dialogUiFactory, multiLanguageFieldFactory, textFieldFactory);
+        detailPanel = new CategoryDetail(facade, i18n, raplaLocale, logger,  dialogUiFactory, multiLanguageFieldFactory, textFieldFactory);
         panel.setPreferredSize(new Dimension(690, 350));
         panel.setLayout(new BorderLayout());
         detailPanel.setEditKeys(editKeys);
@@ -138,7 +137,7 @@ class CategoryDetail extends RaplaGUIComponent implements ChangeListener
     RaplaArrowButton addButton = new RaplaArrowButton('>', 25);
     RaplaArrowButton removeButton = new RaplaArrowButton('<', 25);
 
-    public CategoryDetail(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, RaplaImages raplaImages,
+    public CategoryDetail(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger,
             DialogUiFactoryInterface dialogUiFactory, MultiLanguageFieldFactory multiLanguageFieldFactory, TextFieldFactory textFieldFactory)
     {
         super(facade, i18n, raplaLocale, logger);

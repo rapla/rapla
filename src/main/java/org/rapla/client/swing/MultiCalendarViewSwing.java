@@ -17,7 +17,6 @@ package org.rapla.client.swing;
 import org.rapla.RaplaResources;
 import org.rapla.client.dialog.DialogUiFactoryInterface;
 import org.rapla.client.internal.MultiCalendarView;
-import org.rapla.client.swing.images.RaplaImages;
 import org.rapla.client.swing.internal.FilterEditButton;
 import org.rapla.client.swing.internal.FilterEditButton.FilterEditButtonFactory;
 import org.rapla.client.swing.internal.SwingPopupContext;
@@ -60,7 +59,6 @@ public class MultiCalendarViewSwing implements MultiCalendarView
 
     /** renderer for weekdays in month-view */
     private FilterEditButton filter;
-    private final RaplaImages raplaImages;
     private final DialogUiFactoryInterface dialogUiFactory;
     private LinkedHashMap<String, String> viewIdToViewName;
     private final JPanel filterContainer = new JPanel();
@@ -68,10 +66,9 @@ public class MultiCalendarViewSwing implements MultiCalendarView
     private boolean viewSelectionFromPromgramm = false;
     
     @Inject
-    public MultiCalendarViewSwing(RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, RaplaImages raplaImages,
+    public MultiCalendarViewSwing(RaplaResources i18n, RaplaLocale raplaLocale, Logger logger,
             DialogUiFactoryInterface dialogUiFactory, FilterEditButtonFactory filterEditButtonFactory) throws RaplaInitializationException
     {
-        this.raplaImages = raplaImages;
         this.dialogUiFactory = dialogUiFactory;
         this.filterEditButtonFactory = filterEditButtonFactory;
 
@@ -179,7 +176,7 @@ public class MultiCalendarViewSwing implements MultiCalendarView
     }
 
     /*
-    private void addMenu( CalendarSelectionModel model, String[] ids, RaplaMenu view )
+    private void addMenuItem( CalendarSelectionModel model, String[] ids, RaplaMenu view )
     {
         RaplaMenu viewMenu = new RaplaMenu("views");
         viewMenu.setText(getString("show_as"));

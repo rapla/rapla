@@ -2,6 +2,7 @@ package org.rapla.client.internal.check.gwt;
 
 import jsinterop.annotations.JsType;
 import org.rapla.client.dialog.DialogInterface;
+import org.rapla.components.i18n.I18nIcon;
 import org.rapla.scheduler.Promise;
 import org.rapla.scheduler.UnsynchronizedPromise;
 
@@ -22,23 +23,23 @@ public class VueDialog implements DialogInterface {
     RaplaVue.emit("gwt-dialog-open", this);
     return promise;
   }
-  
+
   public Object getContent() {
     return content;
   }
-  
+
   public Promise<Integer> getPromise() {
     return promise;
   }
-  
+
   public String getTitle() {
     return title;
   }
-  
+
   public String getIcon() {
     return icon;
   }
-  
+
   @Override
   public void busy(final String message) {
 
@@ -50,37 +51,17 @@ public class VueDialog implements DialogInterface {
   }
 
   @Override
-  public int getSelectedIndex() {
-    return 0;
-  }
-
-  @Override
   public void setTitle(final String title) {
     this.title = title;
   }
 
   @Override
-  public void setIcon(final String iconKey) {
-    this.icon = icon;
-  }
-
-  @Override
-  public void setSize(final int width, final int height) {
-  
+  public void setIcon(final I18nIcon iconKey) {
+    this.icon = iconKey.getId();
   }
 
   @Override
   public void close() {
-  
-  }
-
-  @Override
-  public boolean isVisible() {
-    return false;
-  }
-
-  @Override
-  public void setPosition(final double x, final double y) {
 
   }
 
@@ -92,7 +73,7 @@ public class VueDialog implements DialogInterface {
     return new DialogAction() {
       @Override
       public void setEnabled(final boolean enabled) {
-      
+
       }
 
       @Override
@@ -101,7 +82,7 @@ public class VueDialog implements DialogInterface {
       }
 
       @Override
-      public void setIcon(final String iconKey) {
+      public void setIcon(final I18nIcon icon) {
 
       }
 

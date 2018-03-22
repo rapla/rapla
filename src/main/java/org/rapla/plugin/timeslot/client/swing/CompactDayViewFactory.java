@@ -16,10 +16,10 @@ import org.rapla.RaplaResources;
 import org.rapla.client.EditController;
 import org.rapla.client.ReservationController;
 import org.rapla.client.dialog.DialogUiFactoryInterface;
+import org.rapla.client.dialog.InfoFactory;
 import org.rapla.client.extensionpoints.ObjectMenuFactory;
 import org.rapla.client.internal.RaplaClipboard;
-import org.rapla.client.dialog.InfoFactory;
-import org.rapla.client.swing.MenuFactory;
+import org.rapla.client.menu.MenuFactory;
 import org.rapla.client.swing.SwingCalendarView;
 import org.rapla.client.swing.extensionpoints.SwingViewFactory;
 import org.rapla.client.swing.images.RaplaImages;
@@ -54,7 +54,6 @@ public class CompactDayViewFactory implements SwingViewFactory
     private final TimeslotProvider timeslotProvider;
     private final ReservationController reservationController;
     private final InfoFactory infoFactory;
-    private final RaplaImages raplaImages;
     private final DateRenderer dateRenderer;
     private final DialogUiFactoryInterface dialogUiFactory;
     private final ClientFacade facade;
@@ -69,7 +68,7 @@ public class CompactDayViewFactory implements SwingViewFactory
     @Inject
     public CompactDayViewFactory(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, Set<ObjectMenuFactory> objectMenuFactories,
             MenuFactory menuFactory, CalendarSelectionModel calendarSelectionModel, RaplaClipboard clipboard, TimeslotProvider timeslotProvider,
-            ReservationController reservationController, InfoFactory infoFactory, RaplaImages raplaImages, DateRenderer dateRenderer,
+            ReservationController reservationController, InfoFactory infoFactory, DateRenderer dateRenderer,
             DialogUiFactoryInterface dialogUiFactory, IOInterface ioInterface, AppointmentFormater appointmentFormater, EditController editController) throws RaplaInitializationException
     {
         this.facade = facade;
@@ -83,7 +82,6 @@ public class CompactDayViewFactory implements SwingViewFactory
         this.timeslotProvider = timeslotProvider;
         this.reservationController = reservationController;
         this.infoFactory = infoFactory;
-        this.raplaImages = raplaImages;
         this.dateRenderer = dateRenderer;
         this.dialogUiFactory = dialogUiFactory;
         this.ioInterface = ioInterface;
@@ -102,7 +100,7 @@ public class CompactDayViewFactory implements SwingViewFactory
     public SwingCalendarView createSwingView(CalendarModel model, boolean editable, boolean printing) throws RaplaException
     {
         return new SwingCompactDayCalendar(facade, i18n, raplaLocale, logger, model, editable, printing, objectMenuFactories, menuFactory, calendarSelectionModel,
-                clipboard, timeslotProvider, reservationController, infoFactory, raplaImages, dateRenderer, dialogUiFactory, ioInterface, appointmentFormater, editController);
+                clipboard, timeslotProvider, reservationController, infoFactory, dateRenderer, dialogUiFactory, ioInterface, appointmentFormater, editController);
     }
     
     @Override

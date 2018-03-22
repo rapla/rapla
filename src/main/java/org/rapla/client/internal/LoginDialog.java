@@ -15,12 +15,12 @@ package org.rapla.client.internal;
 import org.rapla.RaplaResources;
 import org.rapla.client.swing.RaplaGUIComponent;
 import org.rapla.client.swing.toolkit.DisabledGlassPane;
-import org.rapla.components.i18n.internal.DefaultBundleManager;
+import org.rapla.components.i18n.internal.AbstractBundleManager;
 import org.rapla.components.iolayer.IOInterface;
 import org.rapla.components.layout.TableLayout;
-import org.rapla.components.xmlbundle.I18nBundle;
-import org.rapla.components.xmlbundle.LocaleChangeEvent;
-import org.rapla.components.xmlbundle.LocaleChangeListener;
+import org.rapla.components.i18n.I18nBundle;
+import org.rapla.components.i18n.LocaleChangeEvent;
+import org.rapla.components.i18n.LocaleChangeListener;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.StartupEnvironment;
@@ -48,7 +48,6 @@ import java.awt.event.FocusAdapter;
 import java.awt.event.FocusEvent;
 import java.awt.event.WindowEvent;
 import java.awt.image.ImageObserver;
-import java.beans.PropertyVetoException;
 import java.net.URL;
 
 public final class LoginDialog extends JFrame implements LocaleChangeListener
@@ -71,13 +70,13 @@ public final class LoginDialog extends JFrame implements LocaleChangeListener
 	ImageObserver				observer;
 	Image						image;
 	JPanel						canvas;
-	protected DefaultBundleManager localeSelector;
+	protected AbstractBundleManager localeSelector;
     StartupEnvironment env;
     // we have to add an extra gui component here because LoginDialog extends RaplaFrame and therefore can't extent RaplaGUIComponent
     private final RaplaLocale raplaLocale;
     private final Logger logger;
 
-    private LoginDialog(StartupEnvironment env, RaplaResources i18n, DefaultBundleManager bundleManager, Logger logger, RaplaLocale raplaLocale) throws RaplaException
+    private LoginDialog(StartupEnvironment env, RaplaResources i18n, AbstractBundleManager bundleManager, Logger logger, RaplaLocale raplaLocale) throws RaplaException
 	{
 		super();
 		this.env =  env;
@@ -100,7 +99,7 @@ public final class LoginDialog extends JFrame implements LocaleChangeListener
 		glassPane.deactivate();
 	}
 
-	public static LoginDialog create(StartupEnvironment env, RaplaResources i18n, DefaultBundleManager bundleManager, Logger logger, RaplaLocale raplaLocale, JComponent languageSelector) throws RaplaException
+	public static LoginDialog create(StartupEnvironment env, RaplaResources i18n, AbstractBundleManager bundleManager, Logger logger, RaplaLocale raplaLocale, JComponent languageSelector) throws RaplaException
 	{
 		LoginDialog dlg = new LoginDialog(env, i18n, bundleManager, logger, raplaLocale);
 		dlg.init(languageSelector);
@@ -161,7 +160,7 @@ public final class LoginDialog extends JFrame implements LocaleChangeListener
 		
 		Toolkit toolkit = Toolkit.getDefaultToolkit();
 		// creating an URL to the path of the picture
-		URL url = LoginDialog.class.getResource("/org/rapla/client/swing/gui/images/tafel.png");
+		URL url = LoginDialog.class.getResource("/org/rapla/gui/images/tafel.png");
 		// getting it as image object
 		image = toolkit.createImage(url);
 		

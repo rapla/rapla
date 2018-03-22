@@ -18,7 +18,6 @@ import org.rapla.client.PopupContext;
 import org.rapla.client.UserClientService;
 import org.rapla.client.dialog.DialogUiFactoryInterface;
 import org.rapla.client.swing.RaplaAction;
-import org.rapla.client.swing.images.RaplaImages;
 import org.rapla.entities.User;
 import org.rapla.facade.client.ClientFacade;
 import org.rapla.framework.RaplaException;
@@ -34,22 +33,22 @@ public class UserAction extends RaplaAction {
     private final PopupContext popupContext;
     private final UserClientService service;
     private final EditController editController;
-    private final RaplaImages raplaImages;
+    RaplaResources i18n;
     private final DialogUiFactoryInterface dialogUiFactory;
 
-    public UserAction(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger,PopupContext popupContext, UserClientService service, EditController editController, RaplaImages raplaImages, DialogUiFactoryInterface dialogUiFactory) {
+    public UserAction(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger,PopupContext popupContext, UserClientService service, EditController editController,  DialogUiFactoryInterface dialogUiFactory) {
         super(facade, i18n, raplaLocale, logger);
+        this.i18n = i18n;
         this.popupContext = popupContext;
         this.service = service;
         this.editController = editController;
-        this.raplaImages = raplaImages;
         this.dialogUiFactory = dialogUiFactory;
     }
 
     public UserAction setNew() {
         type = NEW;
-        putValue(NAME, getString("user"));
-        putValue(SMALL_ICON, raplaImages.getIconFromKey("icon.new"));
+        putValue(NAME, i18n.getString("user"));
+        setIcon( i18n.getIcon("icon.new"));
         update();
         return this;
     }
@@ -139,7 +138,7 @@ public class UserAction extends RaplaAction {
 
     public void changePassword(User user, boolean showOld) throws RaplaException
     {
-        new PasswordChangeAction(getClientFacade(), getI18n(), getRaplaLocale(), getLogger(), popupContext, raplaImages, dialogUiFactory).changePassword(user,
+        new PasswordChangeAction(getClientFacade(), getI18n(), getRaplaLocale(), getLogger(), popupContext,  dialogUiFactory).changePassword(user,
                 showOld);
     }
 

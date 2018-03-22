@@ -15,7 +15,6 @@ package org.rapla.client.swing.internal.print;
 import org.rapla.RaplaResources;
 import org.rapla.client.dialog.DialogInterface;
 import org.rapla.client.dialog.DialogUiFactoryInterface;
-import org.rapla.client.swing.images.RaplaImages;
 import org.rapla.client.swing.internal.SwingPopupContext;
 import org.rapla.client.swing.internal.common.NamedListCellRenderer;
 import org.rapla.components.iolayer.IOInterface;
@@ -43,15 +42,13 @@ import java.util.HashMap;
 public class ExportServiceList   {
 
     HashMap<Object,ExportService> exporters = new HashMap<Object,ExportService>();
-    private final RaplaImages raplaImages;
     private final DialogUiFactoryInterface dialogUiFactory;
     private final RaplaResources i18n;
 
     @Inject
-    public ExportServiceList(StartupEnvironment startupEnvironment, RaplaResources i18n, IOInterface printInterface, RaplaImages raplaImages, DialogUiFactoryInterface dialogUiFactory) throws
+    public ExportServiceList(StartupEnvironment startupEnvironment, RaplaResources i18n, IOInterface printInterface, DialogUiFactoryInterface dialogUiFactory) throws
             RaplaInitializationException {
         this.i18n = i18n;
-        this.raplaImages = raplaImages;
         this.dialogUiFactory = dialogUiFactory;
         boolean applet =startupEnvironment.getStartupMode() == StartupEnvironment.APPLET;
         if (printInterface.supportsPostscriptExport() && !applet) {
@@ -81,8 +78,8 @@ public class ExportServiceList   {
                                            ,i18n.getString("cancel")
                                            });
         dlg.setTitle(i18n.getString("weekview.print.choose_export"));
-        dlg.getAction(0).setIcon("icon.save");
-        dlg.getAction(1).setIcon("icon.cancel");
+        dlg.getAction(0).setIcon(i18n.getIcon("icon.save"));
+        dlg.getAction(1).setIcon(i18n.getIcon("icon.cancel"));
         return dlg.start(true).thenApply( index->
         {
             if (index != 0 || list.getSelectedIndex() == -1) {

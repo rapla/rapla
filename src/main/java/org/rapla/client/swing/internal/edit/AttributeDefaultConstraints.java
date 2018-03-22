@@ -7,7 +7,6 @@ import org.rapla.client.dialog.DialogUiFactoryInterface;
 import org.rapla.client.extensionpoints.AnnotationEditAttributeExtension;
 import org.rapla.client.swing.RaplaGUIComponent;
 import org.rapla.client.swing.TreeFactory;
-import org.rapla.client.swing.images.RaplaImages;
 import org.rapla.client.swing.internal.SwingPopupContext;
 import org.rapla.client.swing.internal.common.NamedListCellRenderer;
 import org.rapla.client.swing.internal.edit.annotation.AnnotationEditUI;
@@ -36,8 +35,8 @@ import org.rapla.entities.dynamictype.AttributeType;
 import org.rapla.entities.dynamictype.ConstraintIds;
 import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.entities.dynamictype.DynamicTypeAnnotations;
-import org.rapla.facade.client.ClientFacade;
 import org.rapla.facade.RaplaFacade;
+import org.rapla.facade.client.ClientFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaInitializationException;
 import org.rapla.framework.RaplaLocale;
@@ -107,7 +106,7 @@ public class AttributeDefaultConstraints extends AbstractEditField implements Ac
     private final PermissionController permissionController;
 
     @Inject public AttributeDefaultConstraints(ClientFacade clientFacade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, TreeFactory treeFactory,
-            Set<AnnotationEditAttributeExtension> attributeExtensionSet, RaplaImages raplaImages, DateRenderer dateRenderer,
+            Set<AnnotationEditAttributeExtension> attributeExtensionSet,  DateRenderer dateRenderer,
             final DialogUiFactoryInterface dialogUiFactory, BooleanFieldFactory booleanFieldFactory, TextFieldFactory textFieldFactory,
             MultiLanguageFieldFactory multiLanguageFieldFactory, IOInterface ioInterface) throws RaplaInitializationException
     {
@@ -136,9 +135,9 @@ public class AttributeDefaultConstraints extends AbstractEditField implements Ac
 
         rootCategory = this.raplaFacade.getSuperCategory();
 
-        categorySelect = new CategorySelectField(clientFacade, i18n, raplaLocale, logger, treeFactory, raplaImages, dialogUiFactory, rootCategory);
+        categorySelect = new CategorySelectField(clientFacade, i18n, raplaLocale, logger, treeFactory,  dialogUiFactory, rootCategory);
         categorySelect.setUseNull(false);
-        defaultSelectCategory = new CategorySelectField(clientFacade, i18n, raplaLocale, logger, treeFactory, raplaImages, dialogUiFactory, rootCategory);
+        defaultSelectCategory = new CategorySelectField(clientFacade, i18n, raplaLocale, logger, treeFactory, dialogUiFactory, rootCategory);
         defaultSelectText = textFieldFactory.create();
         RaplaGUIComponent.addCopyPaste(defaultSelectNumber.getNumberField(), i18n, raplaLocale, ioInterface, logger);
         //addCopyPaste( expectedRows.getNumberField());

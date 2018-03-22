@@ -2,7 +2,6 @@ package org.rapla.client.internal.check.gwt;
 
 import org.rapla.client.internal.check.ConflictDialogView;
 import org.rapla.facade.Conflict;
-import org.rapla.framework.RaplaException;
 import org.rapla.inject.DefaultImplementation;
 import org.rapla.inject.InjectionContext;
 

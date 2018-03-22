@@ -15,14 +15,13 @@ package org.rapla.client.swing.gui.edit.test;
 
 import org.rapla.RaplaResources;
 import org.rapla.client.dialog.DialogUiFactoryInterface;
+import org.rapla.client.dialog.swing.DialogUI.DialogUiFactory;
 import org.rapla.client.swing.SwingSchedulerImpl;
 import org.rapla.client.swing.gui.tests.GUITestCase;
-import org.rapla.client.swing.images.RaplaImages;
 import org.rapla.client.swing.internal.edit.AttributeEdit;
 import org.rapla.client.swing.internal.edit.RaplaListEdit.RaplaListEditFactory;
-import org.rapla.client.swing.toolkit.DialogUI.DialogUiFactory;
 import org.rapla.components.i18n.BundleManager;
-import org.rapla.components.i18n.internal.DefaultBundleManager;
+import org.rapla.components.i18n.client.swing.SwingBundleManager;
 import org.rapla.entities.dynamictype.Attribute;
 import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.facade.RaplaFacade;
@@ -34,12 +33,11 @@ public final class AttributeEditTest extends GUITestCase
     public void testMain() throws Exception {
         RaplaFacade facade = null;
         final Logger logger = getLogger();
-        RaplaImages raplaImages = new RaplaImages(logger);
-        final RaplaListEditFactory raplaListEditFactory = new RaplaListEditFactory (raplaImages);
-        BundleManager bundleManager = new DefaultBundleManager();
+        BundleManager bundleManager = new SwingBundleManager(logger);
         RaplaResources i18n = new RaplaResources(bundleManager);
+        final RaplaListEditFactory raplaListEditFactory = new RaplaListEditFactory ( i18n);
         CommandScheduler scheduler = new SwingSchedulerImpl(logger);
-        DialogUiFactoryInterface dialogUiFactory = new DialogUiFactory(i18n, raplaImages, scheduler,bundleManager,  logger);
+        DialogUiFactoryInterface dialogUiFactory = new DialogUiFactory(i18n,  scheduler,bundleManager,  logger);
         AttributeEdit editor = new AttributeEdit(getFacade(), i18n, getRaplaLocale(), getLogger(), null, raplaListEditFactory, dialogUiFactory);
         editor.setDynamicType(facade.getDynamicTypes(null)[0]);
         testComponent(editor.getComponent(),500,500);
@@ -49,12 +47,11 @@ public final class AttributeEditTest extends GUITestCase
     public void testNew() throws Exception {
         RaplaFacade facade = null;
         final Logger logger = getLogger();
-        RaplaImages raplaImages = new RaplaImages(logger);
-        final RaplaListEditFactory raplaListEditFactory = new RaplaListEditFactory (raplaImages);
-        BundleManager bundleManager = new DefaultBundleManager();
+        BundleManager bundleManager = new SwingBundleManager(logger);
         RaplaResources i18n = new RaplaResources(bundleManager);
+        final RaplaListEditFactory raplaListEditFactory = new RaplaListEditFactory ( i18n);
         CommandScheduler scheduler = new SwingSchedulerImpl(logger);
-        DialogUiFactoryInterface dialogUiFactory = new DialogUiFactory(i18n, raplaImages, scheduler,bundleManager,  logger);
+        DialogUiFactoryInterface dialogUiFactory = new DialogUiFactory(i18n,  scheduler,bundleManager,  logger);
         AttributeEdit editor = new AttributeEdit(getFacade(), i18n, getRaplaLocale(), getLogger(), null, raplaListEditFactory, dialogUiFactory);
         DynamicType type =  facade.edit(facade.getDynamicTypes(null)[0]);
         Attribute attribute = type.getAttributes()[0];

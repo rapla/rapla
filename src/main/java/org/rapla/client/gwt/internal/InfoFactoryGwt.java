@@ -1,7 +1,6 @@
 package org.rapla.client.gwt.internal;
 
 import org.rapla.client.PopupContext;
-import org.rapla.client.dialog.DialogInterface;
 import org.rapla.client.dialog.InfoFactory;
 import org.rapla.framework.RaplaException;
 import org.rapla.inject.DefaultImplementation;

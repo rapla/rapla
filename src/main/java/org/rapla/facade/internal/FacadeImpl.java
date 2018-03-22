@@ -13,17 +13,27 @@
 package org.rapla.facade.internal;
 
 import io.reactivex.functions.Consumer;
-import io.reactivex.functions.Function;
-import io.reactivex.functions.Function3;
 import org.jetbrains.annotations.NotNull;
 import org.rapla.RaplaResources;
 import org.rapla.components.util.DateTools;
 import org.rapla.components.util.TimeInterval;
-import org.rapla.entities.*;
+import org.rapla.entities.Category;
+import org.rapla.entities.Entity;
+import org.rapla.entities.EntityNotFoundException;
+import org.rapla.entities.MultiLanguageName;
+import org.rapla.entities.User;
 import org.rapla.entities.configuration.Preferences;
 import org.rapla.entities.configuration.RaplaMap;
 import org.rapla.entities.configuration.internal.RaplaMapImpl;
-import org.rapla.entities.domain.*;
+import org.rapla.entities.domain.Allocatable;
+import org.rapla.entities.domain.Appointment;
+import org.rapla.entities.domain.Period;
+import org.rapla.entities.domain.Permission;
+import org.rapla.entities.domain.PermissionContainer;
+import org.rapla.entities.domain.RaplaObjectAnnotations;
+import org.rapla.entities.domain.Repeating;
+import org.rapla.entities.domain.Reservation;
+import org.rapla.entities.domain.ReservationStartComparator;
 import org.rapla.entities.domain.internal.AllocatableImpl;
 import org.rapla.entities.domain.internal.AppointmentImpl;
 import org.rapla.entities.domain.internal.ReservationImpl;
@@ -36,12 +46,17 @@ import org.rapla.entities.dynamictype.DynamicTypeAnnotations;
 import org.rapla.entities.dynamictype.internal.AttributeImpl;
 import org.rapla.entities.dynamictype.internal.DynamicTypeImpl;
 import org.rapla.entities.internal.CategoryImpl;
-import org.rapla.entities.internal.ModifiableTimestamp;
 import org.rapla.entities.internal.UserImpl;
 import org.rapla.entities.storage.ParentEntity;
 import org.rapla.entities.storage.ReferenceInfo;
 import org.rapla.entities.storage.internal.SimpleEntity;
-import org.rapla.facade.*;
+import org.rapla.facade.CalendarModel;
+import org.rapla.facade.CalendarOptions;
+import org.rapla.facade.CalendarSelectionModel;
+import org.rapla.facade.Conflict;
+import org.rapla.facade.PeriodModel;
+import org.rapla.facade.RaplaComponent;
+import org.rapla.facade.RaplaFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaInitializationException;
 import org.rapla.inject.DefaultImplementation;
@@ -353,18 +368,22 @@ public class FacadeImpl implements RaplaFacade {
 		PermissionController permissionController = operator.getPermissionController();
 		for (DynamicType type: collection) {
 			String classificationTypeAnno = type.getAnnotation(DynamicTypeAnnotations.KEY_CLASSIFICATION_TYPE);
-			// ignore internal types for backward compatibility
-			if ((( DynamicTypeImpl)type).isInternal())
-			{
+			if ( classificationType != null ) {
+				if ( !classificationType.equals(classificationTypeAnno)) {
+					continue;
+				}
+			}
+				// ignore internal types for backward compatibility
+			if ((( DynamicTypeImpl)type).isInternal() && !type.equals(DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RAPLATYPE)) {
 				continue;
 			}
+
 			if ( user != null && !permissionController.canRead(type, user))
 			{
 				continue;
 			}
-			if ( classificationType == null || classificationType.equals(classificationTypeAnno)) {
-				result.add(type);
-			}
+			result.add(type);
+
 		}
 		return result.toArray(DynamicType.DYNAMICTYPE_ARRAY);
 	}
@@ -1187,6 +1206,48 @@ public class FacadeImpl implements RaplaFacade {
 			throw new EntityNotFoundException(	"There is no persistant version of " + entity);
 		}
 		return result;
+	}
+
+	public Promise<Void> moveCategory(Category categoryToMove, Category targetCategory)
+	{
+		final List<Category> categoryList = Stream.of(categoryToMove, targetCategory.getParent(), categoryToMove.getParent()).collect(Collectors.toList());
+		final Promise<Collection<Category>> categoriesToStorePromise = editListAsync(categoryList).thenApply(map->map.values().stream().collect(Collectors.toList())).thenCompose(
+				(editableCategories) ->
+				{
+					final Category categoryToMoveEdit = editableCategories.get(0);
+					final Category targetParentCategoryEdit = editableCategories.get(1);
+
+					final Collection<Category> categoriesToStore = new ArrayList<>();
+					if (!targetParentCategoryEdit.hasCategory(categoryToMoveEdit)) {
+						final Category moveCategoryParent = editableCategories.get(2);
+						// remove from old parent
+						moveCategoryParent.removeCategory(categoryToMoveEdit);
+						categoriesToStore.add(moveCategoryParent);
+					}
+					final Promise<Collection<Category>> editedCategories = editListAsync(Arrays.asList(targetParentCategoryEdit.getCategories())).thenApply(
+							(categoryMap) ->
+							{
+								Collection<Category> categories = categoryMap.values();
+								for (Category category : categories) {
+									targetParentCategoryEdit.removeCategory(category);
+								}
+
+								for (Category category : categories) {
+									if (category.equals(targetCategory)) {
+										targetParentCategoryEdit.addCategory(categoryToMoveEdit);
+									} else if (category.equals(categoryToMoveEdit)) {
+										continue;
+									}
+									targetParentCategoryEdit.addCategory(category);
+								}
+								categoriesToStore.add(targetParentCategoryEdit);
+								categoriesToStore.add(categoryToMoveEdit);
+								return categoriesToStore;
+							}
+					);
+					return editedCategories;
+				});
+		return categoriesToStorePromise.thenCompose((categoriesToStore) -> dispatch(categoriesToStore, Collections.emptyList()));
 	}
 
 	@Override

@@ -2,7 +2,7 @@ package org.rapla.client.swing.internal.edit;
 
 import org.rapla.client.RaplaWidget;
 import org.rapla.components.layout.TableLayout;
-import org.rapla.components.xmlbundle.I18nBundle;
+import org.rapla.components.i18n.I18nBundle;
 
 import javax.swing.BorderFactory;
 import javax.swing.JComponent;

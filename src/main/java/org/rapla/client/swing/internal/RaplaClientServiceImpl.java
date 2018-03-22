@@ -28,10 +28,10 @@ import org.rapla.client.swing.RaplaGUIComponent;
 import org.rapla.client.swing.SwingSchedulerImpl;
 import org.rapla.client.swing.images.RaplaImages;
 import org.rapla.components.i18n.BundleManager;
-import org.rapla.components.i18n.internal.DefaultBundleManager;
+import org.rapla.components.i18n.internal.AbstractBundleManager;
 import org.rapla.entities.User;
-import org.rapla.facade.client.ClientFacade;
 import org.rapla.facade.UpdateErrorListener;
+import org.rapla.facade.client.ClientFacade;
 import org.rapla.facade.internal.ClientFacadeImpl;
 import org.rapla.framework.Disposable;
 import org.rapla.framework.RaplaException;
@@ -86,7 +86,6 @@ public class RaplaClientServiceImpl implements ClientService, UpdateErrorListene
     final RaplaLocale raplaLocale;
     final BundleManager bundleManager;
     final CommandScheduler commandScheduler;
-    final RaplaImages raplaImages;
     io.reactivex.disposables.Disposable schedule;
     //final Provider<RaplaFrame> raplaFrameProvider;
 
@@ -97,7 +96,7 @@ public class RaplaClientServiceImpl implements ClientService, UpdateErrorListene
     @Inject
     public RaplaClientServiceImpl(StartupEnvironment env, Logger logger, DialogUiFactoryInterface dialogUiFactory, ClientFacade facade, RaplaResources i18n, RaplaSystemInfo systemInfo,
                                   RaplaLocale raplaLocale, BundleManager bundleManager, CommandScheduler commandScheduler, final RemoteOperator storageOperator,
-                                  RaplaImages raplaImages, Provider<Application> applicationProvider, RemoteConnectionInfo connectionInfo, RemoteAuthentificationService authentificationService)
+                                  Provider<Application> applicationProvider, RemoteConnectionInfo connectionInfo, RemoteAuthentificationService authentificationService)
     {
         this.env = env;
         this.authentificationService = authentificationService;
@@ -124,7 +123,6 @@ public class RaplaClientServiceImpl implements ClientService, UpdateErrorListene
         this.commandScheduler = commandScheduler;
         this.applicationProvider = applicationProvider;
         ((ClientFacadeImpl) this.facade).setOperator(storageOperator);
-        this.raplaImages = raplaImages;
         this.connectionInfo = connectionInfo;
         try
         {
@@ -282,7 +280,16 @@ public class RaplaClientServiceImpl implements ClientService, UpdateErrorListene
             });
             started = true;
             fireClientStarted();
-        });
+        }).exceptionally((ex)->
+                {
+                    logger.error(ex.getMessage(),ex);
+                    try {
+                        closeApplication();
+                    } finally {
+                        fireClientClosed(null);
+                    }
+                }
+        );
     }
 
     /*
@@ -395,27 +402,34 @@ public class RaplaClientServiceImpl implements ClientService, UpdateErrorListene
 
     private void stop(ConnectInfo reconnect)
     {
-        if (!started)
+        if ( !started)
+        {
             return;
-
-        application.stop();
-        RaplaGUIComponent.setMainComponent(null);
+        }
         try
         {
-            ClientFacade facade = getClientFacade();
-            facade.removeUpdateErrorListener(this);
-            if (facade.isSessionActive())
-            {
-                facade.logout();
-            }
-
+            closeApplication();
         }
-        catch (RaplaException ex)
+        catch (Throwable ex)
         {
             getLogger().error("Clean logout failed. " + ex.getMessage());
         }
         started = false;
         fireClientClosed(reconnect);
+    }
+
+    private void closeApplication() throws RaplaException {
+        if (application != null) {
+            application.stop();
+            RaplaGUIComponent.setMainComponent(null);
+            ClientFacade facade = getClientFacade();
+            if (facade != null) {
+                facade.removeUpdateErrorListener(this);
+                if (facade.isSessionActive()) {
+                    facade.logout();
+                }
+            }
+        }
     }
 
     public void dispose()
@@ -438,7 +452,7 @@ public class RaplaClientServiceImpl implements ClientService, UpdateErrorListene
         {
             final Logger logger = getLogger();
             final LanguageChooser languageChooser = new LanguageChooser(logger, i18n, raplaLocale);
-            final DefaultBundleManager localeSelector = (DefaultBundleManager) bundleManager;
+            final AbstractBundleManager localeSelector = (AbstractBundleManager) bundleManager;
             final LoginDialog dlg = LoginDialog.create(env, i18n, localeSelector, logger, raplaLocale, languageChooser.getComponent());
 
             Action languageChanged = new AbstractAction()
@@ -495,11 +509,11 @@ public class RaplaClientServiceImpl implements ClientService, UpdateErrorListene
                         {
                             dlg.idle();
                             loginMutex.release();
-
                             dlg.busy(i18n.getString("load"));
-                            beginRaplaSession().thenRun(()->dlg.dispose()).exceptionally( ex->
+                            beginRaplaSession().thenRun(()->{dlg.idle();dlg.dispose();}).exceptionally( ex->
                             {
                                 dialogUiFactory.showException(ex, null);
+                                dlg.idle();
                                 fireClientAborted();
                             }
                             );
@@ -508,7 +522,8 @@ public class RaplaClientServiceImpl implements ClientService, UpdateErrorListene
                     {
                         dlg.resetPassword();
                         dialogUiFactory.showException(ex, new SwingPopupContext(dlg, null));
-                    }).finally_(()->dlg.idle());
+                        dlg.idle();
+                    });
 
                 }
 
@@ -527,7 +542,7 @@ public class RaplaClientServiceImpl implements ClientService, UpdateErrorListene
             };
             loginAction.putValue(Action.NAME, i18n.getString("login"));
             exitAction.putValue(Action.NAME, i18n.getString("exit"));
-            dlg.setIconImage(raplaImages.getIconFromKey("icon.rapla_small").getImage());
+            dlg.setIconImage(RaplaImages.getImage(i18n.getIcon("icon.rapla_small")));
             dlg.setLoginAction(loginAction);
             dlg.setExitAction(exitAction);
             //dlg.setSize( 480, 270);

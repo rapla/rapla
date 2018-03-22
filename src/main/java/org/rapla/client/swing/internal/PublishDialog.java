@@ -19,7 +19,6 @@ import org.rapla.client.dialog.DialogUiFactoryInterface;
 import org.rapla.client.extensionpoints.PublishExtensionFactory;
 import org.rapla.client.swing.PublishExtension;
 import org.rapla.client.swing.RaplaGUIComponent;
-import org.rapla.client.swing.images.RaplaImages;
 import org.rapla.facade.CalendarSelectionModel;
 import org.rapla.facade.client.ClientFacade;
 import org.rapla.framework.RaplaException;
@@ -31,8 +30,6 @@ import javax.swing.BoxLayout;
 import javax.swing.JPanel;
 import javax.swing.JTextField;
 import java.awt.Dimension;
-import java.beans.PropertyChangeEvent;
-import java.beans.PropertyChangeListener;
 import java.net.URL;
 import java.net.URLEncoder;
 import java.util.ArrayList;
@@ -47,15 +44,13 @@ public class PublishDialog extends RaplaGUIComponent
 {
 	private final Set<PublishExtensionFactory> extensionFactories;
 	PublishExtension addressCreator= null;
-    private final RaplaImages raplaImages;
     private final DialogUiFactoryInterface dialogUiFactory;
     StartupEnvironment environment;
 
-    public PublishDialog(StartupEnvironment environment,ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, Set<PublishExtensionFactory> extensionFactories, RaplaImages raplaImages, DialogUiFactoryInterface dialogUiFactory)
+    public PublishDialog(StartupEnvironment environment,ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, Set<PublishExtensionFactory> extensionFactories, DialogUiFactoryInterface dialogUiFactory)
     {
         super(facade, i18n, raplaLocale, logger);
         this.environment = environment;
-        this.raplaImages = raplaImages;
         this.dialogUiFactory = dialogUiFactory;
         if ( !isModifyPreferencesAllowed() ) {
         	this.extensionFactories = Collections.emptySet();
@@ -106,13 +101,7 @@ public class PublishDialog extends RaplaGUIComponent
                 continue;
             }
         	PublishExtensionFactory extensionFactory = entry;
-        	PublishExtension extension = extensionFactory.creatExtension(model, new PropertyChangeListener() {
-				
-				public void propertyChange(PropertyChangeEvent evt) 
-				{
-					updateAddress(filename, extensions);
-				}
-			});
+        	PublishExtension extension = extensionFactory.creatExtension(model, (evt)->	updateAddress(filename, extensions));
 			JTextField urlField = extension.getURLField();
 			String generator = extension.getGenerator();
 			if ( urlField != null)
@@ -145,8 +134,8 @@ public class PublishDialog extends RaplaGUIComponent
                                            ,getString("cancel")
                                        });
         dlg.setTitle(getString("publish"));
-        dlg.getAction(0).setIcon("icon.save");
-        dlg.getAction(1).setIcon("icon.cancel");
+        dlg.getAction(0).setIcon(i18n.getIcon("icon.save"));
+        dlg.getAction(1).setIcon(i18n.getIcon("icon.cancel"));
         dlg.getAction(0).setRunnable(new Runnable() {
             private static final long serialVersionUID = 1L;
 
@@ -159,7 +148,7 @@ public class PublishDialog extends RaplaGUIComponent
                 model.save( filename).finally_(()->dlg.idle()).exceptionally((ex)->dialogUiFactory.showException( ex, popupContext)).thenRun(()->dlg.close());
             }
         });
-        dlg.start(true);
+        dlg.start(true).exceptionally(ex->dialogUiFactory.showException( ex,popupContext));
     }
 
 	protected void updateAddress(final String filename,

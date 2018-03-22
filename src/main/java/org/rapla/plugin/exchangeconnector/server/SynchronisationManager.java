@@ -6,8 +6,8 @@ import microsoft.exchange.webservices.data.core.exception.http.HttpErrorExceptio
 import org.rapla.RaplaResources;
 import org.rapla.components.util.DateTools;
 import org.rapla.components.util.TimeInterval;
-import org.rapla.components.xmlbundle.CompoundI18n;
-import org.rapla.components.xmlbundle.I18nBundle;
+import org.rapla.components.i18n.CompoundI18n;
+import org.rapla.components.i18n.I18nBundle;
 import org.rapla.entities.Entity;
 import org.rapla.entities.EntityNotFoundException;
 import org.rapla.entities.User;

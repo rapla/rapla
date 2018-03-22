@@ -36,7 +36,7 @@ import com.google.gwt.user.client.ui.PopupPanel;
 import com.google.gwt.user.client.ui.Widget;
 import org.gwtbootstrap3.client.ui.html.Div;
 import org.rapla.client.PopupContext;
-import org.rapla.client.menu.gwt.ContextCreator;
+import org.rapla.client.menu.sandbox.gwt.ContextCreator;
 import org.rapla.components.calendarview.Block;
 import org.rapla.logger.Logger;
 import org.rapla.plugin.abstractcalendar.HTMLRaplaBlock;

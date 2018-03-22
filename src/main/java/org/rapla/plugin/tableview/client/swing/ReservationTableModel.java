@@ -1,6 +1,6 @@
 package org.rapla.plugin.tableview.client.swing;
 
-import org.rapla.components.xmlbundle.I18nBundle;
+import org.rapla.components.i18n.I18nBundle;
 import org.rapla.entities.domain.Reservation;
 import org.rapla.plugin.tableview.RaplaTableColumn;
 

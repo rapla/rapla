@@ -13,14 +13,11 @@
 
 package org.rapla.storage.impl.server;
 
-import io.reactivex.Observer;
 import io.reactivex.functions.Action;
-import io.reactivex.functions.Consumer;
 import org.apache.commons.collections4.BidiMap;
 import org.apache.commons.collections4.SortedBidiMap;
 import org.apache.commons.collections4.bidimap.DualHashBidiMap;
 import org.apache.commons.collections4.bidimap.DualTreeBidiMap;
-import org.jetbrains.annotations.NotNull;
 import org.rapla.RaplaResources;
 import org.rapla.components.util.Assert;
 import org.rapla.components.util.DateTools;
@@ -92,7 +89,6 @@ import org.rapla.framework.RaplaLocale;
 import org.rapla.logger.Logger;
 import org.rapla.rest.JsonParserWrapper;
 import org.rapla.scheduler.CommandScheduler;
-import org.rapla.scheduler.Observable;
 import org.rapla.scheduler.Promise;
 import org.rapla.scheduler.ResolvedPromise;
 import org.rapla.server.PromiseWait;
@@ -368,6 +364,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
             String key = RAPLA_TEMPLATE;
             type.setKey(key);
             type.setId(key);
+            type.getName().setName("en","template");
             type.setAnnotation(DynamicTypeAnnotations.KEY_CLASSIFICATION_TYPE, DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RAPLATYPE);
             addAttributeWithInternalId(type, "name", AttributeType.STRING);
             {

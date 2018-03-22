@@ -1,6 +1,5 @@
 package org.rapla.client.gwt;
 
-import io.reactivex.functions.Action;
 import org.rapla.framework.Disposable;
 import org.rapla.inject.DefaultImplementation;
 import org.rapla.inject.InjectionContext;

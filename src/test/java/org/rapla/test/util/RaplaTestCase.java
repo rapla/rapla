@@ -23,13 +23,14 @@ import org.jboss.resteasy.plugins.server.servlet.ResteasyBootstrap;
 import org.jetbrains.annotations.NotNull;
 import org.rapla.RaplaResources;
 import org.rapla.components.i18n.BundleManager;
-import org.rapla.components.i18n.internal.DefaultBundleManager;
+import org.rapla.components.i18n.internal.AbstractBundleManager;
+import org.rapla.components.i18n.server.ServerBundleManager;
 import org.rapla.entities.domain.permission.PermissionExtension;
 import org.rapla.entities.domain.permission.impl.RaplaDefaultPermissionImpl;
 import org.rapla.entities.dynamictype.internal.StandardFunctions;
 import org.rapla.entities.extensionpoints.FunctionFactory;
-import org.rapla.facade.client.ClientFacade;
 import org.rapla.facade.RaplaFacade;
+import org.rapla.facade.client.ClientFacade;
 import org.rapla.facade.internal.ClientFacadeImpl;
 import org.rapla.facade.internal.FacadeImpl;
 import org.rapla.framework.RaplaException;
@@ -283,7 +284,7 @@ public abstract class RaplaTestCase
     private static FacadeImpl _createFacadeWithFile(Logger logger, String resolvedPath, FileOperator.FileIO fileIO) throws RaplaException
     {
 
-        DefaultBundleManager bundleManager = new DefaultBundleManager();
+        BundleManager bundleManager = new ServerBundleManager();
         RaplaResources i18n = new RaplaResources(bundleManager);
 
         final DefaultScheduler scheduler = new DefaultScheduler(logger);
@@ -319,7 +320,7 @@ public abstract class RaplaTestCase
         RaplaLocale raplaLocale = new RaplaLocaleImpl(bundleManager);
         map.put(StandardFunctions.NAMESPACE,new StandardFunctions(raplaLocale));
 
-        EventTimeCalculatorResources resources = new EventTimeCalculatorResources(new DefaultBundleManager());
+        EventTimeCalculatorResources resources = new EventTimeCalculatorResources(new ServerBundleManager());
 
         EventTimeCalculatorFactory eventTimeCalculatorFactory = new EventTimeCalculatorFactory(facadeProvider, logger, resources);
         map.put(DurationFunctions.NAMESPACE,new DurationFunctions(eventTimeCalculatorFactory));
@@ -374,7 +375,7 @@ public abstract class RaplaTestCase
 
     public static RaplaFacade createFacadeWithDatasource(Logger logger, javax.sql.DataSource dataSource,String xmlFile) throws RaplaException
     {
-        DefaultBundleManager bundleManager = new DefaultBundleManager();
+        AbstractBundleManager bundleManager = new ServerBundleManager();
         RaplaResources i18n = new RaplaResources(bundleManager);
 
         final DefaultScheduler scheduler = new DefaultScheduler(logger);
@@ -412,7 +413,7 @@ public abstract class RaplaTestCase
         final String serverURL = "http://localhost:" + port + "/rapla";
 
 
-        final DefaultBundleManager bundleManager = new DefaultBundleManager();
+        final AbstractBundleManager bundleManager = new ServerBundleManager();
         final RaplaResources i18n = new RaplaResources(bundleManager);
 
         final CommandScheduler scheduler = new DefaultScheduler(logger);

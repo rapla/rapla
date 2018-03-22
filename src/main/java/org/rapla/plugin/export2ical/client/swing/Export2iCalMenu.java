@@ -5,7 +5,6 @@ import org.rapla.client.dialog.DialogUiFactoryInterface;
 import org.rapla.client.extensionpoints.ExportMenuExtension;
 import org.rapla.client.swing.RaplaGUIComponent;
 import org.rapla.client.swing.images.RaplaImages;
-import org.rapla.client.swing.internal.SwingPopupContext;
 import org.rapla.components.iolayer.IOInterface;
 import org.rapla.components.util.TimeInterval;
 import org.rapla.entities.domain.Appointment;
@@ -44,7 +43,7 @@ public class Export2iCalMenu extends RaplaGUIComponent implements ExportMenuExte
     private final DialogUiFactoryInterface dialogUiFactory;
 
 	@Inject
-	public Export2iCalMenu(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger,ICalExport exportService, Export2iCalResources i18nIcal, CalendarModel calendarModel, IOInterface ioInterface, RaplaImages raplaImages, DialogUiFactoryInterface dialogUiFactory){
+	public Export2iCalMenu(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger,ICalExport exportService, Export2iCalResources i18nIcal, CalendarModel calendarModel, IOInterface ioInterface,  DialogUiFactoryInterface dialogUiFactory){
 		super(facade, i18n, raplaLocale, logger);
 		this.exportService = exportService;
 		this.i18nIcal = i18nIcal;
@@ -52,15 +51,17 @@ public class Export2iCalMenu extends RaplaGUIComponent implements ExportMenuExte
         this.ioInterface = ioInterface;
         this.dialogUiFactory = dialogUiFactory;
 		item = new JMenuItem(i18nIcal.getString(id));
-		item.setIcon(raplaImages.getIconFromKey("icon.export"));
+		item.setIcon(RaplaImages.getIcon(i18n.getIcon("icon.export")));
 		item.addActionListener(this);
 	}
-	
+
+	@Override
 	public String getId() {
 		return id;
 	}
 
-	public JMenuItem getMenuElement() {
+	@Override
+	public JMenuItem getComponent() {
 		return item;
 	}
 	

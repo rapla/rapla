@@ -5,12 +5,14 @@ import org.rapla.ConnectInfo;
 import org.rapla.RaplaResources;
 import org.rapla.components.util.TimeInterval;
 import org.rapla.components.util.undo.CommandHistory;
-import org.rapla.entities.*;
+import org.rapla.entities.EntityNotFoundException;
+import org.rapla.entities.User;
 import org.rapla.entities.domain.Allocatable;
-import org.rapla.entities.domain.Period;
-import org.rapla.entities.internal.ModifiableTimestamp;
 import org.rapla.entities.storage.ReferenceInfo;
-import org.rapla.facade.*;
+import org.rapla.facade.ModificationEvent;
+import org.rapla.facade.ModificationListener;
+import org.rapla.facade.RaplaFacade;
+import org.rapla.facade.UpdateErrorListener;
 import org.rapla.facade.client.ClientFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.inject.DefaultImplementation;
@@ -25,7 +27,11 @@ import org.rapla.storage.dbrm.RemoteOperator;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Iterator;
+import java.util.Vector;
 
 @Singleton
 @DefaultImplementation(of = ClientFacade.class, context = InjectionContext.client)
@@ -480,5 +486,16 @@ public class ClientFacadeImpl implements ClientFacade, StorageUpdateListener {
     @Override
     public String getUsername(ReferenceInfo<User> id) throws RaplaException {
         return getOperator().getUsername( id);
+    }
+
+    @Override
+    public boolean isAdmin() {
+        final User workingUser;
+        try {
+            workingUser = getWorkingUser();
+        } catch (EntityNotFoundException e) {
+            return false;
+        }
+        return workingUser.isAdmin();
     }
 }

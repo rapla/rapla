@@ -15,9 +15,8 @@ package org.rapla.client.swing.toolkit;
 import org.rapla.RaplaResources;
 import org.rapla.client.dialog.DialogInterface;
 import org.rapla.client.dialog.DialogUiFactoryInterface;
-import org.rapla.client.swing.images.RaplaImages;
 import org.rapla.client.swing.internal.SwingPopupContext;
-import org.rapla.components.xmlbundle.I18nBundle;
+import org.rapla.components.i18n.I18nBundle;
 import org.rapla.framework.RaplaException;
 import org.rapla.logger.Logger;
 
@@ -35,18 +34,15 @@ import java.awt.event.ActionListener;
 import java.lang.reflect.Method;
 
 final public class ErrorDialog {
-    RaplaImages images;
     private final DialogUiFactoryInterface dialogUiFactory;
     private final RaplaResources i18n;
     private final Logger logger;
 
-
     @Inject
-    public ErrorDialog(Logger logger, RaplaResources i18n, RaplaImages raplaImages, DialogUiFactoryInterface dialogUiFactory)  {
+    public ErrorDialog(Logger logger, RaplaResources i18n, DialogUiFactoryInterface dialogUiFactory)  {
         this.logger = logger;
         this.i18n = i18n;
         this.dialogUiFactory = dialogUiFactory;
-        images = raplaImages;
     }
     
     protected I18nBundle getI18n()
@@ -188,7 +184,7 @@ final public class ErrorDialog {
             final SwingPopupContext popupContext = new SwingPopupContext(owner, null);
             DialogInterface dlg = dialogUiFactory.createContentDialog(popupContext, component, new String[] {getI18n().getString("ok")});
             dlg.setTitle(createTitle("error"));
-            dlg.setIcon("icon.error");
+            dlg.setIcon(i18n.getIcon("icon.error"));
             dlg.start(true);
         } catch (Exception ex) {
             getLogger().error( e.getMessage(), e);
@@ -200,7 +196,7 @@ final public class ErrorDialog {
         try {
             final SwingPopupContext popupContext = new SwingPopupContext(owner, null);
             DialogInterface dlg = dialogUiFactory.createInfoDialog(popupContext, title,message);
-            dlg.setIcon("icon.error");
+            dlg.setIcon(i18n.getIcon("icon.error"));
             dlg.start(true);
         } catch (Exception ex2) {
             getLogger().error(ex2.getMessage());
@@ -211,7 +207,7 @@ final public class ErrorDialog {
         try {
             final SwingPopupContext popupContext = new SwingPopupContext(owner, null);
             DialogInterface dlg = dialogUiFactory.createInfoDialog(popupContext, title,message);
-            dlg.setIcon("icon.warning");
+            dlg.setIcon(i18n.getIcon("icon.warning"));
             dlg.start(true);
         } catch (Exception ex2) {
             getLogger().error(ex2.getMessage());

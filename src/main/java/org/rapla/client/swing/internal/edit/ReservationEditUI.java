@@ -14,12 +14,11 @@ package org.rapla.client.swing.internal.edit;
 
 import org.rapla.RaplaResources;
 import org.rapla.client.dialog.DialogUiFactoryInterface;
+import org.rapla.client.dialog.InfoFactory;
+import org.rapla.client.menu.MenuFactory;
 import org.rapla.client.swing.EditComponent;
 import org.rapla.client.swing.EditField;
-import org.rapla.client.dialog.InfoFactory;
-import org.rapla.client.swing.MenuFactory;
 import org.rapla.client.swing.TreeFactory;
-import org.rapla.client.swing.images.RaplaImages;
 import org.rapla.client.swing.internal.FilterEditButton.FilterEditButtonFactory;
 import org.rapla.client.swing.internal.MultiCalendarPresenter;
 import org.rapla.client.swing.internal.edit.fields.BooleanField.BooleanFieldFactory;
@@ -36,8 +35,8 @@ import org.rapla.entities.domain.AppointmentFormater;
 import org.rapla.entities.domain.Permission;
 import org.rapla.entities.domain.Reservation;
 import org.rapla.facade.CalendarSelectionModel;
-import org.rapla.facade.client.ClientFacade;
 import org.rapla.facade.RaplaFacade;
+import org.rapla.facade.client.ClientFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaInitializationException;
 import org.rapla.framework.RaplaLocale;
@@ -67,7 +66,7 @@ public class ReservationEditUI  extends AbstractEditUI<Reservation>  {
 
     @Inject
     public ReservationEditUI(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, TreeFactory treeFactory, CalendarSelectionModel originalModel, AppointmentFormater appointmentFormater,
-            InfoFactory infoFactory, RaplaImages raplaImages, MenuFactory menuFactory,
+            InfoFactory infoFactory, MenuFactory menuFactory,
             DialogUiFactoryInterface dialogUiFactory, ClassificationFieldFactory classificationFieldFactory, PermissionListFieldFactory permissionListFieldFactory,
             DateFieldFactory dateFieldFactory, Provider<MultiCalendarPresenter> multiCalendarViewFactory, BooleanFieldFactory booleanFieldFactory, FilterEditButtonFactory filterEditButtonFactory) throws RaplaInitializationException
     {
@@ -84,7 +83,7 @@ public class ReservationEditUI  extends AbstractEditUI<Reservation>  {
         } 
 
         allocatableSelection = new AllocatableSelection(facade, i18n, raplaLocale, logger, false, new CommandHistory(), treeFactory, originalModel,
-                appointmentFormater, menuFactory, infoFactory, raplaImages, dialogUiFactory, dateFieldFactory, multiCalendarViewFactory,
+                appointmentFormater, menuFactory, infoFactory, dialogUiFactory, dateFieldFactory, multiCalendarViewFactory,
                 booleanFieldFactory, filterEditButtonFactory)
         {
             public boolean isRestrictionVisible() {return false;}

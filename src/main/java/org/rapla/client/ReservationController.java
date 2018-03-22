@@ -4,7 +4,6 @@ import jsinterop.annotations.JsType;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.AppointmentBlock;
 import org.rapla.entities.domain.Reservation;
-import org.rapla.framework.RaplaException;
 import org.rapla.scheduler.Promise;
 
 import java.util.Collection;

@@ -18,7 +18,7 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
-import org.rapla.components.i18n.internal.DefaultBundleManager;
+import org.rapla.components.i18n.client.swing.SwingBundleManager;
 import org.rapla.components.util.DateTools;
 import org.rapla.components.util.SerializableDateTimeFormat;
 import org.rapla.entities.DependencyException;
@@ -45,9 +45,9 @@ import org.rapla.entities.dynamictype.DynamicTypeAnnotations;
 import org.rapla.entities.dynamictype.internal.ClassificationFilterImpl;
 import org.rapla.entities.storage.ReferenceInfo;
 import org.rapla.facade.CalendarSelectionModel;
-import org.rapla.facade.client.ClientFacade;
 import org.rapla.facade.Conflict;
 import org.rapla.facade.RaplaFacade;
+import org.rapla.facade.client.ClientFacade;
 import org.rapla.facade.internal.CalendarModelImpl;
 import org.rapla.facade.internal.FacadeImpl;
 import org.rapla.framework.RaplaException;
@@ -646,7 +646,7 @@ public class ClientFacadeTest  {
             final CalendarModelConfigurationImpl configurationWithBothAllocatables;
             StorageOperator operator = facade.getOperator();
             Logger logger = ((FacadeImpl) facade).getLogger();
-            final Locale locale = new RaplaLocaleImpl(new DefaultBundleManager()).getLocale();
+            final Locale locale = new RaplaLocaleImpl(new SwingBundleManager(logger)).getLocale();
             {
                 final CalendarModelImpl calendarModelImpl = new CalendarModelImpl(  locale,user,operator,logger);
                 Collection<Allocatable> markedAllocatables = new ArrayList<>();

@@ -19,8 +19,8 @@ import org.rapla.client.dialog.DialogInterface;
 import org.rapla.client.dialog.DialogUiFactoryInterface;
 import org.rapla.client.swing.internal.SwingPopupContext;
 import org.rapla.client.swing.toolkit.HTMLView;
-import org.rapla.components.xmlbundle.LocaleChangeEvent;
-import org.rapla.components.xmlbundle.LocaleChangeListener;
+import org.rapla.components.i18n.LocaleChangeEvent;
+import org.rapla.components.i18n.LocaleChangeListener;
 import org.rapla.framework.RaplaInitializationException;
 
 import javax.inject.Inject;
@@ -85,16 +85,18 @@ final public class LicenseInfoUI
         final SwingPopupContext popupContext = new SwingPopupContext(owner, null);
         try {
             LicenseUI license =  licenseUiProvider.get();
-            DialogInterface dialog = dialogUiFactory.createContentDialog(popupContext, license.getComponent(), new String[] {i18n.getString("ok")} );
+            final JComponent component = license.getComponent();
+            component.setSize(600,400);
+
+            DialogInterface dialog = dialogUiFactory.createContentDialog(popupContext, component, new String[] {i18n.getString("ok")} );
             dialog.setTitle(systemInfoI18n.getString("licensedialog.title"));
-            dialog.setSize(600,400);
             if (link.equals("warranty")) {
                 dialog.start(true);
-                license.getComponent().revalidate();
+                component.revalidate();
                 license.showBottom();
             } else {
                 dialog.start(true);
-                license.getComponent().revalidate();
+                component.revalidate();
                 license.showTop();
             }
         } catch (Exception ex) {

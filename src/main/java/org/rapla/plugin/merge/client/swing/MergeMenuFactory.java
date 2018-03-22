@@ -1,5 +1,6 @@
 package org.rapla.plugin.merge.client.swing;
 
+import io.reactivex.functions.Consumer;
 import org.rapla.RaplaResources;
 import org.rapla.client.EditApplicationEventContext;
 import org.rapla.client.PopupContext;
@@ -8,10 +9,9 @@ import org.rapla.client.event.ApplicationEvent.ApplicationEventContext;
 import org.rapla.client.event.ApplicationEventBus;
 import org.rapla.client.extensionpoints.ObjectMenuFactory;
 import org.rapla.client.internal.edit.EditTaskPresenter;
-import org.rapla.client.swing.SwingMenuContext;
-import org.rapla.client.swing.images.RaplaImages;
-import org.rapla.client.swing.internal.SwingPopupContext;
-import org.rapla.client.swing.toolkit.DialogUI.DialogUiFactory;
+import org.rapla.client.menu.IdentifiableMenuEntry;
+import org.rapla.client.menu.MenuItemFactory;
+import org.rapla.client.menu.SelectionMenuContext;
 import org.rapla.client.swing.toolkit.RaplaMenuItem;
 import org.rapla.entities.Entity;
 import org.rapla.entities.RaplaObject;
@@ -25,29 +25,23 @@ import org.rapla.storage.PermissionController;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import javax.swing.ImageIcon;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
 
 @Singleton @Extension(provides = ObjectMenuFactory.class, id = "merge") public class MergeMenuFactory implements ObjectMenuFactory
 {
-    private final RaplaImages raplaImages;
-    private final RaplaResources raplaResources;
-    private final DialogUiFactory dialogUiFactory;
+    private final RaplaResources i18n;
+    private final MenuItemFactory menuItemFactory;
     private final ApplicationEventBus eventBus;
-    //    private final MergeDialogFactory mergeDialogFactory;
-    //    private final EditController editController;
     private final PermissionController permissionController;
     private final User user;
 
-    @Inject public MergeMenuFactory(RaplaResources raplaResources, RaplaImages raplaImages, ClientFacade facade, DialogUiFactory dialogUiFactory,
-            ApplicationEventBus eventBus) throws RaplaInitializationException
+    @Inject public MergeMenuFactory(RaplaResources i18n, MenuItemFactory menuItemFactory, ClientFacade facade,
+                                    ApplicationEventBus eventBus) throws RaplaInitializationException
     {
-        this.raplaResources = raplaResources;
-        this.raplaImages = raplaImages;
+        this.i18n = i18n;
+        this.menuItemFactory = menuItemFactory;
         try
         {
             user = facade.getUser();
@@ -57,76 +51,77 @@ import java.util.Iterator;
             throw new RaplaInitializationException(e.getMessage(), e);
         }
         permissionController = facade.getRaplaFacade().getPermissionController();
-        this.dialogUiFactory = dialogUiFactory;
         this.eventBus = eventBus;
     }
 
-    @Override public RaplaMenuItem[] create(final SwingMenuContext menuContext, RaplaObject focusedObject)
+    @Override public IdentifiableMenuEntry[] create(final SelectionMenuContext menuContext, RaplaObject focusedObject)
     {
         final Collection<?> selectedObjects = menuContext.getSelectedObjects();
         if (selectedObjects != null && selectedObjects.size() <= 1)
         {
-            return new RaplaMenuItem[0];
+            return new IdentifiableMenuEntry[0];
+        }
+        if ( !canAdmin(selectedObjects))
+        {
+            return new IdentifiableMenuEntry[0];
         }
         Iterator<?> it = selectedObjects.iterator();
         Object last = it.next();
-        if (!(last instanceof Allocatable) || !permissionController.canAdmin((Allocatable) last, user))
-        {
-            return new RaplaMenuItem[0];
-        }
         while (it.hasNext())
         {
             final Object next = it.next();
             if (!next.getClass().equals(last.getClass()))
             {
-                return new RaplaMenuItem[0];
+                return new IdentifiableMenuEntry[0];
             }
             if (next instanceof Allocatable)
             {
                 if (!((Allocatable) next).getClassification().getType().equals(((Allocatable) last).getClassification().getType()) || !permissionController
                         .canAdmin((Allocatable) next, user))
                 {
-                    return new RaplaMenuItem[0];
+                    return new IdentifiableMenuEntry[0];
                 }
             }
             else
             {
-                return new RaplaMenuItem[0];
+                return new IdentifiableMenuEntry[0];
             }
         }
-        RaplaMenuItem[] menuItem = new RaplaMenuItem[1];
+        IdentifiableMenuEntry[] menuItem = new IdentifiableMenuEntry[1];
         menuItem[0] = new RaplaMenuItem("merge");
-        final String title = raplaResources.getString("merge");
-        menuItem[0].setText(title);
-        final ImageIcon icon = raplaImages.getIconFromKey("icon.merge");
-        menuItem[0].setIcon(icon);
-        menuItem[0].addActionListener(new ActionListener()
+        Consumer<PopupContext> action = (popupContext)
+                ->
         {
-            public void actionPerformed(ActionEvent e)
+            StringBuilder ids = new StringBuilder();
+            boolean first = true;
+            for (Object object : selectedObjects)
             {
-                final RaplaMenuItem e1 = (RaplaMenuItem) e.getSource();
-                PopupContext popupContext = new SwingPopupContext(e1.getComponent(), null);
-                StringBuilder ids = new StringBuilder();
-                boolean first = true;
-                for (Object object : selectedObjects)
+                if (first)
                 {
-                    if (first)
-                    {
-                        first = false;
-                    }
-                    else
-                    {
-                        ids.append(",");
-                    }
-                    ids.append(((Entity) object).getId());
+                    first = false;
                 }
-                final String info = ids.toString();
-                ApplicationEventContext context = new EditApplicationEventContext(new ArrayList( selectedObjects));
-                eventBus.publish(new ApplicationEvent(EditTaskPresenter.MERGE_RESOURCES_ID, info, popupContext, context));
+                else
+                {
+                    ids.append(",");
+                }
+                ids.append(((Entity) object).getId());
             }
-        });
-
+            final String info = ids.toString();
+            ApplicationEventContext context = new EditApplicationEventContext(new ArrayList( selectedObjects));
+            eventBus.publish(new ApplicationEvent(EditTaskPresenter.MERGE_RESOURCES_ID, info, popupContext, context));
+        };
+        menuItemFactory.createMenuItem(i18n.getString("merge"),i18n.getIcon("icon.merge"), action);
         return menuItem;
+    }
+
+    private boolean canAdmin(Collection<?> selectedObjects) {
+        for ( Object last:selectedObjects) {
+            if (!(last instanceof Allocatable) || !permissionController.canAdmin((Allocatable) last, user))
+            {
+                return false;
+            }
+        }
+        return true;
     }
 
 }

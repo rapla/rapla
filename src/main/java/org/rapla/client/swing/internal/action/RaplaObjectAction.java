@@ -14,9 +14,10 @@ package org.rapla.client.swing.internal.action;
 
 import org.rapla.RaplaResources;
 import org.rapla.client.PopupContext;
+import org.rapla.client.menu.MenuInterface;
+import org.rapla.client.menu.MenuItemFactory;
 import org.rapla.client.menu.RaplaObjectActions;
 import org.rapla.client.swing.RaplaAction;
-import org.rapla.client.swing.images.RaplaImages;
 import org.rapla.entities.Entity;
 import org.rapla.entities.RaplaObject;
 import org.rapla.entities.dynamictype.DynamicType;
@@ -32,21 +33,21 @@ public class RaplaObjectAction extends RaplaAction {
     RaplaObjectActions actions;
 	// edit selection (several
 	// editable entities)
+    private RaplaResources i18n;
 
-    private final RaplaImages raplaImages;
 
-    public RaplaObjectAction(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, PopupContext popupContext, RaplaImages raplaImages, Provider<RaplaObjectActions> actions)  {
+    public RaplaObjectAction(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, PopupContext popupContext,  Provider<RaplaObjectActions> actions)  {
         super(facade, i18n, raplaLocale, logger);
+        this.i18n = i18n;
         this.actions = actions.get();
         this.actions.setPopupContext( popupContext);
-        this.raplaImages = raplaImages;
     }
     
 
     public RaplaObjectAction setNew(Class<? extends RaplaObject> raplaType) {
         actions.setNew(raplaType);
         putValue(NAME, getString("new"));
-        putValue(SMALL_ICON, raplaImages.getIconFromKey("icon.new"));
+        setIcon( i18n.getIcon("icon.new"));
         update();
         return this;
     }
@@ -63,7 +64,7 @@ public class RaplaObjectAction extends RaplaAction {
     public RaplaObjectAction setDelete(Entity<?> object) {
         actions.setDelete(object);
         putValue(NAME, getString("delete"));
-        putValue(SMALL_ICON, raplaImages.getIconFromKey("icon.delete"));
+        setIcon(i18n.getIcon("icon.delete"));
         changeObject(object);
         return this;
     }
@@ -71,7 +72,7 @@ public class RaplaObjectAction extends RaplaAction {
     public RaplaObjectAction setDeleteSelection(Collection<Entity<?>> selection) {
         actions.setDeleteSelection( selection);
         putValue(NAME, getString("delete_selection"));
-        putValue(SMALL_ICON, raplaImages.getIconFromKey("icon.delete"));
+        setIcon( i18n.getIcon("icon.delete"));
         update();
         return this;
     }
@@ -79,7 +80,7 @@ public class RaplaObjectAction extends RaplaAction {
     public RaplaObjectAction setView(Entity<?> object) {
         actions.setView(object);
         putValue(NAME, getString("view"));
-        putValue(SMALL_ICON, raplaImages.getIconFromKey("icon.help"));
+        setIcon(i18n.getIcon("icon.help"));
         changeObject(object);
         return this;
     }
@@ -87,7 +88,7 @@ public class RaplaObjectAction extends RaplaAction {
     public RaplaObjectAction setEdit(Entity<?> object) {
         actions.setEdit( object );
         putValue(NAME, getString("edit"));
-        putValue(SMALL_ICON, raplaImages.getIconFromKey("icon.edit"));
+        setIcon(i18n.getIcon("icon.edit"));
         changeObject(object);
         return this;
     }
@@ -97,7 +98,7 @@ public class RaplaObjectAction extends RaplaAction {
  	public RaplaObjectAction setEditSelection(Collection<Entity<?>> selection) {
         actions.setEditSelection( selection);
  		putValue(NAME, getString("edit"));
- 		putValue(SMALL_ICON, raplaImages.getIconFromKey("icon.edit"));
+ 		setIcon(i18n.getIcon("icon.edit"));
         update();
  		return this;
  	}
@@ -106,13 +107,17 @@ public class RaplaObjectAction extends RaplaAction {
         actions.changeObject( object);
         if (actions.isDelete()) {
             if (object == null)
-                putValue(NAME, getString("delete"));
+                putValue(NAME, i18n.getString("delete"));
             else
-                putValue(NAME, getI18n().format("delete.format",getName(object)));
+                putValue(NAME, i18n.format("delete.format",getName(object)));
         }
         update();
     }
 
+    @Override
+    public RaplaObjectAction addTo(MenuInterface menu, MenuItemFactory menuItemFactory) {
+        return (RaplaObjectAction) super.addTo(menu, menuItemFactory);
+    }
 
     protected void update() {
         setEnabled( actions.isEnabled());

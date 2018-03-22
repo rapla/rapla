@@ -13,7 +13,6 @@
 
 package org.rapla.storage.dbrm;
 
-import org.rapla.framework.RaplaException;
 import org.rapla.scheduler.Promise;
 
 public interface RestartServer

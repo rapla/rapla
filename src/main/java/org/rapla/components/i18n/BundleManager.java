@@ -10,6 +10,8 @@ public interface BundleManager {
 
     String getString(String packageId,String key);
 
+    I18nIcon getIcon(String packageId,String key);
+
     Collection<String> getKeys(String packageId);
 
     I18nLocaleFormats getFormats();
@@ -17,4 +19,6 @@ public interface BundleManager {
     Collection<String> getAvailableLanguages();
 
     void setLanguage(String language);
+
+
 }

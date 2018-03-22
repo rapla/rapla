@@ -10,7 +10,6 @@ import org.rapla.storage.dbrm.WrongRaplaVersionException;
 public interface  DialogUiFactoryInterface
 {
 
-    /** creates a Dialog with the native content view (e.g. HTML Object) */
     DialogInterface createContentDialog(PopupContext popupContext, Object content, String[] options);
 
     DialogInterface createTextDialog(PopupContext popupContext, String title, String text, String[] options);

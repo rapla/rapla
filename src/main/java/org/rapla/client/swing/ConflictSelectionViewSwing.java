@@ -32,7 +32,12 @@ import org.rapla.inject.InjectionContext;
 import org.rapla.logger.Logger;
 
 import javax.inject.Inject;
-import javax.swing.*;
+import javax.swing.BorderFactory;
+import javax.swing.JComponent;
+import javax.swing.JLabel;
+import javax.swing.JPanel;
+import javax.swing.JTree;
+import javax.swing.SwingUtilities;
 import javax.swing.event.TreeSelectionEvent;
 import javax.swing.event.TreeSelectionListener;
 import javax.swing.tree.TreeModel;
@@ -92,7 +97,7 @@ public class ConflictSelectionViewSwing implements ConflictSelectionView<Compone
     @Override
     public void showMenuPopup(PopupContext context, boolean enabledButtonEnabled, boolean disableButtonEnabled)
     {
-        RaplaPopupMenu menu = new RaplaPopupMenu();
+        RaplaPopupMenu menu = new RaplaPopupMenu(context);
         RaplaMenuItem disable = new RaplaMenuItem("disable");
         disable.setText(i18n.getString("disable_conflicts"));
         disable.setEnabled( disableButtonEnabled );

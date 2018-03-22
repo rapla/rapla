@@ -6,12 +6,12 @@ import org.rapla.client.PopupContext;
 import org.rapla.client.RaplaWidget;
 import org.rapla.client.dialog.DialogUiFactoryInterface;
 import org.rapla.client.internal.edit.EditTaskPresenter;
+import org.rapla.client.internal.edit.EditTaskViewFactory;
 import org.rapla.client.swing.EditComponent;
 import org.rapla.client.swing.internal.edit.AllocatableMergeEditUI;
 import org.rapla.client.swing.toolkit.RaplaButton;
 import org.rapla.entities.Entity;
 import org.rapla.entities.IllegalAnnotationException;
-import org.rapla.facade.ModificationEvent;
 import org.rapla.framework.RaplaException;
 import org.rapla.inject.DefaultImplementation;
 import org.rapla.inject.InjectionContext;
@@ -20,14 +20,15 @@ import javax.inject.Inject;
 import javax.inject.Provider;
 import javax.swing.JComponent;
 import javax.swing.JPanel;
-import java.awt.*;
+import java.awt.BorderLayout;
+import java.awt.Component;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 
-@DefaultImplementation(of = EditTaskPresenter.EditTaskViewFactory.class, context = InjectionContext.swing)
-public class EditTaskViewSwing implements EditTaskPresenter.EditTaskViewFactory<Component>
+@DefaultImplementation(of = EditTaskViewFactory.class, context = InjectionContext.swing)
+public class EditTaskViewSwing implements EditTaskViewFactory<Component>
 {
     protected final Map<String, Provider<EditComponent>> editUiProvider;
     private final DialogUiFactoryInterface dialogUiFactory;

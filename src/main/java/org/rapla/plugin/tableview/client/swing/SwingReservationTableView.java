@@ -1,20 +1,22 @@
 package org.rapla.plugin.tableview.client.swing;
 
+import io.reactivex.functions.Consumer;
 import org.rapla.RaplaResources;
 import org.rapla.client.EditController;
 import org.rapla.client.PopupContext;
 import org.rapla.client.ReservationController;
 import org.rapla.client.dialog.DialogUiFactoryInterface;
 import org.rapla.client.dialog.InfoFactory;
-import org.rapla.client.swing.MenuFactory;
+import org.rapla.client.menu.IdentifiableMenuEntry;
+import org.rapla.client.menu.MenuFactory;
+import org.rapla.client.menu.MenuInterface;
+import org.rapla.client.menu.MenuItemFactory;
+import org.rapla.client.menu.SelectionMenuContext;
 import org.rapla.client.swing.RaplaGUIComponent;
 import org.rapla.client.swing.SwingCalendarView;
-import org.rapla.client.swing.SwingMenuContext;
 import org.rapla.client.swing.VisibleTimeInterval;
-import org.rapla.client.swing.images.RaplaImages;
 import org.rapla.client.swing.internal.RaplaMenuBarContainer;
 import org.rapla.client.swing.internal.SwingPopupContext;
-import org.rapla.client.swing.toolkit.MenuInterface;
 import org.rapla.client.swing.toolkit.RaplaMenu;
 import org.rapla.client.swing.toolkit.RaplaPopupMenu;
 import org.rapla.components.calendar.DateChangeEvent;
@@ -43,7 +45,6 @@ import org.rapla.storage.PermissionController;
 
 import javax.swing.BoxLayout;
 import javax.swing.JComponent;
-import javax.swing.JMenuItem;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTable;
@@ -54,6 +55,7 @@ import javax.swing.event.TableModelListener;
 import javax.swing.table.TableColumn;
 import javax.swing.table.TableModel;
 import java.awt.BorderLayout;
+import java.awt.Component;
 import java.awt.Dimension;
 import java.awt.Graphics;
 import java.awt.Point;
@@ -92,11 +94,11 @@ public class SwingReservationTableView extends RaplaGUIComponent implements Swin
     CopyListener cutListener = new CopyListener();
     
     private final MenuFactory menuFactory;
+    private final MenuItemFactory menuItemFactory;
 
     private final EditController editController;
     private final ReservationController reservationController;
-
-    private final RaplaImages raplaImages;
+    private final RaplaResources i18n;
 
     private final DialogUiFactoryInterface dialogUiFactory;
 
@@ -107,17 +109,18 @@ public class SwingReservationTableView extends RaplaGUIComponent implements Swin
     private final RaplaMenuBarContainer menuBar;
 
     public SwingReservationTableView(RaplaMenuBarContainer menuBar, ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger,
-            final CalendarModel model, final Set<ReservationSummaryExtension> reservationSummaryExtensions, final boolean editable, boolean printing,
-            TableConfig.TableConfigLoader tableConfigLoader, MenuFactory menuFactory, EditController editController, ReservationController reservationController,
-            final InfoFactory infoFactory, RaplaImages raplaImages, IntervalChooserPanel dateChooser, DialogUiFactoryInterface dialogUiFactory, IOInterface ioInterface) throws RaplaException
+                                     final CalendarModel model, final Set<ReservationSummaryExtension> reservationSummaryExtensions, final boolean editable, boolean printing,
+                                     TableConfig.TableConfigLoader tableConfigLoader, MenuFactory menuFactory, EditController editController, ReservationController reservationController,
+                                     final InfoFactory infoFactory, IntervalChooserPanel dateChooser, MenuItemFactory menuItemFactory, DialogUiFactoryInterface dialogUiFactory, IOInterface ioInterface) throws RaplaException
     {
         super(facade, i18n, raplaLocale, logger);
+        this.i18n = i18n;
         this.menuBar = menuBar;
         this.tableConfigLoader = tableConfigLoader;
         this.menuFactory = menuFactory;
         this.editController = editController;
         this.reservationController = reservationController;
-        this.raplaImages = raplaImages;
+        this.menuItemFactory = menuItemFactory;
         this.dialogUiFactory = dialogUiFactory;
         this.permissionController = facade.getRaplaFacade().getPermissionController();
         this.ioInterface = ioInterface;
@@ -208,8 +211,14 @@ public class SwingReservationTableView extends RaplaGUIComponent implements Swin
     }
 
     
-    private final class CopyListener implements ActionListener {
+    private final class CopyListener implements ActionListener, Consumer<PopupContext> {
         boolean cut;
+
+        @Override
+        public void accept(PopupContext context) {
+            actionPerformed( new ActionEvent(table,ActionEvent.ACTION_PERFORMED,"copy"));
+        }
+
         public void actionPerformed(ActionEvent evt) 
 		{
 	        List<Reservation> selectedEvents = getSelectedEvents();
@@ -349,7 +358,8 @@ public class SwingReservationTableView extends RaplaGUIComponent implements Swin
         if ( selectedEvents.size() == 1) {
             focusedObject = selectedEvents.get( 0);
         }
-        SwingMenuContext menuContext = new SwingMenuContext(  focusedObject, new SwingPopupContext(getComponent(),p), null, p);
+        final SwingPopupContext popupContext = new SwingPopupContext(getComponent(), p);
+        SelectionMenuContext menuContext = new SelectionMenuContext(  focusedObject, popupContext);
         menuContext.setSelectedObjects( selectedEvents);
 
         // add the new reservations wizards
@@ -358,20 +368,13 @@ public class SwingReservationTableView extends RaplaGUIComponent implements Swin
         // add the edit methods
         if ( selectedEvents.size() != 0) {
             {
-                final JMenuItem copyItem = new JMenuItem();
-            	copyItem.addActionListener( cutListener);
-            	copyItem.setText(getString("cut"));
-            	copyItem.setIcon(  raplaImages.getIconFromKey("icon.cut"));
-            	editMenu.insertAfterId(copyItem, "EDIT_BEGIN");
+                final IdentifiableMenuEntry menuItem = menuItemFactory.createMenuItem(i18n.getString("cut"), i18n.getIcon("icon.cut"), cutListener);
+                editMenu.insertAfterId(menuItem, "EDIT_BEGIN");
             }
             {
-                final JMenuItem copyItem = new JMenuItem();
-                copyItem.addActionListener( copyListener);
-                copyItem.setText(getString("copy"));
-                copyItem.setIcon(  raplaImages.getIconFromKey("icon.copy"));
-                editMenu.insertAfterId(copyItem, "EDIT_BEGIN");
+                final IdentifiableMenuEntry menuItem = menuItemFactory.createMenuItem(i18n.getString("copy"), i18n.getIcon("icon.copy"), copyListener);
+                editMenu.insertAfterId(menuItem, "EDIT_BEGIN");
             }
-
             menuFactory.addObjectMenu( editMenu, menuContext, "EDIT_BEGIN");
         } 
 
@@ -393,8 +396,10 @@ public class SwingReservationTableView extends RaplaGUIComponent implements Swin
         void showPopup(MouseEvent me) {
         	 try
              {
-	        	RaplaPopupMenu menu= new RaplaPopupMenu();
-	            Point p = new Point(me.getX(), me.getY());
+                 Point p = new Point(me.getX(), me.getY());
+                 PopupContext popupContext = new SwingPopupContext((Component) me.getSource(), p);
+                 RaplaPopupMenu menu= new RaplaPopupMenu(popupContext);
+
 	            RaplaMenu newMenu = new RaplaMenu("EDIT_BEGIN");
 	            newMenu.setText(getString("new"));
 	            menu.add(newMenu);

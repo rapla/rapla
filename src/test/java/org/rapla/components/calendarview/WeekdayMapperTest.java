@@ -18,7 +18,8 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 import org.rapla.components.i18n.BundleManager;
-import org.rapla.components.i18n.internal.DefaultBundleManager;
+import org.rapla.components.i18n.internal.AbstractBundleManager;
+import org.rapla.components.i18n.server.ServerBundleManager;
 import org.rapla.components.util.DateTools;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.internal.RaplaLocaleImpl;
@@ -43,7 +44,7 @@ public class WeekdayMapperTest   {
 
     @Test
     public void testLocaleGermany() {
-        BundleManager bundleManager = new DefaultBundleManager();
+        BundleManager bundleManager = new ServerBundleManager();
         RaplaLocale raplaLocale =new RaplaLocaleImpl(bundleManager);
         WeekdayMapper mapper = new WeekdayMapper(raplaLocale, DateTools.MONDAY);
         Assert.assertEquals(6, mapper.indexForDay(Calendar.SUNDAY));
@@ -55,7 +56,7 @@ public class WeekdayMapperTest   {
 
     @Test
     public void testLocaleUS() {
-        DefaultBundleManager bundleManager = new DefaultBundleManager();
+        AbstractBundleManager bundleManager = new ServerBundleManager();
         bundleManager.setLanguage("en");
         bundleManager.setCountry("US");
         RaplaLocale raplaLocale =new RaplaLocaleImpl(bundleManager);

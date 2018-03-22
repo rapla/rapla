@@ -25,7 +25,6 @@ import org.rapla.entities.configuration.RaplaMap;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.Appointment;
 import org.rapla.entities.domain.Period;
-import org.rapla.entities.domain.RepeatingType;
 import org.rapla.entities.domain.Reservation;
 import org.rapla.entities.dynamictype.Attribute;
 import org.rapla.entities.dynamictype.AttributeType;
@@ -39,7 +38,10 @@ import org.rapla.scheduler.Promise;
 import org.rapla.storage.PermissionController;
 import org.rapla.storage.StorageOperator;
 
-import java.util.*;
+import java.util.Collection;
+import java.util.Date;
+import java.util.Map;
+import java.util.Set;
 
 /** A collection of all module-interfaces
 */
@@ -311,6 +313,8 @@ public interface RaplaFacade
     /** returns an Interface for accessing the periods
      * @throws RaplaException */
     PeriodModel getPeriodModelFor(String key) throws RaplaException;
+
+    Promise<Void> moveCategory(Category categoryToMove, Category targetCategory);
 
     enum ChangeState
     {

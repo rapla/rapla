@@ -16,8 +16,6 @@ import org.rapla.client.gwt.view.NavigatorView;
 import org.rapla.client.gwt.view.NavigatorView.NavigatorAction;
 import org.rapla.components.i18n.BundleManager;
 import org.rapla.entities.domain.Allocatable;
-import org.rapla.inject.DefaultImplementation;
-import org.rapla.inject.InjectionContext;
 
 import javax.inject.Inject;
 import java.util.Collection;

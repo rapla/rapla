@@ -6,7 +6,9 @@ import org.rapla.inject.DefaultImplementation;
 import org.rapla.inject.InjectionContext;
 
 import javax.inject.Inject;
-import javax.swing.*;
+import javax.swing.BoxLayout;
+import javax.swing.JLabel;
+import javax.swing.JPanel;
 
 @DefaultImplementation(of=CheckView.class,context = InjectionContext.swing)
 public class DefaultCheckViewSwing implements CheckView, RaplaWidget

@@ -3,15 +3,14 @@ package org.rapla.client.swing.internal;
 import org.rapla.RaplaResources;
 import org.rapla.client.PopupContext;
 import org.rapla.client.dialog.DialogUiFactoryInterface;
+import org.rapla.client.dialog.swing.DialogUI;
 import org.rapla.client.swing.RaplaGUIComponent;
 import org.rapla.client.swing.TreeFactory;
-import org.rapla.client.swing.images.RaplaImages;
 import org.rapla.client.swing.internal.edit.ClassifiableFilterEdit;
 import org.rapla.client.swing.internal.edit.fields.BooleanField.BooleanFieldFactory;
 import org.rapla.client.swing.internal.edit.fields.DateField.DateFieldFactory;
 import org.rapla.client.swing.internal.edit.fields.LongField.LongFieldFactory;
 import org.rapla.client.swing.internal.edit.fields.TextField.TextFieldFactory;
-import org.rapla.client.swing.toolkit.DialogUI;
 import org.rapla.components.calendar.RaplaArrowButton;
 import org.rapla.facade.ClassifiableFilter;
 import org.rapla.facade.client.ClientFacade;
@@ -37,7 +36,7 @@ public class FilterEditButton extends RaplaGUIComponent
     ClassifiableFilterEdit ui;
         
     private FilterEditButton(final ClientFacade facade, final RaplaResources i18n, final RaplaLocale raplaLocale, final Logger logger,
-            final TreeFactory treeFactory, final ClassifiableFilter filter, final ChangeListener listener, final RaplaImages raplaImages,
+            final TreeFactory treeFactory, final ClassifiableFilter filter, final ChangeListener listener,
             final DateFieldFactory dateFieldFactory, final BooleanFieldFactory booleanFieldFactory, final DialogUiFactoryInterface dialogUiFactory,
             final boolean isResourceSelection, final TextFieldFactory textFieldFactory, final LongFieldFactory longFieldFactory)
     {
@@ -62,7 +61,7 @@ public class FilterEditButton extends RaplaGUIComponent
                     {
                         ui.removeChangeListener( listener);
                     }
-                    ui = new ClassifiableFilterEdit( facade, i18n, raplaLocale, logger, treeFactory, isResourceSelection, raplaImages, dateFieldFactory, dialogUiFactory, booleanFieldFactory, textFieldFactory, longFieldFactory);
+                    ui = new ClassifiableFilterEdit( facade, i18n, raplaLocale, logger, treeFactory, isResourceSelection,  dateFieldFactory, dialogUiFactory, booleanFieldFactory, textFieldFactory, longFieldFactory);
                     if ( listener != null)
                     {
                     	ui.addChangeListener(listener);
@@ -118,7 +117,6 @@ public class FilterEditButton extends RaplaGUIComponent
         private final Logger logger;
         private final TreeFactory treeFactory;
 
-        private final RaplaImages raplaImages;
         private final DateFieldFactory dateFieldFactory;
         private final BooleanFieldFactory booleanFieldFactory;
         private final DialogUiFactoryInterface dialogUiFactory;
@@ -127,7 +125,7 @@ public class FilterEditButton extends RaplaGUIComponent
 
         @Inject
         public FilterEditButtonFactory(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, TreeFactory treeFactory,
-                 RaplaImages raplaImages, DateFieldFactory dateFieldFactory,
+                  DateFieldFactory dateFieldFactory,
                 BooleanFieldFactory booleanFieldFactory, DialogUiFactoryInterface dialogUiFactory, TextFieldFactory textFieldFactory,
                 LongFieldFactory longFieldFactory)
         {
@@ -137,7 +135,6 @@ public class FilterEditButton extends RaplaGUIComponent
             this.raplaLocale = raplaLocale;
             this.logger = logger;
             this.treeFactory = treeFactory;
-            this.raplaImages = raplaImages;
             this.dateFieldFactory = dateFieldFactory;
             this.booleanFieldFactory = booleanFieldFactory;
             this.dialogUiFactory = dialogUiFactory;
@@ -147,7 +144,7 @@ public class FilterEditButton extends RaplaGUIComponent
 
         public FilterEditButton create(ClassifiableFilter filter,boolean isResourceSelection,ChangeListener listener)
         {
-            return new FilterEditButton(facade, i18n, raplaLocale, logger, treeFactory, filter, listener, raplaImages, dateFieldFactory, booleanFieldFactory,
+            return new FilterEditButton(facade, i18n, raplaLocale, logger, treeFactory, filter, listener,  dateFieldFactory, booleanFieldFactory,
                     dialogUiFactory, isResourceSelection, textFieldFactory, longFieldFactory);
         }
     }

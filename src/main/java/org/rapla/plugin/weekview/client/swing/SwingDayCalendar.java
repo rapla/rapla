@@ -18,11 +18,10 @@ import org.rapla.RaplaResources;
 import org.rapla.client.EditController;
 import org.rapla.client.ReservationController;
 import org.rapla.client.dialog.DialogUiFactoryInterface;
+import org.rapla.client.dialog.InfoFactory;
 import org.rapla.client.extensionpoints.ObjectMenuFactory;
 import org.rapla.client.internal.RaplaClipboard;
-import org.rapla.client.dialog.InfoFactory;
-import org.rapla.client.swing.MenuFactory;
-import org.rapla.client.swing.images.RaplaImages;
+import org.rapla.client.menu.MenuFactory;
 import org.rapla.components.calendar.DateRenderer;
 import org.rapla.components.iolayer.IOInterface;
 import org.rapla.components.util.DateTools;
@@ -43,11 +42,11 @@ public class SwingDayCalendar extends SwingWeekCalendar
     public SwingDayCalendar(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, CalendarModel model, boolean editable,
             boolean printing, final Set<ObjectMenuFactory> objectMenuFactories, MenuFactory menuFactory, Provider<DateRenderer> dateRendererProvider,
             CalendarSelectionModel calendarSelectionModel, RaplaClipboard clipboard, ReservationController reservationController, InfoFactory infoFactory,
-            RaplaImages raplaImages, DateRenderer dateRenderer, DialogUiFactoryInterface dialogUiFactory,
+            DateRenderer dateRenderer, DialogUiFactoryInterface dialogUiFactory,
             IOInterface ioInterface, AppointmentFormater appointmentFormater, EditController editController) throws RaplaException
     {
         super(facade, i18n, raplaLocale, logger, model, editable, printing, objectMenuFactories, menuFactory, dateRendererProvider, calendarSelectionModel, clipboard,
-                reservationController, infoFactory, raplaImages, dateRenderer, dialogUiFactory, ioInterface, appointmentFormater, editController);
+                reservationController, infoFactory,  dateRenderer, dialogUiFactory, ioInterface, appointmentFormater, editController);
     }
 
     @Override

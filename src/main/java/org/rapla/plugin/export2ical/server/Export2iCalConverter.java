@@ -439,7 +439,7 @@ public class Export2iCalConverter
             // MONTHLY -> settings : every nTh Weekday
             recur.setInterval(repeating.getInterval());
             final int weekday = DateTools.getWeekday(appointment.getStart());
-            int weekofmonth = Math.round(DateTools.getDayOfMonth( appointment.getStart()) / DateTools.DAYS_PER_WEEK) + 1;
+            int weekofmonth = Math.round(DateTools.getDayOfMonth( appointment.getStart()) / DateTools.DAYS_PER_WEEK);
             recur.getDayList().add(new WeekDay(WeekDay.getDay(weekday), weekofmonth));
         }
         else if (repeating.isYearly())

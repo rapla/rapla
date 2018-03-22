@@ -14,12 +14,12 @@
 package org.rapla.client.swing;
 
 import org.rapla.RaplaResources;
-import org.rapla.client.MenuContext;
 import org.rapla.client.PopupContext;
 import org.rapla.client.dialog.DialogUiFactoryInterface;
 import org.rapla.client.dialog.InfoFactory;
 import org.rapla.client.internal.ResourceSelectionView;
-import org.rapla.client.swing.images.RaplaImages;
+import org.rapla.client.menu.MenuFactory;
+import org.rapla.client.menu.SelectionMenuContext;
 import org.rapla.client.swing.internal.FilterEditButton;
 import org.rapla.client.swing.internal.FilterEditButton.FilterEditButtonFactory;
 import org.rapla.client.swing.internal.MenuFactoryImpl;
@@ -34,7 +34,6 @@ import org.rapla.client.swing.toolkit.RaplaPopupMenu;
 import org.rapla.client.swing.toolkit.RaplaTree;
 import org.rapla.components.calendar.RaplaArrowButton;
 import org.rapla.components.layout.TableLayout;
-import org.rapla.entities.Category;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.dynamictype.ClassificationFilter;
 import org.rapla.entities.dynamictype.DynamicType;
@@ -44,32 +43,20 @@ import org.rapla.framework.RaplaInitializationException;
 import org.rapla.inject.DefaultImplementation;
 import org.rapla.inject.InjectionContext;
 import org.rapla.logger.Logger;
-import org.rapla.scheduler.Promise;
 
 import javax.inject.Inject;
 import javax.swing.BorderFactory;
-import javax.swing.DropMode;
 import javax.swing.JComponent;
 import javax.swing.JPanel;
 import javax.swing.JTree;
 import javax.swing.SwingUtilities;
-import javax.swing.TransferHandler;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
-import javax.swing.tree.DefaultMutableTreeNode;
 import javax.swing.tree.DefaultTreeModel;
 import javax.swing.tree.TreeCellRenderer;
-import javax.swing.tree.TreePath;
 import java.awt.BorderLayout;
-import java.awt.Color;
-import java.awt.Graphics2D;
+import java.awt.Component;
 import java.awt.Point;
-import java.awt.Rectangle;
-import java.awt.dnd.DnDConstants;
-import java.awt.dnd.DropTarget;
-import java.awt.dnd.DropTargetAdapter;
-import java.awt.dnd.DropTargetDragEvent;
-import java.awt.dnd.DropTargetDropEvent;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.FocusEvent;
@@ -99,7 +86,7 @@ public class ResourceSelectionViewSwing implements ResourceSelectionView
 
     @Inject
     public ResourceSelectionViewSwing(RaplaMenuBarContainer menuBar, RaplaResources i18n, Logger logger,
-                                      TreeFactory treeFactory, MenuFactory menuFactory, InfoFactory infoFactory, RaplaImages raplaImages,
+                                      TreeFactory treeFactory, MenuFactory menuFactory, InfoFactory infoFactory,
                                       DialogUiFactoryInterface dialogUiFactory, FilterEditButtonFactory filterEditButtonFactory) throws RaplaInitializationException
     {
 
@@ -209,116 +196,6 @@ public class ResourceSelectionViewSwing implements ResourceSelectionView
         treeSelection.getTree().setRootVisible(false);
         final JTree tree = treeSelection.getTree();
         tree.setShowsRootHandles(true);
-        tree.setDragEnabled(true);
-        tree.setDropMode(DropMode.ON);
-        tree.setDropTarget(new DropTarget(tree, TransferHandler.MOVE, new DropTargetAdapter()
-        {
-            private final Rectangle _raCueLine = new Rectangle();
-            private final Color _colorCueLine = Color.blue;
-            private TreePath lastPath = null;
-
-            @Override
-            public void dragOver(DropTargetDragEvent dtde)
-            {
-                TreePath selectionPath = tree.getSelectionPath();
-                TreePath sourcePath = selectionPath.getParentPath();
-                DefaultMutableTreeNode selectedNode = (DefaultMutableTreeNode) selectionPath.getLastPathComponent();
-                Graphics2D g2 = (Graphics2D) tree.getGraphics();
-                final Point dropLocation = dtde.getLocation();
-                TreePath path = tree.getClosestPathForLocation(dropLocation.x, dropLocation.y);
-                if(isDropAllowed(sourcePath, path, selectedNode))
-                {
-                    if (lastPath == null || !lastPath.equals(path))
-                    {
-                        if(lastPath != null)
-                        {
-                            drawLine(g2, lastPath, Color.white);
-                        }
-                        lastPath = path;
-                        drawLine(g2, path, _colorCueLine);
-                    }
-                }
-                else
-                {
-                    if(lastPath != null)
-                    {
-                        drawLine(g2, lastPath, Color.white);
-                    }
-                    lastPath = null;
-                }
-            }
-
-            private void drawLine(Graphics2D g2, TreePath path, Color color)
-            {
-                Rectangle raPath = tree.getPathBounds(path);
-                _raCueLine.setRect(0, raPath.y, tree.getWidth(), 2);
-                g2.setColor(color);
-                g2.fill(_raCueLine);
-            }
-
-            @Override
-            public void dragEnter(DropTargetDragEvent dtde)
-            {
-                TreePath selectionPath = tree.getSelectionPath();
-                DefaultMutableTreeNode selectedNode = (DefaultMutableTreeNode) selectionPath.getLastPathComponent();
-                if (!(selectedNode.getUserObject() instanceof Category))
-                {
-                    dtde.rejectDrag();
-                    return;
-                }
-                dtde.acceptDrag(DnDConstants.ACTION_MOVE);
-            }
-
-            @Override
-            public void drop(DropTargetDropEvent dtde)
-            {
-                {
-                    TreePath selectionPath = tree.getSelectionPath();
-                    TreePath sourcePath = selectionPath.getParentPath();
-                    DefaultMutableTreeNode selectedNode = (DefaultMutableTreeNode) selectionPath.getLastPathComponent();
-                    Point dropLocation = dtde.getLocation();
-                    TreePath targetPath = tree.getClosestPathForLocation(dropLocation.x, dropLocation.y);
-                    if (isDropAllowed(sourcePath, targetPath, selectedNode))
-                    {
-                        DefaultMutableTreeNode targetParentNode = (DefaultMutableTreeNode) targetPath.getLastPathComponent();
-                        final Category categoryToMove = (Category) selectedNode.getUserObject();
-                        final Category targetCategory = (Category) targetParentNode.getUserObject();
-                        getPresenter().moveCategory(categoryToMove, targetCategory).execOn(SwingUtilities::invokeLater).thenRun(() ->{
-                            dtde.dropComplete(true);
-                            updateTree(filter, selectedObjects);
-                        }).exceptionally( (ex)->
-                        {
-                            dtde.rejectDrop();
-                            dialogUiFactory.showException(ex, null);
-                            dtde.dropComplete(false);
-                            logger.error("Error performing drag and drop operation: "+ex.getMessage(), ex);
-                        });
-                    }
-                    else
-                    {
-                        dtde.rejectDrop();
-                        dtde.dropComplete(false);
-                    }
-                }
-            }
-
-
-            private boolean isDropAllowed(TreePath sourcePath, TreePath targetPath, DefaultMutableTreeNode selectedNode)
-            {
-                if (selectedNode.getUserObject() instanceof Category
-                        && ((DefaultMutableTreeNode) targetPath.getLastPathComponent()).getUserObject() instanceof Category)
-                {
-                    Category targetCategory = (Category) ((DefaultMutableTreeNode) targetPath.getLastPathComponent()).getUserObject();
-                    if(targetCategory.getId().equals(Category.SUPER_CATEGORY_REF.getId()))
-                    {
-                        return false;
-                    }
-                    return true;
-                }
-                return false;
-            }
-
-        }));
         DefaultTreeModel treeModel = generateTree(filter);
         try
         {
@@ -364,10 +241,11 @@ public class ResourceSelectionViewSwing implements ResourceSelectionView
         return content;
     }
 
-    public void showMenu(RaplaPopupMenu menu, SwingMenuContext swingMenuContext)
+    public void showMenu(RaplaPopupMenu menu, SelectionMenuContext swingMenuContext)
     {
-        JComponent component = swingMenuContext.getComponent();
-        final Point p = swingMenuContext.getPoint();
+        final SwingPopupContext popupContext = (SwingPopupContext)swingMenuContext.getPopupContext();
+        Component component = popupContext.getParent();
+        final Point p = popupContext.getPoint();
         menu.show(component, p.x, p.y);
     }
     
@@ -389,28 +267,27 @@ public class ResourceSelectionViewSwing implements ResourceSelectionView
             Object selectedObject = evt.getSelectedObject();
             Collection<?> selectedElements = treeSelection.getSelectedElements();
             JComponent component = (JComponent) evt.getSource();
-            PopupContext popupContext = new SwingPopupContext(getComponent(), p);
-            final SwingMenuContext menuContext = new SwingMenuContext(selectedObject, popupContext, component, p);
+            PopupContext popupContext = new SwingPopupContext(component, p);
+            final SelectionMenuContext menuContext = new SelectionMenuContext(selectedObject, popupContext);
             menuContext.setSelectedObjects(selectedElements);
 
             showTreePopup(popupContext, selectedObject, menuContext);
         }
 
-        public void showTreePopup(PopupContext popupContext, Object selectedObject, MenuContext menuContext)
+        public void showTreePopup(PopupContext popupContext, Object selectedObject, SelectionMenuContext selectionMenuContext)
         {
             try
             {
                 boolean addNewReservationMenu = selectedObject instanceof Allocatable || selectedObject instanceof DynamicType;
-                RaplaPopupMenu menu = new RaplaPopupMenu();
+                RaplaPopupMenu menu = new RaplaPopupMenu(selectionMenuContext.getPopupContext());
                 RaplaMenu newMenu = new RaplaMenu("new");
                 newMenu.setText(i18n.getString("new"));
                 // TODO extract interface
-                SwingMenuContext swingMenuContext = ((SwingMenuContext) menuContext);
-                ((MenuFactoryImpl) menuFactory).addNew(newMenu, swingMenuContext, null, addNewReservationMenu);
-                menuFactory.addObjectMenu(menu, swingMenuContext, "EDIT_BEGIN");
+                ((MenuFactoryImpl) menuFactory).addNew(newMenu, selectionMenuContext, null, addNewReservationMenu);
+                menuFactory.addObjectMenu(menu, selectionMenuContext, "EDIT_BEGIN");
                 newMenu.setEnabled(newMenu.getMenuComponentCount() > 0);
                 menu.insertAfterId(newMenu, "EDIT_BEGIN");
-                showMenu(menu, swingMenuContext);
+                showMenu(menu, selectionMenuContext);
             }
             catch (RaplaException ex)
             {
@@ -470,7 +347,7 @@ public class ResourceSelectionViewSwing implements ResourceSelectionView
         editMenu.removeAllBetween("EDIT_BEGIN", "EDIT_END");
         newMenu.removeAll();
         PopupContext popupContext = new SwingPopupContext(getComponent(), null);
-        SwingMenuContext menuContext = new SwingMenuContext(focusedObject,popupContext, null, null);
+        SelectionMenuContext menuContext = new SelectionMenuContext(focusedObject,popupContext);
         menuContext.setSelectedObjects(list);
         if (hasFocus())
         {
@@ -480,7 +357,7 @@ public class ResourceSelectionViewSwing implements ResourceSelectionView
         newMenu.setEnabled(newMenu.getMenuComponentCount() > 0);
     }
 
-    public void updateChange() throws RaplaException
+    public void updateChange()
     {
         final Collection<Object> elements = treeSelection.getSelectedElements();
         getPresenter().updateSelectedObjects(elements);

@@ -3,18 +3,19 @@ package org.rapla.components.i18n;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
-import org.rapla.components.i18n.internal.DefaultBundleManager;
+import org.rapla.components.i18n.internal.AbstractBundleManager;
+import org.rapla.components.i18n.server.ServerBundleManager;
 
 import java.util.Locale;
 
 public class TestI18nLocaleFormats
 {
-    DefaultBundleManager bundleManager;
+    AbstractBundleManager bundleManager;
 
     @Before
     public void setUp()
     {
-        this.bundleManager = new DefaultBundleManager();
+        this.bundleManager = new ServerBundleManager();
     }
 
     @Test

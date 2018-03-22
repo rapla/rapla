@@ -32,14 +32,15 @@ import org.rapla.client.swing.toolkit.RaplaButton;
 import org.rapla.components.layout.TableLayout;
 import org.rapla.components.util.TimeInterval;
 import org.rapla.components.util.undo.CommandHistory;
+import org.rapla.components.i18n.I18nIcon;
 import org.rapla.entities.User;
 import org.rapla.entities.domain.Appointment;
 import org.rapla.entities.domain.AppointmentBlock;
 import org.rapla.entities.domain.RaplaObjectAnnotations;
 import org.rapla.entities.domain.Repeating;
 import org.rapla.entities.domain.Reservation;
-import org.rapla.facade.client.ClientFacade;
 import org.rapla.facade.ModificationEvent;
+import org.rapla.facade.client.ClientFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaInitializationException;
 import org.rapla.framework.RaplaLocale;
@@ -73,7 +74,13 @@ import java.awt.Component;
 import java.awt.Container;
 import java.awt.event.ActionEvent;
 import java.awt.event.KeyEvent;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Date;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 @DefaultImplementation(context = InjectionContext.swing, of = ReservationEdit.class)
 public final class ReservationEditImpl extends AbstractAppointmentEditor implements ReservationEdit<Component>
@@ -144,7 +151,7 @@ public final class ReservationEditImpl extends AbstractAppointmentEditor impleme
 
     @Inject
     public ReservationEditImpl(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger,
-            Set<AppointmentStatusFactory> appointmentStatusFactories, RaplaImages raplaImages,
+            Set<AppointmentStatusFactory> appointmentStatusFactories,
             DialogUiFactoryInterface dialogUiFactory, ReservationInfoEditFactory reservationInfoEditFactory,
             AppointmentListEditFactory appointmentListEditFactory, AllocatableSelectionFactory allocatableSelectionFactory,
             Set<ReservationToolbarExtension> reservationToolbarExtensions) throws RaplaInitializationException
@@ -255,23 +262,28 @@ public final class ReservationEditImpl extends AbstractAppointmentEditor impleme
         allocatableEdit.getComponent().setBorder(border3);
 
         saveButton.setText(getString("save"));
-        saveButton.setIcon(raplaImages.getIconFromKey("icon.save"));
+        setIcon(saveButton,i18n.getIcon("icon.save"));
 
         saveButtonTop.setText(getString("save"));
         saveButtonTop.setMnemonic(KeyEvent.VK_S);
-        saveButtonTop.setIcon(raplaImages.getIconFromKey("icon.save"));
+        setIcon(saveButtonTop,i18n.getIcon("icon.save"));
 
         deleteButton.setText(getString("delete"));
-        deleteButton.setIcon(raplaImages.getIconFromKey("icon.delete"));
+        setIcon(deleteButton,i18n.getIcon("icon.delete"));
 
         closeButton.setText(getString("abort"));
-        closeButton.setIcon(raplaImages.getIconFromKey("icon.abort"));
+        setIcon(closeButton,i18n.getIcon("icon.abort"));
 
         vor.setToolTipText(getString("redo"));
-        vor.setIcon(raplaImages.getIconFromKey("icon.redo"));
+        setIcon(vor,i18n.getIcon("icon.redo"));
 
         back.setToolTipText(getString("undo"));
-        back.setIcon(raplaImages.getIconFromKey("icon.undo"));
+        setIcon(back,i18n.getIcon("icon.undo"));
+    }
+
+    public void setIcon(JButton button, I18nIcon icon)
+    {
+        button.setIcon(RaplaImages.getIcon( icon));
     }
 
     @Override

@@ -18,8 +18,8 @@ import org.rapla.client.EditController;
 import org.rapla.client.PopupContext;
 import org.rapla.client.dialog.DeleteDialogInterface;
 import org.rapla.client.dialog.DialogUiFactoryInterface;
-import org.rapla.client.internal.DeleteUndo;
 import org.rapla.client.dialog.InfoFactory;
+import org.rapla.client.internal.DeleteUndo;
 import org.rapla.entities.Category;
 import org.rapla.entities.Entity;
 import org.rapla.entities.RaplaObject;
@@ -42,7 +42,11 @@ import org.rapla.scheduler.ResolvedPromise;
 import org.rapla.storage.PermissionController;
 
 import javax.inject.Inject;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Iterator;
+import java.util.List;
 
 @JsType
 public class RaplaObjectActions extends RaplaComponent{
@@ -401,4 +405,6 @@ public class RaplaObjectActions extends RaplaComponent{
     public boolean isDelete() {
         return type == DELETE;
     }
+
+
 }

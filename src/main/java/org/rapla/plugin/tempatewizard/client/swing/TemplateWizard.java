@@ -12,6 +12,7 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.plugin.tempatewizard.client.swing;
 
+import io.reactivex.functions.Consumer;
 import org.rapla.RaplaResources;
 import org.rapla.client.PopupContext;
 import org.rapla.client.dialog.DialogUiFactoryInterface;
@@ -20,17 +21,17 @@ import org.rapla.client.event.ApplicationEvent.ApplicationEventContext;
 import org.rapla.client.event.ApplicationEventBus;
 import org.rapla.client.extensionpoints.ReservationWizardExtension;
 import org.rapla.client.internal.edit.EditTaskPresenter;
-import org.rapla.client.swing.images.RaplaImages;
+import org.rapla.client.menu.IdentifiableMenuEntry;
+import org.rapla.client.menu.MenuInterface;
+import org.rapla.client.menu.MenuItemFactory;
 import org.rapla.client.swing.toolkit.MenuScroller;
-import org.rapla.client.swing.toolkit.RaplaMenu;
-import org.rapla.client.swing.toolkit.RaplaMenuItem;
 import org.rapla.entities.User;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.facade.CalendarModel;
-import org.rapla.facade.client.ClientFacade;
 import org.rapla.facade.ModificationEvent;
 import org.rapla.facade.ModificationListener;
 import org.rapla.facade.RaplaFacade;
+import org.rapla.facade.client.ClientFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaInitializationException;
 import org.rapla.framework.RaplaLocale;
@@ -41,7 +42,7 @@ import org.rapla.plugin.tempatewizard.TemplatePlugin;
 import org.rapla.storage.PermissionController;
 
 import javax.inject.Inject;
-import javax.swing.MenuElement;
+import javax.swing.JMenu;
 import java.text.Collator;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -64,7 +65,6 @@ import java.util.TreeSet;
     boolean templateNamesValid = false;
     Collection<Allocatable> templateNames;
     private final CalendarModel model;
-    private final RaplaImages raplaImages;
     private final PermissionController permissionController;
     private final ApplicationEventBus eventBus;
     protected final ClientFacade clientFacade;
@@ -73,9 +73,10 @@ import java.util.TreeSet;
     protected final Logger logger;
     protected final RaplaResources i18n;
     protected final DialogUiFactoryInterface dialogUiFactory;
+    protected final MenuItemFactory menuItemFactory;
 
     @Inject public TemplateWizard(ClientFacade clientFacade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, CalendarModel model,
-                                  RaplaImages raplaImages, ApplicationEventBus eventBus, DialogUiFactoryInterface dialogUiFactory) throws RaplaInitializationException
+                                  ApplicationEventBus eventBus, DialogUiFactoryInterface dialogUiFactory, MenuItemFactory menuItemFactory) throws RaplaInitializationException
     {
         this.logger = logger;
         this.i18n = i18n;
@@ -83,8 +84,8 @@ import java.util.TreeSet;
         this.raplaFacade = clientFacade.getRaplaFacade();
         this.raplaLocale = raplaLocale;
         this.model = model;
-        this.raplaImages = raplaImages;
         this.dialogUiFactory = dialogUiFactory;
+        this.menuItemFactory = menuItemFactory;
         this.permissionController = raplaFacade.getPermissionController();
         this.eventBus = eventBus;
         clientFacade.addModificationListener(this);
@@ -132,7 +133,8 @@ import java.util.TreeSet;
         return templates;
     }
 
-    public MenuElement getMenuElement()
+    @Override
+    public Object getComponent()
     {
         //final RaplaFacade clientFacade = getClientFacade();
         User user;
@@ -149,87 +151,86 @@ import java.util.TreeSet;
         }
         boolean canCreateReservation = permissionController.canCreateReservation(user);
 
-        MenuElement element;
+        Object element;
         if (templateNames.size() == 0)
         {
             return null;
         }
+        final boolean enabled = raplaFacade.canAllocate(model, user) && canCreateReservation;
         if (templateNames.size() == 1)
         {
             Allocatable template = templateNames.iterator().next();
-            RaplaMenuItem item = new RaplaMenuItem(getId());
-            item.setEnabled(raplaFacade.canAllocate(model, user) && canCreateReservation);
             final String templateName = template.getName(getLocale());
-            item.setText(getSingleTemplateName(templateName));
-            item.setIcon(raplaImages.getIconFromKey("icon.new"));
-            item.addActionListener((evt)->   createWithTemplate(template)) ;
-            element = item;
+            final String singleTemplateName = getSingleTemplateName(templateName);
+            Consumer<PopupContext> action = enabled ? (popupContext)->createWithTemplate( template) : null;
+            IdentifiableMenuEntry item = menuItemFactory.createMenuItem(singleTemplateName, i18n.getIcon("icon.new"), action);
+            element = item.getComponent();
         }
         else
         {
-            RaplaMenu item = new RaplaMenu(getId());
-            item.setEnabled(raplaFacade.canAllocate(model, user) && canCreateReservation);
-            item.setText(getMultipleTemplateName());
-            item.setIcon(raplaImages.getIconFromKey("icon.new"));
-            @SuppressWarnings("unchecked") Comparator<String> collator = (Comparator<String>) (Comparator) Collator.getInstance(raplaLocale.getLocale());
-            Map<String, Collection<Allocatable>> templateMap = new HashMap<String, Collection<Allocatable>>();
+            final String multipleTemplateName = getMultipleTemplateName();
 
-            Set<String> templateSet = new TreeSet<String>(collator);
-            Locale locale = getLocale();
-            for (Allocatable template : templateNames)
-            {
-                String name = template.getName(locale);
-                templateSet.add(name);
-                Collection<Allocatable> collection = templateMap.get(name);
-                if (collection == null)
-                {
-                    collection = new ArrayList<Allocatable>();
-                    templateMap.put(name, collection);
-                }
-                collection.add(template);
-            }
+            MenuInterface container = menuItemFactory.createMenu(multipleTemplateName, i18n.getIcon("icon.new"));
+            if ( enabled) {
+                @SuppressWarnings("unchecked") Comparator<String> collator = (Comparator<String>) (Comparator) Collator.getInstance(raplaLocale.getLocale());
+                Map<String, Collection<Allocatable>> templateMap = new HashMap<String, Collection<Allocatable>>();
 
-            SortedMap<String, Set<String>> keyGroup = new TreeMap<String, Set<String>>(collator);
-            if (templateSet.size() > 10)
-            {
-                for (String string : templateSet)
+                Set<String> templateSet = new TreeSet<String>(collator);
+                Locale locale = getLocale();
+                for (Allocatable template : templateNames)
                 {
-                    if (string.length() == 0)
+                    String name = template.getName(locale);
+                    templateSet.add(name);
+                    Collection<Allocatable> collection = templateMap.get(name);
+                    if (collection == null)
                     {
-                        continue;
+                        collection = new ArrayList<>();
+                        templateMap.put(name, collection);
                     }
-                    String firstChar = string.substring(0, 1);
-                    Set<String> group = keyGroup.get(firstChar);
-                    if (group == null)
-                    {
-                        group = new TreeSet<String>(collator);
-                        keyGroup.put(firstChar, group);
-                    }
-                    group.add(string);
+                    collection.add(template);
                 }
 
-                SortedMap<String, Set<String>> merged = merge(keyGroup, collator);
-                for (String subMenuName : merged.keySet())
+                SortedMap<String, Set<String>> keyGroup = new TreeMap<String, Set<String>>(collator);
+                if (templateSet.size() > 10)
                 {
-                    RaplaMenu subMenu = new RaplaMenu(getId());
-                    item.setIcon(raplaImages.getIconFromKey("icon.new"));
-                    subMenu.setText(subMenuName);
-                    Set<String> set = merged.get(subMenuName);
-                    int maxItems = 20;
-                    if (set.size() >= maxItems)
+                    for (String string : templateSet)
                     {
-                        int millisToScroll = 40;
-                        MenuScroller.setScrollerFor(subMenu, maxItems, millisToScroll);
+                        if (string.length() == 0)
+                        {
+                            continue;
+                        }
+                        String firstChar = string.substring(0, 1);
+                        Set<String> group = keyGroup.get(firstChar);
+                        if (group == null)
+                        {
+                            group = new TreeSet<String>(collator);
+                            keyGroup.put(firstChar, group);
+                        }
+                        group.add(string);
                     }
-                    addTemplates(subMenu, set, templateMap);
-                    item.add(subMenu);
+
+                    SortedMap<String, Set<String>> merged = merge(keyGroup, collator);
+                    for (String subMenuName : merged.keySet())
+                    {
+                        final String id = getId();
+                        MenuInterface subMenu = menuItemFactory.createMenu(subMenuName,null);
+                        Set<String> set = merged.get(subMenuName);
+                        int maxItems = 20;
+                        if (set.size() >= maxItems)
+                        {
+                            int millisToScroll = 40;
+                            MenuScroller.setScrollerFor((JMenu) subMenu.getComponent(), maxItems, millisToScroll);
+                        }
+                        addTemplates(subMenu, set, templateMap);
+                        container.addMenuItem(subMenu);
+                    }
+                }
+                else
+                {
+                    addTemplates(container, templateSet, templateMap);
                 }
             }
-            else
-            {
-                addTemplates(item, templateSet, templateMap);
-            }
-            element = item;
+            element = container.getComponent();
         }
         return element;
     }
@@ -244,7 +245,7 @@ import java.util.TreeSet;
         return i18n.format("new_reservation.format", templateName);
     }
 
-    public void addTemplates(RaplaMenu item, Set<String> templateSet, Map<String, Collection<Allocatable>> templateMap)
+    public void addTemplates(MenuInterface container, Set<String> templateSet, Map<String, Collection<Allocatable>> templateMap)
     {
         Locale locale = getLocale();
 
@@ -254,10 +255,10 @@ import java.util.TreeSet;
             // there could be multiple templates with the same name
             for (final Allocatable template : collection)
             {
-                RaplaMenuItem newItem = new RaplaMenuItem(template.getName(locale));
-                newItem.setText(templateName);
-                newItem.addActionListener((evt)->createWithTemplate(template));
-                item.add(newItem);
+                final String name = template.getName(locale);
+                Consumer<PopupContext> action = (popupContext)->createWithTemplate(template);
+                IdentifiableMenuEntry newItem = menuItemFactory.createMenuItem(templateName, null, action);
+                container.addMenuItem(newItem);
 
             }
         }

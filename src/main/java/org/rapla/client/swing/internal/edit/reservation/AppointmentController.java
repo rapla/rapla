@@ -129,8 +129,6 @@ public class AppointmentController extends RaplaGUIComponent implements Disposab
 
     Date selectedEditDate = null;
 
-    private final RaplaImages raplaImages;
-
     private final DateRenderer dateRenderer;
 
     private final DialogUiFactoryInterface dialogUiFactory;
@@ -139,11 +137,10 @@ public class AppointmentController extends RaplaGUIComponent implements Disposab
     private TimeInterval lastModifiedExceptionDialogInterval = null;
 
     public AppointmentController(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, CommandHistory commandHistory,
-            RaplaImages raplaImages, DateRenderer dateRenderer, DialogUiFactoryInterface dialogUiFactory, IOInterface ioInterface) throws RaplaException
+            DateRenderer dateRenderer, DialogUiFactoryInterface dialogUiFactory, IOInterface ioInterface) throws RaplaException
     {
         super(facade, i18n, raplaLocale, logger);
         this.commandHistory = commandHistory;
-        this.raplaImages = raplaImages;
         this.dateRenderer = dateRenderer;
         this.dialogUiFactory = dialogUiFactory;
         this.ioInterface = ioInterface;
@@ -1425,9 +1422,9 @@ public class AppointmentController extends RaplaGUIComponent implements Disposab
         public void initialize()
         {
             addButton.setText(getString("add"));
-            addButton.setIcon(raplaImages.getIconFromKey("icon.arrow_right"));
+            addButton.setIcon(RaplaImages.getIcon(i18n.getIcon("icon.arrow_right")));
             removeButton.setText(getString("remove"));
-            removeButton.setIcon(raplaImages.getIconFromKey("icon.arrow_left"));
+            removeButton.setIcon(RaplaImages.getIcon(i18n.getIcon("icon.arrow_left")));
             exceptionStart = createRaplaCalendar(dateRenderer, ioInterface);
             exceptionEnd = createRaplaCalendar(dateRenderer, ioInterface);
             /*

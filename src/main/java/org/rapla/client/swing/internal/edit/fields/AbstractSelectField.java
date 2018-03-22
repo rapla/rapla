@@ -77,11 +77,11 @@ public abstract class AbstractSelectField<T> extends AbstractEditField implement
         return selectButton;
     }
 
-    public AbstractSelectField(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, TreeFactory treeFactory, RaplaImages raplaImages, DialogUiFactoryInterface dialogUiFactory){
-       this( facade, i18n, raplaLocale, logger, treeFactory, raplaImages, dialogUiFactory, null);
+    public AbstractSelectField(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, TreeFactory treeFactory, DialogUiFactoryInterface dialogUiFactory){
+       this( facade, i18n, raplaLocale, logger, treeFactory,  dialogUiFactory, null);
     }
     
-    public AbstractSelectField(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, TreeFactory treeFactory, RaplaImages raplaImages, DialogUiFactoryInterface dialogUiFactory, T defaultValue) {
+    public AbstractSelectField(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, TreeFactory treeFactory,  DialogUiFactoryInterface dialogUiFactory, T defaultValue) {
         super(facade, i18n, raplaLocale, logger);
         this.treeFactory = treeFactory;
         this.dialogUiFactory = dialogUiFactory;
@@ -98,7 +98,7 @@ public abstract class AbstractSelectField<T> extends AbstractEditField implement
         selectButton.setAction(new SelectionAction());
         selectButton.setHorizontalAlignment(RaplaButton.LEFT);
         selectButton.setText(i18n.getString("select"));
-        selectButton.setIcon(raplaImages.getIconFromKey("icon.tree"));
+        selectButton.setIcon(RaplaImages.getIcon(i18n.getIcon("icon.tree")));
         panel.setLayout( new BoxLayout(panel, BoxLayout.X_AXIS));
         panel.add( selectButton);
         panel.add( Box.createHorizontalStrut(10));
@@ -332,7 +332,7 @@ public abstract class AbstractSelectField<T> extends AbstractEditField implement
                             setValues(newValues);
                             fireContentChanged();
                         }
-                    } else if (dialog.getSelectedIndex() == 0) {
+                    } else if (index == 0) {
                         newValues.addAll(getValues(tree));
                         if (!newValues.equals(selectedValues)) {
                             setValues(newValues);

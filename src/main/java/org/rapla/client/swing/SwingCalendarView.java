@@ -20,7 +20,6 @@ import org.rapla.inject.InjectionContext;
 
 import javax.swing.JComponent;
 import java.awt.Component;
-import java.util.Observable;
 
 @ExtensionPoint(context = InjectionContext.swing, id=SwingCalendarView.ID)
 public interface SwingCalendarView extends RaplaWidget<Component>

@@ -1,6 +1,6 @@
 package org.rapla.plugin.export2ical;
 
-import org.rapla.components.xmlbundle.I18nBundle;
+import org.rapla.components.i18n.I18nBundle;
 import org.rapla.entities.configuration.RaplaConfiguration;
 import org.rapla.framework.TypedComponentRole;
 
