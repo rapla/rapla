@@ -9,7 +9,7 @@ import org.rapla.inject.InjectionContext;
 /** add your own menu entries in the context menu of an object. To do this provide
  an ObjectMenuFactory under this entry.
  */
-@ExtensionPoint(context = InjectionContext.swing,id=ObjectMenuFactory.ID)
+@ExtensionPoint(context = InjectionContext.client,id=ObjectMenuFactory.ID)
 public interface ObjectMenuFactory
 {
     String ID = "contextmenu";

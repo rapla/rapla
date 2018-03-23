@@ -14,6 +14,7 @@ package org.rapla.client.menu;
 import org.rapla.framework.RaplaException;
 
 public interface MenuFactory  {
+    MenuInterface addNew(MenuInterface menu, SelectionMenuContext context, String afterId) throws RaplaException;
     MenuInterface addObjectMenu(MenuInterface menu, SelectionMenuContext context, String afterId) throws RaplaException;
     void addReservationWizards(MenuInterface menu, SelectionMenuContext context, String afterId) throws RaplaException;
     MenuItemFactory getItemFactory();

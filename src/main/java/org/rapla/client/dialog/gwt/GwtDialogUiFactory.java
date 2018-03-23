@@ -1,222 +1,29 @@
 package org.rapla.client.dialog.gwt;
 
-import com.google.gwt.event.dom.client.ClickEvent;
-import com.google.gwt.event.dom.client.ClickHandler;
-import com.google.gwt.event.logical.shared.CloseEvent;
-import com.google.gwt.event.logical.shared.CloseHandler;
-import com.google.gwt.event.shared.HandlerRegistration;
-import com.google.gwt.user.client.ui.Button;
 import com.google.gwt.user.client.ui.Label;
-import com.google.gwt.user.client.ui.PopupPanel;
 import org.rapla.RaplaResources;
 import org.rapla.client.PopupContext;
 import org.rapla.client.RaplaWidget;
 import org.rapla.client.dialog.DialogInterface;
-import org.rapla.client.dialog.DialogInterface.DialogAction;
 import org.rapla.client.dialog.DialogUiFactoryInterface;
 import org.rapla.client.gwt.GwtPopupContext;
 import org.rapla.client.internal.check.gwt.VueDialog;
-import org.rapla.components.i18n.I18nIcon;
 import org.rapla.entities.DependencyException;
-import org.rapla.framework.Disposable;
 import org.rapla.inject.DefaultImplementation;
 import org.rapla.inject.InjectionContext;
 import org.rapla.logger.Logger;
 import org.rapla.scheduler.Promise;
-import org.rapla.scheduler.UnsynchronizedPromise;
 import org.rapla.storage.dbrm.RaplaConnectException;
 import org.rapla.storage.dbrm.RaplaRestartingException;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import java.util.ArrayList;
 import java.util.Iterator;
-import java.util.List;
 
 @Singleton
 @DefaultImplementation(context = InjectionContext.gwt, of = DialogUiFactoryInterface.class)
 public class GwtDialogUiFactory implements DialogUiFactoryInterface
 {
-    private static int zIndex = 500;
-
-    private static class GwtDialogAction implements DialogAction
-    {
-
-        private final Button button;
-        private Runnable action;
-
-        public GwtDialogAction(Button button)
-        {
-            this.button = button;
-        }
-
-        @Override
-        public void setEnabled(boolean enabled)
-        {
-            button.setEnabled(enabled);
-        }
-
-        @Override
-        public void setRunnable(Runnable runnable)
-        {
-            action = runnable;
-        }
-
-        @Override
-        public void setIcon(I18nIcon iconKey)
-        {
-            // FIXME GWT
-        }
-
-        @Override
-        public void execute()
-        {
-            if (action != null)
-            {
-                action.run();
-            }
-        }
-
-    }
-
-    private static class GwtDialog extends PopupPanel implements DialogInterface, CloseHandler<PopupPanel>
-    {
-
-        private final Button[] buttons;
-
-        private final DialogAction[] actions;
-
-        private List<HandlerRegistration> handlers = new ArrayList<HandlerRegistration>();
-
-        private Disposable disposable;
-
-        private int selectedIndex = -1;
-
-        private Runnable abortAction = null;
-
-
-        public GwtDialog(boolean modal, String[] options)
-        {
-            super(true, modal);
-            buttons = new Button[options.length];
-            actions = new DialogAction[options.length];
-            for (int i = options.length - 1; i >= 0; i--)
-            {
-                final int index = i;
-                buttons[i] = new Button(options[i]);
-                actions[i] = new GwtDialogAction(buttons[i]);
-                handlers.add(buttons[i].addClickHandler(new ClickHandler()
-                {
-                    @Override
-                    public void onClick(ClickEvent event)
-                    {
-                        selectedIndex = index;
-                        actions[index].execute();
-                        close();
-                    }
-                }));
-            }
-        }
-
-        @Override
-        public Promise<Integer> start(boolean pack)
-        {
-            handlers.add(super.addCloseHandler(this));
-            show();
-            toFront();
-            if (selectedIndex != -1)
-            {
-                buttons[selectedIndex].setFocus(true);
-            }
-            final UnsynchronizedPromise<Integer> integerUnsynchronizedCompletablePromise = new UnsynchronizedPromise<>();
-            return integerUnsynchronizedCompletablePromise;
-        }
-
-        @Override
-        public void busy(String message) {
-
-        }
-
-        @Override
-        public void idle() {
-
-        }
-
-        @Override
-        public void setTitle(String createTitle)
-        {
-            super.setTitle(createTitle);
-        }
-
-        @Override
-        public void setIcon(I18nIcon iconKey)
-        {
-            // FIXME GWT
-        }
-
-        @Override
-        public void close()
-        {
-            hide();
-            removeFromParent();
-            removeHandlers();
-        }
-
-        private void removeHandlers()
-        {
-            for (HandlerRegistration handlerRegistration : handlers)
-            {
-                handlerRegistration.removeHandler();
-            }
-        }
-
-        public boolean isVisible()
-        {
-            return super.isVisible();
-        }
-
-        @Override
-        public DialogAction getAction(int commandIndex)
-        {
-            return null;
-        }
-
-        @Override
-        public void setAbortAction(Runnable abortAction)
-        {
-            this.abortAction = abortAction;
-        }
-
-        @Override
-        public void setDefault(int commandIndex)
-        {
-            selectedIndex = commandIndex;
-        }
-
-        public void toFront()
-        {
-            if (isVisible())
-            {
-                super.getElement().getStyle().setZIndex(zIndex++);
-            }
-        }
-
-        @Override
-        public void onClose(CloseEvent<PopupPanel> event)
-        {
-            if (abortAction != null)
-            {
-                abortAction.run();
-            }
-            if (disposable != null)
-            {
-                disposable.dispose();
-            }
-
-            selectedIndex = -1;
-            removeHandlers();
-        }
-    }
 
     private final RaplaResources i18n;
     private final Logger logger;

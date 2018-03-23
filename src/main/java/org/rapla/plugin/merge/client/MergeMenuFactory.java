@@ -1,4 +1,4 @@
-package org.rapla.plugin.merge.client.swing;
+package org.rapla.plugin.merge.client;
 
 import io.reactivex.functions.Consumer;
 import org.rapla.RaplaResources;
@@ -12,7 +12,6 @@ import org.rapla.client.internal.edit.EditTaskPresenter;
 import org.rapla.client.menu.IdentifiableMenuEntry;
 import org.rapla.client.menu.MenuItemFactory;
 import org.rapla.client.menu.SelectionMenuContext;
-import org.rapla.client.swing.toolkit.RaplaMenuItem;
 import org.rapla.entities.Entity;
 import org.rapla.entities.RaplaObject;
 import org.rapla.entities.User;
@@ -88,7 +87,6 @@ import java.util.Iterator;
             }
         }
         IdentifiableMenuEntry[] menuItem = new IdentifiableMenuEntry[1];
-        menuItem[0] = new RaplaMenuItem("merge");
         Consumer<PopupContext> action = (popupContext)
                 ->
         {
@@ -110,7 +108,7 @@ import java.util.Iterator;
             ApplicationEventContext context = new EditApplicationEventContext(new ArrayList( selectedObjects));
             eventBus.publish(new ApplicationEvent(EditTaskPresenter.MERGE_RESOURCES_ID, info, popupContext, context));
         };
-        menuItemFactory.createMenuItem(i18n.getString("merge"),i18n.getIcon("icon.merge"), action);
+        menuItem[0] = menuItemFactory.createMenuItem(i18n.getString("merge"),i18n.getIcon("icon.merge"), action);
         return menuItem;
     }
 

@@ -8,7 +8,7 @@ import org.rapla.client.dialog.DialogUiFactoryInterface;
 import org.rapla.client.menu.MenuFactory;
 import org.rapla.client.swing.RaplaGUIComponent;
 import org.rapla.client.swing.TreeFactory;
-import org.rapla.client.swing.internal.MenuFactoryImpl;
+import org.rapla.client.menu.MenuFactoryImpl;
 import org.rapla.client.swing.internal.SwingPopupContext;
 import org.rapla.client.swing.toolkit.*;
 import org.rapla.components.layout.TableLayout;
@@ -173,7 +173,7 @@ public class SwingUserGroupsView extends RaplaGUIComponent implements
 			RaplaMenu newMenu = new RaplaMenu("new");
 			newMenu.setText(i18n.getString("new"));
 			// TODO extract interface
-			((MenuFactoryImpl) menuFactory).addNew(newMenu, swingMenuContext, null);
+			menuFactory.addNew(newMenu, swingMenuContext, null);
 			menuFactory.addObjectMenu(menu, swingMenuContext, "EDIT_BEGIN");
 			newMenu.setEnabled(newMenu.getMenuComponentCount() > 0);
 			menu.insertAfterId(newMenu, "EDIT_BEGIN");

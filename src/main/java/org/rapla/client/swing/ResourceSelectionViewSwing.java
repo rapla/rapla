@@ -19,10 +19,11 @@ import org.rapla.client.dialog.DialogUiFactoryInterface;
 import org.rapla.client.dialog.InfoFactory;
 import org.rapla.client.internal.ResourceSelectionView;
 import org.rapla.client.menu.MenuFactory;
+import org.rapla.client.menu.MenuItemFactory;
 import org.rapla.client.menu.SelectionMenuContext;
 import org.rapla.client.swing.internal.FilterEditButton;
 import org.rapla.client.swing.internal.FilterEditButton.FilterEditButtonFactory;
-import org.rapla.client.swing.internal.MenuFactoryImpl;
+import org.rapla.client.menu.MenuFactoryImpl;
 import org.rapla.client.swing.internal.RaplaMenuBarContainer;
 import org.rapla.client.swing.internal.SwingPopupContext;
 import org.rapla.client.swing.internal.edit.ClassifiableFilterEdit;
@@ -279,6 +280,7 @@ public class ResourceSelectionViewSwing implements ResourceSelectionView
             try
             {
                 boolean addNewReservationMenu = selectedObject instanceof Allocatable || selectedObject instanceof DynamicType;
+                MenuItemFactory menuItemFactory;
                 RaplaPopupMenu menu = new RaplaPopupMenu(selectionMenuContext.getPopupContext());
                 RaplaMenu newMenu = new RaplaMenu("new");
                 newMenu.setText(i18n.getString("new"));

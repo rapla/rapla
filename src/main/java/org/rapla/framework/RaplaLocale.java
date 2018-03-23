@@ -6,6 +6,7 @@ import org.rapla.components.i18n.I18nLocaleFormats;
 import org.rapla.components.util.SerializableDateTimeFormat;
 
 import java.util.Collection;
+import java.util.Comparator;
 import java.util.Date;
 import java.util.Locale;
 
@@ -111,5 +112,5 @@ public interface RaplaLocale
 
     Locale newLocale(String language, String country);
 
-
+    Comparator<String> getCollator();
 }

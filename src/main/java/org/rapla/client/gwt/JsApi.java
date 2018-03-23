@@ -5,6 +5,7 @@ import jsinterop.annotations.JsIgnore;
 import jsinterop.annotations.JsType;
 import org.rapla.RaplaResources;
 import org.rapla.client.ReservationController;
+import org.rapla.client.menu.MenuFactory;
 import org.rapla.client.menu.RaplaObjectActions;
 import org.rapla.components.util.TimeInterval;
 import org.rapla.entities.User;
@@ -41,16 +42,17 @@ public class JsApi {
     private final RaplaLocale raplaLocale;
     private final ClientFacade clientFacade;
     private final Provider<RaplaBuilder> raplaBuilder;
-    private final Provider<RaplaObjectActions> raplaObjectActionsProvider;
     private final RaplaResources i18n;
+    private final MenuFactory menuFactory;
 
     @JsIgnore
     @Inject
     public JsApi(ClientFacade facade, Logger logger, ReservationController reservationController, CalendarSelectionModel calendarModel,
-                 RemoteAuthentificationService remoteAuthentificationService, RaplaLocale raplaLocale, Provider<RaplaBuilder> raplaBuilder,
-                 Provider<RaplaObjectActions> raplaObjectActionsProvider, RaplaResources i18n) {
+            RemoteAuthentificationService remoteAuthentificationService, RaplaLocale raplaLocale, Provider<RaplaBuilder> raplaBuilder, RaplaResources i18n,
+            MenuFactory menuFactory) {
         this.clientFacade = facade;
         this.i18n = i18n;
+        this.menuFactory = menuFactory;
         this.facade = clientFacade.getRaplaFacade();
         this.logger = logger;
         this.reservationController = reservationController;
@@ -58,7 +60,6 @@ public class JsApi {
         this.remoteAuthentificationService = remoteAuthentificationService;
         this.raplaLocale = raplaLocale;
         this.raplaBuilder = raplaBuilder;
-        this.raplaObjectActionsProvider = raplaObjectActionsProvider;
     }
 
     public User getUser() throws RaplaException {
@@ -67,6 +68,11 @@ public class JsApi {
 
     public RaplaFacade getFacade() {
         return facade;
+    }
+
+    public MenuFactory getMenuFactory()
+    {
+        return menuFactory;
     }
 
     public CalendarSelectionModel getCalendarModel() {
@@ -87,10 +93,6 @@ public class JsApi {
 
     public RaplaBuilder createBuilder() {
         return raplaBuilder.get();
-    }
-
-    public RaplaObjectActions createActions() {
-        return raplaObjectActionsProvider.get();
     }
 
     public RaplaResources getI18n() {

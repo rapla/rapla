@@ -38,7 +38,7 @@ final public class HTMLView extends JTextPane  {
     private void setDefaultDocBase() {
         if (base == null && error == null) {
             try {
-                String marker = "org/rapla/client/swing/gui/images/repeating.png";
+                String marker = "org/rapla/gui/images/repeating.png";
                 URL url= HTMLView.class.getClassLoader().getResource(marker);
                 if (url == null) {
                     System.err.println("Marker not found " + marker);

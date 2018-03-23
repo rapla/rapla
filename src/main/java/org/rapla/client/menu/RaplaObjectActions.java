@@ -12,6 +12,7 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.client.menu;
 
+import io.reactivex.functions.Consumer;
 import jsinterop.annotations.JsType;
 import org.rapla.RaplaResources;
 import org.rapla.client.EditController;
@@ -20,8 +21,10 @@ import org.rapla.client.dialog.DeleteDialogInterface;
 import org.rapla.client.dialog.DialogUiFactoryInterface;
 import org.rapla.client.dialog.InfoFactory;
 import org.rapla.client.internal.DeleteUndo;
+import org.rapla.components.i18n.I18nIcon;
 import org.rapla.entities.Category;
 import org.rapla.entities.Entity;
+import org.rapla.entities.Named;
 import org.rapla.entities.RaplaObject;
 import org.rapla.entities.User;
 import org.rapla.entities.domain.Allocatable;
@@ -31,7 +34,6 @@ import org.rapla.entities.dynamictype.Classifiable;
 import org.rapla.entities.dynamictype.Classification;
 import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.entities.dynamictype.DynamicTypeAnnotations;
-import org.rapla.facade.RaplaComponent;
 import org.rapla.facade.RaplaFacade;
 import org.rapla.facade.client.ClientFacade;
 import org.rapla.framework.RaplaException;
@@ -49,7 +51,7 @@ import java.util.Iterator;
 import java.util.List;
 
 @JsType
-public class RaplaObjectActions extends RaplaComponent{
+public class RaplaObjectActions {
     public final static int DELETE = 1;
     public final static int COPY = 2;
     public final static int PASTE = 3;
@@ -66,49 +68,75 @@ public class RaplaObjectActions extends RaplaComponent{
     boolean isPerson;
     protected Entity<?> object;
     List<Entity<?>> objectList;
+    RaplaResources i18n;
     protected Class<? extends RaplaObject> raplaType;
     PopupContext popupContext;
     ClientFacade clientFacade;
+    RaplaFacade raplaFacade;
     protected final EditController editController;
     private final InfoFactory infoFactory;
     private final DialogUiFactoryInterface dialogUiFactory;
     private final DeleteDialogInterface deleteDialogInterface;
     private final PermissionController permissionController;
 
+    private final Logger logger;
+    private String name;
+    private I18nIcon icon;
+    private final MenuItemFactory menuItemFactory;
+
     @Inject
-    public RaplaObjectActions(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger,  EditController editController, InfoFactory infoFactory, DialogUiFactoryInterface dialogUiFactory, DeleteDialogInterface deleteDialogInterface)  {
-        super(facade.getRaplaFacade(), i18n, raplaLocale, logger);
+    public RaplaObjectActions(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, EditController editController, InfoFactory infoFactory, DialogUiFactoryInterface dialogUiFactory, DeleteDialogInterface deleteDialogInterface,
+            MenuItemFactory menuItemFactory)  {
+        this.raplaFacade = facade.getRaplaFacade();
+        this.logger = logger;
         this.clientFacade = facade;
+        this.i18n = i18n;
         this.editController = editController;
         this.infoFactory = infoFactory;
         this.dialogUiFactory = dialogUiFactory;
         this.permissionController = facade.getRaplaFacade().getPermissionController();
         this.deleteDialogInterface = deleteDialogInterface;
+        this.menuItemFactory = menuItemFactory;
     }
-    
-    protected PopupContext getPopupContext()
-    {
-        return popupContext;
-    }
-
 
     public RaplaObjectActions setNew(Class<? extends RaplaObject> raplaType) {
         this.raplaType = raplaType;
+        name = i18n.getString("new");
+        icon = i18n.getIcon("icon.new");
         this.type = NEW;
         return this;
     }
 
-    public void setPopupContext(PopupContext popupContext)
+    public I18nIcon getIcon()
+    {
+        return icon;
+    }
+
+    public void setName(String name)
+    {
+        this.name = name;
+    }
+
+    public String getName()
+    {
+        return name;
+    }
+
+    public RaplaObjectActions setPopupContext(PopupContext popupContext)
     {
         this.popupContext = popupContext;
-}
+        return this;
+    }
 
     public void setClassificationType(String classificationType) {
+        setNew(DynamicType.class);
         this.classificationType = classificationType;
     }
 
     public RaplaObjectActions setDelete(Entity<?> object) {
         this.type = DELETE;
+        name =i18n.getString("delete");
+        icon = i18n.getIcon("icon.delete");
         changeObject(object);
         return this;
     }
@@ -116,18 +144,24 @@ public class RaplaObjectActions extends RaplaComponent{
     public RaplaObjectActions setDeleteSelection(Collection<Entity<?>> selection) {
         this.type = DELETE_SELECTION;
         this.objectList = new ArrayList<Entity<?>>(selection);
+        name = i18n.getString("delete_selection");
+        icon = i18n.getIcon("icon.delete");
         isEnabled();
         return this;
     }
 
     public RaplaObjectActions setView(Entity<?> object) {
         this.type = VIEW;
+        name = i18n. getString("view");
+        icon = i18n.getIcon("icon.help");
         changeObject(object);
         return this;
     }
 
     public RaplaObjectActions setEdit(Entity<?> object) {
         this.type = EDIT;
+        name = i18n.getString("edit");
+        icon = i18n.getIcon("icon.edit");
         changeObject(object);
         return this;
     }
@@ -136,12 +170,30 @@ public class RaplaObjectActions extends RaplaComponent{
  	// (cf. setEdit() and setDeleteSelection())
  	public RaplaObjectActions setEditSelection(Collection<Entity<?>> selection) {
  		this.type = EDIT_SELECTION;
- 		this.objectList = new ArrayList<Entity<?>>(selection);
+        name = i18n.getString("edit");
+        icon =i18n.getIcon("icon.edit");
+ 		this.objectList = new ArrayList<>(selection);
  		return this;
  	}
 
     public void changeObject(Entity<?> object) {
         this.object = object;
+        if (isDelete()) {
+            if (object == null)
+                name =  i18n.getString("delete");
+            else
+                name = i18n.format("delete.format",getName(object));
+        }
+    }
+
+    private String getName(Object object) {
+        if (object == null)
+            return "";
+        if (object instanceof Named) {
+            String name = ((Named) object).getName(i18n.getLocale());
+            return (name != null) ? name : "";
+        }
+        return object.toString();
     }
 
 
@@ -202,7 +254,7 @@ public class RaplaObjectActions extends RaplaComponent{
 
 
     protected Promise<? extends Entity> newEntityAsyc(Class<? extends RaplaObject> raplaType){
-        RaplaFacade m = getFacade();
+        RaplaFacade m = raplaFacade;
         try
         {
             final User user = clientFacade.getUser();
@@ -264,7 +316,7 @@ public class RaplaObjectActions extends RaplaComponent{
 
     public DynamicType[] guessTypesFor(Object object) throws RaplaException {
         DynamicType dynamicType = null;
-        getLogger().debug("Guessing DynamicType from " + object);
+        logger.debug("Guessing DynamicType from " + object);
         if (object instanceof DynamicType)
             dynamicType = (DynamicType) object;
 
@@ -286,7 +338,7 @@ public class RaplaObjectActions extends RaplaComponent{
                 classificationType = DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RESOURCE;
             }
         }
-        DynamicType[] dynamicTypes = getFacade().getDynamicTypes( classificationType );
+        DynamicType[] dynamicTypes = raplaFacade.getDynamicTypes( classificationType );
         return dynamicTypes;
       
     }
@@ -313,17 +365,17 @@ public class RaplaObjectActions extends RaplaComponent{
 
     // creates a new Category
     private Promise<Category> createNewNodeAt(Category parent) throws RaplaException {
-        Category newCategory = getFacade().newCategory();
+        Category newCategory = raplaFacade.newCategory();
         newCategory.setKey(createNewKey(parent.getCategories()));
-        newCategory.getName().setName(getI18n().getLang(), getString("new_category") );
-        return getFacade().editAsync(parent).thenApply((editableCategore)->{editableCategore.addCategory(newCategory);return  newCategory;});
+        newCategory.getName().setName(i18n.getLang(), i18n.getString("new_category") );
+        return raplaFacade.editAsync(parent).thenApply((editableCategore)->{editableCategore.addCategory(newCategory);return  newCategory;});
     }
 
 	protected  void newEntity() throws RaplaException {
     	if ( Category.class == raplaType ) {
             createNewNodeAt((Category) object).thenAccept(category -> editController.edit(category, popupContext));
         } else if ( Category.class == raplaType ) {
-            DynamicType newDynamicType = getFacade().newDynamicType(classificationType);
+            DynamicType newDynamicType = raplaFacade.newDynamicType(classificationType);
             editController.edit(newDynamicType, popupContext);
         } else {
             handleException(newEntityAsyc(raplaType).thenAccept(entity->editController.edit( entity, popupContext)));
@@ -366,7 +418,7 @@ public class RaplaObjectActions extends RaplaComponent{
 			}
 	    }
 	    @SuppressWarnings({ "rawtypes", "unchecked" })
-        DeleteUndo<? extends Entity<?>> deleteCommand = new DeleteUndo(getFacade(),getI18n(), entities, clientFacade.getUser());
+        DeleteUndo<? extends Entity<?>> deleteCommand = new DeleteUndo(raplaFacade,i18n, entities, clientFacade.getUser());
         final Promise<Void> promise;
 	    if ( undoable)
 	    {
@@ -404,6 +456,18 @@ public class RaplaObjectActions extends RaplaComponent{
 
     public boolean isDelete() {
         return type == DELETE;
+    }
+
+    public RaplaObjectActions addTo(MenuInterface menu) {
+        final IdentifiableMenuEntry menuEntry = createMenuEntry();
+        menu.addMenuItem(menuEntry);
+        return this;
+    }
+
+    public IdentifiableMenuEntry createMenuEntry()
+    {
+        final Consumer<PopupContext> action = (context) -> actionPerformed();
+        return menuItemFactory.createMenuItem(getName(), getIcon(), isEnabled() ? action : null);
     }
 
 

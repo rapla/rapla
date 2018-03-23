@@ -25,7 +25,7 @@ import org.rapla.client.swing.TreeFactory;
 import org.rapla.client.swing.images.RaplaImages;
 import org.rapla.client.swing.internal.FilterEditButton;
 import org.rapla.client.swing.internal.FilterEditButton.FilterEditButtonFactory;
-import org.rapla.client.swing.internal.MenuFactoryImpl;
+import org.rapla.client.menu.MenuFactoryImpl;
 import org.rapla.client.swing.internal.MultiCalendarPresenter;
 import org.rapla.client.swing.internal.SwingPopupContext;
 import org.rapla.client.swing.internal.common.CalendarAction;
@@ -815,7 +815,7 @@ public class AllocatableSelection extends RaplaGUIComponent implements Appointme
             newMenu.setText(getString("new"));
             if ( menuFactory != null)
             {
-                ((MenuFactoryImpl) menuFactory).addNew(newMenu, menuContext, null);
+                menuFactory.addNew(newMenu, menuContext, null);
                 menuFactory.addObjectMenu(menu, menuContext, seperatorId);
             }
             newMenu.setEnabled(newMenu.getMenuComponentCount() > 0);
