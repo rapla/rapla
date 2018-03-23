@@ -545,10 +545,6 @@
 					<artifactId>jetty-webapp</artifactId>
 				</exclusion>
 				<exclusion>
-					<groupId>tapestry</groupId>
-					<artifactId>tapestry</artifactId>
-				</exclusion>
-				<exclusion>
 					<groupId>net.sourceforge.htmlunit</groupId>
 					<artifactId>htmlunit</artifactId>
 				</exclusion>

@@ -10,7 +10,7 @@
  | program with every library, which license fulfills the Open Source       |
  | Definition as published by the Open Source Initiative (OSI).             |
  *--------------------------------------------------------------------------*/
-package org.rapla.plugin.defaultwizard.client.swing;
+package org.rapla.plugin.defaultwizard.client;
 
 import io.reactivex.functions.Consumer;
 import org.rapla.RaplaResources;
@@ -39,8 +39,6 @@ import org.rapla.storage.PermissionController;
 import javax.inject.Inject;
 import java.util.ArrayList;
 import java.util.List;
-
-import static org.hsqldb.resources.ResourceBundleHandler.getLocale;
 
 /** This ReservationWizard displays no wizard and directly opens a ReservationEdit Window
  */
@@ -116,7 +114,7 @@ import static org.hsqldb.resources.ResourceBundleHandler.getLocale;
         if (eventTypes.size() == 1)
         {
             final DynamicType type = eventTypes.get(0);
-            String name = type.getName(getLocale());
+            String name = type.getName(i18n.getLocale());
             String text;
             if (newEventText.endsWith(name))
             {
@@ -134,7 +132,7 @@ import static org.hsqldb.resources.ResourceBundleHandler.getLocale;
             MenuInterface container = menuItemFactory.createMenu(newEventText, i18n.getIcon("icon.new"));
             if ( enabled) {
                 for (DynamicType type : eventTypes) {
-                    String name = type.getName(getLocale());
+                    String name = type.getName(i18n.getLocale());
                     Consumer<PopupContext> action =(popupContext) -> actionPerformed(popupContext, type);
                     IdentifiableMenuEntry newItem = menuItemFactory.createMenuItem(name, null, action);
                     container.addMenuItem(newItem);

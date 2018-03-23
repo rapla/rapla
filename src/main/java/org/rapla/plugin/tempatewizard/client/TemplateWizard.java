@@ -10,7 +10,7 @@
  | program with every library, which license fulfills the Open Source       |
  | Definition as published by the Open Source Initiative (OSI).             |
  *--------------------------------------------------------------------------*/
-package org.rapla.plugin.tempatewizard.client.swing;
+package org.rapla.plugin.tempatewizard.client;
 
 import io.reactivex.functions.Consumer;
 import org.rapla.RaplaResources;
@@ -24,7 +24,6 @@ import org.rapla.client.internal.edit.EditTaskPresenter;
 import org.rapla.client.menu.IdentifiableMenuEntry;
 import org.rapla.client.menu.MenuInterface;
 import org.rapla.client.menu.MenuItemFactory;
-import org.rapla.client.swing.toolkit.MenuScroller;
 import org.rapla.entities.User;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.facade.CalendarModel;
@@ -42,8 +41,6 @@ import org.rapla.plugin.tempatewizard.TemplatePlugin;
 import org.rapla.storage.PermissionController;
 
 import javax.inject.Inject;
-import javax.swing.JMenu;
-import java.text.Collator;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Comparator;
@@ -172,7 +169,7 @@ import java.util.TreeSet;
 
             MenuInterface container = menuItemFactory.createMenu(multipleTemplateName, i18n.getIcon("icon.new"));
             if ( enabled) {
-                @SuppressWarnings("unchecked") Comparator<String> collator = (Comparator<String>) (Comparator) Collator.getInstance(raplaLocale.getLocale());
+                @SuppressWarnings("unchecked") Comparator<String> collator = raplaLocale.getCollator();;
                 Map<String, Collection<Allocatable>> templateMap = new HashMap<String, Collection<Allocatable>>();
 
                 Set<String> templateSet = new TreeSet<String>(collator);
@@ -215,12 +212,6 @@ import java.util.TreeSet;
                         final String id = getId();
                         MenuInterface subMenu = menuItemFactory.createMenu(subMenuName,null);
                         Set<String> set = merged.get(subMenuName);
-                        int maxItems = 20;
-                        if (set.size() >= maxItems)
-                        {
-                            int millisToScroll = 40;
-                            MenuScroller.setScrollerFor((JMenu) subMenu.getComponent(), maxItems, millisToScroll);
-                        }
                         addTemplates(subMenu, set, templateMap);
                         container.addMenuItem(subMenu);
                     }

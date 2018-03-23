@@ -10,6 +10,8 @@ import org.rapla.inject.DefaultImplementation;
 import org.rapla.inject.InjectionContext;
 
 import javax.inject.Inject;
+import java.text.Collator;
+import java.util.Comparator;
 import java.util.Date;
 import java.util.Locale;
 
@@ -46,7 +48,12 @@ public class GwtRaplaLocale extends AbstractRaplaLocale {
     {
         return ((GwtBundleManager)bundleManager).newLocale(language, country);
     }
-    
-    
+
+
+	@Override
+	public Comparator<String> getCollator()
+	{
+		return (a, b)-> a.compareTo( b);
+	}
 
 }

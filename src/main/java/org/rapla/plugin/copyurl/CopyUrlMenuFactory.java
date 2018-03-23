@@ -6,7 +6,6 @@ import org.rapla.client.extensionpoints.ObjectMenuFactory;
 import org.rapla.client.menu.IdentifiableMenuEntry;
 import org.rapla.client.menu.MenuItemFactory;
 import org.rapla.client.menu.SelectionMenuContext;
-import org.rapla.components.iolayer.IOInterface;
 import org.rapla.components.util.Tools;
 import org.rapla.entities.Entity;
 import org.rapla.entities.RaplaObject;
@@ -23,9 +22,6 @@ import org.rapla.inject.Extension;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import java.awt.datatransfer.StringSelection;
-import java.awt.datatransfer.Transferable;
-import java.security.AccessControlException;
 import java.util.Collection;
 import java.util.HashSet;
 
@@ -34,16 +30,16 @@ import java.util.HashSet;
 public class CopyUrlMenuFactory implements ObjectMenuFactory
 {
 
-    private final IOInterface ioInterface;
     private final MenuItemFactory menuItemFactory;
     private final ClientFacade clientFacade;
+    private final URLCopyService copyService;
 
     @Inject
-    public CopyUrlMenuFactory(ClientFacade clientFacade, IOInterface ioInterface, MenuItemFactory menuItemFactory)
+    public CopyUrlMenuFactory(ClientFacade clientFacade, MenuItemFactory menuItemFactory, URLCopyService copyService)
     {
         this.clientFacade = clientFacade;
-        this.ioInterface = ioInterface;
         this.menuItemFactory = menuItemFactory;
+        this.copyService = copyService;
     }
 
     public IdentifiableMenuEntry[] create(final SelectionMenuContext menuContext, final RaplaObject focusedObject)
@@ -128,26 +124,9 @@ public class CopyUrlMenuFactory implements ObjectMenuFactory
             return IdentifiableMenuEntry.EMPTY_ARRAY;
         }
         final String url = link;
-        Consumer<PopupContext> action = (popupContext)-> copy_(url);
+        Consumer<PopupContext> action = (popupContext)-> copyService.copy(url);
         IdentifiableMenuEntry item = menuItemFactory.createMenuItem("Copy Link", null, action);
         return new IdentifiableMenuEntry[] {item};
-    }
-
-    private void copy_(String link)
-    {
-        Transferable transferable = new StringSelection(link);
-        try
-        {
-            if (ioInterface != null)
-            {
-                ioInterface.setContents(transferable, null);
-            }
-        }
-        catch (AccessControlException ex)
-        {
-            //   clipboard.set( transferable);
-        }
-
     }
 
     public void showException(Exception ex) {

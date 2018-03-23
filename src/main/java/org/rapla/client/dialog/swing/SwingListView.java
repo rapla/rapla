@@ -23,6 +23,7 @@ public class SwingListView<T> implements ListView<T> {
     final Subject<Collection<T>> publisherSelectionChanged;
     final RaplaTree treeSelection;
 
+    @Inject
     public SwingListView(TreeFactory treeFactory, CommandScheduler scheduler)
     {
         publisherDoubleClick = scheduler.createPublisher();

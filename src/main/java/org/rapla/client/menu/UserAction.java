@@ -10,45 +10,65 @@
  | program with every library, which license fulfills the Open Source       |
  | Definition as published by the Open Source Initiative (OSI).             |
  *--------------------------------------------------------------------------*/
-package org.rapla.client.swing.internal.action.user;
+package org.rapla.client.menu;
 
+import io.reactivex.functions.Consumer;
 import org.rapla.RaplaResources;
 import org.rapla.client.EditController;
 import org.rapla.client.PopupContext;
 import org.rapla.client.UserClientService;
 import org.rapla.client.dialog.DialogUiFactoryInterface;
-import org.rapla.client.swing.RaplaAction;
+import org.rapla.components.i18n.I18nIcon;
 import org.rapla.entities.User;
 import org.rapla.facade.client.ClientFacade;
 import org.rapla.framework.RaplaException;
-import org.rapla.framework.RaplaLocale;
 import org.rapla.logger.Logger;
 import org.rapla.storage.PermissionController;
 
-public class UserAction extends RaplaAction {
+import javax.inject.Inject;
+import javax.inject.Provider;
+
+public class UserAction  {
     Object object;
     public final int NEW = 1;
     public final int SWITCH_TO_USER = 3;
     int type = NEW;
-    private final PopupContext popupContext;
+    private PopupContext popupContext;
     private final UserClientService service;
     private final EditController editController;
     RaplaResources i18n;
     private final DialogUiFactoryInterface dialogUiFactory;
+    private final MenuItemFactory menuItemFactory;
+    private final Provider<PasswordChangeAction> passwordChangeAction;
+    private String name;
+    private I18nIcon icon;
+    private boolean enabled;
+    ClientFacade clientFacade;
+    Logger logger;
 
-    public UserAction(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger,PopupContext popupContext, UserClientService service, EditController editController,  DialogUiFactoryInterface dialogUiFactory) {
-        super(facade, i18n, raplaLocale, logger);
+    @Inject
+    public UserAction(ClientFacade facade, RaplaResources i18n, Logger logger, UserClientService service, EditController editController,
+            DialogUiFactoryInterface dialogUiFactory, MenuItemFactory menuItemFactory, Provider<PasswordChangeAction> passwordChangeAction) {
+        this.clientFacade = facade;
         this.i18n = i18n;
-        this.popupContext = popupContext;
+        this.logger = logger;
         this.service = service;
         this.editController = editController;
         this.dialogUiFactory = dialogUiFactory;
+        this.menuItemFactory = menuItemFactory;
+        this.passwordChangeAction = passwordChangeAction;
+    }
+
+    public UserAction setPopupContext(PopupContext popupContext)
+    {
+        this.popupContext = popupContext;
+        return this;
     }
 
     public UserAction setNew() {
         type = NEW;
-        putValue(NAME, i18n.getString("user"));
-        setIcon( i18n.getIcon("icon.new"));
+        name = i18n.getString("user");
+        icon = i18n.getIcon("icon.new");
         update();
         return this;
     }
@@ -56,9 +76,9 @@ public class UserAction extends RaplaAction {
     public UserAction setSwitchToUser() {
         type = SWITCH_TO_USER;
         if (service.canSwitchBack()) {
-            putValue(NAME, getString("switch_back"));
+            name = i18n.getString("switch_back");
         } else {
-            putValue(NAME, getString("switch_to"));
+            name = i18n.getString("switch_to");
         }
         return this;
     }
@@ -71,7 +91,7 @@ public class UserAction extends RaplaAction {
     private void update() {
         User user = null;
         try {
-            user = getUser();
+            user = clientFacade.getUser();
             final boolean admin = PermissionController.canAdminUsers( user );
             if (type == NEW) {
                 setEnabled(admin);
@@ -96,10 +116,9 @@ public class UserAction extends RaplaAction {
                    // putValue(NAME, getString("switch_back"));
                 }
             } else if (type == NEW) {
-                User newUser = getFacade().newUser();
+                User newUser = clientFacade.getRaplaFacade().newUser();
                 // createInfoDialog new user dialog and show password dialog if user is created successfully
-                final String title = getString("user");
-                editController.edit( newUser, /*title,*/popupContext);//,new EditController.EditCallback<User>()
+                editController.edit( newUser, popupContext);//,new EditController.EditCallback<User>()
 /*
                 FIXME call change password dialog after new user
                     {
@@ -138,8 +157,34 @@ public class UserAction extends RaplaAction {
 
     public void changePassword(User user, boolean showOld) throws RaplaException
     {
-        new PasswordChangeAction(getClientFacade(), getI18n(), getRaplaLocale(), getLogger(), popupContext,  dialogUiFactory).changePassword(user,
-                showOld);
+        final PasswordChangeAction passwordChangeAction = this.passwordChangeAction.get();
+        passwordChangeAction.setPopupContext( popupContext);
+        passwordChangeAction.changePassword(user, showOld);
     }
 
+    public IdentifiableMenuEntry createMenuEntry()
+    {
+        final Consumer<PopupContext> action = (context) -> actionPerformed();
+        return menuItemFactory.createMenuItem(getName(), getIcon(), isEnabled() ? action : null);
+    }
+
+    public String getName()
+    {
+        return name;
+    }
+
+    public I18nIcon getIcon()
+    {
+        return icon;
+    }
+
+    public boolean isEnabled()
+    {
+        return enabled;
+    }
+
+    public void setEnabled(boolean enabled)
+    {
+        this.enabled = enabled;
+    }
 }

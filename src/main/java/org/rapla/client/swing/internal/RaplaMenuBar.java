@@ -35,12 +35,12 @@ import org.rapla.client.extensionpoints.ImportMenuExtension;
 import org.rapla.client.extensionpoints.ViewMenuExtension;
 import org.rapla.client.menu.IdentifiableMenuEntry;
 import org.rapla.client.menu.MenuItemFactory;
+import org.rapla.client.menu.UserAction;
 import org.rapla.client.swing.RaplaGUIComponent;
 import org.rapla.client.swing.images.RaplaImages;
 import org.rapla.client.swing.internal.action.RestartRaplaAction;
 import org.rapla.client.swing.internal.action.RestartServerAction;
 import org.rapla.client.swing.internal.action.SaveableToggleAction;
-import org.rapla.client.swing.internal.action.user.UserAction;
 import org.rapla.client.swing.internal.edit.TemplateEdit;
 import org.rapla.client.swing.internal.print.PrintAction;
 import org.rapla.client.swing.internal.view.LicenseInfoUI;
@@ -109,14 +109,14 @@ public class RaplaMenuBar extends RaplaGUIComponent
     RaplaMenuItem ownReservationsMenu;
     private final RaplaSystemInfo systemInfo;
     private final MenuItemFactory menuItemFactory;
+    private final Provider<UserAction> userActionProvider;
 
 
     @Inject public RaplaMenuBar(RaplaMenuBarContainer menuBarContainer, ClientFacade clientFacade, RaplaSystemInfo systemInfo, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger,
-                                PrintAction printAction, Set<AdminMenuExtension> adminMenuExt, Set<EditMenuExtension> editMenuExt, Set<ViewMenuExtension> viewMenuExt,
-                                Set<HelpMenuExtension> helpMenuExt, Set<ImportMenuExtension> importMenuExt, Set<ExportMenuExtension> exportMenuExt,
-                                EditController editController, CalendarSelectionModel model, UserClientService clientService, RestartServer restartServerService,
-                                DialogUiFactoryInterface dialogUiFactory, Provider<TemplateEdit> templateEditFactory,
-                                Provider<LicenseInfoUI> licenseInfoUIProvider, CalendarEventBus eventBus, ApplicationEventBus appEventBus, MenuItemFactory menuItemFactory)            throws RaplaInitializationException
+            PrintAction printAction, Set<AdminMenuExtension> adminMenuExt, Set<EditMenuExtension> editMenuExt, Set<ViewMenuExtension> viewMenuExt, Set<HelpMenuExtension> helpMenuExt, Set<ImportMenuExtension> importMenuExt,
+            Set<ExportMenuExtension> exportMenuExt, EditController editController, CalendarSelectionModel model, UserClientService clientService, RestartServer restartServerService,
+            DialogUiFactoryInterface dialogUiFactory, Provider<TemplateEdit> templateEditFactory, Provider<LicenseInfoUI> licenseInfoUIProvider, CalendarEventBus eventBus, ApplicationEventBus appEventBus, MenuItemFactory menuItemFactory,
+            Provider<UserAction> userActionProvider)            throws RaplaInitializationException
     {
         super(clientFacade, i18n, raplaLocale, logger);
         this.systemInfo = systemInfo;
@@ -127,7 +127,7 @@ public class RaplaMenuBar extends RaplaGUIComponent
         this.templateEditFactory = templateEditFactory;
         this.appEventBus = appEventBus;
         this.menuItemFactory = menuItemFactory;
-
+        this.userActionProvider = userActionProvider;
 
         RaplaMenu editMenu = menuBarContainer.getEditMenu();
         RaplaMenu viewMenu = menuBarContainer.getViewMenu();
@@ -169,9 +169,8 @@ public class RaplaMenuBar extends RaplaGUIComponent
 
         if (clientService.canSwitchBack())
         {
-            JMenuItem switchBack = new JMenuItem();
-            switchBack.setAction(new ActionWrapper(new UserAction(clientFacade, i18n, raplaLocale, logger, null, clientService, editController,  dialogUiFactory).setSwitchToUser()));
-            adminMenu.add(switchBack);
+            final UserAction userAction = userActionProvider.get().setPopupContext(null).setSwitchToUser();
+            adminMenu.addMenuItem(userAction.createMenuEntry());
         }
 
         boolean server = restartServerService.isRestartPossible();

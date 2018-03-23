@@ -1,4 +1,4 @@
-package org.rapla.plugin.setowner.client.swing;
+package org.rapla.plugin.setowner.client;
 
 import io.reactivex.functions.Consumer;
 import org.rapla.RaplaResources;

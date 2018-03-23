@@ -26,9 +26,11 @@ public class SignedTokenTest {
     Key privateKey;
     Key publicKey;
     String seed;
-
+    Key signingKey;
+    Key unsigningKey;
     JwtParser jwtParser;
     private static final String ASYMMETRIC_ALGO = "RSA";
+    final SignatureAlgorithm signatureAlgo = SignatureAlgorithm.HS256;
 
     @Before
     public void setUp() throws NoSuchAlgorithmException {
@@ -43,7 +45,11 @@ public class SignedTokenTest {
         //this.privateKey = base64.encodeAsString(privateKeyObj.getEncoded());
         PublicKey publicKeyObj = keyPair.getPublic();
         publicKey = publicKeyObj;
-        jwtParser = Jwts.parser().setSigningKey(publicKey);
+
+        signingKey = MacProvider.generateKey(signatureAlgo);
+        unsigningKey = signingKey;
+        //jwtParser = Jwts.parser().setSigningKey(publicKey);
+        jwtParser = Jwts.parser().setSigningKey(signingKey);
         //this.publicKey =base64.encodeAsString(publicKeyObj.getEncoded());
 
     }
@@ -51,14 +57,14 @@ public class SignedTokenTest {
     @Test
     public void testPerformance() throws TokenInvalidException {
         SignedToken tokenGenerator = new SignedToken(-1, seed);
-        final int tokenCount = 1000;
+        final int tokenCount = 100000;
         final Date now = new Date();
         final List<String> users = IntStream.range(1, tokenCount).mapToObj((i) -> "user" + i).collect(Collectors.toList());
         Map<String,String> tokens = new LinkedHashMap<>();
         long start = System.currentTimeMillis();
         for ( String user:users)
         {
-            tokens.put( user, tokenGenerator.newToken(user, now));
+            tokens.put( user, tokenGenerator.newToken(user, calculateExpirationTime()));
         }
         final long timeStampAfterGenerate = System.currentTimeMillis();
         long timeGenerate = timeStampAfterGenerate - start;
@@ -76,7 +82,7 @@ public class SignedTokenTest {
     @Test
     public void testJWSToken()
     {
-        final int tokenCount = 100;
+        final int tokenCount = 1000;
         final List<String> users = IntStream.range(1, tokenCount).mapToObj((i) -> "user" + i).collect(Collectors.toList());
         Map<String,String> tokens = new LinkedHashMap<>();
         long start = System.currentTimeMillis();
@@ -108,7 +114,7 @@ public class SignedTokenTest {
                 .setId(userId)
                 .setExpiration(calculateExpirationTime());
         return builder.signWith(
-                SignatureAlgorithm.RS256, privateKey
+                signatureAlgo, signingKey
         ).compact();
     }
 

@@ -20,7 +20,7 @@ import org.rapla.client.dialog.swing.DialogUI;
 import org.rapla.client.extensionpoints.UserOptionPanel;
 import org.rapla.client.internal.LanguageChooser;
 import org.rapla.client.swing.RaplaGUIComponent;
-import org.rapla.client.swing.internal.action.user.PasswordChangeAction;
+import org.rapla.client.menu.PasswordChangeAction;
 import org.rapla.client.swing.toolkit.ActionWrapper;
 import org.rapla.client.swing.toolkit.RaplaButton;
 import org.rapla.components.iolayer.IOInterface;
@@ -38,6 +38,7 @@ import org.rapla.inject.Extension;
 import org.rapla.logger.Logger;
 
 import javax.inject.Inject;
+import javax.inject.Provider;
 import javax.swing.AbstractAction;
 import javax.swing.JComponent;
 import javax.swing.JLabel;
@@ -69,12 +70,14 @@ public class UserOption extends RaplaGUIComponent implements UserOptionPanel
     private final DialogUiFactoryInterface dialogUiFactory;
 
     private final IOInterface ioInterface;
+    private final Provider<PasswordChangeAction> passwordChangeAction;
 
     @Inject
     public UserOption(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger,
-            DialogUiFactoryInterface dialogUiFactory, IOInterface ioInterface)
+            DialogUiFactoryInterface dialogUiFactory, IOInterface ioInterface,Provider<PasswordChangeAction> passwordChangeAction)
     {
         super(facade, i18n, raplaLocale, logger);
+        this.passwordChangeAction = passwordChangeAction;
         this.dialogUiFactory = dialogUiFactory;
         this.ioInterface = ioInterface;
     }
@@ -118,12 +121,12 @@ public class UserOption extends RaplaGUIComponent implements UserOptionPanel
         superPanel.add(new JLabel(getString("password") + ":"), "0,8");
         superPanel.add(new JLabel("****"), "2,8");
         superPanel.add(changePasswordButton, "4,8");
-        PasswordChangeAction passwordChangeAction = new PasswordChangeAction(getClientFacade(), getI18n(), getRaplaLocale(), getLogger(),
-                createPopupContext(getComponent(), null),  dialogUiFactory);
+        PopupContext popupContext = createPopupContext(getComponent(), null);
+        PasswordChangeAction passwordChangeAction = this.passwordChangeAction.get().setPopupContext( popupContext);
         User user = getUser();
         passwordChangeAction.changeObject(user);
-        changePasswordButton.setAction(new ActionWrapper(passwordChangeAction));
         changePasswordButton.setText(getString("change"));
+        changePasswordButton.addActionListener((evt)->passwordChangeAction.actionPerformed());
         usernameLabel.setText(user.getUsername());
     }
 

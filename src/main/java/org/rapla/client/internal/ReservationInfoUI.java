@@ -149,9 +149,9 @@ public class ReservationInfoUI extends ClassificationInfoUI<Reservation> {
             buf.append( "<tr>\n" );
             buf.append( "<td valign=\"top\">\n");
             if (appointments[i].getRepeating() != null) {
-                buf.append ("<img width=\"16\" height=\"16\" src=\"org/rapla/client/swing/gui/images/repeating.png\">");
+                buf.append ("<img width=\"16\" height=\"16\" src=\"org/rapla/gui/images/repeating.png\">");
             } else {
-                buf.append ("<img width=\"16\" height=\"16\" src=\"org/rapla/client/swing/gui/images/single.png\">");
+                buf.append ("<img width=\"16\" height=\"16\" src=\"org/rapla/gui/images/single.png\">");
             }
             buf.append( "</td>\n");
             buf.append( "<td>\n");

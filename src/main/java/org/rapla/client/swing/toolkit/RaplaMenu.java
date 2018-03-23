@@ -18,6 +18,7 @@ import org.rapla.client.menu.MenuInterface;
 
 import javax.swing.JMenu;
 import javax.swing.JMenuItem;
+import javax.swing.JPopupMenu;
 import java.awt.Component;
 
 public class RaplaMenu extends JMenu implements IdentifiableMenuEntry, MenuInterface {
@@ -70,18 +71,20 @@ public class RaplaMenu extends JMenu implements IdentifiableMenuEntry, MenuInter
     @Override
     public void insertAfterId(RaplaWidget widget, String id) {
         Component component = (Component) widget.getComponent();
+        final JPopupMenu popupMenu = getPopupMenu();
         if ( id == null) {
-            getPopupMenu().add( component );
+            popupMenu.add( component );
         } else {
             int index = getIndexOfEntryWithId( id ) ;
-            getPopupMenu().insert( component, index + 1);
+            popupMenu.insert( component, index + 1);
         }
     }
 
     @Override
     public void insertBeforeId(RaplaWidget component,String id) {
         int index = getIndexOfEntryWithId( id );
-        getPopupMenu().insert( (Component)component.getComponent(), index);
+        final JPopupMenu popupMenu = getPopupMenu();
+        popupMenu.insert( (Component)component.getComponent(), index);
     }
 
 	@Override
@@ -95,6 +98,12 @@ public class RaplaMenu extends JMenu implements IdentifiableMenuEntry, MenuInter
         //final JMenuItem item = new JMenuItem(new ActionWrapper(menuItem));
         //mapping.put(menuItem, item);
         super.add((Component)item.getComponent());
+        int maxItems = 20;
+        if (getMenuComponentCount() >= maxItems)
+        {
+            int millisToScroll = 40;
+            MenuScroller.setScrollerFor((JMenu) getComponent(), maxItems, millisToScroll);
+        }
     }
 
 }

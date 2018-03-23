@@ -20,7 +20,9 @@ import org.rapla.inject.InjectionContext;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
+import java.text.Collator;
 import java.text.NumberFormat;
+import java.util.Comparator;
 import java.util.Date;
 import java.util.Locale;
 import java.util.TimeZone;
@@ -72,6 +74,11 @@ public class RaplaLocaleImpl extends AbstractRaplaLocale  {
         return new Locale(language, country != null ? country : "");
     }
 
+    @Override
+    public Comparator<String> getCollator()
+    {
+        return (Comparator<String>) (Comparator) Collator.getInstance(getLocale());
+    }
 }
 
 

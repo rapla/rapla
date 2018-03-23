@@ -10,11 +10,12 @@
  | program with every library, which license fulfills the Open Source       |
  | Definition as published by the Open Source Initiative (OSI).             |
  *--------------------------------------------------------------------------*/
-package org.rapla.client.swing.internal;
+package org.rapla.client.menu.swing;
 
 import io.reactivex.functions.Consumer;
 import org.jetbrains.annotations.NotNull;
 import org.rapla.client.PopupContext;
+import org.rapla.client.RaplaWidget;
 import org.rapla.client.dialog.DialogUiFactoryInterface;
 import org.rapla.client.menu.IdentifiableMenuEntry;
 import org.rapla.client.menu.MenuInterface;
@@ -30,13 +31,13 @@ import javax.inject.Singleton;
 import javax.swing.*;
 import java.awt.*;
 
-@Singleton @DefaultImplementation(of = MenuItemFactory.class, context = InjectionContext.swing) public class MenuItemFactoryImpl
+@Singleton @DefaultImplementation(of = MenuItemFactory.class, context = InjectionContext.swing) public class MenuItemFactorySwingImpl
         implements MenuItemFactory
 {
 
     private final DialogUiFactoryInterface dialogUiFactory;
 
-    @Inject public MenuItemFactoryImpl(DialogUiFactoryInterface dialogUiFactory)
+    @Inject public MenuItemFactorySwingImpl(DialogUiFactoryInterface dialogUiFactory)
     {
         this.dialogUiFactory = dialogUiFactory;
     }
@@ -100,6 +101,12 @@ import java.awt.*;
             raplaPopupMenu.setIcon(RaplaImages.getIcon(icon));
         }
         return raplaPopupMenu;
+    }
+
+    @Override
+    public RaplaWidget createSeparator(String seperator)
+    {
+        return new RaplaSeparator("sep2");
     }
 
 
