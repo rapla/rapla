@@ -8,6 +8,10 @@ import jsinterop.annotations.JsType;
 public class RaplaVue {
 
 	@JsMethod(name = "$emit")
+	public static native void emit(String eventname);
+
+	@JsMethod(name = "$emit")
 	public static native void emit(String eventname, Object params);
-	
+
+
 }

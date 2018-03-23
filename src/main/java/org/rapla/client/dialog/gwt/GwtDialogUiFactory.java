@@ -231,14 +231,7 @@ public class GwtDialogUiFactory implements DialogUiFactoryInterface
     @Override
     public DialogInterface createContentDialog(PopupContext popupContext, Object content, String[] options)
     {
-//        final GwtDialog gwtDialog = new GwtDialog(false, options);
-//        final Point point = GwtPopupContext.extractPoint(popupContext);
-//        if (point != null)
-//        {
-//            gwtDialog.setPopupPosition(point.getX(), point.getY());
-//        }
-        return new VueDialog(content); // TODO: add other parameters
-//        return gwtDialog;
+        return new VueDialog(content, options);
     }
 
     @Override

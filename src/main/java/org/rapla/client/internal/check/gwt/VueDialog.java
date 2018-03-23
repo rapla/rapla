@@ -6,22 +6,38 @@ import org.rapla.components.i18n.I18nIcon;
 import org.rapla.scheduler.Promise;
 import org.rapla.scheduler.UnsynchronizedPromise;
 
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
+
 @JsType
 public class VueDialog implements DialogInterface {
 
   private String icon;
   private String title;
   private Object content;
-  private Promise<Integer> promise= new UnsynchronizedPromise<>();
+  private String[] buttons;
+  private DialogAction[] buttonActions;
+  private Promise<Integer> promise = new UnsynchronizedPromise<>();
+  private Runnable abortAction = () -> {};
+  private Integer defaultAction;
 
-  public VueDialog(final Object content) {
+  public VueDialog(final Object content, String[] actions) {
     this.content = content;
+    this.buttons = actions;
+    this.buttonActions = IntStream.range(0, actions.length)
+                                  .mapToObj(a -> new VueDialogAction())
+                                  .collect(Collectors.toList())
+                                  .toArray(new VueDialogAction[] {});
   }
 
   @Override
   public Promise<Integer> start(final boolean pack) {
     RaplaVue.emit("gwt-dialog-open", this);
     return promise;
+  }
+
+  public int getDefaultAction() {
+    return defaultAction;
   }
 
   public Object getContent() {
@@ -36,8 +52,22 @@ public class VueDialog implements DialogInterface {
     return title;
   }
 
+  @Override
+  public void setTitle(final String title) {
+    this.title = title;
+  }
+
   public String getIcon() {
     return icon;
+  }
+
+  @Override
+  public void setIcon(final I18nIcon iconKey) {
+    this.icon = iconKey.getId();
+  }
+
+  public String[] getButtonStrings() {
+    return buttons;
   }
 
   @Override
@@ -51,18 +81,8 @@ public class VueDialog implements DialogInterface {
   }
 
   @Override
-  public void setTitle(final String title) {
-    this.title = title;
-  }
-
-  @Override
-  public void setIcon(final I18nIcon iconKey) {
-    this.icon = iconKey.getId();
-  }
-
-  @Override
   public void close() {
-
+    RaplaVue.emit("gwt-dialog-close");
   }
 
   /**
@@ -70,36 +90,20 @@ public class VueDialog implements DialogInterface {
    */
   @Override
   public DialogAction getAction(final int commandIndex) {
-    return new DialogAction() {
-      @Override
-      public void setEnabled(final boolean enabled) {
+    return this.buttonActions[commandIndex];
+  }
 
-      }
-
-      @Override
-      public void setRunnable(final Runnable runnable) {
-        throw new UnsupportedOperationException("does not work in GWT-Mode");
-      }
-
-      @Override
-      public void setIcon(final I18nIcon icon) {
-
-      }
-
-      @Override
-      public void execute() {
-        throw new UnsupportedOperationException("does not work in GWT-Mode");
-      }
-    };
+  public Runnable getAbortAction() {
+    return abortAction;
   }
 
   @Override
   public void setAbortAction(final Runnable abortAction) {
-
+    this.abortAction = abortAction;
   }
 
   @Override
   public void setDefault(final int commandIndex) {
-
+    this.defaultAction = commandIndex;
   }
 }
