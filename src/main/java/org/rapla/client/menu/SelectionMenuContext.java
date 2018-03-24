@@ -1,5 +1,6 @@
 package org.rapla.client.menu;
 
+import jsinterop.annotations.JsType;
 import org.rapla.client.PopupContext;
 import org.rapla.client.menu.MenuContext;
 
@@ -8,6 +9,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
 
+@JsType
 public class SelectionMenuContext implements MenuContext {
     Collection<?> selectedObjects = Collections.EMPTY_LIST;
     Object focused;

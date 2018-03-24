@@ -58,13 +58,12 @@ public class ReservationTableViewFactory implements SwingViewFactory
     private final IOInterface ioInterface;
     private final RaplaMenuBarContainer menuBar;
     private final EditController editController;
-    private final MenuItemFactory menuItemFactory;
 
     @Inject
     public ReservationTableViewFactory(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger,
                                        Set<ReservationSummaryExtension> reservationSummaryExtensions, TableConfig.TableConfigLoader tableConfigLoader, MenuFactory menuFactory,
                                        ReservationController reservationController, InfoFactory infoFactory, IntervalChooserPanel dateChooser,
-                                       DialogUiFactoryInterface dialogUiFactory, IOInterface ioInterface, RaplaMenuBarContainer menuBar, EditController editController, MenuItemFactory menuItemFactory)
+                                       DialogUiFactoryInterface dialogUiFactory, IOInterface ioInterface, RaplaMenuBarContainer menuBar, EditController editController)
     {
         this.facade = facade;
         this.i18n = i18n;
@@ -80,7 +79,6 @@ public class ReservationTableViewFactory implements SwingViewFactory
         this.ioInterface = ioInterface;
         this.menuBar = menuBar;
         this.editController = editController;
-        this.menuItemFactory = menuItemFactory;
     }
     
     @Override
@@ -94,7 +92,7 @@ public class ReservationTableViewFactory implements SwingViewFactory
     public SwingCalendarView createSwingView(CalendarModel model, boolean editable, boolean printing) throws RaplaException
     {
         return new SwingReservationTableView(menuBar,facade, i18n, raplaLocale, logger, model, reservationSummaryExtensions, editable, printing, tableConfigLoader, menuFactory,
-                editController, reservationController, infoFactory,  dateChooser, menuItemFactory, dialogUiFactory, ioInterface);
+                editController, reservationController, infoFactory,  dateChooser,  dialogUiFactory, ioInterface);
     }
 
     public String getViewId()

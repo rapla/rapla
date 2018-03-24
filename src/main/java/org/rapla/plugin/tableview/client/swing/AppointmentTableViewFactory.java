@@ -47,10 +47,8 @@ import java.util.Set;
 public class AppointmentTableViewFactory implements SwingViewFactory
 {
     private final Set<AppointmentSummaryExtension> appointmentSummaryExtensions;
-    private final Set<ObjectMenuFactory> objectMenuFactories;
     private final TableConfig.TableConfigLoader tableConfigLoader;
     private final MenuFactory menuFactory;
-    private final CalendarSelectionModel calendarSelectionModel;
     private final ReservationController reservationController;
     private final EditController editController;
     private final InfoFactory infoFactory;
@@ -62,23 +60,20 @@ public class AppointmentTableViewFactory implements SwingViewFactory
     private final Logger logger;
     private final IOInterface ioInterface;
     private final RaplaMenuBarContainer menuBar;
-    private final MenuItemFactory menuItemFactory;
 
     @Inject
     public AppointmentTableViewFactory(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, Set<AppointmentSummaryExtension> appointmentSummaryExtensions,
-                                       Set<ObjectMenuFactory> objectMenuFactories, TableConfig.TableConfigLoader tableConfigLoader, MenuFactory menuFactory, CalendarSelectionModel calendarSelectionModel,
+                                       TableConfig.TableConfigLoader tableConfigLoader, MenuFactory menuFactory,
                                        ReservationController reservationController, EditController editController, InfoFactory infoFactory, IntervalChooserPanel dateChooser, DialogUiFactoryInterface dialogUiFactory, IOInterface ioInterface,
-                                       RaplaMenuBarContainer menuBar, MenuItemFactory menuItemFactory)
+                                       RaplaMenuBarContainer menuBar)
     {
         this.facade = facade;
         this.i18n = i18n;
         this.raplaLocale = raplaLocale;
         this.logger = logger;
         this.appointmentSummaryExtensions = appointmentSummaryExtensions;
-        this.objectMenuFactories = objectMenuFactories;
         this.tableConfigLoader = tableConfigLoader;
         this.menuFactory = menuFactory;
-        this.calendarSelectionModel = calendarSelectionModel;
         this.reservationController = reservationController;
         this.editController = editController;
         this.infoFactory = infoFactory;
@@ -86,7 +81,6 @@ public class AppointmentTableViewFactory implements SwingViewFactory
         this.dialogUiFactory = dialogUiFactory;
         this.ioInterface = ioInterface;
         this.menuBar = menuBar;
-        this.menuItemFactory = menuItemFactory;
     }
     
     @Override
@@ -99,8 +93,8 @@ public class AppointmentTableViewFactory implements SwingViewFactory
 
     public SwingCalendarView createSwingView(CalendarModel model, boolean editable, boolean printing) throws RaplaException
     {
-        return new SwingAppointmentTableView(menuBar,facade, i18n, raplaLocale, logger, model, appointmentSummaryExtensions, objectMenuFactories, editable, printing, tableConfigLoader, menuFactory,
-                calendarSelectionModel, menuItemFactory, reservationController, editController,infoFactory,  dateChooser, dialogUiFactory, ioInterface);
+        return new SwingAppointmentTableView(menuBar,facade, i18n, raplaLocale, logger, model, appointmentSummaryExtensions,  editable, printing, tableConfigLoader, menuFactory,
+                  reservationController, editController,infoFactory,  dateChooser, dialogUiFactory, ioInterface);
     }
 
     public String getViewId()

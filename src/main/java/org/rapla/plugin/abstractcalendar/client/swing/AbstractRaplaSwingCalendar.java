@@ -169,8 +169,8 @@ public abstract class AbstractRaplaSwingCalendar extends RaplaGUIComponent
      */
     protected ViewListener createListener() throws RaplaException
     {
-        return new RaplaCalendarViewListener(getClientFacade(), getI18n(), getRaplaLocale(), getLogger(), model, view.getComponent(), objectMenuFactories,
-                menuFactory, calendarSelectionModel, clipboard, reservationController, infoFactory,  dialogUiFactory, editController);
+        return new RaplaCalendarViewListener(getClientFacade(), getI18n(), getRaplaLocale(), getLogger(), model, view.getComponent(),
+                menuFactory,  reservationController,  dialogUiFactory, editController);
     }
 
     public JComponent getDateSelection()

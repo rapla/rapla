@@ -156,7 +156,7 @@ public class SwingCompactCalendar extends AbstractRaplaSwingCalendar
    
     
      protected ViewListener createListener() throws RaplaException {
-        return  new RaplaCalendarViewListener(getClientFacade(), getI18n(), getRaplaLocale(), getLogger(), model, view.getComponent(), objectMenuFactories, menuFactory, calendarSelectionModel, clipboard, reservationController, infoFactory, dialogUiFactory, editController) {
+        return  new RaplaCalendarViewListener(getClientFacade(), getI18n(), getRaplaLocale(), getLogger(), model, view.getComponent(),  menuFactory,   reservationController,  dialogUiFactory, editController) {
         	/** override to change the allocatable to the row that is selected */
             @Override
             public void selectionChanged(Date start,Date end) 

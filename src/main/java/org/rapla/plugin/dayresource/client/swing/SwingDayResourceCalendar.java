@@ -162,7 +162,7 @@ public class SwingDayResourceCalendar extends SwingDayCalendar
     }
 
     protected ViewListener createListener() {
-    	return  new RaplaCalendarViewListener(getClientFacade(), getI18n(), getRaplaLocale(), getLogger(), model, view.getComponent(), objectMenuFactories, menuFactory, calendarSelectionModel, clipboard, reservationController, infoFactory,  dialogUiFactory, editController) {
+    	return  new RaplaCalendarViewListener(getClientFacade(), getI18n(), getRaplaLocale(), getLogger(), model, view.getComponent(),  menuFactory,  reservationController,  dialogUiFactory, editController) {
             
             @Override
             protected Collection<Allocatable> getMarkedAllocatables()

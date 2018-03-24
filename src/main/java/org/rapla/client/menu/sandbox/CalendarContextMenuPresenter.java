@@ -47,7 +47,6 @@ public class CalendarContextMenuPresenter extends RaplaComponent implements Menu
     private final CalendarSelectionModel model;
     private final ReservationController reservationController;
     private final MenuView<?> view;
-    private final RaplaClipboard clipboard;
 
     private final PermissionController permissionController;
     ClientFacade clientFacade;
@@ -59,14 +58,12 @@ public class CalendarContextMenuPresenter extends RaplaComponent implements Menu
 
     @Inject
     public CalendarContextMenuPresenter(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, CalendarSelectionModel model,
-            ReservationController reservationController, RaplaClipboard clipboard/*,  InfoFactory infoFactory,
-            MenuFactory menuFactory*/, @SuppressWarnings("rawtypes") MenuView view, EditController editController)
+            ReservationController reservationController,  @SuppressWarnings("rawtypes") MenuView view, EditController editController)
     {
         super(facade.getRaplaFacade(), i18n, raplaLocale, logger);
         this.model = model;
         this.reservationController = reservationController;
         this.view = view;
-        this.clipboard = clipboard;
         this.editController = editController;
         this.clientFacade = clientFacade;
         //        this.infoFactory = infoFactory;
@@ -95,150 +92,6 @@ public class CalendarContextMenuPresenter extends RaplaComponent implements Menu
 
     public void selectionPopup(final PopupContext popupContext)
     {
-        try
-        {
-            final Map<MenuEntry, Runnable> mapping = new HashMap<MenuEntry, Runnable>();
-            final List<MenuEntry> menu = new ArrayList<MenuEntry>();
-            // Object focusedObject = null;
-//             MenuContext context = new MenuContext(getContext(), focusedObject);
-//            // TODO
-//             menuFactory.addReservationWizards(new MenuInterface()
-//            {
-//                
-//                @Override
-//                public void removeAllBetween(String startId, String endId)
-//                {
-//                    
-//                }
-//                
-//                @Override
-//                public void removeAll()
-//                {
-//                    menu.clear();
-//                }
-//                
-//                @Override
-//                public void remove(RaplaAction item)
-//                {
-//                    
-//                }
-//                
-//                @Override
-//                public void insertBeforeId(JComponent component, String id)
-//                {
-//                    
-//                }
-//                
-//                @Override
-//                public void insertAfterId(ServerComponent component, String id)
-//                {
-//                    
-//                }
-//                
-//                @Override
-//                public void addSeparator()
-//                {
-//                    
-//                }
-//                
-//                @Override
-//                public void add(RaplaAction item)
-//                {
-//                    
-//                }
-//            }, context, null);
-            final RaplaFacade raplaFacade = getFacade();
-            final User user = getUser();
-            if (permissionController.canCreateReservation(user))
-            {
-                if (permissionController.canUserAllocateSomething(user))
-                {
-                    ReservationEdit[] editWindows = editController.getEditWindows();
-                    if (editWindows.length > 0)
-                    {
-                        final String text = getString("add_to");
-                        MenuEntry addItem = new MenuEntry(text, null, true);
-                        menu.add(addItem);
-                        final List<MenuEntry> subEntries = addItem.getSubEntries();
-                        for (final ReservationEdit reservationEdit : editWindows)
-                        {
-                            final String name2 = reservationEdit.getReservation().getName(getLocale());
-                            String value = name2.trim().length() > 0 ? "'" + name2 + "'" : getString("new_reservation");
-                            final MenuEntry reservationMenu = new MenuEntry(value, "icon.new", canAllocate());
-                            subEntries.add(reservationMenu);
-                            mapping.put(reservationMenu, new Runnable()
-                            {
-                                @Override
-                                public void run()
-                                {
-                                    Date start = getStartDate(model,raplaFacade,user);
-                                    Date end = getEndDate(model, start);
-                                    reservationEdit.addAppointment(start, end);
-                                }
-                            });
-                        }
-                    }
-                }
-                else
-                {
-                    final String text = getString("permission.denied");
-                    menu.add(new MenuEntry(text, null, false));
-                }
-            }
-            Appointment appointment = clipboard.getAppointment();
-            if (appointment != null)
-            {
-                if (clipboard.isPasteExistingPossible())
-                {
-                    final String text = getString("paste_into_existing_event");
-                    final String icon = "icon.paste";
-                    final boolean enabled = reservationController.isAppointmentOnClipboard() && permissionController.canCreateReservation(user);
-                    final MenuEntry entry = new MenuEntry(text, icon, enabled);
-                    menu.add(entry);
-                    mapping.put(entry, new Runnable()
-                    {
-                        @Override
-                        public void run()
-                        {
-                            Date start = getStartDate(model, raplaFacade,user);
-                            boolean keepTime = !model.isMarkedIntervalTimeEnabled();
-                            handleException(reservationController.pasteAppointment(start, popupContext, false, keepTime));
-                        }
-                    });
-                }
-                final String text = getString("paste_as") + " " + getString("new_reservation");
-                final String icon = "icon.paste_new";
-                final boolean enabled = reservationController.isAppointmentOnClipboard() && permissionController.canCreateReservation(user);
-                final MenuEntry entry = new MenuEntry(text, icon, enabled);
-                menu.add(entry);
-                mapping.put(entry, new Runnable()
-                {
-                    @Override
-                    public void run()
-                    {
-                        Date start = getStartDate(model, raplaFacade, user);
-                        boolean keepTime = !model.isMarkedIntervalTimeEnabled();
-                        handleException(reservationController.pasteAppointment(start, popupContext, true, keepTime));
-                    }
-                });
-            }
-            view.showMenuPopup(menu, popupContext, new MenuCallback()
-            {
-                @Override
-                public void selectEntry(MenuEntry entry)
-                {
-                    final Runnable action = mapping.get(entry);
-                    if (action != null)
-                    {
-                        action.run();
-                    }
-                }
-            });
-        }
-        catch (RaplaException ex)
-        {
-            view.showException(ex);
-        }
     }
 
     public void blockPopup(final Block block, final PopupContext popupContext)
@@ -334,161 +187,6 @@ public class CalendarContextMenuPresenter extends RaplaComponent implements Menu
 
     protected void showPopupMenu(final RaplaBlock b, final PopupContext popupContext)
     {
-        final Map<MenuEntry, Runnable> mapping = new HashMap<MenuEntry, Runnable>();
-        final AppointmentBlock appointmentBlock = b.getAppointmentBlock();
-        final Appointment appointment = b.getAppointment();
-        final Date start = b.getStart();
-        final boolean isException = b.isException();
-        final List<MenuEntry> menu = new ArrayList<MenuEntry>();
-        final Allocatable groupAllocatable = b.getGroupAllocatable();
-
-        final Collection<Allocatable> copyContextAllocatables;
-        if (groupAllocatable != null)
-        {
-            copyContextAllocatables = Collections.singleton(groupAllocatable);
-        }
-        else
-        {
-            copyContextAllocatables = Collections.emptyList();
-        }
-
-        User user;
-        try
-        {
-            user = getUser();
-        }
-        catch (RaplaException e1)
-        {
-            view.showException(e1);
-            return;
-        }
-        {
-            final String text = getString("copy");
-            final String icon = "icon.copy";
-            final boolean enabled = permissionController.canCreateReservation(user);
-            final MenuEntry entry = new MenuEntry(text, icon, enabled);
-            menu.add(entry);
-            mapping.put(entry, new Runnable()
-            {
-                public void run()
-                {
-                    handleException(reservationController.copyAppointmentBlock(appointmentBlock, popupContext, copyContextAllocatables));
-                }
-            });
-        }
-        {
-            final String text = getString("cut");
-            final String icon = "icon.cut";
-
-            final boolean enabled = permissionController.canCreateReservation(user);
-            final MenuEntry entry = new MenuEntry(text, icon, enabled);
-            menu.add(entry);
-            mapping.put(entry, new Runnable()
-            {
-                public void run()
-                {
-                    handleException(reservationController.cutAppointment(appointmentBlock, popupContext, copyContextAllocatables));
-                }
-            });
-        }
-        {
-            final String icon = "icon.edit";
-            boolean canExchangeAllocatables = getQuery().canExchangeAllocatables(user,appointment.getReservation());
-            boolean canModify = permissionController.canModify(appointment.getReservation(), user);
-            String text = !canModify && canExchangeAllocatables ? getString("exchange_allocatables") : getString("edit");
-            final boolean enabled = canModify || canExchangeAllocatables;
-            final MenuEntry entry = new MenuEntry(text, icon, enabled);
-            menu.add(entry);
-            mapping.put(entry, new Runnable()
-            {
-                public void run()
-                {
-                    editController.edit(appointmentBlock, popupContext);
-                }
-            });
-        }
-        if (!isException)
-        {
-            final String text = getI18n().format("delete.format", getString("appointment"));
-            final String icon = "icon.delete";
-            final boolean enabled = permissionController.canModify(appointment.getReservation(), user);
-            final MenuEntry entry = new MenuEntry(text, icon, enabled);
-            menu.add(entry);
-            mapping.put(entry, new Runnable()
-            {
-                public void run()
-                {
-                    handleException(reservationController.deleteAppointment(appointmentBlock, popupContext));
-                }
-            });
-        }
-        {
-            final String text = getString("view");
-            final String icon = "icon.help";
-            boolean enabled = permissionController.canRead(appointment, user);
-            final MenuEntry entry = new MenuEntry(text, icon, enabled);
-            menu.add(entry);
-            mapping.put(entry, new Runnable()
-            {
-                public void run()
-                {
-                    //                    try
-                    //                    {
-                    //                        infoFactory.showInfoDialog(object, owner, point);
-                    //                    }
-                    //                    catch (RaplaException e)
-                    //                    {
-                    //                        view.showException(e);
-                    //                    }
-                }
-            });
-        }
-        //
-        //            Iterator<?> it = getContainer().lookupServicesFor(RaplaClientExtensionPoints.OBJECT_MENU_EXTENSION).iterator();
-        //            while (it.hasNext())
-        //            {
-        //                ObjectMenuFactory objectMenuFact = (ObjectMenuFactory) it.next();
-        //                MenuContext menuContext = new MenuContext(getContext(), appointment);
-        //                menuContext.put(SELECTED_DATE, start);
-        //
-        //                RaplaMenuItem[] items = objectMenuFact.createInfoDialog(menuContext, appointment);
-        //                for (int i = 0; i < items.length; i++)
-        //                {
-        //                    RaplaMenuItem item = items[i];
-        //                    menu.add(item);
-        //                }
-        //            }
-
-        view.showMenuPopup(menu, popupContext, new MenuCallback()
-        {
-            @Override
-            public void selectEntry(MenuEntry entry)
-            {
-                final Runnable action = mapping.get(entry);
-                if (action != null)
-                {
-                    action.run();
-                }
-            }
-        });
-    }
-
-    // TODO DELETE
-    private boolean canAllocate() throws RaplaException
-    {
-        //Date start, Date end,
-        Collection<Allocatable> allocatables = model.getMarkedAllocatables();
-        boolean canAllocate = true;
-        Date start = getStartDate(model,getFacade(), getUser());
-        Date end = getEndDate(model, start);
-        for (Allocatable allo : allocatables)
-        {
-            if (!permissionController.canAllocate(start, end, allo, getUser()))
-            {
-                canAllocate = false;
-            }
-        }
-        return canAllocate;
     }
 
 }

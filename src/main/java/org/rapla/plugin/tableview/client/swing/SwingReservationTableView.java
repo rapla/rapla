@@ -7,10 +7,8 @@ import org.rapla.client.PopupContext;
 import org.rapla.client.ReservationController;
 import org.rapla.client.dialog.DialogUiFactoryInterface;
 import org.rapla.client.dialog.InfoFactory;
-import org.rapla.client.menu.IdentifiableMenuEntry;
 import org.rapla.client.menu.MenuFactory;
 import org.rapla.client.menu.MenuInterface;
-import org.rapla.client.menu.MenuItemFactory;
 import org.rapla.client.menu.SelectionMenuContext;
 import org.rapla.client.swing.RaplaGUIComponent;
 import org.rapla.client.swing.SwingCalendarView;
@@ -94,11 +92,9 @@ public class SwingReservationTableView extends RaplaGUIComponent implements Swin
     CopyListener cutListener = new CopyListener();
     
     private final MenuFactory menuFactory;
-    private final MenuItemFactory menuItemFactory;
 
     private final EditController editController;
     private final ReservationController reservationController;
-    private final RaplaResources i18n;
 
     private final DialogUiFactoryInterface dialogUiFactory;
 
@@ -111,7 +107,7 @@ public class SwingReservationTableView extends RaplaGUIComponent implements Swin
     public SwingReservationTableView(RaplaMenuBarContainer menuBar, ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger,
                                      final CalendarModel model, final Set<ReservationSummaryExtension> reservationSummaryExtensions, final boolean editable, boolean printing,
                                      TableConfig.TableConfigLoader tableConfigLoader, MenuFactory menuFactory, EditController editController, ReservationController reservationController,
-                                     final InfoFactory infoFactory, IntervalChooserPanel dateChooser, MenuItemFactory menuItemFactory, DialogUiFactoryInterface dialogUiFactory, IOInterface ioInterface) throws RaplaException
+                                     final InfoFactory infoFactory, IntervalChooserPanel dateChooser, DialogUiFactoryInterface dialogUiFactory, IOInterface ioInterface) throws RaplaException
     {
         super(facade, i18n, raplaLocale, logger);
         this.i18n = i18n;
@@ -120,7 +116,6 @@ public class SwingReservationTableView extends RaplaGUIComponent implements Swin
         this.menuFactory = menuFactory;
         this.editController = editController;
         this.reservationController = reservationController;
-        this.menuItemFactory = menuItemFactory;
         this.dialogUiFactory = dialogUiFactory;
         this.permissionController = facade.getRaplaFacade().getPermissionController();
         this.ioInterface = ioInterface;
@@ -361,23 +356,11 @@ public class SwingReservationTableView extends RaplaGUIComponent implements Swin
         final SwingPopupContext popupContext = new SwingPopupContext(getComponent(), p);
         SelectionMenuContext menuContext = new SelectionMenuContext(  focusedObject, popupContext);
         menuContext.setSelectedObjects( selectedEvents);
-
+        String afterId = "EDIT_BEGIN";
+        menuFactory.addCopyCutListMenu(  editMenu, menuContext, afterId, copyListener, cutListener);
+        menuFactory.addObjectMenu( editMenu, menuContext,afterId);
         // add the new reservations wizards
-        menuFactory.addReservationWizards( newMenu, menuContext, null);
-        
-        // add the edit methods
-        if ( selectedEvents.size() != 0) {
-            {
-                final IdentifiableMenuEntry menuItem = menuItemFactory.createMenuItem(i18n.getString("cut"), i18n.getIcon("icon.cut"), cutListener);
-                editMenu.insertAfterId(menuItem, "EDIT_BEGIN");
-            }
-            {
-                final IdentifiableMenuEntry menuItem = menuItemFactory.createMenuItem(i18n.getString("copy"), i18n.getIcon("icon.copy"), copyListener);
-                editMenu.insertAfterId(menuItem, "EDIT_BEGIN");
-            }
-            menuFactory.addObjectMenu( editMenu, menuContext, "EDIT_BEGIN");
-        } 
-
+        menuFactory.addReservationWizards( newMenu, menuContext, afterId);
 	}
 
     List<Reservation> getSelectedEvents() {

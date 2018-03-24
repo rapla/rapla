@@ -11,10 +11,18 @@
  | Definition as published by the Open Source Initiative (OSI).             |
  *--------------------------------------------------------------------------*/
 package org.rapla.client.menu;
+import io.reactivex.functions.Consumer;
+import jsinterop.annotations.JsType;
+import org.rapla.client.PopupContext;
 import org.rapla.framework.RaplaException;
 
+@JsType
 public interface MenuFactory  {
-    MenuInterface addNew(MenuInterface menu, SelectionMenuContext context, String afterId) throws RaplaException;
+    MenuInterface addCalendarSelectionMenu(MenuInterface menu, SelectionMenuContext context) throws RaplaException;
+    MenuInterface addCopyCutListMenu(MenuInterface editMenu, SelectionMenuContext menuContext, String afterId,
+            Consumer<PopupContext> cutListener, Consumer<PopupContext> copyListener) throws RaplaException;
+
+    MenuInterface addNewMenu(MenuInterface menu, SelectionMenuContext context, String afterId) throws RaplaException;
     MenuInterface addObjectMenu(MenuInterface menu, SelectionMenuContext context, String afterId) throws RaplaException;
     void addReservationWizards(MenuInterface menu, SelectionMenuContext context, String afterId) throws RaplaException;
     MenuItemFactory getItemFactory();

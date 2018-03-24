@@ -12,10 +12,14 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.client.menu;
 
+import io.reactivex.functions.Consumer;
 import org.rapla.RaplaResources;
 import org.rapla.client.PopupContext;
 import org.rapla.client.extensionpoints.ObjectMenuFactory;
 import org.rapla.client.extensionpoints.ReservationWizardExtension;
+import org.rapla.client.internal.RaplaClipboard;
+import org.rapla.client.menu.impl.AppointmentAction;
+import org.rapla.client.menu.impl.RaplaObjectActions;
 import org.rapla.components.util.DateTools;
 import org.rapla.components.util.TimeInterval;
 import org.rapla.entities.Category;
@@ -23,6 +27,8 @@ import org.rapla.entities.Entity;
 import org.rapla.entities.RaplaObject;
 import org.rapla.entities.User;
 import org.rapla.entities.domain.Allocatable;
+import org.rapla.entities.domain.Appointment;
+import org.rapla.entities.domain.AppointmentBlock;
 import org.rapla.entities.domain.Period;
 import org.rapla.entities.domain.Reservation;
 import org.rapla.entities.dynamictype.Classifiable;
@@ -39,6 +45,7 @@ import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.inject.DefaultImplementation;
 import org.rapla.inject.InjectionContext;
+import org.rapla.plugin.abstractcalendar.RaplaBlock;
 import org.rapla.storage.PermissionController;
 
 import javax.inject.Inject;
@@ -46,6 +53,7 @@ import javax.inject.Provider;
 import javax.inject.Singleton;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Date;
 import java.util.Iterator;
 import java.util.LinkedHashSet;
@@ -69,11 +77,14 @@ import java.util.TreeMap;
     private final RaplaResources i18n;
     private final RaplaLocale raplaLocale;
     private final Provider<RaplaObjectActions> actions;
+    private final Provider<AppointmentAction> appointmentActions;
     private final Provider<UserAction> userActions;
     private final Provider<PasswordChangeAction> passwordChangeAction;
+    private final RaplaClipboard clipboard;
 
-    @Inject public MenuFactoryImpl(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, MenuItemFactory menuItemFactory,  Set<ReservationWizardExtension> reservationWizards, Set<ObjectMenuFactory> objectMenuFactories,
-            CalendarSelectionModel model,Provider<RaplaObjectActions> actions, Provider<UserAction> userActions, Provider<PasswordChangeAction> passwordChangeAction)
+    @Inject public MenuFactoryImpl(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, MenuItemFactory menuItemFactory, Set<ReservationWizardExtension> reservationWizards, Set<ObjectMenuFactory> objectMenuFactories,
+            CalendarSelectionModel model, Provider<RaplaObjectActions> actions, Provider<AppointmentAction> appointmentActions, Provider<UserAction> userActions,
+            Provider<PasswordChangeAction> passwordChangeAction, RaplaClipboard raplaClipboard)
     {
         this.raplaLocale = raplaLocale;
         this.i18n = i18n;
@@ -86,8 +97,128 @@ import java.util.TreeMap;
         this.model = model;
 
         this.actions = actions;
+        this.appointmentActions = appointmentActions;
         this.userActions = userActions;
         this.passwordChangeAction = passwordChangeAction;
+        this.clipboard = raplaClipboard;
+    }
+
+    @Override
+    public MenuInterface addCalendarSelectionMenu(MenuInterface menu, SelectionMenuContext context) throws RaplaException
+    {
+        PopupContext popupContext = context.getPopupContext();
+        addReservationWizards(menu, context, null);
+        MenuItemFactory f = getItemFactory();
+        User user = getUser();
+        if (permissionController.canCreateReservation(user))
+        {
+            //	        	 User user = getUserFromRequest();
+            //	 	        Date today = getQuery().today();
+            //	 	        boolean canAllocate = false;
+            //	 	        Collection<Allocatable> selectedAllocatables = getMarkedAllocatables();
+            //	 	        for ( Allocatable alloc: selectedAllocatables) {
+            //	 	            if (alloc.canAllocate( user, start, end, today))
+            //	 	                canAllocate = true;
+            //	 	        }
+            //	 	       canAllocate || (selectedAllocatables.size() == 0 &&
+
+//            if (permissionController.canUserAllocateSomething(user))
+//            {
+//                ReservationEdit[] editWindows = editController.getEditWindows();
+//                if (editWindows.length > 0)
+//                {
+//                    RaplaMenu addItem = new RaplaMenu("add_to");
+//                    addItem.setText(i18n.getString("add_to"));
+//                    menu.add(addItem);
+//                    for (ReservationEdit reservationEdit : editWindows)
+//                    {
+//                        createAction( popupContext).setAddTo(reservationEdit).addTo( menu, f);
+//                    }
+//                }
+//            }
+//            else
+//            {
+//                JMenuItem cantAllocate = new JMenuItem(i18n.getString("permission.denied"));
+//                cantAllocate.setEnabled(false);
+//                menu.add(cantAllocate);
+//            }
+        }
+        //
+        Appointment appointment = clipboard.getAppointment();
+        if (appointment != null)
+        {
+            if (clipboard.isPasteExistingPossible())
+            {
+                createAction( popupContext).setPaste().addTo(menu, f );
+            }
+            createAction(popupContext).setPasteAsNew().addTo(menu, f);
+        }
+        return menu;
+    }
+
+    @Override
+    public MenuInterface addCopyCutListMenu( MenuInterface editMenu, SelectionMenuContext menuContext, String afterId,
+            Consumer<PopupContext> cutListener, Consumer<PopupContext> copyListener) throws RaplaException
+    {
+        // add the new reservations wizards
+        Collection<AppointmentBlock> selection = (Collection<AppointmentBlock>) menuContext.getSelectedObjects();
+        //TODO add cut and copyReservations for more then 1 block
+        if (selection.size() == 1)
+        {
+            if ( cutListener != null)
+            {
+                final IdentifiableMenuEntry menuItem = menuItemFactory.createMenuItem(i18n.getString("cut"), i18n.getIcon("icon.cut"), cutListener);
+                editMenu.insertAfterId(menuItem, afterId);
+            }
+            if ( copyListener != null)
+            {
+                final IdentifiableMenuEntry menuItem = menuItemFactory.createMenuItem(i18n.getString("copy"), i18n.getIcon("icon.copy"), copyListener);
+                editMenu.insertAfterId(menuItem, afterId);
+            }
+        }
+        return editMenu;
+    }
+
+    private MenuInterface addAppointmentBlockMenu(MenuInterface menu, RaplaBlock b, PopupContext popupContext) throws RaplaException
+    {
+        AppointmentBlock appointmentBlock = b.getAppointmentBlock();
+        Appointment appointment = appointmentBlock.getAppointment();
+        Date start = b.getStart();
+        boolean isException = b.isException();
+        Allocatable groupAllocatable = b.getGroupAllocatable();
+        Collection<Allocatable> copyContextAllocatables;
+        if (groupAllocatable != null)
+        {
+            copyContextAllocatables = Collections.singleton(groupAllocatable);
+        }
+        else
+        {
+            copyContextAllocatables = Collections.emptyList();
+        }
+
+        MenuItemFactory f = getItemFactory();
+        createAction(popupContext).setCopy(appointmentBlock, copyContextAllocatables).addTo(menu, f);
+        createAction(popupContext).setCut(appointmentBlock, copyContextAllocatables).addTo( menu, f);
+        createAction(popupContext).setEdit(appointmentBlock).addTo( menu, f);
+        if (!isException)
+        {
+            createAction( popupContext).setDelete(appointmentBlock).addTo( menu, f);
+        }
+        createAction( popupContext).setView(appointmentBlock).addTo( menu, f);
+
+        Iterator<ObjectMenuFactory> it = objectMenuFactories.iterator();
+        while (it.hasNext())
+        {
+            ObjectMenuFactory objectMenuFact = it.next();
+            SelectionMenuContext menuContext = new SelectionMenuContext( appointment,popupContext);
+            menuContext.setSelectedDate( start);
+            IdentifiableMenuEntry[] items = objectMenuFact.create(menuContext, appointment);
+            for (IdentifiableMenuEntry item:items)
+            {
+                menu.addMenuItem(item);
+            }
+        }
+        return menu;
     }
 
     public User getUser() throws RaplaException
@@ -188,7 +319,7 @@ import java.util.TreeMap;
         return canAllocateSelected;
     }
 
-    public MenuInterface addNew(MenuInterface menu, SelectionMenuContext context, String afterId) throws RaplaException
+    public MenuInterface addNewMenu(MenuInterface menu, SelectionMenuContext context, String afterId) throws RaplaException
     {
         return addNew(menu, context, afterId, false);
     }
@@ -306,31 +437,80 @@ import java.util.TreeMap;
         final PopupContext popupContext = context.getPopupContext();
 
         Collection<Entity<?>> list = new LinkedHashSet<Entity<?>>();
-        if (focusedObject != null && (focusedObject instanceof Entity))
+        if (focusedObject != null)
         {
-            Entity<?> obj = (Entity<?>) focusedObject;
-            list.add(obj);
-            final RaplaObjectActions action = newObjectAction(popupContext).setView(obj);
-            addAction(menu, action, afterId);
+            if ((focusedObject instanceof Entity))
+            {
+                Entity<?> obj = (Entity<?>) focusedObject;
+                list.add(obj);
+                final RaplaObjectActions action = newObjectAction(popupContext).setView(obj);
+                addAction(menu, action, afterId);
+            }
+            if ((focusedObject instanceof RaplaBlock))
+            {
+                addAppointmentBlockMenu(menu, (RaplaBlock)focusedObject, popupContext);
+            }
+
         }
 
-        for (Object obj : context.getSelectedObjects())
+        MenuItemFactory f = getItemFactory();
+        if ( focusedObject  != null && focusedObject instanceof AppointmentBlock)
+        {
+            AppointmentBlock appointmentBlock = (AppointmentBlock) focusedObject;
+            {
+                AppointmentAction action = createAction(popupContext);
+                action.setDelete(appointmentBlock);
+                final IdentifiableMenuEntry menuItem = action.createMenuEntry(f);
+                menu.insertAfterId(menuItem, afterId);
+            }
+            {
+                AppointmentAction action = createAction(popupContext);
+                action.setView(appointmentBlock);
+                final IdentifiableMenuEntry menuItem = action.createMenuEntry(f);
+                menu.insertAfterId(menuItem, afterId);
+            }
+
+            {
+                AppointmentAction action = createAction(popupContext);
+                action.setEdit(appointmentBlock);
+                final IdentifiableMenuEntry menuItem = action.createMenuEntry(f);
+                menu.insertAfterId(menuItem, afterId);
+            }
+        }
+
+        final Collection<?> selectedObjects = context.getSelectedObjects();
+
+        Collection<Entity<?>> deletableEntities = new ArrayList<>();
+        Collection<AppointmentBlock> deletableAppointmenBlocks = new ArrayList<>();
+        for (Object obj : selectedObjects)
         {
             if (obj instanceof Entity)
             {
-                list.add((Entity<?>) obj);
+                final Entity<?> entity = (Entity<?>) obj;
+                list.add(entity);
+                if (isDeletable(entity ))
+                {
+                    deletableEntities.add(entity );
+                }
             }
-        }
-
-        {
-            List<Entity<?>> deletableObjects = getDeletableObjects(list);
-            if (deletableObjects.size() > 0)
+            if (obj instanceof AppointmentBlock)
             {
-                final RaplaObjectActions action = newObjectAction(popupContext).setDeleteSelection(deletableObjects);
-                addAction(menu, action, afterId);
+                deletableAppointmenBlocks.add( (AppointmentBlock) obj);
             }
         }
 
+        if ( deletableAppointmenBlocks.size() > 1)
+        {
+            AppointmentAction action = createAction(popupContext);
+            action.setDeleteSelection(deletableAppointmenBlocks);
+            final IdentifiableMenuEntry menuItem = action.createMenuEntry(f);
+            menu.insertAfterId(menuItem, afterId);
+        }
+        if (deletableEntities.isEmpty())
+        {
+            final RaplaObjectActions action = newObjectAction(popupContext).setDeleteSelection(deletableEntities);
+            addAction(menu, action, afterId);
+        }
         List<Entity<?>> editableObjects = getEditableObjects(list);
         Collection<Entity<?>> editObjects = getObjectsWithSameType(editableObjects);
         if (editableObjects.size() == 1)
@@ -358,6 +538,10 @@ import java.util.TreeMap;
         {
             ObjectMenuFactory objectMenuFact = it.next();
             RaplaObject obj = focusedObject instanceof RaplaObject ? (RaplaObject) focusedObject : null;
+            if ( focusedObject instanceof AppointmentBlock)
+            {
+                obj = ((AppointmentBlock)focusedObject).getAppointment();
+            }
             IdentifiableMenuEntry[] items = objectMenuFact.create(context, obj);
             for (IdentifiableMenuEntry item:items)
             {
@@ -369,7 +553,7 @@ import java.util.TreeMap;
 
     private boolean isMultiEditSupported(List<Entity<?>> editableObjects)
     {
-        if (editableObjects.size() > 0)
+        if (!editableObjects.isEmpty())
         {
             Class<?> raplaType = editableObjects.iterator().next().getTypeClass();
             if (raplaType == Allocatable.class || raplaType == User.class || raplaType == Reservation.class)
@@ -382,7 +566,6 @@ import java.util.TreeMap;
 
     private void addAllocatableMenuNew(MenuInterface menu, PopupContext popupContext, Object focusedObj) throws RaplaException
     {
-        MenuItemFactory f = getItemFactory();
         RaplaObjectActions newResource = newObjectAction( popupContext).setNew(Allocatable.class);
         final Locale locale = raplaLocale.getLocale();
         if (focusedObj != CalendarModelImpl.ALLOCATABLES_ROOT)
@@ -507,6 +690,12 @@ import java.util.TreeMap;
         return actions.get().setPopupContext( popupContext);
     }
 
+    public AppointmentAction createAction(PopupContext popupContext)
+    {
+        AppointmentAction action = appointmentActions.get().setPopupContext( popupContext);
+        return action;
+    }
+
 
 
     // This will exclude DynamicTypes and non editable Objects from the list
@@ -524,19 +713,11 @@ import java.util.TreeMap;
         return editableObjects;
     }
 
-    private List<Entity<?>> getDeletableObjects(Collection<Entity<?>> list) throws RaplaException
+    private boolean isDeletable(Entity<?> o) throws RaplaException
     {
-        Iterator<Entity<?>> it = list.iterator();
-        Category superCategory = raplaFacade.getSuperCategory();
-        ArrayList<Entity<?>> deletableObjects = new ArrayList<Entity<?>>();
         final User user = getUser();
-        while (it.hasNext())
-        {
-            Entity<?> o = it.next();
-            if (permissionController.canDelete(o, user) && !o.equals(superCategory))
-                deletableObjects.add(o);
-        }
-        return deletableObjects;
+        Category superCategory = raplaFacade.getSuperCategory();
+        return permissionController.canDelete(o, user) && !o.equals(superCategory);
     }
 
     // method for filtering a selection(Parameter: list) of similar RaplaObjekte
@@ -582,7 +763,12 @@ import java.util.TreeMap;
     public MenuItemFactory getItemFactory() {
         return menuItemFactory;
     }
+
+
+
+
 }
+
 
 
 

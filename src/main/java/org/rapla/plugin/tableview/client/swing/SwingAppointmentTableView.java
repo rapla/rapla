@@ -1,25 +1,20 @@
 package org.rapla.plugin.tableview.client.swing;
 
 import io.reactivex.functions.Consumer;
-import org.jetbrains.annotations.NotNull;
 import org.rapla.RaplaResources;
 import org.rapla.client.EditController;
 import org.rapla.client.PopupContext;
 import org.rapla.client.ReservationController;
 import org.rapla.client.dialog.DialogUiFactoryInterface;
 import org.rapla.client.dialog.InfoFactory;
-import org.rapla.client.extensionpoints.ObjectMenuFactory;
-import org.rapla.client.menu.IdentifiableMenuEntry;
 import org.rapla.client.menu.MenuFactory;
 import org.rapla.client.menu.MenuInterface;
-import org.rapla.client.menu.MenuItemFactory;
 import org.rapla.client.menu.SelectionMenuContext;
 import org.rapla.client.swing.RaplaGUIComponent;
 import org.rapla.client.swing.SwingCalendarView;
 import org.rapla.client.swing.VisibleTimeInterval;
 import org.rapla.client.swing.internal.RaplaMenuBarContainer;
 import org.rapla.client.swing.internal.SwingPopupContext;
-import org.rapla.client.swing.internal.action.AppointmentAction;
 import org.rapla.client.swing.toolkit.RaplaMenu;
 import org.rapla.client.swing.toolkit.RaplaPopupMenu;
 import org.rapla.components.calendar.DateChangeEvent;
@@ -33,7 +28,6 @@ import org.rapla.entities.domain.Appointment;
 import org.rapla.entities.domain.AppointmentBlock;
 import org.rapla.entities.domain.Reservation;
 import org.rapla.facade.CalendarModel;
-import org.rapla.facade.CalendarSelectionModel;
 import org.rapla.facade.RaplaFacade;
 import org.rapla.facade.client.ClientFacade;
 import org.rapla.framework.RaplaException;
@@ -73,7 +67,6 @@ import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Date;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 
@@ -91,12 +84,7 @@ public class SwingAppointmentTableView extends RaplaGUIComponent implements Swin
     CopyListener cutListener = new CopyListener();
 
     private JComponent container;
-    final Set<ObjectMenuFactory> objectMenuFactories;
-    private final TableConfig.TableConfigLoader tableConfigLoader;
-
-    private final CalendarSelectionModel calendarSelectionModel;
     private final MenuFactory menuFactory;
-    private final MenuItemFactory menuItemFactory;
 
     private final ReservationController reservationController;
 
@@ -115,18 +103,14 @@ public class SwingAppointmentTableView extends RaplaGUIComponent implements Swin
     RaplaResources i18n;
 
     SwingAppointmentTableView(RaplaMenuBarContainer menuBar, ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, CalendarModel model, Set<AppointmentSummaryExtension> appointmentSummaryExtensions,
-                              final Set<ObjectMenuFactory> objectMenuFactories, final boolean editable, boolean printing, TableConfig.TableConfigLoader tableConfigLoader, MenuFactory menuFactory,
-                              CalendarSelectionModel calendarSelectionModel, MenuItemFactory menuItemFactory, ReservationController reservationController, EditController editController, InfoFactory infoFactory,
+                              final boolean editable, boolean printing, TableConfig.TableConfigLoader tableConfigLoader, MenuFactory menuFactory,
+                              ReservationController reservationController, EditController editController, InfoFactory infoFactory,
                               IntervalChooserPanel dateChooser, DialogUiFactoryInterface dialogUiFactory, IOInterface ioInterface) throws RaplaException
     {
         super(facade, i18n, raplaLocale, logger);
         this.menuBar = menuBar;
         this.i18n = i18n;
-        this.objectMenuFactories = objectMenuFactories;
-        this.tableConfigLoader = tableConfigLoader;
         this.menuFactory = menuFactory;
-        this.calendarSelectionModel = calendarSelectionModel;
-        this.menuItemFactory = menuItemFactory;
         this.reservationController = reservationController;
         this.editController = editController;
         this.infoFactory = infoFactory;
@@ -439,28 +423,9 @@ public class SwingAppointmentTableView extends RaplaGUIComponent implements Swin
         {
             menuContext.setSelectedObjects(selectedEvents);
         }
-
-        // add the new reservations wizards
-        {
-            menuFactory.addReservationWizards(newMenu, menuContext, null);
-        }
-        //TODO add cut and copyReservations for more then 1 block
-        if (selectedEvents.size() == 1)
-        {
-            {
-                final IdentifiableMenuEntry menuItem = menuItemFactory.createMenuItem(i18n.getString("cut"), i18n.getIcon("icon.cut"), cutListener);
-                editMenu.insertAfterId(menuItem, "EDIT_BEGIN");
-            }
-            {
-                final IdentifiableMenuEntry menuItem = menuItemFactory.createMenuItem(i18n.getString("copy"), i18n.getIcon("icon.copy"), copyListener);
-                editMenu.insertAfterId(menuItem, "EDIT_BEGIN");
-            }
-        }
-        if (selectedEvents.size() != 0)
-        {
-            addObjectMenu(editMenu, menuContext, "EDIT_BEGIN");
-        }
-
+        menuFactory.addReservationWizards( newMenu, menuContext,"EDIT_BEGIN");
+        menuFactory.addObjectMenu( newMenu, menuContext,"EDIT_BEGIN");
+        menuFactory.addCopyCutListMenu( editMenu, menuContext,  "EDIT_BEGIN", cutListener, copyListener);
     }
 
     Printable printable = null;
@@ -474,66 +439,6 @@ public class SwingAppointmentTableView extends RaplaGUIComponent implements Swin
         MessageFormat f2 = new MessageFormat("- {0} -");
         Printable printable = table.getPrintable(JTable.PrintMode.FIT_WIDTH, f1, f2);
         return printable.print(graphics, format, page);
-    }
-
-    private MenuInterface addObjectMenu(MenuInterface menu, SelectionMenuContext context, String afterId) throws RaplaException
-    {
-        Component parent = getComponent();
-        AppointmentBlock appointmentBlock = (AppointmentBlock) context.getFocusedObject();
-        Point p = SwingPopupContext.extractPoint(context.getPopupContext());
-        PopupContext popupContext = createPopupContext(parent, p);
-        @SuppressWarnings("unchecked") Collection<AppointmentBlock> selection = (Collection<AppointmentBlock>) context.getSelectedObjects();
-        RaplaResources i18n = getI18n();
-        if (appointmentBlock != null)
-        {
-            {
-                AppointmentAction action = createAppointmentAction(popupContext);
-                action.setDelete(appointmentBlock);
-                final IdentifiableMenuEntry menuItem = menuItemFactory.createMenuItem(action.getName(), action.getIcon(), action);
-                menu.insertAfterId(menuItem, afterId);
-            }
-            {
-                AppointmentAction action = createAppointmentAction(popupContext);
-                action.setView(appointmentBlock);
-                final IdentifiableMenuEntry menuItem = menuItemFactory.createMenuItem(action.getName(), action.getIcon(), action);
-                menu.insertAfterId(menuItem, afterId);
-            }
-
-            {
-                AppointmentAction action = createAppointmentAction(popupContext);
-                action.setEdit(appointmentBlock);
-                final IdentifiableMenuEntry menuItem = menuItemFactory.createMenuItem(action.getName(), action.getIcon(), action);
-                menu.insertAfterId(menuItem, afterId);
-            }
-
-        }
-        else if (selection != null && selection.size() > 0)
-        {
-            AppointmentAction action = createAppointmentAction(popupContext);
-            action.setDeleteSelection(selection);
-            final IdentifiableMenuEntry menuItem = menuItemFactory.createMenuItem(action.getName(), action.getIcon(), action);
-            menu.insertAfterId(menuItem, afterId);
-        }
-
-        Iterator<?> it = objectMenuFactories.iterator();
-        while (it.hasNext())
-        {
-            ObjectMenuFactory objectMenuFact = (ObjectMenuFactory) it.next();
-            Appointment appointment = appointmentBlock != null ? appointmentBlock.getAppointment() : null;
-            IdentifiableMenuEntry[] items = objectMenuFact.create(context, appointment);
-            for (int i = 0; i < items.length; i++)
-            {
-                IdentifiableMenuEntry item = items[i];
-                menu.insertAfterId(item, afterId);
-            }
-        }
-        return menu;
-    }
-
-    @NotNull
-    private AppointmentAction createAppointmentAction(PopupContext popupContext) {
-        return new AppointmentAction(getClientFacade(), getI18n(), getRaplaLocale(), getLogger(), popupContext,
-                calendarSelectionModel, reservationController,  editController,infoFactory,  dialogUiFactory);
     }
 
     public TimeInterval getVisibleTimeInterval()

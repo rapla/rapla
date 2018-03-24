@@ -6,7 +6,6 @@ import jsinterop.annotations.JsType;
 import org.rapla.RaplaResources;
 import org.rapla.client.ReservationController;
 import org.rapla.client.menu.MenuFactory;
-import org.rapla.client.menu.RaplaObjectActions;
 import org.rapla.components.util.TimeInterval;
 import org.rapla.entities.User;
 import org.rapla.entities.configuration.CalendarModelConfiguration;

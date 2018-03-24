@@ -10,10 +10,9 @@
  | program with every library, which license fulfills the Open Source       |
  | Definition as published by the Open Source Initiative (OSI).             |
  *--------------------------------------------------------------------------*/
-package org.rapla.client.menu;
+package org.rapla.client.menu.impl;
 
 import io.reactivex.functions.Consumer;
-import jsinterop.annotations.JsType;
 import org.rapla.RaplaResources;
 import org.rapla.client.EditController;
 import org.rapla.client.PopupContext;
@@ -21,6 +20,9 @@ import org.rapla.client.dialog.DeleteDialogInterface;
 import org.rapla.client.dialog.DialogUiFactoryInterface;
 import org.rapla.client.dialog.InfoFactory;
 import org.rapla.client.internal.DeleteUndo;
+import org.rapla.client.menu.IdentifiableMenuEntry;
+import org.rapla.client.menu.MenuInterface;
+import org.rapla.client.menu.MenuItemFactory;
 import org.rapla.components.i18n.I18nIcon;
 import org.rapla.entities.Category;
 import org.rapla.entities.Entity;
@@ -50,7 +52,6 @@ import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 
-@JsType
 public class RaplaObjectActions {
     public final static int DELETE = 1;
     public final static int COPY = 2;
