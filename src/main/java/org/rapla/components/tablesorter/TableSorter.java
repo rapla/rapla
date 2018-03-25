@@ -340,8 +340,7 @@ public class TableSorter extends AbstractTableModel {
             int row1 = modelIndex;
             int row2 = ((Row) o).modelIndex;
 
-            for (Iterator<Directive> it = sortingColumns.iterator(); it.hasNext();) {
-                Directive directive =  it.next();
+            for (Directive directive:sortingColumns) {
                 int column = directive.column;
                 Object o1 = tableModel.getValueAt(row1, column);
                 Object o2 = tableModel.getValueAt(row2, column);
@@ -364,7 +363,18 @@ public class TableSorter extends AbstractTableModel {
                     return directive.direction == DESCENDING ? -comparison : comparison;
                 }
             }
-            return 0;
+            if ( row1 == row2)
+            {
+                return 0;
+            }
+            if ( row1< row2)
+            {
+                return -1;
+            }
+            else
+            {
+                return 1;
+            }
         }
     }
 

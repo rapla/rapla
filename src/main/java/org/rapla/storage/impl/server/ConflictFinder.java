@@ -661,7 +661,7 @@ class ConflictFinder {
                 Reservation reservation = currentUpdateResult.getLastKnown( (ReferenceInfo<Reservation>) ref);
     			for (Appointment app: reservation.getAppointments())
     			{
-	    			for ( Allocatable alloc:reservation.getAllocatablesFor( app))
+                    reservation.getAllocatablesFor( app).forEach(alloc->
 	    			{
 	    				Set<ReferenceInfo<Appointment>> set = appointmentUpdateMap.get( alloc.getReference());
 	    				if ( set == null)
@@ -670,7 +670,7 @@ class ConflictFinder {
 	    					appointmentUpdateMap.put(alloc.getReference(), set);
 	    				}
 	    				set.add( app.getReference());
-	    			}
+	    			});
     			}
     		}
     	}

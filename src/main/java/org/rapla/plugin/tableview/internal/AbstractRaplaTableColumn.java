@@ -16,6 +16,7 @@ import org.rapla.framework.RaplaLocale;
 import org.rapla.plugin.tableview.RaplaTableColumn;
 import org.rapla.plugin.tableview.TableViewPlugin;
 import org.rapla.plugin.tableview.internal.TableConfig.TableColumnConfig;
+import org.rapla.plugin.tableview.TableColumnType;
 
 import java.util.Collections;
 import java.util.Date;
@@ -35,6 +36,21 @@ public abstract class AbstractRaplaTableColumn<T, C> implements RaplaTableColumn
         this.raplaLocale = raplaLocale;
         this.facade = facade;
         this.user = user;
+    }
+
+    @Override
+    public TableColumnType getType()
+    {
+        final Class<?> columnClass = getColumnClass();
+        if ( columnClass.equals(Date.class))
+        {
+            return TableColumnType.DATE;
+        }
+        if ( columnClass.equals(Long.class) || columnClass.equals(Integer.class))
+        {
+            return TableColumnType.INTEGER;
+        }
+        return TableColumnType.STRING;
     }
 
     protected Locale getLocale()

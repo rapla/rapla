@@ -884,7 +884,7 @@ public class ReservationControllerImpl implements ReservationController {
                     //modifiableReservation.addAppointment( copyReservations);
                     addAppointment = copy;
 
-                    List<Allocatable> all = new ArrayList<Allocatable>(Arrays.asList(reservation.getAllocatablesFor(appointment)));
+                    List<Allocatable> all = reservation.getAllocatablesFor(appointment).collect(Collectors.toList());
                     all.remove(oldAllocatable);
                     for (Allocatable a : all) {
                         Appointment[] restr = reservation.getRestriction(a);

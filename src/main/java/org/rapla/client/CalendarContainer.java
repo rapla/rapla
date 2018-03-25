@@ -9,7 +9,7 @@ public interface CalendarContainer
 {
     void scrollToStart();
     void closeFilterButton();
-    Observable update();
+    Observable<Object> update();
     void update(ModificationEvent evt) throws RaplaException;
     void init(boolean editable,PresenterChangeCallback callback) throws RaplaException;
     RaplaWidget provideContent();

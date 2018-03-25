@@ -1,4 +1,4 @@
-package org.rapla.plugin.tableview.internal.swing;
+package org.rapla.plugin.tableview.internal;
 
 import org.rapla.RaplaResources;
 import org.rapla.client.extensionpoints.AnnotationEditTypeExtension;

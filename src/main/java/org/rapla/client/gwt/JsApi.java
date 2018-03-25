@@ -10,6 +10,9 @@ import org.rapla.components.util.TimeInterval;
 import org.rapla.entities.User;
 import org.rapla.entities.configuration.CalendarModelConfiguration;
 import org.rapla.entities.configuration.Preferences;
+import org.rapla.entities.domain.AppointmentBlock;
+import org.rapla.entities.domain.Reservation;
+import org.rapla.facade.CalendarModel;
 import org.rapla.facade.CalendarOptions;
 import org.rapla.facade.CalendarSelectionModel;
 import org.rapla.facade.RaplaComponent;
@@ -20,15 +23,24 @@ import org.rapla.framework.RaplaLocale;
 import org.rapla.logger.Logger;
 import org.rapla.plugin.abstractcalendar.RaplaBuilder;
 import org.rapla.plugin.autoexport.AutoExportPlugin;
+import org.rapla.plugin.tableview.RaplaTableColumn;
+import org.rapla.plugin.tableview.RaplaTableModel;
+import org.rapla.plugin.tableview.internal.TableConfig;
+import org.rapla.scheduler.Promise;
+import org.rapla.scheduler.ResolvedPromise;
 import org.rapla.storage.dbrm.RemoteAuthentificationService;
 
 import javax.inject.Inject;
 import javax.inject.Provider;
+import javax.swing.table.TableColumn;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Date;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 @JsType
@@ -43,15 +55,17 @@ public class JsApi {
     private final Provider<RaplaBuilder> raplaBuilder;
     private final RaplaResources i18n;
     private final MenuFactory menuFactory;
+    private final TableConfig.TableConfigLoader tableConfigLoader;
 
     @JsIgnore
     @Inject
     public JsApi(ClientFacade facade, Logger logger, ReservationController reservationController, CalendarSelectionModel calendarModel,
             RemoteAuthentificationService remoteAuthentificationService, RaplaLocale raplaLocale, Provider<RaplaBuilder> raplaBuilder, RaplaResources i18n,
-            MenuFactory menuFactory) {
+            MenuFactory menuFactory, TableConfig.TableConfigLoader tableConfigLoader) {
         this.clientFacade = facade;
         this.i18n = i18n;
         this.menuFactory = menuFactory;
+        this.tableConfigLoader = tableConfigLoader;
         this.facade = clientFacade.getRaplaFacade();
         this.logger = logger;
         this.reservationController = reservationController;
@@ -147,6 +161,41 @@ public class JsApi {
 
     public TimeInterval createInterval(Date from, Date to) {
         return new TimeInterval(from, to);
+    }
+
+    public Promise<RaplaTableModel> loadTableModel(CalendarSelectionModel model)
+    {
+        final String viewId = model.getViewId();
+        if (viewId.equals("table_appointments"))
+        {
+            final Supplier<Promise<List<AppointmentBlock>>> initFunction =(()-> model.queryBlocks(model.getTimeIntervall()));
+            return loadTableModel("appointments", initFunction);
+        }
+        else if (viewId.equals("table_events"))
+        {
+            final Supplier<Promise<List<Reservation>>> initFunction =(()-> model.queryReservations(model.getTimeIntervall()).thenApply(ArrayList::new));
+            return loadTableModel("events", initFunction);
+        }
+        else
+        {
+            return new ResolvedPromise<>(new RaplaException("No table data found for view "  + viewId));
+        }
+    }
+
+    private <T> Promise<RaplaTableModel> loadTableModel(String viewId, Supplier<Promise<List<T>>> initFunction)
+    {
+        RaplaTableModel<T, Object> tableModel;
+        try
+        {
+            User user = getUser();
+            List<RaplaTableColumn<T,Object>> raplaTableColumns = tableConfigLoader.loadColumns(viewId, user);
+            tableModel = new RaplaTableModel<T,Object>(raplaTableColumns);
+        }
+        catch (RaplaException e)
+        {
+            return new ResolvedPromise<>(e);
+        }
+        return initFunction.get().thenApply((blocks)-> tableModel.setObjects( blocks));
     }
 
 }

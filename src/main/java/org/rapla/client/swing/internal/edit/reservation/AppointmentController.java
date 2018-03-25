@@ -1827,7 +1827,7 @@ public class AppointmentController extends RaplaGUIComponent implements Disposab
     public void nextFreeAppointment()
     {
         Reservation reservation = appointment.getReservation();
-        Allocatable[] allocatables = reservation.getAllocatablesFor(appointment);
+        Allocatable[] allocatables = reservation.getAllocatablesFor(appointment).toArray(Allocatable[]::new);
         PopupContext popupContext = dialogUiFactory.createPopupContext( this);
         try
         {

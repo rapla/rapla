@@ -24,6 +24,7 @@ import org.rapla.framework.TypedComponentRole;
 import org.rapla.inject.Extension;
 import org.rapla.logger.Logger;
 import org.rapla.scheduler.CommandScheduler;
+import org.rapla.scheduler.Observable;
 import org.rapla.scheduler.Promise;
 import org.rapla.scheduler.ResolvedPromise;
 import org.rapla.scheduler.Subject;
@@ -86,7 +87,6 @@ import java.util.Date;
         view.addSummaryView(conflictsSelectionPresenter.getSummaryComponent());
         view.addCalendarView(calendarContainer.provideContent());
         updateOwnReservationsSelected();
-
         try
         {
             calendarContainer.init(true, () ->
@@ -100,7 +100,14 @@ import java.util.Date;
             throw new RaplaInitializationException(e);
         }
         view.setPresenter(this);
-        eventBus.getCalendarRefreshObservable().subscribe((evt)->calendarContainer.update());
+        eventBus.getCalendarRefreshObservable().subscribe((evt)-> {
+            busyIdleObservable.onNext("Laden");
+                    calendarContainer.update().doOnComplete(() ->
+                            busyIdleObservable.onNext(""))
+            .doOnError((ex2)->
+                    logger.error( ex2.getMessage(), ex2))
+            .subscribe();
+        });
         eventBus.getCalendarPreferencesObservable().subscribe((evt)
         ->
                 {

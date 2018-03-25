@@ -1,4 +1,4 @@
-package org.rapla.plugin.tableview.internal.gwt;
+package org.rapla.plugin.tableview;
 
 import jsinterop.annotations.JsType;
 

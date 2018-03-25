@@ -50,14 +50,14 @@ public class GroupStartTimesStrategy extends AbstractGroupStrategy {
 			for (Block block:blocks)
 			{
 				RaplaBlock b = (RaplaBlock)block;
-				for (Allocatable a:b.getReservation().getAllocatablesFor(b.getAppointment()))
+				b.getReservation().getAllocatablesFor(b.getAppointment()).forEach( a->
 				{
 					int index = allocatables.indexOf( a );
 					if ( index >= 0 )
 					{
 						map.put( block, index );
 					}
-				}
+				});
 		     }
 		     return map;		
 		}

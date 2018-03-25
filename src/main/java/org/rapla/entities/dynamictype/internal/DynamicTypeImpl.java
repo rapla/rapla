@@ -59,6 +59,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 final public class DynamicTypeImpl extends SimpleEntity implements DynamicType, ParentEntity, ModifiableTimestamp
 {
@@ -923,7 +924,7 @@ final public class DynamicTypeImpl extends SimpleEntity implements DynamicType, 
                 {
                     Appointment appointment = ((Appointment)object);
                     final Reservation reservation = appointment.getReservation();
-                    List<Allocatable> asList = Arrays.asList(reservation.getAllocatablesFor(appointment));
+                    List<Allocatable> asList = reservation.getAllocatablesFor(appointment).collect(Collectors.toList());
                     return asList;
                 }
                 else if ( object instanceof Reservation)
@@ -955,7 +956,7 @@ final public class DynamicTypeImpl extends SimpleEntity implements DynamicType, 
                 {
                     Appointment appointment = ((Appointment)object);
                     final Reservation reservation = appointment.getReservation();
-                    List<Allocatable> asList = Arrays.asList(reservation.getAllocatablesFor(appointment));
+                    List<Allocatable> asList = reservation.getAllocatablesFor(appointment).collect(Collectors.toList());
                     return asList;
                 }
                 else if ( object instanceof Reservation)

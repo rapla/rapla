@@ -12,7 +12,6 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.client.menu.impl;
 
-import io.reactivex.functions.Consumer;
 import org.rapla.RaplaResources;
 import org.rapla.client.EditController;
 import org.rapla.client.PopupContext;
@@ -43,7 +42,7 @@ import java.util.Collection;
 import java.util.Date;
 import java.util.Iterator;
 
-public class AppointmentAction extends RaplaComponent implements Consumer<PopupContext> {
+public class AppointmentAction extends RaplaComponent  {
     public final static int DELETE = 1;
     public final static int COPY = 2;
     public final static int PASTE = 3;
@@ -250,11 +249,6 @@ public class AppointmentAction extends RaplaComponent implements Consumer<PopupC
 		name = !canModify && canExchangeAllocatables ?  getString("exchange_allocatables") : getString("edit");
 		setEnabled(canModify || canExchangeAllocatables );
         return this;
-    }
-
-    @Override
-    public void accept(PopupContext popupContext) {
-        actionPerformed();
     }
 
     public void actionPerformed() {

@@ -192,8 +192,16 @@ public class CalendarModelImpl implements CalendarSelectionModel
 
     public boolean isMatchingSelectionAndFilter(Reservation reservation, Appointment appointment) throws RaplaException
     {
-        Allocatable[] allocatables = appointment == null ? reservation.getAllocatables() : reservation.getAllocatablesFor(appointment);
-        HashSet<RaplaObject> hashSet = new HashSet<RaplaObject>(Arrays.asList(allocatables));
+        Set<RaplaObject> hashSet;
+        if ( appointment == null)
+        {
+            hashSet = new HashSet<>(Arrays.asList(reservation.getAllocatables()));
+        }
+        else
+            {
+            hashSet = reservation.getAllocatablesFor(appointment).collect(Collectors.toSet());
+        }
+
         hashSet.add(reservation.getClassification().getType());
         final ReferenceInfo<User> ownerId = reservation.getOwnerRef();
         if (ownerId != null)
@@ -1439,8 +1447,8 @@ public class CalendarModelImpl implements CalendarSelectionModel
                 for (Appointment app : allAppointments)
                 {
                     Reservation event = app.getReservation();
-                    Allocatable[] allocatablesFor = event.getAllocatablesFor(app);
-                    if (selectedAllocatables == null || containsOne(selectedAllocatables, allocatablesFor))
+                    Stream<Allocatable> allocatablesFor = event.getAllocatablesFor(app);
+                    if (selectedAllocatables == null || allocatablesFor.anyMatch(selectedAllocatables::contains))
                     {
                         Collection<Appointment> conflictList = conflictingAppointments.get(app);
                         if (conflictList == null || conflictList.isEmpty())
@@ -1481,18 +1489,6 @@ public class CalendarModelImpl implements CalendarSelectionModel
         {
             return new ResolvedPromise<>(e);
         }
-    }
-
-    private boolean containsOne(Set<Allocatable> allocatableSet, Allocatable[] listOfAllocatablesToMatch)
-    {
-        for (Allocatable alloc : listOfAllocatablesToMatch)
-        {
-            if (allocatableSet.contains(alloc))
-            {
-                return true;
-            }
-        }
-        return false;
     }
 
     private DynamicType[] getDynamicTypes(String elementKey) throws RaplaException

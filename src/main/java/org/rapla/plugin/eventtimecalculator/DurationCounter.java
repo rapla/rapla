@@ -8,7 +8,7 @@ import org.rapla.facade.client.ClientFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.inject.Extension;
 import org.rapla.plugin.tableview.client.swing.AppointmentTableModel;
-import org.rapla.plugin.tableview.client.swing.ReservationTableModel;
+import org.rapla.plugin.tableview.RaplaTableModel;
 import org.rapla.plugin.tableview.client.swing.extensionpoints.AppointmentSummaryExtension;
 import org.rapla.plugin.tableview.client.swing.extensionpoints.ReservationSummaryExtension;
 
@@ -40,8 +40,8 @@ public final class DurationCounter  implements ReservationSummaryExtension, Appo
     public void init(final JTable table, JPanel summaryRow) {
  		
     	final JLabel counter = new JLabel();
-        summaryRow.add( Box.createHorizontalStrut(30));
         summaryRow.add( counter);
+        summaryRow.add( Box.createHorizontalStrut(30));
         table.getSelectionModel().addListSelectionListener(new ListSelectionListener() {
 
              public void valueChanged(ListSelectionEvent arg0)
@@ -75,20 +75,28 @@ public final class DurationCounter  implements ReservationSummaryExtension, Appo
                          long duration = eventTimeModel.calcDuration(block);
                          totalduration+= duration;
                      }
-                     if ( model instanceof ReservationTableModel)
+                     if ( model instanceof RaplaTableModel)
                      {
-                         Reservation block = ((ReservationTableModel) model).getReservationAt(row);
-                         long duration = eventTimeModel.calcDuration(block);
-                         if ( duration <0)
+                         final Object objectAt = ((RaplaTableModel) model).getObjectAt(row);
+                         long duration =0;
+                         if ( objectAt instanceof Reservation)
                          {
-                             totalduration = -1;
-                             break;
+                             duration = eventTimeModel.calcDuration((Reservation) objectAt);
+                             if (duration < 0)
+                             {
+                                 totalduration = -1;
+                                 break;
+                             }
+                         }
+                         else if (objectAt instanceof AppointmentBlock)
+                         {
+                             duration = eventTimeModel.calcDuration((AppointmentBlock)objectAt);
                          }
                          totalduration+= duration;
                      }
                  }
                  String durationString = totalduration < 0 ? i18n.getString("infinite") : eventTimeModel.format(totalduration);
-                 counter.setText( i18n.getString("total_duration") + " " + durationString);
+                 counter.setText( i18n.getString("total_duration") + " " + durationString + " ");
              }
          });
      }

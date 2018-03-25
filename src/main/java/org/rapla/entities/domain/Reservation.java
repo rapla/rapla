@@ -82,7 +82,7 @@ public interface Reservation extends EntityPermissionContainer<Reservation>,Clas
     Allocatable[] getRestrictedAllocatables(Appointment appointment);
 
     /** get all allocatables that are allocated on the appointment, restricted and non restricted ones*/
-    Allocatable[] getAllocatablesFor(Appointment appointment);
+    Stream<Allocatable> getAllocatablesFor(Appointment appointment);
     
     /** returns if an the reservation has allocated the specified object. */
     boolean hasAllocated(Allocatable alloc);

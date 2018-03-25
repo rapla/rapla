@@ -97,6 +97,8 @@ import java.util.Map.Entry;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.TreeSet;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 class RaplaSQL
 {
@@ -1825,7 +1827,8 @@ class AllocationStorage extends EntityStorage<Appointment> implements SubStorage
     {
         Reservation event = appointment.getReservation();
         int count = 0;
-        for (Allocatable allocatable : event.getAllocatablesFor(appointment))
+        final List<Allocatable> allocatablesFor = event.getAllocatablesFor(appointment).collect(Collectors.toList());
+        for (Allocatable allocatable : allocatablesFor)
         {
             setId(stmt, 1, appointment);
             setId(stmt, 2, allocatable);

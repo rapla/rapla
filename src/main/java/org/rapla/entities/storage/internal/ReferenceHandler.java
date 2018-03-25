@@ -28,6 +28,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
+import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
 
 /** The ReferenceHandler takes care of serializing and deserializing references to Entity objects.
 <p>
@@ -284,7 +286,7 @@ abstract public class ReferenceHandler /*extends HashMap<String,List<String>>*/ 
 		return Collections.unmodifiableCollection(entries);
 	}
 
-	protected <T extends Entity> T tryResolve(String id,Class<T> entityClass) 
+	protected <T extends Entity> T tryResolve(String id,Class<T> entityClass)
 	{
         return resolver.tryResolve( id , entityClass);
 	}	

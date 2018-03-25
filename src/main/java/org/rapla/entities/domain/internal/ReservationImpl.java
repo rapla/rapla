@@ -598,7 +598,7 @@ public final class ReservationImpl extends SimpleEntity implements Reservation, 
         for (String allocatableId:list) {
             boolean found = false;
             List<String> restriction = getRestrictionPrivate( allocatableId );
-            if ( restriction.size() == 0)
+            if ( restriction.isEmpty())
             {
                 found = true;
             }
@@ -618,19 +618,25 @@ public final class ReservationImpl extends SimpleEntity implements Reservation, 
         return set;
     }
 
-    public Allocatable[] getAllocatablesFor(Appointment appointment) {
-        final Collection<ReferenceInfo<Allocatable>> allocatableIds = getAllocatableIdsFor(appointment);
-        HashSet<Allocatable> set = new HashSet<Allocatable>();
-        for(ReferenceInfo<Allocatable> id : allocatableIds)
+    public Stream<Allocatable> getAllocatablesFor(Appointment appointment) {
+        Collection<String> list = getIds("resources");
+        String appointmentId = appointment.getId();
+        final Stream<Allocatable> allocatableStream = list.stream().filter((allocId) -> {
+            List<String> restrictions = getRestrictionPrivate(allocId);
+            return restrictions.isEmpty() || restrictions.contains(appointmentId);
+        }).map(allocId -> resolve(allocId, Allocatable.class));
+        return allocatableStream;
+    }
+
+    private <T extends Entity> T resolve( String id, Class<T> tClass)
+    {
+        final EntityResolver resolver = getResolver();
+        final T alloc = resolver.tryResolve(id,tClass);
+        if ( alloc == null)
         {
-            final Allocatable alloc = getResolver().tryResolve(id);
-            if ( alloc == null)
-            {
-                throw new UnresolvableReferenceExcpetion( Allocatable.class.getName() + ":" + id, toString());
-            }
-            set.add( alloc);
+            throw new UnresolvableReferenceExcpetion( tClass.getName() + ":" + id, toString());
         }
-        return  set.toArray( Allocatable.ALLOCATABLE_ARRAY);
+        return alloc;
     }
 
     public Appointment findAppointment(Appointment copy) {

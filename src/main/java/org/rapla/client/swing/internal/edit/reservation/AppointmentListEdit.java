@@ -472,7 +472,7 @@ class AppointmentListEdit extends AbstractAppointmentEditor
 			List<AppointmentBlock> splits = new ArrayList<AppointmentBlock>();
 			Appointment appointment = appointmentController.getAppointment();
 			appointment.createBlocks(appointment.getStart(), DateTools.fillDate(appointment.getMaxEnd()), splits);
-			allocatablesFor = mutableReservation.getAllocatablesFor(appointment);
+			allocatablesFor = mutableReservation.getAllocatablesFor(appointment).toArray(Allocatable[]::new);
 
 			wholeAppointment = appointment;
 			fireAppointmentRemoved(Collections.singleton(appointment));

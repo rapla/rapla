@@ -1,4 +1,4 @@
-package org.rapla.plugin.tableview.internal;
+package org.rapla.rest;
 
 import org.rapla.components.util.SerializableDateTimeFormat;
 

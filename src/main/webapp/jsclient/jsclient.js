@@ -11,6 +11,14 @@ var apiCallback = (api) =>
           calendar.load(null);
           api.info( "Calendar Model loaded: " + calendar);
           var timeIntervall =calendar.getTimeIntervall();
+          api.loadTableModel(calendar).thenAccept( (table)=>
+              {
+                 if (table.getRowCount() > 0)
+                 {
+                    api.info("TableRow: " + table.getValueAt(0,0));
+                 }
+              }
+           ).exceptionally( errorFunction);
           var blocksPromise = calendar.queryBlocks( timeIntervall);
           blocksPromise.thenRun(()=> api.info("Hallo blocks")).exceptionally(errorFunction);
           //blocksPromise.thenRun(()=> console.log("Hallo blocks")).exceptionally(new rapla.Error(errorFunction).get());

@@ -38,6 +38,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.SortedSet;
 import java.util.TreeSet;
+import java.util.stream.Collectors;
 
 @Extension(provides = FunctionFactory.class, id=StandardFunctions.NAMESPACE)
 public class StandardFunctions implements FunctionFactory
@@ -1319,7 +1320,7 @@ public class StandardFunctions implements FunctionFactory
             {
                 Appointment appointment = ((Appointment) object);
                 final Reservation reservation = appointment.getReservation();
-                List<Allocatable> asList = Arrays.asList(reservation.getAllocatablesFor(appointment));
+                List<Allocatable> asList = reservation.getAllocatablesFor(appointment).collect(Collectors.toList());
                 return asList;
             }
             if (object instanceof CalendarModel)
