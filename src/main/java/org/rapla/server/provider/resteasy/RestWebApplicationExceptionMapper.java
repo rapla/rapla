@@ -1,4 +1,6 @@
-package org.rapla.server.provider;
+package org.rapla.server.provider.resteasy;
+
+import org.rapla.server.provider.ExceptionResponseBuilder;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.WebApplicationException;
@@ -8,7 +10,7 @@ import javax.ws.rs.ext.ExceptionMapper;
 import javax.ws.rs.ext.Provider;
 
 @Provider
-public class RestWebApplicationExceptionMapper extends  RaplaExceptionMapper implements ExceptionMapper<WebApplicationException>
+public class RestWebApplicationExceptionMapper  implements ExceptionMapper<WebApplicationException>
 {
     HttpServletRequest request;
 
@@ -20,6 +22,6 @@ public class RestWebApplicationExceptionMapper extends  RaplaExceptionMapper imp
     @Override
     public Response toResponse(WebApplicationException container)
     {
-        return toResponse( container, request);
+        return ExceptionResponseBuilder.toResponse( container, request);
     }
 }
