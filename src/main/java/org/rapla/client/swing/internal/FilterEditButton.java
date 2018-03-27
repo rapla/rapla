@@ -45,55 +45,51 @@ public class FilterEditButton extends RaplaGUIComponent
         filterButton.setText(getString("filter"));
         filterButton.setSize(80,18);
         final PopupContext popupContext = dialogUiFactory.createPopupContext(null);
-        filterButton.addActionListener( new ActionListener()
-        {
-            public void actionPerformed(ActionEvent e) {
-                
-                if ( popup != null)
-                {
-                    popup.setVisible(false);
-                    popup= null;
-                    filterButton.setChar('v');
-                    return;
-                }
-                try {
-                    if ( ui != null && listener != null)
-                    {
-                        ui.removeChangeListener( listener);
-                    }
-                    ui = new ClassifiableFilterEdit( facade, i18n, raplaLocale, logger, treeFactory, isResourceSelection,  dateFieldFactory, dialogUiFactory, booleanFieldFactory, textFieldFactory, longFieldFactory);
-                    if ( listener != null)
-                    {
-                    	ui.addChangeListener(listener);
-                    }
-                    ui.setFilter( filter);
-                    final Point locationOnScreen = filterButton.getLocationOnScreen();
-                    final int y = locationOnScreen.y + 18;
-                    final int x = locationOnScreen.x;
-                    if ( popup == null)
-                    {
-                    	Component ownerWindow = DialogUI.getOwnerWindow(filterButton);
-                    	if ( ownerWindow instanceof Frame)
-                    	{
-                    		popup = new JWindow((Frame)ownerWindow);
-                    	}
-                    	else if ( ownerWindow instanceof Dialog)
-                    	{
-                    		popup = new JWindow((Dialog)ownerWindow);
-                    	}
-                    }
-                    JComponent content = ui.getComponent();
-					popup.setContentPane(content );
-                    popup.setSize( content.getPreferredSize());
-                    popup.setLocation( x, y);
-                    //.getSharedInstance().getPopup( filterButton, ui.getComponent(), x, y);
-                    popup.setVisible(true);
-                    filterButton.setChar('^');
-                } catch (Exception ex) {
-                    dialogUiFactory.showException(ex, popupContext);
-                }
+        filterButton.addActionListener(e -> {
+
+            if ( popup != null)
+            {
+                popup.setVisible(false);
+                popup= null;
+                filterButton.setChar('v');
+                return;
             }
-            
+            try {
+                if ( ui != null && listener != null)
+                {
+                    ui.removeChangeListener( listener);
+                }
+                ui = new ClassifiableFilterEdit( facade, i18n, raplaLocale, logger, treeFactory, isResourceSelection,  dateFieldFactory, dialogUiFactory, booleanFieldFactory, textFieldFactory, longFieldFactory);
+                if ( listener != null)
+                {
+                    ui.addChangeListener(listener);
+                }
+                ui.setFilter( filter);
+                final Point locationOnScreen = filterButton.getLocationOnScreen();
+                final int y = locationOnScreen.y + 18;
+                final int x = locationOnScreen.x;
+                if ( popup == null)
+                {
+                    Component ownerWindow = DialogUI.getOwnerWindow(filterButton);
+                    if ( ownerWindow instanceof Frame)
+                    {
+                        popup = new JWindow((Frame)ownerWindow);
+                    }
+                    else if ( ownerWindow instanceof Dialog)
+                    {
+                        popup = new JWindow((Dialog)ownerWindow);
+                    }
+                }
+                JComponent content = ui.getComponent();
+                popup.setContentPane(content );
+                popup.setSize( content.getPreferredSize());
+                popup.setLocation( x, y);
+                //.getSharedInstance().getPopup( filterButton, ui.getComponent(), x, y);
+                popup.setVisible(true);
+                filterButton.setChar('^');
+            } catch (Exception ex) {
+                dialogUiFactory.showException(ex, popupContext);
+            }
         });
         
     }

@@ -33,7 +33,7 @@ public class AbstractTableStorage implements TableStorage
 	protected Connection con;
 	protected Logger logger;
 	private String dbProductName = "";
-	private Map<String,ColumnDef> columns = new LinkedHashMap<String,ColumnDef>();
+	private Map<String,ColumnDef> columns = new LinkedHashMap<>();
 	protected String insertSql;
 	protected String deleteSql;
 	protected String selectSql;
@@ -252,27 +252,27 @@ public class AbstractTableStorage implements TableStorage
 	}
 
 	protected boolean isMysql() {
-		boolean result = dbProductName.indexOf("mysql") >=0;
+		boolean result = dbProductName.contains("mysql");
 		return result;
 	}
 
 	protected boolean isSQLServer() {
-        boolean result = dbProductName.toLowerCase().indexOf("microsoft") >=0;
+        boolean result = dbProductName.toLowerCase().contains("microsoft");
         return result;
     }
 
 	protected boolean isHsqldb() {
-		boolean result = dbProductName.indexOf("hsql") >=0;
+		boolean result = dbProductName.contains("hsql");
 		return result;
 	}
 
 	protected boolean isPostgres() {
-		boolean result = dbProductName.indexOf("postgres") >=0;
+		boolean result = dbProductName.contains("postgres");
 		return result;
 	}
 
 	protected boolean isH2() {
-		boolean result = dbProductName.indexOf("h2") >=0;
+		boolean result = dbProductName.contains("h2");
 		return result;
 	}
 
@@ -319,11 +319,11 @@ public class AbstractTableStorage implements TableStorage
 
 	public List<String> getCreateSQL()
     {
-    	List<String> createSQL = new ArrayList<String>();
+    	List<String> createSQL = new ArrayList<>();
     	StringBuffer buf = new StringBuffer();
     	String table = tableName;
 		buf.append("CREATE TABLE " + table + " (");
-		List<String> keyCreates = new ArrayList<String>();
+		List<String> keyCreates = new ArrayList<>();
 		boolean first= true;
 		for (ColumnDef col: columns.values())
 		{

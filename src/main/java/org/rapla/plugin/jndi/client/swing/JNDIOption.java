@@ -127,13 +127,10 @@ public class JNDIOption implements JNDIConf, PluginOptionPanel
         passwordPanel.add( connectionPassword, BorderLayout.CENTER);
         final JCheckBox showPassword = new JCheckBox("show password");
 		passwordPanel.add( showPassword, BorderLayout.EAST);
-		showPassword.addActionListener(new ActionListener() {
-			
-			public void actionPerformed(ActionEvent e) {
-				boolean show = showPassword.isSelected();
-				connectionPassword.setEchoChar( show ? ((char) 0): '*');
-			}
-		});
+		showPassword.addActionListener(e -> {
+            boolean show = showPassword.isSelected();
+            connectionPassword.setEchoChar( show ? ((char) 0): '*');
+        });
 		
 		RaplaGUIComponent.addCopyPaste( connectionPassword, i18n, raplaLocale, ioInterface, logger );
     	connectionURL = newTextField();
@@ -169,44 +166,39 @@ public class JNDIOption implements JNDIConf, PluginOptionPanel
         groupField.mapFrom( Collections.singletonList(user));
     	addRow("Default Groups", groupField.getComponent() );
     	
-    	testButton.addActionListener( new ActionListener() 
-    	{
+    	testButton.addActionListener(e -> {
+            PasswordEnterUI testUser;
+            DialogInterface dialog;
+            final PopupContext popupContext = new SwingPopupContext(getComponent(), null);
+            try
+            {
 
-            public void actionPerformed(ActionEvent e) {
-                PasswordEnterUI testUser;
-                DialogInterface dialog;
-                final PopupContext popupContext = new SwingPopupContext(getComponent(), null);
-                try
-                {
+                testUser = new PasswordEnterUI(raplaResources);
+                dialog =dialogUiFactory.createContentDialog(popupContext, testUser.getComponent(),new String[] {"test","abort"});
+                dialog.setTitle("Please enter valid user!");
 
-                    testUser = new PasswordEnterUI(raplaResources);
-                    dialog =dialogUiFactory.createContentDialog(popupContext, testUser.getComponent(),new String[] {"test","abort"});
-                    dialog.setTitle("Please enter valid user!");
-
-                }
-                catch (Exception ex)
-                {
-                    dialogUiFactory.showException(ex, popupContext);
-                    return;
-                }
-                dialog.start(true).thenCompose((index) ->
-                    {
-                        DefaultConfiguration conf = new DefaultConfiguration("test");
-                        addChildren(conf);
-                        if (index > 0) {
-                            return new ResolvedPromise<>((Void) null);
-                        }
-                        String username = testUser.getUsername();
-                        String password = new String(testUser.getNewPassword());
-                        final Promise<Boolean> testPromise = configService.test(new MailTestRequest(conf, username, password));
-                        return testPromise.thenCompose((dummy) ->
-                                dialogUiFactory.createInfoDialog(popupContext, "JNDI", "JNDI Authentification successfull").start(true)
-                        ).thenApply((index2) -> null);
-                    }
-                ).exceptionally((ex)->dialogUiFactory.showException(ex, popupContext));
             }
-    	    
-    	});
+            catch (Exception ex)
+            {
+                dialogUiFactory.showException(ex, popupContext);
+                return;
+            }
+            dialog.start(true).thenCompose((index) ->
+                {
+                    DefaultConfiguration conf = new DefaultConfiguration("test");
+                    addChildren(conf);
+                    if (index > 0) {
+                        return new ResolvedPromise<>((Void) null);
+                    }
+                    String username = testUser.getUsername();
+                    String password = new String(testUser.getNewPassword());
+                    final Promise<Boolean> testPromise = configService.test(new MailTestRequest(conf, username, password));
+                    return testPromise.thenCompose((dummy) ->
+                            dialogUiFactory.createInfoDialog(popupContext, "JNDI", "JNDI Authentification successfull").start(true)
+                    ).thenApply((index2) -> null);
+                }
+            ).exceptionally((ex)->dialogUiFactory.showException(ex, popupContext));
+        });
     	panel.add( content, BorderLayout.CENTER);
         return panel;
     }
@@ -278,7 +270,7 @@ public class JNDIOption implements JNDIConf, PluginOptionPanel
         Collection<Category> groups;
         if (groupList == null)
         {
-        	groups = new ArrayList<Category>();
+        	groups = new ArrayList<>();
         }
         else
         {
@@ -300,7 +292,7 @@ public class JNDIOption implements JNDIConf, PluginOptionPanel
         addChildren( newConfig );
         this.config = newConfig;
         preferences.putEntry( configEntry,newConfig);
-        Set<Category> set = new LinkedHashSet<Category>();
+        Set<Category> set = new LinkedHashSet<>();
     	this.groupField.mapToList( set);
     	preferences.putEntry( JNDIPlugin.USERGROUP_CONFIG, facade.newRaplaMap( set) );
     }

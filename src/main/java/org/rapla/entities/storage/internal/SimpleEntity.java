@@ -70,7 +70,7 @@ public abstract class SimpleEntity extends ReferenceHandler implements RefEntity
         {
             if ( nonpersistantEntities == null)
             {
-                nonpersistantEntities = new LinkedHashMap<String,Entity>();
+                nonpersistantEntities = new LinkedHashMap<>();
             }
             nonpersistantEntities.put( entity.getId(), entity);
         }
@@ -95,7 +95,7 @@ public abstract class SimpleEntity extends ReferenceHandler implements RefEntity
         {
             if ( nonpersistantEntities == null)
             {
-                nonpersistantEntities = new LinkedHashMap<String,Entity>();
+                nonpersistantEntities = new LinkedHashMap<>();
             }
             nonpersistantEntities.put( entity.getId(), entity);
         }
@@ -282,15 +282,15 @@ public abstract class SimpleEntity extends ReferenceHandler implements RefEntity
 
     protected void deepClone(SimpleEntity clone) {
     	clone.id = id;
-    	clone.links =  new LinkedHashMap<String,List<String>>();
+    	clone.links = new LinkedHashMap<>();
     	for ( String key:links.keySet())
     	{
     		List<String> idList = links.get( key);
-    		clone.links.put( key, new ArrayList<String>(idList));
+    		clone.links.put( key, new ArrayList<>(idList));
     	}
     	clone.resolver = this.resolver;
     	Assert.isTrue(!clone.getSubEntities().iterator().hasNext());
-    	ArrayList<Entity>newSubEntities = new ArrayList<Entity>();
+    	ArrayList<Entity>newSubEntities = new ArrayList<>();
     	Iterable<Entity> oldEntities = getSubEntities();
     	for (Entity entity: oldEntities)
     	{

@@ -102,7 +102,7 @@ public class ConflictSelectionPresenter implements Presenter
     private List<Conflict> getConflicts(boolean enabled)
     {
         Collection<?> list = view.getSelectedElements(true);
-        final List<Conflict> result = new ArrayList<Conflict>();
+        final List<Conflict> result = new ArrayList<>();
         for (Object selected : list)
         {
             if (selected instanceof Conflict)
@@ -158,7 +158,7 @@ public class ConflictSelectionPresenter implements Presenter
         {
 
             this.enable = enable;
-            conflictStrings = new HashSet<String>();
+            conflictStrings = new HashSet<>();
             for (Conflict conflict : conflicts)
             {
                 conflictStrings.add(conflict.getId());
@@ -251,7 +251,7 @@ public class ConflictSelectionPresenter implements Presenter
 
     private void removeConflict(Collection<Conflict> conflicts, Set<ReferenceInfo> removedReferences)
     {
-        Set<String> removedIds = new LinkedHashSet<String>();
+        Set<String> removedIds = new LinkedHashSet<>();
         for (ReferenceInfo removedReference : removedReferences)
         {
             removedIds.add(removedReference.getId());
@@ -281,7 +281,7 @@ public class ConflictSelectionPresenter implements Presenter
 
     private void showConflicts(Collection<Conflict> selectedConflicts)
     {
-        ArrayList<RaplaObject> arrayList = new ArrayList<RaplaObject>(model.getSelectedObjects());
+        ArrayList<RaplaObject> arrayList = new ArrayList<>(model.getSelectedObjects());
         for (Iterator<RaplaObject> it = arrayList.iterator(); it.hasNext(); )
         {
             RaplaObject obj = it.next();
@@ -306,7 +306,7 @@ public class ConflictSelectionPresenter implements Presenter
 
     private Collection<Conflict> getSelectedConflictsInModel()
     {
-        Set<Conflict> result = new LinkedHashSet<Conflict>();
+        Set<Conflict> result = new LinkedHashSet<>();
         for (RaplaObject obj : model.getSelectedObjects())
         {
             if (obj.getTypeClass() == Conflict.class)
@@ -320,7 +320,7 @@ public class ConflictSelectionPresenter implements Presenter
     private Collection<Conflict> getSelectedConflicts()
     {
         Collection<Object> lastSelected = view.getSelectedElements(false);
-        Set<Conflict> selectedConflicts = new LinkedHashSet<Conflict>();
+        Set<Conflict> selectedConflicts = new LinkedHashSet<>();
         for (Object selected : lastSelected)
         {
             if (selected instanceof Conflict)
@@ -334,10 +334,10 @@ public class ConflictSelectionPresenter implements Presenter
     private void updateTree(Collection<Conflict> newConflicts) throws RaplaException
     {
         this.conflicts = newConflicts;
-        Collection<Conflict> selectedConflicts = new ArrayList<Conflict>(getSelectedConflicts());
+        Collection<Conflict> selectedConflicts = new ArrayList<>(getSelectedConflicts());
         Collection<Conflict> conflicts = getConflicts();
         view.updateTree(selectedConflicts, conflicts);
-        Collection<Conflict> inModel = new ArrayList<Conflict>(getSelectedConflictsInModel());
+        Collection<Conflict> inModel = new ArrayList<>(getSelectedConflictsInModel());
         if (!selectedConflicts.equals(inModel))
         {
             showConflicts(inModel);
@@ -356,7 +356,7 @@ public class ConflictSelectionPresenter implements Presenter
     private Collection<Conflict> getConflicts(User user)
     {
 
-        List<Conflict> result = new ArrayList<Conflict>();
+        List<Conflict> result = new ArrayList<>();
         for (Conflict conflict : conflicts)
         {
             if (conflict.isOwner(user))

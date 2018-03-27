@@ -97,7 +97,7 @@ public class RaplaICalImport implements ICalImport {
             String[] allocatableIds = job.getAllocatableIds();
             String eventTypeKey = job.getEventTypeKey();
             String eventTypeNameAttributeKey = job.getEventTypeNameAttributeKey();
-            List<Allocatable> allocatables = new ArrayList<Allocatable>();
+            List<Allocatable> allocatables = new ArrayList<>();
             if ( allocatableIds.length > 0)
             {
                 for ( String id:allocatableIds)
@@ -182,8 +182,8 @@ public class RaplaICalImport implements ICalImport {
 		ComponentList events = calendar.getComponents();
 		@SuppressWarnings("unchecked")
         Iterator<Component> iterator = events.iterator();
-		List<Reservation> eventList = new ArrayList<Reservation>();
-	    Map<String, Reservation> reservationMap = new HashMap<String, Reservation>();
+		List<Reservation> eventList = new ArrayList<>();
+	    Map<String, Reservation> reservationMap = new HashMap<>();
 	    while (iterator.hasNext()) {
 			Component component = iterator.next();
 			if (component.getName().equalsIgnoreCase("VEVENT") ) {
@@ -270,7 +270,7 @@ public class RaplaICalImport implements ICalImport {
 		            PropertyList rrules = component.getProperties("RRULE");
 		            if ( rrules.size() >0)
 		            {
-		                List<Recur> recurList = new ArrayList<Recur>(rrules.size());
+		                List<Recur> recurList = new ArrayList<>(rrules.size());
                         for ( int i=0;i<rrules.size();i++)
                         {
                             Property prop = rrules.get( i);
@@ -359,7 +359,7 @@ public class RaplaICalImport implements ICalImport {
         {
             int eventsPresent = 0;
             int eventsImported = 0;
-            List<Reservation> toImport = new ArrayList<Reservation>();
+            List<Reservation> toImport = new ArrayList<>();
             for (Reservation reservation : eventList)
             {
                 String uid = reservation.getAnnotation(RaplaObjectAnnotations.KEY_EXTERNALID);
@@ -394,7 +394,7 @@ public class RaplaICalImport implements ICalImport {
         Map<String, List<Entity<Reservation>>> keyMap;
         User user = null;
         Date end = null;
-        keyMap = new LinkedHashMap<String, List<Entity<Reservation>>>();
+        keyMap = new LinkedHashMap<>();
         Promise<Collection<Reservation>> reservationsPromise = facade.getReservations(user, start, end, null);
         return reservationsPromise.thenApply((reservations) ->
         {
@@ -406,7 +406,7 @@ public class RaplaICalImport implements ICalImport {
                     List<Entity<Reservation>> list = keyMap.get(key);
                     if (list == null)
                     {
-                        list = new ArrayList<Entity<Reservation>>();
+                        list = new ArrayList<>();
                         keyMap.put(key, list);
                     }
                     list.add(r);
@@ -441,7 +441,7 @@ public class RaplaICalImport implements ICalImport {
 	/** if the recurances can be matched to one or more appointments return the appointment list else return null*/
 	private List<Appointment> calcRepeating(List<Recur> recurList, Appointment start) throws RaplaException {
         final TimeZone timeZone = timeZoneConverter.getImportExportTimeZone();
-        final List<Appointment> appointments = new ArrayList<Appointment>();
+        final List<Appointment> appointments = new ArrayList<>();
         for (Recur recur : recurList) {
         	// FIXME need to implement UTC mapping
 			ReferenceInfo<User> ownerId = start.getOwnerRef();

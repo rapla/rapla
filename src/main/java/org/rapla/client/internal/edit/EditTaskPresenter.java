@@ -292,7 +292,7 @@ public class EditTaskPresenter implements TaskPresenter
     //	method for determining the consistent RaplaType from different objects
     protected Class<? extends Entity> getRaplaType(Collection obj)
     {
-        Set<Class<? extends Entity>> types = new HashSet<Class<? extends Entity>>();
+        Set<Class<? extends Entity>> types = new HashSet<>();
 
         //		iterate all committed objects and store RaplayType of the objects in a Set
         //		identic typs aren't stored double because of Set
@@ -364,7 +364,7 @@ public class EditTaskPresenter implements TaskPresenter
         Consumer<Collection<T>> saveCmd =  (saveObjects) ->
         {
             Promise<Void> promise;
-            Collection<T> entities = new ArrayList<T>();
+            Collection<T> entities = new ArrayList<>();
             entities.addAll(saveObjects);
             boolean canUndo = true;
             for (T obj : saveObjects)
@@ -534,10 +534,6 @@ public class EditTaskPresenter implements TaskPresenter
 
     public void updateReservation(Reservation newReservation) throws RaplaException
     {
-        if ( true)
-        {
-            return;
-        }
         //        if (bSaving)
 //            return;
 //        getLogger().debug("Reservation has been changed.");

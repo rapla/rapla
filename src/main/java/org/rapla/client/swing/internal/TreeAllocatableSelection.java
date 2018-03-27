@@ -93,14 +93,14 @@ public class TreeAllocatableSelection extends RaplaGUIComponent implements Chang
         addDialogTitle = getString( "add") ;
      }
     
-    Set<Allocatable> allocatables = new TreeSet<Allocatable>(new NamedComparator<Allocatable>(getLocale()));
+    Set<Allocatable> allocatables = new TreeSet<>(new NamedComparator<>(getLocale()));
 
 
     public JComponent getComponent() {
         return content;
     }
 
-    final private TreeFactory getTreeFactory() {
+    private TreeFactory getTreeFactory() {
         return  treeFactory;
     }
 
@@ -166,7 +166,7 @@ public class TreeAllocatableSelection extends RaplaGUIComponent implements Chang
 		}
 
 		protected List<Allocatable> getSelectedAllocatables(RaplaTree tree) {
-			List<Allocatable> allocatables = new ArrayList<Allocatable>();
+			List<Allocatable> allocatables = new ArrayList<>();
 			List<Object> selectedElements = tree.getSelectedElements();
 			for ( Object obj:selectedElements)
 			{

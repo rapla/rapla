@@ -318,7 +318,7 @@ public interface RaplaFacade
 
     enum ChangeState
     {
-        latest,newerVersionAvailable,deleted;
+        latest,newerVersionAvailable,deleted
     }
     Promise<ChangeState> getUpdateState(Entity original);
 }

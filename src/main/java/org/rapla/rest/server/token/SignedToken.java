@@ -125,7 +125,7 @@ public class SignedToken {
    * Validate a returned token.
    *
    * @param tokenString a token string previously created by this class.
-   * @param text text that must have been used during {@link #newToken(String)}
+   * @param text text that must have been used during {@link #newToken(String,Date)}
    *        in order for the token to be valid. If null the text will be taken
    *        from the token string itself.
    * @return true if the token is valid; false if the token is null, the empty

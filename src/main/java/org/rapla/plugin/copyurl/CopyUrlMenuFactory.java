@@ -49,7 +49,7 @@ public class CopyUrlMenuFactory implements ObjectMenuFactory
             return IdentifiableMenuEntry.EMPTY_ARRAY;
         }
 
-        Collection<Object> selectedObjects = new HashSet<Object>();
+        Collection<Object> selectedObjects = new HashSet<>();
         Collection<?> selected = menuContext.getSelectedObjects();
         if (selected.size() != 0)
         {

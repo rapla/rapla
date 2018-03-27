@@ -53,7 +53,7 @@ public class DateChooserPanel extends RaplaGUIComponent
         Disposable
         ,RaplaWidget
 {
-    Collection<DateChangeListener> listenerList = new ArrayList<DateChangeListener>();
+    Collection<DateChangeListener> listenerList = new ArrayList<>();
 
     JPanel panel = new JPanel();
     JButton prevButton = new RaplaArrowButton('<', 20);

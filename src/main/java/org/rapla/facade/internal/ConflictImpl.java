@@ -511,9 +511,9 @@ public class ConflictImpl extends SimpleEntity implements Conflict, ModifiableTi
             minEnd = toDate;
         }
 
-        List<AppointmentBlock> listA = new ArrayList<AppointmentBlock>();
+        List<AppointmentBlock> listA = new ArrayList<>();
         a1.createBlocks(maxStart, minEnd, listA);
-        List<AppointmentBlock> listB = new ArrayList<AppointmentBlock>();
+        List<AppointmentBlock> listB = new ArrayList<>();
         a2.createBlocks(maxStart, minEnd, listB);
         for (int i = 0, j = 0; i < listA.size() && j < listB.size(); )
         {
@@ -764,8 +764,8 @@ public class ConflictImpl extends SimpleEntity implements Conflict, ModifiableTi
 
     public static Map<Appointment, Set<Appointment>> getMap(Collection<Conflict> selectedConflicts, Collection<Appointment> appointments)
     {
-        Map<Appointment, Set<Appointment>> result = new HashMap<Appointment, Set<Appointment>>();
-        Map<ReferenceInfo<Appointment>, Appointment> map = new HashMap<ReferenceInfo<Appointment>, Appointment>();
+        Map<Appointment, Set<Appointment>> result = new HashMap<>();
+        Map<ReferenceInfo<Appointment>, Appointment> map = new HashMap<>();
         for (Appointment app : appointments)
         {
             map.put(app.getReference(), app);
@@ -789,7 +789,7 @@ public class ConflictImpl extends SimpleEntity implements Conflict, ModifiableTi
         Set<Appointment> set = result.get(app1);
         if (set == null)
         {
-            set = new HashSet<Appointment>();
+            set = new HashSet<>();
             result.put(app1, set);
         }
         set.add(app2);

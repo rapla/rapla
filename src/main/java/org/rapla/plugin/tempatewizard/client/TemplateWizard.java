@@ -58,7 +58,7 @@ import java.util.TreeSet;
 @Extension(provides = ReservationWizardExtension.class, id = TemplatePlugin.PLUGIN_ID) public class TemplateWizard
         implements ReservationWizardExtension, ModificationListener
 {
-    final public static TypedComponentRole<Boolean> ENABLED = new TypedComponentRole<Boolean>("org.rapla.plugin.templatewizard.enabled");
+    final public static TypedComponentRole<Boolean> ENABLED = new TypedComponentRole<>("org.rapla.plugin.templatewizard.enabled");
     boolean templateNamesValid = false;
     Collection<Allocatable> templateNames;
     private final CalendarModel model;
@@ -120,7 +120,7 @@ import java.util.TreeSet;
         {
             return templateNames;
         }
-        List<Allocatable> templates = new ArrayList<Allocatable>();
+        List<Allocatable> templates = new ArrayList<>();
         for (Allocatable template : raplaFacade.getTemplates())
         {
             templates.add(template);
@@ -169,10 +169,10 @@ import java.util.TreeSet;
 
             MenuInterface container = menuItemFactory.createMenu(multipleTemplateName, i18n.getIcon("icon.new"));
             if ( enabled) {
-                @SuppressWarnings("unchecked") Comparator<String> collator = raplaLocale.getCollator();;
-                Map<String, Collection<Allocatable>> templateMap = new HashMap<String, Collection<Allocatable>>();
+                @SuppressWarnings("unchecked") Comparator<String> collator = raplaLocale.getCollator();
+                Map<String, Collection<Allocatable>> templateMap = new HashMap<>();
 
-                Set<String> templateSet = new TreeSet<String>(collator);
+                Set<String> templateSet = new TreeSet<>(collator);
                 Locale locale = getLocale();
                 for (Allocatable template : templateNames)
                 {
@@ -187,7 +187,7 @@ import java.util.TreeSet;
                     collection.add(template);
                 }
 
-                SortedMap<String, Set<String>> keyGroup = new TreeMap<String, Set<String>>(collator);
+                SortedMap<String, Set<String>> keyGroup = new TreeMap<>(collator);
                 if (templateSet.size() > 10)
                 {
                     for (String string : templateSet)
@@ -200,7 +200,7 @@ import java.util.TreeSet;
                         Set<String> group = keyGroup.get(firstChar);
                         if (group == null)
                         {
-                            group = new TreeSet<String>(collator);
+                            group = new TreeSet<>(collator);
                             keyGroup.put(firstChar, group);
                         }
                         group.add(string);
@@ -257,7 +257,7 @@ import java.util.TreeSet;
 
     private SortedMap<String, Set<String>> merge(SortedMap<String, Set<String>> keyGroup, Comparator<String> comparator)
     {
-        SortedMap<String, Set<String>> result = new TreeMap<String, Set<String>>(comparator);
+        SortedMap<String, Set<String>> result = new TreeMap<>(comparator);
         String beginnChar = null;
         String currentChar = null;
         Set<String> currentSet = null;
@@ -266,7 +266,7 @@ import java.util.TreeSet;
             Set<String> set = keyGroup.get(key);
             if (currentSet == null)
             {
-                currentSet = new TreeSet<String>(comparator);
+                currentSet = new TreeSet<>(comparator);
                 beginnChar = key;
                 currentChar = key;
             }
@@ -284,7 +284,7 @@ import java.util.TreeSet;
                         storeKey = currentChar;
                     }
                     result.put(storeKey, currentSet);
-                    currentSet = new TreeSet<String>(comparator);
+                    currentSet = new TreeSet<>(comparator);
                     beginnChar = key;
                     currentChar = key;
                 }

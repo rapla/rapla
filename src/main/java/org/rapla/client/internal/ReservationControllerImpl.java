@@ -150,10 +150,10 @@ public class ReservationControllerImpl implements ReservationController {
                 return ResolvedPromise.VOID_PROMISE;
 
 
-            Set<Appointment> appointmentsToRemove = new LinkedHashSet<Appointment>();
-            HashMap<Appointment, List<Date>> exceptionsToAdd = new LinkedHashMap<Appointment, List<Date>>();
-            HashMap<Reservation, Integer> appointmentsRemoved = new LinkedHashMap<Reservation, Integer>();
-            Set<Reservation> reservationsToRemove = new LinkedHashSet<Reservation>();
+            Set<Appointment> appointmentsToRemove = new LinkedHashSet<>();
+            HashMap<Appointment, List<Date>> exceptionsToAdd = new LinkedHashMap<>();
+            HashMap<Reservation, Integer> appointmentsRemoved = new LinkedHashMap<>();
+            Set<Reservation> reservationsToRemove = new LinkedHashSet<>();
 
             for (AppointmentBlock block : blockList) {
                 Appointment appointment = block.getAppointment();
@@ -163,7 +163,7 @@ public class ReservationControllerImpl implements ReservationController {
                 if (repeating != null) {
                     List<Date> dateList = exceptionsToAdd.get(appointment);
                     if (dateList == null) {
-                        dateList = new ArrayList<Date>();
+                        dateList = new ArrayList<>();
                         exceptionsToAdd.put(appointment, dateList);
                     }
                     dateList.add(from);
@@ -278,8 +278,8 @@ public class ReservationControllerImpl implements ReservationController {
         final Set<Appointment> appointmentsToRemove;
         final Map<Appointment, List<Date>> exceptionsToAdd;
 
-        private Map<Appointment, Allocatable[]> allocatablesRemoved = new HashMap<Appointment, Allocatable[]>();
-        private Map<Appointment, Reservation> parentReservations = new HashMap<Appointment, Reservation>();
+        private Map<Appointment, Allocatable[]> allocatablesRemoved = new HashMap<>();
+        private Map<Appointment, Reservation> parentReservations = new HashMap<>();
 
         public DeleteBlocksCommand(ClientFacade clientFacade, RaplaResources i18n, Set<Reservation> reservationsToRemove, Set<Appointment> appointmentsToRemove,
                                    Map<Appointment, List<Date>> exceptionsToAdd) throws RaplaException {
@@ -424,9 +424,9 @@ public class ReservationControllerImpl implements ReservationController {
     private Promise<Void> deleteAppointment(AppointmentBlock appointmentBlock, final DialogAction dialogResult, final boolean isCut)  {
         Appointment appointment = appointmentBlock.getAppointment();
         final Date startDate = new Date(appointmentBlock.getStart());
-        Set<Appointment> appointmentsToRemove = new LinkedHashSet<Appointment>();
-        HashMap<Appointment, List<Date>> exceptionsToAdd = new LinkedHashMap<Appointment, List<Date>>();
-        Set<Reservation> reservationsToRemove = new LinkedHashSet<Reservation>();
+        Set<Appointment> appointmentsToRemove = new LinkedHashSet<>();
+        HashMap<Appointment, List<Date>> exceptionsToAdd = new LinkedHashMap<>();
+        Set<Reservation> reservationsToRemove = new LinkedHashSet<>();
         switch (dialogResult) {
             case SINGLE:
                 Repeating repeating = appointment.getRepeating();
@@ -484,7 +484,7 @@ public class ReservationControllerImpl implements ReservationController {
             if (number >= 1) {
                 final int length = repeating.getExceptions().length + exceptions.size();
                 if (length >= number - 1) {
-                    Collection<AppointmentBlock> blocks = new ArrayList<AppointmentBlock>();
+                    Collection<AppointmentBlock> blocks = new ArrayList<>();
                     appointment.createBlocks(appointment.getStart(), appointment.getMaxEnd(), blocks);
                     int blockswithException = 0;
                     for (AppointmentBlock block : blocks) {
@@ -521,9 +521,9 @@ public class ReservationControllerImpl implements ReservationController {
         Date from = new Date(appointmentBlock.getStart());
         Reservation reservation = appointment.getReservation();
         getLogger().debug(action + " '" + appointment + "' for reservation '" + reservation + "'");
-        List<String> optionList = new ArrayList<String>();
+        List<String> optionList = new ArrayList<>();
         List<I18nIcon> iconList = new ArrayList<>();
-        List<DialogAction> actionList = new ArrayList<ReservationControllerImpl.DialogAction>();
+        List<DialogAction> actionList = new ArrayList<>();
         String dateString = getRaplaLocale().formatDate(from);
         if (reservation.getAppointments().length <= 1 || includeEvent) {
             optionList.add(i18n.getString("reservation"));
@@ -596,7 +596,7 @@ public class ReservationControllerImpl implements ReservationController {
         return cloneList(reservations).thenCompose( clones->
             {
                 getClipboard().setReservation(clones, contextAllocatables);
-                Set<Reservation> reservationsToRemove = new HashSet<Reservation>(reservations);
+                Set<Reservation> reservationsToRemove = new HashSet<>(reservations);
                 Set<Appointment> appointmentsToRemove = Collections.emptySet();
                 Map<Appointment, List<Date>> exceptionsToAdd = Collections.emptyMap();
                 DeleteBlocksCommand command = new DeleteBlocksCommand(getClientFacade(), i18n, reservationsToRemove, appointmentsToRemove, exceptionsToAdd) {
@@ -835,11 +835,11 @@ public class ReservationControllerImpl implements ReservationController {
 
     private Promise<AllocatableExchangeCommand> exchangeAllocatebleCmd(AppointmentBlock appointmentBlock, final Allocatable oldAllocatable,
                                                                        final Allocatable newAllocatable, final Date newStart, PopupContext context)  {
-        Map<Allocatable, Appointment[]> newRestrictions = new HashMap<Allocatable, Appointment[]>();
+        Map<Allocatable, Appointment[]> newRestrictions = new HashMap<>();
         //Appointment appointment;
         //Allocatable oldAllocatable;
         //Allocatable newAllocatable;
-        List<Date> exceptionsAdded = new ArrayList<Date>();
+        List<Date> exceptionsAdded = new ArrayList<>();
         Appointment appointment = appointmentBlock.getAppointment();
         Reservation reservation = appointment.getReservation();
         Date date = new Date(appointmentBlock.getStart());
@@ -889,7 +889,7 @@ public class ReservationControllerImpl implements ReservationController {
                     for (Allocatable a : all) {
                         Appointment[] restr = reservation.getRestriction(a);
                         if (restr.length > 0) {
-                            List<Appointment> restrictions = new ArrayList<Appointment>(Arrays.asList(restr));
+                            List<Appointment> restrictions = new ArrayList<>(Arrays.asList(restr));
                             restrictions.add(copy);
                             newRestrictions.put(a, restrictions.toArray(Appointment.EMPTY_ARRAY));
                             //reservation.setRestriction(a, newRestrictions.toArray(new Appointment[] {}));
@@ -903,7 +903,7 @@ public class ReservationControllerImpl implements ReservationController {
                         //modifiableReservation.removeAllocatable(oldAllocatable);
                         removeAllocatable = true;
                     } else {
-                        List<Appointment> appointments = new ArrayList<Appointment>(Arrays.asList(apps));
+                        List<Appointment> appointments = new ArrayList<>(Arrays.asList(apps));
                         appointments.remove(appointment);
                         newRestrictions.put(oldAllocatable, appointments.toArray(Appointment.EMPTY_ARRAY));
                         //modifiableReservation.setRestriction(oldAllocatable, appointments.toArray(Appointment.EMPTY_ARRAY));
@@ -919,7 +919,7 @@ public class ReservationControllerImpl implements ReservationController {
 
                 if (reservation.hasAllocated(newAllocatable)) {
                     Appointment[] existingRestrictions = reservation.getRestriction(newAllocatable);
-                    Collection<Appointment> restrictions = new LinkedHashSet<Appointment>(Arrays.asList(existingRestrictions));
+                    Collection<Appointment> restrictions = new LinkedHashSet<>(Arrays.asList(existingRestrictions));
                     if (existingRestrictions.length == 0 || restrictions.contains(app)) {
                         // is already allocated, do nothing
                     } else {
@@ -1009,13 +1009,13 @@ public class ReservationControllerImpl implements ReservationController {
                 if (addAllocatable) {
                     modifiableReservation.addAllocatable(newAllocatable);
                 }
-                oldRestrictions = new HashMap<Allocatable, Appointment[]>();
+                oldRestrictions = new HashMap<>();
                 for (Allocatable alloc : reservation.getAllocatables()) {
                     oldRestrictions.put(alloc, reservation.getRestriction(alloc));
                 }
                 for (Allocatable alloc : newRestrictions.keySet()) {
                     Appointment[] restrictions = newRestrictions.get(alloc);
-                    ArrayList<Appointment> foundAppointments = new ArrayList<Appointment>();
+                    ArrayList<Appointment> foundAppointments = new ArrayList<>();
                     for (Appointment app : restrictions) {
                         Appointment found = modifiableReservation.findAppointment(app);
                         if (found != null) {
@@ -1074,7 +1074,7 @@ public class ReservationControllerImpl implements ReservationController {
 
                 for (Allocatable alloc : oldRestrictions.keySet()) {
                     Appointment[] restrictions = oldRestrictions.get(alloc);
-                    ArrayList<Appointment> foundAppointments = new ArrayList<Appointment>();
+                    ArrayList<Appointment> foundAppointments = new ArrayList<>();
                     for (Appointment app : restrictions) {
                         Appointment found = modifiableReservation.findAppointment(app);
                         if (found != null) {
@@ -1269,14 +1269,14 @@ public class ReservationControllerImpl implements ReservationController {
     }
 
     public static Promise<Boolean> checkEvents(Provider<Set<EventCheck>> checkers, Collection<? extends Entity> entities, PopupContext sourceComponent) {
-        List<Reservation> reservations = new ArrayList<Reservation>();
+        List<Reservation> reservations = new ArrayList<>();
         for (Entity entity : entities) {
             if (entity.getTypeClass() == Reservation.class) {
                 reservations.add((Reservation) entity);
             }
         }
         final Set<EventCheck> set = checkers.get();
-        Promise<Boolean> check = new ResolvedPromise<Boolean>(true);
+        Promise<Boolean> check = new ResolvedPromise<>(true);
         for (EventCheck eventCheck : set) {
             check = check.thenCompose((result) ->
             {
@@ -1421,7 +1421,7 @@ public class ReservationControllerImpl implements ReservationController {
             }
             else
             {
-                return new ResolvedPromise<Void>(new CommandAbortedException("Command Aborted"));
+                return new ResolvedPromise<>(new CommandAbortedException("Command Aborted"));
             }
            }
         );
@@ -1434,14 +1434,14 @@ public class ReservationControllerImpl implements ReservationController {
         if (firstTime) {
             promise = checkEvents(storeList, sourceComponent);
         } else {
-            promise = new ResolvedPromise<Boolean>(true);
+            promise = new ResolvedPromise<>(true);
         }
         Promise<Void> result = promise.thenCompose((checkResult) ->
         {
             if (checkResult) {
                 return facade.dispatch(storeList, removeList);
             } else {
-                return new ResolvedPromise<Void>(new CommandAbortedException("Command Aborted"));
+                return new ResolvedPromise<>(new CommandAbortedException("Command Aborted"));
             }
         });
         return result;
@@ -1468,7 +1468,7 @@ public class ReservationControllerImpl implements ReservationController {
             try {
                  user = getClientFacade().getUser();
             } catch (RaplaException ex) {
-                return new ResolvedPromise<Void>(ex);
+                return new ResolvedPromise<>(ex);
             }
             return getFacade().copyReservations(fromReservations, start, keepTime, user).thenCompose(clones-> {
                         this.clones = clones;

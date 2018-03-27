@@ -175,7 +175,7 @@ public class UpdateEvent
     {
         if (preferencesPatches == null)
         {
-            preferencesPatches = new ArrayList<PreferencePatch>();
+            preferencesPatches = new ArrayList<>();
         }
         preferencesPatches.add(patch);
     }
@@ -186,7 +186,7 @@ public class UpdateEvent
         {
             return Collections.emptyList();
         }
-        Collection<ReferenceInfo> result = new ArrayList<ReferenceInfo>();
+        Collection<ReferenceInfo> result = new ArrayList<>();
         for (SerializableReferenceInfo entry:removeSet)
         {
             final ReferenceInfo reference = entry.getReference();
@@ -216,7 +216,7 @@ public class UpdateEvent
             return Collections.emptyList();
         }
         // Needs to be a linked hashset to keep the order of the entities
-        HashSet<Entity> objects = new LinkedHashSet<Entity>();
+        HashSet<Entity> objects = new LinkedHashSet<>();
         for (Collection<Entity> list : listMap.values())
         {
             for (Entity entity : list)
@@ -230,7 +230,7 @@ public class UpdateEvent
 
     public Collection<EntityReferencer> getEntityReferences()
     {
-        HashSet<EntityReferencer> objects = new HashSet<EntityReferencer>();
+        HashSet<EntityReferencer> objects = new HashSet<>();
         for (Collection<Entity> list : getListMap().values())
         {
             for (Entity entity : list)
@@ -280,42 +280,42 @@ public class UpdateEvent
         {
             if (class1.equals(Reservation.class))
             {
-                reservations = new ArrayList<ReservationImpl>();
+                reservations = new ArrayList<>();
                 list = reservations;
             }
             else if (class1.equals(Allocatable.class))
             {
-                resources = new ArrayList<AllocatableImpl>();
+                resources = new ArrayList<>();
                 list = resources;
             }
             else if (class1.equals(Preferences.class))
             {
-                preferences = new ArrayList<PreferencesImpl>();
+                preferences = new ArrayList<>();
                 list = preferences;
             }
             else if (class1.equals(Category.class))
             {
-                categories = new ArrayList<CategoryImpl>();
+                categories = new ArrayList<>();
                 list = categories;
             }
             else if (class1.equals(User.class))
             {
-                users = new ArrayList<UserImpl>();
+                users = new ArrayList<>();
                 list = users;
             }
             else if (class1.equals(DynamicType.class))
             {
-                types = new ArrayList<DynamicTypeImpl>();
+                types = new ArrayList<>();
                 list = types;
             }
             else if (class1.equals(Conflict.class))
             {
-                conflicts = new ArrayList<ConflictImpl>();
+                conflicts = new ArrayList<>();
                 list = conflicts;
             }
             else if (class1.equals(ImportExportEntity.class))
             {
-                importExports = new ArrayList<ImportExportEntityImpl>();
+                importExports = new ArrayList<>();
                 list = importExports;
             }
             else
@@ -342,7 +342,7 @@ public class UpdateEvent
         final SerializableReferenceInfo id = new SerializableReferenceInfo(ref);
         if (removeSet == null)
         {
-            removeSet = new LinkedHashSet<SerializableReferenceInfo>();
+            removeSet = new LinkedHashSet<>();
             removeSet.add(id);
         }
         else if (!removeSet.contains(id))

@@ -109,7 +109,7 @@ public class ArchiverServiceImpl  implements ArchiverService
         Promise<Collection<Reservation>> eventsPromise = raplaFacade.getReservations(null, null, endDate, null); 
         eventsPromise.thenAccept((events) ->
         {
-            List<Reservation> toRemove = new ArrayList<Reservation>();
+            List<Reservation> toRemove = new ArrayList<>();
             for (Reservation event : events)
             {
                 if (!RaplaComponent.isTemplate(event) && isOlderThan(event, endDate))

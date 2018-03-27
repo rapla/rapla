@@ -63,12 +63,7 @@ public class ImportExportManagerImpl implements ImportExportManager {
     }
 
     private void doConvert(final CachableStorageOperator cachableStorageOperator1,final CachableStorageOperator cachableStorageOperator2) throws RaplaException {
-    	cachableStorageOperator1.runWithReadLock( new CachableStorageOperatorCommand() {
-			
-			public void execute(LocalCache cache) throws RaplaException {
-		    	cachableStorageOperator2.saveData(cache, null);				
-			}
-		});
+    	cachableStorageOperator1.runWithReadLock(cache -> cachableStorageOperator2.saveData(cache, null));
 
     }
 

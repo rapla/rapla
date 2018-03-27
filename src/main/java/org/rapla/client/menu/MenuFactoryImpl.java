@@ -277,7 +277,7 @@ import java.util.TreeMap;
         boolean canAllocateSelected = canAllocateSelected();
         if (canAllocateSelected)
         {
-            Map<String, IdentifiableMenuEntry> sortedMap = new TreeMap<String, IdentifiableMenuEntry>();
+            Map<String, IdentifiableMenuEntry> sortedMap = new TreeMap<>();
             for (ReservationWizardExtension entry : reservationWizards)
             {
                 if ( entry.isEnabled())
@@ -436,7 +436,7 @@ import java.util.TreeMap;
         Object focusedObject = context.getFocusedObject();
         final PopupContext popupContext = context.getPopupContext();
 
-        Collection<Entity<?>> list = new LinkedHashSet<Entity<?>>();
+        Collection<Entity<?>> list = new LinkedHashSet<>();
         if (focusedObject != null)
         {
             if ((focusedObject instanceof Entity))
@@ -506,7 +506,7 @@ import java.util.TreeMap;
             final IdentifiableMenuEntry menuItem = action.createMenuEntry(f);
             menu.insertAfterId(menuItem, afterId);
         }
-        if (deletableEntities.isEmpty())
+        if (!deletableEntities.isEmpty())
         {
             final RaplaObjectActions action = newObjectAction(popupContext).setDeleteSelection(deletableEntities);
             addAction(menu, action, afterId);
@@ -702,7 +702,7 @@ import java.util.TreeMap;
     private List<Entity<?>> getEditableObjects(Collection<Entity<?>> list) throws RaplaException
     {
         Iterator<Entity<?>> it = list.iterator();
-        ArrayList<Entity<?>> editableObjects = new ArrayList<Entity<?>>();
+        ArrayList<Entity<?>> editableObjects = new ArrayList<>();
         final User user = getUser();
         while (it.hasNext())
         {
@@ -725,7 +725,7 @@ import java.util.TreeMap;
     // criteria: RaplaType: isPerson-Flag
     private <T extends RaplaObject> List<T> getObjectsWithSameType(Collection<T> list, Class raplaType, boolean isPerson)
     {
-        ArrayList<T> objects = new ArrayList<T>();
+        ArrayList<T> objects = new ArrayList<>();
 
         for (RaplaObject o : list)
         {

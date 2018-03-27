@@ -272,7 +272,7 @@ public class UserImpl extends SimpleEntity implements User, ModifiableTimestamp
     }
 
     public static Collection<String> getGroupsIncludingParents(User user) {
-        Collection<String> groups = new HashSet<String>( );
+        Collection<String> groups = new HashSet<>();
         for ( Category group: user.getGroupList())
         {
             groups.add( group.getId());

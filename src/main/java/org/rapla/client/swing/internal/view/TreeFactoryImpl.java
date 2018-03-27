@@ -174,13 +174,13 @@ public class TreeFactoryImpl extends RaplaGUIComponent implements TreeFactory
 
     private TreeModel createClassifiableModel(Classifiable[] classifiables, Comparator<Classifiable> comp, boolean useCategorizations)
     {
-        Set<DynamicType> typeSet = new LinkedHashSet<DynamicType>();
+        Set<DynamicType> typeSet = new LinkedHashSet<>();
         for (Classifiable classifiable : classifiables)
         {
             DynamicType type = classifiable.getClassification().getType();
             typeSet.add(type);
         }
-        List<DynamicType> typeList = new ArrayList<DynamicType>(typeSet);
+        List<DynamicType> typeList = new ArrayList<>(typeSet);
         Collections.sort(typeList, new DynamicTypeComperator());
         Map<DynamicType, NamedNode> nodeMap = new HashMap<>();
         for (DynamicType type : typeList)
@@ -189,7 +189,7 @@ public class TreeFactoryImpl extends RaplaGUIComponent implements TreeFactory
             nodeMap.put(type, node);
         }
 
-        Set<Classifiable> sortedClassifiable = new TreeSet<Classifiable>(comp);
+        Set<Classifiable> sortedClassifiable = new TreeSet<>(comp);
         sortedClassifiable.addAll(Arrays.asList(classifiables));
         addClassifiables(nodeMap, sortedClassifiable, useCategorizations);
         DefaultMutableTreeNode root = new DefaultMutableTreeNode("ROOT");
@@ -205,10 +205,10 @@ public class TreeFactoryImpl extends RaplaGUIComponent implements TreeFactory
             Collection<? extends Classifiable> classifiables, boolean useCategorizations)
     {
         Map<DynamicType, Map<Object, NamedNode>> categorization = new LinkedHashMap<>();
-        Map<Classifiable, Collection<NamedNode>> childMap = new HashMap<Classifiable, Collection<NamedNode>>();
-        Map<Classifiable, Collection<Classifiable>> belongsToMap = new HashMap<Classifiable, Collection<Classifiable>>();
+        Map<Classifiable, Collection<NamedNode>> childMap = new HashMap<>();
+        Map<Classifiable, Collection<Classifiable>> belongsToMap = new HashMap<>();
         Map<Classifiable, NamedNode> objectToNamedNode = new HashMap<>();
-        Map<DynamicType, Collection<NamedNode>> uncategorized = new LinkedHashMap<DynamicType, Collection<NamedNode>>();
+        Map<DynamicType, Collection<NamedNode>> uncategorized = new LinkedHashMap<>();
         for (DynamicType type : nodeMap.keySet())
         {
             categorization.put(type, new LinkedHashMap<>());
@@ -218,7 +218,7 @@ public class TreeFactoryImpl extends RaplaGUIComponent implements TreeFactory
         {
             Classifiable classifiable = it.next();
             Classification classification = classifiable.getClassification();
-            Collection<NamedNode> childNodes = new ArrayList<NamedNode>();
+            Collection<NamedNode> childNodes = new ArrayList<>();
             childMap.put(classifiable, childNodes);
             DynamicType type = classification.getType();
             Assert.notNull(type);
@@ -236,7 +236,7 @@ public class TreeFactoryImpl extends RaplaGUIComponent implements TreeFactory
                 Collection<Classifiable> parts = belongsToMap.get(parent);
                 if (parts == null)
                 {
-                    parts = new ArrayList<Classifiable>();
+                    parts = new ArrayList<>();
                     belongsToMap.put(parent, parts);
                 }
                 parts.add(classifiable);
@@ -358,8 +358,8 @@ public class TreeFactoryImpl extends RaplaGUIComponent implements TreeFactory
     @SuppressWarnings({ "rawtypes", "unchecked" })
     private Collection<Object> getSortedCategorizations(Collection<Object> unsortedCats)
     {
-        ArrayList<Comparable> sortableCats = new ArrayList<Comparable>();
-        ArrayList<Object> unsortableCats = new ArrayList<Object>();
+        ArrayList<Comparable> sortableCats = new ArrayList<>();
+        ArrayList<Object> unsortableCats = new ArrayList<>();
         // All attribute values should implement Comparable but for the doubts we test if value is not comparable
         for (Object cat : unsortedCats)
         {
@@ -373,7 +373,7 @@ public class TreeFactoryImpl extends RaplaGUIComponent implements TreeFactory
             }
         }
         Collections.sort(sortableCats);
-        List<Object> allCats = new ArrayList<Object>(sortableCats);
+        List<Object> allCats = new ArrayList<>(sortableCats);
         allCats.addAll(unsortableCats);
         return allCats;
     }
@@ -767,7 +767,7 @@ public class TreeFactoryImpl extends RaplaGUIComponent implements TreeFactory
 
     protected NamedNode createRootNode(Collection<Category> categories, boolean includeChildren)
     {
-        Map<Category, NamedNode> nodeMap = new HashMap<Category, NamedNode>();
+        Map<Category, NamedNode> nodeMap = new HashMap<>();
         Category superCategory = null;
         {
             Category persistantSuperCategory = getQuery().getSuperCategory();
@@ -784,7 +784,7 @@ public class TreeFactoryImpl extends RaplaGUIComponent implements TreeFactory
             }
         }
         nodeMap.put(superCategory, newNamedNode(superCategory));
-        LinkedHashSet<Category> uniqueCategegories = new LinkedHashSet<Category>();
+        LinkedHashSet<Category> uniqueCategegories = new LinkedHashSet<>();
         for (Category cat : categories)
         {
             if (includeChildren)
@@ -806,7 +806,7 @@ public class TreeFactoryImpl extends RaplaGUIComponent implements TreeFactory
             }
         }
 
-        LinkedList<Category> list = new LinkedList<Category>();
+        LinkedList<Category> list = new LinkedList<>();
         list.addAll(uniqueCategegories);
         while (!list.isEmpty())
         {
@@ -854,7 +854,7 @@ public class TreeFactoryImpl extends RaplaGUIComponent implements TreeFactory
 
     private Collection<Category> getAllChildren(Category cat)
     {
-        ArrayList<Category> result = new ArrayList<Category>();
+        ArrayList<Category> result = new ArrayList<>();
         for (Category child : cat.getCategories())
         {
             result.add(child);
@@ -1297,7 +1297,7 @@ public class TreeFactoryImpl extends RaplaGUIComponent implements TreeFactory
             {
                 return Collections.emptySet();
             }
-            HashSet<Conflict> set = new HashSet<Conflict>();
+            HashSet<Conflict> set = new HashSet<>();
             for (int i = 0; i < children; i++)
             {
                 TreeNode child = treeNode.getChildAt(i);
@@ -1362,7 +1362,7 @@ public class TreeFactoryImpl extends RaplaGUIComponent implements TreeFactory
 
         private TreePath[] getSelectablePaths(TreePath[] pathList)
         {
-            List<TreePath> result = new ArrayList<TreePath>(pathList.length);
+            List<TreePath> result = new ArrayList<>(pathList.length);
             for (TreePath treePath : pathList)
             {
                 if (isSelectable(treePath))

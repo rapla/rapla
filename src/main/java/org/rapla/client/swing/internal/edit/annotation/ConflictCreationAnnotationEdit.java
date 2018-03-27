@@ -49,7 +49,7 @@ public class ConflictCreationAnnotationEdit extends RaplaGUIComponent implements
         }
         String annotation = annotatable.getAnnotation(annotationName);
         Collection<String> collection = Arrays.asList(DynamicTypeAnnotations.VALUE_CONFLICTS_ALWAYS,DynamicTypeAnnotations.VALUE_CONFLICTS_NONE,DynamicTypeAnnotations.VALUE_CONFLICTS_WITH_OTHER_TYPES);
-        ListField<String> field = new ListField<String>(getClientFacade(), getI18n(), getRaplaLocale(), getLogger(), collection);
+        ListField<String> field = new ListField<>(getClientFacade(), getI18n(), getRaplaLocale(), getLogger(), collection);
         field.setFieldName( getString(annotationName));
         
         if (annotation  == null)

@@ -39,16 +39,11 @@ public class MenuPopup
     {
         if (item.getSubEntries().isEmpty())
         {
-            menuBar.addItem(item.getText(), true, new ScheduledCommand()
-            {
-                @Override
-                public void execute()
-                {
-                    menu.hide();
-                    menu.clear();
-                    menu.removeFromParent();
-                    menuCallback.selectEntry(item);
-                }
+            menuBar.addItem(item.getText(), true, () -> {
+                menu.hide();
+                menu.clear();
+                menu.removeFromParent();
+                menuCallback.selectEntry(item);
             });
         }
         else

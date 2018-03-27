@@ -677,12 +677,12 @@ public class ClientFacadeTest  {
                 configurationClassificationFilterWithLoosesAllocatable.setClassificationFilter(classificationFilters);
             }
             final Preferences preferences = facade.edit(facade.getPreferences(user));
-            Map<String,CalendarModelConfiguration> exportMap= preferences.getEntry(CalendarModelConfiguration.EXPORT_ENTRY);
+            RaplaMap<CalendarModelConfiguration> exportMap= preferences.getEntry(CalendarModelConfiguration.EXPORT_ENTRY);
             Map<String,CalendarModelConfiguration> newMap;
             if ( exportMap == null)
                 newMap = new TreeMap<String,CalendarModelConfiguration>();
             else
-                newMap = new TreeMap<String,CalendarModelConfiguration>( exportMap);
+                newMap = new TreeMap<String,CalendarModelConfiguration>( exportMap.toMap());
             newMap.put("testForMerge", configurationWithBothAllocatables);
             newMap.put("testForMergeWithoutWins", configurationWithLoosesAllocatable);
             newMap.put("testForFilter", configurationClassificationFilterWithLoosesAllocatable);

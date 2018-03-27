@@ -95,7 +95,7 @@ public class ClassifiableFilterEdit extends RaplaGUIComponent
     DynamicType[] types;
     boolean isResourceSelection;
 
-    ArrayList<ChangeListener> listenerList = new ArrayList<ChangeListener>();
+    ArrayList<ChangeListener> listenerList = new ArrayList<>();
     final RaplaButton everythingButton = new RaplaButton(RaplaButton.SMALL);
     final RaplaButton  nothingButton = new RaplaButton(RaplaButton.SMALL);
     final TreeFactory treeFactory;
@@ -261,13 +261,10 @@ public class ClassifiableFilterEdit extends RaplaGUIComponent
             content.add( edit.getNewComponent() , "2," + (row + 1));
             content.add( edit.getRulesComponent() , "0," + (row + 2) + ",2,"+ (row + 2));
             content.add( new JPanel() , "0," + (row + 4) + ",2,"  + (row + 4));
-            edit.addChangeListener(new ChangeListener() {
-                
-                public void stateChanged(ChangeEvent e) {
-                	everythingButton.setEnabled( true);
-        			nothingButton.setEnabled( true);
-                    fireFilterChanged();
-                }
+            edit.addChangeListener(e -> {
+                everythingButton.setEnabled( true);
+                nothingButton.setEnabled( true);
+                fireFilterChanged();
             }
             );
             
@@ -285,7 +282,7 @@ public class ClassifiableFilterEdit extends RaplaGUIComponent
 
     public void setFilter(ClassifiableFilter filter) throws RaplaException {
 
-        List<DynamicType> list = new ArrayList<DynamicType>();
+        List<DynamicType> list = new ArrayList<>();
         if ( !isResourceSelection) {
             list.addAll( Arrays.asList( getQuery().getDynamicTypes( DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RESERVATION )));
         } 
@@ -346,7 +343,7 @@ public class ClassifiableFilterEdit extends RaplaGUIComponent
     
     
     public ClassificationFilter[] getFilters()  {
-        ArrayList<ClassificationFilter> list = new ArrayList<ClassificationFilter>();
+        ArrayList<ClassificationFilter> list = new ArrayList<>();
         for (int i=0; i< filterEdit.length; i++) {
             ClassificationFilter filter = filterEdit[i].getFilter();
             if (filter != null) {
@@ -384,13 +381,13 @@ public class ClassifiableFilterEdit extends RaplaGUIComponent
 class ClassificationEdit extends RaplaGUIComponent implements ItemListener {
     JPanel ruleListPanel = new JPanel();
     JPanel newPanel = new JPanel();
-    List<RuleComponent> ruleList = new ArrayList<RuleComponent>();
+    List<RuleComponent> ruleList = new ArrayList<>();
     JComboBox attributeSelector;
     JButton newLabel = new JButton();
     DynamicType type;
     TreeFactory treeFactory;
     
-    ArrayList<ChangeListener> listenerList = new ArrayList<ChangeListener>();
+    ArrayList<ChangeListener> listenerList = new ArrayList<>();
     JScrollPane pane;
     private final DialogUiFactoryInterface dialogUiFactory;
     private final DateFieldFactory dateFieldFactory;
@@ -525,12 +522,10 @@ class ClassificationEdit extends RaplaGUIComponent implements ItemListener {
             update();
            
             // invokeLater prevents a deadlock in jdk <=1.3
-            javax.swing.SwingUtilities.invokeLater(new Runnable() {
-                    public void run() {
-                        attributeSelector.setSelectedIndex(-1);
-                        comp.scrollRowVisible(row);
-                    }
-                });
+            javax.swing.SwingUtilities.invokeLater(() -> {
+                attributeSelector.setSelectedIndex(-1);
+                comp.scrollRowVisible(row);
+            });
             fireFilterChanged();
         }
 		
@@ -578,8 +573,8 @@ class ClassificationEdit extends RaplaGUIComponent implements ItemListener {
         Attribute attribute;
         TreeFactory treeFactory;
         private final Listener listener = new Listener();
-        List<RuleRow> ruleRows = new ArrayList<RuleRow>();
-        List<RaplaButton> deleteButtons = new ArrayList<RaplaButton>();
+        List<RuleRow> ruleRows = new ArrayList<>();
+        List<RaplaButton> deleteButtons = new ArrayList<>();
         boolean isAndVisible;
         JLabel and;
 

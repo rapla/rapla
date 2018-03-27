@@ -82,38 +82,25 @@ public class AllocatableEditUI  extends AbstractEditUI<Allocatable>  {
         holdBackConflictPanel.add(new JLabel(holdBackConflictsField.getFieldName() + ": "), BorderLayout.WEST);
         holdBackConflictPanel.add(holdBackConflictsField.getComponent(), BorderLayout.CENTER);
         editPanel.add( holdBackConflictPanel, BorderLayout.SOUTH);
-        classificationField.addChangeListener(new ChangeListener()
-        {
-            
-            @Override
-            public void stateChanged(ChangeEvent e)
+        classificationField.addChangeListener(e -> {
+            final boolean mainTabSelected = classificationField.isMainTabSelected();
+            permissionPanel.setVisible( !mainTabSelected && canAdmin());
+            if ( !mainTabSelected && !editPanel.isAncestorOf( permissionPanel) )
             {
-                final boolean mainTabSelected = classificationField.isMainTabSelected();
-                permissionPanel.setVisible( !mainTabSelected && canAdmin());
-                if ( !mainTabSelected && !editPanel.isAncestorOf( permissionPanel) )
-                {
-                    editPanel.remove( holdBackConflictPanel);
-                    editPanel.add( permissionPanel, BorderLayout.SOUTH);
-                    editPanel.repaint();
-                }
-                
-                if (  mainTabSelected && ( !editPanel.isAncestorOf( holdBackConflictPanel)) )
-                {
-                    editPanel.remove( permissionPanel );
-                    editPanel.add( holdBackConflictPanel, BorderLayout.SOUTH);
-                    editPanel.repaint();
-                }
-                AllocatableEditUI.this.stateChanged(e);
+                editPanel.remove( holdBackConflictPanel);
+                editPanel.add( permissionPanel, BorderLayout.SOUTH);
+                editPanel.repaint();
             }
-        });
-        permissionListField.addChangeListener(new ChangeListener()
-        {
-            @Override
-            public void stateChanged(ChangeEvent e)
+
+            if (  mainTabSelected && ( !editPanel.isAncestorOf( holdBackConflictPanel)) )
             {
-                AllocatableEditUI.this.stateChanged(e);
+                editPanel.remove( permissionPanel );
+                editPanel.add( holdBackConflictPanel, BorderLayout.SOUTH);
+                editPanel.repaint();
             }
+            AllocatableEditUI.this.stateChanged(e);
         });
+        permissionListField.addChangeListener(e -> AllocatableEditUI.this.stateChanged(e));
         editPanel.setPreferredSize( new Dimension(800,600));
     }
 
@@ -159,7 +146,7 @@ public class AllocatableEditUI  extends AbstractEditUI<Allocatable>  {
     protected void mapFromObjects() throws RaplaException {
         classificationField.mapFrom( objectList);
         permissionListField.mapFrom( objectList);
-        Set<Boolean> values = new HashSet<Boolean>();
+        Set<Boolean> values = new HashSet<>();
         boolean canAdmin = true;
         boolean allPermissions = true;
         boolean internal = false;

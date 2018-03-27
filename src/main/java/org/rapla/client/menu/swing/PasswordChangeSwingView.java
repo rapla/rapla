@@ -69,14 +69,12 @@ public class PasswordChangeSwingView
 
         final JCheckBox showPassword = new JCheckBox(i18n.getString("show_password"));
 		panel.add( showPassword);
-		showPassword.addActionListener(new ActionListener() {		
-			public void actionPerformed(ActionEvent e) {
-				boolean show = showPassword.isSelected();
-				tf1.setEchoChar( show ? ((char) 0): '*');
-				tf2.setEchoChar( show ? ((char) 0): '*');
-			 	tf3.setEchoChar( show ? ((char) 0): '*');
-			}
-		});
+		showPassword.addActionListener(e -> {
+            boolean show = showPassword.isSelected();
+            tf1.setEchoChar( show ? ((char) 0): '*');
+            tf2.setEchoChar( show ? ((char) 0): '*');
+             tf3.setEchoChar( show ? ((char) 0): '*');
+        });
 		 
         superPanel.add(panel);
         superPanel.add(panel2);

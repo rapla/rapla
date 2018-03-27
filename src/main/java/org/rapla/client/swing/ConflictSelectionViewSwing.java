@@ -105,27 +105,14 @@ public class ConflictSelectionViewSwing implements ConflictSelectionView<Compone
         enable.setText(i18n.getString("enable_conflicts"));
         enable.setEnabled( enabledButtonEnabled );
 
-        disable.addActionListener(new ActionListener()
-        {
-
-            @Override
-            public void actionPerformed(ActionEvent e)
-            {
-                PopupContext context = new SwingPopupContext(disable, null);
-                getPresenter().disableConflicts(context);
-            }
-
+        disable.addActionListener(e -> {
+            PopupContext context12 = new SwingPopupContext(disable, null);
+            getPresenter().disableConflicts(context12);
         });
 
-        enable.addActionListener(new ActionListener()
-        {
-
-            @Override
-            public void actionPerformed(ActionEvent e)
-            {
-                PopupContext context = new SwingPopupContext(enable, null);
-                getPresenter().enableConflicts(context);
-            }
+        enable.addActionListener(e -> {
+            PopupContext context1 = new SwingPopupContext(enable, null);
+            getPresenter().enableConflicts(context1);
         });
 
         menu.add(disable);

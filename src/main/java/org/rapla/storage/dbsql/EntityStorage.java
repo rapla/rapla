@@ -49,7 +49,7 @@ abstract class EntityStorage<T extends Entity<T>> extends AbstractTableStorage i
     private RaplaLocale raplaLocale;
     
     protected final EntityHistory history;
-    protected Collection<SubStorage<T>> subStores = new ArrayList<SubStorage<T>>();
+    protected Collection<SubStorage<T>> subStores = new ArrayList<>();
 	private int lastParameterIndex;
     RaplaXMLContext context;
 
@@ -301,7 +301,7 @@ abstract class EntityStorage<T extends Entity<T>> extends AbstractTableStorage i
 //    }
 
     public void save( Iterable<T> entities ) throws RaplaException, SQLException{
-        Collection<ReferenceInfo<T>> toDelete = new ArrayList<ReferenceInfo<T>>();
+        Collection<ReferenceInfo<T>> toDelete = new ArrayList<>();
         for (Entity entity:entities)
         {
             toDelete.add( entity.getReference());
@@ -325,7 +325,7 @@ abstract class EntityStorage<T extends Entity<T>> extends AbstractTableStorage i
 	}
 
     public void deleteEntities(Iterable<ReferenceInfo<T>> entities) throws SQLException, RaplaException {
-        Set<String> ids = new HashSet<String>();
+        Set<String> ids = new HashSet<>();
         for ( ReferenceInfo entity: entities)
         {
         	ids.add( entity.getId());

@@ -377,7 +377,7 @@ public class DialogUI extends JDialog
 //        }
 //    }
 
-    ArrayList<VetoableChangeListener> listenerList = new ArrayList<VetoableChangeListener>();
+    ArrayList<VetoableChangeListener> listenerList = new ArrayList<>();
     @Override
     protected void processWindowEvent(WindowEvent e) {
         final int id = e.getID();

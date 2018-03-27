@@ -15,7 +15,9 @@ package org.rapla.entities.configuration;
 import jsinterop.annotations.JsType;
 import org.rapla.entities.RaplaObject;
 
+import java.util.Collection;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * This Map can hold only Objects of type RaplaObject and String
@@ -23,5 +25,13 @@ import java.util.Map;
  * @see RaplaObject
  */
 @JsType
-public interface RaplaMap<T> extends RaplaObject, Map<String,T>  {
+public interface RaplaMap<T> extends RaplaObject {
+    Map<String,T> toMap();
+
+    Set<Map.Entry<String, T>> entrySet();
+
+    Set<String> keySet();
+    Collection<T> values();
+    int size();
+    T get(Object key);
 }

@@ -59,11 +59,11 @@ import java.util.Map;
     private Collection<String> CLASSIFICATION_TYPES = Arrays.asList(DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RESERVATION);
 
     @GET @Produces({ MediaType.APPLICATION_JSON, MediaType.APPLICATION_XML }) public List<ReservationImpl> list(@QueryParam("start") Date start,
-            @QueryParam("end") Date end, @QueryParam("resources") Collection<String> resources, @QueryParam("eventTypes") Collection<String> eventTypes,
+            @QueryParam("end") Date end, @QueryParam("resources") List<String> resources, @QueryParam("eventTypes") Collection<String> eventTypes,
             @QueryParam("attributeFilter") Map<String, String> simpleFilter) throws Exception
     {
         final User user = session.checkAndGetUser(request);
-        Collection<Allocatable> allocatables = new ArrayList<Allocatable>();
+        Collection<Allocatable> allocatables = new ArrayList<>();
         for (String id : resources)
         {
             Allocatable allocatable = facade.resolve(new ReferenceInfo<Allocatable>(id, Allocatable.class));
@@ -76,7 +76,7 @@ import java.util.Map;
         final Promise<Map<Allocatable, Collection<Appointment>>> promise = operator
                 .queryAppointments(owner, allocatables, start, end, filters, annotationQuery);
         final Map<Allocatable, Collection<Appointment>> appMap = promiseWait.waitForWithRaplaException(promise, 20000);
-        final List<ReservationImpl> result = new ArrayList<ReservationImpl>();
+        final List<ReservationImpl> result = new ArrayList<>();
         final Collection<Reservation> reservations = CalendarModelImpl.getAllReservations(appMap);
         PermissionController permissionController = facade.getPermissionController();
         for (Reservation r : reservations)

@@ -29,8 +29,8 @@ import java.util.Map;
  */
 public interface CalendarModelConfiguration extends RaplaObject<CalendarModelConfiguration>
 {
-    TypedComponentRole<CalendarModelConfiguration> CONFIG_ENTRY = new TypedComponentRole<CalendarModelConfiguration>("org.rapla.DefaultSelection");
-    TypedComponentRole<RaplaMap<CalendarModelConfiguration>> EXPORT_ENTRY = new TypedComponentRole<RaplaMap<CalendarModelConfiguration>>("org.rapla.plugin.autoexport");
+    TypedComponentRole<CalendarModelConfiguration> CONFIG_ENTRY = new TypedComponentRole<>("org.rapla.DefaultSelection");
+    TypedComponentRole<RaplaMap<CalendarModelConfiguration>> EXPORT_ENTRY = new TypedComponentRole<>("org.rapla.plugin.autoexport");
     Date getStartDate();
     Date getEndDate();
     Date getSelectedDate();

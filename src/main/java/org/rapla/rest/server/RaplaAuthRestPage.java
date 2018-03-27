@@ -86,7 +86,7 @@ public class RaplaAuthRestPage
 
     @POST
     @Produces(MediaType.TEXT_HTML)
-    public void create_(@QueryParam("url") String url, @FormParam("username") String user, String password,
+    public void create_(@QueryParam("url") String url, @FormParam("username") String user, @FormParam("password")String password,
             @FormParam("connectAs") String connectAs, @Context HttpServletResponse response) throws Exception
     {
         final String targetUrl = url !=null ? Tools.createXssSafeString(url): "../apiTest.html";

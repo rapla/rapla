@@ -45,8 +45,8 @@ public interface ClientFacade
     void changeEmail(String newEmail) throws RaplaException;
 
 
-    TypedComponentRole<Integer> REFRESH_INTERVAL_ENTRY = new TypedComponentRole<Integer>("org.rapla.refreshInterval");
-    TypedComponentRole<Integer> ARCHIVE_AGE = new TypedComponentRole<Integer>("org.rapla.archiveAge");
+    TypedComponentRole<Integer> REFRESH_INTERVAL_ENTRY = new TypedComponentRole<>("org.rapla.refreshInterval");
+    TypedComponentRole<Integer> ARCHIVE_AGE = new TypedComponentRole<>("org.rapla.archiveAge");
     int REFRESH_INTERVAL_DEFAULT = 30000;
 
     /**

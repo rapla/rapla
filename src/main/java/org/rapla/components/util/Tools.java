@@ -146,7 +146,7 @@ public abstract class Tools
 
     /** 1.3 compatibility method */
     public static String[] split(String stringToSplit, char delimiter) {
-        List<String> keys = new ArrayList<String>();
+        List<String> keys = new ArrayList<>();
         int lastIndex = 0;
         while( true ) {
             int index = stringToSplit.indexOf( delimiter,lastIndex);

@@ -66,8 +66,8 @@ public class TemplateEdit extends RaplaGUIComponent
 {
     RaplaListEdit<Allocatable> templateList;
 
-    Collection<Entity> toStore = new LinkedHashSet<Entity>();
-    Collection<Allocatable> toRemove = new LinkedHashSet<Allocatable>();
+    Collection<Entity> toStore = new LinkedHashSet<>();
+    Collection<Allocatable> toRemove = new LinkedHashSet<>();
     private final CalendarSelectionModel calendarSelectionModel;
     private final DialogUiFactoryInterface dialogUiFactory;
     private final PermissionController permissionController;
@@ -120,53 +120,47 @@ public class TemplateEdit extends RaplaGUIComponent
             }
         };
 
-        ActionListener callback = new ActionListener()
-        {
-
-            @Override
-            public void actionPerformed(ActionEvent evt)
+        ActionListener callback = evt -> {
+            //int index = getSelectedIndex();
+            try
             {
-                //int index = getSelectedIndex();
-                try
+                if (evt.getActionCommand().equals("remove"))
                 {
-                    if (evt.getActionCommand().equals("remove"))
+                    removeTemplate();
+                }
+                else if (evt.getActionCommand().equals("copy"))
+                {
+                    Allocatable template = templateList.getSelectedValue();
+                    if ( template != null)
                     {
-                        removeTemplate();
+                        handleException(copyTemplate( template));
                     }
-                    else if (evt.getActionCommand().equals("copy"))
+                    //if ( template)
+                }
+                else if (evt.getActionCommand().equals("new"))
+                {
+                    createTemplate();
+                }
+                else if (evt.getActionCommand().equals("edit"))
+                {
+                    Allocatable template = templateList.getSelectedValue();
+                    List<Allocatable> list;
+                    if (template != null)
                     {
-                        Allocatable template = templateList.getSelectedValue();
-                        if ( template != null)
-                        {
-                            handleException(copyTemplate( template));
-                        }
-                        //if ( template)
+                        list = Collections.singletonList(template);
                     }
-                    else if (evt.getActionCommand().equals("new"))
+                    else
                     {
-                        createTemplate();
+                        list = Collections.emptyList();
                     }
-                    else if (evt.getActionCommand().equals("edit"))
-                    {
-                        Allocatable template = templateList.getSelectedValue();
-                        List<Allocatable> list;
-                        if (template != null)
-                        {
-                            list = Collections.singletonList(template);
-                        }
-                        else
-                        {
-                            list = Collections.emptyList();
-                        }
-                        allocatableEdit.setObjects(list);
-                        allocatableEdit.mapFromObjects();
-                    }
+                    allocatableEdit.setObjects(list);
+                    allocatableEdit.mapFromObjects();
+                }
 
-                }
-                catch (RaplaException ex)
-                {
-                    dialogUiFactory.showException(ex, new SwingPopupContext(templateList.getComponent(), null));
-                }
+            }
+            catch (RaplaException ex)
+            {
+                dialogUiFactory.showException(ex, new SwingPopupContext(templateList.getComponent(), null));
             }
         };
         templateList = raplaListEditFactory.create( allocatableEdit.getComponent(), callback, true);
@@ -226,7 +220,7 @@ public class TemplateEdit extends RaplaGUIComponent
         promise.exceptionally((ex)->dialogUiFactory.showException( ex, dialogUiFactory.createPopupContext(templateList)));
     }
 
-    Map<ReferenceInfo<User>, String> usernameMap = new HashMap<ReferenceInfo<User>, String>();
+    Map<ReferenceInfo<User>, String> usernameMap = new HashMap<>();
 
     private String getUsername(ReferenceInfo<User> userId)
     {
@@ -249,8 +243,8 @@ public class TemplateEdit extends RaplaGUIComponent
 
     public String getNewTemplateName() throws RaplaException
     {
-        Collection<Allocatable> templates = new LinkedHashSet<Allocatable>(getQuery().getTemplates());
-        Collection<String> templateNames = new LinkedHashSet<String>();
+        Collection<Allocatable> templates = new LinkedHashSet<>(getQuery().getTemplates());
+        Collection<String> templateNames = new LinkedHashSet<>();
         Locale locale = getLocale();
         for (Allocatable template : templates)
         {
@@ -318,7 +312,7 @@ public class TemplateEdit extends RaplaGUIComponent
         newClassification.setValue("name", name);
         final User user = getUser();
         Allocatable template = getFacade().newAllocatable(newClassification, user);
-        Collection<Permission> permissionList = new ArrayList<Permission>(template.getPermissionList());
+        Collection<Permission> permissionList = new ArrayList<>(template.getPermissionList());
         for (Permission permission : permissionList)
         {
             template.removePermission(permission);
@@ -336,8 +330,8 @@ public class TemplateEdit extends RaplaGUIComponent
         try
         {
             Collection<Allocatable> originals = getQuery().getTemplates();
-            List<Allocatable> editableTemplates = new ArrayList<Allocatable>();
-            List<Allocatable> nonEditables = new ArrayList<Allocatable>();
+            List<Allocatable> editableTemplates = new ArrayList<>();
+            List<Allocatable> nonEditables = new ArrayList<>();
             final User user = getUser();
 
             for (Allocatable template : originals)
@@ -353,7 +347,7 @@ public class TemplateEdit extends RaplaGUIComponent
             }
             Collection<Allocatable> copies = getFacade().editList(editableTemplates);
             fillModel(nonEditables,copies);
-            Collection<String> options = new ArrayList<String>();
+            Collection<String> options = new ArrayList<>();
             options.add(getString("apply"));
             options.add(getString("cancel"));
 

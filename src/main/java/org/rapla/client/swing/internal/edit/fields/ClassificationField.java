@@ -88,13 +88,7 @@ public  class  ClassificationField<T extends Classifiable> extends AbstractEditF
 		super(facade, i18n, raplaLocale, logger);
         this.dialogUiFactory = dialogUiFactory;
 		editUI = new ClassificationEditUI(facade, i18n, raplaLocale, logger, treeFactory, dateFieldFactory, dialogUiFactory, booleanFieldFactory, textFieldFactory, longFieldFactory);
-		editUI.addChangeListener( new ChangeListener() { 
-            
-            @Override
-            public void stateChanged(ChangeEvent e) {
-                fireContentChanged();
-            }
-        });
+		editUI.addChangeListener(e -> fireContentChanged());
 		setFieldName("type");
 		content.setBorder(BorderFactory.createEmptyBorder(3, 2, 3, 2));
 	}
@@ -134,9 +128,9 @@ public  class  ClassificationField<T extends Classifiable> extends AbstractEditF
 	@SuppressWarnings("unchecked")
 	public void mapFrom(List<T> list) throws RaplaException {
 		content.removeAll();
-		List<Classifiable> classifiables = new ArrayList<Classifiable>();
+		List<Classifiable> classifiables = new ArrayList<>();
 		// read out Classifications from Classifiable
-		List<Classification> classifications = new ArrayList<Classification>();
+		List<Classification> classifications = new ArrayList<>();
 		for (Classifiable classifiable:list)
 		{
 			classifiables.add( classifiable);
@@ -149,7 +143,7 @@ public  class  ClassificationField<T extends Classifiable> extends AbstractEditF
 		oldClassifications = classifications;
 
 		// checks unity from RaplaTypes of all Classifiables
-		Set<Class> raplaTypes = new HashSet<Class>();
+		Set<Class> raplaTypes = new HashSet<>();
 		for (Classifiable c : classifiables) {
 			raplaTypes.add(((RaplaObject) c).getTypeClass());
 		}
@@ -190,7 +184,7 @@ public  class  ClassificationField<T extends Classifiable> extends AbstractEditF
 		DynamicType[] types = raplaFacade.getDynamicTypes(classificationType);
 
 		// determine DynamicTypes of Classifications
-		Set<DynamicType> dynamicTypes = new HashSet<DynamicType>();
+		Set<DynamicType> dynamicTypes = new HashSet<>();
 		for (Classification c : classifications) {
 			dynamicTypes.add(c.getType());
 		}
@@ -314,7 +308,7 @@ public  class  ClassificationField<T extends Classifiable> extends AbstractEditF
 						editUI.setObjects(oldClassifications);
 					else {
 						// no: set new Classifications
-						List<Classification> newClassifications = new ArrayList<Classification>();
+						List<Classification> newClassifications = new ArrayList<>();
 						List<Classification> classifications = editUI.getObjects();
 						for (int i = 0; i < classifications.size(); i++) {
 							Classification classification = classifications.get(i);

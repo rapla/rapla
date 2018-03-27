@@ -106,7 +106,7 @@ public class ReservationInfoUI extends ClassificationInfoUI<Reservation> {
     }
     
     public List<Row> getAttributes(Reservation reservation,LinkController controller, User user, boolean excludeAdditionalInfos) {
-        ArrayList<Row> att = new ArrayList<Row>();
+        ArrayList<Row> att = new ArrayList<>();
         att.addAll( getClassificationAttributes( reservation, excludeAdditionalInfos,controller, user ));
         ReferenceInfo<User> ownerId = reservation.getOwnerRef();
         if ( ownerId != null)

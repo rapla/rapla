@@ -35,7 +35,7 @@ public class TableColumnAnnotationEdit extends RaplaGUIComponent implements Anno
 
     private final TableConfig.TableConfigLoader tableConfigLoader;
     private final TextFieldFactory textFieldFactory;
-    private final Map<TextField, TableColumnConfig> textFieldsToColumnConfig = new HashMap<TextField, TableColumnConfig>();
+    private final Map<TextField, TableColumnConfig> textFieldsToColumnConfig = new HashMap<>();
     @Inject
     public TableColumnAnnotationEdit(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, TableConfig.TableConfigLoader tableConfigLoader, TextFieldFactory textFieldFactory) {
         super(facade, i18n, raplaLocale, logger);
@@ -70,7 +70,7 @@ public class TableColumnAnnotationEdit extends RaplaGUIComponent implements Anno
         {
             throw new IllegalStateException(ex);
         }
-        ArrayList<EditField> fields = new ArrayList<EditField>();
+        ArrayList<EditField> fields = new ArrayList<>();
         textFieldsToColumnConfig.clear();
         for (TableColumnConfig column:config.getAllColumns())
         {
@@ -154,7 +154,7 @@ public class TableColumnAnnotationEdit extends RaplaGUIComponent implements Anno
     private Map<String, String> getColumnAnnotations(DynamicType dynamicType)
     {
         final String columnAnnotationPrefix = TableViewPlugin.COLUMN_ANNOTATION;
-        Map<String,String> columnAnnotations = new LinkedHashMap<String,String>();
+        Map<String,String> columnAnnotations = new LinkedHashMap<>();
         for ( String annotationKey:dynamicType.getAnnotationKeys())
         {
                if ( annotationKey.startsWith(columnAnnotationPrefix))

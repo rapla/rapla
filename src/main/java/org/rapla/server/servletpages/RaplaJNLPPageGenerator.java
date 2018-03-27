@@ -37,8 +37,8 @@ import java.util.List;
 public class RaplaJNLPPageGenerator
 {
 
-    private static final TypedComponentRole<Boolean> CREATE_SHORTCUT = new TypedComponentRole<Boolean>("org.rapla.jnlp.createshortcut");
-    private static final TypedComponentRole<Integer> CLIENT_VM_MIN_SIZE = new TypedComponentRole<Integer>("org.rapla.jnlp.xms");
+    private static final TypedComponentRole<Boolean> CREATE_SHORTCUT = new TypedComponentRole<>("org.rapla.jnlp.createshortcut");
+    private static final TypedComponentRole<Integer> CLIENT_VM_MIN_SIZE = new TypedComponentRole<>("org.rapla.jnlp.xms");
     @Inject
     RaplaFacade facade;
     @Inject
@@ -84,7 +84,7 @@ public class RaplaJNLPPageGenerator
             buf.append("\n<jar href=\"" + webstartRoot + "/");
             buf.append(file);
             buf.append("\"");
-            if (file.indexOf("/rapla-client.jar") >= 0)
+            if (file.contains("/rapla-client.jar"))
             {
                 buf.append(" main=\"true\"");
             }
@@ -96,7 +96,7 @@ public class RaplaJNLPPageGenerator
 
     public static List<String> getClientLibs(ServletContext context) throws IOException
     {
-        List<String> list = new ArrayList<String>();
+        List<String> list = new ArrayList<>();
         URL resource = RaplaJNLPPageGenerator.class.getResource("/clientlibs.properties");
         if (resource != null)
         {
@@ -127,7 +127,7 @@ public class RaplaJNLPPageGenerator
         for (int i = 0; i < size; i++)
         {
             String entry = list.get(i);
-            if (entry.indexOf("raplaclient") >= 0)
+            if (entry.contains("raplaclient"))
             {
                 list.remove(i);
                 list.add(0, entry);
@@ -138,7 +138,7 @@ public class RaplaJNLPPageGenerator
 
     protected List<String> getProgramArguments()
     {
-        List<String> list = new ArrayList<String>();
+        List<String> list = new ArrayList<>();
         return list;
     }
 

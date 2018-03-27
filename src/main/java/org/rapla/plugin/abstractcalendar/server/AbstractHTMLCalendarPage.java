@@ -339,7 +339,7 @@ public abstract class AbstractHTMLCalendarPage  implements HTMLViewPage
     	String base = request.getRequestURL().toString();
     	String queryPath = request.getQueryString();
     	queryPath = queryPath.replaceAll("&selected_allocatables[^&]*","");
-    	List<Allocatable> sortedAllocatables = new ArrayList<Allocatable>(selectedAllocatables);
+    	List<Allocatable> sortedAllocatables = new ArrayList<>(selectedAllocatables);
     	Collections.sort( sortedAllocatables, new SortedClassifiableComparator(locale) );
     	for (Allocatable alloc:sortedAllocatables)
     	{

@@ -25,7 +25,7 @@ final class TimeModel {
     Calendar m_calendar;
     Locale m_locale;
 	private Date durationStart;
-	ArrayList<DateChangeListener> m_listenerList = new ArrayList<DateChangeListener>();
+	ArrayList<DateChangeListener> m_listenerList = new ArrayList<>();
 
     public TimeModel(Locale locale,TimeZone timeZone) {
         m_locale = locale;

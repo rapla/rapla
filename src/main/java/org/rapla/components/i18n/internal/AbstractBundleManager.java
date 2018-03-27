@@ -24,10 +24,10 @@ import java.util.Vector;
 
 public abstract class AbstractBundleManager implements BundleManager {
     private I18nLocaleFormats formats;
-    private LinkedHashMap<String,ResourceBundle> packMap = new LinkedHashMap<String,ResourceBundle>();
+    private LinkedHashMap<String,ResourceBundle> packMap = new LinkedHashMap<>();
     private final Set<String> availableLanguages;
     Locale locale;
-    Vector<LocaleChangeListener> localeChangeListeners = new Vector<LocaleChangeListener>();
+    Vector<LocaleChangeListener> localeChangeListeners = new Vector<>();
     final Map<String, Set<String>> countriesForLanguage;
 
     public AbstractBundleManager()
@@ -45,7 +45,7 @@ public abstract class AbstractBundleManager implements BundleManager {
 
     public Map<String, Set<String>> getCountriesForLanguage(Set<String> languages)
     {
-        final LinkedHashMap<String, Set<String>> result = new LinkedHashMap<String, Set<String>>();
+        final LinkedHashMap<String, Set<String>> result = new LinkedHashMap<>();
         if (languages != null)
         {
             for (String language : languages)
@@ -62,11 +62,11 @@ public abstract class AbstractBundleManager implements BundleManager {
 
     private Map<String, Set<String>> loadAvailableCountries()
     {
-        LinkedHashMap<String, Set<String>> countriesForLanguage= new LinkedHashMap<String, Set<String>>();
+        LinkedHashMap<String, Set<String>> countriesForLanguage= new LinkedHashMap<>();
         {
             for (String language : availableLanguages)
             {
-                final LinkedHashSet<String> countries = new LinkedHashSet<String>();
+                final LinkedHashSet<String> countries = new LinkedHashSet<>();
                 countries.add(language.toUpperCase());
                 final String[] isoCountries = Locale.getISOCountries();
                 for (String country : isoCountries)
@@ -85,7 +85,7 @@ public abstract class AbstractBundleManager implements BundleManager {
     }
 
     private Set<String> loadAvailableLanguages() {
-        Set<String> availableLanguages = new LinkedHashSet<String>();
+        Set<String> availableLanguages = new LinkedHashSet<>();
         Locale[] availableLocales = Locale.getAvailableLocales();
         final String prefix = "/org/rapla/RaplaResources";
         final String suffix = ".properties";
@@ -223,7 +223,7 @@ public abstract class AbstractBundleManager implements BundleManager {
         localeChangeListeners.add(0,listener);
     }
 
-    private  final Map<Locale, I18nLocaleFormats> cache = new HashMap<Locale, I18nLocaleFormats>();
+    private  final Map<Locale, I18nLocaleFormats> cache = new HashMap<>();
 
     public  I18nLocaleFormats getFormats(Locale localeId)
     {

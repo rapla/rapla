@@ -70,7 +70,7 @@ public class SetOwnerMenuFactory implements ObjectMenuFactory
     		return IdentifiableMenuEntry.EMPTY_ARRAY;
     	}
     	
-    	Collection<Object> selectedObjects = new HashSet<Object>();
+    	Collection<Object> selectedObjects = new HashSet<>();
     	Collection<?> selected = menuContext.getSelectedObjects();
     	if ( selected.size() != 0)
     	{
@@ -82,7 +82,7 @@ public class SetOwnerMenuFactory implements ObjectMenuFactory
     	}
     	ReferenceInfo<User> selectedOwner = null;
     		
-    	final Collection<Entity<? extends Entity>> ownables = new HashSet<Entity<? extends Entity>>();
+    	final Collection<Entity<? extends Entity>> ownables = new HashSet<>();
     	for ( Object obj: selectedObjects)
     	{
     		final Entity<? extends Entity> ownable;
@@ -197,7 +197,7 @@ public class SetOwnerMenuFactory implements ObjectMenuFactory
     }
     
     private <T extends Named> Collection<T> sorted(T[] allocatables) {
-        TreeSet<T> sortedList = new TreeSet<T>(new NamedComparator<T>(i18n.getLocale()));
+        TreeSet<T> sortedList = new TreeSet<>(new NamedComparator<>(i18n.getLocale()));
         sortedList.addAll(Arrays.asList(allocatables));
         return sortedList;
     }

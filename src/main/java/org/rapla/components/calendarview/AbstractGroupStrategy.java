@@ -37,26 +37,24 @@ public abstract class AbstractGroupStrategy implements BuildStrategy {
 
     protected Comparator<Block> blockComparator = new BlockComparator();
 
-	protected Comparator<List<Block>> slotComparator = new Comparator<List<Block>>() {
-            public int compare(List<Block> s1,List<Block> s2) {
-                if (s1.size() == 0 || s2.size() ==0) {
-                    if (s1.size() == s2.size())
-                        return 0;
-                    else
-                        return s1.size() < s2.size() ? -1 : 1;
-                }
+	protected Comparator<List<Block>> slotComparator = (s1, s2) -> {
+        if (s1.size() == 0 || s2.size() ==0) {
+            if (s1.size() == s2.size())
+                return 0;
+            else
+                return s1.size() < s2.size() ? -1 : 1;
+        }
 
-                Block b1 = s1.get(0);
-                Block b2 =  s2.get(0);
-                return b1.getStart().compareTo(b2.getStart());
-            }
-        };
+        Block b1 = s1.get(0);
+        Block b2 =  s2.get(0);
+        return b1.getStart().compareTo(b2.getStart());
+    };
         
     
 
     public void build(BlockContainer wv, List<Block> blocks, Date startDate)
     {
-        LinkedHashMap<Integer,List<Block>> days = new LinkedHashMap<Integer,List<Block>>();
+        LinkedHashMap<Integer,List<Block>> days = new LinkedHashMap<>();
         Map<Block, Integer> blockMap = getBlockMap(wv, blocks, startDate);
         for (Block b:blockMap.keySet()) {
         	Integer index = blockMap.get(b);
@@ -64,7 +62,7 @@ public abstract class AbstractGroupStrategy implements BuildStrategy {
             
             if (list == null)
             {
-            	list = new ArrayList<Block>();
+            	list = new ArrayList<>();
             	days.put(index, list);
             }
             list.add(b);
@@ -92,7 +90,7 @@ public abstract class AbstractGroupStrategy implements BuildStrategy {
     }
 
     protected Map<Block,Integer> getBlockMap(BlockContainer blockContainer, List<Block> blocks, Date startDate) {
-    	Map<Block,Integer> map = new LinkedHashMap<Block, Integer>();
+    	Map<Block,Integer> map = new LinkedHashMap<>();
     	for  (Block block:blocks) {
             final Date start = block.getStart();
             int intoDay = (int)DateTools.countDays(startDate, start);
@@ -142,7 +140,7 @@ public abstract class AbstractGroupStrategy implements BuildStrategy {
     /** takes a block list and returns a sorted slotList */
     protected List<List<Block>> getSortedSlots(List<Block> blockList) {
         Collection<List<Block>> group = group(blockList);
-		List<List<Block>> slots = new ArrayList<List<Block>>(group);
+		List<List<Block>> slots = new ArrayList<>(group);
         if ( isResolveConflictsEnabled()) {
         	resolveConflicts(slots);
         }
@@ -182,7 +180,7 @@ public abstract class AbstractGroupStrategy implements BuildStrategy {
                         group.remove( element2 );
                         j --;
                         if (newSlot == null) {
-                            newSlot = new ArrayList<Block>();
+                            newSlot = new ArrayList<>();
                             groups.add(pos, newSlot);
                         }
                         newSlot.add( element2);

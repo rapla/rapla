@@ -7,24 +7,24 @@ import org.rapla.framework.TypedComponentRole;
 
 public class Export2iCalPlugin  {
 
-	public static final TypedComponentRole<I18nBundle> RESOURCE_FILE = new TypedComponentRole<I18nBundle>("org.rapla.plugin.export2ical" + ".Export2iCalResources");
+	public static final TypedComponentRole<I18nBundle> RESOURCE_FILE = new TypedComponentRole<>("org.rapla.plugin.export2ical" + ".Export2iCalResources");
 
 	public static final String PLUGIN_CLASS = Export2iCalPlugin.class.getName();
-	public static final TypedComponentRole<RaplaConfiguration> ICAL_CONFIG =  new TypedComponentRole<RaplaConfiguration>("org.rapla.plugin.export2ical.server.Config");
+	public static final TypedComponentRole<RaplaConfiguration> ICAL_CONFIG = new TypedComponentRole<>("org.rapla.plugin.export2ical.server.Config");
 
     public static final String ENABLED_STRING = "org.rapla.plugin.export2ical.enabled";
-	public static final TypedComponentRole<Boolean> ENABLED =  new TypedComponentRole<Boolean>(ENABLED_STRING);
+	public static final TypedComponentRole<Boolean> ENABLED = new TypedComponentRole<>(ENABLED_STRING);
     
 	public static final String ICAL_EXPORT = "org.rapla.plugin.export2ical.selected";
 	public static final String DAYS_BEFORE = "days_before";
 	public static final String DAYS_AFTER = "days_after";
 
-	public static final TypedComponentRole<Integer> PREF_BEFORE_DAYS = new TypedComponentRole<Integer>("export2iCal_before_days");
-	public static final TypedComponentRole<Integer> PREF_AFTER_DAYS	= new TypedComponentRole<Integer>("export2iCal_after_days");
+	public static final TypedComponentRole<Integer> PREF_BEFORE_DAYS = new TypedComponentRole<>("export2iCal_before_days");
+	public static final TypedComponentRole<Integer> PREF_AFTER_DAYS	= new TypedComponentRole<>("export2iCal_after_days");
 	
 	public static final String GLOBAL_INTERVAL = "global_interval";
 	public static final String EXPORT_ATTENDEES = "export_attendees";
-	public static final TypedComponentRole<Boolean> EXPORT_ATTENDEES_PREFERENCE = new TypedComponentRole<Boolean>("export_attendees"); 
+	public static final TypedComponentRole<Boolean> EXPORT_ATTENDEES_PREFERENCE = new TypedComponentRole<>("export_attendees");
 	public static final String EXPORT_ATTENDEES_EMAIL_ATTRIBUTE = "export_attendees_email_attribute";
 	public static final String LAST_MODIFIED_INTERVALL = "last_modified_intervall";
 	
@@ -41,7 +41,7 @@ public class Export2iCalPlugin  {
     public static final boolean DEFAULT_exportAttendees = false;
     public static final String EXPORT_ATTENDEES_PARTICIPATION_STATUS = "export_attendees_participation_status";
 
-    public static final TypedComponentRole<String> EXPORT_ATTENDEES_PARTICIPATION_STATUS_PREFERENCE = new TypedComponentRole<String>("export_attendees_participation_status");
+    public static final TypedComponentRole<String> EXPORT_ATTENDEES_PARTICIPATION_STATUS_PREFERENCE = new TypedComponentRole<>("export_attendees_participation_status");
 	public static final String PLUGIN_ID = "org.rapla.plugin.export2ical";
 
 	//FIXME maybe this is no longer needed with signed applets

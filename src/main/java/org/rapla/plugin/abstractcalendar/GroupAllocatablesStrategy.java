@@ -28,10 +28,10 @@ import java.util.Locale;
 /** Tries to put reservations that allocate the same Resources in the same column.*/
 public class GroupAllocatablesStrategy extends AbstractGroupStrategy {
     Comparator<Allocatable> allocatableComparator;
-    Collection<Allocatable> allocatables = new ArrayList<Allocatable>();
+    Collection<Allocatable> allocatables = new ArrayList<>();
     
     public GroupAllocatablesStrategy(Locale locale) {
-    	allocatableComparator = new NamedComparator<Allocatable>( locale );
+    	allocatableComparator = new NamedComparator<>(locale);
     }
 
     public void setAllocatables( Collection<Allocatable> allocatables) {
@@ -40,9 +40,9 @@ public class GroupAllocatablesStrategy extends AbstractGroupStrategy {
     
     protected Collection<List<Block>> group(List<Block> list) {
     	
-    	HashMap<Allocatable,List<Block>> groups = new HashMap<Allocatable,List<Block>>();
+    	HashMap<Allocatable,List<Block>> groups = new HashMap<>();
         for (Iterator<Allocatable> it = allocatables.iterator();it.hasNext(); ) {
-            groups.put( it.next(), new ArrayList<Block>() );
+            groups.put( it.next(), new ArrayList<>() );
         }
         List<Block> noAllocatablesGroup = null;
         for (Iterator<Block> it = list.iterator();it.hasNext();) {
@@ -50,21 +50,21 @@ public class GroupAllocatablesStrategy extends AbstractGroupStrategy {
             Allocatable allocatable = block.getContext().getGroupAllocatable();
             if (allocatable ==  null) {
                 if (noAllocatablesGroup == null)
-                    noAllocatablesGroup = new ArrayList<Block>();
+                    noAllocatablesGroup = new ArrayList<>();
                 noAllocatablesGroup.add(block);
                 continue;
             }
             List<Block> col =  groups.get( allocatable );
             if (col == null) {
-                col = new ArrayList<Block>();
+                col = new ArrayList<>();
                 groups.put( allocatable, col );
             }
             col.add(block);
         }
-        ArrayList<Allocatable> sortedAllocatables = new ArrayList<Allocatable>(groups.keySet());
+        ArrayList<Allocatable> sortedAllocatables = new ArrayList<>(groups.keySet());
         Collections.sort(sortedAllocatables, allocatableComparator);
         
-        ArrayList<List<Block>> sortedList = new ArrayList<List<Block>>();
+        ArrayList<List<Block>> sortedList = new ArrayList<>();
     
         for (Iterator<Allocatable> it = sortedAllocatables.iterator();it.hasNext();) {
         	sortedList.add( groups.get(it.next()) );

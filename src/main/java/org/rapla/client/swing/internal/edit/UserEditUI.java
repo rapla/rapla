@@ -93,7 +93,7 @@ public class UserEditUI  extends AbstractEditUI<User> {
         super(facade, i18n, raplaLocale, logger);
         this.treeFactory = treeFactory;
         this.dialogUiFactory = dialogUiFactory;
-        List<EditField> fields = new ArrayList<EditField>();
+        List<EditField> fields = new ArrayList<>();
         usernameField = textFieldFactory.create(getString("username"));
         fields.add(usernameField);
         personSelect = new PersonSelectField(facade, i18n, raplaLocale, logger);
@@ -269,7 +269,7 @@ public class UserEditUI  extends AbstractEditUI<User> {
             treeSelection.getTree().setCellRenderer(treeFactory.createRenderer());
 
             final DynamicType[] personTypes = getQuery().getDynamicTypes(DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_PERSON);
-            List<ClassificationFilter> filters = new ArrayList<ClassificationFilter>();
+            List<ClassificationFilter> filters = new ArrayList<>();
             for (DynamicType personType: personTypes)
             {
                 if ( personType.getAttribute("email") != null)
@@ -279,7 +279,7 @@ public class UserEditUI  extends AbstractEditUI<User> {
                 }
             }
             final Allocatable[] allocatables = getQuery().getAllocatablesWithFilter(filters.toArray(ClassificationFilter.CLASSIFICATIONFILTER_ARRAY));
-            List<Allocatable> allocatablesWithEmail = new ArrayList<Allocatable>();
+            List<Allocatable> allocatablesWithEmail = new ArrayList<>();
             for ( Allocatable a: allocatables)
             {
                 final Classification classification = a.getClassification();

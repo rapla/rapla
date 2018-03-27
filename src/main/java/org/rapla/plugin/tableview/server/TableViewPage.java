@@ -147,7 +147,7 @@ abstract public class TableViewPage<T, C>
 
     public String getCalendarHTML(List<RaplaTableColumn<T, C>> columPlugins, Collection<T> rowObjects, Map<RaplaTableColumn, Integer> sortDirections)
     {
-        List<TableRow> rows = new ArrayList<TableRow>();
+        List<TableRow> rows = new ArrayList<>();
         for (T r : rowObjects)
         {
             rows.add(new TableRow(r, sortDirections));

@@ -70,7 +70,7 @@ public class EditTaskViewSwing implements EditTaskViewFactory<Component>
                 }
             }
         }
-        ui.setObjects(new ArrayList<T>(toEdit));
+        ui.setObjects(new ArrayList<>(toEdit));
         JPanel jPanel = new JPanel();
         jPanel.setLayout(new BorderLayout());
         jPanel.add(ui.getComponent(), BorderLayout.CENTER);

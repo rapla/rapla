@@ -12,7 +12,7 @@ import java.util.LinkedHashMap;
 public interface MultiCalendarView extends RaplaWidget<Component>
 {
 
-    public interface Presenter
+    interface Presenter
     {
         void onViewSelectionChange(PopupContext context);
         

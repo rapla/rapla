@@ -574,16 +574,7 @@ public class ImportTemplateMenu implements ImportMenuExtension, ActionListener
 
         final JTable table = new JTable();
         table.putClientProperty("terminateEditOnFocusLost", true);
-        final ActionListener copyListener = new ActionListener()
-        {
-
-            @Override
-            public void actionPerformed( final ActionEvent evt )
-            {
-                RaplaGUIComponent.copy(table, evt, ioInterface, raplaLocale);
-            }
-
-        };
+        final ActionListener copyListener = evt -> RaplaGUIComponent.copy(table, evt, ioInterface, raplaLocale);
         table.registerKeyboardAction(copyListener, i18n.getString("copy"), RaplaGUIComponent.COPY_STROKE, JComponent.WHEN_FOCUSED);
         final String[] newHeader = new String[header.length + 3];
         newHeader[selectCol] = "";
@@ -655,19 +646,13 @@ public class ImportTemplateMenu implements ImportMenuExtension, ActionListener
         content.setLayout(new BorderLayout());
         content.add(buttonPanel, BorderLayout.NORTH);
         content.add(pane, BorderLayout.CENTER);
-        final ActionListener listener = new ActionListener()
-        {
-
-            @Override
-            public void actionPerformed( final ActionEvent e )
+        final ActionListener listener = e -> {
+            final Object source = e.getSource();
+            final boolean set = source == everythingButton;
+            final int rowCount = dataModel.getRowCount();
+            for ( int row = 0; row < rowCount; row++ )
             {
-                final Object source = e.getSource();
-                final boolean set = source == everythingButton;
-                final int rowCount = dataModel.getRowCount();
-                for ( int row = 0; row < rowCount; row++ )
-                {
-                    dataModel.setValueAt(new Boolean(set), row, selectCol);
-                }
+                dataModel.setValueAt(new Boolean(set), row, selectCol);
             }
         };
         everythingButton.addActionListener(listener);

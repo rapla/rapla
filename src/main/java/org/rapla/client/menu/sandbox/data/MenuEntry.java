@@ -5,7 +5,7 @@ import java.util.List;
 
 public class MenuEntry
 {
-    private List<MenuEntry> subEntries = new ArrayList<MenuEntry>();
+    private List<MenuEntry> subEntries = new ArrayList<>();
     private String text;
     private String icon;
     private boolean enabled = true;

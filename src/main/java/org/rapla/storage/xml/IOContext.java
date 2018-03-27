@@ -34,7 +34,7 @@ public class IOContext
 {
    protected Map<String,Class<? extends RaplaObject>> getLocalnameMap()  {
         //WARNING We can't use RaplaType.getRegisteredTypes() because the class could not be registered on load time
-        Map<String,Class<? extends RaplaObject>> localnameMap = new HashMap<String,Class<? extends RaplaObject>>();
+        Map<String,Class<? extends RaplaObject>> localnameMap = new HashMap<>();
         put( localnameMap, Reservation.class);
         put( localnameMap, Appointment.class);
         put( localnameMap, Allocatable.class);
@@ -96,13 +96,13 @@ public class IOContext
         ioContext.put(Logger.class, logger);
         ioContext.put(KeyAndPathResolver.class,new KeyAndPathResolver(store, superCategory));
         ioContext.put(PreferenceReader.LOCALNAMEMAPENTRY, getLocalnameMap());
-        Map<Class<? extends  RaplaObject>,RaplaXMLReader> readerMap = new HashMap<Class<? extends  RaplaObject>,RaplaXMLReader>();
+        Map<Class<? extends  RaplaObject>,RaplaXMLReader> readerMap = new HashMap<>();
         ioContext.put(PreferenceReader.READERMAP, readerMap);
         addReaders( readerMap, ioContext);
         return ioContext;
      }
-    public static TypedComponentRole<Boolean> PRINTID = new TypedComponentRole<Boolean>( IOContext.class.getName() + ".idonly");
-    public static TypedComponentRole<Provider<Category>> SUPERCATEGORY = new TypedComponentRole<Provider<Category>>( IOContext.class.getName() + ".supercategory");
+    public static TypedComponentRole<Boolean> PRINTID = new TypedComponentRole<>(IOContext.class.getName() + ".idonly");
+    public static TypedComponentRole<Provider<Category>> SUPERCATEGORY = new TypedComponentRole<>(IOContext.class.getName() + ".supercategory");
     
     public RaplaDefaultXMLContext createOutputContext(Logger logger,RaplaLocale locale,RaplaResources i18n, Provider<Category> superCategory,boolean includeIds) throws RaplaException {
         
@@ -119,7 +119,7 @@ public class IOContext
         	ioContext.put( SUPERCATEGORY, superCategory);
         }
         ioContext.put(PreferenceReader.LOCALNAMEMAPENTRY, getLocalnameMap());
-        Map<Class<? extends  RaplaObject>,RaplaXMLWriter> writerMap = new HashMap<Class<? extends  RaplaObject>,RaplaXMLWriter>();
+        Map<Class<? extends  RaplaObject>,RaplaXMLWriter> writerMap = new HashMap<>();
         ioContext.put(PreferenceWriter.WRITERMAP, writerMap);
         addWriters( writerMap, ioContext );
         return ioContext;

@@ -68,7 +68,7 @@ public class ReservationViewImpl implements ReservationView
 
     }
 
-    private final ArrayList<Dual> navEntries = new ArrayList<Dual>();
+    private final ArrayList<Dual> navEntries = new ArrayList<>();
     private final Div content = new Div();
     private final Div buttons = new Div();
     private final NavTabs bar = new NavTabs();
@@ -180,57 +180,30 @@ public class ReservationViewImpl implements ReservationView
         }
         {
             IconType type = IconType.SAVE;
-            ClickHandler handler = new ClickHandler()
-            {
-                @Override
-                public void onClick(ClickEvent event)
-                {
-                    getPresenter().onSaveButtonClicked();
-                }
-            };
+            ClickHandler handler = event -> getPresenter().onSaveButtonClicked();
             createIcon(type, handler, "Save");
         }
         {
             IconType type = IconType.REMOVE;
-            ClickHandler handler = new ClickHandler()
-            {
-                @Override
-                public void onClick(ClickEvent event)
-                {
-                    getPresenter().onCancelButtonClicked();
-                }
-            };
+            ClickHandler handler = event -> getPresenter().onCancelButtonClicked();
             createIcon(type, handler, "Cancel");
         }
         {
             IconType type = IconType.TRASH;
-            ClickHandler handler = new ClickHandler()
-            {
-                @Override
-                public void onClick(ClickEvent event)
-                {
-                    getPresenter().onDeleteButtonClicked();
-                }
-            };
+            ClickHandler handler = event -> getPresenter().onDeleteButtonClicked();
             createIcon(type, handler, "Delete");
         }
-        bar.addDomHandler(new ClickHandler()
-        {
-            @Override
-            public void onClick(ClickEvent event)
+        bar.addDomHandler(event -> {
+            Element relativeElement = DOM.eventGetTarget(com.google.gwt.user.client.Event.as(event.getNativeEvent()));
+            while (relativeElement != null && !(LIElement.is(relativeElement)))
             {
-                Element relativeElement = DOM.eventGetTarget(com.google.gwt.user.client.Event.as(event.getNativeEvent()));
-                while (relativeElement != null && !(LIElement.is(relativeElement)))
-                {
-                    relativeElement = relativeElement.getParentElement();
-                }
-                if (relativeElement == null)
-                {
-                    return;
-                }
-                activate(relativeElement);
+                relativeElement = relativeElement.getParentElement();
             }
-
+            if (relativeElement == null)
+            {
+                return;
+            }
+            activate(relativeElement);
         }, ClickEvent.getType());
         popup = RaplaPopups.createNewPopupPanel();
         popup.setAnimationEnabled(true);

@@ -144,7 +144,7 @@ public class RaplaObjectActions {
 
     public RaplaObjectActions setDeleteSelection(Collection<Entity<?>> selection) {
         this.type = DELETE_SELECTION;
-        this.objectList = new ArrayList<Entity<?>>(selection);
+        this.objectList = new ArrayList<>(selection);
         name = i18n.getString("delete_selection");
         icon = i18n.getIcon("icon.delete");
         isEnabled();
@@ -446,7 +446,7 @@ public class RaplaObjectActions {
     protected void editSelection() throws RaplaException {
  		if (objectList == null || objectList.size() == 0)
  			return;
-        List<Entity> list = new ArrayList<Entity>(objectList);
+        List<Entity> list = new ArrayList<>(objectList);
         editController.edit(list, popupContext);
  	}
 

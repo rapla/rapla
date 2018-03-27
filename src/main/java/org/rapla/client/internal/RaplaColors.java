@@ -46,7 +46,7 @@ final public class RaplaColors {
     public final static String HIGHLICHT_COLOR = "#DC1E1E";
 
 
-    private static ArrayList<String> colors = new ArrayList<String>(Arrays.asList(COLORS));
+    private static ArrayList<String> colors = new ArrayList<>(Arrays.asList(COLORS));
     private static Random randomA = null;
     private static Random randomB = null;
 
@@ -65,7 +65,7 @@ final public class RaplaColors {
     	return (float) (0.4 + randomB.nextFloat()/2.0);
     }
 
-    final static public String getResourceColor(int nr)
+    static public String getResourceColor(int nr)
     {
     	if (colors.size()<=nr) 
     	{
@@ -91,9 +91,9 @@ final public class RaplaColors {
     	"#ccff88"
     };
 
-    static ArrayList<String> appointmentColors = new ArrayList<String>(Arrays.asList(APPOINTMENT_COLORS));
+    static ArrayList<String> appointmentColors = new ArrayList<>(Arrays.asList(APPOINTMENT_COLORS));
 
-	final static public String getAppointmentColor(int nr)
+	static public String getAppointmentColor(int nr)
 	{
 		if (appointmentColors.size()<=nr) {
 		    int fillSize = nr - appointmentColors.size() + 1;

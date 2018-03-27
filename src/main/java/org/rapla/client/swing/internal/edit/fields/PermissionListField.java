@@ -68,7 +68,7 @@ public class PermissionListField extends AbstractEditField implements EditFieldW
     int selectedIndex = 0;
     Permission.AccessLevel defaultAccessLevel = null;
 
-    List<Permission> notAllList = new ArrayList<Permission>();
+    List<Permission> notAllList = new ArrayList<>();
 
     public PermissionListField(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, String fieldName,
             RaplaListEditFactory raplaListEditFactory, PermissionFieldFactory permissionFieldFactory) throws RaplaException
@@ -100,7 +100,7 @@ public class PermissionListField extends AbstractEditField implements EditFieldW
     {
         for (PermissionContainer allocatable : list)
         {
-            for (Permission perm : new ArrayList<Permission>(allocatable.getPermissionList()))
+            for (Permission perm : new ArrayList<>(allocatable.getPermissionList()))
             {
                 if (!model.contains(perm))
                 {
@@ -119,7 +119,7 @@ public class PermissionListField extends AbstractEditField implements EditFieldW
 
     public Collection<Permission> getPermissionList()
     {
-        Collection<Permission> result = new ArrayList<Permission>();
+        Collection<Permission> result = new ArrayList<>();
         @SuppressWarnings("unchecked")
         Enumeration<Permission> it = (Enumeration<Permission>) model.elements();
         while (it.hasMoreElements())
@@ -147,7 +147,7 @@ public class PermissionListField extends AbstractEditField implements EditFieldW
     {
         model.clear();
         firstAllocatable = list.size() > 0 ? list.get(0) : null;
-        Set<Permission> permissions = new LinkedHashSet<Permission>();
+        Set<Permission> permissions = new LinkedHashSet<>();
         boolean eventTypeList = false;
         for (PermissionContainer container : list)
         {
@@ -166,7 +166,7 @@ public class PermissionListField extends AbstractEditField implements EditFieldW
         }
         permissionField.setEventType(eventTypeList);
 
-        Set<Permission> set = new LinkedHashSet<Permission>();
+        Set<Permission> set = new LinkedHashSet<>();
         for (Permission perm : permissions)
         {
             Permission permissionClone = ((PermissionImpl) perm).clone();

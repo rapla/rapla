@@ -50,7 +50,7 @@ import java.util.Locale;
  */
 public class RaplaComponent
 {
-	public static final TypedComponentRole<RaplaConfiguration> PLUGIN_CONFIG= new TypedComponentRole<RaplaConfiguration>("org.rapla.plugin");
+	public static final TypedComponentRole<RaplaConfiguration> PLUGIN_CONFIG= new TypedComponentRole<>("org.rapla.plugin");
     private Logger logger;
     RaplaLocale raplaLocale;
     protected RaplaResources i18n;
@@ -79,7 +79,7 @@ public class RaplaComponent
             Collection<Allocatable> allocatables = markedAllocatables;
             addAlloctables(newReservations, allocatables);
         }
-        List<Reservation> list = new ArrayList<Reservation>();
+        List<Reservation> list = new ArrayList<>();
         for (Reservation reservation : newReservations)
         {
             Reservation cast = reservation;

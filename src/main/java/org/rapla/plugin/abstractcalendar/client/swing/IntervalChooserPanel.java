@@ -50,7 +50,7 @@ import java.util.Date;
 
 public class IntervalChooserPanel extends RaplaGUIComponent implements RaplaWidget
 {
-    Collection<DateChangeListener> listenerList = new ArrayList<DateChangeListener>();
+    Collection<DateChangeListener> listenerList = new ArrayList<>();
     PeriodChooser periodChooser;
 
     JPanel panel = new JPanel();

@@ -10,7 +10,7 @@ import java.util.Collection;
 public interface ResourceSelectionView extends RaplaWidget
 {
 
-    public interface Presenter
+    interface Presenter
     {
         void selectResource(Object focusedObject);
 

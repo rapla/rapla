@@ -60,9 +60,9 @@ import java.util.Stack;
 final public class RaplaTree extends JScrollPane {
     private static final long serialVersionUID = 1L;
     
-    ArrayList<PopupListener> m_popupListeners = new ArrayList<PopupListener>();
-    ArrayList<ActionListener> m_doubleclickListeners = new ArrayList<ActionListener>();
-    ArrayList<ChangeListener> m_changeListeners = new ArrayList<ChangeListener>();
+    ArrayList<PopupListener> m_popupListeners = new ArrayList<>();
+    ArrayList<ActionListener> m_doubleclickListeners = new ArrayList<>();
+    ArrayList<ChangeListener> m_changeListeners = new ArrayList<>();
     JTree       jTree =  new JTree() {
         private static final long serialVersionUID = 1L;
         public String getToolTipText(MouseEvent evt) {
@@ -316,8 +316,8 @@ final public class RaplaTree extends JScrollPane {
     /** Exchanges the tree-model while trying to preserve the selection an expansion state.
      * Returns if the selection has been affected by the excahnge.*/
     public static boolean exchangeTreeModel(TreeModel model,JTree tree) {
-        Collection<Object> expanded = new LinkedHashSet<Object>();
-        Collection<Object> selected = new LinkedHashSet<Object>();
+        Collection<Object> expanded = new LinkedHashSet<>();
+        Collection<Object> selected = new LinkedHashSet<>();
         int rowCount = tree.getRowCount();
 		for (int i=0;i<rowCount;i++) {
             if (tree.isExpanded(i)) {
@@ -344,7 +344,7 @@ final public class RaplaTree extends JScrollPane {
             }
 
         }
-        ArrayList<TreePath> selectedList = new ArrayList<TreePath>();
+        ArrayList<TreePath> selectedList = new ArrayList<>();
         for (int i=0;i<rowCount;i++) {
             TreePath treePath = tree.getPathForRow(i);
             if (treePath != null)
@@ -379,7 +379,7 @@ final public class RaplaTree extends JScrollPane {
     }
 
     public static class TreeIterator implements Iterator<TreeNode> {
-        Stack<TreeNode> nodeStack = new Stack<TreeNode>();
+        Stack<TreeNode> nodeStack = new Stack<>();
         public TreeIterator(TreeNode node) {
             nodeStack.push(node);
         }
@@ -407,9 +407,8 @@ final public class RaplaTree extends JScrollPane {
     }
 
     public void select(Collection<Object> selectedObjects) {
-        Collection<TreeNode> selectedNodes = new ArrayList<TreeNode>();
-        Collection<Object> selectedToRemove = new LinkedHashSet<Object>( );
-        selectedToRemove.addAll( selectedObjects);
+        Collection<TreeNode> selectedNodes = new ArrayList<>();
+        Collection<Object> selectedToRemove = new LinkedHashSet<>(selectedObjects);
         Iterator<TreeNode> it = new TreeIterator((TreeNode)jTree.getModel().getRoot());
         while (it.hasNext()) {
             TreeNode node = it.next();
@@ -446,7 +445,7 @@ final public class RaplaTree extends JScrollPane {
     
     public List<Object> getSelectedElements(boolean includeChilds) {
         TreePath[] path = jTree.getSelectionPaths();
-        List<Object> list = new LinkedList<Object>();
+        List<Object> list = new LinkedList<>();
         if ( path == null)
         {
             return list;

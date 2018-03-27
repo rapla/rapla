@@ -45,7 +45,7 @@ import java.util.List;
 @Extension(provides = ReservationWizardExtension.class, id = "defaultWizard") public class DefaultWizard
         implements ReservationWizardExtension
 {
-    final public static TypedComponentRole<Boolean> ENABLED = new TypedComponentRole<Boolean>("org.rapla.plugin.defaultwizard.enabled");
+    final public static TypedComponentRole<Boolean> ENABLED = new TypedComponentRole<>("org.rapla.plugin.defaultwizard.enabled");
     private final PermissionController permissionController;
     private final CalendarModel model;
     private final ApplicationEventBus eventBus;
@@ -88,7 +88,7 @@ import java.util.List;
     @Override
     public Object getComponent()
     {
-        List<DynamicType> eventTypes = new ArrayList<DynamicType>();
+        List<DynamicType> eventTypes = new ArrayList<>();
         User user;
         try
         {

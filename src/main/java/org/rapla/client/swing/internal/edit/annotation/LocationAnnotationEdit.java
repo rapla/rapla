@@ -61,7 +61,7 @@ public class LocationAnnotationEdit extends RaplaGUIComponent implements Annotat
         if ( field != null)
         {
             Boolean value = ((BooleanField)field).getValue();
-            if ( value != null && value == true)
+            if ( value != null && value )
             {
                 annotatable.setAnnotation(annotationName, Boolean.TRUE.toString());
                 return;

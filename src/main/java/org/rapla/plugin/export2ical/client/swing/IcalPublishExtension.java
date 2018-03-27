@@ -43,14 +43,10 @@ class IcalPublishExtension extends RaplaGUIComponent implements PublishExtension
 
     	checkbox = new JCheckBox("ICAL " + getString("publish"));
     	final JPanel statusICal = createStatus( icalURL);
-    	checkbox.addChangeListener(new ChangeListener()
-    	{
-           public void stateChanged(ChangeEvent e)
-           {
-               boolean icalEnabled = checkbox.isSelected() ;
-               statusICal.setEnabled( icalEnabled);
-           }
-    	});
+    	checkbox.addChangeListener(e -> {
+            boolean icalEnabled = checkbox.isSelected() ;
+            statusICal.setEnabled( icalEnabled);
+        });
         panel.add(checkbox,"0,0");
         panel.add( statusICal, "2,2,4,1");
         
@@ -86,13 +82,10 @@ class IcalPublishExtension extends RaplaGUIComponent implements PublishExtension
         copyButton.setRolloverEnabled(false);
         copyButton.setIcon(RaplaImages.getIcon(i18n.getIcon("icon.copy")));
         copyButton.setToolTipText(getString("copy_to_clipboard"));
-        copyButton.addActionListener(new ActionListener() {
-            public void actionPerformed(ActionEvent e) {
-            	urlLabel.requestFocus();
-            	urlLabel.selectAll();
-                copy(urlLabel,e, ioInterface, getRaplaLocale());
-            }
-
+        copyButton.addActionListener(e -> {
+            urlLabel.requestFocus();
+            urlLabel.selectAll();
+            copy(urlLabel,e, ioInterface, getRaplaLocale());
         });
         status.add(copyButton, BorderLayout.EAST);
         return status;

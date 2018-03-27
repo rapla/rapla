@@ -132,7 +132,7 @@ public class PreferencesEditUI extends RaplaGUIComponent
     }
 
 	protected Collection<OptionPanel> getPluginOptions() throws RaplaException {
-        List<OptionPanel> optionList = new ArrayList<OptionPanel>();
+        List<OptionPanel> optionList = new ArrayList<>();
         for ( Provider<PluginOptionPanel> panel: pluginOptionPanel.values())
         {
             final PluginOptionPanel e = panel.get();
@@ -147,7 +147,7 @@ public class PreferencesEditUI extends RaplaGUIComponent
     }
 
     public Collection<UserOptionPanel> getUserOptions() throws RaplaException {
-        List<UserOptionPanel> optionList = new ArrayList<UserOptionPanel>();
+        List<UserOptionPanel> optionList = new ArrayList<>();
         final Set<UserOptionPanel> set = userOptionPanel.get();
         for (UserOptionPanel panel : set){
             if(panel.isEnabled())
@@ -160,7 +160,7 @@ public class PreferencesEditUI extends RaplaGUIComponent
     }
 
     public Collection<OptionPanel> getAdminOptions() throws RaplaException {
-        List<OptionPanel> optionList = new ArrayList<OptionPanel>();
+        List<OptionPanel> optionList = new ArrayList<>();
         final Set<SystemOptionPanel> set = systemOptionPanel.get();
         for (SystemOptionPanel panel : set){
             optionList.add(panel);

@@ -109,17 +109,12 @@ public class TableSorter extends AbstractTableModel {
     public static final int DESCENDING = -1;
     public static final int NOT_SORTED = 0;
     public static final int ASCENDING = 1;
-    private Map<Integer,Boolean> enabled= new HashMap<Integer,Boolean>();
+    private Map<Integer,Boolean> enabled= new HashMap<>();
 
     private static Directive EMPTY_DIRECTIVE = new Directive(-1, NOT_SORTED);
 
     @SuppressWarnings("rawtypes")
-	public static final Comparator<Comparable> COMPARABLE_COMAPRATOR = new Comparator<Comparable>() {
-        @SuppressWarnings("unchecked")
-		public int compare(Comparable o1, Comparable o2) {
-            return o1.compareTo(o2);
-        }
-    };
+	public static final Comparator<Comparable> COMPARABLE_COMAPRATOR = (o1, o2) -> o1.compareTo(o2);
    
 
     private Row[] viewToModel;
@@ -128,8 +123,8 @@ public class TableSorter extends AbstractTableModel {
     private JTableHeader tableHeader;
     private MouseListener mouseListener;
     private TableModelListener tableModelListener;
-    private Map<Integer,Comparator<?>> columnComparators = new HashMap<Integer,Comparator<?>>();
-    private List<Directive> sortingColumns = new ArrayList<Directive>();
+    private Map<Integer,Comparator<?>> columnComparators = new HashMap<>();
+    private List<Directive> sortingColumns = new ArrayList<>();
 
     public TableSorter() {
         this.mouseListener = new MouseHandler();

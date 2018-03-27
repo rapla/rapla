@@ -297,16 +297,11 @@ public class RaplaMenuBar extends RaplaGUIComponent
         ownReservationsMenu = new RaplaMenuItem("only_own_reservations");
         ownReservationsMenu.setText(i18n.getString("only_own_reservations"));
         ownReservationsMenu = new RaplaMenuItem("only_own_reservations");
-        ownReservationsMenu.addActionListener(new ActionListener()
-        {
-
-            public void actionPerformed(ActionEvent e)
-            {
-                boolean isSelected = model.isOnlyCurrentUserSelected();
-                // switch selection options
-                model.setOption(CalendarModel.ONLY_MY_EVENTS, isSelected ? "false" : "true");
-                eventBus.publish( new OwnReservationsEvent());
-            }
+        ownReservationsMenu.addActionListener(e -> {
+            boolean isSelected = model.isOnlyCurrentUserSelected();
+            // switch selection options
+            model.setOption(CalendarModel.ONLY_MY_EVENTS, isSelected ? "false" : "true");
+            eventBus.publish( new OwnReservationsEvent());
         });
 
         ownReservationsMenu.setText(i18n.getString("only_own_reservations"));
@@ -552,14 +547,7 @@ public class RaplaMenuBar extends RaplaGUIComponent
                     dialog.setTitle(name);
                     dialog.start(false);
 
-                    SwingUtilities.invokeLater(new Runnable()
-                    {
-                        public void run()
-                        {
-                            content.getViewport().setViewPosition(new Point(0, 0));
-                        }
-
-                    });
+                    SwingUtilities.invokeLater(() -> content.getViewport().setViewPosition(new Point(0, 0)));
             }
 
         };

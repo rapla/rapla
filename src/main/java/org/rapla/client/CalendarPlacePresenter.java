@@ -37,8 +37,8 @@ import java.util.Date;
 @Extension(provides = TaskPresenter.class, id = CalendarPlacePresenter.PLACE_ID) public class CalendarPlacePresenter implements Presenter, TaskPresenter
 {
     public static final String PLACE_ID = "cal";
-    public static final TypedComponentRole<Boolean> SHOW_CONFLICTS_CONFIG_ENTRY = new TypedComponentRole<Boolean>("org.rapla.showConflicts");
-    public static final TypedComponentRole<Boolean> SHOW_SELECTION_CONFIG_ENTRY = new TypedComponentRole<Boolean>("org.rapla.showSelection");
+    public static final TypedComponentRole<Boolean> SHOW_CONFLICTS_CONFIG_ENTRY = new TypedComponentRole<>("org.rapla.showConflicts");
+    public static final TypedComponentRole<Boolean> SHOW_SELECTION_CONFIG_ENTRY = new TypedComponentRole<>("org.rapla.showSelection");
     public static final String SHOW_SELECTION_MENU_ENTRY = "show_resource_selection";
     public static final String SHOW_CONFLICTS_MENU_ENTRY = "show_conflicts";
     private static final String TODAY_DATE = "today";
@@ -49,8 +49,6 @@ import java.util.Date;
     private DialogUiFactoryInterface dialogUiFactory;
     private final RaplaFacade facade;
     private final CalendarSelectionModel model;
-    private final CalendarEventBus eventBus;
-    private final RaplaResources i18n;
     private Logger logger;
 
     final private ResourceSelectionPresenter resourceSelectionPresenter;
@@ -68,10 +66,8 @@ import java.util.Date;
         this.dialogUiFactory = dialogUiFactory;
         this.facade = clientFacade.getRaplaFacade();
         this.clientFacade = clientFacade;
-        this.i18n = i18n;
         this.model = model;
         this.logger = logger;
-        this.eventBus = eventBus;
         this.resourceSelectionPresenter = resourceSelectionPresenter;
         this.savedViews = savedViews;
         this.conflictsView = conflictsSelectionPresenter;
@@ -334,7 +330,7 @@ import java.util.Date;
     @Override
     public Promise<Void> processStop(ApplicationEvent event)
     {
-        return new ResolvedPromise<Void>(Promise.VOID);
+        return new ResolvedPromise<>(Promise.VOID);
     }
 
 

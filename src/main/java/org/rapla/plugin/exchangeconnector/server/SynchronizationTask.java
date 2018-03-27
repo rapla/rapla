@@ -64,7 +64,7 @@ public class SynchronizationTask implements Serializable
 
 	public ReferenceInfo<User> getUserRef()
 	{
-		return new ReferenceInfo<User>(userId,User.class);
+		return new ReferenceInfo<>(userId, User.class);
 	}
 
 

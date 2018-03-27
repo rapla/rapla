@@ -88,7 +88,7 @@ public class ClassificationEditUI extends AbstractEditUI<Classification> {
 
 	private String getAttName(String key) {
 		// collection of all attribute-names for the deposited classifications
-		Set<String> attNames = new HashSet<String>();
+		Set<String> attNames = new HashSet<>();
 		for (Classification c : objectList) {
 			attNames.add(getName(c.getAttribute(key)));
 		}
@@ -104,7 +104,7 @@ public class ClassificationEditUI extends AbstractEditUI<Classification> {
 	protected Attribute getAttribute(int i) {
 		// collection of all attributes for the deposited classifications for a
 		// certain field
-		Set<Attribute> attributes = new HashSet<Attribute>();
+		Set<Attribute> attributes = new HashSet<>();
 		for (Classification c : objectList) {
 			String key = getKey( fields.get(i));
 			Attribute attribute = c.getAttribute(key);
@@ -128,7 +128,7 @@ public class ClassificationEditUI extends AbstractEditUI<Classification> {
 			{
 			    Collection<?> collection = (Collection<?>)value;
 			    Boolean multiSelect = (Boolean)attribute.getConstraint(ConstraintIds.KEY_MULTI_SELECT);
-			    if ( multiSelect != null && multiSelect==true)
+			    if ( multiSelect != null && multiSelect)
                 {
                     c.setValues(attribute, collection);
                 }
@@ -151,12 +151,12 @@ public class ClassificationEditUI extends AbstractEditUI<Classification> {
 
     public Set<Object> getUniqueAttValues(String key) {
         // collection of all attribute values for a certain attribute
-		Set<Object> values = new LinkedHashSet<Object>();
+		Set<Object> values = new LinkedHashSet<>();
 		for (Classification c : objectList) {
 			Attribute attribute = c.getAttribute(key);
 			Object value;
 			Boolean multiSelect = (Boolean) attribute.getConstraint(ConstraintIds.KEY_MULTI_SELECT);
-			if ( multiSelect != null && multiSelect == true)
+			if ( multiSelect != null && multiSelect )
 			{
 				value = c.getValues(attribute);
 			}
@@ -286,7 +286,7 @@ public class ClassificationEditUI extends AbstractEditUI<Classification> {
 		return field;
 	}
 
-	Map<EditField,String> fieldKeyMap = new HashMap<EditField,String>();
+	Map<EditField,String> fieldKeyMap = new HashMap<>();
 	
 	public void setObjects(List<Classification> classificationList) throws RaplaException {
 		this.objectList = classificationList;
@@ -296,7 +296,7 @@ public class ClassificationEditUI extends AbstractEditUI<Classification> {
     public void recreateFields() throws RaplaException
     {
         // determining of the DynmicTypes from the classifications
-		Set<DynamicType> types = new HashSet<DynamicType>();
+		Set<DynamicType> types = new HashSet<>();
 		for (Classification c : objectList) {
 			types.add(c.getType());
 		}
@@ -306,7 +306,7 @@ public class ClassificationEditUI extends AbstractEditUI<Classification> {
 			// read out attributes for this DynmicType
 			Attribute[] attributes = types.iterator().next().getAttributes();
 			// createInfoDialog fields for attributes
-			List<SetGetField<?>> fields= new ArrayList<SetGetField<?>>();
+			List<SetGetField<?>> fields= new ArrayList<>();
 			for (Attribute attribute:attributes) {
 			    boolean isVisible = isVisible(attribute);
 			    if ( !isVisible)

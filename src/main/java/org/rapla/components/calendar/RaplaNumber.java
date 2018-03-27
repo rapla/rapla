@@ -154,14 +154,11 @@ public final class RaplaNumber extends JPanel{
             if (evt.getSource() == m_downButton) {
                 m_numberField.decrease();
             }
-            SwingUtilities.invokeLater( new Runnable() {
-                
-                public void run() {
-                    stateChanged(null);
-                    m_numberField.selectAll();
-                }
+            SwingUtilities.invokeLater(() -> {
+                stateChanged(null);
+                m_numberField.selectAll();
             }
-            
+
             );
         }
 

@@ -248,7 +248,7 @@ public class SwingCompactCalendar extends AbstractRaplaSwingCalendar
         Promise<RaplaBuilder> builderPromise = super.createBuilder();
         final Promise<RaplaBuilder> nextBuilderPromise = builderPromise.thenApply((builder) -> {
             timeslots = timeslotProvider.getTimeslots();
-            List<Integer> startTimes = new ArrayList<Integer>();
+            List<Integer> startTimes = new ArrayList<>();
             for (Timeslot slot:timeslots) {
                  startTimes.add( slot.getMinuteOfDay());
             }

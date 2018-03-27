@@ -34,8 +34,8 @@ class ClassificationFilterReader extends RaplaXMLReader {
     ClassificationFilter filter;
     Attribute attribute;
     String operator;
-    Collection<ClassificationFilter> filterList = new ArrayList<ClassificationFilter>();
-    Collection<Object[]> conditions = new ArrayList<Object[]>();
+    Collection<ClassificationFilter> filterList = new ArrayList<>();
+    Collection<Object[]> conditions = new ArrayList<>();
     int ruleCount;
     private boolean defaultResourceTypes = true;
    

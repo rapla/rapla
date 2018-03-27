@@ -162,20 +162,15 @@ final public class ErrorDialog {
                     stackTracePanel.setMinimumSize( new Dimension(300,200));
                     component.add( stackTracePanel,BorderLayout.CENTER);
                     lister.setVisible( false );
-                    stackTraceChooser.addActionListener( new ActionListener() {
-
-                        @SuppressWarnings("unchecked")
-						public void actionPerformed(ActionEvent e) {
-                            DefaultListModel model =new DefaultListModel();
-                            if (stackTraceChooser.isSelected() ) {
-                                for ( int i=0;i< stackTrace.length;i++) {
-                                    model.addElement( stackTrace[i]);
-                                }
+                    stackTraceChooser.addActionListener(e1 -> {
+                        DefaultListModel model =new DefaultListModel();
+                        if (stackTraceChooser.isSelected() ) {
+                            for ( int i=0;i< stackTrace.length;i++) {
+                                model.addElement( stackTrace[i]);
                             }
-                            lister.setModel( model );
-                            lister.setVisible( stackTraceChooser.isSelected());  
                         }
-                        
+                        lister.setModel( model );
+                        lister.setVisible( stackTraceChooser.isSelected());
                     });
                 } catch (Exception ex) {
                 }

@@ -26,7 +26,7 @@ public interface CalendarModel extends Cloneable, ClassifiableFilter
     String ONLY_ALLOCATION_INFO = "org.rapla.plugin.abstractcalendar.only_allocation_info";
 	String SAVE_SELECTED_DATE = "org.rapla.plugin.abstractcalendar.save_selected_date";
 	String ONLY_MY_EVENTS = "only_own_reservations";
-	TypedComponentRole<Boolean> ONLY_MY_EVENTS_DEFAULT = new TypedComponentRole<Boolean>("org.rapla.plugin.abstractcalendar.only_own_reservations");
+	TypedComponentRole<Boolean> ONLY_MY_EVENTS_DEFAULT = new TypedComponentRole<>("org.rapla.plugin.abstractcalendar.only_own_reservations");
 
 	String getNonEmptyTitle();
 

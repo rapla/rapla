@@ -169,7 +169,7 @@ public class SwingDayResourceCalendar extends SwingDayCalendar
             {
         		final List<Allocatable> selectedAllocatables = getSortedAllocatables();
         		 
-        		Set<Allocatable> allSelected = new HashSet<Allocatable>();
+        		Set<Allocatable> allSelected = new HashSet<>();
         		if ( selectedAllocatables.size() == 1 ) {
         			allSelected.add(selectedAllocatables.get(0));
         		}

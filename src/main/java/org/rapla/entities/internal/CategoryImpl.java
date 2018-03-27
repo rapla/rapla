@@ -42,7 +42,7 @@ final public class CategoryImpl extends SimpleEntity implements Category, Modifi
     private String key;
     private Date lastChanged;
     private Date createDate;
-    private Map<String,String> annotations = new LinkedHashMap<String,String>();
+    private Map<String,String> annotations = new LinkedHashMap<>();
     public CategoryImpl()
     {
         this(new Date(), new Date());
@@ -55,7 +55,7 @@ final public class CategoryImpl extends SimpleEntity implements Category, Modifi
 
     public static Collection<Category> getRecursive(Category cat)
     {
-        List<Category> result = new ArrayList<Category>();
+        List<Category> result = new ArrayList<>();
         addRecursive( cat, result, 0 );
         return result;
     }
@@ -73,7 +73,7 @@ final public class CategoryImpl extends SimpleEntity implements Category, Modifi
     {
         CategoryImpl parent = this;
         final Collection<Category> childs = getCategoryList();
-        final Collection<ReferenceInfo<Category>> newRefs = new ArrayList<ReferenceInfo<Category>>();
+        final Collection<ReferenceInfo<Category>> newRefs = new ArrayList<>();
         if ( direction == -1)
         {
             Category last = null;
@@ -180,7 +180,7 @@ final public class CategoryImpl extends SimpleEntity implements Category, Modifi
         }
         else
         {
-            Set<Category> set = new LinkedHashSet<Category>();
+            Set<Category> set = new LinkedHashSet<>();
             set.addAll( childs);
             set.addAll(nonpersistantEntities );
             return set;
@@ -229,7 +229,7 @@ final public class CategoryImpl extends SimpleEntity implements Category, Modifi
         {
             return Collections.emptySet();
         }
-        final Collection<Category> result = new ArrayList<Category>();
+        final Collection<Category> result = new ArrayList<>();
         for ( Entity entity:nonpersistantEntities)
         {
             if (!(entity instanceof Category))
@@ -306,13 +306,7 @@ final public class CategoryImpl extends SimpleEntity implements Category, Modifi
         T getParent(T category);
     }
 
-    static ParentResolver<Category> defaultResolver = new  ParentResolver<Category>()
-    {
-        public Category getParent(Category category)
-        {
-            return category.getParent();
-        }
-    };
+    static ParentResolver<Category> defaultResolver = category -> category.getParent();
     
     public int getDepth() {
         int max = 0;
@@ -373,7 +367,7 @@ final public class CategoryImpl extends SimpleEntity implements Category, Modifi
     }
     
     public List<String> getKeyPath(Category rootCategory) {
-    	LinkedList<String> result = new LinkedList<String>();
+    	LinkedList<String> result = new LinkedList<>();
         if (rootCategory != null && this.equals(rootCategory))
             return result;
        
@@ -423,7 +417,7 @@ final public class CategoryImpl extends SimpleEntity implements Category, Modifi
 	}
     
     public List<String> getPathForCategory(Category searchCategory, boolean fail) throws EntityNotFoundException {
-    	LinkedList<String> result = new LinkedList<String>();
+    	LinkedList<String> result = new LinkedList<>();
     	Category category = searchCategory;
         Category parent = category.getParent();
         if (category == this)

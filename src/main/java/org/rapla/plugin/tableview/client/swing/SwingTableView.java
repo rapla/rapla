@@ -199,7 +199,7 @@ public class SwingTableView<T> extends RaplaGUIComponent implements SwingCalenda
         this.model = model;
         String sortingStringOption = TableViewPlugin.getSorgingStringOption( tableName);
         List<RaplaTableColumn<T,TableColumn>> raplaTableColumns = tableConfigLoader.loadColumns(tableName, getUser());
-        tableModel = new RaplaTableModel<T,TableColumn>( raplaTableColumns );
+        tableModel = new RaplaTableModel<>(raplaTableColumns);
         swingTableModel= new RaplaSwingTableModel(tableModel);
         sorter = createAndSetSorter(model, table, sortingStringOption, swingTableModel);
         int column = 0;
@@ -216,12 +216,7 @@ public class SwingTableView<T> extends RaplaGUIComponent implements SwingCalenda
     	table.registerKeyboardAction(copyListener,getString("copy"),COPY_STROKE,JComponent.WHEN_FOCUSED);
     	table.registerKeyboardAction(cutListener,getString("cut"),CUT_STROKE,JComponent.WHEN_FOCUSED);
         this.dateChooser = dateChooser;
-        dateChooser.addDateChangeListener( new DateChangeListener() {
-            public void dateChanged( DateChangeEvent evt )
-            {
-                  triggerUpdate();
-            }
-        });
+        dateChooser.addDateChangeListener(evt -> triggerUpdate());
     }
 
     void handleException(Promise<Void> promise)
@@ -294,26 +289,22 @@ public class SwingTableView<T> extends RaplaGUIComponent implements SwingCalenda
                }
            }
         }
-        sorter.addTableModelListener(new TableModelListener() {
-
-            public void tableChanged(TableModelEvent e)
+        sorter.addTableModelListener(e -> {
+            StringBuffer buf = new StringBuffer();
+            for ( int i=0;i<table.getColumnCount();i++)
             {
-                StringBuffer buf = new StringBuffer();
-                for ( int i=0;i<table.getColumnCount();i++)
+                int sortingStatus = sorter.getSortingStatus( i);
+                if (sortingStatus == TableSorter.ASCENDING)
                 {
-                    int sortingStatus = sorter.getSortingStatus( i);
-                    if (sortingStatus == TableSorter.ASCENDING)
-                    {
-                        buf.append(i + "+;");
-                    }
-                    if (sortingStatus == TableSorter.DESCENDING)
-                    {
-                        buf.append(i + "-;");
-                    }
+                    buf.append(i + "+;");
                 }
-                String sortingString = buf.toString();
-                ((CalendarSelectionModel)model).setOption(sortingStringOptionName, sortingString.length() > 0 ? sortingString : null);
+                if (sortingStatus == TableSorter.DESCENDING)
+                {
+                    buf.append(i + "-;");
+                }
             }
+            String sortingString = buf.toString();
+            ((CalendarSelectionModel)model).setOption(sortingStringOptionName, sortingString.length() > 0 ? sortingString : null);
         });
         table.setModel(  sorter );
         return sorter;

@@ -174,7 +174,7 @@ public class AllocatableSelection extends RaplaGUIComponent implements Appointme
     AllocatablesModel completeModel = new CompleteModel();
     AllocatablesModel selectedModel = new SelectedModel();
 
-    Map<Allocatable, Collection<Appointment>> allocatableBindings = new HashMap<Allocatable, Collection<Appointment>>();
+    Map<Allocatable, Collection<Appointment>> allocatableBindings = new HashMap<>();
     //	Map<Appointment,Collection<Allocatable>> appointmentMap	= new HashMap<Appointment,Collection<Allocatable>>();
     Appointment[] appointments;
     String[] appointmentStrings;
@@ -350,7 +350,7 @@ public class AllocatableSelection extends RaplaGUIComponent implements Appointme
                     }
                 }
             }
-            Set<Allocatable> selectedAllocatables = new HashSet<Allocatable>();
+            Set<Allocatable> selectedAllocatables = new HashSet<>();
             for (Reservation r : mutableReservations)
             {
                 selectedAllocatables.addAll(Arrays.asList(r.getAllocatables()));
@@ -396,20 +396,20 @@ public class AllocatableSelection extends RaplaGUIComponent implements Appointme
 
     private void updateBindings(Collection<Appointment> appointments)
     {
-        Collection<Allocatable> allAllocatables = new LinkedHashSet<Allocatable>(completeModel.getAllocatables());
+        Collection<Allocatable> allAllocatables = new LinkedHashSet<>(completeModel.getAllocatables());
         for (Reservation r : mutableReservations)
         {
             allAllocatables.addAll(Arrays.asList(r.getAllocatables()));
         }
-        List<Appointment> appointmentsWithoutTemplates = new ArrayList<Appointment>();
+        List<Appointment> appointmentsWithoutTemplates = new ArrayList<>();
         if (appointments == null)
         {
             allocatableBindings.clear();
             for (Allocatable allocatable : allAllocatables)
             {
-                allocatableBindings.put(allocatable, new HashSet<Appointment>());
+                allocatableBindings.put(allocatable, new HashSet<>());
             }
-            appointments = new ArrayList<Appointment>();
+            appointments = new ArrayList<>();
             for (Reservation r : mutableReservations)
             {
                 Collection<Appointment> sortedAppointments = r.getSortedAppointments();
@@ -445,7 +445,7 @@ public class AllocatableSelection extends RaplaGUIComponent implements Appointme
                     Collection<Appointment> list = this.allocatableBindings.get(alloc);
                     if (list == null)
                     {
-                        list = new HashSet<Appointment>();
+                        list = new HashSet<>();
                         this.allocatableBindings.put(alloc, list);
                     }
                     Collection<Appointment> bindings = entry.getValue();
@@ -479,7 +479,7 @@ public class AllocatableSelection extends RaplaGUIComponent implements Appointme
     private Set<Allocatable> getAllAllocatables() throws RaplaException
     {
         Allocatable[] allocatables = getQuery().getAllocatablesWithFilter(calendarModel.getModel().getAllocatableFilter());
-        Set<Allocatable> rightsToAllocate = new HashSet<Allocatable>();
+        Set<Allocatable> rightsToAllocate = new HashSet<>();
         Date today = getQuery().today();
         for (Allocatable alloc : allocatables)
         {
@@ -493,7 +493,7 @@ public class AllocatableSelection extends RaplaGUIComponent implements Appointme
 
     private Set<Allocatable> getAllocated()
     {
-        Set<Allocatable> result = new HashSet<Allocatable>();
+        Set<Allocatable> result = new HashSet<>();
         for (Reservation r : mutableReservations)
         {
             result.addAll(Arrays.asList(r.getAllocatables()));
@@ -534,18 +534,12 @@ public class AllocatableSelection extends RaplaGUIComponent implements Appointme
         //		filterAction.addPropertyChangeListener(listener);
         //		btnFilter.setAction(filterAction);
         // We have to add this after processing, because the Adapter in the JTreeTable does the same
-        SwingUtilities.invokeLater(new Runnable()
-        {
-            public void run()
-            {
-                selectObjects(model.getSelectedObjects(), completeTable.getTree());
-            }
-        });
+        SwingUtilities.invokeLater(() -> selectObjects(model.getSelectedObjects(), completeTable.getTree()));
     }
 
     private void setAppointments(Collection<Reservation> reservations)
     {
-        List<Appointment> sortedAppointments = new ArrayList<Appointment>();
+        List<Appointment> sortedAppointments = new ArrayList<>();
         for (Reservation reservation : reservations)
         {
             sortedAppointments.addAll(reservation.getSortedAppointments());
@@ -585,14 +579,14 @@ public class AllocatableSelection extends RaplaGUIComponent implements Appointme
 
     public Set<Allocatable> getMarkedAllocatables()
     {
-        return new HashSet<Allocatable>(getSelectedAllocatables(completeTable.getTree()));
+        return new HashSet<>(getSelectedAllocatables(completeTable.getTree()));
     }
 
     protected Collection<Allocatable> getSelectedAllocatables(JTree tree)
     {
         // allow folders to be selected
         Collection<?> selectedElementsIncludingChildren = getSelectedElementsIncludingChildren(tree);
-        List<Allocatable> allocatables = new ArrayList<Allocatable>();
+        List<Allocatable> allocatables = new ArrayList<>();
         for (Object obj : selectedElementsIncludingChildren)
         {
             if (obj instanceof Allocatable)
@@ -606,7 +600,7 @@ public class AllocatableSelection extends RaplaGUIComponent implements Appointme
     protected Collection<?> getSelectedElementsIncludingChildren(JTree tree)
     {
         TreePath[] paths = tree.getSelectionPaths();
-        List<Object> list = new LinkedList<Object>();
+        List<Object> list = new LinkedList<>();
         if (paths == null)
         {
             return list;
@@ -836,8 +830,7 @@ public class AllocatableSelection extends RaplaGUIComponent implements Appointme
 
     public void expandObjects(Collection<? extends Object> expandedNodes, JTree tree)
     {
-        Set<Object> expandedObjects = new LinkedHashSet<Object>();
-        expandedObjects.addAll(expandedNodes);
+        Set<Object> expandedObjects = new LinkedHashSet<>(expandedNodes);
         // we need an enumeration, because we modife the set
         Enumeration<?> enumeration = ((DefaultMutableTreeNode) tree.getModel().getRoot()).preorderEnumeration();
         while (enumeration.hasMoreElements())
@@ -860,8 +853,8 @@ public class AllocatableSelection extends RaplaGUIComponent implements Appointme
     static public void selectObjects(Collection<?> expandedNodes, JTree tree)
     {
         Enumeration<?> enumeration = ((DefaultMutableTreeNode) tree.getModel().getRoot()).preorderEnumeration();
-        List<TreePath> selectionPaths = new ArrayList<TreePath>();
-        Set<Object> alreadySelected = new HashSet<Object>();
+        List<TreePath> selectionPaths = new ArrayList<>();
+        Set<Object> alreadySelected = new HashSet<>();
         while (enumeration.hasMoreElements())
         {
             DefaultMutableTreeNode node = (DefaultMutableTreeNode) enumeration.nextElement();
@@ -1044,7 +1037,7 @@ public class AllocatableSelection extends RaplaGUIComponent implements Appointme
         public void setAllocatables(Collection<Allocatable> allocatables, JTree tree)
         {
             this.allocatables = allocatables;
-            Collection<Object> expanded = new HashSet<Object>();
+            Collection<Object> expanded = new HashSet<>();
             for (int i = 0; i < tree.getRowCount(); i++)
             {
                 if (tree.isExpanded(i))
@@ -1061,7 +1054,7 @@ public class AllocatableSelection extends RaplaGUIComponent implements Appointme
         {
             if (expanded.size() == 0)
                 return;
-            Collection<Object> expandedToRemove = new LinkedHashSet<Object>(expanded);
+            Collection<Object> expandedToRemove = new LinkedHashSet<>(expanded);
             for (int i = 0; i < tree.getRowCount(); i++)
             {
                 DefaultMutableTreeNode node = (DefaultMutableTreeNode) tree.getPathForRow(i).getLastPathComponent();
@@ -1185,7 +1178,7 @@ public class AllocatableSelection extends RaplaGUIComponent implements Appointme
     // TODO add restriction for fixed events
     public Appointment[] getRestriction(Allocatable alloc)
     {
-        List<Appointment> restrictions = new ArrayList<Appointment>();
+        List<Appointment> restrictions = new ArrayList<>();
         for (Reservation r : mutableReservations)
         {
             Appointment[] restriction = r.getRestriction(alloc);
@@ -1196,7 +1189,7 @@ public class AllocatableSelection extends RaplaGUIComponent implements Appointme
 
     private Collection<Appointment> getAllAppointmentsFor(Allocatable alloc)
     {
-        List<Appointment> appointments = new ArrayList<Appointment>();
+        List<Appointment> appointments = new ArrayList<>();
         for (Reservation r : mutableReservations)
         {
             if (!r.hasAllocated(alloc))
@@ -1466,7 +1459,7 @@ public class AllocatableSelection extends RaplaGUIComponent implements Appointme
                     Allocatable allocatable = (Allocatable) selectedObject;
                     allocBinding = calcConflictingAppointments(allocatable);
                 }
-                List<Appointment> newRestrictions = new ArrayList<Appointment>();
+                List<Appointment> newRestrictions = new ArrayList<>();
                 for (int i = 0; i < appointments.length; i++)
                 {
                     boolean conflicting = (allocBinding != null && allocBinding.conflictingAppointments[i]);
@@ -1522,7 +1515,7 @@ public class AllocatableSelection extends RaplaGUIComponent implements Appointme
             // This method is never called
         }
 
-        Map<Integer, JMenuItem> appointmentList = new HashMap<Integer, JMenuItem>();
+        Map<Integer, JMenuItem> appointmentList = new HashMap<>();
         JMenuItem allMenu = new JRadioButtonMenuItem();
         JMenuItem selectedMenu = new JRadioButtonMenuItem();
 
@@ -1652,7 +1645,7 @@ public class AllocatableSelection extends RaplaGUIComponent implements Appointme
             }
             else
             {
-                Collection<Appointment> newAppointments = new ArrayList<Appointment>();
+                Collection<Appointment> newAppointments = new ArrayList<>();
                 // get the selected appointments
 
                 // add all previous selected appointments, except the appointment that
@@ -2174,7 +2167,7 @@ public class AllocatableSelection extends RaplaGUIComponent implements Appointme
                 AllocatableChange commando = newAllocatableChange(command, selectedTable);
                 commandHistory.storeAndExecute(commando);
             }
-            if (command.indexOf("calendar") >= 0)
+            if (command.contains("calendar"))
             {
                 JTreeTable tree = (command.equals("calendar1") ? completeTable : selectedTable);
                 CalendarAction calendarAction = new CalendarAction(getClientFacade(), getI18n(), getRaplaLocale(), getLogger(), getComponent(), calendarModel.getModel(),
@@ -2243,7 +2236,7 @@ public class AllocatableSelection extends RaplaGUIComponent implements Appointme
         {
             this.command = command;
 
-            List<Allocatable> changed = new ArrayList<Allocatable>();
+            List<Allocatable> changed = new ArrayList<>();
             boolean addOrRemove;
             addOrRemove = !command.equals("add");
 
@@ -2316,13 +2309,13 @@ public class AllocatableSelection extends RaplaGUIComponent implements Appointme
         public Promise<Void> execute()
         {
             selectedModel.setValueAt(newRestriction, selectedNode, selectedColumn);
-            return new ResolvedPromise<Void>((Void)null);
+            return new ResolvedPromise<>((Void) null);
         }
 
         public Promise<Void> undo()
         {
             selectedModel.setValueAt(oldRestriction, selectedNode, selectedColumn);
-            return new ResolvedPromise<Void>((Void)null);
+            return new ResolvedPromise<>((Void) null);
         }
 
         public String getCommandoName()

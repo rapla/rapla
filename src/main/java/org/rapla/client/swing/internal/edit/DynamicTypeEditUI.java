@@ -160,17 +160,13 @@ public class DynamicTypeEditUI extends RaplaGUIComponent
 
 
         final SwingPopupContext popupContext = new SwingPopupContext(getComponent(), null);
-        annotationButton.addActionListener(new ActionListener() {
-            
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                try {
-                    showAnnotationDialog();
-                } catch (RaplaException ex) {
-                    dialogUiFactory.showException(ex, popupContext);
-                }
-                
+        annotationButton.addActionListener(e -> {
+            try {
+                showAnnotationDialog();
+            } catch (RaplaException ex) {
+                dialogUiFactory.showException(ex, popupContext);
             }
+
         });
      
         try
@@ -186,16 +182,12 @@ public class DynamicTypeEditUI extends RaplaGUIComponent
         annotationDescription.setText(getString("dynamictype.annotation.nameformat.description"));
         float newSize = (float) (annotationDescription.getFont().getSize() * 0.8);
         annotationDescription.setFont(annotationDescription.getFont().deriveFont( newSize));
-        attributeEdit.addChangeListener( new ChangeListener() {
-            public void stateChanged( ChangeEvent e )
-            {
-                try {
-                    updateAnnotations();
-                } catch (RaplaException ex) {
-                    dialogUiFactory.showException(ex, popupContext);
-                }
+        attributeEdit.addChangeListener(e -> {
+            try {
+                updateAnnotations();
+            } catch (RaplaException ex) {
+                dialogUiFactory.showException(ex, popupContext);
             }
-
         });
         
         colorChooser.addActionListener(new ActionListener() {

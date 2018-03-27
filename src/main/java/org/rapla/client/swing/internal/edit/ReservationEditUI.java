@@ -97,27 +97,21 @@ public class ReservationEditUI  extends AbstractEditUI<Reservation>  {
         editPanel.setLayout( new BorderLayout());
         editPanel.add( classificationField.getComponent(), BorderLayout.CENTER);
         editPanel.add( holdBackConflictPanel, BorderLayout.SOUTH);
-        classificationField.addChangeListener(new ChangeListener()
-        {
-            
-            @Override
-            public void stateChanged(ChangeEvent e)
+        classificationField.addChangeListener(e -> {
+            final boolean mainTabSelected = classificationField.isMainTabSelected();
+            permissionPanel.setVisible( !mainTabSelected);
+            if ( !editPanel.isAncestorOf( permissionPanel) && !mainTabSelected)
             {
-                final boolean mainTabSelected = classificationField.isMainTabSelected();
-                permissionPanel.setVisible( !mainTabSelected);
-                if ( !editPanel.isAncestorOf( permissionPanel) && !mainTabSelected)
-                {
-                    editPanel.remove( holdBackConflictPanel);
-                    editPanel.add( permissionPanel, BorderLayout.SOUTH);
-                    editPanel.repaint();
-                }
-                
-                if ( !editPanel.isAncestorOf( holdBackConflictPanel) && mainTabSelected)
-                {
-                    editPanel.remove( permissionPanel );
-                    editPanel.add( holdBackConflictPanel, BorderLayout.SOUTH);
-                    editPanel.repaint();
-                }
+                editPanel.remove( holdBackConflictPanel);
+                editPanel.add( permissionPanel, BorderLayout.SOUTH);
+                editPanel.repaint();
+            }
+
+            if ( !editPanel.isAncestorOf( holdBackConflictPanel) && mainTabSelected)
+            {
+                editPanel.remove( permissionPanel );
+                editPanel.add( holdBackConflictPanel, BorderLayout.SOUTH);
+                editPanel.repaint();
             }
         });
         editPanel.setPreferredSize( new Dimension(800,600));
@@ -179,7 +173,7 @@ public class ReservationEditUI  extends AbstractEditUI<Reservation>  {
                 canAdmin = false;
             }
         }
-        if ( canAdmin == false)
+        if ( !canAdmin )
         {
             permissionListField.getComponent().setVisible( false );
         }

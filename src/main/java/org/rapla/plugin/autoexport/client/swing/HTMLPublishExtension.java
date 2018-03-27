@@ -64,13 +64,7 @@ public class HTMLPublishExtension extends RaplaGUIComponent implements PublishEx
         statusHtml = createStatus( htmlURL);
         panel.add(checkbox,"0,0");
        
-        checkbox.addChangeListener(new ChangeListener()
-    	{
-           public void stateChanged(ChangeEvent e)
-           {
-        	   updateCheck();
-           }
-    	});
+        checkbox.addChangeListener(e -> updateCheck());
         
         
         panel.add(new JLabel(i18n.getString("weekview.print.title_textfield") +":"),"2,2");
@@ -143,14 +137,11 @@ public class HTMLPublishExtension extends RaplaGUIComponent implements PublishEx
 		ImageIcon icon = RaplaImages.getIcon(i18n.getIcon( "icon.copy"));
 		copyButton.setIcon(icon);
 		copyButton.setToolTipText(i18n.getString("copy_to_clipboard"));
-		copyButton.addActionListener(new ActionListener() {
-		    public void actionPerformed(ActionEvent e) {
-		    	urlLabel.requestFocus();
-		    	urlLabel.selectAll();
-		        copy(urlLabel,e, ioInterface, getRaplaLocale());
-		    }
-		
-		});
+		copyButton.addActionListener(e -> {
+            urlLabel.requestFocus();
+            urlLabel.selectAll();
+            copy(urlLabel,e, ioInterface, getRaplaLocale());
+        });
 		status.add(copyButton, BorderLayout.EAST);
 		return status;
 	}

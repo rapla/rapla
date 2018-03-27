@@ -48,7 +48,7 @@ public class AttributeEdit extends RaplaGUIComponent
     RaplaListEdit<Attribute> listEdit;
     DynamicType dt;
     AttributeDefaultConstraints constraintPanel;
-    ArrayList<ChangeListener> listenerList = new ArrayList<ChangeListener>();
+    ArrayList<ChangeListener> listenerList = new ArrayList<>();
 
     Listener listener = new Listener();
     DefaultListModel model = new DefaultListModel();
@@ -64,21 +64,17 @@ public class AttributeEdit extends RaplaGUIComponent
         listEdit.setListDimension( new Dimension( 200,220 ) );
 
         constraintPanel.addChangeListener( listener );
-        listEdit.setNameProvider( new NameProvider<Attribute>()
-                {
-                    @Override
-                    public String getName(Attribute a) {
-                        String value = a.getName(getRaplaLocale().getLocale());
-                        value = "{" + a.getKey() + "} " + value;
-                        int index = indexOf( a);
-                        if ( index >= 0)
-                        {
-                            value = (index + 1) +") " + value;
-                        }
-                        return value;
-                    }
-                }
-                );
+        listEdit.setNameProvider(a -> {
+            String value = a.getName(getRaplaLocale().getLocale());
+            value = "{" + a.getKey() + "} " + value;
+            int index = indexOf( a);
+            if ( index >= 0)
+            {
+                value = (index + 1) +") " + value;
+            }
+            return value;
+        }
+        );
         listEdit.getComponent().setBorder( BorderFactory.createTitledBorder( new EmptyLineBorder(),getString("attributes")) );
     }
 
@@ -203,7 +199,7 @@ public class AttributeEdit extends RaplaGUIComponent
     }
 
     void removeAttribute()  {
-    	List<Attribute> toRemove = new ArrayList<Attribute>();
+    	List<Attribute> toRemove = new ArrayList<>();
     	
     	for ( int index:listEdit.getList().getSelectedIndices())
     	{

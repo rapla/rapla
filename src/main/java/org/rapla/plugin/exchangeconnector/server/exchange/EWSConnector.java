@@ -67,14 +67,10 @@ public class EWSConnector {
         if ( logger!= null && logger.isDebugEnabled())
         {
             tmpService.setTraceEnabled( true );
-            tmpService.setTraceListener( new ITraceListener() {
-                
-                @Override
-                public void trace(String traceType, String traceMessage) {
-                    if ( traceType.equals(TraceFlags.EwsRequest.toString()))
-                    {
-                        logger.debug(traceMessage);
-                    }
+            tmpService.setTraceListener((traceType, traceMessage) -> {
+                if ( traceType.equals(TraceFlags.EwsRequest.toString()))
+                {
+                    logger.debug(traceMessage);
                 }
             });
         }

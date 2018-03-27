@@ -64,7 +64,7 @@ the entities of rapla.
 public class InfoFactoryImpl extends RaplaGUIComponent implements InfoFactory
 
 {
-    Map<Class,HTMLInfo> views = new HashMap<Class,HTMLInfo>();
+    Map<Class,HTMLInfo> views = new HashMap<>();
     private final IOInterface ioInterface;
     private final DialogUiFactoryInterface dialogUiFactory;
 
@@ -135,7 +135,7 @@ public class InfoFactoryImpl extends RaplaGUIComponent implements InfoFactory
             throws RaplaException
     {
 
-        final ViewTable<T> viewTable = new ViewTable<T>(getClientFacade(), getI18n(), getRaplaLocale(), getLogger(), this, ioInterface, dialogUiFactory);
+        final ViewTable<T> viewTable = new ViewTable<>(getClientFacade(), getI18n(), getRaplaLocale(), getLogger(), this, ioInterface, dialogUiFactory);
         final DialogInterface dlg = dialogUiFactory.createContentDialog(popupContext
                 ,
                 viewTable.getComponent()

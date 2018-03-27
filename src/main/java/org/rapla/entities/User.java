@@ -58,27 +58,22 @@ public interface User extends Entity<User>, Named, Comparable, Timestamp
 
     User[] USER_ARRAY = new User[0];
     
-    Comparator<User> USER_COMPARATOR= new Comparator<User>()
+    Comparator<User> USER_COMPARATOR= (u1, u2) -> {
+        if ( u2 == null)
         {
-            @SuppressWarnings("unchecked")
-            @Override
-            public int compare(User u1, User u2) {
-                if ( u2 == null)
-                {
-                    return 1;
-                }
-                if ( u1==u2 || u1.equals(u2)) return 0;
-                int result = String.CASE_INSENSITIVE_ORDER.compare(
-                                              u1.getUsername()
-                                              ,u2.getUsername()
-                                              );
-                if ( result !=0 )
-                    return result;
-                
-                result = u1.compareTo( u2 );
-                return result;
-            }
-        };
+            return 1;
+        }
+        if ( u1==u2 || u1.equals(u2)) return 0;
+        int result = String.CASE_INSENSITIVE_ORDER.compare(
+                                      u1.getUsername()
+                                      ,u2.getUsername()
+                                      );
+        if ( result !=0 )
+            return result;
+
+        result = u1.compareTo( u2 );
+        return result;
+    };
     
 }
 

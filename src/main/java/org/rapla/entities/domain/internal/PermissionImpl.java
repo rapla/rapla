@@ -247,11 +247,11 @@ public final class PermissionImpl extends ReferenceHandler implements Permission
 
     public PermissionImpl clone() {
         PermissionImpl clone = new PermissionImpl();
-    	clone.links =  new LinkedHashMap<String,List<String>>();
+    	clone.links = new LinkedHashMap<>();
     	for ( String key:links.keySet())
     	{
     		List<String> idList = links.get( key);
-    		clone.links.put( key, new ArrayList<String>(idList));
+    		clone.links.put( key, new ArrayList<>(idList));
     	}
     	clone.resolver = this.resolver;
         // This must be done first

@@ -31,7 +31,7 @@ import java.util.TreeMap;
 public class MultiLanguageName implements java.io.Serializable {
     // Don't forget to increase the serialVersionUID when you change the fields
     private static final long serialVersionUID = 1;
-    Map<String,String> mapLocales = new TreeMap<String,String>();
+    Map<String,String> mapLocales = new TreeMap<>();
     transient private boolean readOnly;
     
     public MultiLanguageName(String language,String translation) {
@@ -101,7 +101,7 @@ public class MultiLanguageName implements java.io.Serializable {
 
     public void setTo(MultiLanguageName newName) {
         checkWritable();
-        mapLocales = new TreeMap<String,String>(newName.mapLocales);
+        mapLocales = new TreeMap<>(newName.mapLocales);
     }
     
     public Collection<String> getAvailableLanguages() {

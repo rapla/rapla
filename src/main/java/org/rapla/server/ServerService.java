@@ -29,6 +29,6 @@ public interface ServerService {
     String ENV_RAPLAFILE_ID = "env.raplafile";
     String ENV_RAPLAMAIL_ID = "env.raplamail";
     //public static final TypedComponentRole<Configuration> RAPLA_MAIN_CONFIGURATION = new TypedComponentRole<Configuration>("org.rapla.MainConfiguration");
-    TypedComponentRole<String> ENV_RAPLAFILE= new TypedComponentRole<String>(ENV_RAPLAFILE_ID);
+    TypedComponentRole<String> ENV_RAPLAFILE= new TypedComponentRole<>(ENV_RAPLAFILE_ID);
 //    public static final TypedComponentRole<SimpleProvider<Object>> ENV_RAPLAMAIL= new TypedComponentRole<SimpleProvider<Object>>(ENV_RAPLAMAIL_ID);
 }

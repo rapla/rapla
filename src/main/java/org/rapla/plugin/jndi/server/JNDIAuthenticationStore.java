@@ -275,7 +275,7 @@ public class JNDIAuthenticationStore implements AuthenticationStore,Disposable,J
 
     static public Map<String,String> generateMap(Configuration config) {
         String[] attributes = config.getAttributeNames();
-        Map<String,String> map = new TreeMap<String,String>();
+        Map<String,String> map = new TreeMap<>();
         for (int i=0;i<attributes.length;i++)
         {
             map.put( attributes[i], config.getAttribute(attributes[i], null));
@@ -387,7 +387,7 @@ public class JNDIAuthenticationStore implements AuthenticationStore,Disposable,J
         	Collection<Category> groups;
         	if (groupList == null)
         	{
-        	    groups = new ArrayList<Category>();
+        	    groups = new ArrayList<>();
         	}
         	else
         	{
@@ -527,7 +527,7 @@ public class JNDIAuthenticationStore implements AuthenticationStore,Disposable,J
                 // If message is null, assume the worst and allow the
                 // connection to be closed.
                 if (e.getMessage()!=null &&
-                    e.getMessage().indexOf("closed") < 0)
+                        !e.getMessage().contains("closed"))
                     throw(e);
 
                 // log the exception so we know it's there.
@@ -659,7 +659,7 @@ public class JNDIAuthenticationStore implements AuthenticationStore,Disposable,J
         throws NamingException {
         JNDIUser user = null;
         // Get attributes to retrieve from user entry
-        ArrayList<String> list = new ArrayList<String>();
+        ArrayList<String> list = new ArrayList<>();
         if (userPassword != null)
             list.add(userPassword);
         if (userMail != null)
@@ -893,7 +893,7 @@ public class JNDIAuthenticationStore implements AuthenticationStore,Disposable,J
     protected String digest(String credentials)  {
 
         // If no MessageDigest instance is specified, return unchanged
-        if ( hasMessageDigest() == false)
+        if ( !hasMessageDigest() )
             return (credentials);
 
         // Digest the user credentials and return as hexadecimal
@@ -1080,7 +1080,7 @@ public class JNDIAuthenticationStore implements AuthenticationStore,Disposable,J
      */
     protected Hashtable<String,Object> getDirectoryContextEnvironment() {
 
-        Hashtable<String,Object> env = new Hashtable<String,Object>();
+        Hashtable<String,Object> env = new Hashtable<>();
 
         // Configure our directory context environment.
         if ( getLogger().isDebugEnabled() && connectionAttempt == 0)

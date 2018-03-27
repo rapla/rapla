@@ -12,7 +12,7 @@ import java.util.Set;
 public abstract class AbstractActivityController
 {
     protected Place place;
-    protected final Set<ApplicationEvent> activities = new LinkedHashSet<ApplicationEvent>();
+    protected final Set<ApplicationEvent> activities = new LinkedHashSet<>();
     protected final Logger logger;
     private RaplaWidget activePlace;
 
@@ -69,7 +69,7 @@ public abstract class AbstractActivityController
         parsePlaceAndActivities();
         if (!activities.isEmpty())
         {
-            ArrayList<ApplicationEvent> toRemove = new ArrayList<ApplicationEvent>();
+            ArrayList<ApplicationEvent> toRemove = new ArrayList<>();
             for (ApplicationEvent activity : activities)
             {
                 if (!startActivity(activity))

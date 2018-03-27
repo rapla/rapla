@@ -28,14 +28,9 @@ public class TextInputField extends FlowPanel
         addon.setText(labelText);
         inputGroup.add(addon);
         final TextBox tb = new TextBox();
-        tb.addChangeHandler(new ChangeHandler()
-        {
-            @Override
-            public void onChange(ChangeEvent event)
-            {
-                final String newValue = tb.getValue();
-                changeHandler.valueChanged(newValue);
-            }
+        tb.addChangeHandler(event -> {
+            final String newValue = tb.getValue();
+            changeHandler.valueChanged(newValue);
         });
         tb.setPlaceholder(placeholder);
         tb.setAutoComplete(false);

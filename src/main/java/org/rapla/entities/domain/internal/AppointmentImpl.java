@@ -241,9 +241,9 @@ public final class AppointmentImpl extends SimpleEntity implements Appointment
     }
 
     public Date getFirstDifference( Appointment a2, Date maxDate ) {
-        List<AppointmentBlock> blocks1 = new ArrayList<AppointmentBlock>();
+        List<AppointmentBlock> blocks1 = new ArrayList<>();
         createBlocks( start, maxDate, blocks1);
-        List<AppointmentBlock> blocks2 = new ArrayList<AppointmentBlock>();
+        List<AppointmentBlock> blocks2 = new ArrayList<>();
         a2.createBlocks(a2.getStart(), maxDate, blocks2);
         //        System.out.println("block sizes " + blocks1.size() + ", " + blocks2.size() );
         int i=0;
@@ -271,9 +271,9 @@ public final class AppointmentImpl extends SimpleEntity implements Appointment
     }
 
     public Date getLastDifference( Appointment a2, Date maxDate ) {
-        List<AppointmentBlock> blocks1 = new ArrayList<AppointmentBlock>();
+        List<AppointmentBlock> blocks1 = new ArrayList<>();
         createBlocks( start, maxDate, blocks1);
-        List<AppointmentBlock> blocks2 = new ArrayList<AppointmentBlock>();
+        List<AppointmentBlock> blocks2 = new ArrayList<>();
         a2.createBlocks(a2.getStart(), maxDate, blocks2);
         if ( blocks2.size() > blocks1.size() ) {
             return new Date( blocks2.get( blocks1.size() ).getEnd() );
@@ -621,7 +621,7 @@ public final class AppointmentImpl extends SimpleEntity implements Appointment
     private boolean overlapsHard( AppointmentImpl a2 )
     {
         Repeating r2 = a2.getRepeating();
-        Collection<AppointmentBlock> array = new ArrayList<AppointmentBlock>(); 
+        Collection<AppointmentBlock> array = new ArrayList<>();
         Date maxEnd =r2.getEnd();
         // overlaps will be checked two  250 weeks (5 years) from now on
         long maxCheck = System.currentTimeMillis() + DateTools.MILLISECONDS_PER_WEEK * 250;
@@ -800,7 +800,7 @@ public final class AppointmentImpl extends SimpleEntity implements Appointment
      * @return
      */
     static public SortedSet<Appointment> getAppointments(SortedSet<Appointment> sortedAppointmentList,User user,Date start,Date end, boolean excludeExceptions) {
-	    SortedSet<Appointment> appointmentSet = new TreeSet<Appointment>(new AppointmentStartComparator());
+	    SortedSet<Appointment> appointmentSet = new TreeSet<>(new AppointmentStartComparator());
 	    Iterator<Appointment> it;
 		if (end != null) {
 	        // all appointments that start before the enddate
@@ -833,7 +833,7 @@ public final class AppointmentImpl extends SimpleEntity implements Appointment
 	}
 	
 	public static Set<Appointment> getConflictingAppointments(SortedSet<Appointment> appointmentSet, Appointment appointment, Collection<Reservation> ignoreList, boolean onlyFirstConflictingAppointment) {
-		Set<Appointment> conflictingAppointments = new HashSet<Appointment>();
+		Set<Appointment> conflictingAppointments = new HashSet<>();
 		Date start =appointment.getStart();
 		Date end = appointment.getMaxEnd();
 		// Templates don't cause conflicts

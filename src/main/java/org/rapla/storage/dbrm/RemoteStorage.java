@@ -47,7 +47,7 @@ public interface RemoteStorage
     @Path("change/password")
     void changePassword(PasswordPost job) throws RaplaException;
 
-    public static class PasswordPost
+    class PasswordPost
     {
         private String username;
         private String oldPassword;
@@ -112,7 +112,7 @@ public interface RemoteStorage
 
     @XmlRootElement
     @XmlAccessorType(XmlAccessType.FIELD)
-    public static class QueryAppointments
+    class QueryAppointments
     {
         private String[] resources;
         private Date start;
@@ -213,7 +213,7 @@ public interface RemoteStorage
     @Produces({ MediaType.APPLICATION_JSON, MediaType.APPLICATION_XML })
     Promise<BindingMap> getFirstAllocatableBindings(AllocatableBindingsRequest job);
 
-    public static class AllocatableBindingsRequest
+    class AllocatableBindingsRequest
     {
         private String[] allocatableIds;
         private List<AppointmentImpl> appointments;
@@ -261,7 +261,7 @@ public interface RemoteStorage
 
     @XmlRootElement
     @XmlAccessorType(XmlAccessType.FIELD)
-    public static class NextAllocatableDateRequest
+    class NextAllocatableDateRequest
     {
         private String[] allocatableIds;
         private AppointmentImpl appointment;
@@ -339,7 +339,7 @@ public interface RemoteStorage
 
     @XmlRootElement
     @XmlAccessorType(XmlAccessType.FIELD)
-    public static class MergeRequest
+    class MergeRequest
     {
         private AllocatableImpl allocatable;
         private String[] allocatableIds;

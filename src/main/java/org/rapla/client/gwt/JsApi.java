@@ -10,6 +10,7 @@ import org.rapla.components.util.TimeInterval;
 import org.rapla.entities.User;
 import org.rapla.entities.configuration.CalendarModelConfiguration;
 import org.rapla.entities.configuration.Preferences;
+import org.rapla.entities.configuration.RaplaMap;
 import org.rapla.entities.domain.AppointmentBlock;
 import org.rapla.entities.domain.Reservation;
 import org.rapla.facade.CalendarModel;
@@ -32,7 +33,6 @@ import org.rapla.storage.dbrm.RemoteAuthentificationService;
 
 import javax.inject.Inject;
 import javax.inject.Provider;
-import javax.swing.table.TableColumn;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -138,7 +138,7 @@ public class JsApi {
 
     public String[] getCalendarNames() throws RaplaException {
         final Preferences preferences = getFacade().getPreferences(getUser());
-        Map<String, CalendarModelConfiguration> exportMap = preferences.getEntry(AutoExportPlugin.PLUGIN_ENTRY);
+        RaplaMap<CalendarModelConfiguration> exportMap = preferences.getEntry(AutoExportPlugin.PLUGIN_ENTRY);
         if (exportMap != null) {
             return exportMap.keySet().toArray(new String[]{});
         }
@@ -189,7 +189,7 @@ public class JsApi {
         {
             User user = getUser();
             List<RaplaTableColumn<T,Object>> raplaTableColumns = tableConfigLoader.loadColumns(viewId, user);
-            tableModel = new RaplaTableModel<T,Object>(raplaTableColumns);
+            tableModel = new RaplaTableModel<>(raplaTableColumns);
         }
         catch (RaplaException e)
         {

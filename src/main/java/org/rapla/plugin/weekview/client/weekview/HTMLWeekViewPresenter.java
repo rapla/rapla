@@ -27,7 +27,7 @@ public class HTMLWeekViewPresenter extends AbstractHTMLView
     private int startMinutes;
     int m_rowsPerHour = 2;
     HTMLDaySlot[] daySlots;
-    ArrayList<Block> blocks = new ArrayList<Block>();
+    ArrayList<Block> blocks = new ArrayList<>();
     String weeknumber;
     Logger logger;
 
@@ -198,7 +198,7 @@ public class HTMLWeekViewPresenter extends AbstractHTMLView
                 {
                     String timeString = getRaplaLocale().formatMinuteOfDay(minuteOfDay);
                     int rowspan = calcRowspan(minuteOfDay, ((minuteOfDay / 60) + 1) * 60);
-                    List<HTMLWeekViewPresenter.SpanAndMinute> rowTimes = new ArrayList<HTMLWeekViewPresenter.SpanAndMinute>();
+                    List<HTMLWeekViewPresenter.SpanAndMinute> rowTimes = new ArrayList<>();
                     for (int i = 0; i < m_rowsPerHour; i++)
                     {
                         final int startMinute = minuteOfDay + (60 / m_rowsPerHour) * i;
@@ -309,7 +309,7 @@ public class HTMLWeekViewPresenter extends AbstractHTMLView
         return headerName;
     }
 
-    SortedSet<Integer> minuteBlock = new TreeSet<Integer>();
+    SortedSet<Integer> minuteBlock = new TreeSet<>();
 
     public void addBlock(Block block, int column, int slot)
     {
@@ -331,7 +331,7 @@ public class HTMLWeekViewPresenter extends AbstractHTMLView
         //            int[] EMPTY = new int[]{-2};
         //      int[] SKIP = new int[]{-1};
         int lastEnd = 0;
-        HashMap<Integer, Block> map = new HashMap<Integer, Block>();
+        HashMap<Integer, Block> map = new HashMap<>();
 
         public Slot()
         {

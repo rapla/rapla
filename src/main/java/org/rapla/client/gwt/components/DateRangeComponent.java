@@ -138,7 +138,7 @@ public class DateRangeComponent extends Input
         String getCancelLabel();
     }
 
-    private static final Map<Character, Character> DATE_TIME_FORMAT_MAP = new HashMap<Character, Character>();
+    private static final Map<Character, Character> DATE_TIME_FORMAT_MAP = new HashMap<>();
 
     static
     {
@@ -160,14 +160,7 @@ public class DateRangeComponent extends Input
         this.changeListener = changeListener;
         this.i18n = i18n;
         addStyleName("inputWrapper");
-        addValueChangeHandler(new ValueChangeHandler<String>()
-        {
-            @Override
-            public void onValueChange(ValueChangeEvent<String> event)
-            {
-                update();
-            }
-        });
+        addValueChangeHandler(event -> update());
     }
 
     private void update()
@@ -206,14 +199,9 @@ public class DateRangeComponent extends Input
         locale.setFormat(getFormat(withTime));
         DateRangePickerJquery jqdp = (DateRangePickerJquery) JQueryElement.Static.$(getElement());
         DateRangePickerElement ele = jqdp.daterangepicker(options);
-        ele.on("apply.daterangepicker", new Function()
-        {
-            @Override
-            public Object call(JqEvent event, Object... params)
-            {
-                update();
-                return null;
-            }
+        ele.on("apply.daterangepicker", (event, params) -> {
+            update();
+            return null;
         });
         datePicker = ele.data("daterangepicker");
     }

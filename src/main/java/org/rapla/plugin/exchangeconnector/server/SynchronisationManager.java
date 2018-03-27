@@ -13,6 +13,7 @@ import org.rapla.entities.EntityNotFoundException;
 import org.rapla.entities.User;
 import org.rapla.entities.configuration.CalendarModelConfiguration;
 import org.rapla.entities.configuration.Preferences;
+import org.rapla.entities.configuration.RaplaMap;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.Appointment;
 import org.rapla.entities.domain.AppointmentFormater;
@@ -73,9 +74,9 @@ public class SynchronisationManager implements ServerExtension
     private static final long SCHEDULE_PERIOD = DateTools.MILLISECONDS_PER_HOUR * 2;
     private static final long VALID_LOCK_DURATION = DateTools.MILLISECONDS_PER_MINUTE * 10;
     private static final String EXCHANGE_LOCK_ID = "EXCHANGE";
-    private static final TypedComponentRole<Boolean> RETRY_USER = new TypedComponentRole<Boolean>("org.rapla.plugin.exchangconnector.retryUser");
-    private static final TypedComponentRole<Boolean> RESYNC_USER = new TypedComponentRole<Boolean>("org.rapla.plugin.exchangconnector.resyncUser");
-    private static final TypedComponentRole<Boolean> PASSWORD_MAIL_USER = new TypedComponentRole<Boolean>("org.rapla.plugin.exchangconnector.passwordMailSent");
+    private static final TypedComponentRole<Boolean> RETRY_USER = new TypedComponentRole<>("org.rapla.plugin.exchangconnector.retryUser");
+    private static final TypedComponentRole<Boolean> RESYNC_USER = new TypedComponentRole<>("org.rapla.plugin.exchangconnector.resyncUser");
+    private static final TypedComponentRole<Boolean> PASSWORD_MAIL_USER = new TypedComponentRole<>("org.rapla.plugin.exchangconnector.passwordMailSent");
     // existing tasks in memory
     private final ExchangeAppointmentStorage appointmentStorage;
     private final AppointmentFormater appointmentFormater;
@@ -170,7 +171,7 @@ public class SynchronisationManager implements ServerExtension
                 cachableStorageOperator.requestLock(EXCHANGE_LOCK_ID, VALID_LOCK_DURATION);
                 appointmentStorage.refresh();
                 Collection<SynchronizationTask> allTasks = appointmentStorage.getAllTasks();
-                Collection<SynchronizationTask> includedTasks = new ArrayList<SynchronizationTask>();
+                Collection<SynchronizationTask> includedTasks = new ArrayList<>();
                 final Date now = new Date();
                 for (SynchronizationTask task : allTasks)
                 {
@@ -233,7 +234,7 @@ public class SynchronisationManager implements ServerExtension
 
     private Collection<SynchronizationTask> updateTasksSetDelete(ReferenceInfo<Appointment> appointmentId) throws RaplaException
     {
-        Collection<SynchronizationTask> result = new HashSet<SynchronizationTask>();
+        Collection<SynchronizationTask> result = new HashSet<>();
         Collection<SynchronizationTask> taskList = appointmentStorage.getTasks(appointmentId);
         for (SynchronizationTask task : taskList)
         {
@@ -245,7 +246,7 @@ public class SynchronisationManager implements ServerExtension
 
     private Collection<SynchronizationTask> updateOrCreateTasks(Appointment appointment) throws RaplaException
     {
-        Collection<SynchronizationTask> result = new HashSet<SynchronizationTask>();
+        Collection<SynchronizationTask> result = new HashSet<>();
         if (isInSyncInterval(appointment))
         {
             Collection<SynchronizationTask> taskList = appointmentStorage.getTasks(appointment.getReference());
@@ -277,8 +278,8 @@ public class SynchronisationManager implements ServerExtension
     private void synchronize(UpdateResult evt) throws RaplaException
     {
         appointmentStorage.refresh();
-        List<Preferences> preferencesToStore = new ArrayList<Preferences>();
-        Collection<SynchronizationTask> tasks = new ArrayList<SynchronizationTask>();
+        List<Preferences> preferencesToStore = new ArrayList<>();
+        Collection<SynchronizationTask> tasks = new ArrayList<>();
         Collection<User> resynchronizeUsers = new ArrayList<>();
         //lock
         for (UpdateOperation operation : evt.getOperations())
@@ -508,9 +509,9 @@ public class SynchronisationManager implements ServerExtension
         TimeInterval syncRange = getSyncRange();
 
         Collection<Appointment> appointments = cachableStorageOperator.getAppointmentsFromUserCalendarModels(userId, syncRange);
-        final Collection<SynchronizationTask> result = new HashSet<SynchronizationTask>();
-        Set<String> appointmentsFound = new HashSet<String>();
-        Collection<SynchronizationTask> newTasksFromCalendar = new HashSet<SynchronizationTask>();
+        final Collection<SynchronizationTask> result = new HashSet<>();
+        Set<String> appointmentsFound = new HashSet<>();
+        Collection<SynchronizationTask> newTasksFromCalendar = new HashSet<>();
         for (Appointment app : appointments)
         {
             SynchronizationTask task = appointmentStorage.getTask(app, userId);
@@ -611,7 +612,7 @@ public class SynchronisationManager implements ServerExtension
         final String username = secrets.login;
         final String password = secrets.secret;
         final Collection<String> exchangeUrls = extractExchangeUrls(user);
-        Collection<SyncError> result = new LinkedHashSet<SyncError>();
+        Collection<SyncError> result = new LinkedHashSet<>();
         for (String exchangeUrl : exchangeUrls)
         {
             Collection<String> appointments = AppointmentSynchronizer.remove(logger, exchangeUrl, username, password);
@@ -632,8 +633,8 @@ public class SynchronisationManager implements ServerExtension
 
     private SynchronizeResult processTasks(Collection<SynchronizationTask> tasks, boolean skipNotification) throws RaplaException
     {
-        final Collection<SynchronizationTask> toStore = new HashSet<SynchronizationTask>();
-        final Collection<SynchronizationTask> toRemove = new HashSet<SynchronizationTask>();
+        final Collection<SynchronizationTask> toStore = new HashSet<>();
+        final Collection<SynchronizationTask> toRemove = new HashSet<>();
 
         final SynchronizeResult result = new SynchronizeResult();
         for (SynchronizationTask task : tasks)
@@ -849,23 +850,23 @@ public class SynchronisationManager implements ServerExtension
             Map<String, String> optionMap = modelConfig.getOptionMap();
             if (optionMap.containsKey(ExchangeConnectorPlugin.EXCHANGE_EXPORT))
             {
-                Map<String, String> newMap = new LinkedHashMap<String, String>(optionMap);
+                Map<String, String> newMap = new LinkedHashMap<>(optionMap);
                 newMap.remove(ExchangeConnectorPlugin.EXCHANGE_EXPORT);
                 CalendarModelConfiguration newConfig = modelConfig.cloneWithNewOptions(newMap);
                 preferences.putEntry(CalendarModelConfiguration.CONFIG_ENTRY, newConfig);
             }
         }
-        Map<String, CalendarModelConfiguration> exportMap = preferences.getEntry(CalendarModelConfiguration.EXPORT_ENTRY);
+        RaplaMap<CalendarModelConfiguration> exportMap = preferences.getEntry(CalendarModelConfiguration.EXPORT_ENTRY);
         if (exportMap != null)
         {
-            Map<String, CalendarModelConfiguration> newExportMap = new TreeMap<String, CalendarModelConfiguration>(exportMap);
+            Map<String, CalendarModelConfiguration> newExportMap = new TreeMap<>(exportMap.toMap());
             for (String key : exportMap.keySet())
             {
                 CalendarModelConfiguration calendarModelConfiguration = exportMap.get(key);
                 Map<String, String> optionMap = calendarModelConfiguration.getOptionMap();
                 if (optionMap.containsKey(ExchangeConnectorPlugin.EXCHANGE_EXPORT))
                 {
-                    Map<String, String> newMap = new LinkedHashMap<String, String>(optionMap);
+                    Map<String, String> newMap = new LinkedHashMap<>(optionMap);
                     newMap.remove(ExchangeConnectorPlugin.EXCHANGE_EXPORT);
                     CalendarModelConfiguration newConfig = calendarModelConfiguration.cloneWithNewOptions(newMap);
                     newExportMap.put(key, newConfig);

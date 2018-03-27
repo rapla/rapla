@@ -12,7 +12,7 @@ import java.util.Set;
 
 public class PreferencePatch extends RaplaMapImpl {
     String userId;
-    Set<String> removedEntries = new LinkedHashSet<String>();
+    Set<String> removedEntries = new LinkedHashSet<>();
     Date lastChanged;
     
     public void addRemove(String role) {
@@ -29,7 +29,7 @@ public class PreferencePatch extends RaplaMapImpl {
 
     public ReferenceInfo<User> getUserRef()
     {
-        return new ReferenceInfo<User>(userId, User.class);
+        return new ReferenceInfo<>(userId, User.class);
     }
     
     public Date getLastChanged() {

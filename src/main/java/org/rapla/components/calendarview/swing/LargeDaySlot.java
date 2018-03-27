@@ -44,7 +44,7 @@ class LargeDaySlot extends AbstractDaySlot
     public static Color WORKTIME_BACKGROUND = Color.white;
     public static Color NON_WORKTIME_BACKGROUND = new Color(0xcc, 0xcc, 0xcc);
 
-    private List<Slot> slots= new ArrayList<Slot>();
+    private List<Slot> slots= new ArrayList<>();
     private int slotxsize;
     
     private int selectionStart = -1;
@@ -117,7 +117,7 @@ class LargeDaySlot extends AbstractDaySlot
     }
 
     public Collection<Block> getBlocks() {
-        ArrayList<Block> list = new ArrayList<Block>();
+        ArrayList<Block> list = new ArrayList<>();
         for (int i=0;i<slots.size();i++)
             list.addAll(slots.get(i).getBlocks());
         return list;
@@ -338,7 +338,7 @@ class LargeDaySlot extends AbstractDaySlot
     {
         private static final long serialVersionUID = 1L;
 
-        private Collection<Block> blocks= new ArrayList<Block>();
+        private Collection<Block> blocks= new ArrayList<>();
        
         public Slot()  {
             setLayout(null);

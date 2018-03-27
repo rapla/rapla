@@ -32,8 +32,8 @@ public class HTMLCompactWeekView extends AbstractHTMLView {
     /** shared calendar instance. Only used for temporary stored values. */
     HTMLSmallDaySlot[] slots = {};
     String[] slotNames = {}; 
-    private ArrayList<List<Block>> rows = new ArrayList<List<Block>>();
-    Map<Block, Integer> columnMap = new HashMap<Block, Integer>();
+    private ArrayList<List<Block>> rows = new ArrayList<>();
+    Map<Block, Integer> columnMap = new HashMap<>();
 	private double leftColumnSize = 0.1;
     String weeknumber = "";
     
@@ -54,7 +54,7 @@ public class HTMLCompactWeekView extends AbstractHTMLView {
     }
     
     public Collection<Block> getBlocks() {
-        ArrayList<Block> list = new ArrayList<Block>();
+        ArrayList<Block> list = new ArrayList<>();
         for (int i=0;i<slots.length;i++) {
             list.addAll(slots[i]);
         }
@@ -144,7 +144,7 @@ public class HTMLCompactWeekView extends AbstractHTMLView {
     }
 
 	protected List<String> getHeaderNames() {
-		List<String> headerNames = new ArrayList<String>();
+		List<String> headerNames = new ArrayList<>();
         Date date = getStartDate();
         int columnCount = getColumnCount();
 		for (int i=0;i<columnCount;i++) {
@@ -191,7 +191,7 @@ public class HTMLCompactWeekView extends AbstractHTMLView {
     }
 
     private void addRow() {
-        rows.add( rows.size(), new ArrayList<Block>());
+        rows.add( rows.size(), new ArrayList<>());
     }
 
     

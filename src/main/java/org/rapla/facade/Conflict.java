@@ -76,7 +76,7 @@ public interface Conflict extends Named, Entity<Conflict>, Timestamp
 
 		public static Collection<Allocatable> getAllocatables(
 				Collection<Conflict> conflictsSelected) {
-			LinkedHashSet<Allocatable> allocatables = new LinkedHashSet<Allocatable>();
+			LinkedHashSet<Allocatable> allocatables = new LinkedHashSet<>();
 		    for ( Conflict conflict: conflictsSelected)
 		    {
 		    	allocatables.add(conflict.getAllocatable());

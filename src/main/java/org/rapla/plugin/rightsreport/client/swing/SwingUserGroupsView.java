@@ -65,7 +65,7 @@ public class SwingUserGroupsView extends RaplaGUIComponent implements
 
 	// text field for filter
 	JTextField filterTextField;
-	Collection<Object> notAllList = new HashSet<Object>();
+	Collection<Object> notAllList = new HashSet<>();
 
     private final TreeFactory treeFactory;
 
@@ -140,18 +140,15 @@ public class SwingUserGroupsView extends RaplaGUIComponent implements
 		selectionTreeTable.getTree().addTreeSelectionListener((e) ->selectionChanged());
 		// including the tree in ScrollPane and adding this to the GUI
 		centerPanel.add(selectionTreeTable, "0,1");
-		selectionTreeTable.addPopupListener(new PopupListener() {
-			@Override
-			public void showPopup(PopupEvent evt) {
-				Point p = evt.getPoint();
-				Object selectedObject = evt.getSelectedObject();
-				Collection<?> selectedElements = selectionTreeTable.getSelectedElements();
-                SwingPopupContext popupContext = new SwingPopupContext(getComponent(), p);
-				final SelectionMenuContext menuContext = new SelectionMenuContext(selectedObject, popupContext);
-				menuContext.setSelectedObjects(selectedElements);
-				showTreePopup(popupContext, menuContext);
-			}
-		});
+		selectionTreeTable.addPopupListener(evt -> {
+            Point p = evt.getPoint();
+            Object selectedObject = evt.getSelectedObject();
+            Collection<?> selectedElements = selectionTreeTable.getSelectedElements();
+SwingPopupContext popupContext = new SwingPopupContext(getComponent(), p);
+            final SelectionMenuContext menuContext = new SelectionMenuContext(selectedObject, popupContext);
+            menuContext.setSelectedObjects(selectedElements);
+            showTreePopup(popupContext, menuContext);
+        });
 
 		// creation of the list for the assigned elements
 		assignedElementsList = new JList();
@@ -221,13 +218,13 @@ public class SwingUserGroupsView extends RaplaGUIComponent implements
 		{
 			List<Object> selectedElements = selectionTreeTable.getSelectedElements();
 			assignedElementsListModel.clear();
-			Set<Object> commonElements = new TreeSet<Object>();
+			Set<Object> commonElements = new TreeSet<>();
 			notAllList.clear();
 			User[] allUsers = getQuery().getUsers();
 			boolean first = true;
 			for ( Object sel:selectedElements)
 			{
-				List<Object> elementsToAdd = new ArrayList<Object>();
+				List<Object> elementsToAdd = new ArrayList<>();
 				if ( sel instanceof User)
 				{
 					User user= (User) sel;
@@ -276,7 +273,7 @@ public class SwingUserGroupsView extends RaplaGUIComponent implements
 	// rootCategory)
 	private List<Category> searchCategoryName(Category rootCategory,
 			String pattern) {
-		List<Category> categories = new ArrayList<Category>();
+		List<Category> categories = new ArrayList<>();
 		Locale locale = getLocale();
 
 		// loop all child of rootCategory
@@ -300,7 +297,7 @@ public class SwingUserGroupsView extends RaplaGUIComponent implements
 
 	// search users with specified pattern in username
 	private List<User> searchUserName(String pattern) throws RaplaException {
-		List<User> users = new ArrayList<User>();
+		List<User> users = new ArrayList<>();
 		Locale locale = getLocale();
 		// get all users
 		for (User user : getQuery().getUsers()) {

@@ -86,7 +86,7 @@ public class RaplaBuilder
 {
 
     private Collection<Reservation> selectedReservations;
-    private Collection<Allocatable> selectedAllocatables = new LinkedHashSet<Allocatable>();
+    private Collection<Allocatable> selectedAllocatables = new LinkedHashSet<>();
 
     private boolean bExceptionsExcluded = false;
     private boolean bResourceVisible = true;
@@ -94,7 +94,7 @@ public class RaplaBuilder
     private boolean bRepeatingVisible = true;
     private boolean bTimeVisible = true; //Shows time <from - till> in top of all HTML- and Swing-View Blocks
     private boolean splitByAllocatables = false;
-    private HashMap<Allocatable,String> colors = new HashMap<Allocatable,String>(); //This currently only works with HashMap
+    private HashMap<Allocatable,String> colors = new HashMap<>(); //This currently only works with HashMap
     private User editingUser;
     private boolean isResourceColoring;
     private boolean isEventColoring;
@@ -108,7 +108,7 @@ public class RaplaBuilder
     //HashSet<Reservation> allReservationsForAllocatables = new HashSet<Reservation>();
 
     
-    public static final TypedComponentRole<Boolean> SHOW_TOOLTIP_CONFIG_ENTRY = new TypedComponentRole<Boolean>("org.rapla.showTooltips");
+    public static final TypedComponentRole<Boolean> SHOW_TOOLTIP_CONFIG_ENTRY = new TypedComponentRole<>("org.rapla.showTooltips");
 
 	Map<Appointment,Set<Appointment>> conflictingAppointments;
     
@@ -158,14 +158,14 @@ public class RaplaBuilder
         final TimeInterval interval = new TimeInterval( startDate, endDate);
         final Promise<Map<Allocatable, Collection<Appointment>>> appointmentBindungsPromise = model.queryAppointmentBindings(interval);
         final Promise<RaplaBuilder> builderPromise = appointmentBindungsPromise.thenApply((appointmentBindings) -> {
-            Collection<Conflict> conflictsSelected = new ArrayList<Conflict>();
+            Collection<Conflict> conflictsSelected = new ArrayList<>();
             conflictsSelected.addAll( ((CalendarModelImpl)model).getSelectedConflicts());
             bindings = appointmentBindings;
             Collection<Allocatable> allocatables ;
             if ( !conflictsSelected.isEmpty() )
             {
                 allocatables = Util.getAllocatables( conflictsSelected );
-                Collection<Appointment> all = new LinkedHashSet<Appointment>();
+                Collection<Appointment> all = new LinkedHashSet<>();
                 for ( Collection<Appointment> appointments: bindings.values())
                 {
                     all.addAll( appointments);
@@ -174,7 +174,7 @@ public class RaplaBuilder
             }
             else
             {
-                Collection<Appointment> all = new LinkedHashSet<Appointment>();
+                Collection<Appointment> all = new LinkedHashSet<>();
                 allocatables = new ArrayList<>(bindings.keySet());
                 Collections.sort( (List)allocatables, new SortedClassifiableComparator(raplaLocale.getLocale()));
                 for ( Collection<Appointment> appointments: bindings.values())
@@ -228,9 +228,9 @@ public class RaplaBuilder
             
             selectedAllocatables.clear();
             if (allocatables != null ) {
-                List<Allocatable> list = new ArrayList<Allocatable>(allocatables);
-                Collections.sort( list, new NamedComparator<Allocatable>( getRaplaLocale().getLocale() ));
-                selectedAllocatables.addAll(new HashSet<Allocatable>(list));
+                List<Allocatable> list = new ArrayList<>(allocatables);
+                Collections.sort( list, new NamedComparator<>(getRaplaLocale().getLocale()));
+                selectedAllocatables.addAll(new HashSet<>(list));
             }
             createColorMap();
             return builder;
@@ -312,16 +312,14 @@ public class RaplaBuilder
     private void createColorMap()
     {
         colors.clear();
-        List<Allocatable> arrayList = new ArrayList<Allocatable>(selectedAllocatables);
-        Comparator<Allocatable> comp =new Comparator<Allocatable>() {
-                public int compare(Allocatable o1, Allocatable o2) {
-                    if (o1.hashCode()>o2.hashCode())
-                        return -1;
-                    if (o1.hashCode()<o2.hashCode())
-                        return 1;
-                    return 0;
-                }
-            };
+        List<Allocatable> arrayList = new ArrayList<>(selectedAllocatables);
+        Comparator<Allocatable> comp = (o1, o2) -> {
+            if (o1.hashCode()>o2.hashCode())
+                return -1;
+            if (o1.hashCode()<o2.hashCode())
+                return 1;
+            return 0;
+        };
         Collections.sort(arrayList,comp);
         Iterator<Allocatable> it = arrayList.iterator();
         int i=0;
@@ -399,7 +397,7 @@ public class RaplaBuilder
 
     @JsIgnore
     static public List<AppointmentBlock> splitBlocks(Collection<AppointmentBlock> preparedBlocks, Date startDate, Date endDate, int offsetMinutes) {
-        List<AppointmentBlock> result = new ArrayList<AppointmentBlock>();
+        List<AppointmentBlock> result = new ArrayList<>();
         for (AppointmentBlock block:preparedBlocks) {
             long blockStart = block.getStart();
             long blockEnd = block.getEnd();
@@ -452,7 +450,7 @@ public class RaplaBuilder
         //= AppointmentImpl.getAppointments(	nonFilteredEventsVisible ? allReservations : selectedReservations, selectedAllocatables);
         //logger.info( "Get appointments took " + (System.currentTimeMillis() - time) + " ms.");
         // Add appointment to the blocks
-        final List<AppointmentBlock> blocks = new ArrayList<AppointmentBlock>();
+        final List<AppointmentBlock> blocks = new ArrayList<>();
         for (Appointment app:appointments)
         {
             if ( excludeExceptions)
@@ -701,8 +699,8 @@ public class RaplaBuilder
 
     /** This context contains the shared information for one particular RaplaBlock.*/
     public static class RaplaBlockContext {
-        Set<Allocatable> selectedMatchingAllocatables = new LinkedHashSet<Allocatable>(3);
-        ArrayList<Allocatable> matchingAllocatables = new ArrayList<Allocatable>(3);
+        Set<Allocatable> selectedMatchingAllocatables = new LinkedHashSet<>(3);
+        ArrayList<Allocatable> matchingAllocatables = new ArrayList<>(3);
         AppointmentBlock appointmentBlock;
         boolean movable;
         BuildContext buildContext;

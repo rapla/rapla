@@ -156,7 +156,7 @@ public class ReservationPresenter implements Presenter
 
     @Override public Collection<DynamicType> getChangeableReservationDynamicTypes()
     {
-        final Collection<DynamicType> creatableTypes = new ArrayList<DynamicType>();
+        final Collection<DynamicType> creatableTypes = new ArrayList<>();
         try
         {
             final DynamicType[] types = facade.getDynamicTypes(DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RESERVATION);

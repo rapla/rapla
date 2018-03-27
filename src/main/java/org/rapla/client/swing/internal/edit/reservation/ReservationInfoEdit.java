@@ -93,8 +93,8 @@ public class ReservationInfoEdit extends RaplaGUIComponent
     private Classifiable classifiable;
     private CommandHistory commandHistory;
     
-    ArrayList<ChangeListener> listenerList = new ArrayList<ChangeListener>();
-    ArrayList<DetailListener> detailListenerList = new ArrayList<DetailListener>();
+    ArrayList<ChangeListener> listenerList = new ArrayList<>();
+    ArrayList<DetailListener> detailListenerList = new ArrayList<>();
     RaplaListComboBox typeSelector;
     RaplaButton tabSelector = new RaplaButton();
 //    RaplaButton permissionButton = new RaplaButton();
@@ -148,7 +148,7 @@ public class ReservationInfoEdit extends RaplaGUIComponent
 
         DynamicType[] types = getQuery().getDynamicTypes( DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RESERVATION);
         DynamicType dynamicType = classification.getType();
-        List<DynamicType> creatableTypes = new ArrayList<DynamicType>();
+        List<DynamicType> creatableTypes = new ArrayList<>();
         User user = getUser();
         PermissionController permissionController = getFacade().getPermissionController();
         for ( DynamicType type: types)
@@ -593,7 +593,7 @@ public class ReservationInfoEdit extends RaplaGUIComponent
                 }
                 catch ( RaplaException ex)
                 {
-                    return new ResolvedPromise<Void>(ex);
+                    return new ResolvedPromise<>(ex);
                 }
 			}
 
@@ -692,7 +692,7 @@ public class ReservationInfoEdit extends RaplaGUIComponent
             }
             catch (RaplaException ex)
             {
-                return new ResolvedPromise<Void>(ex);
+                return new ResolvedPromise<>(ex);
             }
 		}
 	
@@ -716,7 +716,7 @@ public class ReservationInfoEdit extends RaplaGUIComponent
         }
         
         private Collection<Permission> fillWithClones(Collection<Permission> oldPermissions2) {
-            ArrayList<Permission> test = new ArrayList<Permission>();
+            ArrayList<Permission> test = new ArrayList<>();
             for ( Permission p:oldPermissions2)
             {
                 test.add( ((PermissionImpl)p).clone() );

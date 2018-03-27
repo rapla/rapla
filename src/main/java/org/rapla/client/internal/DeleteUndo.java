@@ -33,7 +33,7 @@ public class DeleteUndo<T extends Entity<T>>  implements CommandUndo<RaplaExcept
 	    this.facade = facade;
 	    this.i18n = i18n;
 		this.user = user;
-		this.entities = new LinkedHashSet<T>();
+		this.entities = new LinkedHashSet<>();
 		for ( T entity: entities)
 		{
 			this.entities.add(entity.clone());

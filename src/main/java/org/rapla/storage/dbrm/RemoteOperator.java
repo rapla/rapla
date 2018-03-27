@@ -99,7 +99,7 @@ import java.util.stream.Collectors;
 @Singleton
 public class RemoteOperator
         extends AbstractCachableOperator implements RestartServer, Disposable {
-    final List<StorageUpdateListener> storageUpdateListeners = new Vector<StorageUpdateListener>();
+    final List<StorageUpdateListener> storageUpdateListeners = new Vector<>();
 
     private boolean bSessionActive = false;
     String userId;
@@ -798,7 +798,7 @@ public class RemoteOperator
     //    }
 
     protected String[] getIdList(Collection<? extends Entity> entities) {
-        List<String> idList = new ArrayList<String>();
+        List<String> idList = new ArrayList<>();
         if (entities != null) {
             for (Entity entity : entities) {
                 if (entity != null)
@@ -881,14 +881,14 @@ public class RemoteOperator
         } finally {
             lockManager.unlock(readLock);
         }
-        HashSet<Entity> updated = new HashSet<Entity>(newEntities);
-        Set<Entity> toRemove = new HashSet<Entity>(oldEntities);
-        Set<Entity> toUpdate = new HashSet<Entity>(oldEntities);
+        HashSet<Entity> updated = new HashSet<>(newEntities);
+        Set<Entity> toRemove = new HashSet<>(oldEntities);
+        Set<Entity> toUpdate = new HashSet<>(oldEntities);
         toRemove.removeAll(newEntities);
         updated.removeAll(toRemove);
         toUpdate.retainAll(newEntities);
 
-        HashMap<ReferenceInfo, Entity> oldEntityMap = new HashMap<ReferenceInfo, Entity>();
+        HashMap<ReferenceInfo, Entity> oldEntityMap = new HashMap<>();
         for (Entity oldEntity : toUpdate) {
             @SuppressWarnings("unchecked") Class<? extends Entity> typeClass = oldEntity.getTypeClass();
             Entity newEntity = cache.tryResolve(oldEntity.getId(), typeClass);
@@ -896,7 +896,7 @@ public class RemoteOperator
                 oldEntityMap.put(newEntity.getReference(), oldEntity);
             }
         }
-        Collection<ReferenceInfo> removeInfo = new ArrayList<ReferenceInfo>();
+        Collection<ReferenceInfo> removeInfo = new ArrayList<>();
         for (Entity entity : toRemove) {
             removeInfo.add(new ReferenceInfo(entity.getId(), entity.getTypeClass()));
         }
@@ -946,8 +946,8 @@ public class RemoteOperator
         final String[] allocatableIds = getIdList(allocatables);
         //AppointmentImpl[] appointmentArray = appointments.toArray( new AppointmentImpl[appointments.size()]);
         final String[] reservationIds = getIdList(ignoreList);
-        final List<AppointmentImpl> appointmentList = new ArrayList<AppointmentImpl>();
-        final Map<String, Appointment> appointmentMap = new HashMap<String, Appointment>();
+        final List<AppointmentImpl> appointmentList = new ArrayList<>();
+        final Map<String, Appointment> appointmentMap = new HashMap<>();
         for (Appointment app : appointments) {
             appointmentList.add((AppointmentImpl) app);
             appointmentMap.put(app.getId(), app);
@@ -956,11 +956,11 @@ public class RemoteOperator
 
         Promise<Map<Allocatable, Collection<Appointment>>> resultPromise = bindingMapPromise.thenApply((bindingMap) -> {
             Map<String, List<String>> resultMap = bindingMap.get();
-            HashMap<Allocatable, Collection<Appointment>> result = new HashMap<Allocatable, Collection<Appointment>>();
+            HashMap<Allocatable, Collection<Appointment>> result = new HashMap<>();
             for (Allocatable alloc : allocatables) {
                 List<String> list = resultMap.get(alloc.getId());
                 if (list != null) {
-                    Collection<Appointment> appointmentBinding = new ArrayList<Appointment>();
+                    Collection<Appointment> appointmentBinding = new ArrayList<>();
                     for (String id : list) {
                         Appointment e = appointmentMap.get(id);
                         if (e != null) {
@@ -990,19 +990,19 @@ public class RemoteOperator
                                                                                Collection<Reservation> ignoreList, List<ReservationImpl> serverResult) throws RaplaException {
         testResolve(serverResult);
         setResolver(serverResult);
-        SortedSet<Appointment> allAppointments = new TreeSet<Appointment>(new AppointmentStartComparator());
+        SortedSet<Appointment> allAppointments = new TreeSet<>(new AppointmentStartComparator());
         for (ReservationImpl reservation : serverResult) {
             allAppointments.addAll(reservation.getAppointmentList());
         }
 
-        Map<Allocatable, Map<Appointment, Collection<Appointment>>> result = new HashMap<Allocatable, Map<Appointment, Collection<Appointment>>>();
+        Map<Allocatable, Map<Appointment, Collection<Appointment>>> result = new HashMap<>();
         for (Allocatable alloc : allocatables) {
             final Set<ReferenceInfo<Allocatable>> dependent = cache.getDependent(Collections.singleton(alloc));
             final Set<Allocatable> dependentAllocatables = new LinkedHashSet<>();
             for (ReferenceInfo<Allocatable> referenceInfo : dependent) {
                 dependentAllocatables.add(cache.resolve(referenceInfo));
             }
-            Map<Appointment, Collection<Appointment>> appointmentBinding = new HashMap<Appointment, Collection<Appointment>>();
+            Map<Appointment, Collection<Appointment>> appointmentBinding = new HashMap<>();
             for (Appointment appointment : appointments) {
                 final boolean onlyFirstConflictingAppointment = false;
                 Set<Appointment> allConflictingAppointments = new LinkedHashSet<>();
@@ -1033,7 +1033,7 @@ public class RemoteOperator
     }
 
     static private SortedSet<Appointment> getAppointments(Allocatable alloc, SortedSet<Appointment> allAppointments) {
-        SortedSet<Appointment> result = new TreeSet<Appointment>(new AppointmentStartComparator());
+        SortedSet<Appointment> result = new TreeSet<>(new AppointmentStartComparator());
         for (Appointment appointment : allAppointments) {
             Reservation reservation = appointment.getReservation();
             if (reservation.hasAllocatedOn(alloc, appointment)) {
@@ -1050,7 +1050,7 @@ public class RemoteOperator
         {
             testResolve(list);
             setResolver(list);
-            List<Conflict> result = new ArrayList<Conflict>();
+            List<Conflict> result = new ArrayList<>();
             Iterator it = list.iterator();
             while (it.hasNext()) {
                 Object object = it.next();

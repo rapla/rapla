@@ -171,7 +171,7 @@ public class ResourceSelectionPresenter implements Presenter
     {
         try
         {
-            HashSet<Object> selectedElements = new HashSet<Object>(elements);
+            HashSet<Object> selectedElements = new HashSet<>(elements);
             getModel().setSelectedObjects(selectedElements);
             updateMenu();
             applyFilter();

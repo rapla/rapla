@@ -30,7 +30,7 @@ public class RaplaFrame extends JFrame
 {
     private static final long serialVersionUID = 1L;
     
-    ArrayList<VetoableChangeListener> listenerList = new ArrayList<VetoableChangeListener>();
+    ArrayList<VetoableChangeListener> listenerList = new ArrayList<>();
     /**
        This frame registers itself on the FrameControllerList on <code>contextualzize</code>
        and unregisters upon <code>dispose()</code>.

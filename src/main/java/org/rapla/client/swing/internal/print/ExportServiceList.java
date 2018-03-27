@@ -41,7 +41,7 @@ import java.util.HashMap;
 @Singleton
 public class ExportServiceList   {
 
-    HashMap<Object,ExportService> exporters = new HashMap<Object,ExportService>();
+    HashMap<Object,ExportService> exporters = new HashMap<>();
     private final DialogUiFactoryInterface dialogUiFactory;
     private final RaplaResources i18n;
 

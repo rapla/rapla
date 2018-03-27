@@ -71,14 +71,7 @@ import java.awt.event.ActionListener;
         max.setIcon(UIManager.getDefaults().getIcon("InternalFrame.maximizeIcon"));
         tree.setIcon(RaplaImages.getIcon(i18n.getIcon("icon.tree")));
         JButton min = new RaplaButton(RaplaButton.SMALL);
-        ActionListener minmaxAction = new ActionListener()
-        {
-            public void actionPerformed(ActionEvent e)
-            {
-                presenter.minmaxPressed();
-
-            }
-        };
+        ActionListener minmaxAction = e -> presenter.minmaxPressed();
         min.addActionListener(minmaxAction);
         max.addActionListener(minmaxAction);
         tree.addActionListener(minmaxAction);
@@ -89,15 +82,7 @@ import java.awt.event.ActionListener;
         //exitTemplateEdit.setIcon(raplaImages.getIconFromKey("icon.close"));
         exitTemplateEdit.setText(i18n.getString("close-template"));
         templatePanel.add(exitTemplateEdit);
-        exitTemplateEdit.addActionListener(new ActionListener()
-        {
-
-            public void actionPerformed(ActionEvent e)
-            {
-                presenter.closeTemplate();
-
-            }
-        });
+        exitTemplateEdit.addActionListener(e -> presenter.closeTemplate());
 
         Icon icon = UIManager.getDefaults().getIcon("InternalFrame.minimizeIcon");
         min.setIcon(icon);

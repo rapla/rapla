@@ -24,6 +24,7 @@ import org.rapla.entities.User;
 import org.rapla.entities.configuration.CalendarModelConfiguration;
 import org.rapla.entities.configuration.Preferences;
 import org.rapla.entities.configuration.RaplaConfiguration;
+import org.rapla.entities.configuration.RaplaMap;
 import org.rapla.entities.configuration.internal.CalendarModelConfigurationImpl;
 import org.rapla.entities.configuration.internal.RaplaMapImpl;
 import org.rapla.entities.domain.Allocatable;
@@ -92,12 +93,12 @@ public class CalendarModelImpl implements CalendarSelectionModel
     Date startDate;
     Date endDate;
     Date selectedDate;
-    Collection<RaplaObject> selectedObjects = new LinkedHashSet<RaplaObject>();
+    Collection<RaplaObject> selectedObjects = new LinkedHashSet<>();
     String title;
     final StorageOperator operator;
     String selectedView;
     private User user;
-    Map<String, String> optionMap = new HashMap<String, String>();
+    Map<String, String> optionMap = new HashMap<>();
 
     boolean defaultEventTypes = true;
     boolean defaultResourceTypes = true;
@@ -105,8 +106,8 @@ public class CalendarModelImpl implements CalendarSelectionModel
     Collection<Allocatable> markedAllocatables = Collections.emptyList();
     Locale locale;
     boolean markedIntervalTimeEnabled = false;
-    Map<DynamicType, ClassificationFilter> reservationFilter = new LinkedHashMap<DynamicType, ClassificationFilter>();
-    Map<DynamicType, ClassificationFilter> allocatableFilter = new LinkedHashMap<DynamicType, ClassificationFilter>();
+    Map<DynamicType, ClassificationFilter> reservationFilter = new LinkedHashMap<>();
+    Map<DynamicType, ClassificationFilter> allocatableFilter = new LinkedHashMap<>();
     public static final RaplaConfiguration ALLOCATABLES_ROOT = new RaplaConfiguration("rootnode", "allocatables");
 
     @Inject public CalendarModelImpl(ClientFacade clientFacade, RaplaLocale locale) throws RaplaInitializationException
@@ -240,7 +241,7 @@ public class CalendarModelImpl implements CalendarSelectionModel
 
     public boolean setConfiguration(CalendarModelConfiguration config, final Map<String, String> alternativOptions) throws RaplaException
     {
-        ArrayList<RaplaObject> selectedObjects = new ArrayList<RaplaObject>();
+        ArrayList<RaplaObject> selectedObjects = new ArrayList<>();
         allocatableFilter.clear();
         reservationFilter.clear();
         if (config == null)
@@ -280,7 +281,7 @@ public class CalendarModelImpl implements CalendarSelectionModel
         title = config.getTitle();
         selectedView = config.getView();
         //selectedObjects
-        optionMap = new TreeMap<String, String>();
+        optionMap = new TreeMap<>();
         //  viewOptionMap = new TreeMap<String,String>();
         if (config.getOptionMap() != null)
         {
@@ -377,7 +378,7 @@ public class CalendarModelImpl implements CalendarSelectionModel
             throws RaplaException
     {
         String viewName = selectedView;
-        Set<Entity> selected = new HashSet<Entity>();
+        Set<Entity> selected = new HashSet<>();
 
         Collection<RaplaObject> selectedObjects = getSelectedObjects();
         for (RaplaObject object : selectedObjects)
@@ -408,7 +409,7 @@ public class CalendarModelImpl implements CalendarSelectionModel
         int resourceTypes = 0;
         defaultResourceTypes = true;
         defaultEventTypes = true;
-        List<ClassificationFilter> filter = new ArrayList<ClassificationFilter>();
+        List<ClassificationFilter> filter = new ArrayList<>();
         if (allocatableFilter != null)
         {
             for (ClassificationFilter entry : allocatableFilter)
@@ -450,8 +451,8 @@ public class CalendarModelImpl implements CalendarSelectionModel
         }
 
         final ClassificationFilter[] filterArray = filter.toArray(ClassificationFilter.CLASSIFICATIONFILTER_ARRAY);
-        List<String> selectedIds = new ArrayList<String>();
-        Collection<Class<? extends Entity>> idTypeList = new ArrayList<Class<? extends Entity>>();
+        List<String> selectedIds = new ArrayList<>();
+        Collection<Class<? extends Entity>> idTypeList = new ArrayList<>();
         for (Entity obj : selected)
         {
             Class<? extends Entity> raplaType = obj.getTypeClass();
@@ -705,7 +706,7 @@ public class CalendarModelImpl implements CalendarSelectionModel
 
     private Collection<Allocatable> getFilteredAllocatables() throws RaplaException
     {
-        Collection<Allocatable> list = new LinkedHashSet<Allocatable>();
+        Collection<Allocatable> list = new LinkedHashSet<>();
         // TODO should be replaced with getAllocatables(allocatableFilter.values();
         ClassificationFilter[] filters = allocatableFilter.values().toArray(ClassificationFilter.CLASSIFICATIONFILTER_ARRAY);
 
@@ -752,7 +753,7 @@ public class CalendarModelImpl implements CalendarSelectionModel
 
     public Collection<Allocatable> getAllAllocatables() throws RaplaException
     {
-        Collection<Allocatable> allocatables = new ArrayList<Allocatable>();
+        Collection<Allocatable> allocatables = new ArrayList<>();
         for (RaplaObject obj : getSelectedObjectsAndChildren())
         {
             if (obj instanceof Allocatable)
@@ -768,7 +769,7 @@ public class CalendarModelImpl implements CalendarSelectionModel
     {
         Assert.notNull(selectedObjects);
 
-        ArrayList<DynamicType> dynamicTypes = new ArrayList<DynamicType>();
+        ArrayList<DynamicType> dynamicTypes = new ArrayList<>();
         for (Iterator<RaplaObject> it = selectedObjects.iterator(); it.hasNext(); )
         {
             Object obj = it.next();
@@ -778,7 +779,7 @@ public class CalendarModelImpl implements CalendarSelectionModel
             }
         }
 
-        HashSet<RaplaObject> result = new LinkedHashSet<RaplaObject>();
+        HashSet<RaplaObject> result = new LinkedHashSet<>();
         result.addAll(selectedObjects);
 
         boolean allAllocatablesSelected = selectedObjects.contains(CalendarModelImpl.ALLOCATABLES_ROOT);
@@ -813,7 +814,7 @@ public class CalendarModelImpl implements CalendarSelectionModel
         this.selectedObjects = retainRaplaObjects(selectedObjects);
         if (markedAllocatables != null && !markedAllocatables.isEmpty())
         {
-            markedAllocatables = new LinkedHashSet<Allocatable>(markedAllocatables);
+            markedAllocatables = new LinkedHashSet<>(markedAllocatables);
             try
             {
                 markedAllocatables.retainAll(getSelectedAllocatablesAsList());
@@ -827,7 +828,7 @@ public class CalendarModelImpl implements CalendarSelectionModel
 
     private List<RaplaObject> retainRaplaObjects(Collection<? extends Object> list)
     {
-        List<RaplaObject> result = new ArrayList<RaplaObject>();
+        List<RaplaObject> result = new ArrayList<>();
         for (Iterator<? extends Object> it = list.iterator(); it.hasNext(); )
         {
             Object obj = it.next();
@@ -849,7 +850,7 @@ public class CalendarModelImpl implements CalendarSelectionModel
         Collection<ClassificationFilter> filter;
         if (isDefaultEventTypes() /*|| isTemplateModus()*/)
         {
-            filter = new ArrayList<ClassificationFilter>();
+            filter = new ArrayList<>();
             for (DynamicType type : getDynamicTypes(DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RESERVATION))
             {
                 filter.add(type.newClassificationFilter());
@@ -867,7 +868,7 @@ public class CalendarModelImpl implements CalendarSelectionModel
         Collection<ClassificationFilter> filter;
         if (isDefaultResourceTypes() /*|| isTemplateModus()*/)
         {
-            filter = new ArrayList<ClassificationFilter>();
+            filter = new ArrayList<>();
             for (DynamicType type : getDynamicTypes(DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RESOURCE))
             {
                 filter.add(type.newClassificationFilter());
@@ -961,7 +962,7 @@ public class CalendarModelImpl implements CalendarSelectionModel
 
     public static Collection<Appointment> getAllAppointments(Map<Allocatable, Collection<Appointment>> appointmentMap)
     {
-        Collection<Appointment> allAppointments = new LinkedHashSet<Appointment>();
+        Collection<Appointment> allAppointments = new LinkedHashSet<>();
         for (Collection<Appointment> appointments : appointmentMap.values())
         {
             allAppointments.addAll(appointments);
@@ -982,7 +983,7 @@ public class CalendarModelImpl implements CalendarSelectionModel
         {
             if (cacheValidString != null && cacheValidString.equals(cacheKey) && cachedReservations != null)
             {
-                return new ResolvedPromise<Map<Allocatable, Collection<Appointment>>>(cachedReservations);
+                return new ResolvedPromise<>(cachedReservations);
             }
         }
 
@@ -1047,7 +1048,7 @@ public class CalendarModelImpl implements CalendarSelectionModel
     public List<Reservation> restrictReservations(Collection<Reservation> reservationsToRestrict) throws RaplaException
     {
 
-        List<Reservation> reservations = new ArrayList<Reservation>(reservationsToRestrict);
+        List<Reservation> reservations = new ArrayList<>(reservationsToRestrict);
         // Don't restrict templates
         //      if ( isTemplateModus())
         //      {
@@ -1084,7 +1085,7 @@ public class CalendarModelImpl implements CalendarSelectionModel
         else if (currentUser != null && currentUser.isAdmin())
         {
             final Set<User> selected = getSelected(User.class);
-            final Set<ReferenceInfo<User>> selectedUserIs = new HashSet<ReferenceInfo<User>>();
+            final Set<ReferenceInfo<User>> selectedUserIs = new HashSet<>();
             for (User user : selected)
             {
                 selectedUserIs.add(user.getReference());
@@ -1126,7 +1127,7 @@ public class CalendarModelImpl implements CalendarSelectionModel
 
     @Override public List<Allocatable> getSelectedAllocatablesSorted() throws RaplaException
     {
-        List<Allocatable> result = new ArrayList<Allocatable>(getSelectedAllocatablesAsList());
+        List<Allocatable> result = new ArrayList<>(getSelectedAllocatablesAsList());
         long start = 0;
         final boolean debugEnabled = logger.isDebugEnabled();
         if (debugEnabled)
@@ -1149,7 +1150,7 @@ public class CalendarModelImpl implements CalendarSelectionModel
         if (debugEnabled)
             start = System.currentTimeMillis();
 
-        Collection<Allocatable> result = new HashSet<Allocatable>();
+        Collection<Allocatable> result = new HashSet<>();
         Collection<RaplaObject> selectedObjectsAndChildren = getSelectedObjectsAndChildren();
         boolean conflictsDetected = false;
         for (RaplaObject object : selectedObjectsAndChildren)
@@ -1190,7 +1191,7 @@ public class CalendarModelImpl implements CalendarSelectionModel
 
     public Set<DynamicType> getSelectedTypes(String classificationType) throws RaplaException
     {
-        Set<DynamicType> result = new HashSet<DynamicType>();
+        Set<DynamicType> result = new HashSet<>();
         Iterator<RaplaObject> it = getSelectedObjectsAndChildren().iterator();
         while (it.hasNext())
         {
@@ -1209,7 +1210,7 @@ public class CalendarModelImpl implements CalendarSelectionModel
 
     private <T extends RaplaObject<T>> Set<T> getSelected(Class<T> type)
     {
-        Set<T> result = new HashSet<T>();
+        Set<T> result = new HashSet<>();
         Iterator<RaplaObject> it = getSelectedObjects().iterator();
         while (it.hasNext())
         {
@@ -1278,12 +1279,12 @@ public class CalendarModelImpl implements CalendarSelectionModel
             if (filename == null) {
                 clone.putEntry(CalendarModelConfiguration.CONFIG_ENTRY, conf);
             } else {
-                Map<String, CalendarModelConfiguration> exportMap = clone.getEntry(EXPORT_ENTRY);
+                RaplaMap< CalendarModelConfiguration> exportMap = clone.getEntry(EXPORT_ENTRY);
                 Map<String, CalendarModelConfiguration> newMap;
                 if (exportMap == null)
-                    newMap = new TreeMap<String, CalendarModelConfiguration>();
+                    newMap = new TreeMap<>();
                 else
-                    newMap = new TreeMap<String, CalendarModelConfiguration>(exportMap);
+                    newMap = new TreeMap<>(exportMap.toMap());
                 newMap.put(filename, conf);
                 RaplaMapImpl map = new RaplaMapImpl(newMap);
                 map.setResolver(operator);
@@ -1298,7 +1299,7 @@ public class CalendarModelImpl implements CalendarSelectionModel
     // Old defaultname behaviour. Duplication of language resource names. But the system has to be replaced anyway in the future, because it doesnt allow for multiple language outputs on the server.
     private boolean isOldDefaultNameBehavoir(final String filename)
     {
-        List<String> translations = new ArrayList<String>();
+        List<String> translations = new ArrayList<>();
         translations.add("default");
         translations.add("Default");
         translations.add("Standard");
@@ -1336,7 +1337,7 @@ public class CalendarModelImpl implements CalendarSelectionModel
         else
         {
             final boolean isDefault = filename == null;
-            Map<String, String> alternativeOptions = new HashMap<String, String>();
+            Map<String, String> alternativeOptions = new HashMap<>();
             if (modelConfig != null && modelConfig.getOptionMap() != null)
             {
                 // All old default calendars have no selected date
@@ -1366,7 +1367,7 @@ public class CalendarModelImpl implements CalendarSelectionModel
             }
             else if (filename != null && !isDefault)
             {
-                Map<String, CalendarModelConfiguration> exportMap = preferences.getEntry(EXPORT_ENTRY);
+                Map<String, CalendarModelConfiguration> exportMap = preferences.getEntry(EXPORT_ENTRY).toMap();
                 final CalendarModelConfiguration config;
                 if (exportMap != null)
                 {
@@ -1415,8 +1416,8 @@ public class CalendarModelImpl implements CalendarSelectionModel
 
     private Promise<Collection<Appointment>> getAppointments(Collection<Conflict> conflicts)
     {
-        Collection<ReferenceInfo<Reservation>> ids = new HashSet<ReferenceInfo<Reservation>>();
-        Collection<ReferenceInfo<Appointment>> appointmentIds = new HashSet<ReferenceInfo<Appointment>>();
+        Collection<ReferenceInfo<Reservation>> ids = new HashSet<>();
+        Collection<ReferenceInfo<Appointment>> appointmentIds = new HashSet<>();
         for (Conflict conflict : conflicts)
         {
             ids.add(conflict.getReservation1());
@@ -1434,10 +1435,10 @@ public class CalendarModelImpl implements CalendarSelectionModel
 
     @Override public Promise<List<AppointmentBlock>> queryBlocks(final TimeInterval timeInterval)
     {
-        List<AppointmentBlock> appointments = new ArrayList<AppointmentBlock>();
+        List<AppointmentBlock> appointments = new ArrayList<>();
         try
         {
-            final Set<Allocatable> selectedAllocatables = isNoAllocatableSelected() ? null : new HashSet<Allocatable>(getSelectedAllocatablesAsList());
+            final Set<Allocatable> selectedAllocatables = isNoAllocatableSelected() ? null : new HashSet<>(getSelectedAllocatablesAsList());
             Collection<Conflict> selectedConflicts = getSelectedConflicts();
             Promise<Collection<Appointment>> reservations = getAppointments(selectedConflicts);
             final Promise<Collection<Appointment>> appointmentPromise = queryAppointments(timeInterval);
@@ -1457,7 +1458,7 @@ public class CalendarModelImpl implements CalendarSelectionModel
                         }
                         else
                         {
-                            List<AppointmentBlock> blocks = new ArrayList<AppointmentBlock>();
+                            List<AppointmentBlock> blocks = new ArrayList<>();
                             app.createBlocks(getStartDate(), getEndDate(), blocks);
                             Iterator<AppointmentBlock> it = blocks.iterator();
                             while (it.hasNext())

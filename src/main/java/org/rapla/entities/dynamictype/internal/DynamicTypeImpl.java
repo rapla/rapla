@@ -67,12 +67,12 @@ final public class DynamicTypeImpl extends SimpleEntity implements DynamicType, 
     private Date createDate;
 
     // added an attribute array for performance reasons
-	List<AttributeImpl> attributes = new ArrayList<AttributeImpl>();
-    private List<PermissionImpl> permissions = new ArrayList<PermissionImpl>(1);
+	List<AttributeImpl> attributes = new ArrayList<>();
+    private List<PermissionImpl> permissions = new ArrayList<>(1);
     MultiLanguageName name  = new MultiLanguageName();
     String key = "";
     //Map<String,String> unparsedAnnotations = new HashMap<String,String>();
-    Map<String,ParsedText> annotations = new HashMap<String,ParsedText>();
+    Map<String,ParsedText> annotations = new HashMap<>();
     transient DynamicTypeParseContext parseContext = new DynamicTypeParseContext(this);
     transient Map<String,AttributeImpl> attributeIndex;
     public DynamicTypeImpl() {
@@ -316,21 +316,19 @@ final public class DynamicTypeImpl extends SimpleEntity implements DynamicType, 
     @Override
     public Iterable<ReferenceInfo> getReferenceInfo()
     {
-        return new IterableChain<ReferenceInfo>(
-                super.getReferenceInfo() 
-                ,new NestedIterable<ReferenceInfo,AttributeImpl>( attributes ) 
-                {
-                    public Iterable<ReferenceInfo> getNestedIterable(AttributeImpl obj) {
-                        return obj.getReferenceInfo();
-                    }  
-                }
-                ,new NestedIterable<ReferenceInfo,PermissionImpl>( permissions ) 
-                {
-                    public Iterable<ReferenceInfo> getNestedIterable(PermissionImpl obj) {
-                        return obj.getReferenceInfo();
-                    }
-                }
-           );
+        return new IterableChain<>(
+                super.getReferenceInfo()
+                , new NestedIterable<ReferenceInfo, AttributeImpl>(attributes) {
+            public Iterable<ReferenceInfo> getNestedIterable(AttributeImpl obj) {
+                return obj.getReferenceInfo();
+            }
+        }
+                , new NestedIterable<ReferenceInfo, PermissionImpl>(permissions) {
+            public Iterable<ReferenceInfo> getNestedIterable(PermissionImpl obj) {
+                return obj.getReferenceInfo();
+            }
+        }
+        );
     }
 
     @Override
@@ -400,7 +398,7 @@ final public class DynamicTypeImpl extends SimpleEntity implements DynamicType, 
         Attribute[] attribute = getAttributes();
         Attribute attribute1 = attribute[index1];
         Attribute attribute2 = attribute[index2];
-		List<AttributeImpl> newMap = new ArrayList<AttributeImpl>();
+		List<AttributeImpl> newMap = new ArrayList<>();
         for (int i=0;i<attribute.length;i++) {
         	Attribute att;
         	if (i == index1)
@@ -497,7 +495,7 @@ final public class DynamicTypeImpl extends SimpleEntity implements DynamicType, 
     public AttributeImpl getAttribute(String key) {
     	if ( attributeIndex == null)
     	{
-    		attributeIndex = new HashMap<String, AttributeImpl>();
+    		attributeIndex = new HashMap<>();
         	for ( AttributeImpl att:attributes)
         	{
         		attributeIndex.put( att.getKey(), att);
@@ -550,7 +548,7 @@ final public class DynamicTypeImpl extends SimpleEntity implements DynamicType, 
         {
             att.setParent(clone);
         }
-        clone.annotations = new LinkedHashMap<String, ParsedText>();
+        clone.annotations = new LinkedHashMap<>();
         DynamicTypeParseContext parseContext = new DynamicTypeParseContext(clone);
         for (Map.Entry<String,ParsedText> entry: annotations.entrySet())
         {

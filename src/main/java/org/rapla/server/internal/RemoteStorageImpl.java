@@ -117,11 +117,11 @@ import java.util.stream.Collectors;
         try
         {
             final UpdateEvent resources = getResourcesSync();
-            return new ResolvedPromise<UpdateEvent>(resources);
+            return new ResolvedPromise<>(resources);
         }
         catch (Exception ex)
         {
-            return new ResolvedPromise<UpdateEvent>(ex);
+            return new ResolvedPromise<>(ex);
         }
     }
 
@@ -131,7 +131,7 @@ import java.util.stream.Collectors;
         User sessionUser = checkSessionUser();
         Date repositoryVersion = operator.getCurrentTimestamp();
 
-        ArrayList<Entity> completeList = new ArrayList<Entity>();
+        ArrayList<Entity> completeList = new ArrayList<>();
         for (UpdateEvent.SerializableReferenceInfo id : ids)
         {
             final ReferenceInfo reference = id.getReference();
@@ -208,7 +208,7 @@ import java.util.stream.Collectors;
         getLogger().debug("A RemoteAuthentificationService wants to reservations from ." + start + " to " + end);
         User user = null;
         // Reservations and appointments
-        List<Allocatable> allocatables = new ArrayList<Allocatable>();
+        List<Allocatable> allocatables = new ArrayList<>();
         if (allocatableIds != null)
         {
             for (String id : allocatableIds)
@@ -224,7 +224,7 @@ import java.util.stream.Collectors;
         Map<Allocatable, Collection<Appointment>> reservations = operator.waitForWithRaplaException(mapFutureResult, 50000);
         AppointmentMap list = new AppointmentMap(reservations);
         getLogger().debug("Get reservations " + start + " " + end + ": " + reservations.size() + "," + list.toString());
-        return new ResolvedPromise<AppointmentMap>(list);
+        return new ResolvedPromise<>(list);
     }
 
     private ReservationImpl checkAndMakeReservationsAnonymous(User sessionUser, Entity entity)
@@ -362,7 +362,7 @@ import java.util.stream.Collectors;
     public String getUsername(String userId) throws RaplaException
     {
         checkSessionUser();
-        String username = operator.getUsername(new ReferenceInfo<User>(userId, User.class));
+        String username = operator.getUsername(new ReferenceInfo<>(userId, User.class));
         return username;
     }
 
@@ -570,7 +570,7 @@ import java.util.stream.Collectors;
         }
         catch ( RaplaException ex)
         {
-            return  new ResolvedPromise<Date>(ex);
+            return new ResolvedPromise<>(ex);
         }
         Collection<Reservation> ignoreList = resolveReservations(reservationIds);
         final Promise<Date> nextAllocatableDate = operator
@@ -592,13 +592,13 @@ import java.util.stream.Collectors;
            allocatables = resolveAllocatables(allocatableIds);
         } catch ( RaplaException ex)
         {
-            return new ResolvedPromise<BindingMap>(ex);
+            return new ResolvedPromise<>(ex);
         }
         Collection<Reservation> ignoreList = resolveReservations(reservationIds);
         List<Appointment> asList = cast(appointments);
         Promise<BindingMap> promise = operator.getFirstAllocatableBindings(allocatables, asList, ignoreList).thenApply((bindings) ->
         {
-            Map<String, List<String>> result = new LinkedHashMap<String, List<String>>();
+            Map<String, List<String>> result = new LinkedHashMap<>();
             for (Allocatable alloc : bindings.keySet())
             {
                 Collection<Appointment> apps = bindings.get(alloc);
@@ -606,7 +606,7 @@ import java.util.stream.Collectors;
                 {
                     apps = Collections.emptyList();
                 }
-                ArrayList<String> indexArray = new ArrayList<String>(apps.size());
+                ArrayList<String> indexArray = new ArrayList<>(apps.size());
                 for (Appointment app : apps)
                 {
                     for (Appointment app2 : appointments)
@@ -626,7 +626,7 @@ import java.util.stream.Collectors;
 
     private List<Appointment> cast(List<AppointmentImpl> appointments)
     {
-        List<Appointment> result = new ArrayList<Appointment>(appointments.size());
+        List<Appointment> result = new ArrayList<>(appointments.size());
         for (Appointment app : appointments)
         {
             result.add(app);
@@ -655,7 +655,7 @@ import java.util.stream.Collectors;
 
         Promise<List<ReservationImpl>> promise = operator.getAllAllocatableBindings(allocatables, asList, ignoreList).thenApply((bindings) ->
         {
-            Set<ReservationImpl> result = new HashSet<ReservationImpl>();
+            Set<ReservationImpl> result = new HashSet<>();
             for (Allocatable alloc : bindings.keySet())
             {
                 Map<Appointment, Collection<Appointment>> appointmentBindings = bindings.get(alloc);
@@ -675,14 +675,14 @@ import java.util.stream.Collectors;
                     }
                 }
             }
-            return new ArrayList<ReservationImpl>(result);
+            return new ArrayList<>(result);
         });
         return promise;
     }
 
     private List<Allocatable> resolveAllocatables(String[] allocatableIds) throws RaplaException, RaplaSecurityException
     {
-        List<Allocatable> allocatables = new ArrayList<Allocatable>();
+        List<Allocatable> allocatables = new ArrayList<>();
         User sessionUser = checkSessionUser();
         for (String id : allocatableIds)
         {
@@ -695,7 +695,7 @@ import java.util.stream.Collectors;
 
     private Collection<Reservation> resolveReservations(String[] ignoreList)
     {
-        Set<Reservation> ignoreConflictsWith = new HashSet<Reservation>();
+        Set<Reservation> ignoreConflictsWith = new HashSet<>();
         for (String reservationId : ignoreList)
         {
             try
@@ -721,7 +721,7 @@ import java.util.stream.Collectors;
             sessionUser = checkSessionUser();
             security.checkWritePermissions(sessionUser, allocatable);
             for (final String allocId : allocatableIds) {
-                final ReferenceInfo<Allocatable> refInfo = new ReferenceInfo<Allocatable>(allocId, Allocatable.class);
+                final ReferenceInfo<Allocatable> refInfo = new ReferenceInfo<>(allocId, Allocatable.class);
                 allocReferences.add(refInfo);
                 // TODO check write permissions
             }

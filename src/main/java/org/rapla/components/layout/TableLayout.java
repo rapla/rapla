@@ -213,7 +213,7 @@ public TableLayout (double size[][])
     }
 
     // Create an empty list of components
-    list = new LinkedList<Entry>();
+    list = new LinkedList<>();
 
     // Indicate that the cell sizes are not known
     dirty = true;

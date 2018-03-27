@@ -56,7 +56,7 @@ public class RaplaMenubar extends JMenuBar {
     private void insert(Component component, int index) {
         int size = getComponentCount();
 
-        ArrayList<Component> list = new ArrayList<Component>();
+        ArrayList<Component> list = new ArrayList<>();
 
         // save the components begining with index 
 

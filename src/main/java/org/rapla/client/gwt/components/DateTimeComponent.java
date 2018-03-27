@@ -19,7 +19,7 @@ import java.util.Map;
 
 public class DateTimeComponent extends FlowPanel
 {
-    private static final Map<Character, Character> DATE_TIME_FORMAT_MAP = new HashMap<Character, Character>();
+    private static final Map<Character, Character> DATE_TIME_FORMAT_MAP = new HashMap<>();
 
     static
     {
@@ -80,28 +80,18 @@ public class DateTimeComponent extends FlowPanel
         timePicker.setMaxView(DateTimePickerView.DAY);
         timePicker.setMinuteStep(10);
         timePicker.setAutoClose(true);
-        timePicker.addChangeDateHandler(new ChangeDateHandler()
-        {
-            @Override
-            public void onChangeDate(ChangeDateEvent evt)
-            {
-                final Date date = datePicker.getValue();
-                final Date time = timePicker.getValue();
-                final Date result = GWTDateUtils.gwtDateTimeToRapla(date, time);
-                changeHandler.valueChanged(result);
-            }
+        timePicker.addChangeDateHandler(evt -> {
+            final Date date = datePicker.getValue();
+            final Date time = timePicker.getValue();
+            final Date result = GWTDateUtils.gwtDateTimeToRapla(date, time);
+            changeHandler.valueChanged(result);
         });
         wrapper.add(timePicker);
-        datePicker.addChangeDateHandler(new ChangeDateHandler()
-        {
-            @Override
-            public void onChangeDate(ChangeDateEvent evt)
-            {
-                final Date date = datePicker.getValue();
-                final Date time = timePicker.getValue();
-                final Date result = GWTDateUtils.gwtDateTimeToRapla(date, time);
-                changeHandler.valueChanged(result);
-            }
+        datePicker.addChangeDateHandler(evt -> {
+            final Date date = datePicker.getValue();
+            final Date time = timePicker.getValue();
+            final Date result = GWTDateUtils.gwtDateTimeToRapla(date, time);
+            changeHandler.valueChanged(result);
         });
         if (initDate != null)
         {

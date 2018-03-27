@@ -19,8 +19,8 @@ public class DefaultRaplaLock implements RaplaLock
     public static final int DEFAULT_READLOCK_TIMEOUT_SECONDS = 20;
     public static final int DEFAULT_WRITELOCK_TIMEOUT_SECONDS = 60;
     final protected ReadWriteLock readWriteLock = new ReentrantReadWriteLock();
-    Stack<WriteLock> writeLocks = new Stack<WriteLock>();
-    Stack<ReadLock> readLocks = new Stack<ReadLock>();
+    Stack<WriteLock> writeLocks = new Stack<>();
+    Stack<ReadLock> readLocks = new Stack<>();
     Logger logger;
 
     @Inject
@@ -73,7 +73,7 @@ public class DefaultRaplaLock implements RaplaLock
                     int logThreshholdTime = 0;
                     logLongLocks(this.writeLocks, logThreshholdTime);
                     logLongLocks(this.readLocks, logThreshholdTime);
-                };
+                }
                 if ( isRead)
                 {
                     throw new RaplaSynchronizationException("Someone is currently writing. Please try again! Can't acquire read lock.");

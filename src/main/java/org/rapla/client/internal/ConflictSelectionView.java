@@ -9,7 +9,7 @@ import java.util.Collection;
 public interface ConflictSelectionView<T> extends RaplaWidget<T>
 {
 
-    public interface Presenter
+    interface Presenter
     {
 
         void showTreePopup(PopupContext context);

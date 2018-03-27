@@ -252,22 +252,8 @@ public class RaplaGUIComponent extends RaplaComponent
 
     public static void addCopyPaste( final JComponent component, final RaplaResources i18n, final RaplaLocale raplaLocale, final IOInterface service, final Logger logger )
     {
-        final ActionListener pasteListener = new ActionListener()
-        {
-            @Override
-            public void actionPerformed( final ActionEvent e )
-            {
-                paste(component, e, service, logger);
-            }
-        };
-        final ActionListener copyListener = new ActionListener()
-        {
-            @Override
-            public void actionPerformed( final ActionEvent e )
-            {
-                copy(component, e, service, raplaLocale);
-            }
-        };
+        final ActionListener pasteListener = e -> paste(component, e, service, logger);
+        final ActionListener copyListener = e -> copy(component, e, service, raplaLocale);
         final JPopupMenu menu = new JPopupMenu();
         {
             final JMenuItem copyItem = new JMenuItem();

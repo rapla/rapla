@@ -98,7 +98,7 @@ final public class TimeField extends AbstractBlockField {
         // Use am/pm
         if (amPmPos.getEndIndex()>0) {
             m_useAM_PM = true;
-            americanAM_PM_character = m_useAM_PM && (testFormat.indexOf( "am" )>=0 || testFormat.indexOf( "pm" )>=0);
+            americanAM_PM_character = m_useAM_PM && (testFormat.contains("am") || testFormat.contains("pm"));
             //      System.out.println(formatStr + " hour:"+hp+" minute:"+mp+" ampm:"+ap);
             if (hp<0 || mp<0 || ap<0 || formatStr == null) {
                 throw new IllegalArgumentException("Can't parse the time-format for this locale: " + formatStr);

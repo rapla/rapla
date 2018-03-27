@@ -57,13 +57,13 @@ public interface PermissionContainer extends Ownable
 
         
         public static boolean differs(Collection<Permission> oldPermissions, Collection<Permission> newPermissions) {
-            HashSet<Permission> set = new HashSet<Permission>();
+            HashSet<Permission> set = new HashSet<>();
             addDifferences(set, oldPermissions, newPermissions);
             return set.size() > 0;
         }
 
         public static void replace(PermissionContainer permissionContainer, Collection<Permission> permissions) {
-            Collection<Permission> permissionList = new ArrayList<Permission>(permissionContainer.getPermissionList());
+            Collection<Permission> permissionList = new ArrayList<>(permissionContainer.getPermissionList());
             for (Permission p:permissionList)
             {
                 permissionContainer.removePermission(p);
@@ -178,15 +178,15 @@ public interface PermissionContainer extends Ownable
             }
             else
             {
-            	HashSet<Permission> newSet = new HashSet<Permission>(newPermissions);
-            	HashSet<Permission> oldSet = new HashSet<Permission>(oldPermissions);
+            	HashSet<Permission> newSet = new HashSet<>(newPermissions);
+            	HashSet<Permission> oldSet = new HashSet<>(oldPermissions);
             	{
-            		HashSet<Permission> changed = new HashSet<Permission>( newSet);
+            		HashSet<Permission> changed = new HashSet<>(newSet);
             		changed.removeAll( oldSet);
             		invalidatePermissions.addAll(changed);
             	}
             	{
-            		HashSet<Permission> changed = new HashSet<Permission>(oldSet);
+            		HashSet<Permission> changed = new HashSet<>(oldSet);
             		changed.removeAll( newSet);
             		invalidatePermissions.addAll(changed);
             	}
@@ -220,7 +220,7 @@ public interface PermissionContainer extends Ownable
             // changed permissions take precedence over changed permission_modify
             if ( permissionChanged )
             {
-                List<Category> newCategories = new ArrayList<Category>();
+                List<Category> newCategories = new ArrayList<>();
                 for ( Permission p:newPermissionList)
                 {
                     Category group = p.getGroup();
@@ -235,8 +235,8 @@ public interface PermissionContainer extends Ownable
             }
             else if ( permissionModifyChanged )
             {
-                Set<Category> existingAdminGroups = new HashSet<Category>();
-                for ( Permission p:new ArrayList<Permission>(newPermissionList))
+                Set<Category> existingAdminGroups = new HashSet<>();
+                for ( Permission p: new ArrayList<>(newPermissionList))
                 {
                     Category group = p.getGroup();
                     Permission.AccessLevel accessLevel = p.getAccessLevel();

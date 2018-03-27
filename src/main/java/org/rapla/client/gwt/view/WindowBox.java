@@ -234,24 +234,12 @@ public class WindowBox extends DialogBox implements HasOpenHandlers<WindowBox>
 
         this.close = new Anchor();
         this.close.setStyleName("gwt-extras-dialog-close");
-        this.close.addClickHandler(new ClickHandler()
-        {
-            public void onClick(ClickEvent event)
-            {
-                onCloseClick(event);
-            }
-        });
+        this.close.addClickHandler(event -> onCloseClick(event));
         setCloseIconVisible(showCloseIcon);
 
         this.minimize = new Anchor();
         this.minimize.setStyleName("gwt-extras-dialog-minimize");
-        this.minimize.addClickHandler(new ClickHandler()
-        {
-            public void onClick(ClickEvent event)
-            {
-                onMinimizeClick(event);
-            }
-        });
+        this.minimize.addClickHandler(event -> onMinimizeClick(event));
         setMinimizeIconVisible(showMinimizeIcon);
 
         Grid ctrlGrid = new Grid(1, 2);

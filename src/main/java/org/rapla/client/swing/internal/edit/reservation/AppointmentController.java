@@ -113,7 +113,7 @@ public class AppointmentController extends RaplaGUIComponent implements Disposab
 
     RepeatingType savedRepeatingType = null;
 
-    ArrayList<ChangeListener> listenerList = new ArrayList<ChangeListener>();
+    ArrayList<ChangeListener> listenerList = new ArrayList<>();
     JPanel repeatingType = new JPanel();
     JRadioButton noRepeating = new JRadioButton();
     JRadioButton weeklyRepeating = new JRadioButton();
@@ -199,13 +199,7 @@ public class AppointmentController extends RaplaGUIComponent implements Disposab
 
         singleEditor.initialize();
         repeatingEditor.initialize();
-        ActionListener listener = new ActionListener()
-        {
-            public void actionPerformed(ActionEvent evt)
-            {
-                switchRepeatings();
-            }
-        };
+        ActionListener listener = evt -> switchRepeatings();
         noRepeating.addActionListener(listener);
         weeklyRepeating.addActionListener(listener);
         monthlyRepeating.addActionListener(listener);
@@ -392,14 +386,10 @@ public class AppointmentController extends RaplaGUIComponent implements Disposab
 
             oneDayEventCheckBox.setText(getString("all-day"));
             content.add(oneDayEventCheckBox, "8,0");
-            oneDayEventCheckBox.addItemListener(new ItemListener()
-            {
-                public void itemStateChanged(ItemEvent itemevent)
-                {
-                    boolean selected = itemevent.getStateChange() == ItemEvent.SELECTED;
-                    setToWholeDays(selected);
-                    processChange(itemevent.getSource());
-                }
+            oneDayEventCheckBox.addItemListener(itemevent -> {
+                boolean selected = itemevent.getStateChange() == ItemEvent.SELECTED;
+                setToWholeDays(selected);
+                processChange(itemevent.getSource());
             });
 
             startDate.addDateChangeListener(this);

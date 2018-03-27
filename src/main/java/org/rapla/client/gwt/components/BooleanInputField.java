@@ -26,14 +26,7 @@ public class BooleanInputField extends FlowPanel
         final CheckBox cb = new CheckBox();
         cb.setStyleName(Styles.FORM_CONTROL);
         cb.setValue(value);
-        cb.addClickHandler(new ClickHandler()
-        {
-            @Override
-            public void onClick(ClickEvent event)
-            {
-                changeHandler.valueChanged(cb.getValue());
-            }
-        });
+        cb.addClickHandler(event -> changeHandler.valueChanged(cb.getValue()));
         inputGroup.add(cb);
         add(inputGroup);
     }

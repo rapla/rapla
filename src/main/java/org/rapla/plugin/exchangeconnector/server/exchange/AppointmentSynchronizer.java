@@ -150,11 +150,11 @@ public class AppointmentSynchronizer
     static public Collection<String> remove(Logger logger, final String url, String exchangeUsername, String exchangePassword) throws RaplaException
     {
         WebCredentials credentials = new WebCredentials(exchangeUsername, exchangePassword);
-        Collection<String> result = new LinkedHashSet<String>();
+        Collection<String> result = new LinkedHashSet<>();
         final Logger ewsLogger = logger.getChildLogger("webservice");
         final SearchFilter searchFilter = new SearchFilter.Exists(RAPLA_APPOINTMENT_MARKER);
-        List<Item> items = new ArrayList<Item>();
-        Collection<ItemId> itemIds = new ArrayList<ItemId>();
+        List<Item> items = new ArrayList<>();
+        Collection<ItemId> itemIds = new ArrayList<>();
 
         try
         {
@@ -556,7 +556,7 @@ public class AppointmentSynchronizer
         exchangeAppointment.getRequiredAttendees().clear();
         exchangeAppointment.getResources().clear();
 
-        final List<String> locationList = new ArrayList<String>();
+        final List<String> locationList = new ArrayList<>();
 
         final List<Allocatable> allocatables = raplaAppointment.getReservation().getAllocatablesFor(raplaAppointment).collect(Collectors.toList());
         for (Allocatable restrictedAllocatable : allocatables)
@@ -796,7 +796,7 @@ public class AppointmentSynchronizer
 
     private SortedSet<Date> calcExceptionDates()
     {
-        SortedSet<Date> exceptionDates = new TreeSet<Date>();
+        SortedSet<Date> exceptionDates = new TreeSet<>();
         if (raplaAppointment.isRepeatingEnabled())
         {
             Date[] exceptions = raplaAppointment.getRepeating().getExceptions();

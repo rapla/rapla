@@ -26,8 +26,8 @@ import org.rapla.framework.TypedComponentRole;
 import java.util.Map;
 
 public class PreferenceReader extends RaplaXMLReader {
-    public static final TypedComponentRole<Map<String,Class<? extends  RaplaObject>>> LOCALNAMEMAPENTRY = new TypedComponentRole<Map<String,Class<? extends  RaplaObject>>>("org.rapla.storage.xml.localnameMap");
-    public static final TypedComponentRole<Map<Class<? extends  RaplaObject>,RaplaXMLReader>> READERMAP = new TypedComponentRole<Map<Class<? extends  RaplaObject>,RaplaXMLReader>>("org.rapla.storage.xml.readerMap");
+    public static final TypedComponentRole<Map<String,Class<? extends  RaplaObject>>> LOCALNAMEMAPENTRY = new TypedComponentRole<>("org.rapla.storage.xml.localnameMap");
+    public static final TypedComponentRole<Map<Class<? extends  RaplaObject>,RaplaXMLReader>> READERMAP = new TypedComponentRole<>("org.rapla.storage.xml.readerMap");
     
     PreferencesImpl preferences;
     String configRole;

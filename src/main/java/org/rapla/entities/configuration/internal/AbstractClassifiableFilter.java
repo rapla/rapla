@@ -35,7 +35,7 @@ public abstract class AbstractClassifiableFilter  implements EntityReferencer, D
     protected transient EntityResolver resolver;
     
     AbstractClassifiableFilter() {
-    	classificationFilters = new ArrayList<ClassificationFilterImpl>();
+    	classificationFilters = new ArrayList<>();
     }
    
     public void setResolver( EntityResolver resolver) {
@@ -87,7 +87,7 @@ public abstract class AbstractClassifiableFilter  implements EntityReferencer, D
     public void commitRemoveId(String dynamicTypeId) throws CannotExistWithoutTypeException
     {
         boolean removed = false;
-        List<ClassificationFilterImpl> newFilter = new ArrayList<ClassificationFilterImpl>( classificationFilters);
+        List<ClassificationFilterImpl> newFilter = new ArrayList<>(classificationFilters);
         for (Iterator<ClassificationFilterImpl> f=newFilter.iterator();f.hasNext();) {
             ClassificationFilterImpl filter = f.next();
             if (filter.getType().getId().equals(dynamicTypeId))

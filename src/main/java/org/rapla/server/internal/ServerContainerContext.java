@@ -6,19 +6,15 @@ import java.util.Map;
 
 public class ServerContainerContext
 {
-    private Map<String,DataSource> dbDatasources = new LinkedHashMap<String,DataSource>();
-    private Map<String,String> fileDatasources = new LinkedHashMap<String,String>();
+    private Map<String,DataSource> dbDatasources = new LinkedHashMap<>();
+    private Map<String,String> fileDatasources = new LinkedHashMap<>();
     private Map<String,Boolean> services = new LinkedHashMap<>(); 
     private Object mailSession;
     Runnable shutdownCommand;
 
-    private ShutdownService shutdownService = new ShutdownService()
-    {
-        @Override public void shutdown(boolean restart)
-        {
-            if ( restart )
-                throw new IllegalStateException("Restart not implemented");
-        }
+    private ShutdownService shutdownService = restart -> {
+        if ( restart )
+            throw new IllegalStateException("Restart not implemented");
     };
 
     public Runnable getShutdownCommand()

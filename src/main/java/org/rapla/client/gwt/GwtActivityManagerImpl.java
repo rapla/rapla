@@ -26,19 +26,14 @@ public class GwtActivityManagerImpl extends AbstractActivityController
     public GwtActivityManagerImpl(ApplicationEventBus eventBus, final Logger logger)
     {
         super( eventBus, logger);
-        History.addValueChangeHandler(new ValueChangeHandler<String>()
-        {
-            @Override
-            public void onValueChange(ValueChangeEvent<String> event)
+        History.addValueChangeHandler(event -> {
+            try
             {
-                try
-                {
-                    GwtActivityManagerImpl.this.init();
-                }
-                catch (RaplaException e)
-                {
-                    logger.error("Error updating history change: " + e.getMessage(), e);
-                }
+                GwtActivityManagerImpl.this.init();
+            }
+            catch (RaplaException e)
+            {
+                logger.error("Error updating history change: " + e.getMessage(), e);
             }
         });
     }
@@ -83,7 +78,7 @@ public class GwtActivityManagerImpl extends AbstractActivityController
         }
         if (!activities.isEmpty())
         {
-            Map<String, List<ApplicationEvent>> activitiesMap = new LinkedHashMap<String, List<ApplicationEvent>>();
+            Map<String, List<ApplicationEvent>> activitiesMap = new LinkedHashMap<>();
             sb.append("?");
             for (Iterator<ApplicationEvent> iterator = activities.iterator(); iterator.hasNext();)
             {
@@ -91,7 +86,7 @@ public class GwtActivityManagerImpl extends AbstractActivityController
                 List<ApplicationEvent> activitiesList = activitiesMap.get(activity.getApplicationEventId());
                 if(activitiesList == null)
                 {
-                    activitiesList = new ArrayList<ApplicationEvent>();
+                    activitiesList = new ArrayList<>();
                     activitiesMap.put(activity.getApplicationEventId(), activitiesList);
                 }
                 activitiesList.add(activity);

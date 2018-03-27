@@ -82,7 +82,7 @@ public class UrlEncryptionServletRequestResponsePreprocessor  implements Servlet
 
         final String requestUrl = request.getRequestURL().toString();
         String newRequestUri = requestUrl + (requestUrl.contains("?") ? "&" : "?") + parameters;
-        Map<String, String[]> parameterMap = new TreeMap<String, String[]>();
+        Map<String, String[]> parameterMap = new TreeMap<>();
         StringTokenizer valuePairs = new StringTokenizer(parameters, "&");
         // parse the key - value pairs from the encrypted parameter
         while (valuePairs.hasMoreTokens()) {

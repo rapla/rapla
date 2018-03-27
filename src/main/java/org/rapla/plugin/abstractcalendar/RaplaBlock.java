@@ -129,7 +129,7 @@ public class RaplaBlock implements Block
 
     public String[] getColorsAsHex() {
         BuildContext buildContext = getBuildContext();
-    	LinkedHashSet<String> colorList = new LinkedHashSet<String>();
+    	LinkedHashSet<String> colorList = new LinkedHashSet<>();
         if ( buildContext.isEventColoringEnabled())
         {
         	Reservation reservation = getReservation();

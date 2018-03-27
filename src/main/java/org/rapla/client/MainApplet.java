@@ -57,15 +57,7 @@ final public class MainApplet extends JApplet
         panel1.add( label );
 
         button = new JButton( "StartRapla" );
-        button.addActionListener( new ActionListener()
-        {
-
-            public void actionPerformed( ActionEvent e )
-            {
-                startThread();
-            }
-
-        } );
+        button.addActionListener(e -> startThread());
         panel1.add( button );
 
         dlg.setBackground( new Color( 255, 255, 204 ) );
@@ -91,13 +83,7 @@ final public class MainApplet extends JApplet
 
     private void updateStartable()
     {
-        javax.swing.SwingUtilities.invokeLater( new Runnable()
-        {
-            public void run()
-            {
-                button.setEnabled( startable );
-            }
-        } );
+        javax.swing.SwingUtilities.invokeLater(() -> button.setEnabled( startable ));
     }
 
     private void startThread()

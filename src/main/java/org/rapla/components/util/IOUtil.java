@@ -258,7 +258,7 @@ abstract public class IOUtil {
         }
 
         public static File[] getJarFiles(String baseDir,String dirList) throws IOException {
-            ArrayList<File> completeList = new ArrayList<File>();
+            ArrayList<File> completeList = new ArrayList<>();
             StringTokenizer tokenizer = new StringTokenizer(dirList,",");
             while (tokenizer.hasMoreTokens())
             {

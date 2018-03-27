@@ -13,7 +13,7 @@ import javax.ws.rs.Path;
 public interface ArchiverService
 {
 	String PLUGIN_ID = "org.rapla.plugin.archiver.server";
-	TypedComponentRole<RaplaConfiguration> CONFIG = new TypedComponentRole<RaplaConfiguration>(PLUGIN_ID);
+	TypedComponentRole<RaplaConfiguration> CONFIG = new TypedComponentRole<>(PLUGIN_ID);
 
 	String REMOVE_OLDER_THAN_ENTRY = "remove-older-than";
 	String EXPORT = "export";

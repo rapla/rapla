@@ -46,7 +46,7 @@ import java.util.Map;
 public final class AllocatableImpl extends SimpleEntity implements Allocatable,DynamicTypeDependant, ModifiableTimestamp {
     
     private ClassificationImpl classification;
-    private List<PermissionImpl> permissions = new ArrayList<PermissionImpl>();
+    private List<PermissionImpl> permissions = new ArrayList<>();
     private Date lastChanged;
     private Date createDate;
     private Map<String,String> annotations;
@@ -182,16 +182,16 @@ public final class AllocatableImpl extends SimpleEntity implements Allocatable,D
 
     @Override
     public Iterable<ReferenceInfo> getReferenceInfo() {
-        return new IterableChain<ReferenceInfo>
-            (
-             super.getReferenceInfo()
-             ,classification.getReferenceInfo()
-             ,new NestedIterable<ReferenceInfo,PermissionImpl>( permissions ) {
-                     public Iterable<ReferenceInfo> getNestedIterable(PermissionImpl obj) {
-                         return obj.getReferenceInfo();
-                     }
-                 }
-             );
+        return new IterableChain<>
+                (
+                        super.getReferenceInfo()
+                        , classification.getReferenceInfo()
+                        , new NestedIterable<ReferenceInfo, PermissionImpl>(permissions) {
+                    public Iterable<ReferenceInfo> getNestedIterable(PermissionImpl obj) {
+                        return obj.getReferenceInfo();
+                    }
+                }
+                );
     }
 
     public boolean needsChange(DynamicType type) {
@@ -224,7 +224,7 @@ public final class AllocatableImpl extends SimpleEntity implements Allocatable,D
         checkWritable();
         if ( annotations == null)
         {
-        	annotations = new LinkedHashMap<String, String>(1);
+        	annotations = new LinkedHashMap<>(1);
         }
         if (annotation == null) {
             annotations.remove(key);

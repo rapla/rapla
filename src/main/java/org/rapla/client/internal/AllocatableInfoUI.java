@@ -83,7 +83,7 @@ public class AllocatableInfoUI extends ClassificationInfoUI<Allocatable> {
     }
     
     public List<Row> getAttributes(Allocatable allocatable,LinkController controller,  boolean excludeAdditionalInfos, User user) {
-        ArrayList<Row> att = new ArrayList<Row>();
+        ArrayList<Row> att = new ArrayList<>();
         att.addAll( super.getClassificationAttributes( allocatable, excludeAdditionalInfos, controller, user) );
         ReferenceInfo<User> ownerId = allocatable.getOwnerRef();
         ReferenceInfo<User> lastChangeById = allocatable.getLastChangedBy();
@@ -108,7 +108,7 @@ public class AllocatableInfoUI extends ClassificationInfoUI<Allocatable> {
         StringBuffer buf = new StringBuffer();
         insertClassificationTitle( allocatable, buf );
         insertModificationRow( allocatable, buf );
-        Collection<Row> att = new ArrayList<Row>();
+        Collection<Row> att = new ArrayList<>();
         att.addAll(getAttributes(allocatable,  null,  true, user));
         createTable(att,buf);
         insertPermissions( allocatable, buf );

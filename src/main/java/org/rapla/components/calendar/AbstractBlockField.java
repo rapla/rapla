@@ -54,7 +54,7 @@ public abstract class AbstractBlockField extends JTextField {
     boolean m_keyPressed = false;
     protected String m_oldText;
 
-    ArrayList<ChangeListener> m_listenerList = new ArrayList<ChangeListener>();
+    ArrayList<ChangeListener> m_listenerList = new ArrayList<>();
 
     public AbstractBlockField() {
         Listener listener = new Listener();
@@ -191,7 +191,7 @@ public abstract class AbstractBlockField extends JTextField {
             // event follows a keyPressed.
             // If you type very quickly you could
             // get two strunged keyReleased events
-            if (m_keyPressed == true)
+            if (m_keyPressed)
                 m_keyPressed = false;
             else
                         return;

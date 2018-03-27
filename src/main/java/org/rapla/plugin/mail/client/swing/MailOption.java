@@ -150,13 +150,10 @@ public class MailOption extends RaplaGUIComponent implements PluginOptionPanel {
 			passwordPanel.add( password, BorderLayout.CENTER);
 			final JCheckBox showPassword = new JCheckBox("show password");
 			passwordPanel.add( showPassword, BorderLayout.EAST);
-			showPassword.addActionListener(new ActionListener() {
-
-				public void actionPerformed(ActionEvent e) {
-					boolean show = showPassword.isSelected();
-					password.setEchoChar( show ? ((char) 0): '*');
-				}
-			});
+			showPassword.addActionListener(e -> {
+                boolean show = showPassword.isSelected();
+                password.setEchoChar( show ? ((char) 0): '*');
+            });
 			content.add(new JLabel("Default Sender"), "1,14");
 			content.add( defaultSender, "3,14");
 		}
@@ -177,98 +174,88 @@ public class MailOption extends RaplaGUIComponent implements PluginOptionPanel {
 			//send.setBackground(Color.GREEN);
 		}
 
-		useNoSecurityProtocol.addActionListener(new ActionListener() {
-			public void actionPerformed(ActionEvent e) {
-				if ( listenersEnabled)
-				{
-					smtpPortField.setNumber( new Integer(NO_AUTH_DEFAULT_PORT));
-				}
-			}
-		});
-		useSsl.addActionListener( new ActionListener() {
-			public void actionPerformed(ActionEvent e) {
-				if ( listenersEnabled)
-				{
-					smtpPortField.setNumber( new Integer(SSL_DEFAULT_PORT));
-				}
+		useNoSecurityProtocol.addActionListener(e -> {
+            if ( listenersEnabled)
+            {
+                smtpPortField.setNumber( new Integer(NO_AUTH_DEFAULT_PORT));
+            }
+        });
+		useSsl.addActionListener(e -> {
+            if ( listenersEnabled)
+            {
+                smtpPortField.setNumber( new Integer(SSL_DEFAULT_PORT));
+            }
 
-			}
+        });
+		useStartTls.addActionListener(e -> {
+            if ( listenersEnabled)
+            {
+                smtpPortField.setNumber( new Integer(STARTTLS_DEFAULT_PORT));
+            }
+        });
 
-		});
-		useStartTls.addActionListener( new ActionListener() {
-			public void actionPerformed(ActionEvent e) {
-				if ( listenersEnabled)
-				{
-					smtpPortField.setNumber( new Integer(STARTTLS_DEFAULT_PORT));
-				}
-			}
-		});
+		send.addActionListener(e -> {
+            try
+            {
+                DefaultConfiguration newConfig = new DefaultConfiguration( config);
+                Configuration[] children = newConfig.getChildren();
+                for (Configuration child:children)
+                {
+                    newConfig.removeChild(child);
+                }
+                //					if ( !activate.isSelected())
+                //					{
+                //						throw new RaplaException("You need to activate MailPlugin " + getString("restart_options"));
+                //					}
+                if  (!externalConfigEnabled)
+                {
+                    addChildren( newConfig);
+                    //						if ( !newConfig.equals( config))
+                    //						{
+                    //							getLogger().info("old config" + config );
+                    //							getLogger().info("new config" + newConfig);
+                    //							throw new RaplaException(getString("restart_options"));
+                    //						}
+                }
+                else
+                {
+                    String attribute = config.getAttribute("enabled", null);
+                    if ( attribute == null || !attribute.equalsIgnoreCase("true") )
+                    {
+                        throw new RaplaException(getString("restart_options"));
+                    }
+                }
+                //String senderMail = defaultSender.getText();
+                String recipient = getUser().getEmail();
+                if ( recipient == null || recipient.trim().length() == 0)
+                {
+                    throw new RaplaException("You need to set an email address in your user settings.");
+                }
 
-		send.addActionListener( new ActionListener() {
-
-			public void actionPerformed(ActionEvent e) {
-				try
-				{
-					DefaultConfiguration newConfig = new DefaultConfiguration( config);
-					Configuration[] children = newConfig.getChildren();
-					for (Configuration child:children)
-					{
-						newConfig.removeChild(child);
-					}
-					//					if ( !activate.isSelected())
-					//					{
-					//						throw new RaplaException("You need to activate MailPlugin " + getString("restart_options"));
-					//					}
-					if  (!externalConfigEnabled)
-					{
-						addChildren( newConfig);
-						//						if ( !newConfig.equals( config))
-						//						{
-						//							getLogger().info("old config" + config );
-						//							getLogger().info("new config" + newConfig);
-						//							throw new RaplaException(getString("restart_options"));
-						//						}
-					}
-					else
-					{
-						String attribute = config.getAttribute("enabled", null);
-						if ( attribute == null || !attribute.equalsIgnoreCase("true") )
-						{
-							throw new RaplaException(getString("restart_options"));
-						}
-					}
-					//String senderMail = defaultSender.getText();
-					String recipient = getUser().getEmail();
-					if ( recipient == null || recipient.trim().length() == 0)
-					{
-						throw new RaplaException("You need to set an email address in your user settings.");
-					}
-
-					try
-					{
-						send.setBackground(new Color(255,100,100, 255));
-						configService.testMail( newConfig, defaultSender.getText());
-						send.setBackground(Color.GREEN);
-						send.setText("Please check your mailbox.");
-					}
-					catch (UnsupportedOperationException ex)
-					{
-				          JComponent component = getComponent();
-				          dialogUiFactory.showException( new RaplaException(getString("restart_options")), new SwingPopupContext(component, null));
-					}
-				}
-				catch (RaplaException ex )
-				{
-					JComponent component = getComponent();
-					dialogUiFactory.showException( ex, new SwingPopupContext(component, null));
+                try
+                {
+                    send.setBackground(new Color(255,100,100, 255));
+                    configService.testMail( newConfig, defaultSender.getText());
+                    send.setBackground(Color.GREEN);
+                    send.setText("Please check your mailbox.");
+                }
+                catch (UnsupportedOperationException ex)
+                {
+                      JComponent component = getComponent();
+                      dialogUiFactory.showException( new RaplaException(getString("restart_options")), new SwingPopupContext(component, null));
+                }
+            }
+            catch (RaplaException ex )
+            {
+                JComponent component = getComponent();
+                dialogUiFactory.showException( ex, new SwingPopupContext(component, null));
 
 
 //				} catch (ConfigurationException ex) {
 //					JComponent component = getComponent();
 //					showException( ex, component);
-				}
-			}
-		});
+            }
+        });
     }
 
         

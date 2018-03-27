@@ -30,7 +30,7 @@ import java.util.TreeMap;
 public class GroupStartTimesStrategy extends AbstractGroupStrategy {
 	List<Allocatable> allocatables;
 	
-	List<Integer> startTimes = new ArrayList<Integer>();
+	List<Integer> startTimes = new ArrayList<>();
 	
 
 	{
@@ -46,7 +46,7 @@ public class GroupStartTimesStrategy extends AbstractGroupStrategy {
 	{
 		if (allocatables != null)
 		{
-			Map<Block,Integer> map = new LinkedHashMap<Block, Integer>(); 
+			Map<Block,Integer> map = new LinkedHashMap<>();
 			for (Block block:blocks)
 			{
 				RaplaBlock b = (RaplaBlock)block;
@@ -69,7 +69,7 @@ public class GroupStartTimesStrategy extends AbstractGroupStrategy {
 	
 	@Override
     protected List<List<Block>> getSortedSlots(List<Block> list) {
-    	TreeMap<Integer,List<Block>> groups = new TreeMap<Integer,List<Block>>();
+    	TreeMap<Integer,List<Block>> groups = new TreeMap<>();
         for (Iterator<Block> it = list.iterator();it.hasNext();) {
             Block block = it.next();
             long startTime = block.getStart().getTime();
@@ -93,18 +93,18 @@ public class GroupStartTimesStrategy extends AbstractGroupStrategy {
             
             List<Block> col = groups.get( rowNumber );
             if (col == null) {
-                col = new ArrayList<Block>();
+                col = new ArrayList<>();
                 groups.put( rowNumber, col );
             }
             col.add(block);
         }
-        List<List<Block>> slots = new ArrayList<List<Block>>();
+        List<List<Block>> slots = new ArrayList<>();
         for (int row =0 ;row<startTimes.size();row++)
         {
         	List<Block> oneRow =  groups.get( row  );
 			if ( oneRow == null)
 			{
-				oneRow = new ArrayList<Block>();
+				oneRow = new ArrayList<>();
 			}
 			else
 			{
@@ -117,7 +117,7 @@ public class GroupStartTimesStrategy extends AbstractGroupStrategy {
 
 	@Override
 	protected Collection<List<Block>> group(List<Block> blockList) {
-		 List<List<Block>> singleGroup = new ArrayList<List<Block>>();
+		 List<List<Block>> singleGroup = new ArrayList<>();
 		 singleGroup.add(blockList);
 		 return singleGroup;
 	}

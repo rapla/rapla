@@ -26,7 +26,7 @@ public class TableViewPlugin
     public static final String RESERVATION_SUMMARY = "event_summary";
     public static final String APPOINTMENT_SUMMARY = "appointment_summary";
     public static final String COLUMN_ANNOTATION = "tablecolumn_";
-    public static final TypedComponentRole<RaplaConfiguration> CONFIG = new TypedComponentRole<RaplaConfiguration>(PLUGIN_ID + ".config");
+    public static final TypedComponentRole<RaplaConfiguration> CONFIG = new TypedComponentRole<>(PLUGIN_ID + ".config");
 
     public static String getSorgingStringOption(String viewname)
     {

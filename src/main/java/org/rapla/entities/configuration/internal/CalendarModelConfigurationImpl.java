@@ -54,8 +54,8 @@ public class CalendarModelConfigurationImpl extends AbstractClassifiableFilter i
    public CalendarModelConfigurationImpl( Collection<String> selected,Collection<Class<? extends Entity>> idTypeList,boolean resourceRootSelected, ClassificationFilter[] filter, boolean defaultResourceTypes, boolean defaultEventTypes,String title, Date startDate, Date endDate, Date selectedDate,String view,Map<String,String> extensionMap) {
 	   if (selected != null)
 	   {
-	       this.selected = Collections.unmodifiableList(new ArrayList<String>(selected));
-	       typeList = new ArrayList<String>();
+	       this.selected = Collections.unmodifiableList(new ArrayList<>(selected));
+	       typeList = new ArrayList<>();
 	       for ( Class<? extends RaplaObject> type:idTypeList)
 	       {
                String localname = RaplaType.getLocalName( type);
@@ -76,7 +76,7 @@ public class CalendarModelConfigurationImpl extends AbstractClassifiableFilter i
        this.startDate = startDate;
        this.endDate = endDate;
        this.selectedDate = selectedDate;
-       List<ClassificationFilterImpl> filterList = new ArrayList<ClassificationFilterImpl>();
+       List<ClassificationFilterImpl> filterList = new ArrayList<>();
        if ( filter != null)
        {
 	       for ( ClassificationFilter f:filter)
@@ -85,7 +85,7 @@ public class CalendarModelConfigurationImpl extends AbstractClassifiableFilter i
 	       }
        }
        super.setClassificationFilter( filterList );
-       Map<String,String> map= new LinkedHashMap<String,String>();
+       Map<String,String> map= new LinkedHashMap<>();
        if ( extensionMap != null)
        {
            map.putAll(extensionMap);
@@ -133,7 +133,7 @@ public class CalendarModelConfigurationImpl extends AbstractClassifiableFilter i
     }
 
 	public Collection<Entity> getSelected() {
-		ArrayList<Entity> result = new ArrayList<Entity>();
+		ArrayList<Entity> result = new ArrayList<>();
 
         int i=0;
 		for ( String id: selected)
@@ -161,13 +161,13 @@ public class CalendarModelConfigurationImpl extends AbstractClassifiableFilter i
     public Iterable<ReferenceInfo> getReferenceInfo() {
         Iterable<ReferenceInfo> references = super.getReferenceInfo();
         List<ReferenceInfo> selectedInfo = getSelectedReferences();
-        return new IterableChain<ReferenceInfo>(references, selectedInfo);
+        return new IterableChain<>(references, selectedInfo);
     }
 
 
     private List<ReferenceInfo> getSelectedReferences()
     {
-        List<ReferenceInfo> selectedInfo = new ArrayList<ReferenceInfo>();
+        List<ReferenceInfo> selectedInfo = new ArrayList<>();
         int size = selected.size();
         for ( int i = 0;i<size;i++)
         {
@@ -233,18 +233,17 @@ public class CalendarModelConfigurationImpl extends AbstractClassifiableFilter i
          dest.selectedDate = source.selectedDate;
          dest.resourceRootSelected = source.resourceRootSelected;
          dest.setResolver( source.resolver);
-         List<ClassificationFilterImpl> newFilter = new ArrayList<ClassificationFilterImpl>();
+         List<ClassificationFilterImpl> newFilter = new ArrayList<>();
          for ( ClassificationFilterImpl f: source.classificationFilters)
          {
         	 ClassificationFilterImpl clone = f.clone();
         	 newFilter.add( clone);
          }
          dest.setClassificationFilter(newFilter  );
-         dest.selected = new ArrayList<String>(source.selected);
-         dest.typeList = new ArrayList<String>(source.typeList);
-         LinkedHashMap<String, String> optionMap = new LinkedHashMap<String,String>();
-         optionMap.putAll(source.optionMap);
-         dest.optionMap = Collections.unmodifiableMap(optionMap); 
+         dest.selected = new ArrayList<>(source.selected);
+         dest.typeList = new ArrayList<>(source.typeList);
+         LinkedHashMap<String, String> optionMap = new LinkedHashMap<>(source.optionMap);
+         dest.optionMap = Collections.unmodifiableMap(optionMap);
     }
 
 	public void copy(CalendarModelConfiguration obj) 

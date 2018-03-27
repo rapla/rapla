@@ -241,7 +241,7 @@ public class StandardFunctions implements FunctionFactory
             final Appointment appointment = appointmentBlock.getAppointment();
             final Reservation reservation = appointment.getReservation();
             final Date start = reservation.getFirstDate();
-            SortedSet<AppointmentBlock> blocks = new TreeSet<AppointmentBlock>();
+            SortedSet<AppointmentBlock> blocks = new TreeSet<>();
             for (Appointment app : reservation.getAppointments())
             {
                 app.createBlocks(start, end, blocks);
@@ -314,7 +314,7 @@ public class StandardFunctions implements FunctionFactory
             if (object instanceof Reservation)
             {
                 Reservation reservation = ((Reservation) object);
-                List<AppointmentBlock> blocks = new ArrayList<AppointmentBlock>();
+                List<AppointmentBlock> blocks = new ArrayList<>();
                 for (Appointment appointment : reservation.getSortedAppointments())
                 {
                     appointment.createBlocks(start, end, blocks);
@@ -325,7 +325,7 @@ public class StandardFunctions implements FunctionFactory
             if (object instanceof Appointment)
             {
                 Appointment appointment = ((Appointment) object);
-                Collection<AppointmentBlock> blocks = new ArrayList<AppointmentBlock>();
+                Collection<AppointmentBlock> blocks = new ArrayList<>();
                 appointment.createBlocks(start, end, blocks);
                 return blocks;
             }
@@ -802,7 +802,7 @@ public class StandardFunctions implements FunctionFactory
             {
                 collection = Collections.singleton(evalResult1);
             }
-            Collection<Object> result = new ArrayList<Object>();
+            Collection<Object> result = new ArrayList<>();
             for (Object obj : collection)
             {
                 //                EvalContext subContext = context.clone(Collections.singletonList(obj));
@@ -976,23 +976,19 @@ public class StandardFunctions implements FunctionFactory
             {
                 collection = Collections.singleton(evalResult1);
             }
-            List<Object> result = new ArrayList<Object>();
+            List<Object> result = new ArrayList<>();
             for (Object obj : collection)
             {
                 result.add(obj);
             }
-            Collections.sort(result, new Comparator<Object>()
-            {
-                @Override public int compare(Object o1, Object o2)
-                {
-                    List<Object> objects = new ArrayList<Object>();
-                    objects.add(o1);
-                    objects.add(o2);
-                    EvalContext subContext = new EvalContext(objects, context);
-                    Object evalResult = arg2.eval(subContext);
-                    final Long longResult = ParsedText.guessLong(evalResult);
-                    return longResult.intValue();
-                }
+            Collections.sort(result, (o1, o2) -> {
+                List<Object> objects = new ArrayList<>();
+                objects.add(o1);
+                objects.add(o2);
+                EvalContext subContext = new EvalContext(objects, context);
+                Object evalResult = arg2.eval(subContext);
+                final Long longResult = ParsedText.guessLong(evalResult);
+                return longResult.intValue();
             });
             return result;
         }

@@ -16,15 +16,9 @@ public class CheckBoxComponent extends CheckBox
         super();
         addStyleName("inputWrapper");
         setHTML(label);
-        addChangeHandler(new ChangeHandler()
-        {
-
-            @Override
-            public void onChange(ChangeEvent event)
-            {
-                boolean selected = getValue();
-                listener.changed(selected);
-            }
+        addChangeHandler(event -> {
+            boolean selected = getValue();
+            listener.changed(selected);
         });
     }
 

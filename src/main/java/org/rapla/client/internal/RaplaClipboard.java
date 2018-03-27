@@ -83,7 +83,7 @@ public class RaplaClipboard implements ModificationListener
     
     public void setReservation(Collection<Reservation> copyReservation, Collection<Allocatable> contextAllocatables)
     {
-    	ArrayList<Appointment> appointmentList = new ArrayList<Appointment>();
+    	ArrayList<Appointment> appointmentList = new ArrayList<>();
     	for (Reservation r:copyReservation)
     	{
     		appointmentList.addAll( Arrays.asList( r.getAppointments()));

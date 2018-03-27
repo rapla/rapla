@@ -35,12 +35,8 @@ class ExchangePublishExtension extends RaplaGUIComponent implements PublishExten
         dummyURL = new JTextField();
 
     	checkbox = new JCheckBox(exchangeConnectorResources.getString("exchange.publish"));
-    	checkbox.addChangeListener(new ChangeListener()
-    	{
-           public void stateChanged(ChangeEvent e)
-           {
-           }
-    	});
+    	checkbox.addChangeListener(e -> {
+        });
         panel.add(checkbox,"0,0");
         boolean enabled = false;
         try

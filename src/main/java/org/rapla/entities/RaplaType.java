@@ -49,22 +49,22 @@ public class RaplaType<T>  {
 
     static
     {
-        registeredTypes = new HashMap<Class<? extends RaplaObject>,RaplaType>();
-        registeredTypeNames = new HashMap<String,RaplaType>();
-        new RaplaType<Reservation>(Reservation.class, "reservation");
-        new RaplaType<Appointment>(Appointment.class, "appointment" );
-        new RaplaType<Conflict>(Conflict.class,"conflict");
-        new RaplaType<Category>(Category.class, "category");
-        new RaplaType<User>(User.class,"user");
-        new RaplaType<CalendarModelConfiguration>(CalendarModelConfiguration.class, "calendar");
-        new RaplaType<Preferences>(Preferences.class, "preferences");
-        new RaplaType<RaplaConfiguration>(RaplaConfiguration.class, "config");
-        new RaplaType<RaplaMap>(RaplaMap.class, "map");
-        new RaplaType<Allocatable>(Allocatable.class, "resource");
-        new RaplaType<Period>(Period.class, "period");
-        new RaplaType<Attribute>(Attribute.class, "attribute");
-        new RaplaType<DynamicType>(DynamicType.class, "dynamictype");
-        new RaplaType<ImportExportEntity>(ImportExportEntity.class, "importexport");
+        registeredTypes = new HashMap<>();
+        registeredTypeNames = new HashMap<>();
+        new RaplaType<>(Reservation.class, "reservation");
+        new RaplaType<>(Appointment.class, "appointment");
+        new RaplaType<>(Conflict.class, "conflict");
+        new RaplaType<>(Category.class, "category");
+        new RaplaType<>(User.class, "user");
+        new RaplaType<>(CalendarModelConfiguration.class, "calendar");
+        new RaplaType<>(Preferences.class, "preferences");
+        new RaplaType<>(RaplaConfiguration.class, "config");
+        new RaplaType<>(RaplaMap.class, "map");
+        new RaplaType<>(Allocatable.class, "resource");
+        new RaplaType<>(Period.class, "period");
+        new RaplaType<>(Attribute.class, "attribute");
+        new RaplaType<>(DynamicType.class, "dynamictype");
+        new RaplaType<>(ImportExportEntity.class, "importexport");
     }
 
 
@@ -118,12 +118,12 @@ public class RaplaType<T>  {
 
     @SuppressWarnings("unchecked")
 	public static  <T extends RaplaObject> Set<T> retainObjects(Collection<? extends RaplaObject> set,Collection<T> col) {
-	    HashSet<RaplaObject> tempSet = new HashSet<RaplaObject>(set.size());
+	    HashSet<RaplaObject> tempSet = new HashSet<>(set.size());
 	    tempSet.addAll(set);
 	    tempSet.retainAll(col);
 	    if (tempSet.size() >0)
 	    {
-	    	HashSet<T> result = new HashSet<T>();
+	    	HashSet<T> result = new HashSet<>();
 	    	for ( RaplaObject t : tempSet)
 	    	{
 	    		result.add( (T)t);

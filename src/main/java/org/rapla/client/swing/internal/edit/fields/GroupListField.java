@@ -50,7 +50,7 @@ public class GroupListField extends AbstractEditField implements ChangeListener,
     RaplaButton removeButton = new RaplaButton(RaplaButton.SMALL);
     RaplaButton newButton  = new RaplaButton(RaplaButton.SMALL);
     JList list = new JList();
-    Set<Category> notAllList = new HashSet<Category>();
+    Set<Category> notAllList = new HashSet<>();
 
     private final DialogUiFactoryInterface dialogUiFactory;
 
@@ -139,13 +139,13 @@ public class GroupListField extends AbstractEditField implements ChangeListener,
 
     public void mapFrom(List<User> users) {
 
-    	Set<Category> categories = new LinkedHashSet<Category>();
+    	Set<Category> categories = new LinkedHashSet<>();
 		// determination of the common categories/user groups
 		for (User user:users) {
 			categories.addAll(user.getGroupList());
 		}
 		
-		Set<Category> notAll = new LinkedHashSet<Category>();
+		Set<Category> notAll = new LinkedHashSet<>();
 		for ( Category group: categories)
 		{
 			for (User user:users) 
@@ -172,7 +172,7 @@ public class GroupListField extends AbstractEditField implements ChangeListener,
     }
     
     public void mapFromList(Collection<Category> groups) {
-    	mapFromList(groups, new HashSet<Category>());
+    	mapFromList(groups, new HashSet<>());
     }
     
 	@SuppressWarnings("unchecked")

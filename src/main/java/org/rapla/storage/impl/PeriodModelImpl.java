@@ -48,7 +48,7 @@ class PeriodModelImpl implements PeriodModel
 
     @NotNull
     static private TreeSet<PeriodImpl> createPeriodSet() {
-        return new TreeSet<PeriodImpl>((o1, o2) -> -1 *o1.compareTo(o2));
+        return new TreeSet<>((o1, o2) -> -1 * o1.compareTo(o2));
     }
 
     StorageOperator operator;
@@ -253,7 +253,7 @@ class PeriodModelImpl implements PeriodModel
 
     /** return all matching periods.*/
     public List<Period> getPeriodsFor(Date date) {
-        ArrayList<Period> list = new ArrayList<Period>();
+        ArrayList<Period> list = new ArrayList<>();
         if (date == null)
             return list;
 
@@ -268,7 +268,7 @@ class PeriodModelImpl implements PeriodModel
     }
 
     public List<Period> getPeriodsFor(TimeInterval interval) {
-        ArrayList<Period> list = new ArrayList<Period>();
+        ArrayList<Period> list = new ArrayList<>();
 
         for ( Period period:m_periods)
         {

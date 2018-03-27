@@ -73,7 +73,7 @@ public class ConflictReservationCheck implements EventCheck
             {
                 p = p.thenCombine(resultPromise, (a, b) -> Promise.VOID);
             }
-        };
+        }
         return p.thenCompose((dummy)->
         {
             if ( conflictList.isEmpty())

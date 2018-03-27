@@ -309,24 +309,19 @@ public class ApplicationViewSwing implements ApplicationView<JComponent>
         dialog.setIconImage(RaplaImages.getImage(i18n.getIcon("icon.edit_window_small")));
         dialog.setSize(1050, 700);
         childFrames.put(windowId, dialog);
-        dialog.addVetoableChangeListener(new VetoableChangeListener()
-        {
-            @Override
-            public void vetoableChange(PropertyChangeEvent evt) throws PropertyVetoException
-            {
+        dialog.addVetoableChangeListener(evt -> {
 
-                final ApplicationEvent applicationEvent = new ApplicationEvent(windowId.getApplicationEventId(), windowId.getInfo(),
-                        new SwingPopupContext(component, null), null);
-                logger.debug("Closing");
-                if (windowClosing.apply(applicationEvent))
-                {
-                    subscribe.dispose();
-                    dialog.dispose();
-                }
-                else
-                {
-                    throw new PropertyVetoException("close", evt);
-                }
+            final ApplicationEvent applicationEvent = new ApplicationEvent(windowId.getApplicationEventId(), windowId.getInfo(),
+                    new SwingPopupContext(component, null), null);
+            logger.debug("Closing");
+            if (windowClosing.apply(applicationEvent))
+            {
+                subscribe.dispose();
+                dialog.dispose();
+            }
+            else
+            {
+                throw new PropertyVetoException("close", evt);
             }
         });
         dialog.start( null);

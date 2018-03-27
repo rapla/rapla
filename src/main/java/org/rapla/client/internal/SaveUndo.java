@@ -79,7 +79,7 @@ public class SaveUndo<T extends Entity> implements CommandUndo<RaplaException> {
 
 		return getFacade().editListAsync(oldEntities).thenCompose( (newEntitiesPersistant)->
 			{
-				List<T> toStore = new ArrayList<T>();
+				List<T> toStore = new ArrayList<>();
 				for (T entity : newEntities) {
 					@SuppressWarnings("unchecked") T mutableEntity = (T) entity.clone();
 					if (newEntitiesPersistant != null) {
@@ -103,7 +103,7 @@ public class SaveUndo<T extends Entity> implements CommandUndo<RaplaException> {
 		final Set<T> oldEntities = storeListCopy.keySet();
 		return getFacade().editListAsyncForUndo(oldEntities).thenCompose(map ->
 					{
-						List<T> toStore = new ArrayList<T>();
+						List<T> toStore = new ArrayList<>();
 						List<ReferenceInfo<T>> toRemove = new ArrayList<>();
 						Map<T, T> oldEntitiesPersistant = map;
 						for (T entity : oldEntities)

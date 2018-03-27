@@ -117,20 +117,14 @@ public class TextField extends AbstractEditField implements ActionListener, Focu
         }
         colorPanel.add(colorChooserBtn, BorderLayout.EAST);
         colorChooserBtn.setText(i18n.getString("change"));
-        colorChooserBtn.addActionListener(new ActionListener()
-        {
-
-            public void actionPerformed(ActionEvent e)
+        colorChooserBtn.addActionListener(e -> {
+            currentColor = JColorChooser.showDialog(colorPanel, "Choose Background Color", currentColor);
+            color.setBackground(currentColor);
+            if (currentColor != null)
             {
-                currentColor = JColorChooser.showDialog(colorPanel, "Choose Background Color", currentColor);
-                color.setBackground(currentColor);
-                if (currentColor != null)
-                {
-                    field.setText(AWTColorUtil.getHexForColor(currentColor));
-                }
-                fireContentChanged();
+                field.setText(AWTColorUtil.getHexForColor(currentColor));
             }
-
+            fireContentChanged();
         });
     }
 

@@ -63,7 +63,7 @@ public class PermissionController
 
     private static Collection<Category> getGroupsToAdmin(User user, boolean addParent)
     {
-        final Collection<Category> result = new ArrayList<Category>();
+        final Collection<Category> result = new ArrayList<>();
         final Collection<Category> groupList = user.getGroupList();
         for ( Category group:groupList)
         {

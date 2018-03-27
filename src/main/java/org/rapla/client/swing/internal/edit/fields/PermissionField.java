@@ -148,7 +148,7 @@ public class PermissionField extends AbstractEditField implements  ChangeListene
         reservationPanel.add( maxAdvance.getComponent() , "4,2,l,f" );
 
         userPanel.add( new JLabel(i18n.getString("permission.access") + ":"), "0,4,f,f" );
-        accessField = new ListField<Permission.AccessLevel>(clientFacade, i18n, raplaLocale, logger, permissionLevels );
+        accessField = new ListField<>(clientFacade, i18n, raplaLocale, logger, permissionLevels);
         accessField.setRenderer( new DefaultListCellRenderer() {
             private static final long serialVersionUID = 1L;
 
@@ -363,8 +363,8 @@ public class PermissionField extends AbstractEditField implements  ChangeListene
         public UserListField(ClientFacade clientFacade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger) throws RaplaException{
             super(clientFacade, i18n, raplaLocale, logger, true);
             User[] users = raplaFacade.getUsers();
-            List<User> asList = new ArrayList<User>(Arrays.asList(users ));
-            Collections.sort( asList, new NamedComparator<User>( i18n.getLocale()));
+            List<User> asList = new ArrayList<>(Arrays.asList(users));
+            Collections.sort( asList, new NamedComparator<>(i18n.getLocale()));
             setVector(asList);
         }
     }

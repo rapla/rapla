@@ -37,7 +37,7 @@ public class RepeatingEnding implements Serializable {
     private RepeatingEnding(String type) {
         this.type = type;
         if (types == null) {
-            types = new HashMap<String,RepeatingEnding>();
+            types = new HashMap<>();
         }
         types.put( type, this);
     }

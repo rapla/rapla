@@ -89,7 +89,7 @@ public class ConflictPeriodReservationCheck extends RaplaGUIComponent implements
     {
         CANCEL,
         OK,
-        OK_MODIFIED;
+        OK_MODIFIED
     }
 
     public Promise<Boolean> check(Collection<Reservation> reservations, PopupContext sourceComponent)
@@ -101,11 +101,11 @@ public class ConflictPeriodReservationCheck extends RaplaGUIComponent implements
         }
         catch (RaplaException e)
         {
-            return new ResolvedPromise<Boolean>(e);
+            return new ResolvedPromise<>(e);
         }
         if (periodConflicts.isEmpty())
         {
-            return new ResolvedPromise<Boolean>(true);
+            return new ResolvedPromise<>(true);
         }
         return showPeriodConflicts(sourceComponent, periodConflicts).thenApply((result)->result != DialogResult.CANCEL);
     }
@@ -199,7 +199,7 @@ public class ConflictPeriodReservationCheck extends RaplaGUIComponent implements
         BorderLayout layout = new BorderLayout();
         panel.setLayout(layout);
 
-        Set<Period> allPeriods = new TreeSet<Period>();
+        Set<Period> allPeriods = new TreeSet<>();
         for (Set<Period> periods : conflicts.values())
         {
             allPeriods.addAll(periods);
@@ -263,14 +263,9 @@ public class ConflictPeriodReservationCheck extends RaplaGUIComponent implements
         {
             atomicBoolean.set(ausnahmenCheck.isSelected());
         });
-        tree.getSelectionModel().addTreeSelectionListener(new TreeSelectionListener()
-        {
-            @Override
-            public void valueChanged(TreeSelectionEvent e)
-            {
-                final List<Object> selectedElements = treeSelection.getSelectedElements();
-                selectedItems.set(new HashSet(selectedElements));
-            }
+        tree.getSelectionModel().addTreeSelectionListener(e -> {
+            final List<Object> selectedElements = treeSelection.getSelectedElements();
+            selectedItems.set(new HashSet(selectedElements));
         });
         panel.add(BorderLayout.SOUTH, ausnahmenCheck);
         return panel;
@@ -340,14 +335,7 @@ public class ConflictPeriodReservationCheck extends RaplaGUIComponent implements
 
             }
         });
-        return Collections.singletonList(new RaplaWidget()
-        {
-            @Override
-            public Object getComponent()
-            {
-                return button;
-            }
-        });
+        return Collections.singletonList(() -> button);
     }
 
     @Override

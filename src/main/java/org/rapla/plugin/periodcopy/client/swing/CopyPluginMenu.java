@@ -133,7 +133,7 @@ public class CopyPluginMenu  extends RaplaGUIComponent implements EditMenuExtens
     
     public void copy(  Collection<Reservation> reservations , Date destStart, Date destEnd,boolean includeSingleAppointmentsAndExceptions) throws RaplaException {
         Map<Reservation,Reservation> newReservations = new LinkedHashMap<>();
-        List<Reservation> sortedReservations = new ArrayList<Reservation>( reservations);
+        List<Reservation> sortedReservations = new ArrayList<>(reservations);
         Collections.sort( sortedReservations, new ReservationStartComparator(getLocale()));
         Date firstStart = null;
         for (Reservation reservation: sortedReservations) {

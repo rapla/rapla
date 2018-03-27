@@ -71,7 +71,7 @@ public class Export2iCalMenu extends RaplaGUIComponent implements ExportMenuExte
 		Promise<Collection<Appointment>> appointmentsPromise = calendarModel.queryAppointments(interval);
 		appointmentsPromise.thenAccept((appointments) -> {
 
-		    Set<String> appointmentIds = new LinkedHashSet<String>();
+		    Set<String> appointmentIds = new LinkedHashSet<>();
 		    for ( Appointment app:appointments)
 		    {
 		    	appointmentIds.add(app.getId());

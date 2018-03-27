@@ -46,7 +46,7 @@ final public class CountryChooser implements RaplaWidget
         this.logger = logger;
         language = raplaLocale.getLocale().getLanguage();
         Collection<String> languages = raplaLocale.getAvailableLanguages();
-        remoteLocaleService.countries(new LinkedHashSet<String>(languages)).thenAccept(( countries)->
+        remoteLocaleService.countries(new LinkedHashSet<>(languages)).thenAccept((countries)->
         {
             this.countries = countries;
             String[] entries = createCountryArray();

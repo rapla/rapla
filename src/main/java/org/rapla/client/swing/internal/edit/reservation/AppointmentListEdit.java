@@ -106,7 +106,7 @@ class AppointmentListEdit extends AbstractAppointmentEditor
 		this.commandHistory = commandHistory;
         this.dialogUiFactory = dialogUiFactory;
         appointmentController = new AppointmentController(facade, i18n, raplaLocale, logger, commandHistory,  dateRenderer, dialogUiFactory, ioInterface);
-        listEdit = new RaplaListEdit<Appointment>(getI18n(),  appointmentController.getComponent(), listener, false);
+        listEdit = new RaplaListEdit<>(getI18n(), appointmentController.getComponent(), listener, false);
         listEdit.getToolbar().add( freeButtonNext);
 
         freeButtonNext.setText(getString("appointment.search_free"));
@@ -278,7 +278,7 @@ class AppointmentListEdit extends AbstractAppointmentEditor
 			}
 			else if (actionCommand.equals("select"))
 			{
-				Collection<Appointment> appointments = new ArrayList<Appointment>();
+				Collection<Appointment> appointments = new ArrayList<>();
 				@SuppressWarnings("deprecation")
 				Object[] values = listEdit.getList().getSelectedValues();
 		        for ( Object value:values)
@@ -337,7 +337,7 @@ class AppointmentListEdit extends AbstractAppointmentEditor
 		
 		
 		public RemoveAppointments(Object[] list) {
-			this.list = new LinkedHashMap<Appointment,Allocatable[]>();
+			this.list = new LinkedHashMap<>();
 			for ( Object obj:list)
 			{
 				Appointment appointment = (Appointment) obj;
@@ -469,7 +469,7 @@ class AppointmentListEdit extends AbstractAppointmentEditor
 
 		public Promise<Void> execute()  {
 			// Generate time blocks from selected appointment
-			List<AppointmentBlock> splits = new ArrayList<AppointmentBlock>();
+			List<AppointmentBlock> splits = new ArrayList<>();
 			Appointment appointment = appointmentController.getAppointment();
 			appointment.createBlocks(appointment.getStart(), DateTools.fillDate(appointment.getMaxEnd()), splits);
 			allocatablesFor = mutableReservation.getAllocatablesFor(appointment).toArray(Allocatable[]::new);
@@ -477,7 +477,7 @@ class AppointmentListEdit extends AbstractAppointmentEditor
 			wholeAppointment = appointment;
 			fireAppointmentRemoved(Collections.singleton(appointment));
 
-			splitAppointments = new ArrayList<Appointment>();
+			splitAppointments = new ArrayList<>();
 			// Create single appointments for every time block
 			List<TimeInterval> intervals= splits.stream().map(AppointmentBlock::toInterval).collect(Collectors.toList());
 			return getFacade().newAppointmentsAsync(intervals).thenAccept( newApps->
@@ -490,7 +490,7 @@ class AppointmentListEdit extends AbstractAppointmentEditor
 				for (Allocatable alloc : allocatablesFor) {
 					Appointment[] restrictions = mutableReservation.getRestriction(alloc);
 					if (restrictions.length > 0) {
-						LinkedHashSet<Appointment> newRestrictions = new LinkedHashSet<Appointment>(Arrays.asList(restrictions));
+						LinkedHashSet<Appointment> newRestrictions = new LinkedHashSet<>(Arrays.asList(restrictions));
 						newRestrictions.addAll(splitAppointments);
 						mutableReservation.setRestriction(alloc, newRestrictions.toArray(Appointment.EMPTY_ARRAY));
 					}
@@ -518,7 +518,7 @@ class AppointmentListEdit extends AbstractAppointmentEditor
 			for (Allocatable alloc : allocatablesFor) {
 				Appointment[] restrictions = mutableReservation.getRestriction(alloc);
 				if (restrictions.length > 0) {
-					LinkedHashSet<Appointment> newRestrictions = new LinkedHashSet<Appointment>(Arrays.asList(restrictions));
+					LinkedHashSet<Appointment> newRestrictions = new LinkedHashSet<>(Arrays.asList(restrictions));
 					newRestrictions.removeAll(splitAppointments);
 					newRestrictions.add(wholeAppointment);
 					mutableReservation.setRestriction(alloc,newRestrictions.toArray(Appointment.EMPTY_ARRAY));

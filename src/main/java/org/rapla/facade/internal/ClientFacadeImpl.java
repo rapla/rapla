@@ -40,12 +40,12 @@ public class ClientFacadeImpl implements ClientFacade, StorageUpdateListener {
     protected CommandScheduler notifyQueue;
 
     RaplaFacade raplaFacade;
-    private Vector<ModificationListener> modificatonListenerList = new Vector<ModificationListener>();
+    private Vector<ModificationListener> modificatonListenerList = new Vector<>();
     //private Vector<AllocationChangeListener> allocationListenerList = new Vector<AllocationChangeListener>();
-    private Vector<UpdateErrorListener> errorListenerList = new Vector<UpdateErrorListener>();
+    private Vector<UpdateErrorListener> errorListenerList = new Vector<>();
 
     //	private ConflictFinder conflictFinder;
-    private Vector<ModificationListener> directListenerList = new Vector<ModificationListener>();
+    private Vector<ModificationListener> directListenerList = new Vector<>();
     public CommandHistory commandHistory = new CommandHistory();
     Logger logger;
 
@@ -268,7 +268,7 @@ public class ClientFacadeImpl implements ClientFacade, StorageUpdateListener {
             return Collections.emptyList();
         }
         synchronized (this) {
-            Collection<ModificationListener> list = new ArrayList<ModificationListener>(3);
+            Collection<ModificationListener> list = new ArrayList<>(3);
             Iterator<ModificationListener> it = modificatonListenerList.iterator();
             while (it.hasNext()) {
                 ModificationListener listener =  it.next();

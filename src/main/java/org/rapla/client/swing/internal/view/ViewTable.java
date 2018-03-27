@@ -76,7 +76,7 @@ public class ViewTable<T> extends RaplaGUIComponent
         this.infoFactory = infoFactory;
         this.ioInterface = ioInterface;
         this.dialogUiFactory = dialogUiFactory;
-        linkMap = new HashMap<Integer,Object>(7);
+        linkMap = new HashMap<>(7);
         htmlView.addHyperlinkListener(this);
         htmlView.setBorder(BorderFactory.createEmptyBorder(5,5,5,5));
         pane.setMaximumSize( new Dimension( 600, 500 ));
@@ -128,14 +128,7 @@ public class ViewTable<T> extends RaplaGUIComponent
             htmlView.repaint();
         }
         final JViewport viewport = pane.getViewport();
-        SwingUtilities.invokeLater( new Runnable() {
-            
-            @Override
-            public void run() {
-                viewport.setViewPosition(new Point(0,0));
-                
-            }
-        });
+        SwingUtilities.invokeLater(() -> viewport.setViewPosition(new Point(0,0)));
     }
 
     public void setTitle(String text) {
@@ -164,10 +157,6 @@ public class ViewTable<T> extends RaplaGUIComponent
 
     public void hyperlinkUpdate(HyperlinkEvent e) {
         if (e.getEventType() == HyperlinkEvent.EventType.ACTIVATED) {
-        	if ( true)
-        	{
-        	
-        	}
         	String link = e.getDescription();
         	
         	try

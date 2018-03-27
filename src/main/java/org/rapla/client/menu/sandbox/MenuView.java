@@ -13,7 +13,7 @@ public interface MenuView<W>
     {
     }
     
-    public void setPresenter(Presenter presenter);
+    void setPresenter(Presenter presenter);
 
     Void showException(Throwable ex);
 

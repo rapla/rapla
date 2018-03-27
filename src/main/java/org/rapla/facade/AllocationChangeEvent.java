@@ -22,7 +22,7 @@ import java.util.Map;
 
 public class AllocationChangeEvent
 {
-    static Map<String,Type> TYPES = new HashMap<String,Type>();
+    static Map<String,Type> TYPES = new HashMap<>();
 
     public static class Type
     {

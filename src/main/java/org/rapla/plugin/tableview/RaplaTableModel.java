@@ -19,7 +19,7 @@ public class RaplaTableModel<T, C>
     private List<T> rows = new ArrayList<>();
     private RaplaTableColumn<T, C>[] columns;
     private List<Object[]> data = new ArrayList<>();
-    private List<String> columnNames = new ArrayList<String>();
+    private List<String> columnNames = new ArrayList<>();
 
     public RaplaTableModel( Collection<RaplaTableColumn<T, C>> columnPlugins) {
         columns = new RaplaTableColumn[columnPlugins.size()];

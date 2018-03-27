@@ -43,12 +43,12 @@ import java.util.Map;
 public class SwingCompactWeekView extends AbstractSwingCalendar
 {
     private SmallDaySlot[] slots = new SmallDaySlot[0];
-    private List<List<Block>> rows = new ArrayList<List<Block>>();
+    private List<List<Block>> rows = new ArrayList<>();
     DraggingHandler draggingHandler = new DraggingHandler(this, false);
     SelectionHandler selectionHandler = new SelectionHandler(this);
     String[] rowNames = new String[] {};
     int leftColumnSize = 100;
-    Map<Block, Integer> columnMap = new HashMap<Block, Integer>();
+    Map<Block, Integer> columnMap = new HashMap<>();
 
     public SwingCompactWeekView() {
         this(true);
@@ -60,7 +60,7 @@ public class SwingCompactWeekView extends AbstractSwingCalendar
     }
 
     public Collection<Block> getBlocks() {
-        ArrayList<Block> list = new ArrayList<Block>();
+        ArrayList<Block> list = new ArrayList<>();
         for (int i=0;i<slots.length;i++) {
             list.addAll(slots[i].getBlocks());
         }
@@ -227,7 +227,7 @@ public class SwingCompactWeekView extends AbstractSwingCalendar
     
     protected List<Block> getBlocksForColumn(List<Block> blocks,int column)
     {
-    	List<Block> result = new ArrayList<Block>();
+    	List<Block> result = new ArrayList<>();
     	//Date startDate = getDateFromColumn(column);
     	if ( blocks != null) {
     		
@@ -260,7 +260,7 @@ public class SwingCompactWeekView extends AbstractSwingCalendar
     }
 
     private void addRow() {
-        rows.add( rows.size(), new ArrayList<Block>());
+        rows.add( rows.size(), new ArrayList<>());
     }
 
     public int getSlotNr( DaySlot slot) {

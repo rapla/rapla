@@ -104,14 +104,7 @@ public class RaplaStartOption extends RaplaGUIComponent implements SystemOptionP
         countryChooser = new CountryChooser(getLogger(),i18n,raplaLocale,localeService);
         panel.add( new JLabel(i18n.getString("server.country") ), "0,6");
         panel.add( countryChooser.getComponent(), "2,6");
-        languageChooser.addActionListener(new ActionListener()
-        {
-            @Override
-            public void actionPerformed(ActionEvent e)
-            {
-                countryChooser.changeLanguage(languageChooser.getSelectedLanguage());
-            }
-        });
+        languageChooser.addActionListener(e -> countryChooser.changeLanguage(languageChooser.getSelectedLanguage()));
 
         panel.add(new JLabel( getString("defaultselection") + " '" + getString("only_own_reservations") +"'"), "0,8");
 		ownReservations = new JCheckBox();

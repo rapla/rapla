@@ -52,19 +52,19 @@ import java.util.Set;
 
 public class LocalCache implements EntityResolver
 {
-    Map<String, String> passwords = new HashMap<String, String>();
+    Map<String, String> passwords = new HashMap<>();
     Map<String, Entity> entities;
 
     //Map<String,ConflictImpl> disabledConflicts = new HashMap<String,ConflictImpl>();
     Map<String,ReferenceInfo<Appointment>> disabledConflictApp1 = new HashMap<>();
     Map<String,ReferenceInfo<Appointment>> disabledConflictApp2 = new HashMap<>();
-    Map<String, Date> conflictLastChanged = new HashMap<String, Date>();
+    Map<String, Date> conflictLastChanged = new HashMap<>();
 
     Map<String, DynamicTypeImpl> dynamicTypes;
     Map<String, UserImpl> users;
     Map<String, AllocatableImpl> resources;
     Map<String, ReservationImpl> reservations;
-    Map<ReferenceInfo<Allocatable>, GraphNode> graph = new LinkedHashMap<ReferenceInfo<Allocatable>, GraphNode>();
+    Map<ReferenceInfo<Allocatable>, GraphNode> graph = new LinkedHashMap<>();
 
     private String clientUserId;
     private final PermissionController permissionController;
@@ -72,12 +72,12 @@ public class LocalCache implements EntityResolver
     public LocalCache(PermissionController permissionController)
     {
         this.permissionController = permissionController;
-        entities = new HashMap<String, Entity>();
+        entities = new HashMap<>();
         // top-level-entities
-        reservations = new LinkedHashMap<String, ReservationImpl>();
-        users = new LinkedHashMap<String, UserImpl>();
-        resources = new LinkedHashMap<String, AllocatableImpl>();
-        dynamicTypes = new LinkedHashMap<String, DynamicTypeImpl>();
+        reservations = new LinkedHashMap<>();
+        users = new LinkedHashMap<>();
+        resources = new LinkedHashMap<>();
+        dynamicTypes = new LinkedHashMap<>();
         //initSuperCategory();
     }
 
@@ -332,7 +332,7 @@ public class LocalCache implements EntityResolver
 
     public List<Entity> getVisibleEntities(final User forUser)
     {
-        List<Entity> result = new ArrayList<Entity>();
+        List<Entity> result = new ArrayList<>();
         final CategoryImpl superCategory = getSuperCategory();
         result.addAll(CategoryImpl.getRecursive(superCategory));
         result.addAll(getDynamicTypes());
@@ -437,14 +437,7 @@ public class LocalCache implements EntityResolver
 
     public Provider<Category> getSuperCategoryProvider()
     {
-        return new Provider<Category>()
-        {
-
-            public Category get()
-            {
-                return getSuperCategory();
-            }
-        };
+        return () -> getSuperCategory();
     }
 
     @SuppressWarnings("unchecked") public Collection<User> getUsers()
@@ -511,7 +504,7 @@ public class LocalCache implements EntityResolver
 
     public Collection<Conflict> getDisabledConflicts()
     {
-        List<Conflict> disabled = new ArrayList<Conflict>();
+        List<Conflict> disabled = new ArrayList<>();
         for (String conflictId : getDisabledConflictIds())
         {
             Date lastChanged = conflictLastChanged.get(conflictId);
@@ -591,7 +584,7 @@ public class LocalCache implements EntityResolver
             }
         }
 
-        Map<GraphNode, ConnectionType> connections = new LinkedHashMap<GraphNode, ConnectionType>();
+        Map<GraphNode, ConnectionType> connections = new LinkedHashMap<>();
 
         @Override public String toString()
         {
@@ -640,7 +633,7 @@ public class LocalCache implements EntityResolver
                 {
                     if (id != null)
                     {
-                        ReferenceInfo<Allocatable> targetReference = new ReferenceInfo<Allocatable>(id, Allocatable.class);
+                        ReferenceInfo<Allocatable> targetReference = new ReferenceInfo<>(id, Allocatable.class);
                         final GraphNode node = getOrCreate(ref);
                         final GraphNode targetNode = getOrCreate(targetReference);
                         node.addConnection(targetNode, sourceType);
@@ -665,7 +658,7 @@ public class LocalCache implements EntityResolver
 
     public Set<ReferenceInfo<Allocatable>> getDependentRef(ReferenceInfo<Allocatable> allocatableRef)
     {
-        Set<ReferenceInfo<Allocatable>> allocatableIds = new LinkedHashSet<ReferenceInfo<Allocatable>>();
+        Set<ReferenceInfo<Allocatable>> allocatableIds = new LinkedHashSet<>();
         if (allocatableRef != null)
         {
             fillDependent(allocatableIds, allocatableRef);
@@ -675,7 +668,7 @@ public class LocalCache implements EntityResolver
 
     public Set<ReferenceInfo<Allocatable>> getDependent(final Collection<Allocatable> allocatables)
     {
-        Set<ReferenceInfo<Allocatable>> allocatableIds = new LinkedHashSet<ReferenceInfo<Allocatable>>();
+        Set<ReferenceInfo<Allocatable>> allocatableIds = new LinkedHashSet<>();
         for (Allocatable allocatable : allocatables)
         {
             ReferenceInfo<Allocatable> allocatableRef = allocatable.getReference();

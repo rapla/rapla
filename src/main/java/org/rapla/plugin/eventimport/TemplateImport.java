@@ -8,10 +8,10 @@ import javax.ws.rs.Path;
 @Path( "templateimport" )
 public interface TemplateImport
 {
-    public static final String BEGIN_KEY = "DatumVon";
-    public static final String STORNO_KEY = "StorniertAm";
-    public static final String PRIMARY_KEY = "Seminarnummer";
-    public static final String TEMPLATE_KEY = "TitelName";
+    String BEGIN_KEY = "DatumVon";
+    String STORNO_KEY = "StorniertAm";
+    String PRIMARY_KEY = "Seminarnummer";
+    String TEMPLATE_KEY = "TitelName";
 
     @POST
     @Path("importFromServer")

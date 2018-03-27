@@ -56,12 +56,12 @@ public class PropertyResourceBundleWrapper extends ResourceBundle {
      */
     public Enumeration<String> getKeys() {
         ResourceBundle parent = this.parent;
-        Set<String> set = new LinkedHashSet<String>(lookup.keySet());
+        Set<String> set = new LinkedHashSet<>(lookup.keySet());
         if ( parent != null)
         {
         	set.addAll( parent.keySet());
         }
-        Vector<String> vector = new Vector<String>(set);
+        Vector<String> vector = new Vector<>(set);
 		Enumeration<String> enum1 = vector.elements();
         return enum1;
     }

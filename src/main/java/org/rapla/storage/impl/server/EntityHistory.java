@@ -82,7 +82,7 @@ public class EntityHistory
         }
     }
 
-    private final Map<ReferenceInfo, List<EntityHistory.HistoryEntry>> map = new LinkedHashMap<ReferenceInfo, List<EntityHistory.HistoryEntry>>();
+    private final Map<ReferenceInfo, List<EntityHistory.HistoryEntry>> map = new LinkedHashMap<>();
     private final JsonParserWrapper.JsonParser gson;
 
     public EntityHistory()
@@ -116,13 +116,7 @@ public class EntityHistory
         }
         final EntityHistory.HistoryEntry emptyEntryWithTimestamp = new EntityHistory.HistoryEntry();
         emptyEntryWithTimestamp.timestamp = since.getTime();
-        int index = Collections.binarySearch(historyEntries, emptyEntryWithTimestamp, new Comparator<EntityHistory.HistoryEntry>()
-        {
-            @Override public int compare(EntityHistory.HistoryEntry o1, EntityHistory.HistoryEntry o2)
-            {
-                return (int) (o1.timestamp - o2.timestamp);
-            }
-        });
+        int index = Collections.binarySearch(historyEntries, emptyEntryWithTimestamp, (o1, o2) -> (int) (o1.timestamp - o2.timestamp));
         /*
         * possible results:
         * we get an index >= 0 -> We found an entry, which has the timestamp of the last update from the client. We need to get this one
@@ -140,7 +134,7 @@ public class EntityHistory
         return getEntity(entry);
     }
 
-    Map<Class<? extends Entity>, Class<? extends Entity>> typeImpl = new HashMap<Class<? extends Entity>, Class<? extends Entity>>();
+    Map<Class<? extends Entity>, Class<? extends Entity>> typeImpl = new HashMap<>();
 
     {
         addMap(Reservation.class, ReservationImpl.class);
@@ -172,7 +166,7 @@ public class EntityHistory
         List<EntityHistory.HistoryEntry> historyEntries = map.get(id);
         if (historyEntries == null)
         {
-            historyEntries = new ArrayList<EntityHistory.HistoryEntry>();
+            historyEntries = new ArrayList<>();
             map.put(id, historyEntries);
         }
         final EntityHistory.HistoryEntry newEntry = new EntityHistory.HistoryEntry(id, timestamp.getTime(), json, isDelete);

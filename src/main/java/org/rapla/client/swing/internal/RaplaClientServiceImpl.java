@@ -13,6 +13,17 @@ main.raplaContainer.dispose();
  *--------------------------------------------------------------------------*/
 package org.rapla.client.swing.internal;
 
+import org.apache.http.impl.client.CloseableHttpClient;
+import org.apache.http.impl.client.HttpClients;
+import org.apache.http.impl.conn.PoolingHttpClientConnectionManager;
+import org.apache.http.impl.nio.client.CloseableHttpAsyncClient;
+import org.apache.http.nio.client.HttpAsyncClient;
+import org.jboss.resteasy.client.jaxrs.ClientHttpEngine;
+import org.jboss.resteasy.client.jaxrs.ResteasyClient;
+import org.jboss.resteasy.client.jaxrs.ResteasyClientBuilder;
+import org.jboss.resteasy.client.jaxrs.ResteasyWebTarget;
+import org.jboss.resteasy.client.jaxrs.engines.ApacheHttpAsyncClient4Engine;
+import org.jboss.resteasy.client.jaxrs.engines.ApacheHttpClient4Engine;
 import org.rapla.ConnectInfo;
 import org.rapla.RaplaResources;
 import org.rapla.RaplaSystemInfo;
@@ -29,6 +40,7 @@ import org.rapla.client.swing.SwingSchedulerImpl;
 import org.rapla.client.swing.images.RaplaImages;
 import org.rapla.components.i18n.BundleManager;
 import org.rapla.components.i18n.internal.AbstractBundleManager;
+import org.rapla.entities.Entity;
 import org.rapla.entities.User;
 import org.rapla.facade.UpdateErrorListener;
 import org.rapla.facade.client.ClientFacade;
@@ -41,6 +53,8 @@ import org.rapla.framework.StartupEnvironment;
 import org.rapla.inject.DefaultImplementation;
 import org.rapla.inject.InjectionContext;
 import org.rapla.logger.Logger;
+import org.rapla.rest.client.swing.JavaClientServerConnector;
+import org.rapla.rest.client.swing.JsonRemoteConnector;
 import org.rapla.scheduler.CommandScheduler;
 import org.rapla.scheduler.Promise;
 import org.rapla.storage.RaplaSecurityException;
@@ -55,13 +69,22 @@ import javax.inject.Singleton;
 import javax.swing.AbstractAction;
 import javax.swing.Action;
 import javax.swing.SwingUtilities;
+import javax.ws.rs.client.ClientRequestFilter;
+import javax.ws.rs.client.Invocation;
+import javax.ws.rs.core.MediaType;
+import javax.ws.rs.core.Response;
 import java.awt.Component;
 import java.awt.Dimension;
 import java.awt.Toolkit;
 import java.awt.Window;
 import java.awt.event.ActionEvent;
+import java.io.IOException;
+import java.net.URISyntaxException;
 import java.net.URL;
+import java.util.Map;
 import java.util.Vector;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
 import java.util.concurrent.Semaphore;
 
 /** Implementation of the UserClientService.
@@ -72,7 +95,7 @@ public class RaplaClientServiceImpl implements ClientService, UpdateErrorListene
 {
 
     private final RemoteOperator operator;
-    Vector<RaplaClientListener> listenerList = new Vector<RaplaClientListener>();
+    Vector<RaplaClientListener> listenerList = new Vector<>();
     RaplaResources i18n;
     boolean started;
     boolean restartingGUI;
@@ -93,6 +116,65 @@ public class RaplaClientServiceImpl implements ClientService, UpdateErrorListene
     final private Provider<Application> applicationProvider;
     RemoteAuthentificationService authentificationService;
     RemoteConnectionInfo connectionInfo;
+
+    static {
+        //PoolingHttpClientConnectionManager cm = new PoolingHttpClientConnectionManager();
+        //CloseableHttpAsyncClient httpClient = null;
+        //CloseableHttpClient httpClient = HttpClients.custom().setConnectionManager(cm).build();
+        // TODO Werte aus config holen
+        //cm.setMaxTotal(10); // max Anzahl Connections
+        //cm.setDefaultMaxPerRoute(10); // Increase default max connection per route to 10
+        //ClientHttpEngine engine = new ApacheHttpAsyncClient4Engine(httpClient, true);
+
+        final ResteasyClient client = new ResteasyClientBuilder().useAsyncHttpEngine().build();
+        JavaClientServerConnector.setJsonRemoteConnector(new JsonRemoteConnector() {
+            @Override
+            public CallResult sendCallWithString(String requestMethod, URL methodURL, String body, String authenticationToken, String contentType, Map<String, String> additionalHeaders) throws IOException {
+                final ResteasyWebTarget target;
+                try
+                {
+                    target = client.target(methodURL.toURI());
+                }
+                catch (URISyntaxException e)
+                {
+                    throw new IOException(e);
+                }
+                Invocation.Builder builder = target.request(contentType).header("Authorization", authenticationToken);
+                for (Map.Entry<String, String> additionalHeader : additionalHeaders.entrySet())
+                {
+                    builder = builder.header( additionalHeader.getKey(),additionalHeader.getValue());
+                }
+                builder.accept(contentType);
+                final Response response;
+                if ( requestMethod.equals("GET"))
+                {
+                     response = builder.get();
+                }
+                else
+                {
+                    javax.ws.rs.client.Entity entity = javax.ws.rs.client.Entity.entity(body, contentType);
+                    final Future<Response> post = builder.async().post(entity);
+                    try
+                    {
+                        response = post.get();
+                    }
+                    catch (InterruptedException e)
+                    {
+                        throw new IOException(e);
+                    }
+                    catch (ExecutionException e)
+                    {
+                        throw new IOException(e);
+                    }
+                    int responseCode5 = response.getStatus();
+                }
+                final int responseCode = response.getStatus();
+                final String resultString = response.readEntity(String.class);
+                return new CallResult(resultString, responseCode);
+            }
+        });
+    }
+
     @Inject
     public RaplaClientServiceImpl(StartupEnvironment env, Logger logger, DialogUiFactoryInterface dialogUiFactory, ClientFacade facade, RaplaResources i18n, RaplaSystemInfo systemInfo,
                                   RaplaLocale raplaLocale, BundleManager bundleManager, CommandScheduler commandScheduler, final RemoteOperator storageOperator,
@@ -150,17 +232,13 @@ public class RaplaClientServiceImpl implements ClientService, UpdateErrorListene
         {
             try
             {
-                Thread.setDefaultUncaughtExceptionHandler(new Thread.UncaughtExceptionHandler()
-                {
-                    public void uncaughtException(Thread t, Throwable e)
+                Thread.setDefaultUncaughtExceptionHandler((t, e) -> {
+                    logger.error("uncaught exception", e);
+                    if ( e instanceof IllegalMonitorStateException)
                     {
-                        logger.error("uncaught exception", e);
-                        if ( e instanceof IllegalMonitorStateException)
-                        {
-                            System.exit(-1);
-                        }
-
+                        System.exit(-1);
                     }
+
                 });
             }
             catch (Throwable ex)
@@ -588,7 +666,7 @@ public class RaplaClientServiceImpl implements ClientService, UpdateErrorListene
     }
 
 
-    private final void initRefresh() throws RaplaException {
+    private void initRefresh() throws RaplaException {
         int intervalLength = facade.getRaplaFacade().getSystemPreferences().getEntryAsInteger(ClientFacade.REFRESH_INTERVAL_ENTRY, ClientFacade.REFRESH_INTERVAL_DEFAULT);
         schedule = commandScheduler.schedule(()->operator.triggerRefresh(), 0, intervalLength);
     }
@@ -606,32 +684,27 @@ public class RaplaClientServiceImpl implements ClientService, UpdateErrorListene
         this.schedule = null;
         if (started)
         {
-            SwingUtilities.invokeLater(new Runnable()
-            {
-
-                public void run()
+            SwingUtilities.invokeLater(() -> {
+                boolean modal = false;
+                String title = i18n.getString("restart_client");
+                try
                 {
-                    boolean modal = false;
-                    String title = i18n.getString("restart_client");
-                    try
+                    Component owner = null;
+                    final DialogInterface dialog = dialogUiFactory.createInfoDialog(new SwingPopupContext(owner, null), title, message);
+                    dialog.setAbortAction(()->
                     {
-                        Component owner = null;
-                        final DialogInterface dialog = dialogUiFactory.createInfoDialog(new SwingPopupContext(owner, null), title, message);
-                        dialog.setAbortAction(()->
-                        {
-                            getLogger().warn("restart");
-                            dialog.close();
-                            restart();
-                        }
-                        );
-                        dialog.start(true);
+                        getLogger().warn("restart");
+                        dialog.close();
+                        restart();
                     }
-                    catch (Throwable e)
-                    {
-                        getLogger().error(e.getMessage(), e);
-                    }
-
+                    );
+                    dialog.start(true);
                 }
+                catch (Throwable e)
+                {
+                    getLogger().error(e.getMessage(), e);
+                }
+
             });
         }
     }

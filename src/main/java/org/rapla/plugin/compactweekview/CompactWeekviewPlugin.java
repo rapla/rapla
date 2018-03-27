@@ -6,5 +6,5 @@ import org.rapla.framework.TypedComponentRole;
 public interface CompactWeekviewPlugin
 {
     String COMPACT_WEEK_VIEW = "week_compact";
-    TypedComponentRole<RaplaConfiguration> CONFIG = new TypedComponentRole<RaplaConfiguration>(COMPACT_WEEK_VIEW + ".config");
+    TypedComponentRole<RaplaConfiguration> CONFIG = new TypedComponentRole<>(COMPACT_WEEK_VIEW + ".config");
 }

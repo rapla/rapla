@@ -61,7 +61,7 @@ final public class AttributeImpl extends SimpleEntity implements Attribute
     private boolean packages;
     private boolean optional = true;
 
-    private Map<String, String> annotations = new LinkedHashMap<String, String>();
+    private Map<String, String> annotations = new LinkedHashMap<>();
     private String defaultValue = null;
     private transient DynamicTypeImpl parent;
 
@@ -544,7 +544,7 @@ final public class AttributeImpl extends SimpleEntity implements Attribute
                     // if the category can't be found under the root then we check if we find a category path with the same keys
                     List<String> keyPathRootCategory = ((CategoryImpl) rootCategory).getKeyPath(null);
                     List<String> keyPath = ((CategoryImpl) temp).getKeyPath(null);
-                    List<String> nonCommonPath = new ArrayList<String>();
+                    List<String> nonCommonPath = new ArrayList<>();
                     boolean differInKeys = false;
                     //
                     for (int i = 0; i < keyPath.size(); i++)

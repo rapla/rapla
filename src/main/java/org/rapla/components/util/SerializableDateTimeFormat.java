@@ -191,7 +191,7 @@ public class SerializableDateTimeFormat
 		if ( includeMilliseconds)
 		{
 			buf.append('.');
-			append( buf, time.milliseconds, 4 );
+			append( buf, time.milliseconds, 3 );
 		}
 		//buf.append(  'Z');
 		return buf.toString();

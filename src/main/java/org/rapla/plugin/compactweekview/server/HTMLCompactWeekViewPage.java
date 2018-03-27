@@ -89,7 +89,7 @@ public class HTMLCompactWeekViewPage extends AbstractHTMLCalendarPage implements
             // put all Allocatables in the same group
             strategy = new GroupAllocatablesStrategy( getRaplaLocale().getLocale() ) {
                 protected Collection<List<Block>> group(List<Block> blockList) {
-                    ArrayList<List<Block>> list = new ArrayList<List<Block>>();
+                    ArrayList<List<Block>> list = new ArrayList<>();
                     list.add( blockList );
                     return list;
                 }

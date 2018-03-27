@@ -169,7 +169,7 @@ public class SwingWeekView extends AbstractSwingCalendar
 
     public Collection<Block> getBlocks()
     {
-        ArrayList<Block> list = new ArrayList<Block>();
+        ArrayList<Block> list = new ArrayList<>();
         for (int i = 0; i < getDaysInView(); i++)
         {
             list.addAll(daySlots[i].getBlocks());

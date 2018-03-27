@@ -35,7 +35,7 @@ public class SmallDaySlot extends AbstractDaySlot
     public static Color LINE_COLOR = new Color(0xaa, 0xaa, 0xaa);
     public static Color WORKTIME_BACKGROUND = Color.white;
     
-    private List<Block> blocks = new LinkedList<Block>();
+    private List<Block> blocks = new LinkedList<>();
     private int slotxsize;
     private Color headerColor;
     private Color headerBackground;

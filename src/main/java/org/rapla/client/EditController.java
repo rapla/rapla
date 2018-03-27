@@ -35,7 +35,7 @@ public class EditController
         final Reservation reservation = appointmentBlock.getAppointment().getReservation();
         String info = reservation.getId();
         final List<Reservation> appointmentBlocks = Collections.singletonList(reservation);
-        EditApplicationEventContext context = new EditApplicationEventContext<Reservation>(appointmentBlocks);
+        EditApplicationEventContext context = new EditApplicationEventContext<>(appointmentBlocks);
         context.setAppointmentBlock(appointmentBlock);
         final ApplicationEvent event = new ApplicationEvent(applicationEventId, info, popupContext, context);
         eventBus.publish(event);

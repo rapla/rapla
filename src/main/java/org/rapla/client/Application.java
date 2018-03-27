@@ -201,11 +201,7 @@ public class Application implements ApplicationView.Presenter, ModificationListe
 
         ModifiableCalendarState calendarState = new ModifiableCalendarState(clientFacade, calendarModelProvider);
 
-        ((ClientFacadeImpl) clientFacade).addDirectModificationListener(new ModificationListener() {
-            public void dataChanged(ModificationEvent evt) throws RaplaException {
-                calendarState.dataChanged(evt);
-            }
-        });
+        ((ClientFacadeImpl) clientFacade).addDirectModificationListener(evt -> calendarState.dataChanged(evt));
 
         final RaplaFacade raplaFacade = clientFacade.getRaplaFacade();
         raplaFacade.getReservations(clientFacade.getUser(), null, null, null);

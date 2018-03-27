@@ -29,8 +29,8 @@ import java.util.HashMap;
 import java.util.Map;
 
 public abstract class RaplaAction extends RaplaGUIComponent implements Action {
-    private Map<String,Object> values = new HashMap<String,Object>();
-    private ArrayList<PropertyChangeListener> listenerList = new ArrayList<PropertyChangeListener>();
+    private Map<String,Object> values = new HashMap<>();
+    private ArrayList<PropertyChangeListener> listenerList = new ArrayList<>();
     I18nIcon icon;
 
     public RaplaAction(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger)

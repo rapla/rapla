@@ -328,7 +328,7 @@ public class FacadeImpl implements RaplaFacade {
 	public Promise<Collection<Reservation>> getTemplateReservations(Allocatable template)
 	{
 		User user = null;
-		Collection<Allocatable> allocList = new ArrayList<Allocatable>();
+		Collection<Allocatable> allocList = new ArrayList<>();
 		allocList.add(template);
 		Date start = null;
 		Date end = null;
@@ -363,7 +363,7 @@ public class FacadeImpl implements RaplaFacade {
 
 	static public DynamicType[] getDynamicTypes(StorageOperator operator,String classificationType, User user)
 			throws RaplaException {
-		ArrayList<DynamicType> result = new ArrayList<DynamicType>();
+		ArrayList<DynamicType> result = new ArrayList<>();
 		Collection<DynamicType> collection = operator.getDynamicTypes();
 		PermissionController permissionController = operator.getPermissionController();
 		for (DynamicType type: collection) {
@@ -488,7 +488,7 @@ public class FacadeImpl implements RaplaFacade {
 //	}
 	
 	public Promise<Map<Allocatable,Collection<Appointment>>> getAllocatableBindings(Collection<Allocatable> allocatables, Collection<Appointment> appointments)  {
-		Collection<Reservation> ignoreList = new HashSet<Reservation>();
+		Collection<Reservation> ignoreList = new HashSet<>();
 		if ( appointments != null)
 		{
 			for (Appointment app: appointments)
@@ -824,7 +824,7 @@ public class FacadeImpl implements RaplaFacade {
 		for (int i = 0; i < dts.length; i++) {
 			String key = dts[i].getKey();
 			int len = classificationType.length();
-			if (key.indexOf(classificationType) >= 0 && key.length() > len && Character.isDigit(key.charAt(len))) {
+			if (key.contains(classificationType) && key.length() > len && Character.isDigit(key.charAt(len))) {
 				try {
 					int value = Integer.valueOf(key.substring(len)).intValue();
 					if (value >= max)
@@ -935,7 +935,7 @@ public class FacadeImpl implements RaplaFacade {
 
 	@NotNull
 	private <T extends Entity> List<Entity> cast2Entity(Collection<T> list) {
-		List<Entity> castedList = new ArrayList<Entity>();
+		List<Entity> castedList = new ArrayList<>();
 		for ( Entity entity:list)
 		{
 			castedList.add( entity);
@@ -945,7 +945,7 @@ public class FacadeImpl implements RaplaFacade {
 
 	@NotNull
 	private <T extends Entity> List<T> castEntity(Collection<Entity> result) {
-		List<T> castedResult = new ArrayList<T>();
+		List<T> castedResult = new ArrayList<>();
 		for ( Entity entity:result)
 		{
 			@SuppressWarnings("unchecked")
@@ -1144,7 +1144,7 @@ public class FacadeImpl implements RaplaFacade {
 	private Reservation cloneReservation(Reservation obj,Iterator<ReferenceInfo<Reservation>> reservationIds,Iterator<ReferenceInfo<Appointment>> appoimtmentIds, User user)  throws RaplaException{
 		// first we do a reservation deep clone
 		Reservation clone =  obj.clone();
-		HashMap<Allocatable, Appointment[]> restrictions = new HashMap<Allocatable, Appointment[]>();
+		HashMap<Allocatable, Appointment[]> restrictions = new HashMap<>();
 		Allocatable[] allocatables = clone.getAllocatables();
 
 		for (Allocatable allocatable:allocatables) {
@@ -1253,7 +1253,7 @@ public class FacadeImpl implements RaplaFacade {
 	@Override
 	public <T extends Entity> Map<T,T> getPersistantForList(Collection<T> list) throws RaplaException {
 		Map<Entity,Entity> result = operator.getPersistant(list);
-		LinkedHashMap<T, T> castedResult = new LinkedHashMap<T, T>();
+		LinkedHashMap<T, T> castedResult = new LinkedHashMap<>();
 		for ( Map.Entry<Entity,Entity> entry: result.entrySet())
 		{
 			@SuppressWarnings("unchecked")
@@ -1300,13 +1300,13 @@ public class FacadeImpl implements RaplaFacade {
 			user = getWorkingUser();
 			if (storeList.size() == 0 && removeList.size() == 0)
 			{
-				return new ResolvedPromise<Void>((Void)null);
+				return new ResolvedPromise<>((Void) null);
 			}
 			storeList = checkAndAddTransientCategories(storeList, removeList);
 		}
 		catch ( Exception ex)
 		{
-			return new ResolvedPromise<Void>(ex);
+			return new ResolvedPromise<>(ex);
 		}
 		return operator.storeAndRemoveAsync(storeList, removeList, user);
 	}

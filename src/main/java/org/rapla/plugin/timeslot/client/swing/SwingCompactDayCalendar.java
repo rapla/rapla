@@ -166,7 +166,7 @@ public class SwingCompactDayCalendar extends AbstractRaplaSwingCalendar
             {
                 List<Allocatable> selectedAllocatables = getSortedAllocatables();
                 int columns = selectedAllocatables.size();
-                Set<Allocatable> allSelected = new HashSet<Allocatable>();
+                Set<Allocatable> allSelected = new HashSet<>();
                 int slots = columns * timeslots.size();
                 for (int i = 0; i < slots; i++)
                 {
@@ -299,7 +299,7 @@ public class SwingCompactDayCalendar extends AbstractRaplaSwingCalendar
         final Promise<RaplaBuilder> nextBuilderPromise = builderPromise.thenApply((builder) ->
         {
             timeslots = timeslotProvider.getTimeslots();
-            List<Integer> startTimes = new ArrayList<Integer>();
+            List<Integer> startTimes = new ArrayList<>();
             for (Timeslot slot : timeslots)
             {
                 startTimes.add(slot.getMinuteOfDay());
@@ -315,7 +315,7 @@ public class SwingCompactDayCalendar extends AbstractRaplaSwingCalendar
                 {
                     if (allocatables != null)
                     {
-                        Map<Block, Integer> map = new LinkedHashMap<Block, Integer>();
+                        Map<Block, Integer> map = new LinkedHashMap<>();
                         for (Block block : blocks)
                         {
                             int index = getIndex(allocatables, block);

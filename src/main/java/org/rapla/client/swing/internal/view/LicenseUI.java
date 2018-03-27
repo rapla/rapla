@@ -75,14 +75,7 @@ public class LicenseUI
         final JViewport viewport = new JViewport();
         viewport.setView(license);
         jScrollPane.setViewport(viewport);
-        SwingUtilities.invokeLater( new Runnable() {
-            
-            @Override
-            public void run() {
-                viewport.setViewPosition(new Point(0,0));
-                
-            }
-        });
+        SwingUtilities.invokeLater(() -> viewport.setViewPosition(new Point(0,0)));
     }
 
     public void showBottom() {

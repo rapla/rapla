@@ -121,14 +121,14 @@ public class AttributeDefaultConstraints extends AbstractEditField implements Ac
         try
         {
             final DynamicType[] dynamicTypes = raplaFacade.getDynamicTypes(DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RESOURCE);
-            typeList = new ArrayList<DynamicType>(Arrays.asList(dynamicTypes));
+            typeList = new ArrayList<>(Arrays.asList(dynamicTypes));
             typeList.addAll(Arrays.asList(raplaFacade.getDynamicTypes(DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_PERSON)));
         }
         catch (RaplaException e)
         {
             throw new RaplaInitializationException(e);
         }
-        dynamicTypeSelect = new ListField<DynamicType>(clientFacade, i18n, raplaLocale, logger, true);
+        dynamicTypeSelect = new ListField<>(clientFacade, i18n, raplaLocale, logger, true);
         dynamicTypeSelect.setVector(typeList);
         final Locale locale = raplaLocale.getLocale();
         dynamicTypeSelect.setRenderer(new NamedListCellRenderer(locale));
@@ -177,21 +177,16 @@ public class AttributeDefaultConstraints extends AbstractEditField implements Ac
         panel.add("1,15,l,t", specialkeyLabel); // BJO
         panel.add("3,15,l,t", annotationButton);
         annotationButton.setText(i18n.getString("edit"));
-        annotationButton.addActionListener(new ActionListener()
-        {
-
-            @Override public void actionPerformed(ActionEvent e)
+        annotationButton.addActionListener(e -> {
+            try
             {
-                try
-                {
-                    showAnnotationDialog();
-                }
-                catch (RaplaException ex)
-                {
-                    dialogUiFactory.showException(ex, new SwingPopupContext(getComponent(), null));
-                }
-
+                showAnnotationDialog();
             }
+            catch (RaplaException ex)
+            {
+                dialogUiFactory.showException(ex, new SwingPopupContext(getComponent(), null));
+            }
+
         });
 
         setModel();
@@ -206,17 +201,12 @@ public class AttributeDefaultConstraints extends AbstractEditField implements Ac
         defaultLabel.setText(i18n.getString("default") + ":");
         specialkeyLabel.setText(i18n.getString("options") + ":");
         categorySelect.addChangeListener(this);
-        categorySelect.addChangeListener(new ChangeListener()
-                                         {
-
-                                             public void stateChanged(ChangeEvent e)
-                                             {
-                                                 final Category rootCategory = categorySelect.getValue();
-                                                 defaultSelectCategory.setRootCategory(rootCategory);
-                                                 defaultSelectCategory.setValue(null);
-                                                 defaultSelectCategory.getComponent().setEnabled(rootCategory != null);
-                                             }
-                                         }
+        categorySelect.addChangeListener(e -> {
+            final Category rootCategory = categorySelect.getValue();
+            defaultSelectCategory.setRootCategory(rootCategory);
+            defaultSelectCategory.setValue(null);
+            defaultSelectCategory.getComponent().setEnabled(rootCategory != null);
+        }
 
         );
         name.addChangeListener(this);
@@ -228,14 +218,7 @@ public class AttributeDefaultConstraints extends AbstractEditField implements Ac
         defaultSelectText.addChangeListener(this);
         defaultSelectBoolean.addChangeListener(this);
         defaultSelectNumber.addChangeListener(this);
-        defaultSelectDate.addDateChangeListener(new DateChangeListener()
-        {
-
-            public void dateChanged(DateChangeEvent evt)
-            {
-                stateChanged(null);
-            }
-        });
+        defaultSelectDate.addDateChangeListener(evt -> stateChanged(null));
     }
 
     @SuppressWarnings("unchecked") private void setModel()

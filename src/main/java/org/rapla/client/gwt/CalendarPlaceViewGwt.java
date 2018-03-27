@@ -43,15 +43,9 @@ public class CalendarPlaceViewGwt implements CalendarPlaceView<IsWidget>, Naviga
     @Inject
     public CalendarPlaceViewGwt(BundleManager bundleManager)
     {
-        Window.addResizeHandler(new ResizeHandler()
-        {
-            @Override
-            public void onResize(ResizeEvent event)
-            {
-                final int height = event.getHeight();
-                updateHeights(height);
-            }
-
+        Window.addResizeHandler(event -> {
+            final int height = event.getHeight();
+            updateHeights(height);
         });
         completeView.addStyleName("calendarPlace");
         navigatorView = new NavigatorView(this, bundleManager);
@@ -62,13 +56,8 @@ public class CalendarPlaceViewGwt implements CalendarPlaceView<IsWidget>, Naviga
             resourcesDiv.setVisibleOn(DeviceSize.MD_LG);
             resourcesDiv.addStyleName("resources");
             completeView.add(resourcesDiv);
-            treeComponent = new TreeComponent(locale, new SelectionChangeHandler()
-            {
-                @Override
-                public void selectionChanged(Collection<Allocatable> selected)
-                {
-              //      getPresenter().resourcesSelected(selected);
-                }
+            treeComponent = new TreeComponent(locale, selected -> {
+          //      getPresenter().resourcesSelected(selected);
             });
             resourcesDiv.add(treeComponent);
         }

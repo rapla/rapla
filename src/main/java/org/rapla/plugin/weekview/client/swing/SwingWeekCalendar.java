@@ -162,7 +162,7 @@ public class SwingWeekCalendar extends AbstractRaplaSwingCalendar
 		Set<Integer> excludeDays = calendarOptions.getExcludeDays();
 		if ( days <3)
 		{
-			excludeDays = new HashSet<Integer>();
+			excludeDays = new HashSet<>();
 		}
         view.setExcludeDays( excludeDays );
         

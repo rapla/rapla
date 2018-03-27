@@ -193,7 +193,7 @@ class CategoryDetail extends RaplaGUIComponent implements ChangeListener
         {
             super.getListCellRendererComponent(list, value, index, isSelected, cellHasFocus);
 
-            if (filterStyle == true)
+            if (filterStyle )
                 setFont((getFont().deriveFont(Font.PLAIN)));
 
             if (value != null && value instanceof Category)
@@ -258,7 +258,7 @@ class CategoryDetail extends RaplaGUIComponent implements ChangeListener
         fireContentChanged();
     }
 
-    ArrayList<ChangeListener> listenerList = new ArrayList<ChangeListener>();
+    ArrayList<ChangeListener> listenerList = new ArrayList<>();
 
     public void addChangeListener(ChangeListener listener)
     {

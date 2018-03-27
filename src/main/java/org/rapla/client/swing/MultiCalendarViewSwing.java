@@ -54,7 +54,7 @@ public class MultiCalendarViewSwing implements MultiCalendarView
 {
     private final JPanel page = new JPanel();
     private final JPanel header = new JPanel();
-    Map<String, RaplaMenuItem> viewMenuItems = new HashMap<String, RaplaMenuItem>();
+    Map<String, RaplaMenuItem> viewMenuItems = new HashMap<>();
     private final JComboBox viewChooser;
 
     /** renderer for weekdays in month-view */

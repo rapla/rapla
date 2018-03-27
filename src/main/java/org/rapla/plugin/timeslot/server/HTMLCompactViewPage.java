@@ -81,7 +81,7 @@ public class HTMLCompactViewPage extends AbstractHTMLCalendarPage implements HTM
     protected RaplaBuilder createBuilder() throws RaplaException 
     {
     	List<Timeslot> timeslots = timeslotProvider.getTimeslots();
-    	List<Integer> startTimes = new ArrayList<Integer>();
+    	List<Integer> startTimes = new ArrayList<>();
     	for (Timeslot slot:timeslots) {
     		 startTimes.add( slot.getMinuteOfDay());
     	}

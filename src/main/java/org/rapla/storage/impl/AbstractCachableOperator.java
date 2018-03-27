@@ -272,7 +272,7 @@ public abstract class AbstractCachableOperator implements StorageOperator
         Date today = today();
         if (RaplaComponent.isTemplate(reservation))
         {
-            return new ResolvedPromise<Collection<Conflict>>(Collections.emptyList());
+            return new ResolvedPromise<>(Collections.emptyList());
         }
         final Collection<Allocatable> allocatables = Arrays.asList(reservation.getAllocatables());
         final Collection<Appointment> appointments = Arrays.asList(reservation.getAppointments());
@@ -281,7 +281,7 @@ public abstract class AbstractCachableOperator implements StorageOperator
                 appointments, ignoreList);
         final Promise<Collection<Conflict>> promise = allAllocatableBindingsPromise.thenApply((map) ->
         {
-            ArrayList<Conflict> conflictList = new ArrayList<Conflict>();
+            ArrayList<Conflict> conflictList = new ArrayList<>();
             for (Map.Entry<Allocatable, Map<Appointment, Collection<Appointment>>> entry : map.entrySet())
             {
                 Allocatable allocatable = entry.getKey();
@@ -319,7 +319,7 @@ public abstract class AbstractCachableOperator implements StorageOperator
     public Collection<Allocatable> getDependent(Collection<Allocatable> allocatables)
     {
         final Set<ReferenceInfo<Allocatable>> dependentIds = cache.getDependent(allocatables);
-        final Set<Allocatable> result = new LinkedHashSet<Allocatable>();
+        final Set<Allocatable> result = new LinkedHashSet<>();
         for (ReferenceInfo<Allocatable> dependentId : dependentIds)
         {
             Allocatable allocatable = tryResolve(dependentId);
@@ -347,7 +347,7 @@ public abstract class AbstractCachableOperator implements StorageOperator
         {
             Collection<User> collection = cache.getUsers();
             // We return a clone to avoid synchronization Problems
-            return new LinkedHashSet<User>(collection);
+            return new LinkedHashSet<>(collection);
         }
         finally
         {
@@ -363,7 +363,7 @@ public abstract class AbstractCachableOperator implements StorageOperator
         {
             Collection<DynamicType> collection = cache.getDynamicTypes();
             // We return a clone to avoid synchronization Problems
-            return new ArrayList<DynamicType>(collection);
+            return new ArrayList<>(collection);
         }
         finally
         {
@@ -446,7 +446,7 @@ public abstract class AbstractCachableOperator implements StorageOperator
     protected Collection<Allocatable> getAllocatables(ClassificationFilter[] filters, int maxPerType) throws RaplaException
     {
         checkLoaded();
-        Collection<Allocatable> allocatables = new LinkedHashSet<Allocatable>();
+        Collection<Allocatable> allocatables = new LinkedHashSet<>();
         RaplaLock.ReadLock readLock = lockManager.readLock();
         try
         {
@@ -519,7 +519,7 @@ public abstract class AbstractCachableOperator implements StorageOperator
         }
     }
 
-    protected Map<ReferenceInfo<Preferences>, PreferencesImpl> emptyPreferencesProxy = new HashMap<ReferenceInfo<Preferences>, PreferencesImpl>();
+    protected Map<ReferenceInfo<Preferences>, PreferencesImpl> emptyPreferencesProxy = new HashMap<>();
 
     public Preferences getPreferences(final User user, boolean createIfNotNull) throws RaplaException
     {
@@ -883,9 +883,9 @@ public abstract class AbstractCachableOperator implements StorageOperator
     final protected UpdateResult update(Date since, Date until, Collection<Entity> storeObjects1, Collection<PreferencePatch> preferencePatches,
             Collection<ReferenceInfo> removedIds) throws RaplaException
     {
-        HashMap<ReferenceInfo, Entity> oldEntities = new HashMap<ReferenceInfo, Entity>();
+        HashMap<ReferenceInfo, Entity> oldEntities = new HashMap<>();
         // First make a copyReservations of the old entities
-        Collection<Entity> storeObjects = new LinkedHashSet<Entity>(storeObjects1);
+        Collection<Entity> storeObjects = new LinkedHashSet<>(storeObjects1);
         for (Entity entity : storeObjects)
         {
             Entity persistantEntity = findPersistant(entity);
@@ -929,7 +929,7 @@ public abstract class AbstractCachableOperator implements StorageOperator
             storeObjects.add(clone);
 
         }
-        List<Entity> updatedEntities = new ArrayList<Entity>();
+        List<Entity> updatedEntities = new ArrayList<>();
         // Then update the new entities
         for (Entity entity : storeObjects)
         {
@@ -952,7 +952,7 @@ public abstract class AbstractCachableOperator implements StorageOperator
             cache.put(entity);
             updatedEntities.add(entity);
         }
-        Collection<ReferenceInfo> toRemove = new HashSet<ReferenceInfo>();
+        Collection<ReferenceInfo> toRemove = new HashSet<>();
         for (ReferenceInfo id : removedIds)
         {
             Entity persistantVersion = cache.tryResolve(id);
@@ -1006,7 +1006,7 @@ public abstract class AbstractCachableOperator implements StorageOperator
         //			user = resolve(cache,userId, User.class);
         //		}
 
-        Map<ReferenceInfo, Entity> updatedEntityMap = new LinkedHashMap<ReferenceInfo, Entity>();
+        Map<ReferenceInfo, Entity> updatedEntityMap = new LinkedHashMap<>();
         for (Entity toUpdate : updatedEntities)
         {
             updatedEntityMap.put(toUpdate.getReference(), toUpdate);

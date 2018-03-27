@@ -73,17 +73,11 @@ public class PrintAction extends RaplaAction {
                                         )
                           );
             
-            SwingUtilities.invokeLater( new Runnable() {
-                public void run()
-                {
-                    dialog.setSize(new Dimension(
-                                             Math.min(dimension.width,900)
-                                             ,Math.min(dimension.height-11,699)
-                                             )
-                               );
-                }
-                
-            }
+            SwingUtilities.invokeLater(() -> dialog.setSize(new Dimension(
+                                     Math.min(dimension.width,900)
+                                     ,Math.min(dimension.height-11,699)
+                                     )
+                       )
             );
             dialog.start(false);
             

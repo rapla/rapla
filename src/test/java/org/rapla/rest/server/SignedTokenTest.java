@@ -2,6 +2,7 @@ package org.rapla.rest.server;
 
 import io.jsonwebtoken.*;
 import io.jsonwebtoken.impl.crypto.MacProvider;
+import io.reactivex.functions.Function;
 import org.apache.commons.codec.binary.Base64;
 import org.junit.Assert;
 import org.junit.Before;
@@ -9,14 +10,14 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 import org.rapla.components.util.DateTools;
+import org.rapla.components.util.SerializableDateTimeFormat;
 import org.rapla.rest.server.token.SignedToken;
-import org.rapla.rest.server.token.TokenInvalidException;
 
 import java.security.*;
-import java.util.Date;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
+import java.text.DateFormat;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
@@ -26,11 +27,22 @@ public class SignedTokenTest {
     Key privateKey;
     Key publicKey;
     String seed;
-    Key signingKey;
-    Key unsigningKey;
-    JwtParser jwtParser;
+
     private static final String ASYMMETRIC_ALGO = "RSA";
-    final SignatureAlgorithm signatureAlgo = SignatureAlgorithm.HS256;
+
+
+    @Test
+    public void testDate() throws ParseException {
+        
+        DateFormat df = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSX");
+        df.setTimeZone(TimeZone.getTimeZone("UTC"));
+        final Date date = new Date();
+        final String format4 = SerializableDateTimeFormat.INSTANCE.formatTimestamp(date);
+        final String format = df.format(date);
+        Date parsed = df.parse( format);
+        Assert.assertEquals(date, parsed);
+        Assert.assertEquals(format4, format);
+    }
 
     @Before
     public void setUp() throws NoSuchAlgorithmException {
@@ -46,69 +58,51 @@ public class SignedTokenTest {
         PublicKey publicKeyObj = keyPair.getPublic();
         publicKey = publicKeyObj;
 
-        signingKey = MacProvider.generateKey(signatureAlgo);
-        unsigningKey = signingKey;
+        //signingKey = MacProvider.generateKey(signatureAlgo);
+        //unsigningKey = signingKey;
         //jwtParser = Jwts.parser().setSigningKey(publicKey);
-        jwtParser = Jwts.parser().setSigningKey(signingKey);
+
         //this.publicKey =base64.encodeAsString(publicKeyObj.getEncoded());
 
     }
 
     @Test
-    public void testPerformance() throws TokenInvalidException {
+    public void testSignedToken() throws Exception {
         SignedToken tokenGenerator = new SignedToken(-1, seed);
         final int tokenCount = 100000;
         final Date now = new Date();
-        final List<String> users = IntStream.range(1, tokenCount).mapToObj((i) -> "user" + i).collect(Collectors.toList());
-        Map<String,String> tokens = new LinkedHashMap<>();
-        long start = System.currentTimeMillis();
-        for ( String user:users)
-        {
-            tokens.put( user, tokenGenerator.newToken(user, calculateExpirationTime()));
-        }
-        final long timeStampAfterGenerate = System.currentTimeMillis();
-        long timeGenerate = timeStampAfterGenerate - start;
-        System.out.println("Time to generate " + tokenCount + " tokens " + timeGenerate + " ms");
-        for ( Map.Entry<String,String> entry: tokens.entrySet())
-        {
-            String text = entry.getKey();
-            String token = entry.getValue();
-            tokenGenerator.checkToken( token,text, now );
-        }
-        long timeCheck = System.currentTimeMillis() - timeStampAfterGenerate;
-        System.out.println("Time to check " + tokenCount + " tokens " + timeCheck + " ms");
+
+        Function<String,String> sign = (id)->tokenGenerator.newToken(id, calculateExpirationTime());
+        Function<String,String> check = (id)->tokenGenerator.checkToken(id, null,now).getData();
+        testSigning(sign, check, tokenCount);
     }
 
     @Test
-    public void testJWSToken()
-    {
+    public void testJWSTokenAsymetric() throws Exception {
+        Key signingKey = privateKey;
+        Key unsigningKey = publicKey;
+        final SignatureAlgorithm signatureAlgo = SignatureAlgorithm.RS256;
+        Function<String,String> sign = (id)->createJwt(signatureAlgo, signingKey, id);
+        JwtParser jwtParser = Jwts.parser().setSigningKey(unsigningKey);
+        Function<String,String> check = (id)->checkToken (jwtParser,id);
         final int tokenCount = 1000;
-        final List<String> users = IntStream.range(1, tokenCount).mapToObj((i) -> "user" + i).collect(Collectors.toList());
-        Map<String,String> tokens = new LinkedHashMap<>();
-        long start = System.currentTimeMillis();
-        for ( String user:users)
-        {
-            String compactJws = createJwt( user, user);
-            tokens.put( user, compactJws);
-        }
-        final long timeStampAfterGenerate = System.currentTimeMillis();
-        long timeGenerate = timeStampAfterGenerate - start;
-        System.out.println("Time to generate " + tokenCount + " tokens " + timeGenerate + " ms");
-        for ( Map.Entry<String,String> entry: tokens.entrySet())
-        {
-            String id = entry.getKey();
-            String token = entry.getValue();
-            final String s = checkToken(token);
-            Assert.assertEquals( id, s);
-        }
-        long timeCheck = System.currentTimeMillis() - timeStampAfterGenerate;
-        System.out.println("Time to check " + tokenCount + " tokens " + timeCheck + " ms");
-
-
+        testSigning(sign, check, tokenCount);
     }
 
 
-    public String createJwt(String username, String userId) {
+    @Test
+    public void testJWSTokenSymetric() throws Exception {
+        final SignatureAlgorithm signatureAlgo = SignatureAlgorithm.HS512;
+        Key signingKey = MacProvider.generateKey(signatureAlgo);
+        Key unsigningKey = signingKey;
+        Function<String,String> sign = (id)->createJwt(signatureAlgo, signingKey, id);
+        JwtParser jwtParser = Jwts.parser().setSigningKey(unsigningKey);
+        Function<String,String> check = (id)->checkToken (jwtParser,id);
+        final int tokenCount = 100000;
+        testSigning(sign, check, tokenCount);
+    }
+
+    public String createJwt( SignatureAlgorithm signatureAlgo, Key signingKey,String userId) {
         JwtBuilder builder = Jwts.builder()
                 //.claim("payload", loggedInUser.getPayload())
                 .setId(userId)
@@ -118,13 +112,36 @@ public class SignedTokenTest {
         ).compact();
     }
 
-    String checkToken(String accesTokenString) {
+    String checkToken(JwtParser jwtParser,String accesTokenString) {
 
         Claims claims = jwtParser
                 .parseClaimsJws(accesTokenString)
                 .getBody();
         final String id = claims.getId();
         return id;
+    }
+
+    public void testSigning(Function<String, String> sign, Function<String, String> check, int tokenCount) throws Exception {
+        final List<String> users = IntStream.range(1, tokenCount).mapToObj((i) -> "user" + i).collect(Collectors.toList());
+        Map<String,String> tokens = new LinkedHashMap<>();
+        long start = System.currentTimeMillis();
+        for ( String user:users)
+        {
+            String compactJws = sign.apply(  user);
+            tokens.put( user, compactJws);
+        }
+        final long timeStampAfterGenerate = System.currentTimeMillis();
+        long timeGenerate = timeStampAfterGenerate - start;
+        System.out.println("Time to generate " + tokenCount + " tokens " + timeGenerate + " ms");
+        for ( Map.Entry<String,String> entry: tokens.entrySet())
+        {
+            String id = entry.getKey();
+            String token = entry.getValue();
+            final String s = check.apply(token);
+            Assert.assertEquals( id, s);
+        }
+        long timeCheck = System.currentTimeMillis() - timeStampAfterGenerate;
+        System.out.println("Time to check " + tokenCount + " tokens " + timeCheck + " ms");
     }
 
     private Date calculateExpirationTime() {

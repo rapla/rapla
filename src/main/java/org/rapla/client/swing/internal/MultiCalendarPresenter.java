@@ -63,7 +63,7 @@ public class MultiCalendarPresenter implements CalendarContainer,Presenter
 {
     private static final String ERROR_NO_VIEW_DEFINED = "No views enabled. Please add a plugin in the menu admin/settings/plugins";
     
-    private final Map<String,RaplaMenuItem> viewMenuItems = new HashMap<String,RaplaMenuItem>();
+    private final Map<String,RaplaMenuItem> viewMenuItems = new HashMap<>();
     private final CalendarSelectionModel model;
     private final Set<SwingViewFactory> factoryList;
     private final DialogUiFactoryInterface dialogUiFactory;
@@ -199,14 +199,11 @@ public class MultiCalendarPresenter implements CalendarContainer,Presenter
     }
 
     private LinkedHashMap<String, String> getIds() {
-        List<SwingViewFactory> sortedList = new ArrayList<SwingViewFactory>(factoryList);
-        Collections.sort( sortedList, new Comparator<SwingViewFactory>() {
-            public int compare( SwingViewFactory arg0, SwingViewFactory arg1 )
-            {
-                SwingViewFactory f1 = arg0;
-                SwingViewFactory f2 = arg1;
-                return f1.getMenuSortKey().compareTo( f2.getMenuSortKey() );
-            }
+        List<SwingViewFactory> sortedList = new ArrayList<>(factoryList);
+        Collections.sort( sortedList, (arg0, arg1) -> {
+            SwingViewFactory f1 = arg0;
+            SwingViewFactory f2 = arg1;
+            return f1.getMenuSortKey().compareTo( f2.getMenuSortKey() );
         });
         final LinkedHashMap<String, String> result = new LinkedHashMap<>();
         for (Iterator<SwingViewFactory> it = sortedList.iterator();it.hasNext();) {

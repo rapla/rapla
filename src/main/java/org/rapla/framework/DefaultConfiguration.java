@@ -7,8 +7,8 @@ import java.util.Map;
 
 public class DefaultConfiguration implements Configuration {
 
-    Map<String,String> attributes = new LinkedHashMap<String, String>();
-    List<DefaultConfiguration> children = new ArrayList<DefaultConfiguration>();
+    Map<String,String> attributes = new LinkedHashMap<>();
+    List<DefaultConfiguration> children = new ArrayList<>();
     String value;
     String name;
     
@@ -116,7 +116,7 @@ public class DefaultConfiguration implements Configuration {
     }
 
     public Configuration[] getChildren(String name) {
-        List<Configuration> result = new ArrayList<Configuration>();
+        List<Configuration> result = new ArrayList<>();
         for (DefaultConfiguration child:children)
         {
             if ( child.getName().equals( name))

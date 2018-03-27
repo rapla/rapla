@@ -193,7 +193,7 @@ public class UserOption extends RaplaGUIComponent implements UserOptionPanel
                 {
                     Classification classification = person.getClassification();
                     DynamicType type = classification.getType();
-                    Map<String, JTextField> map = new LinkedHashMap<String, JTextField>();
+                    Map<String, JTextField> map = new LinkedHashMap<>();
                     map.put("title", inputTitle);
                     map.put("firstname", inputFirstname);
                     map.put("forename", inputFirstname);

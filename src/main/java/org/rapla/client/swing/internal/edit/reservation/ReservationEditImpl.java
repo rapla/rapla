@@ -427,7 +427,7 @@ public final class ReservationEditImpl extends AbstractAppointmentEditor impleme
     @Override
     public Collection<Appointment> getSelectedAppointments()
     {
-        Collection<Appointment> appointments = new ArrayList<Appointment>();
+        Collection<Appointment> appointments = new ArrayList<>();
         for (Appointment value : appointmentEdit.getListEdit().getSelectedValues())
         {
             appointments.add(value);
@@ -452,7 +452,7 @@ public final class ReservationEditImpl extends AbstractAppointmentEditor impleme
         allocatableEdit.setReservation(Collections.singleton(mutableReservation), originalCollection);
         reservationInfo.setReservation(mutableReservation);
 
-        List<AppointmentStatusFactory> statusFactories = new ArrayList<AppointmentStatusFactory>();
+        List<AppointmentStatusFactory> statusFactories = new ArrayList<>();
         for (AppointmentStatusFactory entry : appointmentStatusFactories)
         {
             statusFactories.add(entry);

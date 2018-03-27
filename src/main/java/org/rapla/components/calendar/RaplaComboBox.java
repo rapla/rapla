@@ -213,18 +213,14 @@ public abstract class RaplaComboBox extends JPanel {
            // intended behaviour: m_popup.setVisible(false);
            if ( getPopupComponent() != null)
            {
-               javax.swing.SwingUtilities.invokeLater(new Runnable()
-               {
-                   public void run()
-                   {
-                       // Show JMenuItem and fire a mouse-click
-                       cardLayout.last(m_popup);
-                       menuItem.menuSelectionChanged(true);
-                       menuItem.dispatchEvent(new MouseEvent(m_popup, MouseEvent.MOUSE_RELEASED, System.currentTimeMillis(), 0, 0, 0, 1, false));
-                       // show original popup again
-                       cardLayout.first(m_popup);
-                       m_popupButton.requestFocus();
-                   }
+               javax.swing.SwingUtilities.invokeLater(() -> {
+                   // Show JMenuItem and fire a mouse-click
+                   cardLayout.last(m_popup);
+                   menuItem.menuSelectionChanged(true);
+                   menuItem.dispatchEvent(new MouseEvent(m_popup, MouseEvent.MOUSE_RELEASED, System.currentTimeMillis(), 0, 0, 0, 1, false));
+                   // show original popup again
+                   cardLayout.first(m_popup);
+                   m_popupButton.requestFocus();
                });
            }
            else

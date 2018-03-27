@@ -11,7 +11,7 @@ import java.util.Stack;
 
 public class SAXConfigurationHandler implements RaplaSAXHandler 
 {
-    final Stack<DefaultConfiguration> configStack = new Stack<DefaultConfiguration>();
+    final Stack<DefaultConfiguration> configStack = new Stack<>();
     Configuration parsedConfiguration;
     
     public Configuration getConfiguration()

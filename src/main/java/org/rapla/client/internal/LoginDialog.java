@@ -136,17 +136,13 @@ public final class LoginDialog extends JFrame implements LocaleChangeListener
 		
 		// ################## BEGIN LOGO ###################
 		
-		observer = new ImageObserver()
-		{
-			public boolean imageUpdate(Image img, int flags, int x, int y, int w, int h)
-			{
-				if ((flags & ALLBITS) != 0)
-				{
-					canvas.repaint();
-				}
-				return (flags & (ALLBITS | ABORT | ERROR)) == 0;
-			}
-		};
+		observer = (img, flags, x, y, w, h) -> {
+            if ((flags & ALLBITS) != 0)
+            {
+                canvas.repaint();
+            }
+            return (flags & (ALLBITS | ABORT | ERROR)) == 0;
+        };
 		
 		canvas = new JPanel()
 		{

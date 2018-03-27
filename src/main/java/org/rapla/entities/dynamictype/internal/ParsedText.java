@@ -66,11 +66,11 @@ public class ParsedText implements Serializable
 
     public void init(ParseContext context) throws IllegalAnnotationException
     {
-        variablesList = new ArrayList<Function>();
-        nonVariablesList = new ArrayList<String>();
+        variablesList = new ArrayList<>();
+        nonVariablesList = new ArrayList<>();
         int pos = 0;
         int length = formatString.length();
-        List<String> variableContent = new ArrayList<String>();
+        List<String> variableContent = new ArrayList<>();
         while (pos < length)
         {
             int start = formatString.indexOf('{', pos) + 1;
@@ -188,7 +188,7 @@ public class ParsedText implements Serializable
         //{name(p->name(attribute(p,\"a1\"),\"de\"), \"en\")}
         content = content.trim();
         StringBuffer parsed = new StringBuffer();
-        final ArrayList<String> boundParameters = new ArrayList<String>();
+        final ArrayList<String> boundParameters = new ArrayList<>();
         final int indexOfBoundOperator = content.indexOf("->");
         if (indexOfBoundOperator >= 0)
         {
@@ -484,7 +484,7 @@ public class ParsedText implements Serializable
     private Function parseFunctionWithArguments(ParseContext context, String functionName, String content) throws IllegalAnnotationException
     {
         int depth = 0;
-        List<Function> args = new ArrayList<Function>();
+        List<Function> args = new ArrayList<>();
         StringBuffer currentArg = new StringBuffer();
         for (int i = 0; i < content.length(); i++)
         {
@@ -568,7 +568,7 @@ public class ParsedText implements Serializable
         Collection<Object> result;
         if (attribute.getType() == AttributeType.CATEGORY)
         {
-            Collection<Object> wrapperList = new ArrayList<Object>();
+            Collection<Object> wrapperList = new ArrayList<>();
             for (Object value : values)
             {
                 if (value instanceof Category)

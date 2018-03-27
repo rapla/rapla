@@ -513,13 +513,9 @@ public class MenuScroller {
 	private static final long serialVersionUID = 1L;
 
 	public MenuScrollTimer(final int increment, int interval) {
-      super(interval, new ActionListener() {
-
-        @Override
-        public void actionPerformed(ActionEvent e) {
-          firstIndex += increment;
-          refreshMenu();
-        }
+      super(interval, e -> {
+        firstIndex += increment;
+        refreshMenu();
       });
     }
   }

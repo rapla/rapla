@@ -166,12 +166,9 @@ public class ImportFromICalMenu extends RaplaComponent implements ImportMenuExte
         panel1.add(labelNameAttribute, "0,6");
         panel1.add(comboNameAttribute, "2,6");
 
-        comboEventType.addItemListener(new ItemListener() {
-            @Override
-            public void itemStateChanged(ItemEvent e) {
-                if (e.getStateChange() == ItemEvent.SELECTED) {
-                    updateNameAttributes(comboEventType, comboNameAttribute);
-                }
+        comboEventType.addItemListener(e -> {
+            if (e.getStateChange() == ItemEvent.SELECTED) {
+                updateNameAttributes(comboEventType, comboNameAttribute);
             }
         });
 
@@ -196,14 +193,12 @@ public class ImportFromICalMenu extends RaplaComponent implements ImportMenuExte
 		final DialogInterface dlg = dialogUiFactory.createContentDialog(
 				popupContext, container, new String[] { getString("import"), getString("cancel") });
 		
-        final ActionListener radioListener = new ActionListener() {
-			public void actionPerformed(ActionEvent e) {
-				boolean isURL = urlRadio.isSelected() && urlRadio.isEnabled();
-				boolean isFile = fileRadio.isSelected() && fileRadio.isEnabled();
-				urlField.setEnabled(isURL);
-				fileField.setEnabled(isFile);
-			}
-		};
+        final ActionListener radioListener = e -> {
+            boolean isURL = urlRadio.isSelected() && urlRadio.isEnabled();
+            boolean isFile = fileRadio.isSelected() && fileRadio.isEnabled();
+            urlField.setEnabled(isURL);
+            fileField.setEnabled(isFile);
+        };
 
 		urlRadio.addActionListener(radioListener);
 		fileRadio.addActionListener(radioListener);
@@ -355,7 +350,7 @@ public class ImportFromICalMenu extends RaplaComponent implements ImportMenuExte
         } else {
             // found one, so determine all string attribute of event type and update model
             final Attribute[] attributes = dynamicType.getAttributes();
-            final List<Attribute> attributeResult = new ArrayList<Attribute>();
+            final List<Attribute> attributeResult = new ArrayList<>();
             for (Attribute attribute : attributes) {
                 if (attribute.getType().is(AttributeType.STRING))
                 {

@@ -30,7 +30,7 @@ public class HTMLMonthView extends AbstractHTMLView {
     int offset = 0;
     
     public Collection<Block> getBlocks() {
-        ArrayList<Block> list = new ArrayList<Block>();
+        ArrayList<Block> list = new ArrayList<>();
         for (int i=0;i<slots.length;i++) {
             list.addAll(slots[i]);
         }

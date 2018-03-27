@@ -63,7 +63,7 @@ public abstract class AbstractSelectField<T> extends AbstractEditField implement
     private RaplaButton selectButton = new RaplaButton(RaplaButton.SMALL);
     JPanel panel;
     JLabel selectText = new JLabel();
-    private Collection<T> selectedValues = new ArrayList<T>();
+    private Collection<T> selectedValues = new ArrayList<>();
     T defaultValue;
 
     private boolean useDefault = true;
@@ -177,7 +177,7 @@ public abstract class AbstractSelectField<T> extends AbstractEditField implement
 
     public void setValues(Collection<T> values) 
     {
-        selectedValues = new ArrayList<T>();
+        selectedValues = new ArrayList<>();
         if ( values !=null)
         {
             selectedValues.addAll(values);
@@ -274,12 +274,7 @@ public abstract class AbstractSelectField<T> extends AbstractEditField implement
             JButton defaultButton = new JButton(i18n.getString("defaultselection"));
             panel.add( defaultButton,  BorderLayout.CENTER);
             defaultButton.setPreferredSize(new Dimension(100, 20));
-            defaultButton.addActionListener( new ActionListener() {
-                public void actionPerformed(ActionEvent arg0) 
-                {
-                    selectValues( tree, Collections.singletonList(defaultValue));
-                }
-            });
+            defaultButton.addActionListener(arg0 -> selectValues( tree, Collections.singletonList(defaultValue)));
         }
         
         if (useNull)
@@ -287,12 +282,9 @@ public abstract class AbstractSelectField<T> extends AbstractEditField implement
             JButton emptyButton = new JButton(i18n.getString("nothing_selected"));
             panel.add( emptyButton, BorderLayout.PAGE_END);
             emptyButton.setPreferredSize(new Dimension(100, 20));
-            emptyButton.addActionListener( new ActionListener() {
-                public void actionPerformed(ActionEvent arg0) 
-                {
-                    List<T> emptyList = Collections.emptyList();
-					selectValues(tree, emptyList );
-                }
+            emptyButton.addActionListener(arg0 -> {
+                List<T> emptyList = Collections.emptyList();
+                selectValues(tree, emptyList );
             });
         }
 
@@ -303,7 +295,7 @@ public abstract class AbstractSelectField<T> extends AbstractEditField implement
                 panel
                                  ,new String[] { i18n.getString("apply"),i18n.getString("cancel")});
 
-        final Collection<T> newValues = new LinkedHashSet<T>();
+        final Collection<T> newValues = new LinkedHashSet<>();
         tree.addMouseListener(new MouseAdapter() {
             // End dialog when a leaf is double clicked
             public void mousePressed(MouseEvent e) {
@@ -346,7 +338,7 @@ public abstract class AbstractSelectField<T> extends AbstractEditField implement
 
     private Collection<T> getValues(JTree tree)
     {
-        Collection<T> newValues = new LinkedHashSet<T>();
+        Collection<T> newValues = new LinkedHashSet<>();
         TreePath[] paths = tree.getSelectionPaths();
         if ( paths != null)
         {
@@ -377,7 +369,7 @@ public abstract class AbstractSelectField<T> extends AbstractEditField implement
     }
     
     public void select(JTree jTree,Collection<?> selectedObjects) {
-        Collection<TreeNode> selectedNodes = new ArrayList<TreeNode>();
+        Collection<TreeNode> selectedNodes = new ArrayList<>();
         {
             Iterator<TreeNode> it = new TreeIterator((TreeNode)jTree.getModel().getRoot());
             while (it.hasNext()) {

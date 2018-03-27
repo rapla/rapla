@@ -19,7 +19,7 @@ public interface ICalImport
 
     @XmlRootElement
     @XmlAccessorType(XmlAccessType.FIELD)
-    public static class Import
+    class Import
     {
         private String content;
         private boolean isURL;

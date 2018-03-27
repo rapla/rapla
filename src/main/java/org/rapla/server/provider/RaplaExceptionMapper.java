@@ -11,20 +11,27 @@ import javax.ws.rs.core.Response;
 
 public class RaplaExceptionMapper
 {
-    public Response toResponse(Exception container, HttpServletRequest request)
+    public Response toResponse(Exception exception, HttpServletRequest request)
     {
-        Throwable exception = container.getCause();
-        if (exception instanceof JsonParserWrapper.WrappedJsonSerializeException)
+        Throwable cause = exception;
+        if (exception.getCause() != null)
         {
-            exception = exception.getCause();
+            cause = exception.getCause();
         }
-        if (exception instanceof EntityNotFoundException)
+        if (cause instanceof JsonParserWrapper.WrappedJsonSerializeException )
+        {
+            if (exception.getCause() != null)
+            {
+                cause = exception.getCause();
+            }
+        }
+        if (cause instanceof EntityNotFoundException)
         {
             final Response.ResponseBuilder entity = Response.status(Response.Status.NOT_FOUND).entity(exception);
             final Response build = entity.build();
             return build;
         }
-        if (exception instanceof RaplaInvalidTokenException)
+        if (cause instanceof RaplaInvalidTokenException)
         {
             final Response.ResponseBuilder entity = Response.status(Response.Status.UNAUTHORIZED).entity(exception);
             final Response build = entity.build();
@@ -43,7 +50,8 @@ public class RaplaExceptionMapper
             {
                 raplaLogger = RaplaBootstrapLogger.createRaplaLogger();
             }
-            raplaLogger.error(exception.getMessage(), exception);
+            final String message = cause.getMessage();
+            raplaLogger.error(message, exception);
         }
         catch (Throwable ex)
         {

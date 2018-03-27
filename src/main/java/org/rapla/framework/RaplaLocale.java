@@ -42,7 +42,7 @@ If country code is not set, the system default will be used.
 @JsType
 public interface RaplaLocale
 {
-	TypedComponentRole<String>  LANGUAGE_ENTRY = new TypedComponentRole<String>("org.rapla.language");
+	TypedComponentRole<String>  LANGUAGE_ENTRY = new TypedComponentRole<>("org.rapla.language");
     
     Collection<String> getAvailableLanguages();
 

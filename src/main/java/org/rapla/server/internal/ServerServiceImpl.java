@@ -202,7 +202,7 @@ public class ServerServiceImpl implements ServerServiceContainer
 
     public User getFirstAdmin(StorageOperator operator) throws RaplaException
     {
-        Set<User> sorted = new TreeSet<User>(User.USER_COMPARATOR);
+        Set<User> sorted = new TreeSet<>(User.USER_COMPARATOR);
         sorted.addAll(operator.getUsers());
         for (User u : sorted)
         {

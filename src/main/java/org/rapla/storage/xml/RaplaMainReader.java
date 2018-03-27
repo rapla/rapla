@@ -37,7 +37,7 @@ import java.util.Map;
 
 public class RaplaMainReader extends RaplaXMLReader
 {
-    private Map<String,RaplaXMLReader> localnameTable = new HashMap<String,RaplaXMLReader>();
+    private Map<String,RaplaXMLReader> localnameTable = new HashMap<>();
     public final static String INPUT_FILE_VERSION = RaplaMainWriter.OUTPUT_FILE_VERSION;
     private TimeInterval invalidateInterval = null;
     private boolean resourcesRefresh = false;

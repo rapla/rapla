@@ -33,7 +33,7 @@ public abstract class AbstractEditField implements EditField
 
 {
     String fieldName;
-    ArrayList<ChangeListener> listenerList = new ArrayList<ChangeListener>();
+    ArrayList<ChangeListener> listenerList = new ArrayList<>();
     protected final ClientFacade clientFacade;
     protected final RaplaFacade raplaFacade;
     protected final RaplaResources i18n;

@@ -30,9 +30,9 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 
 public class EntityStore implements EntityResolver {
-    HashMap<String,Entity> entities = new LinkedHashMap<String,Entity>();
-    HashMap<String,DynamicType> dynamicTypes = new HashMap<String,DynamicType>();
-    HashMap<ReferenceInfo<User>,String> passwordList = new HashMap<ReferenceInfo<User>,String>();
+    HashMap<String,Entity> entities = new LinkedHashMap<>();
+    HashMap<String,DynamicType> dynamicTypes = new HashMap<>();
+    HashMap<ReferenceInfo<User>,String> passwordList = new HashMap<>();
 
     EntityResolver parent;
     

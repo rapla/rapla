@@ -312,7 +312,7 @@ public abstract class AbstractRaplaSwingCalendar extends RaplaGUIComponent
 
     //DateTools.addDays(new Date(), 100);
     Date currentPrintDate;
-    Map<Date, Integer> pageStartMap = new HashMap<Date, Integer>();
+    Map<Date, Integer> pageStartMap = new HashMap<>();
     Double scaleFactor = null;
 
     /**

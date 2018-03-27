@@ -299,7 +299,7 @@ final public class FileOperator extends LocalAbstractCachableOperator
             Preferences preferences = cache.getPreferencesForUserId(null);
             if (preferences != null)
             {
-                TypedComponentRole<RaplaConfiguration> oldEntry = new TypedComponentRole<RaplaConfiguration>("org.rapla.plugin.export2ical");
+                TypedComponentRole<RaplaConfiguration> oldEntry = new TypedComponentRole<>("org.rapla.plugin.export2ical");
                 if (preferences.getEntry(oldEntry, null) != null)
                 {
                     preferences.putEntry(oldEntry, null);
@@ -463,7 +463,7 @@ final public class FileOperator extends LocalAbstractCachableOperator
                     insertIntoImportExportCache(cast);
                 }
             }
-            Set<ReferenceInfo<ImportExportEntity>> removedImports = new HashSet<ReferenceInfo<ImportExportEntity>>();
+            Set<ReferenceInfo<ImportExportEntity>> removedImports = new HashSet<>();
             for (Iterator<ReferenceInfo> iterator = removeIds.iterator(); iterator.hasNext();)
             {
                 ReferenceInfo referenceInfo = iterator.next();
@@ -622,19 +622,15 @@ final public class FileOperator extends LocalAbstractCachableOperator
         final RaplaMainWriter raplaMainWriter = getMainWriter(cache, version, includeIds);
         try
         {
-            FileIO.write(new RaplaWriter()
-            {
-                @Override public void write(BufferedWriter writer) throws IOException
+            FileIO.write(writer -> {
+                raplaMainWriter.setWriter(writer);
+                try
                 {
-                    raplaMainWriter.setWriter(writer);
-                    try
-                    {
-                        raplaMainWriter.printContent();
-                    }
-                    catch (RaplaException e)
-                    {
-                        throw new IOException(e.getMessage(), e);
-                    }
+                    raplaMainWriter.printContent();
+                }
+                catch (RaplaException e)
+                {
+                    throw new IOException(e.getMessage(), e);
                 }
             }, storageURL);
         }
@@ -681,7 +677,7 @@ final public class FileOperator extends LocalAbstractCachableOperator
         private Date validUntil;
         private boolean active;
     }
-    private final Map<String, SystemLock> locks = new HashMap<String, SystemLock>();
+    private final Map<String, SystemLock> locks = new HashMap<>();
 
     @Override
     public Date requestLock(String id, Long validMilliseconds) throws RaplaException

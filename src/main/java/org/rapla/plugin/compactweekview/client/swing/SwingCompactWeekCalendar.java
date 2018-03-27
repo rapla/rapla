@@ -138,7 +138,7 @@ public class SwingCompactWeekCalendar extends AbstractRaplaSwingCalendar
             protected Collection<Allocatable> getMarkedAllocatables() {
             	final List<Allocatable> selectedAllocatables = getSortedAllocatables();
 				 
-            	Set<Allocatable> allSelected = new HashSet<Allocatable>();
+            	Set<Allocatable> allSelected = new HashSet<>();
 				if ( selectedAllocatables.size() == 1 ) {
 					allSelected.add(selectedAllocatables.get(0));
 				}

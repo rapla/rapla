@@ -27,7 +27,7 @@ import java.util.Set;
 
 public class UpdateResult
 {
-    private List<UpdateOperation> operations = new ArrayList<UpdateOperation>();
+    private List<UpdateOperation> operations = new ArrayList<>();
 	//Set<RaplaType> modified = new HashSet<RaplaType>();
 	private final Date since;
 	private final Date until;
@@ -64,7 +64,7 @@ public class UpdateResult
         if ( operationClass == null)
             throw new IllegalStateException( "OperationClass can't be null" );
         
-        List<T> list = new ArrayList<T>();
+        List<T> list = new ArrayList<>();
         while ( operationsIt.hasNext() ) {
             UpdateOperation obj = operationsIt.next();
             if ( operationClass.equals( obj.getClass()))
@@ -203,7 +203,7 @@ public class UpdateResult
 
     public Collection<ReferenceInfo> getAddedAndChangedIds()
     {
-        Set<ReferenceInfo> result = new LinkedHashSet<ReferenceInfo>();
+        Set<ReferenceInfo> result = new LinkedHashSet<>();
         fillIds(result, Add.class);
         fillIds(result, Change.class);
         return result;
@@ -220,7 +220,7 @@ public class UpdateResult
 
     public <T extends UpdateOperation> Collection<ReferenceInfo> getIds(final Class<T> operationClass)
     {
-        final LinkedHashSet<ReferenceInfo> result = new LinkedHashSet<ReferenceInfo>();
+        final LinkedHashSet<ReferenceInfo> result = new LinkedHashSet<>();
         fillIds(result, operationClass);
         return result;
     }
