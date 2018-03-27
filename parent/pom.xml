@@ -359,6 +359,24 @@
 		</dependency>
 		<!--
 		<dependency>
+			<groupId>org.jboss.resteasy</groupId>
+			<artifactId>resteasy-client</artifactId>
+			<version>${resteasy.version}</version>
+			<scope>compile</scope>
+			<exclusions>
+				<exclusion>
+					<artifactId>slf4j-simple</artifactId>
+					<groupId>org.slf4j</groupId>
+				</exclusion>
+				<exclusion>
+					<artifactId>scannotation</artifactId>
+					<groupId>org.scannotation</groupId>
+				</exclusion>
+			</exclusions>
+		</dependency>
+		-->
+		<!--
+		<dependency>
 			<groupId>de.juplo</groupId>
 			<artifactId>scannotation</artifactId>
 			<version>${scannotation.version}</version>
@@ -539,7 +557,6 @@
 		<dependency>
 			<groupId>com.google.gwt</groupId>
 			<artifactId>gwt-user</artifactId>
-			<version>${gwt.version}</version>
 			<scope>provided</scope>
 		</dependency>
 		<dependency>
@@ -559,6 +576,14 @@
 			<artifactId>gwt-dev</artifactId>
 			<scope>provided</scope>
 			<exclusions>
+				<exclusion>
+					<groupId>org.eclipse.jetty</groupId>
+					<artifactId>jetty-webapp</artifactId>
+				</exclusion>
+				<exclusion>
+					<groupId>net.sourceforge.htmlunit</groupId>
+					<artifactId>htmlunit</artifactId>
+				</exclusion>
 				<exclusion>
 					<groupId>org.eclipse.jetty</groupId>
 					<artifactId>jetty-webapp</artifactId>

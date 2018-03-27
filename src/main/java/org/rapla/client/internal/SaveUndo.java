@@ -32,6 +32,7 @@ public class SaveUndo<T extends Entity> implements CommandUndo<RaplaException> {
 	protected final String commandoName;
    	private RaplaFacade facade;
    	RaplaResources i18n;
+   	boolean firstTime = true;
 
 
 	public SaveUndo(RaplaFacade facade, RaplaResources i18n,Map<T,T> storeList)
@@ -77,7 +78,12 @@ public class SaveUndo<T extends Entity> implements CommandUndo<RaplaException> {
 		final Set<T> oldEntities = storeListCopy.keySet();
  		final Collection<T> newEntities = storeListCopy.values();
 
-		return getFacade().editListAsync(oldEntities).thenCompose( (newEntitiesPersistant)->
+		final RaplaFacade facade = getFacade();
+		if ( firstTime)
+		{
+			return facade.dispatch( newEntities ,Collections.emptyList());
+		}
+		return facade.editListAsync(oldEntities).thenCompose( (newEntitiesPersistant)->
 			{
 				List<T> toStore = new ArrayList<>();
 				for (T entity : newEntities) {
@@ -93,8 +99,8 @@ public class SaveUndo<T extends Entity> implements CommandUndo<RaplaException> {
 					}
 					toStore.add(mutableEntity);
 				}
-				return facade.dispatch(toStore, Collections.emptyList());
-			});
+				return this.facade.dispatch(toStore, Collections.emptyList());
+			}).thenRun(()->firstTime = false);
 
 	}
 

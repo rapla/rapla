@@ -1,5 +1,5 @@
 /*--------------------------------------------------------------------------*
- | Copyright (C) 2013 Christopher Kohlhaas, Bettina Lademann                |
+ | Copyright (C) 2013 Christopher Kohlhaas                                  |
  |                                                                          |
  | This program is free software; you can redistribute it and/or modify     |
  | it under the terms of the GNU General Public License as published by the |
@@ -18,6 +18,8 @@ import org.rapla.client.PopupContext;
 import org.rapla.client.extensionpoints.ObjectMenuFactory;
 import org.rapla.client.extensionpoints.ReservationWizardExtension;
 import org.rapla.client.internal.RaplaClipboard;
+import org.rapla.client.internal.admin.client.CategoryMenuContext;
+import org.rapla.client.internal.admin.client.DynamicTypeMenuContext;
 import org.rapla.client.menu.impl.AppointmentAction;
 import org.rapla.client.menu.impl.RaplaObjectActions;
 import org.rapla.components.util.DateTools;
@@ -349,7 +351,6 @@ import java.util.TreeMap;
         {
             type = ((Classifiable) focusedObject).getClassification().getType();
         }
-
         if (type != null)
         {
             String classificationType = type.getAnnotation(DynamicTypeAnnotations.KEY_CLASSIFICATION_TYPE);
@@ -357,10 +358,8 @@ import java.util.TreeMap;
                     .equals(DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RESOURCE);
             reservationType = classificationType.equals(DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RESERVATION);
         }
-
         boolean allocatableNodeContext = allocatableType || focusedObject instanceof Allocatable || focusedObject == CalendarModelImpl.ALLOCATABLES_ROOT;
         User workingUser = getUser();
-
         final boolean isAdmin = workingUser.isAdmin();
         final boolean localGroupAdmin = !isAdmin && PermissionController.getAdminGroups(workingUser).size() > 0;
         boolean canAdminUsers = isAdmin || localGroupAdmin;
@@ -376,7 +375,7 @@ import java.util.TreeMap;
         boolean reservationNodeContext = reservationType || (focusedObject != null && focusedObject.equals(i18n.getString("reservation_type")));
         boolean userNodeContext = focusedObject instanceof User || (focusedObject != null && focusedObject.equals(i18n.getString("users")));
         boolean periodNodeContext = focusedObject instanceof Period || (focusedObject != null && focusedObject.equals(i18n.getString("periods")));
-        boolean categoryNodeContext = focusedObject instanceof Category || (focusedObject != null && focusedObject.equals(i18n.getString("categories")));
+        boolean categoryNodeContext = context instanceof CategoryMenuContext;
         if (userNodeContext || allocatableNodeContext || reservationNodeContext || periodNodeContext || categoryNodeContext)
         {
             if (allocatableNodeContext || addNewReservationMenu)
@@ -393,10 +392,12 @@ import java.util.TreeMap;
         }
         if (isAdmin)
         {
-            if (allocatableNodeContext && addNewReservationMenu)
+            if ( context instanceof DynamicTypeMenuContext)
             {
-                addTypeMenuNew(menu, DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RESOURCE, popupContext);
-                addTypeMenuNew(menu, DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_PERSON, popupContext);
+                final String classificationType = ((DynamicTypeMenuContext) context).getClassificationType();
+                if (classificationType != null) {
+                    addTypeMenuNew(menu, classificationType, popupContext);
+                }
             }
             if (periodNodeContext)
             {
@@ -407,14 +408,7 @@ import java.util.TreeMap;
         {
             if (categoryNodeContext)
             {
-                addCategoryMenuNew(menu, popupContext, focusedObject);
-            }
-        }
-        if (isAdmin)
-        {
-            if (reservationNodeContext)
-            {
-                addTypeMenuNew(menu, DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RESERVATION, popupContext);
+                addCategoryMenuNew(menu, (CategoryMenuContext)context, focusedObject);
             }
         }
         return menu;
@@ -430,19 +424,23 @@ import java.util.TreeMap;
         }
     }
 
+
+
     @Override
     public MenuInterface addObjectMenu(MenuInterface menu, SelectionMenuContext context, String afterId) throws RaplaException
     {
         Object focusedObject = context.getFocusedObject();
         final PopupContext popupContext = context.getPopupContext();
-
         Collection<Entity<?>> list = new LinkedHashSet<>();
         if (focusedObject != null)
         {
             if ((focusedObject instanceof Entity))
             {
                 Entity<?> obj = (Entity<?>) focusedObject;
-                list.add(obj);
+                if (isContextEditable(context, obj))
+                {
+                    list.add(obj);
+                }
                 final RaplaObjectActions action = newObjectAction(popupContext).setView(obj);
                 addAction(menu, action, afterId);
             }
@@ -469,7 +467,6 @@ import java.util.TreeMap;
                 final IdentifiableMenuEntry menuItem = action.createMenuEntry(f);
                 menu.insertAfterId(menuItem, afterId);
             }
-
             {
                 AppointmentAction action = createAction(popupContext);
                 action.setEdit(appointmentBlock);
@@ -479,7 +476,6 @@ import java.util.TreeMap;
         }
 
         final Collection<?> selectedObjects = context.getSelectedObjects();
-
         Collection<Entity<?>> deletableEntities = new ArrayList<>();
         Collection<AppointmentBlock> deletableAppointmenBlocks = new ArrayList<>();
         for (Object obj : selectedObjects)
@@ -487,11 +483,15 @@ import java.util.TreeMap;
             if (obj instanceof Entity)
             {
                 final Entity<?> entity = (Entity<?>) obj;
-                list.add(entity);
-                if (isDeletable(entity ))
+                if (isContextEditable(context, entity))
                 {
-                    deletableEntities.add(entity );
+                    list.add(entity);
+                    if (isDeletable(entity ))
+                    {
+                        deletableEntities.add(entity );
+                    }
                 }
+
             }
             if (obj instanceof AppointmentBlock)
             {
@@ -549,6 +549,10 @@ import java.util.TreeMap;
             }
         }
         return menu;
+    }
+
+    public boolean isContextEditable(SelectionMenuContext context, Entity<?> obj) {
+        return !obj.getTypeClass().equals(DynamicType.class) || (context instanceof DynamicTypeMenuContext);
     }
 
     private boolean isMultiEditSupported(List<Entity<?>> editableObjects)
@@ -656,8 +660,9 @@ import java.util.TreeMap;
         menu.addMenuItem( menuItem);
     }
 
-    private void addCategoryMenuNew(MenuInterface menu, PopupContext popupContext, Object obj)
+    private void addCategoryMenuNew(MenuInterface menu, CategoryMenuContext menuContext, Object obj)
     {
+        PopupContext popupContext = menuContext.getPopupContext();
         RaplaObjectActions newAction = newObjectAction(popupContext).setNew(Category.class);
         if (obj instanceof Category)
         {
@@ -666,6 +671,10 @@ import java.util.TreeMap;
         else if (obj != null && obj.equals(i18n.getString("categories")))
         {
             newAction.changeObject(raplaFacade.getSuperCategory());
+        }
+        else
+        {
+            newAction.changeObject( menuContext.getRootCategory());
         }
         newAction.setName(i18n.getString("category"));
         newAction.addTo( menu );
@@ -696,8 +705,6 @@ import java.util.TreeMap;
         return action;
     }
 
-
-
     // This will exclude DynamicTypes and non editable Objects from the list
     private List<Entity<?>> getEditableObjects(Collection<Entity<?>> list) throws RaplaException
     {
@@ -707,6 +714,7 @@ import java.util.TreeMap;
         while (it.hasNext())
         {
             Entity o = it.next();
+
             if (permissionController.canModify(o, user))
                 editableObjects.add((Entity<?>) o);
         }

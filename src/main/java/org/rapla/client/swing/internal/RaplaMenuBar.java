@@ -33,6 +33,7 @@ import org.rapla.client.extensionpoints.ExportMenuExtension;
 import org.rapla.client.extensionpoints.HelpMenuExtension;
 import org.rapla.client.extensionpoints.ImportMenuExtension;
 import org.rapla.client.extensionpoints.ViewMenuExtension;
+import org.rapla.client.internal.admin.client.TypeCategoryTask;
 import org.rapla.client.menu.IdentifiableMenuEntry;
 import org.rapla.client.menu.MenuItemFactory;
 import org.rapla.client.menu.UserAction;
@@ -63,7 +64,7 @@ import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.internal.ConfigTools;
 import org.rapla.logger.Logger;
 import org.rapla.plugin.abstractcalendar.RaplaBuilder;
-import org.rapla.plugin.rightsreport.client.AdminUserTask;
+import org.rapla.client.internal.admin.client.AdminUserTask;
 import org.rapla.scheduler.Promise;
 import org.rapla.storage.PermissionController;
 import org.rapla.storage.dbrm.RestartServer;
@@ -281,6 +282,22 @@ public class RaplaMenuBar extends RaplaGUIComponent
         }
         if (isAdmin())
         {
+            RaplaMenuItem  typeAdmin = new RaplaMenuItem("typeadmin");
+            final String name = getString("types") + "/" + getString("categories") ;
+            typeAdmin.setText( name);
+            final Icon icon = RaplaImages.getIcon(i18n.getIcon("icon.tree"));
+            typeAdmin.setIcon( icon);
+            typeAdmin.addActionListener((evt)->
+            {
+                final PopupContext popupContext = dialogUiFactory.createPopupContext(() -> getMainComponent());
+                ApplicationEvent.ApplicationEventContext context = null;
+                String applicationEventId = TypeCategoryTask.ID;
+                String info = applicationEventId;
+                final ApplicationEvent event = new ApplicationEvent(applicationEventId, info, popupContext, context);
+                appEventBus.publish(event);
+            });
+            adminMenu.add( typeAdmin  );
+
             RaplaMenuItem adminOptions = new RaplaMenuItem("adminOptions");
             try
             {
@@ -430,9 +447,6 @@ public class RaplaMenuBar extends RaplaGUIComponent
                 );
             }
         }
-
-
-
     }
 
     @NotNull

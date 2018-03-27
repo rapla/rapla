@@ -9,9 +9,9 @@ import org.rapla.storage.RaplaInvalidTokenException;
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.core.Response;
 
-public class RaplaExceptionMapper
+public class ExceptionResponseBuilder
 {
-    public Response toResponse(Exception exception, HttpServletRequest request)
+    static public Response toResponse(Exception exception, HttpServletRequest request)
     {
         Throwable cause = exception;
         if (exception.getCause() != null)

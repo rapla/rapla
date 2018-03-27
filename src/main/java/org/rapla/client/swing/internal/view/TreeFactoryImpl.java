@@ -562,21 +562,7 @@ public class TreeFactoryImpl extends RaplaGUIComponent implements TreeFactory
         final Category userGroupsCategory = getQuery().getUserGroupsCategory();
         if (isAdmin)
         {
-            TypeNode reservationsRoot = createReservationTypeModel();
-            root.add(reservationsRoot);
-            NamedNode categoryRoot = createRootNode(Collections.singleton(getQuery().getSuperCategory()), true);
-            root.add(categoryRoot);
-            final int indexOfGroupsCategory = categoryRoot.getIndexOfUserObject(userGroupsCategory);
-            if (indexOfGroupsCategory >= 0)
-            {
-                categoryRoot.remove(indexOfGroupsCategory);
-            }
-
-            // set category root name
-            MultiLanguageName multiLanguageName = getQuery().getSuperCategory().getName();
-            // TODO try to replace hack
-            multiLanguageName.setNameWithoutReadCheck(getI18n().getLang(), getString("categories"));
-            // Add the periods    
+            // Add the periods
             TypeNode periodRoot = newTypeNode(Period.class, getString("periods"));
             DynamicType periodType = getQuery().getDynamicType(StorageOperator.PERIOD_TYPE);
 
@@ -1097,51 +1083,11 @@ public class TreeFactoryImpl extends RaplaGUIComponent implements TreeFactory
             else
             {
                 Object nodeInfo = getUserObject(value);
-                final boolean topCategoryNode;
-                if (nodeInfo instanceof Category)
-                {
-                    final Category category = (Category) nodeInfo;
-                    final Category parent = category.getParent();
-                    if (parent == null)
-                    {
-                        topCategoryNode = true;
-                    }
-                    else
-                    {
-                        boolean flag;
-                        try
-                        {
-                            Category userGroupsCategory = getFacade().getUserGroupsCategory();
-                            User user = getClientFacade().getUser();
-                            flag = userGroupsCategory.equals(category) && (user.isAdmin() || PermissionController.getAdminGroups(user).size() > 0);
-                        }
-                        catch (RaplaException e)
-                        {
-                            getLogger().error("Could not resolve user or usergroups: " + e.getMessage(), e);
-                            flag = false;
-                        }
-                        topCategoryNode = flag;
-                    }
-                }
-                else
-                {
-                    topCategoryNode = false;
-                }
-
-                if (topCategoryNode)
-                {
-                    setClosedIcon(bigFolderCategories);
-                    setOpenIcon(bigFolderCategories);
-                    setFont(bigFont);
-                }
-                else
-                {
-                    setClosedIcon(folderClosedIcon);
-                    setOpenIcon(folderOpenIcon);
-                    //if (leaf) {
-                    setIcon(nodeInfo, leaf);
-                    //}
-                }
+                setClosedIcon(folderClosedIcon);
+                setOpenIcon(folderOpenIcon);
+                //if (leaf) {
+                setIcon(nodeInfo, leaf);
+                //}
             }
             Component result = super.getTreeCellRendererComponent(tree, value, sel, expanded, leaf, row, hasFocus);
             return result;

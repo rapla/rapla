@@ -1,6 +1,5 @@
-package org.rapla.plugin.rightsreport.client;
+package org.rapla.client.internal.admin.client;
 
-import io.reactivex.functions.Action;
 import io.reactivex.functions.BiFunction;
 import org.rapla.RaplaResources;
 import org.rapla.client.PopupContext;

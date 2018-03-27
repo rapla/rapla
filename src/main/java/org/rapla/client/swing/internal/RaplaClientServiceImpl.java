@@ -13,17 +13,6 @@ main.raplaContainer.dispose();
  *--------------------------------------------------------------------------*/
 package org.rapla.client.swing.internal;
 
-import org.apache.http.impl.client.CloseableHttpClient;
-import org.apache.http.impl.client.HttpClients;
-import org.apache.http.impl.conn.PoolingHttpClientConnectionManager;
-import org.apache.http.impl.nio.client.CloseableHttpAsyncClient;
-import org.apache.http.nio.client.HttpAsyncClient;
-import org.jboss.resteasy.client.jaxrs.ClientHttpEngine;
-import org.jboss.resteasy.client.jaxrs.ResteasyClient;
-import org.jboss.resteasy.client.jaxrs.ResteasyClientBuilder;
-import org.jboss.resteasy.client.jaxrs.ResteasyWebTarget;
-import org.jboss.resteasy.client.jaxrs.engines.ApacheHttpAsyncClient4Engine;
-import org.jboss.resteasy.client.jaxrs.engines.ApacheHttpClient4Engine;
 import org.rapla.ConnectInfo;
 import org.rapla.RaplaResources;
 import org.rapla.RaplaSystemInfo;
@@ -40,21 +29,14 @@ import org.rapla.client.swing.SwingSchedulerImpl;
 import org.rapla.client.swing.images.RaplaImages;
 import org.rapla.components.i18n.BundleManager;
 import org.rapla.components.i18n.internal.AbstractBundleManager;
-import org.rapla.entities.Entity;
 import org.rapla.entities.User;
 import org.rapla.facade.UpdateErrorListener;
 import org.rapla.facade.client.ClientFacade;
 import org.rapla.facade.internal.ClientFacadeImpl;
-import org.rapla.framework.Disposable;
-import org.rapla.framework.RaplaException;
-import org.rapla.framework.RaplaInitializationException;
-import org.rapla.framework.RaplaLocale;
-import org.rapla.framework.StartupEnvironment;
+import org.rapla.framework.*;
 import org.rapla.inject.DefaultImplementation;
 import org.rapla.inject.InjectionContext;
 import org.rapla.logger.Logger;
-import org.rapla.rest.client.swing.JavaClientServerConnector;
-import org.rapla.rest.client.swing.JsonRemoteConnector;
 import org.rapla.scheduler.CommandScheduler;
 import org.rapla.scheduler.Promise;
 import org.rapla.storage.RaplaSecurityException;
@@ -66,25 +48,11 @@ import org.rapla.storage.dbrm.RemoteOperator;
 import javax.inject.Inject;
 import javax.inject.Provider;
 import javax.inject.Singleton;
-import javax.swing.AbstractAction;
-import javax.swing.Action;
-import javax.swing.SwingUtilities;
-import javax.ws.rs.client.ClientRequestFilter;
-import javax.ws.rs.client.Invocation;
-import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.Response;
-import java.awt.Component;
-import java.awt.Dimension;
-import java.awt.Toolkit;
-import java.awt.Window;
+import javax.swing.*;
+import java.awt.*;
 import java.awt.event.ActionEvent;
-import java.io.IOException;
-import java.net.URISyntaxException;
 import java.net.URL;
-import java.util.Map;
 import java.util.Vector;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Future;
 import java.util.concurrent.Semaphore;
 
 /** Implementation of the UserClientService.
@@ -110,7 +78,6 @@ public class RaplaClientServiceImpl implements ClientService, UpdateErrorListene
     final BundleManager bundleManager;
     final CommandScheduler commandScheduler;
     io.reactivex.disposables.Disposable schedule;
-    //final Provider<RaplaFrame> raplaFrameProvider;
 
     Application application;
     final private Provider<Application> applicationProvider;
@@ -269,24 +236,6 @@ public class RaplaClientServiceImpl implements ClientService, UpdateErrorListene
             getLogger().debug("RaplaClient started");
             ClientFacade facade = getClientFacade();
             facade.addUpdateErrorListener(this);
-            // TODO Promise wait cursor
-            //            StorageOperator operator = facade.getRaplaFacade().getOperator();
-            //            if ( operator instanceof RemoteOperator)
-            //            {
-            //                RemoteConnectionInfo remoteConnection = ((RemoteOperator) operator).getRemoteConnectionInfo();
-            //                remoteConnection.setStatusUpdater( new StatusUpdater()
-            //    	    		{
-            //    	            	private Cursor waitCursor = new Cursor(Cursor.WAIT_CURSOR);
-            //    	            	private Cursor defaultCursor = new Cursor(Cursor.DEFAULT_CURSOR);
-            //
-            //    	            	public void setStatus(Status status) {
-            //    	    				Cursor cursor =( status == Status.BUSY) ? waitCursor: defaultCursor;
-            //    	    				frameControllerList.setCursor( cursor);
-            //    	            	}
-            //
-            //    	    		}
-            //    	    		);
-            //            }
             advanceLoading(true);
 
             logoutAvailable = true;
@@ -369,22 +318,6 @@ public class RaplaClientServiceImpl implements ClientService, UpdateErrorListene
                 }
         );
     }
-
-    /*
-    protected Set<String> discoverPluginClassnames() throws RaplaException {
-        Set<String> pluginNames = super.discoverPluginClassnames();
-        LinkedHashSet<String> result = new LinkedHashSet<String>();
-        for ( String plugin:pluginNames)
-        {
-            if ( plugin.toLowerCase().endsWith("serverplugin") || plugin.contains(".server."))
-            {
-                continue;
-            }
-            result.add( plugin);
-        }
-        return pluginNames;
-    }
-    */
 
     public boolean isRestartingGUI()
     {
