@@ -345,7 +345,7 @@
 			<groupId>org.jboss.resteasy</groupId>
 			<artifactId>resteasy-client</artifactId>
 			<version>${resteasy.version}</version>
-			<scope>compile</scope>
+			<scope>test</scope>
 			<exclusions>
 				<exclusion>
 					<artifactId>slf4j-simple</artifactId>

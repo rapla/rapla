@@ -33,7 +33,11 @@ import org.rapla.entities.User;
 import org.rapla.facade.UpdateErrorListener;
 import org.rapla.facade.client.ClientFacade;
 import org.rapla.facade.internal.ClientFacadeImpl;
-import org.rapla.framework.*;
+import org.rapla.framework.Disposable;
+import org.rapla.framework.RaplaException;
+import org.rapla.framework.RaplaInitializationException;
+import org.rapla.framework.RaplaLocale;
+import org.rapla.framework.StartupEnvironment;
 import org.rapla.inject.DefaultImplementation;
 import org.rapla.inject.InjectionContext;
 import org.rapla.logger.Logger;
@@ -48,8 +52,13 @@ import org.rapla.storage.dbrm.RemoteOperator;
 import javax.inject.Inject;
 import javax.inject.Provider;
 import javax.inject.Singleton;
-import javax.swing.*;
-import java.awt.*;
+import javax.swing.AbstractAction;
+import javax.swing.Action;
+import javax.swing.SwingUtilities;
+import java.awt.Component;
+import java.awt.Dimension;
+import java.awt.Toolkit;
+import java.awt.Window;
 import java.awt.event.ActionEvent;
 import java.net.URL;
 import java.util.Vector;
@@ -83,64 +92,6 @@ public class RaplaClientServiceImpl implements ClientService, UpdateErrorListene
     final private Provider<Application> applicationProvider;
     RemoteAuthentificationService authentificationService;
     RemoteConnectionInfo connectionInfo;
-
-    static {
-        //PoolingHttpClientConnectionManager cm = new PoolingHttpClientConnectionManager();
-        //CloseableHttpAsyncClient httpClient = null;
-        //CloseableHttpClient httpClient = HttpClients.custom().setConnectionManager(cm).build();
-        // TODO Werte aus config holen
-        //cm.setMaxTotal(10); // max Anzahl Connections
-        //cm.setDefaultMaxPerRoute(10); // Increase default max connection per route to 10
-        //ClientHttpEngine engine = new ApacheHttpAsyncClient4Engine(httpClient, true);
-
-        final ResteasyClient client = new ResteasyClientBuilder().useAsyncHttpEngine().build();
-        JavaClientServerConnector.setJsonRemoteConnector(new JsonRemoteConnector() {
-            @Override
-            public CallResult sendCallWithString(String requestMethod, URL methodURL, String body, String authenticationToken, String contentType, Map<String, String> additionalHeaders) throws IOException {
-                final ResteasyWebTarget target;
-                try
-                {
-                    target = client.target(methodURL.toURI());
-                }
-                catch (URISyntaxException e)
-                {
-                    throw new IOException(e);
-                }
-                Invocation.Builder builder = target.request(contentType).header("Authorization", authenticationToken);
-                for (Map.Entry<String, String> additionalHeader : additionalHeaders.entrySet())
-                {
-                    builder = builder.header( additionalHeader.getKey(),additionalHeader.getValue());
-                }
-                builder.accept(contentType);
-                final Response response;
-                if ( requestMethod.equals("GET"))
-                {
-                     response = builder.get();
-                }
-                else
-                {
-                    javax.ws.rs.client.Entity entity = javax.ws.rs.client.Entity.entity(body, contentType);
-                    final Future<Response> post = builder.async().post(entity);
-                    try
-                    {
-                        response = post.get();
-                    }
-                    catch (InterruptedException e)
-                    {
-                        throw new IOException(e);
-                    }
-                    catch (ExecutionException e)
-                    {
-                        throw new IOException(e);
-                    }
-                    int responseCode5 = response.getStatus();
-                }
-                final int responseCode = response.getStatus();
-                final String resultString = response.readEntity(String.class);
-                return new CallResult(resultString, responseCode);
-            }
-        });
-    }
 
     @Inject
     public RaplaClientServiceImpl(StartupEnvironment env, Logger logger, DialogUiFactoryInterface dialogUiFactory, ClientFacade facade, RaplaResources i18n, RaplaSystemInfo systemInfo,
