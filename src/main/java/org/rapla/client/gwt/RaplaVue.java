@@ -1,4 +1,4 @@
-package org.rapla.client.internal.check.gwt;
+package org.rapla.client.gwt;
 
 import jsinterop.annotations.JsMethod;
 import jsinterop.annotations.JsPackage;

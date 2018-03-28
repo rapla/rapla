@@ -22,8 +22,10 @@ import java.awt.Component;
 
 public class RaplaPopupMenu extends JPopupMenu implements MenuInterface {
     private static final long serialVersionUID = 1L;
+    
     private final String id;
     PopupContext popupContext;
+    
     public RaplaPopupMenu(PopupContext popupContext) {
         super();
         this.popupContext = popupContext;

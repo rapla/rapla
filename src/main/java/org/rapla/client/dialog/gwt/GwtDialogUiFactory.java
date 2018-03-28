@@ -7,7 +7,6 @@ import org.rapla.client.RaplaWidget;
 import org.rapla.client.dialog.DialogInterface;
 import org.rapla.client.dialog.DialogUiFactoryInterface;
 import org.rapla.client.gwt.GwtPopupContext;
-import org.rapla.client.internal.check.gwt.VueDialog;
 import org.rapla.entities.DependencyException;
 import org.rapla.inject.DefaultImplementation;
 import org.rapla.inject.InjectionContext;
@@ -164,6 +163,7 @@ public class GwtDialogUiFactory implements DialogUiFactoryInterface
     {
         final Object component = widget.getComponent();
         // todo maybe add component here
+        // TODO: use vue dialog
         return new GwtPopupContext(null);
     }
 

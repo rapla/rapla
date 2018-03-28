@@ -1,4 +1,4 @@
-package org.rapla.client.internal.check.gwt;
+package org.rapla.client.gwt;
 
 import jsinterop.annotations.JsType;
 import org.jetbrains.annotations.Nullable;

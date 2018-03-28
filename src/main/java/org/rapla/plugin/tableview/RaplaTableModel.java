@@ -96,12 +96,19 @@ public class RaplaTableModel<T, C>
         final Object o = rowData[columnIndex];
         return o;
     }
+    
+    public Object[][] getAllRows() {
+        if (data == null) {
+            return new Object[0][0];
+        }
+        return data.toArray(new Object[data.size()][columns.length]);
+    }
 
     public Object[] getRowData( int rowIndex)
     {
         return data.get(rowIndex);
     }
-
+    
     public Class<?> getColumnClass(int columnIndex) {
         RaplaTableColumn<T, C> tableColumn = columns[ columnIndex];
         return tableColumn.getColumnClass();

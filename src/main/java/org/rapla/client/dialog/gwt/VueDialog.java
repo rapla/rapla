@@ -1,7 +1,8 @@
-package org.rapla.client.internal.check.gwt;
+package org.rapla.client.dialog.gwt;
 
 import jsinterop.annotations.JsType;
 import org.rapla.client.dialog.DialogInterface;
+import org.rapla.client.gwt.RaplaVue;
 import org.rapla.components.i18n.I18nIcon;
 import org.rapla.scheduler.Promise;
 import org.rapla.scheduler.UnsynchronizedPromise;

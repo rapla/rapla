@@ -6,6 +6,8 @@ import jsinterop.annotations.JsType;
 import org.rapla.RaplaResources;
 import org.rapla.client.ReservationController;
 import org.rapla.client.menu.MenuFactory;
+import org.rapla.client.menu.MenuInterface;
+import org.rapla.client.menu.gwt.VueMenu;
 import org.rapla.components.util.TimeInterval;
 import org.rapla.entities.User;
 import org.rapla.entities.configuration.CalendarModelConfiguration;
@@ -13,7 +15,6 @@ import org.rapla.entities.configuration.Preferences;
 import org.rapla.entities.configuration.RaplaMap;
 import org.rapla.entities.domain.AppointmentBlock;
 import org.rapla.entities.domain.Reservation;
-import org.rapla.facade.CalendarModel;
 import org.rapla.facade.CalendarOptions;
 import org.rapla.facade.CalendarSelectionModel;
 import org.rapla.facade.RaplaComponent;
@@ -38,16 +39,16 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Date;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 @JsType
 public class JsApi {
     private final RaplaFacade facade;
     private final Logger logger;
-    ReservationController reservationController;
+    private final ReservationController reservationController;
     private final CalendarSelectionModel calendarModel;
     private final RemoteAuthentificationService remoteAuthentificationService;
     private final RaplaLocale raplaLocale;
@@ -135,6 +136,10 @@ public class JsApi {
     public CalendarOptions getCalendarOptions() throws RaplaException {
         return RaplaComponent.getCalendarOptions(getUser(), facade);
     }
+    
+    public MenuInterface createVueMenu() {
+        return new VueMenu();
+    }
 
     public String[] getCalendarNames() throws RaplaException {
         final Preferences preferences = getFacade().getPreferences(getUser());
@@ -153,6 +158,10 @@ public class JsApi {
 
     public Object[] toArray(Collection<?> collection) {
         return collection.toArray();
+    }
+    
+    public Object[] streamToArray(Stream<?> stream) {
+        return stream.toArray();
     }
 
     public Set<Object> asSet(Object[] elements) {

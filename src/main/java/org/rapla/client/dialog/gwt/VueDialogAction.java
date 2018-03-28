@@ -1,4 +1,4 @@
-package org.rapla.client.internal.check.gwt;
+package org.rapla.client.dialog.gwt;
 
 import org.rapla.client.dialog.DialogInterface;
 import org.rapla.components.i18n.I18nIcon;
