@@ -137,10 +137,6 @@ public class JsApi {
         return RaplaComponent.getCalendarOptions(getUser(), facade);
     }
     
-    public MenuInterface createVueMenu() {
-        return new VueMenu();
-    }
-
     public String[] getCalendarNames() throws RaplaException {
         final Preferences preferences = getFacade().getPreferences(getUser());
         RaplaMap<CalendarModelConfiguration> exportMap = preferences.getEntry(AutoExportPlugin.PLUGIN_ENTRY);
