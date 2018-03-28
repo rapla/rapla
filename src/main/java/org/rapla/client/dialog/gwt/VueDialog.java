@@ -2,6 +2,7 @@ package org.rapla.client.dialog.gwt;
 
 import jsinterop.annotations.JsType;
 import org.rapla.client.dialog.DialogInterface;
+import org.rapla.client.dialog.gwt.components.VueComponent;
 import org.rapla.client.gwt.RaplaVue;
 import org.rapla.components.i18n.I18nIcon;
 import org.rapla.scheduler.Promise;
@@ -15,14 +16,14 @@ public class VueDialog implements DialogInterface {
 
   private String icon;
   private String title;
-  private Object content;
+  private VueComponent content;
   private String[] buttons;
   private DialogAction[] buttonActions;
   private Promise<Integer> promise = new UnsynchronizedPromise<>();
   private Runnable abortAction = () -> {};
   private Integer defaultAction;
 
-  public VueDialog(final Object content, String[] actions) {
+  public VueDialog(final VueComponent content, String[] actions) {
     this.content = content;
     this.buttons = actions;
     this.buttonActions = IntStream.range(0, actions.length)
@@ -41,7 +42,7 @@ public class VueDialog implements DialogInterface {
     return defaultAction;
   }
 
-  public Object getContent() {
+  public VueComponent getContent() {
     return content;
   }
 

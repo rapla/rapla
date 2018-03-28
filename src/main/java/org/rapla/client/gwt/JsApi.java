@@ -5,9 +5,9 @@ import jsinterop.annotations.JsIgnore;
 import jsinterop.annotations.JsType;
 import org.rapla.RaplaResources;
 import org.rapla.client.ReservationController;
+import org.rapla.client.dialog.gwt.VueDialog;
+import org.rapla.client.dialog.gwt.components.VueLabel;
 import org.rapla.client.menu.MenuFactory;
-import org.rapla.client.menu.MenuInterface;
-import org.rapla.client.menu.gwt.VueMenu;
 import org.rapla.components.util.TimeInterval;
 import org.rapla.entities.User;
 import org.rapla.entities.configuration.CalendarModelConfiguration;
@@ -34,6 +34,7 @@ import org.rapla.storage.dbrm.RemoteAuthentificationService;
 
 import javax.inject.Inject;
 import javax.inject.Provider;
+import java.io.Console;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -158,6 +159,20 @@ public class JsApi {
     
     public Object[] streamToArray(Stream<?> stream) {
         return stream.toArray();
+    }
+    
+    public Promise<Integer> testDialog() {
+        VueDialog dialog = new VueDialog(
+          new VueLabel("Hallo Welt"),
+          new String[] {}
+        );
+        dialog.start(false);
+        dialog.getPromise().thenAccept(i -> RaplaVue.emit("gwt-dialog-close"));
+        return dialog.getPromise();
+    }
+    
+    public Integer toInteger(int integer) {
+        return Integer.valueOf(integer);
     }
 
     public Set<Object> asSet(Object[] elements) {

@@ -5,40 +5,64 @@ import org.rapla.client.RaplaWidget;
 import org.rapla.client.menu.IdentifiableMenuEntry;
 import org.rapla.client.menu.MenuInterface;
 
-@JsType(isNative = true)
-public class VueMenu
-  implements MenuInterface {
+import java.util.ArrayList;
+import java.util.List;
+
+@JsType
+public class VueMenu implements MenuInterface {
+  
+  private List<IdentifiableMenuEntry> items = new ArrayList<>();
   
   @Override
-  public native void addMenuItem(final IdentifiableMenuEntry newItem);
+  public void addMenuItem(final IdentifiableMenuEntry newItem) {
+    items.add(newItem);
+  }
+  
+  public List<IdentifiableMenuEntry> getItems() {
+    return items;
+  }
   
   @Override
-  public native void addSeparator();
+  public void addSeparator() {
+  
+  }
   
   @Override
-  public native void removeAll();
+  public void removeAll() {
+  
+  }
   
   @Override
-  public native void removeAllBetween(
+  public void removeAllBetween(
     final String startId,
     final String endId
-  );
+  ) {
+  
+  }
   
   @Override
-  public native void insertAfterId(
+  public void insertAfterId(
     final RaplaWidget component,
     final String id
-  );
+  ) {
+  
+  }
   
   @Override
-  public native void insertBeforeId(
+  public void insertBeforeId(
     final RaplaWidget component,
     final String id
-  );
+  ) {
+  
+  }
   
   @Override
-  public native String getId();
+  public String getId() {
+    return null;
+  }
   
   @Override
-  public native Object getComponent();
+  public Object getComponent() {
+    return null;
+  }
 }

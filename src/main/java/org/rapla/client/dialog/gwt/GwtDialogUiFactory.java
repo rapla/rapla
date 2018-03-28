@@ -1,11 +1,12 @@
 package org.rapla.client.dialog.gwt;
 
-import com.google.gwt.user.client.ui.Label;
 import org.rapla.RaplaResources;
 import org.rapla.client.PopupContext;
 import org.rapla.client.RaplaWidget;
 import org.rapla.client.dialog.DialogInterface;
 import org.rapla.client.dialog.DialogUiFactoryInterface;
+import org.rapla.client.dialog.gwt.components.VueComponent;
+import org.rapla.client.dialog.gwt.components.VueLabel;
 import org.rapla.client.gwt.GwtPopupContext;
 import org.rapla.entities.DependencyException;
 import org.rapla.inject.DefaultImplementation;
@@ -37,13 +38,13 @@ public class GwtDialogUiFactory implements DialogUiFactoryInterface
     @Override
     public DialogInterface createContentDialog(PopupContext popupContext, Object content, String[] options)
     {
-        return new VueDialog(content, options);
+        return new VueDialog((VueComponent) content, options);
     }
 
     @Override
     public DialogInterface createTextDialog(PopupContext popupContext, String title, String text, String[] options)
     {
-        final DialogInterface di = createContentDialog(popupContext, new Label(text), options);
+        final DialogInterface di = createContentDialog(popupContext, new VueLabel(text), options);
         di.setTitle(title);
         return di;
     }

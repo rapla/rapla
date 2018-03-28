@@ -1,5 +1,7 @@
 package org.rapla.client.internal.check.gwt;
 
+import org.rapla.client.dialog.gwt.DefaultCheckViewGwtComponent;
+
 import java.util.ArrayList;
 import java.util.List;
 

@@ -82,6 +82,17 @@ public class RaplaTableModel<T, C>
         return this.rows.get(row);
     }
 
+    public int getColumnCount() {
+        return columns.length;
+    }
+    
+    public Object[][] getAllRows() {
+        if (data == null) {
+            return new Object[0][0];
+        }
+        return data.toArray(new Object[data.size()][columns.length]);
+    }
+    
     public int getRowCount() {
         if ( data != null)
             return data.size();
@@ -97,13 +108,6 @@ public class RaplaTableModel<T, C>
         return o;
     }
     
-    public Object[][] getAllRows() {
-        if (data == null) {
-            return new Object[0][0];
-        }
-        return data.toArray(new Object[data.size()][columns.length]);
-    }
-
     public Object[] getRowData( int rowIndex)
     {
         return data.get(rowIndex);
