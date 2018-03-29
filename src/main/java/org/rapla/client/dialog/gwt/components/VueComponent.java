@@ -7,4 +7,6 @@ public interface VueComponent {
   
   String name();
   
+  VueComponent[] children();
+  
 }

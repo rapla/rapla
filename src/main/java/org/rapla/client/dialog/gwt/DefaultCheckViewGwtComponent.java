@@ -4,6 +4,7 @@ import jsinterop.annotations.JsType;
 
 @JsType
 public class DefaultCheckViewGwtComponent {
+  
   private final String[] warnings;
   
   public DefaultCheckViewGwtComponent(final String[] warnings) {
@@ -14,7 +15,4 @@ public class DefaultCheckViewGwtComponent {
     return warnings;
   }
   
-  public String getDialogType() {
-    return "Text";
-  }
 }

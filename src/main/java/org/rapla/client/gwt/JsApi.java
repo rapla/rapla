@@ -6,7 +6,9 @@ import jsinterop.annotations.JsType;
 import org.rapla.RaplaResources;
 import org.rapla.client.ReservationController;
 import org.rapla.client.dialog.gwt.VueDialog;
+import org.rapla.client.dialog.gwt.components.BulmaTextColor;
 import org.rapla.client.dialog.gwt.components.VueLabel;
+import org.rapla.client.dialog.gwt.components.layout.VerticalFlex;
 import org.rapla.client.menu.MenuFactory;
 import org.rapla.components.util.TimeInterval;
 import org.rapla.entities.User;
@@ -163,7 +165,10 @@ public class JsApi {
     
     public Promise<Integer> testDialog() {
         VueDialog dialog = new VueDialog(
-          new VueLabel("Hallo Welt"),
+          new VerticalFlex()
+            .addChild(new VueLabel("Hallo Welt 1").color(BulmaTextColor.DANGER))
+            .addChild(new VueLabel("Hallo Welt 2").color(BulmaTextColor.SUCCESS)
+           ),
           new String[] {}
         );
         dialog.start(false);
