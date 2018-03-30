@@ -10,6 +10,8 @@ import org.rapla.client.dialog.gwt.components.BulmaTextColor;
 import org.rapla.client.dialog.gwt.components.VueLabel;
 import org.rapla.client.dialog.gwt.components.layout.VerticalFlex;
 import org.rapla.client.menu.MenuFactory;
+import org.rapla.client.menu.MenuInterface;
+import org.rapla.client.menu.gwt.VueMenu;
 import org.rapla.components.util.TimeInterval;
 import org.rapla.entities.User;
 import org.rapla.entities.configuration.CalendarModelConfiguration;
@@ -91,7 +93,7 @@ public class JsApi {
     {
         return menuFactory;
     }
-
+    
     public CalendarSelectionModel getCalendarModel() {
         return calendarModel;
     }
