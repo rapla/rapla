@@ -28,18 +28,18 @@ import javax.inject.Singleton;
 @Singleton
 @DefaultImplementation(of = MenuItemFactory.class, context = InjectionContext.gwt)
 public class VueMenuItemFactory implements MenuItemFactory {
-  
+
   @Inject
   public VueMenuItemFactory() {
   }
-  
+
   @Override
   public IdentifiableMenuEntry createMenuItem(String text, I18nIcon icon, Consumer<PopupContext> action) {
-    return new VueMenuItem(text)
+    return new DefaultVueMenuItem(text)
       .icon(icon)
       .action(action);
   }
-  
+
   @Override
   public MenuInterface createMenu(String text, I18nIcon icon) {
     return
@@ -47,10 +47,10 @@ public class VueMenuItemFactory implements MenuItemFactory {
         .text(text)
         .icon(icon);
   }
-  
+
   @Override
   public RaplaWidget createSeparator(String seperator) {
-    throw new UnsupportedOperationException();
+    return new VueMenuSeperator();
   }
-  
+
 }
