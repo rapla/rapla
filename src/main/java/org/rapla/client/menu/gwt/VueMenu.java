@@ -56,12 +56,16 @@ public class VueMenu implements MenuInterface {
 
   @Override
   public void insertAfterId(final RaplaWidget component, final String id) {
-    if (component instanceof VueMenuItem) {
+    if (component instanceof VueMenu) {
+      // TODO: add a sub VueMenu
+    } else if (component instanceof VueMenuItem) {
       VueMenuItem entry = (VueMenuItem) component;
       if (id == null)
         items.add(entry);
       else
         items.add(indexById(id) + 1, entry);
+    } else {
+      throw new RuntimeException("VueMenu can only accept another VueMenu or a VueMenuItem");
     }
   }
 
@@ -73,6 +77,8 @@ public class VueMenu implements MenuInterface {
         items.add(entry);
       else
         items.add(indexById(id), entry);
+    } else {
+      throw new RuntimeException("VueMenu can only accept another VueMenu or a VueMenuItem");
     }
   }
 
@@ -100,7 +106,7 @@ public class VueMenu implements MenuInterface {
 
   @JsIgnore
   public VueMenu icon(final I18nIcon icon) {
-    this.icon = icon.getId();
+    this.icon = icon == null ? null : icon.getId();
     return this;
   }
 

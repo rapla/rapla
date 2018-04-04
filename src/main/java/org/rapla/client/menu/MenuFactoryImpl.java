@@ -326,6 +326,12 @@ import java.util.TreeMap;
         return addNew(menu, context, afterId, false);
     }
 
+    @Override
+    public MenuInterface addReservationMenu(final MenuInterface menu, final SelectionMenuContext context, final
+    String afterId) throws RaplaException {
+        return addNew(menu, context, afterId, true);
+    }
+
     public MenuInterface addNew(MenuInterface menu, SelectionMenuContext context, String afterId, boolean addNewReservationMenu) throws RaplaException
     {
         // Do nothing if the user can't allocate anything

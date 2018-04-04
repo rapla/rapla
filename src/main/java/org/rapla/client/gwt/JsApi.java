@@ -8,11 +8,13 @@ import org.rapla.client.ReservationController;
 import org.rapla.client.dialog.gwt.VueDialog;
 import org.rapla.client.dialog.gwt.components.BulmaTextColor;
 import org.rapla.client.dialog.gwt.components.VueLabel;
+import org.rapla.client.dialog.gwt.components.VueList;
+import org.rapla.client.dialog.gwt.components.layout.HorizontalFlex;
 import org.rapla.client.dialog.gwt.components.layout.VerticalFlex;
 import org.rapla.client.menu.MenuFactory;
 import org.rapla.client.menu.MenuInterface;
-import org.rapla.client.menu.gwt.VueMenu;
 import org.rapla.client.menu.gwt.DefaultVueMenuItem;
+import org.rapla.client.menu.gwt.VueMenu;
 import org.rapla.components.util.TimeInterval;
 import org.rapla.entities.User;
 import org.rapla.entities.configuration.CalendarModelConfiguration;
@@ -65,9 +67,9 @@ public class JsApi {
   @JsIgnore
   @Inject
   public JsApi(
-      ClientFacade facade, Logger logger, ReservationController reservationController, CalendarSelectionModel calendarModel,
-      RemoteAuthentificationService remoteAuthentificationService, RaplaLocale raplaLocale, Provider<RaplaBuilder> raplaBuilder, RaplaResources i18n,
-      MenuFactory menuFactory, TableConfig.TableConfigLoader tableConfigLoader
+    ClientFacade facade, Logger logger, ReservationController reservationController, CalendarSelectionModel calendarModel,
+    RemoteAuthentificationService remoteAuthentificationService, RaplaLocale raplaLocale, Provider<RaplaBuilder> raplaBuilder, RaplaResources i18n,
+    MenuFactory menuFactory, TableConfig.TableConfigLoader tableConfigLoader
   ) {
     this.clientFacade = facade;
     this.i18n = i18n;
@@ -163,10 +165,22 @@ public class JsApi {
 
   public Promise<Integer> testDialog() {
     VueDialog dialog = new VueDialog(
-        new VerticalFlex()
-            .addChild(new VueLabel("Hallo Welt 1").color(BulmaTextColor.DANGER))
-            .addChild(new VueLabel("Hallo Welt 2").color(BulmaTextColor.SUCCESS)),
-        new String[] {}
+      new VerticalFlex()
+        .addChild(new VueLabel("Hallo Welt 1").color(BulmaTextColor.DANGER))
+        .addChild(new VueLabel("Hallo Welt 2").color(BulmaTextColor.SUCCESS))
+        .addChild(new VueLabel("Hallo Welt 3").color(BulmaTextColor.INFO))
+        .addChild(
+          new HorizontalFlex()
+            .addChild(
+              new VueList().item(new VueList.VueListItem("1", "Master 1"))
+                           .item(new VueList.VueListItem("2", "Master 2"))
+            )
+            .addChild(
+              new VueList().item(new VueList.VueListItem("1", "Child 1"))
+                           .item(new VueList.VueListItem("2", "Child 2"))
+            )
+        ),
+      new String[] {}
     );
     dialog.start(false)
           .thenAccept(i -> RaplaVue.emit("gwt-dialog-close"));
@@ -198,7 +212,8 @@ public class JsApi {
     if (viewId.equals("table_appointments")) {
       return loadTableModel("appointments", (() -> model.queryBlocks(model.getTimeIntervall())));
     } else if (viewId.equals("table_events")) {
-      return loadTableModel("events", (() -> model.queryReservations(model.getTimeIntervall()).thenApply(ArrayList::new)));
+      return loadTableModel("events",
+                            (() -> model.queryReservations(model.getTimeIntervall()).thenApply(ArrayList::new)));
     } else {
       return new ResolvedPromise<>(new RaplaException("No table data found for view " + viewId));
     }

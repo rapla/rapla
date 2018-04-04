@@ -6,8 +6,8 @@ import jsinterop.annotations.JsType;
 @JsType
 public class VueLabel implements VueComponent {
 
-  private final String text;
-  private BulmaTextColor color;
+  public final String text;
+  public String color;
 
   @JsIgnore
   public VueLabel(final String text) {
@@ -16,18 +16,8 @@ public class VueLabel implements VueComponent {
 
   @JsIgnore
   public VueLabel color(BulmaTextColor color) {
-    this.color = color;
+    this.color = color.css();
     return this;
-  }
-
-  public String color() {
-    if (color == null)
-      return null;
-    return color.css();
-  }
-
-  public String text() {
-    return text;
   }
 
   @Override

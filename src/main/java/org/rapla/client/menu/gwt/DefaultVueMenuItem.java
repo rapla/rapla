@@ -54,7 +54,7 @@ public class DefaultVueMenuItem implements IdentifiableMenuEntry, VueMenuItem {
 
   @JsIgnore
   public DefaultVueMenuItem icon(final I18nIcon icon) {
-    this.icon = icon.getId();
+      this.icon = icon == null ? null : icon.getId();
     return this;
   }
 }

@@ -20,7 +20,7 @@ public class VueMenuSeperator implements VueMenuItem {
 
   @Override
   public String getIcon() {
-    return null;
+    return "";
   }
 
   @Override
