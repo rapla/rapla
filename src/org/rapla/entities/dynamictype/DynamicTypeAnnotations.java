@@ -17,6 +17,8 @@ public interface DynamicTypeAnnotations
     String KEY_NAME_FORMAT="nameformat";
     String KEY_NAME_FORMAT_PLANNING="nameformat_planning";
     String KEY_NAME_FORMAT_EXPORT="nameformat_export";
+    String KEY_NAME_FORMAT_EXCHANGE="nameformat_exchange";
+
     String KEY_DESCRIPTION_FORMAT_EXPORT="descriptionformat_export";
     
     String KEY_CLASSIFICATION_TYPE="classification-type";

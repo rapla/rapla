@@ -345,7 +345,7 @@ public class Export2iCalConverter extends RaplaComponent {
             // MONTHLY -> settings : every nTh Weekday
             recur.setInterval(repeating.getInterval());
             calendar.setTime(appointment.getStart());
-            int weekofmonth = Math.round(calendar.get(java.util.Calendar.DAY_OF_MONTH) / DateTools.DAYS_PER_WEEK) + 1;
+            int weekofmonth = Math.round(calendar.get(java.util.Calendar.DAY_OF_MONTH) / DateTools.DAYS_PER_WEEK) ;
             recur.getDayList().add(new WeekDay(WeekDay.getWeekDay(calendar), weekofmonth));
         } else if (repeating.isYearly()) {
             // YEARLY -> settings : every nTh day mTh Monthname

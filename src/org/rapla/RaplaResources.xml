@@ -5413,6 +5413,12 @@ See French text.
         <text lang="es">Formato de nombre visualizado si exporta</text>
 		<text lang="fi">Viennissä näytettävä nimen muoto</text>
     </entry>
+	<entry key="nameformat_exchange">
+		<text lang="en">Format of subject in Exchange export</text>
+		<text lang="de">Formatierung des Betreffs im Exchange-Export</text>
+		<text lang="fr">Mettre en forme l'affichage dans le exporter exchange</text>
+		<text lang="es">Formato de nombre visualizado si exporta exchange</text>
+	</entry>
     <entry key="descriptionformat_export">
         <text lang="en">Format of description in export</text>
         <text lang="de">Formatierung der Beschreibung im Export</text>
