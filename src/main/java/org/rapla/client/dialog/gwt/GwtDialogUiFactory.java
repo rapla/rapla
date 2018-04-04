@@ -36,23 +36,26 @@ public class GwtDialogUiFactory implements DialogUiFactoryInterface
     }
 
     @Override
-    public DialogInterface createContentDialog(PopupContext popupContext, Object content, String[] options)
+    public VueDialog createContentDialog(PopupContext popupContext, Object content, String[] options)
     {
+        logger.info("createContentDialog with content " + content.getClass());
         return new VueDialog((VueComponent) content, options);
     }
 
     @Override
-    public DialogInterface createTextDialog(PopupContext popupContext, String title, String text, String[] options)
+    public VueDialog createTextDialog(PopupContext popupContext, String title, String text, String[] options)
     {
-        final DialogInterface di = createContentDialog(popupContext, new VueLabel(text), options);
+        logger.info("createTextDialog with text " + text);
+        final VueDialog di = createContentDialog(popupContext, new VueLabel(text), options);
         di.setTitle(title);
         return di;
     }
 
     @Override
-    public DialogInterface createInfoDialog(PopupContext popupContext, String title, String text)
+    public VueDialog createInfoDialog(PopupContext popupContext, String title, String text)
     {
-        final DialogInterface di = createTextDialog(popupContext, title, text, DialogUiFactoryInterface.Util.getDefaultOptions());
+        final VueDialog di = createTextDialog(popupContext, title, text, DialogUiFactoryInterface.Util.getDefaultOptions());
+        di.setTitle(title);
         return di;
     }
 
