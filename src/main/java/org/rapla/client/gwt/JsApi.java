@@ -192,6 +192,10 @@ public class JsApi {
     menu.addMenuItem(new DefaultVueMenuItem("Item 1").action((ctx) -> logger.info("user has chosen 'Item 1'")));
     menu.addSeparator();
     menu.addMenuItem(new DefaultVueMenuItem("Item 2").action((ctx) -> logger.info("user has chosen 'Item 2'")));
+    VueMenu submenu = new VueMenu();
+    submenu.addMenuItem(new DefaultVueMenuItem("Subitem 1").action((ctx) -> logger.info("subitem 1")));
+    submenu.addMenuItem(new DefaultVueMenuItem("Subitem 2").action((ctx) -> logger.info("subitem 2")));
+    menu.addMenuItem(submenu);
     return menu;
   }
 

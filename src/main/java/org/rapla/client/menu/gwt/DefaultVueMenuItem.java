@@ -8,7 +8,7 @@ import org.rapla.client.menu.IdentifiableMenuEntry;
 import org.rapla.components.i18n.I18nIcon;
 
 @JsType
-public class DefaultVueMenuItem implements IdentifiableMenuEntry, VueMenuItem {
+public class DefaultVueMenuItem implements IdentifiableMenuEntry, VueMenuItem, Selectable {
 
   private final String id;
   private String icon;
@@ -32,18 +32,13 @@ public class DefaultVueMenuItem implements IdentifiableMenuEntry, VueMenuItem {
   }
 
   @Override
-  public Consumer<PopupContext> getAction() {
-    return action;
-  }
-
-  @Override
   public Object getComponent() {
     return this;
   }
 
   @Override
-  public void fireAction(PopupContext context) throws Exception {
-    action.accept(context);
+  public void fireAction() throws Exception {
+    action.accept(null);
   }
 
   @JsIgnore

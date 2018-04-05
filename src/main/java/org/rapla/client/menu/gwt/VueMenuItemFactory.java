@@ -44,7 +44,7 @@ public class VueMenuItemFactory implements MenuItemFactory {
   public MenuInterface createMenu(String text, I18nIcon icon) {
     return
       new VueMenu()
-        .text(text)
+        .label(text)
         .icon(icon);
   }
 

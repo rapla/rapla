@@ -12,21 +12,11 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.client.menu.gwt;
 
-import org.rapla.RaplaResources;
 import org.rapla.client.menu.PasswordChangeView;
 import org.rapla.inject.DefaultImplementation;
 import org.rapla.inject.InjectionContext;
 
 import javax.inject.Inject;
-import javax.swing.BoxLayout;
-import javax.swing.JCheckBox;
-import javax.swing.JComponent;
-import javax.swing.JLabel;
-import javax.swing.JPanel;
-import javax.swing.JPasswordField;
-import java.awt.GridLayout;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
 
 @DefaultImplementation(of=PasswordChangeView.class,context = InjectionContext.gwt)
 public class PasswordChangeGwtView

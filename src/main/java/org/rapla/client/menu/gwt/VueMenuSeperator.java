@@ -24,16 +24,6 @@ public class VueMenuSeperator implements VueMenuItem {
   }
 
   @Override
-  public Consumer<PopupContext> getAction() {
-    return null;
-  }
-
-  @Override
-  public void fireAction(final PopupContext context) {
-
-  }
-
-  @Override
   public String getId() {
     return id;
   }

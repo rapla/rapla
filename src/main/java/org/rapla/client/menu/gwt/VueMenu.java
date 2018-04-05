@@ -1,6 +1,7 @@
 package org.rapla.client.menu.gwt;
 
 import jsinterop.annotations.JsIgnore;
+import jsinterop.annotations.JsMethod;
 import jsinterop.annotations.JsType;
 import org.rapla.client.RaplaWidget;
 import org.rapla.client.menu.IdentifiableMenuEntry;
@@ -11,11 +12,11 @@ import java.util.ArrayList;
 import java.util.List;
 
 @JsType
-public class VueMenu implements MenuInterface {
+public class VueMenu implements MenuInterface, VueMenuItem, IdentifiableMenuEntry {
 
   private List<VueMenuItem> items = new ArrayList<>();
   private String icon;
-  private String text;
+  private String label;
 
   @Override
   public void addMenuItem(final IdentifiableMenuEntry newItem) {
@@ -55,22 +56,24 @@ public class VueMenu implements MenuInterface {
   }
 
   @Override
-  public void insertAfterId(final RaplaWidget component, final String id) {
-    if (component instanceof VueMenu) {
-      // TODO: add a sub VueMenu
-    } else if (component instanceof VueMenuItem) {
+  public void insertAfterId(RaplaWidget component, final String id) {
+    component = (RaplaWidget) component.getComponent();
+    if (component instanceof VueMenuItem) {
       VueMenuItem entry = (VueMenuItem) component;
       if (id == null)
         items.add(entry);
       else
         items.add(indexById(id) + 1, entry);
     } else {
-      throw new RuntimeException("VueMenu can only accept another VueMenu or a VueMenuItem");
+      throw new RuntimeException(
+        "VueMenu can only accept another VueMenu or a VueMenuItem, got " + component.getClass().getSimpleName() +
+        " " + component.toString());
     }
   }
 
   @Override
-  public void insertBeforeId(final RaplaWidget component, final String id) {
+  public void insertBeforeId(RaplaWidget component, final String id) {
+    component = (RaplaWidget) component.getComponent();
     if (component instanceof VueMenuItem) {
       VueMenuItem entry = (VueMenuItem) component;
       if (id == null)
@@ -78,7 +81,9 @@ public class VueMenu implements MenuInterface {
       else
         items.add(indexById(id), entry);
     } else {
-      throw new RuntimeException("VueMenu can only accept another VueMenu or a VueMenuItem");
+      throw new RuntimeException(
+        "VueMenu can only accept another VueMenu or a VueMenuItem, got " + component.getClass().getSimpleName() +
+          " " + component.toString());
     }
   }
 
@@ -87,15 +92,18 @@ public class VueMenu implements MenuInterface {
     return null;
   }
 
+  @JsMethod
   @Override
   public Object getComponent() {
     return this;
   }
 
-  public String getText() {
-    return text;
+  @Override
+  public String getLabel() {
+    return label;
   }
 
+  @Override
   public String getIcon() {
     return icon;
   }
@@ -111,8 +119,8 @@ public class VueMenu implements MenuInterface {
   }
 
   @JsIgnore
-  public VueMenu text(final String text) {
-    this.text = text;
+  public VueMenu label(final String text) {
+    this.label = text;
     return this;
   }
 }
