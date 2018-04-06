@@ -14,6 +14,7 @@ import org.rapla.client.dialog.gwt.components.layout.VerticalFlex;
 import org.rapla.client.menu.MenuFactory;
 import org.rapla.client.menu.MenuInterface;
 import org.rapla.client.menu.gwt.DefaultVueMenuItem;
+import org.rapla.client.menu.gwt.VueButton;
 import org.rapla.client.menu.gwt.VueMenu;
 import org.rapla.components.util.TimeInterval;
 import org.rapla.entities.User;
@@ -169,6 +170,7 @@ public class JsApi {
         .addChild(new VueLabel("Hallo Welt 1").color(BulmaTextColor.DANGER))
         .addChild(new VueLabel("Hallo Welt 2").color(BulmaTextColor.SUCCESS))
         .addChild(new VueLabel("Hallo Welt 3").color(BulmaTextColor.INFO))
+        .addChild(new VueButton("Ich bin ein Button").action(ctx -> logger.info("action!")))
         .addChild(
           new HorizontalFlex()
             .addChild(

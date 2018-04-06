@@ -1,5 +1,5 @@
 package org.rapla.client.menu.gwt;
 
 public interface Selectable {
-  public void fireAction() throws Exception;
+  public void onSelect() throws Exception;
 }

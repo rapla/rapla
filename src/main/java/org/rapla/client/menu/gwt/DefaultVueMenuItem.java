@@ -37,7 +37,7 @@ public class DefaultVueMenuItem implements IdentifiableMenuEntry, VueMenuItem, S
   }
 
   @Override
-  public void fireAction() throws Exception {
+  public void onSelect() throws Exception {
     action.accept(null);
   }
 
