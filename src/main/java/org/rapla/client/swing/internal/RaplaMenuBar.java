@@ -32,6 +32,7 @@ import org.rapla.client.extensionpoints.EditMenuExtension;
 import org.rapla.client.extensionpoints.ExportMenuExtension;
 import org.rapla.client.extensionpoints.HelpMenuExtension;
 import org.rapla.client.extensionpoints.ImportMenuExtension;
+import org.rapla.client.extensionpoints.RaplaMenuExtension;
 import org.rapla.client.extensionpoints.ViewMenuExtension;
 import org.rapla.client.internal.admin.client.TypeCategoryTask;
 import org.rapla.client.menu.IdentifiableMenuEntry;
@@ -455,9 +456,9 @@ public class RaplaMenuBar extends RaplaGUIComponent
         return dialogUiFactory.createPopupContext( null);
     }
 
-    private void addPluginExtensions(Set<? extends IdentifiableMenuEntry> points, RaplaMenu menu)
+    private void addPluginExtensions(Set<? extends RaplaMenuExtension> points, RaplaMenu menu)
     {
-        for (IdentifiableMenuEntry menuItem : points)
+        for (RaplaMenuExtension menuItem : points)
         {
             menu.add((JComponent)menuItem.getComponent());
         }

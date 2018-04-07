@@ -1,6 +1,6 @@
 package org.rapla.client.extensionpoints;
 
-import org.rapla.client.swing.toolkit.IdentifiableMenuEntry;
+import org.rapla.client.menu.IdentifiableMenuEntry;
 
 public interface RaplaMenuExtension extends IdentifiableMenuEntry
 {

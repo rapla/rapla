@@ -1,11 +1,10 @@
 package org.rapla.rest.client.resteasy;
 
-import org.jboss.resteasy.client.jaxrs.ResteasyClient;
-import org.jboss.resteasy.client.jaxrs.ResteasyClientBuilder;
-import org.jboss.resteasy.client.jaxrs.ResteasyWebTarget;
 import org.rapla.rest.client.swing.JsonRemoteConnector;
 
+import javax.ws.rs.client.Client;
 import javax.ws.rs.client.Invocation;
+import javax.ws.rs.client.WebTarget;
 import javax.ws.rs.core.Response;
 import java.io.IOException;
 import java.net.URISyntaxException;
@@ -15,7 +14,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 
 public class ResteasyRemoteConnector implements JsonRemoteConnector {
-    final ResteasyClient client = new ResteasyClientBuilder().useAsyncHttpEngine().build();
+    final Client client = null;//new org.jboss.resteasy.client.jaxrs.ResteasyClientBuilder().useAsyncHttpEngine().build();
 
     public static JsonRemoteConnector createRestEasyClient() {
         return new ResteasyRemoteConnector();
@@ -23,7 +22,7 @@ public class ResteasyRemoteConnector implements JsonRemoteConnector {
 
     @Override
     public CallResult sendCallWithString(String requestMethod, URL methodURL, String body, String authenticationToken, String contentType, Map<String, String> additionalHeaders) throws IOException {
-        final ResteasyWebTarget target;
+        final WebTarget target;
         try {
             target = client.target(methodURL.toURI());
         } catch (URISyntaxException e) {
