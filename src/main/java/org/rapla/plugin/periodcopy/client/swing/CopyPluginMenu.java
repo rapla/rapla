@@ -226,6 +226,12 @@ public class CopyPluginMenu  extends RaplaGUIComponent implements EditMenuExtens
 		return r;
 	}
 
+	@Override
+	public boolean isEnabled()
+	{
+		return true;
+	}
+
 	private Date getNewStartWeekly(Date oldStart, Date destStart) {
 		Date newStart;
 		int weekday = DateTools.getWeekday( oldStart);

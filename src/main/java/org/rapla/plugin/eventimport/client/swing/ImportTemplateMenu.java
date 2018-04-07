@@ -35,6 +35,7 @@ import org.rapla.entities.dynamictype.Classification;
 import org.rapla.facade.client.ClientFacade;
 import org.rapla.facade.RaplaFacade;
 import org.rapla.framework.RaplaException;
+import org.rapla.framework.RaplaInitializationException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.inject.Extension;
 import org.rapla.plugin.eventimport.ParsedTemplateResult;
@@ -108,6 +109,14 @@ public class ImportTemplateMenu implements ImportMenuExtension, ActionListener
         item.setIcon(images.getIconFromKey("icon.import"));
         item.addActionListener(this);
         this.dialogFactory = dialogFactory;
+        try
+        {
+            facade.getSystemPreferences().getEntryAsBoolean(TemplateImport.TEMPLATE_IMPORT_ENABLED,false);
+        }
+        catch (RaplaException e)
+        {
+            throw new RaplaInitializationException(e);
+        }
     }
 
     @Override
@@ -120,6 +129,12 @@ public class ImportTemplateMenu implements ImportMenuExtension, ActionListener
     public String getId()
     {
         return id;
+    }
+
+    @Override
+    public boolean isEnabled()
+    {
+        return false;
     }
 
     @Override

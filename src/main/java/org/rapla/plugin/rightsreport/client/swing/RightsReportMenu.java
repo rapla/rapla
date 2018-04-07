@@ -48,6 +48,12 @@ public class RightsReportMenu extends RaplaGUIComponent implements AdminMenuExte
 	}
 
 	@Override
+	public boolean isEnabled()
+	{
+		return true;
+	}
+
+	@Override
 	public MenuElement getMenuElement() {
 		return report;
 	}

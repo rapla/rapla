@@ -283,6 +283,11 @@ public class FacadeImpl implements RaplaFacade {
         return operator.getPreferences(null, true);
 	}
 
+	public Preferences getAdminPreferences() throws RaplaException
+	{
+		return operator.getPreferences(null, true);
+	}
+
 	public Preferences getPreferences(User user) throws RaplaException {
 		return operator.getPreferences(user, true);
 	}

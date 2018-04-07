@@ -187,7 +187,13 @@ public class CSVExportMenu extends RaplaGUIComponent implements ExportMenuExtens
 
 	    }
 
-	private String escape(Object cell) { 
+    @Override
+    public boolean isEnabled()
+    {
+        return true;
+    }
+
+    private String escape(Object cell) {
 		return cell.toString().replace(LINE_BREAK, " ").replace(CELL_BREAK, " "); 
 	}
 	

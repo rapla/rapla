@@ -337,7 +337,13 @@ public class ImportFromICalMenu extends RaplaGUIComponent implements ImportMenuE
         comboNameAttribute.setRenderer(aRenderer);
 	}
 
-    private class NamedListCellRenderer extends DefaultListCellRenderer {
+	@Override
+	public boolean isEnabled()
+	{
+		return true;
+	}
+
+	private class NamedListCellRenderer extends DefaultListCellRenderer {
 
         private static final long serialVersionUID = 1L;
 

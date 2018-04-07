@@ -78,6 +78,7 @@ public class MainServlet extends HttpServlet
                 Object lookupResource = jndi.lookupResource(key, true);
                 if (lookupResource != null)
                 {
+                    logger.info("Added datasource " + key);
                     backendContext.addDbDatasource(key, (DataSource) lookupResource);
                 }
                 else
@@ -132,6 +133,13 @@ public class MainServlet extends HttpServlet
                     boolean disabled = split2.length > 1 && split2[1].trim().toLowerCase().equals("false");
                     backendContext.putServiceState(service, !disabled);
                 }
+            }
+        }
+        {
+            String patchScript = jndi.lookupEnvString("patchscript", true);
+            if ( patchScript != null && !patchScript.isEmpty())
+            {
+                backendContext.setPatchScript( patchScript );
             }
         }
         env_raplamail = jndi.lookupResource("mail/Session", false);
@@ -490,6 +498,11 @@ public class MainServlet extends HttpServlet
             try
             {
                 Context initContext = new InitialContext();
+                initContext.addToEnvironment("raplafile","");
+                initContext.addToEnvironment("raplafile","");
+                initContext.addToEnvironment("raplaservices","");
+                initContext.addToEnvironment("rapladatasource","raplafile");
+                initContext.addToEnvironment("patchscript","");
                 Context envContext = (Context) initContext.lookup("java:comp");
                 env = (Context) envContext.lookup("env");
             }

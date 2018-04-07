@@ -33,6 +33,7 @@ import org.rapla.client.extensionpoints.EditMenuExtension;
 import org.rapla.client.extensionpoints.ExportMenuExtension;
 import org.rapla.client.extensionpoints.HelpMenuExtension;
 import org.rapla.client.extensionpoints.ImportMenuExtension;
+import org.rapla.client.extensionpoints.RaplaMenuExtension;
 import org.rapla.client.extensionpoints.ViewMenuExtension;
 import org.rapla.client.swing.MenuFactory;
 import org.rapla.client.swing.RaplaGUIComponent;
@@ -267,7 +268,7 @@ public class RaplaMenuBar extends RaplaGUIComponent
             RaplaMenuItem adminOptions = new RaplaMenuItem("adminOptions");
             try
             {
-                adminOptions.setAction(createOptionAction(getQuery().getSystemPreferences()));
+                adminOptions.setAction(createOptionAction(getQuery().getAdminPreferences()));
             }
             catch (RaplaException e)
             {
@@ -435,13 +436,12 @@ public class RaplaMenuBar extends RaplaGUIComponent
         return dialogUiFactory.createPopupContext( null);
     }
 
-    private void addPluginExtensions(Set<? extends IdentifiableMenuEntry> points, RaplaMenu menu)
+    private void addPluginExtensions(Set<? extends RaplaMenuExtension> points, RaplaMenu menu)
     {
-        for (IdentifiableMenuEntry menuItem : points)
-        {
-            MenuElement menuElement = menuItem.getMenuElement();
-            menu.add(menuElement.getComponent());
-        }
+        points.stream()
+                .filter(RaplaMenuExtension::isEnabled)
+                .map((point)->point.getMenuElement().getComponent())
+                .forEach(menu::add);
     }
 
     private Action createOptionAction(final Preferences preferences)

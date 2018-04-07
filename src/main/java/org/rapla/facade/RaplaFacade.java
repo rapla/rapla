@@ -133,6 +133,8 @@ public interface RaplaFacade
 
     Preferences getSystemPreferences() throws RaplaException;
 
+    Preferences getAdminPreferences() throws RaplaException;
+
     /** returns if the user is allowed to exchange the allocatables of this reservation. A user can do it if he has
      * at least admin privileges for one allocatable. He can only exchange or remove or insert allocatables he has admin privileges on.
      * The User cannot change appointments.*/

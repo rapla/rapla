@@ -63,7 +63,13 @@ public class Export2iCalMenu extends RaplaGUIComponent implements ExportMenuExte
 	public JMenuItem getMenuElement() {
 		return item;
 	}
-	
+
+	@Override
+	public boolean isEnabled()
+	{
+		return true;
+	}
+
 	public void actionPerformed(ActionEvent evt) {
 		getCalendarOptions();
 		final TimeInterval interval = new TimeInterval(calendarModel.getStartDate(), calendarModel.getEndDate());
