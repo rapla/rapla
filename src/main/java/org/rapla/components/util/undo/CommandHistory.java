@@ -9,11 +9,11 @@ import java.util.Vector;
 
 
 public class  CommandHistory {
-	private List<CommandUndo<?>> history = new ArrayList<CommandUndo<?>>();
+	private List<CommandUndo<?>> history = new ArrayList<>();
 	private int current = -1;
 	private int maxSize = 100;
 	
-	private Vector<CommandHistoryChangedListener> listenerList = new Vector<CommandHistoryChangedListener>();
+	private Vector<CommandHistoryChangedListener> listenerList = new Vector<>();
 	
 	private void fireChangeEvent() {
 		for (CommandHistoryChangedListener listener: listenerList.toArray(new CommandHistoryChangedListener[] {}))
@@ -22,7 +22,7 @@ public class  CommandHistory {
 		}
 	}
 	
-	 public <T extends Exception> Promise<Void> storeAndExecute(CommandUndo<T> cmd) throws T {
+	 public <T extends Exception> Promise<Void> storeAndExecute(CommandUndo<T> cmd)  {
 		while (!history.isEmpty() && (current < history.size() - 1)) {
 			history.remove(history.size() - 1);
 		}
@@ -49,7 +49,7 @@ public class  CommandHistory {
 				{
 					current--;
 				}
-			).whenComplete((t,ex)-> {fireChangeEvent();});
+			).finally_(()-> fireChangeEvent());
 			return undo;
 		}
 		return ResolvedPromise.VOID_PROMISE;
@@ -59,9 +59,9 @@ public class  CommandHistory {
 		if (!history.isEmpty() && (current < history.size() - 1)) {
 			final Promise<Void> execute = history.get(current + 1).execute();
 			execute.thenRun(() -> {	current++;
-			}).whenComplete((t,ex) ->  {fireChangeEvent();});
+			}).finally_(() -> fireChangeEvent());
 			return execute;
-		};
+		}
 		return ResolvedPromise.VOID_PROMISE;
 	}
 	

@@ -13,6 +13,7 @@
 package org.rapla.client.swing.internal.edit.fields;
 
 import org.rapla.RaplaResources;
+import org.rapla.client.PopupContext;
 import org.rapla.client.dialog.DialogInterface;
 import org.rapla.client.dialog.DialogUiFactoryInterface;
 import org.rapla.client.swing.TreeFactory;
@@ -62,7 +63,7 @@ public abstract class AbstractSelectField<T> extends AbstractEditField implement
     private RaplaButton selectButton = new RaplaButton(RaplaButton.SMALL);
     JPanel panel;
     JLabel selectText = new JLabel();
-    private Collection<T> selectedValues = new ArrayList<T>();
+    private Collection<T> selectedValues = new ArrayList<>();
     T defaultValue;
 
     private boolean useDefault = true;
@@ -76,11 +77,11 @@ public abstract class AbstractSelectField<T> extends AbstractEditField implement
         return selectButton;
     }
 
-    public AbstractSelectField(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, TreeFactory treeFactory, RaplaImages raplaImages, DialogUiFactoryInterface dialogUiFactory){
-       this( facade, i18n, raplaLocale, logger, treeFactory, raplaImages, dialogUiFactory, null);
+    public AbstractSelectField(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, TreeFactory treeFactory, DialogUiFactoryInterface dialogUiFactory){
+       this( facade, i18n, raplaLocale, logger, treeFactory,  dialogUiFactory, null);
     }
     
-    public AbstractSelectField(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, TreeFactory treeFactory, RaplaImages raplaImages, DialogUiFactoryInterface dialogUiFactory, T defaultValue) {
+    public AbstractSelectField(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, TreeFactory treeFactory,  DialogUiFactoryInterface dialogUiFactory, T defaultValue) {
         super(facade, i18n, raplaLocale, logger);
         this.treeFactory = treeFactory;
         this.dialogUiFactory = dialogUiFactory;
@@ -97,7 +98,7 @@ public abstract class AbstractSelectField<T> extends AbstractEditField implement
         selectButton.setAction(new SelectionAction());
         selectButton.setHorizontalAlignment(RaplaButton.LEFT);
         selectButton.setText(i18n.getString("select"));
-        selectButton.setIcon(raplaImages.getIconFromKey("icon.tree"));
+        selectButton.setIcon(RaplaImages.getIcon(i18n.getIcon("icon.tree")));
         panel.setLayout( new BoxLayout(panel, BoxLayout.X_AXIS));
         panel.add( selectButton);
         panel.add( Box.createHorizontalStrut(10));
@@ -176,7 +177,7 @@ public abstract class AbstractSelectField<T> extends AbstractEditField implement
 
     public void setValues(Collection<T> values) 
     {
-        selectedValues = new ArrayList<T>();
+        selectedValues = new ArrayList<>();
         if ( values !=null)
         {
             selectedValues.addAll(values);
@@ -273,12 +274,7 @@ public abstract class AbstractSelectField<T> extends AbstractEditField implement
             JButton defaultButton = new JButton(i18n.getString("defaultselection"));
             panel.add( defaultButton,  BorderLayout.CENTER);
             defaultButton.setPreferredSize(new Dimension(100, 20));
-            defaultButton.addActionListener( new ActionListener() {
-                public void actionPerformed(ActionEvent arg0) 
-                {
-                    selectValues( tree, Collections.singletonList(defaultValue));
-                }
-            });
+            defaultButton.addActionListener(arg0 -> selectValues( tree, Collections.singletonList(defaultValue)));
         }
         
         if (useNull)
@@ -286,22 +282,20 @@ public abstract class AbstractSelectField<T> extends AbstractEditField implement
             JButton emptyButton = new JButton(i18n.getString("nothing_selected"));
             panel.add( emptyButton, BorderLayout.PAGE_END);
             emptyButton.setPreferredSize(new Dimension(100, 20));
-            emptyButton.addActionListener( new ActionListener() {
-                public void actionPerformed(ActionEvent arg0) 
-                {
-                    List<T> emptyList = Collections.emptyList();
-					selectValues(tree, emptyList );
-                }
+            emptyButton.addActionListener(arg0 -> {
+                List<T> emptyList = Collections.emptyList();
+                selectValues(tree, emptyList );
             });
         }
 
-        dialog = dialogUiFactory.create(
-                new SwingPopupContext(parent, null)
-                                 ,true
-                                 ,panel
+        final PopupContext popupContext = new SwingPopupContext(parent, null);
+        dialog = dialogUiFactory.createContentDialog(
+                popupContext
+                                 ,
+                panel
                                  ,new String[] { i18n.getString("apply"),i18n.getString("cancel")});
 
-        final Collection<T> newValues = new LinkedHashSet<T>();
+        final Collection<T> newValues = new LinkedHashSet<>();
         tree.addMouseListener(new MouseAdapter() {
             // End dialog when a leaf is double clicked
             public void mousePressed(MouseEvent e) {
@@ -322,30 +316,29 @@ public abstract class AbstractSelectField<T> extends AbstractEditField implement
             }
         });
         dialog.setTitle(i18n.getString("select"));
-        dialog.start(true);
+        dialog.start(true).thenAccept(index->
+                {
+                    // we did a double clidk
+                    if (!newValues.isEmpty()) {
+                        if (!newValues.equals(selectedValues)) {
+                            setValues(newValues);
+                            fireContentChanged();
+                        }
+                    } else if (index == 0) {
+                        newValues.addAll(getValues(tree));
+                        if (!newValues.equals(selectedValues)) {
+                            setValues(newValues);
+                            fireContentChanged();
+                        }
+                    }
+                }).exceptionally(ex->dialogUiFactory.showException(ex,popupContext));
         tree.requestFocus();
-        // we did a double clidk
-        if ( !newValues.isEmpty())
-        {
-            if ( !newValues.equals(selectedValues))
-            {
-                setValues(newValues);
-                fireContentChanged();
-            }
-        }
-        else if (dialog.getSelectedIndex() == 0 ) {
-            newValues.addAll(getValues(tree));
-            if ( !newValues.equals(selectedValues))
-            {
-                setValues(newValues);
-                fireContentChanged();
-            }
-        }
+
     }
 
     private Collection<T> getValues(JTree tree)
     {
-        Collection<T> newValues = new LinkedHashSet<T>();
+        Collection<T> newValues = new LinkedHashSet<>();
         TreePath[] paths = tree.getSelectionPaths();
         if ( paths != null)
         {
@@ -376,7 +369,7 @@ public abstract class AbstractSelectField<T> extends AbstractEditField implement
     }
     
     public void select(JTree jTree,Collection<?> selectedObjects) {
-        Collection<TreeNode> selectedNodes = new ArrayList<TreeNode>();
+        Collection<TreeNode> selectedNodes = new ArrayList<>();
         {
             Iterator<TreeNode> it = new TreeIterator((TreeNode)jTree.getModel().getRoot());
             while (it.hasNext()) {

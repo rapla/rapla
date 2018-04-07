@@ -17,13 +17,7 @@ import org.rapla.components.calendarview.Block;
 import org.rapla.components.calendarview.Builder;
 import org.rapla.components.calendarview.Builder.PreperationResult;
 import org.rapla.components.util.DateTools;
-import org.rapla.facade.CalendarModel;
 
-import javax.servlet.ServletContext;
-import javax.servlet.ServletException;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -38,8 +32,8 @@ public class HTMLCompactWeekView extends AbstractHTMLView {
     /** shared calendar instance. Only used for temporary stored values. */
     HTMLSmallDaySlot[] slots = {};
     String[] slotNames = {}; 
-    private ArrayList<List<Block>> rows = new ArrayList<List<Block>>();
-    Map<Block, Integer> columnMap = new HashMap<Block, Integer>();
+    private ArrayList<List<Block>> rows = new ArrayList<>();
+    Map<Block, Integer> columnMap = new HashMap<>();
 	private double leftColumnSize = 0.1;
     String weeknumber = "";
     
@@ -60,7 +54,7 @@ public class HTMLCompactWeekView extends AbstractHTMLView {
     }
     
     public Collection<Block> getBlocks() {
-        ArrayList<Block> list = new ArrayList<Block>();
+        ArrayList<Block> list = new ArrayList<>();
         for (int i=0;i<slots.length;i++) {
             list.addAll(slots[i]);
         }
@@ -88,7 +82,7 @@ public class HTMLCompactWeekView extends AbstractHTMLView {
         PreperationResult prep = b.prepareBuild(getStartDate(),getEndDate());
         
         // build Blocks
-        b.build(this, prep.getBlocks()); 
+        b.build(this,this.getStartDate(), prep.getBlocks());
         
         // resource header
 
@@ -150,7 +144,7 @@ public class HTMLCompactWeekView extends AbstractHTMLView {
     }
 
 	protected List<String> getHeaderNames() {
-		List<String> headerNames = new ArrayList<String>();
+		List<String> headerNames = new ArrayList<>();
         Date date = getStartDate();
         int columnCount = getColumnCount();
 		for (int i=0;i<columnCount;i++) {
@@ -197,7 +191,7 @@ public class HTMLCompactWeekView extends AbstractHTMLView {
     }
 
     private void addRow() {
-        rows.add( rows.size(), new ArrayList<Block>());
+        rows.add( rows.size(), new ArrayList<>());
     }
 
     

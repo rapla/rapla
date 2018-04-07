@@ -14,8 +14,8 @@ package org.rapla.client.swing.internal.edit.fields;
 
 import org.rapla.RaplaResources;
 import org.rapla.client.swing.EditField;
-import org.rapla.facade.client.ClientFacade;
 import org.rapla.facade.RaplaFacade;
+import org.rapla.facade.client.ClientFacade;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.logger.Logger;
 
@@ -33,7 +33,7 @@ public abstract class AbstractEditField implements EditField
 
 {
     String fieldName;
-    ArrayList<ChangeListener> listenerList = new ArrayList<ChangeListener>();
+    ArrayList<ChangeListener> listenerList = new ArrayList<>();
     protected final ClientFacade clientFacade;
     protected final RaplaFacade raplaFacade;
     protected final RaplaResources i18n;

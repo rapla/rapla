@@ -37,7 +37,7 @@ public class IterableChain<T> implements Iterable<T> {
     @Override
     public Iterator<T> iterator() 
     {
-        return new IteratorChain<T>(firstIt != null ? firstIt.iterator(): null, secondIt != null ? secondIt.iterator(): null , thirdIt != null ? thirdIt.iterator() :null);
+        return new IteratorChain<>(firstIt != null ? firstIt.iterator() : null, secondIt != null ? secondIt.iterator() : null, thirdIt != null ? thirdIt.iterator() : null);
     }
 	
 }

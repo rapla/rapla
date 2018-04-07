@@ -33,7 +33,7 @@ public class OldIdMapping {
         	return true;
         }
         String KEY_START = RaplaType.getLocalName(type) + "_";
-        boolean idContent = (content.indexOf( KEY_START ) >= 0  && content.length() > 0);
+        boolean idContent = (content.contains(KEY_START) && content.length() > 0);
         return idContent;
     }
 

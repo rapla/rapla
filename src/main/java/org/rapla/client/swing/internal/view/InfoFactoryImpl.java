@@ -16,18 +16,16 @@ import org.rapla.RaplaResources;
 import org.rapla.client.PopupContext;
 import org.rapla.client.dialog.DialogInterface;
 import org.rapla.client.dialog.DialogUiFactoryInterface;
+import org.rapla.client.dialog.InfoFactory;
 import org.rapla.client.internal.AllocatableInfoUI;
 import org.rapla.client.internal.AppointmentInfoUI;
 import org.rapla.client.internal.CategoryInfoUI;
-import org.rapla.client.internal.DeleteInfoUI;
 import org.rapla.client.internal.DynamicTypeInfoUI;
 import org.rapla.client.internal.HTMLInfo;
 import org.rapla.client.internal.PeriodInfoUI;
 import org.rapla.client.internal.ReservationInfoUI;
 import org.rapla.client.internal.UserInfoUI;
-import org.rapla.client.swing.InfoFactory;
 import org.rapla.client.swing.RaplaGUIComponent;
-import org.rapla.client.swing.images.RaplaImages;
 import org.rapla.client.swing.internal.SwingPopupContext;
 import org.rapla.client.swing.toolkit.HTMLView;
 import org.rapla.components.iolayer.ComponentPrinter;
@@ -42,8 +40,8 @@ import org.rapla.entities.domain.AppointmentFormater;
 import org.rapla.entities.domain.Period;
 import org.rapla.entities.domain.Reservation;
 import org.rapla.entities.dynamictype.DynamicType;
-import org.rapla.facade.client.ClientFacade;
 import org.rapla.facade.RaplaFacade;
+import org.rapla.facade.client.ClientFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.inject.DefaultImplementation;
@@ -53,7 +51,6 @@ import org.rapla.logger.Logger;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import java.awt.Component;
-import java.awt.Point;
 import java.awt.datatransfer.DataFlavor;
 import java.awt.datatransfer.StringSelection;
 import java.util.HashMap;
@@ -67,17 +64,15 @@ the entities of rapla.
 public class InfoFactoryImpl extends RaplaGUIComponent implements InfoFactory
 
 {
-    Map<Class,HTMLInfo> views = new HashMap<Class,HTMLInfo>();
+    Map<Class,HTMLInfo> views = new HashMap<>();
     private final IOInterface ioInterface;
-    private final RaplaImages raplaImages;
     private final DialogUiFactoryInterface dialogUiFactory;
 
     @Inject
-    public InfoFactoryImpl(ClientFacade clientFacade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, AppointmentFormater appointmentFormater, IOInterface ioInterface, RaplaImages raplaImages, DialogUiFactoryInterface dialogUiFactory) {
+    public InfoFactoryImpl(ClientFacade clientFacade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, AppointmentFormater appointmentFormater, IOInterface ioInterface,  DialogUiFactoryInterface dialogUiFactory) {
         super(clientFacade, i18n, raplaLocale, logger);
         RaplaFacade facade = clientFacade.getRaplaFacade();
         this.ioInterface = ioInterface;
-        this.raplaImages = raplaImages;
         this.dialogUiFactory = dialogUiFactory;
         views.put( DynamicType.class, new DynamicTypeInfoUI(clientFacade, i18n, raplaLocale, logger) );
         views.put( Reservation.class, new ReservationInfoUI(i18n, raplaLocale, facade, logger, appointmentFormater) );
@@ -88,41 +83,36 @@ public class InfoFactoryImpl extends RaplaGUIComponent implements InfoFactory
         views.put( Category.class, new CategoryInfoUI(facade, i18n, raplaLocale, logger) );
     }
 
-    /** this method is used by the viewtable to dynamicaly create an
+    /** this method is used by the viewtable to dynamicaly createInfoDialog an
      * appropriate HTMLInfo for the passed object
      */
     <T extends RaplaObject> HTMLInfo<T> createView( T object ) throws RaplaException {
         if ( object == null )
-            throw new RaplaException( "Could not create view for null object" );
+            throw new RaplaException( "Could not createInfoDialog view for null object" );
 
         @SuppressWarnings("unchecked")
 		HTMLInfo<T> result =  views.get( object.getTypeClass() );
         if (result != null)
                 return result;
-        throw new RaplaException( "Could not create view for this object: " + object.getClass() );
+        throw new RaplaException( "Could not createInfoDialog view for this object: " + object.getClass() );
     }
 
-    /*
-    public <T> Component createInfoComponent( T object ) throws RaplaException {
-        ViewTable<T> viewTable = new ViewTable<T>(getClientFacade(), getI18n(), getRaplaLocale(), getLogger(), this, ioInterface, dialogUiFactory);
-        viewTable.updateInfo( object );
-        return viewTable.getComponent();
-    }*/
-
+    @Override
     public String getToolTip(Object obj) {
         return getToolTip(obj,true);
     }
 
+    @Override
     public String getToolTip(Object obj,boolean wrapHtml) {
         try {
-            if ( !(obj instanceof RaplaObject)) 
+            if ( !(obj instanceof RaplaObject))
             {
                 return null;
             }
             RaplaObject o = (RaplaObject )obj;
             if ( !views.containsKey( o.getTypeClass()))
             {
-            	return null;
+                return null;
             }
             String text = createView( o ).getTooltip( o, getUser());
             if (wrapHtml && text != null)
@@ -140,19 +130,20 @@ public class InfoFactoryImpl extends RaplaGUIComponent implements InfoFactory
     /* (non-Javadoc)
      * @see org.rapla.client.swing.gui.view.IInfoUIFactory#showInfoDialog(java.lang.Object, java.awt.ServerComponent, java.awt.Point)
      */
+    @Override
     public <T> void showInfoDialog( T object, PopupContext popupContext )
-        throws RaplaException
+            throws RaplaException
     {
-       
-        final ViewTable<T> viewTable = new ViewTable<T>(getClientFacade(), getI18n(), getRaplaLocale(), getLogger(), this, ioInterface, dialogUiFactory);
-        final DialogInterface dlg = dialogUiFactory.create(popupContext
-                                       ,false
-                                       ,viewTable.getComponent()
-                                       ,new String[] {
-        						getString( "copy_to_clipboard" )
-								,getString( "print" )
-								,getString( "back" )
-            });
+
+        final ViewTable<T> viewTable = new ViewTable<>(getClientFacade(), getI18n(), getRaplaLocale(), getLogger(), this, ioInterface, dialogUiFactory);
+        final DialogInterface dlg = dialogUiFactory.createContentDialog(popupContext
+                ,
+                viewTable.getComponent()
+                ,new String[] {
+                        getString( "copy_to_clipboard" )
+                        ,getString( "print" )
+                        ,getString( "back" )
+                });
 
         if ( !(object instanceof RaplaObject)) {
             viewTable.updateInfoHtml( object.toString());
@@ -160,29 +151,27 @@ public class InfoFactoryImpl extends RaplaGUIComponent implements InfoFactory
         else
         {
             @SuppressWarnings("unchecked")
-			HTMLInfo<RaplaObject<T>> createView = createView((RaplaObject<T>)object);
-			@SuppressWarnings("unchecked")
-			final HTMLInfo<T> view = (HTMLInfo<T>) createView;
-			viewTable.updateInfo( object, view );
+            HTMLInfo<RaplaObject<T>> createView = createView((RaplaObject<T>)object);
+            @SuppressWarnings("unchecked")
+            final HTMLInfo<T> view = (HTMLInfo<T>) createView;
+            viewTable.updateInfo( object, view );
         }
         dlg.setTitle( viewTable.getDialogTitle() );
         dlg.setDefault(2);
-        final Point point = SwingPopupContext.extractPoint(popupContext);
-        dlg.setPosition(point.getX(), point.getY());
         dlg.start( true );
 
         dlg.getAction(0).setRunnable( new Runnable() {
             private static final long serialVersionUID = 1L;
-            
+
             public void run() {
                 try {
-                	DataFlavor.getTextPlainUnicodeFlavor();
-                	viewTable.htmlView.selectAll();
-                	String plainText = viewTable.htmlView.getSelectedText();
-                	//String htmlText = viewTable.htmlView.getText();
-                	//InfoSelection selection = new InfoSelection( htmlText, plainText );
-                	StringSelection selection = new StringSelection( plainText );
-                	ioInterface.setContents( selection, null);
+                    DataFlavor.getTextPlainUnicodeFlavor();
+                    viewTable.htmlView.selectAll();
+                    String plainText = viewTable.htmlView.getSelectedText();
+                    //String htmlText = viewTable.htmlView.getText();
+                    //InfoSelection selection = new InfoSelection( htmlText, plainText );
+                    StringSelection selection = new StringSelection( plainText );
+                    ioInterface.setContents( selection, null);
                 } catch (Exception ex) {
                     dialogUiFactory.showException(ex, new SwingPopupContext((Component)dlg, null));
                 }
@@ -190,7 +179,7 @@ public class InfoFactoryImpl extends RaplaGUIComponent implements InfoFactory
         });
         dlg.getAction(1).setRunnable( new Runnable() {
             private static final long serialVersionUID = 1L;
-            
+
             public void run() {
                 try {
                     HTMLView htmlView = viewTable.htmlView;
@@ -206,30 +195,12 @@ public class InfoFactoryImpl extends RaplaGUIComponent implements InfoFactory
         });
     }
 
-    /* (non-Javadoc)
-     * @see org.rapla.client.swing.gui.view.IInfoUIFactory#createDeleteDialog(java.lang.Object[], java.awt.ServerComponent)
-     */
-    public DialogInterface createDeleteDialog( Object[] deletables, PopupContext popupContext ) throws RaplaException {
-        if ( popupContext == null)
-        {
-            popupContext = dialogUiFactory.createPopupContext( null);
-        }
-        ViewTable<Object[]> viewTable = new ViewTable<Object[]>(getClientFacade(), getI18n(), getRaplaLocale(), getLogger(), this, ioInterface, dialogUiFactory);
-        DeleteInfoUI deleteView = new DeleteInfoUI(getI18n(), getRaplaLocale(), getFacade(), getLogger());
-        DialogInterface dlg = dialogUiFactory.create(popupContext
-                                       ,false
-                                       ,viewTable.getComponent()
-                                       ,new String[] {
-                                           getString( "delete.ok" )
-                                           ,getString( "delete.abort" )
-                                       });
-        dlg.setIcon( "icon.warning" );
-        dlg.getAction(0).setIcon("icon.delete");
-        dlg.getAction(1).setIcon("icon.abort");
-        dlg.setDefault(1);
-        viewTable.updateInfo( deletables, deleteView );
-        dlg.setTitle( viewTable.getDialogTitle() );
-        return dlg;
-    }
+    /*
+    public <T> Component createInfoComponent( T object ) throws RaplaException {
+        ViewTable<T> viewTable = new ViewTable<T>(getClientFacade(), getI18n(), getRaplaLocale(), getLogger(), this, ioInterface, dialogUiFactory);
+        viewTable.updateInfo( object );
+        return viewTable.getComponent();
+    }*/
+
 }
 

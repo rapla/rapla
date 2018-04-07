@@ -1,18 +1,17 @@
 package org.rapla.client.gwt.view;
 
-import io.reactivex.functions.Consumer;
-import org.rapla.client.RaplaWidget;
 import org.rapla.client.internal.edit.EditTaskPresenter;
+import org.rapla.client.internal.edit.EditTaskViewFactory;
 import org.rapla.entities.Entity;
 import org.rapla.framework.RaplaException;
 import org.rapla.inject.DefaultImplementation;
 import org.rapla.inject.InjectionContext;
 
 import javax.inject.Inject;
-import java.util.Collection;
+import java.util.Map;
 
-@DefaultImplementation(of= EditTaskPresenter.EditTaskView.class,context = InjectionContext.gwt)
-public class EditTaskViewGwt implements EditTaskPresenter.EditTaskView
+@DefaultImplementation(of= EditTaskViewFactory.class,context = InjectionContext.gwt)
+public class EditTaskViewGwt implements EditTaskViewFactory<Object>
 {
     @Inject
     public EditTaskViewGwt()
@@ -20,11 +19,8 @@ public class EditTaskViewGwt implements EditTaskPresenter.EditTaskView
 
     }
 
-    @Override public <T extends Entity> RaplaWidget doSomething(Collection<T> toEdit,  Consumer<Collection<T>> save, Runnable close, boolean isMerge)
-            throws RaplaException
-    {
+    @Override
+    public <T extends Entity> EditTaskPresenter.EditTaskView<T,Object> create(Map<T,T> editMap, boolean isMerge) throws RaplaException {
         return null;
     }
-
-
 }

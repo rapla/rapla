@@ -2,7 +2,7 @@ package org.rapla.plugin.tableview.internal;
 
 import org.jetbrains.annotations.NotNull;
 import org.rapla.RaplaResources;
-import org.rapla.components.xmlbundle.I18nBundle;
+import org.rapla.components.i18n.I18nBundle;
 import org.rapla.entities.MultiLanguageName;
 import org.rapla.entities.Named;
 import org.rapla.entities.User;
@@ -35,13 +35,13 @@ import java.util.Set;
 
 public class TableConfig
 {
-    private Set<TableColumnConfig> column = new LinkedHashSet<TableColumnConfig>();
-    private Map<String, ViewDefinition> views = new LinkedHashMap<String, ViewDefinition>();
+    private Set<TableColumnConfig> column = new LinkedHashSet<>();
+    private Map<String, ViewDefinition> views = new LinkedHashMap<>();
 
     public static class ViewDefinition implements Named
     {
         private MultiLanguageName name = new MultiLanguageName();
-        private final List<String> columns = new ArrayList<String>();
+        private final List<String> columns = new ArrayList<>();
         private ParsedText contentDefinition = new ParsedText("{appointmentBlocks()}");
 
         public List<String> getColumns()
@@ -352,9 +352,9 @@ public class TableConfig
         {
             return null;
         }
-        Collection<TableColumnConfig> result = new ArrayList<TableColumnConfig>();
-        final LinkedHashSet<String> orderedColumnKeys = new LinkedHashSet<String>(myList.columns);
-        Map<String, TableColumnConfig> map = new LinkedHashMap<String, TableColumnConfig>();
+        Collection<TableColumnConfig> result = new ArrayList<>();
+        final LinkedHashSet<String> orderedColumnKeys = new LinkedHashSet<>(myList.columns);
+        Map<String, TableColumnConfig> map = new LinkedHashMap<>();
         for (TableColumnConfig col : column)
         {
             final String key = col.getKey();
@@ -455,7 +455,7 @@ public class TableConfig
     @NotNull static TableConfig read(RaplaConfiguration configEntry, RaplaLocale raplaLocale) throws ConfigurationException
     {
         TableConfig result = new TableConfig();
-        Map<String, TableColumnConfig> columnSet = new HashMap<String, TableColumnConfig>();
+        Map<String, TableColumnConfig> columnSet = new HashMap<>();
         for (Configuration columnConfig : configEntry.getChildren("column"))
         {
             String key = columnConfig.getChild("key").getValue();
@@ -584,7 +584,7 @@ public class TableConfig
 
         public <T, C> List<RaplaTableColumn<T, C>> loadColumns(String configName, User user) throws RaplaException
         {
-            List<RaplaTableColumn<T, C>> reservationColumnPlugins = new ArrayList<RaplaTableColumn<T, C>>();
+            List<RaplaTableColumn<T, C>> reservationColumnPlugins = new ArrayList<>();
             final Preferences preferences = raplaFacade.getSystemPreferences();
             TableConfig config = read(preferences, false);
             final Collection<TableColumnConfig> columns = config.getColumns(configName);
@@ -597,7 +597,7 @@ public class TableConfig
 
         public TableConfig read(Preferences preferences, boolean allLang) throws RaplaException
         {
-            final Set<String> strings = allLang ? new HashSet<String>(raplaLocale.getAvailableLanguages()) : Collections.singleton(i18n.getLang());
+            final Set<String> strings = allLang ? new HashSet<>(raplaLocale.getAvailableLanguages()) : Collections.singleton(i18n.getLang());
             return TableConfig.read(preferences, i18n, raplaLocale, strings, extensions);
         }
     }

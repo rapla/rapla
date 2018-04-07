@@ -29,7 +29,7 @@ public class UrlEncryptor
 {
 
     @Deprecated
-    private static TypedComponentRole<String> KEY_PREFERENCE_ENTRY = new TypedComponentRole<String>("org.rapla.plugin.urlencryption.urlEncKey");
+    private static TypedComponentRole<String> KEY_PREFERENCE_ENTRY = new TypedComponentRole<>("org.rapla.plugin.urlencryption.urlEncKey");
     private static final int NUM_SHUFFELS = 2;
     private final String syncEncryptionAlg = "AES/ECB/PKCS5Padding";
 

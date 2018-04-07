@@ -17,8 +17,8 @@ import org.junit.Assert;
 import org.rapla.client.EditController;
 import org.rapla.client.ReservationController;
 import org.rapla.client.ReservationEdit;
+import org.rapla.client.dialog.swing.DialogUI;
 import org.rapla.client.swing.gui.tests.GUITestCase;
-import org.rapla.client.swing.toolkit.DialogUI;
 import org.rapla.client.swing.toolkit.RaplaButton;
 import org.rapla.components.util.DateTools;
 import org.rapla.entities.User;
@@ -28,9 +28,8 @@ import org.rapla.entities.domain.AppointmentBlock;
 import org.rapla.entities.domain.Reservation;
 import org.rapla.entities.dynamictype.Classification;
 import org.rapla.entities.dynamictype.ClassificationFilter;
-import org.rapla.facade.client.ClientFacade;
 import org.rapla.facade.RaplaFacade;
-import org.rapla.framework.RaplaException;
+import org.rapla.facade.client.ClientFacade;
 import org.rapla.storage.StorageOperator;
 import org.rapla.test.util.RaplaTestCase;
 
@@ -76,20 +75,17 @@ public final class ReservationControllerTest extends GUITestCase
             {
                 boolean keepTime = true;
                 Point p = null;
-                AppointmentBlock appointmentBlock = new AppointmentBlock(appointment);
+                AppointmentBlock appointmentBlock = AppointmentBlock.create(appointment);
                 Date newStart = DateTools.addDay(appointment.getStart());
-                try
-                {
-                    c.moveAppointment(appointmentBlock, newStart, createPopupContext(), keepTime);
-                    Appointment app = raplaFacade.getPersistant(reservation).getAppointments()[0];
-                    Assert.assertEquals(DateTools.addDay(from), app.getStart());
-                    // Now the test can end
-                    mutex.release();
-                }
-                catch (RaplaException e)
-                {
-                    e.printStackTrace();
-                }
+                c.moveAppointment(appointmentBlock, newStart, createPopupContext(), keepTime).
+                        thenRun( ()->
+                        {
+                            Appointment app = raplaFacade.getPersistant(reservation).getAppointments()[0];
+                            Assert.assertEquals(DateTools.addDay(from), app.getStart());
+                        })
+                        .exceptionally(
+                            ex->Assert.fail( ex.getMessage()))
+                        .finally_( ()->mutex.release());
             }
 
         });

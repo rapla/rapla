@@ -61,15 +61,10 @@ public class LongInputField extends FlowPanel
                 return valueAsInt;
             }
         });
-        input.addChangeHandler(new ChangeHandler()
-        {
-            @Override
-            public void onChange(ChangeEvent event)
-            {
-                final String valueAsString = input.getValue();
-                final Integer newValue = valueAsString != null ? new Integer(valueAsString) : null;
-                changeHandler.valueChanged(newValue != null ? new Long(newValue) : newValue);
-            }
+        input.addChangeHandler(event -> {
+            final String valueAsString = input.getValue();
+            final Integer newValue = valueAsString != null ? new Integer(valueAsString) : null;
+            changeHandler.valueChanged(newValue != null ? new Long(newValue) : newValue);
         });
         inputGroup.add(input);
         this.add(inputGroup);

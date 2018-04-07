@@ -12,7 +12,7 @@ public class TableDef
 	{
 		this.tablename = table;
 	}
-	Map<String,ColumnDef> columns = new LinkedHashMap<String,ColumnDef>();
+	Map<String,ColumnDef> columns = new LinkedHashMap<>();
 	String tablename;
 	public void addColumn(ColumnDef column)
 	{

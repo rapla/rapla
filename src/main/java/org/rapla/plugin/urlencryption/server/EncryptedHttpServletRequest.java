@@ -23,7 +23,7 @@ public class EncryptedHttpServletRequest extends HttpServletRequestWrapper
 	{
 		super(originalRequest);
 		this.newRequestUri = newRequestUri;
-		this.parameters = new TreeMap<String, String[]>();
+		this.parameters = new TreeMap<>();
         Map<String, String[]> parameterMap = super.getParameterMap();
         this.parameters.putAll(parameterMap);
 		this.parameters.putAll(plainParameters);

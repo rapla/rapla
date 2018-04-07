@@ -46,7 +46,7 @@ public final class ClassificationFilterImpl
     private String typeId;
     
     transient boolean readOnly;
-    List<ClassificationFilterRuleImpl> list = new LinkedList<ClassificationFilterRuleImpl>();
+    List<ClassificationFilterRuleImpl> list = new LinkedList<>();
     transient boolean arrayUpToDate = false;
     transient ClassificationFilterRuleImpl[] rulesArray;
     transient EntityResolver resolver;
@@ -77,15 +77,15 @@ public final class ClassificationFilterImpl
 
     @Override
     public Iterable<ReferenceInfo> getReferenceInfo() {
-        return new IterableChain<ReferenceInfo>
-            (
-             Collections.singleton( new ReferenceInfo(typeId, DynamicType.class))
-             ,new NestedIterable<ReferenceInfo,ClassificationFilterRuleImpl>( list ) {
-                     public Iterable<ReferenceInfo> getNestedIterable(ClassificationFilterRuleImpl obj) {
-                         return obj.getReferenceInfo();
-                     }
-                 }
-             );
+        return new IterableChain<>
+                (
+                        Collections.singleton(new ReferenceInfo(typeId, DynamicType.class))
+                        , new NestedIterable<ReferenceInfo, ClassificationFilterRuleImpl>(list) {
+                    public Iterable<ReferenceInfo> getNestedIterable(ClassificationFilterRuleImpl obj) {
+                        return obj.getReferenceInfo();
+                    }
+                }
+                );
     }
 
     
@@ -302,7 +302,7 @@ public final class ClassificationFilterImpl
     public ClassificationFilterImpl clone() {
         ClassificationFilterImpl clone = new ClassificationFilterImpl((DynamicTypeImpl)getType());
         clone.resolver = resolver;
-        clone.list = new LinkedList<ClassificationFilterRuleImpl>();
+        clone.list = new LinkedList<>();
         Iterator<ClassificationFilterRuleImpl> it = list.iterator();
         while (it.hasNext()) {
             ClassificationFilterRuleImpl rule = it.next();

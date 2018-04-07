@@ -266,7 +266,7 @@ package org.rapla.plugin.exchangeconnector.server.unused;
 //    	TimeZone timeZone = raplaLocale.getImportExportTimeZone();
 //    	Date startDate = raplaLocale.toRaplaTime(timeZone, exchangeAppointment.getStart());
 //        Date endDate = raplaLocale.toRaplaTime(timeZone,exchangeAppointment.getEnd());
-//        org.rapla.entities.domain.Appointment raplaAppointment = getClientFacade().newAppointment(startDate, endDate, getRaplaUser());
+//        org.rapla.entities.domain.Appointment raplaAppointment = getClientFacade().newAppointmentDeprecated(startDate, endDate, getRaplaUser());
 //
 //        if (exchangeAppointment.getIsAllDayEvent()) {
 //            raplaAppointment.setWholeDays(true);

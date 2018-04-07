@@ -58,27 +58,22 @@ public class RaplaPopups
 
     static
     {
-        Window.addResizeHandler(new ResizeHandler()
-        {
-            @Override
-            public void onResize(ResizeEvent event)
+        Window.addResizeHandler(event -> {
+            int clientWidth = event.getWidth();
+            final int width = Math.min(MAX_WIDTH_POPUP, clientWidth);
+            BodyElement body = Document.get().getBody();
+            NodeList<Node> childNodes = body.getChildNodes();
+            int length = childNodes.getLength();
+            for (int index = 0; index < length; index++)
             {
-                int clientWidth = event.getWidth();
-                final int width = Math.min(MAX_WIDTH_POPUP, clientWidth);
-                BodyElement body = Document.get().getBody();
-                NodeList<Node> childNodes = body.getChildNodes();
-                int length = childNodes.getLength();
-                for (int index = 0; index < length; index++)
+                Node child = childNodes.getItem(index);
+                if (child instanceof Element)
                 {
-                    Node child = childNodes.getItem(index);
-                    if (child instanceof Element)
+                    Element element = (Element) child;
+                    String styleClass = element.getClassName();
+                    if (styleClass.contains("raplaPopup"))
                     {
-                        Element element = (Element) child;
-                        String styleClass = element.getClassName();
-                        if (styleClass.contains("raplaPopup"))
-                        {
-                            element.getStyle().setWidth(width, Unit.PX);
-                        }
+                        element.getStyle().setWidth(width, Unit.PX);
                     }
                 }
             }

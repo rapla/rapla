@@ -86,26 +86,14 @@ public class ClockPicker extends Div
         final String formatHour = formats.getFormatHour();
         format = DateTimeFormat.getFormat(formatHour);
         input.setStyleName("form-control");
-        input.addChangeHandler(new ChangeHandler()
-        {
-            @Override
-            public void onChange(ChangeEvent event)
-            {
-                timeChanged();
-            }
-        });
+        input.addChangeHandler(event -> timeChanged());
         setTime(initDate);
         add(input);
         final InputGroupAddon addon = new InputGroupAddon();
         addon.setIcon(IconType.CLOCK_O);
-        addon.addDomHandler(new ClickHandler()
-        {
-            @Override
-            public void onClick(ClickEvent event)
-            {
-                clockPicker.show();
-                event.stopPropagation();
-            }
+        addon.addDomHandler(event -> {
+            clockPicker.show();
+            event.stopPropagation();
         }, ClickEvent.getType());
         add(addon);
     }
@@ -123,14 +111,7 @@ public class ClockPicker extends Div
         ClockPickerOptions options = JS.createObject();
         options.setAutoclose(true);
         options.setTwelvehour(amPmFormat);
-        options.setAfterDone(new Callback()
-        {
-            @Override
-            public void handleAction()
-            {
-                timeChanged();
-            }
-        });
+        options.setAfterDone(() -> timeChanged());
         ClockPickerElement clockPickerElement = jqe.clockpicker(options);
         clockPicker = clockPickerElement.data("clockpicker");
     }

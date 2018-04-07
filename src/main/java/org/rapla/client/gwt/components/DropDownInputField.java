@@ -66,7 +66,7 @@ public class DropDownInputField extends Div
         addon.setText(label);
         dropDown.setStyleName(Styles.FORM_CONTROL);
         dropDown.setMultipleSelect(multiSelect);
-        ArrayList<Integer> selectedIndexes = new ArrayList<Integer>();
+        ArrayList<Integer> selectedIndexes = new ArrayList<>();
         int index = 0;
         for (DropDownItem dropDownItem : values)
         {
@@ -78,14 +78,9 @@ public class DropDownInputField extends Div
             }
             index++;
         }
-        dropDown.addChangeHandler(new ChangeHandler()
-        {
-            @Override
-            public void onChange(ChangeEvent event)
-            {
-                String selected = dropDown.getSelectedValue();
-                changeHandler.valueChanged(selected);
-            }
+        dropDown.addChangeHandler(event -> {
+            String selected = dropDown.getSelectedValue();
+            changeHandler.valueChanged(selected);
         });
         for (Integer selectedIndex : selectedIndexes)
         {
@@ -98,7 +93,7 @@ public class DropDownInputField extends Div
     public void changeSelection(Collection<DropDownItem> values)
     {
         dropDown.clear();
-        ArrayList<Integer> selectedIndexes = new ArrayList<Integer>();
+        ArrayList<Integer> selectedIndexes = new ArrayList<>();
         int index = 0;
         for (DropDownItem dropDownItem : values)
         {

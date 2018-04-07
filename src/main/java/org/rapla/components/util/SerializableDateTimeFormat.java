@@ -15,10 +15,10 @@ and times in the following format: <br>
 This is according to the xschema specification for dates and time and
 ISO8601
 */
-@JsType
+@JsType(namespace = "rapla",name = "DateParse")
 public class SerializableDateTimeFormat
 {
-	public static SerializableDateTimeFormat INSTANCE = new SerializableDateTimeFormat();
+	final public static SerializableDateTimeFormat INSTANCE = new SerializableDateTimeFormat();
 	// we ommit T
 	private final static char DATE_TIME_SEPERATOR = 'T';
 	//private final static char DATE_TIME_SEPERATOR = ' ';
@@ -191,7 +191,7 @@ public class SerializableDateTimeFormat
 		if ( includeMilliseconds)
 		{
 			buf.append('.');
-			append( buf, time.milliseconds, 4 );
+			append( buf, time.milliseconds, 3 );
 		}
 		//buf.append(  'Z');
 		return buf.toString();

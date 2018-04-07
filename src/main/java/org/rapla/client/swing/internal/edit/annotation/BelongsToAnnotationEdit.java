@@ -37,7 +37,7 @@ public class BelongsToAnnotationEdit extends RaplaGUIComponent implements Annota
         if ( annotatable.getAnnotation())
         String annotation = annotatable.getAnnotation(annotationName);
         final String string = getString(AttributeAnnotations.KEY_BELONGSTO);
-        BooleanField field = booleanFieldFactory.create(string);
+        BooleanField field = booleanFieldFactory.createInfoDialog(string);
         if (annotation != null)
         {
             field.setValue(annotation.equalsIgnoreCase("true"));

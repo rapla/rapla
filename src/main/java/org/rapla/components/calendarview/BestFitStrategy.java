@@ -20,7 +20,7 @@ import java.util.List;
 /** This strategy groups all blocks in a single group */
 public class BestFitStrategy extends AbstractGroupStrategy {
     protected Collection<List<Block>> group(List<Block> blockList) {
-        List<List<Block>> singleGroup = new ArrayList<List<Block>>();
+        List<List<Block>> singleGroup = new ArrayList<>();
         singleGroup.add(blockList);
         return singleGroup;
     }

@@ -16,15 +16,13 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.rapla.RaplaResources;
 import org.rapla.client.dialog.DialogUiFactoryInterface;
+import org.rapla.client.dialog.swing.DialogUI.DialogUiFactory;
 import org.rapla.client.swing.SwingSchedulerImpl;
-import org.rapla.client.swing.images.RaplaImages;
 import org.rapla.client.swing.internal.RaplaDateRenderer;
 import org.rapla.client.swing.internal.edit.fields.BooleanField.BooleanFieldFactory;
-import org.rapla.client.swing.toolkit.DialogUI.DialogUiFactory;
-import org.rapla.client.swing.toolkit.FrameControllerList;
 import org.rapla.components.calendar.DateRenderer;
 import org.rapla.components.i18n.BundleManager;
-import org.rapla.components.i18n.internal.DefaultBundleManager;
+import org.rapla.components.i18n.client.swing.SwingBundleManager;
 import org.rapla.components.iolayer.DefaultIO;
 import org.rapla.components.iolayer.IOInterface;
 import org.rapla.components.util.TimeInterval;
@@ -33,8 +31,8 @@ import org.rapla.entities.domain.Period;
 import org.rapla.entities.domain.Reservation;
 import org.rapla.entities.dynamictype.ClassificationFilter;
 import org.rapla.facade.CalendarSelectionModel;
-import org.rapla.facade.client.ClientFacade;
 import org.rapla.facade.RaplaFacade;
+import org.rapla.facade.client.ClientFacade;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.internal.RaplaLocaleImpl;
 import org.rapla.logger.Logger;
@@ -112,17 +110,15 @@ public class CopyPeriodPluginTest {
         }
         Assert.assertNotNull("Period not found ", sourcePeriod);
         Assert.assertNotNull("Period not found ", destPeriod);
-        BundleManager bundleManager= new DefaultBundleManager();
+        BundleManager bundleManager= new SwingBundleManager(logger);
         final PeriodCopyResources i18n = new PeriodCopyResources(bundleManager);
         final Logger logger = getLogger();
         final RaplaLocaleImpl raplaLocale = new RaplaLocaleImpl(bundleManager);
         final RaplaResources rr = new RaplaResources(bundleManager);
         final DateRenderer dateRenderer = new RaplaDateRenderer(raplaFacade, getRaplaLocale());
         final RaplaResources raplaResources = rr;
-        final RaplaImages raplaImages = new RaplaImages(logger);
-        final FrameControllerList frameList = new FrameControllerList(logger);
         CommandScheduler scheduler = new SwingSchedulerImpl(logger);
-        final DialogUiFactoryInterface dialogUiFactory = new DialogUiFactory(raplaResources, raplaImages,scheduler, bundleManager, frameList, logger );
+        final DialogUiFactoryInterface dialogUiFactory = new DialogUiFactory(raplaResources, scheduler, bundleManager,  logger );
         final BooleanFieldFactory booleanFieldFactory = new BooleanFieldFactory(facade, raplaResources, raplaLocale, logger);
         final IOInterface t = new DefaultIO(logger);
         Provider<CopyDialog> copyDialogProvider = new Provider<CopyDialog>(){
@@ -132,7 +128,7 @@ public class CopyPeriodPluginTest {
                 return new CopyDialog(getFacade(), rr, getRaplaLocale(), getLogger(), i18n, model, dateRenderer, booleanFieldFactory, dialogUiFactory, t );
             }
         };
-        CopyPluginMenu init = new CopyPluginMenu( getFacade(), rr, getRaplaLocale(), getLogger(), i18n, copyDialogProvider, raplaImages, dialogUiFactory);
+        CopyPluginMenu init = new CopyPluginMenu( getFacade(), rr, getRaplaLocale(), getLogger(), i18n, copyDialogProvider,  dialogUiFactory);
         Collection<Reservation>original = RaplaTestCase.waitForWithRaplaException(model.queryReservations( new TimeInterval(sourcePeriod.getStart(), sourcePeriod.getEnd())), 10000);
         Assert.assertNotNull(findReservationWithName(original, "power planting"));
 

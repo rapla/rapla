@@ -48,7 +48,7 @@ public class AttributeEdit extends RaplaGUIComponent
     RaplaListEdit<Attribute> listEdit;
     DynamicType dt;
     AttributeDefaultConstraints constraintPanel;
-    ArrayList<ChangeListener> listenerList = new ArrayList<ChangeListener>();
+    ArrayList<ChangeListener> listenerList = new ArrayList<>();
 
     Listener listener = new Listener();
     DefaultListModel model = new DefaultListModel();
@@ -58,40 +58,37 @@ public class AttributeEdit extends RaplaGUIComponent
     public AttributeEdit(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, AttributeDefaultConstraints constraintPanel, RaplaListEditFactory raplaListEditFactory, DialogUiFactoryInterface dialogUiFactory) throws
             RaplaInitializationException {
         super(facade, i18n, raplaLocale, logger);
-
-        // 1.
-        //Set<AnnotationEditAttributeExtension> attributeExtensionSet = context.lookup(AnnotationEditExtensionWrapper.class).getAttributeExtensions();
-
-        // 2.
-        //Injector injector = context.lookup(Injector.class);
-        //injector.inject(DefaultConst);
-
-        // 3.
-        //context.lookup(AttributeDefaultConstraints.class);
-
-
         this.constraintPanel = constraintPanel;
         this.dialogUiFactory = dialogUiFactory;
-        listEdit = raplaListEditFactory.create( getI18n(), constraintPanel.getComponent(), listener, false );
+        listEdit = raplaListEditFactory.create( constraintPanel.getComponent(), listener, false );
         listEdit.setListDimension( new Dimension( 200,220 ) );
 
         constraintPanel.addChangeListener( listener );
-        listEdit.setNameProvider( new NameProvider<Attribute>()
-                {
-                    @Override
-                    public String getName(Attribute a) {
-                        String value = a.getName(getRaplaLocale().getLocale());
-                        value = "{" + a.getKey() + "} " + value;
-                        int index = listEdit.indexOf( a);
-                        if ( index >= 0)
-                        {
-                            value = (index + 1) +") " + value;
-                        }
-                        return value;
-                    }
-                }
-                );
+        listEdit.setNameProvider(a -> {
+            String value = a.getName(getRaplaLocale().getLocale());
+            value = "{" + a.getKey() + "} " + value;
+            int index = indexOf( a);
+            if ( index >= 0)
+            {
+                value = (index + 1) +") " + value;
+            }
+            return value;
+        }
+        );
         listEdit.getComponent().setBorder( BorderFactory.createTitledBorder( new EmptyLineBorder(),getString("attributes")) );
+    }
+
+    private int indexOf(Attribute a) {
+        int i =0 ;
+        for (Attribute att:dt.getAttributeIterable())
+        {
+            if (att.equals( a))
+            {
+                return i;
+            }
+            i++;
+        }
+        return -1;
     }
 
 
@@ -202,7 +199,7 @@ public class AttributeEdit extends RaplaGUIComponent
     }
 
     void removeAttribute()  {
-    	List<Attribute> toRemove = new ArrayList<Attribute>();
+    	List<Attribute> toRemove = new ArrayList<>();
     	
     	for ( int index:listEdit.getList().getSelectedIndices())
     	{

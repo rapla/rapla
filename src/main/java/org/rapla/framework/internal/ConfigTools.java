@@ -51,7 +51,7 @@ public abstract class ConfigTools
     public static Map<String,String> parseParams( String[] args )
     {
         boolean bInvalid = false;
-        Map<String,String> map = new HashMap<String,String>();
+        Map<String,String> map = new HashMap<>();
         String config = null;
         String action = null;
 

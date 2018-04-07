@@ -92,7 +92,7 @@ public class HTMLDayResourcePage extends HTMLDayViewPage
         	{
         		if (allocatables != null)
         		{
-        			Map<Block,Integer> map = new LinkedHashMap<Block, Integer>(); 
+        			Map<Block,Integer> map = new LinkedHashMap<>();
         			for (Block block:blocks)
         			{
         				int index = getIndex(allocatables, block);

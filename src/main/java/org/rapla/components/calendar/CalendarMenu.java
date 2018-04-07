@@ -298,7 +298,7 @@ public class CalendarMenu extends JPanel implements MenuElement {
     private String[] createMonthNames( ) {
         Calendar calendar = Calendar.getInstance(m_model.getLocale());
         calendar.setLenient(true);
-        Collection<String> monthNames = new ArrayList<String>();
+        Collection<String> monthNames = new ArrayList<>();
         SimpleDateFormat format = new SimpleDateFormat("MMM",m_model.getLocale());
         int firstMonth = 0;
         int month = 0;

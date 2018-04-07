@@ -16,6 +16,16 @@ public class I18nLocaleFormats
 
     public I18nLocaleFormats()
     {
+        isAmPm = false;
+        amPm = new String[] {};
+        weekdays = new String[] {"M","T","W","T","F","S","S"};
+        shortWeekdays = weekdays;
+        months = new String[] {"J","F","M","A","M","J","J", "A","S","O","N","D"};
+        shortMonths = months;
+        formatDateLong="M/d/yy";
+        formatDateShort = formatDateLong;
+        formatHour="h:mm a";
+        formatTime="h:mm:ss a";
     }
 
     public I18nLocaleFormats(boolean isAmPm, String[] amPm, String formatDateShort, String formatDateLong, String[] weekdays, String[] shortWeekdays, String[] months, String[] shortMonths, String formatHour,

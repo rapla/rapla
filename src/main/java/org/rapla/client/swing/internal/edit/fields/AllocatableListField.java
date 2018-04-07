@@ -38,7 +38,7 @@ public class AllocatableListField extends ListField<Allocatable>
         ClassificationFilter filter = dynamicTypeConstraint.newClassificationFilter();
         ClassificationFilter[] filters = new ClassificationFilter[] { filter };
         Allocatable[] allocatables = raplaFacade.getAllocatablesWithFilter(filters);
-        Set<Allocatable> list = new TreeSet<Allocatable>(new NamedComparator<Allocatable>(raplaLocale.getLocale()));
+        Set<Allocatable> list = new TreeSet<>(new NamedComparator<>(raplaLocale.getLocale()));
         list.addAll(Arrays.asList(allocatables));
         setVector(list);
     }

@@ -16,7 +16,6 @@ import org.rapla.RaplaResources;
 import org.rapla.client.dialog.DialogUiFactoryInterface;
 import org.rapla.client.swing.EditField;
 import org.rapla.client.swing.TreeFactory;
-import org.rapla.client.swing.images.RaplaImages;
 import org.rapla.client.swing.internal.edit.fields.AllocatableSelectField;
 import org.rapla.client.swing.internal.edit.fields.BooleanField.BooleanFieldFactory;
 import org.rapla.client.swing.internal.edit.fields.CategoryListField;
@@ -56,7 +55,6 @@ import java.util.Set;
 public class ClassificationEditUI extends AbstractEditUI<Classification> {
     String selectedView = AttributeAnnotations.VALUE_EDIT_VIEW_MAIN;
     private final TreeFactory treeFactory;
-    private final RaplaImages raplaImages;
     private final DialogUiFactoryInterface dialogUiFactory;
     private final DateFieldFactory dateFieldFactory;
     private final BooleanFieldFactory booleanFieldFactory;
@@ -75,10 +73,9 @@ public class ClassificationEditUI extends AbstractEditUI<Classification> {
         this.selectedView = selectedView;
     }
 
-    public ClassificationEditUI(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, TreeFactory treeFactory, RaplaImages raplaImages, DateFieldFactory dateFieldFactory, DialogUiFactoryInterface dialogUiFactory, BooleanFieldFactory booleanFieldFactory, TextFieldFactory textFieldFactory, LongFieldFactory longFieldFactory) {
+    public ClassificationEditUI(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, TreeFactory treeFactory,  DateFieldFactory dateFieldFactory, DialogUiFactoryInterface dialogUiFactory, BooleanFieldFactory booleanFieldFactory, TextFieldFactory textFieldFactory, LongFieldFactory longFieldFactory) {
 		super(facade, i18n, raplaLocale, logger);
         this.treeFactory = treeFactory;
-        this.raplaImages = raplaImages;
         this.dateFieldFactory = dateFieldFactory;
         this.dialogUiFactory = dialogUiFactory;
         this.booleanFieldFactory = booleanFieldFactory;
@@ -91,7 +88,7 @@ public class ClassificationEditUI extends AbstractEditUI<Classification> {
 
 	private String getAttName(String key) {
 		// collection of all attribute-names for the deposited classifications
-		Set<String> attNames = new HashSet<String>();
+		Set<String> attNames = new HashSet<>();
 		for (Classification c : objectList) {
 			attNames.add(getName(c.getAttribute(key)));
 		}
@@ -107,7 +104,7 @@ public class ClassificationEditUI extends AbstractEditUI<Classification> {
 	protected Attribute getAttribute(int i) {
 		// collection of all attributes for the deposited classifications for a
 		// certain field
-		Set<Attribute> attributes = new HashSet<Attribute>();
+		Set<Attribute> attributes = new HashSet<>();
 		for (Classification c : objectList) {
 			String key = getKey( fields.get(i));
 			Attribute attribute = c.getAttribute(key);
@@ -131,7 +128,7 @@ public class ClassificationEditUI extends AbstractEditUI<Classification> {
 			{
 			    Collection<?> collection = (Collection<?>)value;
 			    Boolean multiSelect = (Boolean)attribute.getConstraint(ConstraintIds.KEY_MULTI_SELECT);
-			    if ( multiSelect != null && multiSelect==true)
+			    if ( multiSelect != null && multiSelect)
                 {
                     c.setValues(attribute, collection);
                 }
@@ -154,12 +151,12 @@ public class ClassificationEditUI extends AbstractEditUI<Classification> {
 
     public Set<Object> getUniqueAttValues(String key) {
         // collection of all attribute values for a certain attribute
-		Set<Object> values = new LinkedHashSet<Object>();
+		Set<Object> values = new LinkedHashSet<>();
 		for (Classification c : objectList) {
 			Attribute attribute = c.getAttribute(key);
 			Object value;
 			Boolean multiSelect = (Boolean) attribute.getConstraint(ConstraintIds.KEY_MULTI_SELECT);
-			if ( multiSelect != null && multiSelect == true)
+			if ( multiSelect != null && multiSelect )
 			{
 				value = c.getValues(attribute);
 			}
@@ -198,7 +195,7 @@ public class ClassificationEditUI extends AbstractEditUI<Classification> {
 //            final Boolean belongsTo = (Boolean) attribute.getConstraint(ConstraintIds.KEY_BELONGS_TO);
 //            final Boolean groups = (Boolean) attribute.getConstraint(ConstraintIds.KEY_GROUPS);
 	//		 if (dynamicTypeConstraint == null || multipleSelectionPossible) {
-				 AllocatableSelectField allocField = new AllocatableSelectField(getClientFacade(), getI18n(), getRaplaLocale(), getLogger(), treeFactory, raplaImages, dynamicTypeConstraint, dialogUiFactory)
+				 AllocatableSelectField allocField = new AllocatableSelectField(getClientFacade(), getI18n(), getRaplaLocale(), getLogger(), treeFactory,  dynamicTypeConstraint, dialogUiFactory)
                  {
 //                     @Override protected Allocatable[] getAllocatables()
 //                     {
@@ -237,7 +234,7 @@ public class ClassificationEditUI extends AbstractEditUI<Classification> {
             }
 			Boolean multipleSelectionPossible = (Boolean) attribute.getConstraint(ConstraintIds.KEY_MULTI_SELECT);
             if ((rootCategory != null && rootCategory.getDepth() > 2) || multipleSelectionPossible) {
-                CategorySelectField catField = new CategorySelectField(getClientFacade(), getI18n(), getRaplaLocale(), getLogger(), treeFactory, raplaImages, dialogUiFactory, rootCategory, defaultCategory);
+                CategorySelectField catField = new CategorySelectField(getClientFacade(), getI18n(), getRaplaLocale(), getLogger(), treeFactory,  dialogUiFactory, rootCategory, defaultCategory);
                 catField.setMultipleSelectionPossible( multipleSelectionPossible != null ? multipleSelectionPossible : false);
                 catField.setFieldName( label );
                 field = catField;
@@ -289,7 +286,7 @@ public class ClassificationEditUI extends AbstractEditUI<Classification> {
 		return field;
 	}
 
-	Map<EditField,String> fieldKeyMap = new HashMap<EditField,String>();
+	Map<EditField,String> fieldKeyMap = new HashMap<>();
 	
 	public void setObjects(List<Classification> classificationList) throws RaplaException {
 		this.objectList = classificationList;
@@ -299,7 +296,7 @@ public class ClassificationEditUI extends AbstractEditUI<Classification> {
     public void recreateFields() throws RaplaException
     {
         // determining of the DynmicTypes from the classifications
-		Set<DynamicType> types = new HashSet<DynamicType>();
+		Set<DynamicType> types = new HashSet<>();
 		for (Classification c : objectList) {
 			types.add(c.getType());
 		}
@@ -308,8 +305,8 @@ public class ClassificationEditUI extends AbstractEditUI<Classification> {
 		    fieldKeyMap.clear();
 			// read out attributes for this DynmicType
 			Attribute[] attributes = types.iterator().next().getAttributes();
-			// create fields for attributes
-			List<SetGetField<?>> fields= new ArrayList<SetGetField<?>>();
+			// createInfoDialog fields for attributes
+			List<SetGetField<?>> fields= new ArrayList<>();
 			for (Attribute attribute:attributes) {
 			    boolean isVisible = isVisible(attribute);
 			    if ( !isVisible)

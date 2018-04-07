@@ -13,7 +13,6 @@
 package org.rapla.components.i18n;
 
 import org.rapla.components.util.DateTools;
-import org.rapla.components.xmlbundle.I18nBundle;
 
 import java.util.Collection;
 import java.util.Locale;
@@ -71,6 +70,12 @@ public class AbstractBundle implements I18nBundle
     public String getString( String key ) throws MissingResourceException
     {
 		return bundleManager.getString(packageId, key);
+    }
+
+
+    public I18nIcon getIcon( String key ) throws MissingResourceException
+    {
+        return bundleManager.getIcon(packageId, key);
     }
 
     public String getString( String key, Locale locale) throws MissingResourceException

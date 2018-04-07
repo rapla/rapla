@@ -33,7 +33,7 @@ abstract class AbstractDaySlot extends JPanel implements DaySlot
     int draggingY;
     SwingBlock draggingView;
     int draggingHeight;
-    protected Map<Object,SwingBlock> blockViewMapper = new HashMap<Object,SwingBlock>();
+    protected Map<Object,SwingBlock> blockViewMapper = new HashMap<>();
 // BJO 00000076
 //    protected Method getButtonMethod = null;
 // BJO 00000076

@@ -30,13 +30,12 @@ import org.rapla.client.gwt.view.RaplaPopups;
 import org.rapla.facade.ModificationEvent;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaInitializationException;
-import org.rapla.inject.DefaultImplementation;
-import org.rapla.inject.InjectionContext;
+import org.rapla.scheduler.Observable;
 
 import javax.inject.Inject;
 import java.util.function.Function;
 
-@DefaultImplementation(of =ApplicationView.class,context= InjectionContext.gwt)
+//@DefaultImplementation(of =ApplicationView.class,context= InjectionContext.gwt)
 public class GwtApplicationViewImpl implements ApplicationView<IsWidget>
 {
     private static final String MENU_ACTION = "RAPLA_MENU_ACTION";
@@ -198,7 +197,7 @@ public class GwtApplicationViewImpl implements ApplicationView<IsWidget>
     }
 
     @Override
-    public void openWindow(ApplicationEvent windowId, PopupContext popupContext, RaplaWidget<IsWidget> component, String title,Function<ApplicationEvent,Boolean> windowClosingFunction)
+    public void openWindow(ApplicationEvent windowId, PopupContext popupContext, RaplaWidget<IsWidget> component, String title, Function<ApplicationEvent, Boolean> windowClosingFunction, Observable<String> busyIdleObservable)
     {
 
     }

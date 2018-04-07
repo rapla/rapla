@@ -1,13 +1,13 @@
 package org.rapla.client.swing.internal.edit;
 
+import org.jetbrains.annotations.Nullable;
 import org.rapla.RaplaResources;
 import org.rapla.client.EditController;
+import org.rapla.client.PopupContext;
 import org.rapla.client.dialog.DialogInterface;
 import org.rapla.client.dialog.DialogUiFactoryInterface;
 import org.rapla.client.swing.RaplaGUIComponent;
-import org.rapla.client.swing.images.RaplaImages;
 import org.rapla.client.swing.internal.SwingPopupContext;
-import org.rapla.client.swing.internal.edit.RaplaListEdit.NameProvider;
 import org.rapla.client.swing.internal.edit.RaplaListEdit.RaplaListEditFactory;
 import org.rapla.client.swing.internal.edit.fields.BooleanField.BooleanFieldFactory;
 import org.rapla.client.swing.internal.edit.fields.ClassificationField.ClassificationFieldFactory;
@@ -18,7 +18,6 @@ import org.rapla.entities.Named;
 import org.rapla.entities.NamedComparator;
 import org.rapla.entities.User;
 import org.rapla.entities.domain.Allocatable;
-import org.rapla.entities.domain.Appointment;
 import org.rapla.entities.domain.Permission;
 import org.rapla.entities.domain.RaplaObjectAnnotations;
 import org.rapla.entities.domain.Reservation;
@@ -28,9 +27,9 @@ import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.entities.dynamictype.DynamicTypeAnnotations;
 import org.rapla.entities.storage.ReferenceInfo;
 import org.rapla.facade.CalendarSelectionModel;
-import org.rapla.facade.client.ClientFacade;
 import org.rapla.facade.RaplaComponent;
 import org.rapla.facade.RaplaFacade;
+import org.rapla.facade.client.ClientFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.logger.Logger;
@@ -40,14 +39,12 @@ import org.rapla.storage.PermissionController;
 import org.rapla.storage.StorageOperator;
 
 import javax.inject.Inject;
-import javax.inject.Singleton;
 import javax.swing.DefaultListCellRenderer;
 import javax.swing.DefaultListModel;
+import javax.swing.JComponent;
 import javax.swing.JList;
 import javax.swing.ListSelectionModel;
 import javax.swing.event.ChangeEvent;
-import javax.swing.event.ListSelectionEvent;
-import javax.swing.event.ListSelectionListener;
 import java.awt.Component;
 import java.awt.Dimension;
 import java.awt.event.ActionEvent;
@@ -68,25 +65,25 @@ import java.util.Map;
 public class TemplateEdit extends RaplaGUIComponent
 {
     RaplaListEdit<Allocatable> templateList;
-    DefaultListModel model = new DefaultListModel();
-    AllocatableEditUI allocatableEdit;
-    Collection<Entity> toStore = new LinkedHashSet<Entity>();
-    Collection<Allocatable> toRemove = new LinkedHashSet<Allocatable>();
+
+    Collection<Entity> toStore = new LinkedHashSet<>();
+    Collection<Allocatable> toRemove = new LinkedHashSet<>();
     private final CalendarSelectionModel calendarSelectionModel;
-    private final RaplaImages raplaImages;
     private final DialogUiFactoryInterface dialogUiFactory;
     private final PermissionController permissionController;
     private final EditController editController;
     private DialogInterface.DialogAction editAction;
+    AllocatableEditUI allocatableEdit;
+    DefaultListModel model = new DefaultListModel();
 
-    private TemplateEdit(final ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, CalendarSelectionModel calendarSelectionModel,
-            RaplaImages raplaImages, final DialogUiFactoryInterface dialogUiFactory, ClassificationFieldFactory classificationFieldFactory,
+    @Inject
+    public TemplateEdit(final ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, CalendarSelectionModel calendarSelectionModel,
+            final DialogUiFactoryInterface dialogUiFactory, ClassificationFieldFactory classificationFieldFactory,
             PermissionListFieldFactory permissionListFieldFactory, RaplaListEditFactory raplaListEditFactory, BooleanFieldFactory booleanFieldFactory,
-            EditController editController) throws RaplaException
+            EditController editController)
     {
         super(facade, i18n, raplaLocale, logger);
         this.calendarSelectionModel = calendarSelectionModel;
-        this.raplaImages = raplaImages;
         this.dialogUiFactory = dialogUiFactory;
         this.permissionController = facade.getRaplaFacade().getPermissionController();
         this.editController = editController;
@@ -123,69 +120,52 @@ public class TemplateEdit extends RaplaGUIComponent
             }
         };
 
-        ActionListener callback = new ActionListener()
-        {
-
-            @Override
-            public void actionPerformed(ActionEvent evt)
+        ActionListener callback = evt -> {
+            //int index = getSelectedIndex();
+            try
             {
-                //int index = getSelectedIndex();
-                try
+                if (evt.getActionCommand().equals("remove"))
                 {
-                    if (evt.getActionCommand().equals("remove"))
+                    removeTemplate();
+                }
+                else if (evt.getActionCommand().equals("copy"))
+                {
+                    Allocatable template = templateList.getSelectedValue();
+                    if ( template != null)
                     {
-                        removeTemplate();
+                        handleException(copyTemplate( template));
                     }
-                    else if (evt.getActionCommand().equals("copy"))
+                    //if ( template)
+                }
+                else if (evt.getActionCommand().equals("new"))
+                {
+                    createTemplate();
+                }
+                else if (evt.getActionCommand().equals("edit"))
+                {
+                    Allocatable template = templateList.getSelectedValue();
+                    List<Allocatable> list;
+                    if (template != null)
                     {
-                        Allocatable template = templateList.getSelectedValue();
-                        if ( template != null)
-                        {
-                            copyTemplate( template);
-                        }
-                        //if ( template)
+                        list = Collections.singletonList(template);
                     }
-                    else if (evt.getActionCommand().equals("new"))
+                    else
                     {
-                        createTemplate();
+                        list = Collections.emptyList();
                     }
-                    else if (evt.getActionCommand().equals("edit"))
-                    {
-                        Allocatable template = templateList.getSelectedValue();
-                        List<Allocatable> list;
-                        if (template != null)
-                        {
-                            list = Collections.singletonList(template);
-                        }
-                        else
-                        {
-                            list = Collections.emptyList();
-                        }
-                        allocatableEdit.setObjects(list);
-                        allocatableEdit.mapFromObjects();
-                    }
+                    allocatableEdit.setObjects(list);
+                    allocatableEdit.mapFromObjects();
+                }
 
-                }
-                catch (RaplaException ex)
-                {
-                    dialogUiFactory.showException(ex, new SwingPopupContext(templateList.getComponent(), null));
-                }
+            }
+            catch (RaplaException ex)
+            {
+                dialogUiFactory.showException(ex, new SwingPopupContext(templateList.getComponent(), null));
             }
         };
-        final ReferenceInfo<User> userReference = getUser().getReference();
-        templateList = raplaListEditFactory.create(i18n, allocatableEdit.getComponent(), callback, true);
-        templateList.setNameProvider(new NameProvider<Allocatable>()
-        {
-            @Override
-            public String getName(Allocatable object)
-            {
-                return object.getName(getLocale());
-            }
-        });
-        templateList.getList().addListSelectionListener(new ListSelectionListener()
-        {
-            @Override
-            public void valueChanged(ListSelectionEvent e)
+        templateList = raplaListEditFactory.create( allocatableEdit.getComponent(), callback, true);
+        templateList.setNameProvider((object)->object.getName(getLocale()));
+        templateList.getList().addListSelectionListener(e->
             {
                 final Allocatable selectedValue = templateList.getSelectedValue();
                 User user = null;
@@ -200,7 +180,8 @@ public class TemplateEdit extends RaplaGUIComponent
                 }
 
             }
-        });
+        );
+        final ReferenceInfo<User> currentUser = getCurrentUserId();
         templateList.getList().setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
         templateList.getList().setCellRenderer(new DefaultListCellRenderer()
         {
@@ -212,7 +193,7 @@ public class TemplateEdit extends RaplaGUIComponent
                     final Allocatable value1 = (Allocatable) value;
                     final ReferenceInfo<User> ownerRef = value1.getOwnerRef();
                     value = value1.getName(getRaplaLocale().getLocale());
-                    if (ownerRef != null && !ownerRef.equals(userReference))
+                    if (ownerRef != null && !ownerRef.equals(currentUser))
                     {
                         String username = getUsername(ownerRef);
                         value = username + ": " + value;
@@ -226,7 +207,20 @@ public class TemplateEdit extends RaplaGUIComponent
         templateList.getComponent().setPreferredSize(new Dimension(1000, 500));
     }
 
-    Map<ReferenceInfo<User>, String> usernameMap = new HashMap<ReferenceInfo<User>, String>();
+    @Nullable
+    protected ReferenceInfo<User> getCurrentUserId() {
+        try {
+            return getUser().getReference();
+        } catch (RaplaException e) {
+            return null;
+        }
+    }
+
+    private void handleException(Promise<Void> promise) {
+        promise.exceptionally((ex)->dialogUiFactory.showException( ex, dialogUiFactory.createPopupContext(templateList)));
+    }
+
+    Map<ReferenceInfo<User>, String> usernameMap = new HashMap<>();
 
     private String getUsername(ReferenceInfo<User> userId)
     {
@@ -249,8 +243,8 @@ public class TemplateEdit extends RaplaGUIComponent
 
     public String getNewTemplateName() throws RaplaException
     {
-        Collection<Allocatable> templates = new LinkedHashSet<Allocatable>(getQuery().getTemplates());
-        Collection<String> templateNames = new LinkedHashSet<String>();
+        Collection<Allocatable> templates = new LinkedHashSet<>(getQuery().getTemplates());
+        Collection<String> templateNames = new LinkedHashSet<>();
         Locale locale = getLocale();
         for (Allocatable template : templates)
         {
@@ -285,32 +279,28 @@ public class TemplateEdit extends RaplaGUIComponent
         }
     }
 
-    private void copyTemplate(Allocatable originalTemplate) throws RaplaException
+    private Promise<Void> copyTemplate(Allocatable originalTemplate)
     {
-        final User user = getUser();
-        final Allocatable templateCopy = getFacade().clone(originalTemplate, user);
-        final String name = (String)templateCopy.getClassification().getValue("name");
-        String newName = name != null ? (name + " (Kopie)") :getNewTemplateName();
-        templateCopy.getClassification().setValue("name", newName);
-        toStore.add(templateCopy);
-         getQuery().getTemplateReservations(originalTemplate).
-        thenAccept(( reservations ->
+        final RaplaFacade facade = getFacade();
+        return facade.cloneAsync(originalTemplate).thenCompose(templateCopy->
         {
-
-            for ( Reservation reservation:reservations)
+            final String name = (String) templateCopy.getClassification().getValue("name");
+            String newName = name != null ? (name + " (Kopie)") : getNewTemplateName();
+            templateCopy.getClassification().setValue("name", newName);
+            toStore.add(templateCopy);
+            return getQuery().getTemplateReservations(originalTemplate).
+                    thenCompose((reservations) -> facade.cloneList(reservations)).thenAccept(clones ->
             {
-                final Reservation clone = getFacade().clone(reservation, user);
-                clone.setAnnotation(RaplaObjectAnnotations.KEY_TEMPLATE, templateCopy.getId());
-                toStore.add( clone);
-            }
-            model.addElement(templateCopy);
-            boolean shouldScroll = true;
-            templateList.getList().clearSelection();
-            templateList.getList().setSelectedValue(templateCopy, shouldScroll);
-        }));
-
-
-
+                for (Reservation clone : clones) {
+                    clone.setAnnotation(RaplaObjectAnnotations.KEY_TEMPLATE, templateCopy.getId());
+                    toStore.add(clone);
+                }
+                model.addElement(templateCopy);
+                boolean shouldScroll = true;
+                templateList.getList().clearSelection();
+                templateList.getList().setSelectedValue(templateCopy, shouldScroll);
+            });
+        });
     }
 
     @SuppressWarnings("unchecked")
@@ -322,7 +312,7 @@ public class TemplateEdit extends RaplaGUIComponent
         newClassification.setValue("name", name);
         final User user = getUser();
         Allocatable template = getFacade().newAllocatable(newClassification, user);
-        Collection<Permission> permissionList = new ArrayList<Permission>(template.getPermissionList());
+        Collection<Permission> permissionList = new ArrayList<>(template.getPermissionList());
         for (Permission permission : permissionList)
         {
             template.removePermission(permission);
@@ -336,12 +326,12 @@ public class TemplateEdit extends RaplaGUIComponent
 
     public void startTemplateEdit()
     {
-        final Component parentComponent = getMainComponent();
+        final PopupContext popupContext = dialogUiFactory.createPopupContext(() -> getMainComponent());
         try
         {
             Collection<Allocatable> originals = getQuery().getTemplates();
-            List<Allocatable> editableTemplates = new ArrayList<Allocatable>();
-            List<Allocatable> nonEditables = new ArrayList<Allocatable>();
+            List<Allocatable> editableTemplates = new ArrayList<>();
+            List<Allocatable> nonEditables = new ArrayList<>();
             final User user = getUser();
 
             for (Allocatable template : originals)
@@ -357,15 +347,16 @@ public class TemplateEdit extends RaplaGUIComponent
             }
             Collection<Allocatable> copies = getFacade().editList(editableTemplates);
             fillModel(nonEditables,copies);
-            Collection<String> options = new ArrayList<String>();
+            Collection<String> options = new ArrayList<>();
             options.add(getString("apply"));
             options.add(getString("cancel"));
 
+            final JComponent component = templateList.getComponent();
+            component.setSize(1000, 800);
             final DialogInterface dlg = dialogUiFactory
-                    .create(new SwingPopupContext(parentComponent, null), false, templateList.getComponent(), options.toArray(new String[] {}));
+                    .createContentDialog(popupContext, component, options.toArray(new String[] {}));
             dlg.setTitle(getString("edit-templates"));
-            dlg.setSize(1000, 800);
-            dlg.getAction(options.size() - 1).setIcon("icon.cancel");
+            dlg.getAction(options.size() - 1).setIcon(i18n.getIcon("icon.cancel"));
 
             final Runnable action = new Runnable()
             {
@@ -409,10 +400,9 @@ public class TemplateEdit extends RaplaGUIComponent
                             return null;
                         });
                     }
-                    final RaplaFacade facade = getFacade();
                     p = p.thenCompose((a) ->
                     {
-                        final Promise<Void> dispatch = facade.dispatch(toStoreObj, toRemoveObj);
+                        final Promise<Void> dispatch = getFacade().dispatch(toStoreObj, toRemoveObj);
                         return dispatch;
                     });
 
@@ -436,24 +426,31 @@ public class TemplateEdit extends RaplaGUIComponent
                             {
                                 if (size == 0)
                                 {
+                                    RaplaFacade facade = getFacade();
                                     final DynamicType[] dynamicTypes = facade
                                             .getDynamicTypes(DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RESERVATION);
-                                    Classification classification = dynamicTypes[0].newClassification();
-                                    Reservation reservation = facade.newReservation( classification, user);
+                                    final DynamicType dynamicType = dynamicTypes[0];
                                     CalendarSelectionModel model = calendarSelectionModel;
-                                    Date startDate = RaplaComponent.getStartDate(model, facade, user);
-                                    Date endDate = RaplaComponent.calcEndDate(model, startDate);
-                                    Appointment appointment = facade.newAppointment(startDate, endDate);
-                                    reservation.addAppointment( appointment);
-                                    reservation.setAnnotation(RaplaObjectAnnotations.KEY_TEMPLATE,selectedTemplate.getId() );
-                                    editController.edit( reservation, null);
+
+                                    RaplaComponent.newReservation(dynamicType, user, facade, model).thenAccept((reservation)
+                                            -> {
+                                        reservation.setAnnotation(RaplaObjectAnnotations.KEY_TEMPLATE, selectedTemplate.getId());
+                                        editController.edit(reservation, null);
+                                    });
+                                    getClientFacade().setTemplate(null);
                                 }
-                                if (size == 1)
+                                else if (size == 1)
                                 {
                                     final Reservation next = reservations.iterator().next();
                                     editController.edit( next, null);
+                                    getClientFacade().setTemplate(null);
+                                }
+                                else
+                                {
+                                    getClientFacade().setTemplate(selectedTemplate);
                                 }
                             }
+                            else
                             {
                                 for (Reservation r : reservations)
                                 {
@@ -467,17 +464,17 @@ public class TemplateEdit extends RaplaGUIComponent
                                 {
                                     calendarSelectionModel.setSelectedDate(start);
                                 }
+                                getClientFacade().setTemplate(selectedTemplate);
                             }
                         }
-                        getUpdateModule().setTemplate(selectedTemplate);
-                    }).whenComplete((a, ex) ->
-                    {
-                        if (ex != null)
+                        else
                         {
-                            dialogUiFactory.showException(ex, new SwingPopupContext(getMainComponent(), null));
+                            getClientFacade().setTemplate(null);
                         }
-                        dlg.close();
-                    });
+
+                    }).exceptionally((ex) ->
+                        dialogUiFactory.showException(ex, popupContext)
+                    ).finally_(()->dlg.close());
                 }
             };
             final JList list = templateList.getList();
@@ -493,13 +490,13 @@ public class TemplateEdit extends RaplaGUIComponent
             });
             editAction = dlg.getAction(0);
             editAction.setRunnable(action);
-            editAction.setIcon("icon.confirm");
+            editAction.setIcon(i18n.getIcon("icon.confirm"));
             editAction.setEnabled( false);
             dlg.start(true);
         }
         catch (RaplaException ex)
         {
-            dialogUiFactory.showException(ex, new SwingPopupContext(parentComponent, null));
+            dialogUiFactory.showException(ex, popupContext);
         }
     }
 
@@ -552,50 +549,4 @@ public class TemplateEdit extends RaplaGUIComponent
         SortedListModel sortedModel = new SortedListModel(model, SortedListModel.SortOrder.ASCENDING, comp);
         templateList.getList().setModel(sortedModel);
     }
-
-    @Singleton
-    public static class TemplateEditFactory
-    {
-        private final ClientFacade facade;
-        private final RaplaResources i18n;
-        private final RaplaLocale raplaLocale;
-        private final Logger logger;
-        private final CalendarSelectionModel calendarSelectionModel;
-        private final RaplaImages raplaImages;
-        private final DialogUiFactoryInterface dialogUiFactory;
-        private final ClassificationFieldFactory classificationFieldFactory;
-        private final PermissionListFieldFactory permissionListFieldFactory;
-        private final RaplaListEditFactory raplaListEditFactory;
-        private final BooleanFieldFactory booleanFieldFactory;
-        private final PermissionController permissionController;
-        private final EditController editController;
-
-        @Inject
-        public TemplateEditFactory(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger,
-                CalendarSelectionModel calendarSelectionModel, RaplaImages raplaImages, DialogUiFactoryInterface dialogUiFactory,
-                ClassificationFieldFactory classificationFieldFactory, PermissionListFieldFactory permissionListFieldFactory,
-                RaplaListEditFactory raplaListEditFactory, BooleanFieldFactory booleanFieldFactory, EditController editController)
-        {
-            this.facade = facade;
-            this.i18n = i18n;
-            this.raplaLocale = raplaLocale;
-            this.logger = logger;
-            this.calendarSelectionModel = calendarSelectionModel;
-            this.raplaImages = raplaImages;
-            this.dialogUiFactory = dialogUiFactory;
-            this.classificationFieldFactory = classificationFieldFactory;
-            this.permissionListFieldFactory = permissionListFieldFactory;
-            this.raplaListEditFactory = raplaListEditFactory;
-            this.booleanFieldFactory = booleanFieldFactory;
-            this.permissionController = facade.getRaplaFacade().getPermissionController();
-            this.editController = editController;
-        }
-
-        public TemplateEdit create() throws RaplaException
-        {
-            return new TemplateEdit(facade, i18n, raplaLocale, logger, calendarSelectionModel, raplaImages, dialogUiFactory, classificationFieldFactory,
-                    permissionListFieldFactory, raplaListEditFactory, booleanFieldFactory, editController);
-        }
-    }
-
 }

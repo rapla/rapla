@@ -489,7 +489,7 @@ public class ClassLoaderLeakPreventor implements javax.servlet.ServletContextLis
   
   /** Deregister JDBC drivers loaded by web app classloader */
   public void deregisterJdbcDrivers() {
-    final List<Driver> driversToDeregister = new ArrayList<Driver>();
+    final List<Driver> driversToDeregister = new ArrayList<>();
     final Enumeration<Driver> allDrivers = DriverManager.getDrivers();
     while(allDrivers.hasMoreElements()) {
       final Driver driver = allDrivers.nextElement();
@@ -690,8 +690,8 @@ public class ClassLoaderLeakPreventor implements javax.servlet.ServletContextLis
     @SuppressWarnings("unchecked")
 	Map<Thread, Thread> shutdownHooks = getStaticFieldValue("java.lang.ApplicationShutdownHooks", "hooks");
     if(shutdownHooks != null) { // Could be null during JVM shutdown, which we already avoid, but be extra precautious
-      // Iterate copy to avoid ConcurrentModificationException
-      for(Thread shutdownHook : new ArrayList<Thread>(shutdownHooks.keySet())) {
+      // Iterate copyReservations to avoid ConcurrentModificationException
+      for(Thread shutdownHook : new ArrayList<>(shutdownHooks.keySet())) {
         if(isThreadInWebApplication(shutdownHook)) { // Planned to run in web app          
           removeShutdownHook(shutdownHook);
         }
@@ -739,7 +739,7 @@ public class ClassLoaderLeakPreventor implements javax.servlet.ServletContextLis
           @SuppressWarnings("unchecked")
           final Map<Class<?>, Class<?>> registry = (Map<Class<?>, Class<?>>) registryField.get(null);
           if(registry != null) { // Initialized
-            final Set<Class> toRemove = new HashSet<Class>();
+            final Set<Class> toRemove = new HashSet<>();
             
             for(Map.Entry<Class<?>, Class<?>> entry : registry.entrySet()) {
               if(isLoadedByWebApplication(entry.getKey()) ||
@@ -763,7 +763,7 @@ public class ClassLoaderLeakPreventor implements javax.servlet.ServletContextLis
   
   /** Deregister custom security providers */
   protected void deregisterSecurityProviders() {
-    final Set<String> providersToRemove = new HashSet<String>();
+    final Set<String> providersToRemove = new HashSet<>();
     for(java.security.Provider provider : java.security.Security.getProviders()) {
       if(isLoadedInWebApplication(provider)) {
         providersToRemove.add(provider.getName());
@@ -1099,7 +1099,7 @@ public class ClassLoaderLeakPreventor implements javax.servlet.ServletContextLis
     Object o = getStaticFieldValue("javax.faces.component.UIComponentBase", "descriptors");
     if(o instanceof WeakHashMap) {
       WeakHashMap descriptors = (WeakHashMap) o;
-      final Set<Class> toRemove = new HashSet<Class>();
+      final Set<Class> toRemove = new HashSet<>();
       for(Object key : descriptors.keySet()) {
         if(key instanceof Class && isLoadedByWebApplication((Class)key)) {
           // For performance reasons, remove all classes loaded in web application
@@ -1390,7 +1390,7 @@ protected void clearIntrospectionUtilsCache() {
     }
     
     // Filter out nulls
-    final List<Thread> output = new ArrayList<Thread>();
+    final List<Thread> output = new ArrayList<>();
     for(Thread t : threads) {
       if(t != null) {
         output.add(t);
@@ -1541,7 +1541,7 @@ protected void clearIntrospectionUtilsCache() {
    */
   protected static void gc() {
     Object obj = new Object();
-    WeakReference ref = new WeakReference<Object>(obj);
+    WeakReference ref = new WeakReference<>(obj);
     //noinspection UnusedAssignment
     obj = null;
     while(ref.get() != null) {

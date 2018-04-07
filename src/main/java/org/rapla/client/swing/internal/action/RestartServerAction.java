@@ -14,36 +14,24 @@ package org.rapla.client.swing.internal.action;
 
 import org.rapla.RaplaResources;
 import org.rapla.client.swing.RaplaAction;
-import org.rapla.client.swing.images.RaplaImages;
 import org.rapla.facade.client.ClientFacade;
-import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.logger.Logger;
 import org.rapla.storage.dbrm.RestartServer;
-
-import javax.swing.SwingUtilities;
 
 
 public class RestartServerAction extends RaplaAction {
     private final RestartServer service;
 
-    public RestartServerAction(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, final RestartServer service, RaplaImages raplaImages) {
+    public RestartServerAction(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, final RestartServer service) {
         super(facade, i18n, raplaLocale, logger);
         this.service = service;
-        putValue(NAME,getString("restart_server"));
-        putValue(SMALL_ICON, raplaImages.getIconFromKey("icon.restart"));
+        putValue(NAME,i18n.getString("restart_server"));
+        setIcon(i18n.getIcon( "icon.restart"));
     }
     
     public void actionPerformed() {
-        SwingUtilities.invokeLater( new Runnable() {
-            public void run() {
-                try {
-					service.restartServer();
-                } catch (RaplaException ex) {
-                    getLogger().error("Error restarting ", ex);
-                }
-            }
-        });
+        service.restartServer().exceptionally( (ex)->getLogger().error("Error restarting ", ex));
     }
 
 

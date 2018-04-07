@@ -16,19 +16,20 @@
 
 package org.rapla.plugin.abstractcalendar;
 
+import jsinterop.annotations.JsIgnore;
 import jsinterop.annotations.JsType;
 import org.jetbrains.annotations.NotNull;
 import org.rapla.RaplaResources;
 import org.rapla.client.internal.AppointmentInfoUI;
 import org.rapla.client.internal.RaplaColors;
 import org.rapla.components.calendarview.Block;
+import org.rapla.components.calendarview.BlockContainer;
 import org.rapla.components.calendarview.BuildStrategy;
 import org.rapla.components.calendarview.Builder;
-import org.rapla.components.calendarview.CalendarView;
 import org.rapla.components.util.Assert;
 import org.rapla.components.util.DateTools;
 import org.rapla.components.util.TimeInterval;
-import org.rapla.components.xmlbundle.I18nBundle;
+import org.rapla.components.i18n.I18nBundle;
 import org.rapla.entities.Category;
 import org.rapla.entities.CategoryAnnotations;
 import org.rapla.entities.NamedComparator;
@@ -61,6 +62,7 @@ import org.rapla.logger.Logger;
 import org.rapla.scheduler.Promise;
 import org.rapla.storage.PermissionController;
 
+import javax.inject.Inject;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -74,6 +76,8 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.BiFunction;
+import java.util.function.Function;
 
 public class RaplaBuilder
     implements
@@ -82,7 +86,7 @@ public class RaplaBuilder
 {
 
     private Collection<Reservation> selectedReservations;
-    private Collection<Allocatable> selectedAllocatables = new LinkedHashSet<Allocatable>();
+    private Collection<Allocatable> selectedAllocatables = new LinkedHashSet<>();
 
     private boolean bExceptionsExcluded = false;
     private boolean bResourceVisible = true;
@@ -90,11 +94,12 @@ public class RaplaBuilder
     private boolean bRepeatingVisible = true;
     private boolean bTimeVisible = true; //Shows time <from - till> in top of all HTML- and Swing-View Blocks
     private boolean splitByAllocatables = false;
-    private HashMap<Allocatable,String> colors = new HashMap<Allocatable,String>(); //This currently only works with HashMap
+    private HashMap<Allocatable,String> colors = new HashMap<>(); //This currently only works with HashMap
     private User editingUser;
     private boolean isResourceColoring;
     private boolean isEventColoring;
     private boolean nonFilteredEventsVisible;
+    private BlockCreator blockCreator = (blockContext, start, end) -> new RaplaBlock(blockContext, start, end);
     Map<Allocatable,Collection<Appointment>> bindings;
 
     /** default buildStrategy is {@link GroupAllocatablesStrategy}.*/
@@ -103,7 +108,7 @@ public class RaplaBuilder
     //HashSet<Reservation> allReservationsForAllocatables = new HashSet<Reservation>();
 
     
-    public static final TypedComponentRole<Boolean> SHOW_TOOLTIP_CONFIG_ENTRY = new TypedComponentRole<Boolean>("org.rapla.showTooltips");
+    public static final TypedComponentRole<Boolean> SHOW_TOOLTIP_CONFIG_ENTRY = new TypedComponentRole<>("org.rapla.showTooltips");
 
 	Map<Appointment,Set<Appointment>> conflictingAppointments;
     
@@ -113,6 +118,7 @@ public class RaplaBuilder
 	final private Logger logger;
 	final private AppointmentFormater appointmentFormater;
 
+	@Inject
 	public RaplaBuilder(RaplaLocale raplaLocale, RaplaFacade raplaFacade, RaplaResources i18n, Logger logger, AppointmentFormater appointmentFormater) {
         Locale locale = raplaLocale.getLocale();
         buildStrategy = new GroupAllocatablesStrategy( locale );
@@ -122,9 +128,12 @@ public class RaplaBuilder
         this.logger = logger;
         this.appointmentFormater = appointmentFormater;
 	}
-	    
 
-    protected RaplaLocale getRaplaLocale() 
+    public void setBlockCreator(BlockCreator blockCreator) {
+        this.blockCreator = blockCreator;
+    }
+
+    protected RaplaLocale getRaplaLocale()
     {
         return raplaLocale;
     }
@@ -149,14 +158,14 @@ public class RaplaBuilder
         final TimeInterval interval = new TimeInterval( startDate, endDate);
         final Promise<Map<Allocatable, Collection<Appointment>>> appointmentBindungsPromise = model.queryAppointmentBindings(interval);
         final Promise<RaplaBuilder> builderPromise = appointmentBindungsPromise.thenApply((appointmentBindings) -> {
-            Collection<Conflict> conflictsSelected = new ArrayList<Conflict>();
+            Collection<Conflict> conflictsSelected = new ArrayList<>();
             conflictsSelected.addAll( ((CalendarModelImpl)model).getSelectedConflicts());
             bindings = appointmentBindings;
             Collection<Allocatable> allocatables ;
             if ( !conflictsSelected.isEmpty() )
             {
                 allocatables = Util.getAllocatables( conflictsSelected );
-                Collection<Appointment> all = new LinkedHashSet<Appointment>();
+                Collection<Appointment> all = new LinkedHashSet<>();
                 for ( Collection<Appointment> appointments: bindings.values())
                 {
                     all.addAll( appointments);
@@ -165,8 +174,8 @@ public class RaplaBuilder
             }
             else
             {
-                Collection<Appointment> all = new LinkedHashSet<Appointment>();
-                allocatables = new ArrayList<Allocatable>(bindings.keySet());
+                Collection<Appointment> all = new LinkedHashSet<>();
+                allocatables = new ArrayList<>(bindings.keySet());
                 Collections.sort( (List)allocatables, new SortedClassifiableComparator(raplaLocale.getLocale()));
                 for ( Collection<Appointment> appointments: bindings.values())
                 {
@@ -219,9 +228,9 @@ public class RaplaBuilder
             
             selectedAllocatables.clear();
             if (allocatables != null ) {
-                List<Allocatable> list = new ArrayList<Allocatable>(allocatables);
-                Collections.sort( list, new NamedComparator<Allocatable>( getRaplaLocale().getLocale() ));
-                selectedAllocatables.addAll(new HashSet<Allocatable>(list));
+                List<Allocatable> list = new ArrayList<>(allocatables);
+                Collections.sort( list, new NamedComparator<>(getRaplaLocale().getLocale()));
+                selectedAllocatables.addAll(new HashSet<>(list));
             }
             createColorMap();
             return builder;
@@ -303,16 +312,14 @@ public class RaplaBuilder
     private void createColorMap()
     {
         colors.clear();
-        List<Allocatable> arrayList = new ArrayList<Allocatable>(selectedAllocatables);
-        Comparator<Allocatable> comp =new Comparator<Allocatable>() {
-                public int compare(Allocatable o1, Allocatable o2) {
-                    if (o1.hashCode()>o2.hashCode())
-                        return -1;
-                    if (o1.hashCode()<o2.hashCode())
-                        return 1;
-                    return 0;
-                }
-            };
+        List<Allocatable> arrayList = new ArrayList<>(selectedAllocatables);
+        Comparator<Allocatable> comp = (o1, o2) -> {
+            if (o1.hashCode()>o2.hashCode())
+                return -1;
+            if (o1.hashCode()<o2.hashCode())
+                return 1;
+            return 0;
+        };
         Collections.sort(arrayList,comp);
         Iterator<Allocatable> it = arrayList.iterator();
         int i=0;
@@ -371,11 +378,15 @@ public class RaplaBuilder
 
     static public class SplittedBlock extends AppointmentBlock
     {
-    	public SplittedBlock(AppointmentBlock original,long start, long end, Appointment appointment,
-				boolean isException) {
+        final private boolean splitStart;
+        final private boolean splitEnd;
+    	public SplittedBlock(AppointmentBlock original, long start, long end, Appointment appointment, boolean isException, boolean splitStart,
+                boolean splitEnd) {
 			super(start, end, appointment, isException);
 			this.original = original;
-    	}
+            this.splitStart = splitStart;
+            this.splitEnd = splitEnd;
+        }
     	
     	public AppointmentBlock getOriginal() {
 			return original;
@@ -384,36 +395,35 @@ public class RaplaBuilder
 		AppointmentBlock original;
     }
 
-    static public List<AppointmentBlock> splitBlocks(Collection<AppointmentBlock> preparedBlocks, Date startDate, Date endDate) {
-        List<AppointmentBlock> result = new ArrayList<AppointmentBlock>();
+    @JsIgnore
+    static public List<AppointmentBlock> splitBlocks(Collection<AppointmentBlock> preparedBlocks, Date startDate, Date endDate, int offsetMinutes) {
+        List<AppointmentBlock> result = new ArrayList<>();
         for (AppointmentBlock block:preparedBlocks) {
             long blockStart = block.getStart();
             long blockEnd = block.getEnd();
             Appointment appointment = block.getAppointment();
             boolean isException = block.isException();
-            if (DateTools.isSameDay(blockStart, blockEnd)) {
-                result.add( block);
-            } else {
+            final long offsetMillis = offsetMinutes * DateTools.MILLISECONDS_PER_MINUTE;
+            BiFunction<Long, Long, Boolean> shouldSplit = ( start, end) -> !DateTools.isSameDay( start -offsetMillis, end- offsetMillis);
+            Function<Long, Long> minStart = ( date) -> DateTools.cutDate( date -offsetMillis ) + offsetMillis;
+            Function<Long, Long> maxEnd = ( date) -> DateTools.fillDate( date  - offsetMillis)-1 + offsetMillis;
+
+
+            if (shouldSplit.apply(blockStart, blockEnd) ) {
                 long firstBlockDate = Math.max(blockStart, startDate.getTime());
                 long lastBlockDate = Math.min(blockEnd, endDate.getTime());
                 long currentBlockDate = firstBlockDate;
-                while ( currentBlockDate >= blockStart && DateTools.cutDate( currentBlockDate ) < lastBlockDate) {
-                    long start;
-                    long end;
-                    if (DateTools.isSameDay(blockStart, currentBlockDate)) {
-                        start= blockStart;
-                    } else {
-                        start = DateTools.cutDate(currentBlockDate);
-                    }
-                    if (DateTools.isSameDay(blockEnd, currentBlockDate) && !DateTools.isMidnight(blockEnd)) {
-                        end = blockEnd;
-                    }else {
-                        end = DateTools.fillDate( currentBlockDate ) -1;
-                    }
+                while ( currentBlockDate >= blockStart && minStart.apply( currentBlockDate )  < lastBlockDate) {
+                    final boolean splitStart =shouldSplit.apply(blockStart, currentBlockDate);
+                    final long start = splitStart ? minStart.apply(currentBlockDate): blockStart;
+                    final boolean splitEnd = shouldSplit.apply(blockEnd, currentBlockDate) || minStart.apply(blockEnd) == blockEnd;
+                    final long end = splitEnd ? maxEnd.apply( currentBlockDate ): blockEnd;
                     //System.out.println("Adding Block " + new Date(start) + " - " + new Date(end));
-                    result.add ( new SplittedBlock(block,start, end, appointment,isException));
+                    result.add ( new SplittedBlock(block,start, end, appointment,isException, splitStart, splitEnd));
                     currentBlockDate+= DateTools.MILLISECONDS_PER_DAY;
                 }
+            } else {
+                result.add( block);
             }
         }
         return result;
@@ -422,7 +432,9 @@ public class RaplaBuilder
 
     /** selects all blocks that should be visible and calculates the max start- and end-time  */
     public PreperationResult prepareBuild(Date start,Date end) {
-    	boolean excludeExceptions = isExceptionsExcluded();
+        start = new Date( start.getTime() );
+        end = new Date( end.getTime() );
+        boolean excludeExceptions = isExceptionsExcluded();
     	boolean nonFilteredEventsVisible = isNonFilteredEventsVisible();
 
         //long time = System.currentTimeMillis();
@@ -438,7 +450,7 @@ public class RaplaBuilder
         //= AppointmentImpl.getAppointments(	nonFilteredEventsVisible ? allReservations : selectedReservations, selectedAllocatables);
         //logger.info( "Get appointments took " + (System.currentTimeMillis() - time) + " ms.");
         // Add appointment to the blocks
-        final List<AppointmentBlock> blocks = new ArrayList<AppointmentBlock>();
+        final List<AppointmentBlock> blocks = new ArrayList<>();
         for (Appointment app:appointments)
         {
             if ( excludeExceptions)
@@ -450,11 +462,13 @@ public class RaplaBuilder
                 app.createBlocks(start, end, blocks);
             }
         }
-        List<AppointmentBlock> preparedBlocks = splitBlocks(blocks, start, end);
-
+        int offsetMinutes = buildStrategy.getOffsetMinutes();
+        List<AppointmentBlock> preparedBlocks = splitBlocks(blocks, start, end, offsetMinutes);
+        int minHour = 0 + offsetMinutes * 60;
+        int maxHour = 24 + offsetMinutes * 60;
         // calculate new start and end times
-        int max =0;
-        int min =24*60;
+        int max =minHour * 60;
+        int min =maxHour*60;
         for (AppointmentBlock block:blocks)
         {
             int starthour = DateTools.getHourOfDay(block.getStart());
@@ -464,33 +478,31 @@ public class RaplaBuilder
             if ((starthour != 0 || startminute != 0)  && starthour*60 + startminute<min)
                 min = starthour * 60 + startminute;
             if ((endhour >0 || endminute>0) && (endhour *60 + endminute)<min  )
-                min = Math.max(0,endhour-1) * 60 + endminute;
+                min = Math.max(minHour,endhour-1) * 60 + endminute;
             if ((endhour != 0 || endminute != 0) && (endhour != 23 || endminute!=59) && (endhour *60 + endminute)>max)
-                max = Math.min(24*60 , endhour  * 60 + endminute);
+                max = Math.min(maxHour*60 , endhour  * 60 + endminute);
             if (starthour>=max)
-                max = Math.min(24*60 , starthour *60 + startminute);
+                max = Math.min(maxHour*60 , starthour *60 + startminute);
         }
         return new PreperationResult( min, max,preparedBlocks);
     }
 
+    public void build(BlockContainer blockContainer, Date startDate, Collection<AppointmentBlock> preparedBlocks) {
 
-    protected Block createBlock(RaplaBlockContext blockContext, Date start, Date end)
-    {
-        return new RaplaBlock( blockContext, start, end);
-    }
-
-
-    public void build(CalendarView calendarView, Collection<AppointmentBlock> preparedBlocks) {
-        List<Block> blocks = getBlocks(preparedBlocks);
+        List<Block> blocks = createBlocks(preparedBlocks, blockCreator);
         //long time = System.currentTimeMillis();
-        Date startDate = calendarView.getStartDate();
-        buildStrategy.build(calendarView, blocks, startDate);
+        buildStrategy.build(blockContainer, blocks, startDate);
         //logger.info( "Build strategy took " + (System.currentTimeMillis() - time) + " ms.");
 
     }
 
+    public interface BlockCreator
+    {
+        Block createBlock(RaplaBlockContext blockContext, Date start, Date end);
+    }
+
     @NotNull
-    public List<Block> getBlocks(Collection<AppointmentBlock> preparedBlocks)
+    public List<Block> createBlocks(Collection<AppointmentBlock> preparedBlocks, BlockCreator blockCreator)
     {
         ArrayList<Block> blocks = new ArrayList<>();
         {
@@ -504,7 +516,7 @@ public class RaplaBuilder
                 Date end = new Date( block.getEnd() );
                 RaplaBlockContext[] blockContext = getBlocksForAppointment( block, buildContext );
                 for ( int j=0;j< blockContext.length; j++) {
-                    blocks.add( createBlock(blockContext[j], start, end));
+                    blocks.add( blockCreator.createBlock(blockContext[j], start, end));
                 }
             }
             //logger.info( "Block creation took " + (System.currentTimeMillis() - time) + " ms.");
@@ -687,20 +699,25 @@ public class RaplaBuilder
 
     /** This context contains the shared information for one particular RaplaBlock.*/
     public static class RaplaBlockContext {
-        Set<Allocatable> selectedMatchingAllocatables = new LinkedHashSet<Allocatable>(3);
-        ArrayList<Allocatable> matchingAllocatables = new ArrayList<Allocatable>(3);
+        Set<Allocatable> selectedMatchingAllocatables = new LinkedHashSet<>(3);
+        ArrayList<Allocatable> matchingAllocatables = new ArrayList<>(3);
         AppointmentBlock appointmentBlock;
         boolean movable;
         BuildContext buildContext;
         boolean isBlockSelected;
         boolean isAnonymous;
+        boolean splitStart = false;
+        boolean splitEnd = false;
 
         public RaplaBlockContext(AppointmentBlock appointmentBlock,RaplaBuilder builder,BuildContext buildContext, Allocatable selectedAllocatable, boolean isBlockSelected, boolean isAnonymous) {
             this.buildContext = buildContext;
             this.isAnonymous = isAnonymous;
             if ( appointmentBlock instanceof SplittedBlock)
             {
-            	this.appointmentBlock = ((SplittedBlock)appointmentBlock).getOriginal();
+                final SplittedBlock splittedBlock = (SplittedBlock) appointmentBlock;
+                this.appointmentBlock = splittedBlock.getOriginal();
+                splitStart = splittedBlock.splitStart;
+                splitEnd = splittedBlock.splitEnd;
             }
             else
             {
@@ -714,6 +731,16 @@ public class RaplaBuilder
             // Prefer resources when grouping
             addAllocatables(builder, reservation.getResources(), selectedAllocatable);
             addAllocatables(builder, reservation.getPersons(), selectedAllocatable);
+        }
+
+        public boolean isSplitStart()
+        {
+            return splitStart;
+        }
+
+        public boolean isSplitEnd()
+        {
+            return splitEnd;
         }
 
         private void addAllocatables(RaplaBuilder builder, Allocatable[] allocatables,Allocatable selectedAllocatable) {

@@ -98,7 +98,7 @@ public class NotificationPluginTest
         Reservation r = facade1.newReservation(facade1.getDynamicTypes(DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RESERVATION)[0].newClassification(), user1);
         String reservationName = "New Reservation";
         r.getClassification().setValue("name", reservationName);
-        Appointment appointment = facade1.newAppointment( new Date(), new Date( new Date().getTime()
+        Appointment appointment = facade1.newAppointmentDeprecated( new Date(), new Date( new Date().getTime()
                 + DateTools.MILLISECONDS_PER_HOUR ) );
         r.addAppointment(appointment);
         r.addAllocatable( allocatable );
@@ -155,7 +155,7 @@ public class NotificationPluginTest
         Reservation r = facade1.newReservation(facade1.getDynamicTypes(DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RESERVATION)[0].newClassification(), user1);
         String reservationName = "New Reservation";
         r.getClassification().setValue( "name", reservationName );
-        Appointment appointment = facade1.newAppointment( new Date(), new Date( new Date().getTime()
+        Appointment appointment = facade1.newAppointmentDeprecated( new Date(), new Date( new Date().getTime()
                 + DateTools.MILLISECONDS_PER_HOUR ) );
         r.addAppointment( appointment );
         r.addAllocatable( allocatable );

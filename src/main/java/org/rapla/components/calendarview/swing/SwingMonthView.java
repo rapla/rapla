@@ -80,7 +80,7 @@ public class SwingMonthView extends AbstractSwingCalendar
     }
 
     public Collection<Block> getBlocks() {
-        ArrayList<Block> list = new ArrayList<Block>();
+        ArrayList<Block> list = new ArrayList<>();
         for (int i=0;i<slots.length;i++) {
             list.addAll(slots[i].getBlocks());
         }
@@ -107,7 +107,7 @@ public class SwingMonthView extends AbstractSwingCalendar
         final Date endDate = getEndDate();
 
         
-        // create fields
+        // createInfoDialog fields
         slots = new SmallDaySlot[daysInMonth];
         Date counter =startDate;
         int year = DateTools.getYear(counter);
@@ -125,7 +125,7 @@ public class SwingMonthView extends AbstractSwingCalendar
         PreperationResult prep = b.prepareBuild(startDate, endDate);
         // build Blocks
         final Collection<AppointmentBlock> blocks = prep.getBlocks();
-        b.build(this, blocks);
+        b.build(this, getStartDate(),blocks);
 
         tableLayout= new TableLayout();
         jCenter.setLayout(tableLayout);
@@ -223,7 +223,7 @@ public class SwingMonthView extends AbstractSwingCalendar
         return DATE_NUMBER_COLOR;
     }
 
-    /** override this method, if you want to create your own header. */
+    /** override this method, if you want to createInfoDialog your own header. */
     protected JComponent createSlotHeader(int weekday) {
         JLabel jLabel = new JLabel();
         jLabel.setBorder(isEditable() ? SLOTHEADER_BORDER : null);

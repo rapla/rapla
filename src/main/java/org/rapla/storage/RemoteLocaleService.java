@@ -1,7 +1,7 @@
 package org.rapla.storage;
 
 import org.rapla.components.i18n.LocalePackage;
-import org.rapla.framework.RaplaException;
+import org.rapla.scheduler.Promise;
 
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
@@ -18,9 +18,9 @@ public interface RemoteLocaleService
     @GET
     @Produces({ MediaType.APPLICATION_JSON })
     @Path("{id}")
-    LocalePackage locale(@PathParam("id") String id, @QueryParam("locale") String locale) throws RaplaException;
+    Promise<LocalePackage> locale(@PathParam("id") String id, @QueryParam("locale") String locale);
 
     @GET
     @Produces({ MediaType.APPLICATION_JSON })
-    Map<String, Set<String>> countries(@QueryParam("languages") Set<String> languages) throws RaplaException;
+    Promise<Map<String, Set<String>>> countries(@QueryParam("languages") Set<String> languages);
 }

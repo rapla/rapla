@@ -44,17 +44,12 @@ public class DateComponent extends Div
         datePicker.setForceParse(true);
         add(datePicker);
         datePicker.setAutoClose(true);
-        datePicker.addChangeDateHandler(new ChangeDateHandler()
-        {
-            @Override
-            public void onChangeDate(ChangeDateEvent evt)
+        datePicker.addChangeDateHandler(evt -> {
+            if(!updateInProgress)
             {
-                if(!updateInProgress)
-                {
-                    Date newDate = datePicker.getValue();
-                    final Date raplaDate = GWTDateUtils.gwtDateToRapla(newDate);
-                    changeHandler.valueChanged(raplaDate);
-                }
+                Date newDate = datePicker.getValue();
+                final Date raplaDate = GWTDateUtils.gwtDateToRapla(newDate);
+                changeHandler.valueChanged(raplaDate);
             }
         });
         if (initDate != null)

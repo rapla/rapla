@@ -37,7 +37,7 @@ public class MailapiClient implements MailInterface
         SSL,
         STARTTLS,
         MAILJET,
-    };
+    }
     String username;
     String password;
     RaplaFacade facade;

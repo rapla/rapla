@@ -96,7 +96,7 @@ public class ListField<T> extends AbstractEditField implements ActionListener,Fo
 
 	@SuppressWarnings("unchecked")
 	public void setVector(Collection<T> v) {
-		this.list = new Vector<Object>(v);
+		this.list = new Vector<>(v);
 		if ( includeNothingSelected)
 		{
 		    list.insertElementAt(nothingSelected, 0);

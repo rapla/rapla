@@ -400,19 +400,15 @@ public class MainServlet extends HttpServlet
             }
            
             Injector membersInjector = serverStarter.getMembersInjector();
-            request.setAttribute(Injector.class.getCanonicalName(), new Injector()
-            {
-                @Override public void injectMembers(Object instance) throws Exception
+            request.setAttribute(Injector.class.getCanonicalName(), (Injector) instance -> {
+                try
                 {
-                    try
-                    {
-                        membersInjector.injectMembers( instance);
-                    }
-                    catch (Exception ex)
-                    {
-                        logger.error(ex.getMessage(),ex);
-                        throw  ex;
-                    }
+                    membersInjector.injectMembers( instance);
+                }
+                catch (Exception ex)
+                {
+                    logger.error(ex.getMessage(),ex);
+                    throw  ex;
                 }
             });
             dispatcher.service(request, response);
@@ -473,7 +469,7 @@ public class MainServlet extends HttpServlet
     //
     public static Map<String, String> getInitParameters(ServletContext context)
     {
-        Map<String, String> initParameters = new HashMap<String, String>();
+        Map<String, String> initParameters = new HashMap<>();
         Enumeration<String> initParameterNames = context.getInitParameterNames();
         while (initParameterNames.hasMoreElements())
         {

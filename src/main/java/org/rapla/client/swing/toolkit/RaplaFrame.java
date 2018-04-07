@@ -18,7 +18,7 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 import javax.swing.JFrame;
 import javax.swing.JRootPane;
-import java.awt.*;
+import java.awt.AWTEvent;
 import java.awt.event.WindowEvent;
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyVetoException;
@@ -27,13 +27,10 @@ import java.util.ArrayList;
 
 @Singleton
 public class RaplaFrame extends JFrame
-    implements
-        FrameController
 {
     private static final long serialVersionUID = 1L;
     
-    FrameControllerList frameList = null;
-    ArrayList<VetoableChangeListener> listenerList = new ArrayList<VetoableChangeListener>();
+    ArrayList<VetoableChangeListener> listenerList = new ArrayList<>();
     /**
        This frame registers itself on the FrameControllerList on <code>contextualzize</code>
        and unregisters upon <code>dispose()</code>.
@@ -42,7 +39,7 @@ public class RaplaFrame extends JFrame
      * @throws RaplaException
     */
     @Inject
-    public RaplaFrame(FrameControllerList frameList) {
+    public RaplaFrame() {
         enableEvents(AWTEvent.WINDOW_EVENT_MASK);
         /*
         AWTAdapterFactory fact =
@@ -54,22 +51,19 @@ public class RaplaFrame extends JFrame
                     }
                 });
         }*/
-        this.frameList = frameList;
-        frameList.add(this);
         final JRootPane rootPane2 = getRootPane();
         rootPane2.setGlassPane(new DisabledGlassPane());
     }
 
-    public void setActive(boolean active)
+    public void busy(String text)
     {
         final DisabledGlassPane glassPane = (DisabledGlassPane) getRootPane().getGlassPane();
-        if ( active) {
-            glassPane.activate("Loading");
-        }
-        else
-        {
-            glassPane.deactivate();
-        }
+        glassPane.activate(text);
+    }
+    public void idle()
+    {
+        final DisabledGlassPane glassPane = (DisabledGlassPane) getRootPane().getGlassPane();
+        glassPane.deactivate();
     }
 
     @Override
@@ -118,21 +112,8 @@ public class RaplaFrame extends JFrame
         }
     }
 
-    final public void place(boolean placeRelativeToMain,boolean packFrame) {
-        //Validate frames that have preset sizes
-        //Pack frames that have useful preferred size info, e.g. from their layout
-        if (packFrame) {
-            this.pack();
-        } else {
-            this.validate();
-        }
-        if (placeRelativeToMain)
-            frameList.placeRelativeToMain(this);
-    }
-
     public void dispose() {
         super.dispose();
-        frameList.remove(this);
     }
 
     public void close() {

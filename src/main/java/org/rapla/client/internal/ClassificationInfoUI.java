@@ -4,7 +4,7 @@
  |                                                                          |
  | This program is free software; you can redistribute it and/or modify     |
  | it under the terms of the GNU General Public License as published by the |
- | Free Software Foundation. A copy of the license has been included with   |
+ | Free Software Foundation. A copyReservations of the license has been included with   |
  | these distribution in the COPYING file, if not go to www.fsf.org         |
  |                                                                          |
  | As a special exception, you are granted the permissions to link this     |
@@ -60,7 +60,7 @@ public class ClassificationInfoUI<T extends Classifiable> extends HTMLInfo<T> {
     }
 
     protected Collection<HTMLInfo.Row> getClassificationAttributes(Classifiable classifiable, boolean excludeAdditionalInfos, LinkController controller, User user) {
-        Collection<Row> att = new ArrayList<Row>();
+        Collection<Row> att = new ArrayList<>();
         Classification classification = classifiable.getClassification();
         Attribute[] attributes = classification.getAttributes();
         for (int i=0; i< attributes.length; i++) {
@@ -109,7 +109,7 @@ public class ClassificationInfoUI<T extends Classifiable> extends HTMLInfo<T> {
     @Override
     public String getTooltip(Classifiable classifiable, User user) {
         StringBuffer buf = new StringBuffer();
-        Collection<Row> att = new ArrayList<Row>();
+        Collection<Row> att = new ArrayList<>();
         att.addAll(getClassificationAttributes(classifiable, false,null,user));
         createTable(att,buf,false);
         return buf.toString();
@@ -119,7 +119,7 @@ public class ClassificationInfoUI<T extends Classifiable> extends HTMLInfo<T> {
     public String createHTMLAndFillLinks(Classifiable classifiable,LinkController controller, User user) {
         StringBuffer buf = new StringBuffer();
         insertClassificationTitle( classifiable, buf );
-        Collection<Row> att = new ArrayList<Row>();
+        Collection<Row> att = new ArrayList<>();
         att.addAll(getClassificationAttributes(classifiable, false, null, user));
         createTable(att,buf,false);
         return buf.toString();

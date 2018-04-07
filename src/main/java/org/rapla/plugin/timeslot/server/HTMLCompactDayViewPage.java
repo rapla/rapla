@@ -58,7 +58,7 @@ public class HTMLCompactDayViewPage extends AbstractHTMLCalendarPage
         {
         	protected List<String> getHeaderNames()
         	{
-	       		 List<String> headerNames = new ArrayList<String>();
+	       		 List<String> headerNames = new ArrayList<>();
 	       		try
 	       		{
 		        		 List<Allocatable> sortedAllocatables = model.getSelectedAllocatablesSorted();
@@ -99,7 +99,7 @@ public class HTMLCompactDayViewPage extends AbstractHTMLCalendarPage
         view.setDaysInView( days);
         int firstDayOfWeek = opt.getFirstDayOfWeek();
 		view.setFirstWeekday( firstDayOfWeek);
-		Set<Integer> excludeDays = new HashSet<Integer>();
+		Set<Integer> excludeDays = new HashSet<>();
 		view.setExcludeDays( excludeDays );
     }
     
@@ -107,7 +107,7 @@ public class HTMLCompactDayViewPage extends AbstractHTMLCalendarPage
     protected RaplaBuilder createBuilder() throws RaplaException 
     {
     	final List<Timeslot> timeslots = timeslotProvider.getTimeslots();
-    	List<Integer> startTimes = new ArrayList<Integer>();
+    	List<Integer> startTimes = new ArrayList<>();
     	for (Timeslot slot:timeslots) {
     		 startTimes.add( slot.getMinuteOfDay());
     	}

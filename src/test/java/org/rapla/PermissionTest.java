@@ -25,8 +25,8 @@ import org.rapla.entities.domain.Appointment;
 import org.rapla.entities.domain.Permission;
 import org.rapla.entities.domain.Reservation;
 import org.rapla.entities.dynamictype.ClassificationFilter;
-import org.rapla.facade.client.ClientFacade;
 import org.rapla.facade.RaplaFacade;
+import org.rapla.facade.client.ClientFacade;
 import org.rapla.storage.PermissionController;
 import org.rapla.storage.RaplaSecurityException;
 import org.rapla.test.util.DefaultPermissionControllerSupport;
@@ -79,9 +79,9 @@ public class PermissionTest extends AbstractTestWithServer {
 
     @Test
     public void testReadPermissions() throws Exception {
-        // first create a new resource and set the permissions
+        // first createInfoDialog a new resource and set the permissions
 
-        Allocatable allocatable = adminFacade.newResource();
+        Allocatable allocatable = adminFacade.newResourceDeprecated();
         allocatable.getClassification().setValue("name","test-allocatable");
         //remove default permission.
         allocatable.removePermission( allocatable.getPermissionList().iterator().next() );
@@ -100,9 +100,9 @@ public class PermissionTest extends AbstractTestWithServer {
 
     @Test
     public void testAllocatePermissions() throws Exception {
-        // first create a new resource and set the permissions
+        // first createInfoDialog a new resource and set the permissions
 
-        Allocatable allocatable = adminFacade.newResource();
+        Allocatable allocatable = adminFacade.newResourceDeprecated();
         allocatable.getClassification().setValue("name","test-allocatable");
         //remove default permission.
         allocatable.removePermission( allocatable.getPermissionList().iterator().next() );
@@ -112,7 +112,7 @@ public class PermissionTest extends AbstractTestWithServer {
         permission.setAccessLevel( Permission.ALLOCATE );
         allocatable.addPermission( permission );
         adminFacade.store( allocatable );
-        Allocatable allocatable3 = adminFacade.newResource();
+        Allocatable allocatable3 = adminFacade.newResourceDeprecated();
         {
             allocatable3.getClassification().setValue("name","test-allocatable2");
             //remove default permission.
@@ -161,7 +161,7 @@ public class PermissionTest extends AbstractTestWithServer {
         //  System.err.println ( ex.getMessage());
         }
 
-        Allocatable allocatable2 = adminFacade.newResource();
+        Allocatable allocatable2 = adminFacade.newResourceDeprecated();
         allocatable2.getClassification().setValue("name","test-allocatable2");
         permission = allocatable.newPermission();
         permission.setUser( testFacadeClient.getUser());
@@ -218,7 +218,7 @@ public class PermissionTest extends AbstractTestWithServer {
         final String ownerUsername = owner.getUsername();
         Assert.assertEquals("test", ownerUsername);
         r1.getClassification().setValue("name","R1");
-		Appointment a1 = testFacade.newAppointment( start1, end1 );
+		Appointment a1 = testFacade.newAppointmentDeprecated( start1, end1 );
 		r1.addAppointment( a1 );
 		r1.addAllocatable( allocatable );
 
@@ -226,7 +226,7 @@ public class PermissionTest extends AbstractTestWithServer {
 
 		Reservation r2 = testFacade.newReservationDeprecated();
 		r2.getClassification().setValue("name","R2");
-		Appointment a2 = testFacade.newAppointment( start2, end2 );
+		Appointment a2 = testFacade.newAppointmentDeprecated( start2, end2 );
 		r2.addAppointment( a2 );
 		r2.addAllocatable( allocatable );
 		try {

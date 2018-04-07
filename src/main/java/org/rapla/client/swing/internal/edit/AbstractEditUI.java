@@ -46,7 +46,7 @@ implements
     protected List<T> objectList;
     protected List<EditField> fields = Collections.emptyList();
 
-    ArrayList<ChangeListener> listenerList = new ArrayList<ChangeListener>();
+    ArrayList<ChangeListener> listenerList = new ArrayList<>();
     
     public AbstractEditUI(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger)
     {
@@ -79,7 +79,7 @@ implements
         for (EditField field:fields) {
             field.removeChangeListener(this);
         }
-        this.fields = new ArrayList<EditField>(fields);
+        this.fields = new ArrayList<>(fields);
         for (EditField field:fields) {
             field.addChangeListener(this);
         }

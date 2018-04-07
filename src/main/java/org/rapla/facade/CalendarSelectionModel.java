@@ -5,6 +5,7 @@ import org.rapla.components.util.TimeInterval;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.dynamictype.ClassificationFilter;
 import org.rapla.framework.RaplaException;
+import org.rapla.scheduler.Promise;
 
 import java.util.Collection;
 import java.util.Date;
@@ -31,7 +32,7 @@ public interface CalendarSelectionModel extends CalendarModel{
     void setAllocatableFilter(ClassificationFilter[] filters);
 
     void resetExports();
-    void save(final String filename) throws RaplaException;
+    Promise<Void> save(final String filename);
 
     void load(final String filename) throws RaplaException, CalendarNotFoundExeption;
     

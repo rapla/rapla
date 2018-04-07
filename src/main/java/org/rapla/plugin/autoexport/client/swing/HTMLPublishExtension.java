@@ -40,19 +40,17 @@ public class HTMLPublishExtension extends RaplaGUIComponent implements PublishEx
      final JCheckBox onlyAllocationInfoField;
 	 AutoExportResources autoExportI18n;
 	 RaplaResources i18n;
-	 private final RaplaImages raplaImages;
-    private final IOInterface ioInterface;
+     private final IOInterface ioInterface;
 
 
-	 public HTMLPublishExtension(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger,CalendarSelectionModel model, AutoExportResources autoExportI18n, RaplaImages raplaImages, IOInterface ioInterface)
+	 public HTMLPublishExtension(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger,CalendarSelectionModel model, AutoExportResources autoExportI18n, IOInterface ioInterface)
 	 {
 		super(facade, i18n, raplaLocale, logger);
 		this.autoExportI18n = autoExportI18n ;
         this.ioInterface = ioInterface;
         this.i18n = i18n;
     	this.model = model;
-        this.raplaImages = raplaImages;
-    	
+
         panel.setLayout(new TableLayout( new double[][] {{TableLayout.PREFERRED,5,TableLayout.PREFERRED,5,TableLayout.FILL},
                 {TableLayout.PREFERRED,5,TableLayout.PREFERRED,5,TableLayout.PREFERRED,5,TableLayout.PREFERRED,5,TableLayout.PREFERRED, 5, TableLayout.PREFERRED  }}));
 	   	titleField = new JTextField(20);
@@ -66,13 +64,7 @@ public class HTMLPublishExtension extends RaplaGUIComponent implements PublishEx
         statusHtml = createStatus( htmlURL);
         panel.add(checkbox,"0,0");
        
-        checkbox.addChangeListener(new ChangeListener()
-    	{
-           public void stateChanged(ChangeEvent e)
-           {
-        	   updateCheck();
-           }
-    	});
+        checkbox.addChangeListener(e -> updateCheck());
         
         
         panel.add(new JLabel(i18n.getString("weekview.print.title_textfield") +":"),"2,2");
@@ -142,17 +134,14 @@ public class HTMLPublishExtension extends RaplaGUIComponent implements PublishEx
 		copyButton.setBorder(BorderFactory.createEmptyBorder(2, 2, 2, 2));
 		copyButton.setFocusable(false);
 		copyButton.setRolloverEnabled(false);
-		ImageIcon icon = raplaImages.getIconFromKey( "icon.copy");
+		ImageIcon icon = RaplaImages.getIcon(i18n.getIcon( "icon.copy"));
 		copyButton.setIcon(icon);
 		copyButton.setToolTipText(i18n.getString("copy_to_clipboard"));
-		copyButton.addActionListener(new ActionListener() {
-		    public void actionPerformed(ActionEvent e) {
-		    	urlLabel.requestFocus();
-		    	urlLabel.selectAll();
-		        copy(urlLabel,e, ioInterface, getRaplaLocale());
-		    }
-		
-		});
+		copyButton.addActionListener(e -> {
+            urlLabel.requestFocus();
+            urlLabel.selectAll();
+            copy(urlLabel,e, ioInterface, getRaplaLocale());
+        });
 		status.add(copyButton, BorderLayout.EAST);
 		return status;
 	}

@@ -44,7 +44,7 @@ import java.util.NoSuchElementException;
 import java.util.Set;
 
 /** Use the method <code>newClassification()</code> of class <code>DynamicType</code> to
- *  create a classification. Once created it is not possible to change the
+ *  createInfoDialog a classification. Once created it is not possible to change the
  *  type of a classifiction. But you can replace the classification of an
  *  object implementing <code>Classifiable</code> with a new one.
  *  @see DynamicType
@@ -54,7 +54,7 @@ public class ClassificationImpl implements Classification,DynamicTypeDependant, 
 
 	private String typeId;
 	private String type;
-	private Map<String,List<String>> data = new LinkedHashMap<String,List<String>>();
+	private Map<String,List<String>> data = new LinkedHashMap<>();
 	private transient boolean readOnly = false;
 
 	private transient TextCache name;
@@ -117,7 +117,7 @@ public class ClassificationImpl implements Classification,DynamicTypeDependant, 
 
     @Override
     public Iterable<ReferenceInfo> getReferenceInfo() {
-        List<ReferenceInfo> result = new ArrayList<ReferenceInfo>();
+        List<ReferenceInfo> result = new ArrayList<>();
         String parentId = getParentId();
         result.add( new ReferenceInfo(parentId, DynamicType.class) );
         DynamicTypeImpl type = getType();
@@ -271,8 +271,8 @@ public class ClassificationImpl implements Classification,DynamicTypeDependant, 
             return;
         }
         
-        Collection<String> removedKeys = new ArrayList<String>();
-        Map<Attribute,Attribute> attributeMapping = new HashMap<Attribute,Attribute>();
+        Collection<String> removedKeys = new ArrayList<>();
+        Map<Attribute,Attribute> attributeMapping = new HashMap<>();
         for  (String key:data.keySet()) {
         	Attribute attribute = getType().getAttribute(key);
         	Attribute attribute2 = type.getAttribute(key);
@@ -294,7 +294,7 @@ public class ClassificationImpl implements Classification,DynamicTypeDependant, 
         }
         for (Attribute attribute: attributeMapping.keySet()) 
         {
-			Collection<Object> convertedValues = new ArrayList<Object>();
+			Collection<Object> convertedValues = new ArrayList<>();
 			Collection<?> valueCollection = getValues( attribute);
             Attribute newAttribute = attributeMapping.get( attribute);
 			for (Object oldValue: valueCollection)
@@ -365,7 +365,7 @@ public class ClassificationImpl implements Classification,DynamicTypeDependant, 
 			name = null;
         	return;
         }
-		ArrayList<String> newValues = new ArrayList<String>();
+		ArrayList<String> newValues = new ArrayList<>();
 		for (Object value:values)
 		{
 			String stringValue = toStringValue(attribute,value);
@@ -410,7 +410,7 @@ public class ClassificationImpl implements Classification,DynamicTypeDependant, 
         List<String> l = data.get(attributeKey);
         if ( l == null)
         {
-            l = new ArrayList<String>();
+            l = new ArrayList<>();
             data.put(attributeKey, l);
         }
         l.add(stringValue);
@@ -441,7 +441,7 @@ public class ClassificationImpl implements Classification,DynamicTypeDependant, 
         {
         	return Collections.emptyList();
         }
-        List<Object> result = new ArrayList<Object>();
+        List<Object> result = new ArrayList<>();
         for (String value:list)
         {
         	Object obj;
@@ -541,7 +541,7 @@ public class ClassificationImpl implements Classification,DynamicTypeDependant, 
         for ( Map.Entry<String,List<String>> entry: data.entrySet())
         {
         	String key = entry.getKey();
-			List<String> value = new ArrayList<String>(entry.getValue());
+			List<String> value = new ArrayList<>(entry.getValue());
 			clone.data.put(key, value);
         }
         clone.resolver = resolver;

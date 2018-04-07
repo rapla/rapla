@@ -59,57 +59,24 @@ public class ResourceDatesView implements ReservationViewPart
     {
         this.presenter = presenter;
         this.raplaLocale = raplaLocale;
-        drp = new DateRangeComponent(bundleManager, i18n, new DateRangeChangeListener()
-        {
-            @Override
-            public void dateRangeChanged(Date startDate, Date endDate)
-            {
-                getPresenter().timeChanged(startDate, endDate);
-            }
-        });
+        drp = new DateRangeComponent(bundleManager, i18n, (startDate, endDate) -> getPresenter().timeChanged(startDate, endDate));
         contentPanel = new Div();
         contentPanel.setStyleName("resourcesDates");
         Container container = new Container();
         Row datesRow = new Row();
         Div datesButtons = new Div();
-        datesButtons.add(createButton(i18n.getString("clear"), IconType.TRASH_O, new ClickHandler()
-        {
-            @Override
-            public void onClick(ClickEvent event)
-            {
-                getPresenter().deleteDateClicked();
-            }
-        }));
-        datesButtons.add(createButton(i18n.getString("new"), IconType.PLUS_CIRCLE, new ClickHandler()
-        {
-            @Override
-            public void onClick(ClickEvent event)
-            {
-                getPresenter().newDateClicked();
-            }
-        }));
+        datesButtons.add(createButton(i18n.getString("clear"), IconType.TRASH_O, event -> getPresenter().deleteDateClicked()));
+        datesButtons.add(createButton(i18n.getString("new"), IconType.PLUS_CIRCLE, event -> getPresenter().newDateClicked()));
         datesRow.add(datesButtons);
         container.add(datesRow);
-        Collection<DropDownItem> values = new ArrayList<DropDownItem>();
-        datesSelection = new DropDownInputField("dates", new DropDownValueChanged()
-        {
-            @Override
-            public void valueChanged(String newValue)
-            {
-                int index = Integer.parseInt(newValue);
-                Appointment selectedAppointment = allAppointments[index];
-                getPresenter().selectAppointment(selectedAppointment);
-                // Update
-            }
+        Collection<DropDownItem> values = new ArrayList<>();
+        datesSelection = new DropDownInputField("dates", newValue -> {
+            int index = Integer.parseInt(newValue);
+            Appointment selectedAppointment = allAppointments[index];
+            getPresenter().selectAppointment(selectedAppointment);
+            // Update
         }, values);
-        allDayCheckBox = new CheckBoxComponent("all day", new CheckBoxChangeListener()
-        {
-            @Override
-            public void changed(boolean selected)
-            {
-                getPresenter().allDayEvent(selected);
-            }
-        });
+        allDayCheckBox = new CheckBoxComponent("all day", selected -> getPresenter().allDayEvent(selected));
         drp.setWithTime(true);
         {
             final Row row1 = new Row();
@@ -126,24 +93,19 @@ public class ResourceDatesView implements ReservationViewPart
             labels[3] = new ButtonGroupEntry(i18n.getString(RepeatingType.MONTHLY.toString()), RepeatingType.MONTHLY.name());
             labels[4] = new ButtonGroupEntry(i18n.getString(RepeatingType.YEARLY.toString()), RepeatingType.YEARLY.name());
             labels[5] = new ButtonGroupEntry(i18n.getString("appointment.convert"), "convert");
-            repeatingSelection = new ButtonGroupComponent(labels, "repeating", new ButtonGroupSelectionChangeListener()
-            {
-                @Override
-                public void selectionChanged(String id)
+            repeatingSelection = new ButtonGroupComponent(labels, "repeating", id -> {
+                if (NO_REPEATING_ID.equals(id))
                 {
-                    if (NO_REPEATING_ID.equals(id))
-                    {
-                        getPresenter().repeating(null);
-                    }
-                    else if ("convert".equals(id))
-                    {
-                        getPresenter().convertAppointment();
-                    }
-                    else
-                    {
-                        RepeatingType repeating = RepeatingType.valueOf(id);
-                        getPresenter().repeating(repeating);
-                    }
+                    getPresenter().repeating(null);
+                }
+                else if ("convert".equals(id))
+                {
+                    getPresenter().convertAppointment();
+                }
+                else
+                {
+                    RepeatingType repeating = RepeatingType.valueOf(id);
+                    getPresenter().repeating(repeating);
                 }
             });
             column2.add(repeatingSelection);
@@ -160,12 +122,7 @@ public class ResourceDatesView implements ReservationViewPart
         }
         contentPanel.add(container);
         // Just for testing
-        contentPanel.add(new ClockPicker(new Date(), new TimeChangeListener()
-        {
-            @Override
-            public void timeChanged(Date newDate)
-            {
-            }
+        contentPanel.add(new ClockPicker(new Date(), newDate -> {
         }, bundleManager));
 
     }
@@ -185,7 +142,7 @@ public class ResourceDatesView implements ReservationViewPart
     public void updateAppointments(Appointment[] allAppointments, Appointment selectedAppointment)
     {
         this.allAppointments = allAppointments;
-        Collection<DropDownItem> values = new ArrayList<DropDownItem>();
+        Collection<DropDownItem> values = new ArrayList<>();
         for (int i = 0; i < allAppointments.length; i++)
         {
             Appointment appointment = allAppointments[i];
@@ -213,7 +170,7 @@ public class ResourceDatesView implements ReservationViewPart
         this.actualReservation = reservation;
         allAppointments = reservation.getAppointments();
         //
-        Collection<DropDownItem> values = new ArrayList<DropDownItem>();
+        Collection<DropDownItem> values = new ArrayList<>();
         boolean first = true;
         for (int i = 0; i < allAppointments.length; i++)
         {

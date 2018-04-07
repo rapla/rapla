@@ -4,7 +4,7 @@
  |                                                                          |
  | This program is free software; you can redistribute it and/or modify     |
  | it under the terms of the GNU General Public License as published by the |
- | Free Software Foundation. A copy of the license has been included with   |
+ | Free Software Foundation. A copyReservations of the license has been included with   |
  | these distribution in the COPYING file, if not go to www.fsf.org         |
  |                                                                          |
  | As a special exception, you are granted the permissions to link this     |
@@ -18,11 +18,10 @@ import org.rapla.RaplaResources;
 import org.rapla.client.EditController;
 import org.rapla.client.ReservationController;
 import org.rapla.client.dialog.DialogUiFactoryInterface;
+import org.rapla.client.dialog.InfoFactory;
 import org.rapla.client.extensionpoints.ObjectMenuFactory;
 import org.rapla.client.internal.RaplaClipboard;
-import org.rapla.client.swing.InfoFactory;
-import org.rapla.client.swing.MenuFactory;
-import org.rapla.client.swing.images.RaplaImages;
+import org.rapla.client.menu.MenuFactory;
 import org.rapla.components.calendar.DateRenderer;
 import org.rapla.components.calendar.DateRendererAdapter;
 import org.rapla.components.calendar.WeekendHighlightRenderer;
@@ -58,11 +57,11 @@ public class SwingMonthCalendar extends AbstractRaplaSwingCalendar
 {
     public SwingMonthCalendar(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, CalendarModel settings, boolean editable, boolean printing, Set<ObjectMenuFactory> objectMenuFactories,
             MenuFactory menuFactory, Provider<DateRenderer> dateRendererProvider, CalendarSelectionModel calendarSelectionModel, RaplaClipboard clipboard,
-            ReservationController reservationController, InfoFactory infoFactory, RaplaImages raplaImages, DateRenderer dateRenderer, DialogUiFactoryInterface dialogUiFactory, IOInterface ioInterface, AppointmentFormater appointmentFormater, EditController editController)
+            ReservationController reservationController, InfoFactory infoFactory, DateRenderer dateRenderer, DialogUiFactoryInterface dialogUiFactory, IOInterface ioInterface, AppointmentFormater appointmentFormater, EditController editController)
                     throws RaplaException
     {
         super(facade, i18n, raplaLocale, logger, settings, editable, printing, objectMenuFactories, menuFactory, dateRendererProvider, calendarSelectionModel, clipboard, reservationController,
-                infoFactory, raplaImages, dateRenderer, dialogUiFactory, ioInterface, appointmentFormater, editController);
+                infoFactory,  dateRenderer, dialogUiFactory, ioInterface, appointmentFormater, editController);
     }
 
     public static Color DATE_NUMBER_COLOR_HIGHLIGHTED = Color.black;
@@ -133,8 +132,8 @@ public class SwingMonthCalendar extends AbstractRaplaSwingCalendar
 		return monthView;
     }
 
-    protected ViewListener createListener() throws RaplaException {
-        RaplaCalendarViewListener listener = new RaplaCalendarViewListener(getClientFacade(), getI18n(), getRaplaLocale(), getLogger(), model, view.getComponent(), objectMenuFactories, menuFactory, calendarSelectionModel, clipboard, reservationController, infoFactory, raplaImages, dialogUiFactory, editController);
+    protected ViewListener createListener()  {
+        RaplaCalendarViewListener listener = new RaplaCalendarViewListener(getClientFacade(), getI18n(), getRaplaLocale(), getLogger(), model, view.getComponent(), menuFactory,  reservationController,   dialogUiFactory, editController);
         listener.setKeepTime( true);
 		return listener;
     }

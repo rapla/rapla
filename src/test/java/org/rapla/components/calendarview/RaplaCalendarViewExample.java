@@ -125,7 +125,7 @@ public final class RaplaCalendarViewExample {
         //      set weekview date to Today
         wv.setToDate( today );
         
-        // create blocks for today
+        // createInfoDialog blocks for today
         final MyBuilder myBuilder = new MyBuilder(  appointments );
         
         wv.rebuild(myBuilder);
@@ -168,7 +168,7 @@ public final class RaplaCalendarViewExample {
         //      set weekview date to monday
         dv.setToDate( mondayOfWeek ) ;
         
-        // create blocks for today
+        // createInfoDialog blocks for today
         final MyBuilder myBuilder = new MyBuilder(  appointments );
         
         dv.rebuild(myBuilder);
@@ -200,7 +200,7 @@ public final class RaplaCalendarViewExample {
         //      set weekview date to Today
         mv.setToDate( today );
         
-        // create blocks for today
+        // createInfoDialog blocks for today
 
         final MyBuilder b = new MyBuilder(  appointments );
         mv.rebuild(b);
@@ -234,7 +234,7 @@ public final class RaplaCalendarViewExample {
                 Appointment appointment = it.next();
                 if ( !appointment.getStart().before( startDate) && !appointment.getEnd().after( endDate ))
                 {
-                    blocks.add( new AppointmentBlock(  appointment ));
+                    blocks.add( AppointmentBlock.create(  appointment ));
                 }
             }
             return new PreperationResult(0, 24*60, blocks);
@@ -248,7 +248,7 @@ public final class RaplaCalendarViewExample {
             return 0;
         }
 
-        public void build(CalendarView cv,Collection<AppointmentBlock> blocks ) {
+        public void build(BlockContainer  cv,Date startDate, Collection<AppointmentBlock> blocks ) {
             List<Block> swingBlocks = new ArrayList<Block>();
             for ( AppointmentBlock block:blocks)
             {
@@ -256,7 +256,7 @@ public final class RaplaCalendarViewExample {
                 swingBlocks .add( new MyBlock(  appointment ));
             }
 
-            strategy.build( cv, swingBlocks, cv.getStartDate());
+            strategy.build( cv, swingBlocks, startDate);
         }
 
         public void setEnabled(boolean enable) {

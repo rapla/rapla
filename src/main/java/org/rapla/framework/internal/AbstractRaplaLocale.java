@@ -13,9 +13,9 @@ import java.util.Locale;
 
 public abstract class AbstractRaplaLocale implements RaplaLocale {
 
-    public final static TypedComponentRole<String> TIMEZONE = new TypedComponentRole<String>("org.rapla.timezone");
-    public final static TypedComponentRole<String> LOCALE = new TypedComponentRole<String>("org.rapla.locale");
-    public final static TypedComponentRole<String> TITLE = new TypedComponentRole<String>("org.rapla.title");
+    public final static TypedComponentRole<String> TIMEZONE = new TypedComponentRole<>("org.rapla.timezone");
+    public final static TypedComponentRole<String> LOCALE = new TypedComponentRole<>("org.rapla.locale");
+    public final static TypedComponentRole<String> TITLE = new TypedComponentRole<>("org.rapla.title");
     protected final BundleManager bundleManager;
 
     protected AbstractRaplaLocale(BundleManager bundleManager){

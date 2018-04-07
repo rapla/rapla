@@ -4,7 +4,7 @@
  |                                                                          |
  | This program is free software; you can redistribute it and/or modify     |
  | it under the terms of the GNU General Public License as published by the |
- | Free Software Foundation. A copy of the license has been included with   |
+ | Free Software Foundation. A copyReservations of the license has been included with   |
  | these distribution in the COPYING file, if not go to www.fsf.org         |
  |                                                                          |
  | As a special exception, you are granted the permissions to link this     |
@@ -25,7 +25,7 @@ import java.awt.Component;
 public interface SwingCalendarView extends RaplaWidget<Component>
 {
     String ID = "org.rapla.client.swing.calendarview";
-    void triggerUpdate();
+    org.rapla.scheduler.Observable triggerUpdate();
     /** you can provide a DateSelection component if you want */
     JComponent getDateSelection();
     /** Most times you can only scroll programaticaly if the window is visible and the size of

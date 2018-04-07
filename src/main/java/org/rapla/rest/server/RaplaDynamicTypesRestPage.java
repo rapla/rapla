@@ -36,7 +36,7 @@ public class RaplaDynamicTypesRestPage
     {
         final User user = session.checkAndGetUser(request);
         DynamicType[] types = facade.getDynamicTypes(classificationType);
-        List<DynamicTypeImpl> result = new ArrayList<DynamicTypeImpl>();
+        List<DynamicTypeImpl> result = new ArrayList<>();
         final PermissionController controller  =   facade.getPermissionController();
         for (DynamicType type : types)
         {

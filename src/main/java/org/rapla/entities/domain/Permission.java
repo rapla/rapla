@@ -107,7 +107,7 @@ public interface Permission
 //    	final LinkedHashMap<Integer,String> map = new LinkedHashMap<Integer,String>();
 //    	{
 //    		map.put( READ_TYPE,"read_type");
-//    		map.put( CREATE, "create");
+//    		map.put( CREATE, "createInfoDialog");
 //            map.put( DENIED,"denied");
 //            map.put( READ_NO_ALLOCATION,"read_no_allocation");
 //    		map.put( READ,"read");

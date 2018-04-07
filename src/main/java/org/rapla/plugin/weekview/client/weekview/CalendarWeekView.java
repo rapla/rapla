@@ -20,7 +20,7 @@ public interface CalendarWeekView<W>
         void resizeReservation(HTMLRaplaBlock block, HTMLDaySlot daySlot, Integer minuteOfDay, PopupContext context) throws RaplaException;
     }
     
-    public void setPresenter(Presenter presenter);
+    void setPresenter(Presenter presenter);
 
     W provideContent();
 

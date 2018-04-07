@@ -24,6 +24,7 @@ import org.rapla.components.util.DateTools;
 import org.rapla.components.util.IOUtil;
 import org.rapla.components.util.ParseDateException;
 import org.rapla.components.util.SerializableDateTimeFormat;
+import org.rapla.components.i18n.I18nIcon;
 import org.rapla.entities.configuration.Preferences;
 import org.rapla.entities.configuration.RaplaConfiguration;
 import org.rapla.facade.client.ClientFacade;
@@ -38,6 +39,7 @@ import org.rapla.plugin.timeslot.TimeslotPlugin;
 import org.rapla.plugin.timeslot.TimeslotProvider;
 
 import javax.inject.Inject;
+import javax.swing.JButton;
 import javax.swing.JComponent;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
@@ -59,7 +61,6 @@ public class TimeslotOption extends RaplaGUIComponent implements PluginOptionPan
 	JPanel list = new JPanel();
 	List<Timeslot> timeslots;
     private final TimeslotProvider timeslotProvider;
-    private final RaplaImages raplaImages;
     private final IOInterface ioInterface;
     private Preferences preferences;
 	
@@ -79,25 +80,21 @@ public class TimeslotOption extends RaplaGUIComponent implements PluginOptionPan
 			RaplaLocale raplaLocale = getRaplaLocale();
 			raplatime = new RaplaTime(raplaLocale.getLocale(), IOUtil.getTimeZone());
 			raplatime.setTime(hour, minute);
-			delete.setIcon(raplaImages.getIconFromKey("icon.remove"));
-			delete.addActionListener(new ActionListener() {
-				
-				public void actionPerformed(ActionEvent arg0) {
-					rows.remove( TimeslotRow.this);
-					update();
-				}
-			});
+			setIcon(delete,i18n.getIcon("icon.remove"));
+			delete.addActionListener(arg0 -> {
+                rows.remove( TimeslotRow.this);
+                update();
+            });
     	}
     	
     	
     }
 
 	@Inject
-    public TimeslotOption(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, TimeslotProvider timeslotProvider, RaplaImages raplaImages, IOInterface ioInterface)
+    public TimeslotOption(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, TimeslotProvider timeslotProvider,  IOInterface ioInterface)
     {
         super(facade, i18n, raplaLocale, logger);
         this.timeslotProvider = timeslotProvider;
-        this.raplaImages = raplaImages;
         this.ioInterface = ioInterface;
     }
 
@@ -108,7 +105,12 @@ public class TimeslotOption extends RaplaGUIComponent implements PluginOptionPan
 		this.preferences = preferences;
 	}
 
-	List<TimeslotRow> rows = new ArrayList<TimeslotOption.TimeslotRow>();
+	public void setIcon(JButton button, I18nIcon icon)
+	{
+		button.setIcon(RaplaImages.getIcon( icon));
+	}
+
+	List<TimeslotRow> rows = new ArrayList<>();
     protected JPanel createPanel() throws RaplaException
     {
 
@@ -119,34 +121,28 @@ public class TimeslotOption extends RaplaGUIComponent implements PluginOptionPan
         JPanel header = new JPanel();
         RaplaButton reset = new RaplaButton(RaplaButton.SMALL);
     	RaplaButton resetButton = reset;
-		resetButton.setIcon(raplaImages.getIconFromKey("icon.remove"));
+		setIcon(resetButton,i18n.getIcon("icon.remove"));
 		resetButton.setText(getString("reset"));
 		RaplaButton newButton = new RaplaButton(RaplaButton.SMALL);
-		newButton.setIcon(raplaImages.getIconFromKey("icon.new"));
+		setIcon(newButton,i18n.getIcon("icon.new"));
 		newButton.setText(getString("new"));
 
 
 		header.add( newButton);
 		header.add( resetButton );
-		newButton.addActionListener( new ActionListener() {
-			
-			public void actionPerformed(ActionEvent arg0) {
-				int minuteOfDay = 0;
-				String lastName = "";
-				Timeslot slot = new Timeslot(lastName, minuteOfDay);
-				rows.add( new TimeslotRow(slot));
-				update();
-			}
-		});
+		newButton.addActionListener(arg0 -> {
+            int minuteOfDay = 0;
+            String lastName = "";
+            Timeslot slot = new Timeslot(lastName, minuteOfDay);
+            rows.add( new TimeslotRow(slot));
+            update();
+        });
 		
-		resetButton.addActionListener( new ActionListener() {
-			
-			public void actionPerformed(ActionEvent arg0) {
-				timeslots = TimeslotProvider.getDefaultTimeslots(getRaplaLocale());
-				initRows();
-				update();
-			}
-		});
+		resetButton.addActionListener(arg0 -> {
+            timeslots = TimeslotProvider.getDefaultTimeslots(getRaplaLocale());
+            initRows();
+            update();
+        });
         container.add(header,BorderLayout.NORTH);
         
 		return container;
@@ -225,7 +221,7 @@ public class TimeslotOption extends RaplaGUIComponent implements PluginOptionPan
 
 
 	protected List<Timeslot> mapToTimeslots() {
-		List<Timeslot> timeslots = new ArrayList<Timeslot>();
+		List<Timeslot> timeslots = new ArrayList<>();
   
       	for ( TimeslotRow row: rows)
     	{

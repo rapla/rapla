@@ -73,7 +73,7 @@ public class TimeslotProvider {
 			Configuration[] children = config.getChildren("timeslot");
 			if ( children.length  > 0)
 			{
-				timeslots = new ArrayList<Timeslot>();
+				timeslots = new ArrayList<>();
 				int i=0;
 				for (Configuration conf:children)
 				{
@@ -109,7 +109,7 @@ public class TimeslotProvider {
 	}
 
 	public static ArrayList<Timeslot> getDefaultTimeslots(RaplaLocale raplaLocale) {
-		ArrayList<Timeslot> timeslots = new ArrayList<Timeslot>();
+		ArrayList<Timeslot> timeslots = new ArrayList<>();
 		Date date = DateTools.cutDate(new Date());
 		for (int i = 0; i <=23; i++ ) {
     		 int minuteOfDay = i * 60;

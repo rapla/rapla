@@ -12,6 +12,8 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.components.util;
 
+import org.rapla.rest.GwtIncompatible;
+
 import java.io.BufferedInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
@@ -22,6 +24,7 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.io.PrintWriter;
+import java.io.Reader;
 import java.io.UnsupportedEncodingException;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
@@ -255,7 +258,7 @@ abstract public class IOUtil {
         }
 
         public static File[] getJarFiles(String baseDir,String dirList) throws IOException {
-            ArrayList<File> completeList = new ArrayList<File>();
+            ArrayList<File> completeList = new ArrayList<>();
             StringTokenizer tokenizer = new StringTokenizer(dirList,",");
             while (tokenizer.hasMoreTokens())
             {
@@ -301,6 +304,38 @@ abstract public class IOUtil {
   public static TimeZone getTimeZone() {
       return timeZone;
   }
+
+    /** reads a table from a csv file. You can specify a minimum number of columns */
+    @GwtIncompatible
+    public static String[][] csvRead(Reader reader, int expectedColumns) throws IOException {
+    	return csvRead(reader, ';', expectedColumns);
+    }
+
+    /** reads a table from a csv file. You can specify the seperator and a minimum number of columns */
+    @GwtIncompatible
+    public static String[][] csvRead(Reader reader, char seperator,int expectedColumns) throws IOException {
+        //System.out.println( "Using Encoding " + reader.getEncoding() );
+        StringBuffer buf = new StringBuffer();
+        while (true) {
+            int c = reader.read();
+            if ( c == -1 )
+                break;
+            buf.append( (char) c );
+        }
+        String[] lines = buf.toString().split(System.getProperty("line.separator")); //BJO
+        //String[] lines = split( buf.toString(),'\n');
+        String[][] lineEntries = new String[ lines.length ][];
+        for ( int i=0;i<lines.length; i++ ) {
+
+            String stringToSplit = lines[i];
+            //String firstIterator =stringToSplit.replaceAll("\"\"", "DOUBLEQUOTEQUOTE");
+            lineEntries[i] = Tools.split( stringToSplit,seperator);
+            if ( lineEntries[i].length < expectedColumns ) {
+                throw new IOException("Can't parse line " + i + ":" + stringToSplit + "Expected " + expectedColumns + " Entries. Found " + lineEntries[i].length); // BJO
+            }
+        }
+        return lineEntries;
+    }
 }
 
 

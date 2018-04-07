@@ -15,13 +15,13 @@ package org.rapla.client.swing.internal.print;
 import org.rapla.RaplaResources;
 import org.rapla.client.dialog.DialogInterface;
 import org.rapla.client.dialog.DialogUiFactoryInterface;
-import org.rapla.client.swing.images.RaplaImages;
 import org.rapla.client.swing.internal.SwingPopupContext;
 import org.rapla.client.swing.internal.common.NamedListCellRenderer;
 import org.rapla.components.iolayer.IOInterface;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaInitializationException;
 import org.rapla.framework.StartupEnvironment;
+import org.rapla.scheduler.Promise;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -41,16 +41,14 @@ import java.util.HashMap;
 @Singleton
 public class ExportServiceList   {
 
-    HashMap<Object,ExportService> exporters = new HashMap<Object,ExportService>();
-    private final RaplaImages raplaImages;
+    HashMap<Object,ExportService> exporters = new HashMap<>();
     private final DialogUiFactoryInterface dialogUiFactory;
     private final RaplaResources i18n;
 
     @Inject
-    public ExportServiceList(StartupEnvironment startupEnvironment, RaplaResources i18n, IOInterface printInterface, RaplaImages raplaImages, DialogUiFactoryInterface dialogUiFactory) throws
+    public ExportServiceList(StartupEnvironment startupEnvironment, RaplaResources i18n, IOInterface printInterface, DialogUiFactoryInterface dialogUiFactory) throws
             RaplaInitializationException {
         this.i18n = i18n;
-        this.raplaImages = raplaImages;
         this.dialogUiFactory = dialogUiFactory;
         boolean applet =startupEnvironment.getStartupMode() == StartupEnvironment.APPLET;
         if (printInterface.supportsPostscriptExport() && !applet) {
@@ -59,7 +57,7 @@ public class ExportServiceList   {
         }
     }
 
-    public boolean export(Printable printable,PageFormat pageFormat,Component parentComponent) throws Exception
+    public Promise<Boolean> export(Printable printable, PageFormat pageFormat, Component parentComponent)
     {
         Collection<ExportService> services = exporters.values();
         Object[] serviceArray = services.toArray();
@@ -73,21 +71,24 @@ public class ExportServiceList   {
         setRenderer(list);
         list.setSelectedIndex(0);
         list.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
-        DialogInterface dlg = dialogUiFactory.create(new SwingPopupContext(parentComponent, null),true,panel,
+        final SwingPopupContext popupContext = new SwingPopupContext(parentComponent, null);
+        DialogInterface dlg = dialogUiFactory.createContentDialog(popupContext, panel,
                                        new String[] {
                                            i18n.getString("export")
                                            ,i18n.getString("cancel")
                                            });
         dlg.setTitle(i18n.getString("weekview.print.choose_export"));
-        dlg.getAction(0).setIcon("icon.save");
-        dlg.getAction(1).setIcon("icon.cancel");
-        dlg.start(true);
-        if (dlg.getSelectedIndex() != 0 || list.getSelectedIndex() == -1)
-            return false;
-
-        ExportService selectedService = (ExportService)serviceArray[list.getSelectedIndex()];
-        boolean result = selectedService.export(printable,pageFormat, parentComponent);
-		return result;
+        dlg.getAction(0).setIcon(i18n.getIcon("icon.save"));
+        dlg.getAction(1).setIcon(i18n.getIcon("icon.cancel"));
+        return dlg.start(true).thenApply( index->
+        {
+            if (index != 0 || list.getSelectedIndex() == -1) {
+                return false;
+            }
+            ExportService selectedService = (ExportService) serviceArray[list.getSelectedIndex()];
+            boolean result = selectedService.export(printable, pageFormat, parentComponent);
+            return result;
+        });
     }
 
 	@SuppressWarnings("unchecked")

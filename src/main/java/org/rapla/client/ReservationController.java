@@ -1,17 +1,17 @@
 package org.rapla.client;
 
+import jsinterop.annotations.JsType;
 import org.rapla.entities.domain.Allocatable;
-import org.rapla.entities.domain.Appointment;
 import org.rapla.entities.domain.AppointmentBlock;
 import org.rapla.entities.domain.Reservation;
-import org.rapla.entities.storage.ReferenceInfo;
-import org.rapla.framework.RaplaException;
 import org.rapla.scheduler.Promise;
 
 import java.util.Collection;
 import java.util.Date;
+import java.util.Map;
+import java.util.Set;
 
-/** Use the ReservationController to modify or create a {@link Reservation}.
+/** Use the ReservationController to modify or createInfoDialog a {@link Reservation}.
     This class handles all interactions with the user. Examples:
     <ul>
     <li>
@@ -29,6 +29,7 @@ import java.util.Date;
     </li>
     </ul>
  */
+@JsType
 public interface ReservationController
 {
 //    void edit( Reservation reservation ) throws RaplaException;
@@ -36,36 +37,26 @@ public interface ReservationController
 //
 //    ReservationEdit[] getEditWindows();
 
-    /** copies an appointment without interaction */
-    Appointment copyAppointment( Appointment appointment ) throws RaplaException;
 
-    void deleteAppointment( AppointmentBlock appointmentBlock, PopupContext context )  throws RaplaException;
-
-    void copyAppointment( AppointmentBlock appointmentBlock, PopupContext context,Collection<Allocatable> contextAllocatables ) throws RaplaException;
-    void cutAppointment(AppointmentBlock appointmentBlock, PopupContext context, Collection<Allocatable> contextAllocatables) throws RaplaException;
-
-    void pasteAppointment( Date start, PopupContext context, boolean asNewReservation, boolean keepTime ) throws RaplaException;
-
-    void copyReservations(Collection<Reservation> reservations,Collection<Allocatable> contextAllocatables )  throws RaplaException;
-    
-    void cutReservations(Collection<Reservation> reservations,Collection<Allocatable> contextAllocatables )  throws RaplaException;
+    Promise<Void> deleteAppointment( AppointmentBlock appointmentBlock, PopupContext context );
+    Promise<Void> copyAppointmentBlock(AppointmentBlock appointmentBlock, PopupContext context, Collection<Allocatable> contextAllocatables );
+    Promise<Void> cutAppointment(AppointmentBlock appointmentBlock, PopupContext context, Collection<Allocatable> contextAllocatables);
+    Promise<Void> pasteAppointment( Date start, PopupContext context, boolean asNewReservation, boolean keepTime );
+    Promise<Void> copyReservations(Collection<Reservation> reservations,Collection<Allocatable> contextAllocatables );
+    Promise<Void> cutReservations(Collection<Reservation> reservations,Collection<Allocatable> contextAllocatables );
 
     /**
      * @param keepTime when moving only the date part and not the time part is modified*/
-    void moveAppointment( AppointmentBlock appointmentBlock,  Date newStart, PopupContext context, boolean keepTime ) throws RaplaException;
-
-  
+    Promise<Void> moveAppointment( AppointmentBlock appointmentBlock,  Date newStart, PopupContext context, boolean keepTime );
     /**
      * @param keepTime when moving only the date part and not the time part is modified*/
-    void resizeAppointment( AppointmentBlock appointmentBlock, Date newStart, Date newEnd, PopupContext context, boolean keepTime ) throws RaplaException;
+    Promise<Void> resizeAppointment( AppointmentBlock appointmentBlock, Date newStart, Date newEnd, PopupContext context, boolean keepTime );
     
-	void exchangeAllocatable(AppointmentBlock appointmentBlock, Allocatable oldAlloc, Allocatable newAlloc,Date newStart, PopupContext context) throws RaplaException;
-	
+	Promise<Void> exchangeAllocatable(AppointmentBlock appointmentBlock, Allocatable oldAlloc, Allocatable newAlloc,Date newStart, PopupContext context);
 	boolean isAppointmentOnClipboard();
 	
-	void deleteBlocks(Collection<AppointmentBlock> blockList, PopupContext context) throws RaplaException;
-
-	Promise<Void> deleteReservation(Reservation reservation,PopupContext context);
-
-    Promise<Void> checkAndDistpatch(Collection<Reservation> storeList, Collection<ReferenceInfo<Reservation>> removeList, boolean firstTime, PopupContext sourceComponent);
+	Promise<Void> deleteBlocks(Collection<AppointmentBlock> blockList, PopupContext context);
+	Promise<Void> deleteReservations(Set<Reservation> reservation, PopupContext context);
+    Promise<Void> saveReservations(Map<Reservation,Reservation> reservation, PopupContext context);
+    Promise<Void> saveReservation( Reservation origReservation, Reservation reservation);
 }

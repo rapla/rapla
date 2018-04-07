@@ -24,7 +24,7 @@ import java.util.Locale;
 @JsType
 public interface Category extends MultiLanguageNamed,Entity<Category>,Timestamp, Annotatable, Comparable
 {
-    ReferenceInfo<Category> SUPER_CATEGORY_REF = new ReferenceInfo<Category>("category_0", Category.class);
+    ReferenceInfo<Category> SUPER_CATEGORY_REF = new ReferenceInfo<>("category_0", Category.class);
     /** add a sub-category.
      * This category is set as parent of the passed category.*/
     void addCategory(Category category);

@@ -16,7 +16,7 @@ import org.jetbrains.annotations.PropertyKey;
 import org.rapla.RaplaResources;
 import org.rapla.components.util.DateTools;
 import org.rapla.components.util.TimeInterval;
-import org.rapla.components.xmlbundle.I18nBundle;
+import org.rapla.components.i18n.I18nBundle;
 import org.rapla.entities.Annotatable;
 import org.rapla.entities.Category;
 import org.rapla.entities.Named;
@@ -28,6 +28,7 @@ import org.rapla.entities.domain.Appointment;
 import org.rapla.entities.domain.Permission;
 import org.rapla.entities.domain.RaplaObjectAnnotations;
 import org.rapla.entities.domain.Reservation;
+import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.entities.storage.ReferenceInfo;
 import org.rapla.facade.internal.CalendarOptionsImpl;
 import org.rapla.framework.RaplaException;
@@ -35,6 +36,7 @@ import org.rapla.framework.RaplaInitializationException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.TypedComponentRole;
 import org.rapla.logger.Logger;
+import org.rapla.scheduler.Promise;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -48,10 +50,10 @@ import java.util.Locale;
  */
 public class RaplaComponent
 {
-	public static final TypedComponentRole<RaplaConfiguration> PLUGIN_CONFIG= new TypedComponentRole<RaplaConfiguration>("org.rapla.plugin");
+	public static final TypedComponentRole<RaplaConfiguration> PLUGIN_CONFIG= new TypedComponentRole<>("org.rapla.plugin");
     private Logger logger;
     RaplaLocale raplaLocale;
-    RaplaResources i18n;
+    protected RaplaResources i18n;
     RaplaFacade facade;
 
     public RaplaComponent(RaplaFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger) {
@@ -77,7 +79,7 @@ public class RaplaComponent
             Collection<Allocatable> allocatables = markedAllocatables;
             addAlloctables(newReservations, allocatables);
         }
-        List<Reservation> list = new ArrayList<Reservation>();
+        List<Reservation> list = new ArrayList<>();
         for (Reservation reservation : newReservations)
         {
             Reservation cast = reservation;
@@ -100,6 +102,16 @@ public class RaplaComponent
                 event.addAllocatable(alloc);
             }
         }
+    }
+
+    public static Promise<Reservation> newReservation(DynamicType type, User user, RaplaFacade raplaFacade, CalendarSelectionModel model)
+    {
+        return raplaFacade.newReservationAsync(type.newClassification()).thenCombine(
+                raplaFacade.newAppointmentAsync(getMarkedInterval(model, raplaFacade, user)),
+                (r, a) -> {
+                    r.addAppointment(a);
+                    return r;
+                });
     }
 
     protected void setLogger(Logger logger) 
@@ -267,18 +279,18 @@ public class RaplaComponent
 	}
 
     public static Date getStartDate(CalendarModel model, RaplaFacade raplaFacade, User user) {
+
+        return getMarkedInterval( model,raplaFacade, user).getStart();
+    }
+
+    public static TimeInterval getMarkedInterval(CalendarModel model,RaplaFacade facade,User user)
+    {
         Collection<TimeInterval> markedIntervals = model.getMarkedIntervals();
-        Date startDate = null;
         if ( markedIntervals.size() > 0)
         {
             TimeInterval first = markedIntervals.iterator().next();
-            startDate = first.getStart();
+            return new TimeInterval( first.getStart(), first.getEnd());
         }
-        if ( startDate != null)
-        {
-            return startDate;
-        }
-        
         Date selectedDate = model.getSelectedDate();
         if ( selectedDate == null)
         {
@@ -286,12 +298,14 @@ public class RaplaComponent
         }
         if ( selectedDate == null)
         {
-            selectedDate = raplaFacade.today();
+            selectedDate = facade.today();
         }
-        final CalendarOptions calendarOptions = RaplaComponent.getCalendarOptions(user, raplaFacade);
+        final CalendarOptions calendarOptions = RaplaComponent.getCalendarOptions(user, facade);
         Date time = new Date (DateTools.MILLISECONDS_PER_MINUTE * calendarOptions.getWorktimeStartMinutes());
-        startDate = DateTools.toDateTime(selectedDate,time);
-        return startDate;
+        Date startDate = DateTools.toDateTime(selectedDate,time);
+        Date endDate = new Date(startDate.getTime() + DateTools.MILLISECONDS_PER_HOUR);
+        return new TimeInterval( startDate, endDate);
+
     }
     
     protected Date getEndDate(CalendarModel model, Date startDate)

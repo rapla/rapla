@@ -48,7 +48,7 @@ import com.google.gwt.user.client.ui.Widget;
  *  .gwt-extras-WindowBox .gwt-extras-dialog-controls a.gwt-extras-dialog-minimize:hover
  *  .gwt-extras-WindowBox .gwt-extras-dialog-controls a.gwt-extras-dialog-maximize
  *  .gwt-extras-WindowBox .gwt-extras-dialog-controls a.gwt-extras-dialog-maximize:hover
- *      the controls in the header. A background image sprite is used to create the mouseover- and clicking-effects.
+ *      the controls in the header. A background image sprite is used to createInfoDialog the mouseover- and clicking-effects.
  *      When the window is minimized, the style-name of the corresponding control changes to "gwt-extras-dialog-maximize"
  *      and vice-versa   
  * </pre>
@@ -234,24 +234,12 @@ public class WindowBox extends DialogBox implements HasOpenHandlers<WindowBox>
 
         this.close = new Anchor();
         this.close.setStyleName("gwt-extras-dialog-close");
-        this.close.addClickHandler(new ClickHandler()
-        {
-            public void onClick(ClickEvent event)
-            {
-                onCloseClick(event);
-            }
-        });
+        this.close.addClickHandler(event -> onCloseClick(event));
         setCloseIconVisible(showCloseIcon);
 
         this.minimize = new Anchor();
         this.minimize.setStyleName("gwt-extras-dialog-minimize");
-        this.minimize.addClickHandler(new ClickHandler()
-        {
-            public void onClick(ClickEvent event)
-            {
-                onMinimizeClick(event);
-            }
-        });
+        this.minimize.addClickHandler(event -> onMinimizeClick(event));
         setMinimizeIconVisible(showMinimizeIcon);
 
         Grid ctrlGrid = new Grid(1, 2);
@@ -342,7 +330,7 @@ public class WindowBox extends DialogBox implements HasOpenHandlers<WindowBox>
 
                     if (this.dragMode >= 0 || calcDragMode(event.getClientX(), event.getClientY()) >= 0)
                     {
-                        // paste'n'copy from Widget.onBrowserEvent
+                        // paste'n'copyReservations from Widget.onBrowserEvent
                         switch (DOM.eventGetType(event))
                         {
                             case Event.ONMOUSEOVER:

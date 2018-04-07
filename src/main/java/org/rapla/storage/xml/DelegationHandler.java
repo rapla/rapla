@@ -41,7 +41,7 @@ class DelegationHandler implements RaplaSAXHandler
     public void addChildHandler( DelegationHandler childHandler )
     {
         if (childHandlers == null)
-            childHandlers = new HashSet<DelegationHandler>();
+            childHandlers = new HashSet<>();
         childHandlers.add( childHandler );
         childHandler.setParent( this );
     }

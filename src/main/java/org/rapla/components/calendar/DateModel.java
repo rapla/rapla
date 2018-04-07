@@ -35,7 +35,7 @@ final class DateModel {
     private DateFormat m_yearFormat;
     private DateFormat m_currentDayFormat;
 
-    ArrayList<DateChangeListener> listenerList = new ArrayList<DateChangeListener>();
+    ArrayList<DateChangeListener> listenerList = new ArrayList<>();
 
     public DateModel(Locale locale,TimeZone timeZone) {
         m_locale = locale;

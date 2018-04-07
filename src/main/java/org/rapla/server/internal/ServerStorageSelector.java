@@ -70,13 +70,7 @@ public class ServerStorageSelector implements Provider<CachableStorageOperator>
 
     public Provider<ImportExportManager> getImportExportManager()
     {
-        return new Provider<ImportExportManager>()
-        {
-            @Override public ImportExportManager get()
-            {
-                return getImportExport();
-            }
-        };
+        return () -> getImportExport();
     }
 
     @NotNull private DBOperator createDbOperator()

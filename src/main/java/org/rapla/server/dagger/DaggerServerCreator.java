@@ -63,7 +63,7 @@ public class DaggerServerCreator
         }
 
         final DaggerRaplaServerStartupModule startupModule = new DaggerRaplaServerStartupModule(containerContext, logger);
-        boolean useReflection = false;
+        boolean useReflection = true;
         if (useReflection)
         {
 

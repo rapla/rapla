@@ -18,10 +18,10 @@ public class ModificationEventImpl implements ModificationEvent
 {
     private TimeInterval timeInterval;
     private boolean switchTemplateMode = false;
-    private final Set<ReferenceInfo> removedReferences = new LinkedHashSet<ReferenceInfo>();
-    private final Set<Entity> added = new LinkedHashSet<Entity>();
-    private final Set<Entity> changed = new LinkedHashSet<Entity>();
-    private final Set<Class<? extends Entity>> modified = new LinkedHashSet<Class<? extends Entity>>();
+    private final Set<ReferenceInfo> removedReferences = new LinkedHashSet<>();
+    private final Set<Entity> added = new LinkedHashSet<>();
+    private final Set<Entity> changed = new LinkedHashSet<>();
+    private final Set<Class<? extends Entity>> modified = new LinkedHashSet<>();
     public ModificationEventImpl()
     {
 
@@ -77,7 +77,7 @@ public class ModificationEventImpl implements ModificationEvent
     //    }
 
     public Set<Entity> getChanged() {
-        Set<Entity> result  = new HashSet<Entity>(getAddObjects());
+        Set<Entity> result  = new HashSet<>(getAddObjects());
         result.addAll(getChangeObjects());
         return result;
     }

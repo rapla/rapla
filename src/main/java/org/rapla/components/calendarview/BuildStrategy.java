@@ -18,6 +18,7 @@ import java.util.List;
 
 public interface BuildStrategy {
     void build(BlockContainer wv, List<Block> blocks, Date startDate);
+    int getOffsetMinutes();
 }
 
 

@@ -33,7 +33,7 @@ public interface DynamicType extends  EntityPermissionContainer<DynamicType>,Mul
     void addAttribute(Attribute attribute);
     
     /** find an attribute in the dynamic type that equals the specified attribute This is usefull if you have the
-     * persistant version of an attribute and want to discover the editable version in the working copy of a dynamic type */
+     * persistant version of an attribute and want to discover the editable version in the working copyReservations of a dynamic type */
     String findAttribute(Attribute attribute);
     
     boolean hasAttribute(Attribute attribute);

@@ -11,8 +11,8 @@ public static final String PLUGIN_CLASS = EventTimeCalculatorPlugin.class.getNam
     // public static String PREF_LUNCHBREAK_NUMBER = "eventtimecalculator_lunchbreak_number";
     public static final String PLUGIN_ID = "org.rapla.plugin.eventtimecalculator";
 
-    public static final TypedComponentRole<RaplaConfiguration> SYSTEM_CONFIG = new TypedComponentRole<RaplaConfiguration>(PLUGIN_ID);
-    public static final TypedComponentRole<RaplaConfiguration> USER_CONFIG = new TypedComponentRole<RaplaConfiguration>(PLUGIN_ID);
+    public static final TypedComponentRole<RaplaConfiguration> SYSTEM_CONFIG = new TypedComponentRole<>(PLUGIN_ID);
+    public static final TypedComponentRole<RaplaConfiguration> USER_CONFIG = new TypedComponentRole<>(PLUGIN_ID);
 
     public static final String INTERVAL_NUMBER = "interval_number";
     public static final String BREAK_NUMBER = "break_number";

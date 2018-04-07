@@ -7,7 +7,6 @@ import org.rapla.client.internal.edit.EditTaskPresenter;
 import org.rapla.entities.Entity;
 import org.rapla.entities.domain.AppointmentBlock;
 import org.rapla.entities.domain.Reservation;
-import org.rapla.facade.RaplaFacade;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -18,22 +17,15 @@ import java.util.List;
 public class EditController
 {
     private final ApplicationEventBus eventBus;
-    private final RaplaFacade facade;
-
     @Inject
-    public EditController(ApplicationEventBus eventBus, RaplaFacade facade)
+    public EditController(ApplicationEventBus eventBus)
     {
         this.eventBus = eventBus;
-        this.facade = facade;
     }
 
     public ReservationEdit[] getEditWindows()
     {
         return new ReservationEdit[] {};
-
-    }
-    public void newObject( Object contextObject, PopupContext popupContext )
-    {
 
     }
 
@@ -43,7 +35,7 @@ public class EditController
         final Reservation reservation = appointmentBlock.getAppointment().getReservation();
         String info = reservation.getId();
         final List<Reservation> appointmentBlocks = Collections.singletonList(reservation);
-        EditApplicationEventContext context = new EditApplicationEventContext<Reservation>(appointmentBlocks);
+        EditApplicationEventContext context = new EditApplicationEventContext<>(appointmentBlocks);
         context.setAppointmentBlock(appointmentBlock);
         final ApplicationEvent event = new ApplicationEvent(applicationEventId, info, popupContext, context);
         eventBus.publish(event);
@@ -54,6 +46,7 @@ public class EditController
         List<T> list = Collections.singletonList(obj);
         edit( list, popupContext);
     }
+
 //  neue Methoden zur Bearbeitung von mehreren gleichartigen Elementen (Entities-Array)
 //  orientieren sich an den oberen beiden Methoden zur Bearbeitung von einem Element
     public <T extends Entity> void edit( List<T> obj, PopupContext popupContext )

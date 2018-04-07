@@ -167,8 +167,8 @@ public class UpdateDataManagerImpl implements  UpdateDataManager
             }
         }
 
-        Set<Permission> invalidatePermissions = new HashSet<Permission>();
-        Set<Permission> invalidateEventPermissions = new HashSet<Permission>();
+        Set<Permission> invalidatePermissions = new HashSet<>();
+        Set<Permission> invalidateEventPermissions = new HashSet<>();
 
         for (Change operation : updateResult.getOperations(UpdateResult.Change.class))
         {
@@ -198,7 +198,7 @@ public class UpdateDataManagerImpl implements  UpdateDataManager
             if (typeClass == User.class && newObject.equals( user))
             {
                 UserImpl newUser = (UserImpl) newObject;
-                HashSet<String> newGroups = new HashSet<String>(newUser.getGroupIdList());
+                HashSet<String> newGroups = new HashSet<>(newUser.getGroupIdList());
                 UserImpl oldUser = (UserImpl) updateResult.getLastEntryBeforeUpdate(currentId);
                 if ( oldUser == null)
                 {
@@ -206,7 +206,7 @@ public class UpdateDataManagerImpl implements  UpdateDataManager
                 }
                 else
                 {
-                    HashSet<String> oldGroups = new HashSet<String>(oldUser.getGroupIdList());
+                    HashSet<String> oldGroups = new HashSet<>(oldUser.getGroupIdList());
                     if (!newGroups.equals(oldGroups) || newUser.isAdmin() != oldUser.isAdmin())
                     {
                         resourceRefresh = true;
@@ -255,8 +255,8 @@ public class UpdateDataManagerImpl implements  UpdateDataManager
         }
         if (!invalidatePermissions.isEmpty() || !invalidateEventPermissions.isEmpty())
         {
-            Set<String> groupsResourceRefresh = new HashSet<String>();
-            Set<String> groupsConflictRefresh = new HashSet<String>();
+            Set<String> groupsResourceRefresh = new HashSet<>();
+            Set<String> groupsConflictRefresh = new HashSet<>();
             for (Permission permission : invalidatePermissions)
             {
                 String permissionUser = ((PermissionImpl)permission).getUserId();

@@ -27,12 +27,11 @@ import org.rapla.client.internal.LoginDialog;
 import org.rapla.client.swing.RaplaGUIComponent;
 import org.rapla.client.swing.SwingSchedulerImpl;
 import org.rapla.client.swing.images.RaplaImages;
-import org.rapla.client.swing.toolkit.FrameControllerList;
 import org.rapla.components.i18n.BundleManager;
-import org.rapla.components.i18n.internal.DefaultBundleManager;
+import org.rapla.components.i18n.internal.AbstractBundleManager;
 import org.rapla.entities.User;
-import org.rapla.facade.client.ClientFacade;
 import org.rapla.facade.UpdateErrorListener;
+import org.rapla.facade.client.ClientFacade;
 import org.rapla.facade.internal.ClientFacadeImpl;
 import org.rapla.framework.Disposable;
 import org.rapla.framework.RaplaException;
@@ -45,10 +44,10 @@ import org.rapla.logger.Logger;
 import org.rapla.scheduler.CommandScheduler;
 import org.rapla.scheduler.Promise;
 import org.rapla.storage.RaplaSecurityException;
-import org.rapla.storage.StorageOperator;
 import org.rapla.storage.dbrm.LoginTokens;
 import org.rapla.storage.dbrm.RemoteAuthentificationService;
 import org.rapla.storage.dbrm.RemoteConnectionInfo;
+import org.rapla.storage.dbrm.RemoteOperator;
 
 import javax.inject.Inject;
 import javax.inject.Provider;
@@ -57,6 +56,9 @@ import javax.swing.AbstractAction;
 import javax.swing.Action;
 import javax.swing.SwingUtilities;
 import java.awt.Component;
+import java.awt.Dimension;
+import java.awt.Toolkit;
+import java.awt.Window;
 import java.awt.event.ActionEvent;
 import java.net.URL;
 import java.util.Vector;
@@ -69,7 +71,8 @@ import java.util.concurrent.Semaphore;
 public class RaplaClientServiceImpl implements ClientService, UpdateErrorListener, Disposable, UserClientService
 {
 
-    Vector<RaplaClientListener> listenerList = new Vector<RaplaClientListener>();
+    private final RemoteOperator operator;
+    Vector<RaplaClientListener> listenerList = new Vector<>();
     RaplaResources i18n;
     boolean started;
     boolean restartingGUI;
@@ -83,17 +86,17 @@ public class RaplaClientServiceImpl implements ClientService, UpdateErrorListene
     final RaplaLocale raplaLocale;
     final BundleManager bundleManager;
     final CommandScheduler commandScheduler;
-    final RaplaImages raplaImages;
-    //final Provider<RaplaFrame> raplaFrameProvider;
+    io.reactivex.disposables.Disposable schedule;
 
     Application application;
     final private Provider<Application> applicationProvider;
     RemoteAuthentificationService authentificationService;
     RemoteConnectionInfo connectionInfo;
+
     @Inject
     public RaplaClientServiceImpl(StartupEnvironment env, Logger logger, DialogUiFactoryInterface dialogUiFactory, ClientFacade facade, RaplaResources i18n, RaplaSystemInfo systemInfo,
-                                  RaplaLocale raplaLocale, BundleManager bundleManager, CommandScheduler commandScheduler, final StorageOperator storageOperator,
-                                  RaplaImages raplaImages, Provider<Application> applicationProvider, RemoteConnectionInfo connectionInfo, RemoteAuthentificationService authentificationService)
+                                  RaplaLocale raplaLocale, BundleManager bundleManager, CommandScheduler commandScheduler, final RemoteOperator storageOperator,
+                                  Provider<Application> applicationProvider, RemoteConnectionInfo connectionInfo, RemoteAuthentificationService authentificationService)
     {
         this.env = env;
         this.authentificationService = authentificationService;
@@ -114,12 +117,12 @@ public class RaplaClientServiceImpl implements ClientService, UpdateErrorListene
         this.logger = logger;
         this.dialogUiFactory = dialogUiFactory;
         this.facade = facade;
+        this.operator = storageOperator;
         this.raplaLocale = raplaLocale;
         this.bundleManager = bundleManager;
         this.commandScheduler = commandScheduler;
         this.applicationProvider = applicationProvider;
         ((ClientFacadeImpl) this.facade).setOperator(storageOperator);
-        this.raplaImages = raplaImages;
         this.connectionInfo = connectionInfo;
         try
         {
@@ -147,17 +150,13 @@ public class RaplaClientServiceImpl implements ClientService, UpdateErrorListene
         {
             try
             {
-                Thread.setDefaultUncaughtExceptionHandler(new Thread.UncaughtExceptionHandler()
-                {
-                    public void uncaughtException(Thread t, Throwable e)
+                Thread.setDefaultUncaughtExceptionHandler((t, e) -> {
+                    logger.error("uncaught exception", e);
+                    if ( e instanceof IllegalMonitorStateException)
                     {
-                        logger.error("uncaught exception", e);
-                        if ( e instanceof IllegalMonitorStateException)
-                        {
-                            System.exit(-1);
-                        }
-
+                        System.exit(-1);
                     }
+
                 });
             }
             catch (Throwable ex)
@@ -188,24 +187,6 @@ public class RaplaClientServiceImpl implements ClientService, UpdateErrorListene
             getLogger().debug("RaplaClient started");
             ClientFacade facade = getClientFacade();
             facade.addUpdateErrorListener(this);
-            // TODO Promise wait cursor
-            //            StorageOperator operator = facade.getRaplaFacade().getOperator();
-            //            if ( operator instanceof RemoteOperator)
-            //            {
-            //                RemoteConnectionInfo remoteConnection = ((RemoteOperator) operator).getRemoteConnectionInfo();
-            //                remoteConnection.setStatusUpdater( new StatusUpdater()
-            //    	    		{
-            //    	            	private Cursor waitCursor = new Cursor(Cursor.WAIT_CURSOR);
-            //    	            	private Cursor defaultCursor = new Cursor(Cursor.DEFAULT_CURSOR);
-            //
-            //    	            	public void setStatus(Status status) {
-            //    	    				Cursor cursor =( status == Status.BUSY) ? waitCursor: defaultCursor;
-            //    	    				frameControllerList.setCursor( cursor);
-            //    	            	}
-            //
-            //    	    		}
-            //    	    		);
-            //            }
             advanceLoading(true);
 
             logoutAvailable = true;
@@ -265,6 +246,7 @@ public class RaplaClientServiceImpl implements ClientService, UpdateErrorListene
     {
         return getClientFacade().load().thenRun(()->
         {
+            initRefresh();
             application = applicationProvider.get();
             application.start(defaultLanguageChosen, () ->
             {
@@ -276,24 +258,17 @@ public class RaplaClientServiceImpl implements ClientService, UpdateErrorListene
             });
             started = true;
             fireClientStarted();
-        });
+        }).exceptionally((ex)->
+                {
+                    logger.error(ex.getMessage(),ex);
+                    try {
+                        closeApplication();
+                    } finally {
+                        fireClientClosed(null);
+                    }
+                }
+        );
     }
-
-    /*
-    protected Set<String> discoverPluginClassnames() throws RaplaException {
-        Set<String> pluginNames = super.discoverPluginClassnames();
-        LinkedHashSet<String> result = new LinkedHashSet<String>();
-        for ( String plugin:pluginNames)
-        {
-            if ( plugin.toLowerCase().endsWith("serverplugin") || plugin.contains(".server."))
-            {
-                continue;
-            }
-            result.add( plugin);
-        }
-        return pluginNames;
-    }
-    */
 
     public boolean isRestartingGUI()
     {
@@ -389,27 +364,34 @@ public class RaplaClientServiceImpl implements ClientService, UpdateErrorListene
 
     private void stop(ConnectInfo reconnect)
     {
-        if (!started)
+        if ( !started)
+        {
             return;
-
-        application.stop();
-        RaplaGUIComponent.setMainComponent(null);
+        }
         try
         {
-            ClientFacade facade = getClientFacade();
-            facade.removeUpdateErrorListener(this);
-            if (facade.isSessionActive())
-            {
-                facade.logout();
-            }
-
+            closeApplication();
         }
-        catch (RaplaException ex)
+        catch (Throwable ex)
         {
             getLogger().error("Clean logout failed. " + ex.getMessage());
         }
         started = false;
         fireClientClosed(reconnect);
+    }
+
+    private void closeApplication() throws RaplaException {
+        if (application != null) {
+            application.stop();
+            RaplaGUIComponent.setMainComponent(null);
+            ClientFacade facade = getClientFacade();
+            if (facade != null) {
+                facade.removeUpdateErrorListener(this);
+                if (facade.isSessionActive()) {
+                    facade.logout();
+                }
+            }
+        }
     }
 
     public void dispose()
@@ -432,7 +414,7 @@ public class RaplaClientServiceImpl implements ClientService, UpdateErrorListene
         {
             final Logger logger = getLogger();
             final LanguageChooser languageChooser = new LanguageChooser(logger, i18n, raplaLocale);
-            final DefaultBundleManager localeSelector = (DefaultBundleManager) bundleManager;
+            final AbstractBundleManager localeSelector = (AbstractBundleManager) bundleManager;
             final LoginDialog dlg = LoginDialog.create(env, i18n, localeSelector, logger, raplaLocale, languageChooser.getComponent());
 
             Action languageChanged = new AbstractAction()
@@ -475,7 +457,7 @@ public class RaplaClientServiceImpl implements ClientService, UpdateErrorListene
                     char[] password = dlg.getPassword();
                     String connectAs = null;
                     reconnectInfo = new ConnectInfo(username, password, connectAs);
-                    dlg.busy( "Login");
+                    dlg.busy( i18n.getString("login"));
                     login(reconnectInfo).thenAccept(
                             (success) ->
                     {
@@ -489,21 +471,20 @@ public class RaplaClientServiceImpl implements ClientService, UpdateErrorListene
                         {
                             dlg.idle();
                             loginMutex.release();
-                            dlg.busy("Daten werden geladen");
-                            beginRaplaSession().thenRun(()->dlg.dispose()).exceptionally( ex->
+                            dlg.busy(i18n.getString("load"));
+                            beginRaplaSession().thenRun(()->{dlg.idle();dlg.dispose();}).exceptionally( ex->
                             {
                                 dialogUiFactory.showException(ex, null);
+                                dlg.idle();
                                 fireClientAborted();
-                                return null;
                             }
                             );
                         }
                     }).exceptionally((ex)->
                     {
                         dlg.resetPassword();
-                        dlg.idle();
                         dialogUiFactory.showException(ex, new SwingPopupContext(dlg, null));
-                        return null;
+                        dlg.idle();
                     });
 
                 }
@@ -523,11 +504,11 @@ public class RaplaClientServiceImpl implements ClientService, UpdateErrorListene
             };
             loginAction.putValue(Action.NAME, i18n.getString("login"));
             exitAction.putValue(Action.NAME, i18n.getString("exit"));
-            dlg.setIconImage(raplaImages.getIconFromKey("icon.rapla_small").getImage());
+            dlg.setIconImage(RaplaImages.getImage(i18n.getIcon("icon.rapla_small")));
             dlg.setLoginAction(loginAction);
             dlg.setExitAction(exitAction);
             //dlg.setSize( 480, 270);
-            FrameControllerList.centerWindowOnScreen(dlg);
+            centerWindowOnScreen(dlg);
             dlg.setVisible(true);
 
             loginMutex.acquire();
@@ -544,6 +525,36 @@ public class RaplaClientServiceImpl implements ClientService, UpdateErrorListene
         }
     }
 
+    /** centers the window around the specified center */
+    static public void centerWindowOnScreen(Window window) {
+        Dimension screenSize = Toolkit.getDefaultToolkit().getScreenSize();
+        Dimension preferredSize = window.getSize();
+        int x = screenSize.width/2 - (preferredSize.width / 2);
+        int y = screenSize.height/2 - (preferredSize.height / 2);
+        fitIntoScreen(x,y,window);
+    }
+
+    /** Tries to place the window, that it fits into the screen. */
+    static public void fitIntoScreen(int x, int y, Component window) {
+        Dimension screenSize = Toolkit.getDefaultToolkit().getScreenSize();
+        Dimension windowSize = window.getSize();
+        if (x + windowSize.width > screenSize.width)
+            x =  screenSize.width - windowSize.width;
+
+        if (y + windowSize.height > screenSize.height)
+            y =  screenSize.height - windowSize.height;
+
+        if (x<0) x = 0;
+        if (y<0) y = 0;
+        window.setLocation(x,y);
+    }
+
+
+    private void initRefresh() throws RaplaException {
+        int intervalLength = facade.getRaplaFacade().getSystemPreferences().getEntryAsInteger(ClientFacade.REFRESH_INTERVAL_ENTRY, ClientFacade.REFRESH_INTERVAL_DEFAULT);
+        schedule = commandScheduler.schedule(()->operator.triggerRefresh(), 0, intervalLength);
+    }
+
     public void updateError(RaplaException ex)
     {
         getLogger().error("Error updating data", ex);
@@ -551,40 +562,33 @@ public class RaplaClientServiceImpl implements ClientService, UpdateErrorListene
 
     public void disconnected(final String message)
     {
+        if (schedule != null) {
+            schedule.dispose();
+        }
+        this.schedule = null;
         if (started)
         {
-            SwingUtilities.invokeLater(new Runnable()
-            {
-
-                public void run()
+            SwingUtilities.invokeLater(() -> {
+                boolean modal = false;
+                String title = i18n.getString("restart_client");
+                try
                 {
-                    boolean modal = true;
-                    String title = i18n.getString("restart_client");
-                    try
+                    Component owner = null;
+                    final DialogInterface dialog = dialogUiFactory.createInfoDialog(new SwingPopupContext(owner, null), title, message);
+                    dialog.setAbortAction(()->
                     {
-                        Component owner = null;
-                        final DialogInterface dialog = dialogUiFactory.create(new SwingPopupContext(owner, null), modal, title, message);
-                        Runnable action = new Runnable()
-                        {
-                            private static final long serialVersionUID = 1L;
-
-                            public void run()
-                            {
-                                getLogger().warn("restart");
-                                dialog.close();
-                                restart();
-                            }
-                        };
-                        dialog.setAbortAction(action);
-                        dialog.getAction(0).setRunnable(action);
-                        dialog.start(true);
+                        getLogger().warn("restart");
+                        dialog.close();
+                        restart();
                     }
-                    catch (Throwable e)
-                    {
-                        getLogger().error(e.getMessage(), e);
-                    }
-
+                    );
+                    dialog.start(true);
                 }
+                catch (Throwable e)
+                {
+                    getLogger().error(e.getMessage(), e);
+                }
+
             });
         }
     }

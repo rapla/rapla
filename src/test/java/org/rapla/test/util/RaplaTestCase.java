@@ -23,13 +23,14 @@ import org.jboss.resteasy.plugins.server.servlet.ResteasyBootstrap;
 import org.jetbrains.annotations.NotNull;
 import org.rapla.RaplaResources;
 import org.rapla.components.i18n.BundleManager;
-import org.rapla.components.i18n.internal.DefaultBundleManager;
+import org.rapla.components.i18n.internal.AbstractBundleManager;
+import org.rapla.components.i18n.server.ServerBundleManager;
 import org.rapla.entities.domain.permission.PermissionExtension;
 import org.rapla.entities.domain.permission.impl.RaplaDefaultPermissionImpl;
 import org.rapla.entities.dynamictype.internal.StandardFunctions;
 import org.rapla.entities.extensionpoints.FunctionFactory;
-import org.rapla.facade.client.ClientFacade;
 import org.rapla.facade.RaplaFacade;
+import org.rapla.facade.client.ClientFacade;
 import org.rapla.facade.internal.ClientFacadeImpl;
 import org.rapla.facade.internal.FacadeImpl;
 import org.rapla.framework.RaplaException;
@@ -101,7 +102,7 @@ public abstract class RaplaTestCase
     public static <T> T  waitForWithRaplaException(Promise<T> promise, int timeout) throws RaplaException
     {
         final CompletableFuture<T> future = new CompletableFuture<>();
-        promise.whenComplete((t, ex) ->
+        promise.handle((t, ex) ->
         {
             if (ex != null)
             {
@@ -111,6 +112,7 @@ public abstract class RaplaTestCase
             {
                 future.complete(t);
             }
+            return t;
         });
         try
         {
@@ -282,7 +284,7 @@ public abstract class RaplaTestCase
     private static FacadeImpl _createFacadeWithFile(Logger logger, String resolvedPath, FileOperator.FileIO fileIO) throws RaplaException
     {
 
-        DefaultBundleManager bundleManager = new DefaultBundleManager();
+        BundleManager bundleManager = new ServerBundleManager();
         RaplaResources i18n = new RaplaResources(bundleManager);
 
         final DefaultScheduler scheduler = new DefaultScheduler(logger);
@@ -318,7 +320,7 @@ public abstract class RaplaTestCase
         RaplaLocale raplaLocale = new RaplaLocaleImpl(bundleManager);
         map.put(StandardFunctions.NAMESPACE,new StandardFunctions(raplaLocale));
 
-        EventTimeCalculatorResources resources = new EventTimeCalculatorResources(new DefaultBundleManager());
+        EventTimeCalculatorResources resources = new EventTimeCalculatorResources(new ServerBundleManager());
 
         EventTimeCalculatorFactory eventTimeCalculatorFactory = new EventTimeCalculatorFactory(facadeProvider, logger, resources);
         map.put(DurationFunctions.NAMESPACE,new DurationFunctions(eventTimeCalculatorFactory));
@@ -373,7 +375,7 @@ public abstract class RaplaTestCase
 
     public static RaplaFacade createFacadeWithDatasource(Logger logger, javax.sql.DataSource dataSource,String xmlFile) throws RaplaException
     {
-        DefaultBundleManager bundleManager = new DefaultBundleManager();
+        AbstractBundleManager bundleManager = new ServerBundleManager();
         RaplaResources i18n = new RaplaResources(bundleManager);
 
         final DefaultScheduler scheduler = new DefaultScheduler(logger);
@@ -411,7 +413,7 @@ public abstract class RaplaTestCase
         final String serverURL = "http://localhost:" + port + "/rapla";
 
 
-        final DefaultBundleManager bundleManager = new DefaultBundleManager();
+        final AbstractBundleManager bundleManager = new ServerBundleManager();
         final RaplaResources i18n = new RaplaResources(bundleManager);
 
         final CommandScheduler scheduler = new DefaultScheduler(logger);
@@ -495,8 +497,8 @@ public abstract class RaplaTestCase
             File testFolder = new File(TEST_FOLDER_NAME);
             System.setProperty("jetty.home", testFolder.getPath());
             testFolder.mkdir();
-            IOUtil.copy(TEST_SRC_FOLDER_NAME + "/test.xconf", TEST_FOLDER_NAME + "/test.xconf");
-            //IOUtil.copy( "test-src/test.xlog", TEST_FOLDER_NAME + "/test.xlog" );
+            IOUtil.copyReservations(TEST_SRC_FOLDER_NAME + "/test.xconf", TEST_FOLDER_NAME + "/test.xconf");
+            //IOUtil.copyReservations( "test-src/test.xlog", TEST_FOLDER_NAME + "/test.xlog" );
         }
         catch (IOException ex)
         {
@@ -521,11 +523,11 @@ public abstract class RaplaTestCase
     {
         try
         {
-            IOUtil.copy(testFile, TEST_FOLDER_NAME + "/test.xml");
+            IOUtil.copyReservations(testFile, TEST_FOLDER_NAME + "/test.xml");
         }
         catch (IOException ex)
         {
-            throw new IOException("Failed to copy TestFile '" + testFile + "': " + ex.getMessage());
+            throw new IOException("Failed to copyReservations TestFile '" + testFile + "': " + ex.getMessage());
         }
     }
 

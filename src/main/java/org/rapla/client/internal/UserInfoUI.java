@@ -29,7 +29,7 @@ public class UserInfoUI extends HTMLInfo<User> {
     ClientFacade clientFacade;
     public UserInfoUI(ClientFacade clientFacade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger) {
         super(i18n, raplaLocale, clientFacade.getRaplaFacade(), logger);
-        classificationInfo = new ClassificationInfoUI<Allocatable>(i18n, raplaLocale, clientFacade.getRaplaFacade(), logger);
+        classificationInfo = new ClassificationInfoUI<>(i18n, raplaLocale, clientFacade.getRaplaFacade(), logger);
         this.clientFacade = clientFacade;
     }
 
@@ -39,7 +39,7 @@ public class UserInfoUI extends HTMLInfo<User> {
         if (user.isAdmin()) {
             highlight(getString("admin"),buf);
         }
-        Collection<Row> att = new ArrayList<Row>();
+        Collection<Row> att = new ArrayList<>();
         att.add(new Row(getString("username"), strong( encode( user.getUsername() ) ) ) );
         
         final Allocatable person = user.getPerson();

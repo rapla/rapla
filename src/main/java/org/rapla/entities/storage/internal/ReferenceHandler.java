@@ -28,6 +28,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
+import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
 
 /** The ReferenceHandler takes care of serializing and deserializing references to Entity objects.
 <p>
@@ -58,7 +60,7 @@ Itertor references = referenceHandler.getReferences();
     @see EntityResolver
  */
 abstract public class ReferenceHandler /*extends HashMap<String,List<String>>*/ implements EntityReferencer {
-	protected Map<String,List<String>> links = new LinkedHashMap<String,List<String>>();
+	protected Map<String,List<String>> links = new LinkedHashMap<>();
     protected transient EntityResolver resolver;
 	
     public EntityResolver getResolver()
@@ -100,7 +102,7 @@ abstract public class ReferenceHandler /*extends HashMap<String,List<String>>*/ 
     @Override
     public Iterable<ReferenceInfo> getReferenceInfo()
     {
-        Set<ReferenceInfo> result = new HashSet<ReferenceInfo>();
+        Set<ReferenceInfo> result = new HashSet<>();
         if (links != null) {
             for (String key:links.keySet()) {
                 List<String> entries = links.get( key);
@@ -156,7 +158,7 @@ abstract public class ReferenceHandler /*extends HashMap<String,List<String>>*/ 
 	        List<String> idEntries = links.get( key );
 	        if ( idEntries == null )
 	        {
-	        	idEntries = new ArrayList<String>();
+	        	idEntries = new ArrayList<>();
 	        	links.put(key, idEntries);
 	        }
 	        if ( idEntries.contains( id))
@@ -193,14 +195,13 @@ abstract public class ReferenceHandler /*extends HashMap<String,List<String>>*/ 
 	            return;
 	        }
 	
-	        List<String> entries = new ArrayList<String>();
-			entries.addAll( ids);
+	        List<String> entries = new ArrayList<>(ids);
 	        links.put(key, entries);
         }
     }
 
     public void putReferences(String key,Collection<? extends ReferenceInfo> refs) {
-        List<String> ids = new ArrayList<String>();
+        List<String> ids = new ArrayList<>();
         for (ReferenceInfo ref:refs)
         {
             String id = ref.getId();
@@ -230,7 +231,7 @@ abstract public class ReferenceHandler /*extends HashMap<String,List<String>>*/ 
         {
             return null;
         }
-        return new ReferenceInfo<T>(id,clazz);
+        return new ReferenceInfo<>(id, clazz);
     }
     
 	public Collection<String> getIds(String key) 
@@ -251,7 +252,7 @@ abstract public class ReferenceHandler /*extends HashMap<String,List<String>>*/ 
 	            links.remove(key);
 	            return;
 	        }
-	        List<String> idEntries = new ArrayList<String>();
+	        List<String> idEntries = new ArrayList<>();
 	        for (Entity ent: entities)
 	        {
 	        	String id = ent.getId();
@@ -268,7 +269,7 @@ abstract public class ReferenceHandler /*extends HashMap<String,List<String>>*/ 
 		{
 			return Collections.emptyList();
 		}
-		List<T> entries = new ArrayList<T>(ids.size());
+		List<T> entries = new ArrayList<>(ids.size());
 		for ( String id:ids)
 		{
 			T entity = tryResolve(id, entityClass);
@@ -284,7 +285,7 @@ abstract public class ReferenceHandler /*extends HashMap<String,List<String>>*/ 
 		return Collections.unmodifiableCollection(entries);
 	}
 
-	protected <T extends Entity> T tryResolve(String id,Class<T> entityClass) 
+	protected <T extends Entity> T tryResolve(String id,Class<T> entityClass)
 	{
         return resolver.tryResolve( id , entityClass);
 	}	

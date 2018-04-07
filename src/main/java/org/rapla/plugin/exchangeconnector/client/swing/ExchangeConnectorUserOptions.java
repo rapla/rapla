@@ -177,113 +177,68 @@ public class ExchangeConnectorUserOptions implements UserOptionPanel
         this.optionsPanel.add(retryButton, "3, 14");
         final PopupContext popupContext = dialogUiFactory.createPopupContext(ExchangeConnectorUserOptions.this);
 
-        loginButton.addActionListener(new ActionListener()
-        {
-            @Override
-            public void actionPerformed(ActionEvent e)
+        loginButton.addActionListener(e -> {
+            String[] options = new String[] { getConnectButtonString(), i18n.getString("abort") };
+            final SyncDialog content = new SyncDialog();
+            if (connected)
             {
-
-                boolean modal = true;
-                String[] options = new String[] { getConnectButtonString(), i18n.getString("abort") };
-                final SyncDialog content = new SyncDialog();
-                if (connected)
-                {
-                    String text = usernameLabel.getText();
-                    content.init(text);
-                }
-                try
-                {
-                    final DialogInterface dialog = dialogUiFactory.create(popupContext, modal, content, options);
-                    dialog.setTitle("Exchange Login");
-                    dialog.getAction(0).setRunnable(new Runnable()
-                    {
-
-                        private static final long serialVersionUID = 1L;
-
-                        @Override
-                        public void run()
-                        {
-                            String username = content.getUsername();
-                            String password = content.getPassword();
-                            try
-                            {
-                                service.changeUser(username, password);
-                            }
-                            catch (RaplaException ex)
-                            {
-                                dialogUiFactory.showException(ex, popupContext);
-                                return;
-                            }
-                            dialog.close();
-                        }
-                    });
-                    dialog.start(true);
-                    updateComponentState();
-                }
-                catch (RaplaException ex)
-                {
+                String text = usernameLabel.getText();
+                content.init(text);
+            }
+            final DialogInterface dialog = dialogUiFactory.createContentDialog(popupContext, content, options);
+            dialog.setTitle("Exchange Login");
+            dialog.getAction(0).setRunnable(() -> {
+                String username = content.getUsername();
+                String password = content.getPassword();
+                try {
+                    service.changeUser(username, password);
+                } catch (RaplaException ex) {
                     dialogUiFactory.showException(ex, popupContext);
-                    logger.error("The operation was not successful!", ex);
+                    return;
                 }
+                dialog.close();
+            });
+            dialog.start(true).thenRun( ()->updateComponentState()).exceptionally((ex)
+            ->dialogUiFactory.showException(ex, popupContext)
+            );
+        });
+        syncButton.addActionListener(e -> {
+            try
+            {
+                service.synchronize();
+                showResultWillBeSentByMailDialog();
+                updateComponentState();
+            }
+            catch (RaplaException ex)
+            {
+                dialogUiFactory.showException(ex, popupContext);
+                logger.error("The operation was not successful!", ex);
             }
 
         });
-        syncButton.addActionListener(new ActionListener()
-        {
-
-            @Override
-            public void actionPerformed(ActionEvent e)
+        removeButton.addActionListener(e -> {
+            try
             {
-                try
-                {
-                    service.synchronize();
-                    showResultWillBeSentByMailDialog();
-                    updateComponentState();
-                }
-                catch (RaplaException ex)
-                {
-                    dialogUiFactory.showException(ex, popupContext);
-                    logger.error("The operation was not successful!", ex);
-                }
-
+                service.removeUser();
+                updateComponentState();
             }
-
-        });
-        removeButton.addActionListener(new ActionListener()
-        {
-
-            @Override
-            public void actionPerformed(ActionEvent e)
+            catch (RaplaException ex)
             {
-                try
-                {
-                    service.removeUser();
-                    updateComponentState();
-                }
-                catch (RaplaException ex)
-                {
-                    dialogUiFactory.showException(ex, popupContext);
-                    logger.error("The operation was not successful!", ex);
-                }
+                dialogUiFactory.showException(ex, popupContext);
+                logger.error("The operation was not successful!", ex);
             }
         });
-        retryButton.addActionListener(new ActionListener()
-        {
-
-            @Override
-            public void actionPerformed(ActionEvent e)
+        retryButton.addActionListener(e -> {
+            try
             {
-                try
-                {
-                    service.retry();
-                    showResultWillBeSentByMailDialog();
-                    updateComponentState();
-                }
-                catch (RaplaException ex)
-                {
-                    dialogUiFactory.showException(ex, popupContext);
-                    logger.error("The operation was not successful!", ex);
-                }
+                service.retry();
+                showResultWillBeSentByMailDialog();
+                updateComponentState();
+            }
+            catch (RaplaException ex)
+            {
+                dialogUiFactory.showException(ex, popupContext);
+                logger.error("The operation was not successful!", ex);
             }
         });
 

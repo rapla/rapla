@@ -26,7 +26,7 @@ import java.util.Collection;
 /** Provides AppointmentListener handling.*/
 public class AbstractAppointmentEditor extends RaplaGUIComponent
 {
-    ArrayList<AppointmentListener> listenerList = new ArrayList<AppointmentListener>();
+    ArrayList<AppointmentListener> listenerList = new ArrayList<>();
     private boolean hasChanged;
 
     public AbstractAppointmentEditor(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger)

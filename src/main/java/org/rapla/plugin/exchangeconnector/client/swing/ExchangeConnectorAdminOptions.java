@@ -178,8 +178,8 @@ public class ExchangeConnectorAdminOptions implements PluginOptionPanel{
     @Override
     public void show() throws RaplaException
     {
-        activate.setText( i18n.getString("selected"));
         container = createPanel();
+        activate.setText( i18n.getString("selected"));
         Configuration config = preferences.getEntry( ExchangeConnectorConfig.EXCHANGESERVER_CONFIG, null);
         if ( config == null )
         {

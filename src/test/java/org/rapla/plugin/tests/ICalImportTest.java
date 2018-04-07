@@ -12,8 +12,8 @@ import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.Appointment;
 import org.rapla.entities.domain.Reservation;
 import org.rapla.entities.dynamictype.DynamicTypeAnnotations;
-import org.rapla.facade.client.ClientFacade;
 import org.rapla.facade.RaplaFacade;
+import org.rapla.facade.client.ClientFacade;
 import org.rapla.logger.Logger;
 import org.rapla.plugin.ical.server.RaplaICalImport;
 import org.rapla.server.RemoteSession;
@@ -58,7 +58,7 @@ public class ICalImportTest {
         RaplaICalImport importer = new RaplaICalImport(converter, session, facade, logger, null);
         boolean isUrl = true;
         String content = "https://www.google.com/calendar/ical/76kijffqdch1nkemshokjlf6r4%40group.calendar.google.com/private-e8c8772e35043055c7d9c16f366fdfbf/basic.ics";
-        Allocatable newResource = facade.newResource();
+        Allocatable newResource = facade.newResourceDeprecated();
         newResource.getClassification().setValue("name", "icaltest");
         facade.store(newResource);
         List<Allocatable> allocatables = Collections.singletonList( newResource);
@@ -94,7 +94,7 @@ public class ICalImportTest {
             }
         }
         String content = fileContent.toString();
-        Allocatable newResource = facade.newResource();
+        Allocatable newResource = facade.newResourceDeprecated();
         newResource.getClassification().setValue("name", "icaltest");
         facade.store(newResource);
         List<Allocatable> allocatables = Collections.singletonList( newResource);

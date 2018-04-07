@@ -13,6 +13,7 @@
 package org.rapla.client.swing.internal.edit.reservation;
 
 import org.rapla.RaplaResources;
+import org.rapla.client.PopupContext;
 import org.rapla.client.RaplaWidget;
 import org.rapla.client.dialog.DialogInterface;
 import org.rapla.client.dialog.DialogUiFactoryInterface;
@@ -112,7 +113,7 @@ public class AppointmentController extends RaplaGUIComponent implements Disposab
 
     RepeatingType savedRepeatingType = null;
 
-    ArrayList<ChangeListener> listenerList = new ArrayList<ChangeListener>();
+    ArrayList<ChangeListener> listenerList = new ArrayList<>();
     JPanel repeatingType = new JPanel();
     JRadioButton noRepeating = new JRadioButton();
     JRadioButton weeklyRepeating = new JRadioButton();
@@ -128,8 +129,6 @@ public class AppointmentController extends RaplaGUIComponent implements Disposab
 
     Date selectedEditDate = null;
 
-    private final RaplaImages raplaImages;
-
     private final DateRenderer dateRenderer;
 
     private final DialogUiFactoryInterface dialogUiFactory;
@@ -138,11 +137,10 @@ public class AppointmentController extends RaplaGUIComponent implements Disposab
     private TimeInterval lastModifiedExceptionDialogInterval = null;
 
     public AppointmentController(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, CommandHistory commandHistory,
-            RaplaImages raplaImages, DateRenderer dateRenderer, DialogUiFactoryInterface dialogUiFactory, IOInterface ioInterface) throws RaplaException
+            DateRenderer dateRenderer, DialogUiFactoryInterface dialogUiFactory, IOInterface ioInterface) throws RaplaException
     {
         super(facade, i18n, raplaLocale, logger);
         this.commandHistory = commandHistory;
-        this.raplaImages = raplaImages;
         this.dateRenderer = dateRenderer;
         this.dialogUiFactory = dialogUiFactory;
         this.ioInterface = ioInterface;
@@ -201,13 +199,7 @@ public class AppointmentController extends RaplaGUIComponent implements Disposab
 
         singleEditor.initialize();
         repeatingEditor.initialize();
-        ActionListener listener = new ActionListener()
-        {
-            public void actionPerformed(ActionEvent evt)
-            {
-                switchRepeatings();
-            }
-        };
+        ActionListener listener = evt -> switchRepeatings();
         noRepeating.addActionListener(listener);
         weeklyRepeating.addActionListener(listener);
         monthlyRepeating.addActionListener(listener);
@@ -394,14 +386,10 @@ public class AppointmentController extends RaplaGUIComponent implements Disposab
 
             oneDayEventCheckBox.setText(getString("all-day"));
             content.add(oneDayEventCheckBox, "8,0");
-            oneDayEventCheckBox.addItemListener(new ItemListener()
-            {
-                public void itemStateChanged(ItemEvent itemevent)
-                {
-                    boolean selected = itemevent.getStateChange() == ItemEvent.SELECTED;
-                    setToWholeDays(selected);
-                    processChange(itemevent.getSource());
-                }
+            oneDayEventCheckBox.addItemListener(itemevent -> {
+                boolean selected = itemevent.getStateChange() == ItemEvent.SELECTED;
+                setToWholeDays(selected);
+                processChange(itemevent.getSource());
             });
 
             startDate.addDateChangeListener(this);
@@ -1376,11 +1364,11 @@ public class AppointmentController extends RaplaGUIComponent implements Disposab
             exceptionEditor.initialize();
             exceptionEditor.mapFromAppointment();
             exceptionEditor.getComponent().setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
+            final PopupContext popupContext = new SwingPopupContext(getComponent(), null);
             exceptionDlg = dialogUiFactory
-                    .create(new SwingPopupContext(getComponent(), null), true, exceptionEditor.getComponent(), new String[] { getString("close") });
+                    .createContentDialog(popupContext, exceptionEditor.getComponent(), new String[] { getString("close") });
             exceptionDlg.setTitle(getString("appointment.exceptions"));
-            exceptionDlg.start(true);
-            updateExceptionCount();
+            exceptionDlg.start(true).thenRun(this::updateExceptionCount);
         }
 
         private void doChanges()
@@ -1424,9 +1412,9 @@ public class AppointmentController extends RaplaGUIComponent implements Disposab
         public void initialize()
         {
             addButton.setText(getString("add"));
-            addButton.setIcon(raplaImages.getIconFromKey("icon.arrow_right"));
+            addButton.setIcon(RaplaImages.getIcon(i18n.getIcon("icon.arrow_right")));
             removeButton.setText(getString("remove"));
-            removeButton.setIcon(raplaImages.getIconFromKey("icon.arrow_left"));
+            removeButton.setIcon(RaplaImages.getIcon(i18n.getIcon("icon.arrow_left")));
             exceptionStart = createRaplaCalendar(dateRenderer, ioInterface);
             exceptionEnd = createRaplaCalendar(dateRenderer, ioInterface);
             /*
@@ -1829,7 +1817,8 @@ public class AppointmentController extends RaplaGUIComponent implements Disposab
     public void nextFreeAppointment()
     {
         Reservation reservation = appointment.getReservation();
-        Allocatable[] allocatables = reservation.getAllocatablesFor(appointment);
+        Allocatable[] allocatables = reservation.getAllocatablesFor(appointment).toArray(Allocatable[]::new);
+        PopupContext popupContext = dialogUiFactory.createPopupContext( this);
         try
         {
             CalendarOptions options = getCalendarOptions();
@@ -1846,13 +1835,13 @@ public class AppointmentController extends RaplaGUIComponent implements Disposab
                 }
                 else
                 {
-                    dialogUiFactory.showWarning("No free appointment found", new SwingPopupContext(getMainComponent(), null));
+                    dialogUiFactory.showWarning("No free appointment found",popupContext);
                 }
             });
         }
         catch (Exception ex)
         {
-            dialogUiFactory.showException(ex, new SwingPopupContext(getMainComponent(), null));
+            dialogUiFactory.showException(ex, popupContext);
         }
     }
 

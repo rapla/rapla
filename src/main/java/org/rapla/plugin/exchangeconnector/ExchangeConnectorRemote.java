@@ -13,7 +13,7 @@ import javax.ws.rs.core.MediaType;
 @Path("exchange/connect")
 public interface ExchangeConnectorRemote 
 {
-    TypedComponentRole<String> LAST_SYNC_ERROR_CHANGE = new TypedComponentRole<String>("org.rapla.plugin.exchangconnector.last_sync_error_change");
+    TypedComponentRole<String> LAST_SYNC_ERROR_CHANGE = new TypedComponentRole<>("org.rapla.plugin.exchangconnector.last_sync_error_change");
     @GET
     @Produces(MediaType.APPLICATION_JSON)
     SynchronizationStatus getSynchronizationStatus() throws RaplaException;

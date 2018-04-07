@@ -5,19 +5,20 @@ import org.rapla.client.EditApplicationEventContext;
 import org.rapla.client.PopupContext;
 import org.rapla.client.ReservationController;
 import org.rapla.client.base.CalendarPlugin;
+import org.rapla.client.dialog.DialogUiFactoryInterface;
 import org.rapla.client.edit.reservation.sample.ReservationPresenter;
 import org.rapla.client.event.ApplicationEvent;
 import org.rapla.client.event.ApplicationEvent.ApplicationEventContext;
 import org.rapla.client.event.ApplicationEventBus;
-import org.rapla.client.menu.CalendarContextMenuPresenter;
+import org.rapla.client.menu.sandbox.CalendarContextMenuPresenter;
 import org.rapla.components.util.DateTools;
 import org.rapla.entities.domain.Appointment;
 import org.rapla.entities.domain.AppointmentBlock;
 import org.rapla.entities.domain.Reservation;
 import org.rapla.facade.CalendarOptions;
 import org.rapla.facade.CalendarSelectionModel;
-import org.rapla.facade.client.ClientFacade;
 import org.rapla.facade.RaplaComponent;
+import org.rapla.facade.client.ClientFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.inject.Extension;
@@ -26,6 +27,7 @@ import org.rapla.plugin.abstractcalendar.GroupAllocatablesStrategy;
 import org.rapla.plugin.abstractcalendar.HTMLRaplaBlock;
 import org.rapla.plugin.abstractcalendar.HTMLRaplaBuilder;
 import org.rapla.plugin.weekview.client.weekview.CalendarWeekView.Presenter;
+import org.rapla.scheduler.Promise;
 
 import javax.inject.Inject;
 import java.util.Collections;
@@ -49,11 +51,12 @@ public class CalendarWeekViewPresenter implements Presenter, CalendarPlugin
     private final RaplaLocale raplaLocale;
     private final RaplaResources i18n;
     private final CalendarContextMenuPresenter presenter;
+    private final DialogUiFactoryInterface dialogUiFactory;
 
     @SuppressWarnings("unchecked")
     @Inject
     public CalendarWeekViewPresenter(CalendarWeekView view, ReservationController reservationController, Logger logger, ApplicationEventBus eventBus,
-            CalendarSelectionModel model, ClientFacade facade, HTMLRaplaBuilder builder, RaplaLocale raplaLocale, RaplaResources i18n, CalendarContextMenuPresenter presenter)
+                                     CalendarSelectionModel model, ClientFacade facade, HTMLRaplaBuilder builder, RaplaLocale raplaLocale, RaplaResources i18n, CalendarContextMenuPresenter presenter, DialogUiFactoryInterface dialogUiFactory)
     {
         super();
         this.view = view;
@@ -66,6 +69,7 @@ public class CalendarWeekViewPresenter implements Presenter, CalendarPlugin
         this.raplaLocale = raplaLocale;
         this.i18n = i18n;
         this.presenter = presenter;
+        this.dialogUiFactory = dialogUiFactory;
         this.view.setPresenter(this);
     }
 
@@ -111,16 +115,16 @@ public class CalendarWeekViewPresenter implements Presenter, CalendarPlugin
     }
 
     @Override
-    public void updateReservation(HTMLRaplaBlock block, HTMLDaySlot daySlot, Integer minuteOfDay, PopupContext context) throws RaplaException
+    public void updateReservation(HTMLRaplaBlock block, HTMLDaySlot daySlot, Integer minuteOfDay, PopupContext context)
     {
         AppointmentBlock appointmentBlock = block.getAppointmentBlock();
         Date newStart = calcDate(daySlot, minuteOfDay);
         boolean keepTime = false;
-        reservationController.moveAppointment(appointmentBlock, newStart, context, keepTime);
+        handleException(reservationController.moveAppointment(appointmentBlock, newStart, context, keepTime));
     }
 
     @Override
-    public void resizeReservation(HTMLRaplaBlock block, HTMLDaySlot daySlot, Integer minuteOfDay, PopupContext context) throws RaplaException
+    public void resizeReservation(HTMLRaplaBlock block, HTMLDaySlot daySlot, Integer minuteOfDay, PopupContext context)
     {
 
         AppointmentBlock appointmentBlock = block.getAppointmentBlock();
@@ -140,8 +144,11 @@ public class CalendarWeekViewPresenter implements Presenter, CalendarPlugin
             newEnd = date1;
         }
         boolean keepTime = false;
-        reservationController.resizeAppointment(appointmentBlock, newStart, newEnd, context, keepTime);
+        handleException(reservationController.resizeAppointment(appointmentBlock, newStart, newEnd, context, keepTime));
+    }
 
+    private void handleException(Promise<Void> promise) {
+        promise.exceptionally((ex)->dialogUiFactory.showException(ex, dialogUiFactory.createPopupContext(null)));
     }
 
     @Override
@@ -199,7 +206,7 @@ public class CalendarWeekViewPresenter implements Presenter, CalendarPlugin
         Set<Integer> excludeDays = opt.getExcludeDays();
         if (days < 3)
         {
-            excludeDays = new HashSet<Integer>();
+            excludeDays = new HashSet<>();
         }
         weekView.setExcludeDays(excludeDays);
         weekView.setLocale(raplaLocale);

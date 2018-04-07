@@ -5,28 +5,18 @@ package org.rapla.plugin.abstractcalendar;
 
 import org.rapla.RaplaResources;
 import org.rapla.client.EditController;
+import org.rapla.client.PopupContext;
 import org.rapla.client.ReservationController;
-import org.rapla.client.ReservationEdit;
 import org.rapla.client.dialog.DialogUiFactoryInterface;
-import org.rapla.client.extensionpoints.ObjectMenuFactory;
-import org.rapla.client.internal.RaplaClipboard;
-import org.rapla.client.swing.InfoFactory;
-import org.rapla.client.swing.MenuFactory;
+import org.rapla.client.menu.MenuFactory;
+import org.rapla.client.menu.SelectionMenuContext;
 import org.rapla.client.swing.RaplaGUIComponent;
-import org.rapla.client.swing.SwingMenuContext;
-import org.rapla.client.swing.images.RaplaImages;
 import org.rapla.client.swing.internal.SwingPopupContext;
-import org.rapla.client.swing.internal.action.AppointmentAction;
-import org.rapla.client.swing.toolkit.MenuInterface;
-import org.rapla.client.swing.toolkit.RaplaMenu;
-import org.rapla.client.swing.toolkit.RaplaMenuItem;
 import org.rapla.client.swing.toolkit.RaplaPopupMenu;
 import org.rapla.components.calendarview.Block;
 import org.rapla.components.calendarview.swing.ViewListener;
 import org.rapla.components.util.TimeInterval;
-import org.rapla.entities.User;
 import org.rapla.entities.domain.Allocatable;
-import org.rapla.entities.domain.Appointment;
 import org.rapla.entities.domain.AppointmentBlock;
 import org.rapla.facade.CalendarModel;
 import org.rapla.facade.CalendarSelectionModel;
@@ -35,51 +25,39 @@ import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.logger.Logger;
 import org.rapla.plugin.abstractcalendar.client.swing.SwingRaplaBlock;
+import org.rapla.scheduler.Promise;
 import org.rapla.storage.PermissionController;
 
 import javax.swing.JComponent;
-import javax.swing.JMenuItem;
 import java.awt.Component;
 import java.awt.Point;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
-import java.util.Iterator;
 import java.util.List;
-import java.util.Set;
 
 public class RaplaCalendarViewListener extends RaplaGUIComponent implements ViewListener
 {
     protected boolean keepTime = false;
-    private final Set<ObjectMenuFactory> objectMenuFactories;
 
     protected JComponent calendarContainerComponent;
     CalendarModel model;
     private final MenuFactory menuFactory;
-    private final CalendarSelectionModel calendarSelectionModel;
-    private final RaplaClipboard clipboard;
     private final ReservationController reservationController;
-    private final InfoFactory infoFactory;
-    private final RaplaImages raplaImages;
     private final DialogUiFactoryInterface dialogUiFactory;
     final PermissionController permissionController;
     final EditController editController;
 
 
     public RaplaCalendarViewListener(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, CalendarModel model, JComponent calendarContainerComponent,
-            Set<ObjectMenuFactory> objectMenuFactories, MenuFactory menuFactory, CalendarSelectionModel calendarSelectionModel, RaplaClipboard clipboard, ReservationController reservationController, InfoFactory infoFactory, RaplaImages raplaImages, DialogUiFactoryInterface dialogUiFactory, EditController editController)
+             MenuFactory menuFactory, ReservationController reservationController,  DialogUiFactoryInterface dialogUiFactory, EditController editController)
     {
         super(facade, i18n, raplaLocale, logger);
         this.editController = editController;
         this.model = model;
         this.calendarContainerComponent = calendarContainerComponent;
-        this.objectMenuFactories = objectMenuFactories;
         this.menuFactory = menuFactory;
-        this.calendarSelectionModel = calendarSelectionModel;
-        this.clipboard = clipboard;
         this.reservationController = reservationController;
-        this.infoFactory = infoFactory;
-        this.raplaImages = raplaImages;
         this.dialogUiFactory = dialogUiFactory;
         permissionController = facade.getRaplaFacade().getPermissionController();
     }
@@ -116,62 +94,17 @@ public class RaplaCalendarViewListener extends RaplaGUIComponent implements View
     {
         try
         {
-            RaplaPopupMenu menu = new RaplaPopupMenu();
+            final PopupContext popupContext = createPopupContext(component, p);
+            RaplaPopupMenu menu = new RaplaPopupMenu(popupContext);
             Object focusedObject = null;
-            SwingMenuContext context = new SwingMenuContext( focusedObject);
-            menuFactory.addReservationWizards(menu, context, null);
-
-            User user = getUser();
-            if (permissionController.canCreateReservation(user))
-            {
-                //	        	 User user = getUserFromRequest();
-                //	 	        Date today = getQuery().today();
-                //	 	        boolean canAllocate = false;
-                //	 	        Collection<Allocatable> selectedAllocatables = getMarkedAllocatables();
-                //	 	        for ( Allocatable alloc: selectedAllocatables) {
-                //	 	            if (alloc.canAllocate( user, start, end, today))
-                //	 	                canAllocate = true;
-                //	 	        }
-                //	 	       canAllocate || (selectedAllocatables.size() == 0 &&
-
-                if (permissionController.canUserAllocateSomething(user))
-                {
-                    ReservationEdit[] editWindows = editController.getEditWindows();
-                    if (editWindows.length > 0)
-                    {
-                        RaplaMenu addItem = new RaplaMenu("add_to");
-                        addItem.setText(getString("add_to"));
-                        menu.add(addItem);
-
-                        for (ReservationEdit reservationEdit : editWindows)
-                        {
-                            addAppointmentAction(addItem, component, p).setAddTo(reservationEdit);
-                        }
-                    }
-                }
-                else
-                {
-                    JMenuItem cantAllocate = new JMenuItem(getString("permission.denied"));
-                    cantAllocate.setEnabled(false);
-                    menu.add(cantAllocate);
-                }
-            }
-            //	
-            Appointment appointment = clipboard.getAppointment();
-            if (appointment != null)
-            {
-                if (clipboard.isPasteExistingPossible())
-                {
-                    addAppointmentAction(menu, component, p).setPaste();
-                }
-                addAppointmentAction(menu, component, p).setPasteAsNew();
-            }
-
+            SelectionMenuContext context = new SelectionMenuContext( focusedObject,popupContext);
+            menuFactory.addCalendarSelectionMenu( menu,context);
             menu.show(component, p.x, p.y);
         }
         catch (RaplaException ex)
         {
-            dialogUiFactory.showException(ex, new SwingPopupContext(calendarContainerComponent, null));
+            PopupContext popupContext = dialogUiFactory.createPopupContext( ()->calendarContainerComponent);
+            dialogUiFactory.showException(ex, popupContext);
         }
 
     }
@@ -216,23 +149,28 @@ public class RaplaCalendarViewListener extends RaplaGUIComponent implements View
 
     public void moved(Block block, Point p, Date newStart, int slotNr)
     {
-        moved(block, p, newStart);
+        handleException(moved(block, p, newStart));
     }
 
-    protected void moved(Block block, Point p, Date newStart)
+    protected Promise<Void> moved(Block block, Point p, Date newStart)
     {
         SwingRaplaBlock b = (SwingRaplaBlock) block;
-        try
-        {
-            long offset = newStart.getTime() - b.getStart().getTime();
-            Date newStartWithOffset = new Date(b.getAppointmentBlock().getStart() + offset);
-            reservationController.moveAppointment(b.getAppointmentBlock(), newStartWithOffset, createPopupContext(calendarContainerComponent, p),
-                    keepTime);
-        }
-        catch (RaplaException ex)
-        {
-            dialogUiFactory.showException(ex, new SwingPopupContext(b.getView(), null));
-        }
+        final PopupContext popupContext = getPopupContext(p);
+        long offset = newStart.getTime() - b.getStart().getTime();
+        Date newStartWithOffset = new Date(b.getAppointmentBlock().getStart() + offset);
+        return reservationController.moveAppointment(b.getAppointmentBlock(), newStartWithOffset, popupContext,
+                keepTime);
+
+    }
+
+    protected void handleException(Promise<Void> promise)
+    {
+        final PopupContext popupContext = getPopupContext(null);
+        promise.exceptionally((ex)->dialogUiFactory.showException(ex, popupContext));
+    }
+
+    private PopupContext getPopupContext(Point p) {
+        return createPopupContext(calendarContainerComponent, p);
     }
 
     public boolean isKeepTime()
@@ -248,15 +186,7 @@ public class RaplaCalendarViewListener extends RaplaGUIComponent implements View
     public void resized(Block block, Point p, Date newStart, Date newEnd, int slotNr)
     {
         SwingRaplaBlock b = (SwingRaplaBlock) block;
-        try
-        {
-            reservationController.resizeAppointment(b.getAppointmentBlock(), newStart, newEnd, createPopupContext(calendarContainerComponent, p),
-                    keepTime);
-        }
-        catch (RaplaException ex)
-        {
-            dialogUiFactory.showException(ex, new SwingPopupContext(b.getView(), null));
-        }
+         handleException(reservationController.resizeAppointment(b.getAppointmentBlock(), newStart, newEnd, getPopupContext(p), keepTime));
     }
 
     public List<Allocatable> getSortedAllocatables()
@@ -301,54 +231,12 @@ public class RaplaCalendarViewListener extends RaplaGUIComponent implements View
     protected void showPopupMenu(SwingRaplaBlock b, Point p) throws RaplaException
     {
         Component component = b.getView();
-        AppointmentBlock appointmentBlock = b.getAppointmentBlock();
-        Appointment appointment = b.getAppointment();
-        Date start = b.getStart();
-        boolean isException = b.isException();
-        RaplaPopupMenu menu = new RaplaPopupMenu();
-        Allocatable groupAllocatable = b.getGroupAllocatable();
-
-        Collection<Allocatable> copyContextAllocatables;
-        if (groupAllocatable != null)
-        {
-            copyContextAllocatables = Collections.singleton(groupAllocatable);
-        }
-        else
-        {
-            copyContextAllocatables = Collections.emptyList();
-        }
-        addAppointmentAction(menu, component, p).setCopy(appointmentBlock, copyContextAllocatables);
-        addAppointmentAction(menu, component, p).setCut(appointmentBlock, copyContextAllocatables);
-        addAppointmentAction(menu, component, p).setEdit(appointmentBlock);
-        if (!isException)
-        {
-            addAppointmentAction(menu, component, p).setDelete(appointmentBlock);
-        }
-        addAppointmentAction(menu, component, p).setView(appointmentBlock);
-
-        Iterator<ObjectMenuFactory> it = objectMenuFactories.iterator();
-        while (it.hasNext())
-        {
-            ObjectMenuFactory objectMenuFact = it.next();
-            SwingMenuContext menuContext = new SwingMenuContext( appointment);
-            menuContext.setSelectedDate( start);
-
-            RaplaMenuItem[] items = objectMenuFact.create(menuContext, appointment);
-            for (int i = 0; i < items.length; i++)
-            {
-                RaplaMenuItem item = items[i];
-                menu.add(item);
-            }
-        }
-
+        final PopupContext popupContext = createPopupContext(component, p);
+        RaplaPopupMenu menu = new RaplaPopupMenu( popupContext);
+        final SelectionMenuContext selectionMenuContext = new SelectionMenuContext(b, popupContext);
+        menuFactory.addObjectMenu( menu, selectionMenuContext, null);
         menu.show(component, p.x, p.y);
     }
 
-    public AppointmentAction addAppointmentAction(MenuInterface menu, Component parent, Point p)
-    {
-        AppointmentAction action = new AppointmentAction(getClientFacade(), getI18n(), getRaplaLocale(), getLogger(), createPopupContext(parent, p), calendarSelectionModel, reservationController,editController, infoFactory, raplaImages, dialogUiFactory);
-        menu.add(action);
-        return action;
-    }
 
 }

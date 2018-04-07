@@ -12,7 +12,9 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.entities.domain;
 
+import jsinterop.annotations.JsType;
 import org.rapla.components.util.DateTools;
+import org.rapla.components.util.TimeInterval;
 
 import java.util.Date;
 
@@ -22,6 +24,7 @@ import java.util.Date;
  * This class represents a time block of an appointment.
  * @since Rapla 1.4
  */
+@JsType
 public class AppointmentBlock implements Comparable<AppointmentBlock>
 {
     long start;
@@ -39,13 +42,14 @@ public class AppointmentBlock implements Comparable<AppointmentBlock>
 		this.appointment = appointment;
 		this.isException = isException;
 	}
-	
-	public AppointmentBlock(Appointment appointment)
+	static public AppointmentBlock create(Appointment appointment)
 	{
-		this.start = appointment.getStart().getTime();
-		this.end = appointment.getEnd().getTime();
-		this.appointment = appointment;
-		this.isException = false;
+		return new AppointmentBlock(appointment);
+	}
+	
+	protected AppointmentBlock(Appointment appointment)
+	{
+	    this(appointment.getStart().getTime(),appointment.getEnd().getTime(), appointment, false);
 	}
 	
 	public boolean includes(AppointmentBlock a2)
@@ -139,6 +143,11 @@ public class AppointmentBlock implements Comparable<AppointmentBlock>
         final String startDate = DateTools.formatDateTime(new Date(start));
         final String endDate = DateTools.formatDateTime(new Date(end));
         return startDate + " - " + endDate;
+	}
+
+	public TimeInterval toInterval()
+	{
+		return new TimeInterval(new Date(getStart()), new Date(getEnd()));
 	}
 
     

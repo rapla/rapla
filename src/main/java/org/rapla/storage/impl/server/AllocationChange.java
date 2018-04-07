@@ -7,8 +7,8 @@ import java.util.Set;
 
 class AllocationChange
 {
-	public Set<Appointment> toChange =  new HashSet<Appointment>();
-	public Set<Appointment> toRemove=  new HashSet<Appointment>();
+	public Set<Appointment> toChange = new HashSet<>();
+	public Set<Appointment> toRemove= new HashSet<>();
 	
 	public String toString()
 	{

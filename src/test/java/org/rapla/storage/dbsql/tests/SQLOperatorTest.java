@@ -273,7 +273,7 @@ public class SQLOperatorTest extends AbstractOperatorTest
         CachableStorageOperator readOperator = (CachableStorageOperator) readFacade.getOperator();
         Thread.sleep(500);
         Date lastUpdated = new Date();
-        {// create second writeFacade
+        {// createInfoDialog second writeFacade
             String reservationId = null;
             ReferenceInfo<Allocatable> resourceId = null;
             String xmlFile = null;
@@ -543,7 +543,7 @@ public class SQLOperatorTest extends AbstractOperatorTest
     {
         RaplaFacade writeFacade = this.facade;
         final String xmlFile = null;
-        // create init data
+        // createInfoDialog init data
         final DynamicType dynamicType = writeFacade.getDynamicTypes(DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RESOURCE)[0];
         List<Entity> storeObjects = new ArrayList<Entity>();
         for(int i = 0; i< 100000; i++)
@@ -566,11 +566,11 @@ public class SQLOperatorTest extends AbstractOperatorTest
             classification.setValue(attribute, "generated-reserv-" + i);
             Date endDate = new Date();
             Date startDate = new Date(endDate.getTime() - 120000);
-            final Appointment newAppointment = writeFacade.newAppointment(startDate, endDate);
-            reservation.addAppointment(newAppointment);
-            newAppointment.setRepeatingEnabled(true);
-            newAppointment.getRepeating().setType(RepeatingType.DAILY);
-            newAppointment.getRepeating().setInterval(i);
+            final Appointment newAppointmentDeprecated = writeFacade.newAppointmentDeprecated(startDate, endDate);
+            reservation.addAppointment(newAppointmentDeprecated);
+            newAppointmentDeprecated.setRepeatingEnabled(true);
+            newAppointmentDeprecated.getRepeating().setType(RepeatingType.DAILY);
+            newAppointmentDeprecated.getRepeating().setInterval(i);
             reservation.addAllocatable(storedAllocatables[i * 3]);
             reservation.addAllocatable(storedAllocatables[i * 3 + 1]);
             reservation.addAllocatable(storedAllocatables[i * 3 + 2]);
@@ -602,7 +602,7 @@ public class SQLOperatorTest extends AbstractOperatorTest
     public void testUpdateChanges() throws Exception
     {
         final DBOperator operator = (DBOperator) facade.getOperator();
-        // create a reading instance for the new table
+        // createInfoDialog a reading instance for the new table
         Calendar datetimeCal = Calendar.getInstance( TimeZone.getDefault());
         final String select = "SELECT ID, CHANGED_AT, ENTITY_CLASS, TYPE, XML_VALUE, ISDELETE FROM CHANGES WHERE id = ?";
         final User user = facade.getUser("homer");

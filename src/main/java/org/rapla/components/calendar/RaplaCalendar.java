@@ -35,7 +35,7 @@ public final class RaplaCalendar extends RaplaComboBox {
 
     protected DateField  m_dateField;
     protected CalendarMenu m_calendarMenu;
-    Collection<DateChangeListener> m_listenerList = new ArrayList<DateChangeListener>();
+    Collection<DateChangeListener> m_listenerList = new ArrayList<>();
     protected DateModel m_model;
     private Date m_lastDate;
     DateRenderer m_dateRenderer;

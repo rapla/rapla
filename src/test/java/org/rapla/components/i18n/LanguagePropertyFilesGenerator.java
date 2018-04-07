@@ -35,7 +35,7 @@ public class LanguagePropertyFilesGenerator
                 writeIntoFile(uLocale, pw);
                 pw.close();
             }
-            {// create default fallback:
+            {// createInfoDialog default fallback:
                 final PrintWriter pw = new PrintWriter(new File(parentDir, "format.properties"), "UTF-8");
                 writeIntoFile(ULocale.ENGLISH, pw);
                 pw.close();

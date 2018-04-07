@@ -6,6 +6,7 @@ import org.rapla.components.i18n.I18nLocaleFormats;
 import org.rapla.components.util.SerializableDateTimeFormat;
 
 import java.util.Collection;
+import java.util.Comparator;
 import java.util.Date;
 import java.util.Locale;
 
@@ -41,7 +42,7 @@ If country code is not set, the system default will be used.
 @JsType
 public interface RaplaLocale
 {
-	TypedComponentRole<String>  LANGUAGE_ENTRY = new TypedComponentRole<String>("org.rapla.language");
+	TypedComponentRole<String>  LANGUAGE_ENTRY = new TypedComponentRole<>("org.rapla.language");
     
     Collection<String> getAvailableLanguages();
 
@@ -66,7 +67,7 @@ public interface RaplaLocale
     Date toTime( int hour, int minute, int second );
 
     /** format long with the local NumberFormat */
-    String formatNumber( long number );
+    String formatNumber( Long number );
 
     /** format without year */
     String formatDateShort( Date date );
@@ -111,5 +112,5 @@ public interface RaplaLocale
 
     Locale newLocale(String language, String country);
 
-
+    Comparator<String> getCollator();
 }

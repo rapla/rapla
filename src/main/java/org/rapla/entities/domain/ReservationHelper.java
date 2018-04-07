@@ -45,7 +45,7 @@ public class ReservationHelper
                 } 
                 else 
                 {
-                    Collection<AppointmentBlock> blocks = new ArrayList<AppointmentBlock>();
+                    Collection<AppointmentBlock> blocks = new ArrayList<>();
                     appointments[i].createBlocks( start, firstStart, blocks );
                     for (AppointmentBlock block: blocks) {
                         if (block.getStart()<firstStart.getTime()) {

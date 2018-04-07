@@ -6,7 +6,7 @@ import java.awt.Color;
 
 public class AWTColorUtil {
 
- 	final static public Color getAppointmentColor(int nr)
+ 	static public Color getAppointmentColor(int nr)
 	{
  		String string = RaplaColors.getAppointmentColor(nr);
  		Color color = getColorForHex(string);

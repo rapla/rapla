@@ -14,25 +14,25 @@ import java.util.Map;
 
 public interface ExchangeConnectorConfig 
 {
-    TypedComponentRole<RaplaConfiguration> 	EXCHANGE_CLIENT_CONFIG = new TypedComponentRole<RaplaConfiguration>("org.rapla.plugin.exchangeconnector.config");
-    TypedComponentRole<RaplaConfiguration> EXCHANGESERVER_CONFIG = new TypedComponentRole<RaplaConfiguration>("org.rapla.plugin.exchangeconnector.server.Config");
+    TypedComponentRole<RaplaConfiguration> 	EXCHANGE_CLIENT_CONFIG = new TypedComponentRole<>("org.rapla.plugin.exchangeconnector.config");
+    TypedComponentRole<RaplaConfiguration> EXCHANGESERVER_CONFIG = new TypedComponentRole<>("org.rapla.plugin.exchangeconnector.server.Config");
     
-	TypedComponentRole<String> EXCHANGE_WS_FQDN = new TypedComponentRole<String>("ews_fqdn");
+	TypedComponentRole<String> EXCHANGE_WS_FQDN = new TypedComponentRole<>("ews_fqdn");
 	String DEFAULT_EXCHANGE_WS_FQDN = "https://myexchange.com";
 	
-	TypedComponentRole<Integer> SYNCING_PERIOD_PAST = new TypedComponentRole<Integer>("exch-sync-past");
+	TypedComponentRole<Integer> SYNCING_PERIOD_PAST = new TypedComponentRole<>("exch-sync-past");
 	Integer DEFAULT_SYNCING_PERIOD_PAST = 30;
 	
 //	public static final TypedComponentRole<Integer> SYNCING_PERIOD_FUTURE = new TypedComponentRole<Integer>("exch-sync-future");
 //	public static final Integer DEFAULT_SYNCING_PERIOD_FUTURE = 300;
 
-	TypedComponentRole<String> EXCHANGE_APPOINTMENT_CATEGORY  = new TypedComponentRole<String>( "exchange.default.category");
+	TypedComponentRole<String> EXCHANGE_APPOINTMENT_CATEGORY  = new TypedComponentRole<>("exchange.default.category");
 	String DEFAULT_EXCHANGE_APPOINTMENT_CATEGORY = "RAPLA";
 	
-	TypedComponentRole<String> EXCHANGE_TIMEZONE  = new TypedComponentRole<String>( "exchange.timezone");
+	TypedComponentRole<String> EXCHANGE_TIMEZONE  = new TypedComponentRole<>("exchange.timezone");
 	String DEFAULT_EXCHANGE_TIMEZONE = "W. Europe Standard Time";
 
-	TypedComponentRole<Boolean> EXCHANGE_SEND_INVITATION_AND_CANCELATION  = new TypedComponentRole<Boolean>( "exchange.sendInvitationAndCancelation");
+	TypedComponentRole<Boolean> EXCHANGE_SEND_INVITATION_AND_CANCELATION  = new TypedComponentRole<>("exchange.sendInvitationAndCancelation");
 	boolean DEFAULT_EXCHANGE_SEND_INVITATION_AND_CANCELATION = false;
 
 	boolean DEFAULT_EXCHANGE_REMINDER_SET = true;
@@ -48,7 +48,7 @@ public interface ExchangeConnectorConfig
 //	public static final TypedComponentRole<Boolean> SYNC_FROM_EXCHANGE_ENABLED_KEY = new TypedComponentRole<Boolean>("sync_from_exchange");
 //	public static final boolean DEFAULT_SYNC_FROM_EXCHANGE_ENABLED = false;
 String ENABLED_BY_ADMIN_STRING = "exchange_connector_enabled_by_admin";
-	TypedComponentRole<Boolean> ENABLED_BY_ADMIN = new TypedComponentRole<Boolean>(ENABLED_BY_ADMIN_STRING);
+	TypedComponentRole<Boolean> ENABLED_BY_ADMIN = new TypedComponentRole<>(ENABLED_BY_ADMIN_STRING);
 	boolean DEFAULT_ENABLED_BY_ADMIN = false;
 //	public static final String PULL_FREQUENCY_KEY = "exch-pull-freq";
 //	public static final Integer DEFAULT_PULL_FREQUENCY = 180;
@@ -76,7 +76,7 @@ String ENABLED_BY_ADMIN_STRING = "exchange_connector_enabled_by_admin";
 	
 	 class ConfigReader implements ExchangeConnectorConfig
 	    {
-		    Map<TypedComponentRole<?>,Object> map = new HashMap<TypedComponentRole<?>,Object>();
+		    Map<TypedComponentRole<?>,Object> map = new HashMap<>();
 		    
                 
 		    @Inject

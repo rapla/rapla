@@ -21,6 +21,6 @@ public class TimeslotPlugin
 	public final static boolean ENABLE_BY_DEFAULT = false;
     public final static String DAY_TIMESLOT = "day_timeslot";
     public final static String WEEK_TIMESLOT = "week_timeslot";
-    public static final TypedComponentRole<RaplaConfiguration> CONFIG = new TypedComponentRole<RaplaConfiguration>(PLUGIN_ID + ".config");
+    public static final TypedComponentRole<RaplaConfiguration> CONFIG = new TypedComponentRole<>(PLUGIN_ID + ".config");
 }
 

@@ -182,8 +182,8 @@ import java.util.List;
         {
             if (permissionController.canModify(entity, user) && (original == null || permissionController.canModify(original, user)))
             {
-                Collection<Category> newUserGroups = new ArrayList<Category>(((User) entity).getGroupList());
-                Collection<Category> removedUserGroups = new ArrayList<Category>();
+                Collection<Category> newUserGroups = new ArrayList<>(((User) entity).getGroupList());
+                Collection<Category> removedUserGroups = new ArrayList<>();
                 if (original != null)
                 {
                     final Collection<Category> originalList = ((User) original).getGroupList();
@@ -218,7 +218,7 @@ import java.util.List;
             Allocatable[] all = reservation.getAllocatables();
             if (originalReservation != null && canExchange)
             {
-                List<Allocatable> newAllocatabes = new ArrayList<Allocatable>(Arrays.asList(reservation.getAllocatables()));
+                List<Allocatable> newAllocatabes = new ArrayList<>(Arrays.asList(reservation.getAllocatables()));
                 newAllocatabes.removeAll(Arrays.asList(originalReservation.getAllocatables()));
                 all = newAllocatabes.toArray(Allocatable.ALLOCATABLE_ARRAY);
             }
@@ -283,9 +283,9 @@ import java.util.List;
 
             List<Allocatable> oldAllocatables = Arrays.asList(oldReservation.getAllocatables());
             List<Allocatable> newAllocatables = Arrays.asList(newReservation.getAllocatables());
-            List<Allocatable> inserted = new ArrayList<Allocatable>(newAllocatables);
-            List<Allocatable> removed = new ArrayList<Allocatable>(oldAllocatables);
-            List<Allocatable> overlap = new ArrayList<Allocatable>(oldAllocatables);
+            List<Allocatable> inserted = new ArrayList<>(newAllocatables);
+            List<Allocatable> removed = new ArrayList<>(oldAllocatables);
+            List<Allocatable> overlap = new ArrayList<>(oldAllocatables);
             inserted.removeAll(oldAllocatables);
             removed.removeAll(newAllocatables);
             overlap.retainAll(inserted);

@@ -30,7 +30,7 @@ public class PeriodInfoUI extends HTMLInfo<Period> {
     }
 
     public String createHTMLAndFillLinks(Period period,LinkController controller, User user) {
-        Collection<Row> att = new ArrayList<Row>();
+        Collection<Row> att = new ArrayList<>();
         RaplaLocale loc = getRaplaLocale();
 
         att.add(new Row(getString("name"), strong( encode( getName( period ) ))));

@@ -82,14 +82,10 @@ public class URLEncyrptionPublicExtensionFactory implements PublishExtensionFact
             encryptionCheck.setSelected(encryptionEnabled);
             encryptionCheck.setText("URL " + encryption);
             final JLabel encryptionActivation = new JLabel();
-            encryptionCheck.addChangeListener(new ChangeListener()
-            {
-                public void stateChanged(ChangeEvent e)
-                {
-                    boolean encryptionEnabled = encryptionCheck.isSelected();
-                    EncryptionPublishExtension.this.refreshCallBack
-                            .propertyChange(new PropertyChangeEvent(EncryptionPublishExtension.this, "encryption", null, encryptionEnabled));
-                }
+            encryptionCheck.addChangeListener(e -> {
+                boolean encryptionEnabled1 = encryptionCheck.isSelected();
+                EncryptionPublishExtension.this.refreshCallBack
+                        .propertyChange(new PropertyChangeEvent(EncryptionPublishExtension.this, "encryption", null, encryptionEnabled1));
             });
 
             panel.add(encryptionCheck, "0,0");

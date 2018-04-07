@@ -26,10 +26,10 @@ import org.rapla.entities.RaplaType;
 import org.rapla.entities.User;
 import org.rapla.entities.storage.ReferenceInfo;
 import org.rapla.facade.CalendarSelectionModel;
-import org.rapla.facade.client.ClientFacade;
 import org.rapla.facade.Conflict;
 import org.rapla.facade.ModificationEvent;
 import org.rapla.facade.RaplaFacade;
+import org.rapla.facade.client.ClientFacade;
 import org.rapla.facade.internal.ConflictImpl;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaInitializationException;
@@ -52,6 +52,7 @@ import java.util.stream.Collectors;
 public class ConflictSelectionPresenter implements Presenter
 {
     protected final CalendarSelectionModel model;
+    private final Logger logger;
     private Collection<Conflict> conflicts;
     private final CalendarEventBus eventBus;
     private final DialogUiFactoryInterface dialogUiFactory;
@@ -59,26 +60,20 @@ public class ConflictSelectionPresenter implements Presenter
     private final RaplaFacade raplaFacade;
     private final ConflictSelectionView<?> view;
 
+
     @Inject
     public ConflictSelectionPresenter(ClientFacade facade, Logger logger, final CalendarSelectionModel model, CalendarEventBus eventBus,
             DialogUiFactoryInterface dialogUiFactory, ConflictSelectionView view) throws RaplaInitializationException
     {
         this.facade = facade;
+        this.logger = logger;
         this.model = model;
         this.eventBus = eventBus;
         this.dialogUiFactory = dialogUiFactory;
         this.view = view;
         raplaFacade = facade.getRaplaFacade();
         view.setPresenter(this);
-        try
-        {
-            conflicts = new LinkedHashSet<Conflict>(raplaFacade.getConflicts());
-            updateTree();
-        }
-        catch (RaplaException e)
-        {
-            throw new RaplaInitializationException(e);
-        }
+        queryAllConflicts();
     }
 
     @Override
@@ -93,7 +88,7 @@ public class ConflictSelectionPresenter implements Presenter
     {
         try
         {
-            // Object obj = evt.getSelectedObject();
+            // Object obj = evt.getSelected();
             final List<Conflict> enabledConflicts = getConflicts(true);
             final List<Conflict> disabledConflicts = getConflicts(false);
             view.showMenuPopup(c, !disabledConflicts.isEmpty(), !enabledConflicts.isEmpty());
@@ -107,7 +102,7 @@ public class ConflictSelectionPresenter implements Presenter
     private List<Conflict> getConflicts(boolean enabled)
     {
         Collection<?> list = view.getSelectedElements(true);
-        final List<Conflict> result = new ArrayList<Conflict>();
+        final List<Conflict> result = new ArrayList<>();
         for (Object selected : list)
         {
             if (selected instanceof Conflict)
@@ -125,45 +120,28 @@ public class ConflictSelectionPresenter implements Presenter
     @Override
     public void enableConflicts(PopupContext context)
     {
-        try
-        {
-            final List<Conflict> disabledConflicts = getConflicts(false);
-            CommandUndo<RaplaException> command = new ConflictEnable(disabledConflicts, true);
-            CommandHistory commanHistory = getCommandHistory();
-            final Promise promise = commanHistory.storeAndExecute(command);
-            handleException(promise, context);
-        }
-        catch (RaplaException ex)
-        {
-            dialogUiFactory.showException(ex, context);
-        }
+        final List<Conflict> disabledConflicts = getConflicts(false);
+        CommandUndo<RaplaException> command = new ConflictEnable(disabledConflicts, true);
+        CommandHistory commanHistory = getCommandHistory();
+        final Promise promise = commanHistory.storeAndExecute(command);
+        handleException(promise, context);
     }
 
     @Override
     public void disableConflicts(PopupContext context)
     {
-        try
-        {
-            List<Conflict> enabledConflicts = getConflicts(true);
-            CommandUndo<RaplaException> command = new ConflictEnable(enabledConflicts, false);
-            CommandHistory commanHistory = getCommandHistory();
-            final Promise promise = commanHistory.storeAndExecute(command);
-            handleException(promise, context);
-        }
-        catch (RaplaException ex)
-        {
-            dialogUiFactory.showException(ex, context);
-        }
-
+        List<Conflict> enabledConflicts = getConflicts(true);
+        CommandUndo<RaplaException> command = new ConflictEnable(enabledConflicts, false);
+        CommandHistory commanHistory = getCommandHistory();
+        final Promise promise = commanHistory.storeAndExecute(command);
+        handleException(promise, context);
     }
 
     protected Promise handleException(Promise promise, PopupContext context)
     {
         return promise.exceptionally(ex ->
-        {
-            dialogUiFactory.showException((Throwable) ex, context);
-            return Promise.VOID;
-        });
+            dialogUiFactory.showException((Throwable) ex, context)
+        );
     }
 
     public CommandHistory getCommandHistory()
@@ -180,7 +158,7 @@ public class ConflictSelectionPresenter implements Presenter
         {
 
             this.enable = enable;
-            conflictStrings = new HashSet<String>();
+            conflictStrings = new HashSet<>();
             for (Conflict conflict : conflicts)
             {
                 conflictStrings.add(conflict.getId());
@@ -211,7 +189,7 @@ public class ConflictSelectionPresenter implements Presenter
                     .filter((conflict) -> conflictStrings.contains(conflict.getId())).collect(Collectors.toList());
             return raplaFacade.updateList(conflictOrig,
                     (editableConflicts) -> editableConflicts.stream().forEach((conflict) -> setEnabled(((ConflictImpl) conflict), newFlag)))
-                    .thenRun(() -> updateTree());
+                    .thenRun(() -> updateTree(conflicts));
         }
     }
 
@@ -241,9 +219,7 @@ public class ConflictSelectionPresenter implements Presenter
         TimeInterval invalidateInterval = evt.getInvalidateInterval();
         if (invalidateInterval != null && invalidateInterval.getStart() == null)
         {
-            Collection<Conflict> conflictArray = raplaFacade.getConflicts();
-            conflicts = new LinkedHashSet<Conflict>(conflictArray);
-            updateTree();
+            queryAllConflicts();
         }
         else if (evt.isModified())
         {
@@ -261,7 +237,7 @@ public class ConflictSelectionPresenter implements Presenter
                     conflicts.add(conflict);
                 }
             }
-            updateTree();
+            updateTree(conflicts);
         }
         else
         {
@@ -269,9 +245,13 @@ public class ConflictSelectionPresenter implements Presenter
         }
     }
 
+    protected void queryAllConflicts()  {
+        raplaFacade.getConflicts().thenAccept(conflicts->updateTree(conflicts)).exceptionally( ex -> logger.error(ex.getMessage(),ex) );
+    }
+
     private void removeConflict(Collection<Conflict> conflicts, Set<ReferenceInfo> removedReferences)
     {
-        Set<String> removedIds = new LinkedHashSet<String>();
+        Set<String> removedIds = new LinkedHashSet<>();
         for (ReferenceInfo removedReference : removedReferences)
         {
             removedIds.add(removedReference.getId());
@@ -301,7 +281,7 @@ public class ConflictSelectionPresenter implements Presenter
 
     private void showConflicts(Collection<Conflict> selectedConflicts)
     {
-        ArrayList<RaplaObject> arrayList = new ArrayList<RaplaObject>(model.getSelectedObjects());
+        ArrayList<RaplaObject> arrayList = new ArrayList<>(model.getSelectedObjects());
         for (Iterator<RaplaObject> it = arrayList.iterator(); it.hasNext(); )
         {
             RaplaObject obj = it.next();
@@ -326,7 +306,7 @@ public class ConflictSelectionPresenter implements Presenter
 
     private Collection<Conflict> getSelectedConflictsInModel()
     {
-        Set<Conflict> result = new LinkedHashSet<Conflict>();
+        Set<Conflict> result = new LinkedHashSet<>();
         for (RaplaObject obj : model.getSelectedObjects())
         {
             if (obj.getTypeClass() == Conflict.class)
@@ -340,7 +320,7 @@ public class ConflictSelectionPresenter implements Presenter
     private Collection<Conflict> getSelectedConflicts()
     {
         Collection<Object> lastSelected = view.getSelectedElements(false);
-        Set<Conflict> selectedConflicts = new LinkedHashSet<Conflict>();
+        Set<Conflict> selectedConflicts = new LinkedHashSet<>();
         for (Object selected : lastSelected)
         {
             if (selected instanceof Conflict)
@@ -351,13 +331,13 @@ public class ConflictSelectionPresenter implements Presenter
         return selectedConflicts;
     }
 
-    private void updateTree() throws RaplaException
+    private void updateTree(Collection<Conflict> newConflicts) throws RaplaException
     {
-
-        Collection<Conflict> selectedConflicts = new ArrayList<Conflict>(getSelectedConflicts());
+        this.conflicts = newConflicts;
+        Collection<Conflict> selectedConflicts = new ArrayList<>(getSelectedConflicts());
         Collection<Conflict> conflicts = getConflicts();
         view.updateTree(selectedConflicts, conflicts);
-        Collection<Conflict> inModel = new ArrayList<Conflict>(getSelectedConflictsInModel());
+        Collection<Conflict> inModel = new ArrayList<>(getSelectedConflictsInModel());
         if (!selectedConflicts.equals(inModel))
         {
             showConflicts(inModel);
@@ -376,7 +356,7 @@ public class ConflictSelectionPresenter implements Presenter
     private Collection<Conflict> getConflicts(User user)
     {
 
-        List<Conflict> result = new ArrayList<Conflict>();
+        List<Conflict> result = new ArrayList<>();
         for (Conflict conflict : conflicts)
         {
             if (conflict.isOwner(user))

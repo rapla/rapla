@@ -56,12 +56,13 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.stream.Stream;
 
 public final class ReservationImpl extends SimpleEntity implements Reservation, ModifiableTimestamp, DynamicTypeDependant, ParentEntity
 {
     private ClassificationImpl classification;
-    private List<AppointmentImpl> appointments = new ArrayList<AppointmentImpl>(1);
-    private List<PermissionImpl> permissions = new ArrayList<PermissionImpl>(1);
+    private List<AppointmentImpl> appointments = new ArrayList<>(1);
+    private List<PermissionImpl> permissions = new ArrayList<>(1);
     private Map<String,List<String>> restrictions;
     private Map<String,String> annotations;
     private Date lastChanged;
@@ -124,7 +125,7 @@ public final class ReservationImpl extends SimpleEntity implements Reservation, 
     
     public Collection<Appointment> getSortedAppointments()
     {
-        List<Appointment> sortedAppointments = new ArrayList<Appointment>( appointments);
+        List<Appointment> sortedAppointments = new ArrayList<>(appointments);
         Collections.sort(sortedAppointments, new AppointmentStartComparator() );
         return sortedAppointments;
     }
@@ -260,7 +261,12 @@ public final class ReservationImpl extends SimpleEntity implements Reservation, 
     {
     	return appointments;
     }
-    
+
+    @Override
+    public Stream<Appointment> getAppointmentStream() {
+        return (Stream)appointments.stream();
+    }
+
     @SuppressWarnings("unchecked")
 	public Collection<AppointmentImpl> getSubEntities()
     {
@@ -269,16 +275,16 @@ public final class ReservationImpl extends SimpleEntity implements Reservation, 
     
     @Override
     public Iterable<ReferenceInfo> getReferenceInfo() {
-        return new IterableChain<ReferenceInfo>
-            (
-             super.getReferenceInfo()
-             ,classification.getReferenceInfo()
-             ,new NestedIterable<ReferenceInfo,PermissionImpl>( permissions ) {
+        return new IterableChain<>
+                (
+                        super.getReferenceInfo()
+                        , classification.getReferenceInfo()
+                        , new NestedIterable<ReferenceInfo, PermissionImpl>(permissions) {
                     public Iterable<ReferenceInfo> getNestedIterable(PermissionImpl obj) {
                         return obj.getReferenceInfo();
                     }
-                 }
-             );
+                }
+                );
     }
 
     
@@ -315,7 +321,7 @@ public final class ReservationImpl extends SimpleEntity implements Reservation, 
         // Remove allocatable if its restricted to the appointment
         String appointmentId = appointment.getId();
         // we clone the list so we can safely remove a refererence it while traversing
-		Collection<String> ids = new ArrayList<String>(getIds("resources"));
+		Collection<String> ids = new ArrayList<>(getIds("resources"));
         for (String allocatableId:ids) {
         	List<String> restriction = getRestrictionPrivate(allocatableId);
 			if (restriction.size() == 1 && restriction.get(0).equals(appointmentId)) {
@@ -337,7 +343,7 @@ public final class ReservationImpl extends SimpleEntity implements Reservation, 
             if ( appointments.size()>0)
             {
                 if (list == null)
-                    list = new ArrayList<String>();
+                    list = new ArrayList<>();
                 list.add(key);
             }
         }
@@ -347,7 +353,7 @@ public final class ReservationImpl extends SimpleEntity implements Reservation, 
         
         for (String key: list) 
         {
-            ArrayList<String> newApps = new ArrayList<String>();
+            ArrayList<String> newApps = new ArrayList<>();
             for ( String appId:restrictions.get(key)) {
                 if ( !appId.equals( appointment.getId() ) ) {
                     newApps.add( appId );
@@ -393,7 +399,7 @@ public final class ReservationImpl extends SimpleEntity implements Reservation, 
     }
     
     public Collection<Allocatable> getAllocatables(String annotationType) {
-        Collection<Allocatable> allocatableList = new ArrayList<Allocatable>();
+        Collection<Allocatable> allocatableList = new ArrayList<>();
    		Collection<Allocatable> list = getList("resources", Allocatable.class);
 		for (Allocatable alloc: list)
     	{
@@ -444,7 +450,7 @@ public final class ReservationImpl extends SimpleEntity implements Reservation, 
     	List<String> appointmentIds;
     	if ( appointments != null)
     	{
-        	appointmentIds = new ArrayList<String>();
+        	appointmentIds = new ArrayList<>();
         	for ( Appointment app:appointments)
         	{
         		appointmentIds.add( app.getId());
@@ -472,7 +478,7 @@ public final class ReservationImpl extends SimpleEntity implements Reservation, 
 	private void updateIndex() {
 		if (appointmentIndex == null)
 		{
-			appointmentIndex = new HashMap<String,AppointmentImpl>();
+			appointmentIndex = new HashMap<>();
 			for (AppointmentImpl app: appointments)
 			{
 				appointmentIndex.put( app.getId(), app);
@@ -495,7 +501,7 @@ public final class ReservationImpl extends SimpleEntity implements Reservation, 
     public void setRestrictionForAppointment(Appointment appointment, Allocatable[] restrictedAllocatables) {
     	for ( Allocatable alloc: restrictedAllocatables)
         {
-            List<String> restrictions = new ArrayList<String>();
+            List<String> restrictions = new ArrayList<>();
             String allocatableId = alloc.getId();
 			if ( !hasAllocated( alloc))
             {
@@ -518,7 +524,7 @@ public final class ReservationImpl extends SimpleEntity implements Reservation, 
     public void setRestrictionForId(String id,List<String> appointmentIds) {
         if (restrictions == null)
         {
-            restrictions = new HashMap<String,List<String>>(1);
+            restrictions = new HashMap<>(1);
         }
         if (appointmentIds == null || appointmentIds.size() == 0)
         {
@@ -532,11 +538,11 @@ public final class ReservationImpl extends SimpleEntity implements Reservation, 
     
     public void addRestrictionForId(String id,String appointmentId) {
         if (restrictions == null)
-            restrictions = new HashMap<String,List<String>>(1);
+            restrictions = new HashMap<>(1);
         List<String> appointments = restrictions.get( id );
         if ( appointments == null)
         {
-        	appointments = new ArrayList<String>();
+        	appointments = new ArrayList<>();
         	restrictions.put(id , appointments);
         }
         appointments.add(appointmentId);
@@ -567,7 +573,7 @@ public final class ReservationImpl extends SimpleEntity implements Reservation, 
     }
 
     public Allocatable[] getRestrictedAllocatables(Appointment appointment) {
-        HashSet<Allocatable> set = new HashSet<Allocatable>();
+        HashSet<Allocatable> set = new HashSet<>();
         for (String allocatableId: getIds("resources")) {
             for (String restriction:getRestrictionPrivate( allocatableId ))
             {
@@ -586,13 +592,13 @@ public final class ReservationImpl extends SimpleEntity implements Reservation, 
 
     public Collection<ReferenceInfo<Allocatable>> getAllocatableIdsFor(Appointment appointment)
     {
-        HashSet<ReferenceInfo<Allocatable>> set = new HashSet<ReferenceInfo<Allocatable>>();
+        HashSet<ReferenceInfo<Allocatable>> set = new HashSet<>();
         Collection<String> list = getIds("resources");
         String id = appointment.getId();
         for (String allocatableId:list) {
             boolean found = false;
             List<String> restriction = getRestrictionPrivate( allocatableId );
-            if ( restriction.size() == 0)
+            if ( restriction.isEmpty())
             {
                 found = true;
             }
@@ -606,25 +612,31 @@ public final class ReservationImpl extends SimpleEntity implements Reservation, 
             }
             if (found )
             {
-                set.add( new ReferenceInfo<Allocatable>(allocatableId, Allocatable.class));
+                set.add(new ReferenceInfo<>(allocatableId, Allocatable.class));
             }
         }
         return set;
     }
 
-    public Allocatable[] getAllocatablesFor(Appointment appointment) {
-        final Collection<ReferenceInfo<Allocatable>> allocatableIds = getAllocatableIdsFor(appointment);
-        HashSet<Allocatable> set = new HashSet<Allocatable>();
-        for(ReferenceInfo<Allocatable> id : allocatableIds)
+    public Stream<Allocatable> getAllocatablesFor(Appointment appointment) {
+        Collection<String> list = getIds("resources");
+        String appointmentId = appointment.getId();
+        final Stream<Allocatable> allocatableStream = list.stream().filter((allocId) -> {
+            List<String> restrictions = getRestrictionPrivate(allocId);
+            return restrictions.isEmpty() || restrictions.contains(appointmentId);
+        }).map(allocId -> resolve(allocId, Allocatable.class));
+        return allocatableStream;
+    }
+
+    private <T extends Entity> T resolve( String id, Class<T> tClass)
+    {
+        final EntityResolver resolver = getResolver();
+        final T alloc = resolver.tryResolve(id,tClass);
+        if ( alloc == null)
         {
-            final Allocatable alloc = getResolver().tryResolve(id);
-            if ( alloc == null)
-            {
-                throw new UnresolvableReferenceExcpetion( Allocatable.class.getName() + ":" + id, toString());
-            }
-            set.add( alloc);
+            throw new UnresolvableReferenceExcpetion( tClass.getName() + ":" + id, toString());
         }
-        return  set.toArray( Allocatable.ALLOCATABLE_ARRAY);
+        return alloc;
     }
 
     public Appointment findAppointment(Appointment copy) {
@@ -657,12 +669,12 @@ public final class ReservationImpl extends SimpleEntity implements Reservation, 
         	{
         		if ( clone.restrictions == null)
         		{
-        			clone.restrictions = new LinkedHashMap<String,List<String>>();
+        			clone.restrictions = new LinkedHashMap<>();
         		}
         		List<String> list = restrictions.get( resourceId);
 	        	if ( list != null)
 	        	{
-	        		clone.restrictions.put( resourceId, new ArrayList<String>(list));
+	        		clone.restrictions.put( resourceId, new ArrayList<>(list));
 	        	}
         	}
         }
@@ -727,7 +739,7 @@ public final class ReservationImpl extends SimpleEntity implements Reservation, 
         checkWritable();
         if ( annotations == null)
         {
-        	annotations = new LinkedHashMap<String, String>(1);
+        	annotations = new LinkedHashMap<>(1);
         }
         if (annotation == null) {
             annotations.remove(key);
@@ -786,8 +798,7 @@ public final class ReservationImpl extends SimpleEntity implements Reservation, 
         if(restrictions != null && restrictions.containsKey(origId.getId()))
         {
             final List<String> restrictionsOfRemoved = restrictions.remove(origId.getId());
-            final ArrayList<String> allRestrinctions = new ArrayList<String>();
-            allRestrinctions.addAll(restrictionsOfRemoved);
+            final ArrayList<String> allRestrinctions = new ArrayList<>(restrictionsOfRemoved);
             if(restrictions.containsKey(newId.getId()))
             {
                 final List<String> restrictionsOfNew = restrictions.get(newId.getId());

@@ -42,7 +42,7 @@ public class ButtonGroupComponent extends ButtonGroup
         }
     }
 
-    private List<RadioButton> buttons = new ArrayList<RadioButton>();
+    private List<RadioButton> buttons = new ArrayList<>();
 
     public ButtonGroupComponent(ButtonGroupEntry[] entries, String groupId, final ButtonGroupSelectionChangeListener listener)
     {
@@ -55,19 +55,14 @@ public class ButtonGroupComponent extends ButtonGroup
             buttons.add(button);
             add(button);
         }
-        addDomHandler(new ClickHandler()
-        {
-            @Override
-            public void onClick(ClickEvent event)
+        addDomHandler(event -> {
+            Element target = DOM.eventGetTarget((Event) event.getNativeEvent());
+            for (RadioButton button : buttons)
             {
-                Element target = DOM.eventGetTarget((Event) event.getNativeEvent());
-                for (RadioButton button : buttons)
+                if (button.getElement() == target)
                 {
-                    if (button.getElement() == target)
-                    {
-                        String id = button.getId();
-                        listener.selectionChanged(id);
-                    }
+                    String id = button.getId();
+                    listener.selectionChanged(id);
                 }
             }
         }, ClickEvent.getType());

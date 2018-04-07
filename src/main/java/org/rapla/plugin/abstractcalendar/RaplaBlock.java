@@ -16,7 +16,7 @@ package org.rapla.plugin.abstractcalendar;
 import jsinterop.annotations.JsType;
 import org.rapla.components.calendarview.Block;
 import org.rapla.components.util.DateTools;
-import org.rapla.components.xmlbundle.I18nBundle;
+import org.rapla.components.i18n.I18nBundle;
 import org.rapla.entities.Named;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.Appointment;
@@ -127,9 +127,9 @@ public class RaplaBlock implements Block
         ;
     }
 
-    protected String[] getColorsAsHex() {
+    public String[] getColorsAsHex() {
         BuildContext buildContext = getBuildContext();
-    	LinkedHashSet<String> colorList = new LinkedHashSet<String>();
+    	LinkedHashSet<String> colorList = new LinkedHashSet<>();
         if ( buildContext.isEventColoringEnabled())
         {
         	Reservation reservation = getReservation();
@@ -162,18 +162,16 @@ public class RaplaBlock implements Block
         return colorList.toArray(new String[] {});
     }
 
-    protected String getTimeString(boolean small) {
+    public String getTimeString(boolean small) {
         RaplaLocale loc = getBuildContext().getRaplaLocale();
         String timeString = null;
         if ( getBuildContext().isTimeVisible()) {
             timeString = "";
-            // Don't show startTime if its 00:00
-            /* TODO nicht sinnvoll auch 0:00 als Start und Endzeit anzuzeigen?*/
-            if ( !DateTools.isMidnight(getStart()) ) {
+            if ( !getContext().isSplitStart() ) {
                 timeString = loc.formatTime( getStart() );
             }
-            if ( !small && !DateTools.isMidnight(getEnd().getTime() + 1))  {
-				timeString = timeString + timeStringSeperator;
+            timeString = timeString + timeStringSeperator;
+            if ( !small && !getContext().isSplitEnd())  {
                 timeString = timeString + loc.formatTime( getEnd());
            }
         }

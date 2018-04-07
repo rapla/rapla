@@ -9,7 +9,7 @@ import java.util.HashMap;
 
 public class RaplaDefaultXMLContext implements RaplaXMLContext
 {
-    private final HashMap<String,Object> contextObjects = new HashMap<String,Object>();
+    private final HashMap<String,Object> contextObjects = new HashMap<>();
     protected final RaplaXMLContext parent;
 
     public RaplaDefaultXMLContext()

@@ -12,11 +12,13 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.components.calendarview;
 
+import jsinterop.annotations.JsType;
 import org.rapla.entities.domain.AppointmentBlock;
 
 import java.util.Collection;
 import java.util.Date;
 
+@JsType
 public interface Builder {
    /** Calculate the blocks that should be displayed in the weekview.
     * This method should not be called manually.
@@ -27,7 +29,8 @@ public interface Builder {
     */
     PreperationResult prepareBuild(Date start, Date end);
    
-    
+
+    @JsType
     class PreperationResult
     {
         final int minMinutes;
@@ -63,7 +66,7 @@ public interface Builder {
     /** Build the calculated blocks into the weekview. This method should not be called manually.
      * It is called by the CalendarView during the build process.
      * @see #prepareBuild */
-    void build(CalendarView cv, Collection<AppointmentBlock> blocks);
+    void build(BlockContainer blockContainer,Date startDate,Collection<AppointmentBlock> blocks);
     
 }
 

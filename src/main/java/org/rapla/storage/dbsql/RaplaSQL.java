@@ -97,10 +97,12 @@ import java.util.Map.Entry;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.TreeSet;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 class RaplaSQL
 {
-    private final List<RaplaTypeStorage> stores = new ArrayList<RaplaTypeStorage>();
+    private final List<RaplaTypeStorage> stores = new ArrayList<>();
     private final Logger logger;
     private final HistoryStorage history;
     RaplaXMLContext context;
@@ -137,7 +139,7 @@ class RaplaSQL
 
     public Map<String, String> getIdColumns()
     {
-        Map<String, String> idColumns = new LinkedHashMap<String, String>();
+        Map<String, String> idColumns = new LinkedHashMap<>();
         for (TableStorage storage : getStoresWithChildren())
         {
             String tableName = storage.getTableName();
@@ -152,7 +154,7 @@ class RaplaSQL
 
     private List<Storage<?>> getStoresWithChildren()
     {
-        List<Storage<?>> storages = new ArrayList<Storage<?>>();
+        List<Storage<?>> storages = new ArrayList<>();
         for (RaplaTypeStorage store : stores)
         {
             storages.add(store);
@@ -194,7 +196,7 @@ class RaplaSQL
         Date connectionTimestamp = getDatabaseTimestamp(con);
         final Collection<TableStorage> storeIt = (Collection) stores;
         final Collection<TableStorage> lockStorages = (Collection) Collections.singletonList(lockStorage);
-        for (TableStorage storage : new IterableChain<TableStorage>(storeIt, lockStorages))
+        for (TableStorage storage : new IterableChain<>(storeIt, lockStorages))
         {
             storage.setConnection(con, connectionTimestamp);
             try
@@ -240,7 +242,7 @@ class RaplaSQL
                 storage.setConnection(con, connectionTimestamp);
                 try
                 {
-                    List<ReferenceInfo> list = new ArrayList<ReferenceInfo>();
+                    List<ReferenceInfo> list = new ArrayList<>();
                     list.add(referenceInfo);
                     storage.deleteEntities(list);
                     couldDelete = true;
@@ -261,7 +263,7 @@ class RaplaSQL
     synchronized public void store(Connection con, Collection<Entity> entities, Date connectionTimestamp) throws SQLException, RaplaException
     {
 
-        Map<Storage, List<Entity>> store = new LinkedHashMap<Storage, List<Entity>>();
+        Map<Storage, List<Entity>> store = new LinkedHashMap<>();
         for (Entity entity : entities)
         {
             if (Attribute.class == entity.getTypeClass())
@@ -274,7 +276,7 @@ class RaplaSQL
                     List<Entity> list = store.get(storage);
                     if (list == null)
                     {
-                        list = new ArrayList<Entity>();
+                        list = new ArrayList<>();
                         store.put(storage, list);
                     }
                     list.add(entity);
@@ -985,34 +987,24 @@ abstract class RaplaTypeStorage<T extends Entity<T>> extends EntityStorage<T>
 
 class CategoryStorage extends RaplaTypeStorage<Category>
 {
-    Map<Category, Integer> orderMap = new HashMap<Category, Integer>();
+    Map<Category, Integer> orderMap = new HashMap<>();
     KeyAndPathResolver keyAndPathResolver;
-    Map<Category, ReferenceInfo<Category>> categoriesWithoutParent = new TreeMap<Category, ReferenceInfo<Category>>(new Comparator<Category>()
-    {
-        public int compare(Category o1, Category o2)
-        {
-            if (o1.equals(o2))
-            {
-                return 0;
-            }
-            int ordering1 = (orderMap.get(o1)).intValue();
-            int ordering2 = (orderMap.get(o2)).intValue();
-            if (ordering1 < ordering2)
-            {
-                return -1;
-            }
-            if (ordering1 > ordering2)
-            {
-                return 1;
-            }
-            if (o1.hashCode() > o2.hashCode())
-            {
-                return -1;
-            }
-            else
-            {
-                return 1;
-            }
+    Map<Category, ReferenceInfo<Category>> categoriesWithoutParent = new TreeMap<>((o1, o2) -> {
+        if (o1.equals(o2)) {
+            return 0;
+        }
+        int ordering1 = (orderMap.get(o1)).intValue();
+        int ordering2 = (orderMap.get(o2)).intValue();
+        if (ordering1 < ordering2) {
+            return -1;
+        }
+        if (ordering1 > ordering2) {
+            return 1;
+        }
+        if (o1.hashCode() > o2.hashCode()) {
+            return -1;
+        } else {
+            return 1;
         }
     });
 
@@ -1179,8 +1171,8 @@ class CategoryStorage extends RaplaTypeStorage<Category>
 
 class AllocatableStorage extends RaplaTypeStorage<Allocatable>
 {
-    Map<ReferenceInfo<? extends Entity>, Classification> classificationMap = new HashMap<ReferenceInfo<? extends Entity>, Classification>();
-    Map<ReferenceInfo<? extends Entity>, Allocatable> allocatableMap = new HashMap<ReferenceInfo<? extends Entity>, Allocatable>();
+    Map<ReferenceInfo<? extends Entity>, Classification> classificationMap = new HashMap<>();
+    Map<ReferenceInfo<? extends Entity>, Allocatable> allocatableMap = new HashMap<>();
     AttributeValueStorage<Allocatable> resourceAttributeStorage;
     PermissionStorage<Allocatable> permissionStorage;
 
@@ -1189,9 +1181,9 @@ class AllocatableStorage extends RaplaTypeStorage<Allocatable>
         super(context, Allocatable.class, "RAPLA_RESOURCE",
                 new String[] { "ID VARCHAR(255) NOT NULL PRIMARY KEY", "TYPE_KEY VARCHAR(255) NOT NULL", "OWNER_ID VARCHAR(255)", "CREATION_TIME TIMESTAMP",
                         "LAST_CHANGED TIMESTAMP KEY", "LAST_CHANGED_BY VARCHAR(255) DEFAULT NULL" });
-        resourceAttributeStorage = new AttributeValueStorage<Allocatable>(context, "RESOURCE_ATTRIBUTE_VALUE", "RESOURCE_ID", classificationMap,
+        resourceAttributeStorage = new AttributeValueStorage<>(context, "RESOURCE_ATTRIBUTE_VALUE", "RESOURCE_ID", classificationMap,
                 allocatableMap);
-        permissionStorage = new PermissionStorage<Allocatable>(context, "RESOURCE", allocatableMap, Allocatable.class);
+        permissionStorage = new PermissionStorage<>(context, "RESOURCE", allocatableMap, Allocatable.class);
         addSubStorage(resourceAttributeStorage);
         addSubStorage(permissionStorage);
     }
@@ -1268,8 +1260,8 @@ class AllocatableStorage extends RaplaTypeStorage<Allocatable>
 
 class ReservationStorage extends RaplaTypeStorage<Reservation>
 {
-    Map<ReferenceInfo<? extends Entity>, Classification> classificationMap = new HashMap<ReferenceInfo<? extends Entity>, Classification>();
-    Map<ReferenceInfo<? extends Entity>, Reservation> reservationMap = new HashMap<ReferenceInfo<? extends Entity>, Reservation>();
+    Map<ReferenceInfo<? extends Entity>, Classification> classificationMap = new HashMap<>();
+    Map<ReferenceInfo<? extends Entity>, Reservation> reservationMap = new HashMap<>();
     AttributeValueStorage<Reservation> attributeValueStorage;
     // appointmentstorage is not a sub store but a delegate
     AppointmentStorage appointmentStorage;
@@ -1280,9 +1272,9 @@ class ReservationStorage extends RaplaTypeStorage<Reservation>
         super(context, Reservation.class, "EVENT",
                 new String[] { "ID VARCHAR(255) NOT NULL PRIMARY KEY", "TYPE_KEY VARCHAR(255) NOT NULL", "OWNER_ID VARCHAR(255) NOT NULL",
                         "CREATION_TIME TIMESTAMP", "LAST_CHANGED TIMESTAMP KEY", "LAST_CHANGED_BY VARCHAR(255) DEFAULT NULL" });
-        attributeValueStorage = new AttributeValueStorage<Reservation>(context, "EVENT_ATTRIBUTE_VALUE", "EVENT_ID", classificationMap, reservationMap);
+        attributeValueStorage = new AttributeValueStorage<>(context, "EVENT_ATTRIBUTE_VALUE", "EVENT_ID", classificationMap, reservationMap);
         addSubStorage(attributeValueStorage);
-        permissionStorage = new PermissionStorage<Reservation>(context, "EVENT", reservationMap, Reservation.class);
+        permissionStorage = new PermissionStorage<>(context, "EVENT", reservationMap, Reservation.class);
         addSubStorage(permissionStorage);
     }
 
@@ -1308,7 +1300,7 @@ class ReservationStorage extends RaplaTypeStorage<Reservation>
     public void save(Iterable<Reservation> entities) throws RaplaException, SQLException
     {
         super.save(entities);
-        Collection<Appointment> appointments = new ArrayList<Appointment>();
+        Collection<Appointment> appointments = new ArrayList<>();
         for (Reservation r : entities)
         {
             appointments.addAll(Arrays.asList(r.getAppointments()));
@@ -1472,7 +1464,7 @@ class AttributeValueStorage<T extends Entity<T>> extends EntityStorage<T> implem
     @Override
     protected void load(ResultSet rset) throws SQLException, RaplaException
     {
-        Class<? extends Entity> idClass = foreignKeyName.indexOf("RESOURCE") >= 0 ? Allocatable.class : Reservation.class;
+        Class<? extends Entity> idClass = foreignKeyName.contains("RESOURCE") ? Allocatable.class : Reservation.class;
         ReferenceInfo<?> classifiableId = readId(rset, 1, idClass);
         String attributekey = rset.getString(2);
         boolean annotationPrefix = attributekey.startsWith(ANNOTATION_PREFIX);
@@ -1640,7 +1632,7 @@ class AppointmentStorage extends RaplaTypeStorage<Appointment>
     void deleteAppointments(Collection<String> reservationIds) throws SQLException, RaplaException
     {
         // look for all appointment ids, as the sub storages must be deleted with appointment id
-        final Set<String> ids = new HashSet<String>();
+        final Set<String> ids = new HashSet<>();
         final String sql = "SELECT ID FROM APPOINTMENT WHERE EVENT_ID=?";
         for (String eventId : reservationIds)
         {
@@ -1670,7 +1662,7 @@ class AppointmentStorage extends RaplaTypeStorage<Appointment>
     void insertAll() throws SQLException, RaplaException
     {
         Collection<Reservation> reservations = cache.getReservations();
-        Collection<Appointment> appointments = new LinkedHashSet<Appointment>();
+        Collection<Appointment> appointments = new LinkedHashSet<>();
         for (Reservation r : reservations)
         {
             appointments.addAll(Arrays.asList(r.getAppointments()));
@@ -1751,7 +1743,7 @@ class AppointmentStorage extends RaplaTypeStorage<Appointment>
                     Set<Integer> weekdays;
 
                     String[] weekdayStrings = repeatingTypeAsString.substring(prefix.length()).split(",");
-                    weekdays = new TreeSet<Integer>();
+                    weekdays = new TreeSet<>();
                     for (String weekday : weekdayStrings)
                     {
                         try
@@ -1825,7 +1817,8 @@ class AllocationStorage extends EntityStorage<Appointment> implements SubStorage
     {
         Reservation event = appointment.getReservation();
         int count = 0;
-        for (Allocatable allocatable : event.getAllocatablesFor(appointment))
+        final List<Allocatable> allocatablesFor = event.getAllocatablesFor(appointment).collect(Collectors.toList());
+        for (Allocatable allocatable : allocatablesFor)
         {
             setId(stmt, 1, appointment);
             setId(stmt, 2, allocatable);
@@ -1960,7 +1953,7 @@ class DynamicTypeStorage extends RaplaTypeStorage<DynamicType>
     @Override
     void insertAll() throws SQLException, RaplaException
     {
-        Collection<DynamicType> dynamicTypes = new ArrayList<DynamicType>(cache.getDynamicTypes());
+        Collection<DynamicType> dynamicTypes = new ArrayList<>(cache.getDynamicTypes());
         Iterator<DynamicType> it = dynamicTypes.iterator();
         while (it.hasNext())
         {
@@ -2006,8 +1999,8 @@ class PreferenceStorage extends RaplaTypeStorage<Preferences>
 
     public List<PreferencePatch> getPatches(Date lastUpdated) throws SQLException, RaplaException
     {
-        Map<String, PreferencePatch> userIdToPatch = new HashMap<String, PreferencePatch>();
-        final ArrayList<PreferencePatch> patches = new ArrayList<PreferencePatch>();
+        Map<String, PreferencePatch> userIdToPatch = new HashMap<>();
+        final ArrayList<PreferencePatch> patches = new ArrayList<>();
         try (final PreparedStatement stmt = con.prepareStatement(updateSql))
         {
             stmt.setTimestamp(1, new java.sql.Timestamp(lastUpdated.getTime()));
@@ -2156,7 +2149,7 @@ class PreferenceStorage extends RaplaTypeStorage<Preferences>
     @Override
     void insertAll() throws SQLException, RaplaException
     {
-        List<Preferences> preferences = new ArrayList<Preferences>();
+        List<Preferences> preferences = new ArrayList<>();
         {
             PreferencesImpl systemPrefs = cache.getPreferencesForUserId(null);
             if (systemPrefs != null)
@@ -2631,7 +2624,7 @@ class HistoryStorage<T extends Entity<T>> extends RaplaTypeStorage<T>
     @Override
     void insertAll() throws SQLException, RaplaException
     {
-        final Collection<Entity> entites = new LinkedList<Entity>();
+        final Collection<Entity> entites = new LinkedList<>();
         entites.addAll(cache.getAllocatables());
         entites.addAll(cache.getDynamicTypes());
         entites.addAll(cache.getReservations());
@@ -2674,7 +2667,7 @@ class HistoryStorage<T extends Entity<T>> extends RaplaTypeStorage<T>
 
     protected Collection<T> getResolvableEntities(Iterable<ReferenceInfo<T>> referenceInfos)
     {
-        Collection<T> resolvedEntities = new LinkedList<T>();
+        Collection<T> resolvedEntities = new LinkedList<>();
         for (ReferenceInfo<T> ref : referenceInfos)
         {
             T entity = cache.tryResolve(ref);
@@ -2684,7 +2677,7 @@ class HistoryStorage<T extends Entity<T>> extends RaplaTypeStorage<T>
             }
             else
             {
-                getLogger().error("can't create resolve event for remove entity with id " + ref);
+                getLogger().error("can't createInfoDialog resolve event for remove entity with id " + ref);
             }
         }
         return resolvedEntities;
@@ -2751,7 +2744,7 @@ class HistoryStorage<T extends Entity<T>> extends RaplaTypeStorage<T>
             {
                 return Collections.emptyList();
             }
-            Collection<ReferenceInfo> ids = new HashSet<ReferenceInfo>();
+            Collection<ReferenceInfo> ids = new HashSet<>();
             while (result.next())
             {
                 load(result);
@@ -2769,7 +2762,7 @@ class HistoryStorage<T extends Entity<T>> extends RaplaTypeStorage<T>
     {
         try (Statement stmt = con.createStatement(); ResultSet rset = stmt.executeQuery(selectSql))
         {
-            final HashSet<String> finishedIdsToLoad = new HashSet<String>();
+            final HashSet<String> finishedIdsToLoad = new HashSet<>();
             while (rset.next())
             {
                 final String id = rset.getString(1);

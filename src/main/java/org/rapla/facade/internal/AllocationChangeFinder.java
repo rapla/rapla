@@ -40,7 +40,7 @@ import java.util.Set;
 /** Converts updateResults into AllocationChangeEvents */
 public class AllocationChangeFinder 
 {
-    ArrayList<AllocationChangeEvent> changeList = new ArrayList<AllocationChangeEvent>();
+    ArrayList<AllocationChangeEvent> changeList = new ArrayList<>();
     Logger logger;
     private final EntityResolver resolver;
 
@@ -118,10 +118,10 @@ public class AllocationChangeFinder
     
     private List<Allocatable> getAllocatablesUsingIds(Reservation reservation)
     {
-        final ArrayList<Allocatable> result = new ArrayList<Allocatable>();
+        final ArrayList<Allocatable> result = new ArrayList<>();
         ReservationImpl resImpl = ((ReservationImpl)reservation);
         final Appointment[] appointments = resImpl.getAppointments();
-        Collection<ReferenceInfo<Allocatable>> allocatableIds = new HashSet<ReferenceInfo<Allocatable>>();
+        Collection<ReferenceInfo<Allocatable>> allocatableIds = new HashSet<>();
         for (Appointment appointment : appointments)
         {
             final Collection<ReferenceInfo<Allocatable>> allocatableIdsFor = resImpl.getAllocatableIdsFor(appointment);
@@ -164,17 +164,17 @@ public class AllocationChangeFinder
             List<Appointment> app1 = Arrays.asList(oldRes.getAppointments());
             List<Appointment> app2 = Arrays.asList(newRes.getAppointments());
 
-            ArrayList<Allocatable> removeList = new ArrayList<Allocatable>(alloc1);
+            ArrayList<Allocatable> removeList = new ArrayList<>(alloc1);
             removeList.removeAll(alloc2);
             // add removed allocations to the change list
             addAppointmentRemove(user, oldRes,newRes, removeList, app1);
 
-            ArrayList<Allocatable> addList = new ArrayList<Allocatable>(alloc2);
+            ArrayList<Allocatable> addList = new ArrayList<>(alloc2);
             addList.removeAll(alloc1);
             // add new allocations to the change list
             addAppointmentAdd(user, newRes, addList, app2);
 
-            ArrayList<Allocatable> changeList = new ArrayList<Allocatable>(alloc2);
+            ArrayList<Allocatable> changeList = new ArrayList<>(alloc2);
             changeList.retainAll(alloc1);
             addAllocationDiff(user, changeList,oldRes,newRes);
         }
@@ -195,10 +195,10 @@ public class AllocationChangeFinder
     private void addAllocationDiff(User user,List<Allocatable> allocatableList,Reservation oldRes,Reservation newRes) {
         List<Appointment> app1 = Arrays.asList(oldRes.getAppointments());
         List<Appointment> app2 = Arrays.asList(newRes.getAppointments());
-        ArrayList<Appointment> removeList = new ArrayList<Appointment>(app1);
+        ArrayList<Appointment> removeList = new ArrayList<>(app1);
         removeList.removeAll(app2);
         addAppointmentRemove(user, oldRes,newRes,allocatableList,removeList);
-        ArrayList<Appointment> addList = new ArrayList<Appointment>(app2);
+        ArrayList<Appointment> addList = new ArrayList<>(app2);
         addList.removeAll(app1);
         addAppointmentAdd(user, newRes,allocatableList,addList);
         /*
@@ -207,10 +207,10 @@ public class AllocationChangeFinder
         System.out.println("NEW appointments");
         printList(app2);
         */
-        Set<Appointment> newList = new HashSet<Appointment>(app2);
+        Set<Appointment> newList = new HashSet<>(app2);
         newList.retainAll(app1);
 
-        ArrayList<Appointment> oldList = new ArrayList<Appointment>(app1);
+        ArrayList<Appointment> oldList = new ArrayList<>(app1);
         oldList.retainAll(app2);
         sort(oldList);
         

@@ -68,7 +68,7 @@ public class HTMLWeekViewPage extends AbstractHTMLCalendarPage
 		Set<Integer> excludeDays = opt.getExcludeDays();
         if ( days <3)
 		{
-			excludeDays = new HashSet<Integer>();
+			excludeDays = new HashSet<>();
 		}
         weekView.setExcludeDays( excludeDays );
        

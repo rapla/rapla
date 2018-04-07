@@ -6,8 +6,8 @@ import java.util.Map;
 
 public class ParsedTemplateResult {
 
-    List<String> header = new ArrayList<String>();
-    List<Map<String, String>> templateList = new ArrayList<Map<String,String>>();
+    List<String> header = new ArrayList<>();
+    List<Map<String, String>> templateList = new ArrayList<>();
     
     public List<String> getHeader() {
         return header;

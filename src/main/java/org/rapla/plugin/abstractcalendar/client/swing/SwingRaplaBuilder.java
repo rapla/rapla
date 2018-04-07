@@ -4,7 +4,7 @@
  |                                                                          |
  | This program is free software; you can redistribute it and/or modify     |
  | it under the terms of the GNU General Public License as published by the |
- | Free Software Foundation. A copy of the license has been included with   |
+ | Free Software Foundation. A copyReservations of the license has been included with   |
  | these distribution in the COPYING file, if not go to www.fsf.org         |
  |                                                                          |
  | As a special exception, you are granted the permissions to link this     |
@@ -15,30 +15,18 @@
 package org.rapla.plugin.abstractcalendar.client.swing;
 
 import org.rapla.RaplaResources;
-import org.rapla.client.swing.images.RaplaImages;
-import org.rapla.components.calendarview.Block;
 import org.rapla.entities.domain.AppointmentFormater;
 import org.rapla.facade.RaplaFacade;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.logger.Logger;
 import org.rapla.plugin.abstractcalendar.RaplaBuilder;
 
-import java.util.Date;
-
 public class SwingRaplaBuilder extends RaplaBuilder
 {
-    RaplaImages images;
-    
-    public SwingRaplaBuilder(RaplaFacade raplaFacade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, AppointmentFormater appointmentFormater, RaplaImages raplaImages)
+    public SwingRaplaBuilder(RaplaFacade raplaFacade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, AppointmentFormater appointmentFormater)
     {
         super(raplaLocale, raplaFacade, i18n, logger, appointmentFormater);
-        this.images= raplaImages;
+        this.setBlockCreator(( blockContext, start, end)->new SwingRaplaBlock( blockContext, start, end));
     }
 
-    protected Block createBlock(RaplaBlockContext blockContext, Date start, Date end) {
-        SwingRaplaBlock block = new SwingRaplaBlock( blockContext, start, end);
-        block.setImages( images);
-
-        return block;
-    }
 }

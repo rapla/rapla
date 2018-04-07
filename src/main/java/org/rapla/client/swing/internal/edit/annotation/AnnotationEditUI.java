@@ -20,7 +20,7 @@ import java.util.Set;
 public class AnnotationEditUI extends AbstractEditUI<Annotatable>
 {
     Set<? extends AnnotationEdit> annotationExtensions;
-    Map<AnnotationEdit,Collection<? extends EditField>> fieldMap = new HashMap<AnnotationEdit,Collection<? extends EditField>>();
+    Map<AnnotationEdit,Collection<? extends EditField>> fieldMap = new HashMap<>();
     
     public AnnotationEditUI(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, Set<? extends AnnotationEdit> annotationExtensions) {
         super(facade, i18n, raplaLocale, logger);
@@ -34,7 +34,7 @@ public class AnnotationEditUI extends AbstractEditUI<Annotatable>
     @Override
     protected void mapFromObjects() throws RaplaException
     {
-        List<EditField> fields = new ArrayList<EditField>();
+        List<EditField> fields = new ArrayList<>();
         Annotatable annotatable = objectList.get(0);
         for (AnnotationEdit annot : annotationExtensions)
         {

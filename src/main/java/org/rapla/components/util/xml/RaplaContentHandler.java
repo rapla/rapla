@@ -59,7 +59,7 @@ public class RaplaContentHandler extends DefaultHandler
 				}
 				else
 				{
-					attributeMap = new LinkedHashMap<String, String>();
+					attributeMap = new LinkedHashMap<>();
 					for ( int i=0;i<length;i++)
 					{
 					    String key = atts.getLocalName( i);

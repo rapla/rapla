@@ -12,10 +12,10 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.plugin.archiver.client.swing;
 
+import org.rapla.client.PopupContext;
 import org.rapla.client.dialog.DialogInterface;
 import org.rapla.client.dialog.DialogUiFactoryInterface;
 import org.rapla.client.extensionpoints.PluginOptionPanel;
-import org.rapla.client.swing.internal.SwingPopupContext;
 import org.rapla.client.swing.toolkit.RaplaButton;
 import org.rapla.components.calendar.RaplaNumber;
 import org.rapla.components.layout.TableLayout;
@@ -27,6 +27,10 @@ import org.rapla.framework.RaplaException;
 import org.rapla.inject.Extension;
 import org.rapla.logger.Logger;
 import org.rapla.plugin.archiver.ArchiverService;
+import org.rapla.scheduler.CommandScheduler;
+import org.rapla.scheduler.Promise;
+import org.rapla.scheduler.ResolvedPromise;
+import org.rapla.scheduler.Subject;
 import org.rapla.storage.dbrm.RestartServer;
 
 import javax.inject.Inject;
@@ -52,14 +56,16 @@ public class ArchiverOption  implements PluginOptionPanel,ActionListener  {
     Preferences preferences;
     Logger logger;
     RestartServer restartServer;
+    Subject<String> busyIdleObservable;
     private final DialogUiFactoryInterface dialogUiFactory;
 
     @Inject
-    public ArchiverOption( Logger logger,ArchiverService archiver, RestartServer restartServer, DialogUiFactoryInterface dialogUiFactory){
+    public ArchiverOption( Logger logger,ArchiverService archiver, RestartServer restartServer, DialogUiFactoryInterface dialogUiFactory, CommandScheduler scheduler){
         this.archiver = archiver;
         this.logger = logger;
         this.restartServer = restartServer;
         this.dialogUiFactory = dialogUiFactory;
+        this.busyIdleObservable = scheduler.createPublisher();
     }
 
 
@@ -81,7 +87,7 @@ public class ArchiverOption  implements PluginOptionPanel,ActionListener  {
         preferences.putEntry( ArchiverService.CONFIG, newConfig);
     }
 
-    @Override public void show() throws RaplaException
+    @Override public void show()
     {
         createPanel();
         RaplaConfiguration config = preferences.getEntry(ArchiverService.CONFIG, new RaplaConfiguration());
@@ -89,7 +95,7 @@ public class ArchiverOption  implements PluginOptionPanel,ActionListener  {
     }
 
 
-    protected void createPanel() throws RaplaException {
+    protected void createPanel()  {
         content = new JPanel();
         double[][] sizes = new double[][] {
             {5,TableLayout.PREFERRED, 5,TableLayout.PREFERRED,5, TableLayout.PREFERRED}
@@ -186,49 +192,47 @@ public class ArchiverOption  implements PluginOptionPanel,ActionListener  {
     }
 
 	public void actionPerformed(ActionEvent e) {
-		try
-		{
-			Object source = e.getSource();
-			if ( source == exportToDataXML || source == removeOlderYesNo)
-			{
-				updateEnabled();
-			}
-			else 
-			{
-				if ( source == deleteNow)
-				{
-					Number days =  dayField.getNumber();
-					if ( days != null)
-					{
-						archiver.delete(new Integer(days.intValue()));
-					}
-				}
-				else if (source == backupButton)
-				{
-					archiver.backupNow();
-				}
-				else if (source == restoreButton)
-				{
-					boolean modal = true;
-					DialogInterface dialog = dialogUiFactory.create(new SwingPopupContext(content, null),modal,"Warning", "The current data will be overwriten by the backup version. Do you want to proceed?", new String[]{"restore data","abort"});
-					dialog.setDefault( 1);
-					dialog.start(true);
-					
-					if (dialog.getSelectedIndex() == 0)
-					{
-						archiver.restore();
-						restartServer.restartServer();
-					}
-				}
-			}
-		}
-		catch (RaplaException ex)
-		{
-//             gui.getMainComponent()
-		    dialogUiFactory.showException(ex, null);
-		}
+        Object source = e.getSource();
+        final PopupContext popupContext = dialogUiFactory.createPopupContext(() -> content);
+        if ( source == exportToDataXML || source == removeOlderYesNo)
+        {
+            updateEnabled();
+        }
+        else
+        {
+            final Promise<Void> result;
+            content.setEnabled( false);
+            if ( source == deleteNow)
+            {
+                Number days =  dayField.getNumber();
+                if ( days != null)
+                {
+                    result = archiver.delete(new Integer(days.intValue()));
+                }
+                else
+                {
+                    result =ResolvedPromise.VOID_PROMISE;
+                }
+            }
+            else if (source == backupButton)
+            {
+                result = archiver.backupNow();
+            }
+            else if (source == restoreButton)
+            {
+                DialogInterface dialog = dialogUiFactory.createTextDialog(popupContext, "Warning", "The current data will be overwriten by the backup version. Do you want to proceed?", new String[]{"restore data","abort"});
+                dialog.setDefault( 1);
+                result = dialog.start(true).thenCompose((index) -> (index == null) ?
+                        archiver.restore().thenCompose((dummy) -> restartServer.restartServer()) :
+                        ResolvedPromise.VOID_PROMISE);
+            }
+            else
+            {
+                throw new IllegalStateException("Unknown button " + source);
+            }
+            result.exceptionally((ex) -> dialogUiFactory.showException(ex, popupContext))
+                    .finally_(()->content.setEnabled( true));
+        }
 	}
-
-
 
 }

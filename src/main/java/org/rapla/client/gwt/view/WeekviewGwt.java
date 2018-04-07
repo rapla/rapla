@@ -36,7 +36,7 @@ import com.google.gwt.user.client.ui.PopupPanel;
 import com.google.gwt.user.client.ui.Widget;
 import org.gwtbootstrap3.client.ui.html.Div;
 import org.rapla.client.PopupContext;
-import org.rapla.client.menu.gwt.ContextCreator;
+import org.rapla.client.menu.sandbox.gwt.ContextCreator;
 import org.rapla.components.calendarview.Block;
 import org.rapla.logger.Logger;
 import org.rapla.plugin.abstractcalendar.HTMLRaplaBlock;
@@ -68,11 +68,11 @@ public class WeekviewGwt extends FlexTable
     }
 
     private static final String BACKGROUND_COLOR_TARGET = "#54FFE5";//"#ffa";
-    private final Map<Element, Event> events = new HashMap<Element, Event>();
+    private final Map<Element, Event> events = new HashMap<>();
     private final Logger logger;
-    private final List<Integer> extraDayColumns = new ArrayList<Integer>();
+    private final List<Integer> extraDayColumns = new ArrayList<>();
     private final Callback callback;
-    List<HandlerRegistration> currentDomHandlers = new ArrayList<HandlerRegistration>();
+    List<HandlerRegistration> currentDomHandlers = new ArrayList<>();
     private final ContextCreator contextCreator;
 
     public WeekviewGwt(String tableStylePrefix, Logger logger, Callback callback, ContextCreator contextCreator)
@@ -84,32 +84,27 @@ public class WeekviewGwt extends FlexTable
         setStyleName(tableStylePrefix);
         addStyleName("table");
         this.sinkEvents(com.google.gwt.user.client.Event.getTypeInt(ContextMenuEvent.getType().getName()));
-        this.addHandler(new ContextMenuHandler()
-        {
-            @Override
-            public void onContextMenu(ContextMenuEvent event)
+        this.addHandler(event -> {
+            event.preventDefault();
+            event.stopPropagation();
+            final Element tc = WeekviewGwt.this.getEventTargetCell((com.google.gwt.user.client.Event) event.getNativeEvent());
+            final Event myEvent = events.get(tc.getFirstChildElement());
+            final StringBuilder sb = new StringBuilder();
+            sb.append("This could be the context Menut :-)");
+            if (myEvent != null)
             {
-                event.preventDefault();
-                event.stopPropagation();
-                final Element tc = WeekviewGwt.this.getEventTargetCell((com.google.gwt.user.client.Event) event.getNativeEvent());
-                final Event myEvent = events.get(tc.getFirstChildElement());
-                final StringBuilder sb = new StringBuilder();
-                sb.append("This could be the context Menut :-)");
-                if (myEvent != null)
-                {
-                    sb.append("... clicked on ");
-                    sb.append(myEvent.getHtmlBlock().getName());
-                }
-                final PopupPanel menu = new PopupPanel(true, true);
-                menu.add(new HTML(sb.toString()));
-                final NativeEvent nativeEvent = event.getNativeEvent();
-                final int clientX = nativeEvent.getClientX();
-                final int scrollLeft = Window.getScrollLeft();
-                final int clientY = nativeEvent.getClientY();
-                final int scrollTop = Window.getScrollTop();
-                menu.setPopupPosition(clientX + scrollLeft, clientY + scrollTop);
-                menu.show();
+                sb.append("... clicked on ");
+                sb.append(myEvent.getHtmlBlock().getName());
             }
+            final PopupPanel menu = new PopupPanel(true, true);
+            menu.add(new HTML(sb.toString()));
+            final NativeEvent nativeEvent = event.getNativeEvent();
+            final int clientX = nativeEvent.getClientX();
+            final int scrollLeft = Window.getScrollLeft();
+            final int clientY = nativeEvent.getClientY();
+            final int scrollTop = Window.getScrollTop();
+            menu.setPopupPosition(clientX + scrollLeft, clientY + scrollTop);
+            menu.show();
         }, ContextMenuEvent.getType());
     }
 
@@ -207,7 +202,7 @@ public class WeekviewGwt extends FlexTable
 
     private ArrayList<Integer> calcTimeRows(final List<RowSlot> timelist)
     {
-        final ArrayList<Integer> timeRows = new ArrayList<Integer>();
+        final ArrayList<Integer> timeRows = new ArrayList<>();
         int row = 0;
         for (final RowSlot rowSlot : timelist)
         {
@@ -832,8 +827,8 @@ public class WeekviewGwt extends FlexTable
     private int createYAchsis(final List<RowSlot> timelist, final FlexCellFormatter flexCellFormatter)
     {
         int actualRowCount = 1;
-        final ArrayList<Integer> fullHours = new ArrayList<Integer>();
-        final ArrayList<Integer> subHours = new ArrayList<Integer>();
+        final ArrayList<Integer> fullHours = new ArrayList<>();
+        final ArrayList<Integer> subHours = new ArrayList<>();
         for (final RowSlot timeEntry : timelist)
         {
             boolean first = true;

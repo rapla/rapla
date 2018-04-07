@@ -12,6 +12,8 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.client.swing.toolkit;
 
+import org.rapla.client.menu.IdentifiableMenuEntry;
+
 import javax.swing.JSeparator;
 import javax.swing.MenuElement;
 import javax.swing.MenuSelectionManager;
@@ -33,10 +35,6 @@ public class RaplaSeparator extends JSeparator implements IdentifiableMenuEntry,
         return id;
     }
 
-	public MenuElement getMenuElement() {
-		return this;
-	}
-
 	public void processMouseEvent(MouseEvent event, MenuElement[] path,
 			MenuSelectionManager manager) {
 		
@@ -55,6 +53,7 @@ public class RaplaSeparator extends JSeparator implements IdentifiableMenuEntry,
 		return new MenuElement[] {};
 	}
 
+	@Override
 	public Component getComponent() {
 		return this;
 	}

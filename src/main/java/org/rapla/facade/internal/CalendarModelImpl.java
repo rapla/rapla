@@ -24,6 +24,7 @@ import org.rapla.entities.User;
 import org.rapla.entities.configuration.CalendarModelConfiguration;
 import org.rapla.entities.configuration.Preferences;
 import org.rapla.entities.configuration.RaplaConfiguration;
+import org.rapla.entities.configuration.RaplaMap;
 import org.rapla.entities.configuration.internal.CalendarModelConfigurationImpl;
 import org.rapla.entities.configuration.internal.RaplaMapImpl;
 import org.rapla.entities.domain.Allocatable;
@@ -45,13 +46,12 @@ import org.rapla.entities.storage.ReferenceInfo;
 import org.rapla.facade.CalendarModel;
 import org.rapla.facade.CalendarNotFoundExeption;
 import org.rapla.facade.CalendarSelectionModel;
-import org.rapla.facade.client.ClientFacade;
 import org.rapla.facade.Conflict;
+import org.rapla.facade.client.ClientFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaInitializationException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.inject.DefaultImplementation;
-import org.rapla.inject.DefaultImplementationRepeatable;
 import org.rapla.inject.InjectionContext;
 import org.rapla.logger.Logger;
 import org.rapla.scheduler.Promise;
@@ -76,11 +76,15 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static org.rapla.entities.configuration.CalendarModelConfiguration.EXPORT_ENTRY;
 
-@Singleton @DefaultImplementationRepeatable({ @DefaultImplementation(of = CalendarSelectionModel.class, context = InjectionContext.client),
-        @DefaultImplementation(of = CalendarModel.class, context = InjectionContext.client) }) public class CalendarModelImpl implements CalendarSelectionModel
+@Singleton
+@DefaultImplementation(of = CalendarSelectionModel.class, context = InjectionContext.client)
+@DefaultImplementation(of = CalendarModel.class, context = InjectionContext.client)
+public class CalendarModelImpl implements CalendarSelectionModel
 {
     private static final String DEFAULT_VIEW = "week";//WeekViewFactory.WEEK_VIEW;
     private static final String ICAL_EXPORT_ENABLED = "org.rapla.plugin.export2ical" + ".selected";
@@ -89,12 +93,12 @@ import static org.rapla.entities.configuration.CalendarModelConfiguration.EXPORT
     Date startDate;
     Date endDate;
     Date selectedDate;
-    Collection<RaplaObject> selectedObjects = new LinkedHashSet<RaplaObject>();
+    Collection<RaplaObject> selectedObjects = new LinkedHashSet<>();
     String title;
     final StorageOperator operator;
     String selectedView;
     private User user;
-    Map<String, String> optionMap = new HashMap<String, String>();
+    Map<String, String> optionMap = new HashMap<>();
 
     boolean defaultEventTypes = true;
     boolean defaultResourceTypes = true;
@@ -102,8 +106,8 @@ import static org.rapla.entities.configuration.CalendarModelConfiguration.EXPORT
     Collection<Allocatable> markedAllocatables = Collections.emptyList();
     Locale locale;
     boolean markedIntervalTimeEnabled = false;
-    Map<DynamicType, ClassificationFilter> reservationFilter = new LinkedHashMap<DynamicType, ClassificationFilter>();
-    Map<DynamicType, ClassificationFilter> allocatableFilter = new LinkedHashMap<DynamicType, ClassificationFilter>();
+    Map<DynamicType, ClassificationFilter> reservationFilter = new LinkedHashMap<>();
+    Map<DynamicType, ClassificationFilter> allocatableFilter = new LinkedHashMap<>();
     public static final RaplaConfiguration ALLOCATABLES_ROOT = new RaplaConfiguration("rootnode", "allocatables");
 
     @Inject public CalendarModelImpl(ClientFacade clientFacade, RaplaLocale locale) throws RaplaInitializationException
@@ -189,8 +193,16 @@ import static org.rapla.entities.configuration.CalendarModelConfiguration.EXPORT
 
     public boolean isMatchingSelectionAndFilter(Reservation reservation, Appointment appointment) throws RaplaException
     {
-        Allocatable[] allocatables = appointment == null ? reservation.getAllocatables() : reservation.getAllocatablesFor(appointment);
-        HashSet<RaplaObject> hashSet = new HashSet<RaplaObject>(Arrays.asList(allocatables));
+        Set<RaplaObject> hashSet;
+        if ( appointment == null)
+        {
+            hashSet = new HashSet<>(Arrays.asList(reservation.getAllocatables()));
+        }
+        else
+            {
+            hashSet = reservation.getAllocatablesFor(appointment).collect(Collectors.toSet());
+        }
+
         hashSet.add(reservation.getClassification().getType());
         final ReferenceInfo<User> ownerId = reservation.getOwnerRef();
         if (ownerId != null)
@@ -229,7 +241,7 @@ import static org.rapla.entities.configuration.CalendarModelConfiguration.EXPORT
 
     public boolean setConfiguration(CalendarModelConfiguration config, final Map<String, String> alternativOptions) throws RaplaException
     {
-        ArrayList<RaplaObject> selectedObjects = new ArrayList<RaplaObject>();
+        ArrayList<RaplaObject> selectedObjects = new ArrayList<>();
         allocatableFilter.clear();
         reservationFilter.clear();
         if (config == null)
@@ -269,7 +281,7 @@ import static org.rapla.entities.configuration.CalendarModelConfiguration.EXPORT
         title = config.getTitle();
         selectedView = config.getView();
         //selectedObjects
-        optionMap = new TreeMap<String, String>();
+        optionMap = new TreeMap<>();
         //  viewOptionMap = new TreeMap<String,String>();
         if (config.getOptionMap() != null)
         {
@@ -366,7 +378,7 @@ import static org.rapla.entities.configuration.CalendarModelConfiguration.EXPORT
             throws RaplaException
     {
         String viewName = selectedView;
-        Set<Entity> selected = new HashSet<Entity>();
+        Set<Entity> selected = new HashSet<>();
 
         Collection<RaplaObject> selectedObjects = getSelectedObjects();
         for (RaplaObject object : selectedObjects)
@@ -397,7 +409,7 @@ import static org.rapla.entities.configuration.CalendarModelConfiguration.EXPORT
         int resourceTypes = 0;
         defaultResourceTypes = true;
         defaultEventTypes = true;
-        List<ClassificationFilter> filter = new ArrayList<ClassificationFilter>();
+        List<ClassificationFilter> filter = new ArrayList<>();
         if (allocatableFilter != null)
         {
             for (ClassificationFilter entry : allocatableFilter)
@@ -439,8 +451,8 @@ import static org.rapla.entities.configuration.CalendarModelConfiguration.EXPORT
         }
 
         final ClassificationFilter[] filterArray = filter.toArray(ClassificationFilter.CLASSIFICATIONFILTER_ARRAY);
-        List<String> selectedIds = new ArrayList<String>();
-        Collection<Class<? extends Entity>> idTypeList = new ArrayList<Class<? extends Entity>>();
+        List<String> selectedIds = new ArrayList<>();
+        Collection<Class<? extends Entity>> idTypeList = new ArrayList<>();
         for (Entity obj : selected)
         {
             Class<? extends Entity> raplaType = obj.getTypeClass();
@@ -694,7 +706,7 @@ import static org.rapla.entities.configuration.CalendarModelConfiguration.EXPORT
 
     private Collection<Allocatable> getFilteredAllocatables() throws RaplaException
     {
-        Collection<Allocatable> list = new LinkedHashSet<Allocatable>();
+        Collection<Allocatable> list = new LinkedHashSet<>();
         // TODO should be replaced with getAllocatables(allocatableFilter.values();
         ClassificationFilter[] filters = allocatableFilter.values().toArray(ClassificationFilter.CLASSIFICATIONFILTER_ARRAY);
 
@@ -741,7 +753,7 @@ import static org.rapla.entities.configuration.CalendarModelConfiguration.EXPORT
 
     public Collection<Allocatable> getAllAllocatables() throws RaplaException
     {
-        Collection<Allocatable> allocatables = new ArrayList<Allocatable>();
+        Collection<Allocatable> allocatables = new ArrayList<>();
         for (RaplaObject obj : getSelectedObjectsAndChildren())
         {
             if (obj instanceof Allocatable)
@@ -757,7 +769,7 @@ import static org.rapla.entities.configuration.CalendarModelConfiguration.EXPORT
     {
         Assert.notNull(selectedObjects);
 
-        ArrayList<DynamicType> dynamicTypes = new ArrayList<DynamicType>();
+        ArrayList<DynamicType> dynamicTypes = new ArrayList<>();
         for (Iterator<RaplaObject> it = selectedObjects.iterator(); it.hasNext(); )
         {
             Object obj = it.next();
@@ -767,7 +779,7 @@ import static org.rapla.entities.configuration.CalendarModelConfiguration.EXPORT
             }
         }
 
-        HashSet<RaplaObject> result = new LinkedHashSet<RaplaObject>();
+        HashSet<RaplaObject> result = new LinkedHashSet<>();
         result.addAll(selectedObjects);
 
         boolean allAllocatablesSelected = selectedObjects.contains(CalendarModelImpl.ALLOCATABLES_ROOT);
@@ -802,7 +814,7 @@ import static org.rapla.entities.configuration.CalendarModelConfiguration.EXPORT
         this.selectedObjects = retainRaplaObjects(selectedObjects);
         if (markedAllocatables != null && !markedAllocatables.isEmpty())
         {
-            markedAllocatables = new LinkedHashSet<Allocatable>(markedAllocatables);
+            markedAllocatables = new LinkedHashSet<>(markedAllocatables);
             try
             {
                 markedAllocatables.retainAll(getSelectedAllocatablesAsList());
@@ -816,7 +828,7 @@ import static org.rapla.entities.configuration.CalendarModelConfiguration.EXPORT
 
     private List<RaplaObject> retainRaplaObjects(Collection<? extends Object> list)
     {
-        List<RaplaObject> result = new ArrayList<RaplaObject>();
+        List<RaplaObject> result = new ArrayList<>();
         for (Iterator<? extends Object> it = list.iterator(); it.hasNext(); )
         {
             Object obj = it.next();
@@ -838,7 +850,7 @@ import static org.rapla.entities.configuration.CalendarModelConfiguration.EXPORT
         Collection<ClassificationFilter> filter;
         if (isDefaultEventTypes() /*|| isTemplateModus()*/)
         {
-            filter = new ArrayList<ClassificationFilter>();
+            filter = new ArrayList<>();
             for (DynamicType type : getDynamicTypes(DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RESERVATION))
             {
                 filter.add(type.newClassificationFilter());
@@ -856,7 +868,7 @@ import static org.rapla.entities.configuration.CalendarModelConfiguration.EXPORT
         Collection<ClassificationFilter> filter;
         if (isDefaultResourceTypes() /*|| isTemplateModus()*/)
         {
-            filter = new ArrayList<ClassificationFilter>();
+            filter = new ArrayList<>();
             for (DynamicType type : getDynamicTypes(DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RESOURCE))
             {
                 filter.add(type.newClassificationFilter());
@@ -939,12 +951,7 @@ import static org.rapla.entities.configuration.CalendarModelConfiguration.EXPORT
 
     public static Collection<Reservation> getAllReservations(Collection<Appointment> appointments)
     {
-        Collection<Reservation> asList = new LinkedHashSet<Reservation>();
-        for (Appointment appointment : appointments)
-        {
-            asList.add(appointment.getReservation());
-        }
-        return asList;
+        return appointments.stream().map(Appointment::getReservation).distinct().collect(Collectors.toList());
     }
 
     public static Collection<Reservation> getAllReservations(Map<Allocatable, Collection<Appointment>> appointmentMap)
@@ -955,7 +962,7 @@ import static org.rapla.entities.configuration.CalendarModelConfiguration.EXPORT
 
     public static Collection<Appointment> getAllAppointments(Map<Allocatable, Collection<Appointment>> appointmentMap)
     {
-        Collection<Appointment> allAppointments = new LinkedHashSet<Appointment>();
+        Collection<Appointment> allAppointments = new LinkedHashSet<>();
         for (Collection<Appointment> appointments : appointmentMap.values())
         {
             allAppointments.addAll(appointments);
@@ -976,7 +983,7 @@ import static org.rapla.entities.configuration.CalendarModelConfiguration.EXPORT
         {
             if (cacheValidString != null && cacheValidString.equals(cacheKey) && cachedReservations != null)
             {
-                return new ResolvedPromise<Map<Allocatable, Collection<Appointment>>>(cachedReservations);
+                return new ResolvedPromise<>(cachedReservations);
             }
         }
 
@@ -990,7 +997,7 @@ import static org.rapla.entities.configuration.CalendarModelConfiguration.EXPORT
 		User user = null;
         final Promise<Map<Allocatable, Collection<Appointment>>> reservationsAsync = operator
                 .queryAppointments(user, allocatables, start, end, reservationFilters, templateId);
-        
+
         return reservationsAsync.thenApply((map) -> {
             if (cachingEnabled)
             {
@@ -1041,7 +1048,7 @@ import static org.rapla.entities.configuration.CalendarModelConfiguration.EXPORT
     public List<Reservation> restrictReservations(Collection<Reservation> reservationsToRestrict) throws RaplaException
     {
 
-        List<Reservation> reservations = new ArrayList<Reservation>(reservationsToRestrict);
+        List<Reservation> reservations = new ArrayList<>(reservationsToRestrict);
         // Don't restrict templates
         //      if ( isTemplateModus())
         //      {
@@ -1078,7 +1085,7 @@ import static org.rapla.entities.configuration.CalendarModelConfiguration.EXPORT
         else if (currentUser != null && currentUser.isAdmin())
         {
             final Set<User> selected = getSelected(User.class);
-            final Set<ReferenceInfo<User>> selectedUserIs = new HashSet<ReferenceInfo<User>>();
+            final Set<ReferenceInfo<User>> selectedUserIs = new HashSet<>();
             for (User user : selected)
             {
                 selectedUserIs.add(user.getReference());
@@ -1120,7 +1127,7 @@ import static org.rapla.entities.configuration.CalendarModelConfiguration.EXPORT
 
     @Override public List<Allocatable> getSelectedAllocatablesSorted() throws RaplaException
     {
-        List<Allocatable> result = new ArrayList<Allocatable>(getSelectedAllocatablesAsList());
+        List<Allocatable> result = new ArrayList<>(getSelectedAllocatablesAsList());
         long start = 0;
         final boolean debugEnabled = logger.isDebugEnabled();
         if (debugEnabled)
@@ -1143,7 +1150,7 @@ import static org.rapla.entities.configuration.CalendarModelConfiguration.EXPORT
         if (debugEnabled)
             start = System.currentTimeMillis();
 
-        Collection<Allocatable> result = new HashSet<Allocatable>();
+        Collection<Allocatable> result = new HashSet<>();
         Collection<RaplaObject> selectedObjectsAndChildren = getSelectedObjectsAndChildren();
         boolean conflictsDetected = false;
         for (RaplaObject object : selectedObjectsAndChildren)
@@ -1184,7 +1191,7 @@ import static org.rapla.entities.configuration.CalendarModelConfiguration.EXPORT
 
     public Set<DynamicType> getSelectedTypes(String classificationType) throws RaplaException
     {
-        Set<DynamicType> result = new HashSet<DynamicType>();
+        Set<DynamicType> result = new HashSet<>();
         Iterator<RaplaObject> it = getSelectedObjectsAndChildren().iterator();
         while (it.hasNext())
         {
@@ -1203,7 +1210,7 @@ import static org.rapla.entities.configuration.CalendarModelConfiguration.EXPORT
 
     private <T extends RaplaObject<T>> Set<T> getSelected(Class<T> type)
     {
-        Set<T> result = new HashSet<T>();
+        Set<T> result = new HashSet<>();
         Iterator<RaplaObject> it = getSelectedObjects().iterator();
         while (it.hasNext())
         {
@@ -1250,40 +1257,49 @@ import static org.rapla.entities.configuration.CalendarModelConfiguration.EXPORT
         return defaultResourceTypes;
     }
 
-    public void save(final String filename) throws RaplaException
+    public Promise<Void> save(final String filename)
     {
-        final CalendarModelConfiguration conf = createConfiguration();
-        final Preferences preferences = operator.getPreferences(user, true);
-        final Collection toEdit = Collections.singleton(preferences);
-        final Collection<Entity> editables = operator.editObjects(toEdit, user);
-        Preferences clone = (Preferences) editables.iterator().next();
-        if (filename == null)
-        {
-            clone.putEntry(CalendarModelConfiguration.CONFIG_ENTRY, conf);
+
+        final CalendarModelConfiguration conf;
+        final Collection toEdit;
+        try {
+            conf = createConfiguration();
+            final Preferences preferences = operator.getPreferences(user, true);
+            toEdit = Collections.singleton(preferences);
         }
-        else
+        catch (RaplaException ex)
         {
-            Map<String, CalendarModelConfiguration> exportMap = clone.getEntry(EXPORT_ENTRY);
-            Map<String, CalendarModelConfiguration> newMap;
-            if (exportMap == null)
-                newMap = new TreeMap<String, CalendarModelConfiguration>();
-            else
-                newMap = new TreeMap<String, CalendarModelConfiguration>(exportMap);
-            newMap.put(filename, conf);
-            RaplaMapImpl map = new RaplaMapImpl(newMap);
-            map.setResolver(operator);
-            clone.putEntry(EXPORT_ENTRY, map);
+            return new ResolvedPromise<>(ex);
         }
-        final Collection<ReferenceInfo<Entity>> toRemove = Collections.emptyList();
-        final Collection<Preferences> singleton = Collections.singleton(clone);
-        final Collection toStore = singleton;
-        operator.storeAndRemove(toStore, toRemove, user);
+        boolean isUndo = false;
+        final Promise<Map<Entity,Entity>>  editPromise = operator.editObjectsAsync(toEdit, user, isUndo);
+        final Promise<Set<Preferences>> modifyPromise = editPromise.thenApply((editables) ->
+        {
+            Preferences clone = (Preferences) editables.values().iterator().next();
+            if (filename == null) {
+                clone.putEntry(CalendarModelConfiguration.CONFIG_ENTRY, conf);
+            } else {
+                RaplaMap< CalendarModelConfiguration> exportMap = clone.getEntry(EXPORT_ENTRY);
+                Map<String, CalendarModelConfiguration> newMap;
+                if (exportMap == null)
+                    newMap = new TreeMap<>();
+                else
+                    newMap = new TreeMap<>(exportMap.toMap());
+                newMap.put(filename, conf);
+                RaplaMapImpl map = new RaplaMapImpl(newMap);
+                map.setResolver(operator);
+                clone.putEntry(EXPORT_ENTRY, map);
+            }
+            return Collections.singleton(clone);
+        });
+        Promise<Void> result = modifyPromise.thenCompose((toStore) -> operator.storeAndRemoveAsync(toStore, Collections.emptyList(), user));
+        return result;
     }
 
     // Old defaultname behaviour. Duplication of language resource names. But the system has to be replaced anyway in the future, because it doesnt allow for multiple language outputs on the server.
     private boolean isOldDefaultNameBehavoir(final String filename)
     {
-        List<String> translations = new ArrayList<String>();
+        List<String> translations = new ArrayList<>();
         translations.add("default");
         translations.add("Default");
         translations.add("Standard");
@@ -1321,7 +1337,7 @@ import static org.rapla.entities.configuration.CalendarModelConfiguration.EXPORT
         else
         {
             final boolean isDefault = filename == null;
-            Map<String, String> alternativeOptions = new HashMap<String, String>();
+            Map<String, String> alternativeOptions = new HashMap<>();
             if (modelConfig != null && modelConfig.getOptionMap() != null)
             {
                 // All old default calendars have no selected date
@@ -1351,7 +1367,7 @@ import static org.rapla.entities.configuration.CalendarModelConfiguration.EXPORT
             }
             else if (filename != null && !isDefault)
             {
-                Map<String, CalendarModelConfiguration> exportMap = preferences.getEntry(EXPORT_ENTRY);
+                Map<String, CalendarModelConfiguration> exportMap = preferences.getEntry(EXPORT_ENTRY).toMap();
                 final CalendarModelConfiguration config;
                 if (exportMap != null)
                 {
@@ -1400,8 +1416,8 @@ import static org.rapla.entities.configuration.CalendarModelConfiguration.EXPORT
 
     private Promise<Collection<Appointment>> getAppointments(Collection<Conflict> conflicts)
     {
-        Collection<ReferenceInfo<Reservation>> ids = new LinkedHashSet<ReferenceInfo<Reservation>>();
-        Collection<ReferenceInfo<Appointment>> appointmentIds = new LinkedHashSet<ReferenceInfo<Appointment>>();
+        Collection<ReferenceInfo<Reservation>> ids = new HashSet<>();
+        Collection<ReferenceInfo<Appointment>> appointmentIds = new HashSet<>();
         for (Conflict conflict : conflicts)
         {
             ids.add(conflict.getReservation1());
@@ -1409,51 +1425,31 @@ import static org.rapla.entities.configuration.CalendarModelConfiguration.EXPORT
             appointmentIds.add(conflict.getAppointment1());
             appointmentIds.add(conflict.getAppointment2());
         }
-
-        Collection<Reservation> values = null;
-        try
-        {
-            values = operator.getFromId(ids, true).values();
-        }
-        catch (RaplaException e)
-        {
-            return new ResolvedPromise<>(e);
-        }
-        @SuppressWarnings("unchecked") ArrayList<Reservation> converted = new ArrayList(values);
-        List<Appointment> appointments = new ArrayList<Appointment>();
-        for (Reservation reservation : converted)
-        {
-            for (Appointment app : reservation.getAppointments())
-            {
-                final ReferenceInfo<Appointment> reference = app.getReference();
-                if (appointmentIds.contains(reference))
+        return operator.getFromIdAsync(ids, true).thenApply(values->
                 {
-                    appointments.add(app);
+                    Stream<Appointment> appointments = values.values().stream().flatMap(Reservation::getAppointmentStream).filter( (app)->appointmentIds.contains(app.getReference()));
+                    return  appointments.collect(Collectors.toList());
                 }
-            }
-
-        }
-        return new ResolvedPromise<>(appointments);
+        );
     }
 
-    @Override public Promise<List<AppointmentBlock>> getBlocks()
+    @Override public Promise<List<AppointmentBlock>> queryBlocks(final TimeInterval timeInterval)
     {
-        List<AppointmentBlock> appointments = new ArrayList<AppointmentBlock>();
+        List<AppointmentBlock> appointments = new ArrayList<>();
         try
         {
-            final Set<Allocatable> selectedAllocatables = isNoAllocatableSelected() ? null : new HashSet<Allocatable>(getSelectedAllocatablesAsList());
+            final Set<Allocatable> selectedAllocatables = isNoAllocatableSelected() ? null : new HashSet<>(getSelectedAllocatablesAsList());
             Collection<Conflict> selectedConflicts = getSelectedConflicts();
             Promise<Collection<Appointment>> reservations = getAppointments(selectedConflicts);
-            final TimeInterval timeIntervall = getTimeIntervall();
-            final Promise<Collection<Appointment>> appointmentPromise = queryAppointments(timeIntervall);
+            final Promise<Collection<Appointment>> appointmentPromise = queryAppointments(timeInterval);
             return appointmentPromise.thenCombine(reservations, ( allAppointments, conflictAppointments) -> {
 
                 Map<Appointment, Set<Appointment>> conflictingAppointments = ConflictImpl.getMap(selectedConflicts, conflictAppointments);
                 for (Appointment app : allAppointments)
                 {
                     Reservation event = app.getReservation();
-                    Allocatable[] allocatablesFor = event.getAllocatablesFor(app);
-                    if (selectedAllocatables == null || containsOne(selectedAllocatables, allocatablesFor))
+                    Stream<Allocatable> allocatablesFor = event.getAllocatablesFor(app);
+                    if (selectedAllocatables == null || allocatablesFor.anyMatch(selectedAllocatables::contains))
                     {
                         Collection<Appointment> conflictList = conflictingAppointments.get(app);
                         if (conflictList == null || conflictList.isEmpty())
@@ -1462,7 +1458,7 @@ import static org.rapla.entities.configuration.CalendarModelConfiguration.EXPORT
                         }
                         else
                         {
-                            List<AppointmentBlock> blocks = new ArrayList<AppointmentBlock>();
+                            List<AppointmentBlock> blocks = new ArrayList<>();
                             app.createBlocks(getStartDate(), getEndDate(), blocks);
                             Iterator<AppointmentBlock> it = blocks.iterator();
                             while (it.hasNext())
@@ -1494,18 +1490,6 @@ import static org.rapla.entities.configuration.CalendarModelConfiguration.EXPORT
         {
             return new ResolvedPromise<>(e);
         }
-    }
-
-    private boolean containsOne(Set<Allocatable> allocatableSet, Allocatable[] listOfAllocatablesToMatch)
-    {
-        for (Allocatable alloc : listOfAllocatablesToMatch)
-        {
-            if (allocatableSet.contains(alloc))
-            {
-                return true;
-            }
-        }
-        return false;
     }
 
     private DynamicType[] getDynamicTypes(String elementKey) throws RaplaException

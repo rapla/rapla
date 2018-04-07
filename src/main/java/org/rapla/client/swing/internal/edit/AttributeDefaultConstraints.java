@@ -1,12 +1,12 @@
 package org.rapla.client.swing.internal.edit;
 
 import org.rapla.RaplaResources;
+import org.rapla.client.PopupContext;
 import org.rapla.client.dialog.DialogInterface;
 import org.rapla.client.dialog.DialogUiFactoryInterface;
 import org.rapla.client.extensionpoints.AnnotationEditAttributeExtension;
 import org.rapla.client.swing.RaplaGUIComponent;
 import org.rapla.client.swing.TreeFactory;
-import org.rapla.client.swing.images.RaplaImages;
 import org.rapla.client.swing.internal.SwingPopupContext;
 import org.rapla.client.swing.internal.common.NamedListCellRenderer;
 import org.rapla.client.swing.internal.edit.annotation.AnnotationEditUI;
@@ -35,8 +35,8 @@ import org.rapla.entities.dynamictype.AttributeType;
 import org.rapla.entities.dynamictype.ConstraintIds;
 import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.entities.dynamictype.DynamicTypeAnnotations;
-import org.rapla.facade.client.ClientFacade;
 import org.rapla.facade.RaplaFacade;
+import org.rapla.facade.client.ClientFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaInitializationException;
 import org.rapla.framework.RaplaLocale;
@@ -106,7 +106,7 @@ public class AttributeDefaultConstraints extends AbstractEditField implements Ac
     private final PermissionController permissionController;
 
     @Inject public AttributeDefaultConstraints(ClientFacade clientFacade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, TreeFactory treeFactory,
-            Set<AnnotationEditAttributeExtension> attributeExtensionSet, RaplaImages raplaImages, DateRenderer dateRenderer,
+            Set<AnnotationEditAttributeExtension> attributeExtensionSet,  DateRenderer dateRenderer,
             final DialogUiFactoryInterface dialogUiFactory, BooleanFieldFactory booleanFieldFactory, TextFieldFactory textFieldFactory,
             MultiLanguageFieldFactory multiLanguageFieldFactory, IOInterface ioInterface) throws RaplaInitializationException
     {
@@ -121,23 +121,23 @@ public class AttributeDefaultConstraints extends AbstractEditField implements Ac
         try
         {
             final DynamicType[] dynamicTypes = raplaFacade.getDynamicTypes(DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RESOURCE);
-            typeList = new ArrayList<DynamicType>(Arrays.asList(dynamicTypes));
+            typeList = new ArrayList<>(Arrays.asList(dynamicTypes));
             typeList.addAll(Arrays.asList(raplaFacade.getDynamicTypes(DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_PERSON)));
         }
         catch (RaplaException e)
         {
             throw new RaplaInitializationException(e);
         }
-        dynamicTypeSelect = new ListField<DynamicType>(clientFacade, i18n, raplaLocale, logger, true);
+        dynamicTypeSelect = new ListField<>(clientFacade, i18n, raplaLocale, logger, true);
         dynamicTypeSelect.setVector(typeList);
         final Locale locale = raplaLocale.getLocale();
         dynamicTypeSelect.setRenderer(new NamedListCellRenderer(locale));
 
         rootCategory = this.raplaFacade.getSuperCategory();
 
-        categorySelect = new CategorySelectField(clientFacade, i18n, raplaLocale, logger, treeFactory, raplaImages, dialogUiFactory, rootCategory);
+        categorySelect = new CategorySelectField(clientFacade, i18n, raplaLocale, logger, treeFactory,  dialogUiFactory, rootCategory);
         categorySelect.setUseNull(false);
-        defaultSelectCategory = new CategorySelectField(clientFacade, i18n, raplaLocale, logger, treeFactory, raplaImages, dialogUiFactory, rootCategory);
+        defaultSelectCategory = new CategorySelectField(clientFacade, i18n, raplaLocale, logger, treeFactory, dialogUiFactory, rootCategory);
         defaultSelectText = textFieldFactory.create();
         RaplaGUIComponent.addCopyPaste(defaultSelectNumber.getNumberField(), i18n, raplaLocale, ioInterface, logger);
         //addCopyPaste( expectedRows.getNumberField());
@@ -177,21 +177,16 @@ public class AttributeDefaultConstraints extends AbstractEditField implements Ac
         panel.add("1,15,l,t", specialkeyLabel); // BJO
         panel.add("3,15,l,t", annotationButton);
         annotationButton.setText(i18n.getString("edit"));
-        annotationButton.addActionListener(new ActionListener()
-        {
-
-            @Override public void actionPerformed(ActionEvent e)
+        annotationButton.addActionListener(e -> {
+            try
             {
-                try
-                {
-                    showAnnotationDialog();
-                }
-                catch (RaplaException ex)
-                {
-                    dialogUiFactory.showException(ex, new SwingPopupContext(getComponent(), null));
-                }
-
+                showAnnotationDialog();
             }
+            catch (RaplaException ex)
+            {
+                dialogUiFactory.showException(ex, new SwingPopupContext(getComponent(), null));
+            }
+
         });
 
         setModel();
@@ -206,17 +201,12 @@ public class AttributeDefaultConstraints extends AbstractEditField implements Ac
         defaultLabel.setText(i18n.getString("default") + ":");
         specialkeyLabel.setText(i18n.getString("options") + ":");
         categorySelect.addChangeListener(this);
-        categorySelect.addChangeListener(new ChangeListener()
-                                         {
-
-                                             public void stateChanged(ChangeEvent e)
-                                             {
-                                                 final Category rootCategory = categorySelect.getValue();
-                                                 defaultSelectCategory.setRootCategory(rootCategory);
-                                                 defaultSelectCategory.setValue(null);
-                                                 defaultSelectCategory.getComponent().setEnabled(rootCategory != null);
-                                             }
-                                         }
+        categorySelect.addChangeListener(e -> {
+            final Category rootCategory = categorySelect.getValue();
+            defaultSelectCategory.setRootCategory(rootCategory);
+            defaultSelectCategory.setValue(null);
+            defaultSelectCategory.getComponent().setEnabled(rootCategory != null);
+        }
 
         );
         name.addChangeListener(this);
@@ -228,14 +218,7 @@ public class AttributeDefaultConstraints extends AbstractEditField implements Ac
         defaultSelectText.addChangeListener(this);
         defaultSelectBoolean.addChangeListener(this);
         defaultSelectNumber.addChangeListener(this);
-        defaultSelectDate.addDateChangeListener(new DateChangeListener()
-        {
-
-            public void dateChanged(DateChangeEvent evt)
-            {
-                stateChanged(null);
-            }
-        });
+        defaultSelectDate.addDateChangeListener(evt -> stateChanged(null));
     }
 
     @SuppressWarnings("unchecked") private void setModel()
@@ -490,12 +473,12 @@ public class AttributeDefaultConstraints extends AbstractEditField implements Ac
 
     private void showAnnotationDialog() throws RaplaException
     {
-        boolean modal = false;
         if (dialog != null)
         {
             dialog.close();
         }
-        dialog = dialogUiFactory.create(new SwingPopupContext(getComponent(), null), modal, annotationEdit.getComponent(), new String[] { i18n.getString("close") });
+        final PopupContext popupContext = dialogUiFactory.createPopupContext(AttributeDefaultConstraints.this);
+        dialog = dialogUiFactory.createContentDialog(popupContext, annotationEdit.getComponent(), new String[] { i18n.getString("close") });
 
         dialog.getAction(0).setRunnable(new Runnable()
         {

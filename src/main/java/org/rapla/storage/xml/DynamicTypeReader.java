@@ -49,9 +49,9 @@ public class DynamicTypeReader extends RaplaXMLReader
     String annotationKey = null;
     boolean isAttributeActive = false;
     boolean isDynamictypeActive = false;
-    HashMap<String,String> typeAnnotations = new LinkedHashMap<String,String>();
-    HashMap<String,String> attributeAnnotations = new LinkedHashMap<String,String>();
-	private HashMap<String, Map<Attribute,String>> unresolvedDynamicTypeConstraints = new HashMap<String, Map<Attribute,String>>();
+    HashMap<String,String> typeAnnotations = new LinkedHashMap<>();
+    HashMap<String,String> attributeAnnotations = new LinkedHashMap<>();
+	private HashMap<String, Map<Attribute,String>> unresolvedDynamicTypeConstraints = new HashMap<>();
 	private PermissionReader permissionHandler;
 	
     public DynamicTypeReader( RaplaXMLContext context ) throws RaplaException
@@ -272,7 +272,7 @@ public class DynamicTypeReader extends RaplaXMLReader
                     Map<Attribute,String> collection = unresolvedDynamicTypeConstraints.get( elementKey);
                     if ( collection == null)
                     {
-                        collection = new HashMap<Attribute,String>();
+                        collection = new HashMap<>();
                         unresolvedDynamicTypeConstraints.put( elementKey, collection);
                     }
                     collection.put( attribute, constraintKey);

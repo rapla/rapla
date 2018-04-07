@@ -22,7 +22,7 @@ import java.util.List;
 
 /**
  * SortedListModel decorates an unsorted ListModel to provide
- * a sorted model. You can create a SortedListModel from models you
+ * a sorted model. You can createInfoDialog a SortedListModel from models you
  * already have. Place the SortedListModel into a JList, for example, to provide
  * a sorted view of your underlying model.
  *
@@ -91,7 +91,7 @@ public class SortedListModel extends AbstractListModel {
 
         // get base model info
         int size = model.getSize();
-        sortedModel = new ArrayList<SortedListEntry>(size);
+        sortedModel = new ArrayList<>(size);
         for (int x = 0; x < size; ++x) {
             SortedListEntry entry = new SortedListEntry(x);
             int insertionPoint = findInsertionPoint(entry);

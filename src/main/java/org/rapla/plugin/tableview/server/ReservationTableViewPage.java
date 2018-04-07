@@ -19,6 +19,7 @@ import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.inject.Extension;
 import org.rapla.plugin.tableview.RaplaTableColumn;
+import org.rapla.plugin.tableview.RaplaTableModel;
 import org.rapla.plugin.tableview.TableViewPlugin;
 import org.rapla.plugin.tableview.internal.TableConfig;
 import org.rapla.server.PromiseWait;
@@ -33,6 +34,7 @@ import javax.swing.table.TableColumn;
 import java.io.IOException;
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 
 @Extension(provides = HTMLViewPage.class, id = TableViewPlugin.TABLE_EVENT_VIEW)
 public class ReservationTableViewPage implements HTMLViewPage
@@ -49,8 +51,10 @@ public class ReservationTableViewPage implements HTMLViewPage
                 final Collection<Reservation> reservations = waiter.waitForWithRaplaException(model.queryReservations(model.getTimeIntervall()),
                         10000);
                 final User user = model.getUser();
-                List<RaplaTableColumn<Reservation, TableColumn>> columnPlugins = tableConfigLoader.loadColumns("events", user);
-                return getCalendarHTML(columnPlugins, reservations, TableViewPlugin.EVENTS_SORTING_STRING_OPTION);
+                final String tableName = "events";
+                List<RaplaTableColumn<Reservation, TableColumn>> columnPlugins = tableConfigLoader.loadColumns(tableName, user);
+                Map<RaplaTableColumn, Integer> sortDirections = RaplaTableModel.getSortDirections(model,columnPlugins, tableName);
+                return getCalendarHTML(columnPlugins, reservations, sortDirections);
             }
 
             @Override

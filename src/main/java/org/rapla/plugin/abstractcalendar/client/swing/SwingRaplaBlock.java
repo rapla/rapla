@@ -53,7 +53,6 @@ public class SwingRaplaBlock extends RaplaBlock implements SwingBlock
 {
     private static BufferedImage exceptionImage;
     RaplaBlockView m_view = new RaplaBlockView();
-    private RaplaImages images;
 
     public SwingRaplaBlock(RaplaBuilder.RaplaBlockContext blockContext, Date start, Date end)
     {
@@ -61,21 +60,12 @@ public class SwingRaplaBlock extends RaplaBlock implements SwingBlock
     }
 
     public Icon getRepeatingIcon() {
-        if ( images == null)
-        {
-            return null;
-        }
-        return images.getIconFromKey("icon.repeating");
-
+        return RaplaImages.getIcon(getI18n().getIcon("icon.repeating"));
     }
     
 
     public ImageIcon getExceptionBackgroundIcon() {
-        if ( images == null)
-        {
-            return null;
-        }
-        return images.getIconFromKey("icon.exceptionBackground");
+        return RaplaImages.getIcon(getI18n().getIcon("icon.exceptionBackground"));
     }
     
     private BufferedImage getExceptionImage()
@@ -124,7 +114,7 @@ public class SwingRaplaBlock extends RaplaBlock implements SwingBlock
     static Font FONT_PERSON = new Font( "SansSerif", Font.ITALIC, 12 );
     static String FOREGROUND_COLOR = AWTColorUtil.getHexForColor( Color.black );
 
-    static Map<Integer,Map<String,Color>> alphaMap = new HashMap<Integer, Map<String,Color>>();
+    static Map<Integer,Map<String,Color>> alphaMap = new HashMap<>();
 
     private static Color LINECOLOR_INACTIVE = Color.darkGray;
     private static Color LINECOLOR_ACTIVE = new Color( 255, 90, 10 );
@@ -171,7 +161,7 @@ public class SwingRaplaBlock extends RaplaBlock implements SwingBlock
             Map<String,Color> colorMap =  alphaMap.get( alpha );
             if ( colorMap == null )
             {
-                colorMap = new HashMap<String,Color>();
+                colorMap = new HashMap<>();
                 alphaMap.put( alpha, colorMap );
             }
             Color color = colorMap.get( org );
@@ -562,12 +552,6 @@ public class SwingRaplaBlock extends RaplaBlock implements SwingBlock
     public String toString()
     {
     	return getName() + " " + getStart() + " - " + getEnd();
-    }
-
-
-    public void setImages(RaplaImages images)
-    {
-        this.images = images;
     }
 
 }

@@ -19,14 +19,15 @@ import org.rapla.components.calendar.DateRenderer;
 import org.rapla.components.calendar.RaplaCalendar;
 import org.rapla.components.calendar.RaplaTime;
 import org.rapla.components.calendar.TimeRenderer;
+import org.rapla.components.i18n.I18nBundle;
 import org.rapla.components.iolayer.IOInterface;
 import org.rapla.components.util.IOUtil;
 import org.rapla.entities.User;
 import org.rapla.facade.CalendarModel;
 import org.rapla.facade.CalendarOptions;
-import org.rapla.facade.client.ClientFacade;
 import org.rapla.facade.RaplaComponent;
 import org.rapla.facade.RaplaFacade;
+import org.rapla.facade.client.ClientFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.logger.Logger;
@@ -59,7 +60,7 @@ import java.util.List;
 
 /**
     Base class for most components in the gui package. Eases
-    access to frequently used services, e.g. {@link org.rapla.components.xmlbundle.I18nBundle}.
+    access to frequently used services, e.g. {@link I18nBundle}.
     It also provides some methods for Exception displaying.
  */
 public class RaplaGUIComponent extends RaplaComponent
@@ -82,18 +83,6 @@ public class RaplaGUIComponent extends RaplaComponent
     protected User getUser() throws RaplaException
     {
         return clientFacade.getUser();
-    }
-
-    /** lookupDeprecated UpdateModule from the serviceManager */
-    protected ClientFacade getUpdateModule()
-    {
-        return clientFacade;
-    }
-
-    /** lookupDeprecated UserModule from the serviceManager */
-    protected ClientFacade getUserModule()
-    {
-        return clientFacade;
     }
 
     public CalendarOptions getCalendarOptions()
@@ -256,24 +245,15 @@ public class RaplaGUIComponent extends RaplaComponent
         return mainComponent;
     }
 
+    static public Component getMainComponentDeprecated()
+    {
+        return mainComponent;
+    }
+
     public static void addCopyPaste( final JComponent component, final RaplaResources i18n, final RaplaLocale raplaLocale, final IOInterface service, final Logger logger )
     {
-        final ActionListener pasteListener = new ActionListener()
-        {
-            @Override
-            public void actionPerformed( final ActionEvent e )
-            {
-                paste(component, e, service, logger);
-            }
-        };
-        final ActionListener copyListener = new ActionListener()
-        {
-            @Override
-            public void actionPerformed( final ActionEvent e )
-            {
-                copy(component, e, service, raplaLocale);
-            }
-        };
+        final ActionListener pasteListener = e -> paste(component, e, service, logger);
+        final ActionListener copyListener = e -> copy(component, e, service, raplaLocale);
         final JPopupMenu menu = new JPopupMenu();
         {
             final JMenuItem copyItem = new JMenuItem();
@@ -527,5 +507,4 @@ public class RaplaGUIComponent extends RaplaComponent
         }
 
     }
-
 }

@@ -1,10 +1,13 @@
 package org.rapla;
 
+import jsinterop.annotations.JsIgnore;
+import jsinterop.annotations.JsType;
 import org.jetbrains.annotations.PropertyKey;
 import org.rapla.components.i18n.AbstractBundle;
 import org.rapla.components.i18n.BundleManager;
 import org.rapla.components.util.DateTools;
-import org.rapla.components.xmlbundle.I18nBundle;
+import org.rapla.components.i18n.I18nBundle;
+import org.rapla.components.i18n.I18nIcon;
 import org.rapla.inject.Extension;
 
 import javax.inject.Inject;
@@ -14,9 +17,11 @@ import java.util.Locale;
 
 @Extension(provides = I18nBundle.class, id = RaplaResources.BUNDLENAME)
 @Singleton
+@JsType
 public class RaplaResources extends AbstractBundle {
     public static final String BUNDLENAME = "org.rapla.RaplaResources";
 
+    @JsIgnore
     @Inject
     public RaplaResources(BundleManager bundleManager)
     {
@@ -28,10 +33,17 @@ public class RaplaResources extends AbstractBundle {
         return super.getString(key);
     }
 
+    @JsIgnore
     @Override
     public String getString(@PropertyKey(resourceBundle = BUNDLENAME) String key,Locale locale)
     {
         return super.getString(key, locale);
+    }
+
+    @Override
+    public I18nIcon getIcon(@PropertyKey(resourceBundle = BUNDLENAME) String key)
+    {
+        return super.getIcon(key);
     }
 
     @Override

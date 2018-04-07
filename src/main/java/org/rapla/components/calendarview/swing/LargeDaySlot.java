@@ -44,7 +44,7 @@ class LargeDaySlot extends AbstractDaySlot
     public static Color WORKTIME_BACKGROUND = Color.white;
     public static Color NON_WORKTIME_BACKGROUND = new Color(0xcc, 0xcc, 0xcc);
 
-    private List<Slot> slots= new ArrayList<Slot>();
+    private List<Slot> slots= new ArrayList<>();
     private int slotxsize;
     
     private int selectionStart = -1;
@@ -117,7 +117,7 @@ class LargeDaySlot extends AbstractDaySlot
     }
 
     public Collection<Block> getBlocks() {
-        ArrayList<Block> list = new ArrayList<Block>();
+        ArrayList<Block> list = new ArrayList<>();
         for (int i=0;i<slots.size();i++)
             list.addAll(slots.get(i).getBlocks());
         return list;
@@ -338,7 +338,7 @@ class LargeDaySlot extends AbstractDaySlot
     {
         private static final long serialVersionUID = 1L;
 
-        private Collection<Block> blocks= new ArrayList<Block>();
+        private Collection<Block> blocks= new ArrayList<>();
        
         public Slot()  {
             setLayout(null);
@@ -376,11 +376,27 @@ class LargeDaySlot extends AbstractDaySlot
 			//update bounds
             int y1= rowScale.getYCoord(b.getStart());
             final int minimumSize = 15;
-            int y2= Math.max( y1+minimumSize,rowScale.getYCoord(b.getEnd()));
+            int y2 = rowScale.getYCoord(b.getEnd());
+            final int maxHeight = getMaximumSize().height;
+            if (y1 <0)
+            {
+                y1 += maxHeight;
+            }
+            if (y2 <0)
+            {
+                y2 += maxHeight;
+            }
+            if (y1> y2)
+            {
+                int swap = y1;
+                y1 = y2;
+                y2 = swap;
+            }
+            y2= Math.max( y1+minimumSize, y2);
             if ( y1 <  0)
                 y1 = 0;
-            if ( y2 > getMaximumSize().height)
-                y2 = getMaximumSize().height;
+            if ( y2 > maxHeight)
+                y2 = maxHeight;
             b.getView().setBounds(0, y1, slotxsize, y2 - y1 + 1);
 		}
 

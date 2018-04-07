@@ -32,7 +32,7 @@ public class HTMLWeekView extends AbstractHTMLView {
     private int startMinutes;
     int m_rowsPerHour = 2;
     HTMLDaySlot[] multSlots ;
-    ArrayList<Block> blocks = new ArrayList<Block>();
+    ArrayList<Block> blocks = new ArrayList<>();
     //ArrayList<Integer> blockStart = new ArrayList<Integer>();
     //ArrayList<Integer> blockSize = new ArrayList<Integer>();
     
@@ -115,7 +115,7 @@ public class HTMLWeekView extends AbstractHTMLView {
             multSlots[i] = new HTMLDaySlot(2);
         }
 
-        b.build(this, prep.getBlocks());
+        b.build(this, getStartDate(),prep.getBlocks());
         boolean useAM_PM = getRaplaLocale().isAmPmFormat(  );
         for (int minuteOfDay = minMinute;minuteOfDay<maxMinute;minuteOfDay++) {
             boolean isLine = (minuteOfDay ) % (60 /  m_rowsPerHour) == 0;
@@ -319,7 +319,7 @@ public class HTMLWeekView extends AbstractHTMLView {
 		return headerName;
 	}
 
-   SortedSet<Integer> minuteBlock = new TreeSet<Integer>();
+   SortedSet<Integer> minuteBlock = new TreeSet<>();
     
    public void addBlock(Block block,int column,int slot) {
         checkBlock ( block );
@@ -379,7 +379,7 @@ public class HTMLWeekView extends AbstractHTMLView {
 //        int[] EMPTY = new int[]{-2};
   //      int[] SKIP = new int[]{-1};
         int lastEnd = 0;
-        HashMap<Integer, Block> map = new HashMap<Integer, Block>();
+        HashMap<Integer, Block> map = new HashMap<>();
        
 		public Slot() {
         }

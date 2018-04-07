@@ -57,7 +57,7 @@ class ConflictFinder {
     	this.logger = logger;
     	this.allocationMap = allocationMap;
         this.permissionController = permissionController;
-    	conflictMap = new HashMap<ReferenceInfo<Allocatable>, Map<ReferenceInfo<Conflict>,Conflict>>();
+    	conflictMap = new HashMap<>();
     	long startTime = System.currentTimeMillis();
     	int conflictSize = 0;
         for (Allocatable allocatable:allocationMap.getAllocatables())
@@ -231,7 +231,7 @@ class ConflictFinder {
 //    }
     
     private  Map<ReferenceInfo<Conflict>,Conflict>  updateConflicts(Allocatable allocatable, Date today, Set<Appointment> allAppointments) {
-        Collection<AppointmentBlock> allAppointmentBlocks =new LinkedList<AppointmentBlock>(); 
+        Collection<AppointmentBlock> allAppointmentBlocks = new LinkedList<>();
         createBlocks(today,allAppointments,allAppointmentBlocks);
 //        Collection<AppointmentBlock> appointmentBlocks =  new LinkedList<AppointmentBlock>();
 //        createBlocks(today,changedAppointments,appointmentBlocks, null);
@@ -270,12 +270,12 @@ class ConflictFinder {
 
     // the sweep-line algorithm
     public static Map<ReferenceInfo<Conflict>,Conflict> sweepLine(Allocatable allocatable, Date today, Collection<AppointmentBlock> intervals) {
-        Map<ReferenceInfo<Conflict>,Conflict> conflictList =  new HashMap<ReferenceInfo<Conflict>,Conflict>( );//conflictMap.get(allocatable);
-        Set<String> foundConflictIds = new HashSet<String>();
+        Map<ReferenceInfo<Conflict>,Conflict> conflictList = new HashMap<>();//conflictMap.get(allocatable);
+        Set<String> foundConflictIds = new HashSet<>();
         // generate N random intervals
 
-        // create events
-        MinPQ<Event> pq = new MinPQ<Event>();
+        // createInfoDialog events
+        MinPQ<Event> pq = new MinPQ<>();
         for (AppointmentBlock block:intervals) {
             Event e1 = new Event(block.getStart(),  block);
             Event e2 = new Event(block.getEnd(), block);
@@ -284,7 +284,7 @@ class ConflictFinder {
         }
 
         // run sweep-line algorithm
-        HashSet<AppointmentBlock> st = new HashSet<AppointmentBlock>();
+        HashSet<AppointmentBlock> st = new HashSet<>();
         while (!pq.isEmpty()) {
             Event e = pq.delMin();
             long time = e.time;
@@ -313,7 +313,7 @@ class ConflictFinder {
                         // Add appointments to conflict list
                         if (ConflictImpl.isConflictWithoutCheck(appointment1, appointment2, today))
                         {
-                            // create a new conflict
+                            // createInfoDialog a new conflict
                             final ConflictImpl conflict = new ConflictImpl(allocatable,appointment1, appointment2, today, id);
                             conflictList.put(conflict.getReference(), conflict);
                             foundConflictIds.add( id);
@@ -448,7 +448,7 @@ class ConflictFinder {
 	        }
 			/*
 			 * If the appointment has a repeating, get all single time blocks of it. If it is no
-			 * repeating, this will just create one block, which is equal to the appointment
+			 * repeating, this will just createInfoDialog one block, which is equal to the appointment
 			 * itself.
 			 */
 			Date start = appointment.getStart();
@@ -467,7 +467,7 @@ class ConflictFinder {
 	 */
 	public Collection<Conflict> getConflicts( User user)
 	{
-		Collection<Conflict> conflictList = new HashSet<Conflict>();
+		Collection<Conflict> conflictList = new HashSet<>();
 		for ( ReferenceInfo<Allocatable> allocatable: conflictMap.keySet())
 		{
 			Map<ReferenceInfo<Conflict>,Conflict> set = conflictMap.get( allocatable);
@@ -566,7 +566,7 @@ class ConflictFinder {
 
 	public Collection<ConflictChangeOperation> updateConflicts(LocalAbstractCachableOperator.UpdateBindingsResult bindingsResult,UpdateResult currentUpdateResult, Date today)
 	{
-        Collection<ConflictChangeOperation> conflictChanges = new ArrayList<ConflictChangeOperation>();
+        Collection<ConflictChangeOperation> conflictChanges = new ArrayList<>();
         Map<ReferenceInfo<Allocatable>, AllocationChange> toUpdate = bindingsResult.toUpdate;
         Collection<ReferenceInfo<Allocatable>> removedAllocatables = bindingsResult.removedAllocatables;
 		for (UpdateResult.Change change:currentUpdateResult.getOperations(UpdateResult.Change.class))
@@ -594,7 +594,7 @@ class ConflictFinder {
 		}
 		
 
-    	Set<Conflict> added = new HashSet<Conflict>();
+    	Set<Conflict> added = new HashSet<>();
     	// this will recalculate the conflicts for that resource and the chan;ged appointments
     	for ( Map.Entry<ReferenceInfo<Allocatable>, AllocationChange> entry:toUpdate.entrySet())
     	{
@@ -609,7 +609,7 @@ class ConflictFinder {
     		Map<ReferenceInfo<Conflict>,Conflict> conflictListBefore =  conflictMap.get(allocatableId);
     		if ( conflictListBefore == null)
     		{
-    			conflictListBefore = new LinkedHashMap<ReferenceInfo<Conflict>,Conflict>();
+    			conflictListBefore = new LinkedHashMap<>();
     		}
             Allocatable allocatable = resolver.tryResolve( allocatableId);
 			Map<ReferenceInfo<Conflict>,Conflict> conflictListAfter;
@@ -650,8 +650,8 @@ class ConflictFinder {
     	// the conflict is still the same but the name could change, so we must somehow indicate the clients displaying that conflict, that they need to refresh the name,
     	// because the involving reservations are not automatically pushed to the client
     	
-    	// first we create a list with all changed appointments. Notice if a reservation is changed all the appointments will change to
-    	Map<ReferenceInfo<Allocatable>, Set<ReferenceInfo<Appointment>>> appointmentUpdateMap = new LinkedHashMap<ReferenceInfo<Allocatable>, Set<ReferenceInfo<Appointment>>>();
+    	// first we createInfoDialog a list with all changed appointments. Notice if a reservation is changed all the appointments will change to
+    	Map<ReferenceInfo<Allocatable>, Set<ReferenceInfo<Appointment>>> appointmentUpdateMap = new LinkedHashMap<>();
     	for (Change change:currentUpdateResult.getOperations(UpdateResult.Change.class))
     	{
     	    ReferenceInfo ref = change.getReference();
@@ -661,21 +661,21 @@ class ConflictFinder {
                 Reservation reservation = currentUpdateResult.getLastKnown( (ReferenceInfo<Reservation>) ref);
     			for (Appointment app: reservation.getAppointments())
     			{
-	    			for ( Allocatable alloc:reservation.getAllocatablesFor( app))
+                    reservation.getAllocatablesFor( app).forEach(alloc->
 	    			{
 	    				Set<ReferenceInfo<Appointment>> set = appointmentUpdateMap.get( alloc.getReference());
 	    				if ( set == null)
 	    				{
-	    					set = new HashSet<ReferenceInfo<Appointment>>();
+	    					set = new HashSet<>();
 	    					appointmentUpdateMap.put(alloc.getReference(), set);
 	    				}
 	    				set.add( app.getReference());
-	    			}
+	    			});
     			}
     		}
     	}
-    	// then we create a map and look for any conflict that has changed appointment. This could still contain old appointment references  
-    	Map<Conflict,Conflict> toUpdateConflicts = new LinkedHashMap<Conflict, Conflict>();
+    	// then we createInfoDialog a map and look for any conflict that has changed appointment. This could still contain old appointment references
+    	Map<Conflict,Conflict> toUpdateConflicts = new LinkedHashMap<>();
     	for ( ReferenceInfo<Allocatable> allocRef: appointmentUpdateMap.keySet())
     	{
     		Set<ReferenceInfo<Appointment>> changedAppointments = appointmentUpdateMap.get( allocRef);
@@ -715,7 +715,7 @@ class ConflictFinder {
 
 
         // we update the conflict with the new appointment references
-    	ArrayList<Conflict> updateList = new ArrayList<Conflict>( toUpdateConflicts.keySet());
+    	ArrayList<Conflict> updateList = new ArrayList<>(toUpdateConflicts.keySet());
     	for ( Conflict oldConflict:updateList)
     	{
     		Conflict newConflict = toUpdateConflicts.get( oldConflict);
@@ -751,7 +751,7 @@ class ConflictFinder {
 
 	public Set<ReferenceInfo<Conflict>> removeOldConflicts(Date today)
 	{
-        Set<ReferenceInfo<Conflict>> result = new LinkedHashSet<ReferenceInfo<Conflict>>();
+        Set<ReferenceInfo<Conflict>> result = new LinkedHashSet<>();
 		for (Map<ReferenceInfo<Conflict>,Conflict> conflictMap: this.conflictMap.values())
 		{
 			Iterator<Map.Entry<ReferenceInfo<Conflict>,Conflict>> it = conflictMap.entrySet().iterator();

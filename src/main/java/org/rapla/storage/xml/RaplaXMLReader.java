@@ -18,7 +18,7 @@ import org.rapla.components.util.ParseDateException;
 import org.rapla.components.util.SerializableDateTimeFormat;
 import org.rapla.components.util.xml.RaplaSAXAttributes;
 import org.rapla.components.util.xml.RaplaSAXParseException;
-import org.rapla.components.xmlbundle.I18nBundle;
+import org.rapla.components.i18n.I18nBundle;
 import org.rapla.entities.Category;
 import org.rapla.entities.Entity;
 import org.rapla.entities.EntityNotFoundException;
@@ -43,7 +43,7 @@ import java.util.Map;
 
 public class RaplaXMLReader extends DelegationHandler implements Namespaces
 {
-    public static TypedComponentRole<Double> VERSION = new TypedComponentRole<Double>("org.rapla.version");
+    public static TypedComponentRole<Double> VERSION = new TypedComponentRole<>("org.rapla.version");
     protected EntityStore store;
     private Logger logger;
     private IdCreator idTable;
@@ -246,7 +246,7 @@ public class RaplaXMLReader extends DelegationHandler implements Namespaces
             throws RaplaSAXParseException
     {
         final String string = getString(atts, key);
-        return new ReferenceInfo<T>(string, clazz);
+        return new ReferenceInfo<>(string, clazz);
     }
 
 

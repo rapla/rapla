@@ -20,25 +20,25 @@ import org.rapla.client.dialog.DialogUiFactoryInterface;
 import org.rapla.client.event.CalendarEventBus;
 import org.rapla.client.event.CalendarRefreshEvent;
 import org.rapla.client.internal.ResourceSelectionView.Presenter;
-import org.rapla.entities.Category;
 import org.rapla.entities.Entity;
 import org.rapla.entities.RaplaObject;
 import org.rapla.entities.User;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.dynamictype.ClassificationFilter;
 import org.rapla.facade.CalendarSelectionModel;
-import org.rapla.facade.client.ClientFacade;
 import org.rapla.facade.ModificationEvent;
 import org.rapla.facade.RaplaFacade;
+import org.rapla.facade.client.ClientFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaInitializationException;
 import org.rapla.logger.Logger;
 import org.rapla.scheduler.CommandScheduler;
-import org.rapla.scheduler.Promise;
 import org.rapla.storage.PermissionController;
 
 import javax.inject.Inject;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashSet;
 
 public class ResourceSelectionPresenter implements Presenter
 {
@@ -101,47 +101,6 @@ public class ResourceSelectionPresenter implements Presenter
         return facade.getRaplaFacade();
     }
 
-    @Override
-    public Promise<Void> moveCategory(Category categoryToMove, Category targetCategory)
-    {
-        final RaplaFacade raplaFacade = getRaplaFacade();
-        final Promise<Void> result = scheduler.supply(() ->
-        {
-            final Collection<Category> categoriesToStore = new ArrayList<>();
-            final Category categoryToMoveEdit = raplaFacade.edit(categoryToMove);
-            final Category targetParentCategoryEdit = raplaFacade.edit(targetCategory.getParent());
-            if (!targetParentCategoryEdit.hasCategory(categoryToMoveEdit))
-            {
-                // remove from old parent
-                final Category moveCategoryParent = raplaFacade.edit(categoryToMove.getParent());
-                moveCategoryParent.removeCategory(categoryToMoveEdit);
-                categoriesToStore.add(moveCategoryParent);
-            }
-            final Collection<Category> categories = raplaFacade.editList(Arrays.asList(targetParentCategoryEdit.getCategories()));
-            for (Category category : categories)
-            {
-                targetParentCategoryEdit.removeCategory(category);
-            }
-
-            for (Category category : categories)
-            {
-                if (category.equals(targetCategory))
-                {
-                    targetParentCategoryEdit.addCategory(categoryToMoveEdit);
-                }
-                else if (category.equals(categoryToMoveEdit))
-                {
-                    continue;
-                }
-                targetParentCategoryEdit.addCategory(category);
-            }
-            categoriesToStore.add(targetParentCategoryEdit);
-            categoriesToStore.add(categoryToMoveEdit);
-            return categoriesToStore;
-        }).thenCompose((categoriesToStore) -> raplaFacade.dispatch(categoriesToStore, Collections.emptyList()));
-        return result.exceptionally((ex) -> dialogUiFactory.showException(ex, null));
-
-    }
 
     @Override
     public void mouseOverResourceSelection()
@@ -171,7 +130,6 @@ public class ResourceSelectionPresenter implements Presenter
         if (type == User.class || type == Allocatable.class)
         {
             Entity entity = (Entity) focusedObject;
-
             PopupContext popupContext = dialogUiFactory.createPopupContext(view);
             PermissionController permissionController = getRaplaFacade().getPermissionController();
             try
@@ -213,7 +171,7 @@ public class ResourceSelectionPresenter implements Presenter
     {
         try
         {
-            HashSet<Object> selectedElements = new HashSet<Object>(elements);
+            HashSet<Object> selectedElements = new HashSet<>(elements);
             getModel().setSelectedObjects(selectedElements);
             updateMenu();
             applyFilter();

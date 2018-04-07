@@ -20,10 +20,10 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 import org.rapla.client.dialog.DialogUiFactoryInterface;
-import org.rapla.client.swing.InfoFactory;
+import org.rapla.client.dialog.InfoFactory;
+import org.rapla.client.dialog.swing.DialogUI.DialogUiFactory;
 import org.rapla.client.swing.SwingSchedulerImpl;
 import org.rapla.client.swing.TreeFactory;
-import org.rapla.client.swing.images.RaplaImages;
 import org.rapla.client.swing.internal.RaplaDateRenderer;
 import org.rapla.client.swing.internal.edit.ClassifiableFilterEdit;
 import org.rapla.client.swing.internal.edit.fields.BooleanField.BooleanFieldFactory;
@@ -32,10 +32,9 @@ import org.rapla.client.swing.internal.edit.fields.LongField.LongFieldFactory;
 import org.rapla.client.swing.internal.edit.fields.TextField.TextFieldFactory;
 import org.rapla.client.swing.internal.view.InfoFactoryImpl;
 import org.rapla.client.swing.internal.view.TreeFactoryImpl;
-import org.rapla.client.swing.toolkit.DialogUI.DialogUiFactory;
-import org.rapla.client.swing.toolkit.FrameControllerList;
 import org.rapla.components.calendar.DateRenderer;
-import org.rapla.components.i18n.internal.DefaultBundleManager;
+import org.rapla.components.i18n.internal.AbstractBundleManager;
+import org.rapla.components.i18n.server.ServerBundleManager;
 import org.rapla.components.iolayer.DefaultIO;
 import org.rapla.components.iolayer.IOInterface;
 import org.rapla.components.util.DateTools;
@@ -50,13 +49,14 @@ import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.entities.dynamictype.DynamicTypeAnnotations;
 import org.rapla.entities.dynamictype.internal.AttributeImpl;
 import org.rapla.facade.CalendarSelectionModel;
-import org.rapla.facade.client.ClientFacade;
 import org.rapla.facade.RaplaFacade;
+import org.rapla.facade.client.ClientFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.internal.RaplaLocaleImpl;
 import org.rapla.logger.Logger;
 import org.rapla.scheduler.CommandScheduler;
+import org.rapla.scheduler.sync.SynchronizedCompletablePromise;
 import org.rapla.test.util.RaplaTestCase;
 
 import java.util.Date;
@@ -110,7 +110,7 @@ public class DynamicTypeTest  {
     {
 	  Reservation event = facade.newReservationDeprecated();
     	event.getClassification().setValue("name", "test");
-    	Appointment app = facade.newAppointment( new Date() , DateTools.addDay(new Date()));
+    	Appointment app = facade.newAppointmentDeprecated( new Date() , DateTools.addDay(new Date()));
     	event.addAppointment( app );
     	
     	DynamicType eventType = event.getClassification().getType();
@@ -135,7 +135,7 @@ public class DynamicTypeTest  {
 	    	Assert.assertNotNull(firstFilter);
 	    	firstFilter.addRule(key, new Object[][] {{"=",Boolean.TRUE}});
 	    	model.setReservationFilter( new ClassificationFilter[] { firstFilter});
-	    	model.save("test");
+	    	SynchronizedCompletablePromise.waitFor(model.save("test"),500, logger);
 			Thread.sleep(100);
     	}   	
     	{
@@ -186,17 +186,15 @@ public class DynamicTypeTest  {
 	    	facade.store(type);
    	}
    	{
-            final DefaultBundleManager bundleManager = new DefaultBundleManager();
+            final AbstractBundleManager bundleManager = new ServerBundleManager();
             RaplaResources i18n = new RaplaResources(bundleManager);
             RaplaLocale raplaLocale = new RaplaLocaleImpl(bundleManager);
             AppointmentFormater appointmentFormater = new AppointmentFormaterImpl(i18n, raplaLocale);
             IOInterface ioInterface = new DefaultIO(logger);
-            final RaplaImages raplaImages = new RaplaImages(logger);
-            FrameControllerList frameList = new FrameControllerList(logger);
 			CommandScheduler scheduler = new SwingSchedulerImpl(logger);
-            DialogUiFactoryInterface dialogUiFactory = new DialogUiFactory(i18n, raplaImages, scheduler,bundleManager, frameList, logger);
-            InfoFactory infoFactory = new InfoFactoryImpl(clientFacade, i18n, raplaLocale, logger, appointmentFormater, ioInterface, raplaImages, dialogUiFactory);
-   	        TreeFactory treeFactory = new TreeFactoryImpl(clientFacade, i18n, raplaLocale, logger, infoFactory, raplaImages);
+            DialogUiFactoryInterface dialogUiFactory = new DialogUiFactory(i18n,  scheduler,bundleManager,  logger);
+            InfoFactory infoFactory = new InfoFactoryImpl(clientFacade, i18n, raplaLocale, logger, appointmentFormater, ioInterface,  dialogUiFactory);
+   	        TreeFactory treeFactory = new TreeFactoryImpl(clientFacade, i18n, raplaLocale, logger, infoFactory);
 	    	model.queryReservations(model.getTimeIntervall());
 	    	Thread.sleep(100);
 			boolean isResourceOnly = true;
@@ -205,7 +203,7 @@ public class DynamicTypeTest  {
             BooleanFieldFactory booleanFieldFactory = new BooleanFieldFactory(clientFacade, i18n, raplaLocale, logger);
             TextFieldFactory textFieldFactory = new TextFieldFactory(clientFacade, i18n, raplaLocale, logger, ioInterface);
             LongFieldFactory longFieldFactory = new LongFieldFactory(clientFacade, i18n, raplaLocale, logger, ioInterface);
-            ClassifiableFilterEdit ui = new ClassifiableFilterEdit( clientFacade, i18n, raplaLocale, logger, treeFactory, isResourceOnly, raplaImages, dateFieldFactory, dialogUiFactory, booleanFieldFactory, textFieldFactory, longFieldFactory);
+            ClassifiableFilterEdit ui = new ClassifiableFilterEdit( clientFacade, i18n, raplaLocale, logger, treeFactory, isResourceOnly,  dateFieldFactory, dialogUiFactory, booleanFieldFactory, textFieldFactory, longFieldFactory);
 			ui.setFilter( model);
    	}
   // 	List<String> errorMessages = RaplaTestLogManager.getErrorMessages();

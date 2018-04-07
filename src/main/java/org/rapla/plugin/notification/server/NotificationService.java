@@ -15,10 +15,10 @@ package org.rapla.plugin.notification.server;
 import io.reactivex.disposables.Disposable;
 import io.reactivex.functions.Action;
 import org.rapla.RaplaResources;
-import org.rapla.client.swing.toolkit.FrameControllerList;
 import org.rapla.components.util.DateTools;
 import org.rapla.entities.User;
 import org.rapla.entities.configuration.Preferences;
+import org.rapla.entities.configuration.RaplaMap;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.Appointment;
 import org.rapla.entities.domain.AppointmentFormater;
@@ -172,7 +172,7 @@ public class NotificationService implements ServerExtension
         {
             getLogger().debug("Mail check triggered");
             User[] users = raplaFacade.getUsers();
-            List<AllocationMail> mailList = new ArrayList<AllocationMail>();
+            List<AllocationMail> mailList = new ArrayList<>();
             // we check for each user if a mail must be sent
             for (int i = 0; i < users.length; i++)
             {
@@ -181,7 +181,7 @@ public class NotificationService implements ServerExtension
                     continue;
 
                 Preferences preferences = raplaFacade.getPreferences(user);
-                Map<String, Allocatable> allocatableMap = null;
+                RaplaMap< Allocatable> allocatableMap = null;
 
                 if (preferences != null && preferences.getEntry(NotificationPlugin.ALLOCATIONLISTENERS_CONFIG) != null)
                 {
@@ -196,7 +196,7 @@ public class NotificationService implements ServerExtension
                     boolean notifyIfOwner = preferences.getEntryAsBoolean(NotificationPlugin.NOTIFY_IF_OWNER_CONFIG, false);
                     final ReferenceInfo<User> ownerId = preferences.getOwnerRef();
                     final User owner = ownerId != null ? raplaFacade.getOperator().resolve(ownerId) : null;
-                    AllocationMail mail = getAllocationMail(new HashSet<Allocatable>(allocatableMap.values()), updateResult, owner, notifyIfOwner);
+                    AllocationMail mail = getAllocationMail(new HashSet<>(allocatableMap.values()), updateResult, owner, notifyIfOwner);
                     if (mail != null)
                     {
                         mailList.add(mail);
@@ -247,8 +247,8 @@ public class NotificationService implements ServerExtension
         {
             return null;
         }
-        final HashMap<Reservation, List<AllocationChangeEvent>> reservationMap = new HashMap<Reservation, List<AllocationChangeEvent>>(4);
-        final HashSet<Allocatable> changedAllocatables = new HashSet<Allocatable>();
+        final HashMap<Reservation, List<AllocationChangeEvent>> reservationMap = new HashMap<>(4);
+        final HashSet<Allocatable> changedAllocatables = new HashSet<>();
         final List<AllocationChangeEvent> changeEvents = AllocationChangeFinder.getTriggerEvents(updateResult, owner, logger, operator);
         for (int i = 0; i < changeEvents.size(); i++)
         {
@@ -268,7 +268,7 @@ public class NotificationService implements ServerExtension
             List<AllocationChangeEvent> eventList = reservationMap.get(reservation);
             if (eventList == null)
             {
-                eventList = new ArrayList<AllocationChangeEvent>(3);
+                eventList = new ArrayList<>(3);
                 reservationMap.put(reservation, eventList);
             }
             changedAllocatables.add(allocatable);
@@ -379,7 +379,7 @@ public class NotificationService implements ServerExtension
             }
             */
             Reservation newReservation = event.getNewReservation();
-            if (newReservation != null && changed == false)
+            if (newReservation != null && !changed)
             {
                 User eventUser = event.getUser();
                 ReferenceInfo<User> lastChangedBy = newReservation.getLastChangedBy();

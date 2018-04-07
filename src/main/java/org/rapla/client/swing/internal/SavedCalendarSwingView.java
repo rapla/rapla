@@ -1,18 +1,18 @@
 package org.rapla.client.swing.internal;
 
+import io.reactivex.functions.Action;
 import org.rapla.RaplaResources;
 import org.rapla.client.CalendarPlacePresenter;
 import org.rapla.client.PopupContext;
+import org.rapla.client.dialog.DeleteDialogInterface;
 import org.rapla.client.dialog.DialogInterface;
 import org.rapla.client.dialog.DialogUiFactoryInterface;
 import org.rapla.client.event.ApplicationEvent;
 import org.rapla.client.event.ApplicationEventBus;
 import org.rapla.client.extensionpoints.PublishExtensionFactory;
 import org.rapla.client.internal.SavedCalendarInterface;
-import org.rapla.client.swing.InfoFactory;
 import org.rapla.client.swing.RaplaAction;
 import org.rapla.client.swing.RaplaGUIComponent;
-import org.rapla.client.swing.images.RaplaImages;
 import org.rapla.client.swing.toolkit.ActionWrapper;
 import org.rapla.client.swing.toolkit.RaplaMenu;
 import org.rapla.components.iolayer.IOInterface;
@@ -20,10 +20,11 @@ import org.rapla.components.layout.TableLayout;
 import org.rapla.entities.User;
 import org.rapla.entities.configuration.CalendarModelConfiguration;
 import org.rapla.entities.configuration.Preferences;
+import org.rapla.entities.configuration.RaplaMap;
 import org.rapla.facade.CalendarModel;
 import org.rapla.facade.CalendarSelectionModel;
-import org.rapla.facade.client.ClientFacade;
 import org.rapla.facade.RaplaFacade;
+import org.rapla.facade.client.ClientFacade;
 import org.rapla.facade.internal.CalendarModelImpl;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaInitializationException;
@@ -35,6 +36,7 @@ import org.rapla.logger.Logger;
 import org.rapla.plugin.autoexport.AutoExportPlugin;
 import org.rapla.plugin.tableview.client.swing.AppointmentTableViewFactory;
 import org.rapla.plugin.tableview.client.swing.ReservationTableViewFactory;
+import org.rapla.scheduler.Promise;
 
 import javax.inject.Inject;
 import javax.swing.BorderFactory;
@@ -72,7 +74,7 @@ public class SavedCalendarSwingView extends RaplaGUIComponent implements SavedCa
     JComboBox selectionBox;
     private final ApplicationEventBus eventBus;
     private boolean listenersEnabled = true;
-    List<FileEntry> filenames = new ArrayList<FileEntry>();
+    List<FileEntry> filenames = new ArrayList<>();
     final CalendarSelectionModel model;
     JToolBar toolbar = new JToolBar();
     private final Set<PublishExtensionFactory> extensionFactories;
@@ -85,7 +87,7 @@ public class SavedCalendarSwingView extends RaplaGUIComponent implements SavedCa
             final String name = getString("save") ;
             putValue(NAME,name);
             putValue(SHORT_DESCRIPTION,name);
-            putValue(SMALL_ICON,raplaImages.getIconFromKey("icon.save"));
+            setIcon(i18n.getIcon("icon.save"));
         }
 
         public void actionPerformed() {
@@ -101,8 +103,8 @@ public class SavedCalendarSwingView extends RaplaGUIComponent implements SavedCa
             final String name = getString("publish") ;
             putValue(NAME,name);
             putValue(SHORT_DESCRIPTION,name);
-            putValue(SMALL_ICON,raplaImages.getIconFromKey("icon.export"));
-            publishDialog = new PublishDialog(environment,facade, i18n, raplaLocale, logger, extensionFactories, raplaImages, dialogUiFactory);
+            setIcon(i18n.getIcon("icon.export"));
+            publishDialog = new PublishDialog(environment,facade, i18n, raplaLocale, logger, extensionFactories,  dialogUiFactory);
         }
 
         public void actionPerformed() {
@@ -140,23 +142,14 @@ public class SavedCalendarSwingView extends RaplaGUIComponent implements SavedCa
             final String name = getString("delete");
             putValue(NAME,name);
             putValue(SHORT_DESCRIPTION,name);
-            putValue(SMALL_ICON,raplaImages.getIconFromKey("icon.delete"));
+            setIcon(i18n.getIcon("icon.delete"));
             
         }
 
         public void actionPerformed() {
-            try 
-            {
-                String[] objects = new String[] { getSelectedFile().name};
-                DialogInterface dlg = infoFactory.createDeleteDialog( objects , null);
-                dlg.start(true);
-                if (dlg.getSelectedIndex() != 0)
-                    return;
-                delete();
-            }
-            catch (RaplaException ex) {
-                dialogUiFactory.showException( ex, null);
-            }
+            String[] objects = new String[] { getSelectedFile().name};
+            PopupContext popupContext = null;
+            deleteDialogInterface.showDeleteDialog(popupContext,objects).thenAccept(result->{if (result) delete();}).exceptionally((ex)->dialogUiFactory.showException(ex,popupContext));
         }
     }
     
@@ -164,9 +157,7 @@ public class SavedCalendarSwingView extends RaplaGUIComponent implements SavedCa
     final PublishAction publishAction;
     final DeleteAction deleteAction;
 
-    private final InfoFactory infoFactory;
-
-    private final RaplaImages raplaImages;
+    private final DeleteDialogInterface deleteDialogInterface;
 
     private final DialogUiFactoryInterface dialogUiFactory;
 
@@ -225,14 +216,13 @@ public class SavedCalendarSwingView extends RaplaGUIComponent implements SavedCa
     }
 
     @Inject
-    public SavedCalendarSwingView(RaplaMenuBarContainer bar, ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, ApplicationEventBus eventBus, final CalendarSelectionModel model, Set<PublishExtensionFactory> extensionFactories, StartupEnvironment environment, InfoFactory infoFactory,
-                                  RaplaImages raplaImages, DialogUiFactoryInterface dialogUiFactory, IOInterface ioInterface) throws RaplaInitializationException {
+    public SavedCalendarSwingView(RaplaMenuBarContainer bar, ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, ApplicationEventBus eventBus, final CalendarSelectionModel model, Set<PublishExtensionFactory> extensionFactories, StartupEnvironment environment,
+                                  DeleteDialogInterface deleteDialogInterface,  DialogUiFactoryInterface dialogUiFactory, IOInterface ioInterface) throws RaplaInitializationException {
         super(facade, i18n, raplaLocale, logger);
         this.eventBus = eventBus;
         this.extensionFactories = extensionFactories;
         this.environment = environment;
-        this.infoFactory = infoFactory;
-        this.raplaImages = raplaImages;
+        this.deleteDialogInterface = deleteDialogInterface;
         this.dialogUiFactory = dialogUiFactory;
         this.ioInterface = ioInterface;
         // I18nBundle i18n = getI18n();
@@ -259,12 +249,12 @@ public class SavedCalendarSwingView extends RaplaGUIComponent implements SavedCa
         save.setAction(new ActionWrapper(saveAction));
         publish.setAction(new ActionWrapper(publishAction));
         RaplaMenu settingsMenu = bar.getSettingsMenu();
-        settingsMenu.insertAfterId(new JMenuItem(new ActionWrapper(saveAction)), null);
+        settingsMenu.insertAfterId(()->new JMenuItem(new ActionWrapper(saveAction)), null);
         if ( publishAction.hasPublishActions())
         {
-            settingsMenu.insertAfterId(new JMenuItem(new ActionWrapper(publishAction)), null);
+            settingsMenu.insertAfterId(()->new JMenuItem(new ActionWrapper(publishAction)), null);
         }
-        settingsMenu.insertAfterId(new JMenuItem(new ActionWrapper(deleteAction)),null);
+        settingsMenu.insertAfterId(()->new JMenuItem(new ActionWrapper(deleteAction)),null);
         
         delete.setAction(new ActionWrapper(deleteAction));
        // toolbar.add(new JLabel(getString("calendar")));
@@ -366,10 +356,11 @@ public class SavedCalendarSwingView extends RaplaGUIComponent implements SavedCa
     {
         final User user = getClientFacade().getUser();
         final Preferences preferences = getFacade().getPreferences(user);
-		Map<String, CalendarModelConfiguration> exportMap= preferences.getEntry(AutoExportPlugin.PLUGIN_ENTRY);
+		RaplaMap<CalendarModelConfiguration> exportMap= preferences.getEntry(AutoExportPlugin.PLUGIN_ENTRY);
 		filenames.clear();
          
 		if ( exportMap != null) {
+		    exportMap.keySet().toArray(new String[]{});
 		    for (Iterator<String> it= exportMap.keySet().iterator();it.hasNext();) {
 		        String filename = it.next();
 		        filenames.add( new FileEntry(filename));
@@ -389,15 +380,15 @@ public class SavedCalendarSwingView extends RaplaGUIComponent implements SavedCa
     public void updateActions() {
         FileEntry selectedFile = getSelectedFile();
         boolean isDefault = selectedFile == null || selectedFile.isDefault ;
-        final boolean modifyPreferencesAllowed = isModifyPreferencesAllowed() && getUpdateModule().getTemplate() == null;
+        final boolean modifyPreferencesAllowed = isModifyPreferencesAllowed() && getClientFacade().getTemplate() == null;
         saveAction.setEnabled(modifyPreferencesAllowed );
         publishAction.setEnabled( modifyPreferencesAllowed);
         deleteAction.setEnabled( !isDefault && modifyPreferencesAllowed);
     }
     
-    public void save(final String filename) throws RaplaException 
+    private Promise<Void> save(final String filename)
     {
-        ((CalendarModelImpl)model).save(filename);
+        return ((CalendarModelImpl)model).save(filename);
 
         // TODO Enable undo with a specific implementation, that does not overwrite all preference changes and regards dynamic type changes
 //        Map<Preferences, Preferences> originalMap = getModification().getPersistant(Collections.singletonList(preferences) );
@@ -422,8 +413,8 @@ public class SavedCalendarSwingView extends RaplaGUIComponent implements SavedCa
         final RaplaFacade facade = getFacade();
 
         facade.editAsync(facade.getPreferences(user)).thenApply(preferences -> {
-                    Map<String, CalendarModelConfiguration> exportMap = preferences.getEntry(AutoExportPlugin.PLUGIN_ENTRY);
-                    Map<String, CalendarModelConfiguration> newMap = new TreeMap<String, CalendarModelConfiguration>();
+                    RaplaMap<CalendarModelConfiguration> exportMap = preferences.getEntry(AutoExportPlugin.PLUGIN_ENTRY);
+                    Map<String, CalendarModelConfiguration> newMap = new TreeMap<>();
                     for (Iterator<String> it = exportMap.keySet().iterator(); it.hasNext(); ) {
                         String filename = it.next();
                         if (!filename.equals(selectedFile.name)) {
@@ -461,9 +452,6 @@ public class SavedCalendarSwingView extends RaplaGUIComponent implements SavedCa
         final FileEntry selectedFile = getSelectedFile();
         
         final Component parentComponent = getMainComponent();
-        try {
-            
-   
         JPanel panel = new JPanel();
         final JTextField textField = new JTextField(20);
         addCopyPaste( textField, getI18n(), getRaplaLocale(), ioInterface, getLogger());
@@ -499,44 +487,40 @@ public class SavedCalendarSwingView extends RaplaGUIComponent implements SavedCa
         	list.setSelectedValue( selectedItem,true);
         }
         textField.setText( selectedFile.toString());
-        list.addListSelectionListener( new ListSelectionListener() {
+        final SwingPopupContext popupContext = new SwingPopupContext(parentComponent, null);
 
-            public void valueChanged( ListSelectionEvent e )
-            {
-            	FileEntry filename = (FileEntry) list.getSelectedValue();
-                if ( filename != null) {
-                    textField.setText( filename.toString() );
-                    try {
-                        final CalendarSelectionModel m = getFacade().newCalendarModel( getUser());
-                        if (filename.isDefault )
-                        {
-                         	m.load(null);
-                        }
-                        else
-                        {
-                        	m.load(filename.toString());
-                        }
-                        final String entry = m.getOption(CalendarModel.SAVE_SELECTED_DATE);
-                        if( entry != null)
-                        	saveSelectedDateField.setSelected(entry.equals("true"));
-                    } catch (RaplaException ex) {
-                        dialogUiFactory.showException( ex, dialogUiFactory.createPopupContext( null));
+        list.addListSelectionListener(e -> {
+            FileEntry filename = (FileEntry) list.getSelectedValue();
+            if ( filename != null) {
+                textField.setText( filename.toString() );
+                try {
+                    final CalendarSelectionModel m = getFacade().newCalendarModel( getUser());
+                    if (filename.isDefault )
+                    {
+                         m.load(null);
                     }
+                    else
+                    {
+                        m.load(filename.toString());
+                    }
+                    final String entry1 = m.getOption(CalendarModel.SAVE_SELECTED_DATE);
+                    if( entry1 != null)
+                        saveSelectedDateField.setSelected(entry1.equals("true"));
+                } catch (RaplaException ex) {
+                    dialogUiFactory.showException( ex, popupContext);
                 }
-              
             }
-
         });
-        
-        final DialogInterface dlg = dialogUiFactory.create(
-                                        new SwingPopupContext(parentComponent, null),true,panel,
+
+        final DialogInterface dlg = dialogUiFactory.createContentDialog(
+                popupContext, panel,
                                        new String[] {
                                            getString("save")
                                            ,getString("cancel")
                                        });
         dlg.setTitle(getString("save") + " " +getString("calendar_settings"));
-        dlg.getAction(0).setIcon("icon.save");
-        dlg.getAction(1).setIcon("icon.cancel");
+        dlg.getAction(0).setIcon(i18n.getIcon("icon.save"));
+        dlg.getAction(1).setIcon(i18n.getIcon("icon.cancel"));
         dlg.getAction(0).setRunnable( new Runnable() {
             private static final long serialVersionUID = 1L;
 
@@ -544,75 +528,55 @@ public class SavedCalendarSwingView extends RaplaGUIComponent implements SavedCa
                 String filename = textField.getText().trim();
                 if (filename.length() == 0)
                 {
-                    dialogUiFactory.showWarning(getString("error.no_name"), new SwingPopupContext(parentComponent, null));
+                    dialogUiFactory.showWarning(getString("error.no_name"), popupContext);
                     return;
                 }
-                dlg.close();
-               
-                
-                try 
+                String saveSelectedDate = saveSelectedDateField.isSelected() ? "true" : "false";
+                model.setOption( CalendarModel.SAVE_SELECTED_DATE, saveSelectedDate);
+                FileEntry selectedValue = (FileEntry)list.getSelectedValue();
+                final boolean isDefault;
+                if ( selectedValue != null)
                 {
-                    String saveSelectedDate = saveSelectedDateField.isSelected() ? "true" : "false";
-                    model.setOption( CalendarModel.SAVE_SELECTED_DATE, saveSelectedDate);
-                    FileEntry selectedValue = (FileEntry)list.getSelectedValue();
-                    final boolean isDefault;
-                    if ( selectedValue != null)
-                    {
-                    	isDefault = selectedValue.isDefault && filename.equals( selectedValue.name );
-                    }
-                    else
-                    {
-                    	isDefault = filename.equals( getString("default") );
-                    }
-                    if ( isDefault)
-                    {
-                    	save(null);
-                    	try
-	                    {
-	                        listenersEnabled = false;
-	                        selectionBox.setSelectedIndex(0);
-	                    }
-	                    finally
-	                    {
-	                        listenersEnabled = true;
-	                    } 
-                    }
-                    else
-                    {
-	                    // We reset exports for newly created files
-                    	{
-                    		FileEntry fileEntry = findInModel(filename);
-							if ( fileEntry == null)
-		                    {
-		                        model.resetExports();
-							}
-                    	}
-	                    save(filename);
-	                    try
-	                    {
-	                    	listenersEnabled = false;
-	                    	updateModel();
-	                    	FileEntry fileEntry = findInModel(filename);
-	                        if ( fileEntry != null)
-	                        {
-	                        	selectionBox.setSelectedItem( fileEntry);
-	                        }
-	                        else 
-	                        {
-	                        	selectionBox.setSelectedIndex(0);
-	                        }
-	                    }
-	                    finally
-	                    {
-	                        listenersEnabled = true;
-	                    }
-                    }
+                    isDefault = selectedValue.isDefault && filename.equals( selectedValue.name );
                 }
-                catch (RaplaException ex) 
+                else
                 {
-                    dialogUiFactory.showException( ex, new SwingPopupContext(parentComponent, null));
+                    isDefault = filename.equals( getString("default") );
                 }
-                
+                final Promise<Void> promise;
+                listenersEnabled = false;
+                dlg.busy(getI18n().getString("save"));
+                if ( isDefault)
+                {
+                    promise = save(null).finally_(() -> { listenersEnabled = true;dlg.idle();}).thenRun(() -> selectionBox.setSelectedIndex(0));
+                    handleException(promise);
+                }
+                else
+                {
+                    // We reset exports for newly created files
+                    {
+                        FileEntry fileEntry = findInModel(filename);
+                        if ( fileEntry == null)
+                        {
+                            model.resetExports();
+                        }
+                    }
+                    Action update = ()->
+                    {
+                        updateModel();
+                        FileEntry fileEntry = findInModel(filename);
+                        if ( fileEntry != null)
+                        {
+                            selectionBox.setSelectedItem( fileEntry);
+                        }
+                        else
+                        {
+                            selectionBox.setSelectedIndex(0);
+                        }
+                    };
+                    promise =save(filename).thenRun(update).finally_(()->{ listenersEnabled = true;dlg.idle();});
+                }
+                handleException(promise.thenRun(()->dlg.close()));
             }
 
             private FileEntry findInModel(String filename) 
@@ -632,12 +596,13 @@ public class SavedCalendarSwingView extends RaplaGUIComponent implements SavedCa
 
 
         });
-        dlg.start(true);
-        } catch (RaplaException ex) {
-            dialogUiFactory.showException( ex, new SwingPopupContext(parentComponent, null));
-        }
+        dlg.start(true).thenApply((index) -> Promise.VOID).exceptionally((ex)->dialogUiFactory.showException( ex, null));
     }
-    
+
+    private void handleException(Promise<Void> promise) {
+        promise.exceptionally((ex)->dialogUiFactory.showException(ex,null));
+    }
+
     private FileEntry getSelectedFile() 
     {
 		ComboBoxModel model2 = selectionBox.getModel();

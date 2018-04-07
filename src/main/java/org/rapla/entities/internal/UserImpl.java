@@ -131,21 +131,7 @@ public class UserImpl extends SimpleEntity implements User, ModifiableTimestamp
 
     public String getName(Locale locale) 
     {
-        final Allocatable person = getPerson();
-        if ( person != null)
-        {
-            return person.getName(locale);
-        }
-
-        final String name = getName();
-        if ( name == null || name.length() == 0)
-        {
-        	return getUsername();
-        }
-        else
-        {
-        	return name;
-        }
+        return getUsername();
     }
 
 
@@ -286,7 +272,7 @@ public class UserImpl extends SimpleEntity implements User, ModifiableTimestamp
     }
 
     public static Collection<String> getGroupsIncludingParents(User user) {
-        Collection<String> groups = new HashSet<String>( );
+        Collection<String> groups = new HashSet<>();
         for ( Category group: user.getGroupList())
         {
             groups.add( group.getId());

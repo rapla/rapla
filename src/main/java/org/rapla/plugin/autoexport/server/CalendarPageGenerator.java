@@ -58,7 +58,7 @@ import java.util.TreeSet;
 
 /******* USAGE: ************
  * ReadOnly calendarview view.
- * You will need the autoexport plugin to create a calendarview-view.
+ * You will need the autoexport plugin to createInfoDialog a calendarview-view.
  *
  * Call:
  * rapla/calendar?user=<username>&file=<export_name>
@@ -136,7 +136,7 @@ public class CalendarPageGenerator
         {
             response.setContentType("text/html; charset=" + raplaLocale.getCharsetNonUtf());
 
-            SortedSet<User> sortedUsers = new TreeSet<User>(User.USER_COMPARATOR);
+            SortedSet<User> sortedUsers = new TreeSet<>(User.USER_COMPARATOR);
             sortedUsers.addAll(Arrays.asList(users));
 
             String calendarName = facade.getSystemPreferences().getEntryAsString(AbstractRaplaLocale.TITLE, i18n.getString("rapla.title"));
@@ -153,7 +153,7 @@ public class CalendarPageGenerator
             for (User user : sortedUsers)
             {
                 Preferences preferences = facade.getPreferences(user);
-                LinkedHashMap<String, CalendarModelConfiguration> completeMap = new LinkedHashMap<String, CalendarModelConfiguration>();
+                LinkedHashMap<String, CalendarModelConfiguration> completeMap = new LinkedHashMap<>();
                 CalendarModelConfiguration defaultConf = preferences.getEntry(CalendarModelConfiguration.CONFIG_ENTRY);
                 if (defaultConf != null)
                 {
@@ -169,7 +169,7 @@ public class CalendarPageGenerator
                         completeMap.put(entry.getKey(), value);
                     }
                 }
-                SortedMap<String, CalendarModelConfiguration> sortedMap = new TreeMap<String, CalendarModelConfiguration>(new TitleComparator(completeMap));
+                SortedMap<String, CalendarModelConfiguration> sortedMap = new TreeMap<>(new TitleComparator(completeMap));
                 sortedMap.putAll(completeMap);
                 Iterator<Map.Entry<String, CalendarModelConfiguration>> it = sortedMap.entrySet().iterator();
 

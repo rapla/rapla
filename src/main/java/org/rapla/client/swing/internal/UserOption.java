@@ -16,13 +16,12 @@ import org.rapla.RaplaResources;
 import org.rapla.client.PopupContext;
 import org.rapla.client.dialog.DialogInterface;
 import org.rapla.client.dialog.DialogUiFactoryInterface;
+import org.rapla.client.dialog.swing.DialogUI;
 import org.rapla.client.extensionpoints.UserOptionPanel;
 import org.rapla.client.internal.LanguageChooser;
 import org.rapla.client.swing.RaplaGUIComponent;
-import org.rapla.client.swing.images.RaplaImages;
-import org.rapla.client.swing.internal.action.user.PasswordChangeAction;
+import org.rapla.client.menu.PasswordChangeAction;
 import org.rapla.client.swing.toolkit.ActionWrapper;
-import org.rapla.client.swing.toolkit.DialogUI;
 import org.rapla.client.swing.toolkit.RaplaButton;
 import org.rapla.components.iolayer.IOInterface;
 import org.rapla.components.layout.TableLayout;
@@ -39,11 +38,13 @@ import org.rapla.inject.Extension;
 import org.rapla.logger.Logger;
 
 import javax.inject.Inject;
+import javax.inject.Provider;
 import javax.swing.AbstractAction;
 import javax.swing.JComponent;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JTextField;
+import javax.swing.SwingUtilities;
 import java.awt.BorderLayout;
 import java.awt.GridLayout;
 import java.awt.event.ActionEvent;
@@ -65,18 +66,18 @@ public class UserOption extends RaplaGUIComponent implements UserOptionPanel
 
     Preferences preferences;
 
-    private final RaplaImages raplaImages;
 
     private final DialogUiFactoryInterface dialogUiFactory;
 
     private final IOInterface ioInterface;
+    private final Provider<PasswordChangeAction> passwordChangeAction;
 
     @Inject
-    public UserOption(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, RaplaImages raplaImages,
-            DialogUiFactoryInterface dialogUiFactory, IOInterface ioInterface)
+    public UserOption(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger,
+            DialogUiFactoryInterface dialogUiFactory, IOInterface ioInterface,Provider<PasswordChangeAction> passwordChangeAction)
     {
         super(facade, i18n, raplaLocale, logger);
-        this.raplaImages = raplaImages;
+        this.passwordChangeAction = passwordChangeAction;
         this.dialogUiFactory = dialogUiFactory;
         this.ioInterface = ioInterface;
     }
@@ -120,12 +121,12 @@ public class UserOption extends RaplaGUIComponent implements UserOptionPanel
         superPanel.add(new JLabel(getString("password") + ":"), "0,8");
         superPanel.add(new JLabel("****"), "2,8");
         superPanel.add(changePasswordButton, "4,8");
-        PasswordChangeAction passwordChangeAction = new PasswordChangeAction(getClientFacade(), getI18n(), getRaplaLocale(), getLogger(),
-                createPopupContext(getComponent(), null), raplaImages, dialogUiFactory);
+        PopupContext popupContext = createPopupContext(getComponent(), null);
+        PasswordChangeAction passwordChangeAction = this.passwordChangeAction.get().setPopupContext( popupContext);
         User user = getUser();
         passwordChangeAction.changeObject(user);
-        changePasswordButton.setAction(new ActionWrapper(passwordChangeAction));
         changePasswordButton.setText(getString("change"));
+        changePasswordButton.addActionListener((evt)->passwordChangeAction.actionPerformed());
         usernameLabel.setText(user.getUsername());
     }
 
@@ -162,6 +163,8 @@ public class UserOption extends RaplaGUIComponent implements UserOptionPanel
 
         public void actionPerformed(ActionEvent arg0)
         {
+            final PopupContext popupContext = new SwingPopupContext(getComponent(), null);
+
             try
             {
                 JPanel test = new JPanel();
@@ -176,7 +179,7 @@ public class UserOption extends RaplaGUIComponent implements UserOptionPanel
                 content.setLayout(layout);
                 test.add(new JLabel(getString("enter_name")), BorderLayout.NORTH);
                 test.add(content, BorderLayout.CENTER);
-                User user = getUserModule().getUser();
+                User user = getUser();
 
                 Allocatable person = user.getPerson();
                 JTextField inputSurname = new JTextField();
@@ -190,7 +193,7 @@ public class UserOption extends RaplaGUIComponent implements UserOptionPanel
                 {
                     Classification classification = person.getClassification();
                     DynamicType type = classification.getType();
-                    Map<String, JTextField> map = new LinkedHashMap<String, JTextField>();
+                    Map<String, JTextField> map = new LinkedHashMap<>();
                     map.put("title", inputTitle);
                     map.put("firstname", inputFirstname);
                     map.put("forename", inputFirstname);
@@ -225,21 +228,22 @@ public class UserOption extends RaplaGUIComponent implements UserOptionPanel
                     layout.setRows(1);
                 }
                 DialogInterface dlg = dialogUiFactory
-                        .create(new SwingPopupContext(getComponent(), null), true, test, new String[] { getString("save"), getString("abort") });
-                dlg.start(true);
-                if (dlg.getSelectedIndex() == 0)
-                {
-                    String title = inputTitle.getText();
-                    String firstname = inputFirstname.getText();
-                    String surname = inputSurname.getText();
-                    getUserModule().changeName(title, firstname, surname);
-
-                    nameLabel.setText(user.getName());
-                }
+                        .createContentDialog(popupContext, test, new String[] { getString("save"), getString("abort") });
+                dlg.start(true).execOn(SwingUtilities::invokeLater).thenAccept( index->
+                        {
+                            if (index == 0) {
+                                String title = inputTitle.getText();
+                                String firstname = inputFirstname.getText();
+                                String surname = inputSurname.getText();
+                                getClientFacade().changeName(title, firstname, surname);
+                                nameLabel.setText(user.getName());
+                            }
+                        }
+                    ).exceptionally(ex->dialogUiFactory.showException(ex, popupContext));
             }
             catch (RaplaException ex)
             {
-                dialogUiFactory.showException(ex, null);
+                dialogUiFactory.showException(ex, popupContext);
             }
         }
     }
@@ -276,14 +280,14 @@ public class UserOption extends RaplaGUIComponent implements UserOptionPanel
                 content.add(validate);
                 addCopyPaste(emailField, getI18n(), getRaplaLocale(), ioInterface, getLogger());
                 addCopyPaste(codeField, getI18n(), getRaplaLocale(), ioInterface, getLogger());
-                dlg = (DialogUI) dialogUiFactory.create(popupContext, true, content, new String[] { getString("save"), getString("abort") });
+                dlg = (DialogUI) dialogUiFactory.createContentDialog(popupContext, content, new String[] { getString("save"), getString("abort") });
                 validate.setAction(new EmailChangeActionA(dlg));
                 validate.setEnabled(false);
                 dlg.setDefault(0);
                 dlg.setTitle("Email");
-                dlg.getButton(0).setAction(new EmailChangeActionC(getUserModule().getUser(), dlg));
+                dlg.getButton(0).setAction(new EmailChangeActionC(getUser(), dlg));
                 dlg.getButton(0).setEnabled(false);
-                dlg.start(true);
+                dlg.start(true).exceptionally( ex->dialogUiFactory.showException( ex,popupContext));
             }
             catch (RaplaException ex)
             {
@@ -309,7 +313,7 @@ public class UserOption extends RaplaGUIComponent implements UserOptionPanel
                 PopupContext popupContext = dialogUiFactory.createPopupContext( ()->getComponent());
                 try
                 {
-                    User user = getUserModule().getUser();
+                    User user = getUser();
                     boolean correct;
                     try
                     {
@@ -359,7 +363,7 @@ public class UserOption extends RaplaGUIComponent implements UserOptionPanel
                 try
                 {
                     String recepient = rec.getText();
-                    getUserModule().confirmEmail(recepient);
+                    getClientFacade().confirmEmail(recepient);
 
                     button.setEnabled(true);
                     code.setEnabled(true);
@@ -391,7 +395,7 @@ public class UserOption extends RaplaGUIComponent implements UserOptionPanel
                 try
                 {
                     String newMail = emailField.getText();
-                    getUserModule().changeEmail(newMail);
+                    getClientFacade().changeEmail(newMail);
                     emailLabel.setText(user.getEmail());
                     dlg.close();
                 }

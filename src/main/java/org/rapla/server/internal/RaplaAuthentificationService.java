@@ -20,10 +20,10 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 import javax.servlet.http.HttpServletRequest;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 @Singleton
@@ -140,15 +140,15 @@ public class RaplaAuthentificationService
                 logger.info("Successfull for User " + username + ".Creating new Rapla user.");
                 Date now = operator.getCurrentTimestamp();
                 UserImpl newUser = new UserImpl(now, now);
-                final ReferenceInfo<User> userReferenceInfo = operator.createIdentifier(User.class, 1)[0];
+                final ReferenceInfo<User> userReferenceInfo = operator.createIdentifier(User.class, 1).get(0);
                 newUser.setId(userReferenceInfo.getId());
                 user = newUser;
             }
             else
             {
                 Set<Entity> singleton = Collections.singleton((Entity) user);
-                Collection<Entity> editList = operator.editObjects(singleton, null);
-                user = (User) editList.iterator().next();
+                Map<Entity,Entity> editList = operator.editObjects(singleton, null);
+                user = (User) editList.values().iterator().next();
             }
 
             boolean initUser;

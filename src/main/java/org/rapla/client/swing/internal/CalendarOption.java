@@ -33,7 +33,6 @@ import org.rapla.framework.DefaultConfiguration;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.inject.Extension;
-import org.rapla.inject.ExtensionRepeatable;
 import org.rapla.logger.Logger;
 
 import javax.inject.Inject;
@@ -50,10 +49,8 @@ import java.awt.FlowLayout;
 import java.util.Date;
 import java.util.Locale;
 
-@ExtensionRepeatable({
-@Extension(provides = UserOptionPanel.class,id="calendarOption"),
+@Extension(provides = UserOptionPanel.class,id="calendarOption")
 @Extension(provides = SystemOptionPanel.class,id="calendarOption")
-})
 public class CalendarOption extends RaplaGUIComponent implements UserOptionPanel,SystemOptionPanel, DateChangeListener
 {
     JPanel panel = new JPanel();
@@ -99,7 +96,7 @@ public class CalendarOption extends RaplaGUIComponent implements UserOptionPanel
         worktimeStart.setRowsPerHour( 1 );
         worktimeEnd = createRaplaTime(ioInterface);
         worktimeEnd.setRowsPerHour( 1 );
-        double pre = TableLayout.PREFERRED;
+               double pre = TableLayout.PREFERRED;
         double fill = TableLayout.FILL;
         // rows = 8 columns = 4
         panel.setLayout( new TableLayout(new double[][] {{pre, 5, pre, 5 , pre, 5, pre}, {pre,5,pre,5,pre,5,pre,5,pre,5,pre,5,pre,5,pre,5,pre,5,pre,5,pre,5,pre,5,pre,5,fill}}));

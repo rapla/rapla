@@ -27,6 +27,7 @@ import org.rapla.client.swing.internal.edit.fields.TextField;
 import org.rapla.client.swing.internal.edit.fields.TextField.TextFieldFactory;
 import org.rapla.client.swing.toolkit.RaplaButton;
 import org.rapla.client.swing.toolkit.RaplaTree;
+import org.rapla.components.i18n.I18nIcon;
 import org.rapla.entities.Category;
 import org.rapla.entities.User;
 import org.rapla.entities.domain.Allocatable;
@@ -43,10 +44,12 @@ import org.rapla.inject.Extension;
 import org.rapla.logger.Logger;
 
 import javax.inject.Inject;
+import javax.swing.JButton;
 import javax.swing.JComponent;
 import javax.swing.JPanel;
 import javax.swing.JToolBar;
 import javax.swing.JTree;
+import javax.swing.SwingUtilities;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
 import javax.swing.tree.TreeNode;
@@ -80,19 +83,17 @@ public class UserEditUI  extends AbstractEditUI<User> {
     AdminBooleanField adminField;
     GroupListField groupField;
     private final TreeFactory treeFactory;
-    private final RaplaImages raplaImages;
     private final DialogUiFactoryInterface dialogUiFactory;
     /**
      * @throws RaplaException
      */
     @Inject
-    public UserEditUI(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, TreeFactory treeFactory, RaplaImages raplaImages, DialogUiFactoryInterface dialogUiFactory, GroupListField groupField, TextFieldFactory textFieldFactory) throws
+    public UserEditUI(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, TreeFactory treeFactory, DialogUiFactoryInterface dialogUiFactory, GroupListField groupField, TextFieldFactory textFieldFactory) throws
             RaplaInitializationException {
         super(facade, i18n, raplaLocale, logger);
         this.treeFactory = treeFactory;
-        this.raplaImages = raplaImages;
         this.dialogUiFactory = dialogUiFactory;
-        List<EditField> fields = new ArrayList<EditField>();
+        List<EditField> fields = new ArrayList<>();
         usernameField = textFieldFactory.create(getString("username"));
         fields.add(usernameField);
         personSelect = new PersonSelectField(facade, i18n, raplaLocale, logger);
@@ -106,6 +107,11 @@ public class UserEditUI  extends AbstractEditUI<User> {
         this.groupField = groupField;
         fields.add(this.groupField);
         setFields(fields);
+    }
+
+    public void setIcon(JButton button, I18nIcon icon)
+    {
+        button.setIcon(RaplaImages.getIcon( icon));
     }
     
     class AdminBooleanField extends BooleanField implements ChangeListener {
@@ -196,9 +202,9 @@ public class UserEditUI  extends AbstractEditUI<User> {
             newButton.addActionListener( this );
             removeButton.addActionListener( this );
             removeButton.setText( getString("remove") );
-            removeButton.setIcon( raplaImages.getIconFromKey( "icon.remove" ) );
+            setIcon( removeButton,i18n.getIcon( "icon.remove" ) );
             newButton.setText( getString("bind_with_person") );
-            newButton.setIcon( raplaImages.getIconFromKey( "icon.new" ) );
+            setIcon(newButton, i18n.getIcon( "icon.new" ) );
 
         }
 
@@ -263,7 +269,7 @@ public class UserEditUI  extends AbstractEditUI<User> {
             treeSelection.getTree().setCellRenderer(treeFactory.createRenderer());
 
             final DynamicType[] personTypes = getQuery().getDynamicTypes(DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_PERSON);
-            List<ClassificationFilter> filters = new ArrayList<ClassificationFilter>();
+            List<ClassificationFilter> filters = new ArrayList<>();
             for (DynamicType personType: personTypes)
             {
                 if ( personType.getAttribute("email") != null)
@@ -273,7 +279,7 @@ public class UserEditUI  extends AbstractEditUI<User> {
                 }
             }
             final Allocatable[] allocatables = getQuery().getAllocatablesWithFilter(filters.toArray(ClassificationFilter.CLASSIFICATIONFILTER_ARRAY));
-            List<Allocatable> allocatablesWithEmail = new ArrayList<Allocatable>();
+            List<Allocatable> allocatablesWithEmail = new ArrayList<>();
             for ( Allocatable a: allocatables)
             {
                 final Classification classification = a.getClassification();
@@ -293,10 +299,10 @@ public class UserEditUI  extends AbstractEditUI<User> {
             treeSelection.setPreferredSize(new java.awt.Dimension(400, 260));
             
            
-            dialog = dialogUiFactory.create(
+            dialog = dialogUiFactory.createContentDialog(
                     new SwingPopupContext(getComponent(), null)
-                    ,true
-                    ,treeSelection
+                    ,
+                    treeSelection
                     ,new String[] { getString("apply"),getString("cancel")});
             final JTree tree = treeSelection.getTree();
             tree.addMouseListener(new MouseAdapter() {
@@ -318,16 +324,18 @@ public class UserEditUI  extends AbstractEditUI<User> {
                 }
             });
             dialog.setTitle(getName());
-            dialog.start(true);
-            if (dialog.getSelectedIndex() == 0) {
-                Iterator<?> it = treeSelection.getSelectedElements().iterator();
-                while (it.hasNext()) {
-                    user.setPerson((Allocatable) it.next());
-                    nameField.setValue( user.getName());
-                    emailField.setValue( user.getEmail());
-                    updateButton();
+            dialog.start(true).execOn(SwingUtilities::invokeLater).thenAccept( index->
+            {
+                if (index == 0) {
+                    Iterator<?> it = treeSelection.getSelectedElements().iterator();
+                    while (it.hasNext()) {
+                        user.setPerson((Allocatable) it.next());
+                        nameField.setValue(user.getName());
+                        emailField.setValue(user.getEmail());
+                        updateButton();
+                    }
                 }
-            }
+            });
         }
 
     }

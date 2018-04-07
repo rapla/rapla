@@ -12,6 +12,8 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.client.swing.toolkit;
 
+import org.rapla.client.menu.IdentifiableMenuEntry;
+
 import javax.swing.JMenuItem;
 
 public class RaplaMenuItem extends JMenuItem implements IdentifiableMenuEntry {
@@ -24,13 +26,15 @@ public class RaplaMenuItem extends JMenuItem implements IdentifiableMenuEntry {
         this.id = id;
     }
 
+    @Override
     public String getId() {
         return id;
     }
    
     public static RaplaMenuItem[] EMPTY_ARRAY = new RaplaMenuItem[] {};
 
-	public JMenuItem getMenuElement() {
+    @Override
+	public JMenuItem getComponent() {
 		return this;
 	}
 

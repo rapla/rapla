@@ -50,10 +50,10 @@ import java.util.UUID;
 public class ExchangeAppointmentStorage
 {
     private static final String EXCHANGE_ID = "exchange";
-    private final Map<String, Set<SynchronizationTask>> tasks = new LinkedHashMap<String, Set<SynchronizationTask>>();
+    private final Map<String, Set<SynchronizationTask>> tasks = new LinkedHashMap<>();
     private Map<String, ImportExportEntity> importExportEntities = new LinkedHashMap<>();
     //CachableStorageOperator operator;
-    TypedComponentRole<String> LAST_SYNC_ERROR_CHANGE_HASH = new TypedComponentRole<String>("org.rapla.plugin.exchangconnector.last_sync_error_change_hash");
+    TypedComponentRole<String> LAST_SYNC_ERROR_CHANGE_HASH = new TypedComponentRole<>("org.rapla.plugin.exchangconnector.last_sync_error_change_hash");
     private final JsonParserWrapper.JsonParser gson = JsonParserWrapper.defaultJson().get();
     //private static String DEFAULT_STORAGE_FILE_PATH = "data/exchangeConnector.dat";
     //	private String storageFilePath = DEFAULT_STORAGE_FILE_PATH;
@@ -78,7 +78,7 @@ public class ExchangeAppointmentStorage
 
     public Collection<SynchronizationTask> getAllTasks() throws RaplaException
     {
-        List<SynchronizationTask> result = new ArrayList<SynchronizationTask>();
+        List<SynchronizationTask> result = new ArrayList<>();
         RaplaLock.ReadLock lock = lockManager.readLock();
         try
         {
@@ -101,7 +101,7 @@ public class ExchangeAppointmentStorage
     public Collection<SynchronizationTask> getTasksForUser(ReferenceInfo<User> userId) throws RaplaException
     {
         // TODO add another index (userId to Collection<SynchronizationTask>) so we can do this faster
-        List<SynchronizationTask> result = new ArrayList<SynchronizationTask>();
+        List<SynchronizationTask> result = new ArrayList<>();
         RaplaLock.ReadLock lock = lockManager.readLock();
         try
         {
@@ -169,7 +169,7 @@ public class ExchangeAppointmentStorage
             {
                 return Collections.emptyList();
             }
-            return new ArrayList<SynchronizationTask>(set);
+            return new ArrayList<>(set);
         }
         finally
         {
@@ -224,7 +224,7 @@ public class ExchangeAppointmentStorage
                 }
                 else
                 {
-                    set = new HashSet<SynchronizationTask>();
+                    set = new HashSet<>();
                     tasks.put(appointmentId, set);
                 }
                 set.add(task);
@@ -283,7 +283,7 @@ public class ExchangeAppointmentStorage
             }
 
         }
-        Map<ReferenceInfo<User>, Set<String>> hashMap = new HashMap<ReferenceInfo<User>, Set<String>>();
+        Map<ReferenceInfo<User>, Set<String>> hashMap = new HashMap<>();
 
         for (SynchronizationTask task : toStore)
         {
@@ -378,7 +378,7 @@ public class ExchangeAppointmentStorage
         Set<String> set = hashMap.get(userId);
         if (set == null)
         {
-            set = new HashSet<String>();
+            set = new HashSet<>();
             hashMap.put(userId, set);
         }
         set.add(useInHashCalc);
@@ -420,7 +420,7 @@ public class ExchangeAppointmentStorage
             Set<SynchronizationTask> taskList = tasks.get(appointmentId);
             if (taskList == null)
             {
-                taskList = new HashSet<SynchronizationTask>();
+                taskList = new HashSet<>();
                 tasks.put(appointmentId, taskList);
             }
             taskList.add(synchronizationTask);

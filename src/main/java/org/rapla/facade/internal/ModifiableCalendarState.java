@@ -11,8 +11,8 @@ import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.entities.storage.CannotExistWithoutTypeException;
 import org.rapla.entities.storage.ReferenceInfo;
 import org.rapla.facade.CalendarSelectionModel;
-import org.rapla.facade.client.ClientFacade;
 import org.rapla.facade.ModificationEvent;
+import org.rapla.facade.client.ClientFacade;
 import org.rapla.framework.RaplaException;
 
 import javax.inject.Provider;
@@ -37,14 +37,10 @@ public class ModifiableCalendarState
     public ModifiableCalendarState(ClientFacade facade,final CalendarSelectionModel model)
     {
         this.facade = facade;
-        this.calendarModel = new Provider<CalendarSelectionModel>()
-        {
-            @Override public CalendarSelectionModel get()
-            {
-                ((CalendarModelImpl)model).setCachingEnabled( true);
-                return model;
-            }
-        } ;
+        this.calendarModel = () -> {
+            ((CalendarModelImpl)model).setCachingEnabled( true);
+            return model;
+        };
     }
 
     public ModifiableCalendarState(ClientFacade facade,Provider<CalendarSelectionModel> calendarModel)
@@ -84,7 +80,7 @@ public class ModifiableCalendarState
 
         }
         {
-            Collection<RaplaObject> newSelection = new ArrayList<RaplaObject>();
+            Collection<RaplaObject> newSelection = new ArrayList<>();
             boolean changed = false;
             for (RaplaObject obj : selectedObjects)
             {

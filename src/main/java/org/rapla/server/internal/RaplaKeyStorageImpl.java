@@ -30,9 +30,9 @@ public class RaplaKeyStorageImpl implements RaplaKeyStorage
     
 	private static final String ASYMMETRIC_ALGO = "RSA";
 
-	private static final TypedComponentRole<String> PUBLIC_KEY = new TypedComponentRole<String>("org.rapla.crypto.publicKey");
-	private static final TypedComponentRole<String> APIKEY =  new TypedComponentRole<String>("org.rapla.crypto.server.refreshToken");
-	private static final TypedComponentRole<String> PRIVATE_KEY = new TypedComponentRole<String>("org.rapla.crypto.server.privateKey");
+	private static final TypedComponentRole<String> PUBLIC_KEY = new TypedComponentRole<>("org.rapla.crypto.publicKey");
+	private static final TypedComponentRole<String> APIKEY = new TypedComponentRole<>("org.rapla.crypto.server.refreshToken");
+	private static final TypedComponentRole<String> PRIVATE_KEY = new TypedComponentRole<>("org.rapla.crypto.server.privateKey");
 
     private String rootKey;
 	private String rootPublicKey;

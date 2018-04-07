@@ -21,7 +21,6 @@ import org.rapla.components.util.DateTools;
 import org.rapla.components.util.xml.XMLWriter;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.AppointmentFormater;
-import org.rapla.facade.CalendarModel;
 import org.rapla.facade.CalendarOptions;
 import org.rapla.facade.RaplaFacade;
 import org.rapla.framework.RaplaException;
@@ -35,11 +34,6 @@ import org.rapla.plugin.compactweekview.CompactWeekviewPlugin;
 import org.rapla.server.extensionpoints.HTMLViewPage;
 
 import javax.inject.Inject;
-import javax.servlet.ServletContext;
-import javax.servlet.ServletException;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
@@ -95,7 +89,7 @@ public class HTMLCompactWeekViewPage extends AbstractHTMLCalendarPage implements
             // put all Allocatables in the same group
             strategy = new GroupAllocatablesStrategy( getRaplaLocale().getLocale() ) {
                 protected Collection<List<Block>> group(List<Block> blockList) {
-                    ArrayList<List<Block>> list = new ArrayList<List<Block>>();
+                    ArrayList<List<Block>> list = new ArrayList<>();
                     list.add( blockList );
                     return list;
                 }

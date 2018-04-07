@@ -1,6 +1,8 @@
 package org.rapla.components.i18n;
 
 import java.util.Collection;
+import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
 
@@ -15,6 +17,11 @@ public class LocalePackage
 
     public LocalePackage()
     {
+        this.bundles = new LinkedHashMap<>();
+        formats = new I18nLocaleFormats();
+        language = "en";
+        country ="UK";
+        availableLanguages = Collections.singleton("en");
     }
 
     public LocalePackage(I18nLocaleFormats formats,String language, String country,Map<String, Map<String, String>> bundles, Set<String> availableLanguages)
@@ -34,6 +41,11 @@ public class LocalePackage
     public Map<String, Map<String, String>> getBundles()
     {
         return bundles;
+    }
+
+    public Map<String,String> getBundle(String packageId)
+    {
+        return bundles.get( packageId);
     }
 
     public Collection<String> getAvailableLanguages() {

@@ -13,7 +13,7 @@ public class SortedClassifiableComparator implements Comparator<Classifiable>
 {
     Locale locale;
     NamedComparator comp;
-    Map<DynamicType,Collection<Attribute>> sortingCache = new LinkedHashMap<DynamicType,Collection<Attribute>>();
+    Map<DynamicType,Collection<Attribute>> sortingCache = new LinkedHashMap<>();
 
     public SortedClassifiableComparator(Locale locale)
     {
@@ -36,7 +36,7 @@ public class SortedClassifiableComparator implements Comparator<Classifiable>
             Collection<Attribute> sortAttributes = sortingCache.get(type1);
             if ( sortAttributes == null)
             {
-                sortAttributes = new ArrayList<Attribute>();
+                sortAttributes = new ArrayList<>();
                 for (Attribute attribute : type1.getAttributeIterable())
                 {
                     String sorting = attribute.getAnnotation(AttributeAnnotations.KEY_SORTING);

@@ -18,12 +18,10 @@ import org.rapla.client.EditController;
 import org.rapla.client.PopupContext;
 import org.rapla.client.ReservationController;
 import org.rapla.client.dialog.DialogUiFactoryInterface;
+import org.rapla.client.dialog.InfoFactory;
 import org.rapla.client.extensionpoints.ObjectMenuFactory;
 import org.rapla.client.internal.RaplaClipboard;
-import org.rapla.client.swing.InfoFactory;
-import org.rapla.client.swing.MenuFactory;
-import org.rapla.client.swing.images.RaplaImages;
-import org.rapla.client.swing.internal.SwingPopupContext;
+import org.rapla.client.menu.MenuFactory;
 import org.rapla.components.calendar.DateRenderer;
 import org.rapla.components.calendarview.Block;
 import org.rapla.components.calendarview.BlockContainer;
@@ -73,11 +71,11 @@ public class SwingCompactDayCalendar extends AbstractRaplaSwingCalendar
     public SwingCompactDayCalendar(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, CalendarModel settings, boolean editable,
             boolean printing, Set<ObjectMenuFactory> objectMenuFactories, MenuFactory menuFactory, CalendarSelectionModel calendarSelectionModel,
             RaplaClipboard clipboard, TimeslotProvider timeslotProvider, ReservationController reservationController, InfoFactory infoFactory,
-            RaplaImages raplaImages, DateRenderer dateRenderer, DialogUiFactoryInterface dialogUiFactory, IOInterface ioInterface,
+            DateRenderer dateRenderer, DialogUiFactoryInterface dialogUiFactory, IOInterface ioInterface,
             AppointmentFormater appointmentFormater, EditController editController) throws RaplaException
     {
         super(facade, i18n, raplaLocale, logger, settings, editable, printing, objectMenuFactories, menuFactory, null, calendarSelectionModel, clipboard,
-                reservationController, infoFactory, raplaImages, dateRenderer, dialogUiFactory, ioInterface, appointmentFormater, editController);
+                reservationController, infoFactory, dateRenderer, dialogUiFactory, ioInterface, appointmentFormater, editController);
         this.timeslotProvider = timeslotProvider;
     }
 
@@ -159,16 +157,16 @@ public class SwingCompactDayCalendar extends AbstractRaplaSwingCalendar
 
     }
 
-    protected ViewListener createListener() throws RaplaException
+    protected ViewListener createListener()
     {
-        return new RaplaCalendarViewListener(getClientFacade(), getI18n(), getRaplaLocale(), getLogger(), model, view.getComponent(), objectMenuFactories,
-                menuFactory, calendarSelectionModel, clipboard, reservationController, infoFactory, raplaImages, dialogUiFactory, editController)
+        return new RaplaCalendarViewListener(getClientFacade(), getI18n(), getRaplaLocale(), getLogger(), model, view.getComponent(),
+                menuFactory,   reservationController,   dialogUiFactory, editController)
         {
             @Override protected Collection<Allocatable> getMarkedAllocatables()
             {
                 List<Allocatable> selectedAllocatables = getSortedAllocatables();
                 int columns = selectedAllocatables.size();
-                Set<Allocatable> allSelected = new HashSet<Allocatable>();
+                Set<Allocatable> allSelected = new HashSet<>();
                 int slots = columns * timeslots.size();
                 for (int i = 0; i < slots; i++)
                 {
@@ -245,58 +243,51 @@ public class SwingCompactDayCalendar extends AbstractRaplaSwingCalendar
                 {
                     return;
                 }
-
-                try
+                final List<Allocatable> selectedAllocatables = getSortedAllocatables();
+                int columns = selectedAllocatables.size();
+                int column = index % columns;
+                Allocatable newAlloc = selectedAllocatables.get(column);
+                RaplaBlock raplaBlock = (RaplaBlock) block;
+                Allocatable oldAlloc = raplaBlock.getGroupAllocatable();
+                int rowIndex = index / columns;
+                Timeslot timeslot = timeslots.get(rowIndex);
+                int time = timeslot.getMinuteOfDay();
+                int minuteOfDayBefore;
+                final DateTools.TimeWithoutTimezone timeWithoutTimezone = DateTools.toTime(block.getStart().getTime());
+                minuteOfDayBefore = timeWithoutTimezone.hour * 60 + timeWithoutTimezone.minute;
+                boolean sameTimeSlot = true;
+                if (minuteOfDayBefore != time)
                 {
-                    final List<Allocatable> selectedAllocatables = getSortedAllocatables();
-                    int columns = selectedAllocatables.size();
-                    int column = index % columns;
-                    Allocatable newAlloc = selectedAllocatables.get(column);
-                    RaplaBlock raplaBlock = (RaplaBlock) block;
-                    Allocatable oldAlloc = raplaBlock.getGroupAllocatable();
-                    int rowIndex = index / columns;
-                    Timeslot timeslot = timeslots.get(rowIndex);
-                    int time = timeslot.getMinuteOfDay();
-                    int minuteOfDayBefore;
-                    final DateTools.TimeWithoutTimezone timeWithoutTimezone = DateTools.toTime(block.getStart().getTime());
-                    minuteOfDayBefore = timeWithoutTimezone.hour * 60 + timeWithoutTimezone.minute;
-                    boolean sameTimeSlot = true;
-                    if (minuteOfDayBefore != time)
+                    sameTimeSlot = false;
+                }
+                if (rowIndex + 1 < timeslots.size())
+                {
+                    Timeslot nextTimeslot = timeslots.get(rowIndex + 1);
+                    if (minuteOfDayBefore >= nextTimeslot.getMinuteOfDay())
                     {
                         sameTimeSlot = false;
                     }
-                    if (rowIndex + 1 < timeslots.size())
-                    {
-                        Timeslot nextTimeslot = timeslots.get(rowIndex + 1);
-                        if (minuteOfDayBefore >= nextTimeslot.getMinuteOfDay())
-                        {
-                            sameTimeSlot = false;
-                        }
-                    }
-
-                    if (sameTimeSlot)
-                    {
-                        time = minuteOfDayBefore;
-                    }
-                    final long l = DateTools.toTime(time / 60, time % 60, 0);
-                    newStart = DateTools.toDateTime(newStart, new Date(l));
-                    if (newAlloc != null && oldAlloc != null && !newAlloc.equals(oldAlloc))
-                    {
-                        AppointmentBlock appointmentBlock = raplaBlock.getAppointmentBlock();
-                        PopupContext popupContext = createPopupContext(getMainComponent(), p);
-                        reservationController.exchangeAllocatable(appointmentBlock, oldAlloc, newAlloc, newStart, popupContext);
-                    }
-                    else
-                    {
-
-                        moved(block, p, newStart);
-                    }
                 }
-                catch (RaplaException ex)
+
+                if (sameTimeSlot)
                 {
-                    dialogUiFactory.showException(ex, new SwingPopupContext(getMainComponent(), null));
+                    time = minuteOfDayBefore;
                 }
+                final long l = DateTools.toTime(time / 60, time % 60, 0);
+                newStart = DateTools.toDateTime(newStart, new Date(l));
+                Promise<Void> ready;
+                if (newAlloc != null && oldAlloc != null && !newAlloc.equals(oldAlloc))
+                {
+                    AppointmentBlock appointmentBlock = raplaBlock.getAppointmentBlock();
+                    PopupContext popupContext = createPopupContext(getMainComponent(), p);
+                    ready = reservationController.exchangeAllocatable(appointmentBlock, oldAlloc, newAlloc, newStart, popupContext);
+                }
+                else
+                {
 
+                    ready = moved(block, p, newStart);
+                }
+                handleException( ready);
             }
 
         };
@@ -308,7 +299,7 @@ public class SwingCompactDayCalendar extends AbstractRaplaSwingCalendar
         final Promise<RaplaBuilder> nextBuilderPromise = builderPromise.thenApply((builder) ->
         {
             timeslots = timeslotProvider.getTimeslots();
-            List<Integer> startTimes = new ArrayList<Integer>();
+            List<Integer> startTimes = new ArrayList<>();
             for (Timeslot slot : timeslots)
             {
                 startTimes.add(slot.getMinuteOfDay());
@@ -324,7 +315,7 @@ public class SwingCompactDayCalendar extends AbstractRaplaSwingCalendar
                 {
                     if (allocatables != null)
                     {
-                        Map<Block, Integer> map = new LinkedHashMap<Block, Integer>();
+                        Map<Block, Integer> map = new LinkedHashMap<>();
                         for (Block block : blocks)
                         {
                             int index = getIndex(allocatables, block);

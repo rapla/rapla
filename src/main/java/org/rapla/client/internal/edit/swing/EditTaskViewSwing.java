@@ -6,6 +6,7 @@ import org.rapla.client.PopupContext;
 import org.rapla.client.RaplaWidget;
 import org.rapla.client.dialog.DialogUiFactoryInterface;
 import org.rapla.client.internal.edit.EditTaskPresenter;
+import org.rapla.client.internal.edit.EditTaskViewFactory;
 import org.rapla.client.swing.EditComponent;
 import org.rapla.client.swing.internal.edit.AllocatableMergeEditUI;
 import org.rapla.client.swing.toolkit.RaplaButton;
@@ -20,13 +21,14 @@ import javax.inject.Provider;
 import javax.swing.JComponent;
 import javax.swing.JPanel;
 import java.awt.BorderLayout;
+import java.awt.Component;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 
-@DefaultImplementation(of = EditTaskPresenter.EditTaskView.class, context = InjectionContext.swing)
-public class EditTaskViewSwing implements EditTaskPresenter.EditTaskView
+@DefaultImplementation(of = EditTaskViewFactory.class, context = InjectionContext.swing)
+public class EditTaskViewSwing implements EditTaskViewFactory<Component>
 {
     protected final Map<String, Provider<EditComponent>> editUiProvider;
     private final DialogUiFactoryInterface dialogUiFactory;
@@ -44,8 +46,8 @@ public class EditTaskViewSwing implements EditTaskPresenter.EditTaskView
     }
 
     @Override
-    public <T extends Entity> RaplaWidget doSomething(Collection<T> toEdit, Consumer<Collection<T>> save, Runnable close, boolean isMerge) throws RaplaException
-    {
+    public <T extends Entity> EditTaskPresenter.EditTaskView<T,Component> create(Map<T,T> editMap, boolean isMerge) throws RaplaException {
+        final Collection<T> toEdit = editMap.values();
         final EditComponent<T, JComponent> ui;
         {
             T obj = toEdit.iterator().next();
@@ -68,7 +70,7 @@ public class EditTaskViewSwing implements EditTaskPresenter.EditTaskView
                 }
             }
         }
-        ui.setObjects(new ArrayList<T>(toEdit));
+        ui.setObjects(new ArrayList<>(toEdit));
         JPanel jPanel = new JPanel();
         jPanel.setLayout(new BorderLayout());
         jPanel.add(ui.getComponent(), BorderLayout.CENTER);
@@ -77,34 +79,55 @@ public class EditTaskViewSwing implements EditTaskPresenter.EditTaskView
         RaplaButton saveButton = new RaplaButton(confirmText, RaplaButton.DEFAULT);
         final RaplaWidget raplaWidget = () -> jPanel;
         final PopupContext popupContext = dialogUiFactory.createPopupContext(raplaWidget);
-        saveButton.addActionListener((evt) ->
-        {
-            try
-            {
-                ui.mapToObjects();
-                List<T> saveObjects = ui.getObjects();
-                save.accept( saveObjects);
-            }
-            catch (IllegalAnnotationException ex)
-            {
-                dialogUiFactory.showWarning(ex.getMessage(), popupContext);
-            }
-            catch (Exception ex)
-            {
-                dialogUiFactory.showException(ex, popupContext);
-            }
-        });
         RaplaButton cancelButton = new RaplaButton(i18n.getString("cancel"), RaplaButton.DEFAULT);
-        cancelButton.addActionListener((evt) ->
-        {
-            close.run();
-        });
-
         saveButton.setDefaultCapable(true);
         buttonsPanel.add(saveButton);
         buttonsPanel.add(cancelButton);
         jPanel.add(buttonsPanel, BorderLayout.SOUTH);
-        return raplaWidget;
+
+        return new EditTaskPresenter.EditTaskView<T,Component>() {
+            @Override
+            public Component getComponent() {
+                return (Component) raplaWidget.getComponent();
+            }
+
+            @Override
+            public void start(Consumer<Collection<T>> save, Runnable close, Runnable delete) {
+
+                saveButton.addActionListener((evt) ->
+                {
+                    try
+                    {
+                        ui.mapToObjects();
+                        List<T> saveObjects = ui.getObjects();
+                        save.accept( saveObjects);
+                    }
+                    catch (IllegalAnnotationException ex)
+                    {
+                        dialogUiFactory.showWarning(ex.getMessage(), popupContext);
+                    }
+                    catch (Exception ex)
+                    {
+                        dialogUiFactory.showException(ex, popupContext);
+                    }
+                });
+                cancelButton.addActionListener((evt) ->
+                {
+                    close.run();
+                });
+            }
+
+            @Override
+            public Map<T,T> getEditMap()
+            {
+                return editMap;
+            }
+
+            @Override
+            public boolean hasChanged() {
+                return true;
+            }
+        };
     }
 
 }

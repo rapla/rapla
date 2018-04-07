@@ -15,11 +15,11 @@ package org.rapla.plugin.eventimport.client.swing;
 import org.rapla.RaplaResources;
 import org.rapla.client.PopupContext;
 import org.rapla.client.dialog.DialogInterface;
+import org.rapla.client.dialog.swing.DialogUI.DialogUiFactory;
 import org.rapla.client.extensionpoints.ImportMenuExtension;
 import org.rapla.client.swing.RaplaGUIComponent;
 import org.rapla.client.swing.images.RaplaImages;
 import org.rapla.client.swing.internal.common.NamedListCellRenderer;
-import org.rapla.client.swing.toolkit.DialogUI.DialogUiFactory;
 import org.rapla.client.swing.toolkit.RaplaButton;
 import org.rapla.components.iolayer.IOInterface;
 import org.rapla.components.util.IOUtil;
@@ -32,8 +32,8 @@ import org.rapla.entities.domain.RaplaObjectAnnotations;
 import org.rapla.entities.domain.Reservation;
 import org.rapla.entities.dynamictype.Attribute;
 import org.rapla.entities.dynamictype.Classification;
-import org.rapla.facade.client.ClientFacade;
 import org.rapla.facade.RaplaFacade;
+import org.rapla.facade.client.ClientFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaInitializationException;
 import org.rapla.framework.RaplaLocale;
@@ -92,7 +92,6 @@ public class ImportTemplateMenu implements ImportMenuExtension, ActionListener
     @Inject
     public ImportTemplateMenu(
         final RaplaResources i18n,
-        final RaplaImages images,
         final TemplateImport importService,
         final ClientFacade clientFacade,
         final RaplaLocale raplaLocale,
@@ -106,7 +105,7 @@ public class ImportTemplateMenu implements ImportMenuExtension, ActionListener
         this.clientFacade = clientFacade;
         this.i18n = i18n;
         item = new JMenuItem(id);
-        item.setIcon(images.getIconFromKey("icon.import"));
+        item.setIcon(RaplaImages.getIcon(i18n.getIcon("icon.import")));
         item.addActionListener(this);
         this.dialogFactory = dialogFactory;
         try
@@ -120,7 +119,7 @@ public class ImportTemplateMenu implements ImportMenuExtension, ActionListener
     }
 
     @Override
-    public JMenuItem getMenuElement()
+    public JMenuItem getComponent()
     {
         return item;
     }
@@ -422,14 +421,9 @@ public class ImportTemplateMenu implements ImportMenuExtension, ActionListener
         {
 
             final Promise<Collection<Reservation>> templateReservations = getTemplateReservations();
-            templateReservations.thenAccept(( reservations ) -> {
-                final User user = clientFacade.getUser();
-                this.reservations = facade.copy(reservations, getBeginn(), true, user);
-                map(reservations, entries);
-            }).exceptionally(( ex ) -> {
-                dialogFactory.showException(ex, popupContext);
-                return Promise.VOID;
-            });
+            templateReservations.thenCompose(( reservations ) -> facade.copyReservations(reservations, getBeginn(), true, clientFacade.getUser())).thenAccept((clones)->map(clones, entries)).exceptionally((ex ) ->
+                dialogFactory.showException(ex, popupContext)
+            );
         }
 
         protected Promise<Collection<Reservation>> getTemplateReservations()
@@ -449,6 +443,7 @@ public class ImportTemplateMenu implements ImportMenuExtension, ActionListener
 
         private void map( final Collection<Reservation> reservations, final Map<String, String> entries ) throws RaplaException
         {
+            this.reservations = reservations;
             final ArrayList<Reservation> toStore = new ArrayList<>();
             final Collection<Reservation> editObjects = facade.editList(reservations);
             for ( final Reservation reservation : editObjects )
@@ -533,10 +528,9 @@ public class ImportTemplateMenu implements ImportMenuExtension, ActionListener
 
     private void confirmImport( final PopupContext popupContext, final String[] header, final List<Entry> entries ) throws RaplaException
     {
-        getImportedReservations().thenAccept(( keyMap ) -> confirmImport(popupContext, header, entries, keyMap)).exceptionally(ex -> {
-            dialogFactory.showException(ex, popupContext);
-            return Promise.VOID;
-        });
+        getImportedReservations().thenAccept(( keyMap ) -> confirmImport(popupContext, header, entries, keyMap)).exceptionally(ex ->
+            dialogFactory.showException(ex, popupContext)
+        );
     }
 
     public void confirmImport( final PopupContext popupContext, final String[] header, final List<Entry> entries, final Map<String, List<Reservation>> keyMap )
@@ -595,16 +589,7 @@ public class ImportTemplateMenu implements ImportMenuExtension, ActionListener
 
         final JTable table = new JTable();
         table.putClientProperty("terminateEditOnFocusLost", true);
-        final ActionListener copyListener = new ActionListener()
-        {
-
-            @Override
-            public void actionPerformed( final ActionEvent evt )
-            {
-                RaplaGUIComponent.copy(table, evt, ioInterface, raplaLocale);
-            }
-
-        };
+        final ActionListener copyListener = evt -> RaplaGUIComponent.copy(table, evt, ioInterface, raplaLocale);
         table.registerKeyboardAction(copyListener, i18n.getString("copy"), RaplaGUIComponent.COPY_STROKE, JComponent.WHEN_FOCUSED);
         final String[] newHeader = new String[header.length + 3];
         newHeader[selectCol] = "";
@@ -676,48 +661,39 @@ public class ImportTemplateMenu implements ImportMenuExtension, ActionListener
         content.setLayout(new BorderLayout());
         content.add(buttonPanel, BorderLayout.NORTH);
         content.add(pane, BorderLayout.CENTER);
-        final ActionListener listener = new ActionListener()
-        {
-
-            @Override
-            public void actionPerformed( final ActionEvent e )
+        final ActionListener listener = e -> {
+            final Object source = e.getSource();
+            final boolean set = source == everythingButton;
+            final int rowCount = dataModel.getRowCount();
+            for ( int row = 0; row < rowCount; row++ )
             {
-                final Object source = e.getSource();
-                final boolean set = source == everythingButton;
-                final int rowCount = dataModel.getRowCount();
-                for ( int row = 0; row < rowCount; row++ )
-                {
-                    dataModel.setValueAt(new Boolean(set), row, selectCol);
-                }
+                dataModel.setValueAt(new Boolean(set), row, selectCol);
             }
         };
         everythingButton.addActionListener(listener);
         nothingButton.addActionListener(listener);
         // pane.setPreferredSize( new Dimension(2000,800));
-        final DialogInterface dialog2 = dialogFactory.create(popupContext, true, content, new String[] { i18n.getString("ok"), i18n.getString("back") });
+        final DialogInterface dialog2 = dialogFactory.createContentDialog(popupContext, content, new String[] { i18n.getString("ok"), i18n.getString("back") });
         pane.setPreferredSize(new Dimension(1024, 700));
         dialog2.setDefault(0);
         final boolean pack = false;
-        dialog2.start(pack);
-
-        if ( dialog2.getSelectedIndex() == 0 )
+        dialog2.start(pack).thenAccept((index)->
         {
-            for ( int i = 0; i < entries.size(); i++ )
-            {
-                final Entry entry = entries.get(i);
-                final Boolean selected = (Boolean) table.getValueAt(i, selectCol);
-                if ( selected == null || !selected )
-                {
-                    continue;
-                }
-                final Allocatable template = (Allocatable) table.getValueAt(i, templateCol);
-                if ( template != null )
-                {
-                    entry.template = template;
-                }
-                entry.process(popupContext);
-            } // TODO Auto-generated method stub
-        }
+            if (index == 0) {
+                for (int i = 0; i < entries.size(); i++) {
+                    final Entry entry = entries.get(i);
+                    final Boolean selected = (Boolean) table.getValueAt(i, selectCol);
+                    if (selected == null || !selected) {
+                        continue;
+                    }
+                    final Allocatable template = (Allocatable) table.getValueAt(i, templateCol);
+                    if (template != null) {
+                        entry.template = template;
+                    }
+                    entry.process(popupContext);
+                } // TODO Auto-generated method stub
+            }
+        }).exceptionally( ex->dialogFactory.showException(ex,popupContext));
     }
 
 //         dialog2.getButton( 0 ).addActionListener( new ActionListener() {

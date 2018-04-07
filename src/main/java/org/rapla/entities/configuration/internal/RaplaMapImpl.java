@@ -13,6 +13,7 @@ o//pyright (C) 2014 Christopher Kohlhaas                                  |
 *--------------------------------------------------------------------------*/
 package org.rapla.entities.configuration.internal;
 
+import org.jetbrains.annotations.NotNull;
 import org.rapla.components.util.iterator.FilterIterable;
 import org.rapla.components.util.iterator.IterableChain;
 import org.rapla.components.util.iterator.NestedIterable;
@@ -66,6 +67,74 @@ public class RaplaMapImpl implements EntityReferencer, DynamicTypeDependant, Rap
     {
     }
 
+    @Override
+    public Map<String,Object> toMap() {
+        return new Map() {
+            @Override
+            public int size() {
+                return RaplaMapImpl.this.size();
+            }
+
+            @Override
+            public boolean isEmpty() {
+                return RaplaMapImpl.this.isEmpty();
+            }
+
+            @Override
+            public boolean containsKey(Object key) {
+                return RaplaMapImpl.this.containsKey( key);
+            }
+
+            @Override
+            public boolean containsValue(Object value) {
+                return RaplaMapImpl.this.containsValue( value);
+            }
+
+            @Override
+            public Object get(Object key) {
+                return RaplaMapImpl.this.get( key);
+            }
+
+            @Override
+            public Object put(Object key, Object value) {
+                throw createReadOnlyException();
+            }
+
+            @Override
+            public Object remove(Object key) {
+                throw createReadOnlyException();
+            }
+
+            @Override
+            public void putAll(@NotNull Map m) {
+                throw createReadOnlyException();
+            }
+
+            @Override
+            public void clear() {
+                throw createReadOnlyException();
+            }
+
+            @NotNull
+            @Override
+            public Set keySet() {
+                return RaplaMapImpl.this.keySet();
+            }
+
+            @NotNull
+            @Override
+            public Collection values() {
+                return RaplaMapImpl.this.values();
+            }
+
+            @NotNull
+            @Override
+            public Set<Entry<String,Object>> entrySet() {
+                return RaplaMapImpl.this.entrySet();
+            }
+        };
+    }
+
     public <T> RaplaMapImpl(Collection<T> list)
     {
         this(makeMap(list));
@@ -78,7 +147,7 @@ public class RaplaMapImpl implements EntityReferencer, DynamicTypeDependant, Rap
 
     private static <T> Map<String, T> makeMap(Collection<T> list)
     {
-        Map<String, T> map = new TreeMap<String, T>();
+        Map<String, T> map = new TreeMap<>();
         int key = 0;
         for (Iterator<T> it = list.iterator(); it.hasNext(); )
         {
@@ -155,7 +224,7 @@ public class RaplaMapImpl implements EntityReferencer, DynamicTypeDependant, Rap
         {
             if (configurations == null)
             {
-                configurations = new LinkedHashMap<String, RaplaConfiguration>();
+                configurations = new LinkedHashMap<>();
             }
             configurations.put(key, (RaplaConfiguration) value);
             getMap().put(key, value);
@@ -164,7 +233,7 @@ public class RaplaMapImpl implements EntityReferencer, DynamicTypeDependant, Rap
         {
             if (maps == null)
             {
-                maps = new LinkedHashMap<String, RaplaMapImpl>();
+                maps = new LinkedHashMap<>();
             }
             maps.put(key, (RaplaMapImpl) value);
             getMap().put(key, value);
@@ -173,7 +242,7 @@ public class RaplaMapImpl implements EntityReferencer, DynamicTypeDependant, Rap
         {
             if (calendars == null)
             {
-                calendars = new LinkedHashMap<String, CalendarModelConfigurationImpl>();
+                calendars = new LinkedHashMap<>();
             }
             calendars.put(key, (CalendarModelConfigurationImpl) value);
             getMap().put(key, value);
@@ -182,7 +251,7 @@ public class RaplaMapImpl implements EntityReferencer, DynamicTypeDependant, Rap
         {
             if (constants == null)
             {
-                constants = new LinkedHashMap<String, String>();
+                constants = new LinkedHashMap<>();
             }
             constants.put(key, (String) value);
             getMap().put(key, value);
@@ -207,7 +276,7 @@ public class RaplaMapImpl implements EntityReferencer, DynamicTypeDependant, Rap
         }
         if (map == null)
         {
-            map = new LinkedHashMap<String, Object>();
+            map = new LinkedHashMap<>();
             fillMap(maps);
             fillMap(configurations);
             fillMap(constants);
@@ -258,7 +327,7 @@ public class RaplaMapImpl implements EntityReferencer, DynamicTypeDependant, Rap
             return refIt;
         }
         Iterable<ReferenceInfo> referencedLinks = links.getReferenceInfo();
-        return new IterableChain<ReferenceInfo>(refIt, referencedLinks);
+        return new IterableChain<>(refIt, referencedLinks);
     }
 
     private Iterable<EntityReferencer> getEntityReferencers()
@@ -305,6 +374,7 @@ public class RaplaMapImpl implements EntityReferencer, DynamicTypeDependant, Rap
         }
     }
 
+    @Override
     public Object get(Object key)
     {
         if (links != null)
@@ -324,12 +394,13 @@ public class RaplaMapImpl implements EntityReferencer, DynamicTypeDependant, Rap
 
     protected ReadOnlyException createReadOnlyException()
     {
-        return new ReadOnlyException("RaplaMap is readonly you must create a new Object");
+        return new ReadOnlyException("RaplaMap is readonly you must createInfoDialog a new Object");
     }
 
     /**
      * @see java.util.Map#size()
      */
+    @Override
     public int size()
     {
         return getMap().size();
@@ -362,6 +433,7 @@ public class RaplaMapImpl implements EntityReferencer, DynamicTypeDependant, Rap
     /**
      * @see java.util.Map#keySet()
      */
+    @Override
     public Set<String> keySet()
     {
         return getMap().keySet();
@@ -453,6 +525,7 @@ public class RaplaMapImpl implements EntityReferencer, DynamicTypeDependant, Rap
     /**
      * @see java.util.Map#values()
      */
+    @Override
     public Collection values()
     {
         if (links == null)
@@ -461,7 +534,7 @@ public class RaplaMapImpl implements EntityReferencer, DynamicTypeDependant, Rap
         }
         else
         {
-            List<Entity> result = new ArrayList<Entity>();
+            List<Entity> result = new ArrayList<>();
             for (Map.Entry<String, Object> entry : entrySet())
             {
                 result.add((Entity) entry.getValue());
@@ -600,7 +673,7 @@ public class RaplaMapImpl implements EntityReferencer, DynamicTypeDependant, Rap
         {
             if (cachedEntries == null)
             {
-                cachedEntries = new HashSet<Map.Entry<String, Object>>();
+                cachedEntries = new HashSet<>();
                 for (String key : links.getReferenceKeys())
                 {
                     String id = links.getId(key);
@@ -617,7 +690,7 @@ public class RaplaMapImpl implements EntityReferencer, DynamicTypeDependant, Rap
         {
             if (cachedEntries == null)
             {
-                cachedEntries = new HashSet<Map.Entry<String, Object>>();
+                cachedEntries = new HashSet<>();
                 for (Map.Entry<String, Object> entry : getMap().entrySet())
                 {
                     if (entry.getValue() == null)

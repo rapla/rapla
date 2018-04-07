@@ -22,8 +22,8 @@ public class JNDIPlugin {
 	public final static boolean ENABLE_BY_DEFAULT = false;
     public static final String PLUGIN_NAME = "Ldap or other JNDI Authentication";
 
-    public static final TypedComponentRole<RaplaConfiguration> JNDISERVER_CONFIG = new TypedComponentRole<RaplaConfiguration>(PLUGIN_ID +".server.config");
-    public final static TypedComponentRole<RaplaMap<Category>> USERGROUP_CONFIG = new TypedComponentRole<RaplaMap<Category>>(PLUGIN_ID + ".newusergroups");
+    public static final TypedComponentRole<RaplaConfiguration> JNDISERVER_CONFIG = new TypedComponentRole<>(PLUGIN_ID + ".server.config");
+    public final static TypedComponentRole<RaplaMap<Category>> USERGROUP_CONFIG = new TypedComponentRole<>(PLUGIN_ID + ".newusergroups");
     
 //    public void provideServices(ClientServiceContainer container, Configuration config)
 //    {

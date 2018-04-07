@@ -33,8 +33,8 @@ public class MailPlugin
 {
 	public static final boolean ENABLE_BY_DEFAULT = false;
  public static final String PLUGIN_ID = "org.rapla.plugin.mail";
- public static final TypedComponentRole<String> DEFAULT_SENDER_ENTRY = new TypedComponentRole<String>(PLUGIN_ID +".DefaultSender");
- public static final TypedComponentRole<RaplaConfiguration> MAILSERVER_CONFIG = new TypedComponentRole<RaplaConfiguration>(PLUGIN_ID +".server.Config");
+ public static final TypedComponentRole<String> DEFAULT_SENDER_ENTRY = new TypedComponentRole<>(PLUGIN_ID + ".DefaultSender");
+ public static final TypedComponentRole<RaplaConfiguration> MAILSERVER_CONFIG = new TypedComponentRole<>(PLUGIN_ID + ".server.Config");
  
 //    public void provideServices(ClientServiceContainer container, Configuration config) throws RaplaXMLContextException {
 //        container.addContainerProvidedComponent( RaplaClientExtensionPoints.PLUGIN_OPTION_PANEL_EXTENSION,MailOption.class);

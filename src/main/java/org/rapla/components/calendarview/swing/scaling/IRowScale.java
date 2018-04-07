@@ -17,4 +17,6 @@ public interface IRowScale extends IRowScaleSmall
      int getSizeInPixelBetween( int startRow, int endRow );
      
      boolean isPaintRowThick( int row );
+
+    void setOffsetMinutes(int offsetMinutes);
 }

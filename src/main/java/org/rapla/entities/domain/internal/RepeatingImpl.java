@@ -341,7 +341,7 @@ final class RepeatingImpl implements Repeating,java.io.Serializable {
         	return;
         }
         if (exceptions == null)
-            exceptions = new TreeSet<Date>();
+            exceptions = new TreeSet<>();
         exceptions.add(DateTools.cutDate(date));
         arrayUpToDate = false;
     }
@@ -349,7 +349,7 @@ final class RepeatingImpl implements Repeating,java.io.Serializable {
     public void addExceptions(TimeInterval interval) {
         checkWritable();
         if (exceptions == null)
-            exceptions = new TreeSet<Date>();
+            exceptions = new TreeSet<>();
         final AppointmentImpl appointment = (AppointmentImpl)getAppointment();
         Collection<AppointmentBlock> blocks = new ArrayList<>();
         appointment.createBlocks(interval.getStart(),interval.getEnd(), blocks);
@@ -438,7 +438,7 @@ final class RepeatingImpl implements Repeating,java.io.Serializable {
         dest.end = source.end;
         if ( source.weekdays != null)
         {
-            dest.weekdays = new TreeSet<Integer>();
+            dest.weekdays = new TreeSet<>();
             dest.weekdays.addAll( source.weekdays);
         }
         else
@@ -449,7 +449,7 @@ final class RepeatingImpl implements Repeating,java.io.Serializable {
         dest.interval = source.interval;
         if (source.exceptions != null)
         { 
-        	dest.exceptions = new TreeSet<Date>();
+        	dest.exceptions = new TreeSet<>();
         	dest.exceptions.addAll(source.exceptions);
         }
         else

@@ -14,8 +14,8 @@ import org.rapla.entities.dynamictype.Attribute;
 import org.rapla.entities.dynamictype.Classification;
 import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.entities.dynamictype.DynamicTypeAnnotations;
-import org.rapla.facade.client.ClientFacade;
 import org.rapla.facade.RaplaFacade;
+import org.rapla.facade.client.ClientFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.logger.Logger;
@@ -156,7 +156,7 @@ public class ReservationPresenter implements Presenter
 
     @Override public Collection<DynamicType> getChangeableReservationDynamicTypes()
     {
-        final Collection<DynamicType> creatableTypes = new ArrayList<DynamicType>();
+        final Collection<DynamicType> creatableTypes = new ArrayList<>();
         try
         {
             final DynamicType[] types = facade.getDynamicTypes(DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RESERVATION);
@@ -182,7 +182,7 @@ public class ReservationPresenter implements Presenter
         Date endDate = new Date();
         try
         {
-            Appointment newAppointment = facade.newAppointment(startDate, endDate);
+            Appointment newAppointment = facade.newAppointmentDeprecated(startDate, endDate);
             editReservation.addAppointment(newAppointment);
             this.selectedAppointment = newAppointment;
             view.updateAppointments(newAppointment);

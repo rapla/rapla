@@ -4,7 +4,7 @@
  |                                                                          |
  | This program is free software; you can redistribute it and/or modify     |
  | it under the terms of the GNU General Public License as published by the |
- | Free Software Foundation. A copy of the license has been included with   |
+ | Free Software Foundation. A copyReservations of the license has been included with   |
  | these distribution in the COPYING file, if not go to www.fsf.org         |
  |                                                                          |
  | As a special exception, you are granted the permissions to link this     |
@@ -17,7 +17,6 @@ package org.rapla.client.swing;
 import org.rapla.RaplaResources;
 import org.rapla.client.dialog.DialogUiFactoryInterface;
 import org.rapla.client.internal.MultiCalendarView;
-import org.rapla.client.swing.images.RaplaImages;
 import org.rapla.client.swing.internal.FilterEditButton;
 import org.rapla.client.swing.internal.FilterEditButton.FilterEditButtonFactory;
 import org.rapla.client.swing.internal.SwingPopupContext;
@@ -55,12 +54,11 @@ public class MultiCalendarViewSwing implements MultiCalendarView
 {
     private final JPanel page = new JPanel();
     private final JPanel header = new JPanel();
-    Map<String, RaplaMenuItem> viewMenuItems = new HashMap<String, RaplaMenuItem>();
+    Map<String, RaplaMenuItem> viewMenuItems = new HashMap<>();
     private final JComboBox viewChooser;
 
     /** renderer for weekdays in month-view */
     private FilterEditButton filter;
-    private final RaplaImages raplaImages;
     private final DialogUiFactoryInterface dialogUiFactory;
     private LinkedHashMap<String, String> viewIdToViewName;
     private final JPanel filterContainer = new JPanel();
@@ -68,10 +66,9 @@ public class MultiCalendarViewSwing implements MultiCalendarView
     private boolean viewSelectionFromPromgramm = false;
     
     @Inject
-    public MultiCalendarViewSwing(RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, RaplaImages raplaImages,
+    public MultiCalendarViewSwing(RaplaResources i18n, RaplaLocale raplaLocale, Logger logger,
             DialogUiFactoryInterface dialogUiFactory, FilterEditButtonFactory filterEditButtonFactory) throws RaplaInitializationException
     {
-        this.raplaImages = raplaImages;
         this.dialogUiFactory = dialogUiFactory;
         this.filterEditButtonFactory = filterEditButtonFactory;
 
@@ -179,7 +176,7 @@ public class MultiCalendarViewSwing implements MultiCalendarView
     }
 
     /*
-    private void addMenu( CalendarSelectionModel model, String[] ids, RaplaMenu view )
+    private void addMenuItem( CalendarSelectionModel model, String[] ids, RaplaMenu view )
     {
         RaplaMenu viewMenu = new RaplaMenu("views");
         viewMenu.setText(getString("show_as"));

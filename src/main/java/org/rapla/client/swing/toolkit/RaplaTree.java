@@ -12,11 +12,17 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.client.swing.toolkit;
 
+import io.reactivex.functions.BiFunction;
 import org.rapla.components.util.Tools;
+import org.rapla.entities.Category;
+import org.rapla.scheduler.Promise;
 
 import javax.swing.BorderFactory;
+import javax.swing.DropMode;
 import javax.swing.JScrollPane;
 import javax.swing.JTree;
+import javax.swing.SwingUtilities;
+import javax.swing.TransferHandler;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
 import javax.swing.event.TreeSelectionEvent;
@@ -28,7 +34,14 @@ import javax.swing.tree.TreeNode;
 import javax.swing.tree.TreePath;
 import javax.swing.tree.TreeSelectionModel;
 import java.awt.Color;
+import java.awt.Graphics2D;
 import java.awt.Point;
+import java.awt.Rectangle;
+import java.awt.dnd.DnDConstants;
+import java.awt.dnd.DropTarget;
+import java.awt.dnd.DropTargetAdapter;
+import java.awt.dnd.DropTargetDragEvent;
+import java.awt.dnd.DropTargetDropEvent;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.MouseEvent;
@@ -47,9 +60,9 @@ import java.util.Stack;
 final public class RaplaTree extends JScrollPane {
     private static final long serialVersionUID = 1L;
     
-    ArrayList<PopupListener> m_popupListeners = new ArrayList<PopupListener>();
-    ArrayList<ActionListener> m_doubleclickListeners = new ArrayList<ActionListener>();
-    ArrayList<ChangeListener> m_changeListeners = new ArrayList<ChangeListener>();
+    ArrayList<PopupListener> m_popupListeners = new ArrayList<>();
+    ArrayList<ActionListener> m_doubleclickListeners = new ArrayList<>();
+    ArrayList<ChangeListener> m_changeListeners = new ArrayList<>();
     JTree       jTree =  new JTree() {
         private static final long serialVersionUID = 1L;
         public String getToolTipText(MouseEvent evt) {
@@ -303,8 +316,8 @@ final public class RaplaTree extends JScrollPane {
     /** Exchanges the tree-model while trying to preserve the selection an expansion state.
      * Returns if the selection has been affected by the excahnge.*/
     public static boolean exchangeTreeModel(TreeModel model,JTree tree) {
-        Collection<Object> expanded = new LinkedHashSet<Object>();
-        Collection<Object> selected = new LinkedHashSet<Object>();
+        Collection<Object> expanded = new LinkedHashSet<>();
+        Collection<Object> selected = new LinkedHashSet<>();
         int rowCount = tree.getRowCount();
 		for (int i=0;i<rowCount;i++) {
             if (tree.isExpanded(i)) {
@@ -331,7 +344,7 @@ final public class RaplaTree extends JScrollPane {
             }
 
         }
-        ArrayList<TreePath> selectedList = new ArrayList<TreePath>();
+        ArrayList<TreePath> selectedList = new ArrayList<>();
         for (int i=0;i<rowCount;i++) {
             TreePath treePath = tree.getPathForRow(i);
             if (treePath != null)
@@ -366,7 +379,7 @@ final public class RaplaTree extends JScrollPane {
     }
 
     public static class TreeIterator implements Iterator<TreeNode> {
-        Stack<TreeNode> nodeStack = new Stack<TreeNode>();
+        Stack<TreeNode> nodeStack = new Stack<>();
         public TreeIterator(TreeNode node) {
             nodeStack.push(node);
         }
@@ -394,9 +407,8 @@ final public class RaplaTree extends JScrollPane {
     }
 
     public void select(Collection<Object> selectedObjects) {
-        Collection<TreeNode> selectedNodes = new ArrayList<TreeNode>();
-        Collection<Object> selectedToRemove = new LinkedHashSet<Object>( );
-        selectedToRemove.addAll( selectedObjects);
+        Collection<TreeNode> selectedNodes = new ArrayList<>();
+        Collection<Object> selectedToRemove = new LinkedHashSet<>(selectedObjects);
         Iterator<TreeNode> it = new TreeIterator((TreeNode)jTree.getModel().getRoot());
         while (it.hasNext()) {
             TreeNode node = it.next();
@@ -433,7 +445,7 @@ final public class RaplaTree extends JScrollPane {
     
     public List<Object> getSelectedElements(boolean includeChilds) {
         TreePath[] path = jTree.getSelectionPaths();
-        List<Object> list = new LinkedList<Object>();
+        List<Object> list = new LinkedList<>();
         if ( path == null)
         {
             return list;
@@ -486,6 +498,128 @@ final public class RaplaTree extends JScrollPane {
             i++;
         }
     }
+
+    public void addDragAndDrop(BiFunction<Object,Object,Promise<Void>> moveFunction)
+    {
+        JTree tree = getTree();
+        tree.setDragEnabled(true);
+        tree.setDropMode(DropMode.ON);
+        tree.setDropTarget(new DropTarget(tree, TransferHandler.MOVE, new DropTargetAdapter()
+        {
+            private final Rectangle _raCueLine = new Rectangle();
+            private final Color _colorCueLine = Color.blue;
+            private TreePath lastPath = null;
+
+            @Override
+            public void dragOver(DropTargetDragEvent dtde)
+            {
+                TreePath selectionPath = tree.getSelectionPath();
+                TreePath sourcePath = selectionPath.getParentPath();
+                DefaultMutableTreeNode selectedNode = (DefaultMutableTreeNode) selectionPath.getLastPathComponent();
+                Graphics2D g2 = (Graphics2D) tree.getGraphics();
+                final Point dropLocation = dtde.getLocation();
+                TreePath path = tree.getClosestPathForLocation(dropLocation.x, dropLocation.y);
+                if(isDropAllowed(sourcePath, path, selectedNode))
+                {
+                    if (lastPath == null || !lastPath.equals(path))
+                    {
+                        Rectangle raPath;
+                        Color color;
+                        if ( lastPath != null )
+                        {
+                            raPath  = tree.getPathBounds(lastPath);
+                            if (raPath != null) {
+                                color = Color.white;
+                                drawLine(g2, raPath, color);
+                            }
+                        }
+                        raPath = tree.getPathBounds(path);
+                        color = _colorCueLine;
+                        drawLine(g2, raPath, color);
+                        lastPath = path;
+                    }
+                }
+                else
+                {
+                    if(lastPath != null)
+                    {
+                        Rectangle raPath = tree.getPathBounds(path);
+                        if (raPath != null) {
+                            drawLine(g2, raPath, Color.white);
+                        }
+                    }
+                    lastPath = null;
+                }
+            }
+
+            private void drawLine(Graphics2D g2, Rectangle raPath, Color color)
+            {
+                _raCueLine.setRect(0, raPath.y, tree.getWidth(), 2);
+                g2.setColor(color);
+                g2.fill(_raCueLine);
+            }
+
+            @Override
+            public void dragEnter(DropTargetDragEvent dtde)
+            {
+                TreePath selectionPath = tree.getSelectionPath();
+                DefaultMutableTreeNode selectedNode = (DefaultMutableTreeNode) selectionPath.getLastPathComponent();
+                if (!(selectedNode.getUserObject() instanceof Category))
+                {
+                    dtde.rejectDrag();
+                    return;
+                }
+                dtde.acceptDrag(DnDConstants.ACTION_MOVE);
+            }
+
+            @Override
+            public void drop(DropTargetDropEvent dtde)
+            {
+                TreePath selectionPath = tree.getSelectionPath();
+                TreePath sourcePath = selectionPath.getParentPath();
+                DefaultMutableTreeNode selectedNode = (DefaultMutableTreeNode) selectionPath.getLastPathComponent();
+                Point dropLocation = dtde.getLocation();
+                TreePath targetPath = tree.getClosestPathForLocation(dropLocation.x, dropLocation.y);
+                if (isDropAllowed(sourcePath, targetPath, selectedNode))
+                {
+                    DefaultMutableTreeNode targetParentNode = (DefaultMutableTreeNode) targetPath.getLastPathComponent();
+                    try {
+                        final Promise<Void> voidPromise;
+                        voidPromise = moveFunction.apply(selectedNode.getUserObject(), targetParentNode.getUserObject());
+                        voidPromise.execOn(SwingUtilities::invokeLater).thenRun(() ->{
+                            dtde.dropComplete(true);
+                        });
+                    } catch (Exception e) {
+                        throw new IllegalStateException(e);
+                    }
+
+                }
+                else
+                {
+                    dtde.rejectDrop();
+                    dtde.dropComplete(false);
+                }
+            }
+
+
+            private boolean isDropAllowed(TreePath sourcePath, TreePath targetPath, DefaultMutableTreeNode selectedNode)
+            {
+                if (selectedNode.getUserObject() instanceof Category
+                        && ((DefaultMutableTreeNode) targetPath.getLastPathComponent()).getUserObject() instanceof Category)
+                {
+                    Category targetCategory = (Category) ((DefaultMutableTreeNode) targetPath.getLastPathComponent()).getUserObject();
+                    if(targetCategory.getId().equals(Category.SUPER_CATEGORY_REF.getId()))
+                    {
+                        return false;
+                    }
+                    return true;
+                }
+                return false;
+            }
+
+        }));
+    }
+
 }
 
 

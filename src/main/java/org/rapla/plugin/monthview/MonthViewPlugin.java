@@ -9,5 +9,5 @@ import org.rapla.framework.TypedComponentRole;
 public interface MonthViewPlugin
 {
     String MONTH_VIEW = "month";
-    TypedComponentRole<RaplaConfiguration> CONFIG = new TypedComponentRole<RaplaConfiguration>(MONTH_VIEW + ".config");
+    TypedComponentRole<RaplaConfiguration> CONFIG = new TypedComponentRole<>(MONTH_VIEW + ".config");
 }

@@ -16,8 +16,8 @@ public class KeyAndPathResolver
 {
     EntityStore store;
 
-    HashMap<String,Category> categories = new HashMap<String,Category>();
-    HashMap<String,String> categoryPath = new HashMap<String,String>();
+    HashMap<String,Category> categories = new HashMap<>();
+    HashMap<String,String> categoryPath = new HashMap<>();
 
     public KeyAndPathResolver(EntityStore store, Category superCategory) throws EntityNotFoundException
     {
@@ -53,7 +53,7 @@ public class KeyAndPathResolver
     }
 
     private List<String> getPathForCategory(Category searchCategory) throws EntityNotFoundException {
-        LinkedList<String> result = new LinkedList<String>();
+        LinkedList<String> result = new LinkedList<>();
         Category category = searchCategory;
         Category parent = null;
         int depth = 0;

@@ -15,6 +15,7 @@ package org.rapla.facade;
 import io.reactivex.functions.Consumer;
 import jsinterop.annotations.JsMethod;
 import jsinterop.annotations.JsType;
+import org.rapla.components.util.TimeInterval;
 import org.rapla.entities.Category;
 import org.rapla.entities.Entity;
 import org.rapla.entities.EntityNotFoundException;
@@ -24,7 +25,6 @@ import org.rapla.entities.configuration.RaplaMap;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.Appointment;
 import org.rapla.entities.domain.Period;
-import org.rapla.entities.domain.RepeatingType;
 import org.rapla.entities.domain.Reservation;
 import org.rapla.entities.dynamictype.Attribute;
 import org.rapla.entities.dynamictype.AttributeType;
@@ -119,11 +119,11 @@ public interface RaplaFacade
     Promise<Collection<Conflict>> getConflictsForReservation(Reservation reservation);
 
 
-    /** returns if the user has the permissions to change/create an
+    /** returns if the user has the permissions to change/createInfoDialog an
      allocation on the passed appointment. Changes of an
      existing appointment that are in an permisable
      timeframe are allowed. Example: The extension of an exisiting appointment,
-     doesn't affect allocations in the past and should not create a
+     doesn't affect allocations in the past and should not createInfoDialog a
      conflict with the permissions.
      */
     //boolean hasPermissionToAllocate( Appointment appointment, Allocatable allocatable );
@@ -159,7 +159,7 @@ public interface RaplaFacade
     /** Creates a new resource from the first dynamic type found, basically a shortcut to newAlloctable(getDynamicType(VALUE_CLASSIFICATION_TYPE_RESOURCE)[0].newClassification()).
      * This is a convenience method for testing.
      *  */
-    @Deprecated Allocatable newResource() throws RaplaException;
+    @Deprecated Allocatable newResourceDeprecated() throws RaplaException;
 
     /** creates a new Rapla Map. Keep in mind that only RaplaObjects and Strings are allowed as entries for a RaplaMap!*/
     <T> RaplaMap<T> newRaplaMapForMap( Map<String,T> map);
@@ -169,15 +169,22 @@ public interface RaplaFacade
     CalendarSelectionModel newCalendarModel( User user) throws RaplaException;
 
     /** Creates a new reservation from the classifcation object and with the passed user as its owner
-     * You can create a new classification from a {@link DynamicType} with newClassification method.
+     * You can createInfoDialog a new classification from a {@link DynamicType} with newClassification method.
      * @see DynamicType#newClassification()
      */
     Reservation newReservation(Classification classification,User user) throws RaplaException;
-    Appointment newAppointment(Date startDate,Date endDate) throws RaplaException;
+
+    /** @deprecated use #newAppointmentWithUser or #newAppointmentAsync (on the client) instead */
+    @Deprecated
+    Appointment newAppointmentDeprecated(Date startDate, Date endDate) throws RaplaException;
+
+    Promise<Reservation> newReservationAsync(Classification classification);
+    Promise<Appointment> newAppointmentAsync(TimeInterval interval);
+    Promise<Collection<Appointment>> newAppointmentsAsync(Collection<TimeInterval> interval);
     Appointment newAppointmentWithUser(Date startDate,Date endDate, User user) throws RaplaException;
 
     /** Creates a new allocatable from the classifcation object and with the passed user as its owner
-     * You can create a new classification from a {@link DynamicType} with newClassification method.
+     * You can createInfoDialog a new classification from a {@link DynamicType} with newClassification method.
      * @see DynamicType#newClassification()*/
     Allocatable newAllocatable( Classification classification, User user) throws RaplaException;
     Allocatable newPeriod(User user) throws RaplaException;
@@ -198,13 +205,16 @@ public interface RaplaFacade
      can be editet.
      */
     <T extends Entity> T clone(T obj,User user) throws RaplaException;
-    <T extends Entity> Promise<Collection<T>> editAsyncList(Collection<T> obj);
+    <T extends Entity> Promise<T> cloneAsync(T obj);
+    <T extends Entity> Promise<Collection<T>> cloneList(Collection<T> obj);
+    <T extends Entity> Promise<Map<T,T>> editListAsync(Collection<T> obj);
+    <T extends Entity> Promise<Map<T,T>> editListAsyncForUndo(Collection<T> obj);
     <T extends Entity> Promise<T> editAsync(T obj);
     <T extends Entity> Promise<Void> update(T entity, Consumer<T> updateFunction);
     <T extends Entity> Promise<Void> updateList(Collection<T> list, Consumer<Collection<T>> updateFunction);
 
     /** copies a list of reservations to a new beginning. KeepTime specifies if the original time is used or the time of the new beginDate*/
-    Collection<Reservation> copy(Collection<Reservation> toCopy, Date beginn, boolean keepTime, User user) throws RaplaException;
+    Promise<Collection<Reservation>> copyReservations(Collection<Reservation> toCopy, Date beginn, boolean keepTime, User user);
 
     <T extends Entity, S extends Entity> Promise<Void> dispatch( Collection<T> storeList, Collection<ReferenceInfo<S>> removeList);
 
@@ -223,11 +233,11 @@ public interface RaplaFacade
     <T extends Entity> Collection<T> editList(Collection<T> list) throws RaplaException;
 
     /** This call will be delegated to the {@link org.rapla.storage.StorageOperator}. It
-     * returns an editable working copy of an object. Only objects return by this method and new objects are editable.
-     * To get the persistant, non-editable version of a working copy use {@link #getPersistant} */
+     * returns an editable working copyReservations of an object. Only objects return by this method and new objects are editable.
+     * To get the persistant, non-editable version of a working copyReservations use {@link #getPersistant} */
     <T extends Entity> T edit(T obj) throws RaplaException;
 
-    /** Returns the persistant version of a working copy.
+    /** Returns the persistant version of a working copyReservations.
      * Throws an {@link org.rapla.entities.EntityNotFoundException} when the
      * object is not found
      * @see #edit
@@ -293,7 +303,7 @@ public interface RaplaFacade
     /** returns all existing conflicts that are visible for the user
      conflicts
      */
-    Collection<Conflict> getConflicts() throws RaplaException;
+    Promise<Collection<Conflict>> getConflicts();
 
     /** returns all available periods */
     Period[] getPeriods() throws RaplaException;
@@ -306,21 +316,13 @@ public interface RaplaFacade
      * @throws RaplaException */
     PeriodModel getPeriodModelFor(String key) throws RaplaException;
 
-    /** checks if the user that  is the user that last changed the entites
-     *
-     * @param entities
-     * @param isNew if new is set then this method does not throw an exception if the entities are not found in persistant store
-     * @param <T>
-     * @return the latest persistant map of the entities
-     * @throws RaplaException if the logged in user is not the lastChanged user of any entities. If isNew is false then an exception is also thrown, when an entity is not found in persistant storage
-     */
-    <T extends Entity> Map<T,T> checklastChanged(Collection<T> entities, User user,boolean isNew) throws RaplaException;
+    Promise<Void> moveCategory(Category categoryToMove, Category targetCategory);
 
-    /** returns the logged in user if the facade is on the client. Otherwise it will thrown an error*/
-    User getUser() throws RaplaException;
-    //<T> T  waitForWithRaplaException(Promise<T> promise, int millis) throws RaplaException;
-
-
+    enum ChangeState
+    {
+        latest,newerVersionAvailable,deleted
+    }
+    Promise<ChangeState> getUpdateState(Entity original);
 }
 
 

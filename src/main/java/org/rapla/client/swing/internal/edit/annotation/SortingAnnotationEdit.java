@@ -52,7 +52,7 @@ public class SortingAnnotationEdit extends RaplaGUIComponent implements Annotati
         String annotation = annotatable.getAnnotation(annotationName);
         Collection<String> collection = Arrays.asList(NOTHING_SELECTED,AttributeAnnotations.VALUE_SORTING_ASCENDING,
                 AttributeAnnotations.VALUE_SORTING_DESCENDING);
-        ListField<String> field = new ListField<String>(getClientFacade(), getI18n(), getRaplaLocale(), getLogger(), collection);
+        ListField<String> field = new ListField<>(getClientFacade(), getI18n(), getRaplaLocale(), getLogger(), collection);
         field.setFieldName( getString(annotationName));
         
         if (annotation  == null)

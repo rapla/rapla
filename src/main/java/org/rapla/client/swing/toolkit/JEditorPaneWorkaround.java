@@ -25,7 +25,7 @@ import java.awt.FontMetrics;
  * This component will be used to calculate the size of
  * the JEditorPane Components.
  */
-final class JEditorPaneWorkaround {
+public final class JEditorPaneWorkaround {
     static public void packText(JEditorPane jText,String text,int width) {
         int height;
 	if (width <=0 )

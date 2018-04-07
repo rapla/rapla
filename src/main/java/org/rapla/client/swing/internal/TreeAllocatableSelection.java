@@ -13,12 +13,14 @@
 package org.rapla.client.swing.internal;
 
 import org.rapla.RaplaResources;
+import org.rapla.client.PopupContext;
 import org.rapla.client.dialog.DialogInterface;
 import org.rapla.client.dialog.DialogUiFactoryInterface;
 import org.rapla.client.swing.RaplaGUIComponent;
 import org.rapla.client.swing.TreeFactory;
 import org.rapla.client.swing.images.RaplaImages;
 import org.rapla.client.swing.toolkit.RaplaTree;
+import org.rapla.components.i18n.I18nIcon;
 import org.rapla.entities.NamedComparator;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.facade.client.ClientFacade;
@@ -61,14 +63,12 @@ public class TreeAllocatableSelection extends RaplaGUIComponent implements Chang
     NotificationAction addAction;
     String addDialogTitle;
     private final TreeFactory treeFactory;
-    private final RaplaImages raplaImages;
     private final DialogUiFactoryInterface dialogUiFactory;
 
     @Inject
-	public TreeAllocatableSelection(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, TreeFactory treeFactory, RaplaImages raplaImages, DialogUiFactoryInterface dialogUiFactory) {
+	public TreeAllocatableSelection(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, TreeFactory treeFactory, DialogUiFactoryInterface dialogUiFactory) {
         super(facade, i18n, raplaLocale, logger);
         this.treeFactory = treeFactory;
-        this.raplaImages = raplaImages;
         this.dialogUiFactory = dialogUiFactory;
         treeSelection = new RaplaTree();
         TitledBorder border = BorderFactory.createTitledBorder(BorderFactory.createEtchedBorder(Color.white,new Color(178, 178, 178)),getString("selection_resource"));
@@ -93,14 +93,14 @@ public class TreeAllocatableSelection extends RaplaGUIComponent implements Chang
         addDialogTitle = getString( "add") ;
      }
     
-    Set<Allocatable> allocatables = new TreeSet<Allocatable>(new NamedComparator<Allocatable>(getLocale()));
+    Set<Allocatable> allocatables = new TreeSet<>(new NamedComparator<>(getLocale()));
 
 
     public JComponent getComponent() {
         return content;
     }
 
-    final private TreeFactory getTreeFactory() {
+    private TreeFactory getTreeFactory() {
         return  treeFactory;
     }
 
@@ -144,7 +144,7 @@ public class TreeAllocatableSelection extends RaplaGUIComponent implements Chang
 
         NotificationAction setDelete() {
             putValue(NAME,getString("delete"));
-            putValue(SMALL_ICON,raplaImages.getIconFromKey("icon.delete"));
+            setIcon(i18n.getIcon("icon.delete"));
             setEnabled(false);
             type = DELETE;
             return this;
@@ -152,9 +152,13 @@ public class TreeAllocatableSelection extends RaplaGUIComponent implements Chang
 
         NotificationAction setAdd() {
             putValue(NAME,getString("add"));
-            putValue(SMALL_ICON,raplaImages.getIconFromKey("icon.new"));
+            setIcon(i18n.getIcon("icon.new"));
             type = ADD;
             return this;
+        }
+
+        public void setIcon(I18nIcon icon) {
+            putValue(SMALL_ICON , RaplaImages.getIcon( icon));
         }
 
 		protected List<Allocatable> getSelected() {
@@ -162,7 +166,7 @@ public class TreeAllocatableSelection extends RaplaGUIComponent implements Chang
 		}
 
 		protected List<Allocatable> getSelectedAllocatables(RaplaTree tree) {
-			List<Allocatable> allocatables = new ArrayList<Allocatable>();
+			List<Allocatable> allocatables = new ArrayList<>();
 			List<Object> selectedElements = tree.getSelectedElements();
 			for ( Object obj:selectedElements)
 			{
@@ -193,10 +197,11 @@ public class TreeAllocatableSelection extends RaplaGUIComponent implements Chang
             treeSelection.exchangeTreeModel(getTreeFactory().createClassifiableModel(getQuery().getAllocatables(),true));
             treeSelection.setMinimumSize(new java.awt.Dimension(300, 200));
             treeSelection.setPreferredSize(new java.awt.Dimension(400, 260));
-            dialog = dialogUiFactory.create(
-                    new SwingPopupContext(getComponent(), null)
-                    ,true
-                    ,treeSelection
+            final PopupContext popupContext = new SwingPopupContext(getComponent(), null);
+            dialog = dialogUiFactory.createContentDialog(
+                    popupContext
+                    ,
+                    treeSelection
                     ,new String[] { getString("add"),getString("cancel")});
             dialog.setTitle(addDialogTitle);
             dialog.getAction(0).setEnabled(false);
@@ -225,12 +230,14 @@ public class TreeAllocatableSelection extends RaplaGUIComponent implements Chang
                 }
             });
             
-            dialog.start(true); 
-            if (dialog.getSelectedIndex() == 0) {
-                List<Allocatable> selected = getSelectedAllocatables(treeSelection);
-                allocatables.addAll(selected);
-                update();
-            }
+            dialog.start(true).thenAccept( index->
+            {
+                if (index == 0) {
+                    List<Allocatable> selected = getSelectedAllocatables(treeSelection);
+                    allocatables.addAll(selected);
+                    update();
+                }
+            });
         }
     }
 }

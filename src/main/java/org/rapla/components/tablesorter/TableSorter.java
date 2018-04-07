@@ -50,12 +50,12 @@ import java.util.Map;
  * <p>
  * TableSorter is a decorator for TableModels; adding sorting
  * functionality to a supplied TableModel. TableSorter does
- * not store or copy the data in its TableModel; instead it maintains
+ * not store or copyReservations the data in its TableModel; instead it maintains
  * a map from the row indexes of the view to the row indexes of the
  * model. As requests are made of the sorter (like getValueAt(row, col))
  * they are passed to the underlying model after the row numbers
  * have been translated via the internal mapping array. This way,
- * the TableSorter appears to hold another copy of the table
+ * the TableSorter appears to hold another copyReservations of the table
  * with the rows in a different order.
  * </p>
  * <p>
@@ -109,17 +109,12 @@ public class TableSorter extends AbstractTableModel {
     public static final int DESCENDING = -1;
     public static final int NOT_SORTED = 0;
     public static final int ASCENDING = 1;
-    private Map<Integer,Boolean> enabled= new HashMap<Integer,Boolean>();
+    private Map<Integer,Boolean> enabled= new HashMap<>();
 
     private static Directive EMPTY_DIRECTIVE = new Directive(-1, NOT_SORTED);
 
     @SuppressWarnings("rawtypes")
-	public static final Comparator<Comparable> COMPARABLE_COMAPRATOR = new Comparator<Comparable>() {
-        @SuppressWarnings("unchecked")
-		public int compare(Comparable o1, Comparable o2) {
-            return o1.compareTo(o2);
-        }
-    };
+	public static final Comparator<Comparable> COMPARABLE_COMAPRATOR = (o1, o2) -> o1.compareTo(o2);
    
 
     private Row[] viewToModel;
@@ -128,8 +123,8 @@ public class TableSorter extends AbstractTableModel {
     private JTableHeader tableHeader;
     private MouseListener mouseListener;
     private TableModelListener tableModelListener;
-    private Map<Integer,Comparator<?>> columnComparators = new HashMap<Integer,Comparator<?>>();
-    private List<Directive> sortingColumns = new ArrayList<Directive>();
+    private Map<Integer,Comparator<?>> columnComparators = new HashMap<>();
+    private List<Directive> sortingColumns = new ArrayList<>();
 
     public TableSorter() {
         this.mouseListener = new MouseHandler();
@@ -340,8 +335,7 @@ public class TableSorter extends AbstractTableModel {
             int row1 = modelIndex;
             int row2 = ((Row) o).modelIndex;
 
-            for (Iterator<Directive> it = sortingColumns.iterator(); it.hasNext();) {
-                Directive directive =  it.next();
+            for (Directive directive:sortingColumns) {
                 int column = directive.column;
                 Object o1 = tableModel.getValueAt(row1, column);
                 Object o2 = tableModel.getValueAt(row2, column);
@@ -364,7 +358,18 @@ public class TableSorter extends AbstractTableModel {
                     return directive.direction == DESCENDING ? -comparison : comparison;
                 }
             }
-            return 0;
+            if ( row1 == row2)
+            {
+                return 0;
+            }
+            if ( row1< row2)
+            {
+                return -1;
+            }
+            else
+            {
+                return 1;
+            }
         }
     }
 

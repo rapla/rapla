@@ -23,13 +23,13 @@ public class RaplaICalTimezones implements ICalTimezones
     @Inject
     public RaplaICalTimezones()
     {
-        availableIDs = new ArrayList<String>(Arrays.asList(TimeZone.getAvailableIDs()));
+        availableIDs = new ArrayList<>(Arrays.asList(TimeZone.getAvailableIDs()));
         Collections.sort(availableIDs, String.CASE_INSENSITIVE_ORDER);
     }
 
     public List<String> getICalTimezones()
     {
-        List<String> result = new ArrayList<String>();
+        List<String> result = new ArrayList<>();
         for (String id : availableIDs)
         {
             result.add(id);

@@ -1,13 +1,11 @@
 package org.rapla.plugin.copyurl;
 
-import org.rapla.RaplaResources;
+import io.reactivex.functions.Consumer;
+import org.rapla.client.PopupContext;
 import org.rapla.client.extensionpoints.ObjectMenuFactory;
-import org.rapla.client.swing.RaplaGUIComponent;
-import org.rapla.client.swing.SwingMenuContext;
-import org.rapla.client.swing.internal.SwingPopupContext;
-import org.rapla.client.swing.toolkit.ErrorDialog;
-import org.rapla.client.swing.toolkit.RaplaMenuItem;
-import org.rapla.components.iolayer.IOInterface;
+import org.rapla.client.menu.IdentifiableMenuEntry;
+import org.rapla.client.menu.MenuItemFactory;
+import org.rapla.client.menu.SelectionMenuContext;
 import org.rapla.components.util.Tools;
 import org.rapla.entities.Entity;
 import org.rapla.entities.RaplaObject;
@@ -20,47 +18,38 @@ import org.rapla.entities.dynamictype.AttributeType;
 import org.rapla.entities.dynamictype.Classifiable;
 import org.rapla.entities.dynamictype.Classification;
 import org.rapla.facade.client.ClientFacade;
-import org.rapla.framework.RaplaException;
-import org.rapla.framework.RaplaLocale;
 import org.rapla.inject.Extension;
-import org.rapla.logger.Logger;
 
 import javax.inject.Inject;
-import javax.inject.Provider;
 import javax.inject.Singleton;
-import java.awt.datatransfer.StringSelection;
-import java.awt.datatransfer.Transferable;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
-import java.security.AccessControlException;
 import java.util.Collection;
 import java.util.HashSet;
 
 @Singleton
 @Extension(provides = ObjectMenuFactory.class, id="copyurl")
-public class CopyUrlMenuFactory extends RaplaGUIComponent implements ObjectMenuFactory
+public class CopyUrlMenuFactory implements ObjectMenuFactory
 {
 
-    private final IOInterface ioInterface;
-    private final Provider<ErrorDialog> errorDialogProvider;
+    private final MenuItemFactory menuItemFactory;
+    private final ClientFacade clientFacade;
+    private final URLCopyService copyService;
 
     @Inject
-    public CopyUrlMenuFactory(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, IOInterface ioInterface,
-            Provider<ErrorDialog> errorDialogProvider)
+    public CopyUrlMenuFactory(ClientFacade clientFacade, MenuItemFactory menuItemFactory, URLCopyService copyService)
     {
-        super(facade, i18n, raplaLocale, logger);
-        this.ioInterface = ioInterface;
-        this.errorDialogProvider = errorDialogProvider;
+        this.clientFacade = clientFacade;
+        this.menuItemFactory = menuItemFactory;
+        this.copyService = copyService;
     }
 
-    public RaplaMenuItem[] create(final SwingMenuContext menuContext, final RaplaObject focusedObject)
+    public IdentifiableMenuEntry[] create(final SelectionMenuContext menuContext, final RaplaObject focusedObject)
     {
-        if (!isAdmin())
+        if (!clientFacade.isAdmin())
         {
-            return RaplaMenuItem.EMPTY_ARRAY;
+            return IdentifiableMenuEntry.EMPTY_ARRAY;
         }
 
-        Collection<Object> selectedObjects = new HashSet<Object>();
+        Collection<Object> selectedObjects = new HashSet<>();
         Collection<?> selected = menuContext.getSelectedObjects();
         if (selected.size() != 0)
         {
@@ -126,55 +115,18 @@ public class CopyUrlMenuFactory extends RaplaGUIComponent implements ObjectMenuF
                             }
                         }
                     }
-                            
                 }
             }
         }
 
         if (link == null)
         {
-            return RaplaMenuItem.EMPTY_ARRAY;
+            return IdentifiableMenuEntry.EMPTY_ARRAY;
         }
         final String url = link;
-        // create the menu entry
-        final RaplaMenuItem setOwnerItem = new RaplaMenuItem("copylink");
-        setOwnerItem.setText("Copy Link");
-        setOwnerItem.addActionListener(new ActionListener()
-        {
-            public void actionPerformed(ActionEvent e)
-            {
-                try
-                {
-                    copy_(url);
-                }
-                catch (RaplaException ex)
-                {
-                    ErrorDialog dialog;
-                    dialog = errorDialogProvider.get();
-                    final SwingPopupContext popupContext = (SwingPopupContext) menuContext.getPopupContext();
-                    dialog.showExceptionDialog(ex, popupContext.getParent());
-                }
-            }
-
-            private void copy_(String link) throws RaplaException
-            {
-                Transferable transferable = new StringSelection(link);
-                try
-                {
-                    if (ioInterface != null)
-                    {
-                        ioInterface.setContents(transferable, null);
-                    }
-                }
-                catch (AccessControlException ex)
-                {
-                    //   clipboard.set( transferable);
-                }
-
-            }
-        });
-
-        return new RaplaMenuItem[] { setOwnerItem };
+        Consumer<PopupContext> action = (popupContext)-> copyService.copy(url);
+        IdentifiableMenuEntry item = menuItemFactory.createMenuItem("Copy Link", null, action);
+        return new IdentifiableMenuEntry[] {item};
     }
 
     public void showException(Exception ex) {

@@ -338,7 +338,7 @@ import java.util.Set;
         }
         final Collection<ReferenceInfo> allIds = raplaSQLInput.update(c, lastUpdated, connectionTime);
         List<PreferencePatch> patches = raplaSQLInput.getPatches(c, lastUpdated);
-        Collection<Entity> toStore = new LinkedHashSet<Entity>();
+        Collection<Entity> toStore = new LinkedHashSet<>();
         Set<ReferenceInfo> toRemove = new HashSet<>();
         for (ReferenceInfo id : allIds)
         {
@@ -527,19 +527,14 @@ import java.util.Set;
             c = null;
             c = createConnection();
             final Connection conn = c;
-            sourceOperator.runWithReadLock(new CachableStorageOperatorCommand()
-            {
-
-                @Override public void execute(LocalCache cache) throws RaplaException
+            sourceOperator.runWithReadLock(cache -> {
+                try
                 {
-                    try
-                    {
-                        saveData(conn, cache);
-                    }
-                    catch (SQLException ex)
-                    {
-                        throw new RaplaException(ex.getMessage(), ex);
-                    }
+                    saveData(conn, cache);
+                }
+                catch (SQLException ex)
+                {
+                    throw new RaplaException(ex.getMessage(), ex);
                 }
             });
             return true;
@@ -557,8 +552,8 @@ import java.util.Set;
 
     private Map<String, TableDef> loadDBSchema(Connection c) throws SQLException
     {
-        Map<String, TableDef> tableMap = new LinkedHashMap<String, TableDef>();
-        List<String> catalogList = new ArrayList<String>();
+        Map<String, TableDef> tableMap = new LinkedHashMap<>();
+        List<String> catalogList = new ArrayList<>();
         DatabaseMetaData metaData = c.getMetaData();
         {
             ResultSet set = metaData.getCatalogs();
@@ -575,7 +570,7 @@ import java.util.Set;
                 set.close();
             }
         }
-        List<String> schemaList = new ArrayList<String>();
+        List<String> schemaList = new ArrayList<>();
         {
             ResultSet set = metaData.getSchemas();
             try
@@ -601,10 +596,10 @@ import java.util.Set;
         {
             catalogList.add(null);
         }
-        Map<String, Set<String>> tables = new LinkedHashMap<String, Set<String>>();
+        Map<String, Set<String>> tables = new LinkedHashMap<>();
         for (String cat : catalogList)
         {
-            LinkedHashSet<String> tableSet = new LinkedHashSet<String>();
+            LinkedHashSet<String> tableSet = new LinkedHashSet<>();
             String[] types = new String[] { "TABLE" };
             tables.put(cat, tableSet);
             {
@@ -701,7 +696,7 @@ import java.util.Set;
         {
             return;
         }
-        final LinkedHashSet<ReferenceInfo> ids = new LinkedHashSet<ReferenceInfo>();
+        final LinkedHashSet<ReferenceInfo> ids = new LinkedHashSet<>();
         for (Entity entity : storeObjects)
         {
             ids.add(entity.getReference());
@@ -800,7 +795,7 @@ import java.util.Set;
 
     private Collection<String> getLockIds(Collection<ReferenceInfo> ids)
     {
-        List<String> result = new ArrayList<String>();
+        List<String> result = new ArrayList<>();
         for (ReferenceInfo info : ids)
         {
             result.add(info.getId());
@@ -830,7 +825,7 @@ import java.util.Set;
         }
         Collection<Entity> storeObjects = Collections.emptyList();
         List<PreferencePatch> preferencePatches = Collections.emptyList();
-        Collection<ReferenceInfo> removeObjects = new ArrayList<ReferenceInfo>();
+        Collection<ReferenceInfo> removeObjects = new ArrayList<>();
         for (ReferenceInfo<Conflict> id : disabledConflicts)
         {
             removeObjects.add(id);

@@ -28,8 +28,8 @@ import org.rapla.components.layout.TableLayout;
 import org.rapla.components.util.DateTools;
 import org.rapla.entities.domain.Period;
 import org.rapla.facade.CalendarModel;
-import org.rapla.facade.client.ClientFacade;
 import org.rapla.facade.PeriodModel;
+import org.rapla.facade.client.ClientFacade;
 import org.rapla.framework.RaplaInitializationException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.logger.Logger;
@@ -50,7 +50,7 @@ import java.util.Date;
 
 public class IntervalChooserPanel extends RaplaGUIComponent implements RaplaWidget
 {
-    Collection<DateChangeListener> listenerList = new ArrayList<DateChangeListener>();
+    Collection<DateChangeListener> listenerList = new ArrayList<>();
     PeriodChooser periodChooser;
 
     JPanel panel = new JPanel();

@@ -17,8 +17,8 @@ import org.rapla.entities.domain.Appointment;
 import org.rapla.entities.domain.Reservation;
 import org.rapla.entities.dynamictype.ClassificationFilter;
 import org.rapla.entities.dynamictype.DynamicType;
-import org.rapla.facade.client.ClientFacade;
 import org.rapla.facade.RaplaFacade;
+import org.rapla.facade.client.ClientFacade;
 import org.rapla.storage.RaplaSecurityException;
 import org.rapla.test.util.RaplaTestCase;
 
@@ -58,8 +58,8 @@ public class SecurityManagerTest extends AbstractTestWithServer {
 		Allocatable resource = facade1.getAllocatablesWithFilter( filter.toArray())[0];
 		Appointment app1;
 		{
-			app1 = facade1.newAppointment( start, end ) ;
-			// First we create a reservation for the resource
+			app1 = facade1.newAppointmentDeprecated( start, end ) ;
+			// First we createInfoDialog a reservation for the resource
 			Reservation event = facade1.newReservationDeprecated();
 			event.getClassification().setValue("name", "taken");
 			event.addAppointment( app1 );
@@ -67,13 +67,13 @@ public class SecurityManagerTest extends AbstractTestWithServer {
 			facade1.store( event );
 		}
 		logout(clientFacade1);
-		// Now we login as a non admin user, who isnt allowed to create conflicts on the resource erwin
+		// Now we login as a non admin user, who isnt allowed to createInfoDialog conflicts on the resource erwin
 		login(clientFacade1,"monty", "burns".toCharArray());
 		{
 			Reservation event = facade1.newReservationDeprecated();
 			// A new event with the same time for the same resource should fail. 
 			event.getClassification().setValue("name", "conflicting event");
-			Appointment app = facade1.newAppointment( start, end ) ;
+			Appointment app = facade1.newAppointmentDeprecated( start, end ) ;
 			event.addAppointment( app);
 			event.addAllocatable( resource );
 			try 

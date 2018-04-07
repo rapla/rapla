@@ -1,15 +1,15 @@
 package org.rapla.plugin.tableview.client.swing;
 
+import org.jetbrains.annotations.NotNull;
 import org.rapla.RaplaResources;
 import org.rapla.inject.Extension;
 import org.rapla.plugin.tableview.client.swing.extensionpoints.AppointmentSummaryExtension;
 
 import javax.inject.Inject;
+import javax.swing.Box;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JTable;
-import javax.swing.event.ListSelectionEvent;
-import javax.swing.event.ListSelectionListener;
 
 @Extension(provides = AppointmentSummaryExtension.class,id = "appointmentcounter")
 public final class AppointmentCounter implements AppointmentSummaryExtension
@@ -25,13 +25,12 @@ public final class AppointmentCounter implements AppointmentSummaryExtension
 	public void init(final JTable table, JPanel summaryRow) {
 		final JLabel counter = new JLabel();
 		summaryRow.add( counter);
-		table.getSelectionModel().addListSelectionListener(new ListSelectionListener() {
-			
-			public void valueChanged(ListSelectionEvent arg0) 
-			{
-				int count = table.getSelectedRows().length;
-				counter.setText( count+ " " + (count == 1 ? i18n.getString("appointment") : i18n.getString("appointments")) + " ");
-			}
-		});
+		summaryRow.add( Box.createHorizontalStrut(30));
+		table.getSelectionModel().addListSelectionListener((evt) ->counter.setText(formatCount( table.getSelectedRows().length)));
+	}
+
+	private String formatCount(int count)
+	{
+		return count+ " " + (count == 1 ? i18n.getString("appointment") : i18n.getString("appointments"));
 	}
 }

@@ -31,9 +31,9 @@ import java.util.Set;
 @DefaultImplementation(of = CalendarOptions.class, context = InjectionContext.all)
 @Singleton
 public class CalendarOptionsImpl implements CalendarOptions {
-    public final static TypedComponentRole<RaplaConfiguration> CALENDAR_OPTIONS= new TypedComponentRole<RaplaConfiguration>("org.rapla.calendarview");
-    public final static TypedComponentRole<Boolean> SHOW_CONFLICT_WARNING = new TypedComponentRole<Boolean>("org.rapla.conflict.showWarning");
-    public final static TypedComponentRole<Boolean> SHOW_NOT_IN_CALENDAR_WARNING = new TypedComponentRole<Boolean>("org.rapla.calendar.showNotInCalendarWarning");
+    public final static TypedComponentRole<RaplaConfiguration> CALENDAR_OPTIONS= new TypedComponentRole<>("org.rapla.calendarview");
+    public final static TypedComponentRole<Boolean> SHOW_CONFLICT_WARNING = new TypedComponentRole<>("org.rapla.conflict.showWarning");
+    public final static TypedComponentRole<Boolean> SHOW_NOT_IN_CALENDAR_WARNING = new TypedComponentRole<>("org.rapla.calendar.showNotInCalendarWarning");
     
     public static final String WORKTIME = "worktime";
     public static final String EXCLUDE_DAYS = "exclude-days";
@@ -64,7 +64,7 @@ public class CalendarOptionsImpl implements CalendarOptions {
     int nTimes; 
     /** Ends here*/
   
-    Set<Integer> excludeDays = new LinkedHashSet<Integer>();
+    Set<Integer> excludeDays = new LinkedHashSet<>();
 
     int maxtimeMinutes = -1;
     int mintimeMinutes = -1;

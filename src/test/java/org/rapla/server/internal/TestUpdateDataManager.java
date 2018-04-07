@@ -9,7 +9,8 @@ import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 import org.rapla.AppointmentFormaterImpl;
 import org.rapla.RaplaResources;
-import org.rapla.components.i18n.internal.DefaultBundleManager;
+import org.rapla.components.i18n.internal.AbstractBundleManager;
+import org.rapla.components.i18n.server.ServerBundleManager;
 import org.rapla.entities.Entity;
 import org.rapla.entities.User;
 import org.rapla.entities.domain.Allocatable;
@@ -55,7 +56,7 @@ public class TestUpdateDataManager
                 facade = RaplaTestCase.createFacadeWithDatasource(logger, datasource, xmlFile);
 //        facade = RaplaTestCase.createFacadeWithFile(logger, xmlFile);
         operator = (CachableStorageOperator) facade.getOperator();
-        DefaultBundleManager bundleManager = new DefaultBundleManager();
+        AbstractBundleManager bundleManager = new ServerBundleManager();
         RaplaResources i18n = new RaplaResources(bundleManager);
         final RaplaLocaleImpl raplaLocale = new RaplaLocaleImpl(bundleManager);
         AppointmentFormater appointmentFormater = new AppointmentFormaterImpl(i18n, raplaLocale);
@@ -91,7 +92,7 @@ public class TestUpdateDataManager
 
     private void testInsertChangeAndDelete(final int countInsert, final int countDelete) throws RaplaException
     {
-        // create second user first
+        // createInfoDialog second user first
         final User readUser = facade.getUser("monty");
         final User writeUser = facade.getUser("homer");
         // do an init so we don't get the resources and reservations from the test data
@@ -102,7 +103,7 @@ public class TestUpdateDataManager
         final int storedReservations;
         final int maxNumberGeneratedItems = countInsert;
         final int storedAllocatables;
-        {// create some Data
+        {// createInfoDialog some Data
             List<Entity> entitiesToStore = new ArrayList<Entity>();
             Allocatable[] allocatables = facade.getAllocatables();
             startAllocatables = allocatables.length;
@@ -112,7 +113,7 @@ public class TestUpdateDataManager
                 {
                     Classification classification = facade.getDynamicTypes(DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RESOURCE)[0].newClassification();
                     final Allocatable newResource = facade.newAllocatable(classification, writeUser);
-                    newResource.getClassification().setValue("name", "newResource" + i);
+                    newResource.getClassification().setValue("name", "newResourceDeprecated" + i);
                     entitiesToStore.add(newResource);
                 }
                 storedAllocatables = entitiesToStore.size();
@@ -162,7 +163,7 @@ public class TestUpdateDataManager
                 if (storeObject instanceof Allocatable)
                 {
                     final Object value = ((Allocatable) storeObject).getClassification().getValue("name");
-                    Assert.assertTrue("name should start with newResource but found " + value, value.toString().startsWith("newResource"));
+                    Assert.assertTrue("name should start with newResourceDeprecated but found " + value, value.toString().startsWith("newResourceDeprecated"));
                 }
                 //                else if (storeObject instanceof Reservation)
                 //                {
@@ -285,7 +286,7 @@ public class TestUpdateDataManager
     @Test
     public void testInsertDeleteInOne() throws Exception
     {
-        // create second user first
+        // createInfoDialog second user first
         Date lastSynced = new Date();
         final User readUser = facade.getUser("monty");
         //facade.logout();
@@ -294,7 +295,7 @@ public class TestUpdateDataManager
         lastSynced = updateEvent.getLastValidated();
         Classification classification = facade.getDynamicTypes(DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RESOURCE)[0].newClassification();
         final Allocatable newResource = facade.newAllocatable(classification, writeUser);
-        newResource.getClassification().setValue("name", "newResource");
+        newResource.getClassification().setValue("name", "newResourceDeprecated");
         facade.storeAndRemove(new Entity[]{newResource}, Entity.ENTITY_ARRAY, writeUser);
         final UpdateEvent updateWithInsert = updateManager.createUpdateEvent(readUser, lastSynced);
         final Date lastValidatedAfterInsert = updateWithInsert.getLastValidated();

@@ -42,6 +42,7 @@ import org.rapla.scheduler.Promise;
 
 import java.util.Collection;
 import java.util.Date;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -61,22 +62,37 @@ public interface StorageOperator extends EntityResolver {
      * operator uses a cache and does not support "Active Monitoring"
      * of the original data */
     void refresh() throws RaplaException;
+
+    Promise<Void> refreshAsync();
+
     void disconnect() throws RaplaException;
 
     /** should return a clone of the object. <strong>Never</strong> edit the
         original, <strong>always</strong> edit the object returned by editObject.*/
-    Collection<Entity> editObjects(Collection<Entity> obj, User user) throws RaplaException;
+    Map<Entity,Entity> editObjects(Collection<Entity> objList, User user) throws RaplaException;
+
+    /** should return a clone of the object. <strong>Never</strong> edit the
+     original, <strong>always</strong> edit the object returned by editObject.
+     The Map keys are the original Versions of the Object and the values are the editable versions
+     */
+    Promise<Map<Entity,Entity>> editObjectsAsync(Collection<Entity> objList, User user, boolean checkLastChanged);
 
     /** if an id is not found and throwEntityNotFound is set to false then the resulting map does not contain an entry for the missing id*/
-    <T extends Entity> Map<ReferenceInfo<T>,T> getFromId(Collection<ReferenceInfo<T>> idSet, boolean throwEntityNotFound) throws RaplaException;
+    <T extends Entity> Promise<Map<ReferenceInfo<T>,T>> getFromIdAsync(Collection<ReferenceInfo<T>> idSet, boolean throwEntityNotFound);
     
     Map<Entity,Entity> getPersistant(Collection<? extends Entity> entity) throws RaplaException;
+
+    //Promise<Map<Entity,Entity>> getPersistantAsync(Collection<? extends Entity> entity);
     /** Stores and/or removes entities and specifies a user that is responsible for the changes.
      * Notifies  all registered StorageUpdateListeners after a successful
      storage.*/
     <T extends Entity, S extends Entity> void storeAndRemove(Collection<T> storeObjects,Collection<ReferenceInfo<S>> removeObjects,User user) throws RaplaException;
 
-    <T extends Entity> ReferenceInfo<T>[] createIdentifier(Class<T> raplaType, int count) throws RaplaException;
+    <T extends Entity, S extends Entity> Promise<Void> storeAndRemoveAsync(Collection<T> storeObjects,Collection<ReferenceInfo<S>> removeObjects,User user);
+
+    <T extends Entity> List<ReferenceInfo<T>> createIdentifier(Class<T> raplaType, int count) throws RaplaException;
+
+    <T extends Entity> Promise<List<ReferenceInfo<T>>> createIdentifierAsync(Class<T> raplaType, int count);
 
     Collection<User> getUsers() throws RaplaException;
 
@@ -126,7 +142,7 @@ public interface StorageOperator extends EntityResolver {
 
     Promise<Date> getNextAllocatableDate(Collection<Allocatable> allocatables,Appointment appointment, Collection<Reservation> ignoreList, Integer worktimeStartMinutes,Integer worktimeEndMinutes, Integer[] excludedDays, Integer rowsPerHour);
     
-    Collection<Conflict> getConflicts(User user) throws RaplaException;
+    Promise<Collection<Conflict>> getConflicts(User user);
 
     Promise<Collection<Conflict>> getConflicts(Reservation reservation);
 

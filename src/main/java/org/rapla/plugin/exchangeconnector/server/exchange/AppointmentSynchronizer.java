@@ -75,6 +75,7 @@ import java.util.Set;
 import java.util.SortedSet;
 import java.util.TimeZone;
 import java.util.TreeSet;
+import java.util.stream.Collectors;
 
 /**
  * 
@@ -149,11 +150,11 @@ public class AppointmentSynchronizer
     static public Collection<String> remove(Logger logger, final String url, String exchangeUsername, String exchangePassword) throws RaplaException
     {
         WebCredentials credentials = new WebCredentials(exchangeUsername, exchangePassword);
-        Collection<String> result = new LinkedHashSet<String>();
+        Collection<String> result = new LinkedHashSet<>();
         final Logger ewsLogger = logger.getChildLogger("webservice");
         final SearchFilter searchFilter = new SearchFilter.Exists(RAPLA_APPOINTMENT_MARKER);
-        List<Item> items = new ArrayList<Item>();
-        Collection<ItemId> itemIds = new ArrayList<ItemId>();
+        List<Item> items = new ArrayList<>();
+        Collection<ItemId> itemIds = new ArrayList<>();
 
         try
         {
@@ -536,18 +537,14 @@ public class AppointmentSynchronizer
 
     private String getStringForRessources(Appointment raplaAppointment)
     {
-        StringBuilder result = new StringBuilder();
+        final StringBuilder result = new StringBuilder();
         // get all restricted resources
-        Allocatable[] resources = raplaAppointment.getReservation().getAllocatablesFor(raplaAppointment);
-        // join and check for mail address, if so, add to reservation
-        for (Allocatable restrictedAllocatable : resources)
-        {
-            if (!restrictedAllocatable.isPerson())
-            {
-                final String name = restrictedAllocatable.getName(locale);
-                result.append(name).append(LINE_BREAK);
-            }
-        }
+        raplaAppointment
+                .getReservation()
+                .getAllocatablesFor(raplaAppointment)
+                .filter( Allocatable::isPerson)
+                .map( alloc-> alloc.getName( locale))
+                .forEach( name-> result.append(name).append(LINE_BREAK));
         return result.toString();
     }
 
@@ -555,13 +552,13 @@ public class AppointmentSynchronizer
     {
         //final DynamicType roomType = getClientFacade().getDynamicTypes();
         // get all restricted resources
-        final Allocatable[] allocatables = raplaAppointment.getReservation().getAllocatablesFor(raplaAppointment);
         // join and check for mail address, if so, add to reservation
         exchangeAppointment.getRequiredAttendees().clear();
         exchangeAppointment.getResources().clear();
 
-        final List<String> locationList = new ArrayList<String>();
+        final List<String> locationList = new ArrayList<>();
 
+        final List<Allocatable> allocatables = raplaAppointment.getReservation().getAllocatablesFor(raplaAppointment).collect(Collectors.toList());
         for (Allocatable restrictedAllocatable : allocatables)
         {
             //String emailAttribute = config.get(ExchangeConnectorConfig.RAPLA_EVENT_TYPE_ATTRIBUTE_EMAIL);
@@ -799,7 +796,7 @@ public class AppointmentSynchronizer
 
     private SortedSet<Date> calcExceptionDates()
     {
-        SortedSet<Date> exceptionDates = new TreeSet<Date>();
+        SortedSet<Date> exceptionDates = new TreeSet<>();
         if (raplaAppointment.isRepeatingEnabled())
         {
             Date[] exceptions = raplaAppointment.getRepeating().getExceptions();

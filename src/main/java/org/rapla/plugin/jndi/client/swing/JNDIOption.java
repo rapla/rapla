@@ -13,6 +13,7 @@
 package org.rapla.plugin.jndi.client.swing;
 
 import org.rapla.RaplaResources;
+import org.rapla.client.PopupContext;
 import org.rapla.client.dialog.DialogInterface;
 import org.rapla.client.dialog.DialogUiFactoryInterface;
 import org.rapla.client.extensionpoints.PluginOptionPanel;
@@ -26,8 +27,8 @@ import org.rapla.entities.User;
 import org.rapla.entities.configuration.Preferences;
 import org.rapla.entities.configuration.RaplaConfiguration;
 import org.rapla.entities.configuration.RaplaMap;
-import org.rapla.facade.client.ClientFacade;
 import org.rapla.facade.RaplaFacade;
+import org.rapla.facade.client.ClientFacade;
 import org.rapla.framework.Configuration;
 import org.rapla.framework.DefaultConfiguration;
 import org.rapla.framework.RaplaException;
@@ -39,7 +40,8 @@ import org.rapla.plugin.jndi.JNDIPlugin;
 import org.rapla.plugin.jndi.internal.JNDIConf;
 import org.rapla.plugin.jndi.internal.JNDIConfig;
 import org.rapla.plugin.jndi.internal.JNDIConfig.MailTestRequest;
-import org.rapla.storage.RaplaSecurityException;
+import org.rapla.scheduler.Promise;
+import org.rapla.scheduler.ResolvedPromise;
 
 import javax.inject.Inject;
 import javax.inject.Provider;
@@ -125,13 +127,10 @@ public class JNDIOption implements JNDIConf, PluginOptionPanel
         passwordPanel.add( connectionPassword, BorderLayout.CENTER);
         final JCheckBox showPassword = new JCheckBox("show password");
 		passwordPanel.add( showPassword, BorderLayout.EAST);
-		showPassword.addActionListener(new ActionListener() {
-			
-			public void actionPerformed(ActionEvent e) {
-				boolean show = showPassword.isSelected();
-				connectionPassword.setEchoChar( show ? ((char) 0): '*');
-			}
-		});
+		showPassword.addActionListener(e -> {
+            boolean show = showPassword.isSelected();
+            connectionPassword.setEchoChar( show ? ((char) 0): '*');
+        });
 		
 		RaplaGUIComponent.addCopyPaste( connectionPassword, i18n, raplaLocale, ioInterface, logger );
     	connectionURL = newTextField();
@@ -167,46 +166,39 @@ public class JNDIOption implements JNDIConf, PluginOptionPanel
         groupField.mapFrom( Collections.singletonList(user));
     	addRow("Default Groups", groupField.getComponent() );
     	
-    	testButton.addActionListener( new ActionListener() 
-    	{
+    	testButton.addActionListener(e -> {
+            PasswordEnterUI testUser;
+            DialogInterface dialog;
+            final PopupContext popupContext = new SwingPopupContext(getComponent(), null);
+            try
+            {
 
-            public void actionPerformed(ActionEvent e) {
-                try
+                testUser = new PasswordEnterUI(raplaResources);
+                dialog =dialogUiFactory.createContentDialog(popupContext, testUser.getComponent(),new String[] {"test","abort"});
+                dialog.setTitle("Please enter valid user!");
+
+            }
+            catch (Exception ex)
+            {
+                dialogUiFactory.showException(ex, popupContext);
+                return;
+            }
+            dialog.start(true).thenCompose((index) ->
                 {
                     DefaultConfiguration conf = new DefaultConfiguration("test");
                     addChildren(conf);
-                    String username = "admin";
-                    String password ="";
-                    {
-                        PasswordEnterUI testUser = new PasswordEnterUI(raplaResources);
-                        DialogInterface dialog =dialogUiFactory.create( new SwingPopupContext(getComponent(), null), true,testUser.getComponent(),new String[] {"test","abort"});
-                        dialog.setTitle("Please enter valid user!");
-                        dialog.start(true);
-                        username = testUser.getUsername();
-                        password = new String(testUser.getNewPassword());
-                        int index=dialog.getSelectedIndex();
-                        if ( index > 0)
-                        {
-                            return;
-                        }
+                    if (index > 0) {
+                        return new ResolvedPromise<>((Void) null);
                     }
-                    configService.test(new MailTestRequest(conf,username,password));
-                    {
-                        DialogInterface dialog = dialogUiFactory.create( new SwingPopupContext(getComponent(), null), true, "JNDI","JNDI Authentification successfull");
-                        dialog.start(true); 
-                    }
-                } 
-                catch (RaplaSecurityException ex)
-                {
-                    dialogUiFactory.showWarning(ex.getMessage(), new SwingPopupContext(getComponent(), null));
+                    String username = testUser.getUsername();
+                    String password = new String(testUser.getNewPassword());
+                    final Promise<Boolean> testPromise = configService.test(new MailTestRequest(conf, username, password));
+                    return testPromise.thenCompose((dummy) ->
+                            dialogUiFactory.createInfoDialog(popupContext, "JNDI", "JNDI Authentification successfull").start(true)
+                    ).thenApply((index2) -> null);
                 }
-                catch (Exception ex)
-                {
-                    dialogUiFactory.showException(ex, new SwingPopupContext(getComponent(), null));
-                }
-            }
-    	    
-    	});
+            ).exceptionally((ex)->dialogUiFactory.showException(ex, popupContext));
+        });
     	panel.add( content, BorderLayout.CENTER);
         return panel;
     }
@@ -278,7 +270,7 @@ public class JNDIOption implements JNDIConf, PluginOptionPanel
         Collection<Category> groups;
         if (groupList == null)
         {
-        	groups = new ArrayList<Category>();
+        	groups = new ArrayList<>();
         }
         else
         {
@@ -300,7 +292,7 @@ public class JNDIOption implements JNDIConf, PluginOptionPanel
         addChildren( newConfig );
         this.config = newConfig;
         preferences.putEntry( configEntry,newConfig);
-        Set<Category> set = new LinkedHashSet<Category>();
+        Set<Category> set = new LinkedHashSet<>();
     	this.groupField.mapToList( set);
     	preferences.putEntry( JNDIPlugin.USERGROUP_CONFIG, facade.newRaplaMap( set) );
     }

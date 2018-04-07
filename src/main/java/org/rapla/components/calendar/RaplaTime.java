@@ -64,7 +64,7 @@ public final class RaplaTime extends RaplaComboBox {
     protected TimeField m_timeField;
     protected TimeList m_timeList;
     protected TimeModel m_timeModel;
-    protected Collection<DateChangeListener> m_listenerList = new ArrayList<DateChangeListener>();
+    protected Collection<DateChangeListener> m_listenerList = new ArrayList<>();
     private Date m_lastTime;
     private int m_visibleRowCount = -1;
     private int m_rowsPerHour = 4;
@@ -335,25 +335,17 @@ class TimeList extends JPanel implements MenuElement,MouseListener,MouseMotionLi
         JPanel downPane = new JPanel();
         downPane.setLayout( new BorderLayout());
         downPane.add( downButton, BorderLayout.CENTER );
-        upButton.addActionListener( new ActionListener() {
-            public void actionPerformed( ActionEvent e )
-            {
-                int direction = (int)- getRowHeight() * (m_list.getVisibleRowCount() -1);
-                JScrollBar bar = scrollPane.getVerticalScrollBar();
-                int value = Math.min( Math.max( 0, bar.getValue() + direction ), bar.getMaximum());
-                scrollPane.getVerticalScrollBar().setValue( value );
-            }
-            
+        upButton.addActionListener(e -> {
+            int direction = (int)- getRowHeight() * (m_list.getVisibleRowCount() -1);
+            JScrollBar bar = scrollPane.getVerticalScrollBar();
+            int value = Math.min( Math.max( 0, bar.getValue() + direction ), bar.getMaximum());
+            scrollPane.getVerticalScrollBar().setValue( value );
         });
-        downButton.addActionListener( new ActionListener() {
-            public void actionPerformed( ActionEvent e )
-            {
-                int direction = (int) getRowHeight() * (m_list.getVisibleRowCount() -1) ;
-                JScrollBar bar = scrollPane.getVerticalScrollBar();
-                int value = Math.min( Math.max( 0, bar.getValue() + direction ), bar.getMaximum());
-                scrollPane.getVerticalScrollBar().setValue( value );
-            }
-            
+        downButton.addActionListener(e -> {
+            int direction = (int) getRowHeight() * (m_list.getVisibleRowCount() -1) ;
+            JScrollBar bar = scrollPane.getVerticalScrollBar();
+            int value = Math.min( Math.max( 0, bar.getValue() + direction ), bar.getMaximum());
+            scrollPane.getVerticalScrollBar().setValue( value );
         });
         
         /*

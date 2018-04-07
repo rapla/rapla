@@ -173,7 +173,7 @@ public class TreeComponent extends Div
     public void updateData(Allocatable[] entries, Collection<Allocatable> selected)
     {
         this.allocatables = entries;
-        Map<String, JSONArray> dynTypes = new HashMap<String, JSONArray>();
+        Map<String, JSONArray> dynTypes = new HashMap<>();
         final JSONArray data = new JSONArray();
         for (int i = 0; i < allocatables.length; i++)
         {
@@ -209,26 +209,14 @@ public class TreeComponent extends Div
         }
         if (jstree == null)
         {
-            Scheduler.get().scheduleFinally(new ScheduledCommand()
-            {
-                @Override
-                public void execute()
-                {
-                    initTree();
-                }
-            });
+            Scheduler.get().scheduleFinally(() -> initTree());
         }
         // load data
-        Scheduler.get().scheduleFinally(new ScheduledCommand()
-        {
-            @Override
-            public void execute()
-            {
-                updatingData = true;
-                jstree.getSettings().getCore().setData(data.getJavaScriptObject());
-                jstree.deselect_all(true);
-                jstree.refresh(true, true);
-            }
+        Scheduler.get().scheduleFinally(() -> {
+            updatingData = true;
+            jstree.getSettings().getCore().setData(data.getJavaScriptObject());
+            jstree.deselect_all(true);
+            jstree.refresh(true, true);
         });
     }
 
@@ -255,7 +243,7 @@ public class TreeComponent extends Div
             return;
         }
         JsArrayInteger selectedPositions = selected;
-        final ArrayList<Allocatable> selectedAllocatables = new ArrayList<Allocatable>();
+        final ArrayList<Allocatable> selectedAllocatables = new ArrayList<>();
         for (int i = 0; i < selectedPositions.length(); i++)
         {
             final int selectedPosition = selectedPositions.get(i);
@@ -280,14 +268,7 @@ public class TreeComponent extends Div
         options.setPlugins(plugins.getJavaScriptObject());
         options.setCore((JsTreeCore)JS.createObject());
         options.setContextmenu((JsTreeContextMenu)JS.createObject());
-        options.getContextmenu().setItems(new JsTreeContextMenuFunction()
-        {
-            @Override
-            public void show(Object node, Object e)
-            {
-                Window.alert("Context menu, I am coming: " + node + ", " + e);
-            }
-        });
+        options.getContextmenu().setItems((node, e) -> Window.alert("Context menu, I am coming: " + node + ", " + e));
         options.getContextmenu().setSelect_node(false);
         JsTreeCore core = options.getCore();
         core.setDataType("JSON");
@@ -299,22 +280,12 @@ public class TreeComponent extends Div
         JsTreeJquery jsTreeJquery = (JsTreeJquery) JQueryElement.Static.$(getElement());
         JsTreeElement jstreeElement = jsTreeJquery.jstree(options);
         jstree = jstreeElement.data("jstree");
-        jsTreeJquery.on("changed.jstree", new JsTreeEventListener()
-        {
-            @Override
-            public void handle(Event e, Object data)
-            {
-                JsArrayInteger selected = ((JsTreeDataChange) data).getSelected();
-                selectionChanged(selected);
-            }
+        jsTreeJquery.on("changed.jstree", (e, data) -> {
+            JsArrayInteger selected = ((JsTreeDataChange) data).getSelected();
+            selectionChanged(selected);
         });
-        jsTreeJquery.on("refresh.jstree", new JsTreeEventListener()
-        {
-            @Override
-            public void handle(Event e, Object data)
-            {
-                refreshCompleted();
-            }
+        jsTreeJquery.on("refresh.jstree", (e, data) -> {
+            refreshCompleted();
         });
     }
 }

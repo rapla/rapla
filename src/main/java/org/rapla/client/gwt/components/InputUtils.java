@@ -81,7 +81,7 @@ public class InputUtils
 
     public static Map<String, Category> createIdMap(Category rootCategory)
     {
-        final LinkedHashMap<String, Category> result = new LinkedHashMap<String, Category>();
+        final LinkedHashMap<String, Category> result = new LinkedHashMap<>();
         fill(rootCategory, result);
         return result;
     }
@@ -104,7 +104,7 @@ public class InputUtils
 
     public static Collection<DropDownItem> createDropDownItems(Map<String, Category> idToCategory, Locale locale, Collection<Object> categories)
     {
-        Collection<DropDownItem> result = new ArrayList<DropDownItem>();
+        Collection<DropDownItem> result = new ArrayList<>();
         for (Entry<String, Category> entry : idToCategory.entrySet())
         {
             boolean selected = categories.contains(entry.getValue());

@@ -13,6 +13,7 @@
 
 package org.rapla.storage.impl;
 
+import org.jetbrains.annotations.NotNull;
 import org.rapla.RaplaResources;
 import org.rapla.components.util.Assert;
 import org.rapla.entities.Category;
@@ -68,6 +69,7 @@ import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 
@@ -135,22 +137,69 @@ public abstract class AbstractCachableOperator implements StorageOperator
     public <T extends Entity> T editObject(T o, User user) throws RaplaException
     {
         Set<Entity> singleton = Collections.singleton((Entity) o);
-        Collection<Entity> list = editObjects(singleton, user);
-        Entity first = list.iterator().next();
+        Map<Entity,Entity> list = editObjects(singleton, user);
+        Entity first = list.values().iterator().next();
         @SuppressWarnings("unchecked") T casted = (T) first;
         return casted;
     }
 
-    public Collection<Entity> editObjects(Collection<Entity> list, User user) throws RaplaException
+    public Map<Entity,Entity> editObjects(Collection<Entity> list, User user) throws RaplaException
     {
-        Collection<Entity> toEdit = new LinkedHashSet<Entity>();
-        Map<Entity, Entity> persistantMap = getPersistant(list);
-        // read unlock
+        Map<ReferenceInfo<Entity>, Entity> idMap = createReferenceInfoMap(list);
+        Map<ReferenceInfo<Entity>, Entity> resolvedList = getFromId(idMap.keySet(), false);
+        return editObjects(list, user, resolvedList);
+    }
+
+    @Override
+    public Promise<Map<Entity,Entity>> editObjectsAsync(Collection<Entity> objList, User user, boolean checkLastChanged) {
+
+        Map<ReferenceInfo<Entity>, Entity> idMap = createReferenceInfoMap(objList);
+        return getFromIdAsync(idMap.keySet(), false).thenApply(
+                map->
+                {
+                    if ( checkLastChanged)
+                    {
+                        checkLastChanged(objList, user, map);
+                    }
+                    return editObjects(objList, user,map);}
+        );
+    }
+
+
+    /** checks if the user that  is the user that last changed the entites
+     *
+     * @return the latest persistant map of the entities
+     * @throws RaplaException if the logged in user is not the lastChanged user of any entities. If isNew is false then an exception is also thrown, when an entity is not found in persistant storage
+     */
+     protected void checkLastChanged(Collection<Entity> objList, User user, Map<ReferenceInfo<Entity>, Entity> map) throws RaplaException {
+        for ( Entity entity:objList)
+        {
+            if ( entity instanceof ModifiableTimestamp)
+            {
+                Entity persistant = map.get( entity.getReference());
+                if ( persistant != null)
+                {
+                    ReferenceInfo<User> lastChangedBy = ((ModifiableTimestamp) persistant).getLastChangedBy();
+                    if (lastChangedBy != null && !user.getReference().equals(lastChangedBy))
+                    {
+                        final Locale locale = i18n.getLocale();
+                        String name = entity instanceof Named ? ((Named) entity).getName( locale) : entity.toString();
+                        throw new RaplaException(i18n.format("error.new_version", name));
+                    }
+                }
+            }
+        }
+    }
+
+    @NotNull
+    protected Map<Entity, Entity> editObjects(Collection<Entity> list, User user, Map<ReferenceInfo<Entity>, Entity> resolvedList) {
+        Map<Entity,Entity> toEdit = new LinkedHashMap<>();
         for (Entity o : list)
         {
-            Entity persistant = persistantMap.get(o);
+            Entity persistant = resolvedList.get(o.getReference());
             Entity refEntity = editObject(o, persistant, user);
-            toEdit.add(refEntity);
+            Entity key = persistant != null ? persistant : o;
+            toEdit.put(key,refEntity);
         }
         return toEdit;
     }
@@ -180,7 +229,12 @@ public abstract class AbstractCachableOperator implements StorageOperator
             final Collection<ReferenceInfo<S>> removeObjects, final User user) throws RaplaException
     {
         checkConnected();
+        UpdateEvent evt = createUpdateEvent(storeObjects, removeObjects, user);
+        dispatch(evt);
+    }
 
+    @NotNull
+    protected <T extends Entity, S extends Entity> UpdateEvent createUpdateEvent(Collection<T> storeObjects, Collection<ReferenceInfo<S>> removeObjects, User user) throws RaplaException {
         UpdateEvent evt = new UpdateEvent();
         if (user != null)
         {
@@ -208,15 +262,17 @@ public abstract class AbstractCachableOperator implements StorageOperator
             }
             evt.putRemoveId(entity);
         }
-        dispatch(evt);
+        return evt;
     }
+
+
 
     public Promise<Collection<Conflict>> getConflicts(Reservation reservation)
     {
         Date today = today();
         if (RaplaComponent.isTemplate(reservation))
         {
-            return new ResolvedPromise<Collection<Conflict>>(Collections.emptyList());
+            return new ResolvedPromise<>(Collections.emptyList());
         }
         final Collection<Allocatable> allocatables = Arrays.asList(reservation.getAllocatables());
         final Collection<Appointment> appointments = Arrays.asList(reservation.getAppointments());
@@ -225,7 +281,7 @@ public abstract class AbstractCachableOperator implements StorageOperator
                 appointments, ignoreList);
         final Promise<Collection<Conflict>> promise = allAllocatableBindingsPromise.thenApply((map) ->
         {
-            ArrayList<Conflict> conflictList = new ArrayList<Conflict>();
+            ArrayList<Conflict> conflictList = new ArrayList<>();
             for (Map.Entry<Allocatable, Map<Appointment, Collection<Appointment>>> entry : map.entrySet())
             {
                 Allocatable allocatable = entry.getKey();
@@ -263,7 +319,7 @@ public abstract class AbstractCachableOperator implements StorageOperator
     public Collection<Allocatable> getDependent(Collection<Allocatable> allocatables)
     {
         final Set<ReferenceInfo<Allocatable>> dependentIds = cache.getDependent(allocatables);
-        final Set<Allocatable> result = new LinkedHashSet<Allocatable>();
+        final Set<Allocatable> result = new LinkedHashSet<>();
         for (ReferenceInfo<Allocatable> dependentId : dependentIds)
         {
             Allocatable allocatable = tryResolve(dependentId);
@@ -291,7 +347,7 @@ public abstract class AbstractCachableOperator implements StorageOperator
         {
             Collection<User> collection = cache.getUsers();
             // We return a clone to avoid synchronization Problems
-            return new LinkedHashSet<User>(collection);
+            return new LinkedHashSet<>(collection);
         }
         finally
         {
@@ -307,7 +363,7 @@ public abstract class AbstractCachableOperator implements StorageOperator
         {
             Collection<DynamicType> collection = cache.getDynamicTypes();
             // We return a clone to avoid synchronization Problems
-            return new ArrayList<DynamicType>(collection);
+            return new ArrayList<>(collection);
         }
         finally
         {
@@ -390,7 +446,7 @@ public abstract class AbstractCachableOperator implements StorageOperator
     protected Collection<Allocatable> getAllocatables(ClassificationFilter[] filters, int maxPerType) throws RaplaException
     {
         checkLoaded();
-        Collection<Allocatable> allocatables = new LinkedHashSet<Allocatable>();
+        Collection<Allocatable> allocatables = new LinkedHashSet<>();
         RaplaLock.ReadLock readLock = lockManager.readLock();
         try
         {
@@ -463,7 +519,7 @@ public abstract class AbstractCachableOperator implements StorageOperator
         }
     }
 
-    protected Map<ReferenceInfo<Preferences>, PreferencesImpl> emptyPreferencesProxy = new HashMap<ReferenceInfo<Preferences>, PreferencesImpl>();
+    protected Map<ReferenceInfo<Preferences>, PreferencesImpl> emptyPreferencesProxy = new HashMap<>();
 
     public Preferences getPreferences(final User user, boolean createIfNotNull) throws RaplaException
     {
@@ -545,7 +601,7 @@ public abstract class AbstractCachableOperator implements StorageOperator
 
     public abstract boolean isLoaded();
 
-    @Override public <T extends Entity> Map<ReferenceInfo<T>, T> getFromId(Collection<ReferenceInfo<T>> idSet, boolean throwEntityNotFound)
+    protected <T extends Entity> Map<ReferenceInfo<T>, T> getFromId(Collection<ReferenceInfo<T>> idSet, boolean throwEntityNotFound)
             throws RaplaException
     {
         checkLoaded();
@@ -593,15 +649,9 @@ public abstract class AbstractCachableOperator implements StorageOperator
 
     @Override public Map<Entity, Entity> getPersistant(Collection<? extends Entity> list) throws RaplaException
     {
-        Map<ReferenceInfo<Entity>, Entity> idMap = new LinkedHashMap<ReferenceInfo<Entity>, Entity>();
-        for (Entity key : list)
-        {
-            ReferenceInfo id = key.getReference();
-            idMap.put(id, key);
-        }
-        Map<Entity, Entity> result = new LinkedHashMap<Entity, Entity>();
-        Set<ReferenceInfo<Entity>> keySet = idMap.keySet();
-        Map<ReferenceInfo<Entity>, Entity> resolvedList = getFromId(keySet, false);
+        Map<ReferenceInfo<Entity>, Entity> idMap = createReferenceInfoMap(list);
+        Map<ReferenceInfo<Entity>, Entity> resolvedList = getFromId(idMap.keySet(), false);
+        Map<Entity, Entity> result = new LinkedHashMap<>();
         for (Entity entity : resolvedList.values())
         {
             ReferenceInfo reference = entity.getReference();
@@ -612,6 +662,17 @@ public abstract class AbstractCachableOperator implements StorageOperator
             }
         }
         return result;
+    }
+
+    @NotNull
+    protected Map<ReferenceInfo<Entity>, Entity> createReferenceInfoMap(Collection<? extends Entity> list) {
+        Map<ReferenceInfo<Entity>, Entity> idMap = new LinkedHashMap<>();
+        for (Entity key : list)
+        {
+            ReferenceInfo id = key.getReference();
+            idMap.put(id, key);
+        }
+        return idMap;
     }
 
     /**
@@ -822,9 +883,9 @@ public abstract class AbstractCachableOperator implements StorageOperator
     final protected UpdateResult update(Date since, Date until, Collection<Entity> storeObjects1, Collection<PreferencePatch> preferencePatches,
             Collection<ReferenceInfo> removedIds) throws RaplaException
     {
-        HashMap<ReferenceInfo, Entity> oldEntities = new HashMap<ReferenceInfo, Entity>();
-        // First make a copy of the old entities
-        Collection<Entity> storeObjects = new LinkedHashSet<Entity>(storeObjects1);
+        HashMap<ReferenceInfo, Entity> oldEntities = new HashMap<>();
+        // First make a copyReservations of the old entities
+        Collection<Entity> storeObjects = new LinkedHashSet<>(storeObjects1);
         for (Entity entity : storeObjects)
         {
             Entity persistantEntity = findPersistant(entity);
@@ -841,7 +902,7 @@ public abstract class AbstractCachableOperator implements StorageOperator
             if (persistantEntity instanceof Appointment)// || ((persistantEntity instanceof Category) && storeObjects.contains( ((Category) persistantEntity).getParent())))
             {
                 throw new RaplaException(persistantEntity.getTypeClass() + " can only be stored via parent entity ");
-                // we ingore subentities, because these are added as bellow via addSubentites. The originals will be contain false parent references (to the new parents) when copy is called
+                // we ingore subentities, because these are added as bellow via addSubentites. The originals will be contain false parent references (to the new parents) when copyReservations is called
             }
             else
             {
@@ -868,7 +929,7 @@ public abstract class AbstractCachableOperator implements StorageOperator
             storeObjects.add(clone);
 
         }
-        List<Entity> updatedEntities = new ArrayList<Entity>();
+        List<Entity> updatedEntities = new ArrayList<>();
         // Then update the new entities
         for (Entity entity : storeObjects)
         {
@@ -891,7 +952,7 @@ public abstract class AbstractCachableOperator implements StorageOperator
             cache.put(entity);
             updatedEntities.add(entity);
         }
-        Collection<ReferenceInfo> toRemove = new HashSet<ReferenceInfo>();
+        Collection<ReferenceInfo> toRemove = new HashSet<>();
         for (ReferenceInfo id : removedIds)
         {
             Entity persistantVersion = cache.tryResolve(id);
@@ -945,7 +1006,7 @@ public abstract class AbstractCachableOperator implements StorageOperator
         //			user = resolve(cache,userId, User.class);
         //		}
 
-        Map<ReferenceInfo, Entity> updatedEntityMap = new LinkedHashMap<ReferenceInfo, Entity>();
+        Map<ReferenceInfo, Entity> updatedEntityMap = new LinkedHashMap<>();
         for (Entity toUpdate : updatedEntities)
         {
             updatedEntityMap.put(toUpdate.getReference(), toUpdate);
@@ -991,7 +1052,7 @@ public abstract class AbstractCachableOperator implements StorageOperator
             }
             else
             {
-                getLogger().warn("No create date set for entity " + newEntity.getReference());
+                getLogger().warn("No createInfoDialog date set for entity " + newEntity.getReference());
                 createdBeforeSince = true;
             }
         }

@@ -1,8 +1,6 @@
 package org.rapla.components.calendarview;
 
-import jsinterop.annotations.JsType;
-
-@JsType
+@FunctionalInterface
 public interface BlockContainer
 {
     /** Adds a block. You can optionaly specify a slot, if the day-view supports multiple slots (like in the weekview).

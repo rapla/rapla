@@ -1,48 +1,110 @@
 package org.rapla.client.gwt;
 
-import com.google.gwt.core.client.Scheduler;
+import com.google.gwt.core.client.GWT;
 import com.google.gwt.user.client.Cookies;
-import com.google.gwt.user.client.History;
 import com.google.gwt.user.client.Window;
-import org.rapla.client.gwt.view.RaplaPopups;
+import org.rapla.components.i18n.client.gwt.GwtBundleManager;
+import org.rapla.facade.RaplaFacade;
+import org.rapla.facade.client.ClientFacade;
+import org.rapla.facade.internal.ClientFacadeImpl;
 import org.rapla.inject.DefaultImplementation;
 import org.rapla.inject.InjectionContext;
+import org.rapla.logger.Logger;
 import org.rapla.scheduler.Promise;
+import org.rapla.storage.RemoteLocaleService;
+import org.rapla.storage.StorageOperator;
 import org.rapla.storage.dbrm.LoginTokens;
+import org.rapla.storage.dbrm.RemoteAuthentificationService;
+import org.rapla.storage.dbrm.RemoteConnectionInfo;
 
 import javax.inject.Inject;
-import java.util.logging.Level;
-import java.util.logging.Logger;
-
+import javax.inject.Provider;
 
 @DefaultImplementation(of=GwtStarter.class,context = InjectionContext.gwt, export = true)
 public class RaplaGwtStarter implements GwtStarter
 {
-    public static final String LOGIN_COOKIE = "raplaLoginToken";
-
-    Bootstrap bootstrapProvider;
+    private final Provider<ClientFacade> facade;
+    private final Provider<StorageOperator> operator;
+    private final Logger logger;
+    private final RemoteConnectionInfo remoteConnectionInfo;
+    Provider<JsApi> jsApi;
+    private final Provider<RemoteAuthentificationService> remoteAuthentificationService;
+    private final RemoteLocaleService remoteLocaleService;
+    private GwtBundleManager gwtBundleManager;
 
     @Inject
-    public RaplaGwtStarter(Bootstrap bootstrapProvider )
+    public RaplaGwtStarter(Provider<ClientFacade> facade, Provider<StorageOperator> operator, Logger logger, RemoteConnectionInfo remoteConnectionInfo, Provider<JsApi> jsApi,
+            Provider<RemoteAuthentificationService> remoteAuthentificationService, RemoteLocaleService remoteLocaleService, GwtBundleManager gwtBundleManager)
     {
-        this.bootstrapProvider = bootstrapProvider;
+        this.remoteConnectionInfo = remoteConnectionInfo;
+        this.operator = operator;
+        this.jsApi = jsApi;
+        this.facade = facade;
+        this.logger = logger;
+        this.remoteAuthentificationService = remoteAuthentificationService;
+        this.remoteLocaleService = remoteLocaleService;
+        this.gwtBundleManager = gwtBundleManager;
+        final String moduleBaseURL = GWT.getModuleBaseURL();
+        this.remoteConnectionInfo.setServerURL(moduleBaseURL + "../rapla");
+
     }
 
+    public Logger getLogger() { return  logger;}
 
-    private LoginTokens getValidToken()
+    public JsApi getAPI() { return  jsApi.get();}
+
+    public RaplaFacade getFacade()
     {
-        final Logger logger = Logger.getLogger("componentClass");
-        logger.log(Level.INFO,Cookies.getCookieNames().toString());
+        return facade.get().getRaplaFacade();
+    }
+
+    public RemoteAuthentificationService getAuthentification()
+    {
+        return remoteAuthentificationService.get();
+    }
+
+    @Override
+    public Promise<Void> initLocale(String localeParam)
+    {
+        String id = "org.rapla";//"123";
+        logger.info("loading locale for " + localeParam);
+        return remoteLocaleService.locale(id, localeParam).thenAccept(localePackage -> {
+            logger.info("Locale loaded for " + localePackage.getCountry() + " Language: " + localePackage.getLanguage());
+            gwtBundleManager.setLocalPackage(localePackage);
+        });
+    }
+
+    @Override
+    public Promise<JsApi> registerApi(String accessToken)
+    {
+        logger.info("Register Start");
+        return load(accessToken).thenApply((dummy2) -> jsApi.get());
+    }
+
+    public Promise<Void> load(String accessToken){
+        logger.info("Starting GWT Client with accessToken" + accessToken);
+        remoteConnectionInfo.setAccessToken(accessToken);
+        final ClientFacade facadeImpl =  facade.get();
+        final StorageOperator operator = this.operator.get();
+        ((ClientFacadeImpl)facadeImpl).setOperator(operator);
+        Promise<Void> load = facadeImpl.load();
+        return load;
+    }
+
+    public static final String LOGIN_COOKIE = "raplaLoginToken";
+    public LoginTokens getValidToken()
+    {
+        logger.info(Cookies.getCookieNames().toString());
         String hashToken = Window.Location.getHash();
         String tokenString = null;
-        if (hashToken != null && !hashToken.isEmpty()) {
+        if (hashToken != null && !hashToken.isEmpty() ) {
             final int indexOf = hashToken.indexOf(LOGIN_COOKIE);
             if ( indexOf >= 0)
             {
                 final String encodedToken = hashToken.substring(indexOf + LOGIN_COOKIE.length() + 1);
                 tokenString = encodedToken.replaceAll("&valid_until=","#");
+                Cookies.setCookie(LOGIN_COOKIE, tokenString);
             }
-            Cookies.setCookie(LOGIN_COOKIE, tokenString);
         }
         if ( tokenString == null)
         {
@@ -55,17 +117,60 @@ public class RaplaGwtStarter implements GwtStarter
             boolean valid = token.isValid();
             if (valid)
             {
-                logger.log(Level.INFO, "found valid cookie: " + tokenString);
+                logger.info("found valid cookie: " + tokenString);
                 return token;
             }
-            logger.log(Level.INFO, "No valid login token found");
+            logger.info( "No valid login token found");
         }
         else
         {
-            logger.log(Level.INFO, "No login token found");
+            logger.info( "No login token found");
         }
         return null;
     }
+
+
+    //    public void start(Promise<Void> load)
+    //    {
+    //        RaplaPopups.getProgressBar().setPercent(40);
+    //        load.thenRun(() ->
+    //        {
+    //            try
+    //            {
+    //                RaplaPopups.getProgressBar().setPercent(70);
+    //                Collection<Allocatable> allocatables = Arrays.asList(getFacade().getAllocatables());
+    //                logger.info("loaded " + allocatables.size() + " resources. Starting application");
+    //                boolean defaultLanguageChosen = false;
+    //                final Application application = getApplication();
+    //                application.start(defaultLanguageChosen, () -> {
+    //                    logger.info("Restarting.");
+    //                    Window.Location.reload();
+    //                }
+    //                );
+    //            }
+    //            catch (Exception e)
+    //            {
+    //                logger.error(e.getMessage(), e);
+    //                if (e instanceof RaplaSecurityException)
+    //                {
+    //                    RaplaGwtStarter.redirectToStart();
+    //                }
+    //
+    //            }
+    //        }).exceptionally((e) ->
+    //        {
+    //            logger.error(e.getMessage(), e);
+    //            if (e instanceof RaplaSecurityException)
+    //            {
+    //                RaplaGwtStarter.redirectToStart();
+    //            }
+    //            return null;
+    //        });
+    //
+    //    }
+
+
+
 
     public void startApplication()
     {
@@ -91,35 +196,7 @@ public class RaplaGwtStarter implements GwtStarter
 //        }
     }
 
-    @Override
-    public void registerJavascriptApi()
-    {
-        System.out.println("Register Start");
-        final LoginTokens token = getValidToken();
 
-        if (token != null)
-        {
-            System.out.println("Token found");
-            final String accessToken = token.getAccessToken();
 
-            final Promise<Void> load = bootstrapProvider.load(accessToken);
-            load.thenRun(() -> {
-                final JsApi api = bootstrapProvider.getAPI();
-                new RaplaCallback().callback(api);
-            });
-        }
-        else
-        {
-            redirectToStart();
-        }
-
-    }
-
-    static public void redirectToStart()
-    {
-        final String historyToken = History.getToken();
-        final String appendig = historyToken != null && !historyToken.isEmpty() ? "&url=rapla.html#" + historyToken : "";
-        Window.Location.replace(/*GWT.getModuleBaseURL*/ "../rapla/login" + appendig);
-    }
 
 }

@@ -2,7 +2,7 @@ package org.rapla.client.internal;
 
 import org.rapla.RaplaResources;
 import org.rapla.components.util.undo.CommandUndo;
-import org.rapla.components.xmlbundle.I18nBundle;
+import org.rapla.components.i18n.I18nBundle;
 import org.rapla.entities.Category;
 import org.rapla.entities.Entity;
 import org.rapla.entities.Ownable;
@@ -33,7 +33,7 @@ public class DeleteUndo<T extends Entity<T>>  implements CommandUndo<RaplaExcept
 	    this.facade = facade;
 	    this.i18n = i18n;
 		this.user = user;
-		this.entities = new LinkedHashSet<T>();
+		this.entities = new LinkedHashSet<>();
 		for ( T entity: entities)
 		{
 			this.entities.add(entity.clone());
@@ -74,7 +74,7 @@ public class DeleteUndo<T extends Entity<T>>  implements CommandUndo<RaplaExcept
 		for ( T entity: entities)
 		{
             Entity<T>  mutableEntity = entity.clone();
-            // we change the owner of deleted entities because we can't create new objects with owners others than the current user
+            // we change the owner of deleted entities because we can't createInfoDialog new objects with owners others than the current user
             if ( mutableEntity instanceof Ownable)
             {
                 ((Ownable) mutableEntity).setOwner( user);

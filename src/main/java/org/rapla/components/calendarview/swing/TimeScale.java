@@ -73,8 +73,11 @@ public class TimeScale extends JComponent
 
     private void createHours(RaplaLocale locale) {
         hours = new String[24];
+        boolean amPm = locale.isAmPmFormat();
         for (int i=0;i<24;i++) {
-            hours[i] = locale.formatHour( i);
+
+            int hour = amPm ? i%12 : i;
+            hours[i] = Integer.toString(hour);
         }
     }
 
@@ -172,7 +175,8 @@ public class TimeScale extends JComponent
                     if ( prefix != null ) {           
                         g.drawString(prefix, (indent[0]-fm.stringWidth(prefix)+1)/2,y + heightEnding);
                     }
-                    g.drawString(hours[i],(hour < 10) ? indent[1]+2:indent[0]+2,y + ( smallSize ? heightEnding : heightHour));
+                    int hourIndex = i%24;
+                    g.drawString(hours[hourIndex],(hour < 10) ? indent[1]+2:indent[0]+2,y + ( smallSize ? heightEnding : heightHour));
                     if ( !smallSize ) {
                         g.setFont(fontSmall);
                     }

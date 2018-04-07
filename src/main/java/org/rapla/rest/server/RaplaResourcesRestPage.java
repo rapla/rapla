@@ -67,7 +67,7 @@ public class RaplaResourcesRestPage  {
         }
         {
             DynamicType[] types = facade.getDynamicTypes(null);
-            List<ClassificationFilter> filterList = new ArrayList<ClassificationFilter>();
+            List<ClassificationFilter> filterList = new ArrayList<>();
             for (DynamicType type : types)
             {
                 String classificationType = type.getAnnotation(DynamicTypeAnnotations.KEY_CLASSIFICATION_TYPE);
@@ -112,12 +112,12 @@ public class RaplaResourcesRestPage  {
     }
 
 	@GET
-	public List<AllocatableImpl> list( @QueryParam("resourceTypes") Collection<String> resourceTypes,
+	public List<AllocatableImpl> list( @QueryParam("resourceTypes") List<String> resourceTypes,
 			@QueryParam("attributeFilter") Map<String, String> simpleFilter) throws RaplaException {
 	    final User user = session.checkAndGetUser(request);
 		ClassificationFilter[] filters = getClassificationFilter(facade, simpleFilter, CLASSIFICATION_TYPES, resourceTypes);
 		Collection<Allocatable> resources = operator.getAllocatables(filters);
-		List<AllocatableImpl> result = new ArrayList<AllocatableImpl>();
+		List<AllocatableImpl> result = new ArrayList<>();
 		PermissionController permissionController = facade.getPermissionController();
 		for (Allocatable r : resources) {
 			if (permissionController.canRead(r, user)) {
@@ -174,7 +174,7 @@ public class RaplaResourcesRestPage  {
 		if (resource.getId() != null) {
 			throw new RaplaException("Id has to be null for new resources");
 		}
-		ReferenceInfo<Allocatable> resourceRef = operator.createIdentifier(Allocatable.class, 1)[0];
+		ReferenceInfo<Allocatable> resourceRef = operator.createIdentifier(Allocatable.class, 1).get(0);
 		resource.setId(resourceRef.getId());
 		resource.setResolver(operator);
 		resource.setOwner(user);

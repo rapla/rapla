@@ -80,22 +80,17 @@ public class InfoView implements ReservationViewPart
         final Classification classification = reservation.getClassification();
         {
             final Collection<DynamicType> dynamicTypes = getPresenter().getChangeableReservationDynamicTypes();
-            final Map<String, DynamicType> idToDynamicType = new HashMap<String, DynamicType>();
-            final Collection<DropDownItem> values = new ArrayList<DropDownInputField.DropDownItem>(dynamicTypes.size());
+            final Map<String, DynamicType> idToDynamicType = new HashMap<>();
+            final Collection<DropDownItem> values = new ArrayList<>(dynamicTypes.size());
             for (final DynamicType dynamicType : dynamicTypes)
             {
                 boolean selected = dynamicType.equals(classification.getType());
                 values.add(new DropDownItem(dynamicType.getName(locale), dynamicType.getId(), selected));
                 idToDynamicType.put(dynamicType.getId(), dynamicType);
             }
-            final DropDownInputField input = new DropDownInputField(i18n.getString("reservation_type"), new DropDownValueChanged()
-            {
-                @Override
-                public void valueChanged(String newValue)
-                {
-                    DynamicType newDynamicType = idToDynamicType.get(newValue);
-                    getPresenter().changeClassification(newDynamicType);
-                }
+            final DropDownInputField input = new DropDownInputField(i18n.getString("reservation_type"), newValue -> {
+                DynamicType newDynamicType = idToDynamicType.get(newValue);
+                getPresenter().changeClassification(newDynamicType);
             }, values);
             final Column column = new Column(COLUMN_SIZE);
             column.add(input);
@@ -115,14 +110,7 @@ public class InfoView implements ReservationViewPart
             final Object value = classification.getValueForAttribute(attribute);
             if (InputUtils.isAttributeInt(attribute))
             {
-                final LongInputField input = new LongInputField(attributeName, (Long) value, new LongValueChange()
-                {
-                    @Override
-                    public void valueChanged(Long newValue)
-                    {
-                        getPresenter().changeAttribute(attribute, newValue);
-                    }
-                });
+                final LongInputField input = new LongInputField(attributeName, (Long) value, newValue -> getPresenter().changeAttribute(attribute, newValue));
                 final Column column = new Column(COLUMN_SIZE);
                 column.add(input);
                 row.add(column);
@@ -130,14 +118,7 @@ public class InfoView implements ReservationViewPart
             }
             else if (InputUtils.isAttributeString(attribute))
             {
-                final TextInputField input = new TextInputField(attributeName, (String) value, new TextValueChanged()
-                {
-                    @Override
-                    public void valueChanged(String newValue)
-                    {
-                        getPresenter().changeAttribute(attribute, newValue);
-                    }
-                });
+                final TextInputField input = new TextInputField(attributeName, (String) value, newValue -> getPresenter().changeAttribute(attribute, newValue));
                 final Column column = new Column(COLUMN_SIZE);
                 column.add(input);
                 row.add(column);
@@ -145,14 +126,7 @@ public class InfoView implements ReservationViewPart
             }
             else if (InputUtils.isAttributeDate(attribute))
             {
-                final DateComponent input = new DateComponent((Date) value, new DateValueChanged()
-                {
-                    @Override
-                    public void valueChanged(Date newValue)
-                    {
-                        getPresenter().changeAttribute(attribute, newValue);
-                    }
-                }, bundleManager);
+                final DateComponent input = new DateComponent((Date) value, newValue -> getPresenter().changeAttribute(attribute, newValue), bundleManager);
                 final Column column = new Column(COLUMN_SIZE);
                 column.add(input);
                 row.add(column);
@@ -160,14 +134,7 @@ public class InfoView implements ReservationViewPart
             }
             else if (InputUtils.isAttributeBoolean(attribute))
             {
-                final BooleanInputField input = new BooleanInputField(attributeName, (Boolean) value, new BooleanValueChange()
-                {
-                    @Override
-                    public void valueChanged(Boolean newValue)
-                    {
-                        getPresenter().changeAttribute(attribute, newValue);
-                    }
-                });
+                final BooleanInputField input = new BooleanInputField(attributeName, (Boolean) value, newValue -> getPresenter().changeAttribute(attribute, newValue));
                 final Column column = new Column(COLUMN_SIZE);
                 column.add(input);
                 row.add(column);
@@ -180,14 +147,9 @@ public class InfoView implements ReservationViewPart
                 final Map<String, Category> idToCategory = InputUtils.createIdMap(rootCategory);
                 final Collection<Object> categories = classification.getValues(attribute);
                 final Collection<DropDownItem> values = InputUtils.createDropDownItems(idToCategory, locale, categories);
-                final DropDownInputField input = new DropDownInputField(attributeName, new DropDownValueChanged()
-                {
-                    @Override
-                    public void valueChanged(String newValue)
-                    {
-                        final Category newCategory = idToCategory.get(newValue);
-                        getPresenter().changeAttribute(attribute, newCategory);
-                    }
+                final DropDownInputField input = new DropDownInputField(attributeName, newValue -> {
+                    final Category newCategory = idToCategory.get(newValue);
+                    getPresenter().changeAttribute(attribute, newCategory);
                 }, values, multipleSelectionPossible);
                 final Column column = new Column(COLUMN_SIZE);
                 column.add(input);

@@ -7,9 +7,8 @@ import org.rapla.entities.domain.Reservation;
 import org.rapla.facade.client.ClientFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.inject.Extension;
-import org.rapla.inject.ExtensionRepeatable;
 import org.rapla.plugin.tableview.client.swing.AppointmentTableModel;
-import org.rapla.plugin.tableview.client.swing.ReservationTableModel;
+import org.rapla.plugin.tableview.RaplaTableModel;
 import org.rapla.plugin.tableview.client.swing.extensionpoints.AppointmentSummaryExtension;
 import org.rapla.plugin.tableview.client.swing.extensionpoints.ReservationSummaryExtension;
 
@@ -23,10 +22,8 @@ import javax.swing.event.ListSelectionListener;
 import javax.swing.table.TableModel;
 
 
-@ExtensionRepeatable({
-    @Extension(provides = ReservationSummaryExtension.class, id = EventTimeCalculatorPlugin.PLUGIN_ID),
-    @Extension(provides = AppointmentSummaryExtension.class, id = EventTimeCalculatorPlugin.PLUGIN_ID)
-})
+@Extension(provides = ReservationSummaryExtension.class, id = EventTimeCalculatorPlugin.PLUGIN_ID)
+@Extension(provides = AppointmentSummaryExtension.class, id = EventTimeCalculatorPlugin.PLUGIN_ID)
 public final class DurationCounter  implements ReservationSummaryExtension, AppointmentSummaryExtension
 {
     EventTimeCalculatorFactory factory;
@@ -43,56 +40,60 @@ public final class DurationCounter  implements ReservationSummaryExtension, Appo
     public void init(final JTable table, JPanel summaryRow) {
  		
     	final JLabel counter = new JLabel();
-        summaryRow.add( Box.createHorizontalStrut(30));
         summaryRow.add( counter);
-        table.getSelectionModel().addListSelectionListener(new ListSelectionListener() {
-
-             public void valueChanged(ListSelectionEvent arg0)
-             {
-                 final User user;
-                 try
-                 {
-                     user = clientFacade.getUser();
-                 }
-                 catch (RaplaException e)
-                 {
-                     return;
-                 }
-                 EventTimeModel eventTimeModel = factory.getEventTimeModel(user);
-            	 int[] selectedRows = table.getSelectedRows();
-                 TableModel model = table.getModel();
-                 TableSorter sorterModel = null;
-                 if ( model instanceof TableSorter)
-                 {
-                     sorterModel = ((TableSorter) model);
-                     model = ((TableSorter)model).getTableModel();
-                 }
-                 long totalduration = 0;
-                 for ( int row:selectedRows)
-                 {
-                     if (sorterModel != null)
-                        row = sorterModel.modelIndex(row);
-                     if ( model instanceof AppointmentTableModel)
-                     {
-                         AppointmentBlock block = ((AppointmentTableModel) model).getAppointmentAt(row);
-                         long duration = eventTimeModel.calcDuration(block);
-                         totalduration+= duration;
-                     }
-                     if ( model instanceof ReservationTableModel)
-                     {
-                         Reservation block = ((ReservationTableModel) model).getReservationAt(row);
-                         long duration = eventTimeModel.calcDuration(block);
-                         if ( duration <0)
-                         {
-                             totalduration = -1;
-                             break;
-                         }
-                         totalduration+= duration;
-                     }
-                 }
-                 String durationString = totalduration < 0 ? i18n.getString("infinite") : eventTimeModel.format(totalduration);
-                 counter.setText( i18n.getString("total_duration") + " " + durationString);
-             }
-         });
+        summaryRow.add( Box.createHorizontalStrut(30));
+        table.getSelectionModel().addListSelectionListener(arg0 -> {
+            final User user;
+            try
+            {
+                user = clientFacade.getUser();
+            }
+            catch (RaplaException e)
+            {
+                return;
+            }
+            EventTimeModel eventTimeModel = factory.getEventTimeModel(user);
+            int[] selectedRows = table.getSelectedRows();
+            TableModel model = table.getModel();
+            TableSorter sorterModel = null;
+            if ( model instanceof TableSorter)
+            {
+                sorterModel = ((TableSorter) model);
+                model = ((TableSorter)model).getTableModel();
+            }
+            long totalduration = 0;
+            for ( int row:selectedRows)
+            {
+                if (sorterModel != null)
+                   row = sorterModel.modelIndex(row);
+                if ( model instanceof AppointmentTableModel)
+                {
+                    AppointmentBlock block = ((AppointmentTableModel) model).getAppointmentAt(row);
+                    long duration = eventTimeModel.calcDuration(block);
+                    totalduration+= duration;
+                }
+                if ( model instanceof RaplaTableModel)
+                {
+                    final Object objectAt = ((RaplaTableModel) model).getObjectAt(row);
+                    long duration =0;
+                    if ( objectAt instanceof Reservation)
+                    {
+                        duration = eventTimeModel.calcDuration((Reservation) objectAt);
+                        if (duration < 0)
+                        {
+                            totalduration = -1;
+                            break;
+                        }
+                    }
+                    else if (objectAt instanceof AppointmentBlock)
+                    {
+                        duration = eventTimeModel.calcDuration((AppointmentBlock)objectAt);
+                    }
+                    totalduration+= duration;
+                }
+            }
+            String durationString = totalduration < 0 ? i18n.getString("infinite") : eventTimeModel.format(totalduration);
+            counter.setText( i18n.getString("total_duration") + " " + durationString + " ");
+        });
      }
  }

@@ -3,8 +3,8 @@ package org.rapla.client.swing.gui.edit.reservation.test;
 import org.junit.Assert;
 import org.rapla.client.PopupContext;
 import org.rapla.client.ReservationController;
+import org.rapla.client.dialog.swing.DialogUI;
 import org.rapla.client.swing.gui.tests.GUITestCase;
-import org.rapla.client.swing.toolkit.DialogUI;
 import org.rapla.client.swing.toolkit.RaplaButton;
 import org.rapla.components.util.DateTools;
 import org.rapla.entities.Entity;
@@ -79,27 +79,23 @@ public class UndoTests extends GUITestCase {
 		final ReservationController control = getService(ReservationController.class);
 
         //Creating Event
-		final Reservation event = createEvent(facade.getRaplaFacade().newResource(), facade.getRaplaFacade().newReservationDeprecated());
+		final Reservation event = createEvent(facade.getRaplaFacade().newResourceDeprecated(), facade.getRaplaFacade().newReservationDeprecated());
         final Appointment changedAppointment = changeTime( true);
 		int buttonNr = 1;
 		executeControlAndPressButton(new Runnable() {
 			
 			public void run() {
-				try {
-					Appointment appOrig = event.getAppointments()[0];
-					AppointmentBlock appointmentBlock = new AppointmentBlock( appOrig);
-					Date newStart = changedAppointment.getStart();
-					Date newEnd = changedAppointment.getEnd();
-					PopupContext popupContext = createPopupContext();
-                    control.resizeAppointment(appointmentBlock, newStart, newEnd, popupContext, false);
-				} catch (RaplaException e) {
-					Assert.fail(e.getMessage());
-				}
+				Appointment appOrig = event.getAppointments()[0];
+				AppointmentBlock appointmentBlock = AppointmentBlock.create( appOrig);
+				Date newStart = changedAppointment.getStart();
+				Date newEnd = changedAppointment.getEnd();
+				PopupContext popupContext = createPopupContext();
+				control.resizeAppointment(appointmentBlock, newStart, newEnd, popupContext, false).exceptionally(e->Assert.fail(e.getMessage()));
 			}
 		}, buttonNr);
        
         //need to use the last event, because if you change only one appointment within the repeating
-        //it will create a new appointment and add it to the end of the array
+        //it will createInfoDialog a new appointment and add it to the end of the array
         //Then comparing the starttimes of the nonPersistantEvent-Appointment and the PersistantEvent-Appointment
 		{
 			Reservation persistant = facade.getRaplaFacade().getPersistant( event );
@@ -134,7 +130,7 @@ public class UndoTests extends GUITestCase {
     	final ClientFacade facade = getFacade();
 		final ReservationController control = getService(ReservationController.class);
 
-		final Reservation event = createEvent(facade.getRaplaFacade().newResource(), facade.getRaplaFacade().newReservationDeprecated());
+		final Reservation event = createEvent(facade.getRaplaFacade().newResourceDeprecated(), facade.getRaplaFacade().newReservationDeprecated());
         final Appointment changedAppointment = changeTime( false);
         //control.resizeAppointment(persistantEvent.getAppointments()[0], persistantEvent.getAppointments()[0].getStart(), changedAppointment.getStart(), changedAppointment.getEnd(), null, null, false);
         
@@ -142,20 +138,16 @@ public class UndoTests extends GUITestCase {
 		executeControlAndPressButton(new Runnable() {
 			
 			public void run() {
-				try {
-					AppointmentBlock appointmentBlock = new AppointmentBlock( event.getAppointments()[0]);
-					Date newStart = changedAppointment.getStart();
-					Date newEnd = changedAppointment.getEnd();
-					PopupContext popupContext= createPopupContext();
-                    control.resizeAppointment(appointmentBlock, newStart, newEnd, popupContext, false);
-				} catch (RaplaException e) {
-					Assert.fail(e.getMessage());
-				}
+				AppointmentBlock appointmentBlock = AppointmentBlock.create( event.getAppointments()[0]);
+				Date newStart = changedAppointment.getStart();
+				Date newEnd = changedAppointment.getEnd();
+				PopupContext popupContext= createPopupContext();
+				control.resizeAppointment(appointmentBlock, newStart, newEnd, popupContext, false).exceptionally(e->Assert.fail(e.getMessage()));
 			}
 		}, buttonNr);
         
         //need to use the last event, because if you change only one appointment within the repeating
-        //it will create a new appointment and add it to the end of the array.
+        //it will createInfoDialog a new appointment and add it to the end of the array.
         //Then comparing the starttimes of the nonPersistantEvent-Appointment and the PersistantEvent-Appointment
 		{
 			Reservation persistant = facade.getRaplaFacade().getPersistant( event );
@@ -192,7 +184,7 @@ public class UndoTests extends GUITestCase {
     	final ClientFacade facade = getFacade();
 		final ReservationController control = getService(ReservationController.class);
 
-		Allocatable nonPersistantAllocatable = facade.getRaplaFacade().newResource();
+		Allocatable nonPersistantAllocatable = facade.getRaplaFacade().newResourceDeprecated();
         Reservation nonPersistantEvent = facade.getRaplaFacade().newReservationDeprecated();
         
         //Creating Event
@@ -202,13 +194,9 @@ public class UndoTests extends GUITestCase {
 		executeControlAndPressButton(new Runnable() {
 			
 			public void run() {
-				try {
-					AppointmentBlock appointmentBlock = new AppointmentBlock( persistantEvent.getAppointments()[0]);
-					PopupContext popupContext = createPopupContext();
-                    control.deleteAppointment(appointmentBlock, popupContext);
-				} catch (RaplaException e) {
-					Assert.fail(e.getMessage());
-				}
+				AppointmentBlock appointmentBlock = AppointmentBlock.create( persistantEvent.getAppointments()[0]);
+				PopupContext popupContext = createPopupContext();
+				control.deleteAppointment(appointmentBlock, popupContext).exceptionally(e->Assert.fail(e.getMessage()));
 			}
 		}, buttonNr);
         Reservation exist=null;
@@ -251,12 +239,12 @@ public class UndoTests extends GUITestCase {
 		nonPersistantEvent.getClassification().setValue("name","dummy-event");
 		Assert.assertEquals( "event", nonPersistantEvent.getClassification().getType().getKey());
         nonPersistantEvent.addAllocatable( nonPersistantAllocatable );
-        Appointment appointment = getFacade().getRaplaFacade().newAppointment( new Date(), new Date());
+        Appointment appointment = getFacade().getRaplaFacade().newAppointmentDeprecated( new Date(), new Date());
         appointment.setRepeatingEnabled( true);
         appointment.getRepeating().setType(RepeatingType.DAILY);
         appointment.getRepeating().setNumber( 3 );
 		nonPersistantEvent.addAppointment( appointment);
-//        getFacade().newAppointment(new Date(), new Date(),RepeatingType.findForString("weekly"), 5);
+//        getFacade().newAppointmentDeprecated(new Date(), new Date(),RepeatingType.findForString("weekly"), 5);
         getFacade().getRaplaFacade().storeObjects( new Entity[] { nonPersistantAllocatable, nonPersistantEvent} );
         return nonPersistantEvent;
 	}
@@ -271,7 +259,7 @@ public class UndoTests extends GUITestCase {
 			newStart = new Date(newStart.getTime() + DateTools.MILLISECONDS_PER_HOUR * 2);
 			newEnd = new Date(newEnd.getTime() + DateTools.MILLISECONDS_PER_HOUR * 2);
 		}
-		Appointment retAppointment = getFacade().getRaplaFacade().newAppointment(newStart, newEnd);
+		Appointment retAppointment = getFacade().getRaplaFacade().newAppointmentDeprecated(newStart, newEnd);
 		return retAppointment;
 	}
 }

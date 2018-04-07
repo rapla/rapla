@@ -31,7 +31,7 @@ public class CategoryReader extends RaplaXMLReader
     MultiLanguageName currentName = null;
     Annotatable currentAnnotatable = null;
     String currentLang = null;
-    Stack<CategoryImpl> categoryStack = new Stack<CategoryImpl>();
+    Stack<CategoryImpl> categoryStack = new Stack<>();
     String annotationKey = null;
     CategoryImpl lastProcessedCategory = null;
     boolean readOnlyThisCategory;

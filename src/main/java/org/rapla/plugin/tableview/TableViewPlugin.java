@@ -21,14 +21,17 @@ public class TableViewPlugin
     public final static String TABLE_EVENT_VIEW =  "table";
     public final static String TABLE_APPOINTMENTS_VIEW =  "table_appointments";
     public static final String PLUGIN_ID = "org.rapla.plugin.tableview";
-    public static final String EVENTS_SORTING_STRING_OPTION = PLUGIN_ID +".events.sortingstring";
-    public static final String BLOCKS_SORTING_STRING_OPTION = PLUGIN_ID+".blocks.sortingstring";
 
     public final static boolean ENABLE_BY_DEFAULT = true;
     public static final String RESERVATION_SUMMARY = "event_summary";
     public static final String APPOINTMENT_SUMMARY = "appointment_summary";
     public static final String COLUMN_ANNOTATION = "tablecolumn_";
-    public static final TypedComponentRole<RaplaConfiguration> CONFIG = new TypedComponentRole<RaplaConfiguration>(PLUGIN_ID + ".config");
+    public static final TypedComponentRole<RaplaConfiguration> CONFIG = new TypedComponentRole<>(PLUGIN_ID + ".config");
+
+    public static String getSorgingStringOption(String viewname)
+    {
+        return PLUGIN_ID + "." + viewname +".sortingstring";
+    }
 
     //    public void provideServices(final ClientServiceContainer container, Configuration config)
 //    {

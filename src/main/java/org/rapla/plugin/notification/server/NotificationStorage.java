@@ -67,7 +67,7 @@ public class NotificationStorage
 
     public void store(List<AllocationMail> mailList) throws RaplaException
     {
-        final ArrayList<Entity> toStore = new ArrayList<Entity>();
+        final ArrayList<Entity> toStore = new ArrayList<>();
         for (AllocationMail allocationMail : mailList)
         {
             final ImportExportEntityImpl importExportEntityImpl = new ImportExportEntityImpl();

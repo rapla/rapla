@@ -326,7 +326,7 @@ public final class ClassificationFilterRuleImpl extends ReferenceHandler
                 string = string.trim();
                 if (value == null)
                     return string.length() == 0;
-                return (((String)value).toLowerCase().indexOf(string)>=0);
+                return (((String) value).toLowerCase().contains(string));
             }
             else if ( operator.equals("starts") )
             {
@@ -422,7 +422,7 @@ public final class ClassificationFilterRuleImpl extends ReferenceHandler
 	    super.replace(origId, newId);
         if (attributeId != null && getAttribute().getRefType() == Allocatable.class)
         {
-            final ArrayList<String> arrayList = new ArrayList<String>(Arrays.asList(ruleValues));
+            final ArrayList<String> arrayList = new ArrayList<>(Arrays.asList(ruleValues));
             final String origIdString = origId.getId();
             if (arrayList.contains(origIdString))
             {

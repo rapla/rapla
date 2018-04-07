@@ -24,7 +24,7 @@ import java.util.Map;
 
     
 public class PreferenceWriter extends RaplaXMLWriter {
-    public static final TypedComponentRole<Map<Class<? extends  RaplaObject>,RaplaXMLWriter>> WRITERMAP = new TypedComponentRole<Map<Class<? extends  RaplaObject>,RaplaXMLWriter>>( "org.rapla.storage.xml.writerMap");
+    public static final TypedComponentRole<Map<Class<? extends  RaplaObject>,RaplaXMLWriter>> WRITERMAP = new TypedComponentRole<>("org.rapla.storage.xml.writerMap");
 
     public PreferenceWriter(RaplaXMLContext sm) throws RaplaException {
         super(sm);

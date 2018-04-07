@@ -39,7 +39,7 @@ public class DynamicTypeInfoUI extends HTMLInfo<DynamicType> {
         DynamicType dynamicType = object;
         StringBuffer buf = new StringBuffer();
         insertModificationRow( object, buf );
-        Collection<Row> att = new ArrayList<Row>();
+        Collection<Row> att = new ArrayList<>();
         att.add(new Row(getString("dynamictype.name"), strong( encode( getName( dynamicType ) ))));
         Attribute[] attributes = dynamicType.getAttributes();
         for (int i=0;i<attributes.length;i++) {

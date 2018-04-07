@@ -109,16 +109,13 @@ public class CopyDialog extends RaplaGUIComponent implements RaplaWidget
             throw new RaplaInitializationException(e1);
         }
         singleChooser = booleanFieldFactory.create("singleChooser");
-        singleChooser.addChangeListener( new ChangeListener() {
-			
-			public void stateChanged(ChangeEvent e) {
-				try {
-					updateReservations();
-				} catch (RaplaException ex) {
-				    dialogUiFactory.showException(ex, new SwingPopupContext(getComponent(), null));
-				}
-			}
-		});
+        singleChooser.addChangeListener(e -> {
+            try {
+                updateReservations();
+            } catch (RaplaException ex) {
+                dialogUiFactory.showException(ex, new SwingPopupContext(getComponent(), null));
+            }
+        });
        
 		DefaultComboBoxModel sourceModel = new DefaultComboBoxModel(  periods );
 		Date today = getQuery().today();
@@ -164,46 +161,39 @@ public class CopyDialog extends RaplaGUIComponent implements RaplaWidget
         panel.add( new JScrollPane( selectedReservations ),"2,12" );
         
         updateView();
-        sourcePeriodChooser.addActionListener( new ActionListener() {
-			public void actionPerformed(ActionEvent e) {
-				updateView();
-				if ( sourcePeriodChooser.getSelectedIndex() > 1)
-				{
-					Period beginPeriod = (Period)sourcePeriodChooser.getSelectedItem();
-					sourceBegin.setDate(beginPeriod.getStart());
-					sourceEnd.setDate(beginPeriod.getEnd());
-				}
-			}
-		});
+        sourcePeriodChooser.addActionListener(e -> {
+            updateView();
+            if ( sourcePeriodChooser.getSelectedIndex() > 1)
+            {
+                Period beginPeriod = (Period)sourcePeriodChooser.getSelectedItem();
+                sourceBegin.setDate(beginPeriod.getStart());
+                sourceEnd.setDate(beginPeriod.getEnd());
+            }
+        });
         NamedListCellRenderer aRenderer = new NamedListCellRenderer( getRaplaLocale().getLocale());
 		sourcePeriodChooser.setRenderer( aRenderer);
 		destPeriodChooser.setRenderer( aRenderer);
         
-        destPeriodChooser.addActionListener( new ActionListener() {
-			public void actionPerformed(ActionEvent e) {
-				updateView();
-				if ( destPeriodChooser.getSelectedIndex() > 0)
-				{
-					Period endPeriod = (Period)destPeriodChooser.getSelectedItem();
-					destBegin.setDate(endPeriod.getStart());
-				}
-			}
-		});
+        destPeriodChooser.addActionListener(e -> {
+            updateView();
+            if ( destPeriodChooser.getSelectedIndex() > 0)
+            {
+                Period endPeriod = (Period)destPeriodChooser.getSelectedItem();
+                destBegin.setDate(endPeriod.getStart());
+            }
+        });
         
 
-        DateChangeListener dateChangeListener = new DateChangeListener() {
-			
-			public void dateChanged(DateChangeEvent evt) {
-				customSource.setStart( sourceBegin.getDate());
-				customSource.setEnd( sourceEnd.getDate());
-				customDest.setStart( destBegin.getDate());
-				try {
-					updateReservations();
-				} catch (RaplaException ex) {
-				    dialogUiFactory.showException(ex, new SwingPopupContext(getComponent(), null));
-				}
-			}
-		};
+        DateChangeListener dateChangeListener = evt -> {
+            customSource.setStart( sourceBegin.getDate());
+            customSource.setEnd( sourceEnd.getDate());
+            customDest.setStart( destBegin.getDate());
+            try {
+                updateReservations();
+            } catch (RaplaException ex) {
+                dialogUiFactory.showException(ex, new SwingPopupContext(getComponent(), null));
+            }
+        };
 		
 		sourceBegin.addDateChangeListener(dateChangeListener);
         sourceEnd.addDateChangeListener(dateChangeListener);
@@ -306,7 +296,7 @@ public class CopyDialog extends RaplaGUIComponent implements RaplaWidget
 	public Promise<List<Reservation>> getReservations() throws RaplaException {
 	    Promise<Collection<Reservation>> reservationsPromise = model.queryReservations( new TimeInterval(getSourceStart(), getSourceEnd() ));
 	    final Promise<List<Reservation>> promise = reservationsPromise.thenApply((reservations) -> {
-            List<Reservation> listModel = new ArrayList<Reservation>();
+            List<Reservation> listModel = new ArrayList<>();
             for (Reservation reservation : reservations)
             {
 

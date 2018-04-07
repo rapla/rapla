@@ -13,11 +13,12 @@
 package org.rapla.examples;
 
 import org.rapla.RaplaClient;
+import org.rapla.components.util.IOUtil;
 import org.rapla.components.util.Tools;
 import org.rapla.entities.Category;
 import org.rapla.entities.User;
-import org.rapla.facade.client.ClientFacade;
 import org.rapla.facade.RaplaFacade;
+import org.rapla.facade.client.ClientFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.StartupEnvironment;
 import org.rapla.logger.ConsoleLogger;
@@ -73,7 +74,7 @@ public class RaplaImportUsers  {
     }
     
     public static void importUsers(ClientFacade facade, Reader reader) throws RaplaException, IOException {
-        String[][] entries = Tools.csvRead( reader, 5 );
+        String[][] entries = IOUtil.csvRead( reader, 5 );
         final RaplaFacade raplaFacade = facade.getRaplaFacade();
         Category rootCategory = raplaFacade.getUserGroupsCategory();
         for ( int i=0;i<entries.length; i++ ) {

@@ -2,7 +2,7 @@
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
+// You may obtain a copyReservations of the License at
 //
 // http://www.apache.org/licenses/LICENSE-2.0
 //
@@ -31,7 +31,8 @@ import java.util.Date;
  */
 public class SignedToken {
   private static final int INT_SZ = 4;
-  private static final String MAC_ALG = "HmacSHA1";
+  //private static final String MAC_ALG = "HmacSHA1";
+  private static final String MAC_ALG = "HmacSHA256";
 
   /**
    * Generate a random key for use with the XSRF library.
@@ -48,6 +49,7 @@ public class SignedToken {
   private final SecretKeySpec key;
   private final SecureRandom rng;
   private final int tokenLength;
+  final Mac m;
 
   /**
    * Create a new utility, using a randomly generated key.
@@ -68,10 +70,12 @@ public class SignedToken {
    */
   public SignedToken(final int age, final String keyBase64)
       throws TokenInvalidException {
+
     maxAge = age > 5 ? age / 5 : age;
     key = new SecretKeySpec(decodeBase64(keyBase64), MAC_ALG);
     rng = new SecureRandom();
     tokenLength = 2 * INT_SZ + newMac().getMacLength();
+    m = newMac();
   }
 
   /** @return maximum age of a signed token, in seconds. */
@@ -108,7 +112,7 @@ public class SignedToken {
    *         after the first ',' in the returned token string.
    * @throws TokenInvalidException the JVM doesn't support the necessary algorithms.
    */
-  public String newToken(final String text, Date now) throws TokenInvalidException {
+  synchronized public String newToken(final String text, Date now) throws TokenInvalidException {
     final int q = rng.nextInt();
     final byte[] buf = new byte[tokenLength];
     encodeInt(buf, 0, q);
@@ -121,7 +125,7 @@ public class SignedToken {
    * Validate a returned token.
    *
    * @param tokenString a token string previously created by this class.
-   * @param text text that must have been used during {@link #newToken(String)}
+   * @param text text that must have been used during {@link #newToken(String,Date)}
    *        in order for the token to be valid. If null the text will be taken
    *        from the token string itself.
    * @return true if the token is valid; false if the token is null, the empty
@@ -170,9 +174,8 @@ public class SignedToken {
     return new ValidToken(maxAge > 0 && c + (maxAge >> 1) <= n, recvText);
   }
 
-  private void computeToken(final byte[] buf, final String text)
+  synchronized private void computeToken(final byte[] buf, final String text)
       throws TokenInvalidException {
-    final Mac m = newMac();
     m.update(buf, 0, 2 * INT_SZ);
     m.update(toBytes(text));
     try {

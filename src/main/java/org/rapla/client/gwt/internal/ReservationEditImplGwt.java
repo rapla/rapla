@@ -1,6 +1,7 @@
 package org.rapla.client.gwt.internal;
 
 import com.google.gwt.user.client.ui.IsWidget;
+import io.reactivex.functions.Consumer;
 import org.rapla.client.AppointmentListener;
 import org.rapla.client.ReservationEdit;
 import org.rapla.components.util.undo.CommandHistory;
@@ -11,10 +12,13 @@ import org.rapla.facade.ModificationEvent;
 import org.rapla.framework.RaplaException;
 import org.rapla.inject.DefaultImplementation;
 import org.rapla.inject.InjectionContext;
+import org.rapla.scheduler.Promise;
 
 import javax.inject.Inject;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Date;
+import java.util.Map;
 
 @DefaultImplementation(context = InjectionContext.gwt, of = ReservationEdit.class)
 public class ReservationEditImplGwt implements ReservationEdit<IsWidget>
@@ -25,9 +29,9 @@ public class ReservationEditImplGwt implements ReservationEdit<IsWidget>
     }
 
 
-    @Override public void addAppointment(Date start, Date end) throws RaplaException
+    @Override public Promise<Void> addAppointment(Date start, Date end)
     {
-
+        return null;
     }
 
     @Override public Reservation getReservation()
@@ -51,9 +55,7 @@ public class ReservationEditImplGwt implements ReservationEdit<IsWidget>
     }
 
     @Override
-    public void editReservation(Reservation reservation, Reservation original,AppointmentBlock appointmentBlock, Runnable saveCmd, Runnable closeCmd, Runnable deleteCmd)
-            throws RaplaException
-    {
+    public void editReservation(Reservation reservation, Reservation original, AppointmentBlock appointmentBlock) throws RaplaException {
 
     }
 
@@ -111,5 +113,15 @@ public class ReservationEditImplGwt implements ReservationEdit<IsWidget>
 
     {
 
+    }
+
+    @Override
+    public void start(Consumer<Collection<Reservation>> save, Runnable close, Runnable deleteCmd) {
+
+    }
+
+    @Override
+    public Map<Reservation, Reservation> getEditMap() {
+        return Collections.emptyMap();
     }
 }

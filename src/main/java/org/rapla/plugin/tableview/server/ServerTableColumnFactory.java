@@ -11,7 +11,7 @@ import org.rapla.plugin.tableview.internal.TableConfig.TableColumnConfig;
 
 import javax.inject.Inject;
 
-@DefaultImplementation(context = { InjectionContext.server }, of = RaplaTableColumnFactory.class)
+@DefaultImplementation(context = { InjectionContext.server}, of = RaplaTableColumnFactory.class)
 public class ServerTableColumnFactory implements RaplaTableColumnFactory
 {
 

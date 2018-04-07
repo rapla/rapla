@@ -49,8 +49,8 @@ import java.util.Set;
 @Extension(provides = PluginOptionPanel.class, id = TableViewPlugin.PLUGIN_ID) public class TableviewOption implements PluginOptionPanel, ChangeListener
 {
     private final JPanel list = new JPanel();
-    private final List<TableColumnConfig> tablerows = new ArrayList<TableColumnConfig>();
-    private final List<TableRow> rows = new ArrayList<TableRow>();
+    private final List<TableColumnConfig> tablerows = new ArrayList<>();
+    private final List<TableRow> rows = new ArrayList<>();
     private JPanel main;
     private TableConfig tableConfig;
     private JComboBox typeSelection;
@@ -122,15 +122,11 @@ import java.util.Set;
         {// Ordering definitionr
             JPanel containerForOrderingAndValueDefinition = new JPanel(new BorderLayout());
             typeSelection = new JComboBox();
-            typeSelection.addActionListener(new ActionListener()
-            {
-                @Override public void actionPerformed(ActionEvent e)
+            typeSelection.addActionListener(e -> {
+                final TypeSelection selectedType = (TypeSelection) typeSelection.getSelectedItem();
+                if (selectedType != null)
                 {
-                    final TypeSelection selectedType = (TypeSelection) typeSelection.getSelectedItem();
-                    if (selectedType != null)
-                    {
-                        sorting.init(selectedType.key);
-                    }
+                    sorting.init(selectedType.key);
                 }
             });
             containerForOrderingAndValueDefinition.add(typeSelection, BorderLayout.NORTH);
@@ -234,7 +230,7 @@ import java.util.Set;
 
     protected List<TableColumnConfig> mapToRows()
     {
-        List<TableColumnConfig> newRows = new ArrayList<TableColumnConfig>();
+        List<TableColumnConfig> newRows = new ArrayList<>();
 
         for (TableColumnConfig column : tableConfig.getAllColumns())
         {
@@ -311,7 +307,7 @@ import java.util.Set;
         private final DefaultListModel listModel = new DefaultListModel();
         private final JList list = new JList(listModel);
         private String selectedTable = null;
-        private final List<SortingRow> rows = new ArrayList<SortingRow>();
+        private final List<SortingRow> rows = new ArrayList<>();
         private final JComboBox allSortingRows = new JComboBox();
 
         public Sorting()
@@ -324,60 +320,40 @@ import java.util.Set;
             header.setLayout(new BoxLayout(header, BoxLayout.X_AXIS));
             add(header, BorderLayout.NORTH);
             header.add(moveUpButton, BorderLayout.WEST);
-            moveUpButton.addActionListener(new ActionListener()
-            {
-                @Override public void actionPerformed(ActionEvent e)
-                {
-                    sort(true);
-                }
-            });
+            moveUpButton.addActionListener(e -> sort(true));
             header.add(moveDownButton, BorderLayout.EAST);
-            moveDownButton.addActionListener(new ActionListener()
-            {
-                @Override public void actionPerformed(ActionEvent e)
-                {
-                    sort(false);
-                }
-            });
+            moveDownButton.addActionListener(e -> sort(false));
             header.add(allSortingRows);
             final JButton addButton = new JButton(i18n.getString("insert"));
-            addButton.addActionListener(new ActionListener()
-            {
-                @Override public void actionPerformed(ActionEvent e)
+            addButton.addActionListener(e -> {
+                final SortingRow selectedItem = (SortingRow) allSortingRows.getSelectedItem();
+                if (selectedItem != null)
                 {
-                    final SortingRow selectedItem = (SortingRow) allSortingRows.getSelectedItem();
-                    if (selectedItem != null)
-                    {
-                        tableConfig.getOrCreateView(selectedTable).addColumn(selectedItem.columnConfig);
-                        init(selectedTable);
-                        list.setSelectedIndex(listModel.getSize() - 1);
-                    }
+                    tableConfig.getOrCreateView(selectedTable).addColumn(selectedItem.columnConfig);
+                    init(selectedTable);
+                    list.setSelectedIndex(listModel.getSize() - 1);
                 }
             });
             header.add(addButton);
             final JButton deleteButton = new JButton(i18n.getString("delete"));
-            deleteButton.addActionListener(new ActionListener()
-            {
-                @Override public void actionPerformed(ActionEvent e)
+            deleteButton.addActionListener(e -> {
+                final int[] selectedIndices = list.getSelectedIndices();
+                if (selectedIndices != null)
                 {
-                    final int[] selectedIndices = list.getSelectedIndices();
-                    if (selectedIndices != null)
+                    List<TableColumnConfig> toRemove = new ArrayList<>();
+                    for (int i = selectedIndices.length - 1; i >= 0; i--)
                     {
-                        List<TableColumnConfig> toRemove = new ArrayList<TableColumnConfig>();
-                        for (int i = selectedIndices.length - 1; i >= 0; i--)
-                        {
-                            int index = selectedIndices[i];
-                            final SortingRow row = (SortingRow) listModel.remove(index);
-                            toRemove.add(row.columnConfig);
-                        }
-                        final ViewDefinition view = tableConfig.getOrCreateView(selectedTable);
-                        for (TableColumnConfig row : toRemove)
-                        {
-                            view.removeColumn(row);
-                        }
-                        list.validate();
-                        list.repaint();
+                        int index = selectedIndices[i];
+                        final SortingRow row = (SortingRow) listModel.remove(index);
+                        toRemove.add(row.columnConfig);
                     }
+                    final ViewDefinition view = tableConfig.getOrCreateView(selectedTable);
+                    for (TableColumnConfig row : toRemove)
+                    {
+                        view.removeColumn(row);
+                    }
+                    list.validate();
+                    list.repaint();
                 }
             });
             header.add(deleteButton);

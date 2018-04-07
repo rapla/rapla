@@ -31,6 +31,7 @@ import org.rapla.logger.Logger;
 import org.rapla.plugin.tableview.RaplaTableColumn;
 import org.rapla.plugin.tableview.internal.TableConfig;
 import org.rapla.scheduler.Promise;
+import org.rapla.scheduler.ResolvedPromise;
 
 import javax.inject.Inject;
 import javax.swing.JMenuItem;
@@ -54,20 +55,18 @@ public class CSVExportMenu extends RaplaGUIComponent implements ExportMenuExtens
 	private final TableConfig.TableConfigLoader tableConfigLoader;
     private final CalendarSelectionModel model;
     private final IOInterface io;
-    private final RaplaImages raplaImages;
     private final DialogUiFactoryInterface dialogUiFactory;
 
 	@Inject
-	public CSVExportMenu(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, TableConfig.TableConfigLoader tableConfigLoader, CalendarSelectionModel model, IOInterface io, RaplaImages raplaImages, DialogUiFactoryInterface dialogUiFactory)
+	public CSVExportMenu(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, TableConfig.TableConfigLoader tableConfigLoader, CalendarSelectionModel model, IOInterface io, DialogUiFactoryInterface dialogUiFactory)
     {
         super(facade, i18n, raplaLocale, logger);
 		this.tableConfigLoader = tableConfigLoader;
         this.model = model;
         this.io = io;
-        this.raplaImages = raplaImages;
         this.dialogUiFactory = dialogUiFactory;
 		exportEntry = new JMenuItem(getString("csv.export"));
-        exportEntry.setIcon( raplaImages.getIconFromKey("icon.export") );
+        exportEntry.setIcon( RaplaImages.getIcon(i18n.getIcon("icon.export") ));
         exportEntry.addActionListener(this);
     }
 	
@@ -82,12 +81,14 @@ public class CSVExportMenu extends RaplaGUIComponent implements ExportMenuExtens
             dialogUiFactory.showException(ex, new SwingPopupContext(getMainComponent(), null));
         }
     }
-    
+
+    @Override
 	public String getId() {
 		return PLUGIN_ID;
 	}
 
-	public JMenuItem getMenuElement() {
+	@Override
+	public JMenuItem getComponent() {
 		return exportEntry;
 	}
 	
@@ -111,12 +112,12 @@ public class CSVExportMenu extends RaplaGUIComponent implements ExportMenuExtens
         else
         {
             columns = tableConfigLoader.loadColumns("appointments", getUser());
-            promise = model.getBlocks().thenApply((list) ->
+            promise = model.queryBlocks(model.getTimeIntervall()).thenApply((list) ->
             {
                 return new ArrayList<Object>(list);
             });
         }
-        promise.thenAccept((objects) ->
+        promise.thenCompose((objects) ->
         {
             StringBuffer buf = new StringBuffer();
             for (RaplaTableColumn column : columns)
@@ -159,32 +160,27 @@ public class CSVExportMenu extends RaplaGUIComponent implements ExportMenuExtens
             String filename = calendarName + "-" + sdfyyyyMMdd.format(model.getStartDate()) + "-" + sdfyyyyMMdd.format(model.getEndDate()) + ".csv";
             if (saveFile(bytes, filename, "csv"))
             {
-                exportFinished(getMainComponent());
+                return exportFinished(getMainComponent());
+            }
+            else
+            {
+                return ResolvedPromise.VOID_PROMISE;
             }
         }).exceptionally((ex) ->
-        {
-            dialogUiFactory.showException(ex, new SwingPopupContext(getMainComponent(), null));
-            return null;
-        });
+            dialogUiFactory.showException(ex, new SwingPopupContext(getMainComponent(), null))
+        );
     }	
 	
-	 protected boolean exportFinished(Component topLevel) {
-			try {
-				DialogInterface dlg = dialogUiFactory.create(
-				                new SwingPopupContext(topLevel, null)
-	                            ,true
-	                            ,getString("export")
-	                            ,getString("file_saved")
-	                            ,new String[] { getString("ok")}
-	                            );
-				dlg.setIcon("icon.export");
-	            dlg.setDefault(0);
-	            dlg.start(true);
-	            return (dlg.getSelectedIndex() == 0);
-			} catch (RaplaException e) {
-				return true;
-			}
-
+	 protected Promise<Void> exportFinished(Component topLevel) {
+            DialogInterface dlg = dialogUiFactory.createTextDialog(
+                            new SwingPopupContext(topLevel, null)
+                            , getString("export")
+                            ,getString("file_saved")
+                            ,new String[] { getString("ok")}
+                            );
+            dlg.setIcon(i18n.getIcon("icon.export"));
+            dlg.setDefault(0);
+            return dlg.start(true).thenApply((index)->null);
 	    }
 
     @Override

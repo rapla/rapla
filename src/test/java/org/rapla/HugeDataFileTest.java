@@ -6,8 +6,8 @@ import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 import org.rapla.entities.domain.Appointment;
 import org.rapla.entities.domain.Reservation;
-import org.rapla.facade.client.ClientFacade;
 import org.rapla.facade.RaplaFacade;
+import org.rapla.facade.client.ClientFacade;
 import org.rapla.test.util.RaplaTestCase;
 
 import java.util.Date;
@@ -27,8 +27,8 @@ public class HugeDataFileTest
         for ( int i=0;i<RESERVATION_COUNT;i++)
         {
             Reservation event = facade.newReservationDeprecated();
-            Appointment app1 = facade.newAppointment(new Date(), new Date());
-            Appointment app2 = facade.newAppointment(new Date(), new Date());
+            Appointment app1 = facade.newAppointmentDeprecated(new Date(), new Date());
+            Appointment app2 = facade.newAppointmentDeprecated(new Date(), new Date());
             event.addAppointment( app1);
             event.addAppointment( app2);
             event.getClassification().setValue("name", "Test-Event " + i);

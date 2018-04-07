@@ -14,12 +14,11 @@ package org.rapla.client.swing.internal.edit;
 
 import org.rapla.RaplaResources;
 import org.rapla.client.dialog.DialogUiFactoryInterface;
+import org.rapla.client.dialog.InfoFactory;
+import org.rapla.client.menu.MenuFactory;
 import org.rapla.client.swing.EditComponent;
 import org.rapla.client.swing.EditField;
-import org.rapla.client.swing.InfoFactory;
-import org.rapla.client.swing.MenuFactory;
 import org.rapla.client.swing.TreeFactory;
-import org.rapla.client.swing.images.RaplaImages;
 import org.rapla.client.swing.internal.FilterEditButton.FilterEditButtonFactory;
 import org.rapla.client.swing.internal.MultiCalendarPresenter;
 import org.rapla.client.swing.internal.edit.fields.BooleanField.BooleanFieldFactory;
@@ -31,14 +30,13 @@ import org.rapla.client.swing.internal.edit.fields.EditFieldWithLayout;
 import org.rapla.client.swing.internal.edit.fields.PermissionListField;
 import org.rapla.client.swing.internal.edit.fields.PermissionListField.PermissionListFieldFactory;
 import org.rapla.client.swing.internal.edit.reservation.AllocatableSelection;
-import org.rapla.client.swing.toolkit.FrameControllerList;
 import org.rapla.components.util.undo.CommandHistory;
 import org.rapla.entities.domain.AppointmentFormater;
 import org.rapla.entities.domain.Permission;
 import org.rapla.entities.domain.Reservation;
 import org.rapla.facade.CalendarSelectionModel;
-import org.rapla.facade.client.ClientFacade;
 import org.rapla.facade.RaplaFacade;
+import org.rapla.facade.client.ClientFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaInitializationException;
 import org.rapla.framework.RaplaLocale;
@@ -68,9 +66,9 @@ public class ReservationEditUI  extends AbstractEditUI<Reservation>  {
 
     @Inject
     public ReservationEditUI(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, TreeFactory treeFactory, CalendarSelectionModel originalModel, AppointmentFormater appointmentFormater,
-            InfoFactory infoFactory, RaplaImages raplaImages, MenuFactory menuFactory,
+            InfoFactory infoFactory, MenuFactory menuFactory,
             DialogUiFactoryInterface dialogUiFactory, ClassificationFieldFactory classificationFieldFactory, PermissionListFieldFactory permissionListFieldFactory,
-            DateFieldFactory dateFieldFactory, Provider<MultiCalendarPresenter> multiCalendarViewFactory, BooleanFieldFactory booleanFieldFactory, FilterEditButtonFactory filterEditButtonFactory, FrameControllerList frameControllerList) throws RaplaInitializationException
+            DateFieldFactory dateFieldFactory, Provider<MultiCalendarPresenter> multiCalendarViewFactory, BooleanFieldFactory booleanFieldFactory, FilterEditButtonFactory filterEditButtonFactory) throws RaplaInitializationException
     {
         super(facade, i18n, raplaLocale, logger);
         this.permissionController = facade.getRaplaFacade().getPermissionController();
@@ -85,8 +83,8 @@ public class ReservationEditUI  extends AbstractEditUI<Reservation>  {
         } 
 
         allocatableSelection = new AllocatableSelection(facade, i18n, raplaLocale, logger, false, new CommandHistory(), treeFactory, originalModel,
-                appointmentFormater, menuFactory, infoFactory, raplaImages, dialogUiFactory, dateFieldFactory, multiCalendarViewFactory,
-                booleanFieldFactory, filterEditButtonFactory, frameControllerList)
+                appointmentFormater, menuFactory, infoFactory, dialogUiFactory, dateFieldFactory, multiCalendarViewFactory,
+                booleanFieldFactory, filterEditButtonFactory)
         {
             public boolean isRestrictionVisible() {return false;}
         };
@@ -99,27 +97,21 @@ public class ReservationEditUI  extends AbstractEditUI<Reservation>  {
         editPanel.setLayout( new BorderLayout());
         editPanel.add( classificationField.getComponent(), BorderLayout.CENTER);
         editPanel.add( holdBackConflictPanel, BorderLayout.SOUTH);
-        classificationField.addChangeListener(new ChangeListener()
-        {
-            
-            @Override
-            public void stateChanged(ChangeEvent e)
+        classificationField.addChangeListener(e -> {
+            final boolean mainTabSelected = classificationField.isMainTabSelected();
+            permissionPanel.setVisible( !mainTabSelected);
+            if ( !editPanel.isAncestorOf( permissionPanel) && !mainTabSelected)
             {
-                final boolean mainTabSelected = classificationField.isMainTabSelected();
-                permissionPanel.setVisible( !mainTabSelected);
-                if ( !editPanel.isAncestorOf( permissionPanel) && !mainTabSelected)
-                {
-                    editPanel.remove( holdBackConflictPanel);
-                    editPanel.add( permissionPanel, BorderLayout.SOUTH);
-                    editPanel.repaint();
-                }
-                
-                if ( !editPanel.isAncestorOf( holdBackConflictPanel) && mainTabSelected)
-                {
-                    editPanel.remove( permissionPanel );
-                    editPanel.add( holdBackConflictPanel, BorderLayout.SOUTH);
-                    editPanel.repaint();
-                }
+                editPanel.remove( holdBackConflictPanel);
+                editPanel.add( permissionPanel, BorderLayout.SOUTH);
+                editPanel.repaint();
+            }
+
+            if ( !editPanel.isAncestorOf( holdBackConflictPanel) && mainTabSelected)
+            {
+                editPanel.remove( permissionPanel );
+                editPanel.add( holdBackConflictPanel, BorderLayout.SOUTH);
+                editPanel.repaint();
             }
         });
         editPanel.setPreferredSize( new Dimension(800,600));
@@ -181,7 +173,7 @@ public class ReservationEditUI  extends AbstractEditUI<Reservation>  {
                 canAdmin = false;
             }
         }
-        if ( canAdmin == false)
+        if ( !canAdmin )
         {
             permissionListField.getComponent().setVisible( false );
         }

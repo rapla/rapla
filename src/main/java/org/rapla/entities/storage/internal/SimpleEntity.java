@@ -70,7 +70,7 @@ public abstract class SimpleEntity extends ReferenceHandler implements RefEntity
         {
             if ( nonpersistantEntities == null)
             {
-                nonpersistantEntities = new LinkedHashMap<String,Entity>();
+                nonpersistantEntities = new LinkedHashMap<>();
             }
             nonpersistantEntities.put( entity.getId(), entity);
         }
@@ -95,7 +95,7 @@ public abstract class SimpleEntity extends ReferenceHandler implements RefEntity
         {
             if ( nonpersistantEntities == null)
             {
-                nonpersistantEntities = new LinkedHashMap<String,Entity>();
+                nonpersistantEntities = new LinkedHashMap<>();
             }
             nonpersistantEntities.put( entity.getId(), entity);
         }
@@ -257,7 +257,7 @@ public abstract class SimpleEntity extends ReferenceHandler implements RefEntity
         }
     }
 
-    /** find the sub-entity that has the same id as the passed copy. Returns null, if the entity was not found. */
+    /** find the sub-entity that has the same id as the passed copyReservations. Returns null, if the entity was not found. */
 	public Entity findEntity(Entity copy) {
         for (Entity entity:getSubEntities())
         {
@@ -268,7 +268,7 @@ public abstract class SimpleEntity extends ReferenceHandler implements RefEntity
         return null;
     }
 
-    /** find the sub-entity that has the same id as the passed copy. Returns null, if the entity was not found. */
+    /** find the sub-entity that has the same id as the passed copyReservations. Returns null, if the entity was not found. */
 	public Entity findEntityForId(String id) {
         for (Entity entity:getSubEntities())
         {
@@ -282,15 +282,15 @@ public abstract class SimpleEntity extends ReferenceHandler implements RefEntity
 
     protected void deepClone(SimpleEntity clone) {
     	clone.id = id;
-    	clone.links =  new LinkedHashMap<String,List<String>>();
+    	clone.links = new LinkedHashMap<>();
     	for ( String key:links.keySet())
     	{
     		List<String> idList = links.get( key);
-    		clone.links.put( key, new ArrayList<String>(idList));
+    		clone.links.put( key, new ArrayList<>(idList));
     	}
     	clone.resolver = this.resolver;
     	Assert.isTrue(!clone.getSubEntities().iterator().hasNext());
-    	ArrayList<Entity>newSubEntities = new ArrayList<Entity>();
+    	ArrayList<Entity>newSubEntities = new ArrayList<>();
     	Iterable<Entity> oldEntities = getSubEntities();
     	for (Entity entity: oldEntities)
     	{
@@ -330,7 +330,7 @@ public abstract class SimpleEntity extends ReferenceHandler implements RefEntity
         if ( o1.equals( o2))
             return 0;
  
-        // first try to compare the entities with their create time
+        // first try to compare the entities with their createInfoDialog time
         if ( o1 instanceof Timestamp && o2 instanceof Timestamp)
         {
         	Date c1 = ((Timestamp)o1).getCreateDate();

@@ -126,7 +126,7 @@ public interface Appointment extends Entity<Appointment>, Comparable {
     {
         static public Map<String,Appointment> idMap(Appointment[] appointments)
         {
-            Map<String,Appointment> idMap = new LinkedHashMap<String, Appointment>();
+            Map<String,Appointment> idMap = new LinkedHashMap<>();
             for (Appointment app: appointments)
             {
                 idMap.put( app.getId(), app );

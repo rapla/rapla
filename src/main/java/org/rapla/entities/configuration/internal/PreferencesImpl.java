@@ -184,7 +184,7 @@ public class PreferencesImpl extends SimpleEntity implements Preferences, Modifi
     {
         Iterable<ReferenceInfo> parentReferences = super.getReferenceInfo();
         Iterable<ReferenceInfo> mapReferences = map.getReferenceInfo();
-        IterableChain<ReferenceInfo> iteratorChain = new IterableChain<ReferenceInfo>(parentReferences, mapReferences);
+        IterableChain<ReferenceInfo> iteratorChain = new IterableChain<>(parentReferences, mapReferences);
         return iteratorChain;
     }
 
@@ -355,7 +355,7 @@ public class PreferencesImpl extends SimpleEntity implements Preferences, Modifi
     {
         if (userId != null)
         {
-            return new ReferenceInfo<Preferences>(Preferences.ID_PREFIX + userId, Preferences.class);
+            return new ReferenceInfo<>(Preferences.ID_PREFIX + userId, Preferences.class);
         }
         else
         {

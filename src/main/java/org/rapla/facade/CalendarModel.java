@@ -1,5 +1,6 @@
 package org.rapla.facade;
 
+import jsinterop.annotations.JsType;
 import org.rapla.components.util.TimeInterval;
 import org.rapla.entities.RaplaObject;
 import org.rapla.entities.User;
@@ -18,13 +19,14 @@ import java.util.List;
 import java.util.Map;
 
 
+@JsType
 public interface CalendarModel extends Cloneable, ClassifiableFilter
 {
     String SHOW_NAVIGATION_ENTRY = "org.rapla.plugin.abstractcalendar.show_navigation";
     String ONLY_ALLOCATION_INFO = "org.rapla.plugin.abstractcalendar.only_allocation_info";
 	String SAVE_SELECTED_DATE = "org.rapla.plugin.abstractcalendar.save_selected_date";
 	String ONLY_MY_EVENTS = "only_own_reservations";
-	TypedComponentRole<Boolean> ONLY_MY_EVENTS_DEFAULT = new TypedComponentRole<Boolean>("org.rapla.plugin.abstractcalendar.only_own_reservations");
+	TypedComponentRole<Boolean> ONLY_MY_EVENTS_DEFAULT = new TypedComponentRole<>("org.rapla.plugin.abstractcalendar.only_own_reservations");
 
 	String getNonEmptyTitle();
 
@@ -75,7 +77,7 @@ public interface CalendarModel extends Cloneable, ClassifiableFilter
     Promise<Collection<Reservation>> queryReservations( TimeInterval interval );
     Promise<Collection<Appointment>> queryAppointments(TimeInterval interval);
     Promise<Map<Allocatable,Collection<Appointment>>> queryAppointmentBindings(TimeInterval interval);
-    Promise<List<AppointmentBlock>> getBlocks();
+    Promise<List<AppointmentBlock>> queryBlocks(TimeInterval timeInterval);
 
 	boolean isMatchingSelectionAndFilter(Reservation reservation, Appointment appointment) throws RaplaException;
 

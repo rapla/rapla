@@ -293,23 +293,20 @@ public class DefaultIO  implements IOInterface{
         fd.setFile(filename);
         if ( fileExtensions.length > 0)
         {
-            fd.setFilenameFilter( new FilenameFilter() {
-                
-                public boolean accept(File dir, String name) {
-                    final String[] split = name.split(".");
-                    if ( split.length > 1)
+            fd.setFilenameFilter((dir1, name) -> {
+                final String[] split = name.split(".");
+                if ( split.length > 1)
+                {
+                    String extension = split[split.length -1].toLowerCase();
+                    for ( String ext: fileExtensions)
                     {
-                        String extension = split[split.length -1].toLowerCase();
-                        for ( String ext: fileExtensions)
+                        if ( ext.toLowerCase().equals(extension ))
                         {
-                            if ( ext.toLowerCase().equals(extension ))
-                            {
-                                return true;
-                            }
+                            return true;
                         }
                     }
-                    return false;
                 }
+                return false;
             });
         }
         fd.setLocation(50, 50);

@@ -38,7 +38,7 @@ public class WeekdayMapper {
     String[] weekdayNames;
     int[] weekday2index;
     int[] index2weekday;
-    Map<Integer,String>  map = new LinkedHashMap<Integer,String>();
+    Map<Integer,String>  map = new LinkedHashMap<>();
 
 
     public WeekdayMapper(RaplaLocale raplaLocale, int firstDayInWeek)

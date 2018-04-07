@@ -14,13 +14,11 @@ package org.rapla.client.swing.toolkit.tests;
 
 import org.rapla.RaplaResources;
 import org.rapla.client.dialog.DialogUiFactoryInterface;
+import org.rapla.client.dialog.swing.DialogUI.DialogUiFactory;
 import org.rapla.client.swing.gui.tests.GUITestCase;
-import org.rapla.client.swing.images.RaplaImages;
-import org.rapla.client.swing.toolkit.DialogUI.DialogUiFactory;
 import org.rapla.client.swing.toolkit.ErrorDialog;
-import org.rapla.client.swing.toolkit.FrameControllerList;
 import org.rapla.components.i18n.BundleManager;
-import org.rapla.components.i18n.internal.DefaultBundleManager;
+import org.rapla.components.i18n.server.ServerBundleManager;
 import org.rapla.framework.internal.DefaultScheduler;
 import org.rapla.logger.Logger;
 import org.rapla.scheduler.CommandScheduler;
@@ -30,14 +28,12 @@ public class ErrorDialogTest extends GUITestCase {
     public void testError() throws Exception {
         ErrorDialog.THROW_ERROR_DIALOG_EXCEPTION = false;
         final Logger logger = getLogger();
-        FrameControllerList frameList = new FrameControllerList(logger);
-        BundleManager bundleManager = new DefaultBundleManager();
+        BundleManager bundleManager = new ServerBundleManager();
         RaplaResources i18n = new RaplaResources(bundleManager);
-        RaplaImages raplaImages = new RaplaImages(logger);
         RaplaResources raplaResources = new RaplaResources(bundleManager);
         CommandScheduler scheduler = new DefaultScheduler(logger);
-        DialogUiFactoryInterface dialogUiFactory = new DialogUiFactory(i18n, raplaImages,scheduler, bundleManager,frameList, logger );
-        ErrorDialog dialog = new ErrorDialog(logger, raplaResources, raplaImages, dialogUiFactory);
+        DialogUiFactoryInterface dialogUiFactory = new DialogUiFactory(i18n, scheduler, bundleManager, logger );
+        ErrorDialog dialog = new ErrorDialog(logger, raplaResources,  dialogUiFactory);
         dialog.show("This is a very long sample error-text for our error-message-displaying-test"
                         + " it should be wrapped so that the whole text is diplayed.");
     }

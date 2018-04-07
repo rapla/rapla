@@ -1,6 +1,6 @@
 package org.rapla.plugin.tableview.client.swing;
 
-import org.rapla.components.xmlbundle.I18nBundle;
+import org.rapla.components.i18n.I18nBundle;
 import org.rapla.entities.domain.AppointmentBlock;
 import org.rapla.plugin.tableview.RaplaTableColumn;
 
@@ -17,16 +17,16 @@ public class AppointmentTableModel extends DefaultTableModel
 {
     private static final long serialVersionUID = 1L;
     
-    List<AppointmentBlock> appointments= new ArrayList<AppointmentBlock>();
+    List<AppointmentBlock> appointments= new ArrayList<>();
     Locale locale;
     I18nBundle i18n;
-    Map<Integer,RaplaTableColumn<AppointmentBlock,TableColumn>> columns = new LinkedHashMap<Integer, RaplaTableColumn<AppointmentBlock,TableColumn>>();
+    Map<Integer,RaplaTableColumn<AppointmentBlock,TableColumn>> columns = new LinkedHashMap<>();
     
     //String[] columns;
     public AppointmentTableModel(Locale locale, I18nBundle i18n, Collection<RaplaTableColumn<AppointmentBlock,TableColumn>> columnPlugins) {
         this.locale = locale;
         this.i18n = i18n;
-        List<String> columnNames = new ArrayList<String>(); 
+        List<String> columnNames = new ArrayList<>();
         int column = 0;
         for (RaplaTableColumn<AppointmentBlock,TableColumn> col: columnPlugins)
         {

@@ -23,6 +23,7 @@ import org.rapla.entities.dynamictype.Classifiable;
 import java.util.Collection;
 import java.util.Date;
 import java.util.Locale;
+import java.util.stream.Stream;
 
 /** The <code>Reservation</code> interface is the central interface of
  *  Rapla.  Objects implementing this interface are the courses or
@@ -47,6 +48,8 @@ public interface Reservation extends EntityPermissionContainer<Reservation>,Clas
     /** returns all appointments that are part off the reservation.*/
     
     Collection<Appointment> getSortedAppointments();
+
+    Stream<Appointment> getAppointmentStream();
     
     Appointment[] getAppointments();
    /** Restrict an allocation to one ore more appointments.
@@ -68,7 +71,7 @@ public interface Reservation extends EntityPermissionContainer<Reservation>,Clas
     Appointment[] getAppointmentsFor(Allocatable alloc);
 
     /** find an appointment in the reservation that equals the specified appointment. This is usefull if you have the
-     * persistant version of an appointment and want to discover the editable appointment in the working copy of a reservation. 
+     * persistant version of an appointment and want to discover the editable appointment in the working copyReservations of a reservation.
      * This does only work with persistant appointments, that have an id.*/
     Appointment findAppointment(Appointment appointment);
 
@@ -79,7 +82,7 @@ public interface Reservation extends EntityPermissionContainer<Reservation>,Clas
     Allocatable[] getRestrictedAllocatables(Appointment appointment);
 
     /** get all allocatables that are allocated on the appointment, restricted and non restricted ones*/
-    Allocatable[] getAllocatablesFor(Appointment appointment);
+    Stream<Allocatable> getAllocatablesFor(Appointment appointment);
     
     /** returns if an the reservation has allocated the specified object. */
     boolean hasAllocated(Allocatable alloc);

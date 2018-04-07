@@ -103,7 +103,7 @@ public class EventTimeModel {
     }
 
     public long calcDuration(Appointment[] appointments){
-        final Collection<AppointmentBlock> blocks = new ArrayList<AppointmentBlock>();
+        final Collection<AppointmentBlock> blocks = new ArrayList<>();
         long totalDuration = 0;
         for (Appointment app : appointments) {
             Date start = app.getStart();

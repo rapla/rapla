@@ -3,11 +3,11 @@ package org.rapla.plugin.exchangeconnector;
 //implements PluginDescriptor<ClientServiceContainer> {
 public interface ExchangeConnectorPlugin {
 
-	public final static boolean ENABLE_BY_DEFAULT = false;
+	boolean ENABLE_BY_DEFAULT = false;
 	
-	public static final String PLUGIN_ID = "org.rapla.ExchangeConnector";
+	String PLUGIN_ID = "org.rapla.ExchangeConnector";
 
-    public static final String EXCHANGE_EXPORT = PLUGIN_ID+".selected";
+	String EXCHANGE_EXPORT = PLUGIN_ID+".selected";
     
 //    public void provideServices(ClientServiceContainer container, Configuration config) throws RaplaContextException {
 //        container.addResourceFile(ExchangeConnectorConfig.RESOURCE_FILE);

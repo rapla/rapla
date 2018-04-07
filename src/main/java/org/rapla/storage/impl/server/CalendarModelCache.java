@@ -6,6 +6,7 @@ import org.rapla.entities.Entity;
 import org.rapla.entities.User;
 import org.rapla.entities.configuration.CalendarModelConfiguration;
 import org.rapla.entities.configuration.Preferences;
+import org.rapla.entities.configuration.RaplaMap;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.Appointment;
 import org.rapla.entities.storage.ReferenceInfo;
@@ -35,7 +36,7 @@ public class CalendarModelCache
 {
     RaplaLock lockManager;
 
-    private final Map<ReferenceInfo<User>, List<CalendarModelImpl>> calendarModels = new HashMap<ReferenceInfo<User>, List<CalendarModelImpl>>();
+    private final Map<ReferenceInfo<User>, List<CalendarModelImpl>> calendarModels = new HashMap<>();
     final CachableStorageOperator operator;
     final RaplaResources i18n;
     final Logger logger;
@@ -69,13 +70,13 @@ public class CalendarModelCache
         return option != null && option.equals("true");
     }
 
-    /** this method does not update the appointments only create new or remove existing appointments.
+    /** this method does not update the appointments only createInfoDialog new or remove existing appointments.
      New exchange appointments are added if the rapla appointment is in an exported calendar view but not in exchange.
      Exchange appointments are removed if the rapla appointment is not in an exported calendar view anymore.
      */
     private void updateCalendarMap(User user) throws RaplaException
     {
-        final List<CalendarModelImpl> calendarModelList = new ArrayList<CalendarModelImpl>();
+        final List<CalendarModelImpl> calendarModelList = new ArrayList<>();
         final boolean createIfNotNull = false;
         final ReferenceInfo<User> userId = user.getReference();
         final Preferences preferences = operator.getPreferences(user, createIfNotNull);
@@ -93,7 +94,7 @@ public class CalendarModelCache
             return; //calendarModelList;
         }
         final CalendarModelConfiguration modelConfig = preferences.getEntry(CalendarModelConfiguration.CONFIG_ENTRY);
-        final Map<String, CalendarModelConfiguration> exportMap = preferences.getEntry(CalendarModelConfiguration.EXPORT_ENTRY);
+        final RaplaMap<CalendarModelConfiguration> exportMap = preferences.getEntry(CalendarModelConfiguration.EXPORT_ENTRY);
         if (modelConfig == null && exportMap == null)
         {
             final RaplaLock.WriteLock lock = lockManager.writeLock(60);
@@ -107,7 +108,7 @@ public class CalendarModelCache
             }
             return;// calendarModelList;
         }
-        final List<CalendarModelConfiguration> configList = new ArrayList<CalendarModelConfiguration>();
+        final List<CalendarModelConfiguration> configList = new ArrayList<>();
         if (modelConfig != null)
         {
             configList.add(modelConfig);
@@ -157,7 +158,7 @@ public class CalendarModelCache
     // checks all exports if appointment is still in on of the exported calendars (check eslected resources)
     public Collection<ReferenceInfo<User>> findMatchingUser(Appointment appointment) throws RaplaException
     {
-        Set<ReferenceInfo<User>> result = new HashSet<ReferenceInfo<User>>();
+        Set<ReferenceInfo<User>> result = new HashSet<>();
         RaplaLock.ReadLock readLock = lockManager.readLock();
         try
         {
@@ -187,7 +188,7 @@ public class CalendarModelCache
     // checks all exports if appointment is still in on of the exported calendars (check eslected resources)
     public Collection<ReferenceInfo<User>> findMatchingUsers(Allocatable allocatable) throws RaplaException
     {
-        Set<ReferenceInfo<User>> result = new HashSet<ReferenceInfo<User>>();
+        Set<ReferenceInfo<User>> result = new HashSet<>();
         RaplaLock.ReadLock lock = lockManager.readLock();
         try
         {
@@ -229,7 +230,7 @@ public class CalendarModelCache
         {
             return Collections.emptySet();
         }
-        Collection<Appointment> appointments = new LinkedHashSet<Appointment>();
+        Collection<Appointment> appointments = new LinkedHashSet<>();
         for (CalendarModelImpl calendarModelImpl : calendarModelList)
         {
             // check if filter or calendar selection changes so that we need to add or remove events from the exchange calendar

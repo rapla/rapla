@@ -105,7 +105,7 @@ public class AppointmentCounterFactory implements AppointmentStatusFactory
 		                count = -1;
 		                break;
 		            }
-		            List<AppointmentBlock> blocks = new ArrayList<AppointmentBlock>();
+		            List<AppointmentBlock> blocks = new ArrayList<>();
 		            appointment.createBlocks( appointment.getStart(), DateTools.fillDate(repeating.getEnd()), blocks);
 		            count += blocks.size();
 		        }

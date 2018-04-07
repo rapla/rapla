@@ -84,7 +84,8 @@ public class Export2iCalConverter
     final RaplaFacade facade;
     final RaplaResources i18n;
 
-    @Inject public Export2iCalConverter(TimeZoneConverter timezoneConverter, RaplaLocale raplaLocale, Logger logger, RaplaFacade facade, RaplaResources i18n )
+    @Inject
+    public Export2iCalConverter(TimeZoneConverter timezoneConverter, RaplaLocale raplaLocale, Logger logger, RaplaFacade facade, RaplaResources i18n)
             throws RaplaInitializationException
     {
         this.timezoneConverter = timezoneConverter;
@@ -102,7 +103,7 @@ public class Export2iCalConverter
         }
         catch (RaplaException e)
         {
-            throw new RaplaInitializationException( e);
+            throw new RaplaInitializationException(e);
         }
         for (DynamicType type : dynamicTypes)
         {
@@ -112,7 +113,6 @@ public class Export2iCalConverter
             }
         }
         CompatibilityHints.setHintEnabled(CompatibilityHints.KEY_RELAXED_VALIDATION, true);
-
 
         global_export_attendees = config.getChild(Export2iCalPlugin.EXPORT_ATTENDEES).getValueAsBoolean(Export2iCalPlugin.DEFAULT_exportAttendees);
         global_export_attendees_participation_status = config.getChild(Export2iCalPlugin.EXPORT_ATTENDEES_PARTICIPATION_STATUS)
@@ -227,7 +227,7 @@ public class Export2iCalConverter
 
         boolean canRead = facade.getPermissionController().canRead(appointment, user);
         addUidToEvent(appointment, properties);
-        addEventNameToEvent(appointment, properties,canRead);
+        addEventNameToEvent(appointment, properties, canRead);
         if (canRead)
         {
             addDescriptionToEvent(appointment, properties);
@@ -248,7 +248,7 @@ public class Export2iCalConverter
     {
         if (facade.getPermissionController().canRead(alloc, user))
         {
-            final String name = NameFormatUtil.getExportName(alloc,raplaLocale.getLocale());
+            final String name = NameFormatUtil.getExportName(alloc, raplaLocale.getLocale());
             return name;
         }
         else
@@ -272,11 +272,11 @@ public class Export2iCalConverter
         User owner;
         try
         {
-            owner = facade.resolve( ownerId);
+            owner = facade.resolve(ownerId);
         }
         catch (EntityNotFoundException e1)
         {
-            getLogger().error("Error getting user for Export2iCal: " +e1.getMessage(), e1);
+            getLogger().error("Error getting user for Export2iCal: " + e1.getMessage(), e1);
             return;
         }
         try
@@ -322,14 +322,7 @@ public class Export2iCalConverter
         if (!doExportAsMeeting)
             return;
 
-        Allocatable[] persons = appointment.getReservation().getAllocatablesFor(appointment);
-
-        for (Allocatable person : persons)
-        {
-            if (!person.isPerson())
-            {
-                continue;
-            }
+        appointment.getReservation().getAllocatablesFor(appointment).filter(Allocatable::isPerson).forEach(person -> {
             String email = null;
             Attribute attr = person.getClassification().getAttribute(exportAttendeesAttribute);
             if (attr != null && person.getClassification().getValueForAttribute(attr) != null)
@@ -340,7 +333,7 @@ public class Export2iCalConverter
                 try
                 {
                     final String resourceName = getResourceName(person, user);
-                    if ( !isEmpty(resourceName))
+                    if (!isEmpty(resourceName))
                     {
                         Attendee attendee = new Attendee(new URI(email));
                         attendee.getParameters().add(Role.REQ_PARTICIPANT);
@@ -354,7 +347,7 @@ public class Export2iCalConverter
                     throw new IllegalArgumentException(e);
                 }
             }
-        }
+        });
     }
 
     private boolean isEmpty(String allocatableName)
@@ -439,12 +432,12 @@ public class Export2iCalConverter
             // MONTHLY -> settings : every nTh Weekday
             recur.setInterval(repeating.getInterval());
             final int weekday = DateTools.getWeekday(appointment.getStart());
-            int weekofmonth = Math.round(DateTools.getDayOfMonth( appointment.getStart()) / DateTools.DAYS_PER_WEEK) + 1;
+            int weekofmonth = Math.round(DateTools.getDayOfMonth(appointment.getStart()) / DateTools.DAYS_PER_WEEK);
             recur.getDayList().add(new WeekDay(WeekDay.getDay(weekday), weekofmonth));
         }
         else if (repeating.isYearly())
         {
-            recur.getYearDayList().add( DateTools.getDayInYear( appointment.getStart()));
+            recur.getYearDayList().add(DateTools.getDayInYear(appointment.getStart()));
         }
         else
         {
@@ -474,7 +467,7 @@ public class Export2iCalConverter
             Date date = itExceptions.next();
             //dl.add(new net.fortuna.ical4j.model.Date( date));
             int offset = (int) (tz.getOffset(DateTools.cutDate(date).getTime()) / DateTools.MILLISECONDS_PER_HOUR);
-            Date dateToSave = new Date(DateTools.cutDate( date).getTime() -offset * DateTools.MILLISECONDS_PER_HOUR);
+            Date dateToSave = new Date(DateTools.cutDate(date).getTime() - offset * DateTools.MILLISECONDS_PER_HOUR);
             net.fortuna.ical4j.model.DateTime dateTime = new net.fortuna.ical4j.model.DateTime();
             dateTime.setTime(dateToSave.getTime());
             exDate.getDates().add(dateTime);
@@ -558,35 +551,38 @@ public class Export2iCalConverter
      */
     private void addLocationToEvent(Appointment appointment, PropertyList properties, User user)
     {
-        Allocatable[] allocatables = appointment.getReservation().getAllocatablesFor(appointment);
-        StringBuffer buffer = new StringBuffer();
-        for (Allocatable alloc : allocatables)
-        {
-            if (hasLocationType)
-            {
-                if (alloc.getClassification().getType().getAnnotation(DynamicTypeAnnotations.KEY_LOCATION) == null)
+        final StringBuffer buffer = new StringBuffer();
+        appointment
+                .getReservation()
+                .getAllocatablesFor(appointment)
+                .filter(this::isLocation).
+                map(alloc -> getResourceName(alloc, user))
+                .filter(this::isEmpty)
+                .forEach(resourceName ->
                 {
-                    continue;
-                }
-            }
-            else if (alloc.isPerson())
-            {
-                continue;
-            }
-            final String resourceName = getResourceName(alloc, user);
-            if ( isEmpty(resourceName))
-            {
-                continue;
-            }
-
             if (buffer.length() > 0)
             {
                 buffer.append(", ");
             }
             buffer.append(resourceName);
-        }
-
+        });
         properties.add(new Location(buffer.toString()));
+    }
+
+    private boolean isLocation(Allocatable alloc)
+    {
+        if (hasLocationType)
+        {
+            if (alloc.getClassification().getType().getAnnotation(DynamicTypeAnnotations.KEY_LOCATION) == null)
+            {
+                return false;
+            }
+        }
+        else if (alloc.isPerson())
+        {
+            return false;
+        }
+        return true;
     }
 
     /**
@@ -704,7 +700,7 @@ public class Export2iCalConverter
 
     private DtEnd getDtEndFromAllDayEvent(Date endDate)
     {
-        Date date = DateTools.addDay(DateTools.cutDate( endDate));
+        Date date = DateTools.addDay(DateTools.cutDate(endDate));
         DtEnd end = new DtEnd(new net.fortuna.ical4j.model.Date(date));
         return end;
     }

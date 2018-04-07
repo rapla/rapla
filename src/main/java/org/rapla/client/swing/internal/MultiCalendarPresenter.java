@@ -4,7 +4,7 @@
  |                                                                          |
  | This program is free software; you can redistribute it and/or modify     |
  | it under the terms of the GNU General Public License as published by the |
- | Free Software Foundation. A copy of the license has been included with   |
+ | Free Software Foundation. A copyReservations of the license has been included with   |
  | these distribution in the COPYING file, if not go to www.fsf.org         |
  |                                                                          |
  | As a special exception, you are granted the permissions to link this     |
@@ -31,17 +31,21 @@ import org.rapla.client.swing.toolkit.RaplaMenuItem;
 import org.rapla.components.util.TimeInterval;
 import org.rapla.entities.dynamictype.ClassificationFilter;
 import org.rapla.facade.CalendarSelectionModel;
-import org.rapla.facade.client.ClientFacade;
 import org.rapla.facade.ModificationEvent;
+import org.rapla.facade.client.ClientFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaInitializationException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.inject.DefaultImplementation;
 import org.rapla.inject.InjectionContext;
 import org.rapla.logger.Logger;
+import org.rapla.scheduler.CommandScheduler;
+import org.rapla.scheduler.Observable;
+import org.rapla.scheduler.ResolvedPromise;
+import org.rapla.scheduler.Subject;
 
 import javax.inject.Inject;
-import javax.swing.*;
+import javax.swing.SwingUtilities;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -59,10 +63,9 @@ public class MultiCalendarPresenter implements CalendarContainer,Presenter
 {
     private static final String ERROR_NO_VIEW_DEFINED = "No views enabled. Please add a plugin in the menu admin/settings/plugins";
     
-    private final Map<String,RaplaMenuItem> viewMenuItems = new HashMap<String,RaplaMenuItem>();
+    private final Map<String,RaplaMenuItem> viewMenuItems = new HashMap<>();
     private final CalendarSelectionModel model;
     private final Set<SwingViewFactory> factoryList;
-    private final RaplaImages raplaImages;
     private final DialogUiFactoryInterface dialogUiFactory;
     private final MultiCalendarView view;
     private final Logger logger;
@@ -76,14 +79,20 @@ public class MultiCalendarPresenter implements CalendarContainer,Presenter
     boolean listenersEnabled = true;
     private SwingCalendarView currentView;
     private PresenterChangeCallback callback;
-    
+    final Subject<ClassificationFilter[]> filterChanged;
+    final CommandScheduler scheduler;
+    final RaplaResources i18n;
+
+
     @Inject
     public MultiCalendarPresenter(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, CalendarSelectionModel model,
-            RaplaImages raplaImages, DialogUiFactoryInterface dialogUiFactory, final Set<SwingViewFactory> factoryList,
+            DialogUiFactoryInterface dialogUiFactory, final Set<SwingViewFactory> factoryList,
             FilterEditButtonFactory filterEditButtonFactory, MultiCalendarView view) throws RaplaInitializationException
     {
+        scheduler = facade.getRaplaFacade().getScheduler();
+        this.i18n = i18n;
+        filterChanged = scheduler.createPublisher();
         this.logger = logger;
-        this.raplaImages = raplaImages;
         this.dialogUiFactory = dialogUiFactory;
         this.factoryList = factoryList;
         this.model = model;
@@ -120,6 +129,12 @@ public class MultiCalendarPresenter implements CalendarContainer,Presenter
         view.setSelectedViewId(model.getViewId());
         view.setFilterModel(model);
         this.view.setSelectableViews(ids);
+        final Observable<Object> objectObservable = filterChanged.debounce(500).switchMap((newFilter) -> {
+            model.setReservationFilter(newFilter);
+            return update();
+        });
+        objectObservable.doOnError((ex)->logger.error(ex.getMessage(),ex)).subscribe();
+
     }
     
     @Override
@@ -142,8 +157,7 @@ public class MultiCalendarPresenter implements CalendarContainer,Presenter
     public void onFilterChange()
     {
         final ClassificationFilter[] filters = view.getFilters();
-        model.setReservationFilter( filters );
-        update();
+        filterChanged.onNext( filters);
     }
 
     public void init(boolean editable, PresenterChangeCallback callback) throws RaplaException
@@ -172,10 +186,10 @@ public class MultiCalendarPresenter implements CalendarContainer,Presenter
             	for ( Iterator<RaplaMenuItem> it = viewMenuItems.values().iterator();it.hasNext();) 
                 {
                     RaplaMenuItem item =  it.next();
-                    item.setIcon( raplaImages.getIconFromKey("icon.empty"));
+                    item.setIcon( RaplaImages.getIcon(i18n.getIcon("icon.empty")));
                 }
                 RaplaMenuItem item = viewMenuItems.get( viewId );
-                item.setIcon( raplaImages.getIconFromKey("icon.radio"));
+                item.setIcon( RaplaImages.getIcon(i18n.getIcon("icon.radio")));
             }
         	callback.onChange();
         	view.setSelectedViewId(viewId);
@@ -185,14 +199,11 @@ public class MultiCalendarPresenter implements CalendarContainer,Presenter
     }
 
     private LinkedHashMap<String, String> getIds() {
-        List<SwingViewFactory> sortedList = new ArrayList<SwingViewFactory>(factoryList);
-        Collections.sort( sortedList, new Comparator<SwingViewFactory>() {
-            public int compare( SwingViewFactory arg0, SwingViewFactory arg1 )
-            {
-                SwingViewFactory f1 = arg0;
-                SwingViewFactory f2 = arg1;
-                return f1.getMenuSortKey().compareTo( f2.getMenuSortKey() );
-            }
+        List<SwingViewFactory> sortedList = new ArrayList<>(factoryList);
+        Collections.sort( sortedList, (arg0, arg1) -> {
+            SwingViewFactory f1 = arg0;
+            SwingViewFactory f2 = arg1;
+            return f1.getMenuSortKey().compareTo( f2.getMenuSortKey() );
         });
         final LinkedHashMap<String, String> result = new LinkedHashMap<>();
         for (Iterator<SwingViewFactory> it = sortedList.iterator();it.hasNext();) {
@@ -283,11 +294,15 @@ public class MultiCalendarPresenter implements CalendarContainer,Presenter
         }
     }
 
-    public void update()
+    public Observable update()
     {
         if (currentView != null)
         {
-            currentView.triggerUpdate();
+            return currentView.triggerUpdate();
+        }
+        else
+        {
+            return scheduler.toObservable(ResolvedPromise.VOID_PROMISE);
         }
     }
 

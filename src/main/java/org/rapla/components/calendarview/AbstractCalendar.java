@@ -9,6 +9,8 @@ import java.util.Collections;
 import java.util.Date;
 
 public abstract class  AbstractCalendar {
+	protected int offsetMinutes = 0* 60;
+
 	private int daysInView = 7;
 	private int firstWeekday = 2;//Calendar.inject().getFirstDayOfWeek();
     /** shared calendar instance. Only used for temporary stored values. */
@@ -55,8 +57,13 @@ public abstract class  AbstractCalendar {
     	boolean empty = isEmpty(column);
 		return empty;
 	}
-	
-	abstract protected boolean isEmpty(int column);
+
+    public int getOffsetMinutes()
+    {
+        return offsetMinutes;
+    }
+
+    abstract protected boolean isEmpty(int column);
 
 	public void setLocale(RaplaLocale raplaLocale) {
         this.raplaLocale = raplaLocale;
@@ -117,6 +124,8 @@ public abstract class  AbstractCalendar {
         	}
         	endDate =DateTools.addDays(startDate, daysInView);
     	}
+    	startDate = new Date( startDate.getTime() + offsetMinutes * DateTools.MILLISECONDS_PER_MINUTE);
+		endDate = new Date( endDate.getTime() + offsetMinutes * DateTools.MILLISECONDS_PER_MINUTE);
 	}
     
     public RaplaLocale getRaplaLocale()

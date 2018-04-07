@@ -30,13 +30,11 @@ class IcalPublishExtension extends RaplaGUIComponent implements PublishExtension
 	CalendarSelectionModel model;
 	final JCheckBox checkbox;
     final JTextField icalURL;
-    private final RaplaImages raplaImages;
     private final IOInterface ioInterface;
 	 
-	public IcalPublishExtension(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, CalendarSelectionModel model, RaplaImages raplaImages, IOInterface ioInterface) {
+	public IcalPublishExtension(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, CalendarSelectionModel model, IOInterface ioInterface) {
 		super(facade, i18n, raplaLocale, logger);
 		this.model = model;
-        this.raplaImages = raplaImages;
         this.ioInterface = ioInterface;
 
         panel.setLayout(new TableLayout( new double[][] {{TableLayout.PREFERRED,5,TableLayout.PREFERRED,5,TableLayout.FILL},
@@ -45,14 +43,10 @@ class IcalPublishExtension extends RaplaGUIComponent implements PublishExtension
 
     	checkbox = new JCheckBox("ICAL " + getString("publish"));
     	final JPanel statusICal = createStatus( icalURL);
-    	checkbox.addChangeListener(new ChangeListener()
-    	{
-           public void stateChanged(ChangeEvent e)
-           {
-               boolean icalEnabled = checkbox.isSelected() ;
-               statusICal.setEnabled( icalEnabled);
-           }
-    	});
+    	checkbox.addChangeListener(e -> {
+            boolean icalEnabled = checkbox.isSelected() ;
+            statusICal.setEnabled( icalEnabled);
+        });
         panel.add(checkbox,"0,0");
         panel.add( statusICal, "2,2,4,1");
         
@@ -86,15 +80,12 @@ class IcalPublishExtension extends RaplaGUIComponent implements PublishExtension
         copyButton.setBorder(BorderFactory.createEmptyBorder(2,2,2,2));
         copyButton.setFocusable(false);
         copyButton.setRolloverEnabled(false);
-        copyButton.setIcon(raplaImages.getIconFromKey("icon.copy"));
+        copyButton.setIcon(RaplaImages.getIcon(i18n.getIcon("icon.copy")));
         copyButton.setToolTipText(getString("copy_to_clipboard"));
-        copyButton.addActionListener(new ActionListener() {
-            public void actionPerformed(ActionEvent e) {
-            	urlLabel.requestFocus();
-            	urlLabel.selectAll();
-                copy(urlLabel,e, ioInterface, getRaplaLocale());
-            }
-
+        copyButton.addActionListener(e -> {
+            urlLabel.requestFocus();
+            urlLabel.selectAll();
+            copy(urlLabel,e, ioInterface, getRaplaLocale());
         });
         status.add(copyButton, BorderLayout.EAST);
         return status;

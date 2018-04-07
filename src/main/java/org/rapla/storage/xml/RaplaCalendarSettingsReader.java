@@ -19,6 +19,7 @@ import org.rapla.entities.Category;
 import org.rapla.entities.Entity;
 import org.rapla.entities.RaplaObject;
 import org.rapla.entities.configuration.CalendarModelConfiguration;
+import org.rapla.entities.configuration.RaplaMap;
 import org.rapla.entities.configuration.internal.CalendarModelConfigurationImpl;
 import org.rapla.entities.dynamictype.ClassificationFilter;
 import org.rapla.entities.dynamictype.DynamicType;
@@ -77,8 +78,8 @@ public class RaplaCalendarSettingsReader extends RaplaXMLReader  {
         }
 
         if (localName.equals("selected")) {
-        	idList = new ArrayList<String>();
-        	idTypeList = new ArrayList<Class<? extends Entity>>();
+        	idList = new ArrayList<>();
+        	idTypeList = new ArrayList<>();
         }
 
         if (localName.equals("options")) {
@@ -159,8 +160,8 @@ public class RaplaCalendarSettingsReader extends RaplaXMLReader  {
 
         if (localName.equals("options")) {
             @SuppressWarnings("unchecked")
-			Map<String,String> entityMap = optionMapReader.getEntityMap();
-			optionMap = entityMap;
+            RaplaMap<String> entityMap = optionMapReader.getEntityMap();
+			optionMap = entityMap != null ? entityMap.toMap() : null;
         }
 
         if (localName.equals("filter")) {

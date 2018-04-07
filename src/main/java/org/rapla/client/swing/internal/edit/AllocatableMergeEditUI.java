@@ -13,11 +13,11 @@
 package org.rapla.client.swing.internal.edit;
 
 import org.rapla.RaplaResources;
+import org.rapla.client.dialog.swing.DialogUI.DialogUiFactory;
 import org.rapla.client.swing.internal.edit.fields.BooleanField.BooleanFieldFactory;
 import org.rapla.client.swing.internal.edit.fields.ClassificationField.ClassificationFieldFactory;
 import org.rapla.client.swing.internal.edit.fields.ListField;
 import org.rapla.client.swing.internal.edit.fields.PermissionListField.PermissionListFieldFactory;
-import org.rapla.client.swing.toolkit.DialogUI.DialogUiFactory;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.facade.client.ClientFacade;
 import org.rapla.framework.RaplaException;
@@ -54,7 +54,7 @@ public class AllocatableMergeEditUI extends AllocatableEditUI
     {
         super(facade, i18n, raplaLocale, logger, classificationFieldFactory, permissionListFieldFactory, booleanFieldFactory);
         
-        allocatableSelectField = new ListField<Allocatable>(facade, i18n, raplaLocale, logger, false);
+        allocatableSelectField = new ListField<>(facade, i18n, raplaLocale, logger, false);
         final JLabel label = new JLabel(i18n.getString("selection"));
         final JComponent component = allocatableSelectField.getComponent();
         final JPanel header = new JPanel();
@@ -63,23 +63,18 @@ public class AllocatableMergeEditUI extends AllocatableEditUI
         header.add(Box.createHorizontalStrut(20));
         header.add(component);
         editPanel.add(header, BorderLayout.NORTH);
-        allocatableSelectField.addChangeListener(new ChangeListener()
-        {
-            @Override
-            public void stateChanged(ChangeEvent e)
+        allocatableSelectField.addChangeListener(e -> {
+            try
             {
-                try
-                {
-                    final Allocatable value = allocatableSelectField.getValue();
-                    AllocatableMergeEditUI.super.setObjects(Collections.singletonList(value));
-                    classificationField.getComponent().revalidate();
-                    permissionListField.getComponent().revalidate();
-                    holdBackConflictsField.getComponent().revalidate();
-                }
-                catch (RaplaException e1)
-                {
-                    dialogUiFactory.showException(e1, null);
-                }
+                final Allocatable value = allocatableSelectField.getValue();
+                AllocatableMergeEditUI.super.setObjects(Collections.singletonList(value));
+                classificationField.getComponent().revalidate();
+                permissionListField.getComponent().revalidate();
+                holdBackConflictsField.getComponent().revalidate();
+            }
+            catch (RaplaException e1)
+            {
+                dialogUiFactory.showException(e1, null);
             }
         });
         editPanel.setPreferredSize(new Dimension(800, 600));
@@ -96,10 +91,7 @@ public class AllocatableMergeEditUI extends AllocatableEditUI
     @Override
     public List<Allocatable> getObjects()
     {
-        final List<Allocatable> objects = super.getObjects();
-        List<Allocatable> result  = new ArrayList<>();
-
-        result.addAll( objects);
+        List<Allocatable> result  = new ArrayList<>(super.getObjects());
         for ( Allocatable alloc:allAllocatables)
         {
             if ( !result.contains( alloc))

@@ -16,7 +16,8 @@ import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
-import org.rapla.components.i18n.internal.DefaultBundleManager;
+import org.rapla.components.i18n.internal.AbstractBundleManager;
+import org.rapla.components.i18n.server.ServerBundleManager;
 import org.rapla.components.util.ParseDateException;
 import org.rapla.components.util.SerializableDateTimeFormat;
 import org.rapla.framework.RaplaLocale;
@@ -30,7 +31,7 @@ public class RaplaLocaleTest
     @Test
     public void testDateFormatDe() throws Exception
     {
-        final DefaultBundleManager bundleManager = new DefaultBundleManager();
+        final AbstractBundleManager bundleManager = new ServerBundleManager();
         bundleManager.setCountry("de");
         bundleManager.setLanguage("DE");
         RaplaLocale raplaLocale = new RaplaLocaleImpl(bundleManager);
@@ -48,7 +49,7 @@ public class RaplaLocaleTest
     @Test
     public void testDateFormatUs() throws Exception
     {
-        final DefaultBundleManager bundleManager = new DefaultBundleManager();
+        final AbstractBundleManager bundleManager = new ServerBundleManager();
         bundleManager.setCountry("US");
         bundleManager.setLanguage("en");
         RaplaLocale raplaLocale = new RaplaLocaleImpl(bundleManager);
@@ -66,7 +67,7 @@ public class RaplaLocaleTest
     @Test
     public void testTimeFormatUs() throws ParseDateException
     {
-        final DefaultBundleManager bundleManager = new DefaultBundleManager();
+        final AbstractBundleManager bundleManager = new ServerBundleManager();
         bundleManager.setCountry("us");
         bundleManager.setLanguage("en");
         RaplaLocale raplaLocale = new RaplaLocaleImpl(bundleManager);
@@ -78,7 +79,7 @@ public class RaplaLocaleTest
     @Test
     public void testTimeFormatDe() throws ParseDateException
     {
-        final DefaultBundleManager bundleManager = new DefaultBundleManager();
+        final AbstractBundleManager bundleManager = new ServerBundleManager();
         bundleManager.setCountry("DE");
         bundleManager.setLanguage("de");
         RaplaLocale raplaLocale = new RaplaLocaleImpl(bundleManager);

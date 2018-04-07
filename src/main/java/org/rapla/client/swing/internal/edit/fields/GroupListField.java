@@ -6,6 +6,7 @@ import org.rapla.client.swing.TreeFactory;
 import org.rapla.client.swing.images.RaplaImages;
 import org.rapla.client.swing.internal.SwingPopupContext;
 import org.rapla.client.swing.toolkit.RaplaButton;
+import org.rapla.components.i18n.I18nIcon;
 import org.rapla.entities.Category;
 import org.rapla.entities.User;
 import org.rapla.facade.client.ClientFacade;
@@ -17,6 +18,7 @@ import org.rapla.logger.Logger;
 import javax.inject.Inject;
 import javax.swing.DefaultListCellRenderer;
 import javax.swing.DefaultListModel;
+import javax.swing.JButton;
 import javax.swing.JComponent;
 import javax.swing.JList;
 import javax.swing.JPanel;
@@ -48,12 +50,12 @@ public class GroupListField extends AbstractEditField implements ChangeListener,
     RaplaButton removeButton = new RaplaButton(RaplaButton.SMALL);
     RaplaButton newButton  = new RaplaButton(RaplaButton.SMALL);
     JList list = new JList();
-    Set<Category> notAllList = new HashSet<Category>();
+    Set<Category> notAllList = new HashSet<>();
 
     private final DialogUiFactoryInterface dialogUiFactory;
 
     @Inject
-    public GroupListField(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, TreeFactory treeFactory, RaplaImages raplaImages, DialogUiFactoryInterface dialogUiFactory) throws
+    public GroupListField(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, TreeFactory treeFactory,  DialogUiFactoryInterface dialogUiFactory) throws
             RaplaInitializationException {
         super(facade, i18n, raplaLocale, logger);
         this.dialogUiFactory = dialogUiFactory;
@@ -68,7 +70,7 @@ public class GroupListField extends AbstractEditField implements ChangeListener,
         }
         if ( rootCategory == null )
             return;
-        newCategory = new CategorySelectField(facade, i18n, raplaLocale, logger, treeFactory, raplaImages, dialogUiFactory, rootCategory );
+        newCategory = new CategorySelectField(facade, i18n, raplaLocale, logger, treeFactory,  dialogUiFactory, rootCategory );
         newCategory.setUseNull( false);
         newCategory.setMultipleSelectionPossible( true);
         toolbar.add( newButton  );
@@ -81,8 +83,8 @@ public class GroupListField extends AbstractEditField implements ChangeListener,
         panel.add( jScrollPane, BorderLayout.CENTER );
         newButton.setText( i18n.getString( "group" ) + " " + i18n.getString( "add" ) );
         removeButton.setText( i18n.getString( "group" ) + " " + i18n.getString( "remove" ) );
-        newButton.setIcon( raplaImages.getIconFromKey( "icon.new" ) );
-        removeButton.setIcon( raplaImages.getIconFromKey( "icon.remove" ) );
+        setIcon( newButton,i18n.getIcon( "icon.new" ) );
+        setIcon( removeButton,i18n.getIcon( "icon.remove" ) );
         newCategory.addChangeListener( this );
         newButton.addActionListener( this );
         removeButton.addActionListener( this );
@@ -122,6 +124,11 @@ public class GroupListField extends AbstractEditField implements ChangeListener,
         return panel;
     }
 
+    public void setIcon(JButton button, I18nIcon icon)
+    {
+        button.setIcon(RaplaImages.getIcon( icon));
+    }
+
     @Override
     public EditFieldLayout getLayout() {
         EditFieldLayout layout = new EditFieldLayout();
@@ -132,13 +139,13 @@ public class GroupListField extends AbstractEditField implements ChangeListener,
 
     public void mapFrom(List<User> users) {
 
-    	Set<Category> categories = new LinkedHashSet<Category>();
+    	Set<Category> categories = new LinkedHashSet<>();
 		// determination of the common categories/user groups
 		for (User user:users) {
 			categories.addAll(user.getGroupList());
 		}
 		
-		Set<Category> notAll = new LinkedHashSet<Category>();
+		Set<Category> notAll = new LinkedHashSet<>();
 		for ( Category group: categories)
 		{
 			for (User user:users) 
@@ -165,7 +172,7 @@ public class GroupListField extends AbstractEditField implements ChangeListener,
     }
     
     public void mapFromList(Collection<Category> groups) {
-    	mapFromList(groups, new HashSet<Category>());
+    	mapFromList(groups, new HashSet<>());
     }
     
 	@SuppressWarnings("unchecked")

@@ -182,12 +182,12 @@ public class JTreeTable extends JTable {
     }
 
     /**
-     * create treepath from treenode
+     * createInfoDialog treepath from treenode
      * @param treeNode  Treenode
      * @return treepath object
      */
     public static TreePath getPath(TreeNode treeNode) {
-        List<Object> nodes = new ArrayList<Object>();
+        List<Object> nodes = new ArrayList<>();
         if (treeNode != null) {
 
             nodes.add(treeNode);
@@ -890,11 +890,7 @@ public class JTreeTable extends JTable {
          * processed. SwingUtilities.invokeLater is used to handle this.
          */
         protected void delayedFireTableDataChanged() {
-            SwingUtilities.invokeLater(new Runnable() {
-                    public void run() {
-                        fireTableDataChanged();
-                    }
-                });
+            SwingUtilities.invokeLater(() -> fireTableDataChanged());
 
         }
     }

@@ -30,7 +30,7 @@ import org.rapla.framework.TypedComponentRole;
 @JsType
 public interface Preferences extends Entity<Preferences>,Ownable,Timestamp, Named {
     String ID_PREFIX  = "preferences_";
-    ReferenceInfo<Preferences> SYSTEM_PREFERENCES_ID = new ReferenceInfo<Preferences>(ID_PREFIX + "0",Preferences.class);
+    ReferenceInfo<Preferences> SYSTEM_PREFERENCES_ID = new ReferenceInfo<>(ID_PREFIX + "0", Preferences.class);
     /** returns if there are any preference-entries */
     boolean isEmpty();
     boolean hasEntry(TypedComponentRole<?> role);

@@ -61,7 +61,7 @@ public class RaplaICalExport implements ICalExport
             return;
         }
         EntityResolver operator = facade.getOperator();
-        Collection<Appointment> appointments = new ArrayList<Appointment>();
+        Collection<Appointment> appointments = new ArrayList<>();
         for ( String id:appointmentIds)
         {
         	Appointment app = operator.resolve(id, Appointment.class);

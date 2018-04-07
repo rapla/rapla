@@ -3,17 +3,20 @@ package org.rapla.client;
 import org.rapla.RaplaResources;
 import org.rapla.client.CalendarPlaceView.Presenter;
 import org.rapla.client.dialog.DialogUiFactoryInterface;
-import org.rapla.client.event.*;
+import org.rapla.client.event.ApplicationEvent;
+import org.rapla.client.event.CalendarEventBus;
+import org.rapla.client.event.TaskPresenter;
 import org.rapla.client.internal.ConflictSelectionPresenter;
 import org.rapla.client.internal.ResourceSelectionPresenter;
 import org.rapla.client.internal.SavedCalendarInterface;
 import org.rapla.entities.Entity;
 import org.rapla.entities.User;
+import org.rapla.entities.configuration.Preferences;
 import org.rapla.facade.CalendarModel;
 import org.rapla.facade.CalendarSelectionModel;
-import org.rapla.facade.client.ClientFacade;
 import org.rapla.facade.ModificationEvent;
 import org.rapla.facade.RaplaFacade;
+import org.rapla.facade.client.ClientFacade;
 import org.rapla.facade.internal.ModificationEventImpl;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaInitializationException;
@@ -21,8 +24,10 @@ import org.rapla.framework.TypedComponentRole;
 import org.rapla.inject.Extension;
 import org.rapla.logger.Logger;
 import org.rapla.scheduler.CommandScheduler;
+import org.rapla.scheduler.Observable;
 import org.rapla.scheduler.Promise;
 import org.rapla.scheduler.ResolvedPromise;
+import org.rapla.scheduler.Subject;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -32,19 +37,18 @@ import java.util.Date;
 @Extension(provides = TaskPresenter.class, id = CalendarPlacePresenter.PLACE_ID) public class CalendarPlacePresenter implements Presenter, TaskPresenter
 {
     public static final String PLACE_ID = "cal";
-    public static final TypedComponentRole<Boolean> SHOW_CONFLICTS_CONFIG_ENTRY = new TypedComponentRole<Boolean>("org.rapla.showConflicts");
-    public static final TypedComponentRole<Boolean> SHOW_SELECTION_CONFIG_ENTRY = new TypedComponentRole<Boolean>("org.rapla.showSelection");
+    public static final TypedComponentRole<Boolean> SHOW_CONFLICTS_CONFIG_ENTRY = new TypedComponentRole<>("org.rapla.showConflicts");
+    public static final TypedComponentRole<Boolean> SHOW_SELECTION_CONFIG_ENTRY = new TypedComponentRole<>("org.rapla.showSelection");
     public static final String SHOW_SELECTION_MENU_ENTRY = "show_resource_selection";
     public static final String SHOW_CONFLICTS_MENU_ENTRY = "show_conflicts";
     private static final String TODAY_DATE = "today";
+    private final Subject<String> busyIdleObservable;
     boolean listenersDisabled = false;
 
     private final CalendarPlaceView view;
     private DialogUiFactoryInterface dialogUiFactory;
     private final RaplaFacade facade;
     private final CalendarSelectionModel model;
-    private final CalendarEventBus eventBus;
-    private final RaplaResources i18n;
     private Logger logger;
 
     final private ResourceSelectionPresenter resourceSelectionPresenter;
@@ -62,14 +66,13 @@ import java.util.Date;
         this.dialogUiFactory = dialogUiFactory;
         this.facade = clientFacade.getRaplaFacade();
         this.clientFacade = clientFacade;
-        this.i18n = i18n;
         this.model = model;
         this.logger = logger;
-        this.eventBus = eventBus;
         this.resourceSelectionPresenter = resourceSelectionPresenter;
         this.savedViews = savedViews;
         this.conflictsView = conflictsSelectionPresenter;
         this.calendarContainer = calendarContainer;
+        this.busyIdleObservable = scheduler.createPublisher();
         resourceSelectionPresenter.setCallback(() ->
         {
             resourceSelectionChanged();
@@ -79,9 +82,7 @@ import java.util.Date;
         view.addConflictsView(conflictsSelectionPresenter.getConflictsView());
         view.addSummaryView(conflictsSelectionPresenter.getSummaryComponent());
         view.addCalendarView(calendarContainer.provideContent());
-
         updateOwnReservationsSelected();
-
         try
         {
             calendarContainer.init(true, () ->
@@ -95,7 +96,14 @@ import java.util.Date;
             throw new RaplaInitializationException(e);
         }
         view.setPresenter(this);
-        eventBus.getCalendarRefreshObservable().subscribe((evt)->calendarContainer.update());
+        eventBus.getCalendarRefreshObservable().subscribe((evt)-> {
+            busyIdleObservable.onNext("Laden");
+                    calendarContainer.update().doOnComplete(() ->
+                            busyIdleObservable.onNext(""))
+            .doOnError((ex2)->
+                    logger.error( ex2.getMessage(), ex2))
+            .subscribe();
+        });
         eventBus.getCalendarPreferencesObservable().subscribe((evt)
         ->
                 {
@@ -123,6 +131,11 @@ import java.util.Date;
             throw new RaplaInitializationException(e);
         }
 
+    }
+
+    @Override
+    public Subject<String> getBusyIdleObservable() {
+        return busyIdleObservable;
     }
 
     public String getTitle(ApplicationEvent event)
@@ -259,8 +272,9 @@ import java.util.Date;
     private void updateViews() throws RaplaException
     {
         User user = clientFacade.getUser();
-        boolean showConflicts = facade.getPreferences(user).getEntryAsBoolean(CalendarPlacePresenter.SHOW_CONFLICTS_CONFIG_ENTRY, true);
-        boolean showSelection = facade.getPreferences(user).getEntryAsBoolean(CalendarPlacePresenter.SHOW_SELECTION_CONFIG_ENTRY, true);
+        final Preferences preferences = facade.getPreferences(user);
+        boolean showConflicts = preferences.getEntryAsBoolean(CalendarPlacePresenter.SHOW_CONFLICTS_CONFIG_ENTRY, true);
+        boolean showSelection = preferences.getEntryAsBoolean(CalendarPlacePresenter.SHOW_SELECTION_CONFIG_ENTRY, true);
         boolean templateMode = clientFacade.getTemplate() != null;
         view.updateView(showConflicts, showSelection, templateMode);
     }
@@ -314,9 +328,9 @@ import java.util.Date;
     }
 
     @Override
-    public Promise<Void> processStop(ApplicationEvent event, RaplaWidget widget)
+    public Promise<Void> processStop(ApplicationEvent event)
     {
-        return new ResolvedPromise<Void>(Promise.VOID);
+        return new ResolvedPromise<>(Promise.VOID);
     }
 
 

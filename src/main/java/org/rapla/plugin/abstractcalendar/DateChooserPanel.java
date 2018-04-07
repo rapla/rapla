@@ -28,8 +28,8 @@ import org.rapla.components.layout.TableLayout;
 import org.rapla.components.util.DateTools;
 import org.rapla.entities.domain.Period;
 import org.rapla.facade.CalendarModel;
-import org.rapla.facade.client.ClientFacade;
 import org.rapla.facade.PeriodModel;
+import org.rapla.facade.client.ClientFacade;
 import org.rapla.framework.Disposable;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
@@ -53,7 +53,7 @@ public class DateChooserPanel extends RaplaGUIComponent
         Disposable
         ,RaplaWidget
 {
-    Collection<DateChangeListener> listenerList = new ArrayList<DateChangeListener>();
+    Collection<DateChangeListener> listenerList = new ArrayList<>();
 
     JPanel panel = new JPanel();
     JButton prevButton = new RaplaArrowButton('<', 20);

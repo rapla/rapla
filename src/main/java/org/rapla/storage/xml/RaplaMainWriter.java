@@ -162,10 +162,10 @@ public class RaplaMainWriter extends RaplaXMLWriter
         // Print all resources that are not persons
         AllocatableWriter allocatableWriter = (AllocatableWriter)getWriterFor(Allocatable.class);
         Collection<Allocatable> allAllocatables = cache.getAllocatables();
-        Map<String,List<Allocatable>> map = new LinkedHashMap<String,List<Allocatable>>();
+        Map<String,List<Allocatable>> map = new LinkedHashMap<>();
         
 		for (DynamicType type:cache.getDynamicTypes()) {
-			map.put( type.getId(), new ArrayList<Allocatable>());
+			map.put( type.getId(), new ArrayList<>());
         }
 		for (Allocatable allocatable:allAllocatables) {
             Classification classification = allocatable.getClassification();

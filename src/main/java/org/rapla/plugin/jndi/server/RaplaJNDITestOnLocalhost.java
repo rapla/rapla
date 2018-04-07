@@ -23,6 +23,8 @@ import org.rapla.inject.InjectionContext;
 import org.rapla.logger.Logger;
 import org.rapla.plugin.jndi.JNDIPlugin;
 import org.rapla.plugin.jndi.internal.JNDIConfig;
+import org.rapla.scheduler.Promise;
+import org.rapla.scheduler.ResolvedPromise;
 import org.rapla.server.RemoteSession;
 import org.rapla.storage.RaplaSecurityException;
 
@@ -46,42 +48,41 @@ public class RaplaJNDITestOnLocalhost implements JNDIConfig
         this.request = request;
     }
 
-    @Override public void test(MailTestRequest job) throws RaplaException
+    @Override public Promise<Boolean> test(MailTestRequest job)
     {
-        DefaultConfiguration config = job.getConfig();
-        String username = job.getUsername();
-        String password = job.getPassword();
-        User user = remoteSession.checkAndGetUser(request);
-        if (!user.isAdmin())
-        {
-            throw new RaplaSecurityException("Access only for admin users");
-        }
-        JNDIAuthenticationStore testStore = new JNDIAuthenticationStore(facade, logger);
-        testStore.initWithConfig(config);
-        logger.info("Test of JNDI Plugin started");
-        boolean authenticate;
-        if (password == null || password.equals(""))
-        {
-            throw new RaplaException("LDAP Plugin doesnt accept empty passwords.");
-        }
+        try {
+            DefaultConfiguration config = job.getConfig();
+            String username = job.getUsername();
+            String password = job.getPassword();
+            User user = remoteSession.checkAndGetUser(request);
+            if (!user.isAdmin()) {
+                throw new RaplaSecurityException("Access only for admin users");
+            }
+            JNDIAuthenticationStore testStore = new JNDIAuthenticationStore(facade, logger);
+            testStore.initWithConfig(config);
+            logger.info("Test of JNDI Plugin started");
+            boolean authenticate;
+            if (password == null || password.equals("")) {
+                throw new RaplaException("LDAP Plugin doesnt accept empty passwords.");
+            }
 
-        try
-        {
-            authenticate = testStore.authenticate(username, password);
+            try {
+                authenticate = testStore.authenticate(username, password);
+            } catch (Exception e) {
+                throw new RaplaException(e);
+            } finally {
+                testStore.dispose();
+            }
+            if (!authenticate) {
+                throw new RaplaSecurityException("Can establish connection but can't authenticate test user " + username);
+            }
+            logger.info("Test of JNDI Plugin successfull");
         }
-        catch (Exception e)
+        catch (RaplaException ex)
         {
-            throw new RaplaException(e);
+            return new ResolvedPromise<>(ex);
         }
-        finally
-        {
-            testStore.dispose();
-        }
-        if (!authenticate)
-        {
-            throw new RaplaSecurityException("Can establish connection but can't authenticate test user " + username);
-        }
-        logger.info("Test of JNDI Plugin successfull");
+        return new ResolvedPromise<>(true);
     }
 
     @SuppressWarnings("deprecation") @Override public DefaultConfiguration getConfig() throws RaplaException

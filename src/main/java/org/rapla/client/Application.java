@@ -14,7 +14,10 @@ import org.rapla.entities.User;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.ResourceAnnotations;
 import org.rapla.entities.dynamictype.internal.AttributeImpl;
-import org.rapla.facade.*;
+import org.rapla.facade.CalendarSelectionModel;
+import org.rapla.facade.ModificationEvent;
+import org.rapla.facade.ModificationListener;
+import org.rapla.facade.RaplaFacade;
 import org.rapla.facade.client.ClientFacade;
 import org.rapla.facade.internal.ClientFacadeImpl;
 import org.rapla.facade.internal.ModifiableCalendarState;
@@ -24,8 +27,8 @@ import org.rapla.framework.internal.AbstractRaplaLocale;
 import org.rapla.logger.Logger;
 import org.rapla.plugin.abstractcalendar.RaplaBuilder;
 import org.rapla.scheduler.CommandScheduler;
+import org.rapla.scheduler.Observable;
 import org.rapla.scheduler.Promise;
-import org.rapla.scheduler.ResolvedPromise;
 
 import javax.inject.Inject;
 import javax.inject.Provider;
@@ -43,7 +46,8 @@ public class Application implements ApplicationView.Presenter, ModificationListe
     private final BundleManager bundleManager;
     private final ClientFacade clientFacade;
     private final AbstractActivityController abstractActivityController;
-    private final ApplicationView mainView;
+    private ApplicationView mainView;
+    private Provider<ApplicationView> mainViewProvider;
     private final RaplaResources i18n;
 
     private final ApplicationEventBus eventBus;
@@ -56,12 +60,12 @@ public class Application implements ApplicationView.Presenter, ModificationListe
     private final Map<ApplicationEvent, TaskPresenter> openDialogsPresenter = new HashMap<>();
 
     @Inject
-    public Application(final ApplicationView mainView, ApplicationEventBus eventBus, Logger logger, BundleManager bundleManager, ClientFacade clientFacade,
+    public Application(final Provider<ApplicationView> mainViewProvider, ApplicationEventBus eventBus, Logger logger, BundleManager bundleManager, ClientFacade clientFacade,
                        AbstractActivityController abstractActivityController, RaplaResources i18n, Map<String, Provider<TaskPresenter>> activityPresenters,
                        Provider<Set<ClientExtension>> clientExtensions, Provider<CalendarSelectionModel> calendarModel, CommandScheduler scheduler,
                        DialogUiFactoryInterface dialogUiFactory) {
-        this.mainView = mainView;
         this.abstractActivityController = abstractActivityController;
+        this.mainViewProvider = mainViewProvider;
         this.bundleManager = bundleManager;
         this.clientFacade = clientFacade;
         this.logger = logger;
@@ -72,7 +76,6 @@ public class Application implements ApplicationView.Presenter, ModificationListe
         this.calendarModelProvider = calendarModel;
         this.scheduler = scheduler;
         this.dialogUiFactory = dialogUiFactory;
-        mainView.setPresenter(this);
     }
 
     public boolean stopAction(ApplicationEvent activity) {
@@ -116,6 +119,7 @@ public class Application implements ApplicationView.Presenter, ModificationListe
         if (taskPresenter == null) {
             return false;
         }
+
         final Promise<RaplaWidget> objectRaplaWidget = taskPresenter.startActivity(activity);
         if (objectRaplaWidget == null) {
             return false;
@@ -127,12 +131,12 @@ public class Application implements ApplicationView.Presenter, ModificationListe
                 mainView.updateContent(widget);
                 if (taskPresenter instanceof CalendarPlacePresenter) {
                     CalendarPlacePresenter calendarPlacePresenter = (CalendarPlacePresenter) taskPresenter;
-                    scheduler.delay(()->calendarPlacePresenter.start(),300);
+                    scheduler.delay(()->calendarPlacePresenter.start(),500);
                 }
             } else {
                 Function<ApplicationEvent, Boolean> windowClosingFunction = (event) ->
                 {
-                    Promise<Void> promise = taskPresenter.processStop(event, widget).thenRun(() ->
+                    Promise<Void> promise = taskPresenter.processStop(event).thenRun(() ->
                     {
                         event.setStop(true);
                         eventBus.publish(event);
@@ -141,7 +145,8 @@ public class Application implements ApplicationView.Presenter, ModificationListe
                     return false;
                 };
                 String title = taskPresenter.getTitle(activity);
-                mainView.openWindow(activity, popupContext, widget, title, windowClosingFunction);
+                final Observable<String> busyIdleObservable = taskPresenter.getBusyIdleObservable();
+                mainView.openWindow(activity, popupContext, widget, title, windowClosingFunction, busyIdleObservable);
                 openDialogsPresenter.put(activity, taskPresenter);
             }
         });
@@ -159,7 +164,6 @@ public class Application implements ApplicationView.Presenter, ModificationListe
             if (!(ex instanceof CommandAbortedException)) {
                 showException(ex, popupContext);
             }
-            return Promise.VOID;
         });
     }
 
@@ -197,11 +201,7 @@ public class Application implements ApplicationView.Presenter, ModificationListe
 
         ModifiableCalendarState calendarState = new ModifiableCalendarState(clientFacade, calendarModelProvider);
 
-        ((ClientFacadeImpl) clientFacade).addDirectModificationListener(new ModificationListener() {
-            public void dataChanged(ModificationEvent evt) throws RaplaException {
-                calendarState.dataChanged(evt);
-            }
-        });
+        ((ClientFacadeImpl) clientFacade).addDirectModificationListener(evt -> calendarState.dataChanged(evt));
 
         final RaplaFacade raplaFacade = clientFacade.getRaplaFacade();
         raplaFacade.getReservations(clientFacade.getUser(), null, null, null);
@@ -212,47 +212,39 @@ public class Application implements ApplicationView.Presenter, ModificationListe
 
         boolean showToolTips = raplaFacade.getPreferences(clientFacade.getUser()).getEntryAsBoolean(RaplaBuilder.SHOW_TOOLTIP_CONFIG_ENTRY, true);
         String title = raplaFacade.getSystemPreferences().getEntryAsString(AbstractRaplaLocale.TITLE, i18n.getString("rapla.title"));
+        mainView = mainViewProvider.get();
+        mainView.setPresenter( this);
         mainView.init(showToolTips, title);
 
-        try {
-            AbstractActivityController am = abstractActivityController;
-            am.setApplication(this);
-            am.init();
+        AbstractActivityController am = abstractActivityController;
+        am.setApplication(this);
+        am.init();
 
-            User user = clientFacade.getUser();
-            final boolean admin = user.isAdmin();
-            mainView.updateMenu();
-            // Test for the resources
-            clientFacade.addModificationListener(this);
-            final String name = user.getName() == null || user.getName().isEmpty() ? user.getUsername() : user.getName();
-            String statusMessage = i18n.format("rapla.welcome", name);
-            if (admin) {
-                statusMessage += " " + i18n.getString("admin.login");
-            }
-            mainView.setStatusMessage(statusMessage, admin);
-            scheduler.delay(()->mainView.setStatusMessage(name, admin),2000);
-        } catch (RaplaException e) {
-            logger.error(e.getMessage(), e);
+        User user = clientFacade.getUser();
+        final boolean admin = user.isAdmin();
+        mainView.updateMenu();
+        // Test for the resources
+        clientFacade.addModificationListener(this);
+        final String name = user.getName() == null || user.getName().isEmpty() ? user.getUsername() : user.getName();
+        String statusMessage = i18n.format("rapla.welcome", name);
+        if (admin) {
+            statusMessage += " " + i18n.getString("admin.login");
         }
+        mainView.setStatusMessage(statusMessage, admin);
+        scheduler.delay(()->mainView.setStatusMessage(name, admin),2000);
     }
 
     protected Promise<Boolean> shouldExit() {
-        try {
-            PopupContext popupContext = mainView.createPopupContext();
-            DialogInterface dlg = dialogUiFactory.create(popupContext, false, i18n.getString("exit.title"), i18n.getString("exit.question"),
-                    new String[]{i18n.getString("exit.ok"), i18n.getString("exit.abort")});
-            dlg.setIcon("icon.question");
-            //dlg.getButton(0).setIcon(getIcon("icon.confirm"));
-            dlg.getAction(0).setIcon("icon.abort");
-            dlg.setDefault(1);
-            final Promise<Integer> start = dlg.start(true);
-            final Promise<Boolean> result = start.thenApply((index) -> index == 0);
-            return result;
-        } catch (RaplaException e) {
-            logger.error(e.getMessage(), e);
-            return new ResolvedPromise<>(Boolean.TRUE);
-        }
-
+        PopupContext popupContext = mainView.createPopupContext();
+        DialogInterface dlg = dialogUiFactory.createTextDialog(popupContext, i18n.getString("exit.title"), i18n.getString("exit.question"),
+                new String[]{i18n.getString("exit.ok"), i18n.getString("exit.abort")});
+        dlg.setIcon(i18n.getIcon("icon.question"));
+        //dlg.getButton(0).setIcon(getIcon("icon.confirm"));
+        dlg.getAction(0).setIcon(i18n.getIcon("icon.abort"));
+        dlg.setDefault(1);
+        final Promise<Integer> start = dlg.start(true);
+        final Promise<Boolean> result = start.thenApply((index) -> index == 0);
+        return result;
     }
 
     @Override

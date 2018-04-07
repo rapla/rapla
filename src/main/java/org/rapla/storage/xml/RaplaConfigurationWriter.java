@@ -51,7 +51,7 @@ public class RaplaConfigurationWriter extends RaplaXMLWriter {
     
     private void printConfiguration(final Configuration element ) throws ConfigurationException, RaplaException, IOException {
 
-        LinkedHashMap<String, String> attr = new LinkedHashMap<String, String>();
+        LinkedHashMap<String, String> attr = new LinkedHashMap<>();
         String[] attrNames = element.getAttributeNames();
 
         if( null != attrNames )

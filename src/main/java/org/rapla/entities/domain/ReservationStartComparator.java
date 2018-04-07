@@ -21,7 +21,7 @@ import java.util.Locale;
 public class ReservationStartComparator implements Comparator<Reservation> {
     NamedComparator<Reservation> namedComp;
     public ReservationStartComparator(Locale locale) {
-        namedComp = new NamedComparator<Reservation>( locale);
+        namedComp = new NamedComparator<>(locale);
     }
     public int compare(Reservation o1,Reservation o2) {
 

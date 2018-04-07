@@ -12,7 +12,7 @@ import java.util.List;
 
 public class ExchangeConnectorServerPlugin {//implements PluginDescriptor<ServerServiceContainer> {
 
-    public static List<String> TIMEZONES = new ArrayList<String>();
+    public static List<String> TIMEZONES = new ArrayList<>();
     static
     {
         InputStream in = null;
@@ -45,7 +45,7 @@ public class ExchangeConnectorServerPlugin {//implements PluginDescriptor<Server
     }
 
     
-    public static final TypedComponentRole<String> EXCHANGE_USER_STORAGE = new TypedComponentRole<String>("org.rapla.server.exchangeuser");
+    public static final TypedComponentRole<String> EXCHANGE_USER_STORAGE = new TypedComponentRole<>("org.rapla.server.exchangeuser");
 
     /* (non-Javadoc)
       * @see org.rapla.framework.PluginDescriptor#provideServices(org.rapla.framework.Container, org.apache.avalon.framework.configuration.Configuration)

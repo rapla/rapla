@@ -1,6 +1,5 @@
 package org.rapla.facade.client;
 
-import org.rapla.ConnectInfo;
 import org.rapla.components.util.undo.CommandHistory;
 import org.rapla.entities.User;
 import org.rapla.entities.domain.Allocatable;
@@ -46,8 +45,8 @@ public interface ClientFacade
     void changeEmail(String newEmail) throws RaplaException;
 
 
-    TypedComponentRole<Integer> REFRESH_INTERVAL_ENTRY = new TypedComponentRole<Integer>("org.rapla.refreshInterval");
-    TypedComponentRole<Integer> ARCHIVE_AGE = new TypedComponentRole<Integer>("org.rapla.archiveAge");
+    TypedComponentRole<Integer> REFRESH_INTERVAL_ENTRY = new TypedComponentRole<>("org.rapla.refreshInterval");
+    TypedComponentRole<Integer> ARCHIVE_AGE = new TypedComponentRole<>("org.rapla.archiveAge");
     int REFRESH_INTERVAL_DEFAULT = 30000;
 
     /**
@@ -70,4 +69,6 @@ public interface ClientFacade
     CommandHistory getCommandHistory();
 
     Promise<Void> load();
+
+    boolean isAdmin();
 }

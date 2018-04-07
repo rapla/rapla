@@ -14,16 +14,15 @@ package org.rapla.client.swing.internal.edit.reservation;
 
 import org.rapla.RaplaResources;
 import org.rapla.client.RaplaWidget;
-import org.rapla.client.ReservationController;
 import org.rapla.client.dialog.DialogUiFactoryInterface;
 import org.rapla.client.swing.images.RaplaImages;
-import org.rapla.client.swing.internal.SwingPopupContext;
 import org.rapla.client.swing.internal.edit.RaplaListEdit;
 import org.rapla.client.swing.toolkit.RaplaButton;
 import org.rapla.components.calendar.DateRenderer;
 import org.rapla.components.iolayer.IOInterface;
 import org.rapla.components.layout.TableLayout;
 import org.rapla.components.util.DateTools;
+import org.rapla.components.util.TimeInterval;
 import org.rapla.components.util.undo.CommandHistory;
 import org.rapla.components.util.undo.CommandUndo;
 import org.rapla.entities.domain.Allocatable;
@@ -72,6 +71,7 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 /** Default GUI for editing multiple appointments.*/
 class AppointmentListEdit extends AbstractAppointmentEditor
@@ -88,32 +88,29 @@ class AppointmentListEdit extends AbstractAppointmentEditor
 
     protected Reservation mutableReservation;
     private Listener listener = new Listener();
-    DefaultListModel model = new DefaultListModel();
     // use sorted model to start with sorting
     // respect dependencies ! on other components
     @SuppressWarnings("rawtypes")
     Comparator comp = new AppointmentStartComparator();
     @SuppressWarnings("unchecked")
-    SortedListModel sortedModel = new SortedListModel(model, SortedListModel.SortOrder.ASCENDING,comp );
+	DefaultListModel model = new DefaultListModel();
+	SortedListModel sortedModel = new SortedListModel(model, SortedListModel.SortOrder.ASCENDING,comp );
     RaplaButton freeButtonNext = new RaplaButton();
     AppointmentFormater appointmentFormater;
-    private final ReservationController reservationController;
-    private final RaplaImages raplaImages;
     private final DialogUiFactoryInterface dialogUiFactory;
 	@SuppressWarnings("unchecked")
-	AppointmentListEdit(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, AppointmentFormater appointmentFormater, ReservationController reservationController, CommandHistory commandHistory, RaplaImages raplaImages, DateRenderer dateRenderer, DialogUiFactoryInterface dialogUiFactory, IOInterface ioInterface)
+	AppointmentListEdit(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, AppointmentFormater appointmentFormater, CommandHistory commandHistory, DateRenderer dateRenderer, DialogUiFactoryInterface dialogUiFactory, IOInterface ioInterface)
 			throws RaplaException {
 		super(facade, i18n, raplaLocale, logger);
         this.appointmentFormater = appointmentFormater;
-        this.reservationController = reservationController;
-
 		this.commandHistory = commandHistory;
-        this.raplaImages = raplaImages;
         this.dialogUiFactory = dialogUiFactory;
-        appointmentController = new AppointmentController(facade, i18n, raplaLocale, logger, commandHistory, raplaImages, dateRenderer, dialogUiFactory, ioInterface);
-        listEdit = new RaplaListEdit<Appointment>(getI18n(), raplaImages, appointmentController.getComponent(), listener, false);
+        appointmentController = new AppointmentController(facade, i18n, raplaLocale, logger, commandHistory,  dateRenderer, dialogUiFactory, ioInterface);
+        listEdit = new RaplaListEdit<>(getI18n(), appointmentController.getComponent(), listener, false);
         listEdit.getToolbar().add( freeButtonNext);
+
         freeButtonNext.setText(getString("appointment.search_free"));
+		freeButtonNext.setActionCommand("nextFreeAppointment");
         freeButtonNext.addActionListener( listener );
         appointmentController.addChangeListener(listener);
         // activate this as a first step
@@ -220,14 +217,14 @@ class AppointmentListEdit extends AbstractAppointmentEditor
         }
 
         public void setAppointment(Appointment appointment,int index) {
-            identifier.setText(getRaplaLocale().formatNumber(index + 1));
+            identifier.setText(getRaplaLocale().formatNumber(new Long(index + 1)));
             identifier.setIndex(index);
             content.setLayout(new BoxLayout(content,BoxLayout.Y_AXIS));
             content.removeAll();
             JLabel label1 = new JLabel(appointmentFormater.getSummary(appointment));
             content.add( label1 );
             if (appointment.getRepeating() != null) {
-                label1.setIcon( raplaImages.getIconFromKey("icon.repeating") );
+                label1.setIcon( RaplaImages.getIcon(i18n.getIcon("icon.repeating") ));
                 Repeating r = appointment.getRepeating();
                 List<Period> periods = getPeriodModel().getPeriodsFor(appointment.getStart());
                 String repeatingString = appointmentFormater.getSummary(r,periods);
@@ -236,18 +233,19 @@ class AppointmentListEdit extends AbstractAppointmentEditor
                     content.add(new JLabel( appointmentFormater.getExceptionSummary( r ) ) );
                 }
             } else {
-                label1.setIcon( raplaImages.getIconFromKey("icon.single") );
+                label1.setIcon( RaplaImages.getIcon(i18n.getIcon("icon.single") ));
             }
         }
     }
 
 	class Listener implements ActionListener, ChangeListener {
 		public void actionPerformed(ActionEvent evt) {
-			if ( evt.getSource() == freeButtonNext )
+			final String actionCommand = evt.getActionCommand();
+			if ( actionCommand.equals("nextFreeAppointment"))
 			{
 				appointmentController.nextFreeAppointment();
 			}
-			if (evt.getActionCommand().equals("remove")) 
+			if (actionCommand.equals("remove"))
 			{
 				@SuppressWarnings("deprecation")
 				Object[] objects = listEdit.getList().getSelectedValues();
@@ -255,22 +253,16 @@ class AppointmentListEdit extends AbstractAppointmentEditor
 						objects);
 				commandHistory.storeAndExecute(command);
 			} 
-			else if (evt.getActionCommand().equals("new")) 
+			else if (actionCommand.equals("new"))
 			{
-				try {
-					Appointment appointment = createAppointmentFromSelected();
-					NewAppointment 	command = new NewAppointment(appointment);
-					commandHistory.storeAndExecute(command);
-				} catch (RaplaException ex) {
-				    dialogUiFactory.showException(ex, new SwingPopupContext(getMainComponent(), null));
-				}
-			} 
-			else if (evt.getActionCommand().equals("split")) 
+				handleException(createAppointmentFromSelected().thenAccept( appointment->commandHistory.storeAndExecute(new NewAppointment(appointment))));
+			}
+			else if (actionCommand.equals("split"))
 			{
 				AppointmentSplit command = new AppointmentSplit();
 				commandHistory.storeAndExecute(command);
 			} 
-			else if (evt.getActionCommand().equals("edit")) {
+			else if (actionCommand.equals("edit")) {
 				Appointment newAppointment = (Appointment) listEdit.getList().getSelectedValue();
 				Appointment oldAppointment = appointmentController.getAppointment();
 				
@@ -284,9 +276,9 @@ class AppointmentListEdit extends AbstractAppointmentEditor
 					}
 				}
 			}
-			else if (evt.getActionCommand().equals("select"))
+			else if (actionCommand.equals("select"))
 			{
-				Collection<Appointment> appointments = new ArrayList<Appointment>();
+				Collection<Appointment> appointments = new ArrayList<>();
 				@SuppressWarnings("deprecation")
 				Object[] values = listEdit.getList().getSelectedValues();
 		        for ( Object value:values)
@@ -316,6 +308,11 @@ class AppointmentListEdit extends AbstractAppointmentEditor
 
 	}
 
+	private void handleException(Promise<Void> promise) {
+		promise.exceptionally((ex)->dialogUiFactory.showException(ex, dialogUiFactory.createPopupContext(()->getMainComponent())));
+
+	}
+
 	public AppointmentController getAppointmentController() {
 		return appointmentController;
 	}
@@ -334,14 +331,13 @@ class AppointmentListEdit extends AbstractAppointmentEditor
 	 * @author Jens Fritz
 	 *
 	 */
-	
 	public class RemoveAppointments implements CommandUndo<RuntimeException> {
 		private final Map<Appointment,Allocatable[]> list;
 		private int[] selectedAppointment;
 		
 		
 		public RemoveAppointments(Object[] list) {
-			this.list = new LinkedHashMap<Appointment,Allocatable[]>();
+			this.list = new LinkedHashMap<>();
 			for ( Object obj:list)
 			{
 				Appointment appointment = (Appointment) obj;
@@ -386,29 +382,34 @@ class AppointmentListEdit extends AbstractAppointmentEditor
 		}
 	}
 
-	protected Appointment createAppointmentFromSelected()
-			throws RaplaException {
+	protected Promise<Appointment> createAppointmentFromSelected()
+	{
 //		Appointment[] appointments = mutableReservation.getAppointments();
-		Appointment appointment;
+		Promise<Appointment> appointment;
 		if (sortedModel.getSize() == 0) {
 			Date start = new Date(DateTools.cutDate(new Date()).getTime()+ getCalendarOptions().getWorktimeStartMinutes()	* DateTools.MILLISECONDS_PER_MINUTE);
 			Date end = new Date(start.getTime()+ DateTools.MILLISECONDS_PER_HOUR);
-			appointment = getFacade().newAppointment(start, end);
+			appointment = getFacade().newAppointmentAsync(new TimeInterval(start, end));
 		} else { 
-			// copy the selected appointment as template
+			// copyReservations the selected appointment as template
 			// if no appointment is selected use the last
 			final int selectedIndex = listEdit.getSelectedIndex();
 			final int index = selectedIndex > -1 ? selectedIndex : sortedModel.getSize() - 1;
 			final Appointment toClone = (Appointment)sortedModel.getElementAt( index);
              //= appointments[index];
 			// this allows each appointment as template
-			appointment = reservationController.copyAppointment(toClone);
-			Repeating repeating = appointment.getRepeating();
-			if (repeating != null) {
-				repeating.clearExceptions();
-			}
+			appointment = getFacade().cloneAsync(toClone).thenApply(AppointmentListEdit::clearExceptions);
 		}
 		return appointment;
+	}
+
+	public static Appointment clearExceptions(Appointment app)
+	{
+		Repeating repeating = app.getRepeating();
+		if (repeating != null) {
+			repeating.clearExceptions();
+		}
+		return app;
 	}
 	
 	/**
@@ -422,8 +423,6 @@ class AppointmentListEdit extends AbstractAppointmentEditor
 	//Erstellt von Matthias Both
 	public class NewAppointment implements CommandUndo<RuntimeException> {
 		private Appointment newAppointment;
-
-		
 		public NewAppointment( Appointment appointment) {
 			this.newAppointment = appointment;
 		}
@@ -469,53 +468,47 @@ class AppointmentListEdit extends AbstractAppointmentEditor
 		}
 
 		public Promise<Void> execute()  {
-			try {
-				// Generate time blocks from selected appointment
-				List<AppointmentBlock> splits = new ArrayList<AppointmentBlock>();
-				Appointment appointment = appointmentController.getAppointment();
-				appointment.createBlocks(appointment.getStart(), DateTools.fillDate(appointment.getMaxEnd()), splits);
-				allocatablesFor = mutableReservation.getAllocatablesFor(appointment);
-				
-				wholeAppointment = appointment;
-				fireAppointmentRemoved(Collections.singleton(appointment));
-				
-				splitAppointments = new ArrayList<Appointment>();
-				// Create single appointments for every time block
-				for (AppointmentBlock block: splits)
-				{
-					Appointment newApp = getFacade().newAppointment(new Date(block.getStart()), new Date(block.getEnd()));
+			// Generate time blocks from selected appointment
+			List<AppointmentBlock> splits = new ArrayList<>();
+			Appointment appointment = appointmentController.getAppointment();
+			appointment.createBlocks(appointment.getStart(), DateTools.fillDate(appointment.getMaxEnd()), splits);
+			allocatablesFor = mutableReservation.getAllocatablesFor(appointment).toArray(Allocatable[]::new);
+
+			wholeAppointment = appointment;
+			fireAppointmentRemoved(Collections.singleton(appointment));
+
+			splitAppointments = new ArrayList<>();
+			// Create single appointments for every time block
+			List<TimeInterval> intervals= splits.stream().map(AppointmentBlock::toInterval).collect(Collectors.toList());
+			return getFacade().newAppointmentsAsync(intervals).thenAccept( newApps->
+			{
+				for (Appointment newApp : newApps) {
 					// Add appointment to list
-					splitAppointments.add( newApp );
+					splitAppointments.add(newApp);
 					mutableReservation.addAppointment(newApp);
 				}
-				for (Allocatable alloc:allocatablesFor)
-				{
-					Appointment[] restrictions =mutableReservation.getRestriction(alloc);
-					if ( restrictions.length > 0)
-					{
-						LinkedHashSet<Appointment> newRestrictions = new LinkedHashSet<Appointment>( Arrays.asList( restrictions));
+				for (Allocatable alloc : allocatablesFor) {
+					Appointment[] restrictions = mutableReservation.getRestriction(alloc);
+					if (restrictions.length > 0) {
+						LinkedHashSet<Appointment> newRestrictions = new LinkedHashSet<>(Arrays.asList(restrictions));
 						newRestrictions.addAll(splitAppointments);
 						mutableReservation.setRestriction(alloc, newRestrictions.toArray(Appointment.EMPTY_ARRAY));
 					}
 				}
 				// we need to remove the appointment after splitting not before, otherwise allocatable connections could be lost
-				mutableReservation.removeAppointment( appointment);
-                model.removeElement( appointment);
-                
-				for (Appointment newApp:splitAppointments)
-				{
+				mutableReservation.removeAppointment(appointment);
+				model.removeElement(appointment);
+
+				for (Appointment newApp : splitAppointments) {
 					addToModel(newApp);
-				}			
+				}
 				fireAppointmentAdded(splitAppointments);
 
 				if (splitAppointments.size() > 0) {
 					Appointment app = splitAppointments.get(0);
-					selectAppointment( app, true);
+					selectAppointment(app, true);
 				}
-				return ResolvedPromise.VOID_PROMISE;
-			} catch (RaplaException ex) {
-				return new ResolvedPromise<Void>( ex);
-			}
+			});
 		}
 		
 		public Promise<Void> undo()  {
@@ -525,7 +518,7 @@ class AppointmentListEdit extends AbstractAppointmentEditor
 			for (Allocatable alloc : allocatablesFor) {
 				Appointment[] restrictions = mutableReservation.getRestriction(alloc);
 				if (restrictions.length > 0) {
-					LinkedHashSet<Appointment> newRestrictions = new LinkedHashSet<Appointment>(Arrays.asList(restrictions));
+					LinkedHashSet<Appointment> newRestrictions = new LinkedHashSet<>(Arrays.asList(restrictions));
 					newRestrictions.removeAll(splitAppointments);
 					newRestrictions.add(wholeAppointment);
 					mutableReservation.setRestriction(alloc,newRestrictions.toArray(Appointment.EMPTY_ARRAY));
@@ -598,15 +591,13 @@ class AppointmentListEdit extends AbstractAppointmentEditor
         private final RaplaLocale raplaLocale;
         private final Logger logger;
         private final AppointmentFormater appointmentFormater;
-        private final ReservationController reservationController;
-        private final RaplaImages raplaImages;
         private final DateRenderer dateRenderer;
         private final DialogUiFactoryInterface dialogUiFactory;
         private final IOInterface ioInterface;
 
         @Inject
         public AppointmentListEditFactory(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger,
-                AppointmentFormater appointmentFormater, ReservationController reservationController, RaplaImages raplaImages, DateRenderer dateRenderer,
+                AppointmentFormater appointmentFormater, DateRenderer dateRenderer,
                 DialogUiFactoryInterface dialogUiFactory, IOInterface ioInterface)
         {
             super();
@@ -615,8 +606,6 @@ class AppointmentListEdit extends AbstractAppointmentEditor
             this.raplaLocale = raplaLocale;
             this.logger = logger;
             this.appointmentFormater = appointmentFormater;
-            this.reservationController = reservationController;
-            this.raplaImages = raplaImages;
             this.dateRenderer = dateRenderer;
             this.dialogUiFactory = dialogUiFactory;
             this.ioInterface = ioInterface;
@@ -624,7 +613,7 @@ class AppointmentListEdit extends AbstractAppointmentEditor
 
         public AppointmentListEdit create(CommandHistory commandHistory) throws RaplaException
         {
-            return new AppointmentListEdit(facade, i18n, raplaLocale, logger, appointmentFormater, reservationController, commandHistory, raplaImages,
+            return new AppointmentListEdit(facade, i18n, raplaLocale, logger, appointmentFormater, commandHistory,
                     dateRenderer, dialogUiFactory, ioInterface);
         }
     }
