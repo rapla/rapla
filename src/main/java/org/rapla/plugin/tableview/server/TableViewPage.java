@@ -1,6 +1,7 @@
 package org.rapla.plugin.tableview.server;
 
 import org.jetbrains.annotations.NotNull;
+import org.rapla.components.util.Tools;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.facade.CalendarModel;
 import org.rapla.framework.RaplaException;
@@ -63,7 +64,9 @@ abstract public class TableViewPage<T, C>
         out.println("    <link REL=\"shortcut icon\" type=\"image/x-icon\" href=\"/images/favicon.ico\">");
         out.println("  <meta HTTP-EQUIV=\"Content-Type\" content=\"text/html; charset=" + raplaLocale.getCharsetNonUtf() + "\">");
         out.println("</head>");
-        out.println("<body>");
+        String filename = request.getParameter("file");
+        String pageId = Tools.createXssSafeString( filename);
+        out.println("<body id=\""+ pageId+ "\">");
         if (request.getParameter("selected_allocatables") != null && request.getParameter("allocatable_id") == null)
         {
             try

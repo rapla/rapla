@@ -1,7 +1,7 @@
 package org.rapla.rest.server;
 
-import io.jsonwebtoken.*;
-import io.jsonwebtoken.impl.crypto.MacProvider;
+//import io.jsonwebtoken.*;
+//import io.jsonwebtoken.impl.crypto.MacProvider;
 import io.reactivex.functions.Function;
 import org.apache.commons.codec.binary.Base64;
 import org.junit.Assert;
@@ -30,8 +30,15 @@ public class SignedTokenTest {
 
     private static final String ASYMMETRIC_ALGO = "RSA";
 
-
     @Test
+    public void parseDate() throws ParseException
+    {
+        SimpleDateFormat df = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSX");
+        df.setTimeZone( TimeZone.getTimeZone("UTC"));
+        Date date = df.parse("2017-08-03T13:10:49.0472Z");
+
+    }
+
     public void testDate() throws ParseException {
         
         DateFormat df = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSX");
@@ -77,49 +84,49 @@ public class SignedTokenTest {
         testSigning(sign, check, tokenCount);
     }
 
-    @Test
-    public void testJWSTokenAsymetric() throws Exception {
-        Key signingKey = privateKey;
-        Key unsigningKey = publicKey;
-        final SignatureAlgorithm signatureAlgo = SignatureAlgorithm.RS256;
-        Function<String,String> sign = (id)->createJwt(signatureAlgo, signingKey, id);
-        JwtParser jwtParser = Jwts.parser().setSigningKey(unsigningKey);
-        Function<String,String> check = (id)->checkToken (jwtParser,id);
-        final int tokenCount = 1000;
-        testSigning(sign, check, tokenCount);
-    }
-
-
-    @Test
-    public void testJWSTokenSymetric() throws Exception {
-        final SignatureAlgorithm signatureAlgo = SignatureAlgorithm.HS512;
-        Key signingKey = MacProvider.generateKey(signatureAlgo);
-        Key unsigningKey = signingKey;
-        Function<String,String> sign = (id)->createJwt(signatureAlgo, signingKey, id);
-        JwtParser jwtParser = Jwts.parser().setSigningKey(unsigningKey);
-        Function<String,String> check = (id)->checkToken (jwtParser,id);
-        final int tokenCount = 100000;
-        testSigning(sign, check, tokenCount);
-    }
-
-    public String createJwt( SignatureAlgorithm signatureAlgo, Key signingKey,String userId) {
-        JwtBuilder builder = Jwts.builder()
-                //.claim("payload", loggedInUser.getPayload())
-                .setId(userId)
-                .setExpiration(calculateExpirationTime());
-        return builder.signWith(
-                signatureAlgo, signingKey
-        ).compact();
-    }
-
-    String checkToken(JwtParser jwtParser,String accesTokenString) {
-
-        Claims claims = jwtParser
-                .parseClaimsJws(accesTokenString)
-                .getBody();
-        final String id = claims.getId();
-        return id;
-    }
+//    @Test
+//    public void testJWSTokenAsymetric() throws Exception {
+//        Key signingKey = privateKey;
+//        Key unsigningKey = publicKey;
+//        final SignatureAlgorithm signatureAlgo = SignatureAlgorithm.RS256;
+//        Function<String,String> sign = (id)->createJwt(signatureAlgo, signingKey, id);
+//        JwtParser jwtParser = Jwts.parser().setSigningKey(unsigningKey);
+//        Function<String,String> check = (id)->checkToken (jwtParser,id);
+//        final int tokenCount = 1000;
+//        testSigning(sign, check, tokenCount);
+//    }
+//
+//
+//    @Test
+//    public void testJWSTokenSymetric() throws Exception {
+//        final SignatureAlgorithm signatureAlgo = SignatureAlgorithm.HS512;
+//        Key signingKey = MacProvider.generateKey(signatureAlgo);
+//        Key unsigningKey = signingKey;
+//        Function<String,String> sign = (id)->createJwt(signatureAlgo, signingKey, id);
+//        JwtParser jwtParser = Jwts.parser().setSigningKey(unsigningKey);
+//        Function<String,String> check = (id)->checkToken (jwtParser,id);
+//        final int tokenCount = 100000;
+//        testSigning(sign, check, tokenCount);
+//    }
+//
+//    public String createJwt( SignatureAlgorithm signatureAlgo, Key signingKey,String userId) {
+//        JwtBuilder builder = Jwts.builder()
+//                //.claim("payload", loggedInUser.getPayload())
+//                .setId(userId)
+//                .setExpiration(calculateExpirationTime());
+//        return builder.signWith(
+//                signatureAlgo, signingKey
+//        ).compact();
+//    }
+//
+//    String checkToken(JwtParser jwtParser,String accesTokenString) {
+//
+//        Claims claims = jwtParser
+//                .parseClaimsJws(accesTokenString)
+//                .getBody();
+//        final String id = claims.getId();
+//        return id;
+//    }
 
     public void testSigning(Function<String, String> sign, Function<String, String> check, int tokenCount) throws Exception {
         final List<String> users = IntStream.range(1, tokenCount).mapToObj((i) -> "user" + i).collect(Collectors.toList());

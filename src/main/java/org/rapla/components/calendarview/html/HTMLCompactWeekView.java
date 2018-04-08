@@ -103,10 +103,10 @@ public class HTMLCompactWeekView extends AbstractHTMLView {
 
         slots = new HTMLSmallDaySlot[rowsize * columns];
         for (int row=0;row<rowsize;row++) {
+            List<Block> blocks =  rows.get( row + startRow );
             for (int column=0;column < columns; column++) {
-                List<Block> blocks =  rows.get( row + startRow );
                 int fieldNumber = row * columns + column;
-                slots[fieldNumber] = createField( blocks, column );
+                slots[fieldNumber] = createField( blocks, fieldNumber );
             }
         }
 
@@ -170,7 +170,8 @@ public class HTMLCompactWeekView extends AbstractHTMLView {
             Iterator<Block> it = blocks.iterator();
             while (it.hasNext()){
                 HTMLBlock block = (HTMLBlock)it.next();
-            	if (columnMap.get( block) == column) {
+                final Integer integer = columnMap.get(block);
+                if (integer == column) {
             		c.putBlock( block );
                 }
             }

@@ -94,6 +94,8 @@ public interface RaplaLocale
 
     String formatDayOfWeekDateMonth(Date date);
 
+    String formatDayOfWeekLongDateMonth(Date date);
+
     int getWeekInYear(Date date);
 
     boolean isAmPmFormat();

@@ -7,7 +7,6 @@ import org.rapla.entities.domain.Reservation;
 import org.rapla.facade.client.ClientFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.inject.Extension;
-import org.rapla.plugin.tableview.client.swing.AppointmentTableModel;
 import org.rapla.plugin.tableview.RaplaTableModel;
 import org.rapla.plugin.tableview.client.swing.extensionpoints.AppointmentSummaryExtension;
 import org.rapla.plugin.tableview.client.swing.extensionpoints.ReservationSummaryExtension;
@@ -17,8 +16,6 @@ import javax.swing.Box;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JTable;
-import javax.swing.event.ListSelectionEvent;
-import javax.swing.event.ListSelectionListener;
 import javax.swing.table.TableModel;
 
 
@@ -66,12 +63,6 @@ public final class DurationCounter  implements ReservationSummaryExtension, Appo
             {
                 if (sorterModel != null)
                    row = sorterModel.modelIndex(row);
-                if ( model instanceof AppointmentTableModel)
-                {
-                    AppointmentBlock block = ((AppointmentTableModel) model).getAppointmentAt(row);
-                    long duration = eventTimeModel.calcDuration(block);
-                    totalduration+= duration;
-                }
                 if ( model instanceof RaplaTableModel)
                 {
                     final Object objectAt = ((RaplaTableModel) model).getObjectAt(row);

@@ -25,6 +25,7 @@ import org.rapla.client.swing.internal.edit.fields.LongField.LongFieldFactory;
 import org.rapla.client.swing.internal.edit.fields.TextField.TextFieldFactory;
 import org.rapla.client.swing.toolkit.RaplaButton;
 import org.rapla.client.swing.toolkit.RaplaListComboBox;
+import org.rapla.entities.Entity;
 import org.rapla.entities.RaplaObject;
 import org.rapla.entities.User;
 import org.rapla.entities.domain.Allocatable;
@@ -208,7 +209,9 @@ public  class  ClassificationField<T extends Classifiable> extends AbstractEditF
 		}
 		typeSelector.setRenderer(new NamedListCellRenderer(i18n.getLocale()));
 		typeSelector.addActionListener(this);
-		typeSelector.setEnabled(types.length>1 && !isInternal && !canNotWriteOneAttribute(list));
+		final boolean canEdit = !canNotWriteOneAttribute(list);
+
+		typeSelector.setEnabled(types.length>1 && !isInternal && canEdit);
 		content.setLayout(new BorderLayout());
 		JPanel header = new JPanel();
 		header.setLayout(new BoxLayout(header, BoxLayout.X_AXIS));
@@ -220,6 +223,7 @@ public  class  ClassificationField<T extends Classifiable> extends AbstractEditF
 		tabSelector = new RaplaButton();
         header.add(tabSelector);
         header.add(Box.createHorizontalGlue());
+        tabSelector.setEnabled( canEdit);
         tabSelector.addActionListener( this);
         updateTabSelectionText();
         
@@ -243,6 +247,10 @@ public  class  ClassificationField<T extends Classifiable> extends AbstractEditF
         for (T t : list)
         {
             final Classification classification = t.getClassification();
+            if (!permissionController.canModify( (Entity) t ,user))
+			{
+				return true;
+			}
             final Attribute[] attributes = classification.getAttributes();
             for (Attribute attribute : attributes)
             {

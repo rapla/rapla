@@ -385,6 +385,7 @@ import java.util.Set;
     public final void loadData() throws RaplaException
     {
 
+
         Connection c = null;
         final RaplaLock.WriteLock writeLock = lockManager.writeLock(10);
         try

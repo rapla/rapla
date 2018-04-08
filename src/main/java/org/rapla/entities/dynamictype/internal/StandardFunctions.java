@@ -40,6 +40,8 @@ import java.util.SortedSet;
 import java.util.TreeSet;
 import java.util.stream.Collectors;
 
+import static org.openjdk.tools.javac.util.Constants.format;
+
 @Extension(provides = FunctionFactory.class, id=StandardFunctions.NAMESPACE)
 public class StandardFunctions implements FunctionFactory
 {
@@ -85,6 +87,7 @@ public class StandardFunctions implements FunctionFactory
             case ResourcesFunction.ID: return new ResourcesFunction(args);
             case ParentFunction.ID: return new ParentFunction(args);
             case TypeFunction.ID: return new TypeFunction(args);
+            case AppointmentTimesFunction.ID: return new AppointmentTimesFunction(args, raplaLocale);
         }
         return null;
     }
@@ -511,6 +514,89 @@ public class StandardFunctions implements FunctionFactory
         }
 
     }
+
+    public static class AppointmentTimesFunction extends Function
+    {
+
+        public static final String ID = "times";
+        private Function subFunction;
+        RaplaLocale raplaLocale;
+
+        AppointmentTimesFunction(List<Function> args, RaplaLocale raplaLocale) throws IllegalAnnotationException
+        {
+            super(NAMESPACE,ID, args);
+            this.raplaLocale = raplaLocale;
+            if (args.size() != 1)
+            {
+                throw new IllegalAnnotationException("appointment function expects 1 argument!");
+            }
+            subFunction = args.get(0);
+        }
+
+        @Override public String eval(EvalContext context)
+        {
+            Object object = subFunction.eval(context);
+            if (object == null)
+            {
+                return null;
+            }
+            TimeInterval interval = null;
+            if (object instanceof AppointmentBlock)
+            {
+                final AppointmentBlock block = (AppointmentBlock) object;
+                long start = block.getStart();
+                long end = block.getEnd();
+                interval = new TimeInterval( new Date(start),new Date(end));
+            }
+            else if (object instanceof Appointment)
+            {
+                Appointment appointment = (Appointment) object;
+                final Date start = appointment.getStart();
+                final Date end = appointment.getEnd();
+                interval = new TimeInterval(start, end);
+            }
+            else if (object instanceof Reservation)
+            {
+                Reservation reservation = (Reservation) object;
+                Date start =  reservation.getFirstDate();
+                Date end = reservation.getMaxEnd();
+                interval = new TimeInterval(start, end);
+            }
+            else if (object instanceof CalendarModel)
+            {
+                CalendarModel model = (CalendarModel) object;
+                final Date endDate = model.getEndDate();
+                final Date startDate = model.getStartDate();
+                interval = new TimeInterval(startDate, endDate);
+            }
+            return format(interval);
+        }
+
+        public String format(TimeInterval timeInterval)
+        {
+            if ( timeInterval == null)
+            {
+                return "";
+            }
+            StringBuilder builder = new StringBuilder();
+            final Date start = timeInterval.getStart();
+            if ( start != null)
+            {
+                builder.append( raplaLocale.formatTime(start));
+                builder.append(" - ");
+            }
+            final Date end = timeInterval.getEnd();
+
+            if ( end != null)
+            {
+                builder.append(raplaLocale.formatTime(end));
+
+            }
+            return builder.toString();
+        }
+
+    }
+
 
     public static class AttributeFunction extends Function
     {

@@ -160,6 +160,16 @@ public abstract class AbstractRaplaLocale implements RaplaLocale {
         return datePart + " " + dateOfMonthPart ;
     }
 
+    @Override
+    public String formatDayOfWeekLongDateMonth(Date date)
+    {
+        int weekday = DateTools.getWeekday( date);
+        String datePart = getWeekdayName(weekday);
+        String dateOfMonthPart = formatDateMonth( date  );
+        return datePart + " " + dateOfMonthPart ;
+    }
+
+
 
     /* (non-Javadoc)
      * @see org.rapla.common.IRaplaLocale#getWeekday(java.util.Date)

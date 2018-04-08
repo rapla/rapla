@@ -172,6 +172,7 @@ public class RaplaMenuBar extends RaplaGUIComponent
         if (clientService.canSwitchBack())
         {
             final UserAction userAction = userActionProvider.get().setPopupContext(null).setSwitchToUser();
+            userAction.setEnabled( true );
             adminMenu.addMenuItem(userAction.createMenuEntry());
         }
 

@@ -20,6 +20,7 @@ public class TableViewPlugin
     public static final String PLUGIN_CLASS = TableViewPlugin.class.getName();
     public final static String TABLE_EVENT_VIEW =  "table";
     public final static String TABLE_APPOINTMENTS_VIEW =  "table_appointments";
+    public final static String APPOINTMENTS_PER_DAY_VIEW =  "table_appointments_per_day";
     public static final String PLUGIN_ID = "org.rapla.plugin.tableview";
 
     public final static boolean ENABLE_BY_DEFAULT = true;

@@ -8,7 +8,7 @@ import org.rapla.server.servletpages.DefaultHTMLMenuEntry;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
-@Extension(provides = HtmlMainMenu.class,id="2_applet")
+//@Extension(provides = HtmlMainMenu.class,id="2_applet")
 @Singleton
 public class RaplaAppletEntry extends DefaultHTMLMenuEntry implements HtmlMainMenu
 {

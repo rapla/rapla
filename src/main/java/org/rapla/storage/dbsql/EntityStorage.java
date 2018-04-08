@@ -38,6 +38,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Date;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Locale;
 import java.util.Set;
 
@@ -335,6 +336,7 @@ abstract class EntityStorage<T extends Entity<T>> extends AbstractTableStorage i
             return;
         }
         deleteFromSubStores(ids);
+        Set<String> idsToDelete = new HashSet<>();
         if(checkLastChanged)
         {
             PreparedStatement stmt = null;
@@ -344,13 +346,21 @@ abstract class EntityStorage<T extends Entity<T>> extends AbstractTableStorage i
                 boolean commitNeeded = false;
                 for (ReferenceInfo referenceInfo : entities)
                 {
-                    final Timestamp castedEntity = (Timestamp)cache.get(referenceInfo.getId());
-                    if(has(referenceInfo.getId()))
+                    final String id = referenceInfo.getId();
+                    final Timestamp loadedEntities = (Timestamp)cache.get(id);
+                    if(has(id))
                     {
-                        stmt.setString(1, referenceInfo.getId());
-                        setTimestamp(stmt, 2, castedEntity.getLastChanged());
-                        stmt.addBatch();
-                        commitNeeded = true;
+                        if ( loadedEntities != null)
+                        {
+                            stmt.setString(1, id);
+                            setTimestamp(stmt, 2, loadedEntities.getLastChanged());
+                            stmt.addBatch();
+                            commitNeeded = true;
+                        }
+                        else
+                        {
+                            idsToDelete.add( id );
+                        }
                     }
                 }
                 if(commitNeeded)
@@ -376,8 +386,9 @@ abstract class EntityStorage<T extends Entity<T>> extends AbstractTableStorage i
         }
         else
         {
-            deleteIds(ids);
+            idsToDelete = ids;
         }
+        deleteIds(idsToDelete);
     }
 
     protected void deleteFromSubStores(Set<String> ids) throws SQLException, RaplaException

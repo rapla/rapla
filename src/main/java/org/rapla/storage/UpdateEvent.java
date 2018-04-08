@@ -51,8 +51,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-@XmlRootElement
-@XmlAccessorType(XmlAccessType.FIELD)
 public class UpdateEvent
 {
     transient Map listMap;// = new HashMap<Class, List<Entity>>();

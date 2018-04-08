@@ -421,7 +421,10 @@ public class ImportTemplateMenu implements ImportMenuExtension, ActionListener
         {
 
             final Promise<Collection<Reservation>> templateReservations = getTemplateReservations();
-            templateReservations.thenCompose(( reservations ) -> facade.copyReservations(reservations, getBeginn(), true, clientFacade.getUser())).thenAccept((clones)->map(clones, entries)).exceptionally((ex ) ->
+            templateReservations.thenCompose(( reservations ) -> facade.copyReservations(reservations, getBeginn(), true, clientFacade.getUser()))
+                    .thenAccept((clones)->
+                            map(clones, entries))
+                    .exceptionally((ex ) ->
                 dialogFactory.showException(ex, popupContext)
             );
         }
@@ -672,10 +675,12 @@ public class ImportTemplateMenu implements ImportMenuExtension, ActionListener
         };
         everythingButton.addActionListener(listener);
         nothingButton.addActionListener(listener);
-        // pane.setPreferredSize( new Dimension(2000,800));
+        content.setPreferredSize(new Dimension(1024, 700));
+        content.setSize(new Dimension(1024, 700));
+
         final DialogInterface dialog2 = dialogFactory.createContentDialog(popupContext, content, new String[] { i18n.getString("ok"), i18n.getString("back") });
-        pane.setPreferredSize(new Dimension(1024, 700));
         dialog2.setDefault(0);
+        dialog2.setTitle( "Veranstaltungen importieren");
         final boolean pack = false;
         dialog2.start(pack).thenAccept((index)->
         {

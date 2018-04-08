@@ -13,6 +13,7 @@ import org.rapla.logger.Logger;
 import org.rapla.plugin.archiver.ArchiverService;
 import org.rapla.scheduler.CommandScheduler;
 import org.rapla.scheduler.Promise;
+import org.rapla.scheduler.ResolvedPromise;
 import org.rapla.server.RemoteSession;
 import org.rapla.storage.ImportExportManager;
 import org.rapla.storage.RaplaSecurityException;
@@ -72,8 +73,15 @@ public class ArchiverServiceImpl  implements ArchiverService
     }
 
     public Promise<Void> backupNow() {
-        return scheduler.run(() ->{
+        try
+        {
             checkAccess();
+        }
+        catch (RaplaException e)
+        {
+            return new ResolvedPromise<>(e);
+        }
+        return scheduler.run(() ->{
             if (!isExportEnabled())
             {
                 throw new RaplaException("Export not enabled");
@@ -83,8 +91,15 @@ public class ArchiverServiceImpl  implements ArchiverService
 	}
 
 	public Promise<Void> restore() {
-	    return scheduler.run( ()-> {
+        try
+        {
             checkAccess();
+        }
+        catch (RaplaException e)
+        {
+            return new ResolvedPromise<>(e);
+        }
+        return scheduler.run( ()-> {
             if (!isExportEnabled())
             {
                 throw new RaplaException("Export not enabled");
@@ -95,8 +110,15 @@ public class ArchiverServiceImpl  implements ArchiverService
 	}
 
 	public Promise<Void> delete(Integer removeOlderInDays)  {
-        return scheduler.run( ()-> {
+        try
+        {
             checkAccess();
+        }
+        catch (RaplaException e)
+        {
+            return new ResolvedPromise<>(e);
+        }
+        return scheduler.run( ()-> {
             final RaplaFacade raplaFacade = this.raplaFacade;
             final Logger logger = this.logger;
             delete(removeOlderInDays, raplaFacade, logger);

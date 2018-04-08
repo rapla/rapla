@@ -2309,8 +2309,11 @@ class PreferenceStorage extends RaplaTypeStorage<Preferences>
                 }
                 empty = false;
                 setId(stmt, 1, userId);
-                final Date lastChanged = preferences.getLastChanged();
-                setTimestamp(stmt, 2, lastChanged);
+                if ( checkLastChanged)
+                {
+                    final Date lastChanged = preferences.getLastChanged();
+                    setTimestamp(stmt, 2, lastChanged);
+                }
                 stmt.addBatch();
             }
             if (!empty)

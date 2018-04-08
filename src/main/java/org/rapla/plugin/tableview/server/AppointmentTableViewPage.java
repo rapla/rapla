@@ -12,6 +12,7 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.plugin.tableview.server;
 
+import org.rapla.components.util.TimeInterval;
 import org.rapla.entities.User;
 import org.rapla.entities.domain.AppointmentBlock;
 import org.rapla.facade.CalendarModel;
@@ -50,7 +51,8 @@ import java.util.Map;
                 User user = model.getUser();
                 final String tableViewName = "appointments";
                 List<RaplaTableColumn<AppointmentBlock, TableColumn>> columnPlugins = tableConfigLoader.loadColumns(tableViewName, user);
-                final List<AppointmentBlock> blocks = waiter.waitForWithRaplaException(model.queryBlocks(model.getTimeIntervall()), 10000);
+                final TimeInterval timeIntervall = model.getTimeIntervall();
+                final List<AppointmentBlock> blocks = waiter.waitForWithRaplaException(model.queryBlocks(timeIntervall), 10000);
                 Map<RaplaTableColumn, Integer> sortDirections = RaplaTableModel.getSortDirections(model,columnPlugins, tableViewName);
                 return getCalendarHTML(columnPlugins, blocks, sortDirections);
             }
