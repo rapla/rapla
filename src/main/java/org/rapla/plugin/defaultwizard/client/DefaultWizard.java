@@ -129,7 +129,7 @@ import java.util.List;
         }
         else
         {
-            MenuInterface container = menuItemFactory.createMenu(newEventText, i18n.getIcon("icon.new"));
+            MenuInterface container = menuItemFactory.createMenu(newEventText, i18n.getIcon("icon.new"),"new");
             if ( enabled) {
                 for (DynamicType type : eventTypes) {
                     String name = type.getName(i18n.getLocale());

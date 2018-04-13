@@ -8,7 +8,7 @@ import org.rapla.components.i18n.I18nIcon;
 
 @JsType
 public interface MenuItemFactory {
-    MenuInterface createMenu(String text, I18nIcon icon);
+    MenuInterface createMenu(String text, I18nIcon icon, String id);
     IdentifiableMenuEntry createMenuItem(String text, I18nIcon icon, Consumer<PopupContext> action);
     RaplaWidget createSeparator(String seperator);
 }

@@ -167,7 +167,7 @@ import java.util.TreeSet;
         {
             final String multipleTemplateName = getMultipleTemplateName();
 
-            MenuInterface container = menuItemFactory.createMenu(multipleTemplateName, i18n.getIcon("icon.new"));
+            MenuInterface container = menuItemFactory.createMenu(multipleTemplateName, i18n.getIcon("icon.new"), "new");
             if ( enabled) {
                 @SuppressWarnings("unchecked") Comparator<String> collator = raplaLocale.getCollator();
                 Map<String, Collection<Allocatable>> templateMap = new HashMap<>();
@@ -210,7 +210,7 @@ import java.util.TreeSet;
                     for (String subMenuName : merged.keySet())
                     {
                         final String id = getId();
-                        MenuInterface subMenu = menuItemFactory.createMenu(subMenuName,null);
+                        MenuInterface subMenu = menuItemFactory.createMenu(subMenuName,null, id);
                         Set<String> set = merged.get(subMenuName);
                         addTemplates(subMenu, set, templateMap);
                         container.addMenuItem(subMenu);

@@ -68,7 +68,6 @@ public class GwtApplicationViewImpl implements ApplicationView<VueComponent>
     @Override
     public void init(boolean showToolTips, String windowTitle)
     {
-        RaplaPopups.getProgressBar().setPercent(100);
     }
 
     @Override public PopupContext createPopupContext()

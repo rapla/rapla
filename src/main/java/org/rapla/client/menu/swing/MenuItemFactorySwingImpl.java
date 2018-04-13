@@ -93,8 +93,8 @@ import java.awt.*;
     }
 
     @Override
-    public MenuInterface createMenu(String text, I18nIcon icon) {
-        final RaplaMenu raplaPopupMenu = new RaplaMenu(createId(text));
+    public MenuInterface createMenu(String text, I18nIcon icon, String id) {
+        final RaplaMenu raplaPopupMenu = new RaplaMenu(id);
         raplaPopupMenu.setText( text);
         if ( icon != null)
         {

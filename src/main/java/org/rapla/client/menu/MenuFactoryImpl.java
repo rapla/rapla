@@ -439,10 +439,10 @@ import java.util.TreeMap;
     @Override
     public MenuInterface addEventMenus(MenuInterface editMenu, SelectionMenuContext menuContext, Consumer<PopupContext> cutListener, Consumer<PopupContext> copyListener) throws RaplaException
     {
-
-        String afterId = "EDIT_BEGIN";
-        MenuInterface newMenu = menuItemFactory.createMenu(i18n.getString("new"), i18n.getIcon("icon.new"));
+        String afterId = "NEW";
+        MenuInterface newMenu = menuItemFactory.createMenu(i18n.getString("new"), i18n.getIcon("icon.new"), afterId);
         editMenu.addMenuItem(newMenu);
+
         boolean canUserAllocateSomething = permissionController.canUserAllocateSomething(getUser());
         addCopyCutListMenu(  editMenu, menuContext, afterId, copyListener, cutListener);
         addObjectMenu( editMenu, menuContext,afterId);
@@ -450,6 +450,7 @@ import java.util.TreeMap;
         int count = addReservationWizards( newMenu, menuContext, afterId);
 
         boolean enableNewMenu = count > 0 && canUserAllocateSomething;
+
         newMenu.setEnabled(enableNewMenu);
         return editMenu;
     }

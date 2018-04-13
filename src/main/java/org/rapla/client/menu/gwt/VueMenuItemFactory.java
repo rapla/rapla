@@ -41,7 +41,7 @@ public class VueMenuItemFactory implements MenuItemFactory {
   }
 
   @Override
-  public MenuInterface createMenu(String text, I18nIcon icon) {
+  public MenuInterface createMenu(String text, I18nIcon icon, String id) {
     return
       new VueMenu()
         .label(text)
