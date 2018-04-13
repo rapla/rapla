@@ -7,8 +7,15 @@ import org.rapla.inject.InjectionContext;
 import org.rapla.client.internal.admin.client.AdminUserUserGroupsView;
 import org.rapla.scheduler.Promise;
 
+import javax.inject.Inject;
+
 @DefaultImplementation(of=AdminUserUserGroupsView.class,context = InjectionContext.gwt)
 public class GwtUserGroupsView implements AdminUserUserGroupsView {
+    @Inject
+    public GwtUserGroupsView()
+    {
+    }
+    
     @Override
     public Promise<RaplaWidget> init(BiFunction<Object, Object, Promise<Void>> moveFunction, Runnable closeCmd) {
         return null;

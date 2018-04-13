@@ -4,6 +4,7 @@ import com.google.gwt.core.client.JsDate;
 import jsinterop.annotations.JsIgnore;
 import jsinterop.annotations.JsType;
 import org.rapla.RaplaResources;
+import org.rapla.client.Application;
 import org.rapla.client.ReservationController;
 import org.rapla.client.dialog.gwt.VueDialog;
 import org.rapla.client.dialog.gwt.components.BulmaTextColor;
@@ -64,16 +65,20 @@ public class JsApi {
   private final RaplaResources i18n;
   private final MenuFactory menuFactory;
   private final TableConfig.TableConfigLoader tableConfigLoader;
+  private final Provider<Application> application;
+
 
   @JsIgnore
   @Inject
   public JsApi(
+          Provider<Application> application,
     ClientFacade facade, Logger logger, ReservationController reservationController, CalendarSelectionModel calendarModel,
     RemoteAuthentificationService remoteAuthentificationService, RaplaLocale raplaLocale, Provider<RaplaBuilder> raplaBuilder, RaplaResources i18n,
     MenuFactory menuFactory, TableConfig.TableConfigLoader tableConfigLoader
   ) {
     this.clientFacade = facade;
     this.i18n = i18n;
+    this.application = application;
     this.menuFactory = menuFactory;
     this.tableConfigLoader = tableConfigLoader;
     this.facade = clientFacade.getRaplaFacade();

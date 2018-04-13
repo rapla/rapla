@@ -1,30 +1,20 @@
 package org.rapla.client.gwt;
 
-import com.google.gwt.dom.client.Style.Unit;
-import com.google.gwt.event.logical.shared.ResizeEvent;
-import com.google.gwt.event.logical.shared.ResizeHandler;
-import com.google.gwt.user.client.Window;
-import com.google.gwt.user.client.ui.HTML;
-import com.google.gwt.user.client.ui.IsWidget;
-import org.gwtbootstrap3.client.ui.constants.DeviceSize;
-import org.gwtbootstrap3.client.ui.html.Div;
 import org.rapla.client.CalendarPlaceView;
 import org.rapla.client.RaplaWidget;
-import org.rapla.client.gwt.components.TreeComponent;
-import org.rapla.client.gwt.components.TreeComponent.SelectionChangeHandler;
-import org.rapla.client.gwt.view.NavigatorView;
-import org.rapla.client.gwt.view.NavigatorView.NavigatorAction;
+import org.rapla.client.dialog.gwt.components.VueComponent;
 import org.rapla.components.i18n.BundleManager;
-import org.rapla.entities.domain.Allocatable;
+import org.rapla.inject.DefaultImplementation;
+import org.rapla.inject.InjectionContext;
 
 import javax.inject.Inject;
-import java.util.Collection;
 import java.util.Date;
-import java.util.Locale;
 
-//@DefaultImplementation(of = CalendarPlaceView.class, context = InjectionContext.gwt)
-public class CalendarPlaceViewGwt implements CalendarPlaceView<IsWidget>, NavigatorAction
+
+@DefaultImplementation(of = CalendarPlaceView.class, context = InjectionContext.gwt)
+public class CalendarPlaceViewGwt implements CalendarPlaceView<VueComponent>//, NavigatorAction
 {
+/*
     private static final int OFFSET_NAVIGATION = 50;
     private final TreeComponent treeComponent;
     private final Div completeView = new Div()
@@ -38,42 +28,44 @@ public class CalendarPlaceViewGwt implements CalendarPlaceView<IsWidget>, Naviga
     private final Div drawingContent = new Div();
     private final Div calendarSelection = new Div();
     private final NavigatorView navigatorView;
+
+*/
     private org.rapla.client.CalendarPlaceView.Presenter presenter;
 
     @Inject
     public CalendarPlaceViewGwt(BundleManager bundleManager)
     {
-        Window.addResizeHandler(event -> {
-            final int height = event.getHeight();
-            updateHeights(height);
-        });
-        completeView.addStyleName("calendarPlace");
-        navigatorView = new NavigatorView(this, bundleManager);
-        final Locale locale = bundleManager.getLocale();
-        // left side resources navigation whenever medium is medium or large size
-        {
-            final Div resourcesDiv = new Div();
-            resourcesDiv.setVisibleOn(DeviceSize.MD_LG);
-            resourcesDiv.addStyleName("resources");
-            completeView.add(resourcesDiv);
-            treeComponent = new TreeComponent(locale, selected -> {
-          //      getPresenter().resourcesSelected(selected);
-            });
-            resourcesDiv.add(treeComponent);
-        }
-        final Div containerDiv = new Div();
-        containerDiv.addStyleName("drawingContainer");
-        completeView.add(containerDiv);
-        // header navigation
-        {
-            final Div headerDiv = new Div();
-            containerDiv.add(headerDiv);
-            {// calendar selection
-                headerDiv.add(calendarSelection);
-                calendarSelection.add(new HTML("calendar drop down"));
-            }
-        }
-        containerDiv.add(drawingContent);
+//        Window.addResizeHandler(event -> {
+//            final int height = event.getHeight();
+//            updateHeights(height);
+//        });
+//        completeView.addStyleName("calendarPlace");
+//        navigatorView = new NavigatorView(this, bundleManager);
+//        final Locale locale = bundleManager.getLocale();
+//        // left side resources navigation whenever medium is medium or large size
+//        {
+//            final Div resourcesDiv = new Div();
+//            resourcesDiv.setVisibleOn(DeviceSize.MD_LG);
+//            resourcesDiv.addStyleName("resources");
+//            completeView.add(resourcesDiv);
+//            treeComponent = new TreeComponent(locale, selected -> {
+//          //      getPresenter().resourcesSelected(selected);
+//            });
+//            resourcesDiv.add(treeComponent);
+//        }
+//        final Div containerDiv = new Div();
+//        containerDiv.addStyleName("drawingContainer");
+//        completeView.add(containerDiv);
+//        // header navigation
+//        {
+//            final Div headerDiv = new Div();
+//            containerDiv.add(headerDiv);
+//            {// calendar selection
+//                headerDiv.add(calendarSelection);
+//                calendarSelection.add(new HTML("calendar drop down"));
+//            }
+//        }
+//        containerDiv.add(drawingContent);
     }
     
     @Override
@@ -85,13 +77,13 @@ public class CalendarPlaceViewGwt implements CalendarPlaceView<IsWidget>, Naviga
         return presenter;
     }
 
-    private void updateHeights(final int height)
-    {
-        final int drawingContentHeight = drawingContent.getParent().getOffsetHeight();
-        final int windowHeigth = height - OFFSET_NAVIGATION;
-        final int newElementHeight = Math.max(0, Math.max(drawingContentHeight, windowHeigth));
-        treeComponent.getElement().getStyle().setHeight(newElementHeight, Unit.PX);
-    }
+//    private void updateHeights(final int height)
+//    {
+//        final int drawingContentHeight = drawingContent.getParent().getOffsetHeight();
+//        final int windowHeigth = height - OFFSET_NAVIGATION;
+//        final int newElementHeight = Math.max(0, Math.max(drawingContentHeight, windowHeigth));
+//        treeComponent.getElement().getStyle().setHeight(newElementHeight, Unit.PX);
+//    }
 /*
     @Override
     public void updateDate(final Date selectedDate)
@@ -164,45 +156,29 @@ public class CalendarPlaceViewGwt implements CalendarPlaceView<IsWidget>, Naviga
         return completeView;
     }
 */
-    @Override
-    public void selectedDate(Date selectedDate)
-    {
-//        getPresenter().selectDate(selectedDate);
-    }
 
-    @Override
-    public void next()
-    {
-       // getPresenter().next();
-    }
 
-    @Override
-    public void previous()
-    {
-    //    getPresenter().previous();
-    }
-
-    @Override public void addSavedViews(RaplaWidget<IsWidget> savedViews)
+    @Override public void addSavedViews(RaplaWidget<VueComponent> savedViews)
     {
 
     }
 
-    @Override public void addSummaryView(RaplaWidget<IsWidget> summaryView)
+    @Override public void addSummaryView(RaplaWidget<VueComponent> summaryView)
     {
 
     }
 
-    @Override public void addConflictsView(RaplaWidget<IsWidget> conflictsView)
+    @Override public void addConflictsView(RaplaWidget<VueComponent> conflictsView)
     {
 
     }
 
-    @Override public void addCalendarView(RaplaWidget<IsWidget> calendarView)
+    @Override public void addCalendarView(RaplaWidget<VueComponent> calendarView)
     {
 
     }
 
-    @Override public void addResourceSelectionView(RaplaWidget<IsWidget> resourceSelectionView)
+    @Override public void addResourceSelectionView(RaplaWidget<VueComponent> resourceSelectionView)
     {
 
     }
@@ -212,7 +188,7 @@ public class CalendarPlaceViewGwt implements CalendarPlaceView<IsWidget>, Naviga
 
     }
 
-    @Override public IsWidget getComponent()
+    @Override public VueComponent getComponent()
     {
         return null;
     }

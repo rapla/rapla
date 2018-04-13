@@ -805,6 +805,13 @@
 			<scope>runtime</scope>
 			<optional>true</optional>
         </dependency>
+		<dependency>
+			<groupId>org.eclipse.jetty</groupId>
+			<artifactId>jetty-proxy</artifactId>
+			<version>${jetty.version}</version>
+			<scope>runtime</scope>
+			<optional>true</optional>
+		</dependency>
         <dependency>
             <groupId>org.eclipse.jetty</groupId>
             <artifactId>jetty-deploy</artifactId>
