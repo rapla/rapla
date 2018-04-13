@@ -22,6 +22,7 @@ import org.rapla.client.internal.admin.client.CategoryMenuContext;
 import org.rapla.client.internal.admin.client.DynamicTypeMenuContext;
 import org.rapla.client.menu.impl.AppointmentAction;
 import org.rapla.client.menu.impl.RaplaObjectActions;
+import org.rapla.client.swing.toolkit.RaplaMenu;
 import org.rapla.components.util.DateTools;
 import org.rapla.components.util.TimeInterval;
 import org.rapla.entities.Category;
@@ -274,8 +275,9 @@ import java.util.TreeMap;
         return startDate;
     }
 
-    private void addNewMenus(MenuInterface menu, String afterId) throws RaplaException
+    private int addNewMenus(MenuInterface menu, String afterId) throws RaplaException
     {
+        int count=0;
         boolean canAllocateSelected = canAllocateSelected();
         if (canAllocateSelected)
         {
@@ -293,9 +295,11 @@ import java.util.TreeMap;
                 if ( component != null)
                 {
                     menu.insertAfterId(() -> component, afterId);
+                    count++;
                 }
             }
         }
+        return count;
         //        else
         //        {
         //        	JMenuItem cantAllocate = new JMenuItem(i18n.getString("permission.denied"));
@@ -421,14 +425,35 @@ import java.util.TreeMap;
     }
 
     @Override
-    public void addReservationWizards(MenuInterface menu, SelectionMenuContext context, String afterId) throws RaplaException
+    public int addReservationWizards(MenuInterface menu, SelectionMenuContext context, String afterId) throws RaplaException
     {
+        int count = 0;
         final User user = getUser();
         if (permissionController.canCreateReservation(user))
         {
-            addNewMenus(menu, afterId);
+            count+=addNewMenus(menu, afterId);
         }
+        return count;
     }
+
+    @Override
+    public MenuInterface addEventMenus(MenuInterface editMenu, SelectionMenuContext menuContext, Consumer<PopupContext> cutListener, Consumer<PopupContext> copyListener) throws RaplaException
+    {
+
+        String afterId = "EDIT_BEGIN";
+        MenuInterface newMenu = menuItemFactory.createMenu(i18n.getString("new"), i18n.getIcon("icon.new"));
+        editMenu.addMenuItem(newMenu);
+        boolean canUserAllocateSomething = permissionController.canUserAllocateSomething(getUser());
+        addCopyCutListMenu(  editMenu, menuContext, afterId, copyListener, cutListener);
+        addObjectMenu( editMenu, menuContext,afterId);
+        // add the new reservations wizards
+        int count = addReservationWizards( newMenu, menuContext, afterId);
+
+        boolean enableNewMenu = count > 0 && canUserAllocateSomething;
+        newMenu.setEnabled(enableNewMenu);
+        return editMenu;
+    }
+
 
 
 

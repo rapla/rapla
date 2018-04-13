@@ -17,6 +17,6 @@ public interface MenuInterface extends IdentifiableMenuEntry {
     void removeAllBetween(String startId, String endId);
     void insertAfterId(RaplaWidget component, String id);
     void insertBeforeId(RaplaWidget component,String id);
-
+    void setEnabled(boolean enabled);
 
 }

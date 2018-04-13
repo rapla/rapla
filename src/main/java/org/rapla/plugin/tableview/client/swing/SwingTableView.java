@@ -1,6 +1,7 @@
 package org.rapla.plugin.tableview.client.swing;
 
 import io.reactivex.functions.Consumer;
+import org.jetbrains.annotations.NotNull;
 import org.rapla.RaplaResources;
 import org.rapla.client.EditController;
 import org.rapla.client.PopupContext;
@@ -380,7 +381,18 @@ public class SwingTableView<T> extends RaplaGUIComponent implements SwingCalenda
     }
 
     protected void updateMenu(MenuInterface editMenu,MenuInterface newMenu, Point p) throws RaplaException {
-		List<T> selectedEvents = getSelectedEvents();
+        SelectionMenuContext menuContext = createMenuContext(p);
+        String afterId = "EDIT_BEGIN";
+        menuFactory.addCopyCutListMenu(  editMenu, menuContext, afterId, copyListener, cutListener);
+        menuFactory.addObjectMenu( editMenu, menuContext,afterId);
+        // add the new reservations wizards
+        menuFactory.addReservationWizards( newMenu, menuContext, afterId);
+	}
+
+    @NotNull
+    private SelectionMenuContext createMenuContext(Point p)
+    {
+        List<T> selectedEvents = getSelectedEvents();
         T focusedObject = null;
         if ( selectedEvents.size() == 1) {
             focusedObject = selectedEvents.get( 0);
@@ -388,12 +400,8 @@ public class SwingTableView<T> extends RaplaGUIComponent implements SwingCalenda
         final SwingPopupContext popupContext = new SwingPopupContext(getComponent(), p);
         SelectionMenuContext menuContext = new SelectionMenuContext(  focusedObject, popupContext);
         menuContext.setSelectedObjects( selectedEvents);
-        String afterId = "EDIT_BEGIN";
-        menuFactory.addCopyCutListMenu(  editMenu, menuContext, afterId, copyListener, cutListener);
-        menuFactory.addObjectMenu( editMenu, menuContext,afterId);
-        // add the new reservations wizards
-        menuFactory.addReservationWizards( newMenu, menuContext, afterId);
-	}
+        return menuContext;
+    }
 
     List<T> getSelectedEvents() {
         int[] rows = table.getSelectedRows();
@@ -414,14 +422,8 @@ public class SwingTableView<T> extends RaplaGUIComponent implements SwingCalenda
                  Point p = new Point(me.getX(), me.getY());
                  PopupContext popupContext = new SwingPopupContext((Component) me.getSource(), p);
                  RaplaPopupMenu menu= new RaplaPopupMenu(popupContext);
-
-	            RaplaMenu newMenu = new RaplaMenu("EDIT_BEGIN");
-	            newMenu.setText(getString("new"));
-	            menu.add(newMenu);
-	            boolean canUserAllocateSomething = permissionController.canUserAllocateSomething(getUser());
-	            updateMenu(menu,newMenu, p);
-	            boolean enableNewMenu = newMenu.getMenuComponentCount() > 0 && canUserAllocateSomething;
-	            newMenu.setEnabled(enableNewMenu);
+                 SelectionMenuContext context = createMenuContext( p);
+                 menuFactory.addEventMenus( menu,context , copyListener, cutListener);
             	menu.show( table, p.x, p.y);
             } catch (RaplaException ex) {
                 dialogUiFactory.showException (ex,new SwingPopupContext(getComponent(), null));

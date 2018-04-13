@@ -24,9 +24,10 @@ public interface MenuFactory  {
 
     MenuInterface addNewMenu(MenuInterface menu, SelectionMenuContext context, String afterId) throws RaplaException;
     MenuInterface addObjectMenu(MenuInterface menu, SelectionMenuContext context, String afterId) throws RaplaException;
+    MenuInterface addEventMenus(MenuInterface editMenu, SelectionMenuContext menuContext, Consumer<PopupContext> cutListener, Consumer<PopupContext> copyListener) throws RaplaException;
     MenuInterface addReservationMenu(MenuInterface menu, SelectionMenuContext context, String afterId) throws
       RaplaException;
-    void addReservationWizards(MenuInterface menu, SelectionMenuContext context, String afterId) throws RaplaException;
+    int addReservationWizards(MenuInterface menu, SelectionMenuContext context, String afterId) throws RaplaException;
     MenuItemFactory getItemFactory();
 }
 

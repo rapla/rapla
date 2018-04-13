@@ -123,4 +123,10 @@ public class VueMenu implements MenuInterface, VueMenuItem, IdentifiableMenuEntr
     this.label = text;
     return this;
   }
+
+  @Override
+  public void setEnabled(boolean enabled)
+  {
+
+  }
 }
