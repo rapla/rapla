@@ -19,8 +19,6 @@ import org.rapla.client.swing.internal.SwingPopupContext;
 import org.rapla.client.swing.toolkit.DisabledGlassPane;
 import org.rapla.client.swing.toolkit.RaplaMenu;
 import org.rapla.client.swing.toolkit.RaplaPopupMenu;
-import org.rapla.components.calendar.DateChangeEvent;
-import org.rapla.components.calendar.DateChangeListener;
 import org.rapla.components.iolayer.IOInterface;
 import org.rapla.components.tablesorter.TableSorter;
 import org.rapla.components.util.TimeInterval;
@@ -56,8 +54,6 @@ import javax.swing.JTable;
 import javax.swing.SwingUtilities;
 import javax.swing.event.ListSelectionEvent;
 import javax.swing.event.ListSelectionListener;
-import javax.swing.event.TableModelEvent;
-import javax.swing.event.TableModelListener;
 import javax.swing.table.TableColumn;
 import javax.swing.table.TableColumnModel;
 import javax.swing.table.TableModel;
@@ -423,7 +419,7 @@ public class SwingTableView<T> extends RaplaGUIComponent implements SwingCalenda
                  PopupContext popupContext = new SwingPopupContext((Component) me.getSource(), p);
                  RaplaPopupMenu menu= new RaplaPopupMenu(popupContext);
                  SelectionMenuContext context = createMenuContext( p);
-                 menuFactory.addEventMenus( menu,context , copyListener, cutListener);
+                 menuFactory.addEventMenu(menu, context , copyListener, cutListener);
             	menu.show( table, p.x, p.y);
             } catch (RaplaException ex) {
                 dialogUiFactory.showException (ex,new SwingPopupContext(getComponent(), null));
@@ -469,7 +465,7 @@ public class SwingTableView<T> extends RaplaGUIComponent implements SwingCalenda
     	Printable  printable = table.getPrintable( JTable.PrintMode.FIT_WIDTH,f1, null );
         return printable.print( graphics, format, page);
     }
-    
+
 	public TimeInterval getVisibleTimeInterval() {
 		return new TimeInterval(model.getStartDate(), model.getEndDate());
 	}

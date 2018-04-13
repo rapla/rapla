@@ -15,7 +15,11 @@ public class DefaultVueMenuItem implements IdentifiableMenuEntry, VueMenuItem, S
   private Consumer<PopupContext> action;
 
   public DefaultVueMenuItem(final String label) {
-    this.id = label;
+    if (label == null) {
+      this.id = "null";
+    } else {
+      this.id = label;
+    }
   }
 
   @Override
@@ -49,7 +53,7 @@ public class DefaultVueMenuItem implements IdentifiableMenuEntry, VueMenuItem, S
 
   @JsIgnore
   public DefaultVueMenuItem icon(final I18nIcon icon) {
-      this.icon = icon == null ? null : icon.getId();
+    this.icon = icon == null ? null : icon.getId();
     return this;
   }
 }

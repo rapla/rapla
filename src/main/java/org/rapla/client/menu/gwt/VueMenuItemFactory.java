@@ -42,10 +42,11 @@ public class VueMenuItemFactory implements MenuItemFactory {
 
   @Override
   public MenuInterface createMenu(String text, I18nIcon icon, String id) {
-    return
-      new VueMenu()
-        .label(text)
-        .icon(icon);
+    VueMenu menu = new VueMenu()
+      .label(text)
+      .icon(icon);
+    menu.setId(id);
+    return menu;
   }
 
   @Override

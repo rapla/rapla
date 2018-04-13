@@ -437,7 +437,7 @@ import java.util.TreeMap;
     }
 
     @Override
-    public MenuInterface addEventMenus(MenuInterface editMenu, SelectionMenuContext menuContext, Consumer<PopupContext> cutListener, Consumer<PopupContext> copyListener) throws RaplaException
+    public MenuInterface addEventMenu(MenuInterface editMenu, SelectionMenuContext menuContext, Consumer<PopupContext> cutListener, Consumer<PopupContext> copyListener) throws RaplaException
     {
         String afterId = "NEW";
         MenuInterface newMenu = menuItemFactory.createMenu(i18n.getString("new"), i18n.getIcon("icon.new"), afterId);

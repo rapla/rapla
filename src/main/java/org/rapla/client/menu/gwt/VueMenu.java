@@ -15,8 +15,10 @@ import java.util.List;
 public class VueMenu implements MenuInterface, VueMenuItem, IdentifiableMenuEntry {
 
   private List<VueMenuItem> items = new ArrayList<>();
+  private String id;
   private String icon;
   private String label;
+  private boolean enabled;
 
   @Override
   public void addMenuItem(final IdentifiableMenuEntry newItem) {
@@ -67,7 +69,7 @@ public class VueMenu implements MenuInterface, VueMenuItem, IdentifiableMenuEntr
     } else {
       throw new RuntimeException(
         "VueMenu can only accept another VueMenu or a VueMenuItem, got " + component.getClass().getSimpleName() +
-        " " + component.toString());
+          " " + component.toString());
     }
   }
 
@@ -89,7 +91,12 @@ public class VueMenu implements MenuInterface, VueMenuItem, IdentifiableMenuEntr
 
   @Override
   public String getId() {
-    return null;
+    return id == null ? label : id;
+  }
+
+  @JsIgnore
+  public void setId(final String id) {
+    this.id = id;
   }
 
   @JsMethod
@@ -125,8 +132,7 @@ public class VueMenu implements MenuInterface, VueMenuItem, IdentifiableMenuEntr
   }
 
   @Override
-  public void setEnabled(boolean enabled)
-  {
-
+  public void setEnabled(boolean enabled) {
+    this.enabled = enabled;
   }
 }
