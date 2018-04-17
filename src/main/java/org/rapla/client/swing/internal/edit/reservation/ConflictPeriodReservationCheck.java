@@ -24,6 +24,8 @@ import org.rapla.client.swing.RaplaGUIComponent;
 import org.rapla.client.swing.ReservationToolbarExtension;
 import org.rapla.client.swing.TreeFactory;
 import org.rapla.client.swing.internal.SwingPopupContext;
+import org.rapla.client.swing.internal.view.RaplaSwingTreeModel;
+import org.rapla.client.swing.internal.view.RaplaTreeNode;
 import org.rapla.client.swing.toolkit.RaplaButton;
 import org.rapla.client.swing.toolkit.RaplaTree;
 import org.rapla.components.util.TimeInterval;
@@ -46,11 +48,9 @@ import javax.swing.JCheckBox;
 import javax.swing.JComponent;
 import javax.swing.JPanel;
 import javax.swing.JTree;
-import javax.swing.event.TreeSelectionEvent;
-import javax.swing.event.TreeSelectionListener;
-import javax.swing.tree.DefaultMutableTreeNode;
 import javax.swing.tree.DefaultTreeModel;
 import javax.swing.tree.TreeModel;
+import javax.swing.tree.TreeNode;
 import java.awt.BorderLayout;
 import java.awt.Component;
 import java.awt.Dimension;
@@ -204,7 +204,6 @@ public class ConflictPeriodReservationCheck extends RaplaGUIComponent implements
         {
             allPeriods.addAll(periods);
         }
-        DefaultMutableTreeNode root = new DefaultMutableTreeNode("");
         final Category timetables = getTimetablesCategory();
         Map<Category, List<Period>> list = new LinkedHashMap<>();
         if (timetables != null)
@@ -226,6 +225,7 @@ public class ConflictPeriodReservationCheck extends RaplaGUIComponent implements
             }
         }
 
+        RaplaTreeNode root = treeFactory.newRootNode();
         for (Map.Entry<Category, List<Period>> entry : list.entrySet())
         {
             Category category = entry.getKey();
@@ -234,19 +234,19 @@ public class ConflictPeriodReservationCheck extends RaplaGUIComponent implements
             {
                 continue;
             }
-            DefaultMutableTreeNode catNode = treeFactory.newNamedNode(category);
+            RaplaTreeNode catNode = treeFactory.newNamedNode(category);
             root.add(catNode);
             for (Period p : value)
             {
                 final Set<Category> categories = p.getCategories();
                 if (categories.contains(category))
                 {
-                    DefaultMutableTreeNode pNode = treeFactory.newNamedNode(p);
+                    RaplaTreeNode pNode = treeFactory.newNamedNode(p);
                     catNode.add(pNode);
                 }
             }
         }
-        TreeModel treeModel = new DefaultTreeModel(root);
+        TreeModel treeModel = new RaplaSwingTreeModel(root);
         RaplaTree treeSelection = new RaplaTree();
         JTree tree = treeSelection.getTree();
         //tree.setCellRenderer( treeF);

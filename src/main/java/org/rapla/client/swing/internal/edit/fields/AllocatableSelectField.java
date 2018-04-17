@@ -15,6 +15,8 @@ package org.rapla.client.swing.internal.edit.fields;
 import org.rapla.RaplaResources;
 import org.rapla.client.dialog.DialogUiFactoryInterface;
 import org.rapla.client.swing.TreeFactory;
+import org.rapla.client.swing.internal.view.RaplaSwingTreeModel;
+import org.rapla.client.swing.internal.view.RaplaTreeNode;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.dynamictype.ClassificationFilter;
 import org.rapla.entities.dynamictype.DynamicType;
@@ -58,20 +60,24 @@ public class AllocatableSelectField extends AbstractSelectField<Allocatable>
     @Override
 	public TreeModel createModel() throws RaplaException {
 		Allocatable[] allocatables = getAllocatables();
-		TreeModel treeModel = getTreeFactory().createClassifiableModel(allocatables, true);
+		TreeModel treeModel;
+		RaplaTreeNode rootNode = getTreeFactory().createClassifiableModel(allocatables, true);
 		if (dynamicTypeConstraint !=null)
 		{
-			TreeNode treeNode = (TreeNode)treeModel.getRoot();
-			if ( treeNode.getChildCount() > 0)
+			if ( rootNode.getChildCount() > 0)
 			{
-			    TreeNode child = treeNode.getChildAt(0);
-			    ((DefaultMutableTreeNode)child).removeFromParent();
-			    treeModel = new DefaultTreeModel( child );
+			    RaplaTreeNode child = rootNode.getChild(0);
+			    rootNode.remove( child);
+			    treeModel = new RaplaSwingTreeModel( child );
 			}
 			else
 			{
 			    treeModel = new DefaultTreeModel( new DefaultMutableTreeNode());
 			}
+		}
+		else
+		{
+			treeModel = new RaplaSwingTreeModel( rootNode);
 		}
 		return treeModel;
     }

@@ -194,7 +194,7 @@ public class DynamicTypeTest  {
 			CommandScheduler scheduler = new SwingSchedulerImpl(logger);
             DialogUiFactoryInterface dialogUiFactory = new DialogUiFactory(i18n,  scheduler,bundleManager,  logger);
             InfoFactory infoFactory = new InfoFactoryImpl(clientFacade, i18n, raplaLocale, logger, appointmentFormater, ioInterface,  dialogUiFactory);
-   	        TreeFactory treeFactory = new TreeFactoryImpl(clientFacade, i18n, raplaLocale, logger, infoFactory);
+   	        TreeFactory treeFactory = new TreeFactoryImpl(clientFacade, i18n, raplaLocale, logger);
 	    	model.queryReservations(model.getTimeIntervall());
 	    	Thread.sleep(100);
 			boolean isResourceOnly = true;

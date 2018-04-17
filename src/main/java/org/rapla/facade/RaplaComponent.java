@@ -252,7 +252,18 @@ public class RaplaComponent
         if (object == null)
             return "";
         if (object instanceof Named) {
-            String name = ((Named) object).getName(getI18n().getLocale());
+            final Locale locale = getI18n().getLocale();
+            String name = ((Named) object).getName(locale);
+            return (name != null) ? name : "";
+        }
+        return object.toString();
+    }
+
+    static public String getName(Object object, Locale locale) {
+        if (object == null)
+            return "";
+        if (object instanceof Named) {
+            String name = ((Named) object).getName(locale);
             return (name != null) ? name : "";
         }
         return object.toString();

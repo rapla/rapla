@@ -99,7 +99,7 @@ public class MultiCalendarPresenter implements CalendarContainer,Presenter
         this.view = view;
         this.view.setPresenter(this);
         // Key name map
-        final LinkedHashMap<String,String> ids = getIds();
+        final LinkedHashMap<String,SwingViewFactory> ids = getIds();
         {
 	         SwingViewFactory factory = findFactory( model.getViewId());
              if ( factory == null)
@@ -198,19 +198,19 @@ public class MultiCalendarPresenter implements CalendarContainer,Presenter
         }
     }
 
-    private LinkedHashMap<String, String> getIds() {
+    private LinkedHashMap<String, SwingViewFactory> getIds() {
         List<SwingViewFactory> sortedList = new ArrayList<>(factoryList);
         Collections.sort( sortedList, (arg0, arg1) -> {
             SwingViewFactory f1 = arg0;
             SwingViewFactory f2 = arg1;
             return f1.getMenuSortKey().compareTo( f2.getMenuSortKey() );
         });
-        final LinkedHashMap<String, String> result = new LinkedHashMap<>();
+        final LinkedHashMap<String, SwingViewFactory> result = new LinkedHashMap<>();
         for (Iterator<SwingViewFactory> it = sortedList.iterator();it.hasNext();) {
             SwingViewFactory factory =  it.next();
             if(factory.isEnabled())
             {
-                result.put(factory.getViewId(), factory.getName());
+                result.put(factory.getViewId(), factory);
             }
         }
         return result;

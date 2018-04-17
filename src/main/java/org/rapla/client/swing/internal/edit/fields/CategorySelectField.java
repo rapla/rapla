@@ -15,13 +15,18 @@ package org.rapla.client.swing.internal.edit.fields;
 import org.rapla.RaplaResources;
 import org.rapla.client.dialog.DialogUiFactoryInterface;
 import org.rapla.client.swing.TreeFactory;
+import org.rapla.client.swing.internal.view.RaplaSwingTreeModel;
+import org.rapla.client.swing.internal.view.RaplaTreeNode;
 import org.rapla.components.util.Assert;
 import org.rapla.entities.Category;
 import org.rapla.facade.client.ClientFacade;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.logger.Logger;
 
+import javax.swing.tree.DefaultTreeModel;
 import javax.swing.tree.TreeModel;
+import javax.swing.tree.TreeNode;
+import java.util.Collections;
 
 
 public class CategorySelectField extends AbstractSelectField<Category>
@@ -47,7 +52,8 @@ public class CategorySelectField extends AbstractSelectField<Category>
 
     @Override
 	public TreeModel createModel() {
-		return getTreeFactory().createModel(rootCategory);
+        final RaplaTreeNode root = getTreeFactory().createModel(Collections.singleton(rootCategory), true);
+        return new RaplaSwingTreeModel(root);
     }
 
     public Category getRootCategory() 

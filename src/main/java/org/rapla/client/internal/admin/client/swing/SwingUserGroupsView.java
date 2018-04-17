@@ -10,6 +10,8 @@ import org.rapla.client.menu.MenuFactory;
 import org.rapla.client.swing.RaplaGUIComponent;
 import org.rapla.client.swing.TreeFactory;
 import org.rapla.client.swing.internal.SwingPopupContext;
+import org.rapla.client.swing.internal.view.RaplaSwingTreeModel;
+import org.rapla.client.swing.internal.view.RaplaTreeNode;
 import org.rapla.client.swing.toolkit.*;
 import org.rapla.components.layout.TableLayout;
 import org.rapla.entities.Category;
@@ -31,9 +33,7 @@ import javax.inject.Inject;
 import javax.swing.*;
 import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
-import javax.swing.tree.DefaultMutableTreeNode;
-import javax.swing.tree.DefaultTreeModel;
-import javax.swing.tree.TreeModel;
+import javax.swing.tree.*;
 import java.awt.*;
 import java.util.*;
 import java.util.List;
@@ -75,7 +75,7 @@ public class SwingUserGroupsView extends RaplaGUIComponent implements
 
 
 	@Inject
-	public SwingUserGroupsView(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, MenuFactory menuFactory, TreeFactory treeFactory, DialogUiFactoryInterface dialogUiFactory) throws
+	public SwingUserGroupsView(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, MenuFactory menuFactory, TreeFactory treeFactory, DialogUiFactoryInterface dialogUiFactory, TreeCellRenderer treeCellRenderer) throws
 			RaplaInitializationException {
 		super(facade, i18n, raplaLocale, logger);
 		this.logger = logger;
@@ -137,7 +137,7 @@ public class SwingUserGroupsView extends RaplaGUIComponent implements
 		// creation of the tree
 		selectionTreeTable = new RaplaTree();
 		selectionTreeTable.setMultiSelect( true);
-		selectionTreeTable.getTree().setCellRenderer(treeFactory.createRenderer());
+		selectionTreeTable.getTree().setCellRenderer(treeCellRenderer);
 		selectionTreeTable.getTree().addTreeSelectionListener((e) ->selectionChanged());
 		// including the tree in ScrollPane and adding this to the GUI
 		centerPanel.add(selectionTreeTable, "0,1");
@@ -338,19 +338,19 @@ public class SwingUserGroupsView extends RaplaGUIComponent implements
 					// them to the list
 					Category rootCategory = raplaFacade.getUserGroupsCategory();
 					List<Category> categoriesToMatch  = searchCategoryName(rootCategory,pattern);
-					selectionModel = treeFactory.createModel(categoriesToMatch, false);
+					selectionModel = new RaplaSwingTreeModel(treeFactory.createModel(categoriesToMatch, false));
 					viewLabel.setText(getI18n().getString("users"));
 					break;
 				case USERS:
 					User[] users  =searchUserName(pattern).toArray( User.USER_ARRAY);
 
-					DefaultMutableTreeNode root = new DefaultMutableTreeNode("");
+					RaplaTreeNode root = treeFactory.newRootNode();
                     viewLabel.setText(getI18n().getString("user-groups"));
 					for (User user:users)
 					{
 						root.add(treeFactory.newNamedNode(user));
 					}
-					selectionModel = new DefaultTreeModel(root);
+					selectionModel = new RaplaSwingTreeModel(root);
 					// change the name of the root node in "user"
 					((DefaultMutableTreeNode) (selectionModel.getRoot())).setUserObject(getString("users"));
 					break;

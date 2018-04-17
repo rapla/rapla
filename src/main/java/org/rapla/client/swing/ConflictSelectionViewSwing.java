@@ -17,12 +17,14 @@ import org.rapla.client.PopupContext;
 import org.rapla.client.dialog.DialogUiFactoryInterface;
 import org.rapla.client.internal.ConflictSelectionView;
 import org.rapla.client.swing.internal.SwingPopupContext;
-import org.rapla.client.swing.internal.view.TreeFactoryImpl;
+import org.rapla.client.swing.internal.view.*;
 import org.rapla.client.swing.toolkit.PopupEvent;
 import org.rapla.client.swing.toolkit.PopupListener;
 import org.rapla.client.swing.toolkit.RaplaMenuItem;
 import org.rapla.client.swing.toolkit.RaplaPopupMenu;
 import org.rapla.client.swing.toolkit.RaplaTree;
+import org.rapla.entities.domain.Allocatable;
+import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.facade.Conflict;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaInitializationException;
@@ -40,13 +42,13 @@ import javax.swing.JTree;
 import javax.swing.SwingUtilities;
 import javax.swing.event.TreeSelectionEvent;
 import javax.swing.event.TreeSelectionListener;
+import javax.swing.tree.DefaultTreeModel;
 import javax.swing.tree.TreeModel;
+import javax.swing.tree.TreeNode;
 import javax.swing.tree.TreePath;
 import java.awt.BorderLayout;
 import java.awt.Component;
 import java.awt.Point;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
 import java.util.Collection;
 
 @DefaultImplementation(context = InjectionContext.swing, of = ConflictSelectionView.class)
@@ -61,14 +63,16 @@ public class ConflictSelectionViewSwing implements ConflictSelectionView<Compone
     private final DialogUiFactoryInterface dialogUiFactory;
     private final RaplaResources i18n;
     private Presenter presenter;
+    private final ConflictTreeCellRenderer treeCellRenderer;
 
     @Inject
     public ConflictSelectionViewSwing(RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, TreeFactory treeFactory,
-            DialogUiFactoryInterface dialogUiFactory) throws RaplaInitializationException
+                                      DialogUiFactoryInterface dialogUiFactory, ConflictTreeCellRenderer treeCellRenderer) throws RaplaInitializationException
     {
         this.i18n = i18n;
         this.treeFactory = treeFactory;
         this.dialogUiFactory = dialogUiFactory;
+        this.treeCellRenderer = treeCellRenderer;
         final JTree navTree = treeSelection.getTree();
         content.setLayout(new BorderLayout());
 
@@ -78,10 +82,29 @@ public class ConflictSelectionViewSwing implements ConflictSelectionView<Compone
         JTree tree = treeSelection.getTree();
         //tree.setRootVisible(false);
         tree.setShowsRootHandles(true);
-        tree.setCellRenderer(getTreeFactory().createConflictRenderer());
-        tree.setSelectionModel(((TreeFactoryImpl) getTreeFactory()).createConflictTreeSelectionModel());
+        tree.setCellRenderer(treeCellRenderer);
+        tree.setSelectionModel(new DelegatingTreeSelectionModel(this::isSelectable));
         treeSelection.addPopupListener(listener);
         navTree.addTreeSelectionListener(listener);
+    }
+
+    boolean isSelectable(TreePath treePath)
+    {
+        Object lastPathComponent = treePath.getLastPathComponent();
+        Object object = TreeFactoryImpl.getUserObject(lastPathComponent);
+        if (object instanceof Conflict)
+        {
+            return true;
+        }
+        if (object instanceof Allocatable)
+        {
+            return true;
+        }
+        if (object instanceof DynamicType)
+        {
+            return true;
+        }
+        return false;
     }
 
     @Override
@@ -172,7 +195,8 @@ public class ConflictSelectionViewSwing implements ConflictSelectionView<Compone
         TreeModel treeModel;
         try
         {
-            treeModel = getTreeFactory().createConflictModel(conflicts);
+            final RaplaTreeNode conflictModel = getTreeFactory().createConflictModel(conflicts);
+            treeModel = new RaplaSwingTreeModel( conflictModel);
         }
         catch (RaplaException e)
         {

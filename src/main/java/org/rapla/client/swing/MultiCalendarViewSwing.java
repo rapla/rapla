@@ -14,9 +14,8 @@
 
 package org.rapla.client.swing;
 
-import org.rapla.RaplaResources;
-import org.rapla.client.dialog.DialogUiFactoryInterface;
 import org.rapla.client.internal.MultiCalendarView;
+import org.rapla.client.swing.extensionpoints.SwingViewFactory;
 import org.rapla.client.swing.internal.FilterEditButton;
 import org.rapla.client.swing.internal.FilterEditButton.FilterEditButtonFactory;
 import org.rapla.client.swing.internal.SwingPopupContext;
@@ -26,20 +25,11 @@ import org.rapla.components.layout.TableLayout;
 import org.rapla.entities.dynamictype.ClassificationFilter;
 import org.rapla.facade.ClassifiableFilter;
 import org.rapla.framework.RaplaInitializationException;
-import org.rapla.framework.RaplaLocale;
 import org.rapla.inject.DefaultImplementation;
 import org.rapla.inject.InjectionContext;
-import org.rapla.logger.Logger;
 
 import javax.inject.Inject;
-import javax.swing.BorderFactory;
-import javax.swing.DefaultComboBoxModel;
-import javax.swing.DefaultListCellRenderer;
-import javax.swing.JComboBox;
-import javax.swing.JComponent;
-import javax.swing.JLabel;
-import javax.swing.JList;
-import javax.swing.JPanel;
+import javax.swing.*;
 import javax.swing.event.ChangeListener;
 import java.awt.BorderLayout;
 import java.awt.Color;
@@ -59,17 +49,14 @@ public class MultiCalendarViewSwing implements MultiCalendarView
 
     /** renderer for weekdays in month-view */
     private FilterEditButton filter;
-    private final DialogUiFactoryInterface dialogUiFactory;
-    private LinkedHashMap<String, String> viewIdToViewName;
+    private LinkedHashMap<String, SwingViewFactory> viewIdToViewName;
     private final JPanel filterContainer = new JPanel();
     private final FilterEditButtonFactory filterEditButtonFactory;
     private boolean viewSelectionFromPromgramm = false;
     
     @Inject
-    public MultiCalendarViewSwing(RaplaResources i18n, RaplaLocale raplaLocale, Logger logger,
-            DialogUiFactoryInterface dialogUiFactory, FilterEditButtonFactory filterEditButtonFactory) throws RaplaInitializationException
+    public MultiCalendarViewSwing(FilterEditButtonFactory filterEditButtonFactory) throws RaplaInitializationException
     {
-        this.dialogUiFactory = dialogUiFactory;
         this.filterEditButtonFactory = filterEditButtonFactory;
 
         viewChooser = new JComboBox();
@@ -130,7 +117,7 @@ public class MultiCalendarViewSwing implements MultiCalendarView
     }
 
     @Override
-    public void setSelectableViews(LinkedHashMap<String, String> viewIdToViewName)
+    public void setSelectableViews(LinkedHashMap<String, SwingViewFactory> viewIdToViewName)
     {
         this.viewIdToViewName = viewIdToViewName;
         viewChooser.setMaximumRowCount(viewIdToViewName.size());
@@ -154,10 +141,11 @@ public class MultiCalendarViewSwing implements MultiCalendarView
                 }
                 else
                 {
-                    final String viewName = viewIdToViewName.get(selectedItem);
+                    final SwingViewFactory swingViewFactory = viewIdToViewName.get(selectedItem);
+                    final String viewName = swingViewFactory.getName();
+                    final Icon icon = swingViewFactory.getIcon();
                     setText(viewName);
-                    // FIXME
-                    // setIcon( factory.getIcon());
+                    setIcon(icon);
                 }
                 return this;
             }

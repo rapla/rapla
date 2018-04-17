@@ -14,6 +14,7 @@ package org.rapla.client.swing.internal.edit;
 
 import org.rapla.RaplaResources;
 import org.rapla.client.dialog.DialogUiFactoryInterface;
+import org.rapla.client.dialog.InfoFactory;
 import org.rapla.client.extensionpoints.PluginOptionPanel;
 import org.rapla.client.extensionpoints.SystemOptionPanel;
 import org.rapla.client.extensionpoints.UserOptionPanel;
@@ -22,6 +23,9 @@ import org.rapla.client.swing.OptionPanel;
 import org.rapla.client.swing.RaplaGUIComponent;
 import org.rapla.client.swing.TreeFactory;
 import org.rapla.client.swing.internal.SwingPopupContext;
+import org.rapla.client.swing.internal.view.RaplaSwingTreeModel;
+import org.rapla.client.swing.internal.view.RaplaTreeNode;
+import org.rapla.client.swing.internal.view.RaplaTreeToolTipRenderer;
 import org.rapla.client.swing.toolkit.RaplaTree;
 import org.rapla.entities.Named;
 import org.rapla.entities.NamedComparator;
@@ -43,8 +47,9 @@ import javax.swing.border.Border;
 import javax.swing.border.TitledBorder;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
-import javax.swing.tree.DefaultMutableTreeNode;
 import javax.swing.tree.DefaultTreeModel;
+import javax.swing.tree.TreeCellRenderer;
+import javax.swing.tree.TreeNode;
 import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Component;
@@ -83,9 +88,11 @@ public class PreferencesEditUI extends RaplaGUIComponent
     /** called during initialization to createInfoDialog the info component
      */
     @Inject
-    public PreferencesEditUI( TreeFactory treeFactory, Provider<Set<UserOptionPanel>> userOptionPanel,
-            Provider<Set<SystemOptionPanel>> systemOptionPanel, Map<String, Provider<PluginOptionPanel>> pluginOptionPanel, ClientFacade facade,
-            RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, DialogUiFactoryInterface dialogUiFactory)
+    public PreferencesEditUI(TreeFactory treeFactory, Provider<Set<UserOptionPanel>> userOptionPanel,
+                             Provider<Set<SystemOptionPanel>> systemOptionPanel, Map<String, Provider<PluginOptionPanel>> pluginOptionPanel, ClientFacade facade,
+                             RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, DialogUiFactoryInterface dialogUiFactory, InfoFactory infoFactory,
+                             TreeCellRenderer renderer
+    )
     {
         super(facade, i18n, raplaLocale, logger);
         this.treeFactory = treeFactory;
@@ -118,8 +125,8 @@ public class PreferencesEditUI extends RaplaGUIComponent
         };
         content.setBorder(emptyLineBorder);
         jPanelContainer.add(content, BorderLayout.CENTER);
-        jPanelSelection.getTree().setCellRenderer(treeFactory.createRenderer());
-        jPanelSelection.setToolTipRenderer(treeFactory.createTreeToolTipRenderer());
+        jPanelSelection.getTree().setCellRenderer(renderer);
+        jPanelSelection.setToolTipRenderer(new RaplaTreeToolTipRenderer(infoFactory));
         container.setPreferredSize(new Dimension(700, 550));
         content.setLeftComponent(jPanelSelection);
         content.setRightComponent(container);
@@ -207,7 +214,7 @@ public class PreferencesEditUI extends RaplaGUIComponent
         if ( preferences.getOwnerRef() == null) {
             messages.setText(getString("restart_options"));
         }
-        DefaultMutableTreeNode root = new DefaultMutableTreeNode("");
+        RaplaTreeNode root = treeFactory.newStringNode("");
         if ( preferences.getOwnerRef() != null) {
             Collection<? extends Named> elements = getUserOptions();
             for (Named element:elements) {
@@ -216,7 +223,7 @@ public class PreferencesEditUI extends RaplaGUIComponent
         } else {
             {
                 Collection<? extends Named> elements = getAdminOptions();
-                DefaultMutableTreeNode adminRoot = new DefaultMutableTreeNode("admin-options");
+                RaplaTreeNode adminRoot = treeFactory.newStringNode("admin-options");
                 for (Named element:elements) {
 
                     adminRoot.add( treeFactory.newNamedNode( element));
@@ -225,7 +232,7 @@ public class PreferencesEditUI extends RaplaGUIComponent
             }
             {
                 Collection<? extends Named> elements = getPluginOptions();
-                DefaultMutableTreeNode pluginRoot = new DefaultMutableTreeNode("plugins");
+                RaplaTreeNode pluginRoot = treeFactory.newStringNode("plugins");
                 for (Named element:elements)
                 {
                     pluginRoot.add( treeFactory.newNamedNode( element));
@@ -233,7 +240,7 @@ public class PreferencesEditUI extends RaplaGUIComponent
                 root.add( pluginRoot );
             }
         }
-        DefaultTreeModel treeModel = new DefaultTreeModel(root);
+        DefaultTreeModel treeModel = new RaplaSwingTreeModel(root);
         jPanelSelection.exchangeTreeModel(treeModel);
     }
 

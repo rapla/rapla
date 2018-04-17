@@ -27,12 +27,11 @@ import org.rapla.client.menu.MenuFactoryImpl;
 import org.rapla.client.swing.internal.RaplaMenuBarContainer;
 import org.rapla.client.swing.internal.SwingPopupContext;
 import org.rapla.client.swing.internal.edit.ClassifiableFilterEdit;
+import org.rapla.client.swing.internal.view.DelegatingTreeSelectionModel;
+import org.rapla.client.swing.internal.view.RaplaSwingTreeModel;
+import org.rapla.client.swing.internal.view.RaplaTreeToolTipRenderer;
 import org.rapla.client.swing.internal.view.TreeFactoryImpl;
-import org.rapla.client.swing.toolkit.PopupEvent;
-import org.rapla.client.swing.toolkit.PopupListener;
-import org.rapla.client.swing.toolkit.RaplaMenu;
-import org.rapla.client.swing.toolkit.RaplaPopupMenu;
-import org.rapla.client.swing.toolkit.RaplaTree;
+import org.rapla.client.swing.toolkit.*;
 import org.rapla.components.calendar.RaplaArrowButton;
 import org.rapla.components.layout.TableLayout;
 import org.rapla.entities.domain.Allocatable;
@@ -53,8 +52,7 @@ import javax.swing.JTree;
 import javax.swing.SwingUtilities;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
-import javax.swing.tree.DefaultTreeModel;
-import javax.swing.tree.TreeCellRenderer;
+import javax.swing.tree.*;
 import java.awt.BorderLayout;
 import java.awt.Component;
 import java.awt.Point;
@@ -84,11 +82,14 @@ public class ResourceSelectionViewSwing implements ResourceSelectionView
     private boolean selectionFromProgram = false;
     private Presenter presenter;
     private final MenuFactory menuFactory;
+    private final TreeToolTipRenderer treeToolTipRenderer;
 
     @Inject
     public ResourceSelectionViewSwing(RaplaMenuBarContainer menuBar, RaplaResources i18n, Logger logger,
                                       TreeFactory treeFactory, MenuFactory menuFactory, InfoFactory infoFactory,
-                                      DialogUiFactoryInterface dialogUiFactory, FilterEditButtonFactory filterEditButtonFactory) throws RaplaInitializationException
+                                      DialogUiFactoryInterface dialogUiFactory, FilterEditButtonFactory filterEditButtonFactory,
+                                      final TreeCellRenderer renderer
+    ) throws RaplaInitializationException
     {
 
         this.menuBar = menuBar;
@@ -98,6 +99,7 @@ public class ResourceSelectionViewSwing implements ResourceSelectionView
         this.menuFactory = menuFactory;
         this.dialogUiFactory = dialogUiFactory;
         this.filterEditButtonFactory = filterEditButtonFactory;
+        this.treeToolTipRenderer = new RaplaTreeToolTipRenderer(infoFactory);
         /*double[][] sizes = new double[][] { { TableLayout.FILL }, { TableLayout.PREFERRED, TableLayout.PREFERRED, TableLayout.FILL } };
         tableLayout = new TableLayout(sizes);*/
         content.setLayout(new BorderLayout());
@@ -110,10 +112,10 @@ public class ResourceSelectionViewSwing implements ResourceSelectionView
 
         buttonsPanel.setLayout(new BorderLayout());
 
-        treeSelection.setToolTipRenderer(getTreeFactory().createTreeToolTipRenderer());
+        treeSelection.setToolTipRenderer(new RaplaTreeToolTipRenderer(infoFactory));
         treeSelection.setMultiSelect(true);
-        treeSelection.getTree().setSelectionModel(((TreeFactoryImpl) getTreeFactory()).createComplexTreeSelectionModel());
-        final TreeCellRenderer renderer = getTreeFactory().createRenderer();
+        treeSelection.getTree().setSelectionModel(   new DelegatingTreeSelectionModel(this::isSelectable));
+
         treeSelection.getTree().setCellRenderer(renderer);
 
         treeSelection.addChangeListener(listener);
@@ -129,6 +131,13 @@ public class ResourceSelectionViewSwing implements ResourceSelectionView
             getPresenter().treeSelectionChanged();
         });
         javax.swing.ToolTipManager.sharedInstance().registerComponent(treeSelection.getTree());
+    }
+
+    public boolean isSelectable(TreePath treePath)
+    {
+        Object lastPathComponent = treePath.getLastPathComponent();
+        Object object = TreeFactoryImpl.getUserObject(lastPathComponent);
+        return !(object instanceof TreeFactoryImpl.Categorization);
     }
     
 
@@ -220,7 +229,7 @@ public class ResourceSelectionViewSwing implements ResourceSelectionView
     protected DefaultTreeModel generateTree(ClassificationFilter[] filter) throws RaplaException
     {
         final TreeFactoryImpl treeFactoryImpl = (TreeFactoryImpl) getTreeFactory();
-        DefaultTreeModel treeModel = treeFactoryImpl.createModel(filter);
+        DefaultTreeModel treeModel = new RaplaSwingTreeModel(treeFactoryImpl.createModel(filter));
         return treeModel;
     }
 

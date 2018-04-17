@@ -2,9 +2,11 @@ package org.rapla.client.dialog.swing;
 
 import org.rapla.client.dialog.ListView;
 import org.rapla.client.swing.TreeFactory;
+import org.rapla.client.swing.internal.view.RaplaSwingTreeModel;
 import org.rapla.client.swing.toolkit.RaplaTree;
 import org.rapla.inject.DefaultImplementation;
 import org.rapla.inject.InjectionContext;
+import org.rapla.plugin.tableview.RaplaTableModel;
 import org.rapla.scheduler.CommandScheduler;
 import org.rapla.scheduler.Observable;
 import org.rapla.scheduler.Subject;
@@ -24,13 +26,13 @@ public class SwingListView<T> implements ListView<T> {
     final RaplaTree treeSelection;
 
     @Inject
-    public SwingListView(TreeFactory treeFactory, CommandScheduler scheduler)
+    public SwingListView(TreeCellRenderer treeCellRenderer, CommandScheduler scheduler)
     {
         publisherDoubleClick = scheduler.createPublisher();
         publisherSelectionChanged = scheduler.createPublisher();
         treeSelection = new RaplaTree();
         treeSelection.setMultiSelect(false);
-        treeSelection.getTree().setCellRenderer(treeFactory.createRenderer());
+        treeSelection.getTree().setCellRenderer(treeCellRenderer);
         treeSelection.setMinimumSize(new java.awt.Dimension(300, 200));
         treeSelection.setPreferredSize(new java.awt.Dimension(400, 260));
         final JTree tree = treeSelection.getTree();

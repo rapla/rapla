@@ -25,6 +25,8 @@ import org.rapla.client.swing.internal.edit.fields.BooleanField;
 import org.rapla.client.swing.internal.edit.fields.GroupListField;
 import org.rapla.client.swing.internal.edit.fields.TextField;
 import org.rapla.client.swing.internal.edit.fields.TextField.TextFieldFactory;
+import org.rapla.client.swing.internal.view.RaplaSwingTreeModel;
+import org.rapla.client.swing.internal.view.RaplaTreeNode;
 import org.rapla.client.swing.toolkit.RaplaButton;
 import org.rapla.client.swing.toolkit.RaplaTree;
 import org.rapla.components.i18n.I18nIcon;
@@ -52,6 +54,7 @@ import javax.swing.JTree;
 import javax.swing.SwingUtilities;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
+import javax.swing.tree.TreeCellRenderer;
 import javax.swing.tree.TreeNode;
 import javax.swing.tree.TreePath;
 import java.awt.BorderLayout;
@@ -84,15 +87,17 @@ public class UserEditUI  extends AbstractEditUI<User> {
     GroupListField groupField;
     private final TreeFactory treeFactory;
     private final DialogUiFactoryInterface dialogUiFactory;
+    private final TreeCellRenderer treeCellRenderer;
     /**
      * @throws RaplaException
      */
     @Inject
-    public UserEditUI(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, TreeFactory treeFactory, DialogUiFactoryInterface dialogUiFactory, GroupListField groupField, TextFieldFactory textFieldFactory) throws
+    public UserEditUI(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, TreeFactory treeFactory, DialogUiFactoryInterface dialogUiFactory, GroupListField groupField, TextFieldFactory textFieldFactory, TreeCellRenderer treeCellRenderer) throws
             RaplaInitializationException {
         super(facade, i18n, raplaLocale, logger);
         this.treeFactory = treeFactory;
         this.dialogUiFactory = dialogUiFactory;
+        this.treeCellRenderer = treeCellRenderer;
         List<EditField> fields = new ArrayList<>();
         usernameField = textFieldFactory.create(getString("username"));
         fields.add(usernameField);
@@ -266,7 +271,7 @@ public class UserEditUI  extends AbstractEditUI<User> {
             final DialogInterface dialog;
             RaplaTree treeSelection = new RaplaTree();
             treeSelection.setMultiSelect(true);
-            treeSelection.getTree().setCellRenderer(treeFactory.createRenderer());
+            treeSelection.getTree().setCellRenderer(treeCellRenderer);
 
             final DynamicType[] personTypes = getQuery().getDynamicTypes(DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_PERSON);
             List<ClassificationFilter> filters = new ArrayList<>();
@@ -294,7 +299,8 @@ public class UserEditUI  extends AbstractEditUI<User> {
                 }
             }
             final Allocatable[] allocatableArray = allocatablesWithEmail.toArray(Allocatable.ALLOCATABLE_ARRAY);
-            treeSelection.exchangeTreeModel(treeFactory.createClassifiableModel(allocatableArray, true));
+            final RaplaTreeNode classifiableModel = treeFactory.createClassifiableModel(allocatableArray, true);
+            treeSelection.exchangeTreeModel(new RaplaSwingTreeModel(classifiableModel));
             treeSelection.setMinimumSize(new java.awt.Dimension(300, 200));
             treeSelection.setPreferredSize(new java.awt.Dimension(400, 260));
             

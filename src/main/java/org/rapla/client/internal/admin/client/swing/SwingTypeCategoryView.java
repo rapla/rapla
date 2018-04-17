@@ -13,14 +13,14 @@ import org.rapla.client.menu.SelectionMenuContext;
 import org.rapla.client.swing.RaplaGUIComponent;
 import org.rapla.client.swing.TreeFactory;
 import org.rapla.client.swing.internal.SwingPopupContext;
+import org.rapla.client.swing.internal.view.RaplaSwingTreeModel;
+import org.rapla.client.swing.internal.view.RaplaTreeNode;
 import org.rapla.client.swing.toolkit.RaplaButton;
 import org.rapla.client.swing.toolkit.RaplaMenu;
 import org.rapla.client.swing.toolkit.RaplaPopupMenu;
 import org.rapla.client.swing.toolkit.RaplaTree;
-import org.rapla.components.layout.TableLayout;
 import org.rapla.entities.Category;
 import org.rapla.entities.NamedComparator;
-import org.rapla.entities.User;
 import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.entities.dynamictype.DynamicTypeAnnotations;
 import org.rapla.facade.RaplaFacade;
@@ -38,9 +38,7 @@ import javax.inject.Inject;
 import javax.swing.*;
 import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
-import javax.swing.tree.DefaultMutableTreeNode;
-import javax.swing.tree.DefaultTreeModel;
-import javax.swing.tree.TreeModel;
+import javax.swing.tree.*;
 import java.awt.*;
 import java.util.*;
 import java.util.List;
@@ -73,10 +71,11 @@ public class SwingTypeCategoryView extends RaplaGUIComponent implements
 
     private final DialogUiFactoryInterface dialogUiFactory;
     private final RaplaFacade raplaFacade;
+    private final TreeCellRenderer treeCellRenderer;
 
 
 	@Inject
-	public SwingTypeCategoryView(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, MenuFactory menuFactory, TreeFactory treeFactory, DialogUiFactoryInterface dialogUiFactory) throws
+	public SwingTypeCategoryView(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, MenuFactory menuFactory, TreeFactory treeFactory, DialogUiFactoryInterface dialogUiFactory, TreeCellRenderer treeCellRenderer) throws
 			RaplaInitializationException {
 		super(facade, i18n, raplaLocale, logger);
 		this.logger = logger;
@@ -84,6 +83,7 @@ public class SwingTypeCategoryView extends RaplaGUIComponent implements
 		this.menuFactory = menuFactory;
 		this.treeFactory = treeFactory;
         this.dialogUiFactory = dialogUiFactory;
+		this.treeCellRenderer = treeCellRenderer;
 
 		// creation of different panels
 		mainPanel = new JPanel();
@@ -134,7 +134,7 @@ public class SwingTypeCategoryView extends RaplaGUIComponent implements
 		// creation of the tree
 		selectionTreeTable = new RaplaTree();
 		selectionTreeTable.setMultiSelect( true);
-		selectionTreeTable.getTree().setCellRenderer(treeFactory.createRenderer());
+		selectionTreeTable.getTree().setCellRenderer(treeCellRenderer);
 		// including the tree in ScrollPane and adding this to the GUI
 		centerPanel.add(selectionTreeTable.getTree(), BorderLayout.CENTER);
 		selectionTreeTable.addPopupListener(evt -> {
@@ -289,7 +289,7 @@ public class SwingTypeCategoryView extends RaplaGUIComponent implements
 						// them to the list
 						Category rootCategory = raplaFacade.getSuperCategory();
 						List<Category> categoriesToMatch = searchCategoryName(rootCategory, pattern);
-						selectionModel = treeFactory.createModel(categoriesToMatch, false);
+						selectionModel = new RaplaSwingTreeModel(treeFactory.createModel(categoriesToMatch, false));
 						viewLabel.setText(getI18n().getString("users"));
 						break;
 					}
@@ -334,13 +334,13 @@ public class SwingTypeCategoryView extends RaplaGUIComponent implements
 	@NotNull
 	public TreeModel updateTypes(String pattern, String valueClassificationTypeResource, String title) throws RaplaException {
 		TreeModel selectionModel;DynamicType[] types  = searchTypes(pattern, valueClassificationTypeResource).toArray( DynamicType.DYNAMICTYPE_ARRAY);
-		DefaultMutableTreeNode root = new DefaultMutableTreeNode("");
+		RaplaTreeNode root = treeFactory.newStringNode("");
 		viewLabel.setText(title);
 		for (DynamicType user:types)
         {
             root.add(treeFactory.newNamedNode(user));
         }
-		selectionModel = new DefaultTreeModel(root);
+		selectionModel = new RaplaSwingTreeModel(root);
 		// change the name of the root node in "user"
 		((DefaultMutableTreeNode) (selectionModel.getRoot())).setUserObject(title);
 		return selectionModel;

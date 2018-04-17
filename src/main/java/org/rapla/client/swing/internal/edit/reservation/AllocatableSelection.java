@@ -31,6 +31,8 @@ import org.rapla.client.swing.internal.common.CalendarAction;
 import org.rapla.client.swing.internal.edit.ClassifiableFilterEdit;
 import org.rapla.client.swing.internal.edit.fields.BooleanField.BooleanFieldFactory;
 import org.rapla.client.swing.internal.edit.fields.DateField.DateFieldFactory;
+import org.rapla.client.swing.internal.view.RaplaSwingTreeModel;
+import org.rapla.client.swing.internal.view.RaplaTreeNode;
 import org.rapla.client.swing.toolkit.AWTColorUtil;
 import org.rapla.client.swing.toolkit.MenuScroller;
 import org.rapla.client.swing.toolkit.PopupEvent;
@@ -1021,7 +1023,8 @@ public class AllocatableSelection extends RaplaGUIComponent implements Appointme
         {
             this.allocatables = allocatables;
 
-            treeModel = treeFactory.createClassifiableModel(allocatables.toArray(Allocatable.ALLOCATABLE_ARRAY), useCategorizations);
+            final RaplaTreeNode classifiableModel = treeFactory.createClassifiableModel(allocatables.toArray(Allocatable.ALLOCATABLE_ARRAY), useCategorizations);
+            treeModel = new RaplaSwingTreeModel(classifiableModel);
             DefaultMutableTreeNode root = (DefaultMutableTreeNode) getRoot();
             int childCount = root.getChildCount();
             int[] childIndices = new int[childCount];
