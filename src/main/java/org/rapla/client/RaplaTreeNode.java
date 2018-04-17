@@ -1,4 +1,4 @@
-package org.rapla.client.swing.internal.view;
+package org.rapla.client;
 
 import java.util.function.Predicate;
 

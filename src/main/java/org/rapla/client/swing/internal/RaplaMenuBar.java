@@ -285,7 +285,7 @@ public class RaplaMenuBar extends RaplaGUIComponent
         if (isAdmin())
         {
             RaplaMenuItem  typeAdmin = new RaplaMenuItem("typeadmin");
-            final String name = getString("types") + "/" + getString("categories") ;
+            final String name = getString("types") + "/" + getString("categories")  + "/" + i18n.getString("periods");
             typeAdmin.setText( name);
             final Icon icon = RaplaImages.getIcon(i18n.getIcon("icon.tree"));
             typeAdmin.setIcon( icon);

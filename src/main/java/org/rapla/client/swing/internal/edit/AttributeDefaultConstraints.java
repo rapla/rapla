@@ -6,7 +6,7 @@ import org.rapla.client.dialog.DialogInterface;
 import org.rapla.client.dialog.DialogUiFactoryInterface;
 import org.rapla.client.extensionpoints.AnnotationEditAttributeExtension;
 import org.rapla.client.swing.RaplaGUIComponent;
-import org.rapla.client.swing.TreeFactory;
+import org.rapla.client.TreeFactory;
 import org.rapla.client.swing.internal.SwingPopupContext;
 import org.rapla.client.swing.internal.common.NamedListCellRenderer;
 import org.rapla.client.swing.internal.edit.annotation.AnnotationEditUI;
@@ -20,8 +20,6 @@ import org.rapla.client.swing.internal.edit.fields.MultiLanguageField.MultiLangu
 import org.rapla.client.swing.internal.edit.fields.TextField;
 import org.rapla.client.swing.internal.edit.fields.TextField.TextFieldFactory;
 import org.rapla.client.swing.toolkit.RaplaButton;
-import org.rapla.components.calendar.DateChangeEvent;
-import org.rapla.components.calendar.DateChangeListener;
 import org.rapla.components.calendar.DateRenderer;
 import org.rapla.components.calendar.RaplaCalendar;
 import org.rapla.components.calendar.RaplaNumber;

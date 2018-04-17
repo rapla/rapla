@@ -7,20 +7,24 @@ import org.rapla.client.RaplaWidget;
 import org.rapla.client.dialog.DialogUiFactoryInterface;
 import org.rapla.client.internal.admin.client.CategoryMenuContext;
 import org.rapla.client.internal.admin.client.DynamicTypeMenuContext;
+import org.rapla.client.internal.admin.client.PeriodMenuContext;
 import org.rapla.client.internal.admin.client.TypeCategoryView;
 import org.rapla.client.menu.MenuFactory;
 import org.rapla.client.menu.SelectionMenuContext;
 import org.rapla.client.swing.RaplaGUIComponent;
-import org.rapla.client.swing.TreeFactory;
+import org.rapla.client.TreeFactory;
 import org.rapla.client.swing.internal.SwingPopupContext;
 import org.rapla.client.swing.internal.view.RaplaSwingTreeModel;
-import org.rapla.client.swing.internal.view.RaplaTreeNode;
+import org.rapla.client.RaplaTreeNode;
 import org.rapla.client.swing.toolkit.RaplaButton;
-import org.rapla.client.swing.toolkit.RaplaMenu;
 import org.rapla.client.swing.toolkit.RaplaPopupMenu;
 import org.rapla.client.swing.toolkit.RaplaTree;
 import org.rapla.entities.Category;
+import org.rapla.entities.Entity;
+import org.rapla.entities.Named;
 import org.rapla.entities.NamedComparator;
+import org.rapla.entities.domain.Allocatable;
+import org.rapla.entities.dynamictype.Classifiable;
 import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.entities.dynamictype.DynamicTypeAnnotations;
 import org.rapla.facade.RaplaFacade;
@@ -33,6 +37,7 @@ import org.rapla.inject.InjectionContext;
 import org.rapla.logger.Logger;
 import org.rapla.scheduler.Promise;
 import org.rapla.scheduler.ResolvedPromise;
+import org.rapla.storage.StorageOperator;
 
 import javax.inject.Inject;
 import javax.swing.*;
@@ -43,7 +48,7 @@ import java.awt.*;
 import java.util.*;
 import java.util.List;
 import java.util.regex.Pattern;
-
+import java.util.stream.Stream;
 
 @DefaultImplementation(of=TypeCategoryView.class,context = InjectionContext.swing)
 public class SwingTypeCategoryView extends RaplaGUIComponent implements
@@ -71,7 +76,6 @@ public class SwingTypeCategoryView extends RaplaGUIComponent implements
 
     private final DialogUiFactoryInterface dialogUiFactory;
     private final RaplaFacade raplaFacade;
-    private final TreeCellRenderer treeCellRenderer;
 
 
 	@Inject
@@ -83,8 +87,6 @@ public class SwingTypeCategoryView extends RaplaGUIComponent implements
 		this.menuFactory = menuFactory;
 		this.treeFactory = treeFactory;
         this.dialogUiFactory = dialogUiFactory;
-		this.treeCellRenderer = treeCellRenderer;
-
 		// creation of different panels
 		mainPanel = new JPanel();
 		mainPanel.setLayout(new BorderLayout());
@@ -101,7 +103,7 @@ public class SwingTypeCategoryView extends RaplaGUIComponent implements
 		// creation of the ComboBox to choose one of the views
 		// adding the ComboBox to the northPanel
 		@SuppressWarnings("unchecked")
-		JComboBox jComboBox = new JComboBox(new String[] {getString("resource_types"), getString("person_types"), getString("reservation_type"),getString("categories")});
+		JComboBox jComboBox = new JComboBox(new String[] {getString("resource_types"), getString("person_types"), getString("reservation_type"),getString("categories"),getString("periods")});
 		cbView = jComboBox;
 		cbView.addItemListener((evt)->itemStateChanged());
 
@@ -148,10 +150,14 @@ public class SwingTypeCategoryView extends RaplaGUIComponent implements
 			{
 				 menuContext= new DynamicTypeMenuContext(selectedObject, popupContext).setClassificationType(classificationType);
 			}
-			else
+			else if (view == View.CATEGORY)
 			{
 				final Category superCategory = getQuery().getSuperCategory();
 				menuContext= new CategoryMenuContext(selectedObject, popupContext, superCategory);
+			}
+			else
+			{
+				menuContext= new PeriodMenuContext(selectedObject, popupContext);
 			}
 			menuContext.setSelectedObjects(selectedElements);
             showTreePopup(popupContext, menuContext);
@@ -160,17 +166,11 @@ public class SwingTypeCategoryView extends RaplaGUIComponent implements
 
 	private void showTreePopup(SwingPopupContext popupContext,  SelectionMenuContext swingMenuContext)
 	{
-		RaplaResources i18n = getI18n();
 		try
 		{
 			RaplaPopupMenu menu = new RaplaPopupMenu(popupContext);
-			RaplaMenu newMenu = new RaplaMenu("new");
-			newMenu.setText(i18n.getString("new"));
-			// TODO extract interface
-			menuFactory.addNewMenu(newMenu, swingMenuContext, null);
-			menuFactory.addObjectMenu(menu, swingMenuContext, "EDIT_BEGIN");
-			newMenu.setEnabled(newMenu.getMenuComponentCount() > 0);
-			menu.insertAfterId(newMenu, "EDIT_BEGIN");
+			menuFactory.addNewMenu(menu, swingMenuContext, null);
+			menuFactory.addObjectMenu(menu, swingMenuContext, null);
             Component component = popupContext.getParent();
 			final Point p = popupContext.getPoint();
 			menu.show(component, p.x, p.y);
@@ -211,6 +211,8 @@ public class SwingTypeCategoryView extends RaplaGUIComponent implements
 			view = View.RESERVATION_TYPE;
 		else if (selectedIndex == 3)
 			view = View.CATEGORY;
+		else if (selectedIndex == 4)
+			view = View.PERIODS;
 		// build of the screen according to the view
 		loadView();
 	}
@@ -245,9 +247,7 @@ public class SwingTypeCategoryView extends RaplaGUIComponent implements
 			// is category a leaf?
 			if (category.getCategories().length == 0) {
 				// does the specified pattern matches with the the categoryname?
-				final String name = category.getName(locale);
-				if (Pattern.matches(pattern.toLowerCase(locale),
-						name.toLowerCase(locale)))
+				if (matchesPattern(pattern,  category))
 					categories.add(category);
 			} else {
 				// get all child with a matching name (recursive)
@@ -262,18 +262,47 @@ public class SwingTypeCategoryView extends RaplaGUIComponent implements
 	// search users with specified pattern in username
 	private List<DynamicType> searchTypes(String pattern, String classificationType) throws RaplaException {
 		List<DynamicType> types = new ArrayList<>();
-		Locale locale = getLocale();
 		// get all types
-		for (DynamicType user : getQuery().getDynamicTypes(classificationType)) {
+		for (DynamicType object : getQuery().getDynamicTypes(classificationType)) {
 			// does the specified pattern matches with the the username?
-			if (Pattern.matches(pattern.toLowerCase(locale), user.getName(locale)
-					.toLowerCase(locale)))
-				types.add(user);
+			Locale locale = getLocale();
+			if (matchesPattern(pattern,  object))
+				types.add(object);
 
 		}
+		Locale locale = getLocale();
 		Collections.sort(types, new NamedComparator<>(locale));
 		return types;
 	}
+
+	private boolean matchesPattern(String pattern, Named named)
+	{
+		Locale locale = getLocale();
+		String name = named.getName(locale);
+		return Pattern.matches(pattern.toLowerCase(locale), name.toLowerCase(locale));
+	}
+
+	private Stream<Allocatable> searchPeriods(String pattern) throws RaplaException {
+		DynamicType periodType = getQuery().getDynamicType(StorageOperator.PERIOD_TYPE);
+		Allocatable[] periodList = getQuery().getAllocatablesWithFilter(periodType.newClassificationFilter().toArray());
+		Comparator<Classifiable> comp =      ( o1, o2)->
+		{
+			final Object start1 = o1.getClassification().getValue("start");
+			final Object start2 = o2.getClassification().getValue("start");
+			if (start1 != null && start2 != null && start1 instanceof Comparable)
+			{
+				int result = ((Comparable) start1).compareTo(start2);
+				if (result != 0)
+				{
+					return result;
+				}
+			}
+
+			return ((Entity) o1).getId().compareTo(((Entity) o2).getId());
+		};
+		return Stream.of( periodList).filter(period->matchesPattern(pattern, period)).sorted( comp);
+	}
+
 
 	@Override
 	public void updateView() {
@@ -308,6 +337,11 @@ public class SwingTypeCategoryView extends RaplaGUIComponent implements
 						selectionModel = updateTypes(pattern, valueClassificationTypeResource, title);
 						break;
 					}
+					case PERIODS: {
+						final String title = getI18n().getString("periods");
+						selectionModel = updatePeriods(pattern,  title);
+						break;
+					}
 				}
 				selectionTreeTable.getTree().setModel(selectionModel);
 			} catch (RaplaException ex) {
@@ -333,7 +367,8 @@ public class SwingTypeCategoryView extends RaplaGUIComponent implements
 
 	@NotNull
 	public TreeModel updateTypes(String pattern, String valueClassificationTypeResource, String title) throws RaplaException {
-		TreeModel selectionModel;DynamicType[] types  = searchTypes(pattern, valueClassificationTypeResource).toArray( DynamicType.DYNAMICTYPE_ARRAY);
+		TreeModel selectionModel;
+		List<DynamicType> types  = searchTypes(pattern, valueClassificationTypeResource);
 		RaplaTreeNode root = treeFactory.newStringNode("");
 		viewLabel.setText(title);
 		for (DynamicType user:types)
@@ -346,9 +381,21 @@ public class SwingTypeCategoryView extends RaplaGUIComponent implements
 		return selectionModel;
 	}
 
+	@NotNull
+	public TreeModel updatePeriods(String pattern,  String title) throws RaplaException {
+		TreeModel selectionModel;
+		RaplaTreeNode root = treeFactory.newRootNode();
+		viewLabel.setText(title);
+		searchPeriods(pattern).map( treeFactory::newNamedNode).forEach(root::add);
+		selectionModel = new RaplaSwingTreeModel(root);
+		// change the name of the root node in "user"
+		((DefaultMutableTreeNode) (selectionModel.getRoot())).setUserObject(title);
+		return selectionModel;
+	}
+
 
 	public enum View {
-		RESOURCE_TYPE, PERSON_TYPE, RESERVATION_TYPE, CATEGORY
+		RESOURCE_TYPE, PERSON_TYPE, RESERVATION_TYPE, CATEGORY, PERIODS
 	}
 
 

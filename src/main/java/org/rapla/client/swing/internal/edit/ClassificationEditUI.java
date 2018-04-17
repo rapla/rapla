@@ -15,7 +15,7 @@ package org.rapla.client.swing.internal.edit;
 import org.rapla.RaplaResources;
 import org.rapla.client.dialog.DialogUiFactoryInterface;
 import org.rapla.client.swing.EditField;
-import org.rapla.client.swing.TreeFactory;
+import org.rapla.client.TreeFactory;
 import org.rapla.client.swing.internal.edit.fields.AllocatableSelectField;
 import org.rapla.client.swing.internal.edit.fields.BooleanField.BooleanFieldFactory;
 import org.rapla.client.swing.internal.edit.fields.CategoryListField;

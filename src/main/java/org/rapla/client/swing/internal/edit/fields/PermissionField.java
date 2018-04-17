@@ -14,7 +14,7 @@ package org.rapla.client.swing.internal.edit.fields;
 
 import org.rapla.RaplaResources;
 import org.rapla.client.dialog.DialogUiFactoryInterface;
-import org.rapla.client.swing.TreeFactory;
+import org.rapla.client.TreeFactory;
 import org.rapla.client.swing.internal.edit.fields.DateField.DateFieldFactory;
 import org.rapla.client.swing.internal.edit.fields.LongField.LongFieldFactory;
 import org.rapla.components.layout.TableLayout;

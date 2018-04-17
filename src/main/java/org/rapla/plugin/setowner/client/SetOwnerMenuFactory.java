@@ -20,7 +20,9 @@ import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.Appointment;
 import org.rapla.entities.domain.AppointmentBlock;
 import org.rapla.entities.domain.Reservation;
+import org.rapla.entities.dynamictype.DynamicTypeAnnotations;
 import org.rapla.entities.storage.ReferenceInfo;
+import org.rapla.facade.PeriodModel;
 import org.rapla.facade.RaplaFacade;
 import org.rapla.facade.client.ClientFacade;
 import org.rapla.framework.RaplaException;
@@ -28,6 +30,7 @@ import org.rapla.inject.Extension;
 import org.rapla.plugin.setowner.SetOwnerResources;
 import org.rapla.scheduler.Promise;
 import org.rapla.scheduler.ResolvedPromise;
+import org.rapla.storage.StorageOperator;
 
 import javax.inject.Inject;
 import javax.inject.Provider;
@@ -104,7 +107,16 @@ public class SetOwnerMenuFactory implements ObjectMenuFactory
     	    	}
     	    	else if ( raplaType ==  Allocatable.class)
     	    	{
-    	    		ownable = (Allocatable) obj;
+                    final Allocatable allocatable = (Allocatable) obj;
+                    //Periods are not ownable
+                    if (StorageOperator.PERIOD_TYPE.equals(allocatable.getClassification().getType().getKey()))
+                    {
+                        ownable = null;
+                    }
+                    else
+                    {
+                        ownable = allocatable;
+                    }
     	    	}
     	    	else
     	    	{

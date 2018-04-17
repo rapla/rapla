@@ -20,6 +20,7 @@ import org.rapla.client.extensionpoints.ReservationWizardExtension;
 import org.rapla.client.internal.RaplaClipboard;
 import org.rapla.client.internal.admin.client.CategoryMenuContext;
 import org.rapla.client.internal.admin.client.DynamicTypeMenuContext;
+import org.rapla.client.internal.admin.client.PeriodMenuContext;
 import org.rapla.client.menu.impl.AppointmentAction;
 import org.rapla.client.menu.impl.RaplaObjectActions;
 import org.rapla.client.swing.toolkit.RaplaMenu;
@@ -368,7 +369,9 @@ import java.util.TreeMap;
                     .equals(DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RESOURCE);
             reservationType = classificationType.equals(DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RESERVATION);
         }
-        boolean allocatableNodeContext = allocatableType || focusedObject instanceof Allocatable || focusedObject == CalendarModelImpl.ALLOCATABLES_ROOT;
+        final boolean dynamicTypeEdit = context instanceof DynamicTypeMenuContext;
+        boolean periodNodeContext = context instanceof PeriodMenuContext || focusedObject instanceof Period;
+        boolean allocatableNodeContext = !periodNodeContext && !dynamicTypeEdit &&  (allocatableType || focusedObject instanceof Allocatable || focusedObject == CalendarModelImpl.ALLOCATABLES_ROOT );
         User workingUser = getUser();
         final boolean isAdmin = workingUser.isAdmin();
         final boolean localGroupAdmin = !isAdmin && PermissionController.getAdminGroups(workingUser).size() > 0;
@@ -383,8 +386,7 @@ import java.util.TreeMap;
             }
         }
         boolean reservationNodeContext = reservationType || (focusedObject != null && focusedObject.equals(i18n.getString("reservation_type")));
-        boolean userNodeContext = focusedObject instanceof User || (focusedObject != null && focusedObject.equals(i18n.getString("users")));
-        boolean periodNodeContext = focusedObject instanceof Period || (focusedObject != null && focusedObject.equals(i18n.getString("periods")));
+        boolean userNodeContext = focusedObject instanceof User;
         boolean categoryNodeContext = context instanceof CategoryMenuContext;
         if (userNodeContext || allocatableNodeContext || reservationNodeContext || periodNodeContext || categoryNodeContext)
         {
@@ -402,7 +404,7 @@ import java.util.TreeMap;
         }
         if (isAdmin)
         {
-            if ( context instanceof DynamicTypeMenuContext)
+            if (dynamicTypeEdit)
             {
                 final String classificationType = ((DynamicTypeMenuContext) context).getClassificationType();
                 if (classificationType != null) {
@@ -665,7 +667,9 @@ import java.util.TreeMap;
     {
         RaplaObjectActions newReservationType = newObjectAction(popupContext);
         newReservationType.setClassificationType(classificationType );
-        final IdentifiableMenuEntry menuItem = menuItemFactory.createMenuItem(i18n.getString(classificationType + "_type"), null, (popupContext1) -> newReservationType.actionPerformed());
+        //final String string = i18n.getString(classificationType + "_type");
+        final String string = i18n.getString("new");
+        final IdentifiableMenuEntry menuItem = menuItemFactory.createMenuItem(string, i18n.getIcon("icon.new"), (popupContext1) -> newReservationType.actionPerformed());
         menu.addMenuItem(menuItem);
     }
 
@@ -696,6 +700,7 @@ import java.util.TreeMap;
     {
         PopupContext popupContext = menuContext.getPopupContext();
         RaplaObjectActions newAction = newObjectAction(popupContext).setNew(Category.class);
+
         if (obj instanceof Category)
         {
             newAction.changeObject((Category) obj);
@@ -708,15 +713,15 @@ import java.util.TreeMap;
         {
             newAction.changeObject( menuContext.getRootCategory());
         }
-        newAction.setName(i18n.getString("category"));
+        newAction.setName(i18n.getString("new"));
+        //newAction.setName(i18n.getString("category"));
         newAction.addTo( menu );
     }
 
     private void addPeriodMenuNew(MenuInterface menu, PopupContext popupContext)
     {
         RaplaObjectActions action = newObjectAction(popupContext).setNew(Period.class).addTo( menu);
-        action.setName(i18n.getString("period"));
-        action.addTo( menu );
+        action.setName(i18n.getString("new"));
     }
 
     private RaplaObjectActions addAction(MenuInterface menu,  RaplaObjectActions action, String id)

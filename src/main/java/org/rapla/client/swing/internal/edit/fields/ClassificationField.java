@@ -14,7 +14,7 @@ package org.rapla.client.swing.internal.edit.fields;
 
 import org.rapla.RaplaResources;
 import org.rapla.client.dialog.DialogUiFactoryInterface;
-import org.rapla.client.swing.TreeFactory;
+import org.rapla.client.TreeFactory;
 import org.rapla.client.swing.images.RaplaImages;
 import org.rapla.client.swing.internal.SwingPopupContext;
 import org.rapla.client.swing.internal.common.NamedListCellRenderer;
@@ -52,8 +52,6 @@ import javax.swing.JComponent;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
-import javax.swing.event.ChangeEvent;
-import javax.swing.event.ChangeListener;
 import java.awt.BorderLayout;
 import java.awt.Dimension;
 import java.awt.event.ActionEvent;

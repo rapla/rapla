@@ -1,5 +1,6 @@
 package org.rapla.client.swing.internal.view;
 
+import org.rapla.client.RaplaTreeNode;
 import org.rapla.client.dialog.InfoFactory;
 import org.rapla.client.swing.toolkit.TreeToolTipRenderer;
 import org.rapla.facade.Conflict;

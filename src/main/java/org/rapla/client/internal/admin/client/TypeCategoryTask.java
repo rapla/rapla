@@ -27,7 +27,7 @@ public class TypeCategoryTask implements TaskPresenter {
     private final RaplaFacade raplaFacade;
     private final DialogUiFactoryInterface dialogUIFactory;
 
-    TypeCategoryView report;
+    TypeCategoryView adminView;
 
     final RaplaResources i18n;
     final private ApplicationEventBus eventBus;
@@ -45,7 +45,7 @@ public class TypeCategoryTask implements TaskPresenter {
     }
     @Override
     public <T> Promise<RaplaWidget> startActivity(ApplicationEvent applicationEvent) {
-        report = viewProvider.get();
+        adminView = viewProvider.get();
         PopupContext popupContext = dialogUIFactory.createPopupContext( null);
         BiFunction<Object,Object,Promise<Void>> moveFunction = (selected, target)->
         {
@@ -60,19 +60,19 @@ public class TypeCategoryTask implements TaskPresenter {
             event.setStop(true);
             eventBus.publish(event);
         };
-        return report.init(moveFunction, closeCmd);
+        return adminView.init(moveFunction, closeCmd);
     }
 
     @Override
     public void updateView(ModificationEvent event) {
         if ( event.isModified(Category.class) || event.isModified(DynamicType.class)) {
-            report.updateView();
+            adminView.updateView();
         }
     }
 
     @Override
     public String getTitle(ApplicationEvent activity) {
-        final String name = i18n.getString("types")  + "/" + i18n.getString("categories") ;
+        final String name = i18n.getString("types")  + "/" + i18n.getString("categories") + "/" + i18n.getString("periods") ;
         return name;
     }
 

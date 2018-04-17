@@ -17,7 +17,7 @@ import org.rapla.client.RaplaWidget;
 import org.rapla.client.dialog.DialogUiFactoryInterface;
 import org.rapla.client.swing.EditField;
 import org.rapla.client.swing.RaplaGUIComponent;
-import org.rapla.client.swing.TreeFactory;
+import org.rapla.client.TreeFactory;
 import org.rapla.client.swing.images.RaplaImages;
 import org.rapla.client.swing.internal.SwingPopupContext;
 import org.rapla.client.swing.internal.common.NamedListCellRenderer;

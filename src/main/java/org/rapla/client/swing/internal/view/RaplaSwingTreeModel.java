@@ -1,6 +1,7 @@
 package org.rapla.client.swing.internal.view;
 
-import javax.swing.table.DefaultTableModel;
+import org.rapla.client.RaplaTreeNode;
+
 import javax.swing.tree.DefaultTreeModel;
 import javax.swing.tree.TreeNode;
 

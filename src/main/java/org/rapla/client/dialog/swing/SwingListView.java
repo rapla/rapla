@@ -1,12 +1,7 @@
 package org.rapla.client.dialog.swing;
 
 import org.rapla.client.dialog.ListView;
-import org.rapla.client.swing.TreeFactory;
-import org.rapla.client.swing.internal.view.RaplaSwingTreeModel;
 import org.rapla.client.swing.toolkit.RaplaTree;
-import org.rapla.inject.DefaultImplementation;
-import org.rapla.inject.InjectionContext;
-import org.rapla.plugin.tableview.RaplaTableModel;
 import org.rapla.scheduler.CommandScheduler;
 import org.rapla.scheduler.Observable;
 import org.rapla.scheduler.Subject;

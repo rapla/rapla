@@ -2,7 +2,7 @@ package org.rapla.client.swing.internal.edit.fields;
 
 import org.rapla.RaplaResources;
 import org.rapla.client.dialog.DialogUiFactoryInterface;
-import org.rapla.client.swing.TreeFactory;
+import org.rapla.client.TreeFactory;
 import org.rapla.client.swing.images.RaplaImages;
 import org.rapla.client.swing.internal.SwingPopupContext;
 import org.rapla.client.swing.toolkit.RaplaButton;

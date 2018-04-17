@@ -15,6 +15,7 @@ package org.rapla.client.swing;
 
 import org.rapla.RaplaResources;
 import org.rapla.client.PopupContext;
+import org.rapla.client.TreeFactory;
 import org.rapla.client.dialog.DialogUiFactoryInterface;
 import org.rapla.client.dialog.InfoFactory;
 import org.rapla.client.internal.ResourceSelectionView;
@@ -27,10 +28,12 @@ import org.rapla.client.menu.MenuFactoryImpl;
 import org.rapla.client.swing.internal.RaplaMenuBarContainer;
 import org.rapla.client.swing.internal.SwingPopupContext;
 import org.rapla.client.swing.internal.edit.ClassifiableFilterEdit;
+import org.rapla.client.swing.internal.view.ComplexTreeCellRenderer;
 import org.rapla.client.swing.internal.view.DelegatingTreeSelectionModel;
 import org.rapla.client.swing.internal.view.RaplaSwingTreeModel;
+import org.rapla.client.RaplaTreeNode;
 import org.rapla.client.swing.internal.view.RaplaTreeToolTipRenderer;
-import org.rapla.client.swing.internal.view.TreeFactoryImpl;
+import org.rapla.client.internal.TreeFactoryImpl;
 import org.rapla.client.swing.toolkit.*;
 import org.rapla.components.calendar.RaplaArrowButton;
 import org.rapla.components.layout.TableLayout;
@@ -82,16 +85,17 @@ public class ResourceSelectionViewSwing implements ResourceSelectionView
     private boolean selectionFromProgram = false;
     private Presenter presenter;
     private final MenuFactory menuFactory;
-    private final TreeToolTipRenderer treeToolTipRenderer;
+    ComplexTreeCellRenderer treeCellRenderer;
 
     @Inject
     public ResourceSelectionViewSwing(RaplaMenuBarContainer menuBar, RaplaResources i18n, Logger logger,
                                       TreeFactory treeFactory, MenuFactory menuFactory, InfoFactory infoFactory,
                                       DialogUiFactoryInterface dialogUiFactory, FilterEditButtonFactory filterEditButtonFactory,
-                                      final TreeCellRenderer renderer
+                                      final ComplexTreeCellRenderer renderer
     ) throws RaplaInitializationException
     {
 
+        this.treeCellRenderer = renderer;
         this.menuBar = menuBar;
         this.i18n = i18n;
         this.logger = logger;
@@ -99,7 +103,6 @@ public class ResourceSelectionViewSwing implements ResourceSelectionView
         this.menuFactory = menuFactory;
         this.dialogUiFactory = dialogUiFactory;
         this.filterEditButtonFactory = filterEditButtonFactory;
-        this.treeToolTipRenderer = new RaplaTreeToolTipRenderer(infoFactory);
         /*double[][] sizes = new double[][] { { TableLayout.FILL }, { TableLayout.PREFERRED, TableLayout.PREFERRED, TableLayout.FILL } };
         tableLayout = new TableLayout(sizes);*/
         content.setLayout(new BorderLayout());
@@ -228,8 +231,12 @@ public class ResourceSelectionViewSwing implements ResourceSelectionView
 
     protected DefaultTreeModel generateTree(ClassificationFilter[] filter) throws RaplaException
     {
-        final TreeFactoryImpl treeFactoryImpl = (TreeFactoryImpl) getTreeFactory();
-        DefaultTreeModel treeModel = new RaplaSwingTreeModel(treeFactoryImpl.createModel(filter));
+        final TreeFactory treeFactory =  getTreeFactory();
+        final TreeFactory.AllocatableNodes allocatableNodes = treeFactory.createAllocatableModel(filter);
+        treeCellRenderer.setFiltered( allocatableNodes.filtered);
+        final RaplaTreeNode raplaTreeNode = treeFactory.newRootNode();
+        raplaTreeNode.add( allocatableNodes.allocatableNode);
+        DefaultTreeModel treeModel = new RaplaSwingTreeModel(raplaTreeNode);
         return treeModel;
     }
 

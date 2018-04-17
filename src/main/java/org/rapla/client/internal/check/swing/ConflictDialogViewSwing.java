@@ -1,7 +1,7 @@
 package org.rapla.client.internal.check.swing;
 
 import org.rapla.client.internal.check.ConflictDialogView;
-import org.rapla.client.swing.TreeFactory;
+import org.rapla.client.TreeFactory;
 import org.rapla.client.swing.internal.view.ConflictTreeCellRenderer;
 import org.rapla.client.swing.internal.view.RaplaSwingTreeModel;
 import org.rapla.client.swing.toolkit.RaplaTree;
@@ -12,9 +12,7 @@ import org.rapla.inject.InjectionContext;
 
 import javax.inject.Inject;
 import javax.swing.*;
-import javax.swing.tree.DefaultTreeModel;
 import javax.swing.tree.TreeModel;
-import javax.swing.tree.TreeNode;
 import java.awt.*;
 import java.util.Collection;
 

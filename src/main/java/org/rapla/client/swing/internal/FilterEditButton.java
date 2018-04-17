@@ -5,7 +5,7 @@ import org.rapla.client.PopupContext;
 import org.rapla.client.dialog.DialogUiFactoryInterface;
 import org.rapla.client.dialog.swing.DialogUI;
 import org.rapla.client.swing.RaplaGUIComponent;
-import org.rapla.client.swing.TreeFactory;
+import org.rapla.client.TreeFactory;
 import org.rapla.client.swing.internal.edit.ClassifiableFilterEdit;
 import org.rapla.client.swing.internal.edit.fields.BooleanField.BooleanFieldFactory;
 import org.rapla.client.swing.internal.edit.fields.DateField.DateFieldFactory;
@@ -26,8 +26,6 @@ import java.awt.Component;
 import java.awt.Dialog;
 import java.awt.Frame;
 import java.awt.Point;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
 
 public class FilterEditButton extends RaplaGUIComponent
 {

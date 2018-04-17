@@ -1,6 +1,8 @@
 package org.rapla.client.swing.internal.view;
 
 import org.rapla.RaplaResources;
+import org.rapla.client.RaplaTreeNode;
+import org.rapla.client.internal.TreeFactoryImpl;
 import org.rapla.client.swing.images.RaplaImages;
 import org.rapla.components.util.DateTools;
 import org.rapla.entities.domain.Allocatable;
@@ -77,10 +79,10 @@ public class ConflictTreeCellRenderer extends DefaultTreeCellRenderer {
     }
 
     public Component getTreeCellRendererComponent(JTree tree, Object value, boolean sel, boolean expanded, boolean leaf, int row, boolean hasFocus) {
-        if (value != null && value instanceof TreeFactoryImpl.TypeNode) {
-            TreeFactoryImpl.TypeNode typeNode = (TreeFactoryImpl.TypeNode) value;
+        Object nodeInfo = TreeFactoryImpl.getUserObject(value);
+        if (nodeInfo instanceof TreeFactoryImpl.ConflictRoot) {
             setFont(bigFont);
-            value = typeNode.toString();
+            value = value.toString();
             setIcon(bigFolderConflicts);
             setClosedIcon(bigFolderConflicts);
             setOpenIcon(bigFolderConflicts);
@@ -88,7 +90,6 @@ public class ConflictTreeCellRenderer extends DefaultTreeCellRenderer {
         } else {
             setClosedIcon(folderClosedIcon);
             setOpenIcon(folderOpenIcon);
-            Object nodeInfo = TreeFactoryImpl.getUserObject(value);
             setFont(normalFont);
             if (nodeInfo instanceof Conflict) {
                 Conflict conflict = (Conflict) nodeInfo;
