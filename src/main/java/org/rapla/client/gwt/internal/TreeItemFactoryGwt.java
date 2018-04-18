@@ -18,6 +18,7 @@ public class TreeItemFactoryGwt implements TreeItemFactory
     @Override
     public RaplaTreeNode createNode(Object userObject)
     {
+        // return new VueTreeNode(userObject);
         throw new UnsupportedOperationException();
     }
 }
