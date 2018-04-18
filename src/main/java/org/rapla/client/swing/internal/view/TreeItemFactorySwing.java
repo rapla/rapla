@@ -2,7 +2,7 @@ package org.rapla.client.swing.internal.view;
 
 import org.rapla.RaplaResources;
 import org.rapla.client.RaplaTreeNode;
-import org.rapla.client.internal.TreeFactoryImpl;
+import org.rapla.client.internal.TreeItemFactory;
 import org.rapla.entities.Named;
 import org.rapla.entities.dynamictype.Classifiable;
 import org.rapla.entities.dynamictype.Classification;
@@ -14,8 +14,8 @@ import javax.inject.Inject;
 import javax.swing.tree.DefaultMutableTreeNode;
 import java.util.Locale;
 
-@DefaultImplementation(of=TreeFactoryImpl.TreeItemFactory.class,context = InjectionContext.swing)
-public class TreeItemFactorySwing implements TreeFactoryImpl.TreeItemFactory
+@DefaultImplementation(of=TreeItemFactory.class,context = InjectionContext.swing)
+public class TreeItemFactorySwing implements TreeItemFactory
 {
     private  final RaplaResources i18n;
 

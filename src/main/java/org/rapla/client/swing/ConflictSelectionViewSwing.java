@@ -1,4 +1,5 @@
-/*--------------------------------------------------------------------------* | Copyright (C) 2008  Christopher Kohlhaas                                 |
+/*--------------------------------------------------------------------------*
+ | Copyright (C) 2008  Christopher Kohlhaas                                 |
  |                                                                          |
  | This program is free software; you can redistribute it and/or modify     |
  | it under the terms of the GNU General Public License as published by the |
@@ -55,25 +56,22 @@ import java.util.Collection;
 @DefaultImplementation(context = InjectionContext.swing, of = ConflictSelectionView.class)
 public class ConflictSelectionViewSwing implements ConflictSelectionView<Component>
 {
-    public RaplaTree treeSelection = new RaplaTree();
+    private RaplaTree treeSelection = new RaplaTree();
     protected JPanel content = new JPanel();
     JLabel summary = new JLabel();
-    Collection<Conflict> conflicts;
     private final Listener listener = new Listener();
     private final TreeFactory treeFactory;
     private final DialogUiFactoryInterface dialogUiFactory;
     private final RaplaResources i18n;
     private Presenter presenter;
-    private final ConflictTreeCellRenderer treeCellRenderer;
 
     @Inject
-    public ConflictSelectionViewSwing(RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, TreeFactory treeFactory,
+    public ConflictSelectionViewSwing(RaplaResources i18n,  Logger logger, TreeFactory treeFactory,
                                       DialogUiFactoryInterface dialogUiFactory, ConflictTreeCellRenderer treeCellRenderer) throws RaplaInitializationException
     {
         this.i18n = i18n;
         this.treeFactory = treeFactory;
         this.dialogUiFactory = dialogUiFactory;
-        this.treeCellRenderer = treeCellRenderer;
         final JTree navTree = treeSelection.getTree();
         content.setLayout(new BorderLayout());
 

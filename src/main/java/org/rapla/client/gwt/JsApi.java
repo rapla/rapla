@@ -6,6 +6,7 @@ import jsinterop.annotations.JsType;
 import org.rapla.RaplaResources;
 import org.rapla.client.Application;
 import org.rapla.client.ReservationController;
+import org.rapla.client.TreeFactory;
 import org.rapla.client.dialog.gwt.VueDialog;
 import org.rapla.client.dialog.gwt.components.BulmaTextColor;
 import org.rapla.client.dialog.gwt.components.VueLabel;
@@ -70,12 +71,9 @@ public class JsApi {
 
   @JsIgnore
   @Inject
-  public JsApi(
-          Provider<Application> application,
-    ClientFacade facade, Logger logger, ReservationController reservationController, CalendarSelectionModel calendarModel,
-    RemoteAuthentificationService remoteAuthentificationService, RaplaLocale raplaLocale, Provider<RaplaBuilder> raplaBuilder, RaplaResources i18n,
-    MenuFactory menuFactory, TableConfig.TableConfigLoader tableConfigLoader
-  ) {
+  public JsApi(Provider<Application> application, ClientFacade facade, Logger logger, ReservationController reservationController, CalendarSelectionModel calendarModel,
+          RemoteAuthentificationService remoteAuthentificationService, RaplaLocale raplaLocale, Provider<RaplaBuilder> raplaBuilder, RaplaResources i18n,
+          MenuFactory menuFactory, TableConfig.TableConfigLoader tableConfigLoader) {
     this.clientFacade = facade;
     this.i18n = i18n;
     this.application = application;
