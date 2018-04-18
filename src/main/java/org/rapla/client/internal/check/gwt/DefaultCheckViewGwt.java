@@ -1,6 +1,7 @@
 package org.rapla.client.internal.check.gwt;
 
 import org.rapla.client.dialog.gwt.components.BulmaTextColor;
+import org.rapla.client.dialog.gwt.components.VueComponent;
 import org.rapla.client.dialog.gwt.components.VueLabel;
 import org.rapla.client.dialog.gwt.components.layout.VerticalFlex;
 import org.rapla.client.internal.check.CheckView;
@@ -34,7 +35,7 @@ public class DefaultCheckViewGwt implements CheckView {
   }
   
   @Override
-  public Object getComponent() {
+  public VueComponent getComponent() {
     logger.debug(warnings.toString());
     return new VerticalFlex()
       .addChildren(warnings, text -> new VueLabel(text).color(BulmaTextColor.DANGER));

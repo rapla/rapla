@@ -2,6 +2,7 @@ package org.rapla.client.internal.check.gwt;
 
 import org.rapla.client.RaplaTreeNode;
 import org.rapla.client.TreeFactory;
+import org.rapla.client.dialog.gwt.components.VueComponent;
 import org.rapla.client.internal.check.ConflictDialogView;
 import org.rapla.facade.Conflict;
 import org.rapla.framework.RaplaException;
@@ -22,7 +23,7 @@ public class ConflictDialogViewGwt implements ConflictDialogView {
         this.treeFactory = treeFactory;
     }
 
-    public Object getConflictPanel(Collection<Conflict> conflicts) throws RaplaException
+    public VueComponent getConflictPanel(Collection<Conflict> conflicts) throws RaplaException
     {
         final RaplaTreeNode conflictModel = treeFactory.createConflictModel(conflicts);
         // FIXME createInfoDialog conflictList
