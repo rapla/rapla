@@ -1,7 +1,5 @@
 package org.rapla.client.gwt;
 
-import com.google.gwt.event.logical.shared.ValueChangeEvent;
-import com.google.gwt.event.logical.shared.ValueChangeHandler;
 import com.google.gwt.user.client.History;
 import org.rapla.client.event.AbstractActivityController;
 import org.rapla.client.event.ApplicationEvent;
@@ -109,7 +107,7 @@ public class GwtActivityManagerImpl extends AbstractActivityController
             // delete last &
             sb.deleteCharAt(sb.length()-1);
         }
-        History.newItem(sb.toString(), false);
+//        History.newItem(sb.toString(), false);
     }
 
     @Override

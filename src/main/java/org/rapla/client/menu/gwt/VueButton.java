@@ -4,6 +4,7 @@ import io.reactivex.functions.Consumer;
 import jsinterop.annotations.JsIgnore;
 import jsinterop.annotations.JsType;
 import org.rapla.client.dialog.gwt.components.VueComponent;
+import org.rapla.client.gwt.VuePopupContext;
 
 @JsType
 public class VueButton implements VueComponent, Selectable {

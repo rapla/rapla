@@ -3,8 +3,6 @@ package org.rapla.client.menu;
 import jsinterop.annotations.JsType;
 import org.rapla.client.RaplaWidget;
 
-import javax.inject.Inject;
-
 /** JPopupMenu and JMenu don't have a common interface, so this is a common interface
  * for RaplaMenu and RaplaPopupMenu
 */
@@ -18,5 +16,7 @@ public interface MenuInterface extends IdentifiableMenuEntry {
     void insertAfterId(RaplaWidget component, String id);
     void insertBeforeId(RaplaWidget component,String id);
     void setEnabled(boolean enabled);
+
+    void setTitle(String title);
 
 }

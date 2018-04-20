@@ -166,7 +166,7 @@ public class RaplaObjectActions {
         changeObject(object);
         return this;
     }
-    
+
  // method for setting a selection as a editable selection
  	// (cf. setEdit() and setDeleteSelection())
  	public RaplaObjectActions setEditSelection(Collection<Entity<?>> selection) {
@@ -244,7 +244,13 @@ public class RaplaObjectActions {
             case NEW: newEntity();break;
             case VIEW: view();break;
             }
-        } catch (RaplaException ex) {
+        } catch (Throwable ex) {
+            if (ex.getCause() != null) {
+                ex = ex.getCause();
+            }
+            if (ex instanceof RuntimeException) {
+                throw (RuntimeException) ex;
+            }
             dialogUiFactory.showException(ex,popupContext);
         } // end of try-catch
     }
@@ -341,7 +347,7 @@ public class RaplaObjectActions {
         }
         DynamicType[] dynamicTypes = raplaFacade.getDynamicTypes( classificationType );
         return dynamicTypes;
-      
+
     }
 
     private String createNewKey(Category[] subCategories) {
@@ -438,7 +444,7 @@ public class RaplaObjectActions {
                 dialogUiFactory.showException((Throwable)ex,popupContext)
         );
     }
-	
+
 
  // action which is executed by clicking on the edit button (after
  	// actionPerformed)

@@ -1,4 +1,4 @@
-package org.rapla.client.menu.gwt;
+package org.rapla.client.gwt;
 
 import org.rapla.client.PopupContext;
 

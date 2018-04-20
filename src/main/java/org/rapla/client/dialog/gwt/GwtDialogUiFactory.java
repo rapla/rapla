@@ -7,7 +7,7 @@ import org.rapla.client.dialog.DialogInterface;
 import org.rapla.client.dialog.DialogUiFactoryInterface;
 import org.rapla.client.dialog.gwt.components.VueComponent;
 import org.rapla.client.dialog.gwt.components.VueLabel;
-import org.rapla.client.gwt.GwtPopupContext;
+import org.rapla.client.gwt.VuePopupContext;
 import org.rapla.entities.DependencyException;
 import org.rapla.inject.DefaultImplementation;
 import org.rapla.inject.InjectionContext;
@@ -165,10 +165,10 @@ public class GwtDialogUiFactory implements DialogUiFactoryInterface
 
     @Override public PopupContext createPopupContext(RaplaWidget widget)
     {
-        final Object component = widget.getComponent();
+//        final Object component = widget.getComponent();
         // todo maybe add component here
         // TODO: use vue dialog
-        return new GwtPopupContext(null);
+        return new VuePopupContext();
     }
 
     @Override

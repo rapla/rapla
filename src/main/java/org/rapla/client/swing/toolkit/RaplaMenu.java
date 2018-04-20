@@ -23,13 +23,15 @@ import java.awt.Component;
 
 public class RaplaMenu extends JMenu implements IdentifiableMenuEntry, MenuInterface {
     private static final long serialVersionUID = 1L;
-    
+
     String id;
 
     public RaplaMenu(String id) {
         super(id);
         this.id = id;
     }
+
+    public void setTitle(String title) {}
 
     public String getId() {
         return id;
@@ -63,9 +65,9 @@ public class RaplaMenu extends JMenu implements IdentifiableMenuEntry, MenuInter
         }
 
     }
-    
+
     public boolean hasId(String id) {
-        return getIndexOfEntryWithId( id )>=0; 
+        return getIndexOfEntryWithId( id )>=0;
     }
 
     @Override
@@ -91,7 +93,7 @@ public class RaplaMenu extends JMenu implements IdentifiableMenuEntry, MenuInter
 	public JMenuItem getComponent() {
 		return this;
 	}
-	
+
 
     @Override
     public void addMenuItem(IdentifiableMenuEntry item) {

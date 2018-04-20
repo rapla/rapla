@@ -23,7 +23,6 @@ import org.rapla.client.internal.admin.client.DynamicTypeMenuContext;
 import org.rapla.client.internal.admin.client.PeriodMenuContext;
 import org.rapla.client.menu.impl.AppointmentAction;
 import org.rapla.client.menu.impl.RaplaObjectActions;
-import org.rapla.client.swing.toolkit.RaplaMenu;
 import org.rapla.components.util.DateTools;
 import org.rapla.components.util.TimeInterval;
 import org.rapla.entities.Category;
@@ -444,6 +443,7 @@ import java.util.TreeMap;
         String afterId = "NEW";
         MenuInterface newMenu = menuItemFactory.createMenu(i18n.getString("new"), i18n.getIcon("icon.new"), afterId);
         editMenu.addMenuItem(newMenu);
+        editMenu.setTitle(i18n.getString("selection"));
 
         boolean canUserAllocateSomething = permissionController.canUserAllocateSomething(getUser());
         addCopyCutListMenu(  editMenu, menuContext, afterId, copyListener, cutListener);

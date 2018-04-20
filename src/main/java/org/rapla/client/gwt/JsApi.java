@@ -6,7 +6,6 @@ import jsinterop.annotations.JsType;
 import org.rapla.RaplaResources;
 import org.rapla.client.Application;
 import org.rapla.client.ReservationController;
-import org.rapla.client.TreeFactory;
 import org.rapla.client.dialog.gwt.VueDialog;
 import org.rapla.client.dialog.gwt.components.BulmaTextColor;
 import org.rapla.client.dialog.gwt.components.VueLabel;
@@ -114,6 +113,10 @@ public class JsApi {
 
   public RaplaResources getI18n() {
     return i18n;
+  }
+
+  public Application getApplication() {
+    return application.get();
   }
 
   public void warn(String message) {

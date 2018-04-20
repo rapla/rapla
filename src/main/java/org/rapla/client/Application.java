@@ -1,5 +1,7 @@
 package org.rapla.client;
 
+import io.reactivex.functions.Action;
+import jsinterop.annotations.JsType;
 import org.rapla.RaplaResources;
 import org.rapla.client.dialog.DialogInterface;
 import org.rapla.client.dialog.DialogUiFactoryInterface;
@@ -39,6 +41,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
 
+@JsType
 @Singleton
 public class Application implements ApplicationView.Presenter, ModificationListener {
     public static final String CLOSE_ACTIVITY_ID = "close";
@@ -193,9 +196,9 @@ public class Application implements ApplicationView.Presenter, ModificationListe
         AttributeImpl.FALSE_TRANSLATION.setName(i18n.getLang(), i18n.getString("no"));
     }
 
-    private Runnable closeCallback;
+    private Action closeCallback;
 
-    public void start(boolean defaultLanguageChosen, Runnable closeCallback) throws RaplaException {
+    public void start(boolean defaultLanguageChosen, Action closeCallback) throws RaplaException {
         this.closeCallback = closeCallback;
         initLanguage(defaultLanguageChosen);
 

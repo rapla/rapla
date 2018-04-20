@@ -1,7 +1,9 @@
 package org.rapla.client.event;
 
+import jsinterop.annotations.JsType;
 import org.rapla.client.PopupContext;
 
+@JsType
 public class ApplicationEvent
 {
     private final String info;
@@ -10,7 +12,7 @@ public class ApplicationEvent
     private final PopupContext popupContext;
     private static final String ACTIVITY_SEPARATOR = "=";
     private boolean stop = false;
-    
+
     public interface ApplicationEventContext
     {
     }
@@ -22,7 +24,7 @@ public class ApplicationEvent
         this.popupContext = popupContext;
         this.context = context;
     }
-    
+
     public ApplicationEventContext getContext()
     {
         return context;

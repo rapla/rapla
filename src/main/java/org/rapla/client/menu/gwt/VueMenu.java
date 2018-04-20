@@ -18,6 +18,7 @@ public class VueMenu implements MenuInterface, VueMenuItem, IdentifiableMenuEntr
   private String id;
   private String icon;
   private String label;
+  private String title;
   private boolean enabled;
 
   @Override
@@ -115,6 +116,10 @@ public class VueMenu implements MenuInterface, VueMenuItem, IdentifiableMenuEntr
     return icon;
   }
 
+  public String getTitle() {
+    return title;
+  }
+
   public IdentifiableMenuEntry[] getItems() {
     return items.toArray(IdentifiableMenuEntry.EMPTY_ARRAY);
   }
@@ -134,5 +139,10 @@ public class VueMenu implements MenuInterface, VueMenuItem, IdentifiableMenuEntr
   @Override
   public void setEnabled(boolean enabled) {
     this.enabled = enabled;
+  }
+
+  @Override
+  public void setTitle(final String title) {
+    this.title = title;
   }
 }
