@@ -20,20 +20,20 @@ public class ExceptionResponseBuilder
         }
         if (cause instanceof JsonParserWrapper.WrappedJsonSerializeException )
         {
-            if (exception.getCause() != null)
+            if (cause.getCause() != null)
             {
-                cause = exception.getCause();
+                cause = cause.getCause();
             }
         }
         if (cause instanceof EntityNotFoundException)
         {
-            final Response.ResponseBuilder entity = Response.status(Response.Status.NOT_FOUND).entity(exception);
+            final Response.ResponseBuilder entity = Response.status(Response.Status.NOT_FOUND).entity(cause);
             final Response build = entity.build();
             return build;
         }
         if (cause instanceof RaplaInvalidTokenException)
         {
-            final Response.ResponseBuilder entity = Response.status(Response.Status.UNAUTHORIZED).entity(exception);
+            final Response.ResponseBuilder entity = Response.status(Response.Status.UNAUTHORIZED).entity(cause);
             final Response build = entity.build();
             return build;
         }
@@ -51,12 +51,12 @@ public class ExceptionResponseBuilder
                 raplaLogger = RaplaBootstrapLogger.createRaplaLogger();
             }
             final String message = cause.getMessage();
-            raplaLogger.error(message, exception);
+            raplaLogger.error(message, cause);
         }
         catch (Throwable ex)
         {
         }
-        final Response.ResponseBuilder entity = Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity(exception);
+        final Response.ResponseBuilder entity = Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity(cause);
         final Response build = entity.build();
         return build;
     }
