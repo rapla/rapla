@@ -245,13 +245,14 @@ public class SwingCompactCalendar extends AbstractRaplaSwingCalendar
     }
 
     protected Promise<RaplaBuilder> createBuilder() {
+		timeslots = timeslotProvider.getTimeslots();
+		List<Integer> startTimes = new ArrayList<>();
+		for (Timeslot slot:timeslots) {
+			startTimes.add( slot.getMinuteOfDay());
+		}
         Promise<RaplaBuilder> builderPromise = super.createBuilder();
         final Promise<RaplaBuilder> nextBuilderPromise = builderPromise.thenApply((builder) -> {
-            timeslots = timeslotProvider.getTimeslots();
-            List<Integer> startTimes = new ArrayList<>();
-            for (Timeslot slot:timeslots) {
-                 startTimes.add( slot.getMinuteOfDay());
-            }
+
             builder.setSmallBlocks( true );
             GroupStartTimesStrategy strategy = new GroupStartTimesStrategy();
             strategy.setFixedSlotsEnabled( true);

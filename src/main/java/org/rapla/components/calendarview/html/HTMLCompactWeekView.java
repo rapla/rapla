@@ -17,6 +17,7 @@ import org.rapla.components.calendarview.Block;
 import org.rapla.components.calendarview.Builder;
 import org.rapla.components.calendarview.Builder.PreperationResult;
 import org.rapla.components.util.DateTools;
+import org.rapla.entities.domain.AppointmentBlock;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -82,7 +83,9 @@ public class HTMLCompactWeekView extends AbstractHTMLView {
         PreperationResult prep = b.prepareBuild(getStartDate(),getEndDate());
         
         // build Blocks
-        b.build(this,this.getStartDate(), prep.getBlocks());
+        final Date startDate = this.getStartDate();
+        final Collection<AppointmentBlock> appointmentBlocks = prep.getBlocks();
+        b.build(this, startDate, appointmentBlocks);
         
         // resource header
 
@@ -106,7 +109,7 @@ public class HTMLCompactWeekView extends AbstractHTMLView {
             List<Block> blocks =  rows.get( row + startRow );
             for (int column=0;column < columns; column++) {
                 int fieldNumber = row * columns + column;
-                slots[fieldNumber] = createField( blocks, fieldNumber );
+                slots[fieldNumber] = createField( blocks, column );
             }
         }
 

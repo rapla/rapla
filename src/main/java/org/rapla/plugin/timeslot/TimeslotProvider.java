@@ -110,11 +110,11 @@ public class TimeslotProvider {
 
 	public static ArrayList<Timeslot> getDefaultTimeslots(RaplaLocale raplaLocale) {
 		ArrayList<Timeslot> timeslots = new ArrayList<>();
-		Date date = DateTools.cutDate(new Date());
+		final Date date = DateTools.cutDate(new Date());
 		for (int i = 0; i <=23; i++ ) {
     		 int minuteOfDay = i * 60;
-			 date = new Date( date.getTime() + minuteOfDay * DateTools.MILLISECONDS_PER_MINUTE);
-    		 String name =raplaLocale.formatTime( date);
+			 Date toFormat = new Date( date.getTime() + minuteOfDay * DateTools.MILLISECONDS_PER_MINUTE);
+    		 String name =raplaLocale.formatTime( toFormat);
     		 //String name = minuteOfDay / 60 + ":" + minuteOfDay%60;
     		 Timeslot slot = new Timeslot(name, minuteOfDay);
     		 timeslots.add(slot);
