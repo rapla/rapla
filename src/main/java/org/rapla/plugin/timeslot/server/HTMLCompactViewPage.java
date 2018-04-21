@@ -86,7 +86,6 @@ public class HTMLCompactViewPage extends AbstractHTMLCalendarPage implements HTM
     		 startTimes.add( slot.getMinuteOfDay());
     	}
         RaplaBuilder builder = super.createBuilder();
-        List<Allocatable> allocatables = getSortedAllocatables();
         builder.setSmallBlocks( true );
         GroupStartTimesStrategy strategy = new GroupStartTimesStrategy();
         strategy.setFixedSlotsEnabled( true);
@@ -94,7 +93,6 @@ public class HTMLCompactViewPage extends AbstractHTMLCalendarPage implements HTM
         strategy.setStartTimes( startTimes );
         builder.setBuildStrategy( strategy);
         builder.setSplitByAllocatables( false );
-        strategy.setAllocatables(allocatables);
         String[] slotNames = new String[ timeslots.size() ];
         for (int i = 0; i <timeslots.size(); i++ ) {
         	slotNames[i] = XMLWriter.encode( timeslots.get( i ).getName());
