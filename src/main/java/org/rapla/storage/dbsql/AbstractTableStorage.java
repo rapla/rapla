@@ -36,6 +36,7 @@ public class AbstractTableStorage implements TableStorage
 	private Map<String,ColumnDef> columns = new LinkedHashMap<>();
 	protected String insertSql;
 	protected String deleteSql;
+	protected String deleteSqlWithoutCheck;
 	protected String selectSql;
 	protected String deleteAllSql;
 	protected String containsSql;
@@ -61,6 +62,7 @@ public class AbstractTableStorage implements TableStorage
 		if (getLogger().isDebugEnabled()) {
 			getLogger().debug(insertSql);
 			getLogger().debug(deleteSql);
+			getLogger().debug(deleteSqlWithoutCheck);
 			getLogger().debug(selectSql);
 			getLogger().debug(deleteAllSql);
 			getLogger().debug(containsSql);
@@ -540,6 +542,7 @@ public class AbstractTableStorage implements TableStorage
 		selectSql = "select " + getEntryList(entries) + " from " + table ;
         containsSql = "select count(" + idName + ") from " + table + " where " + idName + "= ?";
         deleteSql = "delete from " + table + " where " + idName + "= ?" + (checkLastChanged ? " AND LAST_CHANGED = ?" : "");
+		deleteSqlWithoutCheck = "delete from " + table + " where " + idName + "= ?";
 		selectUpdateSql = "SELECT " + getEntryList(entries) + " from " + tableName + " where " + idName + " = ?";
 		String valueString = " (" + getEntryList(entries) + ")";
 		insertSql = "insert into " + table + valueString + " values (" + getMarkerList(entries.size()) + ")";

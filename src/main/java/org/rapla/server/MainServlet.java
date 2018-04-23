@@ -355,12 +355,26 @@ public class MainServlet extends HttpServlet
                 }
                 String pageParam = request.getParameter("page");
                 // compatibility
-                if (pageParam != null && (pathInfo == null || pathInfo.equals("")) && request.getMethod().equals("GET"))
+                if (pageParam != null && (pathInfo == null || pathInfo.equals("") || pathInfo.equals("/rapla")) && request.getMethod().equals("GET"))
                 {
                 	StringBuilder redirect = new StringBuilder();
-                	redirect.append(request.getServletPath());
-                	redirect.append("/");
-                	redirect.append(pageParam);
+                    final String contextPath = request.getContextPath();
+                    final String servletPath = request.getServletPath();
+                    if ( contextPath != null && !contextPath.isEmpty())
+                    {
+                        redirect.append(contextPath);
+                    }
+                    if ( servletPath != null)
+                    {
+                        if ( contextPath!= null && !contextPath.endsWith("/") && !servletPath.startsWith("/"))
+                        {
+                            redirect.append("/");
+                        }
+                        redirect.append(servletPath);
+
+                    }
+                    redirect.append("/");
+                    redirect.append(pageParam);
                 	String queryString = request.getQueryString();
                 	if (queryString != null && queryString.length()>0)
                 	{

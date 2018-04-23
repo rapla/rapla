@@ -920,7 +920,9 @@ public class CalendarModelImpl implements CalendarSelectionModel
         final long selectedAllocatableTimes =  (debugEnabled) ?  System.currentTimeMillis() - start: 0;
         Date startDate = interval != null ? interval.getStart() : null;
         Date endDate = interval != null ? interval.getEnd() : null;
-        final Promise<Map<Allocatable, Collection<Appointment>>> reservations = queryAppointmentBindings(allocatables, startDate, endDate);
+
+        boolean useFilter = getSelectedConflicts().isEmpty();
+        final Promise<Map<Allocatable, Collection<Appointment>>> reservations = queryAppointmentBindings(allocatables, startDate, endDate, useFilter);
         reservations.thenAccept( (res) -> {
             if (debugEnabled)
             {
@@ -928,7 +930,6 @@ public class CalendarModelImpl implements CalendarSelectionModel
                         + selectedAllocatableTimes + " ms). Found appointments for  " + res.size() + " resources.");
             }
         });
-
         return reservations;
     }
 
@@ -976,7 +977,7 @@ public class CalendarModelImpl implements CalendarSelectionModel
     private Map<Allocatable, Collection<Appointment>> cachedReservations;
     private boolean cachingEnabled = false;
 
-    private Promise<Map<Allocatable, Collection<Appointment>>> queryAppointmentBindings(Collection<Allocatable> allocatables, Date start, Date end)
+    private Promise<Map<Allocatable, Collection<Appointment>>> queryAppointmentBindings(Collection<Allocatable> allocatables, Date start, Date end, boolean useFilter)
     {
         final String cacheKey = createCacheKey(allocatables, start, end);
         if (cachingEnabled)
@@ -989,7 +990,7 @@ public class CalendarModelImpl implements CalendarSelectionModel
 
         ClassificationFilter[] reservationFilters;
 		try {
-			reservationFilters = isDefaultEventTypes() ? null : getReservationFilter();
+			reservationFilters = isDefaultEventTypes() || !useFilter ? null : getReservationFilter();
 		} catch (RaplaException ex) {
 			return new ResolvedPromise<>( ex);
 		}
@@ -1045,58 +1046,6 @@ public class CalendarModelImpl implements CalendarSelectionModel
         this.cachingEnabled = enable;
     }
 
-    public List<Reservation> restrictReservations(Collection<Reservation> reservationsToRestrict) throws RaplaException
-    {
-
-        List<Reservation> reservations = new ArrayList<>(reservationsToRestrict);
-        // Don't restrict templates
-        //      if ( isTemplateModus())
-        //      {
-        //          return reservations;
-        //      }
-        ClassificationFilter[] reservationFilter = getReservationFilter();
-        if (isDefaultEventTypes())
-        {
-            reservationFilter = null;
-        }
-        Set<ReferenceInfo<User>> users = getUserRestrictions();
-        for (Iterator<Reservation> it = reservations.iterator(); it.hasNext(); )
-        {
-            Reservation event = it.next();
-            if (!users.isEmpty() && !users.contains(event.getOwnerRef()))
-            {
-                it.remove();
-            }
-            else if (reservationFilter != null && !ClassificationFilter.Util.matches(reservationFilter, event))
-            {
-                it.remove();
-            }
-        }
-        return reservations;
-    }
-
-    private Set<ReferenceInfo<User>> getUserRestrictions()
-    {
-        User currentUser = getUser();
-        if (currentUser != null && isOnlyCurrentUserSelected())
-        {
-            return Collections.singleton(currentUser.getReference());
-        }
-        else if (currentUser != null && currentUser.isAdmin())
-        {
-            final Set<User> selected = getSelected(User.class);
-            final Set<ReferenceInfo<User>> selectedUserIs = new HashSet<>();
-            for (User user : selected)
-            {
-                selectedUserIs.add(user.getReference());
-            }
-            return selectedUserIs;
-        }
-        else
-        {
-            return Collections.emptySet();
-        }
-    }
 
     private boolean isNoAllocatableSelected()
     {

@@ -7,6 +7,7 @@ import org.rapla.rest.JsonParserWrapper;
 import org.rapla.storage.RaplaInvalidTokenException;
 
 import javax.servlet.http.HttpServletRequest;
+import javax.ws.rs.NotFoundException;
 import javax.ws.rs.core.Response;
 
 public class ExceptionResponseBuilder
@@ -37,11 +38,10 @@ public class ExceptionResponseBuilder
             final Response build = entity.build();
             return build;
         }
-
+        final Logger raplaLogger;
         try
         {
             final Object loggerFromContext = request.getServletContext().getAttribute(Logger.class.getCanonicalName());
-            final Logger raplaLogger;
             if (loggerFromContext != null && loggerFromContext instanceof Logger)
             {
                 raplaLogger = (Logger) loggerFromContext;
@@ -50,12 +50,22 @@ public class ExceptionResponseBuilder
             {
                 raplaLogger = RaplaBootstrapLogger.createRaplaLogger();
             }
-            final String message = cause.getMessage();
-            raplaLogger.error(message, cause);
         }
         catch (Throwable ex)
         {
+            final Response.ResponseBuilder entity = Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity(cause);
+            final Response build = entity.build();
+            return build;
         }
+        if (cause instanceof NotFoundException)
+        {
+            final Response.ResponseBuilder entity = Response.status(Response.Status.NOT_FOUND).entity(cause);
+            final Response build = entity.build();
+            raplaLogger.warn( cause.getMessage());
+            return build;
+        }
+        final String message = cause.getMessage();
+        raplaLogger.error(message, cause);
         final Response.ResponseBuilder entity = Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity(cause);
         final Response build = entity.build();
         return build;

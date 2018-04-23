@@ -97,6 +97,7 @@ abstract class EntityStorage<T extends Entity<T>> extends AbstractTableStorage i
 	{
 		selectUpdateSql = selectUpdateSql.replace("where "+idName,"where " + foreignId);
 		deleteSql = deleteSql.replace("where "+ idName, "where " + foreignId);
+        deleteSqlWithoutCheck = deleteSqlWithoutCheck.replace("where "+ idName, "where " + foreignId);
 	}
 
 	public void updateWithForeignId( String foreignId) throws SQLException, RaplaException
@@ -402,7 +403,7 @@ abstract class EntityStorage<T extends Entity<T>> extends AbstractTableStorage i
 	public void deleteIds(Collection<String> ids) throws SQLException, RaplaException {
     	PreparedStatement stmt = null;
         try {
-            stmt = con.prepareStatement(deleteSql);
+            stmt = con.prepareStatement(deleteSqlWithoutCheck);
             for ( String id: ids)
             {
                 stmt.setString(1,id);
