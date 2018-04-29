@@ -2,6 +2,7 @@ package org.rapla.storage.impl.server;
 
 import org.rapla.entities.Category;
 import org.rapla.entities.Entity;
+import org.rapla.entities.Timestamp;
 import org.rapla.entities.User;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.Reservation;
@@ -126,12 +127,44 @@ public class EntityHistory
         {
             index = -index - 2;
         }
-        if (index < 0)
+        if (index < 0 && !historyEntries.isEmpty())
         {
-            return null;
+            EntityHistory.HistoryEntry entry = historyEntries.get(0);
+            final Date lastChanged = getLastChanged(entry);
+            if ( lastChanged.before( since))
+            {
+                return getEntity( entry);
+            }
         }
         EntityHistory.HistoryEntry entry = historyEntries.get(index);
-        return getEntity(entry);
+        final Entity entity = getEntity(entry);
+        if ( index >=0)
+        {
+            // if two history entries have the same timestamp
+            // then check the timestamp on the entities and return
+            EntityHistory.HistoryEntry entryBefore = null;
+            if ( index > 0)
+            {
+                entryBefore = historyEntries.get(index - 1);
+            }
+            if (index <= historyEntries.size() && (entryBefore == null || entryBefore.getTimestamp() != entry.getTimestamp() ))
+            {
+                entryBefore = historyEntries.get(index + 1);
+            }
+            if (entryBefore != null && entryBefore.getTimestamp() == entry.getTimestamp())
+            {
+                Entity otherEntity = getEntity( entryBefore);
+                final Date lastChanged1 = ((Timestamp) entity).getLastChanged();
+                final Date lastChanged2= ((Timestamp) (otherEntity)).getLastChanged();
+                // we return the newest change
+                if ( lastChanged2.after( lastChanged1))
+                {
+                    return otherEntity;
+                }
+            }
+        }
+
+        return entity;
     }
 
     Map<Class<? extends Entity>, Class<? extends Entity>> typeImpl = new HashMap<>();
@@ -183,20 +216,40 @@ public class EntityHistory
         }
         else
         {
-            final long timestamp = historyEntries.get(index - 1).timestamp;
+            final HistoryEntry lastEntry = historyEntries.get(index - 1);
+            final long timestamp = lastEntry.timestamp;
             if (timestamp > newEntry.timestamp)
             {
                 insert(historyEntries, newEntry, index - 1);
             }
             else if (timestamp == newEntry.timestamp)
             {
-                // Do nothing as already inserted... maybe check it
+                final String json = newEntry.json;
+                if (json != null && !json.equals( lastEntry.json))
+                {
+                    Date lastChanged1 = getLastChanged(newEntry);
+                    Date lastChanged2 = getLastChanged(lastEntry);
+                    if ( lastChanged1.before(lastChanged2))
+                    {
+                        historyEntries.add(index-1, newEntry);
+                    }
+                    else
+                    {
+                        historyEntries.add(index, newEntry);
+                    }
+                }
             }
             else
             {
                 historyEntries.add(index, newEntry);
             }
         }
+    }
+
+    private Date getLastChanged(HistoryEntry newEntry)
+    {
+        final Entity entity = getEntity(newEntry);
+        return((Timestamp)entity).getLastChanged();
     }
 
     public EntityHistory.HistoryEntry addHistoryEntry(Entity entity, Date timestamp, boolean isDelete)

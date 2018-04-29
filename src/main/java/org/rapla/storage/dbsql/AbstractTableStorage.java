@@ -357,7 +357,7 @@ public class AbstractTableStorage implements TableStorage
 
 	//CREATE INDEX KEY_ALLOCATION_APPOINTMENT ON ALLOCATION(APPOINTMENT_ID);
 	protected String createKeySQL(String table, String colName) {
-		return "createInfoDialog index KEY_"+ table + "_" + colName + " on " + table + "(" + colName +")";
+		return "create index KEY_"+ table + "_" + colName + " on " + table + "(" + colName +")";
 	}
 
 	public void createOrUpdateIfNecessary( Map<String,TableDef> schema) throws SQLException, RaplaException

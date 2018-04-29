@@ -21,6 +21,7 @@ import org.rapla.components.util.xml.RaplaSAXHandler;
 import org.rapla.components.util.xml.XMLReaderAdapter;
 import org.rapla.entities.Category;
 import org.rapla.entities.Entity;
+import org.rapla.entities.Timestamp;
 import org.rapla.entities.User;
 import org.rapla.entities.configuration.Preferences;
 import org.rapla.entities.configuration.RaplaConfiguration;
@@ -345,7 +346,11 @@ final public class FileOperator extends LocalAbstractCachableOperator
             {
                 if(EntityHistory.isSupportedEntity(entity.getTypeClass()))
                 {
-                    history.addHistoryEntry(entity, lastUpdated, false);
+                    Date lastChanged = ((Timestamp) entity).getLastChanged();
+                    if ( lastChanged != null)
+                    {
+                        history.addHistoryEntry(entity, lastChanged, false);
+                    }
                 }
             }
         }

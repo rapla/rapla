@@ -178,6 +178,7 @@ public abstract class AbstractRaplaSwingCalendar extends RaplaGUIComponent
         return dateChooser.getComponent();
     }
 
+    @Override
     public void dateChanged(DateChangeEvent evt)
     {
         triggerUpdate();

@@ -51,6 +51,7 @@ import org.rapla.entities.dynamictype.internal.KeyAndPathResolver;
 import org.rapla.entities.internal.CategoryImpl;
 import org.rapla.entities.internal.ModifiableTimestamp;
 import org.rapla.entities.internal.UserImpl;
+import org.rapla.entities.storage.EntityResolver;
 import org.rapla.entities.storage.ImportExportEntity;
 import org.rapla.entities.storage.ReferenceInfo;
 import org.rapla.entities.storage.internal.ImportExportEntityImpl;
@@ -70,6 +71,7 @@ import org.rapla.storage.xml.RaplaXMLContext;
 import org.rapla.storage.xml.RaplaXMLReader;
 import org.rapla.storage.xml.RaplaXMLWriter;
 
+import javax.xml.transform.Result;
 import java.io.BufferedWriter;
 import java.io.IOException;
 import java.io.StringWriter;
@@ -102,7 +104,7 @@ import java.util.stream.Stream;
 
 class RaplaSQL
 {
-    private final List<RaplaTypeStorage> stores = new ArrayList<>();
+    private final Map<Class,RaplaTypeStorage> stores = new LinkedHashMap<>();
     private final Logger logger;
     private final HistoryStorage history;
     RaplaXMLContext context;
@@ -116,25 +118,30 @@ class RaplaSQL
         logger = context.lookup(Logger.class);
         lockStorage = new LockStorage(logger);
         // The order is important. e.g. appointments can only be loaded if the reservation they are refering to are already loaded.
-        stores.add(new CategoryStorage(context));
-        stores.add(new UserStorage(context));
-        stores.add(new DynamicTypeStorage(context));
-        stores.add(new AllocatableStorage(context));
+        add(Category.class,new CategoryStorage(context));
+        add(User.class,new UserStorage(context));
+        add(DynamicType.class,new DynamicTypeStorage(context));
+        add(Allocatable.class,new AllocatableStorage(context));
         preferencesStorage = new PreferenceStorage(context);
-        stores.add(preferencesStorage);
+        add(Preferences.class,preferencesStorage);
         ReservationStorage reservationStorage = new ReservationStorage(context);
-        stores.add(reservationStorage);
+        add(Reservation.class,reservationStorage);
         AppointmentStorage appointmentStorage = new AppointmentStorage(context);
-        stores.add(appointmentStorage);
-        stores.add(new ConflictStorage(context));
+        add(Appointment.class,appointmentStorage);
+        add(Conflict.class,new ConflictStorage(context));
         //stores.add(new DeleteStorage( context));
         history = new HistoryStorage(context);
-        stores.add(history);
+        stores.put(HistoryEntry.class,history);
 
         importExportStorage = new ImportExportStorage(context);
-        stores.add(importExportStorage);
+        stores.put(ImportExportEntity.class,importExportStorage);
         // now set delegate because reservation storage should also use appointment storage
         reservationStorage.setAppointmentStorage(appointmentStorage);
+    }
+
+    private <T extends Entity<T>> void  add(Class<T> entityClass, RaplaTypeStorage<T> storage)
+    {
+        stores.put( entityClass, storage);
     }
 
     public Map<String, String> getIdColumns()
@@ -155,7 +162,7 @@ class RaplaSQL
     private List<Storage<?>> getStoresWithChildren()
     {
         List<Storage<?>> storages = new ArrayList<>();
-        for (RaplaTypeStorage store : stores)
+        for (RaplaTypeStorage store : stores.values())
         {
             storages.add(store);
             @SuppressWarnings("unchecked")
@@ -177,7 +184,7 @@ class RaplaSQL
     {
         Date connectionTimestamp = getDatabaseTimestamp(con);
         lockStorage.setConnection(con, connectionTimestamp);
-        for (RaplaTypeStorage storage : stores)
+        for (RaplaTypeStorage storage : stores.values())
         {
             storage.setConnection(con, connectionTimestamp);
             try
@@ -194,7 +201,7 @@ class RaplaSQL
     synchronized public void removeAll(Connection con) throws SQLException, RaplaException
     {
         Date connectionTimestamp = getDatabaseTimestamp(con);
-        final Collection<TableStorage> storeIt = (Collection) stores;
+        final Collection<TableStorage> storeIt = (Collection) stores.values();
         final Collection<TableStorage> lockStorages = (Collection) Collections.singletonList(lockStorage);
         for (TableStorage storage : new IterableChain<>(storeIt, lockStorages))
         {
@@ -214,7 +221,7 @@ class RaplaSQL
     synchronized public void loadAll(Connection con) throws SQLException, RaplaException
     {
         Date connectionTimestamp = getDatabaseTimestamp(con);
-        for (Storage storage : stores)
+        for (Storage storage : stores.values())
         {
             storage.setConnection(con, connectionTimestamp);
             try
@@ -235,22 +242,11 @@ class RaplaSQL
         if (Attribute.class == typeClass)
             return;
         boolean couldDelete = false;
-        for (RaplaTypeStorage storage : stores)
         {
-            if (storage.canDelete(typeClass))
+            RaplaTypeStorage storage = stores.get( typeClass);
+            if ( storage != null)
             {
-                storage.setConnection(con, connectionTimestamp);
-                try
-                {
-                    List<ReferenceInfo> list = new ArrayList<>();
-                    list.add(referenceInfo);
-                    storage.deleteEntities(list);
-                    couldDelete = true;
-                }
-                finally
-                {
-                    storage.removeConnection();
-                }
+                couldDelete = delete(con, referenceInfo, connectionTimestamp, storage);
             }
         }
         if (!couldDelete)
@@ -259,19 +255,48 @@ class RaplaSQL
         }
     }
 
+    private boolean delete(Connection con, ReferenceInfo referenceInfo, Date connectionTimestamp, RaplaTypeStorage storage) throws SQLException, RaplaException
+    {
+        storage.setConnection(con, connectionTimestamp);
+        try
+        {
+            List<ReferenceInfo> list = Collections.singletonList( referenceInfo);
+            storage.deleteEntities(list);
+            final Class<? extends Entity> typeClass = referenceInfo.getType();
+            if ( history.canDelete( typeClass))
+            {
+                history.deleteEntities( list);
+            }
+            return true;
+        }
+        finally
+        {
+            storage.removeConnection();
+        }
+
+    }
+
     @SuppressWarnings("unchecked")
-    synchronized public void store(Connection con, Collection<Entity> entities, Date connectionTimestamp) throws SQLException, RaplaException
+    synchronized public void store(Connection con, Map<Entity,Entity> entities, Date connectionTimestamp) throws SQLException, RaplaException
     {
 
         Map<Storage, List<Entity>> store = new LinkedHashMap<>();
-        for (Entity entity : entities)
+        Map<Entity,Entity> historyList = new LinkedHashMap<>();
+        boolean updateHistory = false;
+        for (Entity entity : entities.keySet())
         {
-            if (Attribute.class == entity.getTypeClass())
+            final Class typeClass = entity.getTypeClass();
+            if (Attribute.class == typeClass)
                 continue;
             boolean found = false;
-            for (RaplaTypeStorage storage : stores)
             {
-                if (storage.canStore(entity.getTypeClass()))
+                RaplaTypeStorage storage = stores.get(typeClass);
+                if (history.canStore( typeClass))
+                {
+                    updateHistory = true;
+                    historyList.put(entity, entities.get( entity));
+                }
+                if ( storage != null)
                 {
                     List<Entity> list = store.get(storage);
                     if (list == null)
@@ -289,25 +314,29 @@ class RaplaSQL
             }
         }
         // always update history at the end
-        boolean updateHistory = false;
+
         for (Storage storage : store.keySet())
         {
-            if (storage instanceof HistoryStorage)
-            {
-                updateHistory = true;
-                continue;
-            }
-            store(con, connectionTimestamp, store, storage);
+            List<Entity> list = store.get(storage);
+            store(con, connectionTimestamp, list, storage);
         }
         if (updateHistory)
         {
-            store(con, connectionTimestamp, store, history);
+            history.setConnection(con, connectionTimestamp);
+            try
+            {
+                history.save(historyList);
+            }
+            finally
+            {
+                history.removeConnection();
+            }
         }
     }
 
-    private void store(Connection con, Date connectionTimestamp, Map<Storage, List<Entity>> store, Storage storage) throws SQLException, RaplaException
+    private void store(Connection con, Date connectionTimestamp, List<Entity> list, Storage storage) throws SQLException, RaplaException
     {
-        List<Entity> list = store.get(storage);
+
         storage.setConnection(con, connectionTimestamp);
         try
         {
@@ -2582,9 +2611,11 @@ class HistoryStorage<T extends Entity<T>> extends RaplaTypeStorage<T>
             result = stmt.executeQuery();
             while (result.next())
             {
-                if (!idToTimestamp.containsKey(result.getString(1)))
+                final String id = result.getString(1);
+                if (!idToTimestamp.containsKey(id))
                 {
-                    idToTimestamp.put(result.getString(1), new Date(result.getTimestamp(2).getTime()));
+                    final java.sql.Timestamp timestamp = result.getTimestamp(2);
+                    idToTimestamp.put(id, new Date(timestamp.getTime()));
                 }
             }
         }
@@ -2601,10 +2632,12 @@ class HistoryStorage<T extends Entity<T>> extends RaplaTypeStorage<T>
         {
             for (Entry<String, Date> idAndTimestamp : idToTimestamp.entrySet())
             {
-                stmt.setString(1, idAndTimestamp.getKey());
-                stmt.setTimestamp(2, new java.sql.Timestamp(idAndTimestamp.getValue().getTime()));
-                stmt.setString(3, idAndTimestamp.getKey());
-                stmt.setTimestamp(4, new java.sql.Timestamp(idAndTimestamp.getValue().getTime()));
+                final String id = idAndTimestamp.getKey();
+                final java.sql.Timestamp changedAt = new java.sql.Timestamp(idAndTimestamp.getValue().getTime());
+                stmt.setString(1, id);
+                stmt.setTimestamp(2, changedAt);
+                stmt.setString(3, id);
+                stmt.setTimestamp(4, changedAt);
                 stmt.addBatch();
             }
             final int[] executeBatch = stmt.executeBatch();
@@ -2654,10 +2687,59 @@ class HistoryStorage<T extends Entity<T>> extends RaplaTypeStorage<T>
 
     }
 
-    @Override
-    public void save(Iterable<T> entities) throws RaplaException, SQLException
+    private void insertWhenNotThere(Entity oldEntity, Date lastChanged) throws SQLException
     {
-        insert(entities, false);
+        if ( !hasHistory( oldEntity))
+        {
+            try (PreparedStatement stmt = con.prepareStatement(insertSql))
+            {
+                final Date timestamp = new Date(getConnectionTimestamp().getTime());
+                write(stmt, (T) oldEntity, false, timestamp);
+                stmt.executeBatch();
+            }
+        }
+    }
+
+    private boolean hasHistory(Entity oldEntity) throws SQLException
+    {
+        ResultSet result = null;
+            try (final PreparedStatement stmt = con.prepareStatement("SELECT ID, CHANGED_AT FROM CHANGES WHERE ID = ?"))
+            {
+                stmt.setString(1, oldEntity.getId());
+                result = stmt.executeQuery();
+                if (result.next())
+                {
+                    return true;
+                }
+
+            }
+            finally
+            {
+                if (result != null)
+                {
+                    result.close();
+                }
+            }
+        return false;
+    }
+
+    public void save(Map<T,T> entities) throws RaplaException, SQLException
+    {
+        final Set<T> entityList = entities.keySet();
+        for ( Entity entity: entityList)
+        {
+            final Entity oldEntity = entities.get( entity);
+            if (oldEntity != null)
+            {
+                final Date lastChanged = ((Timestamp) oldEntity).getLastChanged();
+                if (lastChanged != null)
+                {
+                    insertWhenNotThere( oldEntity, lastChanged);
+
+                }
+            }
+        }
+        insert(entityList, false);
     }
 
     @Override
@@ -2724,14 +2806,20 @@ class HistoryStorage<T extends Entity<T>> extends RaplaTypeStorage<T>
         return write(stmt, entity, false);
     }
 
-    protected int write(PreparedStatement stmt, T entity, boolean asDeletion) throws SQLException, RaplaException
+    private int write(PreparedStatement stmt, T entity, boolean asDeletion) throws SQLException, RaplaException
+    {
+        final Date timestamp = getConnectionTimestamp();
+        return write(stmt, entity, asDeletion, timestamp);
+    }
+
+    private int write(PreparedStatement stmt, T entity, boolean asDeletion, Date timestamp) throws SQLException
     {
         stmt.setString(1, entity.getId());
         stmt.setString(2, RaplaType.getLocalName(entity));
         stmt.setString(3, entity.getClass().getCanonicalName());
         final String xml = gson.toJson(entity);
         setText(stmt, 4, xml);
-        stmt.setTimestamp(5, new java.sql.Timestamp(getConnectionTimestamp().getTime()));
+        stmt.setTimestamp(5, new java.sql.Timestamp(timestamp.getTime()));
         setInt(stmt, 6, asDeletion ? 1 : 0);
         stmt.addBatch();
         return 1;

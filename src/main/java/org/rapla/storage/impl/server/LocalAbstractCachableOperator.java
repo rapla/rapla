@@ -135,6 +135,8 @@ import java.util.SortedSet;
 import java.util.TimeZone;
 import java.util.TreeSet;
 import java.util.UUID;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public abstract class LocalAbstractCachableOperator extends AbstractCachableOperator implements Disposable, CachableStorageOperator, IdCreator
 {
@@ -521,10 +523,21 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
         final Promise<Map<Allocatable, Collection<Appointment>>> promise = scheduler.supply(() ->
         {
             boolean excludeExceptions = false;
-            final Collection<Allocatable> allocs = (allocatables == null || allocatables.size() == 0) ? getAllocatables(null) : allocatables;
+            boolean isResourceTemplate = containsResourceTemplate(allocatables);
+            final Collection<Allocatable> allocs;
+            final Set<Allocatable> nonTemplates;
+            if ( isResourceTemplate)
+            {
+                allocs = allocatables.stream().filter(this::isTemplate).collect(Collectors.toList());
+                nonTemplates = allocatables.stream().filter( (alloc)->!isTemplate(alloc)).collect(Collectors.toSet());
+            }
+            else
+            {
+                allocs = (allocatables == null || allocatables.size() == 0) ? getAllocatables(null) : allocatables;
+                nonTemplates = Collections.emptySet();
+            }
             Map<Allocatable, Collection<Appointment>> result = new LinkedHashMap<>();
-            boolean isResourceTemplate = containsResourceTemplate(allocs);
-            for (Allocatable allocatable : allocs)
+            for (Allocatable allocatable: allocs)
             {
                 RaplaLock.ReadLock readLock = lockManager.readLock();
                 SortedSet<Appointment> appointments;
@@ -543,6 +556,14 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
                     if (!match(reservation, annotationQuery))
                     {
                         continue;
+                    }
+                    final Stream<Allocatable> allocatablesFor = reservation.getAllocatablesFor(appointment);
+                    if ( !nonTemplates.isEmpty())
+                    {
+                        if (!allocatablesFor.anyMatch(nonTemplates::contains))
+                        {
+                            continue;
+                        }
                     }
                     // Ignore Templates if not explicitly requested
 
@@ -564,19 +585,30 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
                     }
                     appointmentCollection.add(appointment);
                 }
-            }
+            };
             return result;
         });
         return promise;
     }
 
+
     private boolean containsResourceTemplate(Collection<Allocatable> allocs) {
+        if ( allocs == null)
+        {
+            return false;
+        }
         for ( Allocatable alloc:allocs) {
-            if (alloc.getClassification().getType().getKey().equals(RAPLA_TEMPLATE)) {
+            if (isTemplate(alloc)) {
                 return true;
             }
         }
         return false;
+    }
+
+    private boolean isTemplate(Allocatable allocatable)
+    {
+        Classification classification = allocatable.getClassification();
+        return classification.getType().getKey().equals(RAPLA_TEMPLATE);
     }
 
     public boolean match(Reservation reservation, Map<String, String> annotationQuery)

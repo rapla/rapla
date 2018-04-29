@@ -17,6 +17,7 @@ import org.rapla.components.util.DateTools;
 import org.rapla.components.util.xml.RaplaNonValidatedInput;
 import org.rapla.entities.Category;
 import org.rapla.entities.Entity;
+import org.rapla.entities.Timestamp;
 import org.rapla.entities.User;
 import org.rapla.entities.domain.permission.PermissionExtension;
 import org.rapla.entities.dynamictype.DynamicType;
@@ -384,9 +385,10 @@ import java.util.Set;
 
     public final void loadData() throws RaplaException
     {
-
+        //clearAllHistory();
 
         Connection c = null;
+
         final RaplaLock.WriteLock writeLock = lockManager.writeLock(10);
         try
         {
@@ -422,6 +424,21 @@ import java.util.Set;
             lockManager.unlock(writeLock);
             close(c);
             c = null;
+        }
+    }
+
+    // Only for testing purpose
+    private void clearAllHistory() throws RaplaException
+    {
+        try
+        {
+            Connection connection = createConnection();
+            connection.createStatement().execute("DELETE FROM CHANGES;");
+            connection.commit();
+            connection.close();
+        } catch (SQLException ex)
+        {
+            throw new RaplaException( ex);
         }
     }
 
@@ -715,12 +732,15 @@ import java.util.Set;
         Date connectionTimestamp = null;
         final Collection<String> lockIds = needsGlobalLock ? Collections.singletonList(LockStorage.GLOBAL_LOCK) : getLockIds(ids);
         RaplaSQL raplaSQLOutput = new RaplaSQL(createOutputContext(cache));
+        Map<Entity,Entity> storeMap = new LinkedHashMap<>();
         try
         {
             connectionTimestamp = raplaSQLOutput.getDatabaseTimestamp(connection);
             User lastChangedBy = (userId != null) ? resolve(userId, User.class) : null;
             for (Entity e : storeObjects)
             {
+                final Entity oldEntity = tryResolve(e.getReference());
+
                 if (e instanceof ModifiableTimestamp)
                 {
                     ModifiableTimestamp modifiableTimestamp = (ModifiableTimestamp) e;
@@ -728,12 +748,12 @@ import java.util.Set;
                     {
                         modifiableTimestamp.setLastChangedBy(lastChangedBy);
                     }
-                    final Entity entity = tryResolve(e.getReference());
-                    if ( entity == null)
+                    if ( oldEntity == null)
                     {
                         modifiableTimestamp.setCreateDate( connectionTimestamp );
                     }
                 }
+                storeMap.put( e, oldEntity);
             }
 
             raplaSQLOutput.requestLocks(connection, connectionTimestamp, lockIds, null, !needsGlobalLock);
@@ -742,7 +762,7 @@ import java.util.Set;
                 raplaSQLOutput.remove(connection, id, connectionTimestamp);
             }
             getLogger().debug("Locks requested storing");
-            raplaSQLOutput.store(connection, storeObjects, connectionTimestamp);
+            raplaSQLOutput.store(connection, storeMap, connectionTimestamp);
             raplaSQLOutput.storePatches(connection, preferencePatches, connectionTimestamp);
             if (bSupportsTransactions)
             {
@@ -969,6 +989,7 @@ import java.util.Set;
         final RaplaDefaultXMLContext inputContext = createInputContext(entityStore, this, superCategory);
         RaplaSQL raplaSQLInput = new RaplaSQL(inputContext);
         raplaSQLInput.loadAll(connection);
+
         final Collection<ReferenceInfo> entitiesToRemove = removeInconsistentReservations(entityStore);
 
         Collection<Entity> list = entityStore.getList();
@@ -994,12 +1015,22 @@ import java.util.Set;
         for (Entity entity : list)
         {
             ((RefEntity) entity).setReadOnly();
+            if(  EntityHistory.isSupportedEntity(entity.getTypeClass()))
+            {
+                Date lastChanged = ((Timestamp) entity).getLastChanged();
+                if ( lastChanged != null)
+                {
+                    history.addHistoryEntry(entity, lastChanged, false);
+                }
+            }
         }
         for (Entity entity : migratedTemplates)
         {
             ((RefEntity) entity).setReadOnly();
         }
         cache.getSuperCategory().setReadOnly();
+
+
         for (User user : cache.getUsers())
         {
             ReferenceInfo<User> id = user.getReference();

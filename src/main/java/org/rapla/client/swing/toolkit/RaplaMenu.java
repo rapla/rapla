@@ -101,7 +101,7 @@ public class RaplaMenu extends JMenu implements IdentifiableMenuEntry, MenuInter
         //mapping.put(menuItem, item);
         super.add((Component)item.getComponent());
         int maxItems = 20;
-        if (getMenuComponentCount() >= maxItems)
+        if (getMenuComponentCount() == maxItems)
         {
             int millisToScroll = 40;
             MenuScroller.setScrollerFor((JMenu) getComponent(), maxItems, millisToScroll);
