@@ -2604,18 +2604,34 @@ class HistoryStorage<T extends Entity<T>> extends RaplaTypeStorage<T>
     {
         // first we collect all dates from entries
         final LinkedHashMap<String, Date> idToTimestamp = new LinkedHashMap<>();
+        final HashSet<String> hasChangeLargerThanDate = new HashSet<>();
+        final HashSet<String> toDeleteFromHistory = new HashSet<>();
         ResultSet result = null;
-        try (final PreparedStatement stmt = con.prepareStatement("SELECT ID, CHANGED_AT FROM CHANGES WHERE CHANGED_AT < ? ORDER BY CHANGED_AT DESC"))
+        final long cleanUpBefore = date.getTime();
+        try (final PreparedStatement stmt = con.prepareStatement("SELECT ID, CHANGED_AT FROM CHANGES ORDER BY CHANGED_AT DESC"))
         {
-            stmt.setTimestamp(1, new java.sql.Timestamp(date.getTime()));
+            stmt.setTimestamp(1, new java.sql.Timestamp(cleanUpBefore));
             result = stmt.executeQuery();
             while (result.next())
             {
                 final String id = result.getString(1);
-                if (!idToTimestamp.containsKey(id))
+                final java.sql.Timestamp timestamp = result.getTimestamp(2);
+                if ( timestamp.getTime() > cleanUpBefore)
                 {
-                    final java.sql.Timestamp timestamp = result.getTimestamp(2);
-                    idToTimestamp.put(id, new Date(timestamp.getTime()));
+                    hasChangeLargerThanDate.add( id );
+                }
+                else
+                {
+                    // we have only old entries, so we can delete all ids
+                    if ( !hasChangeLargerThanDate.contains( id))
+                    {
+                        toDeleteFromHistory.add( id);
+                    }
+                    // we leave the latest timestamp, so we can still get the difference
+                    else if (!idToTimestamp.containsKey(id))
+                    {
+                        idToTimestamp.put(id, new Date(timestamp.getTime()));
+                    }
                 }
             }
         }
@@ -2627,8 +2643,8 @@ class HistoryStorage<T extends Entity<T>> extends RaplaTypeStorage<T>
             }
         }
         // now we delete all older entries or those who have the same timestamp and are deleted
-        try (final PreparedStatement stmt = con
-                .prepareStatement("DELETE FROM CHANGES WHERE (ID = ? AND CHANGED_AT < ?) OR (ID = ? AND CHANGED_AT = ? AND ISDELETE = 1)"))
+        int sum =0;
+        try (final PreparedStatement stmt = con.prepareStatement("DELETE FROM CHANGES WHERE (ID = ? AND CHANGED_AT < ?) OR (ID = ? AND CHANGED_AT = ? AND ISDELETE = 1)"))
         {
             for (Entry<String, Date> idAndTimestamp : idToTimestamp.entrySet())
             {
@@ -2641,13 +2657,26 @@ class HistoryStorage<T extends Entity<T>> extends RaplaTypeStorage<T>
                 stmt.addBatch();
             }
             final int[] executeBatch = stmt.executeBatch();
-            int sum =0;
             for ( int i:executeBatch)
             {
                 sum +=i;
             }
-            logger.info("Deleted " + sum + " history entries");
         }
+
+        try (final PreparedStatement stmt = con.prepareStatement("DELETE FROM CHANGES WHERE ID = ?"))
+        {
+            for (String id : toDeleteFromHistory)
+            {
+                stmt.setString(1, id);
+                stmt.addBatch();
+            }
+            final int[] executeBatch = stmt.executeBatch();
+            for ( int i:executeBatch)
+            {
+                sum +=i;
+            }
+        }
+        logger.info("Deleted " + sum + " history entries");
     }
 
     @Override
