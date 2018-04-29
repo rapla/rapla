@@ -135,6 +135,10 @@ public class EntityHistory
             {
                 return getEntity( entry);
             }
+            else
+                {
+                return null;
+            }
         }
         EntityHistory.HistoryEntry entry = historyEntries.get(index);
         final Entity entity = getEntity(entry);
