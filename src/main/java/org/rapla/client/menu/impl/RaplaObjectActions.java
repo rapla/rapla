@@ -62,6 +62,7 @@ public class RaplaObjectActions {
     public final static int VIEW = 7;
     public final static int DELETE_SELECTION = 8;
     public final static int EDIT_SELECTION = 9; // new attribute to define a
+    public final static int CALENDAR = 10;
 	// edit selection (several
 	// editable entities)
     String classificationType;
@@ -243,6 +244,7 @@ public class RaplaObjectActions {
          	case EDIT_SELECTION:editSelection();break;
             case NEW: newEntity();break;
             case VIEW: view();break;
+            case CALENDAR: calendar();break;
             }
         } catch (Throwable ex) {
             if (ex.getCause() != null) {
@@ -391,6 +393,10 @@ public class RaplaObjectActions {
 
 	protected void edit()  {
         editController.edit(object, popupContext);
+    }
+
+    protected void calendar()  {
+        //editController.edit(object, popupContext);
     }
 
     protected void delete()  {

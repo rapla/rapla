@@ -29,6 +29,8 @@ public interface MenuFactory  {
       RaplaException;
     int addReservationWizards(MenuInterface menu, SelectionMenuContext context, String afterId) throws RaplaException;
     MenuItemFactory getItemFactory();
+
+    void executeCalenderAction(AllocatableReservationMenuContext menuContext);
 }
 
 

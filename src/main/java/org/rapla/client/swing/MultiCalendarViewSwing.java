@@ -34,6 +34,7 @@ import javax.swing.event.ChangeListener;
 import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Component;
+import java.awt.Dimension;
 import java.awt.event.ActionEvent;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
@@ -69,6 +70,8 @@ public class MultiCalendarViewSwing implements MultiCalendarView
             }
         });
         addTypeChooser();
+        page.setSize(800,600);
+        page.setPreferredSize( new Dimension(800,600));
         header.setLayout(new BorderLayout());
         header.add(viewChooser, BorderLayout.CENTER);
         filterContainer.setLayout(new BorderLayout());

@@ -171,7 +171,7 @@ public final class ReservationEditImpl extends AbstractAppointmentEditor impleme
         {
             throw new RaplaInitializationException(ex);
         }
-        allocatableEdit = allocatableSelectionFactory.create(true, commandHistory);
+        allocatableEdit = allocatableSelectionFactory.create(true, commandHistory, true);
         mainContent.setLayout(tableLayout);
         mainContent.add(reservationInfo.getComponent(), "0,0");
         mainContent.add(appointmentEdit.getComponent(), "0,1");
@@ -450,6 +450,7 @@ public final class ReservationEditImpl extends AbstractAppointmentEditor impleme
         Collection<Reservation> emptySet = Collections.emptySet();
         Collection<Reservation> originalCollection = original != null ? Collections.singleton(original) : emptySet;
         allocatableEdit.setReservation(Collections.singleton(mutableReservation), originalCollection);
+        allocatableEdit.appointmentSelected( Collections.singletonList( mutableAppointment));
         reservationInfo.setReservation(mutableReservation);
 
         List<AppointmentStatusFactory> statusFactories = new ArrayList<>();

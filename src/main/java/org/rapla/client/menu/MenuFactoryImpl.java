@@ -14,10 +14,14 @@ package org.rapla.client.menu;
 
 import io.reactivex.functions.Consumer;
 import org.rapla.RaplaResources;
+import org.rapla.client.EditApplicationEventContext;
 import org.rapla.client.PopupContext;
+import org.rapla.client.event.ApplicationEvent;
+import org.rapla.client.event.ApplicationEventBus;
 import org.rapla.client.extensionpoints.ObjectMenuFactory;
 import org.rapla.client.extensionpoints.ReservationWizardExtension;
 import org.rapla.client.internal.RaplaClipboard;
+import org.rapla.client.internal.ResourceCalendarTask;
 import org.rapla.client.internal.admin.client.CategoryMenuContext;
 import org.rapla.client.internal.admin.client.DynamicTypeMenuContext;
 import org.rapla.client.internal.admin.client.PeriodMenuContext;
@@ -84,10 +88,11 @@ import java.util.TreeMap;
     private final Provider<UserAction> userActions;
     private final Provider<PasswordChangeAction> passwordChangeAction;
     private final RaplaClipboard clipboard;
+    private final ApplicationEventBus eventBus;
 
     @Inject public MenuFactoryImpl(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, MenuItemFactory menuItemFactory, Set<ReservationWizardExtension> reservationWizards, Set<ObjectMenuFactory> objectMenuFactories,
             CalendarSelectionModel model, Provider<RaplaObjectActions> actions, Provider<AppointmentAction> appointmentActions, Provider<UserAction> userActions,
-            Provider<PasswordChangeAction> passwordChangeAction, RaplaClipboard raplaClipboard)
+            Provider<PasswordChangeAction> passwordChangeAction, RaplaClipboard raplaClipboard, ApplicationEventBus eventBus)
     {
         this.raplaLocale = raplaLocale;
         this.i18n = i18n;
@@ -104,6 +109,7 @@ import java.util.TreeMap;
         this.userActions = userActions;
         this.passwordChangeAction = passwordChangeAction;
         this.clipboard = raplaClipboard;
+        this.eventBus = eventBus;
     }
 
     @Override
@@ -809,9 +815,30 @@ import java.util.TreeMap;
         return menuItemFactory;
     }
 
-
-
-
+    @Override
+    public void executeCalenderAction(AllocatableReservationMenuContext menuContext)
+    {
+        final List<Allocatable> selectedObjects = (List<Allocatable>) menuContext.getSelectedObjects();
+        final EditApplicationEventContext tEditApplicationEventContext = new EditApplicationEventContext(selectedObjects);
+        tEditApplicationEventContext.setCalendarModel( menuContext.getModel());
+        StringBuilder builder = new StringBuilder();
+        boolean first = true;
+        for ( Allocatable alloc:selectedObjects)
+        {
+            if ( first)
+            {
+                first = false;
+            }
+            else
+            {
+                builder.append(";");
+            }
+            builder.append(alloc.getId());
+        }
+        final String info = builder.toString();
+        ApplicationEvent applicationEvent = new ApplicationEvent(ResourceCalendarTask.ID, info,menuContext.getPopupContext(),tEditApplicationEventContext);
+        eventBus.publish(applicationEvent);
+    }
 }
 
 

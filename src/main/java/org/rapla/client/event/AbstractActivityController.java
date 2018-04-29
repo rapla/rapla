@@ -31,25 +31,35 @@ public abstract class AbstractActivityController
     public AbstractActivityController(ApplicationEventBus eventBus, Logger logger)
     {
         this.logger = logger;
-        eventBus.getApplicationEventObservable().subscribe(this::handle);
+        eventBus.getApplicationEventObservable().doOnError(ex-> {
+            logger.error(ex.getMessage(),ex);
+        }).subscribe(this::handle);
     }
 
     public void handle(ApplicationEvent activity)
     {
-        if ( activity.isStop())
+        try
         {
-            activities.remove(activity);
-            updateHistroryEntry();
-            application.stopAction(activity);
-        }
-        else
-        {
-            if(startActivity(activity))
+            if ( activity.isStop())
             {
-                activities.add(activity);
+                activities.remove(activity);
                 updateHistroryEntry();
+                application.stopAction(activity);
+            }
+            else
+            {
+                if(startActivity(activity))
+                {
+                    activities.add(activity);
+                    updateHistroryEntry();
+                }
             }
         }
+        catch (Exception ex)
+        {
+            logger.error(ex.getMessage(), ex);
+        }
+
     }
 
     abstract  protected boolean isPlace( ApplicationEvent activity);

@@ -3,6 +3,7 @@ package org.rapla.client.gwt.view;
 import org.rapla.client.CalendarContainer;
 import org.rapla.client.RaplaWidget;
 import org.rapla.client.internal.PresenterChangeCallback;
+import org.rapla.facade.CalendarSelectionModel;
 import org.rapla.facade.ModificationEvent;
 import org.rapla.framework.RaplaException;
 import org.rapla.inject.DefaultImplementation;
@@ -39,7 +40,7 @@ public class CalendarContainerGwt implements CalendarContainer
 
     }
 
-    @Override public void init(boolean editable, PresenterChangeCallback callback) throws RaplaException
+    @Override public void init(boolean editable,CalendarSelectionModel model,PresenterChangeCallback callback) throws RaplaException
     {
 
     }

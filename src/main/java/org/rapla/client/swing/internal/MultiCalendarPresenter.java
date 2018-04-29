@@ -30,6 +30,7 @@ import org.rapla.client.swing.internal.FilterEditButton.FilterEditButtonFactory;
 import org.rapla.client.swing.toolkit.RaplaMenuItem;
 import org.rapla.components.util.TimeInterval;
 import org.rapla.entities.dynamictype.ClassificationFilter;
+import org.rapla.facade.CalendarModel;
 import org.rapla.facade.CalendarSelectionModel;
 import org.rapla.facade.ModificationEvent;
 import org.rapla.facade.client.ClientFacade;
@@ -64,7 +65,7 @@ public class MultiCalendarPresenter implements CalendarContainer,Presenter
     private static final String ERROR_NO_VIEW_DEFINED = "No views enabled. Please add a plugin in the menu admin/settings/plugins";
     
     private final Map<String,RaplaMenuItem> viewMenuItems = new HashMap<>();
-    private final CalendarSelectionModel model;
+    private  CalendarSelectionModel model;
     private final Set<SwingViewFactory> factoryList;
     private final DialogUiFactoryInterface dialogUiFactory;
     private final MultiCalendarView view;
@@ -85,9 +86,9 @@ public class MultiCalendarPresenter implements CalendarContainer,Presenter
 
 
     @Inject
-    public MultiCalendarPresenter(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, CalendarSelectionModel model,
+    public MultiCalendarPresenter(ClientFacade facade, RaplaResources i18n,  Logger logger, CalendarSelectionModel model,
             DialogUiFactoryInterface dialogUiFactory, final Set<SwingViewFactory> factoryList,
-            FilterEditButtonFactory filterEditButtonFactory, MultiCalendarView view) throws RaplaInitializationException
+            MultiCalendarView view) throws RaplaInitializationException
     {
         scheduler = facade.getRaplaFacade().getScheduler();
         this.i18n = i18n;
@@ -95,40 +96,11 @@ public class MultiCalendarPresenter implements CalendarContainer,Presenter
         this.logger = logger;
         this.dialogUiFactory = dialogUiFactory;
         this.factoryList = factoryList;
-        this.model = model;
         this.view = view;
         this.view.setPresenter(this);
+
         // Key name map
-        final LinkedHashMap<String,SwingViewFactory> ids = getIds();
-        {
-	         SwingViewFactory factory = findFactory( model.getViewId());
-             if ( factory == null)
-             {
-                 if ( !ids.isEmpty() ) {
-	                 String firstId = ids.keySet().iterator().next();
-	                 model.setViewId( firstId );
-	                 factory = findFactory( firstId );
-	             }
-	         }
-             if(factory == null)
-             {
-                 view.setNoViewText(ERROR_NO_VIEW_DEFINED);
-             }
-             else
-             {
-                 try
-                {
-                    view.setCalendarView(factory.createSwingView(model, true, false));
-                }
-                catch (RaplaException e)
-                {
-                    throw new RaplaInitializationException(e);
-                }
-             }
-         }
-        view.setSelectedViewId(model.getViewId());
-        view.setFilterModel(model);
-        this.view.setSelectableViews(ids);
+
         final Observable<Object> objectObservable = filterChanged.debounce(500).switchMap((newFilter) -> {
             model.setReservationFilter(newFilter);
             return update();
@@ -160,10 +132,41 @@ public class MultiCalendarPresenter implements CalendarContainer,Presenter
         filterChanged.onNext( filters);
     }
 
-    public void init(boolean editable, PresenterChangeCallback callback) throws RaplaException
+    public void init(boolean editable,CalendarSelectionModel model, PresenterChangeCallback callback) throws RaplaException
     {
         this.editable = editable;
         this.callback = callback;
+        final LinkedHashMap<String,SwingViewFactory> ids = getIds();
+        {
+            SwingViewFactory factory = findFactory( model.getViewId());
+            if ( factory == null)
+            {
+                if ( !ids.isEmpty() ) {
+                    String firstId = ids.keySet().iterator().next();
+                    model.setViewId( firstId );
+                    factory = findFactory( firstId );
+                }
+            }
+            if(factory == null)
+            {
+                view.setNoViewText(ERROR_NO_VIEW_DEFINED);
+            }
+            else
+            {
+                try
+                {
+                    view.setCalendarView(factory.createSwingView(model, true, false));
+                }
+                catch (RaplaException e)
+                {
+                    throw new RaplaInitializationException(e);
+                }
+            }
+        }
+        this.model = model;
+        view.setSelectedViewId(model.getViewId());
+        view.setFilterModel(model);
+        this.view.setSelectableViews(ids);
         //update(null);
     }
 

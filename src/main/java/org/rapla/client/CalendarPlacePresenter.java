@@ -85,8 +85,7 @@ import java.util.Date;
         updateOwnReservationsSelected();
         try
         {
-            calendarContainer.init(true, () ->
-            {
+            calendarContainer.init(true,model, () -> {
                 calendarUpdated();
                 start();
             });

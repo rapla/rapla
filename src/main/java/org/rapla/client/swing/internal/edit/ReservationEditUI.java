@@ -64,10 +64,8 @@ public class ReservationEditUI  extends AbstractEditUI<Reservation>  {
     private final PermissionController permissionController;
 
     @Inject
-    public ReservationEditUI(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, TreeFactory treeFactory, CalendarSelectionModel originalModel, AppointmentFormater appointmentFormater,
-            InfoFactory infoFactory, MenuFactory menuFactory,
-            DialogUiFactoryInterface dialogUiFactory, ClassificationFieldFactory classificationFieldFactory, PermissionListFieldFactory permissionListFieldFactory,
-            DateFieldFactory dateFieldFactory, Provider<MultiCalendarPresenter> multiCalendarViewFactory, BooleanFieldFactory booleanFieldFactory, FilterEditButtonFactory filterEditButtonFactory) throws RaplaInitializationException
+    public ReservationEditUI(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger,  ClassificationFieldFactory classificationFieldFactory, PermissionListFieldFactory permissionListFieldFactory,
+             AllocatableSelection.AllocatableSelectionFactory allocatableSelectionFactory) throws RaplaInitializationException
     {
         super(facade, i18n, raplaLocale, logger);
         this.permissionController = facade.getRaplaFacade().getPermissionController();
@@ -81,12 +79,7 @@ public class ReservationEditUI  extends AbstractEditUI<Reservation>  {
             throw new RaplaInitializationException(e1);
         } 
 
-        allocatableSelection = new AllocatableSelection(facade, i18n, raplaLocale, logger, false, new CommandHistory(), treeFactory, originalModel,
-                appointmentFormater, menuFactory, infoFactory, dialogUiFactory, dateFieldFactory, multiCalendarViewFactory,
-                booleanFieldFactory, filterEditButtonFactory)
-        {
-            public boolean isRestrictionVisible() {return false;}
-        };
+        allocatableSelection = allocatableSelectionFactory.create(false, new CommandHistory(), false);
         final JComponent holdBackConflictPanel = allocatableSelection.getComponent();
         holdBackConflictPanel.setPreferredSize( new Dimension(600, 200));
         this.permissionListField.setPermissionLevels(Permission.DENIED, Permission.READ,Permission.EDIT, Permission.ADMIN);
