@@ -151,7 +151,7 @@ public class EntityHistory
             {
                 entryBefore = historyEntries.get(index - 1);
             }
-            if (index <= historyEntries.size() && (entryBefore == null || entryBefore.getTimestamp() != entry.getTimestamp() ))
+            if (index + 1< historyEntries.size() && (entryBefore == null || entryBefore.getTimestamp() != entry.getTimestamp() ))
             {
                 entryBefore = historyEntries.get(index + 1);
             }

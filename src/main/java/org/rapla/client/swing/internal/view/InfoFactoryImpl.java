@@ -37,6 +37,7 @@ import org.rapla.entities.User;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.Appointment;
 import org.rapla.entities.domain.AppointmentFormater;
+import org.rapla.entities.domain.NameFormatUtil;
 import org.rapla.entities.domain.Period;
 import org.rapla.entities.domain.Reservation;
 import org.rapla.entities.dynamictype.DynamicType;
@@ -75,7 +76,17 @@ public class InfoFactoryImpl extends RaplaGUIComponent implements InfoFactory
         this.ioInterface = ioInterface;
         this.dialogUiFactory = dialogUiFactory;
         views.put( DynamicType.class, new DynamicTypeInfoUI(clientFacade, i18n, raplaLocale, logger) );
-        views.put( Reservation.class, new ReservationInfoUI(i18n, raplaLocale, facade, logger, appointmentFormater) );
+        views.put( Reservation.class, new ReservationInfoUI(i18n, raplaLocale, facade, logger, appointmentFormater)
+                {
+                    // Special usecase, because we want to use export name in all other names
+                    @Override
+                    protected String getAllocatableName(Allocatable allocatable)
+                    {
+                        final String exportName = NameFormatUtil.getName(allocatable, getRaplaLocale().getLocale());
+                        return exportName;
+                    }
+                }
+        );
         views.put( Appointment.class, new AppointmentInfoUI(i18n, raplaLocale, facade, logger, appointmentFormater) );
         views.put( Allocatable.class, new AllocatableInfoUI(clientFacade, i18n, raplaLocale, logger) );
         views.put( User.class, new UserInfoUI(clientFacade, i18n, raplaLocale, logger) );
