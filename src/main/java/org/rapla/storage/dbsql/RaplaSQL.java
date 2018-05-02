@@ -169,6 +169,7 @@ class RaplaSQL
             Collection<Storage<?>> subStores = store.getSubStores();
             storages.addAll(subStores);
         }
+        storages.add(history);
         return storages;
     }
 
@@ -258,6 +259,7 @@ class RaplaSQL
     private boolean delete(Connection con, ReferenceInfo referenceInfo, Date connectionTimestamp, RaplaTypeStorage storage) throws SQLException, RaplaException
     {
         storage.setConnection(con, connectionTimestamp);
+        history.setConnection( con, connectionTimestamp);
         try
         {
             List<ReferenceInfo> list = Collections.singletonList( referenceInfo);
@@ -272,6 +274,7 @@ class RaplaSQL
         finally
         {
             storage.removeConnection();
+            history.removeConnection();
         }
 
     }

@@ -995,9 +995,11 @@ public class FacadeImpl implements RaplaFacade {
 				operator.createIdentifierAsync(Appointment.class, countAppointments(toCopy.stream())),
 				(reservationIds, appoimtmentIds) ->
 				{
+					final Iterator<ReferenceInfo<Reservation>> eventIdIterator = reservationIds.iterator();
+					final Iterator<ReferenceInfo<Appointment>> appointmentIdIterator = appoimtmentIds.iterator();
 					List result = new ArrayList();
 					for (Reservation reservation : toCopy) {
-						result.add(copyFunction.copy(reservation, reservationIds.iterator(), appoimtmentIds.iterator()));
+						result.add(copyFunction.copy(reservation, eventIdIterator, appointmentIdIterator));
 					}
 					return result;
 				});

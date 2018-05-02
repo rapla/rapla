@@ -38,17 +38,22 @@ public class ExceptionResponseBuilder
             final Response build = entity.build();
             return build;
         }
-        final Logger raplaLogger;
+        Logger raplaLogger = null;
         try
         {
-            final Object loggerFromContext = request.getServletContext().getAttribute(Logger.class.getCanonicalName());
-            if (loggerFromContext != null && loggerFromContext instanceof Logger)
+
+            if ( request != null)
             {
-                raplaLogger = (Logger) loggerFromContext;
+                final Object loggerFromContext = request.getServletContext().getAttribute(Logger.class.getCanonicalName());
+                if (loggerFromContext != null && loggerFromContext instanceof Logger)
+                {
+                    raplaLogger = (Logger) loggerFromContext;
+                }
             }
-            else
+            if ( raplaLogger == null)
             {
                 raplaLogger = RaplaBootstrapLogger.createRaplaLogger();
+                raplaLogger.warn("Could not get logger from request. Using bootstrap.");
             }
         }
         catch (Throwable ex)

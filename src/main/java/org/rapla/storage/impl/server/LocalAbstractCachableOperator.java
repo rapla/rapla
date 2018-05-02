@@ -540,16 +540,16 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
             for (Allocatable allocatable: allocs)
             {
                 RaplaLock.ReadLock readLock = lockManager.readLock();
-                SortedSet<Appointment> appointments;
+                SortedSet<Appointment> appointmentSet;
                 try
                 {
-                    appointments = getAppointments(allocatable);
+                    SortedSet<Appointment> appointments = getAppointments(allocatable);
+                    appointmentSet = AppointmentImpl.getAppointments(appointments, user, start, end, excludeExceptions);
                 }
                 finally
                 {
                     lockManager.unlock(readLock);
                 }
-                SortedSet<Appointment> appointmentSet = AppointmentImpl.getAppointments(appointments, user, start, end, excludeExceptions);
                 for (Appointment appointment : appointmentSet)
                 {
                     Reservation reservation = appointment.getReservation();
@@ -3883,16 +3883,24 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
             if (type == Conflict.class)
             {
                 final Conflict conflict = conflictFinder.findConflict((ReferenceInfo<Conflict>) update);
-                newEntity = cache.fillConflictDisableInformation(user, conflict);
-                // can be null if no conflict disalbe information is stored
-                if (history.hasHistory(update))
+                if (conflict != null)
                 {
-                    oldEntity = history.get(update, since);
-                }
-                else
-                {
+                    newEntity = cache.fillConflictDisableInformation(user, conflict);
+                    // can be null if no conflict disable information is stored
+                    if (history.hasHistory(update))
+                    {
+                        oldEntity = history.get(update, since);
+                    }
+                    else
+                    {
+                        oldEntity = null;
+                    }
+                } else {
+                    // conflict may be deleted
+                    newEntity = null;
                     oldEntity = null;
                 }
+
             }
             else if (type == Preferences.class)
             {

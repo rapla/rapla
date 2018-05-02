@@ -123,17 +123,26 @@ import java.util.Set;
             final int period = 15000;
             scheduleConnectedTasks(()->
                 {
-                    try (final Connection connection = createConnection())
+                    final RaplaLock.WriteLock writeLock = lockManager.writeLockIfAvaliable();
+                    if ( writeLock != null)
                     {
-                        final RaplaDefaultXMLContext context = createOutputContext(cache);
-                        final RaplaSQL raplaSQL = new RaplaSQL(context);
-                        raplaSQL.cleanupOldLocks(connection);
-                        connection.commit();
+                        try (final Connection connection = createConnection())
+                        {
+                            final RaplaDefaultXMLContext context = createOutputContext(cache);
+                            final RaplaSQL raplaSQL = new RaplaSQL(context);
+                            raplaSQL.cleanupOldLocks(connection);
+                            connection.commit();
+                        }
+                        catch (Throwable t)
+                        {
+                            DBOperator.this.logger.info("Could not release old locks");
+                        }
+                        finally
+                        {
+                            lockManager.unlock(writeLock);
+                        }
                     }
-                    catch (Throwable t)
-                    {
-                        DBOperator.this.logger.info("Could not release old locks");
-                    }
+
                 }
             , delay, period);
         }
