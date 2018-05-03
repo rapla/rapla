@@ -53,7 +53,7 @@ public class CalendarModelCache
 
     private void removeCalendarModelFor(ReferenceInfo<User> userId) throws RaplaException
     {
-        RaplaLock.WriteLock lock = lockManager.writeLock(60);
+        RaplaLock.WriteLock lock = lockManager.writeLock(getClass(), "removeCalendar for user " + userId,60);
         try
         {
             this.calendarModels.remove(userId);
@@ -82,7 +82,7 @@ public class CalendarModelCache
         final Preferences preferences = operator.getPreferences(user, createIfNotNull);
         if (preferences == null)
         {
-            final RaplaLock.WriteLock lock = lockManager.writeLock(60);
+            final RaplaLock.WriteLock lock = lockManager.writeLock(getClass(), "Update calendar for user no prefe " + userId, 60);
             try
             {
                 this.calendarModels.remove(userId);
@@ -97,7 +97,7 @@ public class CalendarModelCache
         final RaplaMap<CalendarModelConfiguration> exportMap = preferences.getEntry(CalendarModelConfiguration.EXPORT_ENTRY);
         if (modelConfig == null && exportMap == null)
         {
-            final RaplaLock.WriteLock lock = lockManager.writeLock(60);
+            final RaplaLock.WriteLock lock = lockManager.writeLock(getClass(), "Update calendar for user  " + userId, 60);
             try
             {
                 this.calendarModels.remove(userId);
@@ -136,7 +136,7 @@ public class CalendarModelCache
             }
         }
 
-        final RaplaLock.WriteLock lock = lockManager.writeLock(60);
+        final RaplaLock.WriteLock lock = lockManager.writeLock(getClass(), "Update calendar for user " + userId + " writing new calendar", 60);
         try
         {
             if (calendarModelList.size() > 0)
@@ -159,7 +159,7 @@ public class CalendarModelCache
     public Collection<ReferenceInfo<User>> findMatchingUser(Appointment appointment) throws RaplaException
     {
         Set<ReferenceInfo<User>> result = new HashSet<>();
-        RaplaLock.ReadLock readLock = lockManager.readLock();
+        RaplaLock.ReadLock readLock = lockManager.readLock(getClass(), "findMatchingUserForAppointment");
         try
         {
             for (ReferenceInfo<User> userId : calendarModels.keySet())
@@ -189,7 +189,7 @@ public class CalendarModelCache
     public Collection<ReferenceInfo<User>> findMatchingUsers(Allocatable allocatable) throws RaplaException
     {
         Set<ReferenceInfo<User>> result = new HashSet<>();
-        RaplaLock.ReadLock lock = lockManager.readLock();
+        RaplaLock.ReadLock lock = lockManager.readLock(getClass(), "findMatchingUserForAppointment");
         try
         {
             for (ReferenceInfo<User> userId : calendarModels.keySet())
@@ -216,7 +216,7 @@ public class CalendarModelCache
     // TODO change to Promise
     public Collection<Appointment> getAppointments(ReferenceInfo<User> userId, TimeInterval syncRange) throws RaplaException
     {
-        final RaplaLock.ReadLock lock = lockManager.readLock();
+        final RaplaLock.ReadLock lock = lockManager.readLock(getClass(), "getAppointments for " + userId);
         List<CalendarModelImpl> calendarModelList;
         try
         {

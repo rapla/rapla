@@ -44,27 +44,26 @@ final public class CountryChooser implements RaplaWidget
     @Inject
     public CountryChooser(Logger logger,final RaplaResources i18n, final RaplaLocale raplaLocale, RemoteLocaleService remoteLocaleService) throws RaplaInitializationException {
         this.logger = logger;
+        final String localeCountry = raplaLocale.getLocale().getCountry();
         language = raplaLocale.getLocale().getLanguage();
         Collection<String> languages = raplaLocale.getAvailableLanguages();
         remoteLocaleService.countries(new LinkedHashSet<>(languages)).thenAccept((countries)->
         {
             this.countries = countries;
             String[] entries = createCountryArray();
-            SwingUtilities.invokeLater(()->
-            jComboBox.setModel( new DefaultComboBoxModel(entries)));
+            SwingUtilities.invokeLater(()-> {
+                jComboBox.setModel(new DefaultComboBoxModel(entries));
+                if(localeCountry != null)
+                {
+                    jComboBox.setSelectedItem(localeCountry);
+                }
+            });
+
         }).exceptionally(e->
              logger.error(e.getMessage(), e)
         );
 
-        @SuppressWarnings("unchecked")
-		final String localeCountry = raplaLocale.getLocale().getCountry();
-        jComboBox = new JComboBox();
-        if(localeCountry != null)
-        {
-            jComboBox.setSelectedItem(localeCountry);
-        }
-
-
+		jComboBox = new JComboBox();
         DefaultListCellRenderer aRenderer = new DefaultListCellRenderer() {
             private static final long serialVersionUID = 1L;
             public Component getListCellRendererComponent(

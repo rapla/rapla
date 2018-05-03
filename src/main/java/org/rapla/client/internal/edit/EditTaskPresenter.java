@@ -417,6 +417,7 @@ public class EditTaskPresenter implements TaskPresenter
         Runnable deleteCmd = () -> {
             busyIdleObservable.onNext(i18n.getString("delete"));
             final Promise<Void> promise = reservationController.deleteReservations(new HashSet(origs), popupContext);
+            handleException( promise,popupContext);
             promise.thenRun( () ->closeCmd.run()).finally_(() ->  busyIdleObservable.onComplete());
         };
         editTaskView.start( saveCmd, closeCmd, deleteCmd);

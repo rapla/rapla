@@ -182,7 +182,7 @@ public class RemoteOperator
     public Promise<User> connectAsync() {
         RemoteStorage serv = getRemoteStorage();
         Promise<User> userPromise = serv.getResources().thenApply((evt) -> {
-            RaplaLock.WriteLock writeLock = lockManager.writeLock(10);
+            RaplaLock.WriteLock writeLock = lockManager.writeLock(getClass() ,"connectAsync", 10);
             try {
                 user = loadData(evt);
                 return user;
@@ -716,7 +716,7 @@ public class RemoteOperator
     private <T extends Entity> Map<ReferenceInfo<T>, T> resolveLocal(UpdateEvent entityList, Collection<ReferenceInfo<T>> idSet) throws RaplaException {
         Map<ReferenceInfo<T>, T> result = new HashMap();
         Collection<Entity> list = entityList.getStoreObjects();
-        RaplaLock.ReadLock lock = lockManager.readLock();
+        RaplaLock.ReadLock lock = lockManager.readLock(getClass(),"resolveLocale");
         try {
             testResolve(list);
             setResolver(list);
@@ -769,7 +769,7 @@ public class RemoteOperator
 
     private Map<Allocatable, Collection<Appointment>> processReservationResult(AppointmentMap appointmentMap, ClassificationFilter[] filters)
             throws RaplaException {
-        RaplaLock.ReadLock lock = lockManager.readLock();
+        RaplaLock.ReadLock lock = lockManager.readLock(getClass(), "processReservationResult");
         try {
             final RemoteOperator resolver = this;
             appointmentMap.init(resolver);
@@ -830,7 +830,7 @@ public class RemoteOperator
             if (!(storeObjects.isEmpty() && removedIds.isEmpty())) {
                 testResolve(storeObjects);
                 setResolver(storeObjects);
-                RaplaLock.WriteLock writeLock = writeLockIfLoaded();
+                RaplaLock.WriteLock writeLock = writeLockIfLoaded("refresh " + evt.getInfoString());
                 try {
                     Collection<PreferencePatch> preferencePatches = evt.getPreferencePatches();
                     result = update(since, until, storeObjects, preferencePatches, removedIds);
@@ -849,7 +849,7 @@ public class RemoteOperator
     protected void refreshAll() throws RaplaException {
         UpdateResult result;
         Collection<Entity> oldEntities;
-        RaplaLock.ReadLock readLock = lockManager.readLock();
+        RaplaLock.ReadLock readLock = lockManager.readLock(getClass(),"refreshAll");
         try {
             User user = cache.resolve(userId, User.class);
             oldEntities = new HashSet(cache.getVisibleEntities(user));
@@ -866,7 +866,7 @@ public class RemoteOperator
         {
 
         }
-        RaplaLock.WriteLock writeLock = writeLockIfLoaded();
+        RaplaLock.WriteLock writeLock = writeLockIfLoaded("Refresh all");
         try {
             loadData();
         } finally {
@@ -874,7 +874,7 @@ public class RemoteOperator
         }
 
         Collection<Entity> newEntities;
-        readLock = lockManager.readLock();
+        readLock = lockManager.readLock(getClass(),"refreshAll");
         try {
             User user = cache.resolve(userId, User.class);
             newEntities = new HashSet<>(cache.getVisibleEntities(user));

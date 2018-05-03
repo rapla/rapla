@@ -123,7 +123,7 @@ import java.util.Set;
             final int period = 15000;
             scheduleConnectedTasks(()->
                 {
-                    final RaplaLock.WriteLock writeLock = lockManager.writeLockIfAvaliable();
+                    final RaplaLock.WriteLock writeLock = lockManager.writeLockIfAvaliable(getClass(), "scheduleCleanupAndRefresh");
                     if ( writeLock != null)
                     {
                         try (final Connection connection = createConnection())
@@ -398,7 +398,7 @@ import java.util.Set;
 
         Connection c = null;
 
-        final RaplaLock.WriteLock writeLock = lockManager.writeLock(10);
+        final RaplaLock.WriteLock writeLock = lockManager.writeLock(getClass(),"loadData",10);
         try
         {
             c = createConnection();
@@ -677,7 +677,7 @@ import java.util.Set;
 
     public void dispatch(UpdateEvent evt) throws RaplaException
     {
-        RaplaLock.WriteLock writeLock = writeLockIfLoaded();
+        RaplaLock.WriteLock writeLock = writeLockIfLoaded("Dispatching " + evt.toString());
         try
         {
             //Date since = lastUpdated;

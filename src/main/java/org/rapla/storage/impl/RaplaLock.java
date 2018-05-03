@@ -1,25 +1,23 @@
 package org.rapla.storage.impl;
 
+import org.rapla.components.util.DateTools;
 import org.rapla.framework.RaplaException;
+
+import java.util.Date;
 
 public interface RaplaLock
 {
-    WriteLock writeLockIfAvaliable();
+    WriteLock writeLockIfAvaliable(Class callerClass,String name);
+    WriteLock writeLock(Class callerClass,String name) throws RaplaException;
+    WriteLock writeLock(Class callerClass,String name,int seconds) throws RaplaException;
 
-    WriteLock writeLock() throws RaplaException;
-
-    WriteLock writeLock(int seconds) throws RaplaException;
-
-    ReadLock readLock() throws RaplaException;
-
-    ReadLock readLock(int seconds) throws RaplaException;
+    ReadLock readLock(Class callerClass, String name) throws RaplaException;
+    ReadLock readLock(Class callerClass, String name,int seconds) throws RaplaException;
 
     boolean isWriteLocked();
-
     boolean isReadLocked();
 
     void unlock(ReadLock lock);
-
     void unlock(WriteLock lock);
 
     interface LockInfo
@@ -28,49 +26,38 @@ public interface RaplaLock
         long getLockTime();
     }
 
-    class ReadLock implements LockInfo
+    class ReadLock extends AbstractLock
     {
-        final Object lock;
-        final StackTraceElement[] stackTrace;
-        final long lockTime;
-        public ReadLock(Object lock,StackTraceElement[] stackTrace, long lockTime)
+        public ReadLock(Object lock, Class lockClazz, String lockname, StackTraceElement[] stackTrace, long lockTime)
         {
-            this.stackTrace = stackTrace;
-            this.lock = lock;
-            this.lockTime = lockTime;
-
+            super(lock, lockClazz, lockname, stackTrace, lockTime, "Readlock");
         }
-
-        public StackTraceElement[] getStackTrace()
+    }
+    class WriteLock extends AbstractLock
+    {
+        public WriteLock(Object lock, Class lockClazz, String lockname, StackTraceElement[] stackTrace, long lockTime)
         {
-            return stackTrace;
+            super(lock, lockClazz, lockname, stackTrace, lockTime, "Writelock");
         }
-
-        public long getLockTime()
-        {
-            return lockTime;
-        }
-
-        @Override
-        public String toString()
-        {
-            return Tools.toString("Readlock", stackTrace);
-        }
-
-
     }
 
-    class WriteLock implements LockInfo
+    class AbstractLock implements LockInfo
     {
         final Object lock;
         final StackTraceElement[] stackTrace;
         final long lockTime;
+        final Class lockClazz;
+        final String lockname;
+        final private String lockType;
 
-        public WriteLock(Object lock,StackTraceElement[] stackTrace, long lockTime)
+        public AbstractLock(Object lock, Class lockClazz, String lockname, StackTraceElement[] stackTrace, long lockTime, String lockType)
         {
             this.stackTrace = stackTrace;
             this.lock = lock;
             this.lockTime = lockTime;
+            this.lockClazz = lockClazz;
+            this.lockname = lockname;
+            this.lockType = lockType;
         }
 
         public StackTraceElement[] getStackTrace()
@@ -86,8 +73,11 @@ public interface RaplaLock
         @Override
         public String toString()
         {
-            return Tools.toString("Writelock", stackTrace);
+            return Tools.toString(lockType + " [" + DateTools.formatTime(new Date(lockTime)) + "]" + lockClazz + ":" + lockname, stackTrace);
         }
+
+
+
     }
 
     class Tools

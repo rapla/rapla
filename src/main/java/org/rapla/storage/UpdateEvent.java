@@ -50,6 +50,9 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collector;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public class UpdateEvent
 {
@@ -146,17 +149,6 @@ public class UpdateEvent
 
     @SuppressWarnings({ "unchecked" }) private Map<Class, List<Entity>> getListMap()
     {
-        if (listMap == null)
-        {
-            listMap = new LinkedHashMap<Class, Collection<Entity>>();
-            put(Category.class, categories);
-            put(DynamicType.class, types);
-            put(Allocatable.class, resources);
-            put(User.class, users);
-            put(Preferences.class, preferences);
-            put(Reservation.class, reservations);
-            put(Conflict.class, conflicts);
-        }
         return listMap;
     }
 
@@ -184,6 +176,7 @@ public class UpdateEvent
         {
             return Collections.emptyList();
         }
+
         Collection<ReferenceInfo> result = new ArrayList<>();
         for (SerializableReferenceInfo entry:removeSet)
         {
@@ -206,24 +199,21 @@ public class UpdateEvent
 
     }
 
+    // Needs to be a linked hashset to keep the order of the entities
+    private static final Collector<Entity,?,Collection<Entity>> ENTITY_COLLECTION_COLLECTOR = Collectors.toCollection(LinkedHashSet::new);
+
     public Collection<Entity> getStoreObjects()
     {
-        final Map<Class, List<Entity>> listMap = getListMap();
-        if ( listMap.isEmpty() )
-        {
-            return Collections.emptyList();
-        }
-        // Needs to be a linked hashset to keep the order of the entities
-        HashSet<Entity> objects = new LinkedHashSet<>();
-        for (Collection<Entity> list : listMap.values())
-        {
-            for (Entity entity : list)
-            {
-                objects.add(entity);
-            }
-        }
-        return objects;
+        final Stream<Entity> objectStream = getObjectStream();
+        final Collection<Entity> collect = objectStream.collect(ENTITY_COLLECTION_COLLECTOR);
+        return collect;
 
+    }
+
+    private Stream<Entity> getObjectStream()
+    {
+        final Map<Class, List<Entity>> listMap = getListMap();
+        return listMap.values().stream().flatMap( Collection::stream);
     }
 
     public Collection<EntityReferencer> getEntityReferences()
@@ -273,7 +263,18 @@ public class UpdateEvent
     private void putStore(Entity entity, boolean checkForDuplicate)
     {
         Class<? extends Entity> class1 = entity.getTypeClass();
-        List list = getListMap().get(class1);
+        if (listMap == null)
+        {
+            listMap = new LinkedHashMap<Class, Collection<Entity>>();
+            put(Category.class, categories);
+            put(DynamicType.class, types);
+            put(Allocatable.class, resources);
+            put(User.class, users);
+            put(Preferences.class, preferences);
+            put(Reservation.class, reservations);
+            put(Conflict.class, conflicts);
+        }
+        List list = (List)listMap.get(class1);
         if (list == null)
         {
             if (class1.equals(Reservation.class))
@@ -440,6 +441,16 @@ public class UpdateEvent
     public void setTimezoneOffset(int timezoneOffset)
     {
         this.timezoneOffset = timezoneOffset;
+    }
+
+    public String getInfoString()
+    {
+        return getUserId() + " made " + getObjectStream( ).count() + " stores " + ((removeSet!=null)? removeSet.size() : 0) + " removes";
+    }
+
+    public String toString()
+    {
+        return getInfoString();
     }
 
 }

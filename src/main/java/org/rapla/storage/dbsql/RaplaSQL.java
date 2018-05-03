@@ -2613,7 +2613,6 @@ class HistoryStorage<T extends Entity<T>> extends RaplaTypeStorage<T>
         final long cleanUpBefore = date.getTime();
         try (final PreparedStatement stmt = con.prepareStatement("SELECT ID, CHANGED_AT FROM CHANGES ORDER BY CHANGED_AT DESC"))
         {
-            stmt.setTimestamp(1, new java.sql.Timestamp(cleanUpBefore));
             result = stmt.executeQuery();
             while (result.next())
             {

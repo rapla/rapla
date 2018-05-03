@@ -292,7 +292,8 @@ public class AppointmentAction extends RaplaComponent  {
     }
 
     private void delete()  {
-        handleException(reservationController.deleteAppointment(appointmentBlock,popupContext));
+        final Promise<Void> promise = reservationController.deleteAppointment(appointmentBlock, popupContext);
+        handleException(promise);
     }
 
     private void copy()

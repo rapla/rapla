@@ -29,19 +29,19 @@ public class DefaultRaplaLock implements RaplaLock
         this.logger = raplaLogger;
     }
 
-    public WriteLock writeLock() throws RaplaException
+    public WriteLock writeLock(Class clazz, String name) throws RaplaException
     {
-        return writeLock(DEFAULT_WRITELOCK_TIMEOUT_SECONDS);
+        return writeLock(clazz, name,DEFAULT_WRITELOCK_TIMEOUT_SECONDS);
     }
 
     @Override
-    public ReadLock readLock(int seconds) throws RaplaException
+    public ReadLock readLock(Class clazz, String name,int seconds) throws RaplaException
     {
         // Enabling the stack trace is a huge performance cost
         StackTraceElement[] stackTrace = logger.isTraceEnabled() ? getStackTrace() : new StackTraceElement[] {};
         final long currentTime = System.currentTimeMillis();
         final Lock lock = lock(this.readWriteLock.readLock(), seconds, true);
-        final ReadLock readLock = new ReadLock(lock, stackTrace, currentTime);
+        final ReadLock readLock = new ReadLock(lock,clazz, name, stackTrace, currentTime);
         readLocks.add(readLock);
         return readLock;
     }
@@ -101,21 +101,21 @@ public class DefaultRaplaLock implements RaplaLock
             if ( timeSinceLock > logThreshholdTime )
             {
                 final RaplaSynchronizationException ex = new RaplaSynchronizationException(
-                        "Current lock [" + i + "] is blocking for " + timeSinceLock + " seconds");
+                        "Current lock [" + i + "] is blocking for " + timeSinceLock + " seconds " + lock);
                 ex.setStackTrace( lock.getStackTrace());
                 logger.warn("Lock Blocking ", ex);
             }
         }
     }
 
-    public WriteLock writeLock(int seconds) throws RaplaException
+    public WriteLock writeLock(Class clazz, String name,int seconds) throws RaplaException
     {
         final WriteLock lock;
         StackTraceElement[] stackTrace = logger.isDebugEnabled() ? getStackTrace() : new StackTraceElement[] {};
         final long currentTime = System.currentTimeMillis();
         if (seconds > 0)
         {
-            lock = new WriteLock(lock(this.readWriteLock.writeLock(), seconds, false), stackTrace, currentTime);
+            lock = new WriteLock(lock(this.readWriteLock.writeLock(), seconds, false),clazz, name, stackTrace, currentTime);
         }
         else
         {
@@ -124,7 +124,7 @@ public class DefaultRaplaLock implements RaplaLock
             boolean tryLock = writeLock.tryLock();
             if (tryLock)
             {
-                lock = new WriteLock(writeLock, stackTrace, currentTime);
+                lock = new WriteLock(writeLock,clazz, name, stackTrace, currentTime);
             }
             else
             {
@@ -156,11 +156,11 @@ public class DefaultRaplaLock implements RaplaLock
         return stackTrace;
     }
 
-    public WriteLock writeLockIfAvaliable()
+    public WriteLock writeLockIfAvaliable(Class clazz, String name)
     {
         try
         {
-            return writeLock(0);
+            return writeLock(clazz, name,0);
         }
         catch (RaplaException e)
         {
@@ -169,9 +169,10 @@ public class DefaultRaplaLock implements RaplaLock
         }
     }
 
-    public ReadLock readLock() throws RaplaException
+    @Override
+    public ReadLock readLock(Class clazz, String name) throws RaplaException
     {
-        return readLock(DEFAULT_READLOCK_TIMEOUT_SECONDS);
+        return readLock(clazz, name,DEFAULT_READLOCK_TIMEOUT_SECONDS);
     }
 
     @Override

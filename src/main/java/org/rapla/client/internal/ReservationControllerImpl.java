@@ -322,7 +322,8 @@ public class ReservationControllerImpl implements ReservationController {
                     if (reservationsToRemove.contains(reservation)) {
                         continue;
                     }
-                    Reservation mutableReservation = toUpdate.get(reservation.getReference());
+                    final ReferenceInfo<Reservation> eventId = reservation.getReference();
+                    Reservation mutableReservation = toUpdate.get(eventId);
                     Allocatable[] restrictedAllocatables = mutableReservation.getRestrictedAllocatables(appointment);
                     mutableReservation.removeAppointment(appointment);
                     allocatablesRemoved.put(appointment, restrictedAllocatables);
@@ -332,7 +333,8 @@ public class ReservationControllerImpl implements ReservationController {
                     if (reservationsToRemove.contains(reservation)) {
                         continue;
                     }
-                    Reservation mutableReservation = toUpdate.get(reservation);
+                    final ReferenceInfo<Reservation> eventId = reservation.getReference();
+                    Reservation mutableReservation = toUpdate.get(eventId);
                     Appointment found = mutableReservation.findAppointment(appointment);
                     if (found != null) {
                         Repeating repeating = found.getRepeating();
@@ -417,7 +419,7 @@ public class ReservationControllerImpl implements ReservationController {
 
     public Promise<Void> deleteAppointment(AppointmentBlock appointmentBlock, PopupContext context) {
         boolean includeEvent = true;
-        return showDialog(appointmentBlock, "delete", includeEvent, context).thenAccept(dialogResult ->
+        return showDialog(appointmentBlock, "delete", includeEvent, context).thenCompose(dialogResult ->
                 deleteAppointment(appointmentBlock, dialogResult, false));
     }
 
@@ -431,7 +433,7 @@ public class ReservationControllerImpl implements ReservationController {
             case SINGLE:
                 Repeating repeating = appointment.getRepeating();
                 if (repeating != null) {
-                    List<Date> exceptionList = Collections.singletonList(startDate);
+                    List<Date> exceptionList = Collections.singletonList(DateTools.cutDate(startDate));
                     if (isNotEmptyWithExceptions(appointment, exceptionList)) {
                         exceptionsToAdd.put(appointment, exceptionList);
                     } else {

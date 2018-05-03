@@ -444,7 +444,7 @@ final public class FileOperator extends LocalAbstractCachableOperator
 
     public void dispatch(final UpdateEvent evt) throws RaplaException
     {
-        final RaplaLock.WriteLock writeLock = writeLockIfLoaded();
+        final RaplaLock.WriteLock writeLock = writeLockIfLoaded("dispatching " +  evt.getInfoString());
         try
         {
             preprocessEventStorage(evt);
@@ -606,7 +606,7 @@ final public class FileOperator extends LocalAbstractCachableOperator
 
     synchronized final public void saveData() throws RaplaException
     {
-        final RaplaLock.WriteLock writeLock = writeLockIfLoaded();
+        final RaplaLock.WriteLock writeLock = writeLockIfLoaded("Saving data");
         try
         {
             saveData(cache, null, includeIds);
@@ -741,7 +741,7 @@ final public class FileOperator extends LocalAbstractCachableOperator
     @Override
     public Map<String, ImportExportEntity> getImportExportEntities(String systemId, int importExportDirection) throws RaplaException
     {
-        final RaplaLock.ReadLock lock = lockManager.readLock();
+        final RaplaLock.ReadLock lock = lockManager.readLock(getClass(), "getImportExportEntities for system " + systemId);
         try
         {
             final Map<String,ImportExportEntity> collection = importExportEntities.get(new ImportExportMapKey(systemId,importExportDirection));

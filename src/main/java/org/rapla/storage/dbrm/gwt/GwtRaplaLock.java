@@ -17,33 +17,34 @@ public class GwtRaplaLock implements RaplaLock
 
     }
     @Override
-    public WriteLock writeLockIfAvaliable()
+    public WriteLock writeLockIfAvaliable(Class clazz, String name)
     {
-        return writeLock(0);
+        return writeLock(clazz, name,0);
     }
 
     @Override
-    public WriteLock writeLock() throws RaplaException
+    public WriteLock writeLock(Class clazz,String name) throws RaplaException
     {
-        return writeLock(60);
+        return writeLock(clazz,name,60);
     }
 
     @Override
-    public WriteLock writeLock(int seconds)
+    public WriteLock writeLock(Class clazz,String name,int seconds)
     {
-        return new WriteLock(null, new StackTraceElement[] {}, System.currentTimeMillis());
+        final WriteLock writeLock = new WriteLock(null, clazz, name,new StackTraceElement[] {}, System.currentTimeMillis());
+        return writeLock;
     }
 
     @Override
-    public ReadLock readLock() throws RaplaException
+    public ReadLock readLock(Class clazz, String name) throws RaplaException
     {
-        return readLock( 20);
+        return readLock( clazz,name,20);
     }
 
     @Override
-    public ReadLock readLock(int seconds) throws RaplaException
+    public ReadLock readLock(Class clazz, String name,int seconds) throws RaplaException
     {
-        return new ReadLock(null, new StackTraceElement[] {},System.currentTimeMillis());
+        return new ReadLock(null, clazz, name,new StackTraceElement[] {},System.currentTimeMillis());
     }
 
     @Override

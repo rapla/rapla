@@ -33,7 +33,7 @@ public class ServerStarter
     /** Locks the server, so no restart can't be triggererd unless lock is released */
     public RaplaLock.ReadLock lockRestart() throws RaplaException
     {
-        return restartLock.readLock( 25);
+        return restartLock.readLock( getClass(),"lockRestart", 25);
     }
 
 
@@ -111,7 +111,7 @@ public class ServerStarter
             RaplaLock.WriteLock writeLock;
             try
             {
-                writeLock = restartLock.writeLock();
+                writeLock = restartLock.writeLock(getClass(),"shutdown restart=" + restart);
             }
             catch (RaplaException ex)
             { 

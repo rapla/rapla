@@ -74,8 +74,7 @@ public abstract class DateTools
 	
 	public static String formatTime(Date date)
 	{
-		SerializableDateTimeFormat format = new SerializableDateTimeFormat();
-        String string = format.formatTime( date);
+        String string = SerializableDateTimeFormat.INSTANCE.formatTime( date);
         return string;
 	}
 	
@@ -86,7 +85,7 @@ public abstract class DateTools
 	
 	public static String formatDateTime(Date date, Locale locale)
 	{
-		SerializableDateTimeFormat format = new SerializableDateTimeFormat();
+		SerializableDateTimeFormat format = SerializableDateTimeFormat.INSTANCE;
 		String dateString = format.formatDate( date);
 		String timeString = format.formatTime( date);
         String string = dateString + " " + timeString; 

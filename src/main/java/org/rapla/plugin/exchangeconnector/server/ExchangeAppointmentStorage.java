@@ -79,7 +79,7 @@ public class ExchangeAppointmentStorage
     public Collection<SynchronizationTask> getAllTasks() throws RaplaException
     {
         List<SynchronizationTask> result = new ArrayList<>();
-        RaplaLock.ReadLock lock = lockManager.readLock();
+        RaplaLock.ReadLock lock = lockManager.readLock(getClass(),"getAllTasks");
         try
         {
             for (Collection<SynchronizationTask> list : tasks.values())
@@ -102,7 +102,7 @@ public class ExchangeAppointmentStorage
     {
         // TODO add another index (userId to Collection<SynchronizationTask>) so we can do this faster
         List<SynchronizationTask> result = new ArrayList<>();
-        RaplaLock.ReadLock lock = lockManager.readLock();
+        RaplaLock.ReadLock lock = lockManager.readLock(getClass(),"getTasksForUser " + userId);
         try
         {
             for (Collection<SynchronizationTask> list : tasks.values())
@@ -136,7 +136,7 @@ public class ExchangeAppointmentStorage
     synchronized public SynchronizationTask getTask(Appointment appointment, ReferenceInfo<User> userId) throws RaplaException
     {
         String appointmentId = appointment.getId();
-        RaplaLock.ReadLock lock = lockManager.readLock();
+        RaplaLock.ReadLock lock = lockManager.readLock(getClass(), "getTask " + appointmentId + " for " + userId);
         try
         {
             Set<SynchronizationTask> set = tasks.get(appointmentId);
@@ -161,7 +161,7 @@ public class ExchangeAppointmentStorage
     public Collection<SynchronizationTask> getTasks(ReferenceInfo appointment) throws RaplaException
     {
         String appointmentId = appointment.getId();
-        RaplaLock.ReadLock lock = lockManager.readLock();
+        RaplaLock.ReadLock lock = lockManager.readLock(getClass(), "getTasks " + appointmentId);
         try
         {
             Set<SynchronizationTask> set = tasks.get(appointmentId);
@@ -211,7 +211,7 @@ public class ExchangeAppointmentStorage
     //	
     public void storeAndRemove(Collection<SynchronizationTask> toStore, Collection<SynchronizationTask> toRemove) throws RaplaException
     {
-        RaplaLock.WriteLock lock = lockManager.writeLock(60);
+        RaplaLock.WriteLock lock = lockManager.writeLock(getClass()," appointments " +toStore.size() + " to store and " + toRemove + " to Remove." ,60);
         try
         {
             for (SynchronizationTask task : toStore)
@@ -257,7 +257,7 @@ public class ExchangeAppointmentStorage
             String appointmentId = task.getAppointmentId();
             if (appointmentId != null)
             {
-                RaplaLock.WriteLock writeLock = lockManager.writeLock(60);
+                RaplaLock.WriteLock writeLock = lockManager.writeLock(getClass(), " removing appointment " + appointmentId ,60);
                 try
                 {
                     //remove tasks from appointmenttask 
