@@ -9,6 +9,7 @@ import org.rapla.inject.InjectionContext;
 import org.rapla.logger.Logger;
 
 import javax.inject.Inject;
+import javax.inject.Singleton;
 import javax.swing.*;
 import java.io.IOException;
 import java.net.URL;
@@ -16,6 +17,7 @@ import java.util.*;
 
 
 @DefaultImplementation(of=BundleManager.class,context = { InjectionContext.swing})
+@Singleton
 public class SwingBundleManager extends AbstractBundleManager
 {
     Map<String, Icon> iconCache = Collections.synchronizedMap(new TreeMap<String, Icon>());

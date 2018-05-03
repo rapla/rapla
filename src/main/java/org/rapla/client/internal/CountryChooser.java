@@ -116,7 +116,7 @@ final public class CountryChooser implements RaplaWidget
     public void changeLanguage(String language)
     {
         this.language = language;
-        if(language != null && countries.get(language)!=null){
+        if(language != null && countries != null && countries.get(language)!=null){
             jComboBox.setEnabled(true);
             final String[] countries = createCountryArray();
             jComboBox.removeAllItems();

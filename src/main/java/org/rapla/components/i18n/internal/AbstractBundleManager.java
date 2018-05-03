@@ -28,7 +28,6 @@ public abstract class AbstractBundleManager implements BundleManager {
     private final Set<String> availableLanguages;
     Locale locale;
     Vector<LocaleChangeListener> localeChangeListeners = new Vector<>();
-    final Map<String, Set<String>> countriesForLanguage;
 
     public AbstractBundleManager()
     {
@@ -39,50 +38,8 @@ public abstract class AbstractBundleManager implements BundleManager {
         //localeSelector.setLocale( locale );
         this.formats = getFormats(locale);
         this.availableLanguages = loadAvailableLanguages();
-        this.countriesForLanguage = loadAvailableCountries();
-
     }
 
-    public Map<String, Set<String>> getCountriesForLanguage(Set<String> languages)
-    {
-        final LinkedHashMap<String, Set<String>> result = new LinkedHashMap<>();
-        if (languages != null)
-        {
-            for (String language : languages)
-            {
-                final Set<String> countries = countriesForLanguage.get(language);
-                if (countries != null)
-                {
-                    result.put(language, countries);
-                }
-            }
-        }
-        return result;
-    }
-
-    private Map<String, Set<String>> loadAvailableCountries()
-    {
-        LinkedHashMap<String, Set<String>> countriesForLanguage= new LinkedHashMap<>();
-        {
-            for (String language : availableLanguages)
-            {
-                final LinkedHashSet<String> countries = new LinkedHashSet<>();
-                countries.add(language.toUpperCase());
-                final String[] isoCountries = Locale.getISOCountries();
-                for (String country : isoCountries)
-                {
-                    final String propertiesFileName = "/org/rapla/components/i18n/server/locales/format_"+language+"_"+country+".properties";
-                    final URL resource = RaplaResources.class.getResource(propertiesFileName);
-                    if(resource != null)
-                    {
-                        countries.add(country.toUpperCase());
-                    }
-                }
-                countriesForLanguage.put(language, Collections.unmodifiableSet(countries));
-            }
-        }
-        return Collections.unmodifiableMap(countriesForLanguage);
-    }
 
     private Set<String> loadAvailableLanguages() {
         Set<String> availableLanguages = new LinkedHashSet<>();

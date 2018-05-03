@@ -28,8 +28,11 @@ import org.rapla.client.swing.RaplaGUIComponent;
 import org.rapla.client.swing.SwingSchedulerImpl;
 import org.rapla.client.swing.images.RaplaImages;
 import org.rapla.components.i18n.BundleManager;
+import org.rapla.components.i18n.client.swing.SwingBundleManager;
 import org.rapla.components.i18n.internal.AbstractBundleManager;
+import org.rapla.components.util.LocaleTools;
 import org.rapla.entities.User;
+import org.rapla.facade.RaplaFacade;
 import org.rapla.facade.UpdateErrorListener;
 import org.rapla.facade.client.ClientFacade;
 import org.rapla.facade.internal.ClientFacadeImpl;
@@ -38,6 +41,7 @@ import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaInitializationException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.StartupEnvironment;
+import org.rapla.framework.internal.AbstractRaplaLocale;
 import org.rapla.inject.DefaultImplementation;
 import org.rapla.inject.InjectionContext;
 import org.rapla.logger.Logger;
@@ -61,6 +65,7 @@ import java.awt.Toolkit;
 import java.awt.Window;
 import java.awt.event.ActionEvent;
 import java.net.URL;
+import java.util.Locale;
 import java.util.Vector;
 import java.util.concurrent.Semaphore;
 
@@ -247,6 +252,22 @@ public class RaplaClientServiceImpl implements ClientService, UpdateErrorListene
         return getClientFacade().load().thenRun(()->
         {
             initRefresh();
+            String language = null;
+            if ( !defaultLanguageChosen)
+            {
+                language = bundleManager.getLocale().getLanguage();
+            }
+            String localeId = facade.getRaplaFacade().getSystemPreferences().getEntryAsString(AbstractRaplaLocale.LOCALE, null);
+            if ( localeId != null)
+            {
+                final Locale locale = LocaleTools.getLocale(localeId);
+                ((SwingBundleManager) bundleManager).setLocale(locale);
+                if ( language != null)
+                {
+                    ((SwingBundleManager) bundleManager).setLanguage(language);
+                }
+            }
+
             application = applicationProvider.get();
             application.start(defaultLanguageChosen, () ->
             {

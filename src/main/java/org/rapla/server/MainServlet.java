@@ -50,12 +50,11 @@ public class MainServlet extends HttpServlet
     private static final long serialVersionUID = 1L;
     private Logger logger = null;
     ServerStarter serverStarter;
-    private final HttpServletDispatcher dispatcher;
+    private HttpServletDispatcher dispatcher;
     private StandaloneStarter standaloneStarter = null;
-
+    String startupMode;
     public MainServlet()
     {
-        dispatcher = new HttpServletDispatcher();
     }
 
     public static ServerContainerContext createBackendContext(Logger logger, RaplaJNDIContext jndi) throws ServletException
@@ -155,26 +154,11 @@ public class MainServlet extends HttpServlet
 
     synchronized public void init() throws ServletException
     {
-        logger = RaplaBootstrapLogger.createRaplaLogger();
-        logger.info("Init RaplaServlet");
         ServletContext context = getServletContext();
-        context.setAttribute(Logger.class.getCanonicalName(), logger);
-        String startupMode;
+
         RaplaJNDIContext jndi = new RaplaJNDIContext(logger, getInitParameters(context));
         String startupUser = jndi.lookupEnvString("rapla_startup_user", false);
         ServerContainerContext backendContext = createBackendContext(logger, jndi);
-        if (jndi.hasContext())
-        {
-            startupMode = jndi.lookupEnvString("rapla_startup_mode", false);
-        }
-        else
-        {
-            startupMode = null;
-        }
-        if (startupMode == null)
-        {
-            startupMode = "server";
-        }
         try
         {
             // this is the default purpose of the servlet to start rapla server as http servlet
@@ -297,37 +281,63 @@ public class MainServlet extends HttpServlet
 
     @Override public void init(ServletConfig config) throws ServletException
     {
-        dispatcher.init(new ServletConfig()
+        logger = RaplaBootstrapLogger.createRaplaLogger();
+        logger.info("Init RaplaServlet");
+        ServletContext context = config.getServletContext();
+        context.setAttribute(Logger.class.getCanonicalName(), logger);
+
+        RaplaJNDIContext jndi = new RaplaJNDIContext(logger, getInitParameters(context));
+        if (jndi.hasContext())
         {
-            @Override public String getServletName()
+            startupMode = jndi.lookupEnvString("rapla_startup_mode", false);
+        }
+        else
+        {
+            startupMode = null;
+        }
+        if (startupMode == null)
+        {
+            startupMode = "server";
+        }
+        if ( startupMode.equals("server") || startupMode.equals("standalone") )
+        {
+            dispatcher = new HttpServletDispatcher();
+            dispatcher.init(new ServletConfig()
             {
-                return config.getServletName();
-            }
-
-            @Override public ServletContext getServletContext()
-            {
-                return config.getServletContext();
-            }
-
-            @Override public String getInitParameter(String name)
-            {
-                switch (name)
+                @Override
+                public String getServletName()
                 {
-                    case "resteasy.servlet.mapping.prefix":
-                        return "rapla/";
-                    case "resteasy.use.builtin.providers":
-                        return "true";
-                    case "javax.ws.rs.Application":
-                        return RestApplication.class.getCanonicalName();
+                    return config.getServletName();
                 }
-                return config.getInitParameter(name);
-            }
 
-            @Override public Enumeration<String> getInitParameterNames()
-            {
-                return config.getInitParameterNames();
-            }
-        });
+                @Override
+                public ServletContext getServletContext()
+                {
+                    return config.getServletContext();
+                }
+
+                @Override
+                public String getInitParameter(String name)
+                {
+                    switch (name)
+                    {
+                        case "resteasy.servlet.mapping.prefix":
+                            return "rapla/";
+                        case "resteasy.use.builtin.providers":
+                            return "true";
+                        case "javax.ws.rs.Application":
+                            return RestApplication.class.getCanonicalName();
+                    }
+                    return config.getInitParameter(name);
+                }
+
+                @Override
+                public Enumeration<String> getInitParameterNames()
+                {
+                    return config.getInitParameterNames();
+                }
+            });
+        }
         super.init(config);
     }
 

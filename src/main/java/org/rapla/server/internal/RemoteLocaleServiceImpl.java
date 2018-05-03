@@ -4,6 +4,7 @@ import org.rapla.components.i18n.BundleManager;
 import org.rapla.components.i18n.I18nLocaleFormats;
 import org.rapla.components.i18n.LocalePackage;
 import org.rapla.components.i18n.internal.AbstractBundleManager;
+import org.rapla.components.i18n.server.ServerBundleManager;
 import org.rapla.components.util.LocaleTools;
 import org.rapla.entities.User;
 import org.rapla.entities.configuration.Preferences;
@@ -29,7 +30,7 @@ import java.util.Set;
 public class RemoteLocaleServiceImpl implements RemoteLocaleService
 {
     @Inject
-    BundleManager bundleManager;
+    ServerBundleManager bundleManager;
     @Inject
     RaplaLocale raplaLocale;
     @Inject
@@ -76,12 +77,11 @@ public class RemoteLocaleServiceImpl implements RemoteLocaleService
             }
         }
         Locale locale = LocaleTools.getLocale(localeString);
-        final AbstractBundleManager defBundleManager = (AbstractBundleManager) bundleManager;
-        final I18nLocaleFormats formats = defBundleManager.getFormats(locale);
+        final I18nLocaleFormats formats = bundleManager.getFormats(locale);
         Map<String, Map<String, String>> bundles = resourceBundleList.getBundles(locale);
         String language = locale.getLanguage();
         String country = locale.getCountry();
-        Set<String> availableLanguages = defBundleManager.getAvailableLanguages();
+        Set<String> availableLanguages = bundleManager.getAvailableLanguages();
         final LocalePackage localePackage = new LocalePackage(formats, language, country, bundles, availableLanguages);
 
         return new ResolvedPromise<>(localePackage);
@@ -90,7 +90,7 @@ public class RemoteLocaleServiceImpl implements RemoteLocaleService
     @Override
     public Promise<Map<String, Set<String>>> countries(Set<String> languages)
     {
-        Map<String, Set<String>> result = ((AbstractBundleManager) bundleManager).getCountriesForLanguage(languages);
+        Map<String, Set<String>> result = bundleManager.getCountriesForLanguage(languages);
         return new ResolvedPromise<>(result);
     }
 }

@@ -12,6 +12,7 @@ import org.rapla.client.event.TaskPresenter;
 import org.rapla.client.extensionpoints.ClientExtension;
 import org.rapla.client.internal.CommandAbortedException;
 import org.rapla.components.i18n.BundleManager;
+import org.rapla.components.util.LocaleTools;
 import org.rapla.entities.User;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.ResourceAnnotations;
@@ -185,11 +186,19 @@ public class Application implements ApplicationView.Presenter, ModificationListe
                         prefs.putEntry(RaplaLocale.LANGUAGE_ENTRY, currentLanguage);
                     }).exceptionally((ex) -> logger.error("Can't  store language change", ex));
         } else {
-            final String systemDefaultLang = facade.getSystemPreferences().getEntryAsString(RaplaLocale.LANGUAGE_ENTRY, null);
+            final String localeId = facade.getSystemPreferences().getEntryAsString(AbstractRaplaLocale.LOCALE, null);
+            String systemDefaultLang = null;
+            if ( localeId != null)
+            {
+                String[] parts = localeId.split("_");
+                if ( parts.length > 0)
+                {
+                    systemDefaultLang = parts[0];
+                }
+            }
             String language = facade.getPreferences(user).getEntryAsString(RaplaLocale.LANGUAGE_ENTRY, systemDefaultLang);
             if (language != null) {
-                BundleManager localeSelector = (BundleManager) bundleManager;
-                localeSelector.setLanguage(language);
+                bundleManager.setLanguage(language);
             }
         }
         AttributeImpl.TRUE_TRANSLATION.setName(i18n.getLang(), i18n.getString("yes"));

@@ -160,7 +160,7 @@ import java.util.Set;
                 }
                 catch(Throwable t)
                 {
-                    DBOperator.this.logger.info("could not clean up history: "+t.getMessage());
+                    DBOperator.this.logger.error("could not clean up history: "+t.getMessage(), t);
                 }
             }, delay, period);
         }

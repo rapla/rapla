@@ -2648,6 +2648,7 @@ class HistoryStorage<T extends Entity<T>> extends RaplaTypeStorage<T>
         int sum =0;
         try (final PreparedStatement stmt = con.prepareStatement("DELETE FROM CHANGES WHERE (ID = ? AND CHANGED_AT < ?) OR (ID = ? AND CHANGED_AT = ? AND ISDELETE = 1)"))
         {
+            boolean batch = false;
             for (Entry<String, Date> idAndTimestamp : idToTimestamp.entrySet())
             {
                 final String id = idAndTimestamp.getKey();
@@ -2657,25 +2658,34 @@ class HistoryStorage<T extends Entity<T>> extends RaplaTypeStorage<T>
                 stmt.setString(3, id);
                 stmt.setTimestamp(4, changedAt);
                 stmt.addBatch();
+                batch = true;
             }
-            final int[] executeBatch = stmt.executeBatch();
-            for ( int i:executeBatch)
+            if ( batch)
             {
-                sum +=i;
+                final int[] executeBatch = stmt.executeBatch();
+                for (int i : executeBatch)
+                {
+                    sum += i;
+                }
             }
         }
 
         try (final PreparedStatement stmt = con.prepareStatement("DELETE FROM CHANGES WHERE ID = ?"))
         {
+            boolean batch = false;
             for (String id : toDeleteFromHistory)
             {
                 stmt.setString(1, id);
                 stmt.addBatch();
+                batch = true;
             }
-            final int[] executeBatch = stmt.executeBatch();
-            for ( int i:executeBatch)
+            if ( batch)
             {
-                sum +=i;
+                final int[] executeBatch = stmt.executeBatch();
+                for (int i : executeBatch)
+                {
+                    sum += i;
+                }
             }
         }
         logger.info("Deleted " + sum + " history entries");

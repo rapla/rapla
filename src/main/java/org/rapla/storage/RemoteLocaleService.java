@@ -4,6 +4,7 @@ import org.rapla.components.i18n.LocalePackage;
 import org.rapla.scheduler.Promise;
 
 import javax.ws.rs.GET;
+import javax.ws.rs.POST;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
@@ -20,7 +21,7 @@ public interface RemoteLocaleService
     @Path("{id}")
     Promise<LocalePackage> locale(@PathParam("id") String id, @QueryParam("locale") String locale);
 
-    @GET
+    @POST
     @Produces({ MediaType.APPLICATION_JSON })
-    Promise<Map<String, Set<String>>> countries(@QueryParam("languages") Set<String> languages);
+    Promise<Map<String, Set<String>>> countries( Set<String> languages);
 }
