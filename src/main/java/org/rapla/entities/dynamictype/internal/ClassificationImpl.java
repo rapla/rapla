@@ -31,6 +31,7 @@ import org.rapla.entities.storage.UnresolvableReferenceExcpetion;
 import org.rapla.framework.RaplaException;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
@@ -59,7 +60,7 @@ public class ClassificationImpl implements Classification,DynamicTypeDependant, 
 
 	private transient TextCache name;
 	private transient EntityResolver resolver;
-    
+
     /** stores the nonreference values like integers,boolean and string.*/
     //HashMap<String,Object> attributeValueMap = new HashMap<String,Object>(1);
     /** stores the references to the dynamictype and the reference values */
@@ -86,10 +87,10 @@ public class ClassificationImpl implements Classification,DynamicTypeDependant, 
             return nameString;
     	}
     }
-    
+
     public ClassificationImpl()
     {
-    	
+
     }
 
     ClassificationImpl(DynamicTypeImpl dynamicType) {
@@ -135,7 +136,7 @@ public class ClassificationImpl implements Classification,DynamicTypeDependant, 
                 continue;
             }
             List<String> values = entry.getValue();
-            if  (values != null ) 
+            if  (values != null )
             {
                 for ( String value:values)
                 {
@@ -146,8 +147,8 @@ public class ClassificationImpl implements Classification,DynamicTypeDependant, 
         return result;
     }
 
-    
-    
+
+
 	private String getParentId() {
 		if  (typeId != null)
 			return typeId;
@@ -162,7 +163,7 @@ public class ClassificationImpl implements Classification,DynamicTypeDependant, 
 		}
 		typeId = dynamicType.getId();
 		return typeId;
-			
+
 	}
 
     public DynamicTypeImpl getType() {
@@ -179,7 +180,7 @@ public class ClassificationImpl implements Classification,DynamicTypeDependant, 
     	return type;
     }
 
-    
+
     public String getName(Locale locale) {
     	// display name = Title of event
         if ( name == null)
@@ -188,7 +189,7 @@ public class ClassificationImpl implements Classification,DynamicTypeDependant, 
         }
         return name.getName(locale,  DynamicTypeAnnotations.KEY_NAME_FORMAT);
     }
-    
+
     public String format( Locale locale, String annotationName)
     {
         DynamicTypeImpl type = getType();
@@ -210,7 +211,7 @@ public class ClassificationImpl implements Classification,DynamicTypeDependant, 
 //        }
 //        return namePlaning.getNamespace(locale,  DynamicTypeAnnotations.KEY_NAME_FORMAT_PLANNING);
 //    }
-	
+
 
     public String getValueAsString(Attribute attribute,Locale locale)
     {
@@ -232,7 +233,7 @@ public class ClassificationImpl implements Classification,DynamicTypeDependant, 
         String result = buf.toString();
         return result;
     }
-    
+
     public Attribute getAttribute(String key) {
         return getType().getAttribute(key);
     }
@@ -248,7 +249,7 @@ public class ClassificationImpl implements Classification,DynamicTypeDependant, 
         DynamicTypeImpl type = getType();
 		if ( !newType.getKey().equals( type.getKey()))
         	return true;
-		
+
         for (String key:data.keySet()) {
         	Attribute attribute = getType().getAttribute(key);
         	if ( attribute == null)
@@ -270,7 +271,7 @@ public class ClassificationImpl implements Classification,DynamicTypeDependant, 
     	if ( !hasType (type )) {
             return;
         }
-        
+
         Collection<String> removedKeys = new ArrayList<>();
         Map<Attribute,Attribute> attributeMapping = new HashMap<>();
         for  (String key:data.keySet()) {
@@ -292,7 +293,7 @@ public class ClassificationImpl implements Classification,DynamicTypeDependant, 
 				attributeMapping.put(attribute, newAtt);
 			}
         }
-        for (Attribute attribute: attributeMapping.keySet()) 
+        for (Attribute attribute: attributeMapping.keySet())
         {
 			Collection<Object> convertedValues = new ArrayList<>();
 			Collection<?> valueCollection = getValues( attribute);
@@ -307,7 +308,7 @@ public class ClassificationImpl implements Classification,DynamicTypeDependant, 
 			}
 			setValues(newAttribute, convertedValues);
         }
-       
+
         for (String key:removedKeys)
         {
         	data.remove( key );
@@ -355,7 +356,10 @@ public class ClassificationImpl implements Classification,DynamicTypeDependant, 
     	setValues(attribute, (Collection<?>) value);
     }
 
-    
+    public <T> void setValues(String attributeKey, T[] values) {
+      setValues(getAttribute(attributeKey), Arrays.asList(values));
+    }
+
     public <T> void setValues(Attribute attribute,Collection<T> values) {
         checkWritable();
         String attributeKey = attribute.getKey();
@@ -429,7 +433,7 @@ public class ClassificationImpl implements Classification,DynamicTypeDependant, 
         }
         return list;
     }
-    
+
     public Collection<Object> getValues(Attribute attribute) {
     	if ( attribute == null ) {
     		throw new NullPointerException("Attribute can't be null");
@@ -497,7 +501,7 @@ public class ClassificationImpl implements Classification,DynamicTypeDependant, 
             throw new IllegalStateException(exception.getMessage(),exception);
         }
     }
-    
+
     public String getValueUnresolvedString(Attribute attribute) {
         if ( attribute == null ) {
             throw new NullPointerException("Attribute can't be null");
@@ -512,7 +516,7 @@ public class ClassificationImpl implements Classification,DynamicTypeDependant, 
         String stringRep = o.get(0);
         return stringRep;
     }
-    
+
     public Object getValueForAttribute(Attribute attribute) {
     	if ( attribute == null ) {
     		throw new NullPointerException("Attribute can't be null");
@@ -582,7 +586,7 @@ public class ClassificationImpl implements Classification,DynamicTypeDependant, 
          }
      }
 
-    public void commitRemove(DynamicType type) throws CannotExistWithoutTypeException 
+    public void commitRemove(DynamicType type) throws CannotExistWithoutTypeException
     {
         throw new CannotExistWithoutTypeException();
     }

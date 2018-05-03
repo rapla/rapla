@@ -1,8 +1,9 @@
 package org.rapla.client.internal.check.gwt;
 
-import org.rapla.client.RaplaTreeNode;
 import org.rapla.client.TreeFactory;
 import org.rapla.client.dialog.gwt.components.VueComponent;
+import org.rapla.client.dialog.gwt.components.VueTree;
+import org.rapla.client.dialog.gwt.components.VueTreeNode;
 import org.rapla.client.internal.check.ConflictDialogView;
 import org.rapla.facade.Conflict;
 import org.rapla.framework.RaplaException;
@@ -19,14 +20,12 @@ public class ConflictDialogViewGwt implements ConflictDialogView {
 
     @Inject
     public ConflictDialogViewGwt(TreeFactory treeFactory) {
-
         this.treeFactory = treeFactory;
     }
 
     public VueComponent getConflictPanel(Collection<Conflict> conflicts) throws RaplaException
     {
-        final RaplaTreeNode conflictModel = treeFactory.createConflictModel(conflicts);
-        // FIXME createInfoDialog conflictList
-        return null;
+        final VueTreeNode conflictModel = (VueTreeNode) treeFactory.createConflictModel(conflicts);
+        return new VueTree(conflictModel);
     }
 }

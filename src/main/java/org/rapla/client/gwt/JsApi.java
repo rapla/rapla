@@ -7,21 +7,23 @@ import org.rapla.RaplaResources;
 import org.rapla.client.Application;
 import org.rapla.client.ReservationController;
 import org.rapla.client.dialog.gwt.VueDialog;
-import org.rapla.client.dialog.gwt.components.BulmaTextColor;
 import org.rapla.client.dialog.gwt.components.VueLabel;
-import org.rapla.client.dialog.gwt.components.VueList;
-import org.rapla.client.dialog.gwt.components.layout.HorizontalFlex;
+import org.rapla.client.dialog.gwt.components.VueTree;
+import org.rapla.client.dialog.gwt.components.VueTreeNode;
 import org.rapla.client.dialog.gwt.components.layout.VerticalFlex;
+import org.rapla.client.internal.TreeFactoryImpl;
 import org.rapla.client.menu.MenuFactory;
 import org.rapla.client.menu.MenuInterface;
 import org.rapla.client.menu.gwt.DefaultVueMenuItem;
 import org.rapla.client.menu.gwt.VueButton;
 import org.rapla.client.menu.gwt.VueMenu;
 import org.rapla.components.util.TimeInterval;
+import org.rapla.entities.Category;
 import org.rapla.entities.User;
 import org.rapla.entities.configuration.CalendarModelConfiguration;
 import org.rapla.entities.configuration.Preferences;
 import org.rapla.entities.configuration.RaplaMap;
+import org.rapla.entities.domain.AppointmentFormater;
 import org.rapla.facade.CalendarOptions;
 import org.rapla.facade.CalendarSelectionModel;
 import org.rapla.facade.RaplaComponent;
@@ -37,7 +39,6 @@ import org.rapla.plugin.tableview.RaplaTableModel;
 import org.rapla.plugin.tableview.internal.TableConfig;
 import org.rapla.scheduler.Promise;
 import org.rapla.scheduler.ResolvedPromise;
-import org.rapla.storage.dbrm.RemoteAuthentificationService;
 
 import javax.inject.Inject;
 import javax.inject.Provider;
@@ -46,6 +47,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Date;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
@@ -54,53 +56,47 @@ import java.util.stream.Stream;
 @JsType
 public class JsApi {
 
-  private final RaplaFacade facade;
+  public final RaplaFacade facade;
   private final Logger logger;
-  private final ReservationController reservationController;
-  private final CalendarSelectionModel calendarModel;
-  private final RemoteAuthentificationService remoteAuthentificationService;
-  private final RaplaLocale raplaLocale;
+  public final CalendarSelectionModel calendarModel;
+  public final RaplaLocale locale;
   private final ClientFacade clientFacade;
   private final Provider<RaplaBuilder> raplaBuilder;
-  private final RaplaResources i18n;
-  private final MenuFactory menuFactory;
+  public final RaplaResources i18n;
+  public final MenuFactory menuFactory;
   private final TableConfig.TableConfigLoader tableConfigLoader;
-  private final Provider<Application> application;
-
+  public final Application application;
+  private final ReservationController reservationController; // TODO: needed?
+  public final AppointmentFormater appointmentFormater;
+  public final TreeFactoryImpl treeFactory;
 
   @JsIgnore
   @Inject
-  public JsApi(Provider<Application> application, ClientFacade facade, Logger logger, ReservationController reservationController, CalendarSelectionModel calendarModel,
-          RemoteAuthentificationService remoteAuthentificationService, RaplaLocale raplaLocale, Provider<RaplaBuilder> raplaBuilder, RaplaResources i18n,
-          MenuFactory menuFactory, TableConfig.TableConfigLoader tableConfigLoader) {
+  public JsApi(Provider<Application> application,
+               ClientFacade facade,
+               Logger logger,
+               ReservationController reservationController,
+               CalendarSelectionModel calendarModel,
+               RaplaLocale locale,
+               Provider<RaplaBuilder> raplaBuilder,
+               RaplaResources i18n,
+               MenuFactory menuFactory,
+               TableConfig.TableConfigLoader tableConfigLoader,
+               TreeFactoryImpl treeFactory,
+               AppointmentFormater appointmentFormater) {
     this.clientFacade = facade;
     this.i18n = i18n;
-    this.application = application;
+    this.application = application.get();
     this.menuFactory = menuFactory;
     this.tableConfigLoader = tableConfigLoader;
     this.facade = clientFacade.getRaplaFacade();
     this.logger = logger;
     this.reservationController = reservationController;
     this.calendarModel = calendarModel;
-    this.remoteAuthentificationService = remoteAuthentificationService;
-    this.raplaLocale = raplaLocale;
+    this.locale = locale;
     this.raplaBuilder = raplaBuilder;
-  }
-
-  public MenuFactory getMenuFactory() {
-    return menuFactory;
-  }
-
-  public CalendarSelectionModel getCalendarModel() {
-    return calendarModel;
-  }
-
-  public RemoteAuthentificationService getRemoteAuthentification() {
-    return remoteAuthentificationService;
-  }
-
-  public RaplaLocale getRaplaLocale() {
-    return raplaLocale;
+    this.appointmentFormater = appointmentFormater;
+    this.treeFactory = treeFactory;
   }
 
   public ReservationController getReservationController() {
@@ -109,14 +105,6 @@ public class JsApi {
 
   public RaplaBuilder createBuilder() {
     return raplaBuilder.get();
-  }
-
-  public RaplaResources getI18n() {
-    return i18n;
-  }
-
-  public Application getApplication() {
-    return application.get();
   }
 
   public void warn(String message) {
@@ -144,16 +132,12 @@ public class JsApi {
   }
 
   public String[] getCalendarNames() throws RaplaException {
-    final Preferences preferences = getFacade().getPreferences(getUser());
+    final Preferences preferences = facade.getPreferences(getUser());
     RaplaMap<CalendarModelConfiguration> exportMap = preferences.getEntry(AutoExportPlugin.PLUGIN_ENTRY);
     if (exportMap != null) {
       return exportMap.keySet().toArray(new String[] {});
     }
     return new String[] {};
-  }
-
-  public RaplaFacade getFacade() {
-    return facade;
   }
 
   public JsDate toJsDate(Date date) {
@@ -173,21 +157,11 @@ public class JsApi {
   public Promise<Integer> testDialog() {
     VueDialog dialog = new VueDialog(
       new VerticalFlex()
-        .addChild(new VueLabel("Hallo Welt 1").color(BulmaTextColor.DANGER))
-        .addChild(new VueLabel("Hallo Welt 2").color(BulmaTextColor.SUCCESS))
-        .addChild(new VueLabel("Hallo Welt 3").color(BulmaTextColor.INFO))
+        .addChild(new VueLabel("Hallo Welt 1"))
+        .addChild(new VueLabel("Hallo Welt 2"))
+        .addChild(new VueLabel("Hallo Welt 3"))
         .addChild(new VueButton("Ich bin ein Button").action(ctx -> logger.info("action!")))
-        .addChild(
-          new HorizontalFlex()
-            .addChild(
-              new VueList().item(new VueList.VueListItem("1", "Master 1"))
-                           .item(new VueList.VueListItem("2", "Master 2"))
-            )
-            .addChild(
-              new VueList().item(new VueList.VueListItem("1", "Child 1"))
-                           .item(new VueList.VueListItem("2", "Child 2"))
-            )
-        ),
+      ,
       new String[] {}
     );
     dialog.start(false)
@@ -240,7 +214,50 @@ public class JsApi {
     } catch (RaplaException e) {
       return new ResolvedPromise<>(e);
     }
-    return initFunction.get().thenApply((blocks) -> tableModel.setObjects(blocks));
+    return initFunction.get().thenApply(tableModel::setObjects);
   }
 
+  public VueTree getAllConflicts() {
+    // TODO: this is a placeholder, return the real conflicts here shown in the main view
+    final VueTreeNode root = new VueTreeNode("DEMO: Konflikte", null);
+    root.add(new VueTreeNode("DEMO: Konflikt 1", null));
+    root.add(new VueTreeNode("DEMO: Konflikt 2", null));
+    return new VueTree(root);
+  }
+
+  // nullable
+  public Category findCategoryById(String id, Category root) {
+    if (root.getId().equals(id)) {
+      info("returning " + root.getName(null));
+      return root;
+    }
+    return Arrays.stream(root.getCategories())
+                 .map(c -> findCategoryById(id, c))
+                 .filter(Objects::nonNull)
+                 .findFirst()
+                 .orElse(null);
+  }
+
+  public View[] getViews() {
+    // TODO: this is a placeholder, return the real views here
+    return new View[] {
+      new View("table_events", "Veranstaltungen"),
+      new View("table_appointments", "Reservierungen"),
+      new View("day", "Tag"),
+      new View("week", "Woche"),
+      new View("month", "Monat")
+    };
+  }
+
+  @JsType
+  class View {
+
+    public final String id;
+    public final String label;
+
+    public View(final String id, final String label) {
+      this.id = id;
+      this.label = label;
+    }
+  }
 }

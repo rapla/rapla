@@ -1,5 +1,6 @@
 package org.rapla.client;
 
+import jsinterop.annotations.JsType;
 import org.rapla.entities.Category;
 import org.rapla.entities.Named;
 import org.rapla.entities.domain.Allocatable;
@@ -9,6 +10,7 @@ import org.rapla.framework.RaplaException;
 
 import java.util.Collection;
 
+@JsType
 public interface TreeFactory {
 
 	AllocatableNodes createAllocatableModel(ClassificationFilter[] filter) throws RaplaException;
@@ -16,7 +18,7 @@ public interface TreeFactory {
 	RaplaTreeNode createClassifiableModel(Allocatable[] classifiables, boolean useCategorizations);
 
 	RaplaTreeNode createConflictModel(Collection<Conflict> conflicts ) throws RaplaException;
-	
+
     RaplaTreeNode newNamedNode(Named element);
 
 	RaplaTreeNode createModel(Collection<Category> categories, boolean includeChildren);
@@ -25,6 +27,7 @@ public interface TreeFactory {
 
 	RaplaTreeNode newRootNode();
 
+	@JsType
 	class AllocatableNodes
 	{
 		public final RaplaTreeNode allocatableNode;
