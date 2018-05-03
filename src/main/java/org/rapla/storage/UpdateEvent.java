@@ -149,6 +149,17 @@ public class UpdateEvent
 
     @SuppressWarnings({ "unchecked" }) private Map<Class, List<Entity>> getListMap()
     {
+        if (listMap == null)
+        {
+            listMap = new LinkedHashMap<Class, Collection<Entity>>();
+            put(Category.class, categories);
+            put(DynamicType.class, types);
+            put(Allocatable.class, resources);
+            put(User.class, users);
+            put(Preferences.class, preferences);
+            put(Reservation.class, reservations);
+            put(Conflict.class, conflicts);
+        }
         return listMap;
     }
 
@@ -263,18 +274,8 @@ public class UpdateEvent
     private void putStore(Entity entity, boolean checkForDuplicate)
     {
         Class<? extends Entity> class1 = entity.getTypeClass();
-        if (listMap == null)
-        {
-            listMap = new LinkedHashMap<Class, Collection<Entity>>();
-            put(Category.class, categories);
-            put(DynamicType.class, types);
-            put(Allocatable.class, resources);
-            put(User.class, users);
-            put(Preferences.class, preferences);
-            put(Reservation.class, reservations);
-            put(Conflict.class, conflicts);
-        }
-        List list = (List)listMap.get(class1);
+
+        List list = getListMap().get(class1);
         if (list == null)
         {
             if (class1.equals(Reservation.class))

@@ -74,7 +74,7 @@ public class RaplaKeyStorageImpl implements RaplaKeyStorage
         }
         catch (Exception e)
         {
-            throw new RaplaInitializationException(e.getMessage());
+            throw new RaplaInitializationException(e.getMessage(), e);
         }
     }
     
