@@ -15,7 +15,7 @@ public class VueLabel implements VueComponent {
   }
 
   @JsIgnore
-  public VueLabel color(BulmaTextColor color) {
+  public VueLabel color(VuetifyColor color) {
     this.color = color.css();
     return this;
   }

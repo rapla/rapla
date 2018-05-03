@@ -21,6 +21,10 @@ public class VueMenu implements MenuInterface, VueMenuItem, IdentifiableMenuEntr
   private String title;
   private boolean enabled;
 
+  public VueMenu() {
+
+  }
+
   @Override
   public void addMenuItem(final IdentifiableMenuEntry newItem) {
     if (newItem instanceof VueMenuItem)

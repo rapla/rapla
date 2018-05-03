@@ -1,6 +1,5 @@
 package org.rapla.server.provider.resteasy;
 
-import javax.ws.rs.NotFoundException;
 import javax.ws.rs.Produces;
 import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.MediaType;
@@ -20,6 +19,15 @@ public class MessageHTMLWriter implements MessageBodyWriter<WebApplicationExcept
     public boolean isWriteable(Class<?> aClass, Type type, Annotation[] annotations, MediaType mediaType)
     {
         return MediaType.TEXT_HTML_TYPE.isCompatible(mediaType) || MediaType.APPLICATION_OCTET_STREAM_TYPE.isCompatible( mediaType);
+    }
+
+    @Override
+    public long getSize(final WebApplicationException e,
+                        final Class<?> aClass,
+                        final Type type,
+                        final Annotation[] annotations,
+                        final MediaType mediaType) {
+        return 0;
     }
 
     @Override

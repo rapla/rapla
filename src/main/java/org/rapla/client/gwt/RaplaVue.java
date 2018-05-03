@@ -15,4 +15,5 @@ public class RaplaVue {
   @JsMethod(name = "$emit")
   public static native void emit(String eventname, Object params);
 
+  public static native boolean hasWindow(final String windowId);
 }

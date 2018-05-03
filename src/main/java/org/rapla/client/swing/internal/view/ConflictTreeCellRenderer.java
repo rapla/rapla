@@ -2,21 +2,23 @@ package org.rapla.client.swing.internal.view;
 
 import org.rapla.RaplaResources;
 import org.rapla.client.RaplaTreeNode;
+import org.rapla.client.internal.ConflictText;
 import org.rapla.client.internal.TreeFactoryImpl;
 import org.rapla.client.swing.images.RaplaImages;
-import org.rapla.components.util.DateTools;
 import org.rapla.entities.domain.Allocatable;
-import org.rapla.entities.domain.RepeatingType;
 import org.rapla.facade.Conflict;
 import org.rapla.facade.RaplaComponent;
 import org.rapla.framework.RaplaLocale;
 
 import javax.inject.Inject;
-import javax.swing.*;
+import javax.swing.BorderFactory;
+import javax.swing.Icon;
+import javax.swing.JTree;
+import javax.swing.UIManager;
 import javax.swing.border.Border;
 import javax.swing.tree.DefaultTreeCellRenderer;
-import java.awt.*;
-import java.util.Date;
+import java.awt.Component;
+import java.awt.Font;
 
 public class ConflictTreeCellRenderer extends DefaultTreeCellRenderer {
     private final RaplaResources i18n;
@@ -48,34 +50,8 @@ public class ConflictTreeCellRenderer extends DefaultTreeCellRenderer {
     }
 
     protected String getConflictText(Conflict conflict) {
-        StringBuilder buf = new StringBuilder();
-        Date startDate = conflict.getStartDate();
-        buf.append(raplaLocale.formatDate(startDate));
-        if (!DateTools.cutDate(startDate).equals(startDate)) {
-            buf.append(' ');
-            buf.append(raplaLocale.formatTime(startDate));
-        }
-        buf.append("<br>");
-        buf.append(conflict.getReservation1Name());
-        if (conflict.getRepeatingType1() != null) {
-            buf.append(getRepeatingType(conflict.getRepeatingType1()));
-        }
-        buf.append(' ');
-        buf.append(i18n.getString("with"));
-        buf.append('\n');
-        buf.append("<br>");
-        buf.append(conflict.getReservation2Name());
-        if (conflict.getRepeatingType2() != null) {
-            buf.append(getRepeatingType(conflict.getRepeatingType2()));
-        }
-        String result = buf.toString();
-        return result;
-    }
-
-    private String getRepeatingType(RepeatingType repeatingType) {
-        final String keyName = repeatingType.name().toLowerCase();
-        final String reslt = i18n.getString(keyName);
-        return " [" + reslt + "]";
+        return ConflictText.getConflictText(conflict, raplaLocale, i18n)
+                           .replaceAll("\n", "<br>");
     }
 
     public Component getTreeCellRendererComponent(JTree tree, Object value, boolean sel, boolean expanded, boolean leaf, int row, boolean hasFocus) {

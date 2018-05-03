@@ -12,7 +12,7 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 @JsType
-public class VueDialog implements DialogInterface, VueComponent  {
+public class VueDialog implements DialogInterface  {
 
   private String icon;
   private String title;
@@ -109,12 +109,4 @@ public class VueDialog implements DialogInterface, VueComponent  {
     this.defaultAction = commandIndex;
   }
 
-  @Override
-  public String name() {
-    return null;
-  }
-  @Override
-  public VueComponent[] children() {
-    return new VueComponent[0];
-  }
 }

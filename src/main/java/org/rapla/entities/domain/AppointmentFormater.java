@@ -11,17 +11,22 @@
  | Definition as published by the Open Source Initiative (OSI).             |
  *--------------------------------------------------------------------------*/
 package org.rapla.entities.domain;
+import jsinterop.annotations.JsMethod;
+import jsinterop.annotations.JsType;
+
 import java.util.List;
 
-
-
 /** Formats the different appointment outputs. */
+@JsType
 public interface AppointmentFormater
 {
     String getShortSummary(Appointment appointment);
     String getVeryShortSummary(Appointment appointment);
+    @JsMethod(name = "getSummary")
     String getSummary( Appointment a );
+    @JsMethod(name = "getSummaryOfRepeatingAndPeriods")
     String getSummary( Repeating r , List<Period> periods);
+    @JsMethod(name = "getSummaryOfRepeating")
     String getSummary( Repeating r );
     String getExceptionSummary( Repeating r );
 }

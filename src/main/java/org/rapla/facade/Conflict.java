@@ -30,89 +30,97 @@ import java.util.LinkedHashSet;
 /**
  * A conflict is the allocation of the same resource at the same time by different
  * reservations. There's one conflict for each resource and each overlapping of
- * two allocating appointments. 
+ * two allocating appointments.
  */
 
 @JsType
-public interface Conflict extends Named, Entity<Conflict>, Timestamp
-{
-    /** @return the allocatable, allocated for the same time by two different reservations. */
-    Allocatable getAllocatable();
-//    /** @return the first Reservation, that is involved in the conflict.*/
-//    public Reservation getReservation1();
-    /** The appointment of the first reservation, that causes the conflict. */
-    ReferenceInfo<Appointment> getAppointment1();
-//    /** @return the second Reservation, that is involved in the conflict.*/
-//    public Reservation getReservation2();
-//    /** @return The User, who created the second Reservation.*/
-//    public User getUser2();
-    /** The appointment of the second reservation, that causes the conflict. */
-    ReferenceInfo<Appointment> getAppointment2();
-    ReferenceInfo<Reservation> getReservation1();
-    ReferenceInfo<Reservation> getReservation2();
-    RepeatingType getRepeatingType1();
-    RepeatingType getRepeatingType2();
+public interface Conflict extends Named, Entity<Conflict>, Timestamp {
 
-    ReferenceInfo<Allocatable> getAllocatableId();
-    
-    String getReservation1Name();
-	
-    String getReservation2Name();
+  /**
+   * @return the allocatable, allocated for the same time by two different reservations.
+   */
+  Allocatable getAllocatable();
+  //    /** @return the first Reservation, that is involved in the conflict.*/
+  //    public Reservation getReservation1();
 
+  /**
+   * The appointment of the first reservation, that causes the conflict.
+   */
+  ReferenceInfo<Appointment> getAppointment1();
+  //    /** @return the second Reservation, that is involved in the conflict.*/
+  //    public Reservation getReservation2();
+  //    /** @return The User, who created the second Reservation.*/
+  //    public User getUser2();
 
+  /**
+   * The appointment of the second reservation, that causes the conflict.
+   */
+  ReferenceInfo<Appointment> getAppointment2();
 
-    
-    ///** Find the first occurance of a conflict in the specified interval or null when not in intervall*/
-    //public Date getFirstConflictDate(final Date  fromDate, final Date toDate);
-    
-    //public boolean canModify(User user);
+  ReferenceInfo<Reservation> getReservation1();
 
-    boolean isOwner(User user);
-    
-    Conflict[] CONFLICT_ARRAY= new Conflict[] {};
-    
-    class Util
-    {
+  ReferenceInfo<Reservation> getReservation2();
 
-		public static Collection<Allocatable> getAllocatables(
-				Collection<Conflict> conflictsSelected) {
-			LinkedHashSet<Allocatable> allocatables = new LinkedHashSet<>();
-		    for ( Conflict conflict: conflictsSelected)
-		    {
-		    	allocatables.add(conflict.getAllocatable());
-		    }
-		    return allocatables;
-		}
+  RepeatingType getRepeatingType1();
 
-//		static public List<Reservation> getReservations(Collection<Conflict> conflicts) {
-//			Collection<Reservation> reservations = new LinkedHashSet<Reservation>();
-//			for (Conflict conflict:conflicts)
-//			{
-//				reservations.add(conflict.getReservation1());
-//				reservations.add(conflict.getReservation2());
-//		
-//			}
-//			return new ArrayList<Reservation>( reservations);
-//		}
-//		
-    	
+  RepeatingType getRepeatingType2();
+
+  ReferenceInfo<Allocatable> getAllocatableId();
+
+  String getReservation1Name();
+
+  String getReservation2Name();
+
+  ///** Find the first occurance of a conflict in the specified interval or null when not in intervall*/
+  //public Date getFirstConflictDate(final Date  fromDate, final Date toDate);
+
+  //public boolean canModify(User user);
+
+  boolean isOwner(User user);
+
+  Conflict[] CONFLICT_ARRAY = new Conflict[] {};
+
+  class Util {
+
+    public static Collection<Allocatable> getAllocatables(
+      Collection<Conflict> conflictsSelected) {
+      LinkedHashSet<Allocatable> allocatables = new LinkedHashSet<>();
+      for (Conflict conflict : conflictsSelected) {
+        allocatables.add(conflict.getAllocatable());
+      }
+      return allocatables;
     }
-    
-    boolean hasAppointment(Appointment appointment);
-    
-    //boolean endsBefore(Date date);
-    
-    Date getStartDate();
-   
-    boolean isAppointment1Enabled();
-    
-    boolean isAppointment2Enabled();
-    
-    boolean isAppointment1Editable();
-    
-    boolean isAppointment2Editable();
-    
-    boolean checkEnabled();
+
+    //		static public List<Reservation> getReservations(Collection<Conflict> conflicts) {
+    //			Collection<Reservation> reservations = new LinkedHashSet<Reservation>();
+    //			for (Conflict conflict:conflicts)
+    //			{
+    //				reservations.add(conflict.getReservation1());
+    //				reservations.add(conflict.getReservation2());
+    //
+    //			}
+    //			return new ArrayList<Reservation>( reservations);
+    //		}
+    //
+
+  }
+
+  boolean hasAppointment(Appointment appointment);
+
+  //boolean endsBefore(Date date);
+
+  Date getStartDate();
+
+  boolean isAppointment1Enabled();
+
+  boolean isAppointment2Enabled();
+
+  boolean isAppointment1Editable();
+
+  boolean isAppointment2Editable();
+
+  boolean checkEnabled();
+
 }
 
 
