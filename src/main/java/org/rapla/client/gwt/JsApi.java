@@ -8,22 +8,21 @@ import org.rapla.client.Application;
 import org.rapla.client.ReservationController;
 import org.rapla.client.dialog.gwt.VueDialog;
 import org.rapla.client.dialog.gwt.components.VueLabel;
+import org.rapla.client.dialog.gwt.components.VueLayout;
 import org.rapla.client.dialog.gwt.components.VueTree;
 import org.rapla.client.dialog.gwt.components.VueTreeNode;
-import org.rapla.client.dialog.gwt.components.layout.VerticalFlex;
 import org.rapla.client.internal.TreeFactoryImpl;
 import org.rapla.client.menu.MenuFactory;
-import org.rapla.client.menu.MenuInterface;
-import org.rapla.client.menu.gwt.DefaultVueMenuItem;
-import org.rapla.client.menu.gwt.VueButton;
-import org.rapla.client.menu.gwt.VueMenu;
 import org.rapla.components.util.TimeInterval;
 import org.rapla.entities.Category;
+import org.rapla.entities.EntityNotFoundException;
 import org.rapla.entities.User;
 import org.rapla.entities.configuration.CalendarModelConfiguration;
 import org.rapla.entities.configuration.Preferences;
 import org.rapla.entities.configuration.RaplaMap;
+import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.AppointmentFormater;
+import org.rapla.entities.storage.ReferenceInfo;
 import org.rapla.facade.CalendarOptions;
 import org.rapla.facade.CalendarSelectionModel;
 import org.rapla.facade.RaplaComponent;
@@ -47,7 +46,6 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Date;
 import java.util.List;
-import java.util.Objects;
 import java.util.Set;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
@@ -156,29 +154,16 @@ public class JsApi {
 
   public Promise<Integer> testDialog() {
     VueDialog dialog = new VueDialog(
-      new VerticalFlex()
+      new VueLayout(VueLayout.Direction.COLUMN)
         .addChild(new VueLabel("Hallo Welt 1"))
         .addChild(new VueLabel("Hallo Welt 2"))
         .addChild(new VueLabel("Hallo Welt 3"))
-        .addChild(new VueButton("Ich bin ein Button").action(ctx -> logger.info("action!")))
       ,
       new String[] {}
     );
     dialog.start(false)
           .thenAccept(i -> RaplaVue.emit("gwt-dialog-close"));
     return dialog.getPromise();
-  }
-
-  public MenuInterface testMenu() {
-    final VueMenu menu = new VueMenu();
-    menu.addMenuItem(new DefaultVueMenuItem("Item 1").action((ctx) -> logger.info("user has chosen 'Item 1'")));
-    menu.addSeparator();
-    menu.addMenuItem(new DefaultVueMenuItem("Item 2").action((ctx) -> logger.info("user has chosen 'Item 2'")));
-    VueMenu submenu = new VueMenu();
-    submenu.addMenuItem(new DefaultVueMenuItem("Subitem 1").action((ctx) -> logger.info("subitem 1")));
-    submenu.addMenuItem(new DefaultVueMenuItem("Subitem 2").action((ctx) -> logger.info("subitem 2")));
-    menu.addMenuItem(submenu);
-    return menu;
   }
 
   public Integer toInteger(int integer) {
@@ -217,7 +202,7 @@ public class JsApi {
     return initFunction.get().thenApply(tableModel::setObjects);
   }
 
-  public VueTree getAllConflicts() {
+  public VueTree buildConflictTree() {
     // TODO: this is a placeholder, return the real conflicts here shown in the main view
     final VueTreeNode root = new VueTreeNode("DEMO: Konflikte", null);
     root.add(new VueTreeNode("DEMO: Konflikt 1", null));
@@ -226,16 +211,16 @@ public class JsApi {
   }
 
   // nullable
-  public Category findCategoryById(String id, Category root) {
-    if (root.getId().equals(id)) {
-      info("returning " + root.getName(null));
-      return root;
-    }
-    return Arrays.stream(root.getCategories())
-                 .map(c -> findCategoryById(id, c))
-                 .filter(Objects::nonNull)
-                 .findFirst()
-                 .orElse(null);
+  public Category findCategoryById(String id) throws EntityNotFoundException{
+    return facade.resolve(new ReferenceInfo<>(id, Category.class));
+  }
+  // nullable
+  public Allocatable findAllocatableById(String id) throws EntityNotFoundException {
+    return facade.resolve(new ReferenceInfo<>(id, Allocatable.class));
+  }
+
+  public void throwEx() {
+    throw new RuntimeException("fehler");
   }
 
   public View[] getViews() {

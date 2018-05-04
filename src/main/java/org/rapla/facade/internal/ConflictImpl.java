@@ -472,7 +472,7 @@ public class ConflictImpl extends SimpleEntity implements Conflict, ModifiableTi
             final Allocatable allocatable = conflict.getAllocatable();
             buf.append(allocatable);
         }
-        catch ( UnresolvableReferenceExcpetion ex)
+        catch ( Throwable ex)
         {
             buf.append( conflict.getAllocatableId());
         }
