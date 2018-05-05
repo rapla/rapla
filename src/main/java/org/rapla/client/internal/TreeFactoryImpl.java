@@ -20,6 +20,7 @@ import org.rapla.components.util.iterator.FilterIterable;
 import org.rapla.entities.Category;
 import org.rapla.entities.Named;
 import org.rapla.entities.domain.Allocatable;
+import org.rapla.entities.domain.Permission;
 import org.rapla.entities.dynamictype.Attribute;
 import org.rapla.entities.dynamictype.AttributeAnnotations;
 import org.rapla.entities.dynamictype.Classifiable;
@@ -56,6 +57,9 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
+import java.util.function.Predicate;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 @Singleton
 @DefaultImplementation(of = TreeFactory.class, context = InjectionContext.client)
@@ -610,21 +614,20 @@ public class TreeFactoryImpl extends RaplaComponent implements TreeFactory
         return conflictsAdded;
     }
 
-
-
     @Override
-    public RaplaTreeNode createModel(Collection<Category> categories, boolean includeChildren)
+    public RaplaTreeNode createModel(Category rootCategory, Predicate<Category> pattern)
     {
+        if ( pattern == null)
+        {
+            pattern = (cat)->true;
+        }
         Map<Category, RaplaTreeNode> nodeMap = new HashMap<>();
         Category superCategory = null;
         {
             Category persistantSuperCategory = getQuery().getSuperCategory();
-            for (Category cat : categories)
+            if (persistantSuperCategory.equals(rootCategory))
             {
-                if (persistantSuperCategory.equals(cat))
-                {
-                    superCategory = cat;
-                }
+                superCategory = rootCategory;
             }
             if (superCategory == null)
             {
@@ -632,19 +635,12 @@ public class TreeFactoryImpl extends RaplaComponent implements TreeFactory
             }
         }
         nodeMap.put(superCategory, newNamedNode(superCategory));
-        LinkedHashSet<Category> uniqueCategegories = new LinkedHashSet<>();
-        for (Category cat : categories)
-        {
-            if (includeChildren)
-            {
-                for (Category child : getAllChildren(cat))
-                {
-                    uniqueCategegories.add(child);
-                }
-            }
-            uniqueCategegories.add(cat);
-        }
-        for (Category cat : uniqueCategegories)
+        //uniqueCategegories.add( rootCategory);
+        Category userGroupsCategory = superCategory.getCategory(Permission.GROUP_CATEGORY_KEY);
+        final Stream<Category> categoryStream = Stream.of(rootCategory.getCategories()).filter((cat) -> !cat.equals(userGroupsCategory));
+        final Stream<Category> allChildren = categoryStream.flatMap(this::getAllChildren);
+        LinkedList<Category> matchedCategories = allChildren.filter( pattern).collect(Collectors.toCollection(LinkedList::new));
+        for (Category cat : matchedCategories)
         {
             RaplaTreeNode node = nodeMap.get(cat);
             if (node == null)
@@ -654,8 +650,9 @@ public class TreeFactoryImpl extends RaplaComponent implements TreeFactory
             }
         }
 
-        LinkedList<Category> list = new LinkedList<>();
-        list.addAll(uniqueCategegories);
+        LinkedList<Category> list = new LinkedList<>(matchedCategories);
+        list.add(rootCategory);
+        // build tree until all are connected to super category
         while (!list.isEmpty())
         {
             Category cat = list.pop();
@@ -665,6 +662,10 @@ public class TreeFactoryImpl extends RaplaComponent implements TreeFactory
                 node = newNamedNode(cat);
                 nodeMap.put(cat, node);
             }
+            if ( cat.equals( rootCategory))
+            {
+                continue;
+            }
             Category parent = cat.getParent();
             if (parent != null)
             {
@@ -673,43 +674,23 @@ public class TreeFactoryImpl extends RaplaComponent implements TreeFactory
                 {
                     parentNode = newNamedNode(parent);
                     nodeMap.put(parent, parentNode);
-                    list.push(parent);
-                    uniqueCategegories.add( parent);
+                    if ( !parent.equals(rootCategory))
+                    {
+                        list.push(parent);
+                    }
                 }
                 parentNode.add(node);
+
             }
-        }
-        RaplaTreeNode rootNode = nodeMap.get(superCategory);
-        while (true)
-        {
-            int childCount = rootNode.getChildCount();
-            if (childCount <= 0 || childCount > 1)
-            {
-                break;
-            }
-            Category cat = (Category) rootNode.getUserObject();
-            if (uniqueCategegories.contains(cat))
-            {
-                break;
-            }
-            RaplaTreeNode firstChild =  rootNode.getChild( 0);
-            rootNode.remove(firstChild);
-            rootNode = firstChild;
 
         }
+        RaplaTreeNode rootNode = nodeMap.get(rootCategory);
         return rootNode;
     }
 
-    private Collection<Category> getAllChildren(Category cat)
+    private Stream<Category> getAllChildren(Category cat)
     {
-        ArrayList<Category> result = new ArrayList<>();
-        for (Category child : cat.getCategories())
-        {
-            result.add(child);
-            Collection<Category> childsOfChild = getAllChildren(child);
-            result.addAll(childsOfChild);
-        }
-        return result;
+        return Stream.concat(Stream.of( cat), Stream.of(cat.getCategories()).flatMap( this::getAllChildren));
     }
 
     private RaplaTreeNode newNode(Object element)

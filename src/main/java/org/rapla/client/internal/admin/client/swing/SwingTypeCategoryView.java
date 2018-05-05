@@ -203,18 +203,24 @@ public class SwingTypeCategoryView extends RaplaGUIComponent implements
 		JComboBox cbViewSelection = cbView;
 		// definition of the internal variable for storing the view
 		final int selectedIndex = cbViewSelection.getSelectedIndex();
+		View newView = null;
 		if (selectedIndex == 0)
-			view = View.RESOURCE_TYPE;
+			newView = View.RESOURCE_TYPE;
 		else if (selectedIndex == 1)
-			view = View.PERSON_TYPE;
+			newView = View.PERSON_TYPE;
 		else if (selectedIndex == 2)
-			view = View.RESERVATION_TYPE;
+			newView = View.RESERVATION_TYPE;
 		else if (selectedIndex == 3)
-			view = View.CATEGORY;
+			newView = View.CATEGORY;
 		else if (selectedIndex == 4)
-			view = View.PERIODS;
+			newView = View.PERIODS;
+		if ( newView != view)
+		{
+			view = newView;
+			loadView();
+		}
 		// build of the screen according to the view
-		loadView();
+
 	}
 
 
@@ -226,37 +232,7 @@ public class SwingTypeCategoryView extends RaplaGUIComponent implements
 		updateView();
 	}
 
-	// search categories with specified pattern in categoryname (only child of
-	// rootCategory)
-	private List<Category> searchCategoryName(Category rootCategory,
-			String pattern) {
-		List<Category> categories = new ArrayList<>();
-		Locale locale = getLocale();
-		Category userGroupsCategory = null;
-		try {
-			userGroupsCategory = getQuery().getUserGroupsCategory();
-		} catch (RaplaException e) {
-			logger.error(e.getMessage(),e);
-		}
-		// loop all child of rootCategory
-		for (Category category : rootCategory.getCategories()) {
-			if ( userGroupsCategory.equals( category))
-			{
-				continue;
-			}
-			// is category a leaf?
-			if (category.getCategories().length == 0) {
-				// does the specified pattern matches with the the categoryname?
-				if (matchesPattern(pattern,  category))
-					categories.add(category);
-			} else {
-				// get all child with a matching name (recursive)
-				categories.addAll(searchCategoryName(category, pattern));
-			}
-		}
-		Collections.sort(categories);
-		return categories;
-	}
+
 
 
 	// search users with specified pattern in username
@@ -317,8 +293,7 @@ public class SwingTypeCategoryView extends RaplaGUIComponent implements
 						// search all categories for the specified pattern and add
 						// them to the list
 						Category rootCategory = raplaFacade.getSuperCategory();
-						List<Category> categoriesToMatch = searchCategoryName(rootCategory, pattern);
-						selectionModel = new RaplaSwingTreeModel(treeFactory.createModel(categoriesToMatch, false));
+						selectionModel = new RaplaSwingTreeModel(treeFactory.createModel(rootCategory,  named-> matchesPattern(pattern, named)));
 						viewLabel.setText(getI18n().getString("users"));
 						break;
 					}

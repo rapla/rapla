@@ -105,7 +105,7 @@ public class SwingUserGroupsView extends RaplaGUIComponent implements
 		// creation of the ComboBox to choose one of the views
 		// adding the ComboBox to the northPanel
 		@SuppressWarnings("unchecked")
-		JComboBox jComboBox = new JComboBox(new String[] {getString("groups"), getString("users")});
+		JComboBox jComboBox = new JComboBox(new String[] { getString("users"), getString("groups")});
 		cbView = jComboBox;
 		cbView.addItemListener((evt)->itemStateChanged());
 		northPanel.add(cbView);
@@ -219,9 +219,9 @@ public class SwingUserGroupsView extends RaplaGUIComponent implements
 		JComboBox cbViewSelection = cbView;
 		// definition of the internal variable for storing the view
 		if (cbViewSelection.getSelectedIndex() == 0)
-			view = View.USERGROUPS;
-		else if (cbViewSelection.getSelectedIndex() == 1)
 			view = View.USERS;
+		else if (cbViewSelection.getSelectedIndex() == 1)
+			view = View.USERGROUPS;
 
 		// build of the screen according to the view
 		loadView();
@@ -283,32 +283,6 @@ public class SwingUserGroupsView extends RaplaGUIComponent implements
 		updateView();
 	}
 
-	// search categories with specified pattern in categoryname (only child of
-	// rootCategory)
-	private List<Category> searchCategoryName(Category rootCategory,
-			String pattern) {
-		List<Category> categories = new ArrayList<>();
-		Locale locale = getLocale();
-
-		// loop all child of rootCategory
-		for (Category category : rootCategory.getCategories()) {
-			// is category a leaf?
-			if (category.getCategories().length == 0) {
-				// does the specified pattern matches with the the categoryname?
-				final String name = category.getName(locale);
-				if (Pattern.matches(pattern.toLowerCase(locale),
-						name.toLowerCase(locale)))
-					categories.add(category);
-			} else {
-				// get all child with a matching name (recursive)
-				categories.addAll(searchCategoryName(category, pattern));
-			}
-		}
-		Collections.sort(categories);
-		return categories;
-	}
-
-
 	// search users with specified pattern in username
 	private List<User> searchUserName(String pattern) throws RaplaException {
 		List<User> users = new ArrayList<>();
@@ -325,6 +299,14 @@ public class SwingUserGroupsView extends RaplaGUIComponent implements
 		return users;
 	}
 
+	private boolean matchesPattern(String pattern, Named named)
+	{
+		Locale locale = getLocale();
+		String name = named.getName(locale);
+		return Pattern.matches(pattern.toLowerCase(locale), name.toLowerCase(locale));
+	}
+
+
 	@Override
 	public void updateView() {
 		// add regular expressions to filter pattern
@@ -337,8 +319,7 @@ public class SwingUserGroupsView extends RaplaGUIComponent implements
 					// search all categories for the specified pattern and add
 					// them to the list
 					Category rootCategory = raplaFacade.getUserGroupsCategory();
-					List<Category> categoriesToMatch  = searchCategoryName(rootCategory,pattern);
-					selectionModel = new RaplaSwingTreeModel(treeFactory.createModel(categoriesToMatch, false));
+					selectionModel = new RaplaSwingTreeModel(treeFactory.createModel(rootCategory, named-> matchesPattern(pattern, named)));
 					viewLabel.setText(getI18n().getString("users"));
 					break;
 				case USERS:

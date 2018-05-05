@@ -294,9 +294,13 @@ public class ApplicationViewSwing implements ApplicationView<JComponent>
     }
 
     @Override
-    public void openWindow(ApplicationEvent windowId, PopupContext popupContext, RaplaWidget<JComponent> objectRaplaWidget, String title,
+    synchronized public void openWindow(ApplicationEvent windowId, PopupContext popupContext, RaplaWidget<JComponent> objectRaplaWidget, String title,
                            Function<ApplicationEvent, Boolean> windowClosing, Observable<String> busyIdleObservable)
     {
+        if ( childFrames.get( windowId)!= null)
+        {
+            return;
+        }
         AtomicReference<DialogUI> frame = new AtomicReference<>();
         final Disposable subscribe = busyIdleObservable.subscribe((message) -> {if ( message!= null && message.length() > 0) frame.get().busy( message); else frame.get().idle();});
         final Container component = (Container) objectRaplaWidget.getComponent();
@@ -308,6 +312,7 @@ public class ApplicationViewSwing implements ApplicationView<JComponent>
         dialog.setTitle( title);
         dialog.setIconImage(RaplaImages.getImage(i18n.getIcon("icon.edit_window_small")));
         dialog.setSize(1050, 700);
+
         childFrames.put(windowId, dialog);
         dialog.addVetoableChangeListener(evt -> {
 

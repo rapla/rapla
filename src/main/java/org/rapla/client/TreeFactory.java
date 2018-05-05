@@ -9,6 +9,7 @@ import org.rapla.facade.Conflict;
 import org.rapla.framework.RaplaException;
 
 import java.util.Collection;
+import java.util.function.Predicate;
 
 @JsType
 public interface TreeFactory {
@@ -21,11 +22,11 @@ public interface TreeFactory {
 
     RaplaTreeNode newNamedNode(Named element);
 
-	RaplaTreeNode createModel(Collection<Category> categories, boolean includeChildren);
-
 	RaplaTreeNode newStringNode(String s);
 
 	RaplaTreeNode newRootNode();
+
+	RaplaTreeNode createModel(Category rootCategory,  Predicate<Category> pattern);
 
 	@JsType
 	class AllocatableNodes

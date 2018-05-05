@@ -481,8 +481,11 @@ import java.util.TreeMap;
                 {
                     list.add(obj);
                 }
-                final RaplaObjectActions action = newObjectAction(popupContext).setView(obj);
-                addAction(menu, action, afterId);
+                if ( !(focusedObject instanceof DynamicType))
+                {
+                    final RaplaObjectActions action = newObjectAction(popupContext).setView(obj);
+                    addAction(menu, action, afterId);
+                }
             }
             if ((focusedObject instanceof RaplaBlock))
             {
@@ -719,7 +722,7 @@ import java.util.TreeMap;
         {
             newAction.changeObject( menuContext.getRootCategory());
         }
-        newAction.setName(i18n.getString("new"));
+        newAction.setName(i18n.getString("new_category"));
         //newAction.setName(i18n.getString("category"));
         newAction.addTo( menu );
     }

@@ -50,7 +50,7 @@ public class CategorySelectField extends AbstractSelectField<Category>
 
     @Override
 	public TreeModel createModel() {
-        final RaplaTreeNode root = getTreeFactory().createModel(Collections.singleton(rootCategory), true);
+        final RaplaTreeNode root = getTreeFactory().createModel(rootCategory, (category -> true));
         return new RaplaSwingTreeModel(root);
     }
 
