@@ -13,7 +13,7 @@ public class VueTree implements VueComponent {
 
   @Override
   public String name() {
-    return "rapla-tree";
+    return "vue-tree";
   }
 
   @Override

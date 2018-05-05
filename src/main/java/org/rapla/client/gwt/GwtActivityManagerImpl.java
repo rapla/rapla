@@ -1,6 +1,7 @@
 package org.rapla.client.gwt;
 
 import com.google.gwt.user.client.History;
+import org.rapla.client.CalendarPlacePresenter;
 import org.rapla.client.event.AbstractActivityController;
 import org.rapla.client.event.ApplicationEvent;
 import org.rapla.client.event.ApplicationEventBus;
@@ -39,6 +40,10 @@ public class GwtActivityManagerImpl extends AbstractActivityController
     @Override
     protected void parsePlaceAndActivities() throws RaplaException
     {
+        activities.add(new ApplicationEvent("cal", "Standard", null, null));
+        if (true) {
+            return;
+        }
         // theory, this class is loaded on startup, so check the url and fire
         // events
         final String token = History.getToken();
@@ -113,6 +118,12 @@ public class GwtActivityManagerImpl extends AbstractActivityController
     @Override
     protected boolean isPlace(ApplicationEvent activity)
     {
+        final String applicationEventId = activity.getApplicationEventId();
+        switch(applicationEventId)
+        {
+            case CalendarPlacePresenter.PLACE_ID:
+                return true;
+        }
         return false;
     }
 

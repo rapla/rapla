@@ -22,7 +22,7 @@ public class VueLabel implements VueComponent {
 
   @Override
   public String name() {
-    return "v-label";
+    return "vue-label";
   }
 
   @Override

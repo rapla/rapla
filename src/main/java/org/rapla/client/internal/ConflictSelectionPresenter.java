@@ -246,7 +246,11 @@ public class ConflictSelectionPresenter implements Presenter
     }
 
     protected void queryAllConflicts()  {
-        raplaFacade.getConflicts().thenAccept(conflicts->updateTree(conflicts)).exceptionally( ex -> logger.error(ex.getMessage(),ex) );
+        raplaFacade.getConflicts()
+                   .thenAccept(conflicts->updateTree(conflicts))
+                   .exceptionally(ex -> {
+                       logger.error(ex.getMessage(), ex);
+                   });
     }
 
     private void removeConflict(Collection<Conflict> conflicts, Set<ReferenceInfo> removedReferences)
