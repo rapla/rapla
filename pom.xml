@@ -265,7 +265,7 @@
                             <goal>single</goal>
                         </goals>
                         <configuration>
-                            <outputDirectory>${project.build.directory}/distriubtion</outputDirectory>
+                            <outputDirectory>${project.build.directory}/distribution</outputDirectory>
                             <finalName>rapla-${project.version}</finalName>
                             <descriptor>${basedir}/src/assembly/rapla.distribution.xml</descriptor>
                             <appendAssemblyId>false</appendAssemblyId>
