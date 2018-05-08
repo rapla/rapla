@@ -2,6 +2,7 @@ package org.rapla.client.swing.internal.view;
 
 import org.rapla.RaplaResources;
 import org.rapla.client.RaplaTreeNode;
+import org.rapla.client.TreeFactory;
 import org.rapla.client.internal.ConflictText;
 import org.rapla.client.internal.TreeFactoryImpl;
 import org.rapla.client.swing.images.RaplaImages;
@@ -19,6 +20,11 @@ import javax.swing.border.Border;
 import javax.swing.tree.DefaultTreeCellRenderer;
 import java.awt.Component;
 import java.awt.Font;
+import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
+import java.util.stream.Stream;
 
 public class ConflictTreeCellRenderer extends DefaultTreeCellRenderer {
     private final RaplaResources i18n;
@@ -83,10 +89,12 @@ public class ConflictTreeCellRenderer extends DefaultTreeCellRenderer {
                     setClosedIcon(icon);
                     setOpenIcon(icon);
                 }
-
                 String text = RaplaComponent.getName(nodeInfo,i18n.getLocale());
                 if (value instanceof RaplaTreeNode) {
-                    text += " (" + RaplaTreeNode.getRecursiveCount(((RaplaTreeNode) value), (obj) -> obj instanceof Conflict) + ")";
+                    RaplaTreeNode node = (RaplaTreeNode) value;
+                    final Stream<Conflict> conflicts1 = TreeFactory.getConflicts(node);
+                    long conflicts = conflicts1.count();
+                    text += " (" + conflicts + ")";
                 }
                 value = text;
             }
@@ -94,4 +102,6 @@ public class ConflictTreeCellRenderer extends DefaultTreeCellRenderer {
         Component result = super.getTreeCellRendererComponent(tree, value, sel, expanded, leaf, row, hasFocus);
         return result;
     }
+
+
 }

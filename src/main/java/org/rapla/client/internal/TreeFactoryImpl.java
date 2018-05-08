@@ -531,7 +531,8 @@ public class TreeFactoryImpl extends RaplaComponent implements TreeFactory
 
     }
 
-    public RaplaTreeNode createConflictModel(Collection<Conflict> conflicts) throws RaplaException
+    public RaplaTreeNode
+    createConflictModel(Collection<Conflict> conflicts) throws RaplaException
     {
         RaplaTreeNode rootNode = newRootNode();
         ConflictRoot conflictRootObj = new ConflictRoot("conflictUC");

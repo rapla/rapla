@@ -120,22 +120,22 @@ import java.util.Set;
     {
         {
             final int delay = 30000;
-            final int period = 15000;
+            final int period = 30000;
             scheduleConnectedTasks(()->
                 {
                     final RaplaLock.WriteLock writeLock = lockManager.writeLockIfAvaliable(getClass(), "scheduleCleanupAndRefresh");
                     if ( writeLock != null)
                     {
-                        try (final Connection connection = createConnection())
+                        try (final Connection connection = createConnection(false))
                         {
                             final RaplaDefaultXMLContext context = createOutputContext(cache);
                             final RaplaSQL raplaSQL = new RaplaSQL(context);
                             raplaSQL.cleanupOldLocks(connection);
-                            connection.commit();
+                            //connection.commit();
                         }
                         catch (Throwable t)
                         {
-                            DBOperator.this.logger.info("Could not release old locks");
+                            DBOperator.this.logger.error("Could not release old locks", t);
                         }
                         finally
                         {
@@ -150,13 +150,12 @@ import java.util.Set;
             long delay = 100;//DateTools.MILLISECONDS_PER_DAY;
             long period = DateTools.MILLISECONDS_PER_DAY;
             scheduleConnectedTasks(() -> {
-                try(final Connection con = createConnection())
+                try(final Connection con = createConnection( false))
                 {
                     final RaplaDefaultXMLContext context = createOutputContext(cache);
                     final RaplaSQL raplaSQL = new RaplaSQL(context);
                     final Date date = new Date(getLastRefreshed().getTime() - LocalAbstractCachableOperator.HISTORY_DURATION);
                     raplaSQL.cleanupHistory(con, date);
-                    con.commit();
                 }
                 catch(Throwable t)
                 {
@@ -265,7 +264,14 @@ import java.util.Set;
             {
                 connection.setAutoCommit(true);
             }
-            connection.setTransactionIsolation(Connection.TRANSACTION_READ_COMMITTED);
+            if ( withTransactionSupport)
+            {
+                connection.setTransactionIsolation(Connection.TRANSACTION_READ_COMMITTED);
+            }
+            else
+            {
+                connection.setTransactionIsolation(Connection.TRANSACTION_READ_UNCOMMITTED);
+            }
             //connection.createStatement().execute( "ALTER TABLE RESOURCE RENAME TO RAPLA_RESOURCE");
             // 		     connection.commit();
             return connection;
@@ -764,7 +770,6 @@ import java.util.Set;
                 }
                 storeMap.put( e, oldEntity);
             }
-
             raplaSQLOutput.requestLocks(connection, connectionTimestamp, lockIds, null, !needsGlobalLock);
             for (ReferenceInfo id : removeObjects)
             {

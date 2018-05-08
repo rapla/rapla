@@ -51,7 +51,6 @@ import org.rapla.entities.dynamictype.internal.KeyAndPathResolver;
 import org.rapla.entities.internal.CategoryImpl;
 import org.rapla.entities.internal.ModifiableTimestamp;
 import org.rapla.entities.internal.UserImpl;
-import org.rapla.entities.storage.EntityResolver;
 import org.rapla.entities.storage.ImportExportEntity;
 import org.rapla.entities.storage.ReferenceInfo;
 import org.rapla.entities.storage.internal.ImportExportEntityImpl;
@@ -71,7 +70,6 @@ import org.rapla.storage.xml.RaplaXMLContext;
 import org.rapla.storage.xml.RaplaXMLReader;
 import org.rapla.storage.xml.RaplaXMLWriter;
 
-import javax.xml.transform.Result;
 import java.io.BufferedWriter;
 import java.io.IOException;
 import java.io.StringWriter;
@@ -85,7 +83,6 @@ import java.util.Arrays;
 import java.util.BitSet;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -100,7 +97,6 @@ import java.util.Set;
 import java.util.TreeMap;
 import java.util.TreeSet;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 class RaplaSQL
 {
@@ -546,7 +542,7 @@ class LockStorage extends AbstractTableStorage
 {
     static final String GLOBAL_LOCK = "GLOBAL_LOCK";
     private final String countLocksSql = "SELECT COUNT(LOCKID) FROM WRITE_LOCK WHERE LOCKID <> '" + GLOBAL_LOCK + "' AND ACTIVE = 1";
-    private final String cleanupSql = "UPDATE WRITE_LOCK SET ACTIVE = 2 WHERE VALID_UNTIL < CURRENT_TIMESTAMP and ACTIVE = 1";
+    private final String cleanupSql = "UPDATE WRITE_LOCK SET ACTIVE = 2 WHERE ACTIVE = 1 and VALID_UNTIL < CURRENT_TIMESTAMP";
     private final String activateSql = "UPDATE WRITE_LOCK SET ACTIVE = 1, LAST_CHANGED = CURRENT_TIMESTAMP, VALID_UNTIL = ? WHERE LOCKID = ? AND ACTIVE <> 1";
     private final String deactivateWithLastRequestedUpdateSql = "UPDATE WRITE_LOCK SET ACTIVE = 2, LAST_REQUESTED = ? WHERE LOCKID = ?";
     private final String deactivateWithoutLastRequestedUpdateSql = "UPDATE WRITE_LOCK SET ACTIVE = 2 WHERE LOCKID = ?";
@@ -591,6 +587,11 @@ class LockStorage extends AbstractTableStorage
 
     public void removeLocks(Collection<String> ids, Date updatedUntil, boolean deleteLocks) throws RaplaException
     {
+        if ( disableLocks())
+        {
+            return;
+        }
+
         if (ids == null || ids.isEmpty())
         {
             return;
@@ -622,9 +623,11 @@ class LockStorage extends AbstractTableStorage
 
     void cleanupOldLocks() throws RaplaException
     {
+        if ( disableLocks())
+            return;
         try (final PreparedStatement deleteStmt = con.prepareStatement(cleanupSql))
         {
-            deleteStmt.setQueryTimeout(60);
+            deleteStmt.setQueryTimeout(40);
             final int executeBatch = deleteStmt.executeUpdate();
             logger.debug("cleanuped logs: " + executeBatch);
         }
@@ -773,6 +776,10 @@ class LockStorage extends AbstractTableStorage
 
     public void getLocks(Collection<String> ids, Long validMilliseconds, boolean deleteLocksOnFailure) throws RaplaException
     {
+        if ( disableLocks())
+        {
+            return;
+        }
         if (ids == null || ids.isEmpty())
         {
             return;
@@ -801,8 +808,17 @@ class LockStorage extends AbstractTableStorage
         }
     }
 
+    private boolean disableLocks()
+    {
+        return true;
+    }
+
     public Date getGlobalLock() throws RaplaException
     {
+        if ( disableLocks())
+        {
+            return new Date();
+        }
         final Date lastLocked = readLockTimestamp();
         final Date lockTimestamp = requestLock(GLOBAL_LOCK, lastLocked);
         return lockTimestamp;
@@ -810,6 +826,8 @@ class LockStorage extends AbstractTableStorage
 
     private Date requestLock(String lockId, Date lastLocked) throws RaplaException
     {
+
+
         try
         {
             activateLocks(Collections.singleton(lockId), null);

@@ -1117,7 +1117,6 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
         conflictFinder = new ConflictFinder(allocationMap, today2, logger, this, permissionController);
 
         // if a client request changes before the start date return refresh conflict flag
-        final long delay = 0;//DateTools.MILLISECONDS_PER_HOUR;
         Action cleanUpConflicts = ()->
             {
                 removeOldConflicts();
@@ -1155,8 +1154,9 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
             addToDeleteUpdate(referenceInfo, timestamp, isDelete, preference);
         }
         calendarModelCache.initCalendarMap();
+        final long delay = 0;//DateTools.MILLISECONDS_PER_HOUR;
         scheduleConnectedTasks(cleanUpConflicts, delay, DateTools.MILLISECONDS_PER_HOUR);
-        final int refreshPeriod = 1000 * 9;
+        final int refreshPeriod = 1000 * 10;
         scheduleConnectedTasks(()->
             {
                 try

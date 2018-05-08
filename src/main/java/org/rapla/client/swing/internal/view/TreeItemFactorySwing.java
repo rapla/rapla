@@ -72,7 +72,7 @@ public class TreeItemFactorySwing implements TreeItemFactory
         }
 
         public RaplaTreeNode getChild(int index) {
-            return (RaplaTreeNode)getChildAt( 0);
+            return (RaplaTreeNode)getChildAt( index);
         }
 
         public void remove(RaplaTreeNode child) {
