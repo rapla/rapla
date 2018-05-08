@@ -1156,7 +1156,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
         calendarModelCache.initCalendarMap();
         final long delay = 0;//DateTools.MILLISECONDS_PER_HOUR;
         scheduleConnectedTasks(cleanUpConflicts, delay, DateTools.MILLISECONDS_PER_HOUR);
-        final int refreshPeriod = 1000 * 10;
+        final int refreshPeriod = 1000 * 20;
         scheduleConnectedTasks(()->
             {
                 try
@@ -1281,6 +1281,10 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
     {
         Map<ReferenceInfo<Allocatable>, AllocationChange> toUpdate = new HashMap<>();
         List<ReferenceInfo<Allocatable>> removedAllocatables = new ArrayList<>();
+        boolean isEmpty()
+        {
+            return toUpdate.isEmpty() && removedAllocatables.isEmpty();
+        }
     }
 
     /** updates the bindings of the resources and returns a map with all processed allocation changes*/
@@ -1535,7 +1539,10 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
         {
             appointmentBindings.initAppointmentBindings(cache.getReservations());
         }
-        appointmentBindings.checkAbandonedAppointments(cache);
+        if ( !bindingResult.isEmpty())
+        {
+            appointmentBindings.checkAbandonedAppointments(cache);
+        }
         return bindingResult;
     }
 

@@ -813,21 +813,18 @@ class LockStorage extends AbstractTableStorage
         return true;
     }
 
-    public Date getGlobalLock() throws RaplaException
+    public void getGlobalLock() throws RaplaException
     {
         if ( disableLocks())
         {
-            return new Date();
+            return;
         }
         final Date lastLocked = readLockTimestamp();
-        final Date lockTimestamp = requestLock(GLOBAL_LOCK, lastLocked);
-        return lockTimestamp;
+        requestLock(GLOBAL_LOCK, lastLocked);
     }
 
-    private Date requestLock(String lockId, Date lastLocked) throws RaplaException
+    private void requestLock(String lockId, Date lastLocked) throws RaplaException
     {
-
-
         try
         {
             activateLocks(Collections.singleton(lockId), null);
@@ -837,7 +834,7 @@ class LockStorage extends AbstractTableStorage
                 Thread.sleep(1);
                 // remove it so we can request a new
                 removeLocks(Collections.singleton(GLOBAL_LOCK), null, false);
-                return requestLock(lockId, lastLocked);
+                requestLock(lockId, lastLocked);
             }
             else
             {
@@ -863,7 +860,6 @@ class LockStorage extends AbstractTableStorage
                         Thread.sleep(1000);
                     }
                 }
-                return newLockTimestamp;
             }
         }
         catch (Exception e)
