@@ -481,9 +481,10 @@ public class TreeFactoryImpl extends RaplaComponent implements TreeFactory
         final String text;
         int conflictNumber = 0;
 
-        ConflictRoot(String text)
+        ConflictRoot(String text, int conflictNumber)
         {
             this.text = text;
+            this.conflictNumber = conflictNumber;
         }
 
         public void setConflictNumber(int conflictNumber)
@@ -535,27 +536,26 @@ public class TreeFactoryImpl extends RaplaComponent implements TreeFactory
     createConflictModel(Collection<Conflict> conflicts) throws RaplaException
     {
         RaplaTreeNode rootNode = newRootNode();
-        ConflictRoot conflictRootObj = new ConflictRoot("conflictUC");
-        RaplaTreeNode treeNode = newNode( conflictRootObj);
-        rootNode.add(treeNode);
-        if (conflicts != null)
+        if (conflicts == null)
         {
-            {
-                Iterable<Conflict> filteredConflicts = filter(conflicts, true);
-                int conflict_number = addConflicts(filteredConflicts, treeNode);
-                conflictRootObj.setConflictNumber(conflict_number);
-            }
-            {
-                Iterable<Conflict> filteredConflicts = filter(conflicts, false);
-                ConflictRoot conflictDisabledRootObj = new ConflictRoot("disabledConflictUC");
-                RaplaTreeNode treeNode2 = newNode( conflictDisabledRootObj);
-                int conflict_number = addConflicts(filteredConflicts, treeNode2);
-                if (conflict_number > 0)
-                {
-                    conflictDisabledRootObj.setConflictNumber(conflict_number);
-                    rootNode.add(treeNode2);
-                }
-            }
+            return rootNode;
+        }
+        {
+            List<RaplaTreeNode> conflictList = new ArrayList<>();
+            int conflict_number = addConflicts(filter(conflicts, true), conflictList);
+            ConflictRoot conflictRootObj = new ConflictRoot("conflictUC", conflict_number);
+            RaplaTreeNode treeNode = newNode(conflictRootObj);
+            conflictList.forEach(treeNode::add);
+            rootNode.add(treeNode);
+        }
+        List<RaplaTreeNode> disableConflictList = new ArrayList<>();
+        int conflict_disabled_number = addConflicts(filter(conflicts, false), disableConflictList);
+        if (conflict_disabled_number > 0)
+        {
+            ConflictRoot conflictDisabledRootObj = new ConflictRoot("disabledConflictUC", conflict_disabled_number);
+            RaplaTreeNode treeNode = newNode( conflictDisabledRootObj);
+            disableConflictList.forEach(treeNode::add);
+            rootNode.add(treeNode);
         }
         return rootNode;
     }
@@ -573,7 +573,7 @@ public class TreeFactoryImpl extends RaplaComponent implements TreeFactory
         };
     }
 
-    private int addConflicts(Iterable<Conflict> conflicts, RaplaTreeNode treeNode) throws RaplaException
+    private int addConflicts(Iterable<Conflict> conflicts, List<RaplaTreeNode> toAdd) throws RaplaException
     {
         int conflictsAdded = 0;
         Map<DynamicType, RaplaTreeNode> nodeMap = new LinkedHashMap<>();
@@ -609,7 +609,7 @@ public class TreeFactoryImpl extends RaplaComponent implements TreeFactory
         for ( RaplaTreeNode node:nodeMap.values())
         {
             if ( node.getChildCount() > 0) {
-                treeNode.add(node);
+                toAdd.add(node);
             }
         }
         return conflictsAdded;
