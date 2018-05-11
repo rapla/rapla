@@ -112,7 +112,6 @@ import org.rapla.storage.impl.DefaultRaplaLock;
 import org.rapla.storage.impl.EntityStore;
 import org.rapla.storage.impl.RaplaLock;
 
-import javax.ws.rs.WebApplicationException;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
@@ -2016,6 +2015,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
     {
         final private Logger logger;
         private Map<ReferenceInfo<Allocatable>, SortedSet<Appointment>> appointmentMap;
+        Set<String> problematicIdSet = Collections.synchronizedSet(new HashSet<>());
 
         private AppointmentMapClass(Logger newLogger)
         {
@@ -2100,6 +2100,8 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
             set.add(appRef);
         }
 
+
+
         // this check is only there to detect rapla bugs in the conflict api and can be removed if it causes performance issues
         private void checkAbandonedAppointments(LocalCache cache)
         {
@@ -2149,7 +2151,11 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
                                     Date persistantLastChanged = persistant.getLastChanged();
                                     if (persistantLastChanged != null && !persistantLastChanged.equals(lastChanged))
                                     {
-                                        logger.error("Reservation stored in cache is not the same as in allocation store " + original);
+                                        if ( !problematicIdSet.contains( persistant.getId()))
+                                        {
+                                            problematicIdSet.add( persistant.getId());
+                                            logger.error("Reservation stored in cache is not the same as in allocation store " + original);
+                                        }
                                         continue;
                                     }
                                 }

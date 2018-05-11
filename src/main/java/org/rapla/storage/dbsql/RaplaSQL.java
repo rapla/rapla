@@ -435,6 +435,10 @@ class RaplaSQL
 
     public Date getLastUpdated(Connection c) throws SQLException, RaplaException
     {
+        if (lockStorage.disableLocks())
+        {
+            new Date();
+        }
         try
         {
             lockStorage.setConnection(c, null);
@@ -627,7 +631,7 @@ class LockStorage extends AbstractTableStorage
             return;
         try (final PreparedStatement deleteStmt = con.prepareStatement(cleanupSql))
         {
-            deleteStmt.setQueryTimeout(40);
+            deleteStmt.setQueryTimeout(10);
             final int executeBatch = deleteStmt.executeUpdate();
             logger.debug("cleanuped logs: " + executeBatch);
         }
@@ -639,7 +643,12 @@ class LockStorage extends AbstractTableStorage
 
     Date getDatabaseTimestamp() throws RaplaException
     {
+        if ( disableLocks())
+        {
+            return new Date();
+        }
         final Date now;
+
         {
             try (final PreparedStatement stmt = con.prepareStatement(requestTimestampSql))
             {
@@ -808,9 +817,9 @@ class LockStorage extends AbstractTableStorage
         }
     }
 
-    private boolean disableLocks()
+    public boolean disableLocks()
     {
-        return true;
+        return false;
     }
 
     public void getGlobalLock() throws RaplaException

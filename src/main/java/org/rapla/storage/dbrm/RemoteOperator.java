@@ -859,7 +859,7 @@ public class RemoteOperator
         RemoteStorage serv = getRemoteStorage();
         UpdateEvent evt;
         try {
-            getLogger().debug("Loading Data from server");
+            getLogger().info("Reloading all Data from Server triggered");
             evt = serv.getResourcesSync();
             getLogger().debug("Data loaded");
         } catch (RaplaException ex)

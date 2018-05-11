@@ -120,7 +120,7 @@ import java.util.Set;
     {
         {
             final int delay = 30000;
-            final int period = 30000;
+            final int period = 1000*60*10;
             scheduleConnectedTasks(()->
                 {
                     final RaplaLock.WriteLock writeLock = lockManager.writeLockIfAvaliable(getClass(), "scheduleCleanupAndRefresh");
@@ -999,6 +999,10 @@ import java.util.Set;
         superCategory.setResolver(this);
         superCategory.setKey("supercategory");
         superCategory.getName().setName("en", "Root");
+        // this is when Rapla categories started
+        final Date superCategoryCreateTime = new Date(DateTools.toDate(2000, 0, 0));
+        superCategory.setCreateDate(superCategoryCreateTime);
+        superCategory.setLastChanged(superCategoryCreateTime);
         entityStore.put( superCategory);
         final RaplaDefaultXMLContext inputContext = createInputContext(entityStore, this, superCategory);
         RaplaSQL raplaSQLInput = new RaplaSQL(inputContext);
