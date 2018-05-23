@@ -79,6 +79,7 @@ import org.rapla.entities.storage.EntityResolver;
 import org.rapla.entities.storage.ImportExportEntity;
 import org.rapla.entities.storage.RefEntity;
 import org.rapla.entities.storage.ReferenceInfo;
+import org.rapla.entities.storage.UnresolvableReferenceExcpetion;
 import org.rapla.entities.storage.internal.SimpleEntity;
 import org.rapla.facade.CalendarModel;
 import org.rapla.facade.Conflict;
@@ -3179,7 +3180,17 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
                 continue;
             }
             Reservation reservation = (Reservation) entity;
-            if (reservation.getSortedAppointments().size() == 0 || (reservation.getAllocatables().length == 0 && !RaplaComponent.isTemplate(reservation)))
+            final Allocatable[] allocatables;
+            try
+            {
+                allocatables= reservation.getAllocatables();
+            } catch (UnresolvableReferenceExcpetion ex)
+            {
+                reservations.add( reservation);
+                continue;
+            }
+
+            if (reservation.getSortedAppointments().size() == 0 || (allocatables.length == 0 && !RaplaComponent.isTemplate(reservation)))
             {
                 reservations.add(reservation);
                 for (Appointment app : reservation.getAppointments())
