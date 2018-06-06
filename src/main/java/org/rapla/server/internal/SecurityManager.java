@@ -191,7 +191,10 @@ import java.util.List;
                     removedUserGroups.removeAll(newUserGroups);
                     newUserGroups.removeAll(originalList);
                 }
-                permitted = PermissionController.canAdminGroups(newUserGroups, user) && PermissionController.canAdminGroups(removedUserGroups, user);
+                checkCanAdminGroups(newUserGroups, user);
+                checkCanAdminGroups(removedUserGroups, user);
+
+
             }
         }
 
@@ -236,6 +239,19 @@ import java.util.List;
 
         // FIXME check if permissions are changed and user has admin priviliges 
 
+    }
+
+    private void checkCanAdminGroups(Collection<Category> groups, User user) throws RaplaSecurityException
+    {
+        final Collection<Category> groupsToAdmin = PermissionController.getGroupsToAdmin(user);
+        for ( Category group: groups)
+        {
+            if (!PermissionController.canAdminGroup( groupsToAdmin, group))
+            {
+                String errorText = i18n.format("error.modify_not_allowed", user.toString(), group.getName( ));
+                throw new RaplaSecurityException(errorText);
+            }
+        }
     }
 
     private Logger getLogger()

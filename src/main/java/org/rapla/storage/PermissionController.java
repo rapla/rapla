@@ -89,19 +89,20 @@ public class PermissionController
     public static boolean canAdminGroups(Collection<Category> groups, User user)
     {
         final Collection<Category> adminGroups = getGroupsToAdmin(user);
-        int found = 0;
-        for (Category group : groups)
+        final boolean result = groups.stream().allMatch(group -> PermissionController.canAdminGroup(adminGroups, group));
+        return result;
+    }
+
+    public static boolean canAdminGroup(Collection<Category> adminGroups, Category group)
+    {
+        for (Category adminGroup : adminGroups)
         {
-            for (Category adminGroup : adminGroups)
+            if (group.equals(adminGroup) || adminGroup.isAncestorOf(group))
             {
-                if (group.equals(adminGroup) || adminGroup.isAncestorOf(group))
-                {
-                    found++;
-                    break;
-                }
+                return true;
             }
         }
-        return found == groups.size();
+        return false;
     }
 
     /**

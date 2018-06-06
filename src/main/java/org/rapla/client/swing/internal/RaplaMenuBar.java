@@ -53,8 +53,10 @@ import org.rapla.client.swing.toolkit.RaplaMenuItem;
 import org.rapla.components.util.undo.CommandHistory;
 import org.rapla.components.util.undo.CommandHistoryChangedListener;
 import org.rapla.components.i18n.I18nIcon;
+import org.rapla.entities.NamedComparator;
 import org.rapla.entities.User;
 import org.rapla.entities.configuration.Preferences;
+import org.rapla.entities.domain.Allocatable;
 import org.rapla.facade.CalendarModel;
 import org.rapla.facade.CalendarSelectionModel;
 import org.rapla.facade.ModificationEvent;
@@ -94,6 +96,7 @@ import java.io.InputStreamReader;
 import java.net.URL;
 import java.util.Enumeration;
 import java.util.Set;
+import java.util.stream.Stream;
 
 @Singleton
 public class RaplaMenuBar extends RaplaGUIComponent
