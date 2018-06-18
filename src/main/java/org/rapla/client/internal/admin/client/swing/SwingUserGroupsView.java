@@ -4,6 +4,7 @@ import io.reactivex.functions.BiFunction;
 import org.rapla.RaplaResources;
 import org.rapla.client.RaplaWidget;
 import org.rapla.client.internal.admin.client.CategoryMenuContext;
+import org.rapla.client.internal.admin.client.UserMenuContext;
 import org.rapla.client.menu.SelectionMenuContext;
 import org.rapla.client.dialog.DialogUiFactoryInterface;
 import org.rapla.client.menu.MenuFactory;
@@ -13,6 +14,7 @@ import org.rapla.client.swing.internal.SwingPopupContext;
 import org.rapla.client.swing.internal.view.RaplaSwingTreeModel;
 import org.rapla.client.RaplaTreeNode;
 import org.rapla.client.swing.toolkit.*;
+import org.rapla.components.calendar.RaplaArrowButton;
 import org.rapla.components.layout.TableLayout;
 import org.rapla.entities.Category;
 import org.rapla.entities.Named;
@@ -132,8 +134,17 @@ public class SwingUserGroupsView extends RaplaGUIComponent implements
 
             }
         });
-		centerPanel.add(filterTextField,"0,0");
+        JPanel toolbar = new JPanel();
+        RaplaArrowButton menuButton = new RaplaArrowButton('v');
+        menuButton.setSize(100,20);
+        toolbar.setLayout(new BorderLayout());
+        toolbar.add( filterTextField, BorderLayout.CENTER);
+		toolbar.add( menuButton, BorderLayout.EAST);
+		menuButton.setText( i18n.getString("edit"));
+
+		centerPanel.add(toolbar,"0,0");
 		centerPanel.add(viewLabel, "2,0");
+
 		// creation of the tree
 		selectionTreeTable = new RaplaTree();
 		selectionTreeTable.setMultiSelect( true);
@@ -149,21 +160,10 @@ public class SwingUserGroupsView extends RaplaGUIComponent implements
         }
         selectionTreeTable.addPopupListener(evt -> {
             Point p = evt.getPoint();
-            Object selectedObject = evt.getSelectedObject();
-            Collection<?> selectedElements = selectionTreeTable.getSelectedElements();
-			SwingPopupContext popupContext = new SwingPopupContext(getComponent(), p);
-            final SelectionMenuContext menuContext;
-            if (view == View.USERS) {
-                menuContext = new SelectionMenuContext(selectedObject, popupContext);
-            }
-            else
-            {
-                menuContext = new CategoryMenuContext(selectedObject, popupContext, usergroups);
-            }
-            menuContext.setSelectedObjects(selectedElements);
-            showTreePopup(popupContext, menuContext);
+			Object selectedObject = evt.getSelectedObject();
+			showPopup(usergroups,  p,selectedObject, getComponent());
         });
-
+		menuButton.addActionListener((evt)->showPopup((Category) usergroups, new Point(0,20), null, menuButton));
 		// creation of the list for the assigned elements
 		assignedElementsList = new JList();
 		assignedElementsListModel = new DefaultListModel();
@@ -172,6 +172,22 @@ public class SwingUserGroupsView extends RaplaGUIComponent implements
 		assignedElementsScrollPane = new JScrollPane(assignedElementsList);
 		centerPanel.add(assignedElementsScrollPane,"2,1");
 
+	}
+
+	private void showPopup(Category usergroups, Point p, Object selectedObject, Component component)
+	{
+		Collection<?> selectedElements = selectionTreeTable.getSelectedElements();
+		SwingPopupContext popupContext = new SwingPopupContext(component, p);
+		final SelectionMenuContext menuContext;
+		if (view == View.USERS) {
+			menuContext = new UserMenuContext(selectedObject, popupContext);
+		}
+		else
+		{
+			menuContext = new CategoryMenuContext(selectedObject, popupContext, usergroups);
+		}
+		menuContext.setSelectedObjects(selectedElements);
+		showTreePopup(popupContext, menuContext);
 	}
 
 	private void showTreePopup(SwingPopupContext popupContext,  SelectionMenuContext swingMenuContext)

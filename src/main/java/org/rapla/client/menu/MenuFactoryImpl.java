@@ -25,6 +25,7 @@ import org.rapla.client.internal.ResourceCalendarTask;
 import org.rapla.client.internal.admin.client.CategoryMenuContext;
 import org.rapla.client.internal.admin.client.DynamicTypeMenuContext;
 import org.rapla.client.internal.admin.client.PeriodMenuContext;
+import org.rapla.client.internal.admin.client.UserMenuContext;
 import org.rapla.client.menu.impl.AppointmentAction;
 import org.rapla.client.menu.impl.RaplaObjectActions;
 import org.rapla.components.util.DateTools;
@@ -391,7 +392,7 @@ import java.util.TreeMap;
             }
         }
         boolean reservationNodeContext = reservationType || (focusedObject != null && focusedObject.equals(i18n.getString("reservation_type")));
-        boolean userNodeContext = focusedObject instanceof User;
+        boolean userNodeContext = focusedObject instanceof User || context instanceof UserMenuContext;
         boolean categoryNodeContext = context instanceof CategoryMenuContext;
         if (userNodeContext || allocatableNodeContext || reservationNodeContext || periodNodeContext || categoryNodeContext)
         {

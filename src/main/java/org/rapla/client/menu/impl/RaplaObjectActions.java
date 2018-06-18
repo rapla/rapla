@@ -215,7 +215,27 @@ public class RaplaObjectActions {
             enabled = permissionController.canModify(object, user);
 
         } else if (type == NEW ) {
-            enabled = (raplaType != null && raplaType == Allocatable.class && permissionController.isRegisterer(null, user)) || user.isAdmin();
+            final boolean admin = user.isAdmin();
+            if ( raplaType != null && !admin)
+            {
+                if ( raplaType == Allocatable.class)
+                {
+                    enabled = permissionController.isRegisterer(null, user);
+                }
+                else if ( raplaType == Category.class && object != null && object instanceof Category)
+                {
+
+                    enabled = permissionController.canModify( object, user);
+                }
+                else
+                {
+                    enabled = false;
+                }
+            }
+            else {
+                enabled = admin;
+            }
+
         } else if (type == EDIT_SELECTION || type == DELETE_SELECTION) {
             if (objectList != null && objectList.size() > 0 ) {
                 Iterator<Entity<?>> it = objectList.iterator();

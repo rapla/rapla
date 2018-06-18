@@ -19,6 +19,8 @@ public interface DialogInterface
     interface DialogAction {
         void setEnabled(boolean enabled);
 
+        boolean isEnabled();
+
         void setRunnable(Runnable runnable);
 
         void setIcon(I18nIcon icon);

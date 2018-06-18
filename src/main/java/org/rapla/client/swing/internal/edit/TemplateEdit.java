@@ -482,7 +482,7 @@ public class TemplateEdit extends RaplaGUIComponent
             {
                 public void mouseClicked(MouseEvent e)
                 {
-                    if (e.getClickCount() >= 2)
+                    if (e.getClickCount() >= 2 && editAction.isEnabled())
                     {
                         action.run();//actionPerformed( new ActionEvent( list, ActionEvent.ACTION_PERFORMED, "save"));
                     }
