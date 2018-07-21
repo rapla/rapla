@@ -39,16 +39,7 @@ import org.rapla.facade.internal.ConflictImpl;
 import org.rapla.framework.RaplaException;
 
 import javax.inject.Provider;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.LinkedHashMap;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 public class LocalCache implements EntityResolver
 {
@@ -336,22 +327,18 @@ public class LocalCache implements EntityResolver
         final CategoryImpl superCategory = getSuperCategory();
         result.addAll(CategoryImpl.getRecursive(superCategory));
         result.addAll(getDynamicTypes());
+        final Collection<Category> adminGroups = forUser != null && !forUser.isAdmin() ?  PermissionController.getGroupsToAdmin(forUser) : Collections.emptyList();
         for (User user : getUsers())
         {
             boolean add = forUser == null || forUser.isAdmin() || forUser.getId().equals(user.getId());
-            if (!add)
+            if (!add && !user.isAdmin())
             {
-                final Collection<Category> adminGroups = PermissionController.getGroupsToAdmin(forUser);
-                if (adminGroups.size() > 0)
+                for (Category adminGroup : adminGroups)
                 {
-                    for (Category adminGroup : adminGroups)
+                    if (((UserImpl) user).isMemberOf(adminGroup) )
                     {
-                        if (((UserImpl) user).isMemberOf(adminGroup))
-                        {
-                            add = true;
-                            break;
-                        }
-
+                        add = true;
+                        break;
                     }
                 }
             }

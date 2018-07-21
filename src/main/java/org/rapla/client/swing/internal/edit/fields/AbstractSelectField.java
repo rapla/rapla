@@ -19,7 +19,9 @@ import org.rapla.client.dialog.DialogUiFactoryInterface;
 import org.rapla.client.TreeFactory;
 import org.rapla.client.swing.images.RaplaImages;
 import org.rapla.client.swing.internal.SwingPopupContext;
+import org.rapla.client.swing.internal.view.ComplexTreeCellRenderer;
 import org.rapla.client.swing.internal.view.ConflictTreeCellRenderer;
+import org.rapla.client.swing.internal.view.SimpleTreeCellRenderer;
 import org.rapla.client.swing.toolkit.RaplaButton;
 import org.rapla.client.swing.toolkit.RaplaTree.TreeIterator;
 import org.rapla.components.util.Tools;
@@ -255,7 +257,7 @@ public abstract class AbstractSelectField<T> extends AbstractEditField implement
         	tree = new JTree();
         	tree.getSelectionModel().setSelectionMode( TreeSelectionModel.SINGLE_TREE_SELECTION );
         }
-        tree.setCellRenderer(new ConflictTreeCellRenderer(i18n,raplaLocale));
+        tree.setCellRenderer(new SimpleTreeCellRenderer(i18n,raplaLocale));
         //tree.setVisibleRowCount(15);
         tree.setRootVisible( false );
         tree.setShowsRootHandles(true);

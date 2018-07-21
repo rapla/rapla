@@ -213,6 +213,7 @@ public class UserImpl extends SimpleEntity implements User, ModifiableTimestamp
         return groupsIncludingParents.contains( group.getId());
     }
 
+    /** returns ture if the user belongs to the group. This checks only direct group assignments. */
     public boolean isMemberOf(Category group)
     {
         return isRefering("groups", group.getId());

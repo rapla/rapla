@@ -187,33 +187,27 @@ public class RaplaClientServiceImpl implements ClientService, UpdateErrorListene
     {
         if (started)
             return;
-        try
-        {
-            getLogger().debug("RaplaClient started");
-            ClientFacade facade = getClientFacade();
-            facade.addUpdateErrorListener(this);
-            advanceLoading(true);
+        getLogger().debug("RaplaClient started");
+        ClientFacade facade = getClientFacade();
+        facade.addUpdateErrorListener(this);
+        advanceLoading(true);
 
-            logoutAvailable = true;
-            if (connectInfo != null && connectInfo.getUsername() != null)
+        logoutAvailable = true;
+        if (connectInfo != null && connectInfo.getUsername() != null)
+        {
+            login(connectInfo).thenAccept( (result)-> {
+                getLogger().info("Login successfull");
+                if (result )
+                    beginRaplaSession();
+                else
+                    startLogin();
+            }).exceptionally( ex ->
             {
-                login(connectInfo).thenAccept( (result)-> {
-                    getLogger().info("Login successfull");
-                    if (result )
-                        beginRaplaSession();
-                    else
-                        startLogin();
-                });
-            } else {
+                getLogger().error(ex.getMessage(), ex);
                 startLogin();
-            }
-        }
-        catch (Exception ex)
-        {
-            throw ex;
-        }
-        finally
-        {
+            });
+        } else {
+            startLogin();
         }
     }
 

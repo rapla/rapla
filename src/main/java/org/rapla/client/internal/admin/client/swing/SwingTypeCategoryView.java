@@ -48,6 +48,7 @@ import java.awt.*;
 import java.util.*;
 import java.util.List;
 import java.util.regex.Pattern;
+import java.util.regex.PatternSyntaxException;
 import java.util.stream.Stream;
 
 @DefaultImplementation(of=TypeCategoryView.class,context = InjectionContext.swing)
@@ -255,7 +256,11 @@ public class SwingTypeCategoryView extends RaplaGUIComponent implements
 	{
 		Locale locale = getLocale();
 		String name = named.getName(locale);
-		return Pattern.matches(pattern.toLowerCase(locale), name.toLowerCase(locale));
+		try {
+			return Pattern.matches(pattern.toLowerCase(locale), name.toLowerCase(locale));
+		} catch ( PatternSyntaxException ex) {
+			return false;
+		}
 	}
 
 	private Stream<Allocatable> searchPeriods(String pattern) throws RaplaException {

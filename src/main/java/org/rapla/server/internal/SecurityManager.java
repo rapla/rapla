@@ -36,12 +36,7 @@ import org.rapla.storage.RaplaSecurityException;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Date;
-import java.util.Iterator;
-import java.util.List;
+import java.util.*;
 
 /** checks if the client can store or delete an entity */
 @Singleton public class SecurityManager
@@ -182,7 +177,9 @@ import java.util.List;
         {
             if (permissionController.canModify(entity, user) && (original == null || permissionController.canModify(original, user)))
             {
-                Collection<Category> newUserGroups = new ArrayList<>(((User) entity).getGroupList());
+                final User userToModify = (User) entity;
+                Collection<Category> newCompleteUserGroups = new ArrayList<>(userToModify.getGroupList());
+                Collection<Category> newUserGroups = new ArrayList<>(newCompleteUserGroups);
                 Collection<Category> removedUserGroups = new ArrayList<>();
                 if (original != null)
                 {
@@ -191,10 +188,18 @@ import java.util.List;
                     removedUserGroups.removeAll(newUserGroups);
                     newUserGroups.removeAll(originalList);
                 }
-                checkCanAdminGroups(newUserGroups, user);
-                checkCanAdminGroups(removedUserGroups, user);
+                final Collection<Category> groupsToAdmin = PermissionController.getGroupsToAdmin(user);
+                checkCanAdminGroups(newUserGroups, groupsToAdmin, user);
+                checkCanAdminGroups(removedUserGroups, groupsToAdmin, user);
 
+                // check if new group list has still one group to admin
+                if (newCompleteUserGroups.isEmpty() || Collections.disjoint(newCompleteUserGroups,groupsToAdmin))
+                {
+                    String errorText = i18n.format("error.modify_not_allowed", user.toString(), userToModify);
+                    throw new RaplaSecurityException(errorText);
+                }
 
+                permitted = true;
             }
         }
 
@@ -241,9 +246,8 @@ import java.util.List;
 
     }
 
-    private void checkCanAdminGroups(Collection<Category> groups, User user) throws RaplaSecurityException
+    private void checkCanAdminGroups(Collection<Category> groups, final Collection<Category> groupsToAdmin, User user) throws RaplaSecurityException
     {
-        final Collection<Category> groupsToAdmin = PermissionController.getGroupsToAdmin(user);
         for ( Category group: groups)
         {
             if (!PermissionController.canAdminGroup( groupsToAdmin, group))

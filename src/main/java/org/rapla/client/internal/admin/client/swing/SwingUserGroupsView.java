@@ -40,6 +40,7 @@ import java.awt.*;
 import java.util.*;
 import java.util.List;
 import java.util.regex.Pattern;
+import java.util.regex.PatternSyntaxException;
 
 
 @DefaultImplementation(of=AdminUserUserGroupsView.class,context = InjectionContext.swing)
@@ -163,7 +164,7 @@ public class SwingUserGroupsView extends RaplaGUIComponent implements
 			Object selectedObject = evt.getSelectedObject();
 			showPopup(usergroups,  p,selectedObject, getComponent());
         });
-		menuButton.addActionListener((evt)->showPopup((Category) usergroups, new Point(0,20), null, menuButton));
+		menuButton.addActionListener((evt)->showPopup((Category) usergroups, new Point(0,20), getFocusedObject(), menuButton));
 		// creation of the list for the assigned elements
 		assignedElementsList = new JList();
 		assignedElementsListModel = new DefaultListModel();
@@ -304,13 +305,12 @@ public class SwingUserGroupsView extends RaplaGUIComponent implements
 		List<User> users = new ArrayList<>();
 		Locale locale = getLocale();
 		// get all users
-		for (User user : getQuery().getUsers()) {
-			// does the specified pattern matches with the the username?
-			if (Pattern.matches(pattern.toLowerCase(locale), user.getUsername()
-					.toLowerCase(locale)))
-				users.add(user);
+			for (User user : getQuery().getUsers()) {
+				// does the specified pattern matches with the the username?
+				if (matchesPattern(pattern, locale,user.getUsername()))
+					users.add(user);
 
-		}
+			}
 		Collections.sort(users, (u1,u2)-> u1.getUsername().compareTo( u2.getUsername()));
 		return users;
 	}
@@ -319,7 +319,16 @@ public class SwingUserGroupsView extends RaplaGUIComponent implements
 	{
 		Locale locale = getLocale();
 		String name = named.getName(locale);
-		return Pattern.matches(pattern.toLowerCase(locale), name.toLowerCase(locale));
+		return matchesPattern(pattern, locale, name);
+	}
+
+	private boolean matchesPattern(String pattern, Locale locale, String name) {
+		try {
+			return Pattern.matches(pattern.toLowerCase(locale), name.toLowerCase(locale));
+		} catch ( PatternSyntaxException ex)
+		{
+			return false;
+		}
 	}
 
 

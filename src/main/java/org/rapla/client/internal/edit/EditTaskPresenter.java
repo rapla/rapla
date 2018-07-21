@@ -133,7 +133,8 @@ public class EditTaskPresenter implements TaskPresenter
                 if (context != null && context instanceof EditApplicationEventContext)
                 {
                     final EditApplicationEventContext editApplicationEventContext = (EditApplicationEventContext) context;
-                    entities=new LinkedHashSet<>(editApplicationEventContext.getSelectedObjects());
+                    final List<Entity> selectedObjects = editApplicationEventContext.getSelectedObjects();
+                    entities=new LinkedHashSet<>(selectedObjects);
                     appointmentBlock = editApplicationEventContext.getAppointmentBlock();
                     if (appointmentBlock != null)
                     {
@@ -407,12 +408,16 @@ public class EditTaskPresenter implements TaskPresenter
                     promise = raplaFacade.dispatch(saveObjects, Collections.emptyList());
                 }
             }
-            handleExceptionCommandAbort(
-                    promise.thenRun(
-                            ()->close(applicationEvent))
-                            .thenCompose(
-                                    (t) -> raplaFacade.refreshAsync()),
-                    popupContext);
+
+            Promise<Boolean> savePromise = handleExceptionCommandAbort(promise, popupEditContext);
+            handleException(savePromise.thenAccept( ( successfull) ->
+                    {
+                        if (successfull)
+                        {
+                           close(applicationEvent);
+                           raplaFacade.refreshAsync();
+                        }
+                    }),popupEditContext);
         };
         Runnable deleteCmd = () -> {
             busyIdleObservable.onNext(i18n.getString("delete"));
@@ -474,22 +479,27 @@ public class EditTaskPresenter implements TaskPresenter
         );
     }
 
-    Promise handleExceptionCommandAbort(Promise promise,PopupContext popupContext)
+    Promise<Boolean> handleExceptionCommandAbort(Promise promise,PopupContext popupContext)
     {
-        return promise.exceptionally(ex->
+        return promise.handle((result,ex)->
                 {
-                    final Throwable cause = ((Throwable) ex).getCause();
-                    if ( cause != null)
-                    {
-                        ex = cause;
+                    if( ex != null) {
+                        final Throwable cause = ((Throwable) ex).getCause();
+                        if (cause != null) {
+                            ex = cause;
+                        }
+                        if (!(ex instanceof CommandAbortedException)) {
+                            dialogUiFactory.showException((Throwable) ex, popupContext);
+                        }
+                        busyIdleObservable.onNext("");
+                        return false;
                     }
-                    if (!(ex instanceof CommandAbortedException))
+                    else
                     {
-                        dialogUiFactory.showException((Throwable) ex, popupContext);
+                        busyIdleObservable.onNext("");
+                        return true;
                     }
-                     busyIdleObservable.onNext("");
-                }
-        );
+                });
     }
 
     public void close(ApplicationEvent applicationEvent)

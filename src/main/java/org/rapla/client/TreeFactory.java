@@ -1,7 +1,6 @@
 package org.rapla.client;
 
 import jsinterop.annotations.JsType;
-import org.rapla.client.swing.internal.view.ConflictTreeCellRenderer;
 import org.rapla.entities.Category;
 import org.rapla.entities.Named;
 import org.rapla.entities.domain.Allocatable;
