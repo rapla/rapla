@@ -21,7 +21,7 @@
 		<slf4j.version>1.7.25</slf4j.version>
 		<logback.version>1.2.3</logback.version>
 		<intellijAnnotations.version>12.0</intellijAnnotations.version>
-		<ical4j.version>2.0.0</ical4j.version>
+		<ical4j.version>3.0.1</ical4j.version>
 		<rxjava.version>2.1.12</rxjava.version>
 		<gwtbootstrap3.version>0.9.1</gwtbootstrap3.version>
 		<!--
