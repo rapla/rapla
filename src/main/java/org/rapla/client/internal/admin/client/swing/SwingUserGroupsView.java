@@ -164,7 +164,7 @@ public class SwingUserGroupsView extends RaplaGUIComponent implements
 			Object selectedObject = evt.getSelectedObject();
 			showPopup(usergroups,  p,selectedObject, getComponent());
         });
-		menuButton.addActionListener((evt)->showPopup((Category) usergroups, new Point(0,20), getFocusedObject(), menuButton));
+		menuButton.addActionListener((evt)->showPopup((Category) usergroups, new Point(0,20), selectionTreeTable.getSelectedElement(), menuButton));
 		// creation of the list for the assigned elements
 		assignedElementsList = new JList();
 		assignedElementsListModel = new DefaultListModel();
