@@ -64,7 +64,7 @@ import java.util.Map;
             public String getCalendarHTML() throws RaplaException
             {
                 User user = model.getUser();
-                final String tableViewName = "appointments";
+                final String tableViewName = "appointments_per_day";
                 List<RaplaTableColumn<AppointmentBlock, TableColumn>> columnPlugins = tableConfigLoader.loadColumns(tableViewName, user);
                 final TimeInterval timeIntervall = model.getTimeIntervall();
                 final List<AppointmentBlock> blocks = waiter.waitForWithRaplaException(model.queryBlocks(timeIntervall), 10000);

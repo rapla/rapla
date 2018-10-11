@@ -116,6 +116,11 @@ public class TableConfig
         final ViewDefinition appointmentsView = config.getOrCreateView("appointments");
         appointmentsView.setName(createName("appointments", i18n, languages, raplaLocale));
         appointmentsView.setContentDefinition("{p->appointmentBlocks(p)}");
+
+        final ViewDefinition appointmentsPerDayView = config.getOrCreateView("appointments_per_day");
+        appointmentsPerDayView.setName(createName("appointments_per_day", i18n, languages, raplaLocale));
+        appointmentsPerDayView.setContentDefinition("{p->appointmentBlocks(p)}");
+
         final ViewDefinition eventsView = config.getOrCreateView("events");
         eventsView.setName(createName("reservations", i18n, languages, raplaLocale));
         eventsView.setContentDefinition("{p->events(p)}");
