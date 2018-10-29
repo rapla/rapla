@@ -54,6 +54,7 @@ import org.rapla.framework.RaplaLocale;
 import org.rapla.inject.DefaultImplementation;
 import org.rapla.inject.InjectionContext;
 import org.rapla.logger.Logger;
+import org.rapla.plugin.tableview.TableViewPlugin;
 import org.rapla.scheduler.Promise;
 import org.rapla.scheduler.ResolvedPromise;
 import org.rapla.storage.PermissionController;
@@ -134,6 +135,7 @@ public class CalendarModelImpl implements CalendarSelectionModel
             throw new RaplaInitializationException(e);
         }
     }
+
 
     Preferences getSystemPreferences() throws RaplaException
     {
@@ -293,7 +295,8 @@ public class CalendarModelImpl implements CalendarSelectionModel
             addOptions(alternativOptions);
         }
         final String saveDate = optionMap.get(CalendarModel.SAVE_SELECTED_DATE);
-        if (config.getSelectedDate() != null && (saveDate == null || saveDate.equals("true")))
+        final boolean isSaveDate = saveDate == null || saveDate.equals("true");
+        if (config.getSelectedDate() != null && isSaveDate)
         {
             setSelectedDate(config.getSelectedDate());
         }
@@ -301,21 +304,23 @@ public class CalendarModelImpl implements CalendarSelectionModel
         {
             setSelectedDate(operator.today());
         }
-        if (config.getStartDate() != null)
+        final Date startDate = config.getStartDate();
+        if (startDate != null && isSaveDate)
         {
-            setStartDate(config.getStartDate());
+            setStartDate(startDate);
         }
         else
         {
             setStartDate(operator.today());
         }
-        if (config.getEndDate() != null && (saveDate == null || saveDate.equals("true")))
+        final Date endDate = config.getEndDate();
+        if (endDate != null && isSaveDate)
         {
-            setEndDate(config.getEndDate());
+            setEndDate(endDate);
         }
         else
         {
-            setEndDate(DateTools.addYear(getStartDate()));
+            setEndDate( (endDate != null && startDate != null) ? DateTools.addDays( getStartDate(), DateTools.countDays(startDate, endDate)) : DateTools.addYear(this.startDate));
         }
         selectedObjects.addAll(config.getSelected());
         if (config.isResourceRootSelected())
@@ -1534,6 +1539,16 @@ public class CalendarModelImpl implements CalendarSelectionModel
             }
             return result;
         });
+    }
+
+    public static String getStartEndDate(RaplaLocale raplaLocale, CalendarSelectionModel model) {
+        String dateString;
+        final String viewId = model.getViewId();
+        if( viewId != null && viewId.startsWith("table"))
+            dateString = raplaLocale.formatDate(model.getStartDate()) + " - " + raplaLocale.formatDate(model.getEndDate());
+        else
+            dateString =  raplaLocale.formatDate(model.getSelectedDate());
+        return dateString;
     }
 
 }

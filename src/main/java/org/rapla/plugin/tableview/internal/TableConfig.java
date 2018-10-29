@@ -35,9 +35,17 @@ import java.util.Set;
 
 public class TableConfig
 {
+
+    public static final String APPOINTMENTS_VIEW = "appointments";
+    public static final String EVENTS_VIEW = "events";
+    public static final String APPOINTMENTS_PER_DAY_VIEW = "appointments_per_day";
     private Set<TableColumnConfig> column = new LinkedHashSet<>();
     private Map<String, ViewDefinition> views = new LinkedHashMap<>();
 
+    public TableConfig()
+    {
+
+    }
     public static class ViewDefinition implements Named
     {
         private MultiLanguageName name = new MultiLanguageName();
@@ -110,59 +118,6 @@ public class TableConfig
         return name;
     }
 
-    private static TableConfig createDefault(I18nBundle i18n, Set<String> languages, RaplaLocale raplaLocale)
-    {
-        TableConfig config = new TableConfig();
-        final ViewDefinition appointmentsView = config.getOrCreateView("appointments");
-        appointmentsView.setName(createName("appointments", i18n, languages, raplaLocale));
-        appointmentsView.setContentDefinition("{p->appointmentBlocks(p)}");
-        final ViewDefinition eventsView = config.getOrCreateView("events");
-        eventsView.setName(createName("reservations", i18n, languages, raplaLocale));
-        eventsView.setContentDefinition("{p->events(p)}");
-        {
-            TableColumnConfig columnConfig = createNameColumn(i18n, languages, raplaLocale);
-            config.addColumn(columnConfig);
-            eventsView.addColumn(columnConfig);
-            appointmentsView.addColumn(columnConfig);
-        }
-        {
-            TableColumnConfig columnConfig = createStartColumn(i18n, languages, raplaLocale);
-            config.addColumn(columnConfig);
-            eventsView.addColumn(columnConfig);
-            appointmentsView.addColumn(columnConfig);
-        }
-        {
-            TableColumnConfig columnConfig = createEndColumn(i18n, languages, raplaLocale);
-            config.addColumn(columnConfig);
-            appointmentsView.addColumn(columnConfig);
-        }
-        {
-            TableColumnConfig columnConfig = createLastChangedColumn(i18n, languages, raplaLocale);
-            config.addColumn(columnConfig);
-            eventsView.addColumn(columnConfig);
-        }
-        {
-            TableColumnConfig columnConfig = createResourcesColumn(i18n, languages, raplaLocale);
-            config.addColumn(columnConfig);
-            appointmentsView.addColumn(columnConfig);
-        }
-        {
-            TableColumnConfig columnConfig = createPersonsColumn(i18n, languages, raplaLocale);
-            config.addColumn(columnConfig);
-            appointmentsView.addColumn(columnConfig);
-        }
-        for (int i = 1; i <= 2; i++)
-        {
-            TableConfig.TableColumnConfig columnConfig = new TableConfig.TableColumnConfig();
-            columnConfig.setKey("customColumn_" + i);
-            columnConfig.setType("string");
-            final MultiLanguageName name = createName("unnamed_column", i18n, languages, raplaLocale);
-            columnConfig.setName(name);
-            config.addColumn(columnConfig);
-        }
-        return config;
-    }
-
     @NotNull private static TableColumnConfig createPersonsColumn(I18nBundle i18n, Set<String> languages, RaplaLocale raplaLocale)
     {
         TableColumnConfig columnConfig = new TableColumnConfig();
@@ -222,6 +177,20 @@ public class TableConfig
         return columnConfig;
     }
 
+    @NotNull private static TableColumnConfig createTimesColumn(I18nBundle i18n, Set<String> languages, RaplaLocale raplaLocale)
+    {
+        String start ="times";
+        String defaultValue = "{p->times(p)}";
+        String times = "times";
+        TableColumnConfig columnConfig = new TableColumnConfig();
+        columnConfig.setKey(start);
+        columnConfig.setType("string");
+        columnConfig.setDefaultValue(defaultValue);
+        final MultiLanguageName name = createName(times, i18n, languages, raplaLocale);
+        columnConfig.setName(name);
+        return columnConfig;
+    }
+
     @NotNull private static TableColumnConfig createNameColumn(I18nBundle i18n, Set<String> languages, RaplaLocale raplaLocale)
     {
         TableColumnConfig columnConfig = new TableColumnConfig();
@@ -234,15 +203,23 @@ public class TableConfig
         return columnConfig;
     }
 
-    //@XmlAccessorType(XmlAccessType.FIELD)
-    static public class TableColumnConfig
-    {
-       
 
+    //@XmlAccessorType(XmlAccessType.FIELD)
+    static public class TableColumnConfig implements Named
+    {
 		private String key;
-        private String type;
+        private String type ="string";
         private String defaultValue;
         private MultiLanguageName name;
+
+        private TableColumnConfig addIfNotInResult(TableConfig configResult)
+        {
+            if ( !configResult.column.contains(this))
+            {
+                configResult.addColumn( this );
+            }
+            return this;
+        }
 
         @Override public int hashCode()
         {
@@ -317,11 +294,26 @@ public class TableConfig
 					+ name + "]";
 		}
 
+        @Override
+        public String getName(Locale locale) {
+            if ( name != null) {
+                final String name = this.name.getName(locale);
+                if ( name != null) {
+                    return name;
+                }
+            }
+            return key;
+        }
     }
 
     public void addColumn(TableColumnConfig config)
     {
         this.column.add(config);
+    }
+
+    public boolean hasView(String id)
+    {
+        return views.containsKey(id);
     }
 
     public ViewDefinition getOrCreateView(String id)
@@ -410,45 +402,66 @@ public class TableConfig
         RaplaConfiguration configEntry = preferences.getEntry(TableViewPlugin.CONFIG, null);
         try
         {
-            final TableConfig configResult;
+            final TableConfig config;
             if (configEntry != null)
             {
-                TableConfig result = read(configEntry, raplaLocale);
-                configResult = result;
-                addIfNotInResult( createNameColumn(i18n, languages, raplaLocale), configResult);
-                addIfNotInResult( createStartColumn(i18n, languages, raplaLocale), configResult);
-                addIfNotInResult( createEndColumn(i18n, languages, raplaLocale), configResult);
-                addIfNotInResult( createLastChangedColumn(i18n, languages, raplaLocale), configResult);
-                addIfNotInResult( createResourcesColumn(i18n, languages, raplaLocale), configResult);
-                addIfNotInResult( createPersonsColumn(i18n, languages, raplaLocale), configResult);
+                config = read(configEntry, raplaLocale);
             }
             else
-            {
-                configResult = createDefault(i18n, languages, raplaLocale);
-            }
-            for (TableColumnDefinitionExtension extension:extensions)
-            {
-                final Collection<TableColumnConfig> columns = extension.getColumns(languages);
-                for ( TableColumnConfig column:columns)
                 {
-                    addIfNotInResult( column, configResult);
-                }
-
+                config = new TableConfig();
             }
-
-            return configResult;
+            if ( !config.hasView(EVENTS_VIEW ))
+            {
+                final ViewDefinition eventsView = config.getOrCreateView(EVENTS_VIEW);
+                eventsView.setName(createName("reservations", i18n, languages, raplaLocale));
+                eventsView.setContentDefinition("{p->events(p)}");
+                eventsView.addColumn(createNameColumn(i18n, languages, raplaLocale).addIfNotInResult( config));
+                eventsView.addColumn(createStartColumn(i18n, languages, raplaLocale).addIfNotInResult(config));
+                eventsView.addColumn(createLastChangedColumn(i18n, languages, raplaLocale).addIfNotInResult( config));
+            }
+            if ( !config.hasView(APPOINTMENTS_VIEW))
+            {
+                final ViewDefinition appointmentsView = config.getOrCreateView(APPOINTMENTS_VIEW);
+                appointmentsView.setName(createName("appointments", i18n, languages, raplaLocale));
+                appointmentsView.setContentDefinition("{p->appointmentBlocks(p)}");
+                appointmentsView.addColumn(createNameColumn(i18n, languages, raplaLocale).addIfNotInResult( config));
+                appointmentsView.addColumn(createStartColumn(i18n, languages, raplaLocale).addIfNotInResult(config));
+                appointmentsView.addColumn(createEndColumn(i18n, languages, raplaLocale).addIfNotInResult( config));
+                appointmentsView.addColumn(createResourcesColumn(i18n, languages, raplaLocale).addIfNotInResult( config));
+                appointmentsView.addColumn(createPersonsColumn(i18n, languages, raplaLocale).addIfNotInResult( config));
+            }
+            if ( !config.hasView(APPOINTMENTS_PER_DAY_VIEW))
+            {
+                final ViewDefinition appointmentsPerDayView = config.getOrCreateView(APPOINTMENTS_PER_DAY_VIEW);
+                appointmentsPerDayView.setName(createName("appointments_per_day", i18n, languages, raplaLocale));
+                appointmentsPerDayView.setContentDefinition("{p->appointmentBlocks(p)}");
+                appointmentsPerDayView.addColumn(createTimesColumn(i18n, languages, raplaLocale).addIfNotInResult( config));
+                appointmentsPerDayView.addColumn(createNameColumn(i18n, languages, raplaLocale).addIfNotInResult( config));
+                appointmentsPerDayView.addColumn(createResourcesColumn(i18n, languages, raplaLocale).addIfNotInResult( config));
+                appointmentsPerDayView.addColumn(createPersonsColumn(i18n, languages, raplaLocale).addIfNotInResult( config));
+            }
+            if (configEntry == null ) {
+                for (int i = 1; i <= 2; i++) {
+                    TableConfig.TableColumnConfig columnConfig = new TableConfig.TableColumnConfig();
+                    columnConfig.setKey("customColumn_" + i);
+                    columnConfig.setType("string");
+                    final MultiLanguageName name = createName("unnamed_column", i18n, languages, raplaLocale);
+                    columnConfig.setName(name);
+                    config.addColumn(columnConfig);
+                }
+            }
+            for (TableColumnDefinitionExtension extension:extensions) {
+                final Collection<TableColumnConfig> columns = extension.getColumns(languages);
+                for (TableColumnConfig column : columns) {
+                    column.addIfNotInResult(config);
+                }
+            }
+            return config;
         }
         catch (ConfigurationException ex)
         {
             throw new RaplaException(ex.getMessage(), ex);
-        }
-    }
-
-    private static void addIfNotInResult(TableColumnConfig column, TableConfig configResult)
-    {
-        if ( !configResult.column.contains(column))
-        {
-            configResult.addColumn( column );
         }
     }
 

@@ -34,8 +34,6 @@ import org.rapla.inject.DefaultImplementation;
 import org.rapla.inject.InjectionContext;
 import org.rapla.logger.Logger;
 import org.rapla.plugin.autoexport.AutoExportPlugin;
-import org.rapla.plugin.tableview.client.swing.AppointmentTableViewFactory;
-import org.rapla.plugin.tableview.client.swing.ReservationTableViewFactory;
 import org.rapla.scheduler.Promise;
 
 import javax.inject.Inject;
@@ -53,8 +51,6 @@ import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTextField;
 import javax.swing.JToolBar;
-import javax.swing.event.ListSelectionEvent;
-import javax.swing.event.ListSelectionListener;
 import java.awt.Component;
 import java.awt.Dimension;
 import java.awt.event.ActionEvent;
@@ -163,7 +159,7 @@ public class SavedCalendarSwingView extends RaplaGUIComponent implements SavedCa
 
     private final IOInterface ioInterface;
     
-    class FileEntry implements Comparable<FileEntry>
+    static class FileEntry implements Comparable<FileEntry>
     {
     	String name;
     	boolean isDefault;
@@ -184,7 +180,6 @@ public class SavedCalendarSwingView extends RaplaGUIComponent implements SavedCa
 		public int hashCode() {
             final int prime = 31;
             int result = 1;
-            result = prime * result + getOuterType().hashCode();
             result = prime * result + (isDefault ? 1231 : 1237);
             result = prime * result + ((name == null) ? 0 : name.hashCode());
             return result;
@@ -198,8 +193,6 @@ public class SavedCalendarSwingView extends RaplaGUIComponent implements SavedCa
             if (getClass() != obj.getClass())
                 return false;
             FileEntry other = (FileEntry) obj;
-            if (!getOuterType().equals(other.getOuterType()))
-                return false;
             if (isDefault != other.isDefault)
                 return false;
             if (name == null) {
@@ -210,9 +203,7 @@ public class SavedCalendarSwingView extends RaplaGUIComponent implements SavedCa
             return true;
         }
         
-		private SavedCalendarSwingView getOuterType() {
-            return SavedCalendarSwingView.this;
-        }
+
     }
 
     @Inject
@@ -454,13 +445,11 @@ public class SavedCalendarSwingView extends RaplaGUIComponent implements SavedCa
         final Component parentComponent = getMainComponent();
         JPanel panel = new JPanel();
         final JTextField textField = new JTextField(20);
-        addCopyPaste( textField, getI18n(), getRaplaLocale(), ioInterface, getLogger());
-        String dateString; 	
-    	if( model.getViewId().equals(ReservationTableViewFactory.TABLE_VIEW) 
-    	 || model.getViewId().equals(AppointmentTableViewFactory.TABLE_VIEW)) 
-            dateString = getRaplaLocale().formatDate(model.getStartDate()) + " - " + getRaplaLocale().formatDate(model.getEndDate());
-    	else
-    		dateString =  getRaplaLocale().formatDate(model.getSelectedDate());
+        final RaplaLocale raplaLocale = getRaplaLocale();
+        addCopyPaste( textField, getI18n(), raplaLocale, ioInterface, getLogger());
+        String dateString;
+        CalendarSelectionModel model = this.model;
+        dateString = CalendarModelImpl.getStartEndDate(raplaLocale, model);
 
         final JCheckBox saveSelectedDateField = new JCheckBox(getI18n().format("including_date",dateString));
         
@@ -469,7 +458,7 @@ public class SavedCalendarSwingView extends RaplaGUIComponent implements SavedCa
         panel.setBorder(BorderFactory.createEmptyBorder(10,10,10,10));
         panel.add(new JLabel(getString("file.enter_name") +":"), "0,0");
         panel.add(textField, "2,0");
-        addCopyPaste( textField, getI18n(), getRaplaLocale(), ioInterface, getLogger());
+        addCopyPaste( textField, getI18n(), raplaLocale, ioInterface, getLogger());
         panel.add(saveSelectedDateField, "2,2");
         
         final String entry = model.getOption(CalendarModel.SAVE_SELECTED_DATE);

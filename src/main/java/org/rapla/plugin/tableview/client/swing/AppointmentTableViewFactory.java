@@ -25,6 +25,7 @@ import org.rapla.client.swing.extensionpoints.SwingViewFactory;
 import org.rapla.client.swing.images.RaplaImages;
 import org.rapla.client.swing.internal.RaplaMenuBarContainer;
 import org.rapla.components.iolayer.IOInterface;
+import org.rapla.components.util.DateTools;
 import org.rapla.entities.domain.AppointmentBlock;
 import org.rapla.facade.CalendarModel;
 import org.rapla.facade.CalendarSelectionModel;
@@ -34,6 +35,8 @@ import org.rapla.framework.RaplaLocale;
 import org.rapla.inject.Extension;
 import org.rapla.logger.Logger;
 import org.rapla.plugin.abstractcalendar.client.swing.IntervalChooserPanel;
+import org.rapla.plugin.tableview.RaplaTableColumn;
+import org.rapla.plugin.tableview.TableColumnType;
 import org.rapla.plugin.tableview.TableViewPlugin;
 import org.rapla.plugin.tableview.client.swing.extensionpoints.AppointmentSummaryExtension;
 import org.rapla.plugin.tableview.client.swing.extensionpoints.SummaryExtension;
@@ -43,6 +46,9 @@ import org.rapla.scheduler.Promise;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import javax.swing.Icon;
+import javax.swing.table.TableColumn;
+import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 import java.util.Set;
 import java.util.function.Supplier;
@@ -100,8 +106,10 @@ public class AppointmentTableViewFactory implements SwingViewFactory
     {
         final Supplier<Promise<List<AppointmentBlock>>> initFunction =(()-> model.queryBlocks(model.getTimeIntervall()));
 
-        return new SwingTableView(menuBar,facade, i18n, raplaLocale, logger, model, appointmentSummaryExtensions, editable, printing, tableConfigLoader, menuFactory,
-                editController, reservationController, infoFactory,  dateChooser,  dialogUiFactory, ioInterface, initFunction, "appointments");
+        final String tableName = TableConfig.APPOINTMENTS_VIEW;
+        final List<RaplaTableColumn<AppointmentBlock,TableColumn>> raplaTableColumns = tableConfigLoader.loadColumns(tableName, facade.getUser());
+        return new SwingTableView<AppointmentBlock>(menuBar,facade, i18n, raplaLocale, logger, model, appointmentSummaryExtensions, editable, printing, raplaTableColumns, menuFactory,
+                editController, reservationController, infoFactory,  dateChooser,  dialogUiFactory, ioInterface, initFunction, tableName);
 
     }
 
