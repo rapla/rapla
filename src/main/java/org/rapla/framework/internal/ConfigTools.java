@@ -113,11 +113,11 @@ public abstract class ConfigTools
 //            } while ( s != -1);
 //            stream.close();
 //            Assert.notNull( stream );
-//            Logger logger = new NullLogger();
+//            Logger TEST_LOGGER = new NullLogger();
 //			RaplaNonValidatedInput parser = new RaplaReaderImpl();
 //			final SAXConfigurationHandler handler = new SAXConfigurationHandler();
 //			String xml = builder.toString();
-//			parser.read(xml, handler, logger);
+//			parser.read(xml, handler, TEST_LOGGER);
 //            Configuration config = handler.getConfiguration();
 //            Assert.notNull( config );
 //            return config;

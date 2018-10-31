@@ -7,6 +7,7 @@ import org.rapla.server.TimeZoneConverter;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
+import java.util.Calendar;
 import java.util.Date;
 import java.util.TimeZone;
 
@@ -62,6 +63,8 @@ public class TimeZoneConverterImpl implements TimeZoneConverter
 		int offsetSystem  =  zone2.getOffset(time);
 		return offsetSystem - offsetRapla;
 	}
+
+
 	
 
 	
