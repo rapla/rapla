@@ -66,7 +66,7 @@ import java.util.*;
         checkModifyPermissions(user, entity, false);
     }
 
-    private void checkModifyPermissions(User user, Entity entity, boolean admin) throws RaplaSecurityException
+    private void checkModifyPermissions(User user, Entity entity, boolean needsAdminPermission) throws RaplaSecurityException
     {
         if (user.isAdmin())
             return;
@@ -76,7 +76,6 @@ import java.util.*;
             throw new RaplaSecurityException("No id set");
 
         boolean permitted = false;
-        @SuppressWarnings("unchecked") Class<Entity> typeClass = entity.getTypeClass();
         Entity original = operator.tryResolve(entity.getReference());
         // flag indicates if a user only exchanges allocatables  (needs to have admin-access on the allocatable)
         boolean canExchange = false;
@@ -121,7 +120,7 @@ import java.util.*;
                 }
                 permitted = (originalOwnerReference != null) && originalOwnerReference.equals(user.getReference()) && originalOwnerReference
                         .equals(entityOwnerReference);
-                if (!permitted && !admin)
+                if (!permitted && !needsAdminPermission)
                 {
                     canExchange = canExchange(user, entity, original);
                     permitted = canExchange;
@@ -137,7 +136,7 @@ import java.util.*;
         }
         if (!permitted && original != null && original instanceof PermissionContainer)
         {
-            if (admin)
+            if (needsAdminPermission)
             {
                 permitted = permissionController.canAdmin(original, user);
             }
@@ -206,7 +205,7 @@ import java.util.*;
         if (!permitted)
         {
             String errorText;
-            if (admin)
+            if (needsAdminPermission)
             {
                 errorText = i18n.format("error.admin_not_allowed", user.toString(), entity.toString());
             }
@@ -419,7 +418,7 @@ import java.util.*;
                 conflictsAfter = new ArrayList<>();
                 try
                 {
-                    operator.waitForWithRaplaException(operator.getConflicts(r).thenAcceptBoth(operator.getConflicts(original), (beforeConfl, afterConf) ->
+                    operator.waitForWithRaplaException(operator.getConflicts(original).thenAcceptBoth(operator.getConflicts(r), (beforeConfl, afterConf) ->
                     {
                         conflictsBefore.addAll(beforeConfl);
                         conflictsAfter.addAll(afterConf);

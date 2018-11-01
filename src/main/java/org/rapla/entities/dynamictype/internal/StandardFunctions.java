@@ -26,7 +26,6 @@ import org.rapla.inject.Extension;
 import org.rapla.rest.GwtIncompatible;
 
 import javax.inject.Inject;
-import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -658,7 +657,7 @@ public class StandardFunctions implements FunctionFactory
 
         @GwtIncompatible private void testMethod() throws IllegalAnnotationException
         {
-            Method method;
+            java.lang.reflect.Method method;
             try
             {
                 Class<? extends Function> class1 = arg.getClass();
@@ -732,7 +731,7 @@ public class StandardFunctions implements FunctionFactory
             {
                 return;
             }
-            Method method;
+            java.lang.reflect.Method method;
             try
             {
                 Class<? extends Function> class1 = objectFunction.getClass();
@@ -928,18 +927,18 @@ public class StandardFunctions implements FunctionFactory
             if (object instanceof AppointmentBlock)
             {
                 AppointmentBlock block = (AppointmentBlock) object;
-                return new Date(block.getStart());
+                return new Date(DateTools.cutDate(block.getStart()));
             }
             else if (object instanceof Appointment)
             {
                 Appointment appointment = (Appointment) object;
-                return appointment.getStart();
+                return DateTools.cutDate(appointment.getStart());
 
             }
             else if (object instanceof Reservation)
             {
                 Reservation reservation = (Reservation) object;
-                return reservation.getFirstDate();
+                return DateTools.cutDate(reservation.getFirstDate());
             }
             else if (object instanceof CalendarModel)
             {
@@ -1152,7 +1151,7 @@ public class StandardFunctions implements FunctionFactory
         @GwtIncompatible private void testMethod() throws IllegalAnnotationException
         {
             {
-                Method method;
+                java.lang.reflect.Method method;
                 try
                 {
                     Class<? extends Function> class1 = start.getClass();
@@ -1168,7 +1167,7 @@ public class StandardFunctions implements FunctionFactory
                 }
             }
             {
-                Method method;
+                java.lang.reflect.Method method;
                 try
                 {
                     Class<? extends Function> class1 = end.getClass();
@@ -1445,7 +1444,7 @@ public class StandardFunctions implements FunctionFactory
 
         @GwtIncompatible private void testMethod() throws IllegalAnnotationException
         {
-            Method method;
+            java.lang.reflect.Method method;
             try
             {
                 Class<? extends Function> class1 = arg.getClass();

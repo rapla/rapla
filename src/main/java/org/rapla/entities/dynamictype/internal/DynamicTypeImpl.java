@@ -703,7 +703,7 @@ final public class DynamicTypeImpl extends SimpleEntity implements DynamicType, 
     }
 
     public static void checkKey(RaplaResources i18n,String key) throws RaplaException {
-        if (key.length() ==0)
+        if (key == null || key.length() ==0)
             throw new RaplaException(i18n.getString("error.no_key"));
         if (!Tools.isKey(key) || key.length()>50) 
         {

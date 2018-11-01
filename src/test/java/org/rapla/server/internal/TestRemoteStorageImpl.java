@@ -25,6 +25,8 @@ import org.rapla.facade.RaplaFacade;
 import org.rapla.facade.client.ClientFacade;
 import org.rapla.facade.internal.FacadeImpl;
 import org.rapla.framework.RaplaException;
+import org.rapla.logger.Logger;
+import org.rapla.scheduler.sync.SynchronizedCompletablePromise;
 import org.rapla.test.util.RaplaTestCase;
 
 import java.util.ArrayList;
@@ -195,10 +197,11 @@ public class TestRemoteStorageImpl extends AbstractTestWithServer
             RaplaResources i18n = ((FacadeImpl) raplaFacade).getI18n();
             final List<Category> entities = Arrays.asList(new Category[] { cat1, cat3 });
             DeleteUndo<Category> undo = new DeleteUndo<Category>(raplaFacade, i18n, entities,clientFacade.getUser());
-            undo.execute();
+            final Logger logger = getLogger();
+            SynchronizedCompletablePromise.waitFor(undo.execute(),1000, logger);
             raplaFacade.refresh();
             TestCase.assertNull(raplaFacade.getSuperCategory().getCategory("cat1"));
-            undo.undo();
+            SynchronizedCompletablePromise.waitFor(undo.undo(),1000, logger);
             raplaFacade.refresh();
             TestCase.assertNotNull(raplaFacade.getSuperCategory().getCategory("cat1"));
         }

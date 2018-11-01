@@ -5,6 +5,7 @@ import org.rapla.components.util.SerializableDateTimeFormat;
 import org.rapla.components.util.xml.XMLWriter;
 import org.rapla.entities.IllegalAnnotationException;
 import org.rapla.entities.MultiLanguageName;
+import org.rapla.entities.Named;
 import org.rapla.entities.User;
 import org.rapla.entities.dynamictype.Classification;
 import org.rapla.entities.dynamictype.internal.DynamicTypeImpl;
@@ -65,9 +66,8 @@ public abstract class AbstractRaplaTableColumn<T, C> implements RaplaTableColumn
 
     public String getColumnName()
     {
-        final MultiLanguageName name = column.getName();
         final Locale locale = getLocale();
-        return name.getName(locale);
+        return column.getName(locale);
     }
 
     public Object getValue(T object)

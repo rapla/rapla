@@ -20,13 +20,15 @@ public class RaplaSwingTableColumnImpl<T> extends AbstractRaplaTableColumn<T, Ta
     {
         if ( isDate())
         {
-            column.setCellRenderer( new DateCellRenderer( getRaplaLocale()));
-            column.setMaxWidth( 130 );
-            column.setPreferredWidth( 130 );
+            final DateCellRenderer cellRenderer = new DateCellRenderer(getRaplaLocale(), false);
+            column.setCellRenderer(cellRenderer);
+            column.setMaxWidth( 120 );
+            column.setPreferredWidth( 120 );
         }
         else if ( isDatetime())
         {
-            column.setCellRenderer( new DateCellRenderer( getRaplaLocale()));
+            final DateCellRenderer cellRenderer = new DateCellRenderer(getRaplaLocale(), true);
+            column.setCellRenderer(cellRenderer);
             column.setMaxWidth( 175 );
             column.setPreferredWidth( 175 );
         }

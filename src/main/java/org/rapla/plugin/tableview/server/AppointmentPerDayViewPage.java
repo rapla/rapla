@@ -15,14 +15,12 @@ package org.rapla.plugin.tableview.server;
 import org.rapla.components.util.TimeInterval;
 import org.rapla.components.util.Tools;
 import org.rapla.entities.User;
-import org.rapla.entities.domain.Appointment;
 import org.rapla.entities.domain.AppointmentBlock;
 import org.rapla.facade.CalendarModel;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.inject.Extension;
 import org.rapla.plugin.tableview.RaplaTableColumn;
-import org.rapla.plugin.tableview.RaplaTableModel;
 import org.rapla.plugin.tableview.TableViewPlugin;
 import org.rapla.plugin.tableview.internal.TableConfig;
 import org.rapla.server.PromiseWait;
@@ -36,15 +34,12 @@ import javax.servlet.http.HttpServletResponse;
 import javax.swing.table.TableColumn;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
 import java.util.Date;
-import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
-@Extension(provides = HTMLViewPage.class, id = TableViewPlugin.APPOINTMENTS_PER_DAY_VIEW) public class AppointmentPerDayViewPage
+@Extension(provides = HTMLViewPage.class, id = TableViewPlugin.TABLE_APPOINTMENTS_PER_DAY_VIEW) public class AppointmentPerDayViewPage
         implements HTMLViewPage
 {
     private TableViewPage<AppointmentBlock, TableColumn> tableViewPage;
@@ -64,7 +59,7 @@ import java.util.Map;
             public String getCalendarHTML() throws RaplaException
             {
                 User user = model.getUser();
-                final String tableViewName = "appointments";
+                final String tableViewName = TableConfig.APPOINTMENTS_PER_DAY_VIEW;
                 List<RaplaTableColumn<AppointmentBlock, TableColumn>> columnPlugins = tableConfigLoader.loadColumns(tableViewName, user);
                 final TimeInterval timeIntervall = model.getTimeIntervall();
                 final List<AppointmentBlock> blocks = waiter.waitForWithRaplaException(model.queryBlocks(timeIntervall), 10000);

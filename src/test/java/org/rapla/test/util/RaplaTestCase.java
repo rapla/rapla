@@ -265,9 +265,12 @@ public abstract class RaplaTestCase
 
     public static ClientFacade createSimpleSimpsonsWithHomer() throws RaplaException
     {
-        ClientFacade facade = (ClientFacade)RaplaTestCase.createFacadeWithFile(RaplaBootstrapLogger.createRaplaLogger(),"/testdefault.xml");
-        facade.login("homer","duffs".toCharArray());
-        return facade;
+        final Logger raplaLogger = RaplaBootstrapLogger.createRaplaLogger();
+        RaplaFacade facade = RaplaTestCase.createFacadeWithFile(raplaLogger,"/testdefault.xml");
+        RaplaResources i18n = ((FacadeImpl)facade).getI18n();
+        ClientFacade clientFacade = new ClientFacadeImpl( facade,raplaLogger, i18n );
+        clientFacade.login("homer","duffs".toCharArray());
+        return clientFacade;
     }
 
     public static RaplaFacade createFacadeWithFile(Logger logger, String xmlFile) throws RaplaException
@@ -452,8 +455,8 @@ public abstract class RaplaTestCase
                 RemoteOperator remoteOperator = new RemoteOperator(logger, i18n, raplaLocale, scheduler, functionFactoryMap, remoteAuthentificationService,
                         remoteStorage, connectionInfo, permissionExtensionsList, lockManager);
                 FacadeImpl facade = new FacadeImpl(i18n, scheduler, logger);
-                facade.setOperator(remoteOperator);
-                ClientFacade clientFacade = new ClientFacadeImpl(facade,logger,i18n);
+                ClientFacadeImpl clientFacade = new ClientFacadeImpl(facade,logger,i18n);
+                clientFacade.setOperator(remoteOperator);
                 return clientFacade;
             }
         };

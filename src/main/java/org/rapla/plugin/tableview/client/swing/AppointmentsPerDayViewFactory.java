@@ -31,6 +31,7 @@ import org.rapla.framework.RaplaLocale;
 import org.rapla.inject.Extension;
 import org.rapla.logger.Logger;
 import org.rapla.plugin.abstractcalendar.client.swing.IntervalChooserPanel;
+import org.rapla.plugin.tableview.RaplaTableColumn;
 import org.rapla.plugin.tableview.TableViewPlugin;
 import org.rapla.plugin.tableview.client.swing.extensionpoints.AppointmentSummaryExtension;
 import org.rapla.plugin.tableview.internal.TableConfig;
@@ -39,12 +40,12 @@ import org.rapla.scheduler.Promise;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import javax.swing.Icon;
-import java.util.List;
-import java.util.Set;
+import javax.swing.table.TableColumn;
+import java.util.*;
 import java.util.function.Supplier;
 
 @Singleton
-@Extension(provides = SwingViewFactory.class, id = TableViewPlugin.APPOINTMENTS_PER_DAY_VIEW)
+@Extension(provides = SwingViewFactory.class, id = TableViewPlugin.TABLE_APPOINTMENTS_PER_DAY_VIEW)
 public class AppointmentsPerDayViewFactory implements SwingViewFactory
 {
     private final Set<AppointmentSummaryExtension> appointmentSummaryExtensions;
@@ -90,14 +91,32 @@ public class AppointmentsPerDayViewFactory implements SwingViewFactory
         return true;
     }
 
-    public final static String TABLE_VIEW = TableViewPlugin.APPOINTMENTS_PER_DAY_VIEW;
+    public final static String TABLE_VIEW = TableViewPlugin.TABLE_APPOINTMENTS_PER_DAY_VIEW;
 
     public SwingCalendarView createSwingView(CalendarModel model, boolean editable, boolean printing) throws RaplaException
     {
         final Supplier<Promise<List<AppointmentBlock>>> initFunction =(()-> model.queryBlocks(model.getTimeIntervall()));
 
-        return new SwingTableView(menuBar,facade, i18n, raplaLocale, logger, model, appointmentSummaryExtensions, editable, printing, tableConfigLoader, menuFactory,
-                editController, reservationController, infoFactory,  dateChooser,  dialogUiFactory, ioInterface, initFunction, "appointments");
+        final String tableName = TableConfig.APPOINTMENTS_PER_DAY_VIEW;
+        final List<RaplaTableColumn<AppointmentBlock, TableColumn>> configuredRaplaTableColumns = tableConfigLoader.loadColumns(tableName, facade.getUser());
+
+        List<RaplaTableColumn<AppointmentBlock,TableColumn>> raplaTableColumns = new ArrayList<>();
+        TableConfig.TableColumnConfig firstConfig = new TableConfig.TableColumnConfig()
+        {
+            @Override
+            public String getName(Locale locale) {
+                return i18n.getString("date");
+            }
+        };
+        firstConfig.setKey("appointment_per_date_date");
+        firstConfig.setType("date");
+        firstConfig.setDefaultValue("{p->date(p)}");
+        raplaTableColumns.add(new RaplaSwingTableColumnImpl(firstConfig,raplaLocale,facade,facade.getUser()));
+        raplaTableColumns.addAll( configuredRaplaTableColumns);
+
+        SwingTableView<AppointmentBlock> view = new SwingTableView<>(menuBar, facade, i18n, raplaLocale, logger, model, appointmentSummaryExtensions, editable, printing, raplaTableColumns, menuFactory,
+                editController, reservationController, infoFactory, dateChooser, dialogUiFactory, ioInterface, initFunction, tableName);
+        return view;
 
     }
 
@@ -108,7 +127,7 @@ public class AppointmentsPerDayViewFactory implements SwingViewFactory
 
     public String getName()
     {
-        return "appointments/day";
+        return i18n.getString("appointments_per_day");
     }
 
     Icon icon;

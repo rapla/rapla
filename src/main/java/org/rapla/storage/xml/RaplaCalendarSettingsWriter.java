@@ -50,10 +50,10 @@ public class RaplaCalendarSettingsWriter extends ClassificationFilterWriter {
 		if ( calendar.getSelectedDate() != null && saveDateActive) {
             att("date", dateTimeFormat.formatDate( calendar.getSelectedDate()));
         }
-        if ( calendar.getStartDate() != null && saveDateActive) {
+        if ( calendar.getStartDate() != null ) {
             att("startdate", dateTimeFormat.formatDate( calendar.getStartDate()));
         }
-        if ( calendar.getEndDate() != null && saveDateActive) {
+        if ( calendar.getEndDate() != null ) {
             att("enddate", dateTimeFormat.formatDate( calendar.getEndDate()));
         }
         if ( calendar.isResourceRootSelected())

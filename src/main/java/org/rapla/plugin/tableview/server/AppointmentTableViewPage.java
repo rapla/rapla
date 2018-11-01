@@ -39,7 +39,7 @@ import java.util.Map;
 @Extension(provides = HTMLViewPage.class, id = TableViewPlugin.TABLE_APPOINTMENTS_VIEW) public class AppointmentTableViewPage
         implements HTMLViewPage
 {
-    private TableViewPage<AppointmentBlock, TableColumn> tableViewPage; 
+    private TableViewPage<AppointmentBlock, TableColumn> tableViewPage;
 
     @Inject public AppointmentTableViewPage(PromiseWait waiter,RaplaLocale raplaLocale, final TableConfig.TableConfigLoader tableConfigLoader)
     {
@@ -49,7 +49,7 @@ import java.util.Map;
             public String getCalendarHTML() throws RaplaException
             {
                 User user = model.getUser();
-                final String tableViewName = "appointments";
+                final String tableViewName = TableConfig.APPOINTMENTS_VIEW;
                 List<RaplaTableColumn<AppointmentBlock, TableColumn>> columnPlugins = tableConfigLoader.loadColumns(tableViewName, user);
                 final TimeInterval timeIntervall = model.getTimeIntervall();
                 final List<AppointmentBlock> blocks = waiter.waitForWithRaplaException(model.queryBlocks(timeIntervall), 10000);

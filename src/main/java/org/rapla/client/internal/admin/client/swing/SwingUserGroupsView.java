@@ -175,6 +175,10 @@ public class SwingUserGroupsView extends RaplaGUIComponent implements
 
 	}
 
+	private Object getFocusedObject() {
+		return selectionTreeTable.getSelectedElement();
+	}
+
 	private void showPopup(Category usergroups, Point p, Object selectedObject, Component component)
 	{
 		Collection<?> selectedElements = selectionTreeTable.getSelectedElements();

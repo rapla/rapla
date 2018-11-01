@@ -14,14 +14,18 @@ import java.util.Date;
 final public class DateCellRenderer extends DefaultTableCellRenderer {
     private static final long serialVersionUID = 1L;
     
-    RaplaLocale raplaLocale;
+    final private RaplaLocale raplaLocale;
 
-    private boolean substractDayWhenFullDay;
+
+    final private boolean appendTime;
     
   
-    public DateCellRenderer(RaplaLocale raplaLocale) {
+    public DateCellRenderer(RaplaLocale raplaLocale, boolean appendTime) {
         this.raplaLocale = raplaLocale;
+        this.appendTime = appendTime;
     }
+
+
     public Component getTableCellRendererComponent( JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column )
     {
         final Date date = (Date) value;
@@ -31,34 +35,17 @@ final public class DateCellRenderer extends DefaultTableCellRenderer {
         }
         else
         {
-            // don't append time when 0 or 24
-	        boolean appendTime = !raplaLocale.toDate(date, false ).equals( date);
-	        if ( appendTime )
+            if ( appendTime )
 	        {
 	            value = raplaLocale.formatDateLong( date) + " " + raplaLocale.formatTime( date ) ;
 	        }
 	        else
 	        {
-	            if ( substractDayWhenFullDay )
-	            {
-	                value = raplaLocale.formatDateLong( DateTools.addDays(date, -1));
-	            }
-	            else
-	            {
-	                value = raplaLocale.formatDateLong( date);
-	            }
-	            
+	            value = raplaLocale.formatDateLong( date);
 	        }
         }
         //setComponentOrientation( ComponentOrientation.RIGHT_TO_LEFT  );
         return super.getTableCellRendererComponent( table, value, isSelected, hasFocus, row, column);
-    }
-    
-    public boolean isSubstractDayWhenFullDay() {
-        return substractDayWhenFullDay;
-    }
-    public void setSubstractDayWhenFullDay(boolean substractDayWhenFullDay) {
-        this.substractDayWhenFullDay = substractDayWhenFullDay;
     }
 
 }

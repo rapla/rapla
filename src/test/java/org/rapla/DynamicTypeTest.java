@@ -33,6 +33,7 @@ import org.rapla.client.swing.internal.edit.fields.TextField.TextFieldFactory;
 import org.rapla.client.internal.TreeFactoryImpl;
 import org.rapla.client.swing.internal.view.TreeItemFactorySwing;
 import org.rapla.components.calendar.DateRenderer;
+import org.rapla.components.i18n.client.swing.SwingBundleManager;
 import org.rapla.components.i18n.internal.AbstractBundleManager;
 import org.rapla.components.i18n.server.ServerBundleManager;
 import org.rapla.components.iolayer.DefaultIO;
@@ -185,7 +186,7 @@ public class DynamicTypeTest  {
 	    	facade.store(type);
    	}
    	{
-            final AbstractBundleManager bundleManager = new ServerBundleManager();
+            final AbstractBundleManager bundleManager = new SwingBundleManager(logger);
             RaplaResources i18n = new RaplaResources(bundleManager);
             RaplaLocale raplaLocale = new RaplaLocaleImpl(bundleManager);
             IOInterface ioInterface = new DefaultIO(logger);
