@@ -207,7 +207,8 @@ public  class  ClassificationField<T extends Classifiable> extends AbstractEditF
 		}
 		typeSelector.setRenderer(new NamedListCellRenderer(i18n.getLocale()));
 		typeSelector.addActionListener(this);
-		final boolean canEdit = !canNotWriteOneAttribute(list);
+		final boolean canEdit = !canNotWriteOneAttribute(list) ;
+		final boolean canAdmin = canAdmin( list);
 
 		typeSelector.setEnabled(types.length>1 && !isInternal && canEdit);
 		content.setLayout(new BorderLayout());
@@ -221,7 +222,7 @@ public  class  ClassificationField<T extends Classifiable> extends AbstractEditF
 		tabSelector = new RaplaButton();
         header.add(tabSelector);
         header.add(Box.createHorizontalGlue());
-        tabSelector.setEnabled( canEdit);
+        tabSelector.setEnabled( canAdmin);
         tabSelector.addActionListener( this);
         updateTabSelectionText();
         
@@ -236,6 +237,20 @@ public  class  ClassificationField<T extends Classifiable> extends AbstractEditF
 		scrollPane.setPreferredSize(new Dimension(500, 340));
 		scrollPane.getVerticalScrollBar().setUnitIncrement( 10);
 		content.add(scrollPane, BorderLayout.CENTER);
+	}
+
+	private boolean canAdmin(final List<T> list) throws RaplaException
+	{
+		final PermissionController permissionController = raplaFacade.getPermissionController();
+		final User user = clientFacade.getUser();
+		for (T t : list)
+		{
+			if (!permissionController.canAdmin( (Entity) t ,user))
+			{
+				return false;
+			}
+		}
+		return true;
 	}
 
     private boolean canNotWriteOneAttribute(final List<T> list) throws RaplaException

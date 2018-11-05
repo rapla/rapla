@@ -51,7 +51,14 @@ public class DefaultScheduler extends UtilConcurrentCommandScheduler implements 
 		cancel();
 	}
 
-	io.reactivex.disposables.Disposable scheduleAtGivenTime(Action task, Supplier<Long> delayProvider)
+
+	public io.reactivex.disposables.Disposable scheduleAtGivenTime(Action task, int hour,int minute)
+	{
+		Supplier<Long> delayProvider = ()->millisToNextPeriod( converter.getImportExportTimeZone(), hour,minute);
+		return scheduleAtGivenTime( task, delayProvider  );
+	}
+
+	public io.reactivex.disposables.Disposable scheduleAtGivenTime(Action task, Supplier<Long> delayProvider)
 	{
 		final Observable<Long> map = just(0l).flatMap((dummy) -> just(0l).delay(delayProvider.get())).map((t) ->
 		{
@@ -70,6 +77,7 @@ public class DefaultScheduler extends UtilConcurrentCommandScheduler implements 
 		converter.setImportExportTimeZone( TimeZone.getTimeZone("Europe/Berlin"));
 		TEST_LOGGER = RaplaBootstrapLogger.createRaplaLogger();
 		final DefaultScheduler scheduler = new DefaultScheduler(TEST_LOGGER, converter);
+		Calendar cal = Calendar.getInstance(converter.getImportExportTimeZone());
 		Clock clock = Clock.system(ZoneId.of("Europe/Berlin"));
 		Action action = ()->
 		{
@@ -87,9 +95,10 @@ public class DefaultScheduler extends UtilConcurrentCommandScheduler implements 
 		//Function<Long,Long> delayProvider = currentTime -> Math.round(Math.random() * 1000);
 		//Function<Long,Long> delayProvider = currentTime -> 2000 - (currentTime % 2000) + 500 ;
 
-		Supplier<Long> delayProvider = ()->millisToNextPeriod( clock);
-		scheduler.scheduleAtGivenTime( action, delayProvider  );
-		Thread.sleep(10000);
+		Supplier<Long> delayProvider = ()->millisToNextPeriod( converter.getImportExportTimeZone());
+		//scheduler.scheduleAtGivenTime( action, delayProvider  );
+		scheduler.scheduleAtGivenTime( action, 22,25  );
+		Thread.sleep(1000000);
 	}
 
 
@@ -112,7 +121,8 @@ public class DefaultScheduler extends UtilConcurrentCommandScheduler implements 
 		return millis;
 	}
 
-	static private long millisToNextPeriod(Calendar calendar, int second) {
+	static private long millisToNextPeriod(TimeZone timeZone) {
+		Calendar calendar = Calendar.getInstance(timeZone);
 		long now = calendar.getTimeInMillis();
 		Calendar clone = (Calendar)calendar.clone();
 
@@ -130,6 +140,28 @@ public class DefaultScheduler extends UtilConcurrentCommandScheduler implements 
 		return millis;
 	}
 
+	static private long millisToNextPeriod(TimeZone timeZone, int hour, int minute) {
+		Calendar calendar = Calendar.getInstance(timeZone);
+		long now = calendar.getTimeInMillis();
+		Calendar clone = (Calendar)calendar.clone();
+
+		clone.set(Calendar.HOUR_OF_DAY, hour);
+		clone.set(Calendar.MINUTE, minute);
+		clone.set(Calendar.SECOND,0);
+		clone.set(Calendar.MILLISECOND,0);
+		long millis = clone.getTimeInMillis() - now;
+
+		if ( millis < 0 )
+		{
+			clone.add(Calendar.DATE,1);
+			millis =  clone.getTimeInMillis() - now;
+			//            int offsetNow = calendar.get(Calendar.DST_OFFSET);
+			//            int offsetTommorow = clone.get(Calendar.DST_OFFSET);
+			//            int offsetDiff = offsetTommorow - offsetNow;
+		}
+		return millis;
+	}
+
 	static private Long millisToNextPeriod(Clock clock) {
 		ZonedDateTime now = ZonedDateTime.now( clock);
 		ZonedDateTime time = now.truncatedTo(ChronoUnit.SECONDS);
@@ -138,6 +170,19 @@ public class DefaultScheduler extends UtilConcurrentCommandScheduler implements 
 		if ( millis < 0 )
 		{
 			ZonedDateTime tommorowTime = time.plus(Duration.ofSeconds(1));
+			millis = MILLIS.between( now, tommorowTime);
+		}
+		//TEST_LOGGER.info("Millis to next execution " + millis);
+		return millis;
+	}
+
+	static private Long millisToNextPeriod(Clock clock,int hour, int minute) {
+		ZonedDateTime now = ZonedDateTime.now( clock);
+		ZonedDateTime time = now.withHour( hour).withMinute( minute).truncatedTo( ChronoUnit.SECONDS);
+		long millis = MILLIS.between( now, time);
+		if ( millis < 0 )
+		{
+			ZonedDateTime tommorowTime = time.plus(Duration.ofDays(1));
 			millis = MILLIS.between( now, tommorowTime);
 		}
 		//TEST_LOGGER.info("Millis to next execution " + millis);
