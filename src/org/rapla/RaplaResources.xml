@@ -714,6 +714,17 @@ See French text.
 		<text lang="pt">Salvar</text>
 		<text lang="fi">Tallenna</text>
     </entry>
+	<entry key="save_and_continue">
+		<text lang="en">Save And Continue</text>
+		<text lang="de">Speichern</text>
+		<text lang="fr">Sauvegarder</text>
+		<text lang="es">Guardar</text>
+		<text lang="cs">Uložit</text>
+		<text lang="nl">Opslaan</text>
+		<text lang="pl">Zapisz</text>
+		<text lang="pt">Salvar</text>
+		<text lang="fi">Tallenna</text>
+	</entry>
     <entry key="saved">
         <text lang="en">saved</text>
         <text lang="de">gespeichert</text>
