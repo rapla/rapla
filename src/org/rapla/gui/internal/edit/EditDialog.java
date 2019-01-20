@@ -238,6 +238,13 @@ public class EditDialog<T extends Entity> extends RaplaGUIComponent implements M
                     CommandHistory commandHistory = getModification().getCommandHistory();
                     commandHistory.storeAndExecute(saveCommand);
                     setupOrig();
+                    dlg.setTitle("Saved Resource!");
+                    try {
+                        Thread.sleep(3000);
+                    } catch (InterruptedException ex) {
+                        //whatever
+                    }
+                    dlg.setTitle("Edit Resource");
                 }
                 else
                 {
