@@ -59,20 +59,17 @@
     <backup>${context-root}\backup\${timestamp}-data.xml</backup>
      -->
      
-     <!-- The old settings directly in raplaserver.xconf should still work 
-    <user>db_user</user>
-    <password>your_pwd</password>
-     -->
+    <user>raplauser</user>
+    <password>raplapw</password>
+
      <!-- HSQLDB Settings
     <driver>org.hsqldb.jdbcDriver</driver>
     <url>jdbc:hsqldb:${context-root}/rapla-hsqldb</url>
     <hsqldb-shutdown>true</hsqldb-shutdown>
      -->
     
-    <!-- Postgres Settings 
     <driver>org.postgresql.Driver</driver>
-    <url>jdbc:postgresql://localhost/your_db_name</url>
-    -->
+    <url>jdbc:postgresql://localhost/rapladb</url>
 
     <!-- Mysql Settings
     <driver>org.gjt.mm.mysql.Driver</driver>
