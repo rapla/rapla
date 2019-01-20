@@ -15,10 +15,8 @@ package org.rapla.gui.internal.edit;
 import java.awt.BorderLayout;
 import java.awt.Component;
 import java.awt.event.ActionEvent;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
-import java.util.Map;
+import java.lang.reflect.Method;
+import java.util.*;
 
 import javax.swing.AbstractAction;
 import javax.swing.BorderFactory;
@@ -31,6 +29,7 @@ import org.rapla.entities.Entity;
 import org.rapla.entities.IllegalAnnotationException;
 import org.rapla.entities.configuration.Preferences;
 import org.rapla.entities.domain.Reservation;
+import org.rapla.entities.domain.internal.AllocatableImpl;
 import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.facade.ModificationEvent;
 import org.rapla.facade.ModificationListener;
@@ -189,7 +188,16 @@ public class EditDialog<T extends Entity> extends RaplaGUIComponent implements M
 
                 // object which is processed by EditComponent
                 List<T> saveObjects = ui.getObjects();
-
+                List<T> newSaveObjects = new ArrayList<T>();
+                for (int i=0; i< saveObjects.size(); i++) {
+                    try {
+                        T tmp = (T)saveObjects.get(i).getClass().getMethod("cloneUnique").invoke(saveObjects.get(i));
+                        newSaveObjects.add(tmp);
+                    } catch (Exception e) {
+                        continue;
+                    }
+                }
+                saveObjects = newSaveObjects;
                 Collection<T> entities = new ArrayList<T>();
                 entities.addAll(saveObjects);
                 boolean canUndo = true;

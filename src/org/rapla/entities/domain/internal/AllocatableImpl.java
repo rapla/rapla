@@ -12,15 +12,7 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.entities.domain.internal;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
+import java.util.*;
 
 import org.rapla.components.util.TimeInterval;
 import org.rapla.components.util.iterator.IterableChain;
@@ -285,6 +277,7 @@ public final class AllocatableImpl extends SimpleEntity implements Allocatable,D
         return annotations.keySet().toArray(RaplaObject.EMPTY_STRING_ARRAY);
     }
 
+    @Override
     public Allocatable clone() {
         AllocatableImpl clone = new AllocatableImpl();
         super.deepClone(clone);
@@ -300,6 +293,28 @@ public final class AllocatableImpl extends SimpleEntity implements Allocatable,D
         @SuppressWarnings("unchecked")
     	Map<String,String> annotationClone = (Map<String, String>) (annotations != null ?  ((HashMap<String,String>)(annotations)).clone() : null);
         clone.annotations = annotationClone;
+        return clone;
+    }
+
+    public Allocatable cloneUnique() {
+        AllocatableImpl clone = new AllocatableImpl();
+        super.deepClone(clone);
+        String id = this.getId();
+        clone.classification =  classification.clone();
+        clone.permissions.clear();
+        for (PermissionImpl perm:permissions) {
+            PermissionImpl permClone = perm.clone();
+            clone.permissions.add(permClone);
+        }
+
+        clone.createDate = createDate;
+        clone.lastChanged = lastChanged;
+
+    	Map<String,String> annotationClone = (Map<String, String>) (annotations != null ?  ((HashMap<String,String>)(annotations)).clone() : null);
+        clone.annotations = annotationClone;
+        String newid = UUID.randomUUID().toString();
+        newid = id.substring(0,1) + newid.substring(1);
+        this.setId(newid);
         return clone;
     }
 
