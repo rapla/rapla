@@ -63,7 +63,7 @@ public class EWSConnector {
      * @return {@link ExchangeService} the service
      */
     public ExchangeService getService() throws RaplaException {
-        ExchangeService tmpService = new ExchangeService(ExchangeVersion.Exchange2010_SP1); //, DateTools.getTimeZone());//, DateTools.getTimeZone());
+        ExchangeService tmpService = new ExchangeService(ExchangeVersion.Exchange2010_SP2); //, DateTools.getTimeZone());//, DateTools.getTimeZone());
         if ( logger!= null && logger.isDebugEnabled())
         {
             tmpService.setTraceEnabled( true );

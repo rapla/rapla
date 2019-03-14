@@ -294,7 +294,8 @@ public class JNDIAuthenticationStore implements AuthenticationStore,Disposable,J
         } catch (NoSuchAlgorithmException e) {
             throw new RaplaException( e.getMessage());
         }
-        setConnectionURL( getAttribute( config,CONNECTION_URL ) );
+        final String url = getAttribute(config, CONNECTION_URL);
+        setConnectionURL(url);
         setUserBase( getAttribute( config,USER_BASE) );
         setConnectionName( getAttribute(config, CONNECTION_NAME, null) );
         setConnectionPassword( getAttribute( config,CONNECTION_PASSWORD, null) );

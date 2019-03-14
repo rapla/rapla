@@ -194,7 +194,7 @@ public class EditTaskPresenter implements TaskPresenter
                 {
                     if (reservations.size() == 0)
                     {
-                        throw new EntityNotFoundException("Template " + template + " is empty. Please createInfoDialog events in template first.");
+                        throw new EntityNotFoundException("Template " + template + " is empty. Please create events in template first.");
                     }
                     Boolean keepOrig = (Boolean) template.getClassification().getValue("fixedtimeandduration");
                     Collection<TimeInterval> markedIntervals = model.getMarkedIntervals();
