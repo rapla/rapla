@@ -38,7 +38,10 @@ detected.
     <New class="org.eclipse.jetty.plus.jndi.EnvEntry">
         <Arg></Arg>
         <Arg>raplafile</Arg>
+        <!--
         <Arg type="java.lang.String">data/data.xml</Arg>
+        -->
+        <Arg type="java.lang.String">data/data-btz.xml</Arg>
         <Arg type="boolean">true</Arg>
     </New>
 
@@ -47,13 +50,11 @@ detected.
     <Arg>jdbc/rapladb</Arg>
 	<Arg>
 		<!--  HSQLDB is provided with the jetty bundled with rapla	-->
-        <!--
        <New class="org.hsqldb.jdbc.JDBCDataSource">
          <Set name="Url">jdbc:hsqldb:data/rapla-hsqldb</Set>
          <Set name="User">db_user</Set>
          <Set name="Password">your_pwd</Set>
 	   </New>
--->
         <!--
         -->
 
@@ -94,8 +95,13 @@ detected.
     <Arg></Arg>
 	<Arg>rapladatasource</Arg>
 	<!--  change to jdbc/rapladb,raplafile if you want to use a database as datasource -->
-	<Arg type="java.lang.String">raplafile</Arg>
-	<Arg type="boolean">true</Arg>
+        <Arg type="java.lang.String">raplafile</Arg>
+     <!--
+         <Arg type="java.lang.String">jdbc/rapladb,raplafile</Arg>
+            -->
+
+
+     <Arg type="boolean">true</Arg>
  </New>
 
   <!-- Normaly you don't have to modify the settings below -->
@@ -103,7 +109,7 @@ detected.
   <New class="org.eclipse.jetty.plus.jndi.EnvEntry">
       <Arg></Arg>
       <Arg>raplaservices</Arg>
-      <Arg type="java.lang.String">org.rapla.plugin.notification=false,org.rapla.ExchangeConnector=false,org.rapla.plugin.archiver.server=false</Arg>
+      <Arg type="java.lang.String">org.rapla.plugin.notification=true,org.rapla.ExchangeConnector=false,org.rapla.plugin.archiver.server=false</Arg>
       <Arg type="boolean">true</Arg>
   </New>
 

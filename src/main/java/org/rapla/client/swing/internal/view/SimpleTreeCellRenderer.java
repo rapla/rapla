@@ -18,7 +18,6 @@ public class SimpleTreeCellRenderer extends DefaultTreeCellRenderer
     private final RaplaResources i18n;
     private final RaplaLocale raplaLocale;
     Font normalFont = UIManager.getFont("Tree.font");
-    Font bigFont = normalFont.deriveFont(Font.BOLD, (float) (normalFont.getSize() * 1.2));
 
     Icon folderClosedIcon;
     Icon folderOpenIcon;

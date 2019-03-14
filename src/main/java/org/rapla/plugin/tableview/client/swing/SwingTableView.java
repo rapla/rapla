@@ -116,8 +116,8 @@ public class SwingTableView<T> extends RaplaGUIComponent implements SwingCalenda
     private final Supplier<Promise<List<T>>> initFunction;
 
     public SwingTableView(RaplaMenuBarContainer menuBar, ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger,
-                                     final CalendarModel model, final Set<SummaryExtension> summaryExtensions, final boolean editable, boolean printing,
-                                     TableConfig.TableConfigLoader tableConfigLoader, MenuFactory menuFactory, EditController editController, ReservationController reservationController,
+                                     final CalendarModel model, final Set<? extends SummaryExtension> summaryExtensions, final boolean editable, boolean printing,
+                          List<RaplaTableColumn<T,TableColumn>> raplaTableColumns, MenuFactory menuFactory, EditController editController, ReservationController reservationController,
                                      final InfoFactory infoFactory, IntervalChooserPanel dateChooser, DialogUiFactoryInterface dialogUiFactory, IOInterface ioInterface
             ,Supplier<Promise<List<T>>> initFunction
             ,String tableName
@@ -194,10 +194,9 @@ public class SwingTableView<T> extends RaplaGUIComponent implements SwingCalenda
             container = scrollpane;
         }
         this.model = model;
-        String sortingStringOption = TableViewPlugin.getSorgingStringOption( tableName);
-        List<RaplaTableColumn<T,TableColumn>> raplaTableColumns = tableConfigLoader.loadColumns(tableName, getUser());
         tableModel = new RaplaTableModel<>(raplaTableColumns);
         swingTableModel= new RaplaSwingTableModel(tableModel);
+        String sortingStringOption = TableViewPlugin.getSortingStringOption( tableName);
         sorter = createAndSetSorter(model, table, sortingStringOption, swingTableModel);
         int column = 0;
         for (RaplaTableColumn<T,TableColumn> col: raplaTableColumns)

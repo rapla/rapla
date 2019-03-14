@@ -62,6 +62,8 @@ public class TimeZoneConverterImpl implements TimeZoneConverter
 		int offsetSystem  =  zone2.getOffset(time);
 		return offsetSystem - offsetRapla;
 	}
+
+
 	
 
 	

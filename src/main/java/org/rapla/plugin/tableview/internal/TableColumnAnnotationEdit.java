@@ -76,7 +76,7 @@ public class TableColumnAnnotationEdit extends RaplaGUIComponent implements Anno
         {
             final String key = column.getKey();
             final String defaultValue = column.getDefaultValue();
-            String label = getLabel( column, getLocale());
+            String label = column.getName( getLocale());
             final TextField field = textFieldFactory.create(label);
             textFieldsToColumnConfig.put(field, column);
 //            new MyTextField(getContext(), column, label);
@@ -119,20 +119,7 @@ public class TableColumnAnnotationEdit extends RaplaGUIComponent implements Anno
         return fields;
     }
 
-    static String getLabel(TableColumnConfig config, Locale locale)
-    {
-        final MultiLanguageName name = config.getName();
-        if ( name != null)
-        {
-            String result = name.getName(  locale.getLanguage());
-            if ( result != null)
-            {
-                return result;
-            }
-        }
-        return config.getKey();
-    }
-//    class MyTextField extends TextField 
+//    class MyTextField extends TextField
 //    {
 //
 //        TableColumnConfig column;

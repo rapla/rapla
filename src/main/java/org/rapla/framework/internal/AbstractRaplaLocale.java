@@ -57,7 +57,8 @@ public abstract class AbstractRaplaLocale implements RaplaLocale {
      * @see org.rapla.common.IRaplaLocale#toDate(java.util.Date, boolean)
      */
     public Date toDate( Date date, boolean fillDate ) {
-    	Date result = DateTools.cutDate(DateTools.addDay(date));
+
+    	Date result = DateTools.cutDate(fillDate ? DateTools.addDay(date) :date);
 		return result;
 //
 //    	Calendar cal1 = createCalendar();

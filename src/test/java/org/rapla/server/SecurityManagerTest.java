@@ -10,6 +10,7 @@ import org.junit.runners.JUnit4;
 import org.rapla.AbstractTestWithServer;
 import org.rapla.components.util.DateTools;
 import org.rapla.entities.Category;
+import org.rapla.entities.CategoryAnnotations;
 import org.rapla.entities.Entity;
 import org.rapla.entities.User;
 import org.rapla.entities.domain.Allocatable;
@@ -22,10 +23,10 @@ import org.rapla.facade.client.ClientFacade;
 import org.rapla.storage.RaplaSecurityException;
 import org.rapla.test.util.RaplaTestCase;
 
+import java.util.Collection;
 import java.util.Date;
 import java.util.Locale;
 
-@Ignore
 @RunWith(JUnit4.class)
 public class SecurityManagerTest extends AbstractTestWithServer {
 
@@ -67,7 +68,7 @@ public class SecurityManagerTest extends AbstractTestWithServer {
 			facade1.store( event );
 		}
 		logout(clientFacade1);
-		// Now we login as a non admin user, who isnt allowed to createInfoDialog conflicts on the resource erwin
+		// Now we login as a non admin user, who isnt allowed to create conflicts on the resource erwin
 		login(clientFacade1,"monty", "burns".toCharArray());
 		{
 			Reservation event = facade1.newReservationDeprecated();
@@ -104,7 +105,7 @@ public class SecurityManagerTest extends AbstractTestWithServer {
 			facade1.store( event );
 		}
 		{
-			// We have to reget the event
+			// We have to re-get the event
 			DynamicType eventType = facade1.getDynamicType("event");
 			ClassificationFilter eventFilter = eventType.newClassificationFilter();
 			eventFilter.addEqualsRule("name", "conflicting event");
@@ -166,6 +167,8 @@ public class SecurityManagerTest extends AbstractTestWithServer {
 			TestCase.assertTrue( newUser.getGroupList().contains( powerplant));
 			newUser.setUsername("waylon");
 			newUser.setEmail("smithers@rapla.dummy.rapla");
+			newUser.getGroupList().stream().forEach( newUser::removeGroup);
+			newUser.addGroup(powerplant);
 			newUser.addGroup(powerplantStaff);
 			raplaFacade.store(newUser);
 		}
@@ -175,6 +178,7 @@ public class SecurityManagerTest extends AbstractTestWithServer {
 		{
 			final Category editablePowerplant = raplaFacade.edit(powerplant);
 			newCategory = raplaFacade.newCategory();
+			newCategory.setKey("testkey");
 			newCategory.getName().setName("en", "new catgory");
 			editablePowerplant.addCategory(newCategory);
 			raplaFacade.store(editablePowerplant);

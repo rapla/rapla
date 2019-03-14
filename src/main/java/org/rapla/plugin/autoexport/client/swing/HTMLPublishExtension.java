@@ -10,6 +10,7 @@ import org.rapla.components.layout.TableLayout;
 import org.rapla.facade.CalendarModel;
 import org.rapla.facade.CalendarSelectionModel;
 import org.rapla.facade.client.ClientFacade;
+import org.rapla.facade.internal.CalendarModelImpl;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.logger.Logger;
 import org.rapla.plugin.autoexport.AutoExportPlugin;
@@ -71,7 +72,7 @@ public class HTMLPublishExtension extends RaplaGUIComponent implements PublishEx
         panel.add( titleField, "4,2");
         panel.add(new JLabel(autoExportI18n.getString("show_navigation")),"2,4");
         panel.add( showNavField, "4,4");
-        String dateString = getRaplaLocale().formatDate(model.getSelectedDate());
+        String dateString = CalendarModelImpl.getStartEndDate(getRaplaLocale(),model);
         panel.add(new JLabel(i18n.format("including_date",dateString)),"2,6");
         panel.add( saveSelectedDateField, "4,6");
         panel.add(new JLabel(autoExportI18n.getString("only_allocation_info")),"2,8");

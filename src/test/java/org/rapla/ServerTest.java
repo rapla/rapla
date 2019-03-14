@@ -22,6 +22,7 @@ import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 import org.rapla.components.util.DateTools;
 import org.rapla.components.util.IOUtil;
+import org.rapla.components.util.TimeInterval;
 import org.rapla.entities.Category;
 import org.rapla.entities.DependencyException;
 import org.rapla.entities.Entity;
@@ -40,6 +41,7 @@ import org.rapla.entities.dynamictype.ClassificationFilter;
 import org.rapla.entities.dynamictype.ConstraintIds;
 import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.entities.dynamictype.DynamicTypeAnnotations;
+import org.rapla.facade.CalendarModel;
 import org.rapla.facade.CalendarSelectionModel;
 import org.rapla.facade.RaplaFacade;
 import org.rapla.facade.client.ClientFacade;
@@ -48,7 +50,10 @@ import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.TypedComponentRole;
 import org.rapla.logger.Logger;
+import org.rapla.plugin.tableview.TableViewPlugin;
 import org.rapla.plugin.weekview.WeekviewPlugin;
+import org.rapla.scheduler.sync.SynchronizedCompletablePromise;
+import org.rapla.scheduler.sync.SynchronizedPromise;
 import org.rapla.server.internal.ServerContainerContext;
 import org.rapla.server.internal.ServerServiceImpl;
 import org.rapla.storage.PermissionController;
@@ -503,7 +508,8 @@ public class ServerTest
     public void testCalendarStore() throws Exception
     {
         final RaplaFacade raplaFacade1 = getRaplaFacade1();
-        Date futureDate = new Date(raplaFacade1.today().getTime() + DateTools.MILLISECONDS_PER_WEEK * 10);
+        final Date today = raplaFacade1.today();
+        Date futureDate = new Date(today.getTime() + DateTools.MILLISECONDS_PER_WEEK * 10);
         Reservation r = newReservation( clientFacade1);
         r.addAppointment(raplaFacade1.newAppointmentDeprecated(futureDate, futureDate));
         r.getClassification().setValue("name", "Test");
@@ -511,18 +517,40 @@ public class ServerTest
 
         raplaFacade1.store(r);
 
-        CalendarSelectionModel calendar = raplaFacade1.newCalendarModel(clientFacade1.getUser());
-        calendar.setViewId(WeekviewPlugin.WEEK_VIEW);
-        calendar.setSelectedObjects(Collections.singletonList(r));
-        calendar.setSelectedDate(raplaFacade1.today());
-        calendar.setTitle("test");
-        CalendarModelConfiguration conf = ((CalendarModelImpl) calendar).createConfiguration();
+        final User user = clientFacade1.getUser();
         {
-            Preferences prefs = raplaFacade1.edit(raplaFacade1.getPreferences(clientFacade1.getUser()));
+            CalendarSelectionModel calendar = raplaFacade1.newCalendarModel(user);
+            calendar.setViewId(TableViewPlugin.TABLE_EVENT_VIEW);
+            calendar.setSelectedObjects(Collections.singletonList(r));
+            final Date start = DateTools.subDay(today);
+            final Date end = DateTools.addDays(start, 20);
+            calendar.setStartDate(start);
+            calendar.setEndDate(end);
+            final TimeInterval timeIntervall = calendar.getTimeIntervall();
+            Assert.assertEquals(start,timeIntervall.getStart());
+            Assert.assertEquals(end,timeIntervall.getEnd());
+            calendar.setTitle("test");
             TypedComponentRole<CalendarModelConfiguration> TEST_ENTRY = new TypedComponentRole<CalendarModelConfiguration>("org.rapla.test");
-            prefs.putEntry(TEST_ENTRY, conf);
-            raplaFacade1.store(prefs);
+            CalendarModelConfiguration conf = ((CalendarModelImpl) calendar).createConfiguration();
+            {
+                Preferences prefs = raplaFacade1.edit(raplaFacade1.getPreferences(user));
+                prefs.putEntry(TEST_ENTRY, conf);
+                raplaFacade1.store(prefs);
+            }
+            calendar.setOption(CalendarModel.SAVE_SELECTED_DATE, "false");
+            SynchronizedCompletablePromise.waitFor(calendar.save("test"), 1000, logger);
         }
+        {
+            CalendarSelectionModel calendar = raplaFacade1.newCalendarModel(user);
+            calendar.load("test");
+            final TimeInterval timeIntervall = calendar.getTimeIntervall();
+            final Date start = today;
+            final Date end = DateTools.addDays(today, 20);
+            Assert.assertEquals(start, timeIntervall.getStart());
+            Assert.assertEquals(end, timeIntervall.getEnd());
+        }
+
+
     }
 
     @Test

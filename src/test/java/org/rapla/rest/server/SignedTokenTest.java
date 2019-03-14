@@ -35,7 +35,7 @@ public class SignedTokenTest {
     {
         SimpleDateFormat df = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSX");
         df.setTimeZone( TimeZone.getTimeZone("UTC"));
-        Date date = df.parse("2017-08-03T13:10:49.0472Z");
+        Date date = df.parse("2017-08-03T13:10:49.472Z");
 
     }
 

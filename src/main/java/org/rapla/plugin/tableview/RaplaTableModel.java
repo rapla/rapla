@@ -35,7 +35,7 @@ public class RaplaTableModel<T, C>
     @JsIgnore
     static public Map<RaplaTableColumn, Integer> getSortDirections(CalendarModel model,List<? extends RaplaTableColumn> columPlugins, String tableViewName)
     {
-        final String sortingStringOption = TableViewPlugin.getSorgingStringOption(tableViewName);
+        final String sortingStringOption = TableViewPlugin.getSortingStringOption(tableViewName);
         String sorting = model.getOption(sortingStringOption);
         Map<RaplaTableColumn, Integer> sortDirections = new LinkedHashMap<>();
         if (sorting != null)

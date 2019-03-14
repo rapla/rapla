@@ -252,7 +252,7 @@ public class IntervalChooserPanel extends RaplaGUIComponent implements RaplaWidg
             }
             else if (source == endTodayButton)
             {
-                setEndDate(getFacade().today());
+                setEndDate(DateTools.addDay(getFacade().today()));
             }
             else if (source == periodChooser)
             {
@@ -334,7 +334,6 @@ public class IntervalChooserPanel extends RaplaGUIComponent implements RaplaWidg
         }
         else
         {
-
             endDateSelection.setDate(DateTools.subDay(date));
         }
     }

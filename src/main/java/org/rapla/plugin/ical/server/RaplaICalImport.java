@@ -267,7 +267,7 @@ public class RaplaICalImport implements ICalImport {
 			            appointment = newAppointment(user,begin, end);
 		            }
 		            
-		            PropertyList rrules = component.getProperties("RRULE");
+		            PropertyList<Property> rrules = component.getProperties("RRULE");
 		            if ( rrules.size() >0)
 		            {
 		                List<Recur> recurList = new ArrayList<>(rrules.size());

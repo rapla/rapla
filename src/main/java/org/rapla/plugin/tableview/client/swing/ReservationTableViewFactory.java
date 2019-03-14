@@ -33,6 +33,7 @@ import org.rapla.framework.RaplaLocale;
 import org.rapla.inject.Extension;
 import org.rapla.logger.Logger;
 import org.rapla.plugin.abstractcalendar.client.swing.IntervalChooserPanel;
+import org.rapla.plugin.tableview.RaplaTableColumn;
 import org.rapla.plugin.tableview.TableViewPlugin;
 import org.rapla.plugin.tableview.client.swing.extensionpoints.ReservationSummaryExtension;
 import org.rapla.plugin.tableview.internal.TableConfig;
@@ -41,6 +42,7 @@ import org.rapla.scheduler.Promise;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import javax.swing.Icon;
+import javax.swing.table.TableColumn;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
@@ -98,8 +100,10 @@ public class ReservationTableViewFactory implements SwingViewFactory
     public SwingCalendarView createSwingView(CalendarModel model, boolean editable, boolean printing) throws RaplaException
     {
         Supplier<Promise<List<Reservation>>> initFunction = (() ->model.queryReservations(model.getTimeIntervall()).thenApply((list)->new ArrayList<>(list)));
-        return new SwingTableView(menuBar,facade, i18n, raplaLocale, logger, model, reservationSummaryExtensions, editable, printing, tableConfigLoader, menuFactory,
-                editController, reservationController, infoFactory,  dateChooser,  dialogUiFactory, ioInterface, initFunction, "events");
+        final String tableName = TableConfig.EVENTS_VIEW;
+        List<RaplaTableColumn<Reservation,TableColumn>> raplaTableColumns = tableConfigLoader.loadColumns(tableName, facade.getUser());
+        return new SwingTableView<Reservation>(menuBar,facade, i18n, raplaLocale, logger, model, reservationSummaryExtensions, editable, printing, raplaTableColumns, menuFactory,
+                editController, reservationController, infoFactory,  dateChooser,  dialogUiFactory, ioInterface, initFunction, tableName);
     }
 
     public String getViewId()
