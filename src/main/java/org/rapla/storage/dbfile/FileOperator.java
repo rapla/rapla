@@ -236,7 +236,13 @@ final public class FileOperator extends LocalAbstractCachableOperator
     }
 
     @Override
-    protected void refreshWithoutLock()
+    protected Object getRefreshData()
+    {
+        return "";
+    }
+
+    @Override
+    protected void refreshWithoutLock(Object refreshData)
     {
         //getLogger().warn("Incremental refreshs are not supported");
         setLastRefreshed(getCurrentTimestamp());
