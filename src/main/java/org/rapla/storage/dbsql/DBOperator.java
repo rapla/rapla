@@ -12,6 +12,7 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.storage.dbsql;
 
+import org.jetbrains.annotations.Nullable;
 import org.rapla.RaplaResources;
 import org.rapla.components.util.DateTools;
 import org.rapla.components.util.xml.RaplaNonValidatedInput;
@@ -123,8 +124,8 @@ import java.util.Set;
             final int period = 1000*60*10;
             scheduleConnectedTasks(()->
                 {
-                    final RaplaLock.WriteLock writeLock = lockManager.writeLockIfAvaliable(getClass(), "scheduleCleanupAndRefresh");
-                    if ( writeLock != null)
+                    //final RaplaLock.WriteLock writeLock = lockManager.writeLockIfAvaliable(getClass(), "scheduleCleanupAndRefresh");
+                    //if ( writeLock != null)
                     {
                         try (final Connection connection = createConnection(false))
                         {
@@ -139,7 +140,7 @@ import java.util.Set;
                         }
                         finally
                         {
-                            lockManager.unlock(writeLock);
+                            //lockManager.unlock(writeLock);
                         }
                     }
 
@@ -323,40 +324,63 @@ import java.util.Set;
         }*/
     }
 
-    @Override protected void refreshWithoutLock()
+
+
+    @Override protected Object getRefreshData()
     {
         if (!isConnected())
         {
-            return;
+            return null;
         }
+        RefreshObject refreshObject;
         try (Connection c = createConnection())
         {
-            refreshWithoutLock(c);
+            return readRefreshInfoFromDb(c);
         }
         catch (Throwable e)
         {
             Date lastUpdated = getLastRefreshed();
             logger.error("Error updating model from DB. Last success was at " + lastUpdated, e);
+            return null;
         }
     }
 
-    private void refreshWithoutLock(Connection c) throws SQLException, RaplaException
+    @Nullable
+    private RefreshObject readRefreshInfoFromDb(Connection c) throws RaplaException, SQLException
     {
+        RefreshObject refreshObject = new RefreshObject();
         final EntityStore entityStore = new EntityStore(cache);
         final Category superCategory = cache.getSuperCategory();
         final RaplaSQL raplaSQLInput = new RaplaSQL(createInputContext(entityStore, DBOperator.this, superCategory));
         Date lastUpdated = getLastRefreshed();
         Date connectionTime = raplaSQLInput.getLastUpdated(c);
-
         if (connectionTime.before(lastUpdated))
         {
-            return;
+            return null;
         }
-        final Collection<ReferenceInfo> allIds = raplaSQLInput.update(c, lastUpdated, connectionTime);
-        List<PreferencePatch> patches = raplaSQLInput.getPatches(c, lastUpdated);
+        refreshObject.allIds = raplaSQLInput.update(c, lastUpdated, connectionTime);
+        refreshObject.patches = raplaSQLInput.getPatches(c, lastUpdated);
+        refreshObject.connectionTime = connectionTime;
+        refreshObject.lastUpdated = lastUpdated;
+        return refreshObject;
+    }
+
+    private class RefreshObject
+    {
+        Date lastUpdated;
+        Date connectionTime;
+        Collection<ReferenceInfo> allIds;
+        List<PreferencePatch> patches;
+    }
+
+    @Override
+    protected void refreshWithoutLock(Object uncasted)
+            throws RaplaException
+    {
+        RefreshObject refreshObject = (RefreshObject) uncasted;
         Collection<Entity> toStore = new LinkedHashSet<>();
         Set<ReferenceInfo> toRemove = new HashSet<>();
-        for (ReferenceInfo id : allIds)
+        for (ReferenceInfo id : refreshObject.allIds)
         {
             final HistoryEntry before = history.getLatest(id);//LastChangedUntil(id, connectionTime);
             if (before.isDelete())
@@ -370,8 +394,7 @@ import java.util.Set;
                 toStore.add(entity);
             }
         }
-        refresh(lastUpdated, connectionTime, toStore, patches, toRemove);
-        return;
+        refresh(refreshObject.lastUpdated, refreshObject.connectionTime, toStore, refreshObject.patches, toRemove);
     }
 
     @Override
@@ -701,7 +724,11 @@ import java.util.Set;
                 dbStore(storeObjects, preferencePatches, removeObjects, connection, evt.getUserId());
                 try
                 {
-                    refreshWithoutLock(connection);
+                    RefreshObject refreshObject = readRefreshInfoFromDb(connection);
+                    if (refreshObject != null)
+                    {
+                        refreshWithoutLock(refreshObject);
+                    }
                 }
                 catch (SQLException e)
                 {

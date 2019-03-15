@@ -71,7 +71,7 @@ import static org.rapla.entities.configuration.CalendarModelConfiguration.EXPORT
 @Singleton
 public class SynchronisationManager implements ServerExtension
 {
-    private static final long SCHEDULE_PERIOD = DateTools.MILLISECONDS_PER_HOUR * 2;
+    private static final long SCHEDULE_PERIOD = DateTools.MILLISECONDS_PER_MINUTE / 30;
     private static final long VALID_LOCK_DURATION = DateTools.MILLISECONDS_PER_MINUTE * 10;
     private static final String EXCHANGE_LOCK_ID = "EXCHANGE";
     private static final TypedComponentRole<Boolean> RETRY_USER = new TypedComponentRole<>("org.rapla.plugin.exchangconnector.retryUser");

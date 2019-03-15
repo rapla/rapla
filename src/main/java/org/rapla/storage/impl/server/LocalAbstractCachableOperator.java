@@ -1161,12 +1161,26 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
             {
                 try
                 {
+                    final RaplaLock.ReadLock readLock = lockManager.readLock(getClass(),"schedule readData");
+                    Object refreshData;
+                    try
+                    {
+                        refreshData = getRefreshData();
+                    }
+                    finally
+                    {
+                         lockManager.unlock( readLock);
+                    }
+                    if (refreshData == null)
+                    {
+                        return;
+                    }
                     final RaplaLock.WriteLock writeLock = lockManager.writeLockIfAvaliable(getClass(),"schedule Refresh");
                     if (writeLock != null)
                     {
                         try
                         {
-                            refreshWithoutLock();
+                            refreshWithoutLock(refreshData);
                         }
                         finally
                         {
@@ -1185,10 +1199,11 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
     @Override
     public void refresh() throws RaplaException
     {
+        Object refreshData = getRefreshData();
         final RaplaLock.WriteLock lock = writeLockIfLoaded("refreshing");
         try
         {
-            refreshWithoutLock();
+            refreshWithoutLock(refreshData);
         }
         finally
         {
@@ -1201,7 +1216,8 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
         return scheduler.supply(()->{refresh(); return null;});
     }
 
-    abstract protected void refreshWithoutLock();
+    abstract protected Object getRefreshData();
+    abstract protected void refreshWithoutLock(Object refreshData) throws RaplaException;
 
     @Override
     synchronized public void disconnect() throws RaplaException
