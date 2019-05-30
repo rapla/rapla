@@ -54,7 +54,6 @@ import org.rapla.framework.RaplaLocale;
 import org.rapla.inject.DefaultImplementation;
 import org.rapla.inject.InjectionContext;
 import org.rapla.logger.Logger;
-import org.rapla.plugin.tableview.TableViewPlugin;
 import org.rapla.scheduler.Promise;
 import org.rapla.scheduler.ResolvedPromise;
 import org.rapla.storage.PermissionController;
@@ -1051,34 +1050,6 @@ public class CalendarModelImpl implements CalendarSelectionModel
         this.cachingEnabled = enable;
     }
 
-
-    private boolean isNoAllocatableSelected()
-    {
-        for (RaplaObject obj : getSelectedObjects())
-        {
-            Class<? extends RaplaObject> raplaType = obj.getTypeClass();
-            if (raplaType == Allocatable.class)
-            {
-                return false;
-            }
-            else if (raplaType == DynamicType.class)
-            {
-                DynamicType type = (DynamicType) obj;
-                String annotation = type.getAnnotation(DynamicTypeAnnotations.KEY_CLASSIFICATION_TYPE);
-                if (annotation.equals(DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_PERSON) || annotation
-                        .equals(DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RESOURCE))
-                {
-                    return false;
-                }
-            }
-            else if (obj.equals(ALLOCATABLES_ROOT))
-            {
-                return false;
-            }
-        }
-        return true;
-    }
-
     @Override public List<Allocatable> getSelectedAllocatablesSorted() throws RaplaException
     {
         List<Allocatable> result = new ArrayList<>(getSelectedAllocatablesAsList());
@@ -1390,60 +1361,47 @@ public class CalendarModelImpl implements CalendarSelectionModel
     @Override public Promise<List<AppointmentBlock>> queryBlocks(final TimeInterval timeInterval)
     {
         List<AppointmentBlock> appointments = new ArrayList<>();
-        try
-        {
-            final Set<Allocatable> selectedAllocatables = isNoAllocatableSelected() ? null : new HashSet<>(getSelectedAllocatablesAsList());
-            Collection<Conflict> selectedConflicts = getSelectedConflicts();
-            Promise<Collection<Appointment>> reservations = getAppointments(selectedConflicts);
-            final Promise<Collection<Appointment>> appointmentPromise = queryAppointments(timeInterval);
-            return appointmentPromise.thenCombine(reservations, ( allAppointments, conflictAppointments) -> {
+        Collection<Conflict> selectedConflicts = getSelectedConflicts();
+        Promise<Collection<Appointment>> reservations = getAppointments(selectedConflicts);
+        final Promise<Collection<Appointment>> appointmentPromise = queryAppointments(timeInterval);
+        return appointmentPromise.thenCombine(reservations, ( allAppointments, conflictAppointments) -> {
 
-                Map<Appointment, Set<Appointment>> conflictingAppointments = ConflictImpl.getMap(selectedConflicts, conflictAppointments);
-                for (Appointment app : allAppointments)
+            Map<Appointment, Set<Appointment>> conflictingAppointments = ConflictImpl.getMap(selectedConflicts, conflictAppointments);
+            for (Appointment app : allAppointments)
+            {
+                Collection<Appointment> conflictList = conflictingAppointments.get(app);
+                if (conflictList == null || conflictList.isEmpty())
                 {
-                    Reservation event = app.getReservation();
-                    Stream<Allocatable> allocatablesFor = event.getAllocatablesFor(app);
-                    if (selectedAllocatables == null || allocatablesFor.anyMatch(selectedAllocatables::contains))
+                    app.createBlocks(getStartDate(), getEndDate(), appointments);
+                }
+                else
+                {
+                    List<AppointmentBlock> blocks = new ArrayList<>();
+                    app.createBlocks(getStartDate(), getEndDate(), blocks);
+                    Iterator<AppointmentBlock> it = blocks.iterator();
+                    while (it.hasNext())
                     {
-                        Collection<Appointment> conflictList = conflictingAppointments.get(app);
-                        if (conflictList == null || conflictList.isEmpty())
+                        AppointmentBlock block = it.next();
+                        boolean found = false;
+                        for (Appointment conflictingApp : conflictList)
                         {
-                            app.createBlocks(getStartDate(), getEndDate(), appointments);
-                        }
-                        else
-                        {
-                            List<AppointmentBlock> blocks = new ArrayList<>();
-                            app.createBlocks(getStartDate(), getEndDate(), blocks);
-                            Iterator<AppointmentBlock> it = blocks.iterator();
-                            while (it.hasNext())
+                            if (conflictingApp.overlapsBlock(block))
                             {
-                                AppointmentBlock block = it.next();
-                                boolean found = false;
-                                for (Appointment conflictingApp : conflictList)
-                                {
-                                    if (conflictingApp.overlapsBlock(block))
-                                    {
-                                        found = true;
-                                        break;
-                                    }
-                                }
-                                if (!found)
-                                {
-                                    it.remove();
-                                }
+                                found = true;
+                                break;
                             }
-                            appointments.addAll(blocks);
+                        }
+                        if (!found)
+                        {
+                            it.remove();
                         }
                     }
+                    appointments.addAll(blocks);
                 }
-                Collections.sort(appointments);
-                return appointments;
-            });
-        }
-        catch (RaplaException e)
-        {
-            return new ResolvedPromise<>(e);
-        }
+            }
+            Collections.sort(appointments);
+            return appointments;
+        });
     }
 
     private DynamicType[] getDynamicTypes(String elementKey) throws RaplaException

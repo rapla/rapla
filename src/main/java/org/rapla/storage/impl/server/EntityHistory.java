@@ -214,40 +214,45 @@ public class EntityHistory
 
     private void insert(List<EntityHistory.HistoryEntry> historyEntries, EntityHistory.HistoryEntry newEntry, int index)
     {
-        if (index == 0)
+        synchronized ( historyEntries)
         {
-            historyEntries.add(0, newEntry);
-        }
-        else
-        {
-            final HistoryEntry lastEntry = historyEntries.get(index - 1);
-            final long timestamp = lastEntry.timestamp;
-            if (timestamp > newEntry.timestamp)
+            if (index == 0)
             {
-                insert(historyEntries, newEntry, index - 1);
-            }
-            else if (timestamp == newEntry.timestamp)
-            {
-                final String json = newEntry.json;
-                if (json != null && !json.equals( lastEntry.json))
-                {
-                    Date lastChanged1 = getLastChanged(newEntry);
-                    Date lastChanged2 = getLastChanged(lastEntry);
-                    if ( lastChanged1.before(lastChanged2))
-                    {
-                        historyEntries.add(index-1, newEntry);
-                    }
-                    else
-                    {
-                        historyEntries.add(index, newEntry);
-                    }
-                }
+                historyEntries.add(0, newEntry);
             }
             else
             {
-                historyEntries.add(index, newEntry);
+                final HistoryEntry lastEntry = historyEntries.get(index - 1);
+                final long timestamp = lastEntry.timestamp;
+                if (timestamp > newEntry.timestamp)
+                {
+                    insert(historyEntries, newEntry, index - 1);
+                }
+                else if (timestamp == newEntry.timestamp)
+                {
+                    final String json = newEntry.json;
+                    if (json != null && !json.equals( lastEntry.json))
+                    {
+                        Date lastChanged1 = getLastChanged(newEntry);
+                        Date lastChanged2 = getLastChanged(lastEntry);
+                        if ( lastChanged1.before(lastChanged2))
+                        {
+                            historyEntries.add(index-1, newEntry);
+                        }
+                        else
+                        {
+                            historyEntries.add(index, newEntry);
+                        }
+                    }
+                }
+                else
+                {
+                    historyEntries.add(index, newEntry);
+                }
             }
         }
+
+
     }
 
     private Date getLastChanged(HistoryEntry newEntry)
@@ -287,9 +292,12 @@ public class EntityHistory
         for (ReferenceInfo key : keySet)
         {
             final List<HistoryEntry> list = map.get(key);
-            while (list.size() >= 2 && list.get(1).timestamp < time)
+            synchronized ( list)
             {
-                list.remove(0);
+                while (list.size() >= 2 && list.get(1).timestamp < time)
+                {
+                    list.remove(0);
+                }
             }
         }
     }
@@ -304,14 +312,17 @@ public class EntityHistory
     {
         final long time = timestamp.getTime();
         final List<HistoryEntry> list = map.get(id);
-        for (int i = list.size() - 1; i >= 0; i--)
+        synchronized ( list)
         {
-            final HistoryEntry historyEntry = list.get(i);
-            if (historyEntry.getTimestamp() <= time)
+            for (int i = list.size() - 1; i >= 0; i--)
             {
-                return historyEntry;
+                final HistoryEntry historyEntry = list.get(i);
+                if (historyEntry.getTimestamp() <= time)
+                {
+                    return historyEntry;
+                }
             }
+            return null;
         }
-        return null;
     }
 }

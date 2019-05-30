@@ -54,8 +54,12 @@ public class AppointmentMap
             final Collection<Appointment> value = entry.getValue();
             for (Appointment app : value)
             {
-                reservations.add((ReservationImpl) app.getReservation());
-                ids.add(app.getId());
+                final ReservationImpl reservation = (ReservationImpl) app.getReservation();
+                if (reservation.getSubEntities().contains( app))
+                {
+                    reservations.add(reservation);
+                    ids.add(app.getId());
+                }
             }
         }
     }
@@ -88,6 +92,7 @@ public class AppointmentMap
                 for (String appointmentId : value)
                 {
                     Appointment app = appointmentIdToAppointment.get(appointmentId);
+                    // if app == null that means an appointment is no longer in the reservation
                     Assert.notNull(app);
                     Reservation reservation = app.getReservation();
                     Assert.notNull( reservation);
