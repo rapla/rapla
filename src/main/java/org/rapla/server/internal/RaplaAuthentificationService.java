@@ -142,6 +142,7 @@ public class RaplaAuthentificationService
                 UserImpl newUser = new UserImpl(now, now);
                 final ReferenceInfo<User> userReferenceInfo = operator.createIdentifier(User.class, 1).get(0);
                 newUser.setId(userReferenceInfo.getId());
+                newUser.setResolver( operator);
                 user = newUser;
             }
             else

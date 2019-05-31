@@ -336,9 +336,18 @@ public abstract class AbstractHTMLCalendarPage  implements HTMLViewPage
 
     static public void printAllocatableList(HttpServletRequest request, java.io.PrintWriter out, Locale locale, Collection<Allocatable> selectedAllocatables) throws UnsupportedEncodingException {
     	out.println("<table>");
-    	String base = request.getRequestURL().toString();
+    	String base = request.getRequestURI().toString();
     	String queryPath = request.getQueryString();
-    	queryPath = queryPath.replaceAll("&selected_allocatables[^&]*","");
+        final String key = request.getParameter("key");
+        final String salt = request.getParameter("salt");
+        if ( key != null && salt != null)
+        {
+            queryPath = "key=" + URLEncoder.encode(key,"UTF-8") + "&salt=" + URLEncoder.encode(salt,"UTF-8");
+        }
+        else
+        {
+            queryPath = queryPath.replaceAll("&selected_allocatables[^&]*", "");
+        }
     	List<Allocatable> sortedAllocatables = new ArrayList<>(selectedAllocatables);
     	Collections.sort( sortedAllocatables, new SortedClassifiableComparator(locale) );
     	for (Allocatable alloc:sortedAllocatables)

@@ -115,13 +115,16 @@ public class ReservationInfoUI extends ClassificationInfoUI<Reservation> {
             String ownerText = encode(ownerName);
             att.add( new Row(getString("reservation.owner"), ownerText));
         }
-        ReferenceInfo<User> lastChangeById = reservation.getLastChangedBy();
-        if ( lastChangeById != null && (ownerId == null ||! lastChangeById.equals(ownerId))) {
-        	final String lastChangedName = getUsername(lastChangeById);
-            String lastChangeByText = encode(lastChangedName);
-            att.add( new Row(getString("last_changed_by"), lastChangeByText));
+        if ( excludeAdditionalInfos )
+        {
+            ReferenceInfo<User> lastChangeById = reservation.getLastChangedBy();
+            if (lastChangeById != null && (ownerId == null || !lastChangeById.equals(ownerId)))
+            {
+                final String lastChangedName = getUsername(lastChangeById);
+                String lastChangeByText = encode(lastChangedName);
+                att.add(new Row(getString("last_changed_by"), lastChangeByText));
+            }
         }
-
         Allocatable[] resources = reservation.getResources();
         String resourceList = allocatableList(reservation, resources, user, controller);  
         if (resourceList.length() > 0) {

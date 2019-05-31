@@ -629,6 +629,7 @@ public class Export2iCalConverter
         else
         {
             eventDescription = NameFormatUtil.getExportName(appointment, locale);
+            // add Attendees if not otherwise configured
             if (reservation.getClassification().getType().getAnnotation(DynamicTypeAnnotations.KEY_NAME_FORMAT_EXPORT) == null)
             {
                 eventDescription += getAttendeeString(appointment);

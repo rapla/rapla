@@ -46,6 +46,11 @@ public class DefaultScheduler extends UtilConcurrentCommandScheduler implements 
 	    this.converter = converter;
 	}
 
+	public void schedule()
+	{
+
+	}
+
 	@Override public void dispose()
 	{
 		cancel();

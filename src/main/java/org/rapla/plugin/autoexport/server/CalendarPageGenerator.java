@@ -198,8 +198,9 @@ public class CalendarPageGenerator
 
                     String filename = URLEncoder.encode(key, "UTF-8");
                     out.print("<li>");
-                    String test = AbstractHTMLCalendarPage.getUrl( request, "rapla/calendar");
-                    out.print("<a href=\""+test+"?user=" + user.getUsername() + "&file=" + filename + "&details=*" + "&folder=true" + "\">");
+                    String baseUrl = AbstractHTMLCalendarPage.getUrl( request, "rapla/calendar");
+                    String link = baseUrl+"?user=" + user.getUsername() + "&file=" + filename + "&details=*" + "&folder=true";
+                    out.print("<a href=\"" + link + "\">");
                     out.print(title);
                     out.print("</a>");
                     out.println("</li>");
