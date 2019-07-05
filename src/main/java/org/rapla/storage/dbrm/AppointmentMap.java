@@ -55,10 +55,11 @@ public class AppointmentMap
             for (Appointment app : value)
             {
                 final ReservationImpl reservation = (ReservationImpl) app.getReservation();
-                if (reservation.getSubEntities().contains( app))
+                final String appId = app.getId();
+                if (reservation.getAppointmentStream().map( Appointment::getId ).anyMatch( appId::equals))
                 {
                     reservations.add(reservation);
-                    ids.add(app.getId());
+                    ids.add(appId);
                 }
             }
         }
@@ -72,7 +73,8 @@ public class AppointmentMap
             final Appointment[] appointments = reservation.getAppointments();
             for (Appointment app : appointments)
             {
-                appointmentIdToAppointment.put(app.getId(), app);
+                final String appId = app.getId();
+                appointmentIdToAppointment.put(appId, app);
             }
         }
         final LinkedHashMap<Allocatable, Collection<Appointment>> result = new LinkedHashMap<>();

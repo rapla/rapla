@@ -31,7 +31,7 @@ import java.util.Collection;
 import java.util.LinkedHashSet;
 import java.util.Set;
 
-@Extension(provides = ExportMenuExtension.class, id = Export2iCalPlugin.PLUGIN_ID)
+//@Extension(provides = ExportMenuExtension.class, id = Export2iCalPlugin.PLUGIN_ID)
 public class Export2iCalMenu extends RaplaGUIComponent implements ExportMenuExtension, ActionListener{
 
 	String id = "export_file_text";
