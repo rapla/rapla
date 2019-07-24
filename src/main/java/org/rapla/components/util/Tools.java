@@ -207,11 +207,11 @@ public abstract class Tools
     /** @returns null if no url */
     public static String getUrl(String value)
     {
-        int httpEnd = Math.max( value.indexOf(" ")-1, value.length());
-        String url = value.substring(0,httpEnd);
-        if ( url.contains(":"))
+        int httpEnd = Math.max( value.indexOf(":"), 0);
+        String protocoll = value.substring(0,httpEnd);
+        if ( protocoll.equalsIgnoreCase("http") || protocoll.equalsIgnoreCase("https") || protocoll.equalsIgnoreCase("file"))
         {
-            return url;
+            return value;
         }
         return null;
         //FIXME mit richtigem URL parsing ersetzen
