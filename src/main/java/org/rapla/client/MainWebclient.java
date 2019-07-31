@@ -106,7 +106,7 @@ public class MainWebclient
     	MainWebclient main = new MainWebclient();
         try {
         	
-        	main.init( new URL("http://localhost:8051/rapla"),StartupEnvironment.CONSOLE);
+        	main.init( new URL("http://localhost:8051/"),StartupEnvironment.CONSOLE);
             main.startRapla();
         } catch (Throwable ex) {
             main.getLogger().error("Couldn't start Rapla",ex);
