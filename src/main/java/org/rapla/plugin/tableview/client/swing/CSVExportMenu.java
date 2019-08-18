@@ -47,7 +47,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
-@Extension(provides = ExportMenuExtension.class, id = CSVExportMenu.PLUGIN_ID)
+//@Extension(provides = ExportMenuExtension.class, id = CSVExportMenu.PLUGIN_ID)
 public class CSVExportMenu extends RaplaGUIComponent implements ExportMenuExtension, ActionListener
 {
     public static final String PLUGIN_ID = "csv";

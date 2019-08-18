@@ -375,7 +375,7 @@ public class ReservationControllerImpl implements ReservationController {
                         mutableReservations.values().stream().collect(Collectors.toMap(Reservation::getReference, java.util.function.Function.identity())));
                 return mapPromise.thenCompose( toUpdateMap-> {
                     for (Appointment appointment : appointmentsToRemove) {
-                        final Reservation reservation = appointment.getReservation();
+                        Reservation reservation = parentReservations.get(appointment);
                         if (reservationsToRemove.contains(reservation)) {
                             continue;
                         }

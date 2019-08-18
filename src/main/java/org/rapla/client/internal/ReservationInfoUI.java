@@ -147,11 +147,10 @@ public class ReservationInfoUI extends ClassificationInfoUI<Reservation> {
         buf.append( ":");
         buf.append( "</td>\n" );
         buf.append( "</tr>\n");
-        Appointment[] appointments = reservation.getAppointments();
-        for (int i = 0;i<appointments.length;i++) {
+        for (Appointment appointment:reservation.getSortedAppointments()) {
             buf.append( "<tr>\n" );
             buf.append( "<td valign=\"top\">\n");
-            if (appointments[i].getRepeating() != null) {
+            if (appointment.getRepeating() != null) {
                 buf.append ("<img width=\"16\" height=\"16\" src=\"org/rapla/gui/images/repeating.png\">");
             } else {
                 buf.append ("<img width=\"16\" height=\"16\" src=\"org/rapla/gui/images/single.png\">");
@@ -159,13 +158,13 @@ public class ReservationInfoUI extends ClassificationInfoUI<Reservation> {
             buf.append( "</td>\n");
             buf.append( "<td>\n");
             String appointmentSummary =
-                appointmentFormater.getSummary( appointments[i] );
+                appointmentFormater.getSummary(appointment);
             encode( appointmentSummary, buf );
-            Repeating repeating = appointments[i].getRepeating();
+            Repeating repeating = appointment.getRepeating();
             if ( repeating != null ) {
                 buf.append("<br>");
                 buf.append("<small>");
-                List<Period> periods = getPeriodModel().getPeriodsFor(appointments[i].getStart());
+                List<Period> periods = getPeriodModel().getPeriodsFor(appointment.getStart());
                 String repeatingSummary =
                     appointmentFormater.getSummary(repeating,periods);
                 encode( repeatingSummary, buf ) ;

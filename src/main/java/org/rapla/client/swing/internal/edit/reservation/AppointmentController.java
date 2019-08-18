@@ -1018,10 +1018,12 @@ public class AppointmentController extends RaplaGUIComponent implements Disposab
 
         private void resetWeekdays(int weekday)
         {
+            final Set<Integer> weekdays = repeating.getWeekdays();
+            final boolean moreThenOneSelected = weekdays.size() > 1;
             for ( Map.Entry<Integer,JCheckBox> entry:weekdaysChecker.entrySet())
             {
                 final Integer key = entry.getKey();
-                boolean selected = key.equals(weekday);
+                boolean selected = moreThenOneSelected ? weekdays.contains( key ) : key.equals(weekday);
                 entry.getValue().setSelected( selected);
                 entry.getValue().setEnabled( key != weekday);
             }
@@ -1093,6 +1095,7 @@ public class AppointmentController extends RaplaGUIComponent implements Disposab
                 {
                     int weekday = DateTools.getWeekday( startDate.getDate());
                     resetWeekdays(weekday);
+
                 }
 
                 doChanges();

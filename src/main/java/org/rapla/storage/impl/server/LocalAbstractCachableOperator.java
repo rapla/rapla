@@ -1122,7 +1122,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
                 removeOldConflicts();
                 removeOldHistory();
             };
-        //removeOldConflicts();
+        removeOldConflicts();
         //removeOldHistory();
         for (ReferenceInfo id : history.getAllIds())
         {
@@ -1154,9 +1154,10 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
             addToDeleteUpdate(referenceInfo, timestamp, isDelete, preference);
         }
         calendarModelCache.initCalendarMap();
-        final long delay = 0;//DateTools.MILLISECONDS_PER_HOUR;
-        scheduleConnectedTasks(cleanUpConflicts, delay, DateTools.MILLISECONDS_PER_HOUR);
+        final long delayCleanup = DateTools.MILLISECONDS_PER_HOUR;
+        scheduleConnectedTasks(cleanUpConflicts, delayCleanup, DateTools.MILLISECONDS_PER_HOUR);
         final int refreshPeriod = 1000 * 20;
+        final long delayRefresh = 1000;
         scheduleConnectedTasks(()->
             {
                 try
@@ -1192,7 +1193,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
                 {
                     getLogger().info("Could not refresh data");
                 }
-        }, delay, refreshPeriod);
+        }, delayRefresh, refreshPeriod);
 
     }
 
@@ -1635,9 +1636,10 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
         {
             entry.addPermissions(event, Permission.EDIT);
         }
-        else
+        else if (reservation != null)
         {
-            DeleteUpdateEntry deleteUpdateEntry = deleteUpdateSet.get(event.getId());
+            final String id = reservation.getId();
+            DeleteUpdateEntry deleteUpdateEntry = deleteUpdateSet.get(id);
             if (deleteUpdateEntry != null)
             {
                 entry.addPermssions(deleteUpdateEntry);
@@ -2223,7 +2225,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 
     private void removeOldHistory() throws RaplaException
     {
-        final RaplaLock.WriteLock writeLock = writeLockIfLoaded("Removing Oldhistory");
+        final RaplaLock.ReadLock readLock = lockManager.readLock(getClass(), "removeOldHistory");
         try
         {
             Date lastUpdated = getLastRefreshed();
@@ -2232,7 +2234,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
         }
         finally
         {
-            lockManager.unlock(writeLock);
+            lockManager.unlock(readLock);
         }
     }
 
@@ -2267,11 +2269,11 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
         {
             final String message = "Removing old conflicts " + conflictsToDelete.size();
             getLogger().info(message);
+            removeConflictsFromDatabase(conflictsToDelete);
             RaplaLock.WriteLock writeLock = writeLockIfLoaded(message);
             try
             {
                 //Order is important they can't be removed from database if they are not in cache
-                removeConflictsFromDatabase(conflictsToDelete);
                 removeConflictsFromCache(conflictsToDelete);
             }
             finally
