@@ -94,15 +94,18 @@ public class AppointmentMap
                 for (String appointmentId : value)
                 {
                     Appointment app = appointmentIdToAppointment.get(appointmentId);
-                    // if app == null that means an appointment is no longer in the reservation
-                    Assert.notNull(app);
-                    Reservation reservation = app.getReservation();
-                    Assert.notNull( reservation);
-                    if (filters != null && !ClassificationFilter.Util.matches(filters, reservation))
+                    if ( app != null)
                     {
-                        continue;
+                        // if app == null that means an appointment is no longer in the reservation
+                        Assert.notNull(app);
+                        Reservation reservation = app.getReservation();
+                        Assert.notNull(reservation);
+                        if (filters != null && !ClassificationFilter.Util.matches(filters, reservation))
+                        {
+                            continue;
+                        }
+                        appointments.add(app);
                     }
-                    appointments.add(app);
                 }
             }
         }return result;

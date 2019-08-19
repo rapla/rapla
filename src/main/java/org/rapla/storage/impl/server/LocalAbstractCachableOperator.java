@@ -2135,22 +2135,24 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
                     {
                         continue;
                     }
-                    for (Appointment app : appointmentSet)
+                    Iterator<Appointment> it = appointmentSet.iterator();
+                    while (it.hasNext())
                     {
+                        Appointment app = it.next();
                         Reservation reservation = app.getReservation();
                         final String annotation = reservation.getAnnotation(RaplaObjectAnnotations.KEY_TEMPLATE);
                         Allocatable template = annotation != null ? cache.tryResolve(annotation, Allocatable.class) : null;
                         if (reservation == null)
                         {
                             logger.error("Appointment without a reservation stored in cache " + app);
-                            appointmentSet.remove(app);
+                            it.remove();
                             continue;
                         }
                         else if (!reservation.hasAllocatedOn(allocatable, app) && (template == null || !template.equals(allocatable)))
                         {
                             logger.error(
                                     "Allocation is not stored correctly for " + reservation + " " + app + " " + allocatable + " removing binding for " + app);
-                            appointmentSet.remove(app);
+                            it.remove();
                             continue;
                         }
                         else
@@ -2181,7 +2183,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
                                 else
                                 {
                                     logger.error("Reservation not stored in cache " + original + " removing binding for " + app);
-                                    appointmentSet.remove(app);
+                                    it.remove();
                                     continue;
                                 }
                             }
