@@ -160,11 +160,6 @@ public class CalendarModelImpl implements CalendarSelectionModel
             setSelectedObjects(types.length > 0 ? Collections.singletonList(types[0]) : Collections.emptyList());
             setViewId(DEFAULT_VIEW);
             this.user = user;
-            if (user != null && !user.isAdmin())
-            {
-                boolean selected = getSystemPreferences().getEntryAsBoolean(CalendarModel.ONLY_MY_EVENTS_DEFAULT, true);
-                optionMap.put(CalendarModel.ONLY_MY_EVENTS, selected ? "true" : "false");
-            }
             optionMap.put(CalendarModel.SAVE_SELECTED_DATE, "false");
             resetExports();
         }
@@ -325,18 +320,6 @@ public class CalendarModelImpl implements CalendarSelectionModel
         if (config.isResourceRootSelected())
         {
             selectedObjects.add(ALLOCATABLES_ROOT);
-        }
-
-        Set<User> selectedUsers = getSelected(User.class);
-        User currentUser = getUser();
-        if (currentUser != null && selectedUsers.size() == 1 && selectedUsers.iterator().next().equals(currentUser))
-        {
-            if (getOption(CalendarModel.ONLY_MY_EVENTS) == null && currentUser.isAdmin())
-            {
-                boolean selected = getSystemPreferences().getEntryAsBoolean(CalendarModel.ONLY_MY_EVENTS_DEFAULT, true);
-                setOption(CalendarModel.ONLY_MY_EVENTS, selected ? "true" : "false");
-                selectedObjects.remove(currentUser);
-            }
         }
 
         setSelectedObjects(selectedObjects);
@@ -1149,11 +1132,6 @@ public class CalendarModelImpl implements CalendarSelectionModel
         return result;
     }
 
-    @Override public boolean isOnlyCurrentUserSelected()
-    {
-        String option = getOption(CalendarModel.ONLY_MY_EVENTS);
-        return option != null && option.equalsIgnoreCase("TRUE");
-    }
 
     @Override public String getOption(String name)
     {

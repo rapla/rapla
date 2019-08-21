@@ -26,7 +26,6 @@ import org.rapla.client.dialog.DialogUiFactoryInterface;
 import org.rapla.client.event.ApplicationEvent;
 import org.rapla.client.event.ApplicationEventBus;
 import org.rapla.client.event.CalendarEventBus;
-import org.rapla.client.event.OwnReservationsEvent;
 import org.rapla.client.extensionpoints.AdminMenuExtension;
 import org.rapla.client.extensionpoints.EditMenuExtension;
 import org.rapla.client.extensionpoints.ExportMenuExtension;
@@ -111,7 +110,6 @@ public class RaplaMenuBar extends RaplaGUIComponent
     private CalendarSelectionModel model;
     Provider<LicenseInfoUI> licenseInfoUIProvider;
     final private ApplicationEventBus appEventBus;
-    RaplaMenuItem ownReservationsMenu;
     private final RaplaSystemInfo systemInfo;
     private final MenuItemFactory menuItemFactory;
     private final Provider<UserAction> userActionProvider;
@@ -315,20 +313,6 @@ public class RaplaMenuBar extends RaplaGUIComponent
             adminMenu.add(adminOptions);
         }
 
-
-        ownReservationsMenu = new RaplaMenuItem("only_own_reservations");
-        ownReservationsMenu.setText(i18n.getString("only_own_reservations"));
-        ownReservationsMenu = new RaplaMenuItem("only_own_reservations");
-        ownReservationsMenu.addActionListener(e -> {
-            boolean isSelected = model.isOnlyCurrentUserSelected();
-            // switch selection options
-            model.setOption(CalendarModel.ONLY_MY_EVENTS, isSelected ? "false" : "true");
-            eventBus.publish( new OwnReservationsEvent());
-        });
-
-        ownReservationsMenu.setText(i18n.getString("only_own_reservations"));
-        setIcon(ownReservationsMenu,i18n.getIcon("icon.unchecked"));
-
         RaplaMenuItem info = new RaplaMenuItem("info");
         info.setAction(createInfoAction());
         extraMenu.add(info);
@@ -352,10 +336,6 @@ public class RaplaMenuBar extends RaplaGUIComponent
 
     public void updateView(ModificationEvent evt)
     {
-
-        boolean isSelected = model.isOnlyCurrentUserSelected();
-        setIcon(ownReservationsMenu,isSelected ? i18n.getIcon("icon.checked") : i18n.getIcon("icon.unchecked"));
-        ownReservationsMenu.setSelected(isSelected);
         updateTemplateText();
     }
 

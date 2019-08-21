@@ -335,7 +335,7 @@ public class ConflictSelectionPresenter implements Presenter
         return selectedConflicts;
     }
 
-    private void updateTree(Collection<Conflict> newConflicts) throws RaplaException
+    private void updateTree(Collection<Conflict> newConflicts)
     {
         this.conflicts = newConflicts;
         Collection<Conflict> selectedConflicts = new ArrayList<>(getSelectedConflicts());
@@ -348,26 +348,9 @@ public class ConflictSelectionPresenter implements Presenter
         }
     }
 
-    public Collection<Conflict> getConflicts() throws RaplaException
+    public Collection<Conflict> getConflicts()
     {
-        Collection<Conflict> conflicts;
-        boolean onlyOwn = model.isOnlyCurrentUserSelected();
-        User conflictUser = onlyOwn ? facade.getUser() : null;
-        conflicts = getConflicts(conflictUser);
-        return conflicts;
-    }
-
-    private Collection<Conflict> getConflicts(User user)
-    {
-
-        List<Conflict> result = new ArrayList<>();
-        for (Conflict conflict : conflicts)
-        {
-            if (conflict.isOwner(user))
-            {
-                result.add(conflict);
-            }
-        }
+        List<Conflict> result = new ArrayList<>(conflicts);
         Collections.sort(result, new ConflictStartDateComparator());
         return result;
     }

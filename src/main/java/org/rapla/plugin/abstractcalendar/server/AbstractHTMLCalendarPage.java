@@ -233,7 +233,7 @@ public abstract class AbstractHTMLCalendarPage  implements HTMLViewPage
 		out.println("  <meta HTTP-EQUIV=\"Content-Type\" content=\"text/html; charset=" + charset + "\">");
 		out.println("</head>");
 		out.println("<body>");
-		if (request.getParameter("selected_allocatables") != null && request.getParameter("allocatable_id")==null)
+		if (isShowLinkList( request ))
 		{
             try {
                 Collection<Allocatable> selectedAllocatables = model.getSelectedAllocatablesAsList();
@@ -383,6 +383,19 @@ public abstract class AbstractHTMLCalendarPage  implements HTMLViewPage
         }
         return !config.equals( "false" ) && request.getParameter("hide_nav") == null;
     }
+
+    public boolean isShowLinkList( HttpServletRequest request) {
+        if (request.getParameter("allocatable_id")  != null) {
+            return false;
+        }
+        if (request.getParameter("selected_allocatables") != null ) {
+            return true;
+        }
+        String config = model.getOption( CalendarModel.RESOURCES_LINK_LIST);
+        return config !=null && config.equals( "true" ) ;
+    }
+
+
 
     String getHiddenField( String fieldname, String value) {
         // prevent against css attacks

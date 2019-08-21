@@ -35,14 +35,11 @@ import org.rapla.storage.RemoteLocaleService;
 import org.rapla.storage.dbrm.RestartServer;
 
 import javax.inject.Inject;
-import javax.swing.JCheckBox;
 import javax.swing.JComboBox;
 import javax.swing.JComponent;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JTextField;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
 import java.util.List;
 import java.util.Locale;
 
@@ -55,7 +52,6 @@ public class RaplaStartOption extends RaplaGUIComponent implements SystemOptionP
     private LanguageChooser languageChooser;
     private CountryChooser countryChooser;
 	ICalTimezones timezoneService;
-	private JCheckBox ownReservations;
 	RaplaNumber seconds = new RaplaNumber(new Double(10),new Double(10),null, false);
     boolean isRestartPossible;
 
@@ -106,16 +102,13 @@ public class RaplaStartOption extends RaplaGUIComponent implements SystemOptionP
         panel.add( countryChooser.getComponent(), "2,6");
         languageChooser.addActionListener(e -> countryChooser.changeLanguage(languageChooser.getSelectedLanguage()));
 
-        panel.add(new JLabel( getString("defaultselection") + " '" + getString("only_own_reservations") +"'"), "0,8");
-		ownReservations = new JCheckBox();
-		panel.add(ownReservations, "2,8");
 		
 		seconds.getNumberField().setBlockStepSize( 60);
 	    seconds.getNumberField().setStepSize( 10);
 	    
-        panel.add( new JLabel(getString("seconds")),"4,10"  );
-        panel.add( seconds,"2,10");
-        panel.add( new JLabel(getString("connection") + ": " + getI18n().format("interval.format", "","")),"0,10"  );
+        panel.add( new JLabel(getString("seconds")),"4,8"  );
+        panel.add( seconds,"2,8");
+        panel.add( new JLabel(getString("connection") + ": " + getI18n().format("interval.format", "","")),"0,8"  );
         addCopyPaste( seconds.getNumberField(), i18n, raplaLocale, ioInterface, logger);
     }
 
@@ -156,8 +149,6 @@ public class RaplaStartOption extends RaplaGUIComponent implements SystemOptionP
 	    	throw new RaplaException(ex);
 	    }
 
-        boolean selected= preferences.getEntryAsBoolean( CalendarModel.ONLY_MY_EVENTS_DEFAULT, true); 
-        ownReservations.setSelected( selected);
         int delay = preferences.getEntryAsInteger( ClientFacade.REFRESH_INTERVAL_ENTRY, ClientFacade.REFRESH_INTERVAL_DEFAULT);
         seconds.setNumber( new Long(delay / 1000));
         seconds.setEnabled(isRestartPossible);
@@ -187,9 +178,6 @@ public class RaplaStartOption extends RaplaGUIComponent implements SystemOptionP
             String localeId = lang + "_" + countryChooser.getSelectedCountry();
             preferences.putEntry( AbstractRaplaLocale.LOCALE, localeId);
         }
-        boolean selected= ownReservations.isSelected();
-    	preferences.putEntry( CalendarModel.ONLY_MY_EVENTS_DEFAULT, selected); 
-    	
     	int delay = seconds.getNumber().intValue() * 1000;
     	preferences.putEntry( ClientFacade.REFRESH_INTERVAL_ENTRY, delay );
     }
