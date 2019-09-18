@@ -25,9 +25,10 @@ public class HTMLDateComponents {
         int day = dateWithoutTimezone.day;
         int month = dateWithoutTimezone.month;
         int year = dateWithoutTimezone.year;
-        int minYear = 2003;
-        int maxYear = 2020;
-        
+        int currentYear = DateTools.getYear( new Date());
+        int minYear = currentYear-10;
+        int maxYear = currentYear+10;
+
         buf.append( getDaySelection(prefix + "day",day));
         buf.append( getMonthSelection(prefix + "month",month, raplaLocale));
         buf.append( getYearSelection(prefix + "year", year,minYear, maxYear));
