@@ -56,7 +56,7 @@ import java.util.Map;
         tableViewPage = new TableViewPage<AppointmentBlock, TableColumn>(raplaLocale) {
 
             @Override
-            public String getCalendarHTML() throws RaplaException
+            public String getCalendarBody() throws RaplaException
             {
                 User user = model.getUser();
                 final String tableViewName = TableConfig.APPOINTMENTS_PER_DAY_VIEW;
@@ -76,45 +76,50 @@ import java.util.Map;
                         appointmentBlocks.add( block );
                 }
                 );
-                return getCalendarHTML(columnPlugins, blockSorter);
+                return getCalendarBody(columnPlugins, blockSorter);
             }
 
-            public String getCalendarHTML(List<RaplaTableColumn<AppointmentBlock, TableColumn>> columPlugins,Map<String,List<AppointmentBlock>> blocks)
+            public String getCalendarBody(List<RaplaTableColumn<AppointmentBlock, TableColumn>> columPlugins,Map<String,List<AppointmentBlock>> blocks)
             {
-                List<TableRow> rows = new ArrayList<>();
-
+                boolean isCsv= isCsv();
                 StringBuffer buf = new StringBuffer();
-                buf.append("<div class=\"export table \">");
-                buf.append("<div class=\"tr\">");
-                for (RaplaTableColumn<?, ?> col : columPlugins)
+                if (isCsv )
                 {
-                    buf.append("<div class=\"th\">");
-                    buf.append(Tools.createXssSafeString(col.getColumnName()));
-                    buf.append("</div>");
+                    buf.append("CSV Export for this view is currently not supported");
                 }
-                buf.append("</div>");
-                blocks.entrySet().stream().forEach( entry-> {
-                            String title = entry.getKey();
-                            //buf.append("<div style=\"clear:both;\"></div>");
-                            buf.append("<div class=\"appointments_per_day\">");
-                            buf.append(title);
-                            buf.append("</div>");
-                            for (AppointmentBlock row : entry.getValue())
-                            {
+                else
+                {
+                    buf.append("<div class=\"export table \">");
+                    buf.append("<div class=\"tr\">");
+                    for (RaplaTableColumn<?, ?> col : columPlugins)
+                    {
+                        buf.append("<div class=\"th\">");
+                        buf.append(Tools.createXssSafeString(col.getColumnName()));
+                        buf.append("</div>");
+                    }
+                    buf.append("</div>");
+                    blocks.entrySet().stream().forEach(entry -> {
+                        String title = entry.getKey();
+                        //buf.append("<div style=\"clear:both;\"></div>");
+                        buf.append("<div class=\"appointments_per_day\">");
+                        buf.append(title);
+                        buf.append("</div>");
+                        for (AppointmentBlock row : entry.getValue())
+                        {
 
-                                buf.append("<div class=\"tr\">");
-                                for (RaplaTableColumn<AppointmentBlock, ?> col : columPlugins)
-                                {
-                                    final String columnName = Tools.createXssSafeString(col.getColumnName());
-                                    buf.append("<div class=\"td "+columnName +"\">");
-                                    final String htmlValue = col.getHtmlValue(row);
-                                    buf.append(htmlValue);
-                                    buf.append("</div>");
-                                }
+                            buf.append("<div class=\"tr\">");
+                            for (RaplaTableColumn<AppointmentBlock, ?> col : columPlugins)
+                            {
+                                final String columnName = Tools.createXssSafeString(col.getColumnName());
+                                buf.append("<div class=\"td " + columnName + "\">");
+                                final String htmlValue = col.getHtmlValue(row);
+                                buf.append(htmlValue);
                                 buf.append("</div>");
                             }
+                            buf.append("</div>");
                         }
-                );
+                    });
+                }
                 buf.append("</div>");
                 //buf.append("</table>");
                 final String result = buf.toString();

@@ -178,7 +178,8 @@ public class RaplaMenuBar extends RaplaGUIComponent
         }
 
         boolean server = restartServerService.isRestartPossible();
-        if (server && isAdmin())
+        final boolean isAdmin = isAdmin();
+        if (server && isAdmin)
         {
             JMenuItem restartServer = new JMenuItem();
             restartServer.setAction(new ActionWrapper(new RestartServerAction(clientFacade, i18n, raplaLocale, logger, restartServerService)));
@@ -283,15 +284,14 @@ public class RaplaMenuBar extends RaplaGUIComponent
                     });
             adminMenu.add( userEditAction  );
         }
-        if (isAdmin())
+        if (canAdminUsers)
         {
-            RaplaMenuItem  typeAdmin = new RaplaMenuItem("typeadmin");
-            final String name = getString("types") + "/" + getString("categories")  + "/" + i18n.getString("periods");
-            typeAdmin.setText( name);
+            RaplaMenuItem typeAdmin = new RaplaMenuItem("typeadmin");
+            final String name = isAdmin ? getString("types") + "/" + getString("categories") + "/" + i18n.getString("periods"):i18n.getString("periods");
+            typeAdmin.setText(name);
             final Icon icon = RaplaImages.getIcon(i18n.getIcon("icon.tree"));
-            typeAdmin.setIcon( icon);
-            typeAdmin.addActionListener((evt)->
-            {
+            typeAdmin.setIcon(icon);
+            typeAdmin.addActionListener((evt) -> {
                 final PopupContext popupContext = dialogUiFactory.createPopupContext(() -> getMainComponent());
                 ApplicationEvent.ApplicationEventContext context = null;
                 String applicationEventId = TypeCategoryTask.ID;
@@ -299,8 +299,10 @@ public class RaplaMenuBar extends RaplaGUIComponent
                 final ApplicationEvent event = new ApplicationEvent(applicationEventId, info, popupContext, context);
                 appEventBus.publish(event);
             });
-            adminMenu.add( typeAdmin  );
-
+            adminMenu.add(typeAdmin);
+        }
+        if (isAdmin)
+        {
             RaplaMenuItem adminOptions = new RaplaMenuItem("adminOptions");
             try
             {

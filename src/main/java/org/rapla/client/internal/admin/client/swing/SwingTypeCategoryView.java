@@ -103,8 +103,11 @@ public class SwingTypeCategoryView extends RaplaGUIComponent implements
 
 		// creation of the ComboBox to choose one of the views
 		// adding the ComboBox to the northPanel
+		final boolean isAdmin = isAdmin();
 		@SuppressWarnings("unchecked")
-		JComboBox jComboBox = new JComboBox(new String[] {getString("resource_types"), getString("person_types"), getString("reservation_type"),getString("categories"),getString("periods")});
+		String[] options = isAdmin ? new String[] {getString("resource_types"), getString("person_types"), getString("reservation_type"),getString("categories"),getString("periods")} : new String[] {getString("periods")};
+		JComboBox jComboBox = new JComboBox(options);
+
 		cbView = jComboBox;
 		cbView.addItemListener((evt)->itemStateChanged());
 
@@ -139,7 +142,7 @@ public class SwingTypeCategoryView extends RaplaGUIComponent implements
 		selectionTreeTable.setMultiSelect( true);
 		selectionTreeTable.getTree().setCellRenderer(treeCellRenderer);
 		// including the tree in ScrollPane and adding this to the GUI
-		centerPanel.add(selectionTreeTable.getTree(), BorderLayout.CENTER);
+		centerPanel.add(new JScrollPane(selectionTreeTable.getTree()), BorderLayout.CENTER);
 		selectionTreeTable.addPopupListener(evt -> {
             Point p = evt.getPoint();
             Object selectedObject = evt.getSelectedObject();
@@ -193,7 +196,7 @@ public class SwingTypeCategoryView extends RaplaGUIComponent implements
 			selectionTreeTable.addDragAndDrop(moveFunction);
 		}
 		okButton.addActionListener((evt)->closeCmd.run());
-		view = View.RESOURCE_TYPE;
+		view = isAdmin() ? View.RESOURCE_TYPE : View.PERIODS;
 		filterTextField.setText("");
 		loadView();
 		return new ResolvedPromise<>(this);

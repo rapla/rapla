@@ -233,11 +233,11 @@ public abstract class AbstractHTMLCalendarPage  implements HTMLViewPage
 		out.println("  <meta HTTP-EQUIV=\"Content-Type\" content=\"text/html; charset=" + charset + "\">");
 		out.println("</head>");
 		out.println("<body>");
-		if (isShowLinkList( request ))
+		if (isShowLinkList( model,request))
 		{
             try {
                 Collection<Allocatable> selectedAllocatables = model.getSelectedAllocatablesAsList();
-                printAllocatableList(request, out, raplaLocale.getLocale(), selectedAllocatables);
+                printAllocatableList(request, out, raplaLocale.getLocale(), selectedAllocatables, false);
             } catch (RaplaException e) {
                 throw new ServletException(e);
             }
@@ -334,7 +334,7 @@ public abstract class AbstractHTMLCalendarPage  implements HTMLViewPage
         return linkPrefix + cssName;
     }
 
-    static public void printAllocatableList(HttpServletRequest request, java.io.PrintWriter out, Locale locale, Collection<Allocatable> selectedAllocatables) throws UnsupportedEncodingException {
+    static public void printAllocatableList(HttpServletRequest request, java.io.PrintWriter out, Locale locale, Collection<Allocatable> selectedAllocatables, boolean addCSV) throws UnsupportedEncodingException {
     	out.println("<table>");
     	String base = request.getRequestURI().toString();
     	String queryPath = request.getQueryString();
@@ -354,17 +354,27 @@ public abstract class AbstractHTMLCalendarPage  implements HTMLViewPage
     	{
     		out.print("<tr>");
     		out.print("<td>");
+
     		String name = alloc.getName(locale);
     		out.print(name);
-    		out.print("</a>");
     		out.print("</td>");
-    		out.print("<td>");
-    		String link = base + "?" + queryPath + "&allocatable_id=" +  URLEncoder.encode(alloc.getId(),"UTF-8");
-    		out.print("<a href=\""+ link+ "\">");
-    		out.print(link);
-    		out.print("</a>");
-    		out.print("</td>");
-    		out.print("</tr>");
+            {
+                out.print("<td  style=\"padding-left:15px;\">");
+                String link = base + "?" + queryPath + "&allocatable_id=" + URLEncoder.encode(alloc.getId(), "UTF-8");
+                out.print("<a href=\"" + link + "\">");
+                out.print("HTML");
+                out.print("</a>");
+                out.print("</td>");
+            }
+            if ( addCSV )
+            {
+                out.print("<td  style=\"padding-left:15px;15px;\">");
+                String link = base + ".csv?" + queryPath + "&allocatable_id=" + URLEncoder.encode(alloc.getId(), "UTF-8");
+                out.print("<a href=\"" + link + "\">");
+                out.print("CSV");
+                out.print("</a>");
+            }
+            out.print("</tr>");
     		
     	}
     	out.println("</table>");
@@ -384,7 +394,7 @@ public abstract class AbstractHTMLCalendarPage  implements HTMLViewPage
         return !config.equals( "false" ) && request.getParameter("hide_nav") == null;
     }
 
-    public boolean isShowLinkList( HttpServletRequest request) {
+    static public boolean isShowLinkList( CalendarModel model,HttpServletRequest request) {
         if (request.getParameter("allocatable_id")  != null) {
             return false;
         }
