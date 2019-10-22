@@ -16,6 +16,7 @@ import net.fortuna.ical4j.model.TimeZoneRegistry;
 import net.fortuna.ical4j.model.TimeZoneRegistryFactory;
 import org.rapla.RaplaResources;
 import org.rapla.RaplaSystemInfo;
+import org.rapla.components.i18n.server.ServerBundleManager;
 import org.rapla.entities.User;
 import org.rapla.entities.configuration.Preferences;
 import org.rapla.entities.configuration.RaplaConfiguration;
@@ -46,6 +47,7 @@ import org.rapla.storage.impl.server.LocalAbstractCachableOperator;
 import javax.inject.Inject;
 import javax.inject.Provider;
 import java.util.Collection;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.TimeZone;
@@ -70,7 +72,7 @@ public class ServerServiceImpl implements ServerServiceContainer
 
     @Inject public ServerServiceImpl(CachableStorageOperator operator, RaplaFacade facade, RaplaLocale raplaLocale, TimeZoneConverter importExportLocale,
             Logger logger, final Provider<Map<String, ServerExtension>> serverExtensions, final Provider<Set<ServletRequestPreprocessor>> requestPreProcessors,
-            CommandScheduler scheduler, ServerContainerContext serverContainerContext,RaplaResources i18n, RaplaSystemInfo systemInfo) throws RaplaInitializationException
+            CommandScheduler scheduler, ServerContainerContext serverContainerContext,RaplaResources i18n, RaplaSystemInfo systemInfo, ServerBundleManager bundleManager) throws RaplaInitializationException
     {
         String version = systemInfo.getString("rapla.version");
         logger.info("Rapla.Version=" + version);
@@ -120,6 +122,9 @@ public class ServerServiceImpl implements ServerServiceContainer
                     }
                 }
             }
+            final Locale aDefault = Locale.getDefault();
+            final String locale  =preferences.getEntryAsString( AbstractRaplaLocale.LOCALE, aDefault.getLanguage()+"_" + aDefault.getCountry());
+            bundleManager.setLocale( new Locale(locale));
             String timezoneId = preferences.getEntryAsString(AbstractRaplaLocale.TIMEZONE, importExportTimeZone);
             //TimeZoneConverter importExportLocale = lookup(TimeZoneConverter.class);
             try

@@ -26,8 +26,8 @@ public class HTMLDateComponents {
         int month = dateWithoutTimezone.month;
         int year = dateWithoutTimezone.year;
         int currentYear = DateTools.getYear( new Date());
-        int minYear = currentYear-10;
-        int maxYear = currentYear+10;
+        int minYear = currentYear-8;
+        int maxYear = currentYear+8;
 
         buf.append( getDaySelection(prefix + "day",day));
         buf.append( getMonthSelection(prefix + "month",month, raplaLocale));

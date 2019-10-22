@@ -117,14 +117,16 @@ public class UrlEncryptionServletRequestResponsePreprocessor  implements Servlet
      */
     public boolean isCalendarExportCalledIllegally(HttpServletRequest request) throws RaplaException {
     	 String username = request.getParameter("user");
-         String filename = request.getParameter("file");
-
-         if (filename == null && username== null) {
+        final String contextPath = request.getPathInfo();
+        if ( contextPath == null || (!contextPath.toLowerCase().contains("cal"))) {
+            return false;
+        }
+        if (username== null)  {
              // no calendar information, so no model and no a
              return false;
          }
-
-         final User user = facade.getUser(username);
+        String filename = request.getParameter("file");
+        final User user = facade.getUser(username);
          final CalendarSelectionModel model = facade.newCalendarModel( user);
          try
          {
