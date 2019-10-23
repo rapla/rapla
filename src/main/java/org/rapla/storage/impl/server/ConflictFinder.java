@@ -310,6 +310,16 @@ class ConflictFinder {
                         {
                             continue;
                         }
+
+                        // Check if allocatable is directly reserved by one of the  reservations
+                        // Blocks are created for parent resources like buildings but the two reservations could allocate different rooms in that building
+                        final Reservation reservation1 = appointment1.getReservation();
+                        final Reservation reservation2 = appointment2.getReservation();
+                        if (!reservation1.hasAllocatedOn(allocatable, appointment1)
+                                && !reservation2.hasAllocatedOn(allocatable,appointment2)) {
+                            continue;
+                        }
+
                         // Add appointments to conflict list
                         if (ConflictImpl.isConflictWithoutCheck(appointment1, appointment2, today))
                         {

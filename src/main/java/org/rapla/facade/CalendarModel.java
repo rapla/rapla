@@ -10,7 +10,6 @@ import org.rapla.entities.domain.AppointmentBlock;
 import org.rapla.entities.domain.Reservation;
 import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.framework.RaplaException;
-import org.rapla.framework.TypedComponentRole;
 import org.rapla.scheduler.Promise;
 
 import java.util.Collection;
@@ -25,8 +24,7 @@ public interface CalendarModel extends Cloneable, ClassifiableFilter
     String SHOW_NAVIGATION_ENTRY = "org.rapla.plugin.abstractcalendar.show_navigation";
     String ONLY_ALLOCATION_INFO = "org.rapla.plugin.abstractcalendar.only_allocation_info";
 	String SAVE_SELECTED_DATE = "org.rapla.plugin.abstractcalendar.save_selected_date";
-	String ONLY_MY_EVENTS = "only_own_reservations";
-	TypedComponentRole<Boolean> ONLY_MY_EVENTS_DEFAULT = new TypedComponentRole<>("org.rapla.plugin.abstractcalendar.only_own_reservations");
+    String RESOURCES_LINK_LIST = "org.rapla.plugin.abstractcalendar.resources_link_list";
 
 	String getNonEmptyTitle();
 

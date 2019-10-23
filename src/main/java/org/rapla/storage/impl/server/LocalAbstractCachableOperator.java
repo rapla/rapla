@@ -2175,7 +2175,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
                                         if ( !problematicIdSet.contains( persistant.getId()))
                                         {
                                             problematicIdSet.add( persistant.getId());
-                                            logger.error("Reservation stored in cache is not the same as in allocation store " + original);
+                                            logger.error("Reservation stored in LocalCache " + persistantLastChanged + ": " + persistant.getSortedAppointments() + " is not the same as in appointment store " + lastChanged + ":" + original.getSortedAppointments());
                                         }
                                         continue;
                                     }
@@ -3712,7 +3712,6 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
         PreferencesImpl newPref = new PreferencesImpl(now, now);
         newPref.setId(PreferencesImpl.getPreferenceIdFromUser(null).getId());
         newPref.setResolver(store);
-        newPref.putEntry(CalendarModel.ONLY_MY_EVENTS_DEFAULT, false);
         newPref.setReadOnly();
         store.put(newPref);
 

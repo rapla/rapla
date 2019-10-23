@@ -71,7 +71,7 @@ import java.util.TreeSet;
  * &year=<year>:  int-value of the year
  * &today:  will set the view to the current day. Ignores day, month and year
  */
-@Path(AutoExportPlugin.CALENDAR_GENERATOR)
+@Path("{a:calendar|calendar.csv}")
 @Singleton
 public class CalendarPageGenerator
 {

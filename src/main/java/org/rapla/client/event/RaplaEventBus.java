@@ -17,13 +17,11 @@ public class RaplaEventBus implements ApplicationEventBus, CalendarEventBus
 {
     final Subject<ApplicationEvent> applicationEventPublishSubject;
     final Subject<CalendarRefreshEvent> calendarRefreshEventPublishSubject;
-    final Subject<OwnReservationsEvent> preferencesObservable;
     @Inject
     public RaplaEventBus(CommandScheduler scheduler)
     {
         applicationEventPublishSubject = scheduler.createPublisher();
         calendarRefreshEventPublishSubject = scheduler.createPublisher();
-        preferencesObservable = scheduler.createPublisher();
     }
 
     @Override
@@ -37,11 +35,6 @@ public class RaplaEventBus implements ApplicationEventBus, CalendarEventBus
     }
 
     @Override
-    public void publish(OwnReservationsEvent event) {
-        preferencesObservable.onNext(event);
-    }
-
-    @Override
     public Observable<ApplicationEvent> getApplicationEventObservable() {
         return applicationEventPublishSubject;
     }
@@ -51,8 +44,4 @@ public class RaplaEventBus implements ApplicationEventBus, CalendarEventBus
         return calendarRefreshEventPublishSubject;
     }
 
-    @Override
-    public Observable<OwnReservationsEvent> getCalendarPreferencesObservable() {
-        return preferencesObservable;
-    }
 }

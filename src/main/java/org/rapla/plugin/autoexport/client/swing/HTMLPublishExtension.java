@@ -22,11 +22,7 @@ import javax.swing.JCheckBox;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JTextField;
-import javax.swing.event.ChangeEvent;
-import javax.swing.event.ChangeListener;
 import java.awt.BorderLayout;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
 
 public class HTMLPublishExtension extends RaplaGUIComponent implements PublishExtension
 {
@@ -39,6 +35,7 @@ public class HTMLPublishExtension extends RaplaGUIComponent implements PublishEx
      final JTextField titleField;
      final JPanel statusHtml;
      final JCheckBox onlyAllocationInfoField;
+     final JCheckBox asLinkListField;
 	 AutoExportResources autoExportI18n;
 	 RaplaResources i18n;
      private final IOInterface ioInterface;
@@ -53,13 +50,14 @@ public class HTMLPublishExtension extends RaplaGUIComponent implements PublishEx
     	this.model = model;
 
         panel.setLayout(new TableLayout( new double[][] {{TableLayout.PREFERRED,5,TableLayout.PREFERRED,5,TableLayout.FILL},
-                {TableLayout.PREFERRED,5,TableLayout.PREFERRED,5,TableLayout.PREFERRED,5,TableLayout.PREFERRED,5,TableLayout.PREFERRED, 5, TableLayout.PREFERRED  }}));
+                {TableLayout.PREFERRED,5,TableLayout.PREFERRED,5,TableLayout.PREFERRED,5,TableLayout.PREFERRED,5,TableLayout.PREFERRED, 5, TableLayout.PREFERRED,5, TableLayout.PREFERRED  }}));
 	   	titleField = new JTextField(20);
         addCopyPaste(titleField, i18n, raplaLocale, ioInterface, logger);
   
         showNavField = new JCheckBox();
         saveSelectedDateField = new JCheckBox();
         onlyAllocationInfoField = new JCheckBox();
+        asLinkListField = new JCheckBox();
         htmlURL = new JTextField();
         checkbox = new JCheckBox("HTML " + i18n.getString("publish"));
         statusHtml = createStatus( htmlURL);
@@ -77,7 +75,9 @@ public class HTMLPublishExtension extends RaplaGUIComponent implements PublishEx
         panel.add( saveSelectedDateField, "4,6");
         panel.add(new JLabel(autoExportI18n.getString("only_allocation_info")),"2,8");
         panel.add( onlyAllocationInfoField, "4,8");
-        panel.add( statusHtml, "2,10,4,1");
+        panel.add(new JLabel(autoExportI18n.getString("resources_as_linklist")),"2,10");
+        panel.add( asLinkListField, "4,10");
+        panel.add( statusHtml, "2,12,4,1");
         
         {	
             final String entry = model.getOption(AutoExportPlugin.HTML_EXPORT);
@@ -90,6 +90,10 @@ public class HTMLPublishExtension extends RaplaGUIComponent implements PublishEx
         {
             final String entry = model.getOption(CalendarModel.ONLY_ALLOCATION_INFO);
             onlyAllocationInfoField.setSelected( entry != null && entry.equals("true"));
+        }
+        {
+        	final String entry = model.getOption(CalendarModel.RESOURCES_LINK_LIST);
+        	asLinkListField.setSelected( entry != null && entry.equals("true"));
         }
         {
             final String entry = model.getOption(CalendarModel.SAVE_SELECTED_DATE);
@@ -109,6 +113,7 @@ public class HTMLPublishExtension extends RaplaGUIComponent implements PublishEx
         saveSelectedDateField.setEnabled(htmlEnabled);
         statusHtml.setEnabled(htmlEnabled);
         onlyAllocationInfoField.setEnabled(htmlEnabled);
+        asLinkListField.setEnabled( htmlEnabled);
     }
 	 
 	JPanel createStatus( final JTextField urlLabel)  
@@ -168,7 +173,10 @@ public class HTMLPublishExtension extends RaplaGUIComponent implements PublishEx
 		
 		String onlyAlloactionInfo = onlyAllocationInfoField.isSelected() ? "true" : "false";
 		model.setOption( CalendarModel.ONLY_ALLOCATION_INFO, onlyAlloactionInfo);
-	   
+
+		String asLinkListInfo = asLinkListField.isSelected() ? "true" : "false";
+		model.setOption( CalendarModel.RESOURCES_LINK_LIST, asLinkListInfo);
+
 		final String htmlSelected = checkbox.isSelected() ? "true" : "false";
 		model.setOption( AutoExportPlugin.HTML_EXPORT, htmlSelected);
 	}

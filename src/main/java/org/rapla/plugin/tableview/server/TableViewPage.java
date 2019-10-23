@@ -1,6 +1,6 @@
 package org.rapla.plugin.tableview.server;
 
-import org.jetbrains.annotations.NotNull;
+import org.rapla.components.util.IOUtil;
 import org.rapla.components.util.Tools;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.facade.CalendarModel;
@@ -8,22 +8,18 @@ import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.plugin.abstractcalendar.server.AbstractHTMLCalendarPage;
 import org.rapla.plugin.tableview.RaplaTableColumn;
-import org.rapla.plugin.tableview.TableViewPlugin;
 
 import javax.servlet.ServletContext;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.Enumeration;
-import java.util.HashMap;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.StringTokenizer;
 
 abstract public class TableViewPage<T, C>
 {
@@ -31,6 +27,7 @@ abstract public class TableViewPage<T, C>
     protected CalendarModel model;
 
     private final RaplaLocale raplaLocale;
+    private boolean csv;
 
     public TableViewPage(RaplaLocale raplaLocale)
     {
@@ -46,6 +43,43 @@ abstract public class TableViewPage<T, C>
             throws ServletException, IOException
     {
         this.model = model.clone();
+        final String pathTranslated = request.getPathTranslated();
+        csv = pathTranslated.endsWith(".csv");
+        if (csv)
+        {
+            generagePageCSV(request, response, model);
+        }
+        else
+        {
+            generagePageHtml(request, response, model);
+        }
+    }
+
+    public boolean isCsv()
+    {
+        return csv;
+    }
+
+    private void generagePageCSV(HttpServletRequest request, HttpServletResponse response, CalendarModel model) throws IOException, ServletException
+    {
+        response.setContentType("text/comma-separated-values; charset=" + raplaLocale.getCharsetNonUtf());
+        java.io.PrintWriter out = response.getWriter();
+        try
+        {
+            final String calendarCSV = getCalendarBody();
+            out.println(calendarCSV);
+        }
+        catch (RaplaException e)
+        {
+            throw new ServletException(e);
+        } finally
+        {
+            out.close();
+        }
+    }
+
+    private void generagePageHtml(HttpServletRequest request, HttpServletResponse response, CalendarModel model) throws IOException, ServletException
+    {
         response.setContentType("text/html; charset=" + raplaLocale.getCharsetNonUtf());
         java.io.PrintWriter out = response.getWriter();
 
@@ -67,12 +101,12 @@ abstract public class TableViewPage<T, C>
         String filename = request.getParameter("file");
         String pageId = Tools.createXssSafeString( filename);
         out.println("<body id=\""+ pageId+ "\">");
-        if (request.getParameter("selected_allocatables") != null && request.getParameter("allocatable_id") == null)
+        if (AbstractHTMLCalendarPage.isShowLinkList(model,request))
         {
             try
             {
                 Collection<Allocatable> selectedAllocatables = model.getSelectedAllocatablesAsList();
-                AbstractHTMLCalendarPage.printAllocatableList(request, out, raplaLocale.getLocale(), selectedAllocatables);
+                AbstractHTMLCalendarPage.printAllocatableList(request, out, raplaLocale.getLocale(), selectedAllocatables, true);
             }
             catch (RaplaException e)
             {
@@ -87,7 +121,7 @@ abstract public class TableViewPage<T, C>
             out.println("<div id=\"calendar\">");
             try
             {
-                final String calendarHTML = getCalendarHTML();
+                final String calendarHTML = getCalendarBody();
                 out.println(calendarHTML);
             }
             catch (RaplaException e)
@@ -101,7 +135,6 @@ abstract public class TableViewPage<T, C>
         out.println("</body>");
         out.println("</html>");
         out.close();
-
     }
 
     class TableRow implements Comparable<TableRow>
@@ -148,14 +181,26 @@ abstract public class TableViewPage<T, C>
         }
     }
 
-    public String getCalendarHTML(List<RaplaTableColumn<T, C>> columPlugins, Collection<T> rowObjects, Map<RaplaTableColumn, Integer> sortDirections)
-    {
+    public String getCalendarBody(List<RaplaTableColumn<T, C>> columPlugins, Collection<T> rowObjects, Map<RaplaTableColumn, Integer> sortDirections) {
         List<TableRow> rows = new ArrayList<>();
         for (T r : rowObjects)
         {
             rows.add(new TableRow(r, sortDirections));
         }
         Collections.sort(rows);
+        if (isCsv())
+        {
+            return  getCalendarBodyCSV(columPlugins, rows);
+        }
+        else
+        {
+            return  getCalendarBodyHTML(columPlugins, rows);
+        }
+    }
+
+    public String getCalendarBodyHTML(List<RaplaTableColumn<T, C>> columPlugins, List<TableRow> rows)
+    {
+
         StringBuffer buf = new StringBuffer();
         buf.append("<table class='export table table-striped table-bordered' style='width: 99%; margin: 0 auto;'>");
         buf.append("<thead><tr>");
@@ -187,8 +232,56 @@ abstract public class TableViewPage<T, C>
         return result;
     }
 
-    abstract String getCalendarHTML() throws RaplaException;
+    private static final String LINE_BREAK = "\n";
+    private static final String CELL_BREAK = ";";
+    public String getCalendarBodyCSV(List<RaplaTableColumn<T, C>> columns, List<TableRow> rows)
+    {
+        StringBuffer buf = new StringBuffer();
+        for (RaplaTableColumn column : columns)
+        {
+            buf.append(column.getColumnName());
+            buf.append(CELL_BREAK);
+        }
+        for (TableRow row : rows)
+        {
+            buf.append(LINE_BREAK);
+            for (RaplaTableColumn column : columns)
+            {
+                T rowObject = row.object;
+                Object value = column.getValue(rowObject);
+                Class columnClass = column.getColumnClass();
+                boolean isDate = columnClass.isAssignableFrom(java.util.Date.class);
+                String formated = "";
+                if (value != null)
+                {
+                    if (isDate)
+                    {
+                        SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+                        format.setTimeZone(IOUtil.getTimeZone());
+                        String timestamp = format.format((java.util.Date) value);
+                        formated = timestamp;
+                    }
+                    else
+                    {
+                        String escaped = escape(value);
+                        formated = escaped;
+                    }
+                }
+                buf.append(formated);
+                buf.append(CELL_BREAK);
+            }
+        }
+        final String result = buf.toString();
+        return result;
+    }
+
+    private String escape(Object cell) {
+        return cell.toString().replace(LINE_BREAK, " ").replace(CELL_BREAK, " ");
+    }
+
+    abstract String getCalendarBody() throws RaplaException;
 
     abstract int compareTo(T object1, T object2);
+
 
 }

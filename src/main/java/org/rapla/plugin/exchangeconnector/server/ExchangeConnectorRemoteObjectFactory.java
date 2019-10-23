@@ -60,10 +60,11 @@ public class ExchangeConnectorRemoteObjectFactory implements ExchangeConnectorRe
     {
         final User user = session.checkAndGetUser(request);
         String raplaUsername = user.getUsername();
-        getLogger().debug("Invoked add exchange user for rapla " + raplaUsername + " with exchange user " + exchangeUsername);
+        getLogger().info("Invoked add exchange user for rapla " + raplaUsername + " with exchange user " + exchangeUsername);
         manager.testConnection( exchangeUsername, exchangePassword, user);
         getLogger().debug("Invoked change connection for user " + user.getUsername());
         keyStorage.storeLoginInfo( user, ExchangeConnectorServerPlugin.EXCHANGE_USER_STORAGE, exchangeUsername, exchangePassword);
+        getLogger().info("New exchangename stored for " + user.getUsername());
     }
 
     @Override

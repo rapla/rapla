@@ -46,7 +46,7 @@ import java.util.Map;
         tableViewPage = new TableViewPage<AppointmentBlock, TableColumn>(raplaLocale) {
 
             @Override
-            public String getCalendarHTML() throws RaplaException
+            public String getCalendarBody() throws RaplaException
             {
                 User user = model.getUser();
                 final String tableViewName = TableConfig.APPOINTMENTS_VIEW;
@@ -54,7 +54,7 @@ import java.util.Map;
                 final TimeInterval timeIntervall = model.getTimeIntervall();
                 final List<AppointmentBlock> blocks = waiter.waitForWithRaplaException(model.queryBlocks(timeIntervall), 10000);
                 Map<RaplaTableColumn, Integer> sortDirections = RaplaTableModel.getSortDirections(model,columnPlugins, tableViewName);
-                return getCalendarHTML(columnPlugins, blocks, sortDirections);
+                return getCalendarBody(columnPlugins, blocks, sortDirections);
             }
 
             @Override

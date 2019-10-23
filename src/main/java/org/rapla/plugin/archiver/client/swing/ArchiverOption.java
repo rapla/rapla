@@ -222,7 +222,7 @@ public class ArchiverOption  implements PluginOptionPanel,ActionListener  {
             {
                 DialogInterface dialog = dialogUiFactory.createTextDialog(popupContext, "Warning", "The current data will be overwriten by the backup version. Do you want to proceed?", new String[]{"restore data","abort"});
                 dialog.setDefault( 1);
-                result = dialog.start(true).thenCompose((index) -> (index == null) ?
+                result = dialog.start(true).thenCompose((index) -> (index == 0) ?
                         archiver.restore().thenCompose((dummy) -> restartServer.restartServer()) :
                         ResolvedPromise.VOID_PROMISE);
             }

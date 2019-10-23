@@ -46,7 +46,7 @@ public class ReservationTableViewPage implements HTMLViewPage
     {
         tableViewPage = new TableViewPage<Reservation, TableColumn>(raplaLocale)
         {
-            String getCalendarHTML() throws RaplaException
+            String getCalendarBody() throws RaplaException
             {
                 final Collection<Reservation> reservations = waiter.waitForWithRaplaException(model.queryReservations(model.getTimeIntervall()),
                         10000);
@@ -54,7 +54,7 @@ public class ReservationTableViewPage implements HTMLViewPage
                 final String tableName = TableConfig.EVENTS_VIEW;
                 List<RaplaTableColumn<Reservation, TableColumn>> columnPlugins = tableConfigLoader.loadColumns(tableName, user);
                 Map<RaplaTableColumn, Integer> sortDirections = RaplaTableModel.getSortDirections(model,columnPlugins, tableName);
-                return getCalendarHTML(columnPlugins, reservations, sortDirections);
+                return getCalendarBody(columnPlugins, reservations, sortDirections);
             }
 
             @Override

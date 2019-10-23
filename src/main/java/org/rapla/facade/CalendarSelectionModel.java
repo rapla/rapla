@@ -24,9 +24,6 @@ public interface CalendarSelectionModel extends CalendarModel{
 
     void setOption( String name, String string );
 
-    /** If show only own reservations is selected. Thats if the current user is selected with select User*/
-    boolean isOnlyCurrentUserSelected();
-
     void setReservationFilter(ClassificationFilter[] array);
 
     void setAllocatableFilter(ClassificationFilter[] filters);

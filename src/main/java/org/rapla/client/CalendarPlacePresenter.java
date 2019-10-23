@@ -82,7 +82,6 @@ import java.util.Date;
         view.addConflictsView(conflictsSelectionPresenter.getConflictsView());
         view.addSummaryView(conflictsSelectionPresenter.getSummaryComponent());
         view.addCalendarView(calendarContainer.provideContent());
-        updateOwnReservationsSelected();
         try
         {
             calendarContainer.init(true,model, () -> {
@@ -103,24 +102,6 @@ import java.util.Date;
                     logger.error( ex2.getMessage(), ex2))
             .subscribe();
         });
-        eventBus.getCalendarPreferencesObservable().subscribe((evt)
-        ->
-                {
-                    try
-                    {
-                        Entity preferences = facade.getPreferences(clientFacade.getUser());
-                        ModificationEventImpl modificationEvt = new ModificationEventImpl();
-                        modificationEvt.addChanged(preferences);
-                        resourceSelectionPresenter.dataChanged(modificationEvt);
-                        calendarContainer.update(modificationEvt);
-                        conflictsSelectionPresenter.dataChanged(modificationEvt);
-                    }
-                    catch (Exception ex)
-                    {
-                        dialogUiFactory.showException(ex, null);
-                    }
-                }
-        );
         try
         {
             updateViews();
@@ -276,13 +257,6 @@ import java.util.Date;
         boolean showSelection = preferences.getEntryAsBoolean(CalendarPlacePresenter.SHOW_SELECTION_CONFIG_ENTRY, true);
         boolean templateMode = clientFacade.getTemplate() != null;
         view.updateView(showConflicts, showSelection, templateMode);
-    }
-
-    public void updateOwnReservationsSelected()
-    {
-        final CalendarSelectionModel model = resourceSelectionPresenter.getModel();
-        boolean isSelected = model.isOnlyCurrentUserSelected();
-        //FIXME onlyOwnReservationSelected
     }
 
     @Override public void minmaxPressed()

@@ -26,7 +26,6 @@ import org.rapla.client.dialog.DialogUiFactoryInterface;
 import org.rapla.client.event.ApplicationEvent;
 import org.rapla.client.event.ApplicationEventBus;
 import org.rapla.client.event.CalendarEventBus;
-import org.rapla.client.event.OwnReservationsEvent;
 import org.rapla.client.extensionpoints.AdminMenuExtension;
 import org.rapla.client.extensionpoints.EditMenuExtension;
 import org.rapla.client.extensionpoints.ExportMenuExtension;
@@ -111,7 +110,6 @@ public class RaplaMenuBar extends RaplaGUIComponent
     private CalendarSelectionModel model;
     Provider<LicenseInfoUI> licenseInfoUIProvider;
     final private ApplicationEventBus appEventBus;
-    RaplaMenuItem ownReservationsMenu;
     private final RaplaSystemInfo systemInfo;
     private final MenuItemFactory menuItemFactory;
     private final Provider<UserAction> userActionProvider;
@@ -180,7 +178,8 @@ public class RaplaMenuBar extends RaplaGUIComponent
         }
 
         boolean server = restartServerService.isRestartPossible();
-        if (server && isAdmin())
+        final boolean isAdmin = isAdmin();
+        if (server && isAdmin)
         {
             JMenuItem restartServer = new JMenuItem();
             restartServer.setAction(new ActionWrapper(new RestartServerAction(clientFacade, i18n, raplaLocale, logger, restartServerService)));
@@ -285,15 +284,14 @@ public class RaplaMenuBar extends RaplaGUIComponent
                     });
             adminMenu.add( userEditAction  );
         }
-        if (isAdmin())
+        if (canAdminUsers)
         {
-            RaplaMenuItem  typeAdmin = new RaplaMenuItem("typeadmin");
-            final String name = getString("types") + "/" + getString("categories")  + "/" + i18n.getString("periods");
-            typeAdmin.setText( name);
+            RaplaMenuItem typeAdmin = new RaplaMenuItem("typeadmin");
+            final String name = isAdmin ? getString("types") + "/" + getString("categories") + "/" + i18n.getString("periods"):i18n.getString("periods");
+            typeAdmin.setText(name);
             final Icon icon = RaplaImages.getIcon(i18n.getIcon("icon.tree"));
-            typeAdmin.setIcon( icon);
-            typeAdmin.addActionListener((evt)->
-            {
+            typeAdmin.setIcon(icon);
+            typeAdmin.addActionListener((evt) -> {
                 final PopupContext popupContext = dialogUiFactory.createPopupContext(() -> getMainComponent());
                 ApplicationEvent.ApplicationEventContext context = null;
                 String applicationEventId = TypeCategoryTask.ID;
@@ -301,8 +299,10 @@ public class RaplaMenuBar extends RaplaGUIComponent
                 final ApplicationEvent event = new ApplicationEvent(applicationEventId, info, popupContext, context);
                 appEventBus.publish(event);
             });
-            adminMenu.add( typeAdmin  );
-
+            adminMenu.add(typeAdmin);
+        }
+        if (isAdmin)
+        {
             RaplaMenuItem adminOptions = new RaplaMenuItem("adminOptions");
             try
             {
@@ -314,20 +314,6 @@ public class RaplaMenuBar extends RaplaGUIComponent
             }
             adminMenu.add(adminOptions);
         }
-
-
-        ownReservationsMenu = new RaplaMenuItem("only_own_reservations");
-        ownReservationsMenu.setText(i18n.getString("only_own_reservations"));
-        ownReservationsMenu = new RaplaMenuItem("only_own_reservations");
-        ownReservationsMenu.addActionListener(e -> {
-            boolean isSelected = model.isOnlyCurrentUserSelected();
-            // switch selection options
-            model.setOption(CalendarModel.ONLY_MY_EVENTS, isSelected ? "false" : "true");
-            eventBus.publish( new OwnReservationsEvent());
-        });
-
-        ownReservationsMenu.setText(i18n.getString("only_own_reservations"));
-        setIcon(ownReservationsMenu,i18n.getIcon("icon.unchecked"));
 
         RaplaMenuItem info = new RaplaMenuItem("info");
         info.setAction(createInfoAction());
@@ -352,10 +338,6 @@ public class RaplaMenuBar extends RaplaGUIComponent
 
     public void updateView(ModificationEvent evt)
     {
-
-        boolean isSelected = model.isOnlyCurrentUserSelected();
-        setIcon(ownReservationsMenu,isSelected ? i18n.getIcon("icon.checked") : i18n.getIcon("icon.unchecked"));
-        ownReservationsMenu.setSelected(isSelected);
         updateTemplateText();
     }
 
