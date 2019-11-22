@@ -62,7 +62,7 @@ public class HTMLWeekViewPage extends AbstractHTMLCalendarPage
 		CalendarOptions opt = getCalendarOptions();
         weekView.setRowsPerHour( opt.getRowsPerHour() );
         weekView.setWorktimeMinutes(opt.getWorktimeStartMinutes(), opt.getWorktimeEndMinutes() );
-        weekView.setFirstWeekday( opt.getFirstDayOfWeek());
+        weekView.setFirstWeekday( opt.getFirstDayOfWeek(facade.today()));
         int days = getDays(opt);
 		weekView.setDaysInView( days);
 		Set<Integer> excludeDays = opt.getExcludeDays();

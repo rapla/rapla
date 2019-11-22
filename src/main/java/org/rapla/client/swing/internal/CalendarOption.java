@@ -46,6 +46,7 @@ import javax.swing.JList;
 import javax.swing.JPanel;
 import java.awt.Component;
 import java.awt.FlowLayout;
+import java.util.Arrays;
 import java.util.Date;
 import java.util.Locale;
 
@@ -125,9 +126,13 @@ public class CalendarOption extends RaplaGUIComponent implements UserOptionPanel
         panel.add( new JLabel(getString("events_not_matched_by_filter")),"0,10");
         panel.add( nonFilteredEvents,"2,10");
         setRenderer();
-        
+
+        final String[] weekdayNames = mapper.getNames();
+        final String[] names = new String[weekdayNames.length + 1];
+        System.arraycopy(weekdayNames,0, names,0, weekdayNames.length);
+        names[7] = i18n.getString("today");
         @SuppressWarnings("unchecked")
-		JComboBox jComboBox = new JComboBox(mapper.getNames());
+		JComboBox jComboBox = new JComboBox(names);
 		firstDayOfWeek = jComboBox;
         panel.add( new JLabel(getString("day1week")),"0,12");
         panel.add( firstDayOfWeek,"2,12");
@@ -218,7 +223,7 @@ public class CalendarOption extends RaplaGUIComponent implements UserOptionPanel
             box[i].setSelected( options.getExcludeDays().contains( new Integer( weekday)));
         }
         int firstDayOfWeek2 = options.getFirstDayOfWeek();
-        firstDayOfWeek.setSelectedIndex( mapper.indexForDay( firstDayOfWeek2));
+        firstDayOfWeek.setSelectedIndex(  firstDayOfWeek2 == 0 ? 7 :mapper.indexForDay( firstDayOfWeek2));
         
         daysInWeekview.setNumber( options.getDaysInWeekview());
         minBlockWidth.setSelectedItem( new Integer(options.getMinBlockWidth()));

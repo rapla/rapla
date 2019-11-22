@@ -11,6 +11,7 @@
  | Definition as published by the Open Source Initiative (OSI).             |
  *--------------------------------------------------------------------------*/
 package org.rapla.facade;
+import java.util.Date;
 import java.util.Set;
 
 
@@ -38,7 +39,7 @@ public interface CalendarOptions {
     
     int getDaysInWeekview();
 	int getFirstDayOfWeek();
-
+    int getFirstDayOfWeek(Date today);
     boolean isExceptionsVisible();
     boolean isCompactColumns();
     boolean isResourceColoring();

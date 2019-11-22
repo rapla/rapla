@@ -21,6 +21,7 @@ import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.inject.Extension;
 import org.rapla.plugin.tableview.RaplaTableColumn;
+import org.rapla.plugin.tableview.RaplaTableModel;
 import org.rapla.plugin.tableview.TableViewPlugin;
 import org.rapla.plugin.tableview.internal.TableConfig;
 import org.rapla.server.PromiseWait;
@@ -34,6 +35,7 @@ import javax.servlet.http.HttpServletResponse;
 import javax.swing.table.TableColumn;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Date;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -64,30 +66,29 @@ import java.util.Map;
                 final TimeInterval timeIntervall = model.getTimeIntervall();
                 final List<AppointmentBlock> blocks = waiter.waitForWithRaplaException(model.queryBlocks(timeIntervall), 10000);
                 final  Map<String,List<AppointmentBlock>> blockSorter = new LinkedHashMap<>();
-                blocks.stream().forEach( block->
-                {
-                        String day =getDayString(block);
-                        List<AppointmentBlock> appointmentBlocks = blockSorter.get(day);
-                        if ( appointmentBlocks == null)
-                        {
-                            appointmentBlocks = new ArrayList<>();
-                            blockSorter.put( day, appointmentBlocks);
-                        }
-                        appointmentBlocks.add( block );
-                }
-                );
-                return getCalendarBody(columnPlugins, blockSorter);
-            }
-
-            public String getCalendarBody(List<RaplaTableColumn<AppointmentBlock, TableColumn>> columPlugins,Map<String,List<AppointmentBlock>> blocks)
-            {
-                boolean isCsv= isCsv();
-                StringBuffer buf = new StringBuffer();
-                if (isCsv )
-                {
-                    buf.append("CSV Export for this view is currently not supported");
+                if (isCsv()) {
+                    Map<RaplaTableColumn, Integer> sortDirections = RaplaTableModel.getSortDirections(model,columnPlugins, tableViewName);
+                    return super.getCalendarBody( columnPlugins, blocks, sortDirections);
                 }
                 else
+                {
+                    blocks.stream().forEach(block -> {
+                        String day = getDayString(block);
+                        List<AppointmentBlock> appointmentBlocks = blockSorter.get(day);
+                        if (appointmentBlocks == null)
+                        {
+                            appointmentBlocks = new ArrayList<>();
+                            blockSorter.put(day, appointmentBlocks);
+                        }
+                        appointmentBlocks.add(block);
+                    });
+                    return getCalendarBodyHTML(columnPlugins, blockSorter);
+                }
+            }
+
+            public String getCalendarBodyHTML(List<RaplaTableColumn<AppointmentBlock, TableColumn>> columPlugins,Map<String,List<AppointmentBlock>> blocks)
+            {
+                StringBuffer buf = new StringBuffer();
                 {
                     buf.append("<div class=\"export table \">");
                     buf.append("<div class=\"tr\">");

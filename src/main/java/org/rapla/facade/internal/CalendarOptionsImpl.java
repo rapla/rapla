@@ -24,6 +24,7 @@ import org.rapla.inject.InjectionContext;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
+import java.util.Date;
 import java.util.LinkedHashSet;
 import java.util.Set;
 
@@ -201,12 +202,23 @@ public class CalendarOptionsImpl implements CalendarOptions {
 		return daysInWeekview;
 	}
 
+	@Override
 	public int getFirstDayOfWeek()
 	{
-		return firstDayOfWeek;
+	   return firstDayOfWeek;
 	}
 
-	public int getMinBlockWidth()
+    @Override
+    public int getFirstDayOfWeek(Date now)
+    {
+        if ( firstDayOfWeek == DateTools.CURRENT_WEEKDAY) {
+            return DateTools.getWeekday( now );
+        }
+        return firstDayOfWeek;
+    }
+
+
+    public int getMinBlockWidth()
 	{
 		return minBlockWidth;
 	}

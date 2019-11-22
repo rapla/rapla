@@ -46,6 +46,7 @@ public class WeekdayMapperTest   {
     public void testLocaleGermany() {
         BundleManager bundleManager = new ServerBundleManager();
         RaplaLocale raplaLocale =new RaplaLocaleImpl(bundleManager);
+        bundleManager.setLanguage("de");
         WeekdayMapper mapper = new WeekdayMapper(raplaLocale, DateTools.MONDAY);
         Assert.assertEquals(6, mapper.indexForDay(Calendar.SUNDAY));
         Assert.assertEquals(0, mapper.indexForDay(Calendar.MONDAY));

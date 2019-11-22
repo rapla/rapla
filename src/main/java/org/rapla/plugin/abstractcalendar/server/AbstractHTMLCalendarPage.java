@@ -14,6 +14,7 @@ package org.rapla.plugin.abstractcalendar.server;
 
 import org.rapla.RaplaResources;
 import org.rapla.components.calendarview.html.AbstractHTMLView;
+import org.rapla.components.i18n.I18nBundle;
 import org.rapla.components.util.DateTools;
 import org.rapla.components.util.ParseDateException;
 import org.rapla.components.util.SerializableDateTimeFormat;
@@ -41,6 +42,7 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
+import java.io.PrintWriter;
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
 import java.util.ArrayList;
@@ -237,7 +239,7 @@ public abstract class AbstractHTMLCalendarPage  implements HTMLViewPage
 		{
             try {
                 Collection<Allocatable> selectedAllocatables = model.getSelectedAllocatablesAsList();
-                printAllocatableList(request, out, raplaLocale.getLocale(), selectedAllocatables, false);
+                printAllocatableList(request, out, raplaLocale.getLocale(), model.getNonEmptyTitle(),selectedAllocatables, false);
             } catch (RaplaException e) {
                 throw new ServletException(e);
             }
@@ -334,8 +336,7 @@ public abstract class AbstractHTMLCalendarPage  implements HTMLViewPage
         return linkPrefix + cssName;
     }
 
-    static public void printAllocatableList(HttpServletRequest request, java.io.PrintWriter out, Locale locale, Collection<Allocatable> selectedAllocatables, boolean addCSV) throws UnsupportedEncodingException {
-    	out.println("<table>");
+    static public void printAllocatableList(HttpServletRequest request, java.io.PrintWriter out, Locale locale, String title, Collection<Allocatable> selectedAllocatables, boolean addCSV) throws UnsupportedEncodingException {
     	String base = request.getRequestURI().toString();
     	String queryPath = request.getQueryString();
         final String key = request.getParameter("key");
@@ -348,36 +349,48 @@ public abstract class AbstractHTMLCalendarPage  implements HTMLViewPage
         {
             queryPath = queryPath.replaceAll("&selected_allocatables[^&]*", "");
         }
-    	List<Allocatable> sortedAllocatables = new ArrayList<>(selectedAllocatables);
+
+        out.println("<table>");
+        {
+            addListRow(out, addCSV, base, title, queryPath + "&allocatable_id=");
+        }
+        out.println("</table>");
+        out.println("<hr/>");
+        out.println("<table>");
+        List<Allocatable> sortedAllocatables = new ArrayList<>(selectedAllocatables);
     	Collections.sort( sortedAllocatables, new SortedClassifiableComparator(locale) );
     	for (Allocatable alloc:sortedAllocatables)
     	{
-    		out.print("<tr>");
-    		out.print("<td>");
-
-    		String name = alloc.getName(locale);
-    		out.print(name);
-    		out.print("</td>");
-            {
-                out.print("<td  style=\"padding-left:15px;\">");
-                String link = base + "?" + queryPath + "&allocatable_id=" + URLEncoder.encode(alloc.getId(), "UTF-8");
-                out.print("<a href=\"" + link + "\">");
-                out.print("HTML");
-                out.print("</a>");
-                out.print("</td>");
-            }
-            if ( addCSV )
-            {
-                out.print("<td  style=\"padding-left:15px;15px;\">");
-                String link = base + ".csv?" + queryPath + "&allocatable_id=" + URLEncoder.encode(alloc.getId(), "UTF-8");
-                out.print("<a href=\"" + link + "\">");
-                out.print("CSV");
-                out.print("</a>");
-            }
-            out.print("</tr>");
-    		
-    	}
+            String name = alloc.getName(locale);
+            final String fullQueryPath = queryPath + "&allocatable_id=" + URLEncoder.encode(alloc.getId(), "UTF-8");
+            addListRow(out, addCSV, base, name, fullQueryPath);
+        }
     	out.println("</table>");
+    }
+
+    private static void addListRow(PrintWriter out, boolean addCSV, String base, String name, String fullQueryPath)
+    {
+        out.print("<tr>");
+        out.print("<td>");
+        out.print(name);
+        out.print("</td>");
+        {
+            out.print("<td  style=\"padding-left:15px;\">");
+            String link = base + "?" + fullQueryPath;
+            out.print("<a href=\"" + link + "\">");
+            out.print("HTML");
+            out.print("</a>");
+            out.print("</td>");
+        }
+        if ( addCSV )
+        {
+            out.print("<td  style=\"padding-left:15px;15px;\">");
+            String link = base + ".csv?" + fullQueryPath;
+            out.print("<a href=\"" + link + "\">");
+            out.print("CSV");
+            out.print("</a>");
+        }
+        out.print("</tr>");
     }
 
     public String getFilename(HttpServletRequest request) {

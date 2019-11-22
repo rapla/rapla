@@ -69,7 +69,7 @@ public class HTMLCompactWeekViewPage extends AbstractHTMLCalendarPage implements
         Set<Integer> excludeDays = opt.getExcludeDays();
         view.setExcludeDays( excludeDays );
         view.setDaysInView( opt.getDaysInWeekview());
-        int firstDayOfWeek = opt.getFirstDayOfWeek();
+        int firstDayOfWeek = opt.getFirstDayOfWeek(facade.today());
 		view.setFirstWeekday( firstDayOfWeek);
         view.setExcludeDays( excludeDays );
     }

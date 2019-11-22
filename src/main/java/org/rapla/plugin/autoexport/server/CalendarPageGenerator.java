@@ -297,10 +297,13 @@ public class CalendarPageGenerator
                         break;
                     }
                 }
-                if (foundAlloc != null)
+                if (allocatableId.isEmpty() || foundAlloc != null)
                 {
-                    model.setSelectedObjects(Collections.singleton(foundAlloc));
                     request.setAttribute("allocatable_id", allocatableId);
+                    if (foundAlloc != null)
+                    {
+                        model.setSelectedObjects(Collections.singleton(foundAlloc));
+                    }
                 }
                 else
                 {

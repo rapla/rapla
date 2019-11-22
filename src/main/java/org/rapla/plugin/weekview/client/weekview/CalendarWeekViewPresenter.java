@@ -200,7 +200,7 @@ public class CalendarWeekViewPresenter implements Presenter, CalendarPlugin
         CalendarOptions opt = getCalendarOptions();
         weekView.setRowsPerHour(opt.getRowsPerHour());
         weekView.setWorktimeMinutes(opt.getWorktimeStartMinutes(), opt.getWorktimeEndMinutes());
-        weekView.setFirstWeekday(opt.getFirstDayOfWeek());
+        weekView.setFirstWeekday(opt.getFirstDayOfWeek(facade.getRaplaFacade().today()));
         int days = getDays(opt);
         weekView.setDaysInView(days);
         Set<Integer> excludeDays = opt.getExcludeDays();

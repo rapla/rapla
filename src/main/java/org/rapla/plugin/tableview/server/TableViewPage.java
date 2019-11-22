@@ -14,6 +14,7 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
+import java.net.URLEncoder;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -106,7 +107,7 @@ abstract public class TableViewPage<T, C>
             try
             {
                 Collection<Allocatable> selectedAllocatables = model.getSelectedAllocatablesAsList();
-                AbstractHTMLCalendarPage.printAllocatableList(request, out, raplaLocale.getLocale(), selectedAllocatables, true);
+                AbstractHTMLCalendarPage.printAllocatableList(request, out, raplaLocale.getLocale(),model.getNonEmptyTitle(), selectedAllocatables, true);
             }
             catch (RaplaException e)
             {

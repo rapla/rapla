@@ -166,7 +166,7 @@ public class SwingWeekCalendar extends AbstractRaplaSwingCalendar
 		}
         view.setExcludeDays( excludeDays );
         
-        view.setFirstWeekday( calendarOptions.getFirstDayOfWeek());
+        view.setFirstWeekday( calendarOptions.getFirstDayOfWeek(getFacade().today()));
         view.setToDate(model.getSelectedDate());
 
 //        if ( !view.isEditable() ) {

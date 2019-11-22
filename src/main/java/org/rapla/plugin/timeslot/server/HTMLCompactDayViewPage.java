@@ -97,7 +97,7 @@ public class HTMLCompactDayViewPage extends AbstractHTMLCalendarPage
         CalendarOptions opt = getCalendarOptions();
         int days = 1;
         view.setDaysInView( days);
-        int firstDayOfWeek = opt.getFirstDayOfWeek();
+        int firstDayOfWeek = opt.getFirstDayOfWeek(facade.today());
 		view.setFirstWeekday( firstDayOfWeek);
 		Set<Integer> excludeDays = new HashSet<>();
 		view.setExcludeDays( excludeDays );
