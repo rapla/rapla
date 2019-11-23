@@ -269,12 +269,15 @@ public abstract class AbstractSelectField<T> extends AbstractEditField implement
         JScrollPane scrollPane = new JScrollPane(tree);
         scrollPane.setMinimumSize(new Dimension(300, 200));
         scrollPane.setPreferredSize(new Dimension(400, 260));
-        panel.add(scrollPane, BorderLayout.PAGE_START);
-        
+        panel.add(scrollPane, BorderLayout.CENTER);
+        JPanel buttonPanel = new JPanel();
+        buttonPanel.setLayout( new BoxLayout(buttonPanel, BoxLayout.X_AXIS));
+        panel.add( buttonPanel, BorderLayout.PAGE_END);
+
         if (useDefault)
         {
             JButton defaultButton = new JButton(i18n.getString("defaultselection"));
-            panel.add( defaultButton,  BorderLayout.CENTER);
+            buttonPanel.add( defaultButton);
             defaultButton.setPreferredSize(new Dimension(100, 20));
             defaultButton.addActionListener(arg0 -> selectValues( tree, Collections.singletonList(defaultValue)));
         }
@@ -282,7 +285,7 @@ public abstract class AbstractSelectField<T> extends AbstractEditField implement
         if (useNull)
         {
             JButton emptyButton = new JButton(i18n.getString("nothing_selected"));
-            panel.add( emptyButton, BorderLayout.PAGE_END);
+            buttonPanel.add( emptyButton);
             emptyButton.setPreferredSize(new Dimension(100, 20));
             emptyButton.addActionListener(arg0 -> {
                 List<T> emptyList = Collections.emptyList();

@@ -147,6 +147,7 @@
 	  -->
 
     <!-- Configure Proxy if you want to use nodejs server in dev mode-->
+    <!--
     <New id="proxy" class="org.eclipse.jetty.servlet.ServletContextHandler">
         <Set name="contextPath">/proxy</Set>
         <Call name="getServletHandler">
@@ -160,7 +161,7 @@
             </Call>
         </Call>
     </New>
-
+    -->
     <!-- =========================================================== -->
     <!-- Set handler Collection Structure                            -->
     <!-- =========================================================== -->
@@ -170,11 +171,13 @@
          <Array type="org.eclipse.jetty.server.Handler">
            <Item>
              <New id="contexts" class="org.eclipse.jetty.server.handler.ContextHandlerCollection">
+                 <!--
                  <Call name="addHandler">
                     <Arg>
                         <Ref id="proxy"/>
                     </Arg>
                  </Call>
+                 -->
              </New>
            </Item>
            <Item>

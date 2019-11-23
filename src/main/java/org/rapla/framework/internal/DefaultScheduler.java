@@ -45,7 +45,7 @@ public class DefaultScheduler extends UtilConcurrentCommandScheduler implements 
 	    super(logger,poolSize);
 	    this.converter = converter;
 	}
-
+	
 	@Override public void dispose()
 	{
 		cancel();
