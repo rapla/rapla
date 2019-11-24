@@ -335,7 +335,7 @@ public class Export2iCalConverter
                     final String resourceName = getResourceName(person, user);
                     if (!isEmpty(resourceName))
                     {
-                        Attendee attendee = new Attendee("MAILTO:" + new URI(email).trim());
+                        Attendee attendee = new Attendee("MAILTO:" + new URI(email.trim()));
                         attendee.getParameters().add(Role.REQ_PARTICIPANT);
                         attendee.getParameters().add(new Cn(resourceName));
                         attendee.getParameters().add(new PartStat(exportAttendeesParticipationStatus));
