@@ -10,7 +10,7 @@
  | program with every library, which license fulfills the Open Source       |
  | Definition as published by the Open Source Initiative (OSI).             |
  *--------------------------------------------------------------------------*/
-package org.rapla.plugin.tableview.client.swing;
+package org.rapla.plugin.csvexport.client.swing;
 
 import org.jetbrains.annotations.NotNull;
 import org.rapla.RaplaResources;
@@ -22,7 +22,6 @@ import org.rapla.client.swing.images.RaplaImages;
 import org.rapla.client.swing.internal.SwingPopupContext;
 import org.rapla.components.iolayer.IOInterface;
 import org.rapla.entities.User;
-import org.rapla.entities.domain.AppointmentBlock;
 import org.rapla.entities.domain.ReservationStartComparator;
 import org.rapla.facade.CalendarSelectionModel;
 import org.rapla.facade.client.ClientFacade;
@@ -30,8 +29,12 @@ import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.inject.Extension;
 import org.rapla.logger.Logger;
+import org.rapla.plugin.csvexport.CSVExportPlugin;
 import org.rapla.plugin.tableview.RaplaTableColumn;
 import org.rapla.plugin.tableview.RaplaTableModel;
+import org.rapla.plugin.tableview.client.swing.AppointmentTableViewFactory;
+import org.rapla.plugin.tableview.client.swing.AppointmentsPerDayViewFactory;
+import org.rapla.plugin.tableview.client.swing.ReservationTableViewFactory;
 import org.rapla.plugin.tableview.internal.TableConfig;
 import org.rapla.scheduler.Promise;
 import org.rapla.scheduler.ResolvedPromise;
@@ -46,9 +49,8 @@ import java.awt.event.ActionListener;
 import java.io.IOException;
 import java.util.*;
 
-@Extension(provides = ExportMenuExtension.class, id = CSVExportMenu.PLUGIN_ID)
+@Extension(provides = ExportMenuExtension.class, id = CSVExportPlugin.PLUGIN_ID)
 public class CSVExportMenu extends RaplaGUIComponent implements ExportMenuExtension, ActionListener {
-    public static final String PLUGIN_ID = "csv";
     JMenuItem exportEntry;
     private final TableConfig.TableConfigLoader tableConfigLoader;
     private final CalendarSelectionModel model;
@@ -77,7 +79,7 @@ public class CSVExportMenu extends RaplaGUIComponent implements ExportMenuExtens
 
     @Override
     public String getId() {
-        return PLUGIN_ID;
+        return CSVExportPlugin.PLUGIN_ID;
     }
 
     @Override
@@ -156,7 +158,11 @@ public class CSVExportMenu extends RaplaGUIComponent implements ExportMenuExtens
 
     @Override
     public boolean isEnabled() {
-        return true;
+        try {
+           return getFacade().getSystemPreferences().getEntryAsBoolean(CSVExportPlugin.ENABLED, true);
+        } catch (RaplaException e) {
+            return false;
+        }
     }
 
 

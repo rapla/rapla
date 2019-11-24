@@ -446,7 +446,9 @@ public class RaplaMenuBar extends RaplaGUIComponent
     {
         for (RaplaMenuExtension menuItem : points)
         {
-            menu.add((JComponent)menuItem.getComponent());
+            if (menuItem.isEnabled()) {
+                menu.add((JComponent) menuItem.getComponent());
+            }
         }
     }
 

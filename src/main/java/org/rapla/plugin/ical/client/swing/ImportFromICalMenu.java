@@ -74,7 +74,7 @@ public class ImportFromICalMenu extends RaplaComponent implements ImportMenuExte
 	IdentifiableMenuEntry item;
 	String id = "ical";
 	ICalImport importService;
-	ImportFromICalResources i18n;
+	ImportFromICalResources icalI18n;
     private final Provider<TreeAllocatableSelection> treeAllocatableSelectionProvider;
     private final IOInterface io;
     private final DialogUiFactoryInterface dialogUiFactory;
@@ -83,7 +83,7 @@ public class ImportFromICalMenu extends RaplaComponent implements ImportMenuExte
 	{
 		super( facade,i18n, raplaLocale, logger);
 		this.importService = importService;
-		this.i18n = icalImportResources;
+		this.icalI18n = icalImportResources;
         this.treeAllocatableSelectionProvider = treeAllocatableSelectionProvider;
         this.io = io;
         this.dialogUiFactory = dialogUiFactory;
@@ -135,12 +135,12 @@ public class ImportFromICalMenu extends RaplaComponent implements ImportMenuExte
                                    TableLayout.PREFERRED, 5, } }));
 		panel1.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
 
-		final String urlText = i18n.getString("enter_url");
+		final String urlText = icalI18n.getString("enter_url");
 		final JTextField urlField = new JTextField(urlText);
 		RaplaGUIComponent.addCopyPaste(urlField, getI18n(), getRaplaLocale(), io, getLogger());
 		panel1.add(urlField, "2,0");
 
-		final JTextField fileField = new JTextField(i18n.getString("click_for_file"));
+		final JTextField fileField = new JTextField(icalI18n.getString("click_for_file"));
 		panel1.add(fileField, "2,2");
 		fileField.setEditable(false);
 		fileField.setBackground(new Color(240, 240, 255));
@@ -148,7 +148,7 @@ public class ImportFromICalMenu extends RaplaComponent implements ImportMenuExte
 
 		
 		ButtonGroup bg = new ButtonGroup();
-		final JRadioButton urlRadio = new JRadioButton(i18n.getString("url"));
+		final JRadioButton urlRadio = new JRadioButton(icalI18n.getString("url"));
 		panel1.add(urlRadio, "0,0");
 		bg.add(urlRadio);
 		final JRadioButton fileRadio = new JRadioButton(getString("file"));
