@@ -8,6 +8,7 @@ import org.rapla.facade.client.ClientFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.inject.Extension;
 import org.rapla.plugin.tableview.RaplaTableModel;
+import org.rapla.plugin.tableview.client.swing.RaplaSwingTableModel;
 import org.rapla.plugin.tableview.client.swing.extensionpoints.AppointmentSummaryExtension;
 import org.rapla.plugin.tableview.client.swing.extensionpoints.ReservationSummaryExtension;
 
@@ -63,9 +64,10 @@ public final class DurationCounter  implements ReservationSummaryExtension, Appo
             {
                 if (sorterModel != null)
                    row = sorterModel.modelIndex(row);
-                if ( model instanceof RaplaTableModel)
+                if ( model instanceof RaplaSwingTableModel)
                 {
-                    final Object objectAt = ((RaplaTableModel) model).getObjectAt(row);
+                    final RaplaTableModel raplaTableModel = ((RaplaSwingTableModel) model).getRaplaTableModel();
+                    final Object objectAt = raplaTableModel.getObjectAt(row);
                     long duration =0;
                     if ( objectAt instanceof Reservation)
                     {

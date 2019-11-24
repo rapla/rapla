@@ -15,6 +15,11 @@ public class RaplaSwingTableModel extends DefaultTableModel
         this.setColumnIdentifiers( columnNames);
     }
 
+    public RaplaTableModel getRaplaTableModel()
+    {
+        return raplaTableModel;
+    }
+
     @Override
     public int getRowCount()
     {

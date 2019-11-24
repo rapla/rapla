@@ -87,7 +87,7 @@ import java.util.function.Supplier;
 public class SwingTableView<T> extends RaplaGUIComponent implements SwingCalendarView, Printable, VisibleTimeInterval
 {
 
-    RaplaTableModel<T, TableColumn> tableModel;
+    RaplaTableModel<T> tableModel;
     RaplaSwingTableModel swingTableModel;
 
     JTable table;
@@ -117,7 +117,7 @@ public class SwingTableView<T> extends RaplaGUIComponent implements SwingCalenda
 
     public SwingTableView(RaplaMenuBarContainer menuBar, ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger,
                                      final CalendarModel model, final Set<? extends SummaryExtension> summaryExtensions, final boolean editable, boolean printing,
-                          List<RaplaTableColumn<T,TableColumn>> raplaTableColumns, MenuFactory menuFactory, EditController editController, ReservationController reservationController,
+                          List<RaplaTableColumn<T>> raplaTableColumns, MenuFactory menuFactory, EditController editController, ReservationController reservationController,
                                      final InfoFactory infoFactory, IntervalChooserPanel dateChooser, DialogUiFactoryInterface dialogUiFactory, IOInterface ioInterface
             ,Supplier<Promise<List<T>>> initFunction
             ,String tableName
@@ -199,11 +199,13 @@ public class SwingTableView<T> extends RaplaGUIComponent implements SwingCalenda
         String sortingStringOption = TableViewPlugin.getSortingStringOption( tableName);
         sorter = createAndSetSorter(model, table, sortingStringOption, swingTableModel);
         int column = 0;
-        for (RaplaTableColumn<T,TableColumn> col: raplaTableColumns)
+        for (RaplaTableColumn<T> col: raplaTableColumns)
         {
             final TableColumnModel columnModel = table.getColumnModel();
             final TableColumn column1 = columnModel.getColumn(column);
-            col.init(column1);
+            if (col instanceof RaplaSwingTableColumnImpl) {
+                ((RaplaSwingTableColumnImpl)col).init(column1);
+            }
         	column++;
         }
         table.setColumnSelectionAllowed( true );

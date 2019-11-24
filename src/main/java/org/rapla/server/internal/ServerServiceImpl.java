@@ -123,8 +123,19 @@ public class ServerServiceImpl implements ServerServiceContainer
                 }
             }
             final Locale aDefault = Locale.getDefault();
-            final String locale  =preferences.getEntryAsString( AbstractRaplaLocale.LOCALE, aDefault.getLanguage()+"_" + aDefault.getCountry());
-            bundleManager.setLocale( new Locale(locale));
+            final String localeString  =preferences.getEntryAsString( AbstractRaplaLocale.LOCALE, aDefault.getLanguage()+"_" + aDefault.getCountry());
+            final String[] split = localeString.split("_");
+            final Locale locale;
+            if ( split.length == 1) {
+                locale = new Locale(split[0]);
+            } else  if ( split.length == 2) {
+                locale = new Locale(split[0],split[1]);
+            } else  if ( split.length == 3) {
+                locale = new Locale(split[0], split[1], split[2]);
+            } else {
+                locale = aDefault;
+            }
+            bundleManager.setLocale( locale);
             String timezoneId = preferences.getEntryAsString(AbstractRaplaLocale.TIMEZONE, importExportTimeZone);
             //TimeZoneConverter importExportLocale = lookup(TimeZoneConverter.class);
             try

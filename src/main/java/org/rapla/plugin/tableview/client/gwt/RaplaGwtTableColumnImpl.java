@@ -5,20 +5,15 @@ import org.rapla.entities.User;
 import org.rapla.facade.client.ClientFacade;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.plugin.tableview.TableColumnType;
-import org.rapla.plugin.tableview.internal.AbstractRaplaTableColumn;
+import org.rapla.plugin.tableview.internal.DefaultRaplaTableColumn;
 import org.rapla.plugin.tableview.internal.TableConfig.TableColumnConfig;
 
 @JsType
-public class RaplaGwtTableColumnImpl<T> extends AbstractRaplaTableColumn<T, Object>
+public class RaplaGwtTableColumnImpl<T> extends DefaultRaplaTableColumn<T>
 {
     public RaplaGwtTableColumnImpl(TableColumnConfig column, RaplaLocale raplaLocale, ClientFacade facade, User user)
     {
         super(column, raplaLocale, facade.getRaplaFacade(),user);
-    }
-
-    @Override
-    public void init(Object column)
-    {
     }
     
     @Override

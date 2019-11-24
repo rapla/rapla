@@ -8,6 +8,7 @@ import org.rapla.entities.Named;
 import org.rapla.entities.User;
 import org.rapla.entities.configuration.Preferences;
 import org.rapla.entities.configuration.RaplaConfiguration;
+import org.rapla.entities.domain.AppointmentBlock;
 import org.rapla.entities.dynamictype.internal.ParsedText;
 import org.rapla.facade.RaplaFacade;
 import org.rapla.framework.Configuration;
@@ -414,7 +415,7 @@ public class TableConfig
             if ( !config.hasView(EVENTS_VIEW ))
             {
                 final ViewDefinition eventsView = config.getOrCreateView(EVENTS_VIEW);
-                eventsView.setName(createName("reservations", i18n, languages, raplaLocale));
+                eventsView.setName(createName(TableConfig.EVENTS_VIEW, i18n, languages, raplaLocale));
                 eventsView.setContentDefinition("{p->events(p)}");
                 eventsView.addColumn(createNameColumn(i18n, languages, raplaLocale).addIfNotInResult( config));
                 eventsView.addColumn(createStartColumn(i18n, languages, raplaLocale).addIfNotInResult(config));
@@ -423,7 +424,7 @@ public class TableConfig
             if ( !config.hasView(APPOINTMENTS_VIEW))
             {
                 final ViewDefinition appointmentsView = config.getOrCreateView(APPOINTMENTS_VIEW);
-                appointmentsView.setName(createName("appointments", i18n, languages, raplaLocale));
+                appointmentsView.setName(createName(TableConfig.APPOINTMENTS_VIEW, i18n, languages, raplaLocale));
                 appointmentsView.setContentDefinition("{p->appointmentBlocks(p)}");
                 appointmentsView.addColumn(createNameColumn(i18n, languages, raplaLocale).addIfNotInResult( config));
                 appointmentsView.addColumn(createStartColumn(i18n, languages, raplaLocale).addIfNotInResult(config));
@@ -434,7 +435,7 @@ public class TableConfig
             if ( !config.hasView(APPOINTMENTS_PER_DAY_VIEW))
             {
                 final ViewDefinition appointmentsPerDayView = config.getOrCreateView(APPOINTMENTS_PER_DAY_VIEW);
-                appointmentsPerDayView.setName(createName("appointments_per_day", i18n, languages, raplaLocale));
+                appointmentsPerDayView.setName(createName(TableConfig.APPOINTMENTS_PER_DAY_VIEW, i18n, languages, raplaLocale));
                 appointmentsPerDayView.setContentDefinition("{p->appointmentBlocks(p)}");
                 appointmentsPerDayView.addColumn(createTimesColumn(i18n, languages, raplaLocale).addIfNotInResult( config));
                 appointmentsPerDayView.addColumn(createNameColumn(i18n, languages, raplaLocale).addIfNotInResult( config));
@@ -595,9 +596,9 @@ public class TableConfig
             this.tableColumnCreator = tableColumnCreator;
         }
 
-        public <T, C> List<RaplaTableColumn<T, C>> loadColumns(String configName, User user) throws RaplaException
+        public <T> List<RaplaTableColumn<T>> loadColumns(String configName, User user) throws RaplaException
         {
-            List<RaplaTableColumn<T, C>> reservationColumnPlugins = new ArrayList<>();
+            List<RaplaTableColumn<T>> reservationColumnPlugins = new ArrayList<>();
             final Preferences preferences = raplaFacade.getSystemPreferences();
             TableConfig config = read(preferences, false);
             final Collection<TableColumnConfig> columns = config.getColumns(configName);
@@ -613,6 +614,23 @@ public class TableConfig
             final Set<String> strings = allLang ? new HashSet<>(raplaLocale.getAvailableLanguages()) : Collections.singleton(i18n.getLang());
             return TableConfig.read(preferences, i18n, raplaLocale, strings, extensions);
         }
+
+        @NotNull
+        public RaplaTableColumn<AppointmentBlock> createDateColumn(String key, User user ) {
+
+            TableConfig.TableColumnConfig firstConfig = new TableConfig.TableColumnConfig();
+            final MultiLanguageName name = new MultiLanguageName();
+            final String lang = i18n.getLang();
+            final String dateTranslation = i18n.getString("date");
+            name.setName(lang, dateTranslation);
+            firstConfig.setName(name);
+            firstConfig.setKey(key);
+            firstConfig.setType("date");
+            firstConfig.setDefaultValue("{p->date(p)}");
+            final RaplaTableColumn<AppointmentBlock> column = tableColumnCreator.createColumn(firstConfig, user, raplaLocale);
+            return column;
+        }
+
     }
 
 }

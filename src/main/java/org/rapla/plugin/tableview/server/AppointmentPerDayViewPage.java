@@ -12,6 +12,7 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.plugin.tableview.server;
 
+import org.rapla.components.i18n.I18nBundle;
 import org.rapla.components.util.TimeInterval;
 import org.rapla.components.util.Tools;
 import org.rapla.entities.User;
@@ -23,6 +24,7 @@ import org.rapla.inject.Extension;
 import org.rapla.plugin.tableview.RaplaTableColumn;
 import org.rapla.plugin.tableview.RaplaTableModel;
 import org.rapla.plugin.tableview.TableViewPlugin;
+import org.rapla.plugin.tableview.internal.DefaultRaplaTableColumn;
 import org.rapla.plugin.tableview.internal.TableConfig;
 import org.rapla.server.PromiseWait;
 import org.rapla.server.extensionpoints.HTMLViewPage;
@@ -34,17 +36,12 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.swing.table.TableColumn;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Date;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 @Extension(provides = HTMLViewPage.class, id = TableViewPlugin.TABLE_APPOINTMENTS_PER_DAY_VIEW) public class AppointmentPerDayViewPage
         implements HTMLViewPage
 {
-    private TableViewPage<AppointmentBlock, TableColumn> tableViewPage;
+    private TableViewPage<AppointmentBlock> tableViewPage;
     RaplaLocale raplaLocale;
     String getDayString(AppointmentBlock block)
     {
@@ -52,23 +49,26 @@ import java.util.Map;
         return raplaLocale.formatDayOfWeekLongDateMonth(start);
     }
 
-    @Inject public AppointmentPerDayViewPage(PromiseWait waiter,RaplaLocale raplaLocale, final TableConfig.TableConfigLoader tableConfigLoader)
+    @Inject public AppointmentPerDayViewPage(PromiseWait waiter, RaplaLocale raplaLocale, final TableConfig.TableConfigLoader tableConfigLoader)
     {
         this.raplaLocale = raplaLocale;
-        tableViewPage = new TableViewPage<AppointmentBlock, TableColumn>(raplaLocale) {
+        tableViewPage = new TableViewPage<AppointmentBlock>(raplaLocale) {
 
             @Override
             public String getCalendarBody() throws RaplaException
             {
                 User user = model.getUser();
                 final String tableViewName = TableConfig.APPOINTMENTS_PER_DAY_VIEW;
-                List<RaplaTableColumn<AppointmentBlock, TableColumn>> columnPlugins = tableConfigLoader.loadColumns(tableViewName, user);
+                List<RaplaTableColumn<AppointmentBlock>> columnPlugins = tableConfigLoader.loadColumns(tableViewName, user);
+
                 final TimeInterval timeIntervall = model.getTimeIntervall();
                 final List<AppointmentBlock> blocks = waiter.waitForWithRaplaException(model.queryBlocks(timeIntervall), 10000);
                 final  Map<String,List<AppointmentBlock>> blockSorter = new LinkedHashMap<>();
                 if (isCsv()) {
-                    Map<RaplaTableColumn, Integer> sortDirections = RaplaTableModel.getSortDirections(model,columnPlugins, tableViewName);
-                    return super.getCalendarBody( columnPlugins, blocks, sortDirections);
+                    List<RaplaTableColumn<AppointmentBlock>> columnPluginsPlusDate = new ArrayList<>(columnPlugins);
+                    columnPluginsPlusDate.add(0, tableConfigLoader.createDateColumn( "appointment_per_date_date", user));
+                    Map<RaplaTableColumn<AppointmentBlock>, Integer> sortDirections = RaplaTableModel.getSortDirections(model,columnPluginsPlusDate, tableViewName);
+                    return super.getCalendarBody( columnPluginsPlusDate, blocks, sortDirections);
                 }
                 else
                 {
@@ -86,13 +86,13 @@ import java.util.Map;
                 }
             }
 
-            public String getCalendarBodyHTML(List<RaplaTableColumn<AppointmentBlock, TableColumn>> columPlugins,Map<String,List<AppointmentBlock>> blocks)
+            public String getCalendarBodyHTML(List<RaplaTableColumn<AppointmentBlock>> columPlugins,Map<String,List<AppointmentBlock>> blocks)
             {
                 StringBuffer buf = new StringBuffer();
                 {
                     buf.append("<div class=\"export table \">");
                     buf.append("<div class=\"tr\">");
-                    for (RaplaTableColumn<?, ?> col : columPlugins)
+                    for (RaplaTableColumn<?> col : columPlugins)
                     {
                         buf.append("<div class=\"th\">");
                         buf.append(Tools.createXssSafeString(col.getColumnName()));
@@ -109,7 +109,7 @@ import java.util.Map;
                         {
 
                             buf.append("<div class=\"tr\">");
-                            for (RaplaTableColumn<AppointmentBlock, ?> col : columPlugins)
+                            for (RaplaTableColumn<AppointmentBlock> col : columPlugins)
                             {
                                 final String columnName = Tools.createXssSafeString(col.getColumnName());
                                 buf.append("<div class=\"td " + columnName + "\">");
@@ -128,11 +128,10 @@ import java.util.Map;
             }
 
             @Override
-            public int compareTo(AppointmentBlock object1, AppointmentBlock object2)
-            {
-                return object1.compareTo(object2);
+            protected Comparator<AppointmentBlock> getFallbackComparator() {
+                return Comparator.naturalOrder();
             }
-            
+
         };
     }
     

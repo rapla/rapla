@@ -13,7 +13,7 @@ public interface DialogInterface
     void setIcon(I18nIcon iconKey);
     void close();
     DialogAction getAction(int commandIndex);
-    void setAbortAction(Runnable abortAction);
+    void setCloseAction(Runnable abortAction);
     void setDefault(int commandIndex);
 
     interface DialogAction {

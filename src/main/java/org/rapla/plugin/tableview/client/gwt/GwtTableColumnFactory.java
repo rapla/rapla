@@ -1,7 +1,6 @@
 package org.rapla.plugin.tableview.client.gwt;
 
 import org.rapla.entities.User;
-import org.rapla.facade.RaplaFacade;
 import org.rapla.facade.client.ClientFacade;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.inject.DefaultImplementation;
@@ -9,7 +8,6 @@ import org.rapla.inject.InjectionContext;
 import org.rapla.plugin.tableview.RaplaTableColumn;
 import org.rapla.plugin.tableview.internal.RaplaTableColumnFactory;
 import org.rapla.plugin.tableview.internal.TableConfig.TableColumnConfig;
-import org.rapla.plugin.tableview.server.RaplaSeverTableColumnImpl;
 
 import javax.inject.Inject;
 

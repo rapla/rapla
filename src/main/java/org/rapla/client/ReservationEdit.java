@@ -2,6 +2,7 @@ package org.rapla.client;
 
 import jsinterop.annotations.JsType;
 import org.rapla.client.internal.edit.EditTaskPresenter;
+import org.rapla.components.util.TimeInterval;
 import org.rapla.components.util.undo.CommandHistory;
 import org.rapla.entities.domain.Appointment;
 import org.rapla.entities.domain.AppointmentBlock;
@@ -12,6 +13,7 @@ import org.rapla.scheduler.Promise;
 
 import java.util.Collection;
 import java.util.Date;
+import java.util.List;
 
 @JsType
 public interface ReservationEdit<T> extends EditTaskPresenter.EditTaskView<Reservation,T>
@@ -30,6 +32,8 @@ public interface ReservationEdit<T> extends EditTaskPresenter.EditTaskView<Reser
     Reservation getOriginal();
 
     boolean hasChanged();
+
+    void addExceptionsToCurrentAppointment(List<TimeInterval> exceptions);
 
     void setReservation(Reservation reservation, Appointment appointment) throws RaplaException;
     //void updateReservation(Reservation persistant) throws RaplaException;

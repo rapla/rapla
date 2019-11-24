@@ -13,7 +13,9 @@
 package org.rapla.plugin.tableview.server;
 
 import org.rapla.entities.User;
+import org.rapla.entities.domain.AppointmentBlock;
 import org.rapla.entities.domain.Reservation;
+import org.rapla.entities.domain.ReservationStartComparator;
 import org.rapla.facade.CalendarModel;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
@@ -33,39 +35,35 @@ import javax.servlet.http.HttpServletResponse;
 import javax.swing.table.TableColumn;
 import java.io.IOException;
 import java.util.Collection;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 
 @Extension(provides = HTMLViewPage.class, id = TableViewPlugin.TABLE_EVENT_VIEW)
 public class ReservationTableViewPage implements HTMLViewPage
 {
-    private TableViewPage<Reservation, TableColumn> tableViewPage;
+    private TableViewPage<Reservation> tableViewPage;
 
     @Inject
     public ReservationTableViewPage(PromiseWait waiter,RaplaLocale raplaLocale, TableConfig.TableConfigLoader tableConfigLoader)
     {
-        tableViewPage = new TableViewPage<Reservation, TableColumn>(raplaLocale)
+        tableViewPage = new TableViewPage<Reservation>(raplaLocale)
         {
-            String getCalendarBody() throws RaplaException
+            Comparator<Reservation> comparator = new ReservationStartComparator(raplaLocale.getLocale());
+            protected String getCalendarBody() throws RaplaException
             {
                 final Collection<Reservation> reservations = waiter.waitForWithRaplaException(model.queryReservations(model.getTimeIntervall()),
                         10000);
                 final User user = model.getUser();
                 final String tableName = TableConfig.EVENTS_VIEW;
-                List<RaplaTableColumn<Reservation, TableColumn>> columnPlugins = tableConfigLoader.loadColumns(tableName, user);
-                Map<RaplaTableColumn, Integer> sortDirections = RaplaTableModel.getSortDirections(model,columnPlugins, tableName);
+                List<RaplaTableColumn<Reservation>> columnPlugins = tableConfigLoader.loadColumns(tableName, user);
+                Map<RaplaTableColumn<Reservation>, Integer> sortDirections = RaplaTableModel.getSortDirections(model,columnPlugins, tableName);
                 return getCalendarBody(columnPlugins, reservations, sortDirections);
             }
 
             @Override
-            int compareTo(Reservation r1, Reservation r2)
-            {
-                if (r1.equals(r2))
-                {
-                    return 0;
-                }
-                int compareTo = r1.getFirstDate().compareTo(r2.getFirstDate());
-                return compareTo;
+            protected Comparator<Reservation> getFallbackComparator() {
+                return comparator;
             }
         };
     }

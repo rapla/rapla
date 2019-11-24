@@ -13,6 +13,7 @@ import org.rapla.entities.dynamictype.internal.DynamicTypeImpl.DynamicTypeParseC
 import org.rapla.entities.dynamictype.internal.EvalContext;
 import org.rapla.entities.dynamictype.internal.ParsedText;
 import org.rapla.facade.RaplaFacade;
+import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.plugin.tableview.RaplaTableColumn;
 import org.rapla.plugin.tableview.TableViewPlugin;
@@ -23,7 +24,7 @@ import java.util.Collections;
 import java.util.Date;
 import java.util.Locale;
 
-public abstract class AbstractRaplaTableColumn<T, C> implements RaplaTableColumn<T, C>
+public class DefaultRaplaTableColumn<T> implements RaplaTableColumn<T>
 {
 
     protected final TableColumnConfig column;
@@ -31,7 +32,7 @@ public abstract class AbstractRaplaTableColumn<T, C> implements RaplaTableColumn
     final RaplaFacade facade;
     User user;
 
-    public AbstractRaplaTableColumn(TableColumnConfig column, RaplaLocale raplaLocale, RaplaFacade facade, User user)
+    public DefaultRaplaTableColumn(TableColumnConfig column, RaplaLocale raplaLocale, RaplaFacade facade, User user)
     {
         this.column = column;
         this.raplaLocale = raplaLocale;
@@ -86,6 +87,9 @@ public abstract class AbstractRaplaTableColumn<T, C> implements RaplaTableColumn
         final Locale locale = getLocale();
         final String annotationName = getAnnotationName();
         final Classification classification = ParsedText.guessClassification(object);
+        if (classification == null) {
+            throw new IllegalStateException("object " + object + " is not a classifiable object");
+        }
         final DynamicTypeImpl type = (DynamicTypeImpl) classification.getType();
         ParsedText parsedAnnotation = type.getParsedAnnotation(annotationName);
         final EvalContext context = type.createEvalContext(user,locale, annotationName, Collections.singletonList(object));

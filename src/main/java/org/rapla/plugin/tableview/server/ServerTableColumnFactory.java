@@ -6,6 +6,7 @@ import org.rapla.framework.RaplaLocale;
 import org.rapla.inject.DefaultImplementation;
 import org.rapla.inject.InjectionContext;
 import org.rapla.plugin.tableview.RaplaTableColumn;
+import org.rapla.plugin.tableview.internal.DefaultRaplaTableColumn;
 import org.rapla.plugin.tableview.internal.RaplaTableColumnFactory;
 import org.rapla.plugin.tableview.internal.TableConfig.TableColumnConfig;
 
@@ -27,7 +28,7 @@ public class ServerTableColumnFactory implements RaplaTableColumnFactory
     @Override
     public RaplaTableColumn createColumn(TableColumnConfig column, User user,RaplaLocale raplaLocale)
     {
-        return new RaplaSeverTableColumnImpl(column, raplaLocale, facade, user);
+        return new DefaultRaplaTableColumn(column, raplaLocale, facade, user);
     }
 
 }

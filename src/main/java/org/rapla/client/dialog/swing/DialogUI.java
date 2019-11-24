@@ -76,10 +76,10 @@ public class DialogUI extends JDialog
     private RaplaResources i18n;
     private CommandScheduler scheduler;
 
-    private ButtonListener buttonListener = new ButtonListener();
+    private AbortListener abortListener = new AbortListener();
     private boolean m_modal;
 
-    private Runnable abortAction = () -> close();
+    private Runnable closeAction = () -> close();
 
     protected Point p = null;
 
@@ -147,7 +147,7 @@ public class DialogUI extends JDialog
          <a href="http://www.javaworld.com/javaworld/javatips/jw-javatip72.html">Java-Tip 72</a>
     */
         KeyStroke stroke = KeyStroke.getKeyStroke(KeyEvent.VK_ESCAPE, 0);
-        contentPane.getActionMap().put("abort",buttonListener);
+        contentPane.getActionMap().put("abort", abortListener);
         contentPane.getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW).put(stroke,"abort");
     }
 
@@ -165,8 +165,10 @@ public class DialogUI extends JDialog
         @Override
         public void actionPerformed(ActionEvent e)
         {
-            action.run();
-
+            if (action != null)
+            {
+                action.run();
+            }
         }
 
         @Override
@@ -202,10 +204,19 @@ public class DialogUI extends JDialog
 
     private RaplaButton createButton(String option) {
         RaplaButton button = new RaplaButton(option,RaplaButton.DEFAULT);
-        button.addActionListener(buttonListener);
         final UiDialogAction action = new UiDialogAction(i18n, button);
-        action.setRunnable(abortAction);
         button.setAction(action);
+        action.setRunnable(new Runnable()
+        {
+            @Override
+            public void run()
+            {
+                int selectedIndex = buttons.indexOf( button );
+                completable.complete( selectedIndex);
+                closeAction.run();
+            }
+        });
+        button.setDefaultCapable(true);
         button.setDefaultCapable(true);
         return button;
     }
@@ -222,20 +233,16 @@ public class DialogUI extends JDialog
         return jPanelButtons;
     }
 
-    class ButtonListener extends AbstractAction {
+    class AbortListener extends AbstractAction {
         private static final long serialVersionUID = 1L;
         public void actionPerformed(ActionEvent evt) {
-            int selectedIndex = buttons.indexOf( evt.getSource());
-            if (selectedIndex == -1) {
-                abortAction.run();
-            }
-            completable.complete( selectedIndex);
+            closeAction.run();
         }
     }
 
     @Override
-    public void setAbortAction(Runnable action) {
-        abortAction = action;
+    public void setCloseAction(Runnable action) {
+        closeAction = action;
     }
 
 
@@ -281,6 +288,8 @@ public class DialogUI extends JDialog
 
     // The implementation of the FrameController Interface
     public void close() {
+        if ( completable != null && !completable.isDone())
+            completable.complete( -1);
         if (bClosed)
             return;
         dispose();
@@ -384,6 +393,7 @@ public class DialogUI extends JDialog
         if (id == WindowEvent.WINDOW_CLOSING) {
             try {
                 fireFrameClosing();
+
                 close();
             } catch (PropertyVetoException ex) {
                 return;

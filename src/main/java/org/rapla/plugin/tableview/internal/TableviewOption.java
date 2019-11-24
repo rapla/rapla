@@ -368,7 +368,7 @@ import java.util.Set;
         {
             this.selectedTable = selectedTable;
             final Collection<TableColumnConfig> columns = tableConfig.getColumns(selectedTable);
-            final Locale locale = getLocale();
+            final Locale locale = raplaLocale.getLocale();
             listModel.removeAllElements();
             rows.clear();
             if (columns != null)

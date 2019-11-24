@@ -17,6 +17,7 @@ import org.rapla.client.extensionpoints.UserOptionPanel;
 import org.rapla.client.swing.RaplaGUIComponent;
 import org.rapla.components.layout.TableLayout;
 import org.rapla.entities.configuration.Preferences;
+import org.rapla.facade.PeriodModel;
 import org.rapla.facade.client.ClientFacade;
 import org.rapla.facade.internal.CalendarOptionsImpl;
 import org.rapla.framework.RaplaException;
@@ -38,20 +39,38 @@ public class WarningsOption extends RaplaGUIComponent implements UserOptionPanel
     Preferences preferences;
     JCheckBox showConflictWarningsField = new JCheckBox();
     JCheckBox showNotInCalendarWarningsField = new JCheckBox();
-
+    JCheckBox showHolidayWarnings = new JCheckBox();
+    final boolean isHolidayEnabled;
     @Inject
     public WarningsOption(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger) {
         super(facade, i18n, raplaLocale, logger);
         showConflictWarningsField.setText("");        
         double pre = TableLayout.PREFERRED;
-        panel.setLayout( new TableLayout(new double[][] {{pre, 5,pre}, {pre,5,pre}}));
+        panel.setLayout( new TableLayout(new double[][] {{pre, 5,pre}, {pre,5,pre,5,pre}}));
         panel.add( new JLabel(getString("warning.conflict")),"0,0");
         panel.add( showConflictWarningsField,"2,0");
         panel.add( new JLabel(getString("warning.not_in_calendar_option")),"0,2");
         panel.add( showNotInCalendarWarningsField,"2,2");
-
+        isHolidayEnabled = isHolidayEnabled(facade);
+        if (isHolidayEnabled)
+        {
+            panel.add(new JLabel("WARNUNG: Konflikt mit Feiertagen"), "0,4");
+            panel.add(showHolidayWarnings, "2,4");
+        }
     }
 
+    protected boolean isHolidayEnabled(ClientFacade facade)
+    {
+        try
+        {
+            final PeriodModel feiertag = facade.getRaplaFacade().getPeriodModelFor("feiertag");
+            return feiertag != null;
+        }
+        catch (RaplaException e)
+        {
+            return false;
+        }
+    }
 
     @Override
     public boolean isEnabled()
@@ -80,6 +99,11 @@ public class WarningsOption extends RaplaGUIComponent implements UserOptionPanel
             boolean config = preferences.getEntryAsBoolean( CalendarOptionsImpl.SHOW_NOT_IN_CALENDAR_WARNING, true);
             showNotInCalendarWarningsField.setSelected( config);
         }
+        if (isHolidayEnabled)
+        {
+            boolean config = preferences.getEntryAsBoolean( CalendarOptionsImpl.SHOW_HOLIDAY_WARNING, true);
+            showHolidayWarnings.setSelected( config);
+        }
     }
 
     public void commit() {
@@ -92,6 +116,11 @@ public class WarningsOption extends RaplaGUIComponent implements UserOptionPanel
         {
             boolean selected = showNotInCalendarWarningsField.isSelected();
             preferences.putEntry( CalendarOptionsImpl.SHOW_NOT_IN_CALENDAR_WARNING, selected);
+        }
+        if (isHolidayEnabled)
+        {
+            boolean selected = showHolidayWarnings.isSelected();
+            preferences.putEntry( CalendarOptionsImpl.SHOW_HOLIDAY_WARNING, selected);
         }
     }
 

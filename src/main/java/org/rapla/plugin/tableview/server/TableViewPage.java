@@ -1,6 +1,5 @@
 package org.rapla.plugin.tableview.server;
 
-import org.rapla.components.util.IOUtil;
 import org.rapla.components.util.Tools;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.facade.CalendarModel;
@@ -8,21 +7,16 @@ import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.plugin.abstractcalendar.server.AbstractHTMLCalendarPage;
 import org.rapla.plugin.tableview.RaplaTableColumn;
+import org.rapla.plugin.tableview.RaplaTableModel;
 
 import javax.servlet.ServletContext;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
-import java.net.URLEncoder;
-import java.text.SimpleDateFormat;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
-abstract public class TableViewPage<T, C>
+abstract public class TableViewPage<T>
 {
 
     protected CalendarModel model;
@@ -64,6 +58,8 @@ abstract public class TableViewPage<T, C>
     private void generagePageCSV(HttpServletRequest request, HttpServletResponse response, CalendarModel model) throws IOException, ServletException
     {
         response.setContentType("text/comma-separated-values; charset=" + raplaLocale.getCharsetNonUtf());
+        String filename = model.getFilename();
+        response.setHeader("Content-Disposition","attachment; filename=\""+filename+".csv\"");
         java.io.PrintWriter out = response.getWriter();
         try
         {
@@ -138,60 +134,11 @@ abstract public class TableViewPage<T, C>
         out.close();
     }
 
-    class TableRow implements Comparable<TableRow>
-    {
-        T object;
-        @SuppressWarnings("rawtypes")
-        Map<RaplaTableColumn, Integer> sortDirections;
-
-        TableRow(T originalObject, Map<RaplaTableColumn, Integer> sortDirections)
-        {
-            this.object = originalObject;
-            this.sortDirections = sortDirections;
-        }
-
-        @SuppressWarnings({ "rawtypes", "unchecked" })
-        public int compareTo(TableRow o)
-        {
-            if (o.equals(this))
-            {
-                return 0;
-            }
-            for (Map.Entry<RaplaTableColumn, Integer> entry : sortDirections.entrySet())
-            {
-                RaplaTableColumn column = entry.getKey();
-                int direction = entry.getValue();
-                Object v1 = column.getValue(object);
-                Object v2 = column.getValue(o.object);
-                if (v1 != null && v2 != null)
-                {
-                    Class<?> columnClass = column.getColumnClass();
-                    if (columnClass.equals(String.class))
-                    {
-                        return String.CASE_INSENSITIVE_ORDER.compare(v1.toString(), v2.toString()) * direction;
-                    }
-                    else if (columnClass.isAssignableFrom(Comparable.class))
-                    {
-                        return ((Comparable) v1).compareTo(v2) * direction;
-                    }
-                }
-            }
-            T object1 = object;
-            T object2 = o.object;
-            return TableViewPage.this.compareTo(object1, object2);
-        }
-    }
-
-    public String getCalendarBody(List<RaplaTableColumn<T, C>> columPlugins, Collection<T> rowObjects, Map<RaplaTableColumn, Integer> sortDirections) {
-        List<TableRow> rows = new ArrayList<>();
-        for (T r : rowObjects)
-        {
-            rows.add(new TableRow(r, sortDirections));
-        }
-        Collections.sort(rows);
+    public String getCalendarBody(List<RaplaTableColumn<T>> columPlugins, Collection<T> rowObjects, Map<RaplaTableColumn<T>, Integer> sortDirections) {
+        final List<T> rows = RaplaTableModel.sortRows(rowObjects, sortDirections, getFallbackComparator());
         if (isCsv())
         {
-            return  getCalendarBodyCSV(columPlugins, rows);
+            return RaplaTableModel.getCSV(columPlugins, rows);
         }
         else
         {
@@ -199,13 +146,13 @@ abstract public class TableViewPage<T, C>
         }
     }
 
-    public String getCalendarBodyHTML(List<RaplaTableColumn<T, C>> columPlugins, List<TableRow> rows)
+    public String getCalendarBodyHTML(List<RaplaTableColumn<T>> columPlugins, List<T> rows)
     {
 
         StringBuffer buf = new StringBuffer();
         buf.append("<table class='export table table-striped table-bordered' style='width: 99%; margin: 0 auto;'>");
         buf.append("<thead><tr>");
-        for (RaplaTableColumn<?, C> col : columPlugins)
+        for (RaplaTableColumn<?> col : columPlugins)
         {
             buf.append("<th>");
             buf.append(col.getColumnName());
@@ -213,14 +160,13 @@ abstract public class TableViewPage<T, C>
         }
         buf.append("</tr></thead>");
         buf.append("<tbody>");
-        for (TableRow row : rows)
+        for (T row : rows)
         {
             buf.append("<tr>");
-            for (RaplaTableColumn<T, C> col : columPlugins)
+            for (RaplaTableColumn<T> col : columPlugins)
             {
                 buf.append("<td>");
-                T rowObject = row.object;
-                final String htmlValue = col.getHtmlValue(rowObject);
+                final String htmlValue = col.getHtmlValue(row);
                 buf.append(htmlValue);
                 buf.append("</td>");
             }
@@ -233,56 +179,11 @@ abstract public class TableViewPage<T, C>
         return result;
     }
 
-    private static final String LINE_BREAK = "\n";
-    private static final String CELL_BREAK = ";";
-    public String getCalendarBodyCSV(List<RaplaTableColumn<T, C>> columns, List<TableRow> rows)
-    {
-        StringBuffer buf = new StringBuffer();
-        for (RaplaTableColumn column : columns)
-        {
-            buf.append(column.getColumnName());
-            buf.append(CELL_BREAK);
-        }
-        for (TableRow row : rows)
-        {
-            buf.append(LINE_BREAK);
-            for (RaplaTableColumn column : columns)
-            {
-                T rowObject = row.object;
-                Object value = column.getValue(rowObject);
-                Class columnClass = column.getColumnClass();
-                boolean isDate = columnClass.isAssignableFrom(java.util.Date.class);
-                String formated = "";
-                if (value != null)
-                {
-                    if (isDate)
-                    {
-                        SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
-                        format.setTimeZone(IOUtil.getTimeZone());
-                        String timestamp = format.format((java.util.Date) value);
-                        formated = timestamp;
-                    }
-                    else
-                    {
-                        String escaped = escape(value);
-                        formated = escaped;
-                    }
-                }
-                buf.append(formated);
-                buf.append(CELL_BREAK);
-            }
-        }
-        final String result = buf.toString();
-        return result;
-    }
 
-    private String escape(Object cell) {
-        return cell.toString().replace(LINE_BREAK, " ").replace(CELL_BREAK, " ");
-    }
+    protected abstract String getCalendarBody() throws RaplaException;
 
-    abstract String getCalendarBody() throws RaplaException;
-
-    abstract int compareTo(T object1, T object2);
+    /** Comparator to be used, when no sorting option is defined */
+    protected abstract Comparator<T> getFallbackComparator();
 
 
 }

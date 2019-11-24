@@ -86,13 +86,15 @@ import java.awt.Insets;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.ItemEvent;
-import java.awt.event.ItemListener;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.Date;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
@@ -220,6 +222,12 @@ public class AppointmentController extends RaplaGUIComponent implements Disposab
         commandHistory.storeAndExecute(repeatingCommand);
     }
 
+    public void addExceptions(List<TimeInterval> addedException)
+    {
+        UndoExceptionChange command = new UndoExceptionChange(addedException, new Object[] {} );
+        commandHistory.storeAndExecute(command);
+    }
+
     public void setAppointment(Appointment appointment)
     {
         this.appointment = appointment;
@@ -315,6 +323,7 @@ public class AppointmentController extends RaplaGUIComponent implements Disposab
         {
             listeners[i].stateChanged(evt);
         }
+        repeatingEditor.updateExceptionCount();
         getLogger().debug("appointment changed: " + appointment);
     }
 
@@ -1371,7 +1380,7 @@ public class AppointmentController extends RaplaGUIComponent implements Disposab
             exceptionDlg = dialogUiFactory
                     .createContentDialog(popupContext, exceptionEditor.getComponent(), new String[] { getString("close") });
             exceptionDlg.setTitle(getString("appointment.exceptions"));
-            exceptionDlg.start(true).thenRun(this::updateExceptionCount);
+            exceptionDlg.start(true);
         }
 
         private void doChanges()
@@ -1590,9 +1599,10 @@ public class AppointmentController extends RaplaGUIComponent implements Disposab
         private void addException()
         {
             Date exceptionStart = this.exceptionStart.getDate();
-            Date exceptionEnd = this.exceptionEnd.getDate();
-            UndoExceptionChange command = new UndoExceptionChange(exceptionStart, exceptionEnd, null);
-            commandHistory.storeAndExecute(command);
+            Date exceptionEnd = DateTools.fillDate(this.exceptionEnd.getDate());
+            final TimeInterval timeInterval = new TimeInterval(exceptionStart, exceptionEnd);
+            final List<TimeInterval> addedException = Collections.singletonList(timeInterval);
+            addExceptions(addedException);
         }
 
         @SuppressWarnings("deprecation")
@@ -1601,7 +1611,7 @@ public class AppointmentController extends RaplaGUIComponent implements Disposab
             if (specialExceptions.getSelectedValues() == null)
                 return;
             Object[] selectedExceptions = specialExceptions.getSelectedValues();
-            UndoExceptionChange command = new UndoExceptionChange(null, null, selectedExceptions);
+            UndoExceptionChange command = new UndoExceptionChange(Collections.emptyList(), selectedExceptions);
             commandHistory.storeAndExecute(command);
         }
 
@@ -1613,80 +1623,91 @@ public class AppointmentController extends RaplaGUIComponent implements Disposab
             }
         }
 
-        /**
-         * This class collects any information of changes done to the exceptions
-         * of an appointment, if a repeating-type is selected.
-         * This is where undo/redo for the changes of the exceptions within a repeating-type-appointment
-         * at the right of the edit view is realized.
-         * @author Jens Fritz
-         *
-         */
+    }
 
-        //Erstellt von Dominik Krickl-Vorreiter
-        public class UndoExceptionChange implements CommandUndo<RuntimeException>
+    /**
+     * This class collects any information of changes done to the exceptions
+     * of an appointment, if a repeating-type is selected.
+     * This is where undo/redo for the changes of the exceptions within a repeating-type-appointment
+     * at the right of the edit view is realized.
+     * @author Jens Fritz
+     *
+     */
+    public class UndoExceptionChange implements CommandUndo<RuntimeException>
+    {
+        boolean add;
+        Collection<TimeInterval> exceptions;
+
+        Object[] removedExceptions;
+
+        public UndoExceptionChange(Collection<TimeInterval> addedException, Object[] removedExceptions)
         {
-            boolean add;
-            Date exceptionStart;
-            Date exceptionEnd;
-            Object[] selectedExceptions;
+            this.add = !addedException.isEmpty() ;
+            this.removedExceptions = removedExceptions;
+            this.exceptions = addedException;
+        }
 
-            public UndoExceptionChange(Date exceptionStart, Date exceptionEnd, Object[] selectedExceptions)
+        @SuppressWarnings("unchecked")
+        public Promise<Void> execute()
+        {
+            Repeating repeating = appointment.getRepeating();
+            if (repeating == null)
             {
-                this.add = exceptionStart != null;
-                this.exceptionStart = exceptionStart;
-                this.exceptionEnd = exceptionEnd;
-                this.selectedExceptions = selectedExceptions;
-            }
-
-            @SuppressWarnings("unchecked")
-            public Promise<Void> execute()
-            {
-                Repeating repeating = appointment.getRepeating();
-                if (add)
-                {
-                    final TimeInterval interval = new TimeInterval(exceptionStart, DateTools.fillDate(exceptionEnd));
-                    repeating.addExceptions(interval);
-                    specialExceptions.setListData(repeating.getExceptions());
-                    fireAppointmentChanged();
-                }
-                else
-                {
-                    for (int i = 0; i < selectedExceptions.length; i++)
-                    {
-                        repeating.removeException((Date) selectedExceptions[i]);
-                    }
-                    specialExceptions.setListData(repeating.getExceptions());
-                    fireAppointmentChanged();
-                }
                 return ResolvedPromise.VOID_PROMISE;
             }
-
-            @SuppressWarnings("unchecked")
-            public Promise<Void> undo()
+            if (add)
             {
-                Repeating repeating = appointment.getRepeating();
-                if (add)
-                {
-                    repeating.removeException(exceptionStart);
-                    specialExceptions.setListData(repeating.getExceptions());
-                    fireAppointmentChanged();
-                }
-                else
-                {
-                    for (int i = 0; i < selectedExceptions.length; i++)
-                    {
-                        repeating.addException((Date) selectedExceptions[i]);
-                    }
-                    specialExceptions.setListData(repeating.getExceptions());
-                    fireAppointmentChanged();
-                }
-                return ResolvedPromise.VOID_PROMISE;
+                exceptions.forEach( repeating::addExceptions);
+                updateExcpetionEditor(repeating);
+                fireAppointmentChanged();
             }
-
-            public String getCommandoName()
+            else
             {
-                return getString("change") + " " + getString("appointment");
+                for (int i = 0; i < removedExceptions.length; i++)
+                {
+                    repeating.removeException((Date) removedExceptions[i]);
+                }
+                updateExcpetionEditor(repeating);
+                fireAppointmentChanged();
             }
+            return ResolvedPromise.VOID_PROMISE;
+        }
+
+        @SuppressWarnings("unchecked")
+        public Promise<Void> undo()
+        {
+            Repeating repeating = appointment.getRepeating();
+            if (add)
+            {
+                exceptions.forEach( (exception)-> repeating.removeException( exception.getStart()));
+                updateExcpetionEditor(repeating);
+                fireAppointmentChanged();
+            }
+            else
+            {
+                for (int i = 0; i < removedExceptions.length; i++)
+                {
+                    repeating.addException((Date) removedExceptions[i]);
+                }
+                updateExcpetionEditor(repeating);
+                fireAppointmentChanged();
+            }
+            return ResolvedPromise.VOID_PROMISE;
+        }
+
+        public String getCommandoName()
+        {
+            return getString("change") + " " + getString("appointment");
+        }
+    }
+
+    protected void updateExcpetionEditor(Repeating repeating)
+    {
+        if (repeatingEditor == null) {
+            return;
+        }
+        if ( repeatingEditor.exceptionEditor != null) {
+            repeatingEditor.exceptionEditor.specialExceptions.setListData(repeating.getExceptions());
         }
     }
 

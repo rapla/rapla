@@ -3,28 +3,25 @@ package org.rapla.plugin.tableview;
 import jsinterop.annotations.JsIgnore;
 import jsinterop.annotations.JsType;
 import org.jetbrains.annotations.NotNull;
+import org.rapla.components.util.IOUtil;
 import org.rapla.facade.CalendarModel;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
+import java.text.SimpleDateFormat;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @JsType
-public class RaplaTableModel<T, C>
+public class RaplaTableModel<T>
 {
     private List<T> rows = new ArrayList<>();
-    private RaplaTableColumn<T, C>[] columns;
+    private RaplaTableColumn<T>[] columns;
     private List<Object[]> data = new ArrayList<>();
     private List<String> columnNames = new ArrayList<>();
 
-    public RaplaTableModel( Collection<RaplaTableColumn<T, C>> columnPlugins) {
+    public RaplaTableModel( Collection<RaplaTableColumn<T>> columnPlugins) {
         columns = new RaplaTableColumn[columnPlugins.size()];
         int column = 0;
-        for (RaplaTableColumn<T, C> col: columnPlugins)
+        for (RaplaTableColumn<T> col: columnPlugins)
         {
         	columnNames.add( col.getColumnName());
         	this.columns[column++]= col;
@@ -33,11 +30,11 @@ public class RaplaTableModel<T, C>
 
     @NotNull
     @JsIgnore
-    static public Map<RaplaTableColumn, Integer> getSortDirections(CalendarModel model,List<? extends RaplaTableColumn> columPlugins, String tableViewName)
+    static public <T> Map<RaplaTableColumn<T>, Integer> getSortDirections(CalendarModel model,List<? extends RaplaTableColumn<T>> columPlugins, String tableViewName)
     {
         final String sortingStringOption = TableViewPlugin.getSortingStringOption(tableViewName);
         String sorting = model.getOption(sortingStringOption);
-        Map<RaplaTableColumn, Integer> sortDirections = new LinkedHashMap<>();
+        Map<RaplaTableColumn<T>, Integer> sortDirections = new LinkedHashMap<>();
         if (sorting != null)
         {
             for (String string : sorting.split(";"))
@@ -53,10 +50,10 @@ public class RaplaTableModel<T, C>
                 }
             }
         }
-        if (sortDirections.isEmpty())
-        {
-            sortDirections.put(columPlugins.get(0), 1);
-        }
+        //if (sortDirections.isEmpty())
+        //{
+        //    sortDirections.put(columPlugins.get(0), 1);
+        //}
         return sortDirections;
     }
 
@@ -70,7 +67,7 @@ public class RaplaTableModel<T, C>
         return columnNames;
     }
 
-    public RaplaTableModel<T,C> setObjects(List<T> objects)
+    public RaplaTableModel<T> setObjects(List<T> objects)
     {
         data = objects.stream().parallel()
                 .map((obj) -> Arrays.stream(columns).map((column) -> column.getValue(obj)).toArray()).collect(Collectors.toList());
@@ -114,7 +111,7 @@ public class RaplaTableModel<T, C>
     }
     
     public Class<?> getColumnClass(int columnIndex) {
-        RaplaTableColumn<T, C> tableColumn = columns[ columnIndex];
+        RaplaTableColumn<T> tableColumn = columns[ columnIndex];
         return tableColumn.getColumnClass();
     }
 
@@ -123,4 +120,80 @@ public class RaplaTableModel<T, C>
     {
         return data.toString();
     }
+
+    private static final String LINE_BREAK = "\n";
+    private static final String CELL_BREAK = ";";
+    static public <T> String getCSV(List<RaplaTableColumn<T>> columns, List<T> rows)
+    {
+        StringBuffer buf = new StringBuffer();
+        for (RaplaTableColumn column : columns)
+        {
+            buf.append(column.getColumnName());
+            buf.append(CELL_BREAK);
+        }
+        for (T row : rows)
+        {
+            buf.append(LINE_BREAK);
+            for (RaplaTableColumn column : columns)
+            {
+                T rowObject = row;
+                Object value = column.getValue(rowObject);
+                Class columnClass = column.getColumnClass();
+                boolean isDate = columnClass.isAssignableFrom(java.util.Date.class);
+                String formated = "";
+                if (value != null)
+                {
+                    if (isDate)
+                    {
+                        SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+                        format.setTimeZone(IOUtil.getTimeZone());
+                        String timestamp = format.format((java.util.Date) value);
+                        formated = timestamp;
+                    }
+                    else
+                    {
+                        String escaped = escape(value);
+                        formated = escaped;
+                    }
+                }
+                buf.append(formated);
+                buf.append(CELL_BREAK);
+            }
+        }
+        final String result = buf.toString();
+        return result;
+    }
+
+    static private String escape(Object cell) {
+        return cell.toString().replace(LINE_BREAK, " ").replace(CELL_BREAK, " ");
+    }
+
+    static public <T> List<T> sortRows(Collection<T> rowObjects, Map<RaplaTableColumn<T>, Integer> sortDirections,Comparator<T> fallbackComparator) {
+        List<T> result = new ArrayList<>(rowObjects);
+        Comparator<T> comparator = new Comparator<T>() {
+            public int compare(T o1, T o2) {
+                if (o2.equals(o1)) {
+                    return 0;
+                }
+                for (Map.Entry<RaplaTableColumn<T>, Integer> entry : sortDirections.entrySet()) {
+                    RaplaTableColumn column = entry.getKey();
+                    int direction = entry.getValue();
+                    Object v1 = column.getValue(o1);
+                    Object v2 = column.getValue(o2);
+                    if (v1 != null && v2 != null) {
+                        Class<?> columnClass = column.getColumnClass();
+                        if (columnClass.equals(String.class)) {
+                            return String.CASE_INSENSITIVE_ORDER.compare(v1.toString(), v2.toString()) * direction;
+                        } else if (columnClass.isAssignableFrom(Comparable.class)) {
+                            return ((Comparable) v1).compareTo(v2) * direction;
+                        }
+                    }
+                }
+                return fallbackComparator.compare(o1, o2);
+            }
+        };
+        Collections.sort(result, comparator);
+        return  result;
+    }
+
 }

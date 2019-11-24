@@ -32,7 +32,6 @@ import org.rapla.components.i18n.client.swing.SwingBundleManager;
 import org.rapla.components.i18n.internal.AbstractBundleManager;
 import org.rapla.components.util.LocaleTools;
 import org.rapla.entities.User;
-import org.rapla.facade.RaplaFacade;
 import org.rapla.facade.UpdateErrorListener;
 import org.rapla.facade.client.ClientFacade;
 import org.rapla.facade.internal.ClientFacadeImpl;
@@ -590,7 +589,7 @@ public class RaplaClientServiceImpl implements ClientService, UpdateErrorListene
                 {
                     Component owner = null;
                     final DialogInterface dialog = dialogUiFactory.createInfoDialog(new SwingPopupContext(owner, null), title, message);
-                    dialog.setAbortAction(()->
+                    dialog.setCloseAction(()->
                     {
                         getLogger().warn("restart");
                         dialog.close();

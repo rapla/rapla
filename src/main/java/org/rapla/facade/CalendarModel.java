@@ -28,7 +28,9 @@ public interface CalendarModel extends Cloneable, ClassifiableFilter
 
 	String getNonEmptyTitle();
 
-    User getUser();
+	String getFilename();
+
+	User getUser();
 
     Date getSelectedDate();
 

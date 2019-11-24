@@ -33,34 +33,34 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.swing.table.TableColumn;
 import java.io.IOException;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 
 @Extension(provides = HTMLViewPage.class, id = TableViewPlugin.TABLE_APPOINTMENTS_VIEW) public class AppointmentTableViewPage
         implements HTMLViewPage
 {
-    private TableViewPage<AppointmentBlock, TableColumn> tableViewPage;
+    private TableViewPage<AppointmentBlock> tableViewPage;
 
     @Inject public AppointmentTableViewPage(PromiseWait waiter,RaplaLocale raplaLocale, final TableConfig.TableConfigLoader tableConfigLoader)
     {
-        tableViewPage = new TableViewPage<AppointmentBlock, TableColumn>(raplaLocale) {
+        tableViewPage = new TableViewPage<AppointmentBlock>(raplaLocale) {
 
             @Override
-            public String getCalendarBody() throws RaplaException
+            protected String getCalendarBody() throws RaplaException
             {
                 User user = model.getUser();
                 final String tableViewName = TableConfig.APPOINTMENTS_VIEW;
-                List<RaplaTableColumn<AppointmentBlock, TableColumn>> columnPlugins = tableConfigLoader.loadColumns(tableViewName, user);
+                List<RaplaTableColumn<AppointmentBlock>> columnPlugins = tableConfigLoader.loadColumns(tableViewName, user);
                 final TimeInterval timeIntervall = model.getTimeIntervall();
                 final List<AppointmentBlock> blocks = waiter.waitForWithRaplaException(model.queryBlocks(timeIntervall), 10000);
-                Map<RaplaTableColumn, Integer> sortDirections = RaplaTableModel.getSortDirections(model,columnPlugins, tableViewName);
+                Map<RaplaTableColumn<AppointmentBlock>, Integer> sortDirections = RaplaTableModel.getSortDirections(model,columnPlugins, tableViewName);
                 return getCalendarBody(columnPlugins, blocks, sortDirections);
             }
 
             @Override
-            public int compareTo(AppointmentBlock object1, AppointmentBlock object2)
-            {
-                return object1.compareTo(object2);
+            protected Comparator<AppointmentBlock> getFallbackComparator() {
+                return Comparator.naturalOrder();
             }
             
         };

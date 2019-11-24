@@ -2,6 +2,7 @@ package org.rapla.components.util;
 
 import jsinterop.annotations.JsMethod;
 import jsinterop.annotations.JsType;
+import org.jetbrains.annotations.NotNull;
 import org.rapla.components.util.DateTools.TimeWithoutTimezone;
 
 import java.util.Date;
@@ -204,13 +205,23 @@ public class SerializableDateTimeFormat
     */
     @JsMethod(name = "formatDate_")
     public String formatDate( Date date, boolean adaptDay ) {
-    	StringBuilder buf = new StringBuilder();
-    	DateTools.DateWithoutTimezone splitDate;
-    	splitDate = DateTools.toDate( date.getTime()  - (adaptDay ?  DateTools.MILLISECONDS_PER_DAY : 0));
+        final char splitChar = '-';
+        return formatDate(date, adaptDay, splitChar);
+    }
+
+    @NotNull
+    public String formatDate(Date date, boolean adaptDay, Character splitChar) {
+        StringBuilder buf = new StringBuilder();
+        DateTools.DateWithoutTimezone splitDate;
+        splitDate = DateTools.toDate( date.getTime()  - (adaptDay ?  DateTools.MILLISECONDS_PER_DAY : 0));
         append( buf, splitDate.year, 4 );
-        buf.append( '-' );
+        if (splitChar != null) {
+            buf.append(splitChar);
+        }
         append( buf, splitDate.month, 2 );
-        buf.append( '-' );
+        if (splitChar != null) {
+            buf.append(splitChar);
+        }
         append( buf, splitDate.day, 2 );
         return buf.toString();
     }

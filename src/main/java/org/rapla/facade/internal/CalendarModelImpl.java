@@ -13,8 +13,10 @@
 
 package org.rapla.facade.internal;
 
+import org.jetbrains.annotations.NotNull;
 import org.rapla.components.util.Assert;
 import org.rapla.components.util.DateTools;
+import org.rapla.components.util.SerializableDateTimeFormat;
 import org.rapla.components.util.TimeInterval;
 import org.rapla.entities.Entity;
 import org.rapla.entities.IllegalAnnotationException;
@@ -51,6 +53,7 @@ import org.rapla.facade.client.ClientFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaInitializationException;
 import org.rapla.framework.RaplaLocale;
+import org.rapla.framework.internal.AbstractRaplaLocale;
 import org.rapla.inject.DefaultImplementation;
 import org.rapla.inject.InjectionContext;
 import org.rapla.logger.Logger;
@@ -678,6 +681,33 @@ public class CalendarModelImpl implements CalendarSelectionModel
 
         return types;
     }
+
+    @Override
+    public String getFilename() {
+        StringBuilder builder = new StringBuilder();
+        String rawFilename = getNonEmptyTitle();
+        if (rawFilename.isEmpty()) {
+            try {
+                rawFilename =operator.getPreferences(null, true).getEntryAsString(AbstractRaplaLocale.TITLE, "calendar");
+            } catch (RaplaException e) {
+                rawFilename = "calendar";
+            }
+        }
+
+        final String str = convertToFilename(rawFilename);
+        builder.append(str);
+        builder.append("_");
+        builder.append(SerializableDateTimeFormat.INSTANCE.formatDate( getStartDate(),false,null));
+        builder.append("-");
+        builder.append(SerializableDateTimeFormat.INSTANCE.formatDate( getEndDate(),true,null));
+        final String name = builder.toString();
+        return name;
+    }
+
+    private String convertToFilename(String filename) {
+        return filename.replaceAll("[^A-Za-z0-9]","_");
+    }
+
 
     public String getName(Object object)
     {

@@ -425,6 +425,12 @@ public final class ReservationEditImpl extends AbstractAppointmentEditor impleme
     }
 
     @Override
+    public void addExceptionsToCurrentAppointment(List<TimeInterval> exceptions)
+    {
+        appointmentEdit.getAppointmentController().addExceptions( exceptions);
+    }
+
+    @Override
     public Collection<Appointment> getSelectedAppointments()
     {
         Collection<Appointment> appointments = new ArrayList<>();

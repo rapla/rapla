@@ -100,7 +100,7 @@ public class VueDialog implements DialogInterface  {
   }
 
   @Override
-  public void setAbortAction(final Runnable abortAction) {
+  public void setCloseAction(final Runnable abortAction) {
     this.abortAction = abortAction;
   }
 

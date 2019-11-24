@@ -7,6 +7,7 @@ import org.rapla.RaplaResources;
 import org.rapla.client.AppointmentListener;
 import org.rapla.client.ReservationEdit;
 import org.rapla.client.gwt.window.VueWindow;
+import org.rapla.components.util.TimeInterval;
 import org.rapla.components.util.undo.CommandHistory;
 import org.rapla.entities.domain.Appointment;
 import org.rapla.entities.domain.AppointmentBlock;
@@ -23,6 +24,7 @@ import javax.inject.Inject;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
+import java.util.List;
 import java.util.Map;
 
 @JsType
@@ -118,6 +120,12 @@ public class ReservationEditImplGwt implements ReservationEdit<VueWindow>, VueWi
   @Override
   public boolean hasChanged() {
     return false;
+  }
+
+  @Override
+  public void addExceptionsToCurrentAppointment(List<TimeInterval> exceptions)
+  {
+
   }
 
   @Override

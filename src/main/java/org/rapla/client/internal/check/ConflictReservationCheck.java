@@ -31,9 +31,9 @@ public class ConflictReservationCheck implements EventCheck
     private final PermissionController permissionController;
     private final DialogUiFactoryInterface dialogUiFactory;
     private final ConflictDialogView conflictDialogView;
-    ClientFacade clientFacade;
-    RaplaFacade raplaFacade;
-    RaplaResources i18n;
+    final ClientFacade clientFacade;
+    final RaplaFacade raplaFacade;
+    final RaplaResources i18n;
 
     @Inject
     public ConflictReservationCheck(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, DialogUiFactoryInterface dialogUiFactory,

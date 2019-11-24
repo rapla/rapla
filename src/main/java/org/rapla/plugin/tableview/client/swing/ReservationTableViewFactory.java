@@ -101,7 +101,7 @@ public class ReservationTableViewFactory implements SwingViewFactory
     {
         Supplier<Promise<List<Reservation>>> initFunction = (() ->model.queryReservations(model.getTimeIntervall()).thenApply((list)->new ArrayList<>(list)));
         final String tableName = TableConfig.EVENTS_VIEW;
-        List<RaplaTableColumn<Reservation,TableColumn>> raplaTableColumns = tableConfigLoader.loadColumns(tableName, facade.getUser());
+        List<RaplaTableColumn<Reservation>> raplaTableColumns = tableConfigLoader.loadColumns(tableName, facade.getUser());
         return new SwingTableView<Reservation>(menuBar,facade, i18n, raplaLocale, logger, model, reservationSummaryExtensions, editable, printing, raplaTableColumns, menuFactory,
                 editController, reservationController, infoFactory,  dateChooser,  dialogUiFactory, ioInterface, initFunction, tableName);
     }

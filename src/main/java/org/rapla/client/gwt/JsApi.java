@@ -191,10 +191,10 @@ public class JsApi {
   }
 
   private <T> Promise<RaplaTableModel> loadTableModel(String viewId, Supplier<Promise<List<T>>> initFunction) {
-    RaplaTableModel<T, Object> tableModel;
+    RaplaTableModel<T> tableModel;
     try {
       User user = getUser();
-      List<RaplaTableColumn<T, Object>> raplaTableColumns = tableConfigLoader.loadColumns(viewId, user);
+      List<RaplaTableColumn<T>> raplaTableColumns = tableConfigLoader.loadColumns(viewId, user);
       tableModel = new RaplaTableModel<>(raplaTableColumns);
     } catch (RaplaException e) {
       return new ResolvedPromise<>(e);
