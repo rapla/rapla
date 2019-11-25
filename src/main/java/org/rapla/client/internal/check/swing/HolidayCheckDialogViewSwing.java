@@ -8,6 +8,7 @@ import org.rapla.client.swing.toolkit.RaplaTree;
 import org.rapla.inject.DefaultImplementation;
 import org.rapla.inject.InjectionContext;
 
+import javax.inject.Inject;
 import javax.swing.JCheckBox;
 import javax.swing.JComponent;
 import javax.swing.JPanel;
@@ -23,6 +24,10 @@ import java.util.List;
 @DefaultImplementation(of= HolidayCheckDialogView.class,context = InjectionContext.swing)
 public class HolidayCheckDialogViewSwing implements HolidayCheckDialogView
 {
+    @Inject
+    public HolidayCheckDialogViewSwing() {
+
+    }
     @Override
     public HolidayCheckPanel getConflictPanel(RaplaTreeNode root, boolean showCheckbox)
     {

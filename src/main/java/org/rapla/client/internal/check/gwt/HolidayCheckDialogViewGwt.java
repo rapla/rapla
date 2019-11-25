@@ -18,6 +18,10 @@ import java.util.Collection;
 @DefaultImplementation(of= HolidayCheckDialogView.class,context = InjectionContext.gwt)
 public class HolidayCheckDialogViewGwt implements HolidayCheckDialogView {
 
+    @Inject
+    public HolidayCheckDialogViewGwt() {
+
+    }
     @Override
     public HolidayCheckPanel getConflictPanel(RaplaTreeNode root, boolean showCheckbox)
     {
