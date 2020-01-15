@@ -552,13 +552,16 @@ public final class AppointmentImpl extends SimpleEntity implements Appointment
             return false;
         end = getOverlappingEnd(r2,r1);
         if (end != null && (end.getTime()<=s1 || end.getTime()<=s2))
-        // We cant compare the fixed interval length here so we have to compare the blocks
-        if ( !r1.isFixedIntervalLength())
+            return false;
+        // We can only compare fixed interval length repeatings here
+        if ( !r1.isFixedIntervalLength() )
         {
+            //  we have to compare the blocks for non fixed ones
             return overlapsHard( (AppointmentImpl)a2);
         }
-        if ( !r2.isFixedIntervalLength())
+        if ( !r2.isFixedIntervalLength()  )
         {
+            //  we have to compare the blocks for non fixed ones
             return ((AppointmentImpl)a2).overlapsHard( this);
         }
         // O.K. we found 2 Candidates for the hard way
@@ -616,6 +619,7 @@ public final class AppointmentImpl extends SimpleEntity implements Appointment
             DD=DE?BUG: print("Appointments don't overlap");
         return overlaps;
     }
+
 
     // check every block in the appointment
     private boolean overlapsHard( AppointmentImpl a2 )

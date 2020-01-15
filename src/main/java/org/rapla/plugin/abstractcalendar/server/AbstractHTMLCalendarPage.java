@@ -31,6 +31,7 @@ import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.logger.Logger;
 import org.rapla.plugin.abstractcalendar.HTMLRaplaBuilder;
+import org.rapla.plugin.abstractcalendar.MultiCalendarPrint;
 import org.rapla.plugin.abstractcalendar.RaplaBuilder;
 import org.rapla.scheduler.Promise;
 import org.rapla.server.PromiseWait;
@@ -55,9 +56,7 @@ import java.util.Locale;
 public abstract class AbstractHTMLCalendarPage  implements HTMLViewPage
 {
     protected AbstractHTMLView view;
-    protected String calendarviewHTML;
     protected CalendarModel model = null;
-    RaplaBuilder builder;
     final protected RaplaResources raplaResources;
     final protected RaplaLocale raplaLocale;
     final protected RaplaFacade facade;
@@ -105,12 +104,13 @@ public abstract class AbstractHTMLCalendarPage  implements HTMLViewPage
     abstract protected DateTools.IncrementSize getIncrementSize();
 
     public String getCalendarHTML() {
-        return calendarviewHTML;
+        return view != null ? view.getHtml() : "";
     }
 
     public String getDateChooserHTML( Date date) {
         return HTMLDateComponents.getDateSelection("", date, raplaLocale);
     }
+
 
     public Date getStartDate() {
         return view.getStartDate();
@@ -196,22 +196,24 @@ public abstract class AbstractHTMLCalendarPage  implements HTMLViewPage
             throw new ServletException( ex );
         }
         view.setLocale( raplaLocale );
-        view.setToDate(model.getSelectedDate());
-        model.setStartDate( view.getStartDate() );
-        model.setEndDate( view.getEndDate() );
-
-        try {
-            builder = createBuilder();
-        } catch (RaplaException ex) {
-            logger.error("Can't createInfoDialog builder ", ex);
-            out.close();
-            throw new ServletException( ex );
-        }
-        view.rebuild( builder);
 
         printPage(request, out, calendarview);
         out.close();
 	}
+
+    protected void rebuild() throws ServletException {
+        try {
+
+            view.setToDate(model.getSelectedDate());
+            model.setStartDate( view.getStartDate() );
+            model.setEndDate( view.getEndDate() );
+            RaplaBuilder builder = createBuilder();
+             view.rebuild( builder);
+        } catch (RaplaException ex) {
+            logger.error("Can't create builder ", ex);
+            throw new ServletException( ex );
+        }
+    }
 
     /**
      * @throws ServletException  
@@ -220,7 +222,6 @@ public abstract class AbstractHTMLCalendarPage  implements HTMLViewPage
     protected void printPage(HttpServletRequest request, java.io.PrintWriter out, Date currentDate) throws ServletException, UnsupportedEncodingException {
         boolean navigationVisible = isNavigationVisible( request );
 
-        calendarviewHTML = view.getHtml();
         out.println("<!DOCTYPE html>"); // we have HTML5 
 		out.println("<html>");
 		out.println("<head>");
@@ -247,6 +248,8 @@ public abstract class AbstractHTMLCalendarPage  implements HTMLViewPage
 		else
 		{
 		    String allocatable_id  = request.getParameter("allocatable_id");
+            final String pageRequestParam = request.getParameter("pages");
+            int selectedPageCount = pageRequestParam != null ? Integer.parseInt(pageRequestParam) : 1;
 		    // Start DateChooser
 			if (navigationVisible)
 			{
@@ -288,22 +291,36 @@ public abstract class AbstractHTMLCalendarPage  implements HTMLViewPage
 				out.println("<span class=\"spacer\">&nbsp;</span>");
 				// add the "today" button including the css class="super button"
 				out.println("<span class=\"button\"><input type=\"submit\" name=\"today\" value=\"" + getI18n().getString("today") + "\"/></span>");
-				out.println("<span class=\"spacer\">&nbsp;</span>");
+
 				// add the "next" button including the css class="super button"
 				out.println("<span class=\"button\"><input type=\"submit\" name=\"next\" value=\"&gt;&gt;\"/></span>");
-				out.println("</form>");
+                out.println("<span class=\"spacer\">&nbsp;</span>");
+                String incrementName = MultiCalendarPrint.getIncrementName( getIncrementSize(),getI18n());
+                out.println("<span>");
+                out.println(incrementName);
+                out.println(HTMLDateComponents.getCountSelect("pages",selectedPageCount,1,20, true));
+                out.println("</span>");
+                out.println("</form>");
 				out.println("</div>");
 			}
-			
 			// End DateChooser
 			// Start weekview
 			out.println("<h2 class=\"title\">");
 			out.println(getTitle());
 			out.println("</h2>");
-			out.println("<div id=\"calendar\">");
-			out.println(getCalendarHTML());
-			out.println("</div>");
-			
+
+            final Date selectedDate = model.getSelectedDate();
+            Date currentPrintDate = selectedDate;
+			for ( int i=0;i<selectedPageCount;i++) {
+                out.println("<div class=\"calendar\">");
+                int printOffset = (int) DateTools.countDays(selectedDate, currentPrintDate);
+                model.setSelectedDate(DateTools.addDays(selectedDate, printOffset));
+                rebuild();
+                currentPrintDate = DateTools.add(currentPrintDate, getIncrementSize(), 1);
+                out.println(getCalendarHTML());
+                out.println("</div>");
+            }
+
 			// end weekview
 		}
 		out.println("</body>");

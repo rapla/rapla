@@ -333,11 +333,7 @@ public abstract class AbstractRaplaSwingCalendar extends RaplaGUIComponent
         final Date selectedDate = model.getSelectedDate();
 
         int pages = getUnits();
-        Date targetDate;
-
-        {
-            targetDate = DateTools.add(selectedDate, getIncrementSize(), pages - 1);
-        }
+        Date targetDate = DateTools.add(selectedDate, getIncrementSize(), pages - 1);
 
         if (page <= 0)
         {
@@ -449,17 +445,8 @@ public abstract class AbstractRaplaSwingCalendar extends RaplaGUIComponent
     public String getCalendarUnit()
     {
         DateTools.IncrementSize incrementSize = getIncrementSize();
-        switch (incrementSize)
-        {
-            case DAY_OF_YEAR:
-                return getString("days");
-            case WEEK_OF_YEAR:
-                return getString("weeks");
-            case MONTH:
-                return getString("months");
-            default:
-                return "";
-        }
+        final RaplaResources i18n = this.i18n;
+        return MultiCalendarPrint.getIncrementName(incrementSize, i18n);
     }
 
     public int getUnits()

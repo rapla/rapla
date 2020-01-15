@@ -210,6 +210,7 @@ public class SerializableDateTimeFormat
     }
 
     @NotNull
+    @JsMethod(name = "formatDateSplit")
     public String formatDate(Date date, boolean adaptDay, Character splitChar) {
         StringBuilder buf = new StringBuilder();
         DateTools.DateWithoutTimezone splitDate;

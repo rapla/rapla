@@ -26,18 +26,7 @@ import org.rapla.entities.domain.RepeatingType;
 import org.rapla.entities.domain.internal.AppointmentImpl;
 import org.rapla.rest.client.internal.isodate.ISODateTimeFormat;
 
-import java.util.ArrayList;
-import java.util.Calendar;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.Date;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Locale;
-import java.util.Set;
-import java.util.TimeZone;
-import java.util.TreeSet;
+import java.util.*;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -61,6 +50,26 @@ public class AppointmentTest {
         return isoDateTimeFormat.parseTimestamp( date);
     }
 
+
+    @Test
+    public void testOverlapWithMoreDays() {
+        Appointment a1 = createAppointment("2020-1-15", "10:30", "12:00");
+        Appointment a2 = createAppointment("2020-1-20", "08:30", "13:00");
+        a1.setRepeatingEnabled(true);
+        a1.getRepeating().setType(RepeatingType.WEEKLY);
+        a1.getRepeating().setNumber(2);
+        a2.setRepeatingEnabled(true);
+        a2.getRepeating().setType(RepeatingType.WEEKLY);
+        final Date end = new Date(DateTools.toDate(2020, 1, 24));
+        a2.getRepeating().setEnd(end);
+        a2.getRepeating().setWeekdays(new HashSet<>(Arrays.asList(DateTools.MONDAY,DateTools.TUESDAY, DateTools.WEDNESDAY,DateTools.THURSDAY)));
+        final boolean overlaps1 = a2.overlapsAppointment(a1);
+        assertTrue(overlaps1);
+
+        final boolean overlaps2 = a1.overlapsAppointment(a2);
+        assertTrue(overlaps2);
+
+    }
 
     @Test
     public void testOverlapAndCompareTo()  {

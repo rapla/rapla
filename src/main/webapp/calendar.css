@@ -1,4 +1,4 @@
-#calendar * {
+.calendar * {
 	font-family: Helvetica,Arial,Verdana,sans-serif;
 }
 a, a:visited{
@@ -9,17 +9,17 @@ a:hover{
     color: black;
     background-color: #FFFF88;
 }
-#calendar a span.tooltip {
+.calendar a span.tooltip {
     display: none;
 }
 
-#calendar a span td {
+.calendar a span td {
     padding: 0px;
     font-size: small;
     color: black;
 }
 
-#calendar a td {
+.calendar a td {
     padding: 0px;
     font-size: small;
     color: black;
@@ -40,12 +40,12 @@ a:hover{
     color: black;
 }
 
-#calendar {
+.calendar {
    width: 100%;
 }
 
 /** calendar tooltip */
-#calendar a:hover span.tooltip {
+.calendar a:hover span.tooltip {
     display: block;
     bottom: 0.5em;
     right: 0.5em;
@@ -61,7 +61,7 @@ a:hover{
 }
 
 /* woraround for IE */
-#calendar a:hover span.tooltip {
+.calendar a:hover span.tooltip {
   // position: absolute;
 }
 
@@ -354,6 +354,11 @@ a:hover{
 @media print {
    .datechooser {
      display: none;
+   }
+   .calendar
+   {
+      clear:both;
+      page-break-after:always;
    }
 }
 

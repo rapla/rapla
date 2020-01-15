@@ -3,10 +3,9 @@ package org.rapla.plugin.tableview;
 import jsinterop.annotations.JsIgnore;
 import jsinterop.annotations.JsType;
 import org.jetbrains.annotations.NotNull;
-import org.rapla.components.util.IOUtil;
+import org.rapla.components.util.DateTools;
 import org.rapla.facade.CalendarModel;
 
-import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -139,15 +138,13 @@ public class RaplaTableModel<T>
                 T rowObject = row;
                 Object value = column.getValue(rowObject);
                 Class columnClass = column.getColumnClass();
-                boolean isDate = columnClass.isAssignableFrom(java.util.Date.class);
+                boolean isDate = columnClass.equals(java.util.Date.class);
                 String formated = "";
                 if (value != null)
                 {
                     if (isDate)
                     {
-                        SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
-                        format.setTimeZone(IOUtil.getTimeZone());
-                        String timestamp = format.format((java.util.Date) value);
+                        String timestamp = DateTools.formatDateTime( (java.util.Date) value);
                         formated = timestamp;
                     }
                     else
@@ -184,7 +181,7 @@ public class RaplaTableModel<T>
                         Class<?> columnClass = column.getColumnClass();
                         if (columnClass.equals(String.class)) {
                             return String.CASE_INSENSITIVE_ORDER.compare(v1.toString(), v2.toString()) * direction;
-                        } else if (columnClass.isAssignableFrom(Comparable.class)) {
+                        } else if (v1 instanceof Comparable) {
                             return ((Comparable) v1).compareTo(v2) * direction;
                         }
                     }
