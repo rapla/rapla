@@ -817,6 +817,15 @@ class ClassificationEdit extends RaplaGUIComponent implements ItemListener {
                     box.setSelectedIndex(5);
                 
             }
+            if (type.equals(AttributeType.STRING)) {
+                JComboBox box = (JComboBox)operatorComponent;
+                if (operator == null)
+                    operator = "contains";
+                if (operator.equals("contains"))
+                    box.setSelectedIndex(0);
+                if (operator.equals("starts"))
+                    box.setSelectedIndex(1);
+            }
         }
 
         private EditField createField(Attribute attribute) {
