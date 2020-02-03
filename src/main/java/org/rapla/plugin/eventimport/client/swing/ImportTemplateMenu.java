@@ -88,6 +88,7 @@ public class ImportTemplateMenu implements ImportMenuExtension, ActionListener
     private final TemplateImport importService;
     private final DialogUiFactory dialogFactory;
     private final IOInterface ioInterface;
+    boolean enabled;
 
     @Inject
     public ImportTemplateMenu(
@@ -110,7 +111,7 @@ public class ImportTemplateMenu implements ImportMenuExtension, ActionListener
         this.dialogFactory = dialogFactory;
         try
         {
-            facade.getSystemPreferences().getEntryAsBoolean(TemplateImport.TEMPLATE_IMPORT_ENABLED,false);
+             enabled = facade.getSystemPreferences().getEntryAsBoolean(TemplateImport.TEMPLATE_IMPORT_ENABLED, false);
         }
         catch (RaplaException e)
         {
@@ -133,7 +134,7 @@ public class ImportTemplateMenu implements ImportMenuExtension, ActionListener
     @Override
     public boolean isEnabled()
     {
-        return false;
+        return enabled;
     }
 
     @Override
