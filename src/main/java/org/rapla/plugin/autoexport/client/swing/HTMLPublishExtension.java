@@ -7,21 +7,18 @@ import org.rapla.client.swing.images.RaplaImages;
 import org.rapla.client.swing.toolkit.RaplaButton;
 import org.rapla.components.iolayer.IOInterface;
 import org.rapla.components.layout.TableLayout;
+import org.rapla.components.util.DateTools;
 import org.rapla.facade.CalendarModel;
 import org.rapla.facade.CalendarSelectionModel;
 import org.rapla.facade.client.ClientFacade;
 import org.rapla.facade.internal.CalendarModelImpl;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.logger.Logger;
+import org.rapla.plugin.abstractcalendar.MultiCalendarPrint;
 import org.rapla.plugin.autoexport.AutoExportPlugin;
 import org.rapla.plugin.autoexport.AutoExportResources;
 
-import javax.swing.BorderFactory;
-import javax.swing.ImageIcon;
-import javax.swing.JCheckBox;
-import javax.swing.JLabel;
-import javax.swing.JPanel;
-import javax.swing.JTextField;
+import javax.swing.*;
 import java.awt.BorderLayout;
 
 public class HTMLPublishExtension extends RaplaGUIComponent implements PublishExtension
@@ -39,7 +36,7 @@ public class HTMLPublishExtension extends RaplaGUIComponent implements PublishEx
 	 AutoExportResources autoExportI18n;
 	 RaplaResources i18n;
      private final IOInterface ioInterface;
-
+	JComboBox pagesBox;
 
 	 public HTMLPublishExtension(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger,CalendarSelectionModel model, AutoExportResources autoExportI18n, IOInterface ioInterface)
 	 {
@@ -48,9 +45,13 @@ public class HTMLPublishExtension extends RaplaGUIComponent implements PublishEx
         this.ioInterface = ioInterface;
         this.i18n = i18n;
     	this.model = model;
-
+		 String[] blockSizes = new String[52];
+		 for (int i=0;i<blockSizes.length;i++)
+		 {
+			 blockSizes[i] = String.valueOf(i+1);
+		 }
         panel.setLayout(new TableLayout( new double[][] {{TableLayout.PREFERRED,5,TableLayout.PREFERRED,5,TableLayout.FILL},
-                {TableLayout.PREFERRED,5,TableLayout.PREFERRED,5,TableLayout.PREFERRED,5,TableLayout.PREFERRED,5,TableLayout.PREFERRED, 5, TableLayout.PREFERRED,5, TableLayout.PREFERRED  }}));
+                {TableLayout.PREFERRED,5,TableLayout.PREFERRED,5,TableLayout.PREFERRED,5,TableLayout.PREFERRED,5,TableLayout.PREFERRED, 5,TableLayout.PREFERRED, 5, TableLayout.PREFERRED,5, TableLayout.PREFERRED  }}));
 	   	titleField = new JTextField(20);
         addCopyPaste(titleField, i18n, raplaLocale, ioInterface, logger);
   
@@ -73,11 +74,30 @@ public class HTMLPublishExtension extends RaplaGUIComponent implements PublishEx
         String dateString = CalendarModelImpl.getStartEndDate(getRaplaLocale(),model);
         panel.add(new JLabel(i18n.format("including_date",dateString)),"2,6");
         panel.add( saveSelectedDateField, "4,6");
-        panel.add(new JLabel(autoExportI18n.getString("only_allocation_info")),"2,8");
-        panel.add( onlyAllocationInfoField, "4,8");
-        panel.add(new JLabel(autoExportI18n.getString("resources_as_linklist")),"2,10");
-        panel.add( asLinkListField, "4,10");
-        panel.add( statusHtml, "2,12,4,1");
+        String viewId = model.getViewId();
+        DateTools.IncrementSize increment;
+        if (viewId.contains("week")) {
+        	increment = DateTools.IncrementSize.WEEK_OF_YEAR;
+		}
+        else if (viewId.contains("month")) {
+			 increment = DateTools.IncrementSize.MONTH;
+        }
+		else if (viewId.contains("day")) {
+			increment = DateTools.IncrementSize.DAY_OF_YEAR;
+		} else {
+			increment = null;
+		}
+		if (increment != null) {
+			String incrementName = MultiCalendarPrint.getIncrementName(increment, i18n);
+			panel.add(new JLabel(incrementName), "2,8");
+			pagesBox = new JComboBox(blockSizes);
+			panel.add(pagesBox, "4,8");
+		}
+        panel.add(new JLabel(autoExportI18n.getString("only_allocation_info")),"2,10");
+        panel.add( onlyAllocationInfoField, "4,10");
+        panel.add(new JLabel(autoExportI18n.getString("resources_as_linklist")),"2,12");
+        panel.add( asLinkListField, "4,12");
+        panel.add( statusHtml, "2,14,4,1");
         
         {	
             final String entry = model.getOption(AutoExportPlugin.HTML_EXPORT);
@@ -87,7 +107,11 @@ public class HTMLPublishExtension extends RaplaGUIComponent implements PublishEx
             final String entry = model.getOption(CalendarModel.SHOW_NAVIGATION_ENTRY);
             showNavField.setSelected( entry == null || entry.equals("true"));
         }
-        {
+		{
+		    final String entry = model.getOption(CalendarModel.PAGES);
+		    pagesBox.setSelectedItem(entry);
+		}
+		{
             final String entry = model.getOption(CalendarModel.ONLY_ALLOCATION_INFO);
             onlyAllocationInfoField.setSelected( entry != null && entry.equals("true"));
         }
@@ -170,6 +194,9 @@ public class HTMLPublishExtension extends RaplaGUIComponent implements PublishEx
 	   
 		String saveSelectedDate = saveSelectedDateField.isSelected() ? "true" : "false";
 		model.setOption( CalendarModel.SAVE_SELECTED_DATE, saveSelectedDate);
+
+		String pages = pagesBox != null  ? (String)pagesBox.getSelectedItem() : null;
+		model.setOption( CalendarModel.PAGES, pages);
 		
 		String onlyAlloactionInfo = onlyAllocationInfoField.isSelected() ? "true" : "false";
 		model.setOption( CalendarModel.ONLY_ALLOCATION_INFO, onlyAlloactionInfo);

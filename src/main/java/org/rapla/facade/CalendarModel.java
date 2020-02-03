@@ -24,6 +24,7 @@ public interface CalendarModel extends Cloneable, ClassifiableFilter
     String SHOW_NAVIGATION_ENTRY = "org.rapla.plugin.abstractcalendar.show_navigation";
     String ONLY_ALLOCATION_INFO = "org.rapla.plugin.abstractcalendar.only_allocation_info";
 	String SAVE_SELECTED_DATE = "org.rapla.plugin.abstractcalendar.save_selected_date";
+    String PAGES = "org.rapla.plugin.abstractcalendar.pages";
     String RESOURCES_LINK_LIST = "org.rapla.plugin.abstractcalendar.resources_link_list";
 
 	String getNonEmptyTitle();
