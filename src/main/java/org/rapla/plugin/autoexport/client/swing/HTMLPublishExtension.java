@@ -19,7 +19,7 @@ import org.rapla.plugin.autoexport.AutoExportPlugin;
 import org.rapla.plugin.autoexport.AutoExportResources;
 
 import javax.swing.*;
-import java.awt.BorderLayout;
+import java.awt.*;
 
 public class HTMLPublishExtension extends RaplaGUIComponent implements PublishExtension
 {
@@ -51,7 +51,7 @@ public class HTMLPublishExtension extends RaplaGUIComponent implements PublishEx
 			 blockSizes[i] = String.valueOf(i+1);
 		 }
         panel.setLayout(new TableLayout( new double[][] {{TableLayout.PREFERRED,5,TableLayout.PREFERRED,5,TableLayout.FILL},
-                {TableLayout.PREFERRED,5,TableLayout.PREFERRED,5,TableLayout.PREFERRED,5,TableLayout.PREFERRED,5,TableLayout.PREFERRED, 5,TableLayout.PREFERRED, 5, TableLayout.PREFERRED,5, TableLayout.PREFERRED  }}));
+                {TableLayout.PREFERRED,5,TableLayout.PREFERRED,5,TableLayout.PREFERRED,5,TableLayout.PREFERRED,5,TableLayout.PREFERRED, 5,TableLayout.PREFERRED, 5, TableLayout.PREFERRED,5, TableLayout.PREFERRED,20  }}));
 	   	titleField = new JTextField(20);
         addCopyPaste(titleField, i18n, raplaLocale, ioInterface, logger);
   
@@ -82,7 +82,7 @@ public class HTMLPublishExtension extends RaplaGUIComponent implements PublishEx
         else if (viewId.contains("month")) {
 			 increment = DateTools.IncrementSize.MONTH;
         }
-		else if (viewId.contains("day")) {
+		else if (viewId.contains("day") && !viewId.contains("appointments")) {
 			increment = DateTools.IncrementSize.DAY_OF_YEAR;
 		} else {
 			increment = null;
@@ -91,7 +91,11 @@ public class HTMLPublishExtension extends RaplaGUIComponent implements PublishEx
 			String incrementName = MultiCalendarPrint.getIncrementName(increment, i18n);
 			panel.add(new JLabel(incrementName), "2,8");
 			pagesBox = new JComboBox(blockSizes);
-			panel.add(pagesBox, "4,8");
+			pagesBox.setMinimumSize(new Dimension(100,15));
+			final JPanel jPanel = new JPanel();
+			jPanel.setLayout(new BorderLayout());
+			jPanel.add( pagesBox,BorderLayout.WEST );
+			panel.add(jPanel, "4,8");
 		}
         panel.add(new JLabel(autoExportI18n.getString("only_allocation_info")),"2,10");
         panel.add( onlyAllocationInfoField, "4,10");
@@ -109,7 +113,9 @@ public class HTMLPublishExtension extends RaplaGUIComponent implements PublishEx
         }
 		{
 		    final String entry = model.getOption(CalendarModel.PAGES);
-		    pagesBox.setSelectedItem(entry);
+		    if (pagesBox!= null) {
+				pagesBox.setSelectedItem(entry);
+			}
 		}
 		{
             final String entry = model.getOption(CalendarModel.ONLY_ALLOCATION_INFO);
