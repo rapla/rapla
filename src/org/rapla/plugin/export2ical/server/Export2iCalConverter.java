@@ -263,7 +263,7 @@ public class Export2iCalConverter extends RaplaComponent {
             // determine if person has email attribute
             if (email != null && email.length() > 0) {
                 try {
-                    Attendee attendee = new Attendee(new URI(email));
+                    Attendee attendee = new Attendee("MAILTO:" + new URI(email.trim()));
                     attendee.getParameters().add(Role.REQ_PARTICIPANT);
                     attendee.getParameters().add(new Cn(getResourceName(person,user)));
                     attendee.getParameters().add(new PartStat(exportAttendeesParticipationStatus));
