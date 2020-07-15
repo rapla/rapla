@@ -22,8 +22,8 @@ public class HTMLDateComponents {
         int day = calendarview.get(Calendar.DATE);
         int month = calendarview.get(Calendar.MONTH) +1;
         int year = calendarview.get(Calendar.YEAR);
-        int minYear = 2003;
-        int maxYear = 2020;
+        int minYear = 2012;
+        int maxYear = 2030;
         
         buf.append( getDaySelection(prefix + "day",day));
         buf.append( getMonthSelection(prefix + "month",month, locale));
