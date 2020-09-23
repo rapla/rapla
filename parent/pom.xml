@@ -55,7 +55,7 @@
 		<javax.ws.rs.version>2.1</javax.ws.rs.version>
 		<hsqldb.version>2.4.0</hsqldb.version>
 		<postgresql.version>9.1-901-1.jdbc4</postgresql.version>
-		<mysql.version>5.1.41</mysql.version>
+		<mysql.version>8.0.16</mysql.version>
 		<!--
         <restinject.version>1-SNAPSHOT</restinject.version>
          -->
