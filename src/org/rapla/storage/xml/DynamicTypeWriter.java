@@ -110,7 +110,7 @@ public class DynamicTypeWriter extends RaplaXMLWriter
                 final String formatDate = dateTimeFormat.formatDate( (Date) constraint);
                 print( formatDate);
             } else {
-                print( constraint.toString()); 
+                printEncode( constraint.toString());
             }
             closeElementOnLine("rapla:constraint");
             println();
@@ -122,12 +122,12 @@ public class DynamicTypeWriter extends RaplaXMLWriter
             closeTagOnLine();
             if ( defaultValue instanceof Category) {
                 Category category = (Category) defaultValue;
-                print( getCategoryPath( category ) );
+                printEncode( getCategoryPath( category ) );
             }  else if ( defaultValue instanceof Date) {
                 final String formatDate = dateTimeFormat.formatDate( (Date) defaultValue);
                 print( formatDate);
             } else {
-                print( defaultValue.toString()); 
+                printEncode( defaultValue.toString());
             }
             closeElementOnLine("rapla:default");
             println();
