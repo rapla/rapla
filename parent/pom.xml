@@ -31,7 +31,7 @@
 		<jetty.version>9.2.14.v20151106</jetty.version>
 		-->
 		<exchange.webservice.api>2.0</exchange.webservice.api>
-		<jetty.version>9.4.11.v20180605</jetty.version>
+		<jetty.version>9.4.24.v20191120</jetty.version>
 		<!--
 		<jetty.version>9.4.9.v20180320</jetty.version>
 		-->
