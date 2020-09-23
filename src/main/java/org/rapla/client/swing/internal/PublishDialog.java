@@ -90,7 +90,7 @@ public class PublishDialog extends RaplaGUIComponent
     {
         JPanel panel = new JPanel();
   
-        panel.setPreferredSize( new Dimension(600,300));
+        panel.setPreferredSize( new Dimension(600,380));
         panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
         final Collection<PublishExtension> extensions = new ArrayList<>();
         addressCreator = null;

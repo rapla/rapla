@@ -51,7 +51,7 @@ public class HTMLPublishExtension extends RaplaGUIComponent implements PublishEx
 			 blockSizes[i] = String.valueOf(i+1);
 		 }
         panel.setLayout(new TableLayout( new double[][] {{TableLayout.PREFERRED,5,TableLayout.PREFERRED,5,TableLayout.FILL},
-                {TableLayout.PREFERRED,5,TableLayout.PREFERRED,5,TableLayout.PREFERRED,5,TableLayout.PREFERRED,5,TableLayout.PREFERRED, 5,TableLayout.PREFERRED, 5, TableLayout.PREFERRED,5, TableLayout.PREFERRED,20  }}));
+                {TableLayout.PREFERRED,5,TableLayout.PREFERRED,5,TableLayout.PREFERRED,5,TableLayout.PREFERRED,5,TableLayout.PREFERRED, 5,TableLayout.PREFERRED, 5, TableLayout.PREFERRED,5, TableLayout.PREFERRED,50  }}));
 	   	titleField = new JTextField(20);
         addCopyPaste(titleField, i18n, raplaLocale, ioInterface, logger);
   
