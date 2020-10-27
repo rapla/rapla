@@ -52,12 +52,7 @@ import org.rapla.components.util.undo.CommandUndo;
 import org.rapla.components.i18n.I18nIcon;
 import org.rapla.entities.Named;
 import org.rapla.entities.User;
-import org.rapla.entities.domain.Allocatable;
-import org.rapla.entities.domain.Appointment;
-import org.rapla.entities.domain.AppointmentFormater;
-import org.rapla.entities.domain.AppointmentStartComparator;
-import org.rapla.entities.domain.Reservation;
-import org.rapla.entities.domain.ResourceAnnotations;
+import org.rapla.entities.domain.*;
 import org.rapla.entities.dynamictype.Classification;
 import org.rapla.entities.dynamictype.ClassificationFilter;
 import org.rapla.entities.dynamictype.DynamicType;
@@ -374,13 +369,26 @@ public class AllocatableSelection extends RaplaGUIComponent implements Appointme
     {
         setAppointments(mutableReservations);
         selectedModel.setAllocatables(getAllocated(), selectedTable.getTree());
+        changeRequestStatus();
         updateBindings(appointments);
     }
 
     public void appointmentChanged(Collection<Appointment> appointments)
     {
         setAppointments(mutableReservations);
+        changeRequestStatus();
         updateBindings(appointments);
+    }
+
+    private void changeRequestStatus() {
+        for (Reservation reservation:mutableReservations) {
+            for (Allocatable allocatable:reservation.getAllocatables()) {
+                final RequestStatus status = reservation.getRequestStatus(allocatable);
+                if (status == RequestStatus.CONFIRMED || status == RequestStatus.REQUESTED) {
+                    reservation.setRequestStatus( allocatable, RequestStatus.CHANGED );
+                }
+            }
+        }
     }
 
     public void appointmentRemoved(Collection<Appointment> appointments)
@@ -488,7 +496,7 @@ public class AllocatableSelection extends RaplaGUIComponent implements Appointme
         Date today = getQuery().today();
         for (Allocatable alloc : allocatables)
         {
-            if (permissionController.canAllocate(alloc, user, today))
+            if (permissionController.canAllocate(alloc, user, today) || permissionController.canRequest(alloc, user))
             {
                 rightsToAllocate.add(alloc);
             }
@@ -663,6 +671,7 @@ public class AllocatableSelection extends RaplaGUIComponent implements Appointme
 
     protected void add(Collection<Allocatable> elements)
     {
+        Date today = getQuery().today();
         Iterator<Allocatable> it = elements.iterator();
         boolean bChanged = false;
         while (it.hasNext())
@@ -673,6 +682,9 @@ public class AllocatableSelection extends RaplaGUIComponent implements Appointme
                 if (!r.hasAllocated(a))
                 {
                     r.addAllocatable(a);
+                    if (permissionController.isRequestOnly( a, user, today)) {
+                        r.setRequestStatus( a, RequestStatus.CHANGED);
+                    }
                     bChanged = true;
                 }
             }
@@ -1236,7 +1248,8 @@ public class AllocatableSelection extends RaplaGUIComponent implements Appointme
     {
         boolean conflictingAppointments[] = new boolean[appointments.length]; // stores the temp conflicting appointments
         int conflictCount = 0; // temp value for conflicts
-        int permissionConflictCount = 0; // temp value for conflicts that are the result of denied permissions
+        int permissionConflictCount = 0; // temp value for conflicts that are the result of denied permission
+        RequestStatus requestStatus;
     }
 
     // calculates the number of conflicting appointments for this allocatable
@@ -1251,7 +1264,20 @@ public class AllocatableSelection extends RaplaGUIComponent implements Appointme
             Collection<Appointment> collection = allocatableBindings.get(allocatable);
             boolean conflictingAppointments = collection != null && collection.contains(appointment);
             result.conflictingAppointments[i] = false;
-
+            final RequestStatus status = appointment.getReservation().getRequestStatus(allocatable);
+            if ( status != null) {
+                if (result.requestStatus == null) {
+                    result.requestStatus = status;
+                } else if ( status == RequestStatus.DENIED) {
+                    result.requestStatus = RequestStatus.DENIED;
+                 } else if ( result.requestStatus != RequestStatus.DENIED) {
+                    if(status == RequestStatus.CHANGED) {
+                        result.requestStatus = RequestStatus.CHANGED;
+                    } else if (result.requestStatus!= RequestStatus.CHANGED && status == RequestStatus.REQUESTED) {
+                        result.requestStatus = RequestStatus.REQUESTED;
+                    }
+                }
+            }
             if (conflictingAppointments)
             {
                 if (!holdBackConflicts)
@@ -1941,12 +1967,14 @@ public class AllocatableSelection extends RaplaGUIComponent implements Appointme
         Icon personIcon;
         Icon personNotAlwaysAvailableIcon;
         Icon forbiddenIcon;
+        Icon requestIcon;
         boolean checkRestrictions;
 
         public AllocationTreeCellRenderer(boolean checkRestrictions)
         {
             forbiddenIcon = RaplaImages.getIcon(i18n.getIcon("icon.no_perm"));
             conflictIcon = RaplaImages.getIcon(i18n.getIcon("icon.allocatable_taken"));
+            requestIcon = RaplaImages.getIcon(i18n.getIcon("icon.permissions"));
             freeIcon = RaplaImages.getIcon(i18n.getIcon("icon.allocatable_available"));
             notAlwaysAvailableIcon = RaplaImages.getIcon(i18n.getIcon("icon.allocatable_not_always_available"));
             personIcon = RaplaImages.getIcon(i18n.getIcon("icon.tree.persons"));
@@ -1975,6 +2003,7 @@ public class AllocatableSelection extends RaplaGUIComponent implements Appointme
 
         private Icon getIcon(Allocatable allocatable)
         {
+            Date today = getQuery().today();
 
             AllocationRendering allocBinding = calcConflictingAppointments(allocatable);
             if (allocBinding.conflictCount == 0)
@@ -1987,7 +2016,11 @@ public class AllocatableSelection extends RaplaGUIComponent implements Appointme
                 {
                     if (!checkRestrictions)
                     {
-                        return forbiddenIcon;
+                        if (permissionController.canRequest( allocatable, user)) {
+                            return requestIcon;
+                        } else {
+                            return forbiddenIcon;
+                        }
                     }
                 }
                 else
@@ -1998,6 +2031,17 @@ public class AllocatableSelection extends RaplaGUIComponent implements Appointme
             else if (!checkRestrictions)
             {
                 return getNotAlwaysAvailableIcon(allocatable);
+            }
+
+            if (checkRestrictions && permissionController.isRequestOnly( allocatable, user,  today))
+            {
+                final RequestStatus requestStatus = allocBinding.requestStatus;
+                if (requestStatus == RequestStatus.DENIED) {
+                    return forbiddenIcon;
+                }
+                if (requestStatus == RequestStatus.CHANGED || requestStatus == RequestStatus.REQUESTED) {
+                    return requestIcon;
+                }
             }
             for (int i = 0; i < appointments.length; i++)
             {
@@ -2058,6 +2102,18 @@ public class AllocatableSelection extends RaplaGUIComponent implements Appointme
                     if (classification.getType().getAnnotation(DynamicTypeAnnotations.KEY_NAME_FORMAT_PLANNING) != null)
                     {
                         value = classification.format(locale, DynamicTypeAnnotations.KEY_NAME_FORMAT_PLANNING);
+                    }
+                    if ( checkRestrictions ) {
+                        if (mutableReservations.size() == 1)
+                        {
+                            final RequestStatus requestStatus = mutableReservations.iterator().next().getRequestStatus(allocatable);
+                            if (requestStatus==RequestStatus.CHANGED || requestStatus == RequestStatus.REQUESTED) {
+                                value = "Anfrage:" + value;
+                            }
+                            if (requestStatus==RequestStatus.DENIED ) {
+                                value = "Abgelehnt:" + value;
+                            }
+                        }
                     }
                 }
                 else

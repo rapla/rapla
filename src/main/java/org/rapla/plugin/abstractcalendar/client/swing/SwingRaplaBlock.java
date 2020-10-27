@@ -20,6 +20,7 @@ import org.rapla.components.calendarview.swing.SwingBlock;
 import org.rapla.entities.Named;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.Appointment;
+import org.rapla.entities.domain.RequestStatus;
 import org.rapla.entities.domain.Reservation;
 import org.rapla.plugin.abstractcalendar.RaplaBlock;
 import org.rapla.plugin.abstractcalendar.RaplaBuilder;
@@ -136,6 +137,19 @@ public class SwingRaplaBlock extends RaplaBlock implements SwingBlock
         public String getName( Named named )
         {
             return SwingRaplaBlock.this.getNameFor( named );
+        }
+
+        public String getName( Allocatable allocatable, Reservation reservation )
+        {
+            final RequestStatus requestStatus = reservation.getRequestStatus(allocatable);
+            String name = this.getName(allocatable);
+            if (RequestStatus.CHANGED == requestStatus || RequestStatus.REQUESTED == requestStatus) {
+                name = "Anfrage:" + name;
+            } else if (RequestStatus.DENIED == requestStatus ) {
+                name = "Abgelehnt:" + name;
+            }
+
+            return name;
         }
 
         public String getToolTipText( MouseEvent evt )
@@ -278,7 +292,8 @@ public class SwingRaplaBlock extends RaplaBlock implements SwingBlock
                 return;
             }
 
-            String label = getName( getReservation() );
+            final Reservation reservation = getReservation();
+            String label = getName(reservation);
             buf.append(label);
             y = drawString( g, buf.toString(), y, 2, true ) + 2;
 
@@ -292,7 +307,7 @@ public class SwingRaplaBlock extends RaplaBlock implements SwingBlock
                 List<Allocatable> persons = getContext().getAllocatables();
                 for ( Allocatable person:persons)
                 {
-                  String text = getName( person);
+                  String text = getName( person, reservation);
                   if ( !getContext().isVisible( person) || !person.isPerson())
                 	  continue;
                     if ( y > lowerBound )
@@ -318,7 +333,7 @@ public class SwingRaplaBlock extends RaplaBlock implements SwingBlock
                        {
                     	   buf.append(", ");
                        }
-                       buf.append( getName( person ));
+                       buf.append( getName( person, reservation ));
                    }
                    String text = buf.toString();
                    y = drawString( g, text, y, 7, true );
@@ -334,7 +349,7 @@ public class SwingRaplaBlock extends RaplaBlock implements SwingBlock
                 {
                 	 if ( !getContext().isVisible( resource) || resource.isPerson())
                     	  continue;
-                	String text = getName( resource );
+                	String text = getName( resource, reservation );
                     if ( y > lowerBound )
                     {
                         text = "...";

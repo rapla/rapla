@@ -115,7 +115,12 @@ public interface Reservation extends EntityPermissionContainer<Reservation>,Clas
 	String formatAppointmentBlock(Locale locale, String annotationName, AppointmentBlock block);
 
 	int indexOf(Appointment a1);
-	
+
+    void setRequestStatus(Allocatable allocatable,RequestStatus status);
+
+    RequestStatus getRequestStatus(Allocatable allocatable);
+
+
 }
 
 

@@ -18,12 +18,7 @@ import org.rapla.entities.Entity;
 import org.rapla.entities.Ownable;
 import org.rapla.entities.User;
 import org.rapla.entities.configuration.Preferences;
-import org.rapla.entities.domain.Allocatable;
-import org.rapla.entities.domain.Appointment;
-import org.rapla.entities.domain.AppointmentFormater;
-import org.rapla.entities.domain.Permission;
-import org.rapla.entities.domain.PermissionContainer;
-import org.rapla.entities.domain.Reservation;
+import org.rapla.entities.domain.*;
 import org.rapla.entities.dynamictype.Classifiable;
 import org.rapla.entities.storage.ReferenceInfo;
 import org.rapla.facade.Conflict;
@@ -285,6 +280,7 @@ import java.util.*;
      * removed allocatable and the newly inserted allocatable */
     private boolean canExchange(User user, Entity entity, Entity original)
     {
+        Date today = operator.today();
         final Class<? extends Entity> typeClass = entity.getTypeClass();
         if (Appointment.class == typeClass)
         {
@@ -308,10 +304,7 @@ import java.util.*;
             inserted.removeAll(oldAllocatables);
             removed.removeAll(newAllocatables);
             overlap.retainAll(inserted);
-            if (inserted.size() == 0 && removed.size() == 0)
-            {
-                return false;
-            }
+
             //  he must have admin rights on all inserted resources
             Iterator<Allocatable> it = inserted.iterator();
             while (it.hasNext())
@@ -356,6 +349,34 @@ import java.util.*;
                 }
                 if (changed && !canAllocateForOthers(all, user))
                 {
+                    return false;
+                }
+            }
+            if (inserted.size() == 0 && removed.size() == 0)
+            {
+                boolean validRequestStatusChange = false;
+                for (Allocatable allocatable:newAllocatables) {
+                    RequestStatus oldStatus = oldReservation.getRequestStatus( allocatable );
+                    RequestStatus newStatus = newReservation.getRequestStatus( allocatable );
+                    if ( oldStatus != newStatus) {
+                        if ( newStatus == RequestStatus.CONFIRMED && oldStatus != RequestStatus.CONFIRMED) {
+                            validRequestStatusChange = true;
+                        }
+                        else if ( newStatus == RequestStatus.DENIED && (oldStatus == RequestStatus.CHANGED || oldStatus == RequestStatus.REQUESTED || oldStatus == RequestStatus.CONFIRMED)) {
+                            validRequestStatusChange = true;
+                        } else {
+                            validRequestStatusChange = false;
+                            break;
+                        }
+
+                    }
+                    if (validRequestStatusChange) {
+                        if ( !permissionController.canAllocate( allocatable, user, today)) {
+                            validRequestStatusChange = false;
+                        }
+                    }
+                }
+                if (!validRequestStatusChange) {
                     return false;
                 }
             }
@@ -454,10 +475,17 @@ import java.util.*;
                 Date today = operator.today();
                 if (r.hasAllocatedOn(allocatable, appointment) && !permissionController.hasPermissionToAllocate(user, appointment, allocatable, original, today))
                 {
-                    String all = allocatable.getName(i18n.getLocale());
-                    String app = appointmentFormater.getSummary(appointment);
-                    String error = i18n.format("warning.no_reserve_permission", all, app);
-                    throw new RaplaSecurityException(error);
+                    if (permissionController.canRequest( allocatable, user)) {
+                        final RequestStatus requestStatus = r.getRequestStatus(allocatable);
+                        if ( RequestStatus.CHANGED == requestStatus) {
+                            r.setRequestStatus(allocatable, RequestStatus.CHANGED);
+                        }
+                    } else {
+                        String all = allocatable.getName(i18n.getLocale());
+                        String app = appointmentFormater.getSummary(appointment);
+                        String error = i18n.format("warning.no_reserve_permission", all, app);
+                        throw new RaplaSecurityException(error);
+                    }
                 }
             }
         }
@@ -482,10 +510,14 @@ import java.util.*;
                     Date end = appointment.getMaxEnd();
                     if (!permissionController.canAllocate(allocatable, user, start, end, today))
                     {
-                        String all = allocatable.getName(i18n.getLocale());
-                        String app = appointmentFormater.getSummary(appointment);
-                        String error = i18n.format("warning.no_reserve_permission", all, app);
-                        throw new RaplaSecurityException(error);
+                        if (permissionController.canRequest( allocatable, user)) {
+                            r.setRequestStatus( allocatable, RequestStatus.CHANGED);
+                        } else {
+                            String all = allocatable.getName(i18n.getLocale());
+                            String app = appointmentFormater.getSummary(appointment);
+                            String error = i18n.format("warning.no_reserve_permission", all, app);
+                            throw new RaplaSecurityException(error);
+                        }
                     }
                 }
             }
