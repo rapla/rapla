@@ -17,6 +17,7 @@ import org.rapla.entities.RaplaObject;
 import org.rapla.entities.User;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.Appointment;
+import org.rapla.entities.domain.RequestStatus;
 import org.rapla.entities.domain.Reservation;
 import org.rapla.entities.domain.internal.AllocatableImpl;
 import org.rapla.entities.domain.internal.ReservationImpl;
@@ -235,6 +236,8 @@ public class AllocationChangeFinder
             {
                 boolean oldAllocated = oldRes.hasAllocatedOn(allocatable, oldApp);
                 boolean newAllocated = newRes.hasAllocatedOn(allocatable, newApp);
+                final RequestStatus requestStatus = newRes.getRequestStatus(allocatable);
+                final RequestStatus oldRequestStatus = oldRes.getRequestStatus(allocatable);
                 if (!oldAllocated && !newAllocated) {
                     continue;
                 }
@@ -251,6 +254,18 @@ public class AllocationChangeFinder
                     getLogger().debug("\n" + newApp + " doesn't match \n" + oldApp);
                     changeList.add(new AllocationChangeEvent(user,newRes,allocatable,newApp,oldApp));
                 }
+                if (requestStatus != oldRequestStatus ){
+                    if (  requestStatus == RequestStatus.CHANGED) {
+                        changeList.add(new AllocationChangeEvent(AllocationChangeEvent.REQUESTED,user, newRes,allocatable,newApp));
+                    }
+                    if (  requestStatus == RequestStatus.CONFIRMED) {
+                        changeList.add(new AllocationChangeEvent(AllocationChangeEvent.CONFIRMED,user, newRes,allocatable,newApp));
+                    }
+                    if (  requestStatus == RequestStatus.DENIED) {
+                        changeList.add(new AllocationChangeEvent(AllocationChangeEvent.DENIED, user, newRes, allocatable, newApp));
+
+                    }
+                }
             }
         }
     }
@@ -263,8 +278,12 @@ public class AllocationChangeFinder
     private void addAppointmentAdd(User user,Reservation newRes,List<Allocatable> allocatables,List<Appointment> appointments) {
         for (Allocatable allocatable:allocatables)
         {
-        	for (Appointment appointment:appointments)
+            for (Appointment appointment:appointments)
             {
+                final RequestStatus requestStatus = newRes.getRequestStatus(allocatable);
+                if (  requestStatus == RequestStatus.REQUESTED) {
+                    changeList.add(new AllocationChangeEvent(AllocationChangeEvent.REQUESTED,user, newRes,allocatable,appointment));
+                }
                 if (!newRes.hasAllocatedOn(allocatable,appointment))
                     continue;
 

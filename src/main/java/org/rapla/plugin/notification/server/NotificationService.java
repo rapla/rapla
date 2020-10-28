@@ -14,17 +14,13 @@ package org.rapla.plugin.notification.server;
 
 import io.reactivex.disposables.Disposable;
 import io.reactivex.functions.Action;
+import org.jetbrains.annotations.NotNull;
 import org.rapla.RaplaResources;
 import org.rapla.components.util.DateTools;
 import org.rapla.entities.User;
 import org.rapla.entities.configuration.Preferences;
 import org.rapla.entities.configuration.RaplaMap;
-import org.rapla.entities.domain.Allocatable;
-import org.rapla.entities.domain.Appointment;
-import org.rapla.entities.domain.AppointmentFormater;
-import org.rapla.entities.domain.RaplaObjectAnnotations;
-import org.rapla.entities.domain.Repeating;
-import org.rapla.entities.domain.Reservation;
+import org.rapla.entities.domain.*;
 import org.rapla.entities.domain.internal.ReservationImpl;
 import org.rapla.entities.dynamictype.Attribute;
 import org.rapla.entities.dynamictype.Classification;
@@ -44,6 +40,7 @@ import org.rapla.scheduler.CommandScheduler;
 import org.rapla.server.extensionpoints.ServerExtension;
 import org.rapla.storage.CachableStorageOperator;
 import org.rapla.storage.StorageOperator;
+import org.rapla.storage.UpdateOperation;
 import org.rapla.storage.UpdateResult;
 
 import javax.inject.Inject;
@@ -171,49 +168,103 @@ public class NotificationService implements ServerExtension
         try
         {
             getLogger().debug("Mail check triggered");
-            User[] users = raplaFacade.getUsers();
-            List<AllocationMail> mailList = new ArrayList<>();
-            // we check for each user if a mail must be sent
-            for (int i = 0; i < users.length; i++)
-            {
-                User user = users[i];
-                if (user.getEmail().trim().length() == 0)
-                    continue;
-
-                Preferences preferences = raplaFacade.getPreferences(user);
-                RaplaMap< Allocatable> allocatableMap = null;
-
-                if (preferences != null && preferences.getEntry(NotificationPlugin.ALLOCATIONLISTENERS_CONFIG) != null)
-                {
-                    allocatableMap = preferences.getEntry(NotificationPlugin.ALLOCATIONLISTENERS_CONFIG);
-                }
-                else
-                {
-                    continue;
-                }
-                if (allocatableMap != null && allocatableMap.size() > 0)
-                {
-                    boolean notifyIfOwner = preferences.getEntryAsBoolean(NotificationPlugin.NOTIFY_IF_OWNER_CONFIG, false);
-                    final ReferenceInfo<User> ownerId = preferences.getOwnerRef();
-                    final User owner = ownerId != null ? raplaFacade.getOperator().resolve(ownerId) : null;
-                    AllocationMail mail = getAllocationMail(new HashSet<>(allocatableMap.values()), updateResult, owner, notifyIfOwner);
-                    if (mail != null)
-                    {
-                        mailList.add(mail);
-                    }
-
-                }
-            }
+            List<AllocationMail> mailList = getAllocationMails(updateResult);
             if (!mailList.isEmpty())
             {
                 notificationStorage.store(mailList);
                 sendMails(mailList);
+            }
+            List<AllocationMail> mailList2 = getBookingRequestMails(updateResult);
+            if (!mailList2.isEmpty())
+            {
+                notificationStorage.store(mailList2);
+                sendMails(mailList2);
             }
         }
         catch (RaplaException ex)
         {
             getLogger().error("Can't trigger notification service." + ex.getMessage(), ex);
         }
+    }
+
+    @NotNull
+    private List<AllocationMail> getBookingRequestMails(UpdateResult updateResult) throws RaplaException {
+        List<AllocationMail> mailList = new ArrayList<>();
+        if (updateResult == null || !updateResult.getOperations().iterator().hasNext()) {
+            return null;
+        }
+        User owner = null;
+        final List<AllocationChangeEvent> changeEvents = AllocationChangeFinder.getTriggerEvents(updateResult, owner, logger, operator);
+        for (AllocationChangeEvent event: changeEvents) 
+        {
+            final Allocatable allocatable = event.getAllocatable();
+            if (event.getType() == AllocationChangeEvent.REQUESTED) {
+                final Reservation newReservation = event.getNewReservation();
+                final String email = (String) allocatable.getClassification().getValue("Email");
+                final AllocationMail allocationMail = new AllocationMail();
+                allocationMail.recipient = email;
+                allocationMail.subject = "Buchungsanfrage für " + allocatable.getName( getLocale() );
+                StringBuilder buf = new StringBuilder();
+                printReservation(newReservation, buf);
+                allocationMail.body = buf.toString();
+                mailList.add( allocationMail );
+            }
+            if (event.getType() == AllocationChangeEvent.CONFIRMED) {
+                final Reservation newReservation = event.getNewReservation();
+
+                final ReferenceInfo<User> ownerRef = newReservation.getOwnerRef();
+                final User user = operator.tryResolve(ownerRef);
+                if (user != null ) {
+                    final String email = user.getEmail();
+                    final AllocationMail allocationMail = new AllocationMail();
+                    allocationMail.recipient = email;
+                    allocationMail.subject = "Buchungsanfrage genehmigt für " + allocatable.getName(getLocale());
+                    StringBuilder buf = new StringBuilder();
+                    printReservation(newReservation, buf);
+                    allocationMail.body = buf.toString();
+                    mailList.add( allocationMail );
+                }
+            }
+        }
+        return mailList;
+    }
+
+    @NotNull
+    private List<AllocationMail> getAllocationMails(UpdateResult updateResult) throws RaplaException {
+        User[] users = raplaFacade.getUsers();
+        List<AllocationMail> mailList = new ArrayList<>();
+        // we check for each user if a mail must be sent
+        for (int i = 0; i < users.length; i++)
+        {
+            User user = users[i];
+            if (user.getEmail().trim().length() == 0)
+                continue;
+
+            Preferences preferences = raplaFacade.getPreferences(user);
+            RaplaMap< Allocatable> allocatableMap = null;
+
+            if (preferences != null && preferences.getEntry(NotificationPlugin.ALLOCATIONLISTENERS_CONFIG) != null)
+            {
+                allocatableMap = preferences.getEntry(NotificationPlugin.ALLOCATIONLISTENERS_CONFIG);
+            }
+            else
+            {
+                continue;
+            }
+            if (allocatableMap != null && allocatableMap.size() > 0)
+            {
+                boolean notifyIfOwner = preferences.getEntryAsBoolean(NotificationPlugin.NOTIFY_IF_OWNER_CONFIG, false);
+                final ReferenceInfo<User> ownerId = preferences.getOwnerRef();
+                final User owner = ownerId != null ? raplaFacade.getOperator().resolve(ownerId) : null;
+                AllocationMail mail = getAllocationMail(new HashSet<>(allocatableMap.values()), updateResult, owner, notifyIfOwner);
+                if (mail != null)
+                {
+                    mailList.add(mail);
+                }
+
+            }
+        }
+        return mailList;
     }
 
     private void sendMails(Collection<AllocationMail> mails) throws RaplaException
@@ -408,6 +459,11 @@ public class NotificationService implements ServerExtension
         if (removed)
             return buf.toString();
 
+        printReservation(reservation, buf);
+        return buf.toString();
+    }
+
+    private void printReservation(Reservation reservation, StringBuilder buf) {
         buf.append("-----------");
         buf.append(notificationI18n.getString("complete_reservation"));
         buf.append("-----------");
@@ -471,7 +527,6 @@ public class NotificationService implements ServerExtension
         {
             printAppointment(buf, appointments[i]);
         }
-        return buf.toString();
     }
 
     private void printAppointment(StringBuilder buf, Appointment app)

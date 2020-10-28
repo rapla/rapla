@@ -349,7 +349,7 @@ public class PermissionController
 
     public boolean isRequestOnly(Allocatable alloc, User user, Date today) {
         if (canAllocate( alloc, user, today)) {
-            return true;
+            return false;
         }
         return canRequest(alloc, user);
     }

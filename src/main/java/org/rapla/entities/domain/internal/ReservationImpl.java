@@ -376,6 +376,7 @@ public final class ReservationImpl extends SimpleEntity implements Reservation, 
     public void removeAllocatable(Allocatable allocatable)   {
         checkWritable();
         removeId(allocatable.getId());
+        setRequestStatus( allocatable, null );
     }
 
     public Allocatable[] getAllocatables()  {
