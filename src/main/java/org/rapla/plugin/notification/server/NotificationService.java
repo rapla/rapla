@@ -113,7 +113,7 @@ public class NotificationService implements ServerExtension
             }
             catch (Throwable t)
             {
-                NotificationService.this.logger.warn("Could not prepare mail: " + t.getMessage());
+                NotificationService.this.logger.warn("Could not prepare mail: " + t.getMessage(),t);
             }
             finally
             {
@@ -191,7 +191,7 @@ public class NotificationService implements ServerExtension
     private List<AllocationMail> getBookingRequestMails(UpdateResult updateResult) throws RaplaException {
         List<AllocationMail> mailList = new ArrayList<>();
         if (updateResult == null || !updateResult.getOperations().iterator().hasNext()) {
-            return null;
+            return mailList;
         }
         User owner = null;
         final List<AllocationChangeEvent> changeEvents = AllocationChangeFinder.getTriggerEvents(updateResult, owner, logger, operator);
@@ -215,10 +215,27 @@ public class NotificationService implements ServerExtension
                 final ReferenceInfo<User> ownerRef = newReservation.getOwnerRef();
                 final User user = operator.tryResolve(ownerRef);
                 if (user != null ) {
-                    final String email = user.getEmail();
+                    final String email = user.getUsername();
                     final AllocationMail allocationMail = new AllocationMail();
                     allocationMail.recipient = email;
                     allocationMail.subject = "Buchungsanfrage genehmigt für " + allocatable.getName(getLocale());
+                    StringBuilder buf = new StringBuilder();
+                    printReservation(newReservation, buf);
+                    allocationMail.body = buf.toString();
+                    mailList.add( allocationMail );
+                }
+            }
+
+            if (event.getType() == AllocationChangeEvent.DENIED) {
+                final Reservation newReservation = event.getNewReservation();
+
+                final ReferenceInfo<User> ownerRef = newReservation.getOwnerRef();
+                final User user = operator.tryResolve(ownerRef);
+                if (user != null ) {
+                    final String email = user.getUsername();
+                    final AllocationMail allocationMail = new AllocationMail();
+                    allocationMail.recipient = email;
+                    allocationMail.subject = "Buchungsanfrage abgelehnt für " + allocatable.getName(getLocale());
                     StringBuilder buf = new StringBuilder();
                     printReservation(newReservation, buf);
                     allocationMail.body = buf.toString();
@@ -459,16 +476,17 @@ public class NotificationService implements ServerExtension
         if (removed)
             return buf.toString();
 
-        printReservation(reservation, buf);
-        return buf.toString();
-    }
-
-    private void printReservation(Reservation reservation, StringBuilder buf) {
         buf.append("-----------");
         buf.append(notificationI18n.getString("complete_reservation"));
         buf.append("-----------");
         buf.append("\n");
         buf.append("\n");
+        printReservation(reservation, buf);
+        return buf.toString();
+    }
+
+    private void printReservation(Reservation reservation, StringBuilder buf) {
+
 
         ReferenceInfo<User> ownerId = reservation.getOwnerRef();
         User owner = ownerId != null ? raplaFacade.getOperator().tryResolve(ownerId) : null;
@@ -492,10 +510,14 @@ public class NotificationService implements ServerExtension
             Object value = classification.getValueForAttribute(attributes[i]);
             if (value == null)
                 continue;
-            buf.append("\n");
-            buf.append(attributes[i].getName(getLocale()));
-            buf.append(": ");
-            buf.append(classification.getValueAsString(attributes[i], getLocale()));
+            final String valueAsString = classification.getValueAsString(attributes[i], getLocale());
+            if ( !valueAsString.trim().isEmpty())
+            {
+                buf.append("\n");
+                buf.append(attributes[i].getName(getLocale()));
+                buf.append(": ");
+                buf.append(valueAsString);
+            }
         }
 
         Allocatable[] resources = reservation.getResources();

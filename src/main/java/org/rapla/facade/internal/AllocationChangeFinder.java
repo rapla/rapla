@@ -152,7 +152,11 @@ public class AllocationChangeFinder
     }
 
     private void changed(Entity oldEntity,Entity newEntity, User user) {
-        Class<? extends Entity> raplaType = oldEntity.getTypeClass();
+        Class<? extends Entity> raplaType = newEntity.getTypeClass();
+        if (oldEntity == null) {
+            getLogger().error(" change event triggered but old entity = null for " + newEntity);
+            return;
+        }
         if (raplaType ==  Reservation.class ) {
             if (getLogger().isDebugEnabled())
                 getLogger().debug("Reservation changed: " + oldEntity);
@@ -281,7 +285,7 @@ public class AllocationChangeFinder
             for (Appointment appointment:appointments)
             {
                 final RequestStatus requestStatus = newRes.getRequestStatus(allocatable);
-                if (  requestStatus == RequestStatus.REQUESTED) {
+                if (  requestStatus == RequestStatus.REQUESTED || requestStatus == RequestStatus.CHANGED) {
                     changeList.add(new AllocationChangeEvent(AllocationChangeEvent.REQUESTED,user, newRes,allocatable,appointment));
                 }
                 if (!newRes.hasAllocatedOn(allocatable,appointment))

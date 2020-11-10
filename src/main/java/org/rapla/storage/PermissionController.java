@@ -344,7 +344,15 @@ public class PermissionController
     public boolean canRequest(Allocatable alloc, User user) {
         final Classification classification = alloc.getClassification();
         final Attribute emailAtt = classification.getType().getAttribute("Email");
-        return (canRead(alloc, user)  && emailAtt!= null && classification.getValue( "Email") != null);
+        if (canRead(alloc, user)  && emailAtt!= null)
+        {
+            final Object email = classification.getValue("Email");
+            if (email != null) {
+                final boolean emailSet = !email.toString().trim().isEmpty();
+                return emailSet;
+            }
+        }
+        return  false;
     }
 
     public boolean isRequestOnly(Allocatable alloc, User user, Date today) {

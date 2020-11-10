@@ -523,6 +523,18 @@ public class AllocatableSelection extends RaplaGUIComponent implements Appointme
         this.user = getUser();
         setAppointments(mutableReservation);
         Collection<Allocatable> allocatableList = getAllAllocatables();
+        for (Allocatable allocatable:allocatableList) {
+            Date today = getQuery().today();
+            if (permissionController.isRequestOnly( allocatable, user, today))
+            {
+                for (Reservation reservation: mutableReservation) {
+                    final RequestStatus requestStatus = reservation.getRequestStatus(allocatable);
+                    if (requestStatus == null) {
+                        reservation.setRequestStatus( allocatable, RequestStatus.CHANGED );
+                    }
+                }
+            }
+        }
         completeModel.setAllocatables(allocatableList);
         updateBindings(null);
         // Expand allocatableTree if only one DynamicType
