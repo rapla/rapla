@@ -115,8 +115,6 @@ public class AllocatableReader extends RaplaXMLReader
 
         if (localName.equals( "resource" ) || localName.equals( "person" ) )
         {
-            if (allocatable.getPermissionList().size() == 0)
-                allocatable.addPermission( new PermissionImpl() );
             add( allocatable );
         }
         else if (localName.equals( "extension" ) )
