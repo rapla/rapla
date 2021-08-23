@@ -1044,10 +1044,11 @@ public class ParsedText implements Serializable
                 return "???";
             }
 
-            final String annotationName = DynamicTypeAnnotations.KEY_NAME_FORMAT;
+            final DynamicTypeImpl type = (DynamicTypeImpl) classification.getType();
+            final String contextAnnotationName = context.getAnnotationName();
+            final String annotationName = type.getAnnotation(contextAnnotationName) != null ? contextAnnotationName: DynamicTypeAnnotations.KEY_NAME_FORMAT;
             final List<Object> contextObjects = Collections.singletonList(object);
             EvalContext contextClone = new EvalContext(locale, annotationName, permissionController, user, contextObjects, callStackDepth + 1);
-            final DynamicTypeImpl type = (DynamicTypeImpl) classification.getType();
             ParsedText parsedAnnotation;
             //parsedAnnotation = type.getParsedAnnotation(contextClone.getAnnotationName());
             //if (parsedAnnotation == null)

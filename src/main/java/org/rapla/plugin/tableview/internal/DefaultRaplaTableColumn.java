@@ -8,6 +8,7 @@ import org.rapla.entities.MultiLanguageName;
 import org.rapla.entities.Named;
 import org.rapla.entities.User;
 import org.rapla.entities.dynamictype.Classification;
+import org.rapla.entities.dynamictype.DynamicTypeAnnotations;
 import org.rapla.entities.dynamictype.internal.DynamicTypeImpl;
 import org.rapla.entities.dynamictype.internal.DynamicTypeImpl.DynamicTypeParseContext;
 import org.rapla.entities.dynamictype.internal.EvalContext;
@@ -73,16 +74,16 @@ public class DefaultRaplaTableColumn<T> implements RaplaTableColumn<T>
 
     public Object getValue(T object)
     {
-        return format(object);
+        return format(object, false);
     }
 
     public String getHtmlValue(T object)
     {
-        Object value = getValue(object);
+        Object value = format(object, true);
         return formatHtml(value);
     }
 
-    protected Object format(Object object)
+    protected Object format(Object object, boolean export)
     {
         final Locale locale = getLocale();
         final String annotationName = getAnnotationName();
@@ -92,7 +93,8 @@ public class DefaultRaplaTableColumn<T> implements RaplaTableColumn<T>
         }
         final DynamicTypeImpl type = (DynamicTypeImpl) classification.getType();
         ParsedText parsedAnnotation = type.getParsedAnnotation(annotationName);
-        final EvalContext context = type.createEvalContext(user,locale, annotationName, Collections.singletonList(object));
+        String contextAnnotationName = export ? DynamicTypeAnnotations.KEY_NAME_FORMAT_EXPORT : DynamicTypeAnnotations.KEY_NAME_FORMAT;
+        final EvalContext context = type.createEvalContext(user,locale, contextAnnotationName, Collections.singletonList(object));
         if (parsedAnnotation == null)
         {
             final String defaultValue = column.getDefaultValue();

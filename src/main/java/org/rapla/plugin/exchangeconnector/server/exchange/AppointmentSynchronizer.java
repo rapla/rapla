@@ -567,16 +567,16 @@ public class AppointmentSynchronizer
             final String name = restrictedAllocatable.getName(locale);
             if (restrictedAllocatable.isPerson())
             {
-                if (email != null && !email.equalsIgnoreCase(raplaUser.getEmail()))
+                if (email != null && !email.equalsIgnoreCase(raplaUser.getEmail())  && sendNotificationMail)
                 {
-                    exchangeAppointment.getRequiredAttendees().add(name, email);
+                    exchangeAppointment.getOptionalAttendees().add(name, email);
                     //                    if (ExchangeConnectorConfig.DEFAULT_EXCHANGE_EXPECT_RESPONSE)
                     //                        exchangeAppointment.setIsResponseRequested(true);
                 }
             }
             else if (classification.getType().getAnnotation(DynamicTypeAnnotations.KEY_LOCATION, "false").equals("true"))
             {
-                if (email != null)
+                if (email != null  && sendNotificationMail)
                 {
                     final Attendee attendee = new Attendee(email.toString());
                     attendee.setMailboxType(MailboxType.Mailbox);

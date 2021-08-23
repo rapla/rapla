@@ -37,8 +37,8 @@ public class RaplaGwtTableColumnImpl<T> extends DefaultRaplaTableColumn<T>
     }
     
     @Override
-    protected Object format(final Object object) {
-        return super.format(object);
+    protected Object format(final Object object,boolean export) {
+        return super.format(object, export);
     }
     
     @Override
