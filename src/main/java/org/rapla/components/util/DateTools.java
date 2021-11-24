@@ -21,6 +21,7 @@ import java.util.Locale;
  */
 public abstract class DateTools
 {
+    public static String DEFAULT_GWT_LOCALE = "en_UK";
     public static Date setWeekday(Date date, int selectedWeekday)
     {
         final int weekday = DateTools.getWeekday(date);
@@ -229,8 +230,9 @@ public abstract class DateTools
     		year += month/ 12;
     		month = ((month -1) % 12) + 1;
     	}
-    	int day = date.day ;
-		long newDate = toDate(year, month, day);
+    	int maxDay = getDaysInMonth( year, month );
+        int day = Math.min(date.day, maxDay) ;
+        long newDate = toDate(year, month, day);
     	Date result = new Date( newDate + millis);
 		return result;
 	}
@@ -497,12 +499,21 @@ public abstract class DateTools
     }
 
     public static String getLang(Locale locale) {
-        String localeString = locale.toString();
+        String localeString = getLocaleString(locale);
         String[] parts = localeString.split("_");
         if (parts.length == 0) {
             throw new IllegalStateException("Locale split length can't be 0");
         }
         return parts[0];
+    }
+
+    private static String getLocaleString(Locale locale)
+    {
+        String localeString = locale.toString();
+        if ( localeString.equals("unknown")) {
+            localeString = DEFAULT_GWT_LOCALE;
+        }
+        return localeString;
     }
 
     public static String getCountry(Locale locale)

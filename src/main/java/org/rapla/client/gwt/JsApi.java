@@ -1,6 +1,9 @@
 package org.rapla.client.gwt;
 
 import com.google.gwt.core.client.JsDate;
+import com.google.gwt.dom.client.Element;
+import com.google.gwt.user.client.DOM;
+import com.google.gwt.user.client.ui.IsWidget;
 import jsinterop.annotations.JsIgnore;
 import jsinterop.annotations.JsType;
 import org.rapla.RaplaResources;
@@ -11,8 +14,12 @@ import org.rapla.client.dialog.gwt.components.VueLabel;
 import org.rapla.client.dialog.gwt.components.VueLayout;
 import org.rapla.client.dialog.gwt.components.VueTree;
 import org.rapla.client.dialog.gwt.components.VueTreeNode;
+import org.rapla.client.gwt.components.util.GWTDateUtils;
 import org.rapla.client.internal.TreeFactoryImpl;
 import org.rapla.client.menu.MenuFactory;
+import org.rapla.components.util.DateTools;
+import org.rapla.components.util.ParseDateException;
+import org.rapla.components.util.SerializableDateTimeFormat;
 import org.rapla.components.util.TimeInterval;
 import org.rapla.entities.Category;
 import org.rapla.entities.EntityNotFoundException;
@@ -36,11 +43,13 @@ import org.rapla.plugin.autoexport.AutoExportPlugin;
 import org.rapla.plugin.tableview.RaplaTableColumn;
 import org.rapla.plugin.tableview.RaplaTableModel;
 import org.rapla.plugin.tableview.internal.TableConfig;
+import org.rapla.plugin.weekview.client.weekview.CalendarWeekViewPresenter;
 import org.rapla.scheduler.Promise;
 import org.rapla.scheduler.ResolvedPromise;
 
 import javax.inject.Inject;
 import javax.inject.Provider;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -67,6 +76,7 @@ public class JsApi {
   private final ReservationController reservationController; // TODO: needed?
   public final AppointmentFormater appointmentFormater;
   public final TreeFactoryImpl treeFactory;
+  public final CalendarWeekViewPresenter weekViewPresenter;
 
   @JsIgnore
   @Inject
@@ -81,7 +91,9 @@ public class JsApi {
                MenuFactory menuFactory,
                TableConfig.TableConfigLoader tableConfigLoader,
                TreeFactoryImpl treeFactory,
-               AppointmentFormater appointmentFormater) {
+               AppointmentFormater appointmentFormater,
+              CalendarWeekViewPresenter weekViewPresenter
+  ) {
     this.clientFacade = facade;
     this.i18n = i18n;
     this.application = application.get();
@@ -95,6 +107,7 @@ public class JsApi {
     this.raplaBuilder = raplaBuilder;
     this.appointmentFormater = appointmentFormater;
     this.treeFactory = treeFactory;
+    this.weekViewPresenter = weekViewPresenter;
   }
 
   public ReservationController getReservationController() {
@@ -125,8 +138,35 @@ public class JsApi {
     return RaplaComponent.getCalendarOptions(getUser(), facade);
   }
 
+  public Element updateWeekview() throws RaplaException
+  {
+      weekViewPresenter.updateContent();
+      return ((IsWidget) weekViewPresenter.provideContent()).asWidget().getElement();
+  }
+
+  public void initWeekview() throws RaplaException
+  {
+    Element coreDiv = DOM.getElementById("weekview");
+    final Element isWidget = updateWeekview();
+    coreDiv.appendChild( isWidget );
+  }
+
+
   public User getUser() throws RaplaException {
     return clientFacade.getUser();
+  }
+
+  public RaplaFacade getFacade() {
+    return facade;
+  }
+
+  public RaplaLocale getRaplaLocale() {
+    return locale;
+  }
+
+  public CalendarSelectionModel getCalendarModel()
+  {
+    return calendarModel;
   }
 
   public String[] getCalendarNames() throws RaplaException {
@@ -142,6 +182,15 @@ public class JsApi {
     if (date != null)
       return JsDate.create(date.getTime());
     return null;
+  }
+
+  public Date addDays(Date date, int days) {
+    return DateTools.addDays(date, days);
+  }
+
+  public Date fromDateString(String string, boolean fillDate) throws ParseDateException
+  {
+    return SerializableDateTimeFormat.INSTANCE.parseDate( string, fillDate);
   }
 
   public Object[] toArray(Collection<?> collection) {
@@ -166,6 +215,16 @@ public class JsApi {
     return dialog.getPromise();
   }
 
+  public String[] getSelectedIds(CalendarSelectionModel model) throws RaplaException
+  {
+    final Collection<Allocatable> selectedAllocatablesAsList = model.getSelectedAllocatablesAsList();
+    String[] result = new String[selectedAllocatablesAsList.size()];
+    int i= 0;
+    for ( Allocatable allocatable: selectedAllocatablesAsList) {
+      result[i++]= allocatable.getId();
+    }
+    return result;
+  }
   public Integer toInteger(int integer) {
     return Integer.valueOf(integer);
   }
@@ -182,7 +241,7 @@ public class JsApi {
     final String viewId = model.getViewId();
     if (viewId.equals("table_appointments")) {
       return loadTableModel("appointments", (() -> model.queryBlocks(model.getTimeIntervall())));
-    } else if (viewId.equals("table_events")) {
+    } else if (viewId.equals("table") || viewId.equals("table_events")) {
       return loadTableModel("events",
                             (() -> model.queryReservations(model.getTimeIntervall()).thenApply(ArrayList::new)));
     } else {
@@ -226,12 +285,39 @@ public class JsApi {
   public View[] getViews() {
     // TODO: this is a placeholder, return the real views here
     return new View[] {
-      new View("table_events", "Veranstaltungen"),
+      new View("table", "Veranstaltungen"),
       new View("table_appointments", "Reservierungen"),
-      new View("day", "Tag"),
+      //new View("day", "Tag"),
       new View("week", "Woche"),
-      new View("month", "Monat")
+      //new View("month", "Monat")
     };
+  }
+
+
+  public void jumpDate(int direction) throws RaplaException
+  {
+    final CalendarSelectionModel calendarModel = getCalendarModel();
+    Date date2 = calendarModel.getSelectedDate();
+    DateTools.IncrementSize incrementSize = DateTools.IncrementSize.WEEK_OF_YEAR;
+    if ( direction != 0)
+    {
+      date2 = DateTools.add(date2, incrementSize, direction * getIncrementAmount(incrementSize));
+    }
+    else
+    {
+      date2 = facade.today();
+    }
+    calendarModel.setSelectedDate( date2 );
+  }
+
+  protected int getIncrementAmount(DateTools.IncrementSize incrementSize) throws RaplaException
+  {
+    if (incrementSize == DateTools.IncrementSize.WEEK_OF_YEAR)
+    {
+      int daysInWeekview = getCalendarOptions().getDaysInWeekview();
+      return Math.max(1,daysInWeekview / 7 );
+    }
+    return 1;
   }
 
   @JsType

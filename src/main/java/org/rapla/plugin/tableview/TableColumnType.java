@@ -4,5 +4,8 @@ import jsinterop.annotations.JsType;
 
 @JsType
 public enum TableColumnType {
-    STRING, INTEGER, DATE
+    STRING, INTEGER, DATE;
+    public String getTypeName() {
+        return name();
+    }
 }

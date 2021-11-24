@@ -74,6 +74,8 @@
 	<inherits name='com.google.gwt.http.HTTP'/>
 	<inherits name='com.google.gwt.i18n.CldrLocales' />
 	<inherits name='com.google.gwt.i18n.I18N' />
+	<inherits name='org.gwtbootstrap3.GwtBootstrap3Theme'/>
+
 	<!--
 	<inherits name='com.google.gwt.user.theme.clean.Clean'/>
 	<inherits name='com.google.gwt.inject.Inject'/>
@@ -87,4 +89,7 @@
 	<inherits name='org.rapla.inject.inject'/>
 	<inherits name='org.rapla.scheduler.scheduler'/>
 	<inherits name="RestinjectExternal"/>
+	<!--
+	<inherits name='com.axellience.vuegwt.VueGWT'/>
+	-->
 </module>

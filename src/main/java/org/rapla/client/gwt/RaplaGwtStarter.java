@@ -1,15 +1,25 @@
 package org.rapla.client.gwt;
 
 import com.google.gwt.core.client.GWT;
+import com.google.gwt.dom.client.Element;
 import com.google.gwt.user.client.Cookies;
+import com.google.gwt.user.client.DOM;
 import com.google.gwt.user.client.Window;
+import com.google.gwt.user.client.ui.IsWidget;
+import org.rapla.client.PopupContext;
+import org.rapla.client.gwt.view.WeekviewGwt;
+import org.rapla.client.menu.sandbox.gwt.ContextCreator;
 import org.rapla.components.i18n.client.gwt.GwtBundleManager;
 import org.rapla.facade.RaplaFacade;
 import org.rapla.facade.client.ClientFacade;
 import org.rapla.facade.internal.ClientFacadeImpl;
+import org.rapla.framework.RaplaException;
 import org.rapla.inject.DefaultImplementation;
 import org.rapla.inject.InjectionContext;
 import org.rapla.logger.Logger;
+import org.rapla.plugin.abstractcalendar.HTMLRaplaBlock;
+import org.rapla.plugin.weekview.client.weekview.HTMLDaySlot;
+import org.rapla.plugin.weekview.client.weekview.HTMLWeekViewPresenter;
 import org.rapla.scheduler.Promise;
 import org.rapla.storage.RemoteLocaleService;
 import org.rapla.storage.StorageOperator;
@@ -19,6 +29,8 @@ import org.rapla.storage.dbrm.RemoteConnectionInfo;
 
 import javax.inject.Inject;
 import javax.inject.Provider;
+import java.util.ArrayList;
+import java.util.List;
 
 @DefaultImplementation(of=GwtStarter.class,context = InjectionContext.gwt, export = true)
 public class RaplaGwtStarter implements GwtStarter
@@ -88,6 +100,31 @@ public class RaplaGwtStarter implements GwtStarter
         final StorageOperator operator = this.operator.get();
         ((ClientFacadeImpl)facadeImpl).setOperator(operator);
         Promise<Void> load = facadeImpl.load();
+        WeekviewGwt.Callback callback = new WeekviewGwt.Callback()
+        {
+            public void updateReservation(HTMLRaplaBlock block, HTMLDaySlot daySlot, Integer rowSlot, PopupContext context)
+            {
+
+            }
+
+            @Override
+            public void selectReservation(HTMLRaplaBlock block, PopupContext context)
+            {
+
+            }
+
+            @Override
+            public void newReservation(HTMLDaySlot daySlot, Integer fromMinuteOfDay, Integer tillMinuteOfDay, PopupContext context)
+            {
+
+            }
+
+            @Override
+            public void resizeReservation(HTMLRaplaBlock block, HTMLDaySlot daySlot, Integer minuteOfDay, PopupContext context)
+            {
+
+            }
+        };
         return load;
     }
 

@@ -258,7 +258,8 @@ public class WeekviewGwt extends FlexTable
                 {
                     final int cellCountFromWidget = getCellCount(row);
                     final int realColumn = calcColumn(spanCells, row, column);
-                    if (getWidget(row, realColumn) == null)
+                    final Widget widget = getWidget(row, realColumn);
+                    if (widget == null)
                     {
                         if (row > rowCountFromWidget || realColumn > cellCountFromWidget)
                         {

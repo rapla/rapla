@@ -73,6 +73,7 @@ public class ExchangeConnectorRemoteObjectFactory implements ExchangeConnectorRe
         final User user = session.checkAndGetUser(request);
         getLogger().info("Removing exchange connection for user " + user);
         keyStorage.removeLoginInfo(user, ExchangeConnectorServerPlugin.EXCHANGE_USER_STORAGE);
+        getLogger().info("Removed login info for " + user);
         manager.removeTasksAndExports(user);
     }
 

@@ -180,17 +180,22 @@ public class CalendarWeekViewPresenter implements Presenter, CalendarPlugin
         builder.setNonFilteredEventsVisible(false);
         {
             long time = System.currentTimeMillis();
-            builder.initFromModel(model, startDate, endDate);
+            builder.initFromModel(model, startDate, endDate).thenRun(()->
+            {
+
+                GroupAllocatablesStrategy strategy = new GroupAllocatablesStrategy(raplaLocale.getLocale());
+                boolean compactColumns = getCalendarOptions().isCompactColumns() || builder.getAllocatables().size() == 0;
+                //compactColumns = false;
+                strategy.setFixedSlotsEnabled(!compactColumns);
+                strategy.setResolveConflictsEnabled(true);
+                builder.setBuildStrategy(strategy);
+                weekView.rebuild(builder);
+        }
+            );
             logger.info("events loaded took  " + (System.currentTimeMillis() - time) + " ms");
         }
 
-        GroupAllocatablesStrategy strategy = new GroupAllocatablesStrategy(raplaLocale.getLocale());
-        boolean compactColumns = getCalendarOptions().isCompactColumns() || builder.getAllocatables().size() == 0;
-        //compactColumns = false;
-        strategy.setFixedSlotsEnabled(!compactColumns);
-        strategy.setResolveConflictsEnabled(true);
-        builder.setBuildStrategy(strategy);
-        weekView.rebuild(builder);
+
         //String calendarviewHTML = weekview.getHtml();
         //this.view.update(calendarviewHTML);
     }

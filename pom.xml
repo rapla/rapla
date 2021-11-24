@@ -38,6 +38,9 @@
 	<build>
         <resources>
             <resource>
+                <directory>src/main/java</directory>
+            </resource>
+            <resource>
                 <directory>${basedir}/src/main/resources-filtered</directory>
                 <filtering>true</filtering>
             </resource>
@@ -248,7 +251,12 @@
                 <configuration>
                     <archiveClasses>true</archiveClasses>
                     <warSourceExcludes>org.rapla.Rapla/Rapla.nocache.js</warSourceExcludes>
-
+                    <webResources>
+                        <resource>
+                            <!-- this is relative to the pom.xml directory -->
+                            <directory>../raplajsclient/dist</directory>
+                        </resource>
+                    </webResources>
                     <packagingExcludes>**/*.java</packagingExcludes>
                     <warSourceDirectory>${basedir}/src/main/webapp</warSourceDirectory>
                     <webXml>${basedir}/src/main/webapp/WEB-INF/web.xml</webXml>
@@ -290,6 +298,16 @@
                 </executions>
             </plugin>
             <!--
+
+            <plugin>
+                <groupId>com.vertispan.j2cl</groupId>
+                <artifactId>j2cl-maven-plugin</artifactId>
+                <version>0.19-SNAPSHOT</version>
+                <inherited>false</inherited>
+                <configuration>
+                    <webappDirectory>${project.basedir}/src/main/webapp/</webappDirectory>
+                </configuration>
+            </plugin>
             <plugin>
                <groupId>org.apache.maven.plugins</groupId>
                <artifactId>maven-jar-plugin</artifactId>
@@ -305,6 +323,36 @@
            -->
         </plugins>
     </build>
+    <!--
+    <repositories>
+        <repository>
+            <id>vertispan-j2cl</id>
+            <name>Vertispan hosted artifacts-releases</name>
+            <url>https://repo.vertispan.com/j2cl</url>
+            <releases>
+                <enabled>true</enabled>
+            </releases>
+            <snapshots>
+                <enabled>true</enabled>
+                <checksumPolicy>fail</checksumPolicy>
+            </snapshots>
+        </repository>
+    </repositories>
+    <pluginRepositories>
+        <pluginRepository>
+            <id>vertispan-j2cl</id>
+            <name>Vertispan hosted artifacts-releases</name>
+            <url>https://repo.vertispan.com/j2cl</url>
+            <releases>
+                <enabled>true</enabled>
+            </releases>
+            <snapshots>
+                <enabled>true</enabled>
+                <checksumPolicy>fail</checksumPolicy>
+            </snapshots>
+        </pluginRepository>
+    </pluginRepositories>
+    -->
     <profiles>
         <profile>
             <id>deploy</id>
