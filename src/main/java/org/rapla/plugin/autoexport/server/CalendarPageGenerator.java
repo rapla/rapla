@@ -244,7 +244,7 @@ public class CalendarPageGenerator
                 {
                     users = facade.getUsers();
                 }
-                final Boolean entryAsBoolean = facade.getSystemPreferences().getEntryAsBoolean(AutoExportPlugin.SHOW_CALENDAR_LIST_IN_HTML_MENU, true);
+                final Boolean entryAsBoolean = facade.getSystemPreferences().getEntryAsBoolean(AutoExportPlugin.SHOW_CALENDAR_LIST_IN_HTML_MENU, false);
                 if ( entryAsBoolean)
                 {
                     generatePageList(users, request, response);
