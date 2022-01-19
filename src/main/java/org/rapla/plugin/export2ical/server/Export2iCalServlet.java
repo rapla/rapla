@@ -117,7 +117,7 @@ public class Export2iCalServlet
 	}
 
 	@GET
-	@Produces(MediaType.TEXT_HTML)
+	@Produces({MediaType.TEXT_HTML, "text/calendar"})
 	public void generatePage(@Context HttpServletRequest request, @Context HttpServletResponse response, @QueryParam("file") final String filename, @QueryParam("user") final String username) throws IOException, ServletException {
 
 		//this.response = response;
