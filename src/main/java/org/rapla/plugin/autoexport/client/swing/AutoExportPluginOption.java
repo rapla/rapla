@@ -17,7 +17,8 @@ import java.util.Locale;
 @Extension(provides = PluginOptionPanel.class, id = AutoExportPlugin.PLUGIN_ID)
 public class AutoExportPluginOption implements PluginOptionPanel
 {
-    JCheckBox booleanField = new JCheckBox();
+    JCheckBox showListExported = new JCheckBox();
+    JCheckBox showTooltipsInExports = new JCheckBox();
     JComponent component;
     Preferences preferences;
 
@@ -34,7 +35,9 @@ public class AutoExportPluginOption implements PluginOptionPanel
         TableLayout tableLayout = new TableLayout(sizes);
         content.setLayout(tableLayout);
         content.add(new JLabel("Show list of exported calendars im HTML Menu"), "1,4");
-        content.add(booleanField, "3,4");
+        content.add(showListExported, "3,4");
+        content.add(new JLabel("Show tooltips in HTML Exports"), "1,6");
+        content.add(showTooltipsInExports, "3,6");
         return content;
 
     }
@@ -54,15 +57,16 @@ public class AutoExportPluginOption implements PluginOptionPanel
     @Override
     public void commit() throws RaplaException
     {
-        preferences.putEntry(AutoExportPlugin.SHOW_CALENDAR_LIST_IN_HTML_MENU, booleanField.isSelected());
+        preferences.putEntry(AutoExportPlugin.SHOW_CALENDAR_LIST_IN_HTML_MENU, showListExported.isSelected());
+        preferences.putEntry(AutoExportPlugin.SHOW_TOOLTIP_IN_EXPORT_CONFIG_ENTRY, showTooltipsInExports.isSelected());
     }
 
     @Override
     public void show() throws RaplaException
     {
-        final Boolean entry = preferences.getEntryAsBoolean(AutoExportPlugin.SHOW_CALENDAR_LIST_IN_HTML_MENU, false);
+        showListExported.setSelected(preferences.getEntryAsBoolean(AutoExportPlugin.SHOW_CALENDAR_LIST_IN_HTML_MENU, false));
+        showTooltipsInExports.setSelected(preferences.getEntryAsBoolean(AutoExportPlugin.SHOW_TOOLTIP_IN_EXPORT_CONFIG_ENTRY, true));
         component = createPanel();
-        booleanField.setSelected(entry);
     }
 
     @Override

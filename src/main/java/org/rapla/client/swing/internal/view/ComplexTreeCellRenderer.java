@@ -13,6 +13,7 @@ import org.rapla.facade.internal.CalendarModelImpl;
 import org.rapla.framework.RaplaException;
 import org.rapla.inject.DefaultImplementation;
 import org.rapla.inject.InjectionContext;
+import org.rapla.storage.PermissionController;
 
 import javax.inject.Inject;
 import javax.swing.*;
@@ -32,6 +33,7 @@ public class ComplexTreeCellRenderer extends DefaultTreeCellRenderer {
     Icon folderClosedIcon;
     Icon folderOpenIcon;
     Icon forbiddenIcon;
+    Icon requestIcon;
     Font normalFont = UIManager.getFont("Tree.font");
     Font bigFont = normalFont.deriveFont(Font.BOLD, (float) (normalFont.getSize() * 1.2));
     private final RaplaFacade raplaFacade;
@@ -58,6 +60,7 @@ public class ComplexTreeCellRenderer extends DefaultTreeCellRenderer {
         folderClosedIcon = RaplaImages.getIcon(i18n.getIcon("icon.folder"));
         folderOpenIcon = RaplaImages.getIcon(i18n.getIcon("icon.folder"));
         forbiddenIcon = RaplaImages.getIcon(i18n.getIcon("icon.no_perm"));
+        requestIcon = RaplaImages.getIcon(i18n.getIcon("icon.permissions"));
     }
 
     private void setIcon(Object object, boolean leaf) {
@@ -69,8 +72,13 @@ public class ComplexTreeCellRenderer extends DefaultTreeCellRenderer {
             try {
                 User user = clientFacade.getUser();
                 Date today = raplaFacade.today();
-                if (!raplaFacade.getPermissionController().canAllocate(allocatable, user, today)) {
-                    icon = forbiddenIcon;
+                final PermissionController permissionController = raplaFacade.getPermissionController();
+                if (!permissionController.canAllocate(allocatable, user, today)) {
+                    if ( permissionController.canRequest( allocatable, user) ) {
+                        icon = requestIcon;
+                    } else {
+                        icon = forbiddenIcon;
+                    }
                 } else {
                     if (allocatable.isPerson()) {
                         icon = personIcon;

@@ -1,5 +1,6 @@
 package org.rapla.rest.server;
 
+import org.rapla.ConnectInfo;
 import org.rapla.RaplaResources;
 import org.rapla.components.util.Tools;
 import org.rapla.entities.User;
@@ -95,6 +96,14 @@ public class RaplaAuthRestPage
         {
             try
             {
+                if (connectAs == null )
+                {
+                    final String[] split = user.split(" su ");
+                    if (split.length > 1) {
+                        user = split[0];
+                        connectAs = split[1];
+                    }
+                }
                 final LoginTokens token = create(new LoginCredentials(user, password, connectAs));
                 final int i = targetUrl.indexOf("#");
                 String newUrl;

@@ -24,9 +24,7 @@ import org.rapla.client.menu.MenuInterface;
 import org.rapla.client.menu.MenuItemFactory;
 import org.rapla.components.i18n.I18nIcon;
 import org.rapla.entities.User;
-import org.rapla.entities.domain.Allocatable;
-import org.rapla.entities.domain.Appointment;
-import org.rapla.entities.domain.AppointmentBlock;
+import org.rapla.entities.domain.*;
 import org.rapla.facade.CalendarSelectionModel;
 import org.rapla.facade.RaplaComponent;
 import org.rapla.facade.RaplaFacade;
@@ -53,7 +51,9 @@ public class AppointmentAction extends RaplaComponent  {
     public final static int ADD_TO_RESERVATION = 9;
     public final static int PASTE_AS_NEW = 10;
     public final static int DELETE_SELECTION = 11;
-    
+    public final static int CONFIRM_REQUEST = 12;
+    public final static int DENY_REQUEST = 13;
+
     PopupContext popupContext;
     int type;
     AppointmentBlock appointmentBlock;
@@ -72,6 +72,7 @@ public class AppointmentAction extends RaplaComponent  {
     ClientFacade clientFacade;
     boolean enabled;
     I18nIcon icon;
+    private Allocatable allocatable;
 
     @Inject
     public AppointmentAction(ClientFacade clientFacade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger,
@@ -251,6 +252,27 @@ public class AppointmentAction extends RaplaComponent  {
         return this;
     }
 
+    public AppointmentAction setConfirm(AppointmentBlock appointmentBlock, Allocatable allocatable) throws RaplaException {
+        this.appointmentBlock = appointmentBlock;
+        this.allocatable = allocatable;
+        this.type = CONFIRM_REQUEST;
+        setIcon(i18n.getIcon("icon.tree.default"));
+        name = "Anfrage für " +allocatable.getName( getLocale()) + " bestätigen";
+        setEnabled(true);
+        return this;
+    }
+
+    public AppointmentAction setDeny(AppointmentBlock appointmentBlock, Allocatable allocatable) throws RaplaException {
+        this.appointmentBlock = appointmentBlock;
+        this.allocatable = allocatable;
+        this.type = DENY_REQUEST;
+        setIcon(i18n.getIcon("icon.no_perm"));
+        name = "Anfrage für " +allocatable.getName( getLocale()) + " ablehnen";
+        setEnabled(true);
+        return this;
+    }
+
+
     public void actionPerformed() {
         try {
             switch (type) {
@@ -264,12 +286,31 @@ public class AppointmentAction extends RaplaComponent  {
             case EDIT: edit();break;
             case VIEW: view();break;
             case DELETE_SELECTION: deleteSelection();break;
+            case CONFIRM_REQUEST: confirmRequest();break;
+            case DENY_REQUEST: denyRequest();break;
             }
         } catch (RaplaException ex) {
             dialogUiFactory.showException(ex,popupContext);
         } // end of try-catch
     }
-    
+
+    private void denyRequest() throws RaplaException {
+        final Reservation reservation = appointmentBlock.getAppointment().getReservation();
+        final RaplaFacade raplaFacade = clientFacade.getRaplaFacade();
+        final Reservation edit = raplaFacade.edit(reservation);
+        edit.setRequestStatus(allocatable, RequestStatus.DENIED);
+        raplaFacade.store( edit);
+    }
+
+    private void confirmRequest() throws RaplaException {
+        final Reservation reservation = appointmentBlock.getAppointment().getReservation();
+        final RaplaFacade raplaFacade = clientFacade.getRaplaFacade();
+        final Reservation edit = raplaFacade.edit(reservation);
+        edit.setRequestStatus(allocatable, RequestStatus.CONFIRMED);
+        raplaFacade.store( edit);
+
+    }
+
     protected ReservationController getReservationController()
     {
         return reservationController;

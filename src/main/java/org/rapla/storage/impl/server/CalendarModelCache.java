@@ -129,7 +129,7 @@ public class CalendarModelCache
                     final Locale locale = i18n.getLocale();
                     calendarModelImpl = new CalendarModelImpl(locale, user, operator,logger);
                     Map<String, String> alternativOptions = null;
-                    calendarModelImpl.setConfiguration(config, alternativOptions);
+                    calendarModelImpl.setConfiguration(config, alternativOptions, true);
                     calendarModelList.add(calendarModelImpl);
                 }
 

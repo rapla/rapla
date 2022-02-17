@@ -238,7 +238,7 @@ public class CalendarModelImpl implements CalendarSelectionModel
         return false;
     }
 
-    public boolean setConfiguration(CalendarModelConfiguration config, final Map<String, String> alternativOptions) throws RaplaException
+    public boolean setConfiguration(CalendarModelConfiguration config, final Map<String, String> alternativOptions, boolean updateSelectedDates) throws RaplaException
     {
         ArrayList<RaplaObject> selectedObjects = new ArrayList<>();
         allocatableFilter.clear();
@@ -297,7 +297,7 @@ public class CalendarModelImpl implements CalendarSelectionModel
         {
             setSelectedDate(config.getSelectedDate());
         }
-        else
+        else if (updateSelectedDates)
         {
             setSelectedDate(operator.today());
         }
@@ -306,7 +306,7 @@ public class CalendarModelImpl implements CalendarSelectionModel
         {
             setStartDate(startDate);
         }
-        else
+        else if (updateSelectedDates)
         {
             setStartDate(operator.today());
         }
@@ -315,7 +315,7 @@ public class CalendarModelImpl implements CalendarSelectionModel
         {
             setEndDate(endDate);
         }
-        else
+        else if (updateSelectedDates)
         {
             setEndDate( (endDate != null && startDate != null) ? DateTools.addDays( getStartDate(), DateTools.countDays(startDate, endDate)) : DateTools.addYear(this.startDate));
         }
@@ -911,7 +911,7 @@ public class CalendarModelImpl implements CalendarSelectionModel
             clone = new CalendarModelImpl(locale, user, operator, logger);
             CalendarModelConfiguration config = createConfiguration();
             Map<String, String> alternativOptions = null;
-            clone.setConfiguration(config, alternativOptions);
+            clone.setConfiguration(config, alternativOptions, true);
         }
         catch (RaplaException e)
         {
@@ -1284,7 +1284,7 @@ public class CalendarModelImpl implements CalendarSelectionModel
                     alternativeOptions.put(HTML_EXPORT_ENABLED, "true");
                 }
             }
-            setConfiguration(modelConfig, alternativeOptions);
+            setConfiguration(modelConfig, alternativeOptions,true);
         }
     }
 

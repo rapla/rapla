@@ -22,13 +22,7 @@ import org.rapla.components.util.iterator.IterableChain;
 import org.rapla.components.util.iterator.NestedIterable;
 import org.rapla.entities.Entity;
 import org.rapla.entities.RaplaObject;
-import org.rapla.entities.domain.Allocatable;
-import org.rapla.entities.domain.Appointment;
-import org.rapla.entities.domain.AppointmentBlock;
-import org.rapla.entities.domain.AppointmentStartComparator;
-import org.rapla.entities.domain.Permission;
-import org.rapla.entities.domain.RaplaObjectAnnotations;
-import org.rapla.entities.domain.Reservation;
+import org.rapla.entities.domain.*;
 import org.rapla.entities.dynamictype.Classification;
 import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.entities.dynamictype.DynamicTypeAnnotations;
@@ -67,7 +61,8 @@ public final class ReservationImpl extends SimpleEntity implements Reservation, 
     private Map<String,String> annotations;
     private Date lastChanged;
     private Date createDate;
-    
+    private Map<String, RequestStatus> requestStatus;
+
     transient HashMap<String,AppointmentImpl> appointmentIndex;
         
     ReservationImpl() {
@@ -381,6 +376,7 @@ public final class ReservationImpl extends SimpleEntity implements Reservation, 
     public void removeAllocatable(Allocatable allocatable)   {
         checkWritable();
         removeId(allocatable.getId());
+        setRequestStatus( allocatable, null );
     }
 
     public Allocatable[] getAllocatables()  {
@@ -462,7 +458,20 @@ public final class ReservationImpl extends SimpleEntity implements Reservation, 
     	}
     	setRestrictionPrivate(allocatable, appointmentIds);
     }
-    
+
+    public void setRequestStatus(Allocatable allocatable,RequestStatus status) {
+        checkWritable();
+        final String id = allocatable.getId();
+        setRequestStatusForId(id, status);
+    }
+
+    public RequestStatus getRequestStatus(Allocatable allocatable) {
+        if (requestStatus == null) {
+            return null;
+        }
+        return requestStatus.get( allocatable.getId());
+    }
+
     public Appointment[] getRestriction(Allocatable allocatable) {
         List<String> restrictionPrivate = getRestrictionPrivate(allocatable.getId());
 		Appointment[] list = new Appointment[restrictionPrivate.size()];
@@ -533,6 +542,21 @@ public final class ReservationImpl extends SimpleEntity implements Reservation, 
         else
         {
             restrictions.put(id, appointmentIds);
+        }
+    }
+
+    public void setRequestStatusForId(String id,RequestStatus status) {
+        if (requestStatus == null)
+        {
+            requestStatus = new HashMap<>(1);
+        }
+        if (status == null )
+        {
+            requestStatus.remove(id);
+        }
+        else
+        {
+            requestStatus.put(id, status);
         }
     }
     
@@ -677,6 +701,19 @@ public final class ReservationImpl extends SimpleEntity implements Reservation, 
 	        		clone.restrictions.put( resourceId, new ArrayList<>(list));
 	        	}
         	}
+
+            if ( requestStatus != null)
+            {
+                if ( clone.requestStatus == null)
+                {
+                    clone.requestStatus = new LinkedHashMap<>();
+                }
+                RequestStatus status = requestStatus.get( resourceId);
+                if ( status != null)
+                {
+                    clone.requestStatus.put( resourceId, status);
+                }
+            }
         }
         clone.createDate = createDate;
         clone.lastChanged = lastChanged;

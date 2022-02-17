@@ -5,6 +5,7 @@ import org.rapla.components.i18n.I18nLocaleFormats;
 import org.rapla.components.i18n.I18nIconURL;
 import org.rapla.components.i18n.LocalePackage;
 import org.rapla.components.i18n.I18nIcon;
+import org.rapla.components.util.DateTools;
 import org.rapla.inject.DefaultImplementation;
 import org.rapla.inject.InjectionContext;
 
@@ -32,7 +33,11 @@ public class GwtBundleManager implements BundleManager
         this.localePackage = localePackage;
         String language = localePackage.getLanguage();
         String country = localePackage.getCountry();
-        locale = newLocale(language, country);
+        locale = Locale.getDefault();//newLocale(Locale.getDefault(),language, country);
+        DateTools.DEFAULT_GWT_LOCALE = language;
+        if ( country != null) {
+            DateTools.DEFAULT_GWT_LOCALE += "_" +country;
+        }
     }
 
     @Override
@@ -107,7 +112,11 @@ public class GwtBundleManager implements BundleManager
 
     public Locale newLocale(String language, String country)
     {
-        Locale locale = Locale.getDefault();
+        return newLocale(Locale.US, language, country);
+    }
+
+    private Locale newLocale(Locale locale,String language, String country)
+    {
         StringBuilder sb = new StringBuilder(language);
         if(country != null && !country.isEmpty())
         {

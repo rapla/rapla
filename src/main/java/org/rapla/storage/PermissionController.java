@@ -341,6 +341,27 @@ public class PermissionController
         return hasAccess(container, user, Permission.ALLOCATE, start, end, today, false);
     }
 
+    public boolean canRequest(Allocatable alloc, User user) {
+        final Classification classification = alloc.getClassification();
+        final Attribute emailAtt = classification.getType().getAttribute("Email");
+        if (canRead(alloc, user)  && emailAtt!= null)
+        {
+            final Object email = classification.getValue("Email");
+            if (email != null) {
+                final boolean emailSet = !email.toString().trim().isEmpty();
+                return emailSet;
+            }
+        }
+        return  false;
+    }
+
+    public boolean isRequestOnly(Allocatable alloc, User user, Date today) {
+        if (canAllocate( alloc, user, today)) {
+            return false;
+        }
+        return canRequest(alloc, user);
+    }
+
     /**
      *  Checks if the user is allowed to make an allocation in the future (starting with date today)
      * @param container

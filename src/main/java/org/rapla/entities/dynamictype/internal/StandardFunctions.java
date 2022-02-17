@@ -59,6 +59,7 @@ public class StandardFunctions implements FunctionFactory
         switch (functionName)
         {
             case IsPerson.ID: return new IsPerson(args);
+            case IsLocation.ID: return new IsLocation(args);
             case NotFunction.ID: return new NotFunction(args);
             case AndFunction.ID: return new AndFunction(args);
             case OrFunction.ID: return new OrFunction(args);
@@ -130,6 +131,48 @@ public class StandardFunctions implements FunctionFactory
             {
                 final String classificationType = classification.getType().getAnnotation(DynamicTypeAnnotations.KEY_CLASSIFICATION_TYPE);
                 return classificationType != null && classificationType.equals(valueClassificationType);
+            }
+            return Boolean.FALSE;
+        }
+    }
+
+    public static class IsLocation extends Function
+    {
+        public static final String ID = "isLocation";
+        private Function subFunction;
+
+        public IsLocation(List<Function> args) throws IllegalAnnotationException
+        {
+            super(NAMESPACE,ID, args);
+            assertArgs(1);
+            if (args.size() > 0)
+            {
+                subFunction = args.get(0);
+            }
+            // filter( resources(), new function(equals(key(type()),"room")))
+            // attribute("name"),filter( resources(), if(key(type()),"room"),attribute("roomName"),attribute("name"))
+            // filter( resources(), u->kladeradatsch)
+            //if(key(type(filter(persons(), v -> equals(type(u), "master"))),"room"),attribute(u,"roomName"),attribute(u,"name")
+            // filter( resources(this), u->equals()
+            //List<Function> olderUsers = args.stream().filter(u -> u.name.equals("bla")).collect(Collectors.toList());
+        }
+
+        @Override public Boolean eval(EvalContext context)
+        {
+            final Object obj;
+            if (subFunction != null)
+            {
+                obj = subFunction.eval(context);
+            }
+            else
+            {
+                obj = context.getFirstContextObject();
+            }
+            Classification classification = ParsedText.guessClassification(obj);
+            if (classification != null)
+            {
+                final String classificationType = classification.getType().getAnnotation(DynamicTypeAnnotations.KEY_LOCATION);
+                return classificationType != null && classificationType.equals("true");
             }
             return Boolean.FALSE;
         }

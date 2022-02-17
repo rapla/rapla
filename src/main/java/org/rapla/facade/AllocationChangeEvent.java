@@ -44,6 +44,10 @@ public class AllocationChangeEvent
     public static Type CHANGE = new Type( "change" );
     public static Type ADD = new Type( "add" );
     public static Type REMOVE = new Type( "remove" );
+    public static Type REQUESTED = new Type( "requested" );
+    public static Type CONFIRMED = new Type( "confirmed" );
+    public static Type DENIED = new Type( "denied" );
+
 
     User m_user;
     Reservation m_newReservation;

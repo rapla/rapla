@@ -34,11 +34,7 @@ import org.rapla.entities.Category;
 import org.rapla.entities.Entity;
 import org.rapla.entities.RaplaObject;
 import org.rapla.entities.User;
-import org.rapla.entities.domain.Allocatable;
-import org.rapla.entities.domain.Appointment;
-import org.rapla.entities.domain.AppointmentBlock;
-import org.rapla.entities.domain.Period;
-import org.rapla.entities.domain.Reservation;
+import org.rapla.entities.domain.*;
 import org.rapla.entities.dynamictype.Classifiable;
 import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.entities.dynamictype.DynamicTypeAnnotations;
@@ -193,6 +189,7 @@ import java.util.TreeMap;
     {
         AppointmentBlock appointmentBlock = b.getAppointmentBlock();
         Appointment appointment = appointmentBlock.getAppointment();
+        Reservation reservation = appointment.getReservation();
         Date start = b.getStart();
         boolean isException = b.isException();
         Allocatable groupAllocatable = b.getGroupAllocatable();
@@ -207,14 +204,29 @@ import java.util.TreeMap;
         }
 
         MenuItemFactory f = getItemFactory();
-        createAction(popupContext).setCopy(appointmentBlock, copyContextAllocatables).addTo(menu, f);
-        createAction(popupContext).setCut(appointmentBlock, copyContextAllocatables).addTo( menu, f);
-        createAction(popupContext).setEdit(appointmentBlock).addTo( menu, f);
-        if (!isException)
-        {
-            createAction( popupContext).setDelete(appointmentBlock).addTo( menu, f);
+        final User user = getUser();
+        if ( permissionController.canModify( reservation, user)) {
+            createAction(popupContext).setCopy(appointmentBlock, copyContextAllocatables).addTo(menu, f);
+            createAction(popupContext).setCut(appointmentBlock, copyContextAllocatables).addTo(menu, f);
+            createAction(popupContext).setEdit(appointmentBlock).addTo(menu, f);
+            if (!isException)
+            {
+                createAction( popupContext).setDelete(appointmentBlock).addTo( menu, f);
+            }
+        }
+        for (Allocatable alloc:reservation.getAllocatables()) {
+            final RequestStatus requestStatus = reservation.getRequestStatus(alloc);
+            if (requestStatus != null && permissionController.canAllocate(  appointment.getStart(), appointment.getMaxEnd(),alloc, user)) {
+                if (requestStatus !=  RequestStatus.CONFIRMED) {
+                    createAction(popupContext).setConfirm(appointmentBlock, alloc).addTo(menu, f);
+                }
+                if (requestStatus ==  RequestStatus.REQUESTED || requestStatus ==  RequestStatus.CHANGED || requestStatus ==  RequestStatus.CONFIRMED) {
+                    createAction(popupContext).setDeny(appointmentBlock, alloc).addTo(menu, f);
+                }
+            }
         }
         createAction( popupContext).setView(appointmentBlock).addTo( menu, f);
+        //createAction(popupContext).setConfirm(appointmentBlock).addTo( menu, f);
 
         Iterator<ObjectMenuFactory> it = objectMenuFactories.iterator();
         while (it.hasNext())
@@ -325,7 +337,7 @@ import java.util.TreeMap;
         Date end = getEndDate(model, start);
         for (Allocatable alloc : selectedAllocatables)
         {
-            if (permissionController.canAllocate(alloc, user, start, end, today))
+            if (permissionController.canAllocate(alloc, user, start, end, today) || permissionController.canRequest(alloc, user))
                 canAllocate = true;
         }
         boolean canAllocateSelected = canAllocate || (selectedAllocatables.size() == 0 && permissionController.canUserAllocateSomething(user));

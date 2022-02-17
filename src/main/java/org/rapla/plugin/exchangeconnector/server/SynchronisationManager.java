@@ -875,6 +875,7 @@ public class SynchronisationManager implements ServerExtension
             preferences.putEntry(EXPORT_ENTRY, facade.newRaplaMapForMap(newExportMap));
         }
         facade.store(preferences);
+        logger.info("Removed exchange export infos for " + user);
     }
 
     public void testConnection(String exchangeUsername, String exchangePassword, User user) throws RaplaException

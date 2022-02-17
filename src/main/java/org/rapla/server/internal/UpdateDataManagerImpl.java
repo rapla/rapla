@@ -120,9 +120,10 @@ public class UpdateDataManagerImpl implements  UpdateDataManager
         Date currentTimestamp = operator.getCurrentTimestamp();
         Date historyValidStart = operator.getHistoryValidStart();
         Date conflictValidStart = operator.getConnectStart();
-        if (lastSynced.after(currentTimestamp))
+        Date lastRefreshed = operator.getLastRefreshed();
+        if (lastSynced.after(lastRefreshed))
         {
-            long diff = lastSynced.getTime() - currentTimestamp.getTime();
+            long diff = lastSynced.getTime() - lastRefreshed.getTime();
             getLogger().warn("Timestamp of client " + diff + " ms  after server ");
             lastSynced = currentTimestamp;
         }

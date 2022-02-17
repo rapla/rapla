@@ -267,16 +267,18 @@ import java.util.stream.Collectors;
     {
         User sessionUser = checkSessionUser();
         Date currentTimestamp = operator.getCurrentTimestamp();
+        Date lastRefreshed = operator.getLastRefreshed();
+
         Date lastSynced = event.getLastValidated();
         if (lastSynced == null)
         {
             throw new RaplaException("client sync time is missing");
         }
-        if (lastSynced.after(currentTimestamp))
+        if (lastSynced.after(lastRefreshed))
         {
-            long diff = lastSynced.getTime() - currentTimestamp.getTime();
+            long diff = lastSynced.getTime() - lastRefreshed.getTime();
             getLogger().warn("Timestamp of client " + diff + " ms  after server ");
-            lastSynced = currentTimestamp;
+            lastSynced = lastRefreshed;
         }
         //   LocalCache cache = operator.getCache();
         //   UpdateEvent event = createUpdateEvent( context,xml, cache );
@@ -287,7 +289,6 @@ import java.util.stream.Collectors;
         }
         dispatch_(event);
         getLogger().info("Change for user " + sessionUser + " dispatched.");
-
         UpdateEvent result = updateDataManager.createUpdateEvent(sessionUser, lastSynced);
         for ( PrePostDispatchProcessor processor:prePostDispatchProcessors)
         {

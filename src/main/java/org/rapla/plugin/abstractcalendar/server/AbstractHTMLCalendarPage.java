@@ -225,7 +225,8 @@ public abstract class AbstractHTMLCalendarPage  implements HTMLViewPage
         out.println("<!DOCTYPE html>"); // we have HTML5 
 		out.println("<html>");
 		out.println("<head>");
-		out.println("  <title>" + getTitle() + "</title>");
+        final String title = getTitle(request);
+        out.println("  <title>" + title + "</title>");
         String formAction = getUrl(request,"rapla/calendar");
 
         out.println("  " + getCssLine(request, "calendar.css"));
@@ -312,7 +313,7 @@ public abstract class AbstractHTMLCalendarPage  implements HTMLViewPage
 			// End DateChooser
 			// Start weekview
 			out.println("<h2 class=\"title\">");
-			out.println(getTitle());
+			out.println(title);
 			out.println("</h2>");
 
             final Date selectedDate = model.getSelectedDate();
@@ -331,6 +332,21 @@ public abstract class AbstractHTMLCalendarPage  implements HTMLViewPage
 		}
 		out.println("</body>");
 		out.println("</html>");
+    }
+
+    private String getTitle(HttpServletRequest request)
+    {
+        String allocatable_id  = request.getParameter("allocatable_id");
+
+        if ( allocatable_id != null) {
+            final Allocatable allocatable = facade.getOperator().tryResolve(allocatable_id, Allocatable.class);
+            if ( allocatable != null)
+            {
+                final String name = allocatable.getName(getRaplaLocale().getLocale());
+                return name;
+            }
+        }
+        return getTitle();
     }
 
     static public String getFavIconLine(HttpServletRequest request)
@@ -361,7 +377,12 @@ public abstract class AbstractHTMLCalendarPage  implements HTMLViewPage
 
     static public void printAllocatableList(HttpServletRequest request, java.io.PrintWriter out, Locale locale, String title, Collection<Allocatable> selectedAllocatables, boolean addCSV) throws UnsupportedEncodingException {
     	String base = request.getRequestURI().toString();
-    	String queryPath = request.getQueryString();
+        String forwardProto = request.getHeader("X-Forwarded-Proto");
+        boolean secure = (forwardProto != null && forwardProto.toLowerCase().equals("https")) || request.isSecure();
+        if ( secure) {
+            base = base.replaceAll("http://", "https://");
+        }
+        String queryPath = request.getQueryString();
         final String key = request.getParameter("key");
         final String salt = request.getParameter("salt");
         if ( key != null && salt != null)

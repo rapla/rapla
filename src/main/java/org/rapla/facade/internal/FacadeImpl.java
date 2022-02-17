@@ -149,10 +149,15 @@ public class FacadeImpl implements RaplaFacade {
 		Date end = RaplaComponent.calcEndDate(model, start);
 		for (Allocatable allo : allocatables)
 		{
-			if (!getPermissionController().canAllocate(start, end, allo, user))
+			final PermissionController permissionController = getPermissionController();
+			if (!permissionController.canAllocate(start, end, allo, user))
 			{
-				canAllocate = false;
+				if (permissionController.canRequest(allo, user)) {
+ 				} else {
+					canAllocate = false;
+				}
 			}
+
 		}
 		return canAllocate;
 	}

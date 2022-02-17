@@ -117,7 +117,7 @@ public class Export2iCalServlet
 	}
 
 	@GET
-	@Produces(MediaType.TEXT_HTML)
+	@Produces({MediaType.TEXT_HTML, "text/calendar"})
 	public void generatePage(@Context HttpServletRequest request, @Context HttpServletResponse response, @QueryParam("file") final String filename, @QueryParam("user") final String username) throws IOException, ServletException {
 
 		//this.response = response;
@@ -197,7 +197,7 @@ public class Export2iCalServlet
 			final CalendarSelectionModel calModel = facade.newCalendarModel(user);
 			calModel.load(filename);
 
-			int daysBefore = global_interval ? global_daysBefore : preferences.getEntryAsInteger(Export2iCalPlugin.PREF_BEFORE_DAYS, 11);
+			int daysBefore = global_interval ? global_daysBefore : preferences.getEntryAsInteger(Export2iCalPlugin.PREF_BEFORE_DAYS, global_daysBefore);
 			int daysAfter = global_interval ? global_daysAfter : preferences.getEntryAsInteger(Export2iCalPlugin.PREF_AFTER_DAYS, global_daysAfter);
 
 			final Date now = new Date();

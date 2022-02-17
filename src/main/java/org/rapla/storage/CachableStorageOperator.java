@@ -50,6 +50,7 @@ public interface CachableStorageOperator extends StorageOperator {
     UpdateResult getUpdateResult(Date since) throws RaplaException;
     UpdateResult getUpdateResult(Date since,User user) throws RaplaException;
 
+    Date getLastRefreshed();
     Date getHistoryValidStart();
     Date getConnectStart();
 

@@ -352,7 +352,7 @@ a:hover{
 }
 
 @media print {
-   .datechooser {
+    .datechooser {
      display: none;
    }
    .calendar
@@ -360,6 +360,7 @@ a:hover{
       clear:both;
       page-break-after:always;
    }
+    body {-webkit-print-color-adjust: exact;}
 }
 
 /* HTML Export calendar */

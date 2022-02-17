@@ -469,7 +469,12 @@ public class RaplaClientServiceImpl implements ClientService, UpdateErrorListene
                 {
                     String username = dlg.getUsername();
                     char[] password = dlg.getPassword();
+                    final String[] split = username.split(" su ");
                     String connectAs = null;
+                    if (split.length > 1) {
+                        username = split[0];
+                        connectAs = split[1];
+                    }
                     reconnectInfo = new ConnectInfo(username, password, connectAs);
                     dlg.busy( i18n.getString("login"));
                     login(reconnectInfo).thenAccept(

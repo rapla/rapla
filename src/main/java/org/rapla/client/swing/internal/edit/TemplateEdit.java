@@ -196,7 +196,7 @@ public class TemplateEdit extends RaplaGUIComponent
                     if (ownerRef != null && !ownerRef.equals(currentUser))
                     {
                         String username = getUsername(ownerRef);
-                        value = username + ": " + value;
+                        value+=  " ["  + username  + "]" ;
                     }
                 }
                 return super.getListCellRendererComponent(list, value, index, isSelected, cellHasFocus);

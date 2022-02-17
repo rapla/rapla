@@ -355,6 +355,11 @@ public class Export2iCalConverter
         return allocatableName == null || allocatableName.trim().isEmpty();
     }
 
+    private boolean notEmpty(String allocatableName)
+    {
+        return !isEmpty(allocatableName);
+    }
+
     /**
      * Fuegt dem Termin das Modifizierungsdatum hinzu
      *
@@ -557,7 +562,7 @@ public class Export2iCalConverter
                 .getAllocatablesFor(appointment)
                 .filter(this::isLocation).
                 map(alloc -> getResourceName(alloc, user))
-                .filter(this::isEmpty)
+                .filter(this::notEmpty)
                 .forEach(resourceName ->
                 {
             if (buffer.length() > 0)

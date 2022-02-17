@@ -10,19 +10,52 @@
  | program with every library, which license fulfills the Open Source       |
  | Definition as published by the Open Source Initiative (OSI).             |
  *--------------------------------------------------------------------------*/
-package org.rapla.plugin.autoexport;
+package org.rapla.entities.domain;
 
-import org.rapla.entities.configuration.CalendarModelConfiguration;
-import org.rapla.entities.configuration.RaplaMap;
-import org.rapla.framework.TypedComponentRole;
 
-public class AutoExportPlugin
-{
-	public static final String CALENDAR_GENERATOR = "calendar";
-    public static final TypedComponentRole<RaplaMap<CalendarModelConfiguration>> PLUGIN_ENTRY = CalendarModelConfiguration.EXPORT_ENTRY;
-    public static final String HTML_EXPORT= PLUGIN_ENTRY + ".selected";
-    public static final String PLUGIN_ID ="org.rapla.plugin.autoexport";
-    public static final TypedComponentRole<Boolean> SHOW_CALENDAR_LIST_IN_HTML_MENU = new TypedComponentRole<>(PLUGIN_ID + "." + "show_calendar_list_in_html_menu");
-    public static final TypedComponentRole<Boolean> SHOW_TOOLTIP_IN_EXPORT_CONFIG_ENTRY = new TypedComponentRole<>(PLUGIN_ID + "."+ "show_tooltips_in_export");
+/**Currently Rapla supports the following request status:
+  <ul>
+        <li>prerequest</li>
+        <li>requested</li>
+        <li>confirmed</li>
+        <li>denied</li>
+ </ul>
+ */
+public enum RequestStatus {
+    REQUESTED("requested"),
+    CHANGED("newrequest"),
+    CONFIRMED("confirmed"),
+    DENIED("denied");
 
+    String type;
+    RequestStatus(String type) {
+        this.type = type;
+    }
+
+    
+    public boolean is(RequestStatus other) {
+        if ( other == null)
+            return false;
+        return type.equals( other.type); 
+    }
+    
+    public static RequestStatus findForString(String string  ) {
+    	for (RequestStatus type:values())
+    	{
+    		if ( type.type.equals( string))
+    		{
+    			return type;
+    		}
+    	}
+    	return null;
+    }
+    
+    public String toString() {
+        return type;
+    }
+    
 }
+
+
+
+
