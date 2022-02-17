@@ -250,8 +250,6 @@
 					<logLevel>INFO</logLevel>
 					<detail>true</detail>
 					<classpathScope>compile+runtime</classpathScope>
-					<!--
-					-->
 					<optimize>8</optimize>
 					<style>OBFUSCATED</style>
 					<draftCompile>false</draftCompile>

@@ -179,8 +179,8 @@ public class RaplaJNLPPageGenerator
         // we changed the logo from .gif to .png to make it more sexy
         //differentiate between icon and splash because of different sizes!
         out.println(" <icon kind=\"default\" href=\"" + webstartRoot + "/webclient/rapla_64x64.png\" width=\"64\" height=\"64\"/> ");
-        out.println(" <icon kind=\"desktop\" href=\"" + webstartRoot + "/webclient/rapla_128x128.png\" width=\"128\" height=\"128\"/> ");
-        out.println(" <icon kind=\"shortcut\" href=\"" + webstartRoot + "/webclient/rapla_64x64.png\" width=\"64\" height=\"64\"/> ");
+        //out.println(" <icon kind=\"desktop\" href=\"" + webstartRoot + "/webclient/rapla_128x128.png\" width=\"128\" height=\"128\"/> ");
+        //out.println(" <icon kind=\"shortcut\" href=\"" + webstartRoot + "/webclient/rapla_64x64.png\" width=\"64\" height=\"64\"/> ");
         // and here aswell
 
         out.println(" <icon kind=\"splash\" href=\"" + webstartRoot + "/webclient/logo.png\"/> ");
