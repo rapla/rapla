@@ -89,7 +89,7 @@ public class ExchangeAppointmentStorage
                     result.addAll(list);
                 }
             }
-
+            logger.debug("Found " + result.size() + " existing exchange tasks. ");
             return result;
         }
         finally

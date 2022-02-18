@@ -72,7 +72,7 @@ import static org.rapla.entities.configuration.CalendarModelConfiguration.EXPORT
 public class SynchronisationManager implements ServerExtension
 {
     private static final long SCHEDULE_PERIOD = DateTools.MILLISECONDS_PER_MINUTE / 3;
-    private static final long VALID_LOCK_DURATION = DateTools.MILLISECONDS_PER_MINUTE * 10;
+    private static final long VALID_LOCK_DURATION = DateTools.MILLISECONDS_PER_MINUTE * 5;
     private static final String EXCHANGE_LOCK_ID = "EXCHANGE";
     private static final TypedComponentRole<Boolean> RETRY_USER = new TypedComponentRole<>("org.rapla.plugin.exchangconnector.retryUser");
     private static final TypedComponentRole<Boolean> RESYNC_USER = new TypedComponentRole<>("org.rapla.plugin.exchangconnector.resyncUser");
@@ -143,7 +143,7 @@ public class SynchronisationManager implements ServerExtension
                 // set it as last, so update must have been successful
                 updatedUntil = updateResult.getUntil();
             } catch (Throwable t) {
-                SynchronisationManager.this.logger.debug("Error updating exchange queue");
+                SynchronisationManager.this.logger.error("Error updating exchange queue", t);
             } finally {
                 if (lastUpdated != null) {
                     cachableStorageOperator.releaseLock(EXCHANGE_LOCK_ID, updatedUntil);
@@ -160,52 +160,7 @@ public class SynchronisationManager implements ServerExtension
         }
     }
 
-    class RetryCommand implements Action
-    {
-        boolean firstExecution = true;
-
-        public void run()
-        {
-            try
-            {
-                cachableStorageOperator.requestLock(EXCHANGE_LOCK_ID, VALID_LOCK_DURATION);
-                appointmentStorage.refresh();
-                Collection<SynchronizationTask> allTasks = appointmentStorage.getAllTasks();
-                Collection<SynchronizationTask> includedTasks = new ArrayList<>();
-                final Date now = new Date();
-                for (SynchronizationTask task : allTasks)
-                {
-                    final int retries = task.getRetries();
-                    if (retries > 5 && !firstExecution)
-                    {
-                        final Date lastRetry = task.getLastRetry();
-                        if (lastRetry != null)
-                        {
-                            // skip a schedule Period for the time of retries
-                            if (lastRetry.getTime() > now.getTime() - (retries - 5) * SCHEDULE_PERIOD)
-                            {
-                                continue;
-                            }
-                        }
-                    }
-                    includedTasks.add(task);
-                }
-                firstExecution = false;
-                SynchronisationManager.this.execute(includedTasks);
-                cachableStorageOperator.releaseLock(EXCHANGE_LOCK_ID, null);
-            }
-            catch (Exception ex)
-            {
-                logger.warn("Could not synchronize with exchange: " + ex.getMessage());
-                if (logger.isDebugEnabled())
-                {
-                    final StringWriter sw = new StringWriter();
-                    ex.printStackTrace(new PrintWriter(sw));
-                    logger.debug(sw.toString());
-                }
-            }
-        }
-    }
+    boolean firstExecution = true;
 
     public void retry(User user) throws RaplaException
     {
@@ -277,9 +232,37 @@ public class SynchronisationManager implements ServerExtension
 
     private void synchronize(UpdateResult evt) throws RaplaException
     {
+        final Collection<ReferenceInfo> addedAndChangedIds = evt.getAddedAndChangedIds();
+        if ( addedAndChangedIds.size() >0) {
+            SynchronisationManager.this.logger.info("Update triggered. Looking for " + addedAndChangedIds.size() + " synchronisation tasks since " + evt.getSince() );
+        } else if (firstExecution){
+            SynchronisationManager.this.logger.info("empty update since " + evt.getSince());
+        }
+
         appointmentStorage.refresh();
+        Collection<SynchronizationTask> allTasks = appointmentStorage.getAllTasks();
+        Collection<SynchronizationTask> includedTasks = new ArrayList<>();
+        final Date now = new Date();
+        for (SynchronizationTask task : allTasks)
+        {
+            final int retries = task.getRetries();
+            if (retries > 5 && !firstExecution)
+            {
+                final Date lastRetry = task.getLastRetry();
+                if (lastRetry != null)
+                {
+                    // skip a schedule Period for the time of retries
+                    if (lastRetry.getTime() > now.getTime() - (retries - 5) * SCHEDULE_PERIOD)
+                    {
+                        continue;
+                    }
+                }
+            }
+            includedTasks.add(task);
+        }
+        firstExecution = false;
         List<Preferences> preferencesToStore = new ArrayList<>();
-        Collection<SynchronizationTask> tasks = new ArrayList<>();
+        Collection<SynchronizationTask> tasks = includedTasks;
         Collection<User> resynchronizeUsers = new ArrayList<>();
         //lock
         for (UpdateOperation operation : evt.getOperations())
@@ -297,6 +280,7 @@ public class SynchronisationManager implements ServerExtension
                         Collection<SynchronizationTask> result = updateTasksSetDelete(app.getReference());
                         tasks.addAll(result);
                     }
+                    logger.info("Removing  " + oldReservation);
                 }
                 else if (operation instanceof UpdateResult.Add)
                 {
@@ -306,11 +290,13 @@ public class SynchronisationManager implements ServerExtension
                         Collection<SynchronizationTask> result = updateOrCreateTasks(app);
                         tasks.addAll(result);
                     }
+                    logger.info("Adding  " + newReservation);
                 }
                 else //if ( operation instanceof UpdateResult.Change)
                 {
                     Reservation oldReservation = evt.getLastEntryBeforeUpdate(op.getReference());
                     Reservation newReservation = evt.getLastKnown(op.getReference());
+                    logger.info("changing  " + newReservation);
                     Map<String, Appointment> oldAppointments = Appointment.AppointmentUtil.idMap(oldReservation.getAppointments());
                     Map<String, Appointment> newAppointments = Appointment.AppointmentUtil.idMap(newReservation.getAppointments());
                     for (Appointment oldApp : oldAppointments.values())
@@ -361,6 +347,7 @@ public class SynchronisationManager implements ServerExtension
                     boolean savePreferences = false;
                     if (preferences.getEntryAsBoolean(RETRY_USER, false))
                     {
+
                         final ReferenceInfo<User> ownerId = preferences.getOwnerRef();
                         Collection<SynchronizationTask> existingTasks = appointmentStorage.getTasksForUser(ownerId);
                         for (SynchronizationTask task : existingTasks)
@@ -369,6 +356,7 @@ public class SynchronisationManager implements ServerExtension
                         }
                         tasks.addAll(existingTasks);
                         final User resolvedUser = facade.tryResolve(preferences.getOwnerRef());
+                        logger.info("retry user  " + resolvedUser);
                         if(resolvedUser != null)
                         {
                             resynchronizeUsers.add(resolvedUser);
@@ -380,7 +368,16 @@ public class SynchronisationManager implements ServerExtension
                         final User user = facade.tryResolve(preferences.getOwnerRef());
                         if (user != null)
                         {
-                            removeAllAppointmentsFromExchangeAndAppointmentStore(user);
+                            logger.info("resync user  " + user);
+                            final LoginInfo secrets = keyStorage.getSecrets(user, ExchangeConnectorServerPlugin.EXCHANGE_USER_STORAGE);
+                            if (secrets != null)
+                            {
+                                removeAllAppointmentsFromExchangeAndAppointmentStore(user, secrets);
+                            }
+                            else
+                            {
+                                logger.warn("Keine Benutzerkonto mit Exchange verknuepft. " + user.getUsername());
+                            }
                         }
                         final User resolvedUser = facade.tryResolve(preferences.getOwnerRef());
                         if(resolvedUser != null)
@@ -392,10 +389,13 @@ public class SynchronisationManager implements ServerExtension
                     if (savePreferences)
                     {
                         final Preferences resolve = facade.resolve(preferences.getReference());
+                        final User resolvedUser = facade.tryResolve(preferences.getOwnerRef());
+                        logger.info("saving new preferences for  " + resolvedUser);
                         final Preferences editPreferences = facade.edit(resolve);
                         editPreferences.putEntry(RESYNC_USER, false);
                         editPreferences.putEntry(RETRY_USER, false);
                         preferencesToStore.add(editPreferences);
+                        logger.info("preferences added for " + resolvedUser);
                     }
                 }
                 else
@@ -408,8 +408,10 @@ public class SynchronisationManager implements ServerExtension
                     if (ownerId != null)
                     {
                         User owner = facade.resolve(ownerId);
+                        logger.info("update tasks for " + owner);
                         Collection<SynchronizationTask> result = updateTasksForUser(owner);
                         tasks.addAll(result);
+                        logger.info("update tasks for " + owner + " collected.");
                     }
                 }
             }
@@ -418,6 +420,7 @@ public class SynchronisationManager implements ServerExtension
                 ReferenceInfo<User> userId = operation.getReference();
                 if (operation instanceof UpdateResult.Remove)
                 {
+                    logger.info("Remove user " + userId);
                     appointmentStorage.removeTasksForUser(userId);
                 }
                 else if (operation instanceof UpdateResult.Change)
@@ -428,6 +431,7 @@ public class SynchronisationManager implements ServerExtension
                         Collection<SynchronizationTask> result = updateTasksForUser(owner);
                         tasks.addAll(result);
                     }
+                    logger.info("update user for " + owner + " collected.");
                 }
             }
             else if (raplaType == Allocatable.class)
@@ -443,21 +447,29 @@ public class SynchronisationManager implements ServerExtension
                         for (ReferenceInfo<User> userId : users)
                         {
                             User owner = facade.tryResolve(userId);
+                            logger.info("update changes  for " + owner );
                             if (owner != null)
                             {
                                 Collection<SynchronizationTask> result = updateTasksForUser(owner);
                                 tasks.addAll(result);
+                                logger.info("update changes for " + owner + " collected.");
                             }
                         }
                     }
                 }
             }
         }
-        if (tasks.size() > 0)
+        final int size = tasks.size();
+        if (size > 0)
         {
             Collection<SynchronizationTask> toRemove = Collections.emptyList();
             appointmentStorage.storeAndRemove(tasks, toRemove);
-            execute(tasks);
+            final SynchronizeResult execute = execute(tasks);
+            if (execute.changed>0 || execute.open > 0 || execute.removed> 0 || execute.errorMessages.size() > 0)
+            {
+                logger.info("synchronisaction reult " + execute);
+
+            }
             if(!resynchronizeUsers.isEmpty())
             {
                 for (User user : resynchronizeUsers)
@@ -497,7 +509,9 @@ public class SynchronisationManager implements ServerExtension
         }
         if (!preferencesToStore.isEmpty())
         {
+            logger.info("Synchronizing new preferences.");
             facade.storeObjects(preferencesToStore.toArray(new Entity[preferencesToStore.size()]));
+            logger.info("Synchronizing new preferences <done>.");
         }
     }
 
@@ -602,13 +616,8 @@ public class SynchronisationManager implements ServerExtension
         return appointmentMessage.toString();
     }
 
-    private Collection<SyncError> removeAllAppointmentsFromExchangeAndAppointmentStore(User user) throws RaplaException
+    private Collection<SyncError> removeAllAppointmentsFromExchangeAndAppointmentStore(User user, LoginInfo secrets) throws RaplaException
     {
-        final LoginInfo secrets = keyStorage.getSecrets(user, ExchangeConnectorServerPlugin.EXCHANGE_USER_STORAGE);
-        if (secrets == null)
-        {
-            throw new RaplaException("Keine Benutzerkonto mit Exchange verknuepft.");
-        }
         final String username = secrets.login;
         final String password = secrets.secret;
         final Collection<String> exchangeUrls = extractExchangeUrls(user);
@@ -859,6 +868,7 @@ public class SynchronisationManager implements ServerExtension
         RaplaMap<CalendarModelConfiguration> exportMap = preferences.getEntry(CalendarModelConfiguration.EXPORT_ENTRY);
         if (exportMap != null)
         {
+            boolean exchangeCalenderRemoved = false;
             Map<String, CalendarModelConfiguration> newExportMap = new TreeMap<>(exportMap.toMap());
             for (String key : exportMap.keySet())
             {
@@ -870,9 +880,13 @@ public class SynchronisationManager implements ServerExtension
                     newMap.remove(ExchangeConnectorPlugin.EXCHANGE_EXPORT);
                     CalendarModelConfiguration newConfig = calendarModelConfiguration.cloneWithNewOptions(newMap);
                     newExportMap.put(key, newConfig);
+                    exchangeCalenderRemoved = true;
                 }
             }
-            preferences.putEntry(EXPORT_ENTRY, facade.newRaplaMapForMap(newExportMap));
+            if (exchangeCalenderRemoved)
+            {
+                preferences.putEntry(EXPORT_ENTRY, facade.newRaplaMapForMap(newExportMap));
+            }
         }
         facade.store(preferences);
         logger.info("Removed exchange export infos for " + user);
