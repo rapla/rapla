@@ -634,6 +634,23 @@ public class CalendarModelImpl implements CalendarSelectionModel
 
     @Override public String getNonEmptyTitle()
     {
+        String annotationName = null;
+        return getNonEmptyTitle(annotationName);
+    }
+
+    public String getAnnotation(String annotationName) {
+        ParseContext parseContext = new CalendarModelParseContext();
+        ParsedText parsedTitle;
+        try {
+            parsedTitle = new ParsedText(title);
+            parsedTitle.init(parseContext);
+            return parsedTitle.getExternalRepresentation( parseContext);
+        } catch (IllegalAnnotationException e) {
+            return e.getMessage();
+        }
+    }
+
+    public String getNonEmptyTitle(String annotationName) {
         String title = getTitle();
         if (title != null && title.trim().length() > 0)
         {
@@ -649,7 +666,7 @@ public class CalendarModelImpl implements CalendarSelectionModel
                 return e.getMessage();
             }
             final PermissionController permissionController = operator.getPermissionController();
-            EvalContext evalContext = new EvalContext(locale, null, permissionController, user, Collections.singletonList(this));
+            EvalContext evalContext = new EvalContext(locale, annotationName, permissionController, user, Collections.singletonList(this));
             String result = parsedTitle.formatName(evalContext);
             return result;
         }

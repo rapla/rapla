@@ -14,6 +14,8 @@ import java.util.Date;
 public interface CalendarSelectionModel extends CalendarModel{
     String getTitle();
 
+    String getAnnotation(String annotationName);
+
 	void setTitle(String title);
 
 	void setViewId(String viewId);

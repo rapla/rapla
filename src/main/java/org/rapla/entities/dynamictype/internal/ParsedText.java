@@ -963,7 +963,8 @@ public class ParsedText implements Serializable
                 {
                     buf.append(", ");
                 }
-                buf.append(evalToString(element, context));
+                final String str = evalToString(element, context);
+                buf.append(str);
                 i++;
             }
             return buf.toString();
@@ -1046,7 +1047,9 @@ public class ParsedText implements Serializable
 
             final DynamicTypeImpl type = (DynamicTypeImpl) classification.getType();
             final String contextAnnotationName = context.getAnnotationName();
-            final String annotationName = type.getAnnotation(contextAnnotationName) != null ? contextAnnotationName: DynamicTypeAnnotations.KEY_NAME_FORMAT;
+            //final String annotationName = DynamicTypeAnnotations.KEY_NAME_FORMAT;
+            final boolean contextAnnotationNameSet = type.getAnnotation(contextAnnotationName) != null;
+            final String annotationName = contextAnnotationNameSet ? contextAnnotationName: DynamicTypeAnnotations.KEY_NAME_FORMAT;
             final List<Object> contextObjects = Collections.singletonList(object);
             EvalContext contextClone = new EvalContext(locale, annotationName, permissionController, user, contextObjects, callStackDepth + 1);
             ParsedText parsedAnnotation;

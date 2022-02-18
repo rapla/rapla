@@ -3,7 +3,7 @@ package org.rapla.server.internal.console;
 import org.rapla.ConnectInfo;
 import org.rapla.RaplaStartupEnvironment;
 import org.rapla.client.ClientService;
-import org.rapla.client.swing.internal.dagger.DaggerClientCreator;
+import org.rapla.client.swing.internal.ClientCreator;
 import org.rapla.framework.StartupEnvironment;
 import org.rapla.logger.Logger;
 
@@ -15,7 +15,7 @@ public class ClientStarter extends GUIStarter
 
     private ClientService create(RaplaStartupEnvironment env) throws Exception
     {
-        return DaggerClientCreator.create(env);
+        return ClientCreator.create(env);
     }
 
     

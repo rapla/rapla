@@ -39,7 +39,6 @@ import java.util.SortedSet;
 import java.util.TreeSet;
 import java.util.stream.Collectors;
 
-import static org.openjdk.tools.javac.util.Constants.format;
 
 @Extension(provides = FunctionFactory.class, id=StandardFunctions.NAMESPACE)
 public class StandardFunctions implements FunctionFactory

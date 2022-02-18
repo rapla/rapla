@@ -12,7 +12,7 @@
  *--------------------------------------------------------------------------*/
 package org.rapla;
 
-import org.rapla.client.swing.internal.dagger.DaggerClientCreator;
+import org.rapla.client.swing.internal.ClientCreator;
 import org.rapla.components.i18n.I18nBundle;
 import org.rapla.entities.domain.AppointmentFormater;
 import org.rapla.facade.client.ClientFacade;
@@ -81,7 +81,7 @@ public class RaplaClient
 
     public RaplaClient(  StartupEnvironment env) throws Exception
     {
-        facade = DaggerClientCreator.createFacade(env);
+        facade = ClientCreator.createFacade(env);
     }
 
     public void dispose()

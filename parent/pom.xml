@@ -47,7 +47,7 @@
 		<commons-collections.version>4.1</commons-collections.version>
 		<gson.version>2.8.2</gson.version>
 		<javax.inject.version>1</javax.inject.version>
-		<restinject.version>1.0-beta1</restinject.version>
+		<restinject.version>1.0-RC2</restinject.version>
 		<!--
 		<restinject.version>1.0-alpha9</restinject.version>
 		-->
@@ -120,7 +120,6 @@
 				<configuration>
 					<annotationProcessors>
 						<annotationProcessor>org.rapla.inject.generator.AnnotationInjectionProcessor</annotationProcessor>
-						<annotationProcessor>dagger.internal.codegen.ComponentProcessor</annotationProcessor>
 					</annotationProcessors>
 					<compilerArguments>
 					<AmoduleName>${project.groupId}.${project.artifactId}</AmoduleName>
@@ -260,7 +259,6 @@
 
 				</configuration>
 			</plugin>
-			-->
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-source-plugin</artifactId>
@@ -273,6 +271,7 @@
 					</execution>
 				</executions>
 			</plugin>
+			-->
 		</plugins>
 		<pluginManagement>
 			<plugins>
