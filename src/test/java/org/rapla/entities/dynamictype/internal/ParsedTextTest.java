@@ -32,7 +32,9 @@ import java.util.Locale;
 @RunWith(JUnit4.class)
 public class ParsedTextTest 
 {
-    DynamicTypeImpl type ;
+    DynamicTypeImpl type1;
+    DynamicTypeImpl type2 ;
+
     AttributeImpl attribute;
     CategoryImpl c2;
     CategoryImpl c3;
@@ -83,25 +85,33 @@ public class ParsedTextTest
         cache.put( c3);
         cache.put( c4);
 
-        type = new DynamicTypeImpl();
-        type.setResolver(cache);
-        type.setOperator(operator);
-        type.setKey("test");
-        type.setId("d1");
-        
-        
+        type1 = new DynamicTypeImpl();
+        type1.setResolver(cache);
+        type1.setOperator(operator);
+        type1.setKey("test");
+        type1.setId("id1");
+
+
+        type2 = new DynamicTypeImpl();
+        type2.setResolver(cache);
+        type2.setOperator(operator);
+        type2.setKey("type2");
+        type2.setId("id2");
+
         attribute = new AttributeImpl();
         attribute.setKey("a1");
         attribute.setId("a1");
         attribute.setType(AttributeType.CATEGORY);
         attribute.setResolver(cache);
         attribute.setConstraint(ConstraintIds.KEY_ROOT_CATEGORY, c1);
-        type.addAttribute(attribute);
-        cache.put(type);
+        type1.addAttribute(attribute);
+
+
+        cache.put(type1);
 
         Category constraint = (Category) attribute.getConstraint(ConstraintIds.KEY_ROOT_CATEGORY);
         Assert.assertEquals(c1,constraint);
-        type.setAnnotation(DynamicTypeAnnotations.KEY_NAME_FORMAT, "{a1}");
+        type1.setAnnotation(DynamicTypeAnnotations.KEY_NAME_FORMAT, "{a1}");
 
     }
 
@@ -112,17 +122,17 @@ public class ParsedTextTest
     {
         final String annoName = "myanno";
         final String annotationContent = "{name(a1,\"de\")}";
-        type.setAnnotation(annoName, annotationContent);
-        type.setReadOnly();
+        type1.setAnnotation(annoName, annotationContent);
+        type1.setReadOnly();
         Locale locale = Locale.GERMANY;
-        Classification classification = type.newClassification();
+        Classification classification = type1.newClassification();
         classification.setValueForAttribute(attribute, c2);
         final EvalContext evalContext = new EvalContext(locale,  annoName,permissionController, user, Collections.singletonList(classification));
-        final ParsedText parsedAnnotation = type.getParsedAnnotation(annoName);
+        final ParsedText parsedAnnotation = type1.getParsedAnnotation(annoName);
         final String formatName = parsedAnnotation.formatName(evalContext);
 
         Assert.assertEquals("Welt", formatName);
-        Assert.assertEquals(annotationContent, type.getAnnotation(annoName));
+        Assert.assertEquals(annotationContent, type1.getAnnotation(annoName));
     }
 
     @Test
@@ -130,17 +140,17 @@ public class ParsedTextTest
     {
         final String annoName = "myanno";
         final String annotationContent = "{name(a1,\"de\")}";
-        type.setAnnotation(annoName, annotationContent);
-        type.setReadOnly();
+        type1.setAnnotation(annoName, annotationContent);
+        type1.setReadOnly();
         Locale locale = Locale.GERMANY;
-        Classification classification = type.newClassification();
+        Classification classification = type1.newClassification();
         classification.setValueForAttribute(attribute, c2);
         final EvalContext evalContext = new EvalContext(locale,  annoName,permissionController, user, Collections.singletonList(classification));
-        final ParsedText parsedAnnotation = type.getParsedAnnotation(annoName);
+        final ParsedText parsedAnnotation = type1.getParsedAnnotation(annoName);
         final String formatName = parsedAnnotation.formatName(evalContext);
         
         Assert.assertEquals("Welt", formatName);
-        Assert.assertEquals(annotationContent, type.getAnnotation(annoName));
+        Assert.assertEquals(annotationContent, type1.getAnnotation(annoName));
     }
 
     @Test
@@ -148,25 +158,25 @@ public class ParsedTextTest
     {
         final String annoName = "myanno";
         final String annotationContent = "{p->name(p)}";
-        type.setAnnotation(annoName, annotationContent);
-        type.setReadOnly();
-        final ParsedText parsedAnnotation = type.getParsedAnnotation(annoName);
-        final String externalRepresentation = type.getAnnotation(annoName);
+        type1.setAnnotation(annoName, annotationContent);
+        type1.setReadOnly();
+        final ParsedText parsedAnnotation = type1.getParsedAnnotation(annoName);
+        final String externalRepresentation = type1.getAnnotation(annoName);
         Assert.assertEquals(annotationContent, externalRepresentation);
         Locale locale = Locale.GERMANY;
         List<Classification>classifications= new ArrayList<Classification>();
         {
-            Classification classification = type.newClassification();
+            Classification classification = type1.newClassification();
             classification.setValueForAttribute(attribute, c2);
             classifications.add(classification);
         }
         {
-            Classification classification = type.newClassification();
+            Classification classification = type1.newClassification();
             classification.setValueForAttribute(attribute, c3);
             classifications.add(classification);
         }
         {
-            Classification classification = type.newClassification();
+            Classification classification = type1.newClassification();
             classification.setValueForAttribute(attribute, c4);
             classifications.add(classification);
         }
@@ -182,16 +192,16 @@ public class ParsedTextTest
         try
         {
             final String annotationContent = "{p->duration(p)}";
-            type.setAnnotation(annoName, annotationContent);
+            type1.setAnnotation(annoName, annotationContent);
             Assert.fail("Unknown namespace error expected");
         }
         catch (IllegalAnnotationException ex)
         {
         }
         final String annotationContent = "{p->" + DurationFunctions.NAMESPACE + ":duration(p)}";
-        type.setAnnotation(annoName, annotationContent);
-        type.setReadOnly();
-        final String externalRepresentation = type.getAnnotation(annoName);
+        type1.setAnnotation(annoName, annotationContent);
+        type1.setReadOnly();
+        final String externalRepresentation = type1.getAnnotation(annoName);
         Assert.assertEquals(annotationContent, externalRepresentation);
     }
 
@@ -203,21 +213,21 @@ public class ParsedTextTest
         ParsedText parsedAnnotation;
         final String annotationContentWithoutParanth = "{p->name(attribute(p,\"a1\"),\"de\")}";
         {
-            type.setAnnotation(annoName, annotationContentWithoutParanth);
-            parsedAnnotation = type.getParsedAnnotation(annoName);
-            final String externalRepresentation = type.getAnnotation(annoName);
+            type1.setAnnotation(annoName, annotationContentWithoutParanth);
+            parsedAnnotation = type1.getParsedAnnotation(annoName);
+            final String externalRepresentation = type1.getAnnotation(annoName);
             Assert.assertEquals(annotationContentWithoutParanth, externalRepresentation);
         }
         {
             final String annotationContent = "{(p)->name(attribute(p,\"a1\"),\"de\")}";
-            type.setAnnotation(annoName, annotationContent);
-            parsedAnnotation = type.getParsedAnnotation(annoName);
-            final String externalRepresentation = type.getAnnotation(annoName);
+            type1.setAnnotation(annoName, annotationContent);
+            parsedAnnotation = type1.getParsedAnnotation(annoName);
+            final String externalRepresentation = type1.getAnnotation(annoName);
             Assert.assertEquals(annotationContentWithoutParanth, externalRepresentation);
         }
-        type.setReadOnly();
+        type1.setReadOnly();
         Locale locale = Locale.GERMANY;
-        Classification classification = type.newClassification();
+        Classification classification = type1.newClassification();
         classification.setValueForAttribute(attribute, c2);
         {
             final EvalContext evalContext = new EvalContext(locale, annoName,permissionController, user, Collections.singletonList(classification));
@@ -236,13 +246,13 @@ public class ParsedTextTest
     {
         final String annoName = "myanno";
         final String annotationContent = "{(p,u)->concat(name(attribute(p,\"a1\"),\"de\"),name(u))}";
-        type.setAnnotation(annoName, annotationContent);
-        type.setReadOnly();
+        type1.setAnnotation(annoName, annotationContent);
+        type1.setReadOnly();
         Locale locale = Locale.GERMANY;
-        Classification classification = type.newClassification();
+        Classification classification = type1.newClassification();
         classification.setValueForAttribute(attribute, c2);
-        final ParsedText parsedAnnotation = type.getParsedAnnotation(annoName);
-        final String externalRepresentation = type.getAnnotation(annoName);
+        final ParsedText parsedAnnotation = type1.getParsedAnnotation(annoName);
+        final String externalRepresentation = type1.getAnnotation(annoName);
         Assert.assertEquals(annotationContent, externalRepresentation);
         {
             final EvalContext evalContext = new EvalContext(locale,  annoName,permissionController, user, Collections.singletonList(classification));
@@ -261,25 +271,25 @@ public class ParsedTextTest
     {
         final String annoName = "myanno";
         final String annotationContent = "{p->filter(p,u->equals(substring(name(attribute(u,\"a1\"),\"de\"),0,4),\"Welt\"))}";
-        type.setAnnotation(annoName, annotationContent);
-        type.setReadOnly();
-        final ParsedText parsedAnnotation = type.getParsedAnnotation(annoName);
-        final String externalRepresentation = type.getAnnotation(annoName);
+        type2.setAnnotation(annoName, annotationContent);
+        type1.setReadOnly();
+        final ParsedText parsedAnnotation = type2.getParsedAnnotation(annoName);
+        final String externalRepresentation = type2.getAnnotation(annoName);
         Assert.assertEquals(annotationContent, externalRepresentation);
         Locale locale = Locale.GERMANY;
         List<Classification>classifications= new ArrayList<Classification>();
         {
-            Classification classification = type.newClassification();
+            Classification classification = type1.newClassification();
             classification.setValueForAttribute(attribute, c2);
             classifications.add(classification);
         }
         {
-            Classification classification = type.newClassification();
+            Classification classification = type1.newClassification();
             classification.setValueForAttribute(attribute, c3);
             classifications.add(classification);
         }
         {
-            Classification classification = type.newClassification();
+            Classification classification = type1.newClassification();
             classification.setValueForAttribute(attribute, c4);
             classifications.add(classification);
         }
@@ -293,25 +303,25 @@ public class ParsedTextTest
     {
         final String annoName = "myanno";
         final String annotationContent = "{p->filter(p,u->equals(attribute(u,\"a1\"),attribute(index(p,1),\"a1\")))}";
-        type.setAnnotation(annoName, annotationContent);
-        type.setReadOnly();
-        final ParsedText parsedAnnotation = type.getParsedAnnotation(annoName);
-        final String externalRepresentation = type.getAnnotation(annoName);
+        type2.setAnnotation(annoName, annotationContent);
+        type1.setReadOnly();
+        final ParsedText parsedAnnotation = type2.getParsedAnnotation(annoName);
+        final String externalRepresentation = type2.getAnnotation(annoName);
         Assert.assertEquals(annotationContent, externalRepresentation);
         Locale locale = Locale.GERMANY;
         List<Classification>classifications= new ArrayList<Classification>();
         {
-            Classification classification = type.newClassification();
+            Classification classification = type1.newClassification();
             classification.setValueForAttribute(attribute, c2);
             classifications.add(classification);
         }
         {
-            Classification classification = type.newClassification();
+            Classification classification = type1.newClassification();
             classification.setValueForAttribute(attribute, c3);
             classifications.add(classification);
         }
         {
-            Classification classification = type.newClassification();
+            Classification classification = type1.newClassification();
             classification.setValueForAttribute(attribute, c4);
             classifications.add(classification);
         }
@@ -326,31 +336,39 @@ public class ParsedTextTest
     {
         final String annoName = "myanno";
         final String annotationContent = "{p->sort(p,(u,v)->reverse(stringComparator(u,v)))}";
-        type.setAnnotation(annoName, annotationContent);
-        type.setReadOnly();
-        final ParsedText parsedAnnotation = type.getParsedAnnotation(annoName);
-        final String externalRepresentation = type.getAnnotation(annoName);
+        type2.setAnnotation(annoName, annotationContent);
+        type1.setAnnotation(annoName,"{substring(a1,0,5)}");
+        final ParsedText parsedAnnotation = type2.getParsedAnnotation(annoName);
+        final String externalRepresentation = type2.getAnnotation(annoName);
         Assert.assertEquals(annotationContent, externalRepresentation);
         Locale locale = Locale.GERMANY;
+        type1.setReadOnly();
         List<Classification>classifications= new ArrayList<Classification>();
         {
-            Classification classification = type.newClassification();
+            Classification classification = type1.newClassification();
             classification.setValueForAttribute(attribute, c2);
             classifications.add(classification);
         }
         {
-            Classification classification = type.newClassification();
+            Classification classification = type1.newClassification();
             classification.setValueForAttribute(attribute, c3);
             classifications.add(classification);
         }
         {
-            Classification classification = type.newClassification();
+            Classification classification = type1.newClassification();
             classification.setValueForAttribute(attribute, c4);
             classifications.add(classification);
         }
-        final EvalContext evalContext = new EvalContext(locale,  annoName, permissionController,user,Collections.singletonList(classifications));
-        final String formatName = parsedAnnotation.formatName(evalContext);
-        Assert.assertEquals("Welten, Welt, Rapla", formatName);
+        {
+            final EvalContext evalContext = new EvalContext(locale, annoName, permissionController, user, Collections.singletonList(classifications));
+            final String formatName = parsedAnnotation.formatName(evalContext);
+            Assert.assertEquals("Welte, Welt, Rapla", formatName);
+        }
+        {
+            final EvalContext evalContext = new EvalContext(locale, null, permissionController, user, Collections.singletonList(classifications));
+            final String formatName = parsedAnnotation.formatName(evalContext);
+            Assert.assertEquals("Welten, Welt, Rapla", formatName);
+        }
     }
     
     @Test
@@ -358,25 +376,25 @@ public class ParsedTextTest
     {
         final String annoName = "myanno";
         final String annotationContent = "{p->filter(sort(p,(p,q)->reverse(stringComparator(p,q))),q->equals(substring(attribute(q,\"a1\"),0,3),\"Wel\"))}";
-        type.setAnnotation(annoName, annotationContent);
-        type.setReadOnly();
-        final ParsedText parsedAnnotation = type.getParsedAnnotation(annoName);
-        final String externalRepresentation = type.getAnnotation(annoName);
+        type2.setAnnotation(annoName, annotationContent);
+        final ParsedText parsedAnnotation = type2.getParsedAnnotation(annoName);
+        final String externalRepresentation = type2.getAnnotation(annoName);
         Assert.assertEquals(annotationContent, externalRepresentation);
+        type1.setReadOnly();
         Locale locale = Locale.GERMANY;
         List<Classification>classifications= new ArrayList<Classification>();
         {
-            Classification classification = type.newClassification();
+            Classification classification = type1.newClassification();
             classification.setValueForAttribute(attribute, c2);
             classifications.add(classification);
         }
         {
-            Classification classification = type.newClassification();
+            Classification classification = type1.newClassification();
             classification.setValueForAttribute(attribute, c3);
             classifications.add(classification);
         }
         {
-            Classification classification = type.newClassification();
+            Classification classification = type1.newClassification();
             classification.setValueForAttribute(attribute, c4);
             classifications.add(classification);
         }
