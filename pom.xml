@@ -248,12 +248,14 @@
                 <configuration>
                     <archiveClasses>true</archiveClasses>
                     <warSourceExcludes>org.rapla.Rapla/Rapla.nocache.js</warSourceExcludes>
+                    <!-- this is relative to the pom.xml directory -->
+<!--
                     <webResources>
                         <resource>
-                            <!-- this is relative to the pom.xml directory -->
                             <directory>../raplajsclient/dist</directory>
                         </resource>
                     </webResources>
+                    -->
                     <packagingExcludes>**/*.java</packagingExcludes>
                     <warSourceDirectory>${basedir}/src/main/webapp</warSourceDirectory>
                     <webXml>${basedir}/src/main/webapp/WEB-INF/web.xml</webXml>
