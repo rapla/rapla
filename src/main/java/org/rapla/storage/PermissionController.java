@@ -28,6 +28,7 @@ import org.rapla.entities.storage.ReferenceInfo;
 import org.rapla.facade.Conflict;
 import org.rapla.framework.RaplaException;
 
+import javax.inject.Inject;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Date;
@@ -38,6 +39,7 @@ public class PermissionController
     private final Set<PermissionExtension> permissionExtensions;
     StorageOperator operator;
 
+    @Inject
     public PermissionController(Set<PermissionExtension> permissionExtensions, StorageOperator operator)
     {
         super();
