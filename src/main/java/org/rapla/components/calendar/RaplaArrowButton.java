@@ -15,10 +15,7 @@ package org.rapla.components.calendar;
 import javax.swing.ImageIcon;
 import javax.swing.JButton;
 import javax.swing.SwingUtilities;
-import java.awt.Color;
-import java.awt.Dimension;
-import java.awt.Graphics;
-import java.awt.Insets;
+import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
@@ -26,7 +23,7 @@ import java.awt.image.BufferedImage;
 
 public class RaplaArrowButton extends JButton  {
     private static final long serialVersionUID = 1L;
-
+    ImageIcon additionalIcon;
     ButtonStateChecker m_checker = new ButtonStateChecker();
     
     int m_delay = 0;
@@ -99,7 +96,18 @@ public class RaplaArrowButton extends JButton  {
         int imageSize = size - 8;
         if (imageSize > 0) {
             poly = new ArrowPolygon(c,imageSize);
-            BufferedImage image = new BufferedImage(imageSize,imageSize,BufferedImage.TYPE_INT_ARGB);
+            int imageWidth = imageSize;
+            int imageHeight = imageSize;
+            Image additionalImage;
+            if ( additionalIcon != null) {
+                additionalImage  = additionalIcon.getImage();
+                imageWidth+=additionalImage.getWidth( null);
+                //imageHeight+= Math.max( imageSize, additionalImage.getHeight( null));
+                imageHeight += 3;
+            } else {
+                additionalImage = null;
+            }
+            BufferedImage image = new BufferedImage(imageWidth,imageHeight,BufferedImage.TYPE_INT_ARGB);
             Graphics g = image.createGraphics();
             g.setColor(new Color(0, 0, 0, 0));
             g.fillRect( 0, 0, imageSize, imageSize );
@@ -108,6 +116,9 @@ public class RaplaArrowButton extends JButton  {
             g.fillPolygon( poly );
             g.setColor( Color.black );
             g.drawPolygon( poly );
+            if ( additionalImage != null ) {
+                g.drawImage(additionalImage, imageSize, 0, null);
+            }
             setIcon(new ImageIcon(image));
         } else {
             setIcon(null);
@@ -118,7 +129,11 @@ public class RaplaArrowButton extends JButton  {
         setMaximumSize(dim);
         setMinimumSize(dim);
     }
-    
+
+    public void setAdditionalIcon(ImageIcon imageIcon) {
+        additionalIcon = imageIcon;
+    }
+
     class ButtonStateChecker implements Runnable{
         long startMillis;
         long startDelay;

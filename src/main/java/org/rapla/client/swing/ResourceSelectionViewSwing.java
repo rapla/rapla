@@ -233,6 +233,7 @@ public class ResourceSelectionViewSwing implements ResourceSelectionView
     {
         final TreeFactory treeFactory =  getTreeFactory();
         final TreeFactory.AllocatableNodes allocatableNodes = treeFactory.createAllocatableModel(filter);
+        filterEdit.setFiltered( allocatableNodes.filtered );
         treeCellRenderer.setFiltered( allocatableNodes.filtered);
         final RaplaTreeNode raplaTreeNode = treeFactory.newRootNode();
         raplaTreeNode.add( allocatableNodes.allocatableNode);

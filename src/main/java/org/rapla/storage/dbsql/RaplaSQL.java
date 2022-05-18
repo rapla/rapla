@@ -829,38 +829,32 @@ class LockStorage extends AbstractTableStorage
             return;
         }
         final Date lastLocked = readLockTimestamp();
-        requestLock(GLOBAL_LOCK, lastLocked);
-    }
-
-    private void requestLock(String lockId, Date lastLocked) throws RaplaException
-    {
         try
         {
-            activateLocks(Collections.singleton(lockId), null);
+            activateLocks(Collections.singleton(GLOBAL_LOCK), null);
             final Date newLockTimestamp = readLockTimestamp();
             if (!newLockTimestamp.after(lastLocked))
             {
                 Thread.sleep(1);
                 // remove it so we can request a new
                 removeLocks(Collections.singleton(GLOBAL_LOCK), null, false);
-                requestLock(lockId, lastLocked);
             }
-            else
-            {
-                final long startWaitingTime = System.currentTimeMillis();
-                try (PreparedStatement cstmt = con.prepareStatement(countLocksSql))
-                {
+            final long startWaitingTime = System.currentTimeMillis();
+            // wait
+            while (true) {
+                try (PreparedStatement cstmt = con.prepareStatement(countLocksSql)) {
                     final ResultSet result = cstmt.executeQuery();
                     result.next();
-                    while (result.getInt(1) > 0)
-                    {
+                    if (result.getInt(1) < 1) {
+                        // no other locks, we can continue
+                        break;
+                    }
+                    else {
                         // wait for max 30 seconds
                         final long actualTime = System.currentTimeMillis();
-                        if ((actualTime - startWaitingTime) > 30000l)
-                        {
+                        if ((actualTime - startWaitingTime) > 30000l) {
                             removeLocks(Collections.singleton(GLOBAL_LOCK), null, false);
-                            if (con.getMetaData().supportsTransactions())
-                            {// Commit so others do not see the global lock any more
+                            if (con.getMetaData().supportsTransactions()) {// Commit so others do not see the global lock any more
                                 con.commit();
                             }
                             throw new RaplaException("Global lock timed out");
@@ -873,7 +867,7 @@ class LockStorage extends AbstractTableStorage
         }
         catch (Exception e)
         {
-            throw new RaplaException("Error receiving lock for " + lockId, e);
+            throw new RaplaException("Error receiving lock for " + GLOBAL_LOCK, e);
         }
     }
 

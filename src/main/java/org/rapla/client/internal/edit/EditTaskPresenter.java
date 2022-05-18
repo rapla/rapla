@@ -130,6 +130,7 @@ public class EditTaskPresenter implements TaskPresenter
             {
                 final ApplicationEventContext context = applicationEvent.getContext();
                 Collection<Entity> entities;
+                Class<? extends Entity> clazz = taskId.equals(EDIT_EVENTS_ID) ?  Reservation.class: Allocatable.class;
                 if (context != null && context instanceof EditApplicationEventContext)
                 {
                     final EditApplicationEventContext editApplicationEventContext = (EditApplicationEventContext) context;
@@ -145,7 +146,6 @@ public class EditTaskPresenter implements TaskPresenter
                 else
                 {
                     entities = new LinkedHashSet<>();
-                    Class<? extends Entity> clazz = taskId.equals(EDIT_EVENTS_ID) ?  Reservation.class: Allocatable.class;
                     String[] ids =  info.split(",");
                     for (String id : ids)
                     {
@@ -160,16 +160,17 @@ public class EditTaskPresenter implements TaskPresenter
                         }
                         entities.add(resolve);
                     }
-                    if ( clazz.equals( Allocatable.class) && isMerge)
-                    {
-                        for (MergeCheckExtension mergeCheckExtension : mergeCheckers)
-                        {
-                            final Collection allocatableCollection =  entities;
-                            mergeCheckExtension.precheckAllocatableSelection(allocatableCollection);
-                        }
-                    }
+
                 }
 
+                if ( clazz.equals( Allocatable.class) && isMerge)
+                {
+                    for (MergeCheckExtension mergeCheckExtension : mergeCheckers)
+                    {
+                        final Collection allocatableCollection =  entities;
+                        mergeCheckExtension.precheckAllocatableSelection(allocatableCollection);
+                    }
+                }
                 editTaskView = createEditDialog(entities,  popupContext, applicationEvent);
             }
             else if (CREATE_RESERVATION_FOR_DYNAMIC_TYPE.equals(taskId))

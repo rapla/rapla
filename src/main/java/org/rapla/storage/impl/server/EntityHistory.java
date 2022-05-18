@@ -4,6 +4,8 @@ import org.rapla.entities.Category;
 import org.rapla.entities.Entity;
 import org.rapla.entities.Timestamp;
 import org.rapla.entities.User;
+import org.rapla.entities.configuration.Preferences;
+import org.rapla.entities.configuration.internal.PreferencesImpl;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.Reservation;
 import org.rapla.entities.domain.internal.AllocatableImpl;
@@ -39,7 +41,7 @@ public class EntityHistory
     public static boolean isSupportedEntity(Class<? extends Entity> type)
     {
         return type == Allocatable.class || type == DynamicType.class || type == Reservation.class || type == User.class || type == Category.class
-                || type == Conflict.class;
+                || type == Conflict.class || type == Preferences.class;
     }
 
     public static class HistoryEntry
@@ -181,6 +183,7 @@ public class EntityHistory
         addMap(User.class, UserImpl.class);
         addMap(Conflict.class, ConflictImpl.class);
         addMap(DynamicType.class, DynamicTypeImpl.class);
+        addMap(Preferences.class, PreferencesImpl.class);
 
     }
 

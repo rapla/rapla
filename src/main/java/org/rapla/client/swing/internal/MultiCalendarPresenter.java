@@ -103,6 +103,7 @@ public class MultiCalendarPresenter implements CalendarContainer,Presenter
 
         final Observable<Object> objectObservable = filterChanged.debounce(500).switchMap((newFilter) -> {
             model.setReservationFilter(newFilter);
+            view.setFiltered(!model.isDefaultEventTypes());
             return update();
         });
         objectObservable.doOnError((ex)->logger.error(ex.getMessage(),ex)).subscribe();
