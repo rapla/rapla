@@ -161,7 +161,7 @@ public class RaplaAuthentificationService
             }
             catch (RaplaSecurityException ex)
             {
-                throw new RaplaSecurityException(i18n.getString("error.login"));
+                throw new RaplaSecurityException( i18n.getString("error.login")+ex.getMessage());
             }
             if (initUser)
             {

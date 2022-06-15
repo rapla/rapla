@@ -1,9 +1,11 @@
 package org.rapla.client.swing.internal.edit;
 
+import com.axellience.vuegwt.core.client.component.options.functions.OnEvent;
 import org.jetbrains.annotations.Nullable;
 import org.rapla.RaplaResources;
 import org.rapla.client.EditController;
 import org.rapla.client.PopupContext;
+import org.rapla.client.RaplaTreeNode;
 import org.rapla.client.dialog.DialogInterface;
 import org.rapla.client.dialog.DialogUiFactoryInterface;
 import org.rapla.client.swing.RaplaGUIComponent;
@@ -13,6 +15,8 @@ import org.rapla.client.swing.internal.edit.fields.BooleanField.BooleanFieldFact
 import org.rapla.client.swing.internal.edit.fields.ClassificationField.ClassificationFieldFactory;
 import org.rapla.client.swing.internal.edit.fields.PermissionListField.PermissionListFieldFactory;
 import org.rapla.client.swing.internal.edit.reservation.SortedListModel;
+import org.rapla.client.swing.internal.view.RaplaSwingTreeModel;
+import org.rapla.entities.Category;
 import org.rapla.entities.Entity;
 import org.rapla.entities.Named;
 import org.rapla.entities.NamedComparator;
@@ -43,8 +47,15 @@ import javax.swing.DefaultListCellRenderer;
 import javax.swing.DefaultListModel;
 import javax.swing.JComponent;
 import javax.swing.JList;
+import javax.swing.JPanel;
+import javax.swing.JTextField;
 import javax.swing.ListSelectionModel;
 import javax.swing.event.ChangeEvent;
+import javax.swing.event.DocumentEvent;
+import javax.swing.event.DocumentListener;
+import javax.swing.tree.DefaultMutableTreeNode;
+import javax.swing.tree.TreeModel;
+import java.awt.BorderLayout;
 import java.awt.Component;
 import java.awt.Dimension;
 import java.awt.event.ActionEvent;
@@ -61,6 +72,8 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.regex.Pattern;
+import java.util.regex.PatternSyntaxException;
 
 public class TemplateEdit extends RaplaGUIComponent
 {
@@ -74,7 +87,10 @@ public class TemplateEdit extends RaplaGUIComponent
     private final EditController editController;
     private DialogInterface.DialogAction editAction;
     AllocatableEditUI allocatableEdit;
+    List<Allocatable> items = new ArrayList<>();
     DefaultListModel model = new DefaultListModel();
+    // text field for filter
+    JTextField filterTextField;// text field for filter
 
     @Inject
     public TemplateEdit(final ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, CalendarSelectionModel calendarSelectionModel,
@@ -205,7 +221,48 @@ public class TemplateEdit extends RaplaGUIComponent
 
         templateList.setMoveButtonVisible(false);
         templateList.getComponent().setPreferredSize(new Dimension(1000, 500));
+        // note: DocumentListener registers all changes
+        filterTextField = new JTextField();
+
+        filterTextField.getDocument().addDocumentListener(new DocumentListener() {
+            @Override
+            public void insertUpdate(DocumentEvent e) {
+                updateView();
+            }
+
+            @Override
+            public void removeUpdate(DocumentEvent e) {
+                updateView();
+            }
+
+            @Override
+            public void changedUpdate(DocumentEvent e) {
+
+            }
+        });
     }
+
+    public void updateView() {
+        // add regular expressions to filter pattern
+        rebuildList();
+    }
+
+    private boolean matchesPattern(String pattern, Named named)
+    {
+        Locale locale = getLocale();
+        String name = named.getName(locale);
+        return matchesPattern(pattern, locale, name);
+    }
+
+    private boolean matchesPattern(String pattern, Locale locale, String name) {
+        try {
+            return Pattern.matches(pattern.toLowerCase(locale), name.toLowerCase(locale));
+        } catch ( PatternSyntaxException ex)
+        {
+            return false;
+        }
+    }
+
 
     @Nullable
     protected ReferenceInfo<User> getCurrentUserId() {
@@ -250,9 +307,9 @@ public class TemplateEdit extends RaplaGUIComponent
         {
             templateNames.add(template.getName(locale));
         }
-        for (int i = 0; i < model.size(); i++)
+        for (int i = 0; i < items.size(); i++)
         {
-            Allocatable template = (Allocatable) model.get(i);
+            Allocatable template = (Allocatable) items.get(i);
             templateNames.add(template.getName(locale));
         }
         int index = 0;
@@ -275,7 +332,7 @@ public class TemplateEdit extends RaplaGUIComponent
         if (template != null)
         {
             toRemove.add(template);
-            model.removeElement(template);
+            items.remove(template);
         }
     }
 
@@ -295,8 +352,9 @@ public class TemplateEdit extends RaplaGUIComponent
                     clone.setAnnotation(RaplaObjectAnnotations.KEY_TEMPLATE, templateCopy.getId());
                     toStore.add(clone);
                 }
-                model.addElement(templateCopy);
+                items.add(templateCopy);
                 boolean shouldScroll = true;
+                rebuildList();
                 templateList.getList().clearSelection();
                 templateList.getList().setSelectedValue(templateCopy, shouldScroll);
             });
@@ -318,9 +376,10 @@ public class TemplateEdit extends RaplaGUIComponent
             template.removePermission(permission);
         }
         toStore.add(template);
-        model.addElement(template);
+        items.add(template);
         boolean shouldScroll = true;
         templateList.getList().clearSelection();
+        rebuildList();
         templateList.getList().setSelectedValue(template, shouldScroll);
     }
 
@@ -351,10 +410,14 @@ public class TemplateEdit extends RaplaGUIComponent
             options.add(getString("apply"));
             options.add(getString("cancel"));
 
+            JPanel panel = new JPanel();
             final JComponent component = templateList.getComponent();
-            component.setSize(1000, 800);
+            component.setSize(1000, 750);
+            panel.setLayout(new BorderLayout());
+            panel.add(filterTextField, BorderLayout.NORTH);
+            panel.add(component, BorderLayout.CENTER);
             final DialogInterface dlg = dialogUiFactory
-                    .createContentDialog(popupContext, component, options.toArray(new String[] {}));
+                    .createContentDialog(popupContext, panel, options.toArray(new String[] {}));
             dlg.setTitle(getString("edit-templates"));
             dlg.getAction(options.size() - 1).setIcon(i18n.getIcon("icon.cancel"));
 
@@ -503,13 +566,14 @@ public class TemplateEdit extends RaplaGUIComponent
     @SuppressWarnings("unchecked")
     public void fillModel(Collection<Allocatable> originals,Collection<Allocatable> templates) throws RaplaException
     {
+        items.clear();
         for (Allocatable template : originals)
         {
-            model.addElement(template);
+            items.add(template);
         }
         for (Allocatable template : templates)
         {
-            model.addElement(template);
+            items.add(template);
         }
         User user = getUser();
         Comparator comp = new NamedComparator(getLocale())
@@ -546,7 +610,21 @@ public class TemplateEdit extends RaplaGUIComponent
                 return super.compare(o1, o2);
             }
         };
+
         SortedListModel sortedModel = new SortedListModel(model, SortedListModel.SortOrder.ASCENDING, comp);
         templateList.getList().setModel(sortedModel);
+        rebuildList();
     }
+    void rebuildList() {
+        String pattern = ".*" + filterTextField.getText() + ".*";
+        model.clear();
+        for (Allocatable allocatable:items){
+            if (matchesPattern(pattern, allocatable)){
+                model.addElement(allocatable);
+            }
+
+        }
+
+    }
+
 }

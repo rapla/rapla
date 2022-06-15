@@ -624,15 +624,22 @@ public class SynchronisationManager implements ServerExtension
         Collection<SyncError> result = new LinkedHashSet<>();
         for (String exchangeUrl : exchangeUrls)
         {
-            Collection<String> appointments = AppointmentSynchronizer.remove(logger, exchangeUrl, username, password);
-            for (String errorMessage : appointments)
+            try
             {
-                // appointment remove failed
-                if (errorMessage != null && !errorMessage.isEmpty())
+                Collection<String> appointments = AppointmentSynchronizer.remove(logger, exchangeUrl, username, password);
+                for (String errorMessage : appointments)
                 {
-                    SyncError error = new SyncError(errorMessage, errorMessage);
-                    result.add(error);
+                    // appointment remove failed
+                    if (errorMessage != null && !errorMessage.isEmpty())
+                    {
+                        SyncError error = new SyncError(errorMessage, errorMessage);
+                        result.add(error);
+                    }
                 }
+            }
+            catch (Exception ex)
+            {
+                logger.error(ex.getMessage(),ex);
             }
         }
         ReferenceInfo<User> userId = user.getReference();
