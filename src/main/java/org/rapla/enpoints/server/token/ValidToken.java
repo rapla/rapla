@@ -12,10 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package org.rapla.rest.server.token;
+package org.rapla.enpoints.server.token;
 
 
-/** A validated token from {@link SignedToken#checkToken(String, String)} */
+/** A validated token from {@link SignedToken#checkToken(String, String, java.util.Date)} */
 public class ValidToken {
   private final boolean refresh;
   private final String data;

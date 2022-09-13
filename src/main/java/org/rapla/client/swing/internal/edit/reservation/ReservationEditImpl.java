@@ -12,7 +12,7 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.client.swing.internal.edit.reservation;
 
-import io.reactivex.functions.Consumer;
+import io.reactivex.rxjava3.functions.Consumer;
 import org.rapla.RaplaResources;
 import org.rapla.client.AppointmentListener;
 import org.rapla.client.RaplaWidget;
@@ -559,7 +559,7 @@ public final class ReservationEditImpl extends AbstractAppointmentEditor impleme
             {
                 try {
                     saveCmd.accept(Collections.singleton(mutableReservation));
-                } catch (Exception ex) {
+                } catch (Throwable ex) {
                     dialogUiFactory.showException( ex,null);
                 }
             }

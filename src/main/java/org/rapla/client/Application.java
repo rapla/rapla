@@ -1,6 +1,6 @@
 package org.rapla.client;
 
-import io.reactivex.functions.Action;
+import io.reactivex.rxjava3.functions.Action;
 import jsinterop.annotations.JsType;
 import org.rapla.RaplaResources;
 import org.rapla.client.dialog.DialogInterface;
@@ -102,7 +102,7 @@ public class Application implements ApplicationView.Presenter, ModificationListe
             clientFacade.removeModificationListener(this);
             try {
                 closeCallback.run();
-            } catch (Exception ex) {
+            } catch (Throwable ex) {
                 logger.error(ex.getMessage(), ex);
             }
             return false;

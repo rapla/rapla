@@ -12,7 +12,7 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.client.swing.toolkit;
 
-import io.reactivex.functions.BiFunction;
+import io.reactivex.rxjava3.functions.BiFunction;
 import org.rapla.components.util.Tools;
 import org.rapla.entities.Category;
 import org.rapla.scheduler.Promise;
@@ -589,7 +589,7 @@ final public class RaplaTree extends JScrollPane {
                         voidPromise.execOn(SwingUtilities::invokeLater).thenRun(() ->{
                             dtde.dropComplete(true);
                         });
-                    } catch (Exception e) {
+                    } catch (Throwable e) {
                         throw new IllegalStateException(e);
                     }
 

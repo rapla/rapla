@@ -37,9 +37,6 @@ import org.rapla.facade.Conflict;
 import org.rapla.facade.internal.ConflictImpl;
 import org.rapla.framework.RaplaException;
 
-import javax.xml.bind.annotation.XmlAccessType;
-import javax.xml.bind.annotation.XmlAccessorType;
-import javax.xml.bind.annotation.XmlRootElement;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -79,8 +76,6 @@ public class UpdateEvent
     private String lastValidated;
     private int timezoneOffset;
 
-    @XmlRootElement
-    @XmlAccessorType(XmlAccessType.FIELD)
     public static class SerializableReferenceInfo
     {
         String id;

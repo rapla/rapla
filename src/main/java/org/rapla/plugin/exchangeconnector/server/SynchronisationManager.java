@@ -1,7 +1,7 @@
 package org.rapla.plugin.exchangeconnector.server;
 
-import io.reactivex.disposables.Disposable;
-import io.reactivex.functions.Action;
+import  io.reactivex.rxjava3.disposables.Disposable;
+import io.reactivex.rxjava3.functions.Action;
 import microsoft.exchange.webservices.data.core.exception.http.HttpErrorException;
 import org.rapla.RaplaResources;
 import org.rapla.components.util.DateTools;
@@ -726,7 +726,7 @@ public class SynchronisationManager implements ServerExtension
                     int httpErrorCode = ((HttpErrorException) cause).getHttpErrorCode();
                     if (httpErrorCode == 401)
                     {
-                        message = "Exchangezugriff verweigert. Ist das eingetragenen Exchange Passwort noch aktuell?";
+                        message = "Exchangezugriff verweigert. Ist das eingetragenen Exchange Passwort noch aktuell fuer den user '" + user.getUsername() + "' ?";
                         final Preferences preferences = facade.getPreferences(user);
                         final Boolean mailSent = preferences.getEntryAsBoolean(PASSWORD_MAIL_USER, false);
                         if(!mailSent)

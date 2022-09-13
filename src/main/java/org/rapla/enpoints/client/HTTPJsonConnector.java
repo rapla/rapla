@@ -1,4 +1,4 @@
-package org.rapla.rest.client;
+package org.rapla.enpoints.client;
 
 import org.rapla.rest.client.swing.HTTPWithJsonConnector;
 

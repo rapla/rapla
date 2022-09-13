@@ -1,6 +1,6 @@
 package org.rapla.client.internal.edit;
 
-import io.reactivex.functions.Consumer;
+import io.reactivex.rxjava3.functions.Consumer;
 import org.jetbrains.annotations.Nullable;
 import org.rapla.RaplaResources;
 import org.rapla.client.EditApplicationEventContext;

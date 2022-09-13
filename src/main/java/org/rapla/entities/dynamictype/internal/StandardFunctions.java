@@ -23,14 +23,12 @@ import org.rapla.facade.CalendarModel;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.inject.Extension;
-import org.rapla.rest.GwtIncompatible;
 
 import javax.inject.Inject;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.Date;
 import java.util.Iterator;
 import java.util.List;
@@ -697,7 +695,7 @@ public class StandardFunctions implements FunctionFactory
             arg = args.get(0);
         }
 
-        @GwtIncompatible private void testMethod() throws IllegalAnnotationException
+        private void testMethod() throws IllegalAnnotationException
         {
             java.lang.reflect.Method method;
             try
@@ -764,10 +762,10 @@ public class StandardFunctions implements FunctionFactory
                 objectFunction = args.get(0);
             }
             languageFunction = args.size() == 2 ? args.get(1) : null;
-            //testMethod();
+            testMethod();
         }
 
-        @GwtIncompatible private void testMethod() throws IllegalAnnotationException
+        private void testMethod() throws IllegalAnnotationException
         {
             if (objectFunction == null)
             {
@@ -1135,7 +1133,6 @@ public class StandardFunctions implements FunctionFactory
 
             list = args.get(0);
             index = args.get(1);
-            //testMethod();
         }
 
         @Override public Object eval(EvalContext context)
@@ -1187,10 +1184,10 @@ public class StandardFunctions implements FunctionFactory
             content = args.get(0);
             start = args.get(1);
             end = args.get(2);
-            //testMethod();
+            testMethod();
         }
 
-        @GwtIncompatible private void testMethod() throws IllegalAnnotationException
+        private void testMethod() throws IllegalAnnotationException
         {
             {
                 java.lang.reflect.Method method;
@@ -1481,10 +1478,10 @@ public class StandardFunctions implements FunctionFactory
             super(NAMESPACE,ID, args);
             assertArgs(1);
             arg = args.get(0);
-            //testMethod();
+            testMethod();
         }
 
-        @GwtIncompatible private void testMethod() throws IllegalAnnotationException
+        private void testMethod() throws IllegalAnnotationException
         {
             java.lang.reflect.Method method;
             try

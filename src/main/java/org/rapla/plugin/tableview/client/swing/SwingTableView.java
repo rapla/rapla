@@ -1,6 +1,6 @@
 package org.rapla.plugin.tableview.client.swing;
 
-import io.reactivex.functions.Consumer;
+import io.reactivex.rxjava3.functions.Consumer;
 import org.jetbrains.annotations.NotNull;
 import org.rapla.RaplaResources;
 import org.rapla.client.EditController;
@@ -39,7 +39,6 @@ import org.rapla.plugin.tableview.RaplaTableColumn;
 import org.rapla.plugin.tableview.RaplaTableModel;
 import org.rapla.plugin.tableview.TableViewPlugin;
 import org.rapla.plugin.tableview.client.swing.extensionpoints.SummaryExtension;
-import org.rapla.plugin.tableview.internal.TableConfig;
 import org.rapla.scheduler.Observable;
 import org.rapla.scheduler.Promise;
 import org.rapla.scheduler.ResolvedPromise;

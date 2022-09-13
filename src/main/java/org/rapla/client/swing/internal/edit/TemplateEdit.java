@@ -1,6 +1,5 @@
 package org.rapla.client.swing.internal.edit;
 
-import com.axellience.vuegwt.core.client.component.options.functions.OnEvent;
 import org.jetbrains.annotations.Nullable;
 import org.rapla.RaplaResources;
 import org.rapla.client.EditController;

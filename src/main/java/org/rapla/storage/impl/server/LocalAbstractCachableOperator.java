@@ -13,7 +13,7 @@
 
 package org.rapla.storage.impl.server;
 
-import io.reactivex.functions.Action;
+import io.reactivex.rxjava3.functions.Action;
 import org.apache.commons.collections4.BidiMap;
 import org.apache.commons.collections4.SortedBidiMap;
 import org.apache.commons.collections4.bidimap.DualHashBidiMap;
@@ -172,7 +172,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 
     private TimeZone systemTimeZone = TimeZone.getDefault();
     private CommandScheduler scheduler;
-    private List<io.reactivex.disposables.Disposable> scheduledTasks = new ArrayList<>();
+    private List< io.reactivex.rxjava3.disposables.Disposable> scheduledTasks = new ArrayList<>();
     private CalendarModelCache calendarModelCache;
     private Date connectStart;
     private final DefaultRaplaLock disconnectLock;
@@ -1030,7 +1030,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
                 disconnectLock.unlock(lock);
             }
         };
-        io.reactivex.disposables.Disposable schedule = scheduler.schedule(task, delay,period);
+        io.reactivex.rxjava3.disposables.Disposable schedule = scheduler.schedule(task, delay,period);
         scheduledTasks.add(schedule);
     }
 
@@ -1258,7 +1258,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 
         try
         {
-            for (io.reactivex.disposables.Disposable task : scheduledTasks)
+            for ( io.reactivex.rxjava3.disposables.Disposable task : scheduledTasks)
             {
                 task.dispose();
             }

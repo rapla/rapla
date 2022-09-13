@@ -12,7 +12,7 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.facade;
 
-import io.reactivex.functions.Consumer;
+import io.reactivex.rxjava3.functions.Consumer;
 import jsinterop.annotations.JsMethod;
 import jsinterop.annotations.JsType;
 import org.rapla.components.util.TimeInterval;

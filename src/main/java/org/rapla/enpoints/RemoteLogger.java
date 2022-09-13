@@ -1,4 +1,4 @@
-package org.rapla.rest;
+package org.rapla.enpoints;
 
 import org.rapla.framework.RaplaException;
 

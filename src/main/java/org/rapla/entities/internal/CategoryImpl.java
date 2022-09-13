@@ -499,7 +499,7 @@ final public class CategoryImpl extends SimpleEntity implements Category, Modifi
         CategoryImpl clone = new CategoryImpl();
         super.deepClone(clone);
         clone.name = (MultiLanguageName) name.clone();
-        clone.annotations = (HashMap<String,String>) ((HashMap<String,String>)annotations).clone();
+        clone.annotations = new LinkedHashMap<>(annotations);
         clone.key = key;
         clone.lastChanged = lastChanged;
         clone.createDate = createDate;

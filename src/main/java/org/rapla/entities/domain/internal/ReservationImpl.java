@@ -717,8 +717,7 @@ public final class ReservationImpl extends SimpleEntity implements Reservation, 
         }
         clone.createDate = createDate;
         clone.lastChanged = lastChanged;
-        @SuppressWarnings("unchecked")
-        Map<String,String> annotationClone = (Map<String, String>) (annotations != null ?  ((HashMap<String,String>)(annotations)).clone() : null);
+        Map<String,String> annotationClone = (Map<String, String>) (annotations != null ?  new LinkedHashMap<>(annotations) : null);
 		clone.annotations = annotationClone;
         return clone;
     }

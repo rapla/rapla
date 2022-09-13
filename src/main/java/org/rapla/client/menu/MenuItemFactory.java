@@ -1,6 +1,6 @@
 package org.rapla.client.menu;
 
-import io.reactivex.functions.Consumer;
+import io.reactivex.rxjava3.functions.Consumer;
 import jsinterop.annotations.JsType;
 import org.rapla.client.PopupContext;
 import org.rapla.client.RaplaWidget;

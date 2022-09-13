@@ -12,7 +12,7 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.plugin.defaultwizard.client;
 
-import io.reactivex.functions.Consumer;
+import io.reactivex.rxjava3.functions.Consumer;
 import org.rapla.RaplaResources;
 import org.rapla.client.PopupContext;
 import org.rapla.client.event.ApplicationEvent;

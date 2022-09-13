@@ -6,7 +6,7 @@ import org.rapla.framework.RaplaException;
 import org.rapla.inject.DefaultImplementation;
 import org.rapla.inject.InjectionContext;
 import org.rapla.logger.Logger;
-import org.rapla.rest.server.RaplaAuthRestPage;
+import org.rapla.enpoints.server.RaplaAuthRestPage;
 import org.rapla.server.RemoteSession;
 import org.rapla.storage.RaplaSecurityException;
 import org.rapla.storage.dbrm.LoginTokens;

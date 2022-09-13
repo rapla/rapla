@@ -1,4 +1,4 @@
-package org.rapla.rest.server;
+package org.rapla.enpoints.server;
 
 import org.rapla.ConnectInfo;
 import org.rapla.RaplaResources;

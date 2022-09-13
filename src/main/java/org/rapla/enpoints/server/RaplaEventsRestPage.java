@@ -1,4 +1,4 @@
-package org.rapla.rest.server;
+package org.rapla.enpoints.server;
 
 import org.rapla.entities.Entity;
 import org.rapla.entities.User;

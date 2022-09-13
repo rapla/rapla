@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package org.rapla.rest.server.token;
+package org.rapla.enpoints.server.token;
 
 /** Indicates the requested method is not known. */
 @SuppressWarnings("serial")

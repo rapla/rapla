@@ -2,7 +2,7 @@ package org.rapla.rest.server;
 
 //import io.jsonwebtoken.*;
 //import io.jsonwebtoken.impl.crypto.MacProvider;
-import io.reactivex.functions.Function;
+import io.reactivex.rxjava3.functions.Function;
 import org.apache.commons.codec.binary.Base64;
 import org.junit.Assert;
 import org.junit.Before;
@@ -11,7 +11,7 @@ import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 import org.rapla.components.util.DateTools;
 import org.rapla.components.util.SerializableDateTimeFormat;
-import org.rapla.rest.server.token.SignedToken;
+import org.rapla.enpoints.server.token.SignedToken;
 
 import java.security.*;
 import java.text.DateFormat;
@@ -74,7 +74,7 @@ public class SignedTokenTest {
     }
 
     @Test
-    public void testSignedToken() throws Exception {
+    public void testSignedToken() throws Throwable {
         SignedToken tokenGenerator = new SignedToken(-1, seed);
         final int tokenCount = 100000;
         final Date now = new Date();
@@ -128,7 +128,7 @@ public class SignedTokenTest {
 //        return id;
 //    }
 
-    public void testSigning(Function<String, String> sign, Function<String, String> check, int tokenCount) throws Exception {
+    public void testSigning(Function<String, String> sign, Function<String, String> check, int tokenCount) throws Throwable {
         final List<String> users = IntStream.range(1, tokenCount).mapToObj((i) -> "user" + i).collect(Collectors.toList());
         Map<String,String> tokens = new LinkedHashMap<>();
         long start = System.currentTimeMillis();

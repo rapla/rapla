@@ -6,9 +6,6 @@ import javax.ws.rs.POST;
 import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
 import javax.ws.rs.core.MediaType;
-import javax.xml.bind.annotation.XmlAccessType;
-import javax.xml.bind.annotation.XmlAccessorType;
-import javax.xml.bind.annotation.XmlRootElement;
 
 @Path("ical/import")
 public interface ICalImport
@@ -17,8 +14,6 @@ public interface ICalImport
     @Produces({ MediaType.APPLICATION_JSON, MediaType.APPLICATION_XML })
     Integer[] importICal(Import job) throws RaplaException;
 
-    @XmlRootElement
-    @XmlAccessorType(XmlAccessType.FIELD)
     class Import
     {
         private String content;
