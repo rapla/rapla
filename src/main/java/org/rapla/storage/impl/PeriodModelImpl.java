@@ -213,13 +213,16 @@ class PeriodModelImpl implements PeriodModel
         	        from_end = Math.abs(diff(period.getEnd(), endDate));
                 }
         	    if (    from_start < min_from_start	
-                    || (from_start == min_from_start && from_end < min_from_end)
+                    || (from_start == min_from_start && from_end < min_from_end
+                )
         		  ) 
                {
                    min_from_start = from_start;
                    min_from_end   = from_end;
                    result = period;
-               }
+               } else if (period.contains( date) && (result == null  || !result.contains(date))) {
+                   result = period;
+                }
             }
             else if ( result == null)
             {
