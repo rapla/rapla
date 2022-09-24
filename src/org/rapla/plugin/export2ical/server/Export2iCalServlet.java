@@ -168,7 +168,7 @@ public class Export2iCalServlet extends RaplaComponent implements RaplaPageGener
 			final CalendarSelectionModel calModel = getClientFacade().newCalendarModel( user);
 			calModel.load(filename);
 
-			int daysBefore = global_interval ? global_daysBefore : preferences.getEntryAsInteger(Export2iCalPlugin.PREF_BEFORE_DAYS, 11);
+			int daysBefore = global_interval ? global_daysBefore : preferences.getEntryAsInteger(Export2iCalPlugin.PREF_BEFORE_DAYS, global_daysBefore);
 			int daysAfter = global_interval ? global_daysAfter : preferences.getEntryAsInteger(Export2iCalPlugin.PREF_AFTER_DAYS, global_daysAfter);
 
 			final Date now = new Date();
