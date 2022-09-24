@@ -34,13 +34,6 @@
             <groupId>org.rapla</groupId>
             <artifactId>rapla</artifactId>
             <version>${rapla.version}</version>
-            <classifier>sources</classifier>
-            <scope>provided</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.rapla</groupId>
-            <artifactId>rapla</artifactId>
-            <version>${rapla.version}</version>
             <classifier>tests</classifier>
             <scope>test</scope>
         </dependency>
@@ -100,7 +93,7 @@
                                             <outputDirectory>${project.build.directory}/${project.build.finalName}/webclient</outputDirectory>
                                         </artifactItem>
                                         <artifactItem>
-                                            <groupId>io.reactivex.rxjava2</groupId>
+                                            <groupId>io.reactivex.rxjava3</groupId>
                                             <artifactId>rxjava</artifactId>
                                             <version>${rxjava.version}</version>
                                             <type>jar</type>
@@ -132,7 +125,7 @@
                                             <outputDirectory>${project.build.directory}/${project.build.finalName}/webclient</outputDirectory>
                                         </artifactItem>
                                         <artifactItem>
-                                            <groupId>io.reactivex.rxjava2</groupId>
+                                            <groupId>io.reactivex.rxjava3</groupId>
                                             <artifactId>rxjava</artifactId>
                                             <version>${rxjava.version}</version>
                                             <type>jar</type>
@@ -153,14 +146,6 @@
                                             <groupId>org.rapla</groupId>
                                             <artifactId>restinject</artifactId>
                                             <version>${restinject.version}</version>
-                                            <type>jar</type>
-                                            <overWrite>true</overWrite>
-                                            <outputDirectory>${project.build.directory}/${project.build.finalName}/webclient</outputDirectory>
-                                        </artifactItem>
-                                        <artifactItem>
-                                            <groupId>com.google.dagger</groupId>
-                                            <artifactId>dagger</artifactId>
-                                            <version>${dagger.version}</version>
                                             <type>jar</type>
                                             <overWrite>true</overWrite>
                                             <outputDirectory>${project.build.directory}/${project.build.finalName}/webclient</outputDirectory>
