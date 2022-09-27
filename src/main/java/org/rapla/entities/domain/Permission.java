@@ -13,7 +13,6 @@
 
 package org.rapla.entities.domain;
 
-import jsinterop.annotations.JsType;
 import org.rapla.entities.Category;
 import org.rapla.entities.User;
 
@@ -24,7 +23,6 @@ import java.util.Date;
  * per user/group. You can, for example, prevent modifing appointments
  * in the past, by setting the relative start-time to 0.
 */
-@JsType
 public interface Permission
 {
     String GROUP_CATEGORY_KEY = "user-groups";

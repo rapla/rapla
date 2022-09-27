@@ -12,8 +12,6 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.entities.dynamictype;
 
-import jsinterop.annotations.JsMethod;
-import jsinterop.annotations.JsType;
 
 import java.util.Iterator;
 
@@ -67,14 +65,12 @@ import java.util.Iterator;
 
     @see Classification
  */
-@JsType
 public interface ClassificationFilter extends Cloneable {
     DynamicType getType();
 
     /** Defines a rule for the passed attribute. 
      */
     void setRule(int index, String attributeName,Object[][] conditions);
-    @JsMethod(name = "setRuleWithAttribute")
     void setRule(int index, Attribute attribute,Object[][] conditions);
     /** appends a rule. 
      *  @see #setRule*/

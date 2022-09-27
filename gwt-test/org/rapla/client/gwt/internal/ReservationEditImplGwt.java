@@ -2,7 +2,6 @@ package org.rapla.client.gwt.internal;
 
 import io.reactivex.functions.Action;
 import io.reactivex.functions.Consumer;
-import jsinterop.annotations.JsType;
 import org.rapla.RaplaResources;
 import org.rapla.client.AppointmentListener;
 import org.rapla.client.ReservationEdit;
@@ -27,7 +26,6 @@ import java.util.Date;
 import java.util.List;
 import java.util.Map;
 
-@JsType
 @DefaultImplementation(context = InjectionContext.gwt, of = ReservationEdit.class)
 public class ReservationEditImplGwt implements ReservationEdit<VueWindow>, VueWindow {
 

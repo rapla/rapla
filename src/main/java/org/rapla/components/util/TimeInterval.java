@@ -1,11 +1,9 @@
 package org.rapla.components.util;
 
-import jsinterop.annotations.JsType;
 
 import java.io.Serializable;
 import java.util.Date;
 
-@JsType(namespace = "rapla")
 public final class TimeInterval implements Serializable
 {
 	private static final long serialVersionUID = -8387919392038291664L;

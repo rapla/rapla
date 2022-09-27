@@ -1,8 +1,6 @@
 package org.rapla.client.dialog.gwt;
 
-import jsinterop.annotations.JsType;
 
-@JsType
 public class DefaultCheckViewGwtComponent {
   
   private final String[] warnings;

@@ -1,9 +1,7 @@
 package org.rapla.client.dialog.gwt.components;
 
 import jsinterop.annotations.JsIgnore;
-import jsinterop.annotations.JsType;
 
-@JsType
 public class VueLabel implements VueComponent {
 
   public final String text;

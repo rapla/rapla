@@ -12,7 +12,6 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.entities.domain;
 
-import jsinterop.annotations.JsType;
 import org.rapla.components.util.TimeInterval;
 import org.rapla.entities.Entity;
 import org.rapla.entities.User;
@@ -25,7 +24,6 @@ import java.util.Map;
 /** The basic building blocks of reservations.
     @see Reservation
     @see Repeating*/
-@JsType
 public interface Appointment extends Entity<Appointment>, Comparable {
     Date getStart();
     Date getEnd();

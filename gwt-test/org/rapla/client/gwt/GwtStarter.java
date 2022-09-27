@@ -1,11 +1,9 @@
 package org.rapla.client.gwt;
 
-import jsinterop.annotations.JsType;
 import org.rapla.inject.client.gwt.GwtComponentMarker;
 import org.rapla.scheduler.Promise;
 import org.rapla.storage.dbrm.LoginTokens;
 
-@JsType
 public interface GwtStarter extends GwtComponentMarker
 {
     LoginTokens getValidToken();

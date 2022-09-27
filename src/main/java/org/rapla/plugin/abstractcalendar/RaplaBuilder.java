@@ -16,8 +16,6 @@
 
 package org.rapla.plugin.abstractcalendar;
 
-import jsinterop.annotations.JsIgnore;
-import jsinterop.annotations.JsType;
 import org.jetbrains.annotations.NotNull;
 import org.rapla.RaplaResources;
 import org.rapla.client.internal.AppointmentInfoUI;
@@ -395,7 +393,6 @@ public class RaplaBuilder
 		AppointmentBlock original;
     }
 
-    @JsIgnore
     static public List<AppointmentBlock> splitBlocks(Collection<AppointmentBlock> preparedBlocks, Date startDate, Date endDate, int offsetMinutes) {
         List<AppointmentBlock> result = new ArrayList<>();
         for (AppointmentBlock block:preparedBlocks) {
@@ -585,8 +582,7 @@ public class RaplaBuilder
     }
 
     /** This context contains the shared information for all RaplaBlocks.*/
-    @JsType
-    public static class BuildContext {
+        public static class BuildContext {
         boolean bResourceVisible = true;
         boolean bPersonVisible = true;
         boolean bRepeatingVisible = true;

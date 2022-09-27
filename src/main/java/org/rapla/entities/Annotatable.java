@@ -12,17 +12,11 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.entities;
 
-
-import jsinterop.annotations.JsMethod;
-import jsinterop.annotations.JsType;
-
-@JsType
 public interface Annotatable {
     void setAnnotation(String key, String annotation) throws IllegalAnnotationException;
     //<T extends RaplaAnnotation> String getAnnotation(Class<T> annotation);
     //<T extends RaplaAnnotation> String  getAnnotation(Class<T> annotation, T defaultValue);
     String getAnnotation(String key);
-    @JsMethod(name = "getAnnotationWithDefault")
     String getAnnotation(String key, String defaultValue);
     String[] getAnnotationKeys();
 }

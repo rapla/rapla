@@ -1,6 +1,5 @@
 package org.rapla.facade;
 
-import jsinterop.annotations.JsType;
 import org.rapla.components.util.TimeInterval;
 import org.rapla.entities.RaplaObject;
 import org.rapla.entities.User;
@@ -18,7 +17,6 @@ import java.util.List;
 import java.util.Map;
 
 
-@JsType
 public interface CalendarModel extends Cloneable, ClassifiableFilter
 {
     String SHOW_NAVIGATION_ENTRY = "org.rapla.plugin.abstractcalendar.show_navigation";

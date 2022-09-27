@@ -2,7 +2,6 @@ package org.rapla.client.menu.gwt;
 
 import jsinterop.annotations.JsIgnore;
 import jsinterop.annotations.JsMethod;
-import jsinterop.annotations.JsType;
 import org.rapla.client.RaplaWidget;
 import org.rapla.client.menu.IdentifiableMenuEntry;
 import org.rapla.client.menu.MenuInterface;
@@ -11,7 +10,6 @@ import org.rapla.components.i18n.I18nIcon;
 import java.util.ArrayList;
 import java.util.List;
 
-@JsType
 public class VueMenu implements MenuInterface, VueMenuItem, IdentifiableMenuEntry {
 
   private List<VueMenuItem> items = new ArrayList<>();

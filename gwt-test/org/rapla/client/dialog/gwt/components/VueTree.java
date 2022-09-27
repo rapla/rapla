@@ -1,8 +1,6 @@
 package org.rapla.client.dialog.gwt.components;
 
-import jsinterop.annotations.JsType;
 
-@JsType
 public class VueTree implements VueComponent {
 
   public final VueTreeNode rootNode;

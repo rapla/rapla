@@ -2,12 +2,10 @@ package org.rapla.client.menu.gwt;
 
 import io.reactivex.functions.Consumer;
 import jsinterop.annotations.JsIgnore;
-import jsinterop.annotations.JsType;
 import org.rapla.client.PopupContext;
 import org.rapla.client.menu.IdentifiableMenuEntry;
 import org.rapla.components.i18n.I18nIcon;
 
-@JsType
 public class DefaultVueMenuItem implements IdentifiableMenuEntry, VueMenuItem, Selectable {
 
   private final String id;

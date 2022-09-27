@@ -12,7 +12,6 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.entities.dynamictype;
 
-import jsinterop.annotations.JsType;
 import org.rapla.entities.Annotatable;
 import org.rapla.entities.MultiLanguageNamed;
 import org.rapla.entities.Timestamp;
@@ -22,7 +21,6 @@ import org.rapla.entities.domain.EntityPermissionContainer;
     customized attributes. You can for example define a dynamicType called <em>room</em> with the
     attributes <em>name</em> and <em>seats</em> and classify all your room-resources as <em>room</em>.
  */
-@JsType
 public interface DynamicType extends  EntityPermissionContainer<DynamicType>,MultiLanguageNamed,Annotatable, Timestamp
 {
     Attribute[] getAttributes();

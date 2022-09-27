@@ -12,11 +12,9 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.client;
 
-import jsinterop.annotations.JsType;
 
 /** Should be implemented by all rapla-gui-components that have a view.*/
 @FunctionalInterface
-@JsType
 public interface RaplaWidget<T> {
     T getComponent();
 }

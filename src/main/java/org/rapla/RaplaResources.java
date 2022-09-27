@@ -1,7 +1,5 @@
 package org.rapla;
 
-import jsinterop.annotations.JsIgnore;
-import jsinterop.annotations.JsType;
 import org.jetbrains.annotations.PropertyKey;
 import org.rapla.components.i18n.AbstractBundle;
 import org.rapla.components.i18n.BundleManager;
@@ -17,11 +15,9 @@ import java.util.Locale;
 
 @Extension(provides = I18nBundle.class, id = RaplaResources.BUNDLENAME)
 @Singleton
-@JsType
 public class RaplaResources extends AbstractBundle {
     public static final String BUNDLENAME = "org.rapla.RaplaResources";
 
-    @JsIgnore
     @Inject
     public RaplaResources(BundleManager bundleManager)
     {
@@ -33,7 +29,6 @@ public class RaplaResources extends AbstractBundle {
         return super.getString(key);
     }
 
-    @JsIgnore
     @Override
     public String getString(@PropertyKey(resourceBundle = BUNDLENAME) String key,Locale locale)
     {

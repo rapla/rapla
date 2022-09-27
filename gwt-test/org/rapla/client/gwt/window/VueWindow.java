@@ -1,12 +1,10 @@
 package org.rapla.client.gwt.window;
 
 import io.reactivex.functions.Action;
-import jsinterop.annotations.JsType;
 
 public interface VueWindow {
 
-  @JsType
-  class WindowAction {
+    class WindowAction {
     public final String icon;
     public final String label;
     public final Action action;

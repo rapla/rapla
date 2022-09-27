@@ -12,11 +12,9 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.client.menu;
 import io.reactivex.rxjava3.functions.Consumer;
-import jsinterop.annotations.JsType;
 import org.rapla.client.PopupContext;
 import org.rapla.framework.RaplaException;
 
-@JsType
 public interface MenuFactory  {
     MenuInterface addCalendarSelectionMenu(MenuInterface menu, SelectionMenuContext context) throws RaplaException;
     MenuInterface addCopyCutListMenu(MenuInterface editMenu, SelectionMenuContext menuContext, String afterId,

@@ -1,6 +1,5 @@
 package org.rapla.facade;
 
-import jsinterop.annotations.JsType;
 import org.rapla.components.util.TimeInterval;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.dynamictype.ClassificationFilter;
@@ -10,7 +9,6 @@ import org.rapla.scheduler.Promise;
 import java.util.Collection;
 import java.util.Date;
 
-@JsType
 public interface CalendarSelectionModel extends CalendarModel{
     String getTitle();
 

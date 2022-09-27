@@ -1,6 +1,5 @@
 package org.rapla.client;
 
-import jsinterop.annotations.JsType;
 import org.rapla.client.internal.edit.EditTaskPresenter;
 import org.rapla.components.util.TimeInterval;
 import org.rapla.components.util.undo.CommandHistory;
@@ -15,7 +14,6 @@ import java.util.Collection;
 import java.util.Date;
 import java.util.List;
 
-@JsType
 public interface ReservationEdit<T> extends EditTaskPresenter.EditTaskView<Reservation,T>
 {
     Promise<Void> addAppointment(Date start, Date end);

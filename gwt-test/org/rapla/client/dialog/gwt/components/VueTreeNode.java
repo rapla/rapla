@@ -1,13 +1,11 @@
 package org.rapla.client.dialog.gwt.components;
 
 import jsinterop.annotations.JsIgnore;
-import jsinterop.annotations.JsType;
 import org.rapla.client.RaplaTreeNode;
 
 import java.util.ArrayList;
 import java.util.List;
 
-@JsType
 public class VueTreeNode implements RaplaTreeNode {
 
   public final String label;

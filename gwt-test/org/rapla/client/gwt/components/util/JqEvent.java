@@ -1,7 +1,6 @@
 package org.rapla.client.gwt.components.util;
 
 import jsinterop.annotations.JsProperty;
-import jsinterop.annotations.JsType;
 
 @JsType(name="Event",namespace = "jQuery")
 public interface JqEvent

@@ -11,7 +11,6 @@ import com.google.gwt.json.client.JSONString;
 import com.google.gwt.user.client.Window;
 import jsinterop.annotations.JsFunction;
 import jsinterop.annotations.JsProperty;
-import jsinterop.annotations.JsType;
 import org.gwtbootstrap3.client.ui.html.Div;
 import org.rapla.client.gwt.components.util.JQueryElement;
 import org.rapla.client.gwt.components.util.JS;

@@ -7,7 +7,6 @@ import com.google.gwt.i18n.client.DateTimeFormat;
 import com.google.gwt.json.client.JSONArray;
 import com.google.gwt.json.client.JSONString;
 import jsinterop.annotations.JsProperty;
-import jsinterop.annotations.JsType;
 import org.gwtbootstrap3.client.ui.Input;
 import org.gwtbootstrap3.client.ui.constants.InputType;
 import org.rapla.RaplaResources;
@@ -30,20 +29,17 @@ public class DateRangeComponent extends Input
         void dateRangeChanged(Date startDate, Date endDate);
     }
 
-    @JsType
-    public interface DateRangePickerJquery extends JQueryElement
+        public interface DateRangePickerJquery extends JQueryElement
     {
         DateRangePickerElement daterangepicker(DateRangeOptions options);
     }
 
-    @JsType
-    public interface DateRangePickerElement extends JQueryElement
+        public interface DateRangePickerElement extends JQueryElement
     {
         DateRangePicker data(String key);
     }
 
-    @JsType
-    public interface DateRangePicker extends JQueryElement
+        public interface DateRangePicker extends JQueryElement
     {
         @JsProperty void setTimePicker(boolean timePicker);
 
@@ -60,8 +56,7 @@ public class DateRangeComponent extends Input
         void remove();
     }
 
-    @JsType
-    public interface DateRangeOptions
+        public interface DateRangeOptions
     {
         @JsProperty void setLocale(Locale locale);
 
@@ -98,8 +93,7 @@ public class DateRangeComponent extends Input
 
     }
 
-    @JsType
-    public interface Locale
+        public interface Locale
     {
         @JsProperty
         void setFormat(String format);

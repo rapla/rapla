@@ -1,6 +1,5 @@
 package org.rapla.client.gwt;
 
-import jsinterop.annotations.JsType;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.function.Consumer;

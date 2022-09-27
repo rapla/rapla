@@ -1,14 +1,12 @@
 package org.rapla.client.dialog.gwt.components;
 
 import jsinterop.annotations.JsIgnore;
-import jsinterop.annotations.JsType;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-@JsType
 public class VueLayout implements VueComponent {
 
   public enum Direction {

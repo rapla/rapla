@@ -12,7 +12,6 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.entities.domain;
 
-import jsinterop.annotations.JsType;
 import org.rapla.components.util.DateTools;
 import org.rapla.components.util.TimeInterval;
 
@@ -24,7 +23,6 @@ import java.util.Date;
  * This class represents a time block of an appointment.
  * @since Rapla 1.4
  */
-@JsType
 public class AppointmentBlock implements Comparable<AppointmentBlock>
 {
     long start;

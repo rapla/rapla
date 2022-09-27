@@ -1,7 +1,5 @@
 package org.rapla.plugin.tableview;
 
-import jsinterop.annotations.JsIgnore;
-import jsinterop.annotations.JsType;
 import org.jetbrains.annotations.NotNull;
 import org.rapla.components.util.DateTools;
 import org.rapla.facade.CalendarModel;
@@ -9,7 +7,6 @@ import org.rapla.facade.CalendarModel;
 import java.util.*;
 import java.util.stream.Collectors;
 
-@JsType
 public class RaplaTableModel<T>
 {
     private List<T> rows = new ArrayList<>();
@@ -28,7 +25,6 @@ public class RaplaTableModel<T>
     }
 
     @NotNull
-    @JsIgnore
     static public <T> Map<RaplaTableColumn<T>, Integer> getSortDirections(CalendarModel model,List<? extends RaplaTableColumn<T>> columPlugins, String tableViewName)
     {
         final String sortingStringOption = TableViewPlugin.getSortingStringOption(tableViewName);

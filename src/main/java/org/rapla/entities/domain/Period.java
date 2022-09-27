@@ -12,8 +12,6 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.entities.domain;
 
-import jsinterop.annotations.JsMethod;
-import jsinterop.annotations.JsType;
 import org.rapla.components.util.TimeInterval;
 import org.rapla.entities.Category;
 import org.rapla.entities.Named;
@@ -25,14 +23,12 @@ import java.util.Set;
 Most universities and schools are planning for fixed periods/terms
 rather than arbitrary dates. Rapla provides support for this periods.
 */
-@JsType
 public interface Period extends RaplaObject<Period>,Comparable<Period>,Named {
     
     Date getStart();
     Date getEnd();
     TimeInterval getInterval();
     int getWeeks();
-    @JsMethod(name = "getPeriodName")
     String getName();
     Set<Category> getCategories();
 

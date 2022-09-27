@@ -8,7 +8,6 @@ import com.google.gwt.i18n.client.DateTimeFormat;
 import com.google.gwt.user.client.ui.TextBox;
 import jsinterop.annotations.JsFunction;
 import jsinterop.annotations.JsProperty;
-import jsinterop.annotations.JsType;
 import org.gwtbootstrap3.client.ui.InputGroupAddon;
 import org.gwtbootstrap3.client.ui.constants.IconType;
 import org.gwtbootstrap3.client.ui.html.Div;

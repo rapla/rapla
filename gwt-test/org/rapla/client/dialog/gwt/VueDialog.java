@@ -1,6 +1,5 @@
 package org.rapla.client.dialog.gwt;
 
-import jsinterop.annotations.JsType;
 import org.rapla.client.dialog.DialogInterface;
 import org.rapla.client.dialog.gwt.components.VueComponent;
 import org.rapla.client.gwt.RaplaVue;
@@ -11,7 +10,6 @@ import org.rapla.scheduler.UnsynchronizedPromise;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
-@JsType
 public class VueDialog implements DialogInterface  {
 
   private String icon;

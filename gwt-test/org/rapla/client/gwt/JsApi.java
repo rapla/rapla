@@ -5,7 +5,6 @@ import com.google.gwt.dom.client.Element;
 import com.google.gwt.user.client.DOM;
 import com.google.gwt.user.client.ui.IsWidget;
 import jsinterop.annotations.JsIgnore;
-import jsinterop.annotations.JsType;
 import org.rapla.RaplaResources;
 import org.rapla.client.Application;
 import org.rapla.client.ReservationController;
@@ -60,7 +59,6 @@ import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-@JsType
 public class JsApi {
 
   public final RaplaFacade facade;
@@ -320,8 +318,7 @@ public class JsApi {
     return 1;
   }
 
-  @JsType
-  class View {
+    class View {
 
     public final String id;
     public final String label;

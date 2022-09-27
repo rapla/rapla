@@ -1,6 +1,5 @@
 package org.rapla.client.gwt;
 
-import jsinterop.annotations.JsType;
 import org.rapla.RaplaResources;
 import org.rapla.client.ApplicationView;
 import org.rapla.client.PopupContext;
@@ -105,8 +104,7 @@ public class GwtApplicationViewImpl implements ApplicationView<VueWindow> {
     //    RaplaVue.emit("gwt-debug", "requestFocus("+windowId+")");
   }
 
-  @JsType
-  public class GwtInit {
+    public class GwtInit {
 
     public final boolean showTooltips;
     public final String windowTitle;
@@ -117,8 +115,7 @@ public class GwtApplicationViewImpl implements ApplicationView<VueWindow> {
     }
   }
 
-  @JsType
-  public class OpenWindow {
+    public class OpenWindow {
 
     public final String title;
     public final ApplicationEvent windowId;

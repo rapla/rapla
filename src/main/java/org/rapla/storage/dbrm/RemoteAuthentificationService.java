@@ -12,7 +12,6 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.storage.dbrm;
 
-import jsinterop.annotations.JsType;
 import org.rapla.framework.RaplaException;
 
 import javax.ws.rs.GET;
@@ -23,7 +22,6 @@ import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.MediaType;
 
 @Path("authentication")
-@JsType
 public interface RemoteAuthentificationService
 {
     @POST

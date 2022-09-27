@@ -1,7 +1,6 @@
 package org.rapla.client.gwt.test;
 
 import jsinterop.annotations.JsProperty;
-import jsinterop.annotations.JsType;
 
 
 /**
