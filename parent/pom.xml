@@ -23,17 +23,8 @@
 		<intellijAnnotations.version>12.0</intellijAnnotations.version>
 		<ical4j.version>3.2.4</ical4j.version>
 		<rxjava.version>3.1.5</rxjava.version>
-		<!--
-		<jetty.version>9.3.7.v20160115</jetty.version>
-		-->
-		<!--
-		<jetty.version>9.2.14.v20151106</jetty.version>
-		-->
 		<exchange.webservice.api>2.0</exchange.webservice.api>
-		<jetty.version>9.4.41.v20210516</jetty.version>
-		<!--
-		<jetty.version>9.4.9.v20180320</jetty.version>
-		-->
+		<jetty.version>9.4.44.v20210927</jetty.version>
 		<mail.version>1.4.7</mail.version>
 		<maven.install.skip>false</maven.install.skip>
 		<guava.version>21.0</guava.version>
@@ -41,20 +32,14 @@
 		<commons-codec.version>1.8</commons-codec.version>
 		<commons-lang.version>2.6</commons-lang.version>
 		<commons-collections.version>4.1</commons-collections.version>
-		<gson.version>2.8.9</gson.version>
+		<gson.version>2.9.1</gson.version>
 		<javax.inject.version>1</javax.inject.version>
-		<restinject.version>2.0-RC2</restinject.version>
-		<!--
-		<restinject.version>1.0-alpha9</restinject.version>
-		-->
+		<restinject.version>2.0-SNAPSHOT</restinject.version>
 		<resteasy.version>3.5.1.Final</resteasy.version>
 		<javax.ws.rs.version>2.1</javax.ws.rs.version>
 		<hsqldb.version>2.4.0</hsqldb.version>
 		<postgresql.version>9.1-901-1.jdbc4</postgresql.version>
 		<mysql.version>8.0.28</mysql.version>
-		<!--
-        <restinject.version>1-SNAPSHOT</restinject.version>
-         -->
 
 		<maven.compiler.source>1.8</maven.compiler.source>
 		<maven.compiler.target>1.8</maven.compiler.target>
@@ -199,56 +184,6 @@
 				<artifactId>maven-jdeps-plugin</artifactId>
 				<version>3.1.2</version>
 			</plugin>
-			<!--
-			<plugin>
-				<groupId>net.ltgt.gwt.maven</groupId>
-				<artifactId>gwt-maven-plugin</artifactId>
-				<version>${gwt.plugin.version}</version>
-				<extensions>true</extensions>
-				<executions>
-					<execution>
-						<phase>prepare-package</phase>
-						<goals>
-							<goal>compile</goal>
-						</goals>
-					</execution>
-				</executions>
-				<configuration>
-					<codeserverArgs>
-						<arg>-generateJsInteropExports</arg>
-					</codeserverArgs>
-					<compilerArgs>
-						<arg>-generateJsInteropExports</arg>
-					</compilerArgs>
-										<moduleName>Rapla</moduleName>
-					<modules>Rapla</modules>
-					<sourceLevel>1.8</sourceLevel>
-					<logLevel>INFO</logLevel>
-					<detail>true</detail>
-					<classpathScope>compile+runtime</classpathScope>
-					<optimize>8</optimize>
-					<style>OBFUSCATED</style>
-					<draftCompile>false</draftCompile>
-					<skipModuleMetadata>false</skipModuleMetadata>
-					<skipModule>false</skipModule>
-					<skipCompilation>${disableGwtCompile}</skipCompilation>
-					<launcherDir>${project.basedir}/src/main/webapp/</launcherDir>
-
-				</configuration>
-			</plugin>
-			<plugin>
-				<groupId>org.apache.maven.plugins</groupId>
-				<artifactId>maven-source-plugin</artifactId>
-				<version>3.0.1</version>
-				<executions>
-					<execution>
-						<goals>
-							<goal>jar</goal>
-						</goals>
-					</execution>
-				</executions>
-			</plugin>
-			-->
 		</plugins>
 		<pluginManagement>
 			<plugins>
@@ -352,13 +287,6 @@
 			<groupId>io.jsonwebtoken</groupId>
 			<artifactId>jjwt</artifactId>
 			<version>0.9.0</version>
-		</dependency>
-		-->
-		<!--
-		<dependency>
-			<groupId>de.juplo</groupId>
-			<artifactId>scannotation</artifactId>
-			<version>${scannotation.version}</version>
 		</dependency>
 		-->
 		<dependency>

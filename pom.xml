@@ -178,13 +178,13 @@
             </plugin>
             <plugin>
                 <artifactId>maven-antrun-plugin</artifactId>
-                <version>1.8</version>
+                <version>3.1.0</version>
                 <executions>
                     <execution>
                         <id>generateclientlibsproperties</id>
                         <phase>prepare-package</phase>
                         <configuration>
-                            <tasks>
+                            <target>
                                 <mkdir dir="${webapp.dir}/webclient"/>
                                 <path id="dist.contents">
                                     <fileset dir="${webapp.dir}/webclient">
@@ -203,7 +203,7 @@
                                          preserveLastModified="true" />
                                 <replace file="${webapp.dir}/WEB-INF/classes/clientlibs.properties"
                                          token="${path.separator}" value=";" preserveLastModified="true" />
-                            </tasks>
+                            </target>
                         </configuration>
                         <goals>
                             <goal>run</goal>
