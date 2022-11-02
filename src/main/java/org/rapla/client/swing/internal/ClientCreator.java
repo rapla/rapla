@@ -13,6 +13,9 @@ import org.rapla.inject.raplainject.SimpleRaplaInjector;
 import org.rapla.inject.scanning.ScanningClassLoader;
 import org.rapla.inject.scanning.ServiceInfLoader;
 import org.rapla.logger.Logger;
+import org.rapla.rest.JsonParserWrapper;
+import org.rapla.rest.gson.GsonParserWrapper;
+import org.rapla.rest.jackson.JacksonParserWrapper;
 
 import javax.inject.Provider;
 import java.util.Collection;

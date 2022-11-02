@@ -13,7 +13,6 @@ module org.rapla {
     requires java.scripting;
     requires java.naming;
     requires java.management;
-    requires jsinterop.annotations;
     requires annotations;
     requires commons.codec;
     requires ews.java.api;
@@ -21,5 +20,5 @@ module org.rapla {
     requires mailapi;
     requires commons.collections4;
     requires httpcore;
-    requires restinject;
+    requires org.rapla.restinject;
 }

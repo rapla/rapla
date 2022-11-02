@@ -7,6 +7,9 @@ import org.rapla.inject.raplainject.SimpleRaplaInjector;
 import org.rapla.inject.scanning.ScanningClassLoader;
 import org.rapla.inject.scanning.ServiceInfLoader;
 import org.rapla.logger.Logger;
+import org.rapla.rest.JsonParserWrapper;
+import org.rapla.rest.gson.GsonParserWrapper;
+import org.rapla.rest.jackson.JacksonParserWrapper;
 import org.rapla.server.ServerService;
 import org.rapla.server.ServerServiceContainer;
 import org.rapla.server.internal.ServerContainerContext;
@@ -40,6 +43,7 @@ public class ServerCreator
     {
         ServerContext result = new ServerContext();
         {
+            //JsonParserWrapper.setFactory(new GsonParserWrapper());
             SimpleRaplaInjector injector = createInjector(logger, containerContext);
             result.membersInjector = injector.getMembersInjector();
             result.serviceContainer = injector.getInstance(ServerServiceContainer.class);
