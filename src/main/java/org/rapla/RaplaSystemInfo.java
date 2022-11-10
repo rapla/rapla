@@ -40,7 +40,7 @@ public class RaplaSystemInfo extends AbstractBundle
 
     // custom format for info text
     public String infoText(String javaversion) {
-        String signed = "x";
+        String signed = "";
         return format("info.text",signed,javaversion );
     }
 }

@@ -9,6 +9,8 @@ import org.rapla.components.layout.TableLayout;
 import org.rapla.entities.User;
 import org.rapla.entities.domain.Appointment;
 import org.rapla.entities.domain.Reservation;
+import org.rapla.entities.dynamictype.Attribute;
+import org.rapla.entities.dynamictype.Classification;
 import org.rapla.facade.client.ClientFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
@@ -20,7 +22,7 @@ import org.rapla.plugin.eventtimecalculator.EventTimeModel;
 import javax.swing.JComponent;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
-import java.awt.Font;
+import java.awt.*;
 import java.util.Collection;
 
 /**
@@ -109,7 +111,26 @@ public class EventTimeCalculatorStatusWidget extends RaplaGUIComponent implement
         if (totalDurationVisible) {
             long totalDuration = 0;
             totalDuration = eventTimeModel.calcDuration(event.getAppointments());
-            totalDurationLabel.setText(eventTimei18n.getString("total_duration") + ": " + eventTimeModel.format(totalDuration));
+            String format = eventTimeModel.format(totalDuration);
+            Classification classification = event.getClassification();
+            Attribute attribute = classification.getAttribute("SollStunden");
+            if ( attribute != null )
+            {
+                Object value = classification.getValueForAttribute(attribute);
+
+                boolean same = true;
+                if ( value != null) {
+                    try {
+                        String format1 =Integer.valueOf(value.toString()) + ",0";
+                        same = format.equals(format1) ;
+                    } catch (NumberFormatException ex) {
+
+                    }
+                    totalDurationLabel.setForeground(same? Color.black :Color.red);
+
+                }
+            }
+            totalDurationLabel.setText(eventTimei18n.getString("total_duration") + ": " + format);
         }
 
         final Collection<Appointment> selectedAppointmentsCollection = reservationEdit.getSelectedAppointments();

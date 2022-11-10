@@ -512,9 +512,12 @@ public class ReservationInfoEdit extends RaplaGUIComponent
         @Override
         protected boolean isVisible(Attribute attribute)
         {
-            return true;
+            String view = attribute.getAnnotation(AttributeAnnotations.KEY_EDIT_VIEW, AttributeAnnotations.VALUE_EDIT_VIEW_MAIN);
+            // only hide when its in no_view for reservation edit
+            boolean isVisible = !view.equals( AttributeAnnotations.VALUE_EDIT_VIEW_NO_VIEW);
+            return isVisible;
         }
-        
+
 
         public void stateChanged(ChangeEvent evt) {
             	SetGetField<?> editField = (SetGetField<?>) evt.getSource();
