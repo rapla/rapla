@@ -112,6 +112,7 @@ public class CalendarModelImpl implements CalendarSelectionModel
     Map<DynamicType, ClassificationFilter> reservationFilter = new LinkedHashMap<>();
     Map<DynamicType, ClassificationFilter> allocatableFilter = new LinkedHashMap<>();
     public static final RaplaConfiguration ALLOCATABLES_ROOT = new RaplaConfiguration("rootnode", "allocatables");
+    public static final RaplaConfiguration USER_ROOT = new RaplaConfiguration("userroot", "users");
 
     @Inject public CalendarModelImpl(ClientFacade clientFacade, RaplaLocale locale) throws RaplaInitializationException
     {

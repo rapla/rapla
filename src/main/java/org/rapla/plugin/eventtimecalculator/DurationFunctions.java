@@ -5,6 +5,8 @@ import org.rapla.entities.User;
 import org.rapla.entities.domain.Appointment;
 import org.rapla.entities.domain.AppointmentBlock;
 import org.rapla.entities.domain.Reservation;
+import org.rapla.entities.dynamictype.Classifiable;
+import org.rapla.entities.dynamictype.Classification;
 import org.rapla.entities.dynamictype.internal.EvalContext;
 import org.rapla.entities.extensionpoints.Function;
 import org.rapla.entities.extensionpoints.FunctionFactory;
@@ -33,7 +35,47 @@ public class DurationFunctions implements FunctionFactory
         {
             return new DurationFunction(args);
         }
+        if ( functionName.equals(DurationCompareFunction.name))
+        {
+            return new DurationCompareFunction(args);
+        }
         return null;
+    }
+
+    private long calcDuration(EventTimeModel eventTimeModel, Object obj)
+    {
+        final long l;
+
+        if ( obj instanceof AppointmentBlock)
+        {
+            l = eventTimeModel.calcDuration((AppointmentBlock) obj);
+        }
+        else if (obj instanceof Appointment)
+        {
+            l= eventTimeModel.calcDuration(new Appointment[] { (Appointment) obj });
+        }
+        else if (obj instanceof Reservation)
+        {
+            l = eventTimeModel.calcDuration((Reservation) obj);
+        }
+        else if ( obj instanceof Collection)
+        {
+            long sum= 0;
+            for (Object item:((Collection)obj))
+            {
+                sum += calcDuration(eventTimeModel, item);
+            }
+            if ( sum<0)
+            {
+                sum = -1;
+            }
+            l = sum;
+        }
+        else
+        {
+            l = -1;
+        }
+        return l;
     }
 
     class DurationFunction extends Function
@@ -70,42 +112,45 @@ public class DurationFunctions implements FunctionFactory
             return result;
         }
 
-        private long calcDuration(EventTimeModel eventTimeModel, Object obj)
-        {
-            final long l;
-
-            if ( obj instanceof AppointmentBlock)
-            {
-                l = eventTimeModel.calcDuration((AppointmentBlock) obj);
-            }
-            else if (obj instanceof Appointment)
-            {
-                l= eventTimeModel.calcDuration(new Appointment[] { (Appointment) obj });
-            }
-            else if (obj instanceof Reservation)
-            {
-                l = eventTimeModel.calcDuration((Reservation) obj);
-            }
-            else if ( obj instanceof Collection)
-            {
-                long sum= 0;
-                for (Object item:((Collection)obj))
-                {
-                    sum += calcDuration(eventTimeModel, item);
-                }
-                if ( sum<0)
-                {
-                    sum = -1;
-                }
-                l = sum;
-            }
-            else
-            {
-                l = -1;
-            }
-            return l;
-        }
     }
 
+    class DurationCompareFunction extends Function {
+        static public final String name = "durationCompare";
+        Function durationArg;
+        Function compareDurationArg;
+
+        public DurationCompareFunction(List<Function> args) throws IllegalAnnotationException {
+            super(NAMESPACE, name, args);
+            assertArgs(0, 2);
+            if (args.size() > 1) {
+                durationArg = args.get(0);
+                compareDurationArg = args.get(1);
+            }
+        }
+
+        @Override
+        public Long eval(EvalContext context) {
+            final Object obj;
+            if (durationArg != null) {
+                obj = durationArg.eval(context);
+            } else {
+                obj = context.getFirstContextObject();
+            }
+            User user = context.getUser();
+            EventTimeModel eventTimeModel = factory.getEventTimeModel(user);
+            final long l = calcDuration(eventTimeModel, obj);
+            Object eval = compareDurationArg.eval(context);
+            if ( eval != null ){
+                try {
+                    Long expectedHours =Long.valueOf(eval.toString());
+                    long expectedMinutes = eventTimeModel.calcMinutes(expectedHours);
+                    return  l - expectedMinutes;
+                } catch (NumberFormatException ex) {
+                    return null;
+                }
+            }
+            return null;
+        }
+    }
 }
 

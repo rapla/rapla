@@ -28,7 +28,7 @@ public class ImportExportManagerImpl implements ImportExportManager {
     Logger logger;
 
 
-    public ImportExportManagerImpl(Logger logger,FileOperator source,DBOperator dest)
+    public ImportExportManagerImpl(Logger logger,CachableStorageOperator source,CachableStorageOperator dest)
     {
         this.logger =  logger;
         this.source = source;
@@ -63,8 +63,7 @@ public class ImportExportManagerImpl implements ImportExportManager {
     }
 
     private void doConvert(final CachableStorageOperator cachableStorageOperator1,final CachableStorageOperator cachableStorageOperator2) throws RaplaException {
-    	cachableStorageOperator1.runWithReadLock(cache -> cachableStorageOperator2.saveData(cache, null));
-
+    	cachableStorageOperator1.runWithReadLock((cache, syncEntityList) -> cachableStorageOperator2.saveData(cache, syncEntityList, null));
     }
 
 	@Override

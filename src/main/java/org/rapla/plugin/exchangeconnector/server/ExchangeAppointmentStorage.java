@@ -6,9 +6,9 @@ import org.rapla.entities.User;
 import org.rapla.entities.configuration.Preferences;
 import org.rapla.entities.domain.Appointment;
 import org.rapla.entities.storage.ImportExportDirections;
-import org.rapla.entities.storage.ImportExportEntity;
+import org.rapla.entities.storage.ExternalSyncEntity;
 import org.rapla.entities.storage.ReferenceInfo;
-import org.rapla.entities.storage.internal.ImportExportEntityImpl;
+import org.rapla.entities.storage.internal.ExternalSyncEntityImpl;
 import org.rapla.facade.RaplaFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.TypedComponentRole;
@@ -51,7 +51,7 @@ public class ExchangeAppointmentStorage
 {
     private static final String EXCHANGE_ID = "exchange";
     private final Map<String, Set<SynchronizationTask>> tasks = new LinkedHashMap<>();
-    private Map<String, ImportExportEntity> importExportEntities = new LinkedHashMap<>();
+    private Map<String, ExternalSyncEntity> importExportEntities = new LinkedHashMap<>();
     //CachableStorageOperator operator;
     TypedComponentRole<String> LAST_SYNC_ERROR_CHANGE_HASH = new TypedComponentRole<>("org.rapla.plugin.exchangconnector.last_sync_error_change_hash");
     private final JsonParserWrapper.JsonParser gson = JsonParserWrapper.defaultJson().get();
@@ -275,7 +275,7 @@ public class ExchangeAppointmentStorage
             String persistantId = task.getPersistantId();
             if (persistantId != null)
             {
-                ImportExportEntity persistant = importExportEntities.get(persistantId);
+                ExternalSyncEntity persistant = importExportEntities.get(persistantId);
                 if (persistant != null)
                 {
                     removeObjects.add(((Entity)persistant).getReference());
@@ -294,7 +294,7 @@ public class ExchangeAppointmentStorage
                 if (persistant != null)
                 {
                     final Entity edit = facade.edit(persistant);
-                    ((ImportExportEntityImpl)edit).setData(gson.toJson(task));
+                    ((ExternalSyncEntityImpl)edit).setData(gson.toJson(task));
                     storeObjects.add(edit);
                 }
                 else
@@ -309,7 +309,7 @@ public class ExchangeAppointmentStorage
             }
             else
             {
-                final ImportExportEntityImpl importExportEntityImpl = new ImportExportEntityImpl();
+                final ExternalSyncEntityImpl importExportEntityImpl = new ExternalSyncEntityImpl();
                 final char[] charArray = UUID.randomUUID().toString().toCharArray();
                 charArray[0] = 's';
                 importExportEntityImpl.setId(new String(charArray));
@@ -393,7 +393,7 @@ public class ExchangeAppointmentStorage
     {
         importExportEntities = operator.getImportExportEntities(EXCHANGE_ID, ImportExportDirections.EXPORT);
         tasks.clear();
-        for (ImportExportEntity persistant : importExportEntities.values())
+        for (ExternalSyncEntity persistant : importExportEntities.values())
         {
             SynchronizationTask synchronizationTask = gson.fromJson(persistant.getData(), SynchronizationTask.class);
             if (synchronizationTask.getUserId() == null)

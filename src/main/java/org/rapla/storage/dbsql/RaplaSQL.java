@@ -12,6 +12,7 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.storage.dbsql;
 
+import org.jetbrains.annotations.NotNull;
 import org.rapla.components.util.Assert;
 import org.rapla.components.util.DateTools;
 import org.rapla.components.util.iterator.IterableChain;
@@ -51,9 +52,9 @@ import org.rapla.entities.dynamictype.internal.KeyAndPathResolver;
 import org.rapla.entities.internal.CategoryImpl;
 import org.rapla.entities.internal.ModifiableTimestamp;
 import org.rapla.entities.internal.UserImpl;
-import org.rapla.entities.storage.ImportExportEntity;
+import org.rapla.entities.storage.ExternalSyncEntity;
 import org.rapla.entities.storage.ReferenceInfo;
-import org.rapla.entities.storage.internal.ImportExportEntityImpl;
+import org.rapla.entities.storage.internal.ExternalSyncEntityImpl;
 import org.rapla.facade.Conflict;
 import org.rapla.facade.internal.ConflictImpl;
 import org.rapla.framework.RaplaException;
@@ -106,7 +107,7 @@ class RaplaSQL
     RaplaXMLContext context;
     PreferenceStorage preferencesStorage;
     LockStorage lockStorage;
-    private final ImportExportStorage importExportStorage;
+    private final ImportExportStorage syncEntitiesStorage;
 
     RaplaSQL(RaplaXMLContext context) throws RaplaException
     {
@@ -129,8 +130,8 @@ class RaplaSQL
         history = new HistoryStorage(context);
         stores.put(HistoryEntry.class,history);
 
-        importExportStorage = new ImportExportStorage(context);
-        stores.put(ImportExportEntity.class,importExportStorage);
+        syncEntitiesStorage = new ImportExportStorage(context);
+        stores.put(ExternalSyncEntity.class, syncEntitiesStorage);
         // now set delegate because reservation storage should also use appointment storage
         reservationStorage.setAppointmentStorage(appointmentStorage);
     }
@@ -416,12 +417,12 @@ class RaplaSQL
         }
     }
 
-    public Map<String,ImportExportEntity> getImportExportEntities(String id, int importExportDirection, Connection con) throws RaplaException
+    public Map<String, ExternalSyncEntity> getImportExportEntities(String id, int importExportDirection, Connection con) throws RaplaException
     {
         try
         {
-            importExportStorage.setConnection(con, null);
-            return importExportStorage.load(id, importExportDirection);
+            syncEntitiesStorage.setConnection(con, null);
+            return syncEntitiesStorage.load(id, importExportDirection);
         }
         catch (SQLException e)
         {
@@ -429,9 +430,44 @@ class RaplaSQL
         }
         finally
         {
-            importExportStorage.removeConnection();
+            syncEntitiesStorage.removeConnection();
         }
     }
+
+    public Collection<ExternalSyncEntity> getAllSyncEntities( Connection con) throws RaplaException
+    {
+        try
+        {
+            syncEntitiesStorage.setConnection(con, null);
+            return syncEntitiesStorage.loadAllIntoList();
+        }
+        catch (SQLException e)
+        {
+            throw new RaplaException("Error reading ImportExportEntries.");
+        }
+        finally
+        {
+            syncEntitiesStorage.removeConnection();
+        }
+    }
+
+    public void saveAllSyncEntities(Connection con, Collection<ExternalSyncEntity> externalSyncEntityList) throws RaplaException {
+        try
+        {
+            syncEntitiesStorage.setConnection(con, null);
+            syncEntitiesStorage.deleteAll();
+            syncEntitiesStorage.save(externalSyncEntityList);
+        }
+        catch (SQLException e)
+        {
+            throw new RaplaException("Error reading ImportExportEntries.");
+        }
+        finally
+        {
+            syncEntitiesStorage.removeConnection();
+        }
+    }
+
 
     public Date getLastUpdated(Connection c) throws SQLException, RaplaException
     {
@@ -539,6 +575,7 @@ class RaplaSQL
             history.removeConnection();
         }
     }
+
 }
 
 // TODO Think about canDelete and remove of locks when entities are deleted (not updated)
@@ -2981,13 +3018,11 @@ class HistoryStorage<T extends Entity<T>> extends RaplaTypeStorage<T>
 
 }
 
-class ImportExportStorage extends RaplaTypeStorage<ImportExportEntity>
+class ImportExportStorage extends RaplaTypeStorage<ExternalSyncEntity>
 {
-    private String sqlLoadByExternalSystemAndDirection;
-
     public ImportExportStorage(RaplaXMLContext context) throws RaplaException
     {
-        super(context, ImportExportEntity.class, "IMPORT_EXPORT",
+        super(context, ExternalSyncEntity.class, "IMPORT_EXPORT",
                 new String[] { "FOREIGN_ID VARCHAR(255) KEY", "EXTERNAL_SYSTEM VARCHAR(255) KEY", "RAPLA_ID VARCHAR(255)", "DIRECTION INTEGER NOT NULL",
                         "DATA TEXT NOT NULL", "CONTEXT TEXT", "CHANGED_AT TIMESTAMP KEY" });
     }
@@ -2999,7 +3034,7 @@ class ImportExportStorage extends RaplaTypeStorage<ImportExportEntity>
     }
 
     @Override
-    protected int write(PreparedStatement stmt, ImportExportEntity entity) throws SQLException, RaplaException
+    protected int write(PreparedStatement stmt, ExternalSyncEntity entity) throws SQLException, RaplaException
     {
         stmt.setString(1, entity.getId());
         stmt.setString(2, entity.getExternalSystem());
@@ -3016,33 +3051,46 @@ class ImportExportStorage extends RaplaTypeStorage<ImportExportEntity>
     protected void createSQL(Collection<ColumnDef> entries)
     {
         super.createSQL(entries);
-        sqlLoadByExternalSystemAndDirection = selectSql + " WHERE EXTERNAL_SYSTEM = ? AND DIRECTION = ?";
     }
 
-    public Map<String,ImportExportEntity> load(String externalSystemId, int direction) throws SQLException
+    public Map<String, ExternalSyncEntity> load(String externalSystemId, int direction) throws SQLException
     {
+        final String sqlLoadByExternalSystemAndDirection = selectSql + " WHERE EXTERNAL_SYSTEM = ? AND DIRECTION = ?";
         try (PreparedStatement stmt = con.prepareStatement(sqlLoadByExternalSystemAndDirection))
         {
             stmt.setString(1, externalSystemId);
             stmt.setInt(2, direction);
-            final ResultSet rs = stmt.executeQuery();
-            if (rs == null)
-            {
-                return Collections.emptyMap();
-            }
-            Map<String,ImportExportEntity> result = new LinkedHashMap<>();
-            while (rs.next())
-            {
-                final ImportExportEntityImpl importExportEntityImpl = new ImportExportEntityImpl();
-                importExportEntityImpl.setId(rs.getString(1));
-                importExportEntityImpl.setExternalSystem(rs.getString(2));
-                importExportEntityImpl.setRaplaId(rs.getString(3));
-                importExportEntityImpl.setDirection(rs.getInt(4));
-                importExportEntityImpl.setData(getText(rs, 5));
-                importExportEntityImpl.setContext(getText(rs, 6));
-                result.put(importExportEntityImpl.getId(), importExportEntityImpl);
-            }
-            return result;
+            return load(stmt);
+        }
+    }
+
+    @NotNull
+    private Map<String, ExternalSyncEntity> load(PreparedStatement stmt) throws SQLException {
+        final ResultSet rs = stmt.executeQuery();
+        if (rs == null)
+        {
+            return Collections.emptyMap();
+        }
+        Map<String, ExternalSyncEntity> result = new LinkedHashMap<>();
+        while (rs.next())
+        {
+            final ExternalSyncEntityImpl importExportEntityImpl = new ExternalSyncEntityImpl();
+            importExportEntityImpl.setId(rs.getString(1));
+            importExportEntityImpl.setExternalSystem(rs.getString(2));
+            importExportEntityImpl.setRaplaId(rs.getString(3));
+            importExportEntityImpl.setDirection(rs.getInt(4));
+            importExportEntityImpl.setData(getText(rs, 5));
+            importExportEntityImpl.setContext(getText(rs, 6));
+            result.put(importExportEntityImpl.getId(), importExportEntityImpl);
+        }
+        return result;
+    }
+
+    public Collection<ExternalSyncEntity> loadAllIntoList() throws SQLException, RaplaException
+    {
+        try (PreparedStatement stmt = con.prepareStatement(selectSql))
+        {
+            return load(stmt).values();
         }
     }
 

@@ -41,6 +41,7 @@ import org.rapla.entities.dynamictype.internal.AttributeImpl;
 import org.rapla.entities.dynamictype.internal.DynamicTypeImpl;
 import org.rapla.entities.dynamictype.internal.StandardFunctions;
 import org.rapla.entities.extensionpoints.FunctionFactory;
+import org.rapla.entities.storage.ExternalSyncEntity;
 import org.rapla.facade.RaplaFacade;
 import org.rapla.facade.client.ClientFacade;
 import org.rapla.facade.internal.CalendarModelImpl;
@@ -159,7 +160,7 @@ public class LocalCacheTest  {
         storage.runWithReadLock(new CachableStorageOperatorCommand() {
 			
 			@Override
-			public void execute(LocalCache cache) throws RaplaException {
+			public void execute(LocalCache cache, Collection<ExternalSyncEntity> syncEntityList) throws RaplaException {
 			    try
 				{
 		            ClassificationFilter[] filters = null;

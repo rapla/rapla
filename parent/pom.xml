@@ -23,6 +23,7 @@
 		<intellijAnnotations.version>12.0</intellijAnnotations.version>
 		<ical4j.version>3.2.4</ical4j.version>
 		<rxjava.version>3.1.5</rxjava.version>
+		<java.version>1.8</java.version>
 		<exchange.webservice.api>2.0</exchange.webservice.api>
 		<jetty.version>9.4.49.v20220914</jetty.version>
 		<mail.version>1.4.7</mail.version>
@@ -44,6 +45,8 @@
 
 		<maven.compiler.source>1.8</maven.compiler.source>
 		<maven.compiler.target>1.8</maven.compiler.target>
+		<maven.compiler.release>8</maven.compiler.release>
+
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 		<webapp.dir>${project.build.directory}/${project.build.finalName}</webapp.dir>
 		<rapla.distribution.directory>${basedir}/src/main/distribution</rapla.distribution.directory>
@@ -451,6 +454,7 @@
 			<artifactId>hsqldb</artifactId>
 			<version>${hsqldb.version}</version>
 			<scope>provided</scope>
+			<classifier>jdk8</classifier>
 		</dependency>
 		<!--
 		<dependency>

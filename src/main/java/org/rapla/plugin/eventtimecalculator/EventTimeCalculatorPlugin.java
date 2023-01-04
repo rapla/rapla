@@ -6,6 +6,7 @@ import org.rapla.framework.TypedComponentRole;
 public class EventTimeCalculatorPlugin  {
 public static final String PLUGIN_CLASS = EventTimeCalculatorPlugin.class.getName();
     public static final boolean ENABLE_BY_DEFAULT = false;
+    public static final String EVENTIME_CONDITION_ANNOTATION_NAME="eventtime_condition";
 
 
     // public static String PREF_LUNCHBREAK_NUMBER = "eventtimecalculator_lunchbreak_number";

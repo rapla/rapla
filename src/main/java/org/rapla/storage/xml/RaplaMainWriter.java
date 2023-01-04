@@ -22,7 +22,7 @@ import org.rapla.entities.domain.Reservation;
 import org.rapla.entities.dynamictype.Classification;
 import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.entities.dynamictype.internal.DynamicTypeImpl;
-import org.rapla.entities.storage.ImportExportEntity;
+import org.rapla.entities.storage.ExternalSyncEntity;
 import org.rapla.entities.storage.ReferenceInfo;
 import org.rapla.facade.Conflict;
 import org.rapla.framework.RaplaException;
@@ -43,9 +43,9 @@ public class RaplaMainWriter extends RaplaXMLWriter
 	String encoding = "utf-8";
     protected LocalCache cache;
     private String version = OUTPUT_FILE_VERSION;
-    private final Collection<ImportExportEntity> importExportEntities;
+    private final Collection<ExternalSyncEntity> importExportEntities;
 
-    public RaplaMainWriter(RaplaXMLContext context, LocalCache cache, Collection<ImportExportEntity> importExportEntities) throws RaplaException {
+    public RaplaMainWriter(RaplaXMLContext context, LocalCache cache, Collection<ExternalSyncEntity> importExportEntities) throws RaplaException {
         super(context);
         this.cache = cache;
         this.importExportEntities = importExportEntities;
@@ -190,9 +190,9 @@ public class RaplaMainWriter extends RaplaXMLWriter
     void printImportExport() throws IOException, RaplaException {
         final String elementName = "rapla:importexports";
         openElement(elementName);
-        ImportExportWriter writer = (ImportExportWriter)getWriterFor(ImportExportEntity.class);
-        for (ImportExportEntity importExportEntity: importExportEntities) {
-            writer.printImportExportEntity(importExportEntity);
+        ImportExportWriter writer = (ImportExportWriter)getWriterFor(ExternalSyncEntity.class);
+        for (ExternalSyncEntity externalSyncEntity : importExportEntities) {
+            writer.printImportExportEntity(externalSyncEntity);
         }
         closeElement(elementName);
     }

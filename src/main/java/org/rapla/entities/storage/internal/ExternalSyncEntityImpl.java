@@ -1,8 +1,8 @@
 package org.rapla.entities.storage.internal;
 
-import org.rapla.entities.storage.ImportExportEntity;
+import org.rapla.entities.storage.ExternalSyncEntity;
 
-public class ImportExportEntityImpl extends SimpleEntity implements ImportExportEntity
+public class ExternalSyncEntityImpl extends SimpleEntity implements ExternalSyncEntity
 {
 
     private int direction;
@@ -11,19 +11,19 @@ public class ImportExportEntityImpl extends SimpleEntity implements ImportExport
     private String raplaId;
     private String externalSystem;
 
-    public ImportExportEntityImpl()
+    public ExternalSyncEntityImpl()
     {
     }
 
-    @Override public Class<ImportExportEntity> getTypeClass()
+    @Override public Class<ExternalSyncEntity> getTypeClass()
     {
-        return ImportExportEntity.class;
+        return ExternalSyncEntity.class;
     }
 
     @Override
-    public ImportExportEntity clone()
+    public ExternalSyncEntity clone()
     {
-        ImportExportEntityImpl newImportExportEntity = new ImportExportEntityImpl();
+        ExternalSyncEntityImpl newImportExportEntity = new ExternalSyncEntityImpl();
         super.deepClone(newImportExportEntity);
         newImportExportEntity.context = context;
         newImportExportEntity.data = data;

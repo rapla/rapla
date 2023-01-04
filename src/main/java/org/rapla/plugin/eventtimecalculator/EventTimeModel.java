@@ -93,6 +93,10 @@ public class EventTimeModel {
         return actualDuration;
     }
 
+    public long calcMinutes(long hours) {
+        return  hours * timeUnit;
+    }
+
     public long calcDuration(Reservation reservation) {
         return calcDuration(reservation.getAppointments());
     }

@@ -405,8 +405,10 @@ public class ParsedText implements Serializable
             final Function resolvedParentFunction = context.resolveVariableFunction(variableName);
             if (resolvedParentFunction != null)
             {
-                final ParentParameterFunction parentParameterFunction = new ParentParameterFunction(resolvedParentFunction, variableName);
-                return parentParameterFunction;
+                return resolvedParentFunction;
+
+               // final ParentParameterFunction parentParameterFunction = new ParentParameterFunction(resolvedParentFunction, variableName);
+               // return parentParameterFunction;
             }
             else
             {

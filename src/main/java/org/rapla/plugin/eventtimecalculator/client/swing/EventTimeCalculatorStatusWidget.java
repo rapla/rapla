@@ -16,6 +16,7 @@ import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.logger.Logger;
 import org.rapla.plugin.eventtimecalculator.EventTimeCalculatorFactory;
+import org.rapla.plugin.eventtimecalculator.EventTimeCalculatorPlugin;
 import org.rapla.plugin.eventtimecalculator.EventTimeCalculatorResources;
 import org.rapla.plugin.eventtimecalculator.EventTimeModel;
 
@@ -24,6 +25,7 @@ import javax.swing.JLabel;
 import javax.swing.JPanel;
 import java.awt.*;
 import java.util.Collection;
+import java.util.Locale;
 
 /**
  * @author Tobias Bertram
@@ -52,7 +54,7 @@ public class EventTimeCalculatorStatusWidget extends RaplaGUIComponent implement
         TableLayout tableLayout = new TableLayout(sizes);
         content.setLayout(tableLayout);
 
-        Font font1 = totalDurationLabel.getFont().deriveFont((float) 9.0);
+        Font font1 = totalDurationLabel.getFont().deriveFont((float) 10.0);
         totalDurationLabel.setFont(font1);
         selectedDurationLabel.setFont(font1);
 
@@ -113,21 +115,26 @@ public class EventTimeCalculatorStatusWidget extends RaplaGUIComponent implement
             totalDuration = eventTimeModel.calcDuration(event.getAppointments());
             String format = eventTimeModel.format(totalDuration);
             Classification classification = event.getClassification();
-            Attribute attribute = classification.getAttribute("SollStunden");
-            if ( attribute != null )
+            String annotation = classification.getType().getAnnotation(EventTimeCalculatorPlugin.EVENTIME_CONDITION_ANNOTATION_NAME);
+            if ( annotation != null && !annotation.isEmpty())
             {
-                Object value = classification.getValueForAttribute(attribute);
-
-                boolean same = true;
-                if ( value != null) {
+                Locale locale = i18n.getLocale();
+                Object value = event.format(locale,EventTimeCalculatorPlugin.EVENTIME_CONDITION_ANNOTATION_NAME);
+                if ( value != null ) {
                     try {
-                        String format1 =Integer.valueOf(value.toString()) + ",0";
-                        same = format.equals(format1) ;
+                        long diff = Long.parseLong(value.toString());
+                        final Color color;
+                        if (diff > 0) {
+                            color = Color.red.darker().darker();
+                        } else if (diff < 0) {
+                            color = Color.red;
+                        } else {
+                            color = Color.green.darker().darker();
+                        }
+                        totalDurationLabel.setForeground(color);
                     } catch (NumberFormatException ex) {
-
+                        getLogger().warn(ex.getMessage());
                     }
-                    totalDurationLabel.setForeground(same? Color.black :Color.red);
-
                 }
             }
             totalDurationLabel.setText(eventTimei18n.getString("total_duration") + ": " + format);

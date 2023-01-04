@@ -48,7 +48,7 @@ public interface TreeFactory {
 		return conflictStream;
 	}
 
-		class AllocatableNodes
+	class AllocatableNodes
 	{
 		public final RaplaTreeNode allocatableNode;
 		public final boolean filtered;

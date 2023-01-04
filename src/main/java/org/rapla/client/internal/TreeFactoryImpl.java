@@ -19,6 +19,7 @@ import org.rapla.components.util.Assert;
 import org.rapla.components.util.iterator.FilterIterable;
 import org.rapla.entities.Category;
 import org.rapla.entities.Named;
+import org.rapla.entities.User;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.Permission;
 import org.rapla.entities.dynamictype.Attribute;
@@ -445,6 +446,14 @@ public class TreeFactoryImpl extends RaplaComponent implements TreeFactory
             treeNode.add(node);
             nodeMap.put(type, node);
         }
+//        RaplaTreeNode usersNode = newStringNode("Users");
+//        treeNode.add(usersNode);
+//
+//        User[] users = getQuery().getUsers();
+//        for (User user:users) {
+//            RaplaTreeNode node = newNamedNode(user);
+//            usersNode.add(node);
+//        }
         // adds elements to typ folders
         Allocatable[] filtered = getQuery().getAllocatablesWithFilter(filter);
         Collection<Allocatable> sorted = sorted(filtered, new SortedClassifiableComparator(getLocale()));
