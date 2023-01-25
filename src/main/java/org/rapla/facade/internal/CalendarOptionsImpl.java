@@ -35,8 +35,9 @@ public class CalendarOptionsImpl implements CalendarOptions {
     public final static TypedComponentRole<RaplaConfiguration> CALENDAR_OPTIONS= new TypedComponentRole<>("org.rapla.calendarview");
     public final static TypedComponentRole<Boolean> SHOW_CONFLICT_WARNING = new TypedComponentRole<>("org.rapla.conflict.showWarning");
     public final static TypedComponentRole<Boolean> SHOW_HOLIDAY_WARNING = new TypedComponentRole<>("org.rapla.holiday.showWarning");
+    public final static TypedComponentRole<Boolean> SHOW_HOLIDAY_WARNING_SINGLE_APPOINTMENT = new TypedComponentRole<>("org.rapla.holiday.showWarningSingle");
     public final static TypedComponentRole<Boolean> SHOW_NOT_IN_CALENDAR_WARNING = new TypedComponentRole<>("org.rapla.calendar.showNotInCalendarWarning");
-    
+
     public static final String WORKTIME = "worktime";
     public static final String EXCLUDE_DAYS = "exclude-days";
     public static final String WEEKSTART = "exclude-days";

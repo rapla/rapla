@@ -23,7 +23,7 @@ import java.util.Collection;
 import java.util.Collections;
 
 
-@Extension(provides= AnnotationEditTypeExtension.class, id=DynamicTypeAnnotations.KEY_DESCRIPTION_FORMAT_EXPORT)
+@Extension(provides= AnnotationEditTypeExtension.class, id=EventTimeCalculatorPlugin.EVENTIME_CONDITION_ANNOTATION_NAME)
 public class EventTimeConditionAnnotationEdit extends RaplaGUIComponent implements AnnotationEditTypeExtension
 {
     protected String annotationName = EventTimeCalculatorPlugin.EVENTIME_CONDITION_ANNOTATION_NAME;

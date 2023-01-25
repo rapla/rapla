@@ -59,7 +59,7 @@ public class AppointmentCounterFactory implements AppointmentStatusFactory
 		public AppointmentCounter(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, final ReservationEdit reservationEdit) {
 			super(facade, i18n, raplaLocale, logger);
 
-			Font font = statusBar.getFont().deriveFont( (float)9.0);
+			Font font = statusBar.getFont().deriveFont( (float)11.0);
 			statusBar.setFont( font ); 
 		    
 			this.reservationEdit = reservationEdit;

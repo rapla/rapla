@@ -54,7 +54,7 @@ public class EventTimeCalculatorStatusWidget extends RaplaGUIComponent implement
         TableLayout tableLayout = new TableLayout(sizes);
         content.setLayout(tableLayout);
 
-        Font font1 = totalDurationLabel.getFont().deriveFont((float) 10.0);
+        Font font1 = totalDurationLabel.getFont().deriveFont((float) 11.0);
         totalDurationLabel.setFont(font1);
         selectedDurationLabel.setFont(font1);
 
@@ -125,7 +125,7 @@ public class EventTimeCalculatorStatusWidget extends RaplaGUIComponent implement
                         long diff = Long.parseLong(value.toString());
                         final Color color;
                         if (diff > 0) {
-                            color = Color.red.darker().darker();
+                            color = Color.red;
                         } else if (diff < 0) {
                             color = Color.red;
                         } else {
