@@ -21,4 +21,5 @@ module org.rapla {
     requires commons.collections4;
     requires httpcore;
     requires org.rapla.restinject;
+    requires java.xml.ws;
 }
