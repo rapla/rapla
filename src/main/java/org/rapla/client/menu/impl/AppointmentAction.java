@@ -377,6 +377,7 @@ public class AppointmentAction extends RaplaComponent  {
 
     public AppointmentAction addTo(MenuInterface menu, MenuItemFactory menuItemFactory) {
         final IdentifiableMenuEntry menuItem = createMenuEntry(menuItemFactory);
+        menuItem.setEnabled( enabled );
         menu.addMenuItem(menuItem);
         return this;
     }

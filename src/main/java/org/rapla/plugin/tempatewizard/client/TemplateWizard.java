@@ -102,6 +102,9 @@ import java.util.TreeSet;
         }
     }
 
+    public void setEnabled( boolean b) {
+    }
+
     @Override public boolean isEnabled()
     {
         try

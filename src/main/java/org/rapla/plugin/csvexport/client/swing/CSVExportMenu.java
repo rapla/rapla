@@ -165,7 +165,10 @@ public class CSVExportMenu extends RaplaGUIComponent implements ExportMenuExtens
         }
     }
 
+    @Override
+    public void setEnabled(boolean b) {
 
+    }
 
     public boolean saveFile(byte[] content, String filename, String extension) throws RaplaException {
         final Frame frame = (Frame) SwingUtilities.getRoot(getMainComponent());
