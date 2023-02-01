@@ -57,6 +57,8 @@ public class CopyPluginMenu  extends RaplaGUIComponent implements EditMenuExtens
 	RaplaMenuItem item;
 	String id = "copy_events";
 	final String label ;
+
+	private boolean enabled = true;
     private final PeriodCopyResources periodCopyI18n;
     private final Provider<CopyDialog> copyDialogProvider;
     private final DialogUiFactoryInterface dialogUiFactory;
@@ -227,7 +229,12 @@ public class CopyPluginMenu  extends RaplaGUIComponent implements EditMenuExtens
 	@Override
 	public boolean isEnabled()
 	{
-		return true;
+		return enabled;
+	}
+
+	@Override
+	public void setEnabled(boolean enabled) {
+		this.enabled = enabled;
 	}
 
 	private Date getNewStartWeekly(Date oldStart, Date destStart) {

@@ -7,6 +7,10 @@ public interface IdentifiableMenuEntry extends RaplaWidget
 {
     String getId();
 
+    void setEnabled(boolean b);
+
+    boolean isEnabled();
+
     IdentifiableMenuEntry[] EMPTY_ARRAY  = new IdentifiableMenuEntry[]{
     };
 }

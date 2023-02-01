@@ -318,25 +318,26 @@ public final class ClassificationFilterRuleImpl extends ReferenceHandler
             {
                 return  value != null && value.equals( ruleValue );
             } 
-            else if ( operator.equals("contains") )
-            {
+            else {
                 String string = ((String)ruleValue).toLowerCase();
                 if (string == null)
                     return true;
                 string = string.trim();
                 if (value == null)
                     return string.length() == 0;
-                return (((String) value).toLowerCase().contains(string));
-            }
-            else if ( operator.equals("starts") )
-            {
-                String string = ((String)ruleValue).toLowerCase();
-                if (string == null)
-                    return true;
-                string = string.trim();
-                if (value == null)
-                    return string.length() == 0;
-                return (((String)value).toLowerCase().startsWith(string));
+                String s = ((String) value).toLowerCase();
+                if ( operator.equals("contains") )
+                {
+                    return s.contains(string);
+                }
+                else if ( operator.equals("starts") )
+                {
+                    return s.startsWith(string);
+                }
+                else if ( operator.equals("ends") )
+                {
+                    return s.endsWith(string);
+                }
             }
         }
         else if (type ==  AttributeType.BOOLEAN)

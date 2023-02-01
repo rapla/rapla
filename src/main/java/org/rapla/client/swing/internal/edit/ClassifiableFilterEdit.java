@@ -772,9 +772,11 @@ class ClassificationEdit extends RaplaGUIComponent implements ItemListener {
             if (type.equals(AttributeType.STRING)) {
             	int index = ((JComboBox)operatorComponent).getSelectedIndex();
             	if (index == 0)
-                return "contains";
-            	if (index == 1)
+                    return "contains";
+            	else if (index == 1)
             		return "starts";
+                else if (index == 2)
+                    return "ends";
             }
             if (type.equals(AttributeType.DATE) || type.equals(AttributeType.INT)) {
                 int index = ((JComboBox)operatorComponent).getSelectedIndex();
@@ -868,6 +870,7 @@ class ClassificationEdit extends RaplaGUIComponent implements ItemListener {
 				DefaultComboBoxModel model = new DefaultComboBoxModel(new String[] {
                 		 getString("filter.contains")
                         ,getString("filter.starts")
+                        ,getString("filter.ends")
                     });
                 @SuppressWarnings("unchecked")
 				JComboBox jComboBox = new JComboBox(model);

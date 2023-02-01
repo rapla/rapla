@@ -67,6 +67,9 @@ import java.util.List;
         this.eventBus = eventBus;
     }
 
+    public void setEnabled( boolean b) {
+    }
+
     @Override public boolean isEnabled()
     {
         try
