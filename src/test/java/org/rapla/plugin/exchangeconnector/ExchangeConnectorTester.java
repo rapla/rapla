@@ -38,8 +38,8 @@ import java.util.*;
 public class ExchangeConnectorTester {
     public static void main(String[] args) throws Exception {
 
-        String username = "termine@dhbw-karlsruhe.aa";
-        String password = "!!t.u1234T.U?";
+        String username = args[0];
+        String password = args[1];
         String url = "https://mail.dhbw-karlsruhe.de";
 
 
@@ -65,7 +65,6 @@ public class ExchangeConnectorTester {
         NameResolutionCollection ncCol2 = service.resolveName("/o=DHBW Karlsruhe/ou=Exchange Administrative Group (FYDIBOHF23SPDLT)/cn=Recipients/cn=f36d29e6d843490c80163f77e187f1d7-Termine", ResolveNameSearchLocation.DirectoryOnly, false);
         NameResolutionCollection nameResolutionCollection2 = service.resolveName("anna.anwender@dhbw-karlsruhe.de", ResolveNameSearchLocation.DirectoryOnly, true);
         NameResolutionCollection nameResolutionCollection3 = service.resolveName("ben.bearbeiter@dhbw-karlsruhe.de", ResolveNameSearchLocation.DirectoryOnly, true);
-        NameResolutionCollection nameResolutionCollection4 = service.resolveName("ritzenthaler@dhbw-karlsruhe.de", ResolveNameSearchLocation.DirectoryOnly, true);
         NameResolutionCollection nameResolutionCollection5 = service.resolveName("termine@dhbw-karlsruhe.de", ResolveNameSearchLocation.DirectoryOnly, true);
         NameResolutionCollection nameResolutionCollection = service.resolveName("christopher.kohlhaas@mosbach.dhbw.de", ResolveNameSearchLocation.DirectoryOnly, true);
         logger.info(" Found " + nameResolutionCollection.getCount());
