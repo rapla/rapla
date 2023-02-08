@@ -117,7 +117,7 @@ public class UrlEncryptor
         }
         catch (Exception e)
         {
-            throw new Exception("The provided URL is not valid.");
+            throw new Exception("The provided URL is not valid." + e.getMessage());
         }
     }
 

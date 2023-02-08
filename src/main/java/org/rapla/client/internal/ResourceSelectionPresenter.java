@@ -29,6 +29,7 @@ import org.rapla.facade.CalendarSelectionModel;
 import org.rapla.facade.ModificationEvent;
 import org.rapla.facade.RaplaFacade;
 import org.rapla.facade.client.ClientFacade;
+import org.rapla.facade.internal.CalendarModelImpl;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaInitializationException;
 import org.rapla.logger.Logger;
@@ -88,6 +89,7 @@ public class ResourceSelectionPresenter implements Presenter
         ClassificationFilter[] filter = model.getAllocatableFilter();
         Collection<Object> selectedObjects = new ArrayList<>(model.getSelectedObjects());
         view.update(filter, model, selectedObjects);
+
         applyFilter();
     }
 

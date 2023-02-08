@@ -88,6 +88,10 @@ public class RaplaArrowButton extends JButton  {
         final int height2 = (int)size.getHeight();
         setSize( width2,height2);
 	}
+
+    public void refreshChar() {
+        setChar( c );
+    }
     /** Set the size of the drop-down button. 
         The minimum of width and height will be used as new size of the arrow.
      */

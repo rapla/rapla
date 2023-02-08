@@ -41,6 +41,7 @@ import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.dynamictype.ClassificationFilter;
 import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.facade.ClassifiableFilter;
+import org.rapla.facade.internal.CalendarModelImpl;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaInitializationException;
 import org.rapla.inject.DefaultImplementation;
@@ -170,6 +171,8 @@ public class ResourceSelectionViewSwing implements ResourceSelectionView
                     filterEdit = filterEditButtonFactory.create(model, true, listener);
                     buttonsPanel.add(filterEdit.getButton(), BorderLayout.EAST);
                 }
+                //boolean defaultFilter = model.isDefaultResourceTypes();
+                //filterEdit.setFiltered( ! defaultFilter );
                 updateTree(filter, selectedObjects);
                 updateSelection(selectedObjects);
             }
@@ -374,6 +377,10 @@ public class ResourceSelectionViewSwing implements ResourceSelectionView
         }
         ((MenuFactoryImpl) menuFactory).addNew(newMenu, menuContext, null, true);
         newMenu.setEnabled(newMenu.getMenuComponentCount() > 0);
+    }
+
+    public void setFiltered(boolean filtered) {
+        filterEdit.setFiltered( filtered );
     }
 
     public void updateChange()
