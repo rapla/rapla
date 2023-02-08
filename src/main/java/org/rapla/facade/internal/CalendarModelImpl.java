@@ -13,7 +13,6 @@
 
 package org.rapla.facade.internal;
 
-import org.jetbrains.annotations.NotNull;
 import org.rapla.components.util.Assert;
 import org.rapla.components.util.DateTools;
 import org.rapla.components.util.SerializableDateTimeFormat;
@@ -387,6 +386,25 @@ public class CalendarModelImpl implements CalendarSelectionModel
         boolean resourceRootSelected = selectedObjects.contains(ALLOCATABLES_ROOT);
         return newRaplaCalendarModel(selected, resourceRootSelected, allocatableFilter, eventFilter, title, startDate, endDate, selectedDate, viewName,
                 optionMap);
+    }
+
+    public static boolean isDefaultFilter(ClassificationFilter[] allocatableFilter, int allTypes) {
+        int filteredTypes = 0;
+        if (allocatableFilter != null)
+        {
+            for (ClassificationFilter entry : allocatableFilter)
+            {
+                filteredTypes++;
+                if (entry.ruleSize() > 0)
+                {
+                    return false;
+                }
+            }
+        }
+        if ( filteredTypes < allTypes) {
+            return false;
+        }
+        return true;
     }
 
     public CalendarModelConfigurationImpl newRaplaCalendarModel(Collection<Entity> selected, boolean resourceRootSelected,

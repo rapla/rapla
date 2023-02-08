@@ -99,10 +99,16 @@ public class FilterEditButton extends RaplaGUIComponent
         return filterButton;
     }
 
+    public void refresh()
+    {
+        filterButton.refreshChar();
+    }
+
     public void setFiltered(boolean filtered) {
         //filterButton.setBackground(filtered ? Color.red: null);
         final ImageIcon icon = RaplaImages.getIcon("/org/rapla/gui/images/eclipse-icons/filter_small.gif");
         filterButton.setAdditionalIcon(filtered ? icon: null);
+        filterButton.refreshChar();
     }
 
     @Singleton
