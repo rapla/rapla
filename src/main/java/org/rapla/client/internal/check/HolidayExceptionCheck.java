@@ -63,8 +63,12 @@ public class HolidayExceptionCheck implements EventCheck
     static public Map<Appointment, Set<Period>> getPeriodConflicts(RaplaFacade raplaFacade, Collection<Reservation> reservations) throws RaplaException
     {
         Map<Appointment, Set<Period>> periodConflicts = new LinkedHashMap<>();
-        final PeriodModel periodModel;
-        periodModel = raplaFacade.getPeriodModelFor("feiertag");
+        PeriodModel periodModel;
+        periodModel = raplaFacade.getPeriodModelFor("holiday");
+        if (periodModel == null)
+        {
+            periodModel = raplaFacade.getPeriodModelFor("feiertag");
+        }
         if (periodModel == null)
         {
             return periodConflicts;
@@ -141,12 +145,13 @@ public class HolidayExceptionCheck implements EventCheck
         RaplaTreeNode root = createPeriodTree(list);
         final HolidayCheckDialogView.HolidayCheckPanel conflictPanel = checkDialogView.getConflictPanel(root, showCheckbox);
         DialogInterface dialog = dialogUiFactory
-                .createContentDialog(sourceComponent, conflictPanel.component, new String[] { i18n.getString("continue"), i18n.getString("cancel") });
+                .createContentDialog(sourceComponent, conflictPanel.component, new String[] {
+                        i18n.getString("continue"), i18n.getString("cancel") });
         dialog.setDefault(1);
         dialog.setIcon(i18n.getIcon("icon.big_folder_conflicts"));
         dialog.getAction(0).setIcon(i18n.getIcon("icon.save"));
         dialog.getAction(1).setIcon(i18n.getIcon("icon.cancel"));
-        dialog.setTitle("Termine überschneiden sich mit");
+        dialog.setTitle(i18n.getString("appointment_collision_title"));
         return dialog.start(true).thenApply(index -> {
             if (index == 0)
             {

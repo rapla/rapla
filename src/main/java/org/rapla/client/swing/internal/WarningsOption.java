@@ -57,9 +57,9 @@ public class WarningsOption extends RaplaGUIComponent implements UserOptionPanel
         isHolidayEnabled = isHolidayEnabled(facade);
         if (isHolidayEnabled)
         {
-            panel.add(new JLabel("WARNUNG: Konflikt Wiederholingstermin mit Feiertagen/Ferien"), "0,4");
+            panel.add(new JLabel(getString("warning.repeating_conflicts_with_holiday")), "0,4");
             panel.add(showHolidayWarnings, "2,4");
-            panel.add(new JLabel("WARNUNG: Konflikt Einzeltermin mit Feiertagen/Ferien"), "0,6");
+            panel.add(new JLabel(getString("warning.single_conflicts_with_holiday")), "0,6");
             panel.add(showHolidayWarningsSingleAppointment, "2,6");
         }
     }

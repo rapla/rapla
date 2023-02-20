@@ -71,7 +71,7 @@ public class ConflictPeriodReservationButton extends RaplaGUIComponent implement
         }
         final PopupContext popupContext = new SwingPopupContext((Component) edit.getComponent(), null);
         button = new RaplaButton();
-        button.setText("Feiertage/Ferien");
+        button.setText(i18n.getString("holidays"));
         button.addActionListener((evt) ->
         {
             try
@@ -161,7 +161,7 @@ public class ConflictPeriodReservationButton extends RaplaGUIComponent implement
         {
             count += periods.size();
         }
-        button.setText("Feiertage/Ferien (" + count + ")");
+        button.setText(i18n.getString("holidays") + " (" + count + ")");
     }
 }
 
