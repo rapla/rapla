@@ -63,12 +63,7 @@ public class HolidayExceptionCheck implements EventCheck
     static public Map<Appointment, Set<Period>> getPeriodConflicts(RaplaFacade raplaFacade, Collection<Reservation> reservations) throws RaplaException
     {
         Map<Appointment, Set<Period>> periodConflicts = new LinkedHashMap<>();
-        PeriodModel periodModel;
-        periodModel = raplaFacade.getPeriodModelFor("holiday");
-        if (periodModel == null)
-        {
-            periodModel = raplaFacade.getPeriodModelFor("feiertag");
-        }
+        final PeriodModel periodModel = PeriodModel.getHoliday(raplaFacade);
         if (periodModel == null)
         {
             return periodConflicts;
@@ -217,11 +212,11 @@ public class HolidayExceptionCheck implements EventCheck
         {
             allPeriods.addAll(periods);
         }
-        final Category timetables = getTimetablesCategory();
+        final Category periodsCategory = getPeriodsCategory();
         Map<Category, List<Period>> list = new LinkedHashMap<>();
-        if (timetables != null)
+        if (periodsCategory != null)
         {
-            for (Category category : timetables.getCategoryList())
+            for (Category category : periodsCategory.getCategoryList())
             {
                 list.put(category, new ArrayList<>());
             }
@@ -240,9 +235,10 @@ public class HolidayExceptionCheck implements EventCheck
         return list;
     }
 
-    public Category getTimetablesCategory()
+    public Category getPeriodsCategory()
     {
-        return raplaFacade.getSuperCategory().getCategory("timetables");
+        Category superCategory = raplaFacade.getSuperCategory();
+        return PeriodModel.getPeriodsCategory( superCategory );
     }
 
 }

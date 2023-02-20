@@ -60,12 +60,12 @@ public class ConflictPeriodReservationButton extends RaplaGUIComponent implement
     @Override
     public Collection<RaplaWidget> createExtensionButtons(ReservationEdit edit)
     {
-        final Category timetablesCategory = check.getTimetablesCategory();
-        if (timetablesCategory == null)
+        final Category periodCategory = check.getPeriodsCategory();
+        if (periodCategory == null)
         {
             return Collections.emptyList();
         }
-        if ( timetablesCategory.getCategories().length == 0)
+        if ( periodCategory.getCategories().length == 0)
         {
         	return Collections.emptyList();
         }

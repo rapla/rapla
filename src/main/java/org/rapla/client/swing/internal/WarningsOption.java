@@ -68,8 +68,8 @@ public class WarningsOption extends RaplaGUIComponent implements UserOptionPanel
     {
         try
         {
-            final PeriodModel feiertag = facade.getRaplaFacade().getPeriodModelFor("feiertag");
-            return feiertag != null;
+            final PeriodModel holiday = PeriodModel.getHoliday(facade.getRaplaFacade());
+            return holiday != null;
         }
         catch (RaplaException e)
         {

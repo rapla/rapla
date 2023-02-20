@@ -284,7 +284,7 @@ class PeriodModelImpl implements PeriodModel
     }
 
     public int getSize() {
-        Assert.notNull(m_periods,"Componenet not setup!");
+        Assert.notNull(m_periods,"Component not setup!");
         return m_periods.size();
     }
 

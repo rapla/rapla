@@ -55,7 +55,7 @@ public class RaplaDateRenderer implements DateRenderer {
             return periodModel;
         }
         try {
-            PeriodModel model = facade.getPeriodModelFor("feiertag");
+            PeriodModel model = PeriodModel.getHoliday(facade);
             if ( model == null)
             {
                 model= facade.getPeriodModel();
