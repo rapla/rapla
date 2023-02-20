@@ -13,7 +13,9 @@
 package org.rapla.facade;
 
 import org.rapla.components.util.TimeInterval;
+import org.rapla.entities.Category;
 import org.rapla.entities.domain.Period;
+import org.rapla.framework.RaplaException;
 
 import java.util.Date;
 import java.util.List;
@@ -22,6 +24,22 @@ import java.util.List;
  * */
 public interface PeriodModel
 {
+    static Category getPeriodsCategory(Category superCategory) {
+        Category category = superCategory.getCategory("periods");
+        if ( category == null) {
+            category = superCategory.getCategory("timetables");
+        }
+        return category;
+    }
+
+    static PeriodModel getHoliday(RaplaFacade raplaFacade) throws RaplaException {
+       PeriodModel model = raplaFacade.getPeriodModelFor("holiday");
+       if ( model == null ) {
+           model = raplaFacade.getPeriodModelFor("feiertag");
+       }
+       return model;
+    }
+
     /** returns the first matching period or null if no period matches.*/
     Period getPeriodFor(Date date);
     Period getNearestPeriodForDate(Date date);

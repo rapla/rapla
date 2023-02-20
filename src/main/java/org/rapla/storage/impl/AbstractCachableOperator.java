@@ -422,17 +422,17 @@ public abstract class AbstractCachableOperator implements StorageOperator
             return periodModel;
         }
         if (periodModelHoliday == null) {
-            final Category timetablesCategory = getSuperCategory().getCategory("timetables");
-            if ( timetablesCategory == null)
+            final Category periodsCategory = PeriodModel.getPeriodsCategory(getSuperCategory());
+            if ( periodsCategory == null)
             {
                 return null;
             }
-            Category[] timetables = timetablesCategory.getCategories();
-            if ( timetables.length == 0)
+            Category[] periodsCategoryCategories = periodsCategory.getCategories();
+            if ( periodsCategoryCategories.length == 0)
             {
                 return null;
             }
-            periodModelHoliday = new PeriodModelImpl(this, timetables);
+            periodModelHoliday = new PeriodModelImpl(this, periodsCategoryCategories);
         }
         return periodModelHoliday;
     }

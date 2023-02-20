@@ -3761,6 +3761,23 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
         setName(groupsCategory.getName(), groupsCategory.getKey());
         setNew(groupsCategory);
         store.put(groupsCategory);
+
+        CategoryImpl periodsCategory = new CategoryImpl(now, now);
+        periodsCategory.setKey("periods");
+        periodsCategory.setResolver(store);
+        setName(periodsCategory.getName(), periodsCategory.getKey());
+        setNew(periodsCategory);
+        store.put(periodsCategory);
+
+        CategoryImpl holidaysCategory = new CategoryImpl(now, now);
+
+        holidaysCategory.setKey("holiday");
+        holidaysCategory.setResolver(store);
+        setName(holidaysCategory.getName(), holidaysCategory.getKey());
+        setNew(holidaysCategory);
+        store.put(holidaysCategory);
+        periodsCategory.addCategory(holidaysCategory);
+
         for (String catName : userGroups)
         {
             CategoryImpl group = new CategoryImpl(now, now);
@@ -3773,6 +3790,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
         }
         final Category superCategory = store.resolve(Category.SUPER_CATEGORY_REF);
         superCategory.addCategory(groupsCategory);
+        superCategory.addCategory(periodsCategory);
 
         DynamicTypeImpl resourceType = newDynamicType(DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RESOURCE, "resource", groupsCategory, store);
         setName(resourceType.getName(), "resource");
