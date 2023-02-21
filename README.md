@@ -12,12 +12,8 @@ get the latest rapla binary packages under
 
 https://sourceforge.net/projects/rapla/files/latest/download?source=files
 
-# Licence
+# License
 
-Rapla is dual licensed. You can either use it under the terms of the GPL 3 license
+Rapla is dual licensed. You can either use it under the terms of the 
 
-[License GPL3](LICENSE_GPL3)
-
-or the terms of the Apache 2 license
-
-[License APACHE2](LICENSE_APACHE2)
+[GNU AFFERO GENERAL PUBLIC LICENSE](LICENSE_GPL3) or the [Apache License 2.0](LICENSE_APACHE2)
