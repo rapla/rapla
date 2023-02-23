@@ -159,7 +159,9 @@ public final class ReservationImpl extends SimpleEntity implements Reservation, 
     
     public void addPermission(Permission permission) {
         checkWritable();
-        permissions.add((PermissionImpl)permission);
+        if ( !permissions.contains(permission)) {
+            permissions.add((PermissionImpl) permission);
+        }
     }
 
     public boolean removePermission(Permission permission) {
