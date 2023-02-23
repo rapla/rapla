@@ -376,7 +376,7 @@ public class ParsedText implements Serializable
                     final Object eval = parentFunction.eval(parent);
                     return eval;
                 }
-                return null;
+                return parentFunction.eval( context );
             }
 
             public String getRepresentation(ParseContext context)
@@ -405,10 +405,9 @@ public class ParsedText implements Serializable
             final Function resolvedParentFunction = context.resolveVariableFunction(variableName);
             if (resolvedParentFunction != null)
             {
-                return resolvedParentFunction;
-
-               // final ParentParameterFunction parentParameterFunction = new ParentParameterFunction(resolvedParentFunction, variableName);
-               // return parentParameterFunction;
+                // Also check Parent Context
+                final ParentParameterFunction parentParameterFunction = new ParentParameterFunction(resolvedParentFunction, variableName);
+                return parentParameterFunction;
             }
             else
             {

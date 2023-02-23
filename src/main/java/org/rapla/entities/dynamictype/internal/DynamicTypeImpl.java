@@ -196,7 +196,9 @@ final public class DynamicTypeImpl extends SimpleEntity implements DynamicType, 
     
     public void addPermission(Permission permission) {
         checkWritable();
-        permissions.add((PermissionImpl)permission);
+        if (!permissions.contains( permission)) {
+            permissions.add((PermissionImpl) permission);
+        }
     }
 
     public boolean removePermission(Permission permission) {

@@ -150,7 +150,9 @@ public final class AllocatableImpl extends SimpleEntity implements Allocatable,D
     
     public void addPermission(Permission permission) {
         checkWritable();
-        permissions.add((PermissionImpl)permission);
+        if ( !permissions.contains( permission )) {
+            permissions.add((PermissionImpl) permission);
+        }
     }
 
     public boolean removePermission(Permission permission) {

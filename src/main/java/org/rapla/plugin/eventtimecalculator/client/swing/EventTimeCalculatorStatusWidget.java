@@ -120,7 +120,7 @@ public class EventTimeCalculatorStatusWidget extends RaplaGUIComponent implement
             {
                 Locale locale = i18n.getLocale();
                 Object value = event.format(locale,EventTimeCalculatorPlugin.EVENTIME_CONDITION_ANNOTATION_NAME);
-                if ( value != null ) {
+                if ( value != null && value.toString().length() != 0) {
                     try {
                         long diff = Long.parseLong(value.toString());
                         final Color color;
