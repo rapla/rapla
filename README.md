@@ -1,5 +1,7 @@
 # Rapla
 
+<img src="http://82.165.167.200/r2/r2_main-week-view.JPG" height="400" alt="Main Window" />
+
 checkout the rapla website for news on rapla 
 
 http://rapla.org
