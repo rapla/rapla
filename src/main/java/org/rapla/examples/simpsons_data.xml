@@ -1,0 +1,763 @@
+<?xml version="1.0" encoding="utf-8"?><!--*- coding: utf-8 -*-->
+<rapla:data xmlns:rapla="http://rapla.sourceforge.net/rapla"
+ xmlns:relax="http://relaxng.org/ns/structure/1.0"
+ xmlns:dynatt="http://rapla.sourceforge.net/dynamictype"
+ xmlns:ext="http://rapla.sourceforge.net/extension"
+ xmlns:doc="http://rapla.sourceforge.net/annotation"
+ version="1.2">
+   <rapla:categories>
+      <rapla:category created-at="2022-03-16T12:49:50.041Z" last-changed="2022-03-16T12:49:50.041Z" id="c161ae36-c22e-4030-b56e-b99f818a3d7b" key="department">
+         <doc:name lang="de">Verwaltungseinheit</doc:name>
+         <doc:name lang="en">Administrative Entity</doc:name>
+         <rapla:category created-at="2022-03-16T12:49:50.041Z" last-changed="2022-03-16T12:49:50.041Z" id="cf073ddc-cc0b-4c37-8f60-80370b9776a2" key="channel-6">
+            <doc:name lang="en">channel-6</doc:name>
+         </rapla:category>
+         <rapla:category created-at="2022-03-16T12:49:50.041Z" last-changed="2022-03-16T12:49:50.041Z" id="cfbd9862-5586-49cd-b71c-993d60bda682" key="elementary-springfield">
+            <doc:name lang="en">elementary-springfield</doc:name>
+         </rapla:category>
+         <rapla:category created-at="2022-03-16T12:49:50.041Z" last-changed="2022-03-16T12:49:50.041Z" id="c64d3511-abe8-4b55-8378-5f8c585a3eda" key="springfield-powerplant">
+            <doc:name lang="en">springfield powerplant</doc:name>
+            <rapla:category created-at="2022-03-16T12:49:50.041Z" last-changed="2022-03-16T12:49:50.041Z" id="c9282bc0-3f88-4514-99a2-d16d49d169ce" key="security-department">
+               <doc:name lang="de">Sicherheitabteilung</doc:name>
+               <doc:name lang="en">securitydepartment</doc:name>
+            </rapla:category>
+            <rapla:category created-at="2022-03-16T12:49:50.041Z" last-changed="2022-03-16T12:49:50.041Z" id="ca9a17fa-b16b-4d0a-8b1e-f77955b615a9" key="waste-disposal">
+               <doc:name lang="de">Abfallbeseitigung</doc:name>
+               <doc:name lang="en">waste disposal</doc:name>
+            </rapla:category>
+         </rapla:category>
+      </rapla:category>
+      <rapla:category created-at="2022-03-16T12:49:50.041Z" last-changed="2022-03-16T12:49:50.041Z" id="cd4a4dca-1b64-46e9-a3c1-c0b272850813" key="resources">
+         <doc:name lang="de">Ressourcen</doc:name>
+         <doc:name lang="en">resources</doc:name>
+         <rapla:category created-at="2022-03-16T12:49:50.041Z" last-changed="2022-03-16T12:49:50.041Z" id="ce3a090e-b9ef-44fa-a06d-465df4dd5cb0" key="vehicle-types">
+            <doc:name lang="de">Fahrzeugtypen</doc:name>
+            <doc:name lang="en">vehicle-types</doc:name>
+            <rapla:category created-at="2022-03-16T12:49:50.041Z" last-changed="2022-03-16T12:49:50.041Z" id="c9222914-4b3f-49c6-b7a3-1d0d08c697ef" key="bus">
+               <doc:name lang="de">Bus</doc:name>
+               <doc:name lang="en">bus</doc:name>
+            </rapla:category>
+            <rapla:category created-at="2022-03-16T12:49:50.041Z" last-changed="2022-03-16T12:49:50.041Z" id="c5f118a3-fcb6-4b59-9ccd-f77211ab0e16" key="car">
+               <doc:name lang="de">PKW</doc:name>
+               <doc:name lang="en">car</doc:name>
+            </rapla:category>
+         </rapla:category>
+         <rapla:category created-at="2022-03-16T12:49:50.041Z" last-changed="2022-03-16T12:49:50.041Z" id="c60ef57c-150c-4c7b-b67d-9be8b7c2e71d" key="room-types">
+            <doc:name lang="de">Raumtypen</doc:name>
+            <doc:name lang="en">room-types</doc:name>
+            <rapla:category created-at="2022-03-16T12:49:50.041Z" last-changed="2022-03-16T12:49:50.041Z" id="c586f02b-27bc-4e24-83dd-30c2a18728c4" key="classroom">
+               <doc:name lang="de">Klassenraum</doc:name>
+               <doc:name lang="en">classroom</doc:name>
+            </rapla:category>
+            <rapla:category created-at="2022-03-16T12:49:50.041Z" last-changed="2022-03-16T12:49:50.041Z" id="c8434248-e26f-4d4a-8209-505c210e17c9" key="studio">
+               <doc:name lang="de">Studio</doc:name>
+               <doc:name lang="en">studio</doc:name>
+            </rapla:category>
+            <rapla:category created-at="2022-03-16T12:49:50.041Z" last-changed="2022-03-16T12:49:50.041Z" id="c5bbe0e9-ff32-4f2b-a3bd-4c73cce5c831" key="bar">
+               <doc:name lang="de">Bar</doc:name>
+               <doc:name lang="en">bar</doc:name>
+            </rapla:category>
+            <rapla:category created-at="2022-03-16T12:49:50.041Z" last-changed="2022-03-16T12:49:50.041Z" id="c1802aee-7a84-4201-b9e2-cf3fb502210a" key="conferenceroom">
+               <doc:name lang="de">Konferenzraum</doc:name>
+               <doc:name lang="en">conference room</doc:name>
+            </rapla:category>
+         </rapla:category>
+      </rapla:category>
+      <rapla:category created-at="2022-03-16T12:49:50.041Z" last-changed="2022-03-16T12:49:50.041Z" id="cb4ea81c-5b39-44da-b765-20d00e5bdc95" key="lecture">
+         <doc:name lang="de">Vorlesung</doc:name>
+         <doc:name lang="en">lecture</doc:name>
+         <rapla:category created-at="2022-03-16T12:49:50.041Z" last-changed="2022-03-16T12:49:50.041Z" id="c199830d-81f5-4808-9bcd-f476d07d71f3" key="level">
+            <doc:name lang="de">Schwierigkeitsgrade</doc:name>
+            <doc:name lang="en">difficulty levels</doc:name>
+            <rapla:category created-at="2022-03-16T12:49:50.041Z" last-changed="2022-03-16T12:49:50.041Z" id="cfdc461f-cc87-4d77-af96-f500a4f9d808" key="too-easy">
+               <doc:name lang="de">viel zu einfach</doc:name>
+               <doc:name lang="en">too simple</doc:name>
+            </rapla:category>
+            <rapla:category created-at="2022-03-16T12:49:50.041Z" last-changed="2022-03-16T12:49:50.041Z" id="c31b0fde-36f7-4c0b-b6bc-1fc631d73da6" key="too-hard">
+               <doc:name lang="de">viel zu schwierig</doc:name>
+               <doc:name lang="en">too hard</doc:name>
+            </rapla:category>
+            <rapla:category created-at="2022-03-16T12:49:50.041Z" last-changed="2022-03-16T12:49:50.041Z" id="cb1bd270-003e-4c59-b839-6e0320cd0dbc" key="too-boring">
+               <doc:name lang="de">zu langweilig</doc:name>
+               <doc:name lang="en">too boring</doc:name>
+            </rapla:category>
+         </rapla:category>
+      </rapla:category>
+      <rapla:category created-at="2022-03-16T12:49:50.041Z" last-changed="2022-03-16T12:49:50.041Z" id="cd7e610f-3b1c-495d-89b4-52ca8599961b" key="user-groups">
+         <doc:name lang="de">Benutzergruppen</doc:name>
+         <doc:name lang="en">user-groups</doc:name>
+         <rapla:category created-at="2022-03-16T12:49:50.041Z" last-changed="2022-03-16T12:49:50.041Z" id="c899a15d-8f3f-4462-b2ea-a1de62ca1013" key="registerer">
+            <doc:name lang="de">Ressourcen eintragen</doc:name>
+            <doc:name lang="en">register resources</doc:name>
+            <doc:name lang="fr">Enregistrer des ressources</doc:name>
+         </rapla:category>
+         <rapla:category created-at="2022-03-16T12:49:50.041Z" last-changed="2022-03-16T12:49:50.041Z" id="c5062cd6-3d2b-4297-98ad-699eda348c98" key="modify-preferences">
+            <doc:name lang="de">Einstellungen bearbeiten</doc:name>
+            <doc:name lang="en">modify preferences</doc:name>
+            <doc:name lang="fr">Modifier la préférence</doc:name>
+         </rapla:category>
+      </rapla:category>
+   </rapla:categories>
+
+   <relax:grammar>
+      <relax:define name="vehicle">
+         <relax:element name="dynatt:vehicle" id="dd103875-2b56-40b0-b16e-6c8cf1dc82dc" created-at="2022-03-16T12:49:50.042Z" last-changed="2022-03-16T12:49:50.042Z">
+            <doc:name lang="de">Fahrzeug</doc:name>
+            <doc:name lang="en">vehicle</doc:name>
+            <doc:annotations>
+               <rapla:annotation key="nameformat">{name}</rapla:annotation>
+               <rapla:annotation key="classification-type">resource</rapla:annotation>
+            </doc:annotations>
+            <relax:optional>
+               <relax:element name="name">
+                  <doc:name lang="de">Name</doc:name>
+                  <doc:name lang="en">name</doc:name>
+                  <relax:data type="string"/>
+               </relax:element>
+            </relax:optional>
+            <relax:optional>
+               <relax:element name="hp">
+                  <doc:name lang="de">PS</doc:name>
+                  <doc:name lang="en">hp</doc:name>
+                  <relax:data type="int"/>
+               </relax:element>
+            </relax:optional>
+            <relax:optional>
+               <relax:element name="seats">
+                  <doc:name lang="de">Anzahl Plätze</doc:name>
+                  <doc:name lang="en">number of seats</doc:name>
+                  <relax:data type="int"/>
+               </relax:element>
+            </relax:optional>
+            <relax:optional>
+               <relax:element name="belongsto">
+                  <doc:name lang="de">gehört zu</doc:name>
+                  <doc:name lang="en">belongs to</doc:name>
+                  <relax:data type="rapla:category"/>
+                  <rapla:constraint name="root-category">category[key='department']</rapla:constraint>
+                  <rapla:constraint name="multi-select">false</rapla:constraint>
+               </relax:element>
+            </relax:optional>
+            <relax:optional>
+               <relax:element name="vehicle-type">
+                  <doc:name lang="de">Fahrzeugtyp</doc:name>
+                  <doc:name lang="en">type of vehicle</doc:name>
+                  <relax:data type="rapla:category"/>
+                  <rapla:constraint name="root-category">category[key='resources']/category[key='vehicle-types']</rapla:constraint>
+                  <rapla:constraint name="multi-select">false</rapla:constraint>
+               </relax:element>
+            </relax:optional>
+            <rapla:permission access="read_type"/>
+            <rapla:permission access="allocate_conflicts"/>
+         </relax:element>
+      </relax:define>
+
+      <relax:define name="room">
+         <relax:element name="dynatt:room" id="da91b174-b01f-4948-8f9f-81f313c9b431" created-at="2022-03-16T12:49:50.042Z" last-changed="2022-03-16T12:49:50.042Z">
+            <doc:name lang="de">Raum</doc:name>
+            <doc:name lang="en">room</doc:name>
+            <doc:annotations>
+               <rapla:annotation key="nameformat">{name}</rapla:annotation>
+               <rapla:annotation key="classification-type">resource</rapla:annotation>
+            </doc:annotations>
+            <relax:optional>
+               <relax:element name="name">
+                  <doc:name lang="de">Name</doc:name>
+                  <doc:name lang="en">name</doc:name>
+                  <relax:data type="string"/>
+               </relax:element>
+            </relax:optional>
+            <relax:optional>
+               <relax:element name="blackboard">
+                  <doc:name lang="de">Tafel</doc:name>
+                  <doc:name lang="en">blackboard</doc:name>
+                  <relax:data type="boolean"/>
+                  <rapla:default>false</rapla:default>
+               </relax:element>
+            </relax:optional>
+            <relax:optional>
+               <relax:element name="seats">
+                  <doc:name lang="de">Anzahl der Plätze</doc:name>
+                  <doc:name lang="en">number of seats</doc:name>
+                  <relax:data type="int"/>
+               </relax:element>
+            </relax:optional>
+            <relax:optional>
+               <relax:element name="room-type">
+                  <doc:name lang="de">Raumtyp</doc:name>
+                  <doc:name lang="en">type of room</doc:name>
+                  <relax:data type="rapla:category"/>
+                  <rapla:constraint name="root-category">category[key='resources']/category[key='room-types']</rapla:constraint>
+                  <rapla:constraint name="multi-select">false</rapla:constraint>
+               </relax:element>
+            </relax:optional>
+            <relax:optional>
+               <relax:element name="belongsto">
+                  <doc:name lang="de">gehört zu</doc:name>
+                  <doc:name lang="en">belongs to</doc:name>
+                  <relax:data type="rapla:category"/>
+                  <rapla:constraint name="root-category">category[key='department']</rapla:constraint>
+                  <rapla:constraint name="multi-select">false</rapla:constraint>
+               </relax:element>
+            </relax:optional>
+            <rapla:permission access="read_type"/>
+            <rapla:permission access="allocate_conflicts"/>
+         </relax:element>
+      </relax:define>
+
+      <relax:define name="lecturer">
+         <relax:element name="dynatt:lecturer" id="d72e9a6f-fbba-4ed8-a311-0bf59384a095" created-at="2022-03-16T12:49:50.042Z" last-changed="2022-03-16T12:49:50.042Z">
+            <doc:name lang="de">Dozent</doc:name>
+            <doc:name lang="en">lecturer</doc:name>
+            <doc:annotations>
+               <rapla:annotation key="nameformat">{surname} {forename}</rapla:annotation>
+               <rapla:annotation key="classification-type">person</rapla:annotation>
+            </doc:annotations>
+            <relax:optional>
+               <relax:element name="title">
+                  <doc:name lang="de">Titel</doc:name>
+                  <doc:name lang="en">title</doc:name>
+                  <relax:data type="string"/>
+               </relax:element>
+            </relax:optional>
+            <relax:optional>
+               <relax:element name="surname">
+                  <doc:name lang="de">Nachname</doc:name>
+                  <doc:name lang="en">surname</doc:name>
+                  <relax:data type="string"/>
+               </relax:element>
+            </relax:optional>
+            <relax:optional>
+               <relax:element name="forename">
+                  <doc:name lang="de">Vorname</doc:name>
+                  <doc:name lang="en">forename</doc:name>
+                  <relax:data type="string"/>
+               </relax:element>
+            </relax:optional>
+            <relax:optional>
+               <relax:element name="email">
+                  <doc:name lang="de">email</doc:name>
+                  <doc:name lang="en">email</doc:name>
+                  <relax:data type="string"/>
+               </relax:element>
+            </relax:optional>
+            <relax:optional>
+               <relax:element name="worksfor">
+                  <doc:name lang="de">arbeitet für</doc:name>
+                  <doc:name lang="en">works for</doc:name>
+                  <relax:data type="rapla:category"/>
+                  <rapla:constraint name="root-category">category[key='department']</rapla:constraint>
+                  <rapla:constraint name="multi-select">false</rapla:constraint>
+               </relax:element>
+            </relax:optional>
+            <rapla:permission access="read_type"/>
+            <rapla:permission access="allocate_conflicts"/>
+         </relax:element>
+      </relax:define>
+
+      <relax:define name="meeting">
+         <relax:element name="dynatt:meeting" id="d254c701-76d7-42e8-8788-efb40ac487c1" created-at="2022-03-16T12:49:50.042Z" last-changed="2022-03-16T12:49:50.042Z">
+            <doc:name lang="de">Meeting</doc:name>
+            <doc:name lang="en">meeting</doc:name>
+            <doc:annotations>
+               <rapla:annotation key="nameformat">{name}</rapla:annotation>
+               <rapla:annotation key="classification-type">reservation</rapla:annotation>
+            </doc:annotations>
+            <relax:optional>
+               <relax:element name="name">
+                  <doc:name lang="de">Name</doc:name>
+                  <doc:name lang="en">name</doc:name>
+                  <relax:data type="string"/>
+               </relax:element>
+            </relax:optional>
+            <relax:optional>
+               <relax:element name="public">
+                  <doc:name lang="de">Gäste erlaubt</doc:name>
+                  <doc:name lang="en">guests permitted</doc:name>
+                  <relax:data type="boolean"/>
+                  <rapla:default>false</rapla:default>
+               </relax:element>
+            </relax:optional>
+            <rapla:permission access="read_type"/>
+            <rapla:permission access="read"/>
+            <rapla:permission access="create"/>
+         </relax:element>
+      </relax:define>
+
+      <relax:define name="lecture">
+         <relax:element name="dynatt:lecture" id="deb2a147-6fe0-4fcb-adb9-e046e7cedca7" created-at="2022-03-16T12:49:50.042Z" last-changed="2022-03-16T12:49:50.042Z">
+            <doc:name lang="de">Vorlesung</doc:name>
+            <doc:name lang="en">lecture</doc:name>
+            <doc:annotations>
+               <rapla:annotation key="nameformat">{name}</rapla:annotation>
+               <rapla:annotation key="classification-type">reservation</rapla:annotation>
+            </doc:annotations>
+            <relax:optional>
+               <relax:element name="name">
+                  <doc:name lang="de">Name</doc:name>
+                  <doc:name lang="en">name</doc:name>
+                  <relax:data type="string"/>
+               </relax:element>
+            </relax:optional>
+            <relax:optional>
+               <relax:element name="difficulty">
+                  <doc:name lang="de">Schwierigkeitsgrad</doc:name>
+                  <doc:name lang="en">difficulty level</doc:name>
+                  <relax:data type="rapla:category"/>
+                  <rapla:constraint name="root-category">category[key='lecture']/category[key='level']</rapla:constraint>
+                  <rapla:constraint name="multi-select">false</rapla:constraint>
+               </relax:element>
+            </relax:optional>
+            <rapla:permission access="read_type"/>
+            <rapla:permission access="read"/>
+            <rapla:permission access="create"/>
+         </relax:element>
+      </relax:define>
+
+      <relax:start>
+         <relax:choice>
+            <relax:ref name="vehicle"/>
+            <relax:ref name="room"/>
+            <relax:ref name="lecturer"/>
+            <relax:ref name="meeting"/>
+            <relax:ref name="lecture"/>
+         </relax:choice>
+      </relax:start>
+   </relax:grammar>
+
+   <rapla:preferences>
+      <rapla:entry key="org.rapla.plugin">
+         <rapla:config>
+            <pluginlist>
+               <plugin enabled="true" class="org.rapla.plugin.periodwizard.PeriodWizardPlugin"/>
+               <plugin enabled="true" class="org.rapla.plugin.autoexport.AutoExportPlugin"/>
+            </pluginlist>
+         </rapla:config>
+      </rapla:entry>
+      <rapla:entry key="org.rapla.crypto.server.privateKey" value="MIIEvwIBADANBgkqhkiG9w0BAQEFAASCBKkwggSlAgEAAoIBAQDr-r-PM_wauq-Zrg7FrBZZn5oBKCQHtqH60KaUdDSgr56pSSfBXOa1EyFUkWTRLWcE-PiMxfBTyZMO90MmVlSAgoq58TyvVhFT2aHxhUPKgc4WS3Yl1ASu52dEqT_VUw2UOKW8MBtWgmp3Hfs5Qsnm6Ed3BCjcQYbu2qC19hQKLYGRqnW__AcBU2Hrt_TsZKyMHJIa7evEKX-SOaPOgYsjbgNYM-bFRR-F4PU-twxV-3GA6MVtPQR0GWIiTzxCCc9FLEcaAj6HefM2IYVkmIpW4E3Wg-VUJx_YAOFrQmI_yj0SHRz8GGBzFGQa2FBrGGclUcBoXACumzNDNpqC63YvAgMBAAECggEBAOrq0qxi2gRZ-NoKttX-PLm38v5X0ZaEL7ia4lpDXOjiLBbmptcN_vYgNzwTCcRbaIVAvV6W5mri7q0lZgnSQ4kza5s0Fm-ORO2uaFMhkZ0Vn-397X43FPpxjxKBUvSxG4GE6yju0yhJ6Gbwx9n3LTvb3NkUoQCzkvpRV1ANy2FchjWUFpli-Bce9GpC1s2oQzUVkG-h0DmrCzuOihNrZ90K8R44XnGNJ3hu4k2uYwS-uaL1Dgg7d0OXaciHJ58Q2tY-LU7eQ5E4SiqcHFNL6fHDpLSKic-AADNp55mYeZIQ14wKzVnI6IQP160ye4_9RPTu1pwfP1Sw71SGfFl4j6ECgYEA_4oppI63UuJ0ZS69VGciSeUx8Kc_dgUpx_MMctQpsmHRGebfhkpGbF4Lc4JkDZ0RNay7mliImIieg_5iyRx2w9RR8nmH72iVQlDG-vKQm8fOFokYfDqwlfZTBpatBjeUwSJTf92H0DkxpDVFuk7LpSBee9hmM6bBniIddcj0tUcCgYEA7GeQ12rxXvD1NrpcXbQHB58GzEerqq5PSBh-vwF-k_QmJOJuyCQfVZzRgGY5bKgJGuatubs-LqIJ2PgLHjfRhUmwVtn8yIbWNOAGJJWklzsaMf8kRQwFSh8KN-P08KJUEXKbgMVr7dpwx0UABQc1tJlV4kYfJQ8BiP2yrCuOS9kCgYEAoF1sVMDbe0ByGy2B034Fnqoe9Q-AW-hRmBGHNmi-4htQxhiFHhluqIM8XHjvoTt4mV6VPP9ieZcDI4J5LAyY27xa0PhDvpK7WKqotMOUzK5PPwU6QHv0Zaf34qKcYtJun-WS0SONH7dE1_A2mfzo_--YW9AqEzALQdnW8xvxtfECgYEAsiX9jYhmqmA0ufBIaMigv4qEie68m9vNnQvwf6n1pDNJh2QnjaVDA7YwXm0qewpKCj6pzhwfaO7tMtcBMd1og-QbAeg1yTtrMt9bYbhvFxQP0ntt7qZ3Wfr4LVQYojoB1kAilTCw-8YwVMpXkHJ1c0pV4TVshPXA92YPfhU4n0kCgYAY-tWKKskk_KBg3kzVl-byoayr5nucPtIK7Gqt_b5QoJtf0qEG4v5sR-HkCPO94ZxlrS8DaS0ArFY_d8aMxWPkvo_tNrV2P36qCFMcz2SOckigq2L_5g7g6ROl0fH7hPKQVSKEL1kVcZXXQr2pLDoVVErO48Va5GT_mKqlgVB7ew"/>
+      <rapla:entry key="org.rapla.crypto.publicKey" value="MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA6_q_jzP8Grqvma4OxawWWZ-aASgkB7ah-tCmlHQ0oK-eqUknwVzmtRMhVJFk0S1nBPj4jMXwU8mTDvdDJlZUgIKKufE8r1YRU9mh8YVDyoHOFkt2JdQErudnRKk_1VMNlDilvDAbVoJqdx37OULJ5uhHdwQo3EGG7tqgtfYUCi2Bkap1v_wHAVNh67f07GSsjBySGu3rxCl_kjmjzoGLI24DWDPmxUUfheD1PrcMVftxgOjFbT0EdBliIk88QgnPRSxHGgI-h3nzNiGFZJiKVuBN1oPlVCcf2ADha0JiP8o9Eh0c_BhgcxRkGthQaxhnJVHAaFwArpszQzaagut2LwIDAQAB"/>
+   </rapla:preferences>
+
+   <rapla:users>
+      <!-- Users of the system -->
+      <rapla:user id="uf49044c-1469-4699-8a66-5f46ec6c0a41" created-at="2022-03-16T12:49:50.043Z" last-changed="2022-03-16T12:49:50.043Z" username="" password="" name="Krustofski Herschel" email="krusty@channel6.com" isAdmin="true">
+         <rapla:group key="category[key='modify-preferences']"/>
+      </rapla:user>
+      <rapla:user id="u5e1576a-bc70-4ddf-9943-8e6ad1c86100" created-at="2022-03-16T12:49:50.043Z" last-changed="2022-03-16T12:49:50.043Z" username="admin" password="" name="Burns Monty" email="chief@power-plant.sim" isAdmin="true">
+         <rapla:group key="category[key='modify-preferences']"/>
+         <rapla:preferences>
+            <rapla:entry key="org.rapla.calendarview">
+               <rapla:config>
+                  <calendar-options>
+                     <color>resources</color>
+                     <worktime>8-18</worktime>
+                     <exceptions-visible>false</exceptions-visible>
+                     <rows-per-hour>4</rows-per-hour>
+                     <exclude-days></exclude-days>
+                     <days-in-weekview>7</days-in-weekview>
+                     <first-day-of-week>2</first-day-of-week>
+                     <minimum-block-width>100</minimum-block-width>
+                     <non-filtered-events>transparent</non-filtered-events>
+                  </calendar-options>
+               </rapla:config>
+            </rapla:entry>
+            <rapla:entry key="org.rapla.language" value="en"/>
+         </rapla:preferences>
+      </rapla:user>
+      <rapla:user id="u6f601b7-c855-445c-ab5b-182ab32a67c0" created-at="2022-03-16T12:49:50.043Z" last-changed="2022-03-16T12:49:50.043Z" username="homer" password="duffs" name="Simpson Homer" email="simpson@security.power-plant.sim" isAdmin="true">
+         <rapla:group key="category[key='modify-preferences']"/>
+      </rapla:user>
+      <rapla:user id="ub640eb8-250f-4322-967a-401240dd6a2e" created-at="2022-03-16T12:49:50.043Z" last-changed="2022-03-16T12:49:50.043Z" username="skinner" password="edna" name="Skinner Seymour" email="scinner@elementary-springfield.edu" isAdmin="false">
+         <rapla:group key="category[key='modify-preferences']"/>
+      </rapla:user>
+      <rapla:user id="ua890200-036e-427e-bb5c-ba50e1c0450f" created-at="2022-03-16T12:49:50.043Z" last-changed="2022-03-16T12:49:50.043Z" username="abe" password="matlock" name="Simpson Abraham" email="abe@retirement-castle.old" isAdmin="false">
+         <rapla:group key="category[key='modify-preferences']"/>
+      </rapla:user>
+      <rapla:user id="uab162d0-5561-4fc0-a89e-1533693b197c" created-at="2022-03-16T12:49:50.043Z" last-changed="2022-03-16T12:49:50.043Z" username="selma" password="jubjub" name="Krustofski Herschel" email="krusty@channel6.com" isAdmin="false">
+         <rapla:group key="category[key='modify-preferences']"/>
+      </rapla:user>
+      <rapla:user id="uaf19a1d-9258-4e39-a852-7107a9356259" created-at="2022-03-16T12:49:50.043Z" last-changed="2022-03-16T12:49:50.043Z" username="lisa" password="lisa" name="Simpson Lisa" email="lisa@mensa.org" isAdmin="false">
+         <rapla:group key="category[key='modify-preferences']"/>
+      </rapla:user>
+   </rapla:users>
+
+   <rapla:resources>
+      <!-- resources -->
+      <rapla:extension id="period_4" created-at="2022-03-16T12:49:50.071Z" last-changed="2022-03-16T12:49:50.071Z">
+         <ext:period>
+            <ext:name>WS 2002/2003</ext:name>
+            <ext:start>2002-10-14</ext:start>
+            <ext:end>2003-02-06</ext:end>
+         </ext:period>
+         <rapla:permission access="read"/>
+      </rapla:extension>
+      <rapla:extension id="period_5" created-at="2022-03-16T12:49:50.074Z" last-changed="2022-03-16T12:49:50.074Z">
+         <ext:period>
+            <ext:name>SS 2003</ext:name>
+            <ext:start>2003-04-07</ext:start>
+            <ext:end>2003-06-23</ext:end>
+         </ext:period>
+         <rapla:permission access="read"/>
+      </rapla:extension>
+      <rapla:resource id="r15a0bde-3f6d-42f4-89ff-8cf03e5161d4" created-at="2022-03-16T12:49:50.044Z" last-changed="2022-03-16T12:49:50.044Z">
+         <dynatt:vehicle>
+            <dynatt:name>Ottos bus</dynatt:name>
+            <dynatt:hp>250</dynatt:hp>
+            <dynatt:seats>50</dynatt:seats>
+            <dynatt:belongsto>category[key='elementary-springfield']</dynatt:belongsto>
+            <dynatt:vehicle-type>category[key='bus']</dynatt:vehicle-type>
+         </dynatt:vehicle>
+         <rapla:permission access="allocate_conflicts"/>
+      </rapla:resource>
+      <rapla:resource id="r521686b-0ab4-4ff4-a56e-0bdf148e8d1d" created-at="2022-03-16T12:49:50.044Z" last-changed="2022-03-16T12:49:50.044Z">
+         <dynatt:room>
+            <dynatt:name>room A66</dynatt:name>
+            <dynatt:blackboard>true</dynatt:blackboard>
+            <dynatt:seats>30</dynatt:seats>
+            <dynatt:room-type>category[key='conferenceroom']</dynatt:room-type>
+            <dynatt:belongsto>category[key='springfield-powerplant']/category[key='security-department']</dynatt:belongsto>
+         </dynatt:room>
+         <rapla:permission access="allocate_conflicts"/>
+      </rapla:resource>
+      <rapla:resource id="r24ce517-4697-4e52-9917-ec000c84563c" created-at="2022-03-16T12:49:50.044Z" last-changed="2022-03-16T12:49:50.044Z">
+         <dynatt:room>
+            <dynatt:name>classroom 3a</dynatt:name>
+            <dynatt:blackboard>true</dynatt:blackboard>
+            <dynatt:seats>24</dynatt:seats>
+            <dynatt:room-type>category[key='classroom']</dynatt:room-type>
+            <dynatt:belongsto>category[key='elementary-springfield']</dynatt:belongsto>
+         </dynatt:room>
+         <rapla:permission access="allocate_conflicts"/>
+      </rapla:resource>
+      <rapla:resource id="r26b7058-49d5-4bdf-8a5f-81a0cde6ebd2" created-at="2022-03-16T12:49:50.044Z" last-changed="2022-03-16T12:49:50.044Z">
+         <dynatt:room>
+            <dynatt:name>studio 1</dynatt:name>
+            <dynatt:blackboard>false</dynatt:blackboard>
+            <dynatt:seats>150</dynatt:seats>
+            <dynatt:room-type>category[key='studio']</dynatt:room-type>
+            <dynatt:belongsto>category[key='channel-6']</dynatt:belongsto>
+         </dynatt:room>
+         <rapla:permission access="allocate_conflicts"/>
+      </rapla:resource>
+      <rapla:resource id="r6442ec8-b412-4667-a4d1-3be7e974d038" created-at="2022-03-16T12:49:50.044Z" last-changed="2022-03-16T12:49:50.044Z">
+         <dynatt:room>
+            <dynatt:name>Moes bar</dynatt:name>
+            <dynatt:blackboard>false</dynatt:blackboard>
+            <dynatt:seats>50</dynatt:seats>
+            <dynatt:room-type>category[key='bar']</dynatt:room-type>
+         </dynatt:room>
+         <rapla:permission access="allocate_conflicts"/>
+      </rapla:resource>
+      <rapla:person id="r2b28af8-c674-4f50-9121-543b454a4597" created-at="2022-03-16T12:49:50.044Z" last-changed="2022-03-16T12:49:50.044Z">
+         <dynatt:lecturer>
+            <dynatt:title>Principal</dynatt:title>
+            <dynatt:surname>Skinner</dynatt:surname>
+            <dynatt:forename>Seymour</dynatt:forename>
+            <dynatt:email>scinner@elementary-springfield.edu</dynatt:email>
+            <dynatt:worksfor>category[key='elementary-springfield']</dynatt:worksfor>
+         </dynatt:lecturer>
+         <rapla:permission access="allocate_conflicts"/>
+      </rapla:person>
+      <rapla:person id="r161b171-3426-4be3-a3c9-a84d2be57e50" created-at="2022-03-16T12:49:50.044Z" last-changed="2022-03-16T12:49:50.044Z">
+         <dynatt:lecturer>
+            <dynatt:surname>Simpson</dynatt:surname>
+            <dynatt:forename>Homer</dynatt:forename>
+            <dynatt:email>simpson@security.power-plant.sim</dynatt:email>
+            <dynatt:worksfor>category[key='springfield-powerplant']</dynatt:worksfor>
+         </dynatt:lecturer>
+         <rapla:permission access="allocate_conflicts"/>
+      </rapla:person>
+      <rapla:person id="r2fc2327-b88a-4e7f-ada5-c700abefb05b" created-at="2022-03-16T12:49:50.044Z" last-changed="2022-03-16T12:49:50.044Z">
+         <dynatt:lecturer>
+            <dynatt:title>Mr.</dynatt:title>
+            <dynatt:surname>Burns</dynatt:surname>
+            <dynatt:forename>Monty</dynatt:forename>
+            <dynatt:email>chief@power-plant.sim</dynatt:email>
+            <dynatt:worksfor>category[key='springfield-powerplant']</dynatt:worksfor>
+         </dynatt:lecturer>
+         <rapla:permission access="allocate_conflicts"/>
+      </rapla:person>
+      <rapla:person id="r2d6d605-4e01-49d4-9c2d-68d7c5f8033c" created-at="2022-03-16T12:49:50.044Z" last-changed="2022-03-16T12:49:50.044Z">
+         <dynatt:lecturer>
+            <dynatt:surname>Gumble</dynatt:surname>
+            <dynatt:forename>Barney</dynatt:forename>
+            <dynatt:email>gumble@duff.beer</dynatt:email>
+         </dynatt:lecturer>
+         <rapla:permission access="allocate_conflicts"/>
+      </rapla:person>
+      <rapla:person id="rea6c3e7-4be3-483a-9884-d24063c97540" created-at="2022-03-16T12:49:50.044Z" last-changed="2022-03-16T12:49:50.044Z">
+         <dynatt:lecturer>
+            <dynatt:title>Miss</dynatt:title>
+            <dynatt:surname>Bouvier</dynatt:surname>
+            <dynatt:forename>Selma</dynatt:forename>
+            <dynatt:email>selma@simgles.com</dynatt:email>
+         </dynatt:lecturer>
+         <rapla:permission access="allocate_conflicts"/>
+      </rapla:person>
+      <rapla:person id="rdebc5a1-a064-4a45-b5c4-d692387694f4" created-at="2022-03-16T12:49:50.044Z" last-changed="2022-03-16T12:49:50.044Z">
+         <dynatt:lecturer>
+            <dynatt:surname>Brockman</dynatt:surname>
+            <dynatt:forename>Kent</dynatt:forename>
+            <dynatt:email>kent@channel6.com</dynatt:email>
+            <dynatt:worksfor>category[key='channel-6']</dynatt:worksfor>
+         </dynatt:lecturer>
+         <rapla:permission access="allocate_conflicts"/>
+      </rapla:person>
+      <rapla:person id="rae867b1-e986-4afb-8f29-f6e55f312e98" created-at="2022-03-16T12:49:50.044Z" last-changed="2022-03-16T12:49:50.044Z">
+         <dynatt:lecturer>
+            <dynatt:surname>Krustofski</dynatt:surname>
+            <dynatt:forename>Herschel</dynatt:forename>
+            <dynatt:email>krusty@channel6.com</dynatt:email>
+            <dynatt:worksfor>category[key='channel-6']</dynatt:worksfor>
+         </dynatt:lecturer>
+         <rapla:permission access="allocate_conflicts"/>
+      </rapla:person>
+      <rapla:person id="rabbf65a-e9f9-420c-8efe-f73d3b708bfd" created-at="2022-03-16T12:49:50.044Z" last-changed="2022-03-16T12:49:50.044Z">
+         <dynatt:lecturer>
+            <dynatt:surname>Simpson</dynatt:surname>
+            <dynatt:forename>Abraham</dynatt:forename>
+            <dynatt:email>abe@retirement-castle.old</dynatt:email>
+         </dynatt:lecturer>
+         <rapla:permission access="allocate_conflicts"/>
+      </rapla:person>
+      <rapla:person id="re66e02b-2960-4b5a-99a8-c59ccb197b60" created-at="2022-03-16T12:49:50.044Z" last-changed="2022-03-16T12:49:50.044Z">
+         <dynatt:lecturer>
+            <dynatt:surname>Simpson</dynatt:surname>
+            <dynatt:forename>Lisa</dynatt:forename>
+            <dynatt:email>lisa@mensa.org</dynatt:email>
+         </dynatt:lecturer>
+         <rapla:permission access="allocate_conflicts"/>
+      </rapla:person>
+      <rapla:person id="r0bddc04-8d94-42d3-9978-77aaa57bfd08" created-at="2022-03-16T12:49:50.044Z" last-changed="2022-03-16T12:49:50.044Z">
+         <dynatt:lecturer>
+            <dynatt:surname>Mann</dynatt:surname>
+            <dynatt:forename>Otto</dynatt:forename>
+            <dynatt:email>otto@elementary-springfield.edu</dynatt:email>
+            <dynatt:worksfor>category[key='elementary-springfield']</dynatt:worksfor>
+         </dynatt:lecturer>
+         <rapla:permission access="allocate_conflicts"/>
+      </rapla:person>
+      <rapla:person id="r3e1ceb0-b3b2-4266-a746-32075ffd27db" created-at="2022-03-16T12:49:50.044Z" last-changed="2022-03-16T12:49:50.044Z">
+         <dynatt:lecturer>
+            <dynatt:surname>Szyslak</dynatt:surname>
+            <dynatt:forename>Moe</dynatt:forename>
+            <dynatt:email>lisa@moes-tavern.com</dynatt:email>
+         </dynatt:lecturer>
+         <rapla:permission access="allocate_conflicts"/>
+      </rapla:person>
+
+   </rapla:resources>
+
+   <rapla:reservations>
+      <rapla:reservation id="e446620d-5fed-4a69-b186-fdd7185254a1" owner="u6f601b7-c855-445c-ab5b-182ab32a67c0" created-at="2004-01-05T00:00:00.000Z" last-changed="2023-03-12T14:59:21.423Z" last-changed-by="u5e1576a-bc70-4ddf-9943-8e6ad1c86100">
+         <dynatt:lecture>
+            <dynatt:name>Duffs seminar</dynatt:name>
+            <dynatt:difficulty>category[key='too-easy']</dynatt:difficulty>
+         </dynatt:lecture>
+         <rapla:appointment id="aa6debab-6c4f-4618-b165-b7f2be9910ed" start-date="2023-04-07" start-time="13:00:00" end-date="2023-04-07" end-time="16:00:00">
+            <rapla:repeating type="weekly" end-date="2023-04-07"/>
+         </rapla:appointment>
+         <rapla:appointment id="a3e5c749-4a68-4e4a-a1f7-ad7793aaae0e" start-date="2023-04-09" start-time="13:00:00" end-date="2023-04-09" end-time="16:00:00">
+            <rapla:repeating type="weekly" end-date="2024-04-09"/>
+         </rapla:appointment>
+         <rapla:allocate idref="r2d6d605-4e01-49d4-9c2d-68d7c5f8033c"/>
+         <rapla:allocate idref="r3e1ceb0-b3b2-4266-a746-32075ffd27db"/>
+         <rapla:allocate idref="r6442ec8-b412-4667-a4d1-3be7e974d038"/>
+         <rapla:permission access="read"/>
+      </rapla:reservation>
+      <rapla:reservation id="e7142295-6e80-4fdd-959f-1de7b486bdcf" owner="ub640eb8-250f-4322-967a-401240dd6a2e" created-at="2004-01-05T00:00:00.000Z" last-changed="2023-03-12T15:00:35.732Z" last-changed-by="u5e1576a-bc70-4ddf-9943-8e6ad1c86100">
+         <dynatt:lecture>
+            <dynatt:name>lesson for veterans</dynatt:name>
+            <dynatt:difficulty>category[key='too-boring']</dynatt:difficulty>
+         </dynatt:lecture>
+         <rapla:appointment id="a35ed8e3-65a8-412d-b001-61feda95ee50" start-date="2023-04-07" start-time="21:00:00" end-date="2023-04-08" end-time="00:00:00">
+            <rapla:repeating type="weekly" end-date="2024-04-07"/>
+         </rapla:appointment>
+         <rapla:appointment id="abb5b908-f045-4bf7-afb0-f798cd56b289" start-date="2023-04-09" start-time="21:00:00" end-date="2023-04-10" end-time="00:00:00">
+            <rapla:repeating type="weekly" end-date="2024-04-09"/>
+            <rapla:allocate idref="r24ce517-4697-4e52-9917-ec000c84563c"/>
+         </rapla:appointment>
+         <rapla:appointment id="a2b7850d-dbb6-42f2-84f7-716f1e0dd833" start-date="2023-04-10" start-time="16:00:00" end-date="2023-04-10" end-time="20:00:00">
+            <rapla:repeating type="weekly" end-date="2023-06-22"/>
+            <rapla:allocate idref="r15a0bde-3f6d-42f4-89ff-8cf03e5161d4"/>
+            <rapla:allocate idref="r6442ec8-b412-4667-a4d1-3be7e974d038"/>
+         </rapla:appointment>
+         <rapla:permission access="read"/>
+      </rapla:reservation>
+      <rapla:reservation id="e8c84169-471f-451e-9f6d-34afb59f57c3" owner="ua890200-036e-427e-bb5c-ba50e1c0450f" created-at="2004-01-05T00:00:00.000Z" last-changed="2023-03-12T14:58:32.701Z" last-changed-by="u5e1576a-bc70-4ddf-9943-8e6ad1c86100">
+         <dynatt:lecture>
+            <dynatt:name>storys about the past</dynatt:name>
+            <dynatt:difficulty>category[key='too-boring']</dynatt:difficulty>
+         </dynatt:lecture>
+         <rapla:appointment id="ac11be6b-9ad3-41ef-9114-c37165c0c417" start-date="2023-04-08" start-time="11:00:00" end-date="2023-04-08" end-time="15:00:00">
+            <rapla:repeating type="weekly" end-date="2024-04-08"/>
+         </rapla:appointment>
+         <rapla:appointment id="a3cf27e0-9314-471f-aee2-1b91f57afd67" start-date="2022-04-10" start-time="11:00:00" end-date="2022-04-10" end-time="15:00:00">
+            <rapla:repeating type="weekly" end-date="2023-06-22"/>
+         </rapla:appointment>
+         <rapla:allocate idref="r15a0bde-3f6d-42f4-89ff-8cf03e5161d4"/>
+         <rapla:allocate idref="r24ce517-4697-4e52-9917-ec000c84563c"/>
+         <rapla:permission access="read"/>
+      </rapla:reservation>
+      <rapla:reservation id="e97a107b-27ce-4875-a95e-df5d60ba6f72" owner="u6f601b7-c855-445c-ab5b-182ab32a67c0" created-at="2004-01-05T00:00:00.000Z" last-changed="2023-03-12T15:01:15.169Z" last-changed-by="u5e1576a-bc70-4ddf-9943-8e6ad1c86100">
+         <dynatt:lecture>
+            <dynatt:name>brewing techniques</dynatt:name>
+            <dynatt:difficulty>category[key='too-hard']</dynatt:difficulty>
+         </dynatt:lecture>
+         <rapla:appointment id="a34e1816-667c-43f4-88e6-bbf34dd17d6e" start-date="2023-04-13" start-time="13:00:00" end-date="2023-04-13" end-time="17:00:00">
+            <rapla:repeating type="weekly" end-date="2024-06-22"/>
+            <rapla:allocate idref="r15a0bde-3f6d-42f4-89ff-8cf03e5161d4"/>
+         </rapla:appointment>
+         <rapla:appointment id="aba44600-d3b4-4d52-afcb-05ab7110e5d0" start-date="2023-04-08" start-time="13:00:00" end-date="2023-04-08" end-time="15:00:00">
+            <rapla:repeating type="weekly" end-date="2023-10-27"/>
+         </rapla:appointment>
+         <rapla:allocate idref="r2d6d605-4e01-49d4-9c2d-68d7c5f8033c"/>
+         <rapla:allocate idref="r161b171-3426-4be3-a3c9-a84d2be57e50"/>
+         <rapla:allocate idref="r3e1ceb0-b3b2-4266-a746-32075ffd27db"/>
+         <rapla:allocate idref="r6442ec8-b412-4667-a4d1-3be7e974d038"/>
+         <rapla:permission access="read"/>
+      </rapla:reservation>
+      <rapla:reservation id="e5717276-c6c7-4d52-8e1a-022da461f5ef" owner="uf49044c-1469-4699-8a66-5f46ec6c0a41" created-at="2004-01-05T00:00:00.000Z" last-changed="2023-03-12T14:56:26.765Z" last-changed-by="u5e1576a-bc70-4ddf-9943-8e6ad1c86100">
+         <dynatt:meeting>
+            <dynatt:name>Itchy and Scratchy</dynatt:name>
+            <dynatt:public>true</dynatt:public>
+         </dynatt:meeting>
+         <rapla:appointment id="a4c06c8e-68ff-433b-97e7-794a34aaf6d0" start-date="2022-04-09" start-time="14:00:00" end-date="2022-04-09" end-time="16:00:00">
+            <rapla:repeating type="weekly" end-date="2024-04-09"/>
+         </rapla:appointment>
+         <rapla:appointment id="abedd35b-07c8-4aa9-9252-5434fccdb5b8" start-date="2022-04-11" start-time="15:00:00" end-date="2022-04-11" end-time="17:00:00">
+            <rapla:repeating type="weekly" end-date="2024-04-11"/>
+         </rapla:appointment>
+         <rapla:allocate idref="re66e02b-2960-4b5a-99a8-c59ccb197b60"/>
+         <rapla:allocate idref="r26b7058-49d5-4bdf-8a5f-81a0cde6ebd2"/>
+         <rapla:permission access="read"/>
+      </rapla:reservation>
+      <rapla:reservation id="ee0a6c96-641d-45c6-aa3d-048ac6648386" owner="u6f601b7-c855-445c-ab5b-182ab32a67c0" created-at="2004-01-05T00:00:00.000Z" last-changed="2023-03-12T15:00:59.522Z" last-changed-by="u5e1576a-bc70-4ddf-9943-8e6ad1c86100">
+         <dynatt:meeting>
+            <dynatt:name>bowling</dynatt:name>
+            <dynatt:public>false</dynatt:public>
+         </dynatt:meeting>
+         <rapla:appointment id="a8d0e605-9ce1-4bea-9957-7cea7369946a" start-date="2023-04-07" start-time="17:00:00" end-date="2023-04-07" end-time="20:00:00">
+            <rapla:repeating type="weekly" end-date="2023-04-07"/>
+         </rapla:appointment>
+         <rapla:appointment id="ae3c0823-8343-420f-92e3-f4c7e135d67e" start-date="2023-04-12" start-time="17:00:00" end-date="2023-04-12" end-time="20:00:00">
+            <rapla:repeating type="weekly" end-date="2024-04-12"/>
+         </rapla:appointment>
+         <rapla:allocate idref="r2b28af8-c674-4f50-9121-543b454a4597"/>
+         <rapla:allocate idref="r24ce517-4697-4e52-9917-ec000c84563c"/>
+         <rapla:permission access="read"/>
+      </rapla:reservation>
+      <rapla:reservation id="eabcaaab-e4b5-43f6-a963-9d3c7ffbfe96" owner="uaf19a1d-9258-4e39-a852-7107a9356259" created-at="2004-01-05T00:00:00.000Z" last-changed="2023-03-12T14:59:58.073Z" last-changed-by="u5e1576a-bc70-4ddf-9943-8e6ad1c86100">
+         <dynatt:meeting>
+            <dynatt:name>jam session</dynatt:name>
+            <dynatt:public>true</dynatt:public>
+         </dynatt:meeting>
+         <rapla:appointment id="a738186c-a813-4a51-b60d-4af6ae72220a" start-date="2023-04-09" start-time="16:00:00" end-date="2023-04-09" end-time="18:00:00">
+            <rapla:repeating type="weekly" end-date="2024-06-22"/>
+         </rapla:appointment>
+         <rapla:allocate idref="r521686b-0ab4-4ff4-a56e-0bdf148e8d1d"/>
+         <rapla:permission access="read"/>
+      </rapla:reservation>
+      <rapla:reservation id="e801c293-2eba-4035-8f68-327f2f597432" owner="uaf19a1d-9258-4e39-a852-7107a9356259" created-at="2004-01-05T00:00:00.000Z" last-changed="2023-03-12T14:59:39.329Z" last-changed-by="u5e1576a-bc70-4ddf-9943-8e6ad1c86100">
+         <dynatt:lecture>
+            <dynatt:name>enviromental protection</dynatt:name>
+            <dynatt:difficulty>category[key='too-boring']</dynatt:difficulty>
+         </dynatt:lecture>
+         <rapla:appointment id="a74c371b-bfb8-43bf-b8eb-3f615a5fdaf6" start-date="2023-04-09" start-time="12:15:00" end-date="2023-04-09" end-time="13:45:00">
+            <rapla:repeating type="weekly" end-date="2024-04-09"/>
+            <rapla:allocate idref="r24ce517-4697-4e52-9917-ec000c84563c"/>
+         </rapla:appointment>
+         <rapla:appointment id="a8d14243-6b80-42cc-b0f4-04d03370fcf6" start-date="2023-04-04" start-time="13:30:00" end-date="2023-04-04" end-time="15:00:00">
+            <rapla:repeating type="weekly" end-date="2024-04-04"/>
+            <rapla:allocate idref="r521686b-0ab4-4ff4-a56e-0bdf148e8d1d"/>
+         </rapla:appointment>
+         <rapla:allocate idref="r2b28af8-c674-4f50-9121-543b454a4597"/>
+         <rapla:permission access="read"/>
+      </rapla:reservation>
+      <rapla:reservation id="ee459332-521c-494f-89dc-0709bc316951" owner="u5e1576a-bc70-4ddf-9943-8e6ad1c86100" created-at="2004-01-05T00:00:00.000Z" last-changed="2023-03-12T14:56:59.771Z" last-changed-by="u5e1576a-bc70-4ddf-9943-8e6ad1c86100">
+         <dynatt:lecture>
+            <dynatt:name>power planting</dynatt:name>
+            <dynatt:difficulty>category[key='too-easy']</dynatt:difficulty>
+         </dynatt:lecture>
+         <rapla:appointment id="a3bc6c00-e49e-4cc4-ab9a-1485ba84defe" start-date="2022-04-12" start-time="15:00:00" end-date="2022-04-12" end-time="17:00:00">
+            <rapla:repeating type="weekly" end-date="2023-04-12"/>
+         </rapla:appointment>
+         <rapla:appointment id="a0470bd0-f438-4c27-bb5b-42c1038b1a76" start-date="2022-10-18" start-time="10:00:00" end-date="2022-10-18" end-time="12:00:00">
+            <rapla:repeating type="weekly" end-date="2023-10-18"/>
+         </rapla:appointment>
+         <rapla:allocate idref="r161b171-3426-4be3-a3c9-a84d2be57e50"/>
+         <rapla:allocate idref="r521686b-0ab4-4ff4-a56e-0bdf148e8d1d"/>
+         <rapla:permission access="read"/>
+      </rapla:reservation>
+      <rapla:reservation id="e07e6bdd-782c-4573-b2a8-a82433b9dc5d" owner="ub640eb8-250f-4322-967a-401240dd6a2e" created-at="2004-01-05T00:00:00.000Z" last-changed="2023-03-12T14:58:46.796Z" last-changed-by="u5e1576a-bc70-4ddf-9943-8e6ad1c86100">
+         <dynatt:lecture>
+            <dynatt:name>Han Tan Bantan</dynatt:name>
+            <dynatt:difficulty>category[key='too-boring']</dynatt:difficulty>
+         </dynatt:lecture>
+         <rapla:appointment id="aab3604d-3125-4228-b690-2d872a3b8f13" start-date="2023-04-08" start-time="09:00:00" end-date="2023-04-08" end-time="10:45:00">
+            <rapla:repeating type="weekly" end-date="2024-04-08"/>
+            <rapla:allocate idref="r15a0bde-3f6d-42f4-89ff-8cf03e5161d4"/>
+         </rapla:appointment>
+         <rapla:appointment id="a30a9a22-86f8-4424-b661-0ac8520f5b6a" start-date="2023-04-10" start-time="09:00:00" end-date="2023-04-10" end-time="10:45:00">
+            <rapla:repeating type="weekly" end-date="2024-04-10"/>
+         </rapla:appointment>
+         <rapla:allocate idref="r24ce517-4697-4e52-9917-ec000c84563c"/>
+         <rapla:permission access="read"/>
+      </rapla:reservation>
+      <rapla:reservation id="e4cdb246-1cce-4259-9f4f-567602415063" owner="u5e1576a-bc70-4ddf-9943-8e6ad1c86100" created-at="2023-03-12T11:20:57.037Z" last-changed="2023-03-12T11:21:04.970Z" last-changed-by="u5e1576a-bc70-4ddf-9943-8e6ad1c86100">
+         <dynatt:meeting>
+            <dynatt:name>MMM - Monday Morning Meeting</dynatt:name>
+            <dynatt:public>true</dynatt:public>
+         </dynatt:meeting>
+         <rapla:appointment id="af930f43-50f6-4752-a0b7-5d7f68760500" start-date="2023-03-06" start-time="08:00:00" end-date="2023-03-06" end-time="10:00:00">
+            <rapla:repeating type="weekly" number="100"/>
+         </rapla:appointment>
+         <rapla:allocate idref="r6442ec8-b412-4667-a4d1-3be7e974d038"/>
+         <rapla:allocate idref="rea6c3e7-4be3-483a-9884-d24063c97540"/>
+         <rapla:allocate idref="rdebc5a1-a064-4a45-b5c4-d692387694f4"/>
+         <rapla:allocate idref="r2fc2327-b88a-4e7f-ada5-c700abefb05b"/>
+         <rapla:allocate idref="r2d6d605-4e01-49d4-9c2d-68d7c5f8033c"/>
+         <rapla:permission access="read"/>
+      </rapla:reservation>
+      <rapla:reservation id="eb4fe28c-b907-41ca-9f2f-075bbde0d9e8" owner="u5e1576a-bc70-4ddf-9943-8e6ad1c86100" created-at="2023-03-12T11:23:37.322Z" last-changed="2023-03-12T11:23:37.322Z" last-changed-by="u5e1576a-bc70-4ddf-9943-8e6ad1c86100">
+         <dynatt:meeting>
+            <dynatt:name>Resv. for Bibl.Service</dynatt:name>
+            <dynatt:public>false</dynatt:public>
+         </dynatt:meeting>
+         <rapla:appointment id="a5394847-d06c-4498-882e-33103db12e00" start-date="2023-03-06" start-time="08:00:00" end-date="2023-03-06" end-time="08:45:00">
+            <rapla:repeating type="daily" number="365"/>
+         </rapla:appointment>
+         <rapla:allocate idref="r15a0bde-3f6d-42f4-89ff-8cf03e5161d4"/>
+         <rapla:permission access="read"/>
+      </rapla:reservation>
+      <rapla:reservation id="e3b2ad77-0505-4ad1-a686-ac1a1ed76cc7" owner="u5e1576a-bc70-4ddf-9943-8e6ad1c86100" created-at="2023-03-12T13:39:03.863Z" last-changed="2023-03-12T13:39:34.832Z" last-changed-by="u5e1576a-bc70-4ddf-9943-8e6ad1c86100">
+         <dynatt:meeting>
+            <dynatt:name>test</dynatt:name>
+            <dynatt:public>false</dynatt:public>
+         </dynatt:meeting>
+         <rapla:appointment id="a786b595-87ab-4eb5-a4d4-82690d8f3196" start-date="2023-03-13" start-time="10:00:00" end-date="2023-03-13" end-time="11:00:00"/>
+         <rapla:allocate idref="r15a0bde-3f6d-42f4-89ff-8cf03e5161d4"/>
+         <rapla:allocate idref="rea6c3e7-4be3-483a-9884-d24063c97540"/>
+         <rapla:permission access="read"/>
+      </rapla:reservation>
+      <rapla:reservation id="e2a36bc1-a356-4d04-b7f6-4e615b41f3ff" owner="u5e1576a-bc70-4ddf-9943-8e6ad1c86100" created-at="2023-03-12T14:57:19.671Z" last-changed="2023-03-12T15:01:33.769Z" last-changed-by="u5e1576a-bc70-4ddf-9943-8e6ad1c86100">
+         <dynatt:meeting>
+            <dynatt:name>drinking at Moes</dynatt:name>
+            <dynatt:public>true</dynatt:public>
+         </dynatt:meeting>
+         <rapla:appointment id="a63df756-7563-4f0e-b409-79456126d530" start-date="2023-04-16" start-time="08:00:00" end-date="2023-04-16" end-time="12:00:00">
+            <rapla:repeating type="weekly" end-date="2024-06-22"/>
+         </rapla:appointment>
+         <rapla:appointment id="a0b98c50-9fb7-4519-8b5d-87dbdcada85c" start-date="2023-04-12" start-time="08:00:00" end-date="2023-04-12" end-time="12:00:00">
+            <rapla:repeating type="weekly" end-date="2024-04-12"/>
+         </rapla:appointment>
+         <rapla:allocate idref="r2d6d605-4e01-49d4-9c2d-68d7c5f8033c"/>
+         <rapla:allocate idref="r3e1ceb0-b3b2-4266-a746-32075ffd27db"/>
+         <rapla:allocate idref="r6442ec8-b412-4667-a4d1-3be7e974d038"/>
+         <rapla:permission access="read"/>
+      </rapla:reservation>
+   </rapla:reservations>
+
+   <rapla:importexports>
+   </rapla:importexports>
+</rapla:data>
