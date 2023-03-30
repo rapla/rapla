@@ -96,6 +96,7 @@ public abstract class AbstractCachableOperator implements StorageOperator
     private PeriodModelImpl periodModelHoliday;
 
     protected RaplaLock lockManager;
+    ThreadLocal<Map<String,Object>> threadContextMap = new ThreadLocal<>();
 
     public AbstractCachableOperator(Logger logger, RaplaResources i18n, RaplaLocale raplaLocale, Map<String, FunctionFactory> functionFactoryMap,
             Set<PermissionExtension> permissionExtensions, RaplaLock lockManager)
@@ -112,6 +113,17 @@ public abstract class AbstractCachableOperator implements StorageOperator
         this.permissionController = new PermissionController(permissionExtensions, this);
         cache = new LocalCache(permissionController);
     }
+
+    @Override
+    public Map<String, Object> getThreadContextMap() {
+        Map<String, Object> map = threadContextMap.get();
+        if ( map == null) {
+            map = new LinkedHashMap<>();
+            threadContextMap.set( map );
+        }
+        return map;
+    }
+
 
     public PermissionController getPermissionController()
     {

@@ -685,7 +685,8 @@ public class CalendarModelImpl implements CalendarSelectionModel
                 return e.getMessage();
             }
             final PermissionController permissionController = operator.getPermissionController();
-            EvalContext evalContext = new EvalContext(locale, annotationName, permissionController, user, Collections.singletonList(this));
+            Map<String, Object> environment = operator.getThreadContextMap();
+            EvalContext evalContext = new EvalContext(locale, annotationName, permissionController,environment, user, Collections.singletonList(this));
             String result = parsedTitle.formatName(evalContext);
             return result;
         }

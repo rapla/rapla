@@ -23,6 +23,7 @@ import org.rapla.client.swing.internal.SwingPopupContext;
 import org.rapla.components.iolayer.IOInterface;
 import org.rapla.entities.User;
 import org.rapla.entities.domain.ReservationStartComparator;
+import org.rapla.entities.dynamictype.DynamicTypeAnnotations;
 import org.rapla.facade.CalendarSelectionModel;
 import org.rapla.facade.client.ClientFacade;
 import org.rapla.framework.RaplaException;
@@ -140,8 +141,9 @@ public class CSVExportMenu extends RaplaGUIComponent implements ExportMenuExtens
             columnPlugins = columnPluginsPlusDate;
         }
         Map<RaplaTableColumn<T>, Integer> sortDirections = RaplaTableModel.getSortDirections(model,columnPlugins, tableViewName);
-        final List<T> rows = RaplaTableModel.sortRows(objects, sortDirections, fallBackComparator);
-        return RaplaTableModel.getCSV(columnPlugins, rows);
+        String contextAnnotationName = DynamicTypeAnnotations.KEY_NAME_FORMAT;
+        final List<T> rows = RaplaTableModel.sortRows(objects, sortDirections, fallBackComparator, contextAnnotationName);
+        return RaplaTableModel.getCSV(columnPlugins, rows, contextAnnotationName);
     }
 
     protected Promise<Void> exportFinished(Component topLevel) {

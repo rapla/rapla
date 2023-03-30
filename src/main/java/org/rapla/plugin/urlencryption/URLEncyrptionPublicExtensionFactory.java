@@ -97,15 +97,15 @@ public class URLEncyrptionPublicExtensionFactory implements PublishExtensionFact
             return panel;
         }
 
+        @Override
+        public void setAdress(String generator, String address) {
+
+        }
+
         public void mapOptionTo()
         {
             final String icalSelected = encryptionCheck.isSelected() ? "true" : "false";
             model.setOption(UrlEncryptionPlugin.URL_ENCRYPTION, icalSelected);
-        }
-
-        public JTextField getURLField()
-        {
-            return null;
         }
 
         public String getAddress(String filename, String generator)
@@ -162,9 +162,9 @@ public class URLEncyrptionPublicExtensionFactory implements PublishExtensionFact
             return true;
         }
 
-        public String getGenerator()
+        public String[] getGenerators()
         {
-            return null;
+            return new String[] {};
         }
 
     }

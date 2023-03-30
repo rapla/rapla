@@ -129,6 +129,9 @@ public class HTMLRaplaBlock extends RaplaBlock implements HTMLBlock {
             if ( value == null)
                 continue;
             url = Tools.getUrl(value);
+            if ( url != null) {
+                break;
+            }
         }
             buf.append( "<a href=\"");
             if ( url != null) {

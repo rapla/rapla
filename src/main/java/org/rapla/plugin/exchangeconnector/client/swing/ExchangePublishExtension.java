@@ -64,10 +64,9 @@ class ExchangePublishExtension extends RaplaGUIComponent implements PublishExten
 		 final String selected = checkbox.isSelected() ? "true" : "false";
          model.setOption( ExchangeConnectorPlugin.EXCHANGE_EXPORT, selected);
 	}
-	
-	public JTextField getURLField() 
-	{
-		return dummyURL;
+
+	@Override
+	public void setAdress(String generator, String address) {
 	}
 
 	public boolean hasAddressCreationStrategy() {
@@ -77,9 +76,10 @@ class ExchangePublishExtension extends RaplaGUIComponent implements PublishExten
 	public String getAddress(String filename, String generator) {
 		return null;
 	}
-	
-	public String getGenerator() {
-	     return "exchange";
+
+	@Override
+	public String[] getGenerators() {
+	     return new String[] {};
 	}
 	
 
