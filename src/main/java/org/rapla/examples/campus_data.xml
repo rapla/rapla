@@ -1,0 +1,1521 @@
+<?xml version="1.0" encoding="utf-8"?><!--*- coding: utf-8 -*-->
+<rapla:data xmlns:rapla="http://rapla.sourceforge.net/rapla"
+ xmlns:relax="http://relaxng.org/ns/structure/1.0"
+ xmlns:dynatt="http://rapla.sourceforge.net/dynamictype"
+ xmlns:ext="http://rapla.sourceforge.net/extension"
+ xmlns:doc="http://rapla.sourceforge.net/annotation"
+ version="1.2">
+   <rapla:categories>
+      <rapla:category created-at="2022-09-27T02:17:21.148Z" last-changed="2022-10-28T15:54:47.022Z" last-changed-by="u77daec1-c023-4193-b189-028294168c36" id="cfdb9315-a551-48ae-b838-12180433bf15" key="user-groups">
+         <doc:name lang="de">Benutzergruppen</doc:name>
+         <doc:name lang="en">user-groups</doc:name>
+         <rapla:category created-at="2022-09-27T02:17:21.148Z" last-changed="2022-09-27T02:17:21.148Z" id="c79e2bfa-aad0-48f4-a7f1-9c9fd32216b1" key="read-events-from-others">
+            <doc:name lang="de">Die Veranstaltungen anderer sehen</doc:name>
+            <doc:name lang="en">read-events-from-others</doc:name>
+         </rapla:category>
+         <rapla:category created-at="2022-09-27T02:17:21.148Z" last-changed="2022-09-27T02:17:21.148Z" id="cb4f30e4-f365-47e4-9ea7-6696b47d0a83" key="create-events">
+            <doc:name lang="de">Veranstaltungen anlegen</doc:name>
+            <doc:name lang="en">create-events</doc:name>
+         </rapla:category>
+         <rapla:category created-at="2022-10-28T15:54:23.439Z" last-changed="2022-10-28T15:54:23.439Z" last-changed-by="u77daec1-c023-4193-b189-028294168c36" id="c8b1f3da-e8be-44c7-9f12-c81eb1db2714" key="pl_math">
+            <doc:name lang="en">Planning_Math</doc:name>
+         </rapla:category>
+         <rapla:category created-at="2022-10-28T15:54:47.022Z" last-changed="2022-10-28T15:54:47.022Z" last-changed-by="u77daec1-c023-4193-b189-028294168c36" id="c5ddac7e-ed28-45de-b26a-59d90eab807e" key="pl_phys">
+            <doc:name lang="en">Planning_Phys</doc:name>
+         </rapla:category>
+      </rapla:category>
+   </rapla:categories>
+
+   <relax:grammar>
+      <relax:define name="rooms">
+         <relax:element name="dynatt:rooms" id="d6cc00de-886f-4db4-ac8d-ae431ff07deb" created-at="2022-09-27T02:17:21.149Z" last-changed="2022-10-28T13:57:41.691Z" last-changed-by="u77daec1-c023-4193-b189-028294168c36">
+            <doc:name lang="de">Raum</doc:name>
+            <doc:name lang="en">Rooms</doc:name>
+            <doc:name lang="fr">Salle</doc:name>
+            <doc:annotations>
+               <rapla:annotation key="nameformat">{name}</rapla:annotation>
+               <rapla:annotation key="classification-type">resource</rapla:annotation>
+               <rapla:annotation key="colors">rapla:automated</rapla:annotation>
+            </doc:annotations>
+            <relax:optional>
+               <relax:element name="name">
+                  <doc:name lang="de">Name</doc:name>
+                  <doc:name lang="en">name</doc:name>
+                  <relax:data type="string"/>
+               </relax:element>
+            </relax:optional>
+            <relax:optional>
+               <relax:element name="a1">
+                  <doc:name lang="en">Seats</doc:name>
+                  <relax:data type="int"/>
+               </relax:element>
+            </relax:optional>
+            <rapla:permission access="read_type"/>
+            <rapla:permission access="allocate_conflicts"/>
+         </relax:element>
+      </relax:define>
+
+      <relax:define name="lecturers">
+         <relax:element name="dynatt:lecturers" id="d187a69d-0625-4d58-b065-80e7c84154e5" created-at="2022-09-27T02:17:21.149Z" last-changed="2022-10-28T12:48:33.683Z" last-changed-by="u77daec1-c023-4193-b189-028294168c36">
+            <doc:name lang="de">Person</doc:name>
+            <doc:name lang="en">Lecturers</doc:name>
+            <doc:annotations>
+               <rapla:annotation key="nameformat">{surname} {firstname}</rapla:annotation>
+               <rapla:annotation key="classification-type">person</rapla:annotation>
+               <rapla:annotation key="colors">rapla:automated</rapla:annotation>
+            </doc:annotations>
+            <relax:optional>
+               <relax:element name="surname">
+                  <doc:name lang="de">Nachname</doc:name>
+                  <doc:name lang="en">surname</doc:name>
+                  <relax:data type="string"/>
+               </relax:element>
+            </relax:optional>
+            <relax:optional>
+               <relax:element name="firstname">
+                  <doc:name lang="de">Vorname</doc:name>
+                  <doc:name lang="en">firstname</doc:name>
+                  <relax:data type="string"/>
+               </relax:element>
+            </relax:optional>
+            <relax:optional>
+               <relax:element name="email">
+                  <doc:name lang="de">Email</doc:name>
+                  <doc:name lang="en">email</doc:name>
+                  <relax:data type="string"/>
+               </relax:element>
+            </relax:optional>
+            <rapla:permission access="read_type"/>
+            <rapla:permission access="allocate_conflicts"/>
+         </relax:element>
+      </relax:define>
+
+      <relax:define name="math_lecture">
+         <relax:element name="dynatt:math_lecture" id="de8f508d-5a83-4762-942e-1e3273549e0f" created-at="2022-09-27T02:17:21.149Z" last-changed="2023-03-04T10:37:46.992Z" last-changed-by="u77daec1-c023-4193-b189-028294168c36">
+            <doc:name lang="de">Veranstaltung</doc:name>
+            <doc:name lang="en">MATH Lecture</doc:name>
+            <doc:annotations>
+               <rapla:annotation key="classification-type">reservation</rapla:annotation>
+               <rapla:annotation key="tablecolumn_customColumn_1"></rapla:annotation>
+               <rapla:annotation key="tablecolumn_customColumn_2"></rapla:annotation>
+               <rapla:annotation key="colors">rapla:automated</rapla:annotation>
+               <rapla:annotation key="nameformat">{name}</rapla:annotation>
+               <rapla:annotation key="tablecolumn_end">{p-&gt;end(p)}</rapla:annotation>
+               <rapla:annotation key="tablecolumn_times">{p-&gt;times(p)}</rapla:annotation>
+               <rapla:annotation key="tablecolumn_start">{p-&gt;start(p)}</rapla:annotation>
+               <rapla:annotation key="tablecolumn_resources">Room: {p-&gt;filter(resources(p),r-&gt;not(isPerson(r)))}</rapla:annotation>
+               <rapla:annotation key="tablecolumn_persons">{p-&gt;filter(resources(p),r-&gt;isPerson(r))}</rapla:annotation>
+               <rapla:annotation key="tablecolumn_name">{p-&gt;name(p)}</rapla:annotation>
+               <rapla:annotation key="tablecolumn_lastchanged">{p-&gt;lastchanged(p)}</rapla:annotation>
+               <rapla:annotation key="tablecolumn_org.rapla.eventtimecalculator:duration">{p-&gt;org.rapla.eventtimecalculator:duration(p)}</rapla:annotation>
+            </doc:annotations>
+            <relax:optional>
+               <relax:element name="name">
+                  <doc:name lang="de">Veranstaltungsname</doc:name>
+                  <doc:name lang="en">eventname</doc:name>
+                  <relax:data type="string"/>
+               </relax:element>
+            </relax:optional>
+            <relax:optional>
+               <relax:element name="color">
+                  <doc:name lang="en">Color</doc:name>
+                  <doc:annotations>
+                     <rapla:annotation key="color">true</rapla:annotation>
+                     <rapla:annotation key="edit-view">additional-view</rapla:annotation>
+                  </doc:annotations>
+                  <relax:data type="string"/>
+                  <rapla:default>#ccffff</rapla:default>
+               </relax:element>
+            </relax:optional>
+            <rapla:permission access="read_type"/>
+            <rapla:permission group="category[key='read-events-from-others']" access="read"/>
+            <rapla:permission group="category[key='pl_math']" access="create"/>
+            <rapla:permission group="category[key='pl_math']" access="edit"/>
+         </relax:element>
+      </relax:define>
+
+      <relax:define name="course">
+         <relax:element name="dynatt:course" id="d968ccb1-773b-4012-8443-c6b1728f911f" created-at="2022-10-28T13:57:06.437Z" last-changed="2022-10-28T13:57:06.437Z" last-changed-by="u77daec1-c023-4193-b189-028294168c36">
+            <doc:name lang="de">Kurs</doc:name>
+            <doc:name lang="en">Course</doc:name>
+            <doc:name lang="fr">Cours</doc:name>
+            <doc:annotations>
+               <rapla:annotation key="nameformat">{name}</rapla:annotation>
+               <rapla:annotation key="classification-type">resource</rapla:annotation>
+               <rapla:annotation key="colors">rapla:automated</rapla:annotation>
+            </doc:annotations>
+            <relax:optional>
+               <relax:element name="name">
+                  <doc:name lang="en">Name</doc:name>
+                  <relax:data type="string"/>
+               </relax:element>
+            </relax:optional>
+            <rapla:permission access="read_type"/>
+            <rapla:permission access="allocate_conflicts"/>
+         </relax:element>
+      </relax:define>
+
+      <relax:define name="staff">
+         <relax:element name="dynatt:staff" id="deb732bc-0c31-4d28-83a9-b4494b8eea2f" created-at="2022-10-28T13:57:57.022Z" last-changed="2023-03-04T11:24:11.013Z" last-changed-by="u77daec1-c023-4193-b189-028294168c36">
+            <doc:name lang="en">Staff</doc:name>
+            <doc:annotations>
+               <rapla:annotation key="nameformat">{firstname} {surname}</rapla:annotation>
+               <rapla:annotation key="classification-type">person</rapla:annotation>
+               <rapla:annotation key="colors">rapla:automated</rapla:annotation>
+            </doc:annotations>
+            <relax:optional>
+               <relax:element name="surname">
+                  <doc:name lang="de">Nachname</doc:name>
+                  <doc:name lang="en">surname</doc:name>
+                  <relax:data type="string"/>
+               </relax:element>
+            </relax:optional>
+            <relax:optional>
+               <relax:element name="firstname">
+                  <doc:name lang="en">First name</doc:name>
+                  <relax:data type="string"/>
+               </relax:element>
+            </relax:optional>
+            <relax:optional>
+               <relax:element name="email">
+                  <doc:name lang="en">Email</doc:name>
+                  <relax:data type="string"/>
+               </relax:element>
+            </relax:optional>
+            <rapla:permission access="read_type"/>
+            <rapla:permission access="allocate_conflicts"/>
+         </relax:element>
+      </relax:define>
+
+      <relax:define name="math_examination">
+         <relax:element name="dynatt:math_examination" id="d54c9b98-da1f-4de4-a04b-d1aa2f5deb6a" created-at="2022-11-05T17:39:27.025Z" last-changed="2023-03-04T09:44:25.363Z" last-changed-by="u77daec1-c023-4193-b189-028294168c36">
+            <doc:name lang="en">MATH Examination</doc:name>
+            <doc:annotations>
+               <rapla:annotation key="classification-type">reservation</rapla:annotation>
+               <rapla:annotation key="tablecolumn_customColumn_1"></rapla:annotation>
+               <rapla:annotation key="tablecolumn_customColumn_2"></rapla:annotation>
+               <rapla:annotation key="colors">color</rapla:annotation>
+               <rapla:annotation key="nameformat">{name}</rapla:annotation>
+               <rapla:annotation key="tablecolumn_end">{p-&gt;end(p)}</rapla:annotation>
+               <rapla:annotation key="tablecolumn_times">{p-&gt;times(p)}</rapla:annotation>
+               <rapla:annotation key="tablecolumn_start">{p-&gt;start(p)}</rapla:annotation>
+               <rapla:annotation key="tablecolumn_resources">{p-&gt;filter(resources(p),r-&gt;not(isPerson(r)))}</rapla:annotation>
+               <rapla:annotation key="tablecolumn_persons">{p-&gt;filter(resources(p),r-&gt;isPerson(r))}</rapla:annotation>
+               <rapla:annotation key="tablecolumn_name">{p-&gt;name(p)}</rapla:annotation>
+               <rapla:annotation key="tablecolumn_lastchanged">{p-&gt;lastchanged(p)}</rapla:annotation>
+               <rapla:annotation key="tablecolumn_org.rapla.eventtimecalculator:duration">{p-&gt;org.rapla.eventtimecalculator:duration(p)}</rapla:annotation>
+            </doc:annotations>
+            <relax:optional>
+               <relax:element name="name">
+                  <doc:name lang="de">Veranstaltungsname</doc:name>
+                  <doc:name lang="en">eventname</doc:name>
+                  <relax:data type="string"/>
+               </relax:element>
+            </relax:optional>
+            <relax:optional>
+               <relax:element name="color">
+                  <doc:name lang="en">Color</doc:name>
+                  <doc:annotations>
+                     <rapla:annotation key="color">true</rapla:annotation>
+                     <rapla:annotation key="edit-view">additional-view</rapla:annotation>
+                  </doc:annotations>
+                  <relax:data type="string"/>
+                  <rapla:default>#ffcccc</rapla:default>
+               </relax:element>
+            </relax:optional>
+            <rapla:permission access="read_type"/>
+            <rapla:permission group="category[key='read-events-from-others']" access="read"/>
+            <rapla:permission group="category[key='pl_math']" access="create"/>
+            <rapla:permission group="category[key='pl_math']" access="admin"/>
+         </relax:element>
+      </relax:define>
+
+      <relax:define name="phys_lecture">
+         <relax:element name="dynatt:phys_lecture" id="d61fd5cd-5c5a-4836-8efa-94fd25ac6f86" created-at="2023-03-04T09:51:09.962Z" last-changed="2023-03-04T09:53:02.597Z" last-changed-by="u77daec1-c023-4193-b189-028294168c36">
+            <doc:name lang="en">PHYS Lecture</doc:name>
+            <doc:annotations>
+               <rapla:annotation key="nameformat">{name}</rapla:annotation>
+               <rapla:annotation key="classification-type">reservation</rapla:annotation>
+               <rapla:annotation key="colors">color</rapla:annotation>
+            </doc:annotations>
+            <relax:optional>
+               <relax:element name="name">
+                  <doc:name lang="de">Veranstaltungsname</doc:name>
+                  <doc:name lang="en">eventname</doc:name>
+                  <relax:data type="string"/>
+               </relax:element>
+            </relax:optional>
+            <relax:optional>
+               <relax:element name="color">
+                  <doc:name lang="en">Color</doc:name>
+                  <doc:annotations>
+                     <rapla:annotation key="color">true</rapla:annotation>
+                     <rapla:annotation key="edit-view">no-view</rapla:annotation>
+                  </doc:annotations>
+                  <relax:data type="string"/>
+                  <rapla:default>#ccffff</rapla:default>
+               </relax:element>
+            </relax:optional>
+            <rapla:permission access="read_type"/>
+            <rapla:permission group="category[key='read-events-from-others']" access="read"/>
+            <rapla:permission group="category[key='pl_phys']" access="create"/>
+            <rapla:permission group="category[key='pl_phys']" access="edit"/>
+         </relax:element>
+      </relax:define>
+
+      <relax:define name="phys_exam">
+         <relax:element name="dynatt:phys_exam" id="d38f9d97-d088-4679-bb05-6505f3b80148" created-at="2023-03-04T10:03:09.087Z" last-changed="2023-03-04T10:03:09.087Z" last-changed-by="u77daec1-c023-4193-b189-028294168c36">
+            <doc:name lang="en">PHYS Exam.</doc:name>
+            <doc:annotations>
+               <rapla:annotation key="classification-type">reservation</rapla:annotation>
+               <rapla:annotation key="tablecolumn_customColumn_1"></rapla:annotation>
+               <rapla:annotation key="tablecolumn_customColumn_2"></rapla:annotation>
+               <rapla:annotation key="colors">color</rapla:annotation>
+               <rapla:annotation key="nameformat">{name}</rapla:annotation>
+               <rapla:annotation key="tablecolumn_end">{p-&gt;end(p)}</rapla:annotation>
+               <rapla:annotation key="tablecolumn_times">{p-&gt;times(p)}</rapla:annotation>
+               <rapla:annotation key="tablecolumn_start">{p-&gt;start(p)}</rapla:annotation>
+               <rapla:annotation key="tablecolumn_resources">{p-&gt;filter(resources(p),r-&gt;not(isPerson(r)))}</rapla:annotation>
+               <rapla:annotation key="tablecolumn_persons">{p-&gt;filter(resources(p),r-&gt;isPerson(r))}</rapla:annotation>
+               <rapla:annotation key="tablecolumn_name">{p-&gt;name(p)}</rapla:annotation>
+               <rapla:annotation key="tablecolumn_lastchanged">{p-&gt;lastchanged(p)}</rapla:annotation>
+               <rapla:annotation key="tablecolumn_org.rapla.eventtimecalculator:duration">{p-&gt;org.rapla.eventtimecalculator:duration(p)}</rapla:annotation>
+            </doc:annotations>
+            <relax:optional>
+               <relax:element name="name">
+                  <doc:name lang="de">Veranstaltungsname</doc:name>
+                  <doc:name lang="en">eventname</doc:name>
+                  <relax:data type="string"/>
+               </relax:element>
+            </relax:optional>
+            <relax:optional>
+               <relax:element name="color">
+                  <doc:name lang="en">Color</doc:name>
+                  <doc:annotations>
+                     <rapla:annotation key="color">true</rapla:annotation>
+                     <rapla:annotation key="edit-view">no-view</rapla:annotation>
+                  </doc:annotations>
+                  <relax:data type="string"/>
+                  <rapla:default>#ffcccc</rapla:default>
+               </relax:element>
+            </relax:optional>
+            <rapla:permission access="read_type"/>
+            <rapla:permission group="category[key='read-events-from-others']" access="read"/>
+            <rapla:permission group="category[key='pl_phys']" access="create"/>
+            <rapla:permission group="category[key='pl_phys']" access="edit"/>
+         </relax:element>
+      </relax:define>
+
+      <relax:start>
+         <relax:choice>
+            <relax:ref name="rooms"/>
+            <relax:ref name="lecturers"/>
+            <relax:ref name="math_lecture"/>
+            <relax:ref name="course"/>
+            <relax:ref name="staff"/>
+            <relax:ref name="math_examination"/>
+            <relax:ref name="phys_lecture"/>
+            <relax:ref name="phys_exam"/>
+         </relax:choice>
+      </relax:start>
+   </relax:grammar>
+
+   <rapla:preferences>
+      <rapla:entry key="org.rapla.plugin.jndi.newusergroups">
+         <rapla:map>
+         </rapla:map>
+      </rapla:entry>
+      <rapla:entry key="org.rapla.calendarview">
+         <rapla:config>
+            <calendar-options>
+               <color>reservations_and_resources</color>
+               <worktime>8-18</worktime>
+               <exceptions-visible>false</exceptions-visible>
+               <rows-per-hour>4</rows-per-hour>
+               <exclude-days>7,1</exclude-days>
+               <days-in-weekview>7</days-in-weekview>
+               <first-day-of-week>2</first-day-of-week>
+               <minimum-block-width>0</minimum-block-width>
+               <non-filtered-events>transparent</non-filtered-events>
+            </calendar-options>
+         </rapla:config>
+      </rapla:entry>
+      <rapla:entry key="org.rapla.plugin.archiver.server">
+         <rapla:config>
+            <config/>
+         </rapla:config>
+      </rapla:entry>
+      <rapla:entry key="org.rapla.plugin.exchangeconnector.server.Config">
+         <rapla:config>
+            <config>
+               <ews_fqdn>https://myexchange.com</ews_fqdn>
+               <exchange.default.category>RAPLA</exchange.default.category>
+               <exch-sync-past>30</exch-sync-past>
+               <exchange.timezone>W. Europe Standard Time</exchange.timezone>
+            </config>
+         </rapla:config>
+      </rapla:entry>
+      <rapla:entry key="org.rapla.plugin.exchangeconnector.config">
+         <rapla:config>
+            <clientConfig>
+               <exchange_connector_enabled_by_admin>false</exchange_connector_enabled_by_admin>
+            </clientConfig>
+         </rapla:config>
+      </rapla:entry>
+      <rapla:entry key="org.rapla.plugin.export2ical.server.Config">
+         <rapla:config>
+            <config>
+               <days_before>100</days_before>
+               <days_after>400</days_after>
+               <global_interval>true</global_interval>
+               <last_modified_intervall>5</last_modified_intervall>
+               <org.rapla.plugin.export2ical.enabled>false</org.rapla.plugin.export2ical.enabled>
+               <export_attendees>false</export_attendees>
+               <export_attendees_email_attribute>email</export_attendees_email_attribute>
+               <export_attendees_participation_status>TENTATIVE</export_attendees_participation_status>
+            </config>
+         </rapla:config>
+      </rapla:entry>
+      <rapla:entry key="org.rapla.plugin.jndi.server.config">
+         <rapla:config>
+            <config connectionName="uid=admin,ou=system" connectionPassword="secret" connectionURL="ldap://localhost:10389" contextFactory="com.sun.jndi.ldap.LdapCtxFactory" userBase="dc=example,dc=com" userCn="cn" userMail="mail" userPassword="" userSearch="(uid={0})"/>
+         </rapla:config>
+      </rapla:entry>
+      <rapla:entry key="org.rapla.plugin.mail.server.Config">
+         <rapla:config>
+            <config>
+               <smtp-port>25</smtp-port>
+               <smtp-host>localhost</smtp-host>
+               <ssl>false</ssl>
+               <startTls>false</startTls>
+               <username/>
+               <password/>
+            </config>
+         </rapla:config>
+      </rapla:entry>
+      <rapla:entry key="org.rapla.plugin.tableview.config">
+         <rapla:config>
+            <config>
+               <column>
+                  <key>name</key>
+                  <defaultValue>{p-&gt;name(p)}</defaultValue>
+                  <type>string</type>
+                  <name>
+                     <mapLocales>
+                        <entry>
+                           <key>cs</key>
+                           <value>Jméno</value>
+                        </entry>
+                        <entry>
+                           <key>en</key>
+                           <value>Name</value>
+                        </entry>
+                        <entry>
+                           <key>es</key>
+                           <value>Nombre</value>
+                        </entry>
+                        <entry>
+                           <key>fi</key>
+                           <value>Nimi</value>
+                        </entry>
+                        <entry>
+                           <key>fr</key>
+                           <value>Nom</value>
+                        </entry>
+                        <entry>
+                           <key>nl</key>
+                           <value>Naam</value>
+                        </entry>
+                        <entry>
+                           <key>pl</key>
+                           <value>Nazwa</value>
+                        </entry>
+                        <entry>
+                           <key>pt</key>
+                           <value>Nome</value>
+                        </entry>
+                     </mapLocales>
+                  </name>
+               </column>
+               <column>
+                  <key>start</key>
+                  <defaultValue>{p-&gt;start(p)}</defaultValue>
+                  <type>datetime</type>
+                  <name>
+                     <mapLocales>
+                        <entry>
+                           <key>cs</key>
+                           <value>Počáteční datum</value>
+                        </entry>
+                        <entry>
+                           <key>de</key>
+                           <value>Beginn</value>
+                        </entry>
+                        <entry>
+                           <key>en</key>
+                           <value>Start</value>
+                        </entry>
+                        <entry>
+                           <key>es</key>
+                           <value>Inicio</value>
+                        </entry>
+                        <entry>
+                           <key>fi</key>
+                           <value>Aloitus</value>
+                        </entry>
+                        <entry>
+                           <key>fr</key>
+                           <value>Début</value>
+                        </entry>
+                        <entry>
+                           <key>pl</key>
+                           <value>Początek</value>
+                        </entry>
+                        <entry>
+                           <key>pt</key>
+                           <value>Início</value>
+                        </entry>
+                     </mapLocales>
+                  </name>
+               </column>
+               <column>
+                  <key>lastchanged</key>
+                  <defaultValue>{p-&gt;lastchanged(p)}</defaultValue>
+                  <type>datetime</type>
+                  <name>
+                     <mapLocales>
+                        <entry>
+                           <key>cs</key>
+                           <value>Naposledy změněno</value>
+                        </entry>
+                        <entry>
+                           <key>de</key>
+                           <value>zuletzt geändert am</value>
+                        </entry>
+                        <entry>
+                           <key>en</key>
+                           <value>Last changed</value>
+                        </entry>
+                        <entry>
+                           <key>es</key>
+                           <value>Última modificación el</value>
+                        </entry>
+                        <entry>
+                           <key>fi</key>
+                           <value>Viimeksi muutettu</value>
+                        </entry>
+                        <entry>
+                           <key>fr</key>
+                           <value>Dernière modification le</value>
+                        </entry>
+                        <entry>
+                           <key>nl</key>
+                           <value>Aangepast op</value>
+                        </entry>
+                        <entry>
+                           <key>pl</key>
+                           <value>Ostatnia zmiana</value>
+                        </entry>
+                        <entry>
+                           <key>pt</key>
+                           <value>Modificado pela última vez</value>
+                        </entry>
+                     </mapLocales>
+                  </name>
+               </column>
+               <column>
+                  <key>end</key>
+                  <defaultValue>{p-&gt;end(p)}</defaultValue>
+                  <type>datetime</type>
+                  <name>
+                     <mapLocales>
+                        <entry>
+                           <key>cs</key>
+                           <value>Konec</value>
+                        </entry>
+                        <entry>
+                           <key>de</key>
+                           <value>Ende</value>
+                        </entry>
+                        <entry>
+                           <key>en</key>
+                           <value>End</value>
+                        </entry>
+                        <entry>
+                           <key>es</key>
+                           <value>Fin</value>
+                        </entry>
+                        <entry>
+                           <key>fi</key>
+                           <value>Loppu</value>
+                        </entry>
+                        <entry>
+                           <key>fr</key>
+                           <value>Fin</value>
+                        </entry>
+                        <entry>
+                           <key>nl</key>
+                           <value>Einde</value>
+                        </entry>
+                        <entry>
+                           <key>pl</key>
+                           <value>Koniec</value>
+                        </entry>
+                        <entry>
+                           <key>pt</key>
+                           <value>Fim</value>
+                        </entry>
+                     </mapLocales>
+                  </name>
+               </column>
+               <column>
+                  <key>resources</key>
+                  <defaultValue>{p-&gt;filter(resources(p),r-&gt;not(isPerson(r)))}</defaultValue>
+                  <type>string</type>
+                  <name>
+                     <mapLocales>
+                        <entry>
+                           <key>cs</key>
+                           <value>Prostředky</value>
+                        </entry>
+                        <entry>
+                           <key>de</key>
+                           <value>Ressourcen</value>
+                        </entry>
+                        <entry>
+                           <key>en</key>
+                           <value>Resources</value>
+                        </entry>
+                        <entry>
+                           <key>es</key>
+                           <value>Recursos</value>
+                        </entry>
+                        <entry>
+                           <key>fi</key>
+                           <value>Resurssit</value>
+                        </entry>
+                        <entry>
+                           <key>fr</key>
+                           <value>Ressources</value>
+                        </entry>
+                        <entry>
+                           <key>nl</key>
+                           <value>Middelen</value>
+                        </entry>
+                        <entry>
+                           <key>pl</key>
+                           <value>Zasoby</value>
+                        </entry>
+                        <entry>
+                           <key>pt</key>
+                           <value>Recursos</value>
+                        </entry>
+                     </mapLocales>
+                  </name>
+               </column>
+               <column>
+                  <key>persons</key>
+                  <defaultValue>{p-&gt;filter(resources(p),r-&gt;isPerson(r))}</defaultValue>
+                  <type>string</type>
+                  <name>
+                     <mapLocales>
+                        <entry>
+                           <key>cs</key>
+                           <value>Osoby</value>
+                        </entry>
+                        <entry>
+                           <key>de</key>
+                           <value>Personen</value>
+                        </entry>
+                        <entry>
+                           <key>en</key>
+                           <value>Persons</value>
+                        </entry>
+                        <entry>
+                           <key>es</key>
+                           <value>Personas</value>
+                        </entry>
+                        <entry>
+                           <key>fi</key>
+                           <value>Henkilöt</value>
+                        </entry>
+                        <entry>
+                           <key>fr</key>
+                           <value>Personnes</value>
+                        </entry>
+                        <entry>
+                           <key>nl</key>
+                           <value>Personen</value>
+                        </entry>
+                        <entry>
+                           <key>pl</key>
+                           <value>Osoby</value>
+                        </entry>
+                        <entry>
+                           <key>pt</key>
+                           <value>Pessoas</value>
+                        </entry>
+                     </mapLocales>
+                  </name>
+               </column>
+               <column>
+                  <key>times</key>
+                  <defaultValue>{p-&gt;times(p)}</defaultValue>
+                  <type>string</type>
+                  <name>
+                     <mapLocales>
+                        <entry>
+                           <key>de</key>
+                           <value>Zeiten</value>
+                        </entry>
+                        <entry>
+                           <key>en</key>
+                           <value>times</value>
+                        </entry>
+                        <entry>
+                           <key>es</key>
+                           <value>Tiempos</value>
+                        </entry>
+                        <entry>
+                           <key>fr</key>
+                           <value>Heures</value>
+                        </entry>
+                     </mapLocales>
+                  </name>
+               </column>
+               <column>
+                  <key>customColumn_1</key>
+                  <defaultValue/>
+                  <type>string</type>
+                  <name>
+                     <mapLocales>
+                        <entry>
+                           <key>de</key>
+                           <value>unbenannte Spalte</value>
+                        </entry>
+                        <entry>
+                           <key>en</key>
+                           <value>unnamed column</value>
+                        </entry>
+                     </mapLocales>
+                  </name>
+               </column>
+               <column>
+                  <key>customColumn_2</key>
+                  <defaultValue/>
+                  <type>string</type>
+                  <name>
+                     <mapLocales>
+                        <entry>
+                           <key>de</key>
+                           <value>unbenannte Spalte</value>
+                        </entry>
+                        <entry>
+                           <key>en</key>
+                           <value>unnamed column</value>
+                        </entry>
+                     </mapLocales>
+                  </name>
+               </column>
+               <column>
+                  <key>org.rapla.eventtimecalculator:duration</key>
+                  <defaultValue>{p-&gt;org.rapla.eventtimecalculator:duration(p)}</defaultValue>
+                  <type>string</type>
+                  <name>
+                     <mapLocales>
+                        <entry>
+                           <key>cs</key>
+                           <value>duration</value>
+                        </entry>
+                        <entry>
+                           <key>de</key>
+                           <value>Dauer</value>
+                        </entry>
+                        <entry>
+                           <key>en</key>
+                           <value>duration</value>
+                        </entry>
+                        <entry>
+                           <key>es</key>
+                           <value>duration</value>
+                        </entry>
+                        <entry>
+                           <key>fi</key>
+                           <value>duration</value>
+                        </entry>
+                        <entry>
+                           <key>fr</key>
+                           <value>duration</value>
+                        </entry>
+                        <entry>
+                           <key>nl</key>
+                           <value>duur</value>
+                        </entry>
+                        <entry>
+                           <key>pl</key>
+                           <value>duration</value>
+                        </entry>
+                        <entry>
+                           <key>pt</key>
+                           <value>duration</value>
+                        </entry>
+                     </mapLocales>
+                  </name>
+               </column>
+               <views>
+                  <entry>
+                     <key>events</key>
+                     <name>
+                        <mapLocales>
+                           <entry>
+                              <key>cs</key>
+                              <value>Události</value>
+                           </entry>
+                           <entry>
+                              <key>de</key>
+                              <value>Veranstaltungen</value>
+                           </entry>
+                           <entry>
+                              <key>en</key>
+                              <value>Events</value>
+                           </entry>
+                           <entry>
+                              <key>es</key>
+                              <value>Eventos</value>
+                           </entry>
+                           <entry>
+                              <key>fi</key>
+                              <value>Tapahtumat</value>
+                           </entry>
+                           <entry>
+                              <key>fr</key>
+                              <value>Événements</value>
+                           </entry>
+                           <entry>
+                              <key>nl</key>
+                              <value>Reservaties</value>
+                           </entry>
+                           <entry>
+                              <key>pl</key>
+                              <value>Wydarzenia</value>
+                           </entry>
+                           <entry>
+                              <key>pt</key>
+                              <value>Eventos</value>
+                           </entry>
+                        </mapLocales>
+                     </name>
+                     <contentDefinition>{p-&gt;events(p)}</contentDefinition>
+                     <value>
+                        <item>name</item>
+                        <item>start</item>
+                        <item>lastchanged</item>
+                     </value>
+                  </entry>
+                  <entry>
+                     <key>appointments</key>
+                     <name>
+                        <mapLocales>
+                           <entry>
+                              <key>cs</key>
+                              <value>Rezervace</value>
+                           </entry>
+                           <entry>
+                              <key>de</key>
+                              <value>Termine</value>
+                           </entry>
+                           <entry>
+                              <key>en</key>
+                              <value>Appointments</value>
+                           </entry>
+                           <entry>
+                              <key>es</key>
+                              <value>Citas</value>
+                           </entry>
+                           <entry>
+                              <key>fi</key>
+                              <value>Ajanvaraukset</value>
+                           </entry>
+                           <entry>
+                              <key>fr</key>
+                              <value>Réservations</value>
+                           </entry>
+                           <entry>
+                              <key>nl</key>
+                              <value>Afspraken</value>
+                           </entry>
+                           <entry>
+                              <key>pl</key>
+                              <value>Terminy</value>
+                           </entry>
+                           <entry>
+                              <key>pt</key>
+                              <value>Compromissos</value>
+                           </entry>
+                        </mapLocales>
+                     </name>
+                     <contentDefinition>{p-&gt;appointmentBlocks(p)}</contentDefinition>
+                     <value>
+                        <item>name</item>
+                        <item>start</item>
+                        <item>end</item>
+                        <item>resources</item>
+                        <item>persons</item>
+                     </value>
+                  </entry>
+                  <entry>
+                     <key>appointments_per_day</key>
+                     <name>
+                        <mapLocales>
+                           <entry>
+                              <key>de</key>
+                              <value>Termine pro Tag</value>
+                           </entry>
+                           <entry>
+                              <key>en</key>
+                              <value>appointments per day</value>
+                           </entry>
+                           <entry>
+                              <key>es</key>
+                              <value>Citas per día</value>
+                           </entry>
+                        </mapLocales>
+                     </name>
+                     <contentDefinition>{p-&gt;appointmentBlocks(p)}</contentDefinition>
+                     <value>
+                        <item>times</item>
+                        <item>name</item>
+                        <item>resources</item>
+                        <item>persons</item>
+                     </value>
+                  </entry>
+               </views>
+            </config>
+         </rapla:config>
+      </rapla:entry>
+      <rapla:entry key="org.rapla.plugin.eventtimecalculator">
+         <rapla:config>
+            <eventtime>
+               <interval_number>0</interval_number>
+               <break_number>0</break_number>
+               <time_unit>45</time_unit>
+               <time_format>{0},{1}</time_format>
+            </eventtime>
+         </rapla:config>
+      </rapla:entry>
+      <rapla:entry key="org.rapla.crypto.server.privateKey" value="MIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCRwOjkKOlTNPOVX1eXzXzxzZj5zkp8ggAwHrFVsCp9D_j9LsjuekoTHsk9k4edyzMdHIC-_DhywJCxHcEFQzytVklSKN3OqjuxFB-tOodRch2y57fEi1zBFL8mGGgf1zo_7ampmGCqDfUW4Q3wMsb-BsaJNZvNsMEaaGvJQquUCOjtcj19DVhgnY0tzS0xLvH67SoNw8nd0-Vf6_62NRa65-NwrajZKKM1yNVbk0UIo3F_QhxCDLd257f7e8tmRGSiLPzAK3H00naBbw8JU6rs_HrY2fVAS7xam2kQcXCn1u2qgSF7chixgvBs1hEHFM9qKybl0Y6QxYgCxye_ym51AgMBAAECggEAMz9T450q5NGyb6vVPY_HxbFXf0X0VLDU5hZ0nb9SQSTTlBnWFluzHePuOBNeVLH0p-C0t_Iw2tAwT8Y5buNEO2IiZ5vs2VRrpoh_1sXEfHOWU6g7qgSiOVVVHEzql39ygLXMuM_V9RTxPvkkkHcaFolFV0sdHAZw7xsWAu7JK0Qq3ecW1n-EzMqFHfyi5FkO9Ijkf6CYdC13Glq87WWP_5Kod3VUDn1vGlkD3QdfSNZyUdhamtAiyrztic_Co-ynNd95amAoneCW3kH318LFvD9rGn1jKA7pfgrpHndM0_sV-1XfN1TSlpzqtenu6cJjDEhzcWWSF-QPWffTTUDcJQKBgQDEu2Frl73m9A-wPWDcLs2AQ6n_LmPubu3xMsOb7FTHZ3uKXjbJyVXnuhcHHN4zgAs__9cHaoObr5RRZHsjmBBQcWza2i7XeIF485wIBiEKGLPhuAIl0j3MvU5wTXgVJR6pvmxFpCOX3_P-RMrCwwF2eMJ8dqoNBJvwDwphXzNx1wKBgQC9qef4-Re5i2byaJOt6JLNEz2wpjyEM9-eQZnvRM9w5dSIr9XDrbJ5cyOIbmuyYICx1VU8HNzeYHyaeZHakay6c6rjNU2o30pCxNdZEkzRvq9H6BQKKWg0_qwipA_zhWMWgyb-pTZ2eHyRIzn9jsBcQeG4PsWGQ5TSRDPmnd5wkwKBgHleHFDTMU28_by9cPcFTLQ3ijWqee4Ls3Fc3v5fg0HtXnLTgrtkIUIvNKunrJFbChW2kQK7PGwcmsTH14vy8QWfpAc0GTfG2SE0MOtmVJW0_axf57tLg-K-Wxi_QjjRSKRxnLwt8eNtP0p7SBd1VH6xK1K7plcXo9gqfz3pDITLAoGBAIFb0C7c3hScAsQVFZyIww-CLxI734yfwMY0oiQyf3XWG8Z6f0buQotZP4P_JA9OiJhCE9djLDW0A2hswFEeCHxHBeff5C7o1MKDdQl4VNK9xtk5bemcYkm65XbfBU4nzPR-0WrfDi1xciyfpR7ObV6_RI-gqKIxl-BtyiRhymRnAoGAMHgaOe6wulGdA8D1oNcjW1vu46bLW-S1GhT6kHHJ8kFzCq3cC-QsxCvltfTV7jHEwC8J-gNnTbjyp4RCknOdXxGBdo0901Ux2JoTDvy2froJIswTY8odXoGgolp1T6KmC3hoHX80kAPhdfcEv3KKC5JVbuwLitxOllamN3DseoA"/>
+      <rapla:entry key="org.rapla.crypto.publicKey" value="MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAkcDo5CjpUzTzlV9Xl8188c2Y-c5KfIIAMB6xVbAqfQ_4_S7I7npKEx7JPZOHncszHRyAvvw4csCQsR3BBUM8rVZJUijdzqo7sRQfrTqHUXIdsue3xItcwRS_JhhoH9c6P-2pqZhgqg31FuEN8DLG_gbGiTWbzbDBGmhryUKrlAjo7XI9fQ1YYJ2NLc0tMS7x-u0qDcPJ3dPlX-v-tjUWuufjcK2o2SijNcjVW5NFCKNxf0IcQgy3due3-3vLZkRkoiz8wCtx9NJ2gW8PCVOq7Px62Nn1QEu8WptpEHFwp9btqoEhe3IYsYLwbNYRBxTPaism5dGOkMWIAscnv8pudQIDAQAB"/>
+      <rapla:entry key="org.rapla.title" value="Rapla2 - Example for use at polytechnics, colleges"/>
+      <rapla:entry key="org.rapla.timezone" value="Europe/Berlin"/>
+      <rapla:entry key="org.rapla.locale" value="en_EN"/>
+      <rapla:entry key="org.rapla.refreshInterval" value="30000"/>
+      <rapla:entry key="org.rapla.plugin.cssexport.enabled" value="true"/>
+      <rapla:entry key="org.rapla.plugin.autoexport.show_calendar_list_in_html_menu" value="false"/>
+      <rapla:entry key="org.rapla.plugin.autoexport.show_tooltips_in_export" value="true"/>
+      <rapla:entry key="org.rapla.plugin.mail.DefaultSender" value="rapla@domainname"/>
+   </rapla:preferences>
+
+   <rapla:users>
+      <!-- Users of the system -->
+      <rapla:user id="u77daec1-c023-4193-b189-028294168c36" created-at="2022-09-27T02:17:21.150Z" last-changed="2023-03-04T18:23:19.461Z" last-changed-by="u77daec1-c023-4193-b189-028294168c36" username="admin" password="sha-1:da39a3ee5e6b4b0d3255bfef95601890afd80709" name="" email="" isAdmin="true">
+         <rapla:preferences>
+            <rapla:entry key="org.rapla.plugin.notification.allocationlisteners">
+               <rapla:map>
+               </rapla:map>
+            </rapla:entry>
+            <rapla:entry key="org.rapla.calendarview">
+               <rapla:config>
+                  <calendar-options>
+                     <color>reservations</color>
+                     <worktime>8-18</worktime>
+                     <exceptions-visible>false</exceptions-visible>
+                     <rows-per-hour>4</rows-per-hour>
+                     <exclude-days>7,1</exclude-days>
+                     <days-in-weekview>7</days-in-weekview>
+                     <first-day-of-week>2</first-day-of-week>
+                     <minimum-block-width>200</minimum-block-width>
+                     <non-filtered-events>transparent</non-filtered-events>
+                  </calendar-options>
+               </rapla:config>
+            </rapla:entry>
+            <rapla:entry key="org.rapla.language" value="en"/>
+            <rapla:entry key="org.rapla.showSelection" value="true"/>
+            <rapla:entry key="org.rapla.conflict.showWarning" value="true"/>
+            <rapla:entry key="org.rapla.calendar.showNotInCalendarWarning" value="true"/>
+            <rapla:entry key="org.rapla.plugin.notification.notify_if_owner" value="false"/>
+            <rapla:entry key="export_attendees" value="false"/>
+            <rapla:entry key="export_attendees_participation_status" value="TENTATIVE"/>
+         </rapla:preferences>
+      </rapla:user>
+      <rapla:user id="uc938133-e7ad-4b5a-bfbd-528417af5567" created-at="2022-10-28T15:55:12.952Z" last-changed="2023-03-04T18:23:51.504Z" last-changed-by="uc938133-e7ad-4b5a-bfbd-528417af5567" username="maude" password="sha-1:da39a3ee5e6b4b0d3255bfef95601890afd80709" name="Maude" email="" isAdmin="false">
+         <rapla:group key="category[key='read-events-from-others']"/>
+         <rapla:group key="category[key='create-events']"/>
+         <rapla:group key="category[key='pl_math']"/>
+         <rapla:preferences>
+            <rapla:entry key="org.rapla.plugin.autoexport">
+               <rapla:map>
+                  <rapla:mapentry key="Course Math3 - Weekly Schedule">
+                     <rapla:calendar title="" view="week" startdate="2022-10-31" enddate="2023-11-05">
+                        <selected>
+                           <rapla:resource idref="r25a28c7-21cc-4d3b-a210-0b89fa335613"/>
+                        </selected>
+                        <options>
+                           <rapla:map>
+                              <rapla:mapentry key="org.rapla.plugin.abstractcalendar.show_navigation" value="true"/>
+                              <rapla:mapentry key="org.rapla.plugin.abstractcalendar.save_selected_date" value="false"/>
+                              <rapla:mapentry key="org.rapla.plugin.export2ical.selected" value="false"/>
+                              <rapla:mapentry key="org.rapla.plugin.abstractcalendar.only_allocation_info" value="false"/>
+                              <rapla:mapentry key="org.rapla.plugin.urlencryption.selected" value="true"/>
+                              <rapla:mapentry key="org.rapla.plugin.autoexport.selected" value="true"/>
+                              <rapla:mapentry key="org.rapla.plugin.abstractcalendar.resources_link_list" value="false"/>
+                           </rapla:map>
+                        </options>
+                     </rapla:calendar>
+                  </rapla:mapentry>
+                  <rapla:mapentry key="Ramanujan - Weekly Schedule">
+                     <rapla:calendar title="Ramanujan - Weekly" view="week" startdate="2022-10-31" enddate="2023-11-05">
+                        <selected>
+                           <rapla:resource idref="rbaa85e6-11d6-45be-81ca-cd7891addb5b"/>
+                        </selected>
+                        <options>
+                           <rapla:map>
+                              <rapla:mapentry key="org.rapla.plugin.abstractcalendar.show_navigation" value="true"/>
+                              <rapla:mapentry key="org.rapla.plugin.abstractcalendar.save_selected_date" value="false"/>
+                              <rapla:mapentry key="org.rapla.plugin.export2ical.selected" value="false"/>
+                              <rapla:mapentry key="org.rapla.plugin.abstractcalendar.only_allocation_info" value="false"/>
+                              <rapla:mapentry key="org.rapla.plugin.urlencryption.selected" value="true"/>
+                              <rapla:mapentry key="org.rapla.plugin.autoexport.selected" value="true"/>
+                              <rapla:mapentry key="org.rapla.plugin.abstractcalendar.resources_link_list" value="false"/>
+                           </rapla:map>
+                        </options>
+                     </rapla:calendar>
+                  </rapla:mapentry>
+               </rapla:map>
+            </rapla:entry>
+            <rapla:entry key="org.rapla.calendarview">
+               <rapla:config>
+                  <calendar-options>
+                     <color>reservations</color>
+                     <worktime>8-18</worktime>
+                     <exceptions-visible>false</exceptions-visible>
+                     <rows-per-hour>4</rows-per-hour>
+                     <exclude-days/>
+                     <days-in-weekview>7</days-in-weekview>
+                     <first-day-of-week>2</first-day-of-week>
+                     <minimum-block-width>0</minimum-block-width>
+                     <non-filtered-events>transparent</non-filtered-events>
+                  </calendar-options>
+               </rapla:config>
+            </rapla:entry>
+            <rapla:entry key="org.rapla.language" value="en"/>
+         </rapla:preferences>
+      </rapla:user>
+      <rapla:user id="u449b103-07f2-4feb-9f14-cddfea0639c8" created-at="2022-10-28T15:55:33.456Z" last-changed="2023-03-04T18:23:41.926Z" last-changed-by="u449b103-07f2-4feb-9f14-cddfea0639c8" username="marie-pauline" password="sha-1:da39a3ee5e6b4b0d3255bfef95601890afd80709" name="Marie-Pauline" email="" isAdmin="false">
+         <rapla:group key="category[key='read-events-from-others']"/>
+         <rapla:group key="category[key='create-events']"/>
+         <rapla:group key="category[key='pl_phys']"/>
+         <rapla:group key="category[key='pl_math']"/>
+         <rapla:preferences>
+            <rapla:entry key="org.rapla.calendarview">
+               <rapla:config>
+                  <calendar-options>
+                     <color>reservations</color>
+                     <worktime>8-18</worktime>
+                     <exceptions-visible>false</exceptions-visible>
+                     <rows-per-hour>4</rows-per-hour>
+                     <exclude-days>7,1</exclude-days>
+                     <days-in-weekview>7</days-in-weekview>
+                     <first-day-of-week>2</first-day-of-week>
+                     <minimum-block-width>0</minimum-block-width>
+                     <non-filtered-events>transparent</non-filtered-events>
+                  </calendar-options>
+               </rapla:config>
+            </rapla:entry>
+            <rapla:entry key="org.rapla.language" value="fr"/>
+         </rapla:preferences>
+      </rapla:user>
+      <rapla:user id="uccbc6da-6cf6-4d2c-9163-761d67419f65" created-at="2022-10-28T15:55:47.899Z" last-changed="2023-03-04T18:23:59.765Z" last-changed-by="uccbc6da-6cf6-4d2c-9163-761d67419f65" username="peter" password="sha-1:da39a3ee5e6b4b0d3255bfef95601890afd80709" name="Peter" email="" isAdmin="false">
+         <rapla:group key="category[key='read-events-from-others']"/>
+         <rapla:group key="category[key='create-events']"/>
+         <rapla:group key="category[key='pl_phys']"/>
+         <rapla:preferences>
+            <rapla:entry key="org.rapla.calendarview">
+               <rapla:config>
+                  <calendar-options>
+                     <color>reservations</color>
+                     <worktime>8-18</worktime>
+                     <exceptions-visible>false</exceptions-visible>
+                     <rows-per-hour>4</rows-per-hour>
+                     <exclude-days>7,1</exclude-days>
+                     <days-in-weekview>7</days-in-weekview>
+                     <first-day-of-week>2</first-day-of-week>
+                     <minimum-block-width>0</minimum-block-width>
+                     <non-filtered-events>transparent</non-filtered-events>
+                  </calendar-options>
+               </rapla:config>
+            </rapla:entry>
+            <rapla:entry key="org.rapla.language" value="de"/>
+         </rapla:preferences>
+      </rapla:user>
+   </rapla:users>
+
+   <rapla:resources>
+      <!-- resources -->
+      <rapla:extension id="r1723e4d-40bf-439f-bf72-9d39c1cb0d95" owner="uc938133-e7ad-4b5a-bfbd-528417af5567" created-at="2023-03-04T12:59:49.296Z" last-changed="2023-03-04T12:59:49.296Z" last-changed-by="uc938133-e7ad-4b5a-bfbd-528417af5567">
+         <ext:template>
+            <ext:name>Calculus I: maude</ext:name>
+            <ext:fixedtimeandduration>false</ext:fixedtimeandduration>
+         </ext:template>
+      </rapla:extension>
+      <rapla:extension id="r66e45ab-9330-47a3-b227-059a0f2f3e38" owner="uc938133-e7ad-4b5a-bfbd-528417af5567" created-at="2023-03-04T13:01:35.978Z" last-changed="2023-03-04T13:01:35.978Z" last-changed-by="uc938133-e7ad-4b5a-bfbd-528417af5567">
+         <ext:template>
+            <ext:name>Algebra I: maude</ext:name>
+            <ext:fixedtimeandduration>false</ext:fixedtimeandduration>
+         </ext:template>
+      </rapla:extension>
+      <rapla:extension id="r40555da-fd69-466e-bb35-2a349cd6970b" owner="uc938133-e7ad-4b5a-bfbd-528417af5567" created-at="2023-03-04T13:04:26.810Z" last-changed="2023-03-04T13:04:26.810Z" last-changed-by="uc938133-e7ad-4b5a-bfbd-528417af5567">
+         <ext:template>
+            <ext:name>MATH Sem. 1: maude</ext:name>
+            <ext:fixedtimeandduration>true</ext:fixedtimeandduration>
+         </ext:template>
+      </rapla:extension>
+      <rapla:resource id="r9549ee6-16d2-4d00-a437-b2d2bc131b3e" owner="u77daec1-c023-4193-b189-028294168c36" created-at="2022-10-28T13:58:18.409Z" last-changed="2022-11-01T20:13:03.801Z" last-changed-by="u77daec1-c023-4193-b189-028294168c36">
+         <dynatt:rooms>
+            <dynatt:name>M.30</dynatt:name>
+            <dynatt:a1>50</dynatt:a1>
+         </dynatt:rooms>
+         <rapla:permission group="category[key='pl_math']" access="allocate_conflicts"/>
+         <rapla:permission access="read"/>
+      </rapla:resource>
+      <rapla:resource id="r2ea8923-d3e4-4ce1-95d2-e91839c08be7" owner="u77daec1-c023-4193-b189-028294168c36" created-at="2022-10-28T13:58:37.839Z" last-changed="2022-11-01T20:13:03.801Z" last-changed-by="u77daec1-c023-4193-b189-028294168c36">
+         <dynatt:rooms>
+            <dynatt:name>M.31</dynatt:name>
+            <dynatt:a1>51</dynatt:a1>
+         </dynatt:rooms>
+         <rapla:permission group="category[key='pl_math']" access="allocate_conflicts"/>
+         <rapla:permission access="read"/>
+      </rapla:resource>
+      <rapla:resource id="re170240-fa15-40a3-97d6-0053396a3e4d" owner="u77daec1-c023-4193-b189-028294168c36" created-at="2022-10-28T13:58:52.578Z" last-changed="2022-11-01T20:13:20.644Z" last-changed-by="u77daec1-c023-4193-b189-028294168c36">
+         <dynatt:rooms>
+            <dynatt:name>PH.1</dynatt:name>
+            <dynatt:a1>100</dynatt:a1>
+         </dynatt:rooms>
+         <rapla:permission access="read"/>
+         <rapla:permission group="category[key='pl_phys']" access="allocate_conflicts"/>
+      </rapla:resource>
+      <rapla:resource id="rd023196-7994-47e8-b0c4-2cb5242d2da6" owner="u77daec1-c023-4193-b189-028294168c36" created-at="2022-10-28T13:59:04.695Z" last-changed="2022-11-01T20:13:20.644Z" last-changed-by="u77daec1-c023-4193-b189-028294168c36">
+         <dynatt:rooms>
+            <dynatt:name>PH.2</dynatt:name>
+            <dynatt:a1>87</dynatt:a1>
+         </dynatt:rooms>
+         <rapla:permission access="read"/>
+         <rapla:permission group="category[key='pl_phys']" access="allocate_conflicts"/>
+      </rapla:resource>
+      <rapla:person id="rbaa85e6-11d6-45be-81ca-cd7891addb5b" owner="u77daec1-c023-4193-b189-028294168c36" created-at="2022-10-28T13:59:57.716Z" last-changed="2022-11-05T14:39:52.423Z" last-changed-by="u77daec1-c023-4193-b189-028294168c36">
+         <dynatt:lecturers>
+            <dynatt:surname>Ramanujan</dynatt:surname>
+            <dynatt:firstname>S.</dynatt:firstname>
+            <dynatt:email></dynatt:email>
+         </dynatt:lecturers>
+         <rapla:permission access="denied"/>
+         <rapla:permission group="category[key='pl_math']" access="allocate_conflicts"/>
+      </rapla:person>
+      <rapla:person id="ra9133cb-2e02-4e16-aedc-791f51e567be" owner="u77daec1-c023-4193-b189-028294168c36" created-at="2022-10-28T14:00:10.136Z" last-changed="2022-10-28T14:00:10.136Z" last-changed-by="u77daec1-c023-4193-b189-028294168c36">
+         <dynatt:lecturers>
+            <dynatt:surname>Bohr</dynatt:surname>
+            <dynatt:firstname>Niels</dynatt:firstname>
+            <dynatt:email></dynatt:email>
+         </dynatt:lecturers>
+         <rapla:permission access="allocate_conflicts"/>
+      </rapla:person>
+      <rapla:person id="ref63343-fa52-4773-984a-98c36c14e4f0" owner="u77daec1-c023-4193-b189-028294168c36" created-at="2022-10-28T14:00:23.789Z" last-changed="2022-10-28T14:00:23.789Z" last-changed-by="u77daec1-c023-4193-b189-028294168c36">
+         <dynatt:lecturers>
+            <dynatt:surname>Einstein</dynatt:surname>
+            <dynatt:firstname>Albert</dynatt:firstname>
+            <dynatt:email></dynatt:email>
+         </dynatt:lecturers>
+         <rapla:permission access="allocate_conflicts"/>
+      </rapla:person>
+      <rapla:resource id="r25a28c7-21cc-4d3b-a210-0b89fa335613" owner="u77daec1-c023-4193-b189-028294168c36" created-at="2022-10-28T13:59:18.056Z" last-changed="2022-11-01T20:13:40.727Z" last-changed-by="u77daec1-c023-4193-b189-028294168c36">
+         <dynatt:course>
+            <dynatt:name>Math3</dynatt:name>
+         </dynatt:course>
+         <rapla:permission access="read"/>
+         <rapla:permission group="category[key='pl_math']" access="allocate_conflicts"/>
+      </rapla:resource>
+      <rapla:resource id="r58cecd4-b9f4-4a16-ab14-6e1c9dac5ec8" owner="u77daec1-c023-4193-b189-028294168c36" created-at="2022-10-28T13:59:29.226Z" last-changed="2022-11-01T20:13:50.259Z" last-changed-by="u77daec1-c023-4193-b189-028294168c36">
+         <dynatt:course>
+            <dynatt:name>Physics2</dynatt:name>
+         </dynatt:course>
+         <rapla:permission access="read"/>
+         <rapla:permission group="category[key='pl_phys']" access="allocate_conflicts"/>
+      </rapla:resource>
+      <rapla:resource id="rffb4ff4-dd3f-4ebf-8856-6ab28673d5b0" owner="u77daec1-c023-4193-b189-028294168c36" created-at="2022-10-28T13:59:41.903Z" last-changed="2022-11-01T20:13:50.259Z" last-changed-by="u77daec1-c023-4193-b189-028294168c36">
+         <dynatt:course>
+            <dynatt:name>Physics1</dynatt:name>
+         </dynatt:course>
+         <rapla:permission access="read"/>
+         <rapla:permission group="category[key='pl_phys']" access="allocate_conflicts"/>
+      </rapla:resource>
+      <rapla:resource id="r8dd8a5a-b32d-4fd3-bebd-62f0a5657ed0" owner="u77daec1-c023-4193-b189-028294168c36" created-at="2023-03-04T11:03:49.565Z" last-changed="2023-03-04T11:04:15.837Z" last-changed-by="u77daec1-c023-4193-b189-028294168c36">
+         <dynatt:course>
+            <dynatt:name>Math1</dynatt:name>
+         </dynatt:course>
+         <rapla:permission access="read"/>
+         <rapla:permission group="category[key='pl_math']" access="allocate_conflicts"/>
+      </rapla:resource>
+      <rapla:person id="r212e974-87a3-4291-8453-4e2b15133745" owner="u77daec1-c023-4193-b189-028294168c36" created-at="2022-10-28T14:00:35.577Z" last-changed="2022-10-28T14:00:35.577Z" last-changed-by="u77daec1-c023-4193-b189-028294168c36">
+         <dynatt:staff>
+            <dynatt:surname>Simpson</dynatt:surname>
+            <dynatt:firstname>Homer</dynatt:firstname>
+            <dynatt:email></dynatt:email>
+         </dynatt:staff>
+         <rapla:permission access="allocate_conflicts"/>
+      </rapla:person>
+      <rapla:person id="r144329a-acf7-478a-b65d-5a310878a5eb" owner="u77daec1-c023-4193-b189-028294168c36" created-at="2022-10-28T14:00:49.222Z" last-changed="2022-10-28T14:00:49.222Z" last-changed-by="u77daec1-c023-4193-b189-028294168c36">
+         <dynatt:staff>
+            <dynatt:surname>Simpson</dynatt:surname>
+            <dynatt:firstname>Lisa</dynatt:firstname>
+            <dynatt:email></dynatt:email>
+         </dynatt:staff>
+         <rapla:permission access="allocate_conflicts"/>
+      </rapla:person>
+
+   </rapla:resources>
+
+   <rapla:reservations>
+      <rapla:reservation id="ed787a13-6c4e-4aba-9ce1-9346afdd5d3c" owner="uc938133-e7ad-4b5a-bfbd-528417af5567" created-at="2022-11-05T17:40:06.480Z" last-changed="2023-03-04T09:44:25.363Z" last-changed-by="u77daec1-c023-4193-b189-028294168c36">
+         <dynatt:math_examination>
+            <dynatt:name>Written Test - Math II</dynatt:name>
+            <dynatt:color>#ffcccc</dynatt:color>
+         </dynatt:math_examination>
+         <rapla:appointment id="a1a42f36-3354-4cac-b386-42e60926a2e6" start-date="2022-11-07" start-time="08:00:00" end-date="2022-11-07" end-time="10:00:00"/>
+         <rapla:allocate idref="r212e974-87a3-4291-8453-4e2b15133745"/>
+         <rapla:allocate idref="r9549ee6-16d2-4d00-a437-b2d2bc131b3e"/>
+         <rapla:allocate idref="r25a28c7-21cc-4d3b-a210-0b89fa335613"/>
+         <rapla:permission group="category[key='read-events-from-others']" access="read"/>
+         <rapla:permission access="read"/>
+      </rapla:reservation>
+      <rapla:reservation id="eff395c1-b84f-4b0d-b869-4c2aaa0887b7" owner="uc938133-e7ad-4b5a-bfbd-528417af5567" created-at="2022-11-05T17:40:51.451Z" last-changed="2023-03-04T09:45:38.768Z" last-changed-by="u77daec1-c023-4193-b189-028294168c36">
+         <dynatt:math_lecture>
+            <dynatt:name>Photons for Beginners</dynatt:name>
+            <dynatt:color>#ccffff</dynatt:color>
+         </dynatt:math_lecture>
+         <rapla:appointment id="a575a16c-3eb6-435c-9d37-aada706cc56f" start-date="2022-11-08" start-time="09:00:00" end-date="2022-11-08" end-time="11:00:00">
+            <rapla:allocate idref="ra9133cb-2e02-4e16-aedc-791f51e567be"/>
+            <rapla:allocate idref="r9549ee6-16d2-4d00-a437-b2d2bc131b3e"/>
+         </rapla:appointment>
+         <rapla:appointment id="a8bd6e1d-706c-4648-9a30-6f334599db83" start-date="2022-11-15" start-time="08:45:00" end-date="2022-11-15" end-time="10:45:00">
+            <rapla:allocate idref="ref63343-fa52-4773-984a-98c36c14e4f0"/>
+            <rapla:allocate idref="r9549ee6-16d2-4d00-a437-b2d2bc131b3e"/>
+         </rapla:appointment>
+         <rapla:appointment id="af087eaf-e1fb-4591-ae02-e0deee8ff73f" start-date="2022-11-22" start-time="08:45:00" end-date="2022-11-22" end-time="10:45:00">
+            <rapla:allocate idref="ref63343-fa52-4773-984a-98c36c14e4f0"/>
+            <rapla:allocate idref="r9549ee6-16d2-4d00-a437-b2d2bc131b3e"/>
+         </rapla:appointment>
+         <rapla:appointment id="ac9ba7d7-9ece-4590-8c8b-68cba04a4297" start-date="2022-11-29" start-time="08:45:00" end-date="2022-11-29" end-time="10:45:00">
+            <rapla:allocate idref="ref63343-fa52-4773-984a-98c36c14e4f0"/>
+            <rapla:allocate idref="r9549ee6-16d2-4d00-a437-b2d2bc131b3e"/>
+         </rapla:appointment>
+         <rapla:appointment id="afffafd4-6f0f-481d-8372-075aa86b76a3" start-date="2022-12-06" start-time="08:45:00" end-date="2022-12-06" end-time="10:45:00">
+            <rapla:allocate idref="ref63343-fa52-4773-984a-98c36c14e4f0"/>
+            <rapla:allocate idref="r2ea8923-d3e4-4ce1-95d2-e91839c08be7"/>
+         </rapla:appointment>
+         <rapla:allocate idref="r25a28c7-21cc-4d3b-a210-0b89fa335613"/>
+         <rapla:permission group="category[key='read-events-from-others']" access="read"/>
+      </rapla:reservation>
+      <rapla:reservation id="e869a215-b05b-4e59-9bb1-dfdb16189d10" owner="uc938133-e7ad-4b5a-bfbd-528417af5567" created-at="2023-03-04T13:01:09.329Z" last-changed="2023-03-04T13:01:09.329Z" last-changed-by="uc938133-e7ad-4b5a-bfbd-528417af5567">
+         <rapla:annotation key="template">r1723e4d-40bf-439f-bf72-9d39c1cb0d95</rapla:annotation>
+         <dynatt:math_lecture>
+            <dynatt:name>Calculus I</dynatt:name>
+            <dynatt:color>#ccffff</dynatt:color>
+         </dynatt:math_lecture>
+         <rapla:appointment id="a947642a-e335-4586-935b-5088a276538c" start-date="2023-04-03" start-time="13:00:00" end-date="2023-04-03" end-time="14:30:00">
+            <rapla:repeating type="weekly" number="10"/>
+         </rapla:appointment>
+         <rapla:allocate idref="r9549ee6-16d2-4d00-a437-b2d2bc131b3e"/>
+         <rapla:allocate idref="r8dd8a5a-b32d-4fd3-bebd-62f0a5657ed0"/>
+         <rapla:allocate idref="rbaa85e6-11d6-45be-81ca-cd7891addb5b"/>
+         <rapla:permission group="category[key='read-events-from-others']" access="read"/>
+         <rapla:permission group="category[key='pl_math']" access="edit"/>
+      </rapla:reservation>
+      <rapla:reservation id="efc35af5-d5e1-42ba-bccb-17795f5554af" owner="uc938133-e7ad-4b5a-bfbd-528417af5567" created-at="2023-03-04T13:02:37.075Z" last-changed="2023-03-04T13:02:37.075Z" last-changed-by="uc938133-e7ad-4b5a-bfbd-528417af5567">
+         <rapla:annotation key="template">r66e45ab-9330-47a3-b227-059a0f2f3e38</rapla:annotation>
+         <dynatt:math_lecture>
+            <dynatt:name>Algebra I</dynatt:name>
+            <dynatt:color>#99ccff</dynatt:color>
+         </dynatt:math_lecture>
+         <rapla:appointment id="a49c83f3-287b-4a94-abce-3bb0b137ea0f" start-date="2023-04-03" start-time="15:00:00" end-date="2023-04-03" end-time="16:30:00">
+            <rapla:repeating type="weekly" number="7"/>
+         </rapla:appointment>
+         <rapla:allocate idref="r9549ee6-16d2-4d00-a437-b2d2bc131b3e"/>
+         <rapla:allocate idref="r8dd8a5a-b32d-4fd3-bebd-62f0a5657ed0"/>
+         <rapla:allocate idref="ref63343-fa52-4773-984a-98c36c14e4f0"/>
+         <rapla:permission group="category[key='read-events-from-others']" access="read"/>
+         <rapla:permission group="category[key='pl_math']" access="edit"/>
+      </rapla:reservation>
+      <rapla:reservation id="edeb304c-e0e2-4241-b866-b54cd1860403" owner="uc938133-e7ad-4b5a-bfbd-528417af5567" created-at="2023-03-04T13:04:56.162Z" last-changed="2023-03-04T13:04:56.162Z" last-changed-by="uc938133-e7ad-4b5a-bfbd-528417af5567">
+         <rapla:annotation key="template">r40555da-fd69-466e-bb35-2a349cd6970b</rapla:annotation>
+         <dynatt:math_lecture>
+            <dynatt:name>Calculus I</dynatt:name>
+            <dynatt:color>#ccffff</dynatt:color>
+         </dynatt:math_lecture>
+         <rapla:appointment id="a127a2cc-003f-43bc-bd2c-f9b64954d064" start-date="2023-04-03" start-time="13:00:00" end-date="2023-04-03" end-time="14:30:00">
+            <rapla:repeating type="weekly" number="10"/>
+         </rapla:appointment>
+         <rapla:allocate idref="r9549ee6-16d2-4d00-a437-b2d2bc131b3e"/>
+         <rapla:allocate idref="r8dd8a5a-b32d-4fd3-bebd-62f0a5657ed0"/>
+         <rapla:allocate idref="rbaa85e6-11d6-45be-81ca-cd7891addb5b"/>
+         <rapla:permission group="category[key='read-events-from-others']" access="read"/>
+         <rapla:permission group="category[key='pl_math']" access="edit"/>
+      </rapla:reservation>
+      <rapla:reservation id="ed7e65e8-fa4f-4de1-acdf-f6a62adddb46" owner="uc938133-e7ad-4b5a-bfbd-528417af5567" created-at="2023-03-04T13:05:03.585Z" last-changed="2023-03-04T13:05:03.585Z" last-changed-by="uc938133-e7ad-4b5a-bfbd-528417af5567">
+         <rapla:annotation key="template">r40555da-fd69-466e-bb35-2a349cd6970b</rapla:annotation>
+         <dynatt:math_lecture>
+            <dynatt:name>Algebra I</dynatt:name>
+            <dynatt:color>#99ccff</dynatt:color>
+         </dynatt:math_lecture>
+         <rapla:appointment id="a27c6aae-f43b-41c5-9acd-47edeec56c8a" start-date="2023-04-03" start-time="15:00:00" end-date="2023-04-03" end-time="16:30:00">
+            <rapla:repeating type="weekly" number="7"/>
+         </rapla:appointment>
+         <rapla:allocate idref="r9549ee6-16d2-4d00-a437-b2d2bc131b3e"/>
+         <rapla:allocate idref="r8dd8a5a-b32d-4fd3-bebd-62f0a5657ed0"/>
+         <rapla:allocate idref="ref63343-fa52-4773-984a-98c36c14e4f0"/>
+         <rapla:permission group="category[key='read-events-from-others']" access="read"/>
+         <rapla:permission group="category[key='pl_math']" access="edit"/>
+      </rapla:reservation>
+      <rapla:reservation id="e6d50347-a05f-4435-8fc6-e0719301e9c6" owner="uc938133-e7ad-4b5a-bfbd-528417af5567" created-at="2023-03-04T13:05:44.231Z" last-changed="2023-03-04T13:05:44.231Z" last-changed-by="uc938133-e7ad-4b5a-bfbd-528417af5567">
+         <rapla:annotation key="template">r40555da-fd69-466e-bb35-2a349cd6970b</rapla:annotation>
+         <dynatt:math_lecture>
+            <dynatt:name>Partitions</dynatt:name>
+            <dynatt:color>#ccffff</dynatt:color>
+         </dynatt:math_lecture>
+         <rapla:appointment id="aa9da131-7b8a-4e2a-a1c3-3c7e1fa37e7e" start-date="2023-04-03" start-time="08:00:00" end-date="2023-04-03" end-time="10:15:00">
+            <rapla:repeating type="weekly" number="7"/>
+         </rapla:appointment>
+         <rapla:allocate idref="r9549ee6-16d2-4d00-a437-b2d2bc131b3e"/>
+         <rapla:allocate idref="r8dd8a5a-b32d-4fd3-bebd-62f0a5657ed0"/>
+         <rapla:allocate idref="rbaa85e6-11d6-45be-81ca-cd7891addb5b"/>
+         <rapla:permission group="category[key='read-events-from-others']" access="read"/>
+         <rapla:permission group="category[key='pl_math']" access="edit"/>
+      </rapla:reservation>
+      <rapla:reservation id="e2cef3e4-5592-4c61-9348-719352b924c9" owner="uc938133-e7ad-4b5a-bfbd-528417af5567" created-at="2023-03-04T13:06:38.273Z" last-changed="2023-03-04T13:06:38.273Z" last-changed-by="uc938133-e7ad-4b5a-bfbd-528417af5567">
+         <rapla:annotation key="template">r40555da-fd69-466e-bb35-2a349cd6970b</rapla:annotation>
+         <dynatt:math_lecture>
+            <dynatt:name>Exercices Calculus I</dynatt:name>
+            <dynatt:color>#ccffff</dynatt:color>
+         </dynatt:math_lecture>
+         <rapla:appointment id="a62080bc-852b-44e6-b968-2510d9cc96dc" start-date="2023-04-04" start-time="08:00:00" end-date="2023-04-04" end-time="12:00:00">
+            <rapla:repeating type="weekly" number="7"/>
+         </rapla:appointment>
+         <rapla:allocate idref="r9549ee6-16d2-4d00-a437-b2d2bc131b3e"/>
+         <rapla:allocate idref="r8dd8a5a-b32d-4fd3-bebd-62f0a5657ed0"/>
+         <rapla:allocate idref="r212e974-87a3-4291-8453-4e2b15133745"/>
+         <rapla:permission group="category[key='read-events-from-others']" access="read"/>
+         <rapla:permission group="category[key='pl_math']" access="edit"/>
+      </rapla:reservation>
+      <rapla:reservation id="ed8b5a8b-211b-4f72-a051-3f2f3eaf0beb" owner="uc938133-e7ad-4b5a-bfbd-528417af5567" created-at="2023-03-04T13:07:26.953Z" last-changed="2023-03-04T13:07:26.953Z" last-changed-by="uc938133-e7ad-4b5a-bfbd-528417af5567">
+         <rapla:annotation key="template">r40555da-fd69-466e-bb35-2a349cd6970b</rapla:annotation>
+         <dynatt:math_examination>
+            <dynatt:name>Calculus I - Written Exam</dynatt:name>
+            <dynatt:color>#ffcccc</dynatt:color>
+         </dynatt:math_examination>
+         <rapla:appointment id="a0375ba9-7f1f-4e00-af7f-a1e348b463e7" start-date="2023-06-12" start-time="08:00:00" end-date="2023-06-12" end-time="11:00:00"/>
+         <rapla:allocate idref="r2ea8923-d3e4-4ce1-95d2-e91839c08be7"/>
+         <rapla:allocate idref="r8dd8a5a-b32d-4fd3-bebd-62f0a5657ed0"/>
+         <rapla:allocate idref="r212e974-87a3-4291-8453-4e2b15133745"/>
+         <rapla:permission group="category[key='read-events-from-others']" access="read"/>
+         <rapla:permission group="category[key='pl_math']" access="admin"/>
+      </rapla:reservation>
+      <rapla:reservation id="e4cd6b2d-6cc8-41d1-bedc-1b2e80c05467" owner="uc938133-e7ad-4b5a-bfbd-528417af5567" created-at="2023-03-04T13:08:00.605Z" last-changed="2023-03-04T13:08:00.605Z" last-changed-by="uc938133-e7ad-4b5a-bfbd-528417af5567">
+         <rapla:annotation key="template">r40555da-fd69-466e-bb35-2a349cd6970b</rapla:annotation>
+         <dynatt:math_examination>
+            <dynatt:name>Partitions</dynatt:name>
+            <dynatt:color>#ffcccc</dynatt:color>
+         </dynatt:math_examination>
+         <rapla:appointment id="a119a475-8379-4ad0-bffc-1b003b838155" start-date="2023-06-13" start-time="08:00:00" end-date="2023-06-13" end-time="11:00:00"/>
+         <rapla:allocate idref="r2ea8923-d3e4-4ce1-95d2-e91839c08be7"/>
+         <rapla:allocate idref="r212e974-87a3-4291-8453-4e2b15133745"/>
+         <rapla:permission group="category[key='read-events-from-others']" access="read"/>
+         <rapla:permission group="category[key='pl_math']" access="admin"/>
+      </rapla:reservation>
+      <rapla:reservation id="eef9bd51-3819-4605-9936-5aa278f487b6" owner="uc938133-e7ad-4b5a-bfbd-528417af5567" created-at="2023-03-04T13:09:17.292Z" last-changed="2023-03-04T13:09:17.292Z" last-changed-by="uc938133-e7ad-4b5a-bfbd-528417af5567">
+         <rapla:annotation key="copyof">r40555da-fd69-466e-bb35-2a349cd6970b</rapla:annotation>
+         <dynatt:math_lecture>
+            <dynatt:name>Partitions</dynatt:name>
+            <dynatt:color>#ccffff</dynatt:color>
+         </dynatt:math_lecture>
+         <rapla:appointment id="a5437ae0-5bf1-4964-a0b5-d35d9de0a089" start-date="2023-04-03" start-time="08:00:00" end-date="2023-04-03" end-time="10:15:00">
+            <rapla:repeating type="weekly" number="7"/>
+         </rapla:appointment>
+         <rapla:allocate idref="r9549ee6-16d2-4d00-a437-b2d2bc131b3e"/>
+         <rapla:allocate idref="r8dd8a5a-b32d-4fd3-bebd-62f0a5657ed0"/>
+         <rapla:allocate idref="rbaa85e6-11d6-45be-81ca-cd7891addb5b"/>
+         <rapla:permission group="category[key='read-events-from-others']" access="read"/>
+         <rapla:permission group="category[key='pl_math']" access="edit"/>
+      </rapla:reservation>
+      <rapla:reservation id="e7fd1251-e847-4eba-953d-a71c5ed55ce3" owner="uc938133-e7ad-4b5a-bfbd-528417af5567" created-at="2023-03-04T13:09:17.292Z" last-changed="2023-03-04T13:09:57.661Z" last-changed-by="uc938133-e7ad-4b5a-bfbd-528417af5567">
+         <rapla:annotation key="copyof">r40555da-fd69-466e-bb35-2a349cd6970b</rapla:annotation>
+         <dynatt:math_lecture>
+            <dynatt:name>Calculus I</dynatt:name>
+            <dynatt:color>#ccffff</dynatt:color>
+         </dynatt:math_lecture>
+         <rapla:appointment id="a1198d52-5a38-4aa8-b74d-edde7e306400" start-date="2023-04-03" start-time="13:00:00" end-date="2023-04-03" end-time="14:30:00">
+            <rapla:repeating type="weekly" number="10">
+               <rapla:exception>
+                  <rapla:date date="2023-04-10"/>
+               </rapla:exception>
+            </rapla:repeating>
+         </rapla:appointment>
+         <rapla:appointment id="ab4b1c9b-7e1b-4eac-8165-cd66884abf69" start-date="2023-04-10" start-time="13:15:00" end-date="2023-04-10" end-time="14:45:00"/>
+         <rapla:allocate idref="r9549ee6-16d2-4d00-a437-b2d2bc131b3e"/>
+         <rapla:allocate idref="r8dd8a5a-b32d-4fd3-bebd-62f0a5657ed0"/>
+         <rapla:allocate idref="rbaa85e6-11d6-45be-81ca-cd7891addb5b"/>
+         <rapla:permission group="category[key='read-events-from-others']" access="read"/>
+         <rapla:permission group="category[key='pl_math']" access="edit"/>
+      </rapla:reservation>
+      <rapla:reservation id="e4cdcb4e-52f7-4112-a635-373f8e23ef23" owner="uc938133-e7ad-4b5a-bfbd-528417af5567" created-at="2023-03-04T13:09:17.292Z" last-changed="2023-03-04T13:09:17.292Z" last-changed-by="uc938133-e7ad-4b5a-bfbd-528417af5567">
+         <rapla:annotation key="copyof">r40555da-fd69-466e-bb35-2a349cd6970b</rapla:annotation>
+         <dynatt:math_lecture>
+            <dynatt:name>Algebra I</dynatt:name>
+            <dynatt:color>#99ccff</dynatt:color>
+         </dynatt:math_lecture>
+         <rapla:appointment id="a09a4f3f-4d6b-4163-a6aa-121a8c580d79" start-date="2023-04-03" start-time="15:00:00" end-date="2023-04-03" end-time="16:30:00">
+            <rapla:repeating type="weekly" number="7"/>
+         </rapla:appointment>
+         <rapla:allocate idref="r9549ee6-16d2-4d00-a437-b2d2bc131b3e"/>
+         <rapla:allocate idref="r8dd8a5a-b32d-4fd3-bebd-62f0a5657ed0"/>
+         <rapla:allocate idref="ref63343-fa52-4773-984a-98c36c14e4f0"/>
+         <rapla:permission group="category[key='read-events-from-others']" access="read"/>
+         <rapla:permission group="category[key='pl_math']" access="edit"/>
+      </rapla:reservation>
+      <rapla:reservation id="e8f1c29b-0e83-4bf2-91c6-99e331f5f69d" owner="uc938133-e7ad-4b5a-bfbd-528417af5567" created-at="2023-03-04T13:09:17.292Z" last-changed="2023-03-04T13:09:17.292Z" last-changed-by="uc938133-e7ad-4b5a-bfbd-528417af5567">
+         <rapla:annotation key="copyof">r40555da-fd69-466e-bb35-2a349cd6970b</rapla:annotation>
+         <dynatt:math_lecture>
+            <dynatt:name>Exercices Calculus I</dynatt:name>
+            <dynatt:color>#ccffff</dynatt:color>
+         </dynatt:math_lecture>
+         <rapla:appointment id="af2d177f-cf96-408f-a281-b05339c70dfd" start-date="2023-04-04" start-time="08:00:00" end-date="2023-04-04" end-time="12:00:00">
+            <rapla:repeating type="weekly" number="7"/>
+         </rapla:appointment>
+         <rapla:allocate idref="r9549ee6-16d2-4d00-a437-b2d2bc131b3e"/>
+         <rapla:allocate idref="r8dd8a5a-b32d-4fd3-bebd-62f0a5657ed0"/>
+         <rapla:allocate idref="r212e974-87a3-4291-8453-4e2b15133745"/>
+         <rapla:permission group="category[key='read-events-from-others']" access="read"/>
+         <rapla:permission group="category[key='pl_math']" access="edit"/>
+      </rapla:reservation>
+      <rapla:reservation id="e03fdaa6-3d9d-4213-9686-060fb3857e09" owner="uc938133-e7ad-4b5a-bfbd-528417af5567" created-at="2023-03-04T13:09:17.292Z" last-changed="2023-03-04T13:09:17.292Z" last-changed-by="uc938133-e7ad-4b5a-bfbd-528417af5567">
+         <rapla:annotation key="copyof">r40555da-fd69-466e-bb35-2a349cd6970b</rapla:annotation>
+         <dynatt:math_examination>
+            <dynatt:name>Calculus I - Written Exam</dynatt:name>
+            <dynatt:color>#ffcccc</dynatt:color>
+         </dynatt:math_examination>
+         <rapla:appointment id="aa284cf9-1c03-4f52-9c02-3a8e225cf2f1" start-date="2023-06-12" start-time="08:00:00" end-date="2023-06-12" end-time="11:00:00"/>
+         <rapla:allocate idref="r2ea8923-d3e4-4ce1-95d2-e91839c08be7"/>
+         <rapla:allocate idref="r8dd8a5a-b32d-4fd3-bebd-62f0a5657ed0"/>
+         <rapla:allocate idref="r212e974-87a3-4291-8453-4e2b15133745"/>
+         <rapla:permission group="category[key='read-events-from-others']" access="read"/>
+         <rapla:permission group="category[key='pl_math']" access="admin"/>
+      </rapla:reservation>
+      <rapla:reservation id="e592ae2c-dc13-49ef-80a4-46b3f180405d" owner="uc938133-e7ad-4b5a-bfbd-528417af5567" created-at="2023-03-04T13:09:17.292Z" last-changed="2023-03-04T13:09:36.477Z" last-changed-by="uc938133-e7ad-4b5a-bfbd-528417af5567">
+         <rapla:annotation key="copyof">r40555da-fd69-466e-bb35-2a349cd6970b</rapla:annotation>
+         <dynatt:math_examination>
+            <dynatt:name>Partitions</dynatt:name>
+            <dynatt:color>#ffcccc</dynatt:color>
+         </dynatt:math_examination>
+         <rapla:appointment id="aed47b21-98d3-4a00-bca2-a9e10ac28212" start-date="2023-06-13" start-time="09:00:00" end-date="2023-06-13" end-time="12:00:00"/>
+         <rapla:allocate idref="r2ea8923-d3e4-4ce1-95d2-e91839c08be7"/>
+         <rapla:allocate idref="r212e974-87a3-4291-8453-4e2b15133745"/>
+         <rapla:permission group="category[key='read-events-from-others']" access="read"/>
+         <rapla:permission group="category[key='pl_math']" access="admin"/>
+      </rapla:reservation>
+      <rapla:reservation id="e2eb1e7c-2cb5-47d5-bf93-51e770733697" owner="uc938133-e7ad-4b5a-bfbd-528417af5567" created-at="2023-03-04T13:30:10.725Z" last-changed="2023-03-04T13:30:10.725Z" last-changed-by="uc938133-e7ad-4b5a-bfbd-528417af5567">
+         <rapla:annotation key="copyof">r40555da-fd69-466e-bb35-2a349cd6970b</rapla:annotation>
+         <dynatt:math_lecture>
+            <dynatt:name>Partitions</dynatt:name>
+            <dynatt:color>#ccffff</dynatt:color>
+         </dynatt:math_lecture>
+         <rapla:appointment id="a7fadaf8-9201-463a-a650-b2ffa3c6e977" start-date="2023-10-02" start-time="08:00:00" end-date="2023-10-02" end-time="10:15:00">
+            <rapla:repeating type="weekly" number="7"/>
+         </rapla:appointment>
+         <rapla:allocate idref="r9549ee6-16d2-4d00-a437-b2d2bc131b3e"/>
+         <rapla:allocate idref="r8dd8a5a-b32d-4fd3-bebd-62f0a5657ed0"/>
+         <rapla:allocate idref="rbaa85e6-11d6-45be-81ca-cd7891addb5b"/>
+         <rapla:permission group="category[key='read-events-from-others']" access="read"/>
+         <rapla:permission group="category[key='pl_math']" access="edit"/>
+      </rapla:reservation>
+      <rapla:reservation id="eed987a4-e3ae-4415-a5b0-3368e14a1993" owner="uc938133-e7ad-4b5a-bfbd-528417af5567" created-at="2023-03-04T13:30:10.725Z" last-changed="2023-03-04T13:30:10.725Z" last-changed-by="uc938133-e7ad-4b5a-bfbd-528417af5567">
+         <rapla:annotation key="copyof">r40555da-fd69-466e-bb35-2a349cd6970b</rapla:annotation>
+         <dynatt:math_lecture>
+            <dynatt:name>Calculus I</dynatt:name>
+            <dynatt:color>#ccffff</dynatt:color>
+         </dynatt:math_lecture>
+         <rapla:appointment id="a61731f9-5345-48f0-860d-fd0c89df2b3e" start-date="2023-10-02" start-time="13:00:00" end-date="2023-10-02" end-time="14:30:00">
+            <rapla:repeating type="weekly" number="10"/>
+         </rapla:appointment>
+         <rapla:allocate idref="r9549ee6-16d2-4d00-a437-b2d2bc131b3e"/>
+         <rapla:allocate idref="r8dd8a5a-b32d-4fd3-bebd-62f0a5657ed0"/>
+         <rapla:allocate idref="rbaa85e6-11d6-45be-81ca-cd7891addb5b"/>
+         <rapla:permission group="category[key='read-events-from-others']" access="read"/>
+         <rapla:permission group="category[key='pl_math']" access="edit"/>
+      </rapla:reservation>
+      <rapla:reservation id="e2ed2f78-52ac-400a-a813-b588b3b21310" owner="uc938133-e7ad-4b5a-bfbd-528417af5567" created-at="2023-03-04T13:30:10.725Z" last-changed="2023-03-04T13:30:10.725Z" last-changed-by="uc938133-e7ad-4b5a-bfbd-528417af5567">
+         <rapla:annotation key="copyof">r40555da-fd69-466e-bb35-2a349cd6970b</rapla:annotation>
+         <dynatt:math_lecture>
+            <dynatt:name>Algebra I</dynatt:name>
+            <dynatt:color>#99ccff</dynatt:color>
+         </dynatt:math_lecture>
+         <rapla:appointment id="a650f73a-f303-4bbd-86b5-0c9eb37d245a" start-date="2023-10-02" start-time="15:00:00" end-date="2023-10-02" end-time="16:30:00">
+            <rapla:repeating type="weekly" number="7"/>
+         </rapla:appointment>
+         <rapla:allocate idref="r9549ee6-16d2-4d00-a437-b2d2bc131b3e"/>
+         <rapla:allocate idref="r8dd8a5a-b32d-4fd3-bebd-62f0a5657ed0"/>
+         <rapla:allocate idref="ref63343-fa52-4773-984a-98c36c14e4f0"/>
+         <rapla:permission group="category[key='read-events-from-others']" access="read"/>
+         <rapla:permission group="category[key='pl_math']" access="edit"/>
+      </rapla:reservation>
+      <rapla:reservation id="e644c515-8cd1-4410-b046-fffd10efef55" owner="uc938133-e7ad-4b5a-bfbd-528417af5567" created-at="2023-03-04T13:30:10.725Z" last-changed="2023-03-04T13:30:10.725Z" last-changed-by="uc938133-e7ad-4b5a-bfbd-528417af5567">
+         <rapla:annotation key="copyof">r40555da-fd69-466e-bb35-2a349cd6970b</rapla:annotation>
+         <dynatt:math_lecture>
+            <dynatt:name>Exercices Calculus I</dynatt:name>
+            <dynatt:color>#ccffff</dynatt:color>
+         </dynatt:math_lecture>
+         <rapla:appointment id="a3a052fd-b5b6-4b7e-83db-8d8d6ec20683" start-date="2023-10-03" start-time="08:00:00" end-date="2023-10-03" end-time="12:00:00">
+            <rapla:repeating type="weekly" number="7"/>
+         </rapla:appointment>
+         <rapla:allocate idref="r9549ee6-16d2-4d00-a437-b2d2bc131b3e"/>
+         <rapla:allocate idref="r8dd8a5a-b32d-4fd3-bebd-62f0a5657ed0"/>
+         <rapla:allocate idref="r212e974-87a3-4291-8453-4e2b15133745"/>
+         <rapla:permission group="category[key='read-events-from-others']" access="read"/>
+         <rapla:permission group="category[key='pl_math']" access="edit"/>
+      </rapla:reservation>
+      <rapla:reservation id="e717141c-08b1-4584-97dd-70904ad5bc8b" owner="uc938133-e7ad-4b5a-bfbd-528417af5567" created-at="2023-03-04T13:30:10.725Z" last-changed="2023-03-04T13:30:10.725Z" last-changed-by="uc938133-e7ad-4b5a-bfbd-528417af5567">
+         <rapla:annotation key="copyof">r40555da-fd69-466e-bb35-2a349cd6970b</rapla:annotation>
+         <dynatt:math_examination>
+            <dynatt:name>Calculus I - Written Exam</dynatt:name>
+            <dynatt:color>#ffcccc</dynatt:color>
+         </dynatt:math_examination>
+         <rapla:appointment id="ac29a57b-5946-4266-b111-f2e9bdfe4acf" start-date="2023-12-11" start-time="08:00:00" end-date="2023-12-11" end-time="11:00:00"/>
+         <rapla:allocate idref="r2ea8923-d3e4-4ce1-95d2-e91839c08be7"/>
+         <rapla:allocate idref="r8dd8a5a-b32d-4fd3-bebd-62f0a5657ed0"/>
+         <rapla:allocate idref="r212e974-87a3-4291-8453-4e2b15133745"/>
+         <rapla:permission group="category[key='read-events-from-others']" access="read"/>
+         <rapla:permission group="category[key='pl_math']" access="admin"/>
+      </rapla:reservation>
+      <rapla:reservation id="e6e2f6dd-cea7-4e82-9e15-101a5a758d41" owner="uc938133-e7ad-4b5a-bfbd-528417af5567" created-at="2023-03-04T13:30:10.725Z" last-changed="2023-03-04T13:30:10.725Z" last-changed-by="uc938133-e7ad-4b5a-bfbd-528417af5567">
+         <rapla:annotation key="copyof">r40555da-fd69-466e-bb35-2a349cd6970b</rapla:annotation>
+         <dynatt:math_examination>
+            <dynatt:name>Partitions</dynatt:name>
+            <dynatt:color>#ffcccc</dynatt:color>
+         </dynatt:math_examination>
+         <rapla:appointment id="a045b0ae-fac6-4282-85e9-2604fcd70cfb" start-date="2023-12-12" start-time="08:00:00" end-date="2023-12-12" end-time="11:00:00"/>
+         <rapla:allocate idref="r2ea8923-d3e4-4ce1-95d2-e91839c08be7"/>
+         <rapla:allocate idref="r212e974-87a3-4291-8453-4e2b15133745"/>
+         <rapla:permission group="category[key='read-events-from-others']" access="read"/>
+         <rapla:permission group="category[key='pl_math']" access="admin"/>
+      </rapla:reservation>
+   </rapla:reservations>
+
+   <rapla:importexports>
+   </rapla:importexports>
+</rapla:data>
