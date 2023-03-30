@@ -102,13 +102,11 @@ public class PublishDialog extends RaplaGUIComponent
             }
         	PublishExtensionFactory extensionFactory = entry;
         	PublishExtension extension = extensionFactory.creatExtension(model, (evt)->	updateAddress(filename, extensions));
-			JTextField urlField = extension.getURLField();
-			String generator = extension.getGenerator();
-			if ( urlField != null)
-			{
-				String address = getAddress(filename, generator);
-				urlField.setText(address);
-			}
+			String[] generators = extension.getGenerators();
+            for (String generator: generators) {
+                String address = getAddress(filename, generator);
+                extension.setAdress( generator, address);
+            }
 			if ( extension.hasAddressCreationStrategy())
 			{
 				if ( addressCreator != null)
@@ -156,10 +154,10 @@ public class PublishDialog extends RaplaGUIComponent
 		for ( PublishExtension entry:extensions)
         {
         	PublishExtension extension = entry;
-			JTextField urlField = extension.getURLField();
-			if ( urlField != null)
+            String[] generators = extension.getGenerators();
+
+			for ( String generator:generators)
 			{
-				String generator = extension.getGenerator();
 				String address;
 				if ( addressCreator != null )
 				{
@@ -169,7 +167,7 @@ public class PublishDialog extends RaplaGUIComponent
 				{
 					address = getAddress(filename, generator);
 				}
-				urlField.setText(address);
+                extension.setAdress( generator, address );
 			}
         }
 	}

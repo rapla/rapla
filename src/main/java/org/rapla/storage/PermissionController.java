@@ -29,11 +29,14 @@ import org.rapla.facade.Conflict;
 import org.rapla.framework.RaplaException;
 
 import javax.inject.Inject;
+import javax.inject.Singleton;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Date;
 import java.util.Set;
 
+
+@Singleton
 public class PermissionController
 {
     private final Set<PermissionExtension> permissionExtensions;

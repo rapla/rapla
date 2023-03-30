@@ -7,11 +7,24 @@
         <version>2.0-SNAPSHOT</version>
         <relativePath>parent/pom.xml</relativePath>
     </parent>
+    <url>https://github.com/rapla/rapla</url>
     <name>rapla - resource scheduling and event planing</name>
     <description>rapla - resource scheduling and event planing</description>
     <groupId>org.rapla</groupId>
     <artifactId>rapla</artifactId>
-    <packaging>war</packaging>
+    <inceptionYear>2000</inceptionYear>
+    <licenses>
+        <license>
+            <name>GNU Affero General Public License</name>
+            <url>https://www.gnu.org/licenses/agpl-3.0.de.html</url>
+            <distribution>repo</distribution>
+        </license>
+        <license>
+            <name>Apache 2</name>
+            <url>https://www.apache.org/licenses/LICENSE-2.0</url>
+            <distribution>repo</distribution>
+        </license>
+    </licenses>
     <scm>
         <connection>scm:git:git://github.com/rapla/rapla.git</connection>
         <url>https://github.com/rapla/rapla.git</url>
@@ -45,13 +58,6 @@
             <resource>
                 <directory>${basedir}/src/main/resources</directory>
                 <filtering>false</filtering>
-            </resource>
-            <resource>
-                <directory>${basedir}/src/main/gwt-jre</directory>
-                <filtering>false</filtering>
-                <excludes>
-                    <exclude>jre</exclude>
-                </excludes>
             </resource>
         </resources>
 		<plugins>
@@ -264,10 +270,17 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-war-plugin</artifactId>
-                <version>3.0.0</version>
+                <version>3.3.1</version>
+                <executions>
+                    <execution>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>war</goal>
+                        </goals>
+                    </execution>
+                </executions>
                 <configuration>
                     <archiveClasses>true</archiveClasses>
-                    <warSourceExcludes>org.rapla.Rapla/Rapla.nocache.js</warSourceExcludes>
                     <!-- this is relative to the pom.xml directory -->
 <!--
                     <webResources>
@@ -287,20 +300,6 @@
                 <version>2.5.5</version>
                 <executions>
                     <execution>
-                        <id>rapla.distribution</id>
-                        <phase>package</phase>
-                        <goals>
-                            <goal>single</goal>
-                        </goals>
-                        <configuration>
-                            <outputDirectory>${project.build.directory}/distribution</outputDirectory>
-                            <finalName>rapla-${project.version}</finalName>
-                            <descriptor>${basedir}/src/assembly/rapla.distribution.xml</descriptor>
-                            <appendAssemblyId>false</appendAssemblyId>
-                            <attach>false</attach>
-                        </configuration>
-                    </execution>
-                    <execution>
                         <phase>package</phase>
                         <id>rapla.jar</id>
                         <goals>
@@ -314,6 +313,21 @@
                             <attach>true</attach>
                         </configuration>
                     </execution>
+                    <execution>
+                        <id>rapla.distribution</id>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>single</goal>
+                        </goals>
+                        <configuration>
+                            <outputDirectory>${project.build.directory}/distribution</outputDirectory>
+                            <finalName>rapla-${project.version}</finalName>
+                            <descriptor>${basedir}/src/assembly/rapla.distribution.xml</descriptor>
+                            <appendAssemblyId>false</appendAssemblyId>
+                            <attach>false</attach>
+                        </configuration>
+                    </execution>
+
                 </executions>
             </plugin>
             <!--

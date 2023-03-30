@@ -30,12 +30,7 @@ import org.rapla.entities.storage.ReferenceInfo;
 import org.rapla.storage.PermissionController;
 
 import java.io.Serializable;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Date;
-import java.util.List;
-import java.util.Locale;
+import java.util.*;
 
 /**
  * Enables text replacement of variables like {name} {email} with corresponding attribute values
@@ -1052,7 +1047,8 @@ public class ParsedText implements Serializable
             final boolean contextAnnotationNameSet = type.getAnnotation(contextAnnotationName) != null;
             final String annotationName = contextAnnotationNameSet ? contextAnnotationName: DynamicTypeAnnotations.KEY_NAME_FORMAT;
             final List<Object> contextObjects = Collections.singletonList(object);
-            EvalContext contextClone = new EvalContext(locale, annotationName, permissionController, user, contextObjects, callStackDepth + 1);
+            Map<String, Object> environment = context.getEnvironment();
+            EvalContext contextClone = new EvalContext(locale, annotationName, permissionController, environment, user, contextObjects, callStackDepth + 1);
             ParsedText parsedAnnotation;
             //parsedAnnotation = type.getParsedAnnotation(contextClone.getAnnotationName());
             //if (parsedAnnotation == null)

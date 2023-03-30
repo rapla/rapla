@@ -734,8 +734,9 @@ final public class DynamicTypeImpl extends SimpleEntity implements DynamicType, 
     {
         final StorageOperator operator = getOperator();
         PermissionController permissionController = operator.getPermissionController();
+        Map<String, Object> environment = operator.getThreadContextMap();
         List list = ( object instanceof List) ? (List)object : Collections.singletonList( object);
-        return new EvalContext(locale, annotationName,permissionController, user, list);
+        return new EvalContext(locale, annotationName,permissionController,environment, user, list);
     }
 
     static private Classification getRootClassification(EvalContext context)

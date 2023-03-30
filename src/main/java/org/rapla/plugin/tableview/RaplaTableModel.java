@@ -2,6 +2,7 @@ package org.rapla.plugin.tableview;
 
 import org.jetbrains.annotations.NotNull;
 import org.rapla.components.util.DateTools;
+import org.rapla.entities.dynamictype.DynamicTypeAnnotations;
 import org.rapla.facade.CalendarModel;
 
 import java.util.*;
@@ -64,8 +65,9 @@ public class RaplaTableModel<T>
 
     public RaplaTableModel<T> setObjects(List<T> objects)
     {
+        String contextAnnotationName = DynamicTypeAnnotations.KEY_NAME_FORMAT;
         data = objects.stream().parallel()
-                .map((obj) -> Arrays.stream(columns).map((column) -> column.getValue(obj)).toArray()).collect(Collectors.toList());
+                .map((obj) -> Arrays.stream(columns).map((column) -> column.getValue(obj, contextAnnotationName)).toArray()).collect(Collectors.toList());
         this.rows = objects;
         return this;
     }
@@ -118,7 +120,7 @@ public class RaplaTableModel<T>
 
     private static final String LINE_BREAK = "\n";
     private static final String CELL_BREAK = ";";
-    static public <T> String getCSV(List<RaplaTableColumn<T>> columns, List<T> rows)
+    static public <T> String getCSV(List<RaplaTableColumn<T>> columns, List<T> rows, String contextAnnotationName)
     {
         StringBuffer buf = new StringBuffer();
         for (RaplaTableColumn column : columns)
@@ -132,7 +134,7 @@ public class RaplaTableModel<T>
             for (RaplaTableColumn column : columns)
             {
                 T rowObject = row;
-                Object value = column.getValue(rowObject);
+                Object value = column.getValue(rowObject, contextAnnotationName);
                 Class columnClass = column.getColumnClass();
                 boolean isDate = columnClass.equals(java.util.Date.class);
                 String formated = "";
@@ -161,7 +163,7 @@ public class RaplaTableModel<T>
         return cell.toString().replace(LINE_BREAK, " ").replace(CELL_BREAK, " ");
     }
 
-    static public <T> List<T> sortRows(Collection<T> rowObjects, Map<RaplaTableColumn<T>, Integer> sortDirections,Comparator<T> fallbackComparator) {
+    static public <T> List<T> sortRows(Collection<T> rowObjects, Map<RaplaTableColumn<T>, Integer> sortDirections,Comparator<T> fallbackComparator, String  contextAnnotationName) {
         List<T> result = new ArrayList<>(rowObjects);
         Comparator<T> comparator = new Comparator<T>() {
             public int compare(T o1, T o2) {
@@ -171,8 +173,8 @@ public class RaplaTableModel<T>
                 for (Map.Entry<RaplaTableColumn<T>, Integer> entry : sortDirections.entrySet()) {
                     RaplaTableColumn column = entry.getKey();
                     int direction = entry.getValue();
-                    Object v1 = column.getValue(o1);
-                    Object v2 = column.getValue(o2);
+                    Object v1 = column.getValue(o1, contextAnnotationName);
+                    Object v2 = column.getValue(o2, contextAnnotationName);
                     if (v1 != null && v2 != null) {
                         Class<?> columnClass = column.getColumnClass();
                         if (columnClass.equals(String.class)) {

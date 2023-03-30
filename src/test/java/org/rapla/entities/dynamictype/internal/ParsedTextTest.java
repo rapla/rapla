@@ -134,7 +134,7 @@ public class ParsedTextTest
         Locale locale = Locale.GERMANY;
         Classification classification = type1.newClassification();
         classification.setValueForAttribute(attribute1, c2);
-        final EvalContext evalContext = new EvalContext(locale,  annoName,permissionController, user, Collections.singletonList(classification));
+        final EvalContext evalContext = new EvalContext(locale,  annoName,permissionController, new HashMap<>(),user, Collections.singletonList(classification));
         final ParsedText parsedAnnotation = type1.getParsedAnnotation(annoName);
         final String formatName = parsedAnnotation.formatName(evalContext);
 
@@ -152,7 +152,7 @@ public class ParsedTextTest
         Locale locale = Locale.GERMANY;
         Classification classification = type1.newClassification();
         classification.setValueForAttribute(attribute1, c2);
-        final EvalContext evalContext = new EvalContext(locale,  annoName,permissionController, user, Collections.singletonList(classification));
+        final EvalContext evalContext = new EvalContext(locale,  annoName,permissionController,new HashMap<>(),user, Collections.singletonList(classification));
         final ParsedText parsedAnnotation = type1.getParsedAnnotation(annoName);
         final String formatName = parsedAnnotation.formatName(evalContext);
         
@@ -187,7 +187,7 @@ public class ParsedTextTest
             classification.setValueForAttribute(attribute1, c4);
             classifications.add(classification);
         }
-        final EvalContext evalContext = new EvalContext(locale,  annoName, permissionController,user,Collections.singletonList(classifications));
+        final EvalContext evalContext = new EvalContext(locale,  annoName, permissionController,new HashMap<>(),user,Collections.singletonList(classifications));
         final String formatName = parsedAnnotation.formatName(evalContext);
         Assert.assertEquals("Welt, Welten, Rapla", formatName);
     }
@@ -237,12 +237,12 @@ public class ParsedTextTest
         Classification classification = type1.newClassification();
         classification.setValueForAttribute(attribute1, c2);
         {
-            final EvalContext evalContext = new EvalContext(locale, annoName,permissionController, user, Collections.singletonList(classification));
+            final EvalContext evalContext = new EvalContext(locale, annoName,permissionController,new HashMap<>(), user, Collections.singletonList(classification));
             final String formatName = parsedAnnotation.formatName(evalContext);
             Assert.assertEquals("Welt", formatName);
         }
         {
-            final EvalContext evalContext = new EvalContext(locale,  annoName,permissionController, user, Collections.emptyList());
+            final EvalContext evalContext = new EvalContext(locale,  annoName,permissionController,new HashMap<>(), user, Collections.emptyList());
             final String formatName = parsedAnnotation.formatName(evalContext);
             Assert.assertEquals("", formatName);
         }
@@ -262,12 +262,12 @@ public class ParsedTextTest
         final String externalRepresentation = type1.getAnnotation(annoName);
         Assert.assertEquals(annotationContent, externalRepresentation);
         {
-            final EvalContext evalContext = new EvalContext(locale,  annoName,permissionController, user, Collections.singletonList(classification));
+            final EvalContext evalContext = new EvalContext(locale,  annoName,permissionController, new HashMap<>(),user, Collections.singletonList(classification));
             final String formatName = parsedAnnotation.formatName(evalContext);
             Assert.assertEquals("Welt", formatName);
         }
         {
-            final EvalContext evalContext = new EvalContext(locale,  annoName, permissionController, user,Arrays.asList(classification, classification));
+            final EvalContext evalContext = new EvalContext(locale,  annoName, permissionController, new HashMap<>(),user,Arrays.asList(classification, classification));
             final String formatName = parsedAnnotation.formatName(evalContext);
             Assert.assertEquals("WeltWelt", formatName);
         }
@@ -300,7 +300,7 @@ public class ParsedTextTest
             classification.setValueForAttribute(attribute1, c4);
             classifications.add(classification);
         }
-        final EvalContext evalContext = new EvalContext(locale,  annoName, permissionController, user,Collections.singletonList(classifications));
+        final EvalContext evalContext = new EvalContext(locale,  annoName, permissionController, new HashMap<>(),user,Collections.singletonList(classifications));
         final String formatName = parsedAnnotation.formatName(evalContext);
         Assert.assertEquals("Welt, Welten", formatName);
     }
@@ -332,7 +332,7 @@ public class ParsedTextTest
             classification.setValueForAttribute(attribute1, c4);
             classifications.add(classification);
         }
-        final EvalContext evalContext = new EvalContext(locale,  annoName, permissionController, user,Collections.singletonList(classifications));
+        final EvalContext evalContext = new EvalContext(locale,  annoName, permissionController,new HashMap<>(), user,Collections.singletonList(classifications));
         final String formatName = parsedAnnotation.formatName(evalContext);
         Assert.assertEquals("Welten", formatName);
     }
@@ -356,7 +356,7 @@ public class ParsedTextTest
         ReservationImpl reservation = new ReservationImpl( new Date(), new Date());
         reservation.setClassification( classification ) ;
 
-        final EvalContext evalContext = new EvalContext(locale,  annoName, permissionController, user,Collections.singletonList(reservation));
+        final EvalContext evalContext = new EvalContext(locale,  annoName, permissionController,new HashMap<>(), user,Collections.singletonList(reservation));
         final String formatName = parsedAnnotation.formatName(evalContext);
         Assert.assertEquals("-60", formatName);
 
@@ -391,12 +391,12 @@ public class ParsedTextTest
             classifications.add(classification);
         }
         {
-            final EvalContext evalContext = new EvalContext(locale, annoName, permissionController, user, Collections.singletonList(classifications));
+            final EvalContext evalContext = new EvalContext(locale, annoName, permissionController, new HashMap<>(),user, Collections.singletonList(classifications));
             final String formatName = parsedAnnotation.formatName(evalContext);
             Assert.assertEquals("Welte, Welt, Rapla", formatName);
         }
         {
-            final EvalContext evalContext = new EvalContext(locale, null, permissionController, user, Collections.singletonList(classifications));
+            final EvalContext evalContext = new EvalContext(locale, null, permissionController, new HashMap<>(),user, Collections.singletonList(classifications));
             final String formatName = parsedAnnotation.formatName(evalContext);
             Assert.assertEquals("Welten, Welt, Rapla", formatName);
         }
@@ -429,7 +429,7 @@ public class ParsedTextTest
             classification.setValueForAttribute(attribute1, c4);
             classifications.add(classification);
         }
-        final EvalContext evalContext = new EvalContext(locale,  annoName, permissionController, user,Collections.singletonList(classifications));
+        final EvalContext evalContext = new EvalContext(locale,  annoName, permissionController,new HashMap<>(),user,Collections.singletonList(classifications));
         final String formatName = parsedAnnotation.formatName(evalContext);
         Assert.assertEquals("Welten, Welt", formatName);
     }

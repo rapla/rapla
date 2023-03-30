@@ -4,30 +4,21 @@
 	<groupId>org.rapla</groupId>
 	<artifactId>rapla-parent</artifactId>
 	<version>2.0-SNAPSHOT</version>
-	<url>https://github.com/rapla/rapla</url>
 	<description>rapla - parent</description>
 	<name>rapla - parent</name>
-	<inceptionYear>2000</inceptionYear>
-	<licenses>
-		<license>
-			<name>GNU GPL v3</name>
-			<url>http://www.gnu.org/licenses/gpl-3.0.html</url>
-			<distribution>repo</distribution>
-		</license>
-	</licenses>
 	<packaging>pom</packaging>
 	<properties>
 		<disableGwtCompile>false</disableGwtCompile>
-		<slf4j.version>1.7.25</slf4j.version>
-		<logback.version>1.2.9</logback.version>
+		<slf4j.version>1.7.36</slf4j.version>
+		<logback.version>1.2.11</logback.version>
 		<intellijAnnotations.version>12.0</intellijAnnotations.version>
 		<ical4j.version>3.2.4</ical4j.version>
 		<rxjava.version>3.1.5</rxjava.version>
 		<java.version>1.8</java.version>
 		<exchange.webservice.api>2.0</exchange.webservice.api>
-		<jetty.version>9.4.49.v20220914</jetty.version>
+		<jetty.version>9.4.51.v20230217</jetty.version>
 		<mail.version>1.4.7</mail.version>
-		<jackson.version>2.14.0-rc3</jackson.version>
+		<jackson.version>2.14.2</jackson.version>
 		<maven.install.skip>false</maven.install.skip>
 		<guava.version>21.0</guava.version>
 		<requestfactory.version>2.8.0</requestfactory.version>
@@ -56,7 +47,7 @@
 		<doc.version>${project.version}</doc.version>
 		<doc.buildtime>${maven.build.timestamp} GMT+0 </doc.buildtime>
 		<doc.revision></doc.revision>
-		<doc.year>2000-2022</doc.year>
+		<doc.year>2000-2023</doc.year>
 		<doc.copyright>Rapla Team</doc.copyright>
 		<doc.developer-list-link>http://lists.sourceforge.net/lists/listinfo/rapla-developers</doc.developer-list-link>
 		<doc.developer-list>rapla-developers@lists.sourceforge.net</doc.developer-list>

@@ -1,7 +1,7 @@
 This README is for running Rapla as server. You will find more information on our
 documentation pages on 
 
-http://code.google.com/p/rapla/
+https://github.com/rapla/rapla/
 
 
 The Rapla server:
@@ -14,7 +14,7 @@ You can start it with:
 raplaserver.bat (Windows)
 raplaserver.sh run (Unix)
 
-If you want to install Rapla-Server as a SERVICE on Win NT/2000/XP/Vista/7 or linux 
+If you want to install Rapla-Server as a SERVICE on Win 11 or linux
 use the scripts in the service/bin folder to test/install/uninstall rapla as a service.
 
 You can also try the script service/bin/TestWrapper instead of raplaserver if it fails 

@@ -5,6 +5,7 @@ import org.rapla.storage.PermissionController;
 
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 
 
 final public class EvalContext
@@ -16,17 +17,19 @@ final public class EvalContext
     private EvalContext parent;
     private PermissionController permissionController;
     private User user;
+    Map<String,Object> environment;
 
-    public EvalContext(Locale locale, String annotationName, PermissionController permissionController,User user,List contextObjects)
+    public EvalContext(Locale locale, String annotationName, PermissionController permissionController,Map<String,Object> environment, User user, List contextObjects)
     {
-        this(locale, annotationName,permissionController, user, contextObjects, 0);
+        this(locale, annotationName,permissionController,environment, user, contextObjects, 0);
     }
 
-    EvalContext(Locale locale, String annotationName, PermissionController permissionController,User user,List contextObjects, int callStackDepth)
+    EvalContext(Locale locale, String annotationName, PermissionController permissionController,Map<String,Object> environment, User user,List contextObjects, int callStackDepth)
     {
         this.locale = locale;
         this.user = user;
         this.permissionController = permissionController;
+        this.environment = environment;
         this.callStackDepth = callStackDepth;
         this.annotationName = annotationName;
         this.contextObjects = contextObjects;
@@ -36,6 +39,7 @@ final public class EvalContext
     {
         this.locale = parent.locale;
         this.user = parent.user;
+        this.environment = parent.environment;
         this.callStackDepth = parent.callStackDepth + 1;
         this.annotationName = parent.annotationName;
         this.contextObjects = contextObjects;
@@ -45,6 +49,10 @@ final public class EvalContext
     public User getUser()
     {
         return user;
+    }
+
+    public Map<String, Object> getEnvironment() {
+        return environment;
     }
 
     PermissionController getPermissionController()
@@ -59,7 +67,7 @@ final public class EvalContext
 
     public EvalContext clone(Locale locale)
     {
-        EvalContext clone = new EvalContext(locale, annotationName, permissionController,user,contextObjects, callStackDepth);
+        EvalContext clone = new EvalContext(locale, annotationName, permissionController,environment,user,contextObjects, callStackDepth);
         return clone;
     }
 

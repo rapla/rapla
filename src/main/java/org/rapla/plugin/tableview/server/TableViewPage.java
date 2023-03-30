@@ -2,6 +2,7 @@ package org.rapla.plugin.tableview.server;
 
 import org.rapla.components.util.Tools;
 import org.rapla.entities.domain.Allocatable;
+import org.rapla.entities.dynamictype.DynamicTypeAnnotations;
 import org.rapla.facade.CalendarModel;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
@@ -135,10 +136,13 @@ abstract public class TableViewPage<T>
     }
 
     public String getCalendarBody(List<RaplaTableColumn<T>> columPlugins, Collection<T> rowObjects, Map<RaplaTableColumn<T>, Integer> sortDirections) {
-        final List<T> rows = RaplaTableModel.sortRows(rowObjects, sortDirections, getFallbackComparator());
+
+        //FIXME Replace with KeyNameFormat
+        final List<T> rows = RaplaTableModel.sortRows(rowObjects, sortDirections, getFallbackComparator(), DynamicTypeAnnotations.KEY_NAME_FORMAT);
         if (isCsv())
         {
-            return RaplaTableModel.getCSV(columPlugins, rows);
+            String contextAnnotationName = DynamicTypeAnnotations.KEY_NAME_FORMAT;
+            return RaplaTableModel.getCSV(columPlugins, rows, contextAnnotationName);
         }
         else
         {
