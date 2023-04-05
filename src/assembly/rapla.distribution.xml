@@ -23,7 +23,7 @@
 			<outputDirectory></outputDirectory>
 		</file>
 		<file>
-			<source>${project.build.directory}/rapla-${version}.war</source>
+			<source>${project.build.directory}/rapla-${version}-war.war</source>
 			<destName>rapla.war</destName>
 			<outputDirectory>webapps</outputDirectory>
 		</file>
