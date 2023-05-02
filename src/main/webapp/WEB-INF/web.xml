@@ -4,10 +4,6 @@
  -->
 <web-app>
   <!-- Servlet Configuration ========================================== -->
-  <listener>
-    <listener-class>se.jiderhamn.classloader.leak.prevention.ClassLoaderLeakPreventor</listener-class>
-  </listener>  
-  
   <servlet>
     <servlet-name>RaplaServer</servlet-name>
     <display-name>RaplaServer</display-name>

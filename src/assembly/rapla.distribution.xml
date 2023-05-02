@@ -18,11 +18,6 @@
 			<outputDirectory>contexts</outputDirectory>
 		</file>
 		<file>
-			<source>${rapla.distribution.directory}/templates/rapla.exe</source>
-			<destName>raplaclient.exe</destName>
-			<outputDirectory></outputDirectory>
-		</file>
-		<file>
 			<source>${project.build.directory}/rapla-${version}-war.war</source>
 			<destName>rapla.war</destName>
 			<outputDirectory>webapps</outputDirectory>
@@ -111,14 +106,6 @@
 			<includes>
 				<include>logback.xml</include>
 				<include>logback-access.xml</include>
-			</includes>
-		</fileSet>
-		<fileSet>
-			<directory>${rapla.distribution.directory}/templates</directory>
-			<outputDirectory></outputDirectory>
-			<includes>
-				<include>rapla*.exe</include>
-				<include>rapla*.l4j.ini</include>
 			</includes>
 		</fileSet>
 		<fileSet>
