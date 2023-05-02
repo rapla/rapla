@@ -6,21 +6,23 @@ https://github.com/rapla/rapla/
 
 Requirements:
 
-You need JAVA: Java 8 at least (1.11 recommended).
-You can download it from java.com
+You need JAVA: Java 8 at least (17 recommended).
+There are multiple sources of openjdk here are two popular examples
 
-* The SDK works for the binary and source distribution but is very
-  large 
+Amazon Corretto
 
-* The JRE will only work for the binary distribution (Compiler
-  missing) but is much smaller
+https://aws.amazon.com/corretto/
+
+Eclipse Temurin
+
+https://projects.eclipse.org/projects/adoptium.temurin
 
 
 STARTING RAPLA SERVER:
 
-Start raplaserver.exe (raplaserver.sh under Unix).
+Start raplaserver.bat (raplaserver.sh under Unix).
 
-To start Rapla from the command-line, you may to set the java command
+After installing java to start Rapla from the command-line, you may to set the java command
 in your PATH-Variable (if its not already there),
 
 Example:
