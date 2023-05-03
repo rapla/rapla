@@ -143,7 +143,7 @@ public class RaplaJNLPPageGenerator extends RaplaComponent implements RaplaPageG
 		out.println("<information>");
 		out.println(" <title>"+menuName+"</title>");
 		out.println(" <vendor>Rapla team</vendor>");
-		out.println(" <homepage href=\"http://code.google.com/p/rapla/\"/>");
+		out.println(" <homepage href=\"https://rapla.org/\"/>");
 		out.println(" <description>Resource Scheduling Application</description>");
 		// we changed the logo from .gif to .png to make it more sexy
         //differentiate between icon and splash because of different sizes!
@@ -171,7 +171,7 @@ public class RaplaJNLPPageGenerator extends RaplaComponent implements RaplaPageG
     		out.println("</security>");
 		}
         out.println("<resources>");
-		out.println("  <j2se version=\"1.4+\"/>");
+		out.println("  <j2se version=\"1.6+\"/>");
 		
 		String passedUsername = request.getParameter("username");
 		if ( passedUsername != null)
