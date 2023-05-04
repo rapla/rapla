@@ -1,6 +1,5 @@
 package org.rapla.client;
 
-import jsinterop.annotations.JsType;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.AppointmentBlock;
 import org.rapla.entities.domain.Reservation;
@@ -29,7 +28,6 @@ import java.util.Set;
     </li>
     </ul>
  */
-@JsType
 public interface ReservationController
 {
 //    void edit( Reservation reservation ) throws RaplaException;

@@ -25,7 +25,7 @@ import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.Period;
 import org.rapla.entities.domain.Reservation;
 import org.rapla.entities.dynamictype.DynamicType;
-import org.rapla.entities.storage.ImportExportEntity;
+import org.rapla.entities.storage.ExternalSyncEntity;
 import org.rapla.facade.Conflict;
 import org.rapla.framework.RaplaException;
 
@@ -60,7 +60,7 @@ public class RaplaMainReader extends RaplaXMLReader
         localnameTable.put( "period", readerMap.get( Period.class ) );
         localnameTable.put( "reservation", readerMap.get( Reservation.class ) );
         localnameTable.put( "conflict", readerMap.get( Conflict.class ) );
-        localnameTable.put( "importexports", readerMap.get( ImportExportEntity.class ) );
+        localnameTable.put( "importexports", readerMap.get( ExternalSyncEntity.class ) );
         addChildHandler( readerMap.values() );
     }
 

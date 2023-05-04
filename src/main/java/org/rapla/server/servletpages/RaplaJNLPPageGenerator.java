@@ -11,7 +11,6 @@ import org.rapla.facade.RaplaFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.TypedComponentRole;
 import org.rapla.framework.internal.AbstractRaplaLocale;
-import org.rapla.inject.dagger.DaggerReflectionStarter;
 import org.rapla.server.ServerServiceContainer;
 
 import javax.inject.Inject;
@@ -43,12 +42,11 @@ public class RaplaJNLPPageGenerator
     RaplaFacade facade;
     @Inject
     RaplaResources i18n;
-    private final String moduleId;
+
 
     @Inject
     public RaplaJNLPPageGenerator()
     {
-        moduleId = DaggerReflectionStarter.loadModuleId(ServerServiceContainer.class.getClassLoader());
     }
 
     private String getCodebase(HttpServletRequest request)
@@ -174,13 +172,13 @@ public class RaplaJNLPPageGenerator
         out.println("<information>");
         out.println(" <title>" + menuName + "</title>");
         out.println(" <vendor>Rapla team</vendor>");
-        out.println(" <homepage href=\"http://code.google.com/p/rapla/\"/>");
+        out.println(" <homepage href=\"https://rapla.org\"/>");
         out.println(" <description>Resource Scheduling Application</description>");
         // we changed the logo from .gif to .png to make it more sexy
         //differentiate between icon and splash because of different sizes!
-        out.println(" <icon kind=\"default\" href=\"" + webstartRoot + "/webclient/rapla_64x64.png\" width=\"64\" height=\"64\"/> ");
-        out.println(" <icon kind=\"desktop\" href=\"" + webstartRoot + "/webclient/rapla_128x128.png\" width=\"128\" height=\"128\"/> ");
-        out.println(" <icon kind=\"shortcut\" href=\"" + webstartRoot + "/webclient/rapla_64x64.png\" width=\"64\" height=\"64\"/> ");
+        //out.println(" <icon kind=\"default\" href=\"" + webstartRoot + "/webclient/rapla_64x64.png\" width=\"64\" height=\"64\"/> ");
+        //out.println(" <icon kind=\"desktop\" href=\"" + webstartRoot + "/webclient/rapla_128x128.png\" width=\"128\" height=\"128\"/> ");
+        //out.println(" <icon kind=\"shortcut\" href=\"" + webstartRoot + "/webclient/rapla_64x64.png\" width=\"64\" height=\"64\"/> ");
         // and here aswell
 
         out.println(" <icon kind=\"splash\" href=\"" + webstartRoot + "/webclient/logo.png\"/> ");
@@ -214,8 +212,9 @@ public class RaplaJNLPPageGenerator
             out.println("  <property name=\"" + usernameProperty + "\" value=\"" + safeUsername + "\"/>");
         }
         {
-            String moduleIdProperty = "jnlp.org.rapla.moduleId";
-            out.println("  <property name=\"" + moduleIdProperty + "\" value=\"" + moduleId + "\"/>");
+
+            //String moduleIdProperty = "jnlp.org.rapla.moduleId";
+            //out.println("  <property name=\"" + moduleIdProperty + "\" value=\"" + moduleId + "\"/>");
         }
         out.println(getLibsJNLP(request.getServletContext(), webstartRoot));
         out.println("</resources>");

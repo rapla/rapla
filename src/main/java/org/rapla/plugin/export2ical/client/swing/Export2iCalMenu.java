@@ -42,6 +42,8 @@ public class Export2iCalMenu extends RaplaGUIComponent implements ExportMenuExte
     private final IOInterface ioInterface;
     private final DialogUiFactoryInterface dialogUiFactory;
 
+	private boolean enabled = false;
+
 	@Inject
 	public Export2iCalMenu(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger,ICalExport exportService, Export2iCalResources i18nIcal, CalendarModel calendarModel, IOInterface ioInterface,  DialogUiFactoryInterface dialogUiFactory){
 		super(facade, i18n, raplaLocale, logger);
@@ -68,7 +70,12 @@ public class Export2iCalMenu extends RaplaGUIComponent implements ExportMenuExte
 	@Override
 	public boolean isEnabled()
 	{
-		return false;
+		return enabled;
+	}
+
+	@Override
+	public void setEnabled(boolean enabled) {
+		this.enabled = enabled;
 	}
 
 	public void actionPerformed(ActionEvent evt) {

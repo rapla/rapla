@@ -1,6 +1,5 @@
 package org.rapla.storage.dbrm;
 
-import jsinterop.annotations.JsMethod;
 
 import java.util.Date;
 
@@ -17,13 +16,11 @@ public class LoginTokens {
         this.validUntil = validUntil;
     }
 
-    @JsMethod
     public String getAccessToken()
     {
         return accessToken;
     }
 
-    @JsMethod
     public Date getValidUntil()
     {
         return validUntil;

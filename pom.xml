@@ -4,14 +4,27 @@
     <parent>
         <groupId>org.rapla</groupId>
         <artifactId>rapla-parent</artifactId>
-        <version>2.0-SNAPSHOT</version>
+        <version>2.0-beta2</version>
         <relativePath>parent/pom.xml</relativePath>
     </parent>
+    <url>https://github.com/rapla/rapla</url>
     <name>rapla - resource scheduling and event planing</name>
     <description>rapla - resource scheduling and event planing</description>
     <groupId>org.rapla</groupId>
     <artifactId>rapla</artifactId>
-    <packaging>war</packaging>
+    <inceptionYear>2000</inceptionYear>
+    <licenses>
+        <license>
+            <name>GNU Affero General Public License</name>
+            <url>https://www.gnu.org/licenses/agpl-3.0.de.html</url>
+            <distribution>repo</distribution>
+        </license>
+        <license>
+            <name>Apache 2</name>
+            <url>https://www.apache.org/licenses/LICENSE-2.0</url>
+            <distribution>repo</distribution>
+        </license>
+    </licenses>
     <scm>
         <connection>scm:git:git://github.com/rapla/rapla.git</connection>
         <url>https://github.com/rapla/rapla.git</url>
@@ -33,13 +46,11 @@
         <url>http://rapla.org</url>
     </organization>
     <properties>
-		<org.rapla.parentModules></org.rapla.parentModules>
+        <maven.compiler.source>1.8</maven.compiler.source>
+        <maven.compiler.target>1.8</maven.compiler.target>
     </properties>
 	<build>
         <resources>
-            <resource>
-                <directory>src/main/java</directory>
-            </resource>
             <resource>
                 <directory>${basedir}/src/main/resources-filtered</directory>
                 <filtering>true</filtering>
@@ -47,13 +58,6 @@
             <resource>
                 <directory>${basedir}/src/main/resources</directory>
                 <filtering>false</filtering>
-            </resource>
-            <resource>
-                <directory>${basedir}/src/main/gwt-jre</directory>
-                <filtering>false</filtering>
-                <excludes>
-                    <exclude>jre</exclude>
-                </excludes>
             </resource>
         </resources>
 		<plugins>
@@ -79,7 +83,7 @@
                                     <outputDirectory>${project.build.directory}/${project.build.finalName}/webclient</outputDirectory>
                                 </artifactItem>
                                 <artifactItem>
-                                    <groupId>io.reactivex.rxjava2</groupId>
+                                    <groupId>io.reactivex.rxjava3</groupId>
                                     <artifactId>rxjava</artifactId>
                                     <version>${rxjava.version}</version>
                                     <type>jar</type>
@@ -102,6 +106,32 @@
                                     <overWrite>true</overWrite>
                                     <outputDirectory>${project.build.directory}/${project.build.finalName}/webclient</outputDirectory>
                                 </artifactItem>
+                                <!--
+                                <artifactItem>
+                                    <groupId>com.fasterxml.jackson.core</groupId>
+                                    <artifactId>jackson-databind</artifactId>
+                                    <version>${jackson.version}</version>
+                                    <type>jar</type>
+                                    <overWrite>true</overWrite>
+                                    <outputDirectory>${project.build.directory}/${project.build.finalName}/webclient</outputDirectory>
+                                </artifactItem>
+                                <artifactItem>
+                                    <groupId>com.fasterxml.jackson.core</groupId>
+                                    <artifactId>jackson-core</artifactId>
+                                    <version>${jackson.version}</version>
+                                    <type>jar</type>
+                                    <overWrite>true</overWrite>
+                                    <outputDirectory>${project.build.directory}/${project.build.finalName}/webclient</outputDirectory>
+                                </artifactItem>
+                                <artifactItem>
+                                    <groupId>com.fasterxml.jackson.core</groupId>
+                                    <artifactId>jackson-annotations</artifactId>
+                                    <version>${jackson.version}</version>
+                                    <type>jar</type>
+                                    <overWrite>true</overWrite>
+                                    <outputDirectory>${project.build.directory}/${project.build.finalName}/webclient</outputDirectory>
+                                </artifactItem>
+                                -->
                                 <artifactItem>
                                     <groupId>javax.inject</groupId>
                                     <artifactId>javax.inject</artifactId>
@@ -114,14 +144,6 @@
                                     <groupId>org.rapla</groupId>
                                     <artifactId>restinject</artifactId>
                                     <version>${restinject.version}</version>
-                                    <type>jar</type>
-                                    <overWrite>true</overWrite>
-                                    <outputDirectory>${project.build.directory}/${project.build.finalName}/webclient</outputDirectory>
-                                </artifactItem>
-                                <artifactItem>
-                                    <groupId>com.google.dagger</groupId>
-                                    <artifactId>dagger</artifactId>
-                                    <version>${dagger.version}</version>
                                     <type>jar</type>
                                     <overWrite>true</overWrite>
                                     <outputDirectory>${project.build.directory}/${project.build.finalName}/webclient</outputDirectory>
@@ -164,7 +186,8 @@
                             <archive>
                             	<manifestEntries>
                             		<Permissions>all-permissions</Permissions>
-                            	</manifestEntries>
+                                    <Multi-Release>true</Multi-Release>
+                                </manifestEntries>
                             </archive>
                             <classifier>client</classifier>
                         </configuration>
@@ -187,13 +210,13 @@
             </plugin>
             <plugin>
                 <artifactId>maven-antrun-plugin</artifactId>
-                <version>1.8</version>
+                <version>3.1.0</version>
                 <executions>
                     <execution>
                         <id>generateclientlibsproperties</id>
                         <phase>prepare-package</phase>
                         <configuration>
-                            <tasks>
+                            <target>
                                 <mkdir dir="${webapp.dir}/webclient"/>
                                 <path id="dist.contents">
                                     <fileset dir="${webapp.dir}/webclient">
@@ -212,7 +235,7 @@
                                          preserveLastModified="true" />
                                 <replace file="${webapp.dir}/WEB-INF/classes/clientlibs.properties"
                                          token="${path.separator}" value=";" preserveLastModified="true" />
-                            </tasks>
+                            </target>
                         </configuration>
                         <goals>
                             <goal>run</goal>
@@ -247,16 +270,26 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-war-plugin</artifactId>
-                <version>3.0.0</version>
+                <version>3.3.2</version>
+                <executions>
+                    <execution>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>war</goal>
+                        </goals>
+                    </execution>
+                </executions>
                 <configuration>
                     <archiveClasses>true</archiveClasses>
-                    <warSourceExcludes>org.rapla.Rapla/Rapla.nocache.js</warSourceExcludes>
+                    <!-- this is relative to the pom.xml directory -->
+<!--
                     <webResources>
                         <resource>
-                            <!-- this is relative to the pom.xml directory -->
                             <directory>../raplajsclient/dist</directory>
                         </resource>
                     </webResources>
+                    -->
+                    <classifier>war</classifier>
                     <packagingExcludes>**/*.java</packagingExcludes>
                     <warSourceDirectory>${basedir}/src/main/webapp</warSourceDirectory>
                     <webXml>${basedir}/src/main/webapp/WEB-INF/web.xml</webXml>
@@ -267,20 +300,6 @@
                 <artifactId>maven-assembly-plugin</artifactId>
                 <version>2.5.5</version>
                 <executions>
-                    <execution>
-                        <id>rapla.distribution</id>
-                        <phase>package</phase>
-                        <goals>
-                            <goal>single</goal>
-                        </goals>
-                        <configuration>
-                            <outputDirectory>${project.build.directory}/distribution</outputDirectory>
-                            <finalName>rapla-${project.version}</finalName>
-                            <descriptor>${basedir}/src/assembly/rapla.distribution.xml</descriptor>
-                            <appendAssemblyId>false</appendAssemblyId>
-                            <attach>false</attach>
-                        </configuration>
-                    </execution>
                     <execution>
                         <phase>package</phase>
                         <id>rapla.jar</id>
@@ -295,64 +314,25 @@
                             <attach>true</attach>
                         </configuration>
                     </execution>
+                    <execution>
+                        <id>rapla.distribution</id>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>single</goal>
+                        </goals>
+                        <configuration>
+                            <outputDirectory>${project.build.directory}/distribution</outputDirectory>
+                            <finalName>rapla-${project.version}</finalName>
+                            <descriptor>${basedir}/src/assembly/rapla.distribution.xml</descriptor>
+                            <appendAssemblyId>false</appendAssemblyId>
+                            <attach>false</attach>
+                        </configuration>
+                    </execution>
+
                 </executions>
             </plugin>
-            <!--
-
-            <plugin>
-                <groupId>com.vertispan.j2cl</groupId>
-                <artifactId>j2cl-maven-plugin</artifactId>
-                <version>0.19-SNAPSHOT</version>
-                <inherited>false</inherited>
-                <configuration>
-                    <webappDirectory>${project.basedir}/src/main/webapp/</webappDirectory>
-                </configuration>
-            </plugin>
-            <plugin>
-               <groupId>org.apache.maven.plugins</groupId>
-               <artifactId>maven-jar-plugin</artifactId>
-               <version>2.2</version>
-               <executions>
-                   <execution>
-                       <goals>
-                           <goal>test-jar</goal>
-                       </goals>
-                   </execution>
-               </executions>
-           </plugin>
-           -->
         </plugins>
     </build>
-    <!--
-    <repositories>
-        <repository>
-            <id>vertispan-j2cl</id>
-            <name>Vertispan hosted artifacts-releases</name>
-            <url>https://repo.vertispan.com/j2cl</url>
-            <releases>
-                <enabled>true</enabled>
-            </releases>
-            <snapshots>
-                <enabled>true</enabled>
-                <checksumPolicy>fail</checksumPolicy>
-            </snapshots>
-        </repository>
-    </repositories>
-    <pluginRepositories>
-        <pluginRepository>
-            <id>vertispan-j2cl</id>
-            <name>Vertispan hosted artifacts-releases</name>
-            <url>https://repo.vertispan.com/j2cl</url>
-            <releases>
-                <enabled>true</enabled>
-            </releases>
-            <snapshots>
-                <enabled>true</enabled>
-                <checksumPolicy>fail</checksumPolicy>
-            </snapshots>
-        </pluginRepository>
-    </pluginRepositories>
-    -->
     <profiles>
         <profile>
             <id>deploy</id>

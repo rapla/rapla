@@ -1,6 +1,5 @@
 package org.rapla.client.internal;
 
-import io.reactivex.functions.BiFunction;
 import org.rapla.RaplaResources;
 import org.rapla.client.CalendarContainer;
 import org.rapla.client.EditApplicationEventContext;
@@ -8,15 +7,9 @@ import org.rapla.client.PopupContext;
 import org.rapla.client.RaplaWidget;
 import org.rapla.client.dialog.DialogUiFactoryInterface;
 import org.rapla.client.event.ApplicationEvent;
-import org.rapla.client.event.ApplicationEventBus;
 import org.rapla.client.event.TaskPresenter;
-import org.rapla.client.internal.admin.client.TypeCategoryView;
-import org.rapla.entities.Category;
-import org.rapla.entities.dynamictype.DynamicType;
-import org.rapla.facade.CalendarModel;
 import org.rapla.facade.CalendarSelectionModel;
 import org.rapla.facade.ModificationEvent;
-import org.rapla.facade.RaplaFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.inject.Extension;
 import org.rapla.scheduler.CommandScheduler;
@@ -27,7 +20,6 @@ import org.rapla.scheduler.Subject;
 
 import javax.inject.Inject;
 import javax.inject.Provider;
-import java.util.List;
 
 @Extension(id = ResourceCalendarTask.ID, provides = TaskPresenter.class)
 public class ResourceCalendarTask implements TaskPresenter {

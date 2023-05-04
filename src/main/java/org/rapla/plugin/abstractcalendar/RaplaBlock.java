@@ -13,7 +13,6 @@
 
 package org.rapla.plugin.abstractcalendar;
 
-import jsinterop.annotations.JsType;
 import org.rapla.components.calendarview.Block;
 import org.rapla.components.util.DateTools;
 import org.rapla.components.i18n.I18nBundle;
@@ -32,7 +31,6 @@ import java.util.LinkedHashSet;
 import java.util.List;
 
 
-@JsType
 public class RaplaBlock implements Block
 {
     RaplaBuilder.RaplaBlockContext m_context;

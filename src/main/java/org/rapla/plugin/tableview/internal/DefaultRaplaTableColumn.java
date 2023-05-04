@@ -72,18 +72,18 @@ public class DefaultRaplaTableColumn<T> implements RaplaTableColumn<T>
         return column.getName(locale);
     }
 
-    public Object getValue(T object)
+    public Object getValue(T object, String contextAnnotationName)
     {
-        return format(object, false);
+        return format(object, contextAnnotationName);
     }
 
     public String getHtmlValue(T object)
     {
-        Object value = format(object, true);
+        Object value = format(object, DynamicTypeAnnotations.KEY_NAME_FORMAT_EXPORT);
         return formatHtml(value);
     }
 
-    protected Object format(Object object, boolean export)
+    protected Object format(Object object, String contextAnnotationName)
     {
         final Locale locale = getLocale();
         final String annotationName = getAnnotationName();
@@ -93,7 +93,6 @@ public class DefaultRaplaTableColumn<T> implements RaplaTableColumn<T>
         }
         final DynamicTypeImpl type = (DynamicTypeImpl) classification.getType();
         ParsedText parsedAnnotation = type.getParsedAnnotation(annotationName);
-        String contextAnnotationName = export ? DynamicTypeAnnotations.KEY_NAME_FORMAT_EXPORT : DynamicTypeAnnotations.KEY_NAME_FORMAT;
         final EvalContext context = type.createEvalContext(user,locale, contextAnnotationName, Collections.singletonList(object));
         if (parsedAnnotation == null)
         {

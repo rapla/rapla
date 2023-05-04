@@ -1,9 +1,7 @@
 package org.rapla.client.event;
 
-import jsinterop.annotations.JsType;
 import org.rapla.client.PopupContext;
 
-@JsType
 public class ApplicationEvent
 {
     private final String info;

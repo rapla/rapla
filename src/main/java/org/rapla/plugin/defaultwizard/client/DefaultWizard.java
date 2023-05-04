@@ -12,7 +12,7 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.plugin.defaultwizard.client;
 
-import io.reactivex.functions.Consumer;
+import io.reactivex.rxjava3.functions.Consumer;
 import org.rapla.RaplaResources;
 import org.rapla.client.PopupContext;
 import org.rapla.client.event.ApplicationEvent;
@@ -65,6 +65,9 @@ import java.util.List;
         this.permissionController = raplaFacade.getPermissionController();
         this.model = model;
         this.eventBus = eventBus;
+    }
+
+    public void setEnabled( boolean b) {
     }
 
     @Override public boolean isEnabled()

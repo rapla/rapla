@@ -84,6 +84,12 @@ public class MultiCalendarViewSwing implements MultiCalendarView
     private Presenter presenter;
 
     @Override
+    public void setFiltered(boolean b)
+    {
+        filter.setFiltered( b );
+    }
+
+    @Override
     public void setPresenter(Presenter presenter) {
         this.presenter = presenter;
     }

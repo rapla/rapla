@@ -12,8 +12,6 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.entities.dynamictype;
 
-import jsinterop.annotations.JsIgnore;
-import jsinterop.annotations.JsType;
 import org.rapla.entities.Named;
 
 import java.util.Collection;
@@ -23,7 +21,6 @@ import java.util.Locale;
  * need one classification for each object you want to
  * classify.
  */
-@JsType
 public interface Classification extends Named,Cloneable {
     DynamicType getType();
     String getName(Locale locale);
@@ -32,7 +29,6 @@ public interface Classification extends Named,Cloneable {
     Attribute getAttribute(String key);
     void setValueForAttribute(Attribute attribute,Object value);
     <T> void setValues(String attributeKey, T[] values);
-    @JsIgnore
     <T> void setValues(Attribute attribute,Collection<T> values);
     /** calls setValue(getAttribute(key),value)*/
     void setValue(String key,Object value);

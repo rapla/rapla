@@ -4,7 +4,7 @@ import org.rapla.framework.RaplaException;
 import org.rapla.inject.DefaultImplementation;
 import org.rapla.inject.InjectionContext;
 import org.rapla.logger.Logger;
-import org.rapla.rest.RemoteLogger;
+import org.rapla.enpoints.RemoteLogger;
 
 import javax.inject.Inject;
 

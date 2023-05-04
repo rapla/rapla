@@ -10,7 +10,7 @@ import org.apache.http.impl.io.SessionInputBufferImpl;
 import org.rapla.ConnectInfo;
 import org.rapla.RaplaStartupEnvironment;
 import org.rapla.client.ClientService;
-import org.rapla.client.swing.internal.dagger.DaggerClientCreator;
+import org.rapla.client.swing.internal.ClientCreator;
 import org.rapla.entities.User;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaInitializationException;
@@ -46,7 +46,7 @@ public class StandaloneStarter extends GUIStarter implements JsonRemoteConnector
 
     private ClientService create(RaplaStartupEnvironment env) throws Exception
     {
-        return DaggerClientCreator.create(env);
+        return ClientCreator.create(env);
     }
 
     public StandaloneStarter(Logger logger, ServerContainerContext backendContext, ServerStarter serverStarter, URL mockDownloadUrl, String startupUser,

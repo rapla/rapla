@@ -12,6 +12,7 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.plugin.autoexport.server;
 
+import org.jetbrains.annotations.NotNull;
 import org.rapla.RaplaResources;
 import org.rapla.components.util.IOUtil;
 import org.rapla.components.util.ParseDateException;
@@ -31,6 +32,7 @@ import org.rapla.plugin.abstractcalendar.server.AbstractHTMLCalendarPage;
 import org.rapla.plugin.autoexport.AutoExportPlugin;
 import org.rapla.plugin.autoexport.AutoExportResources;
 import org.rapla.server.extensionpoints.HTMLViewPage;
+import org.rapla.storage.StorageOperator;
 
 import javax.inject.Inject;
 import javax.inject.Provider;
@@ -40,6 +42,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
+import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
 import javax.ws.rs.core.Context;
 import java.io.IOException;
@@ -71,14 +74,14 @@ import java.util.TreeSet;
  * &year=<year>:  int-value of the year
  * &today:  will set the view to the current day. Ignores day, month and year
  */
-@Path("{a:calendar|calendar.csv}")
+@Path("{path:calendar|calendar.csv|internal_calendar|internal_calendar.csv}")
 @Singleton
 public class CalendarPageGenerator
 {
     @Inject 
     Map<String, Provider<HTMLViewPage>> factoryMap;
     @Inject 
-    RaplaFacade facade;
+    public RaplaFacade facade;
     @Inject 
     Logger logger;
     @Inject 
@@ -92,6 +95,11 @@ public class CalendarPageGenerator
     public CalendarPageGenerator()
     {
     }
+
+    public RaplaFacade getFacade() {
+        return facade;
+    }
+
 
     private String getTitle(String key, CalendarModelConfiguration conf)
     {
@@ -144,7 +152,7 @@ public class CalendarPageGenerator
             out.println("<head>");
             out.println("<title>" + calendarName + "</title>");
             String charset = raplaLocale.getCharsetNonUtf();//
-    		out.println("  <meta HTTP-EQUIV=\"Content-Type\" content=\"text/html; charset=" + charset + "\">");
+            out.println("  <meta HTTP-EQUIV=\"Content-Type\" content=\"text/html; charset=" + charset + "\">");
             out.println("</head>");
             out.println("<body>");
 
@@ -198,7 +206,7 @@ public class CalendarPageGenerator
 
                     String filename = URLEncoder.encode(key, "UTF-8");
                     out.print("<li>");
-                    String baseUrl = AbstractHTMLCalendarPage.getUrl( request, "rapla/calendar");
+                    String baseUrl = getBaseUrl(request);
                     String link = baseUrl+"?user=" + user.getUsername() + "&file=" + filename + "&details=*" + "&folder=true";
                     out.print("<a href=\"" + link + "\">");
                     out.print(title);
@@ -224,13 +232,28 @@ public class CalendarPageGenerator
         }
     }
 
+    @NotNull
+    protected String getBaseUrl(HttpServletRequest request) {
+        return AbstractHTMLCalendarPage.getUrl(request, getBasePath());
+    }
+
+    @NotNull
+    protected String getBasePath() {
+        return "rapla/calendar";
+    }
+
     @GET
     //@Produces("text/html;charset=ISO-8859-1")
     @Produces("text/html;UTF-8")
-    public void generatePage(@Context HttpServletRequest request, @Context HttpServletResponse response) throws IOException, ServletException
+    public void generatePage(@PathParam("path")  String path, @Context HttpServletRequest request, @Context HttpServletResponse response) throws IOException, ServletException
     {
+        StorageOperator operator = getFacade().getOperator();
+        Map<String, Object> threadContextMap = operator.getThreadContextMap();
         try
         {
+            if ( path.startsWith("internal")) {
+                threadContextMap.put("internal_request", Boolean.TRUE);
+            }
             String username = request.getParameter("user");
             if (username == null)
             {
@@ -244,7 +267,7 @@ public class CalendarPageGenerator
                 {
                     users = facade.getUsers();
                 }
-                final Boolean entryAsBoolean = facade.getSystemPreferences().getEntryAsBoolean(AutoExportPlugin.SHOW_CALENDAR_LIST_IN_HTML_MENU, true);
+                final Boolean entryAsBoolean = facade.getSystemPreferences().getEntryAsBoolean(AutoExportPlugin.SHOW_CALENDAR_LIST_IN_HTML_MENU, false);
                 if ( entryAsBoolean)
                 {
                     generatePageList(users, request, response);
@@ -361,6 +384,8 @@ public class CalendarPageGenerator
         {
             writeStacktrace(response, ex);
             throw new ServletException(ex);
+        } finally {
+            threadContextMap.remove("internal_request");
         }
 
     }

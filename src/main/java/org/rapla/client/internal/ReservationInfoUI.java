@@ -74,7 +74,7 @@ public class ReservationInfoUI extends ClassificationInfoUI<Reservation> {
                 encode(name, buf);
             addRestriction(reservation, allocatable, buf);
             if (i<allocatables.length-1) {
-                buf.append (",");
+                buf.append (" | ");
             }
         }
         return buf.toString();

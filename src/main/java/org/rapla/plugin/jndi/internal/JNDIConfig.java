@@ -10,9 +10,6 @@ import javax.ws.rs.POST;
 import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
 import javax.ws.rs.core.MediaType;
-import javax.xml.bind.annotation.XmlAccessType;
-import javax.xml.bind.annotation.XmlAccessorType;
-import javax.xml.bind.annotation.XmlRootElement;
 
 @Path("jndi")
 public interface JNDIConfig 
@@ -21,8 +18,6 @@ public interface JNDIConfig
     @Consumes({MediaType.APPLICATION_JSON, MediaType.APPLICATION_XML})
     Promise<Boolean> test(MailTestRequest job) throws RaplaException;
 
-    @XmlRootElement
-    @XmlAccessorType(XmlAccessType.FIELD)
     public static class MailTestRequest
     {
         private DefaultConfiguration config;

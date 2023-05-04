@@ -1,6 +1,6 @@
 package org.rapla.client.swing.internal;
 
-import io.reactivex.disposables.Disposable;
+import  io.reactivex.rxjava3.disposables.Disposable;
 import org.rapla.RaplaResources;
 import org.rapla.client.ApplicationView;
 import org.rapla.client.PopupContext;

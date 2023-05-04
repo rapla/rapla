@@ -33,7 +33,7 @@ import org.rapla.entities.dynamictype.Classifiable;
 import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.entities.dynamictype.internal.DynamicTypeImpl;
 import org.rapla.entities.internal.UserImpl;
-import org.rapla.entities.storage.ImportExportEntity;
+import org.rapla.entities.storage.ExternalSyncEntity;
 import org.rapla.entities.storage.ReferenceInfo;
 import org.rapla.facade.Conflict;
 import org.rapla.framework.RaplaException;
@@ -120,9 +120,10 @@ public class UpdateDataManagerImpl implements  UpdateDataManager
         Date currentTimestamp = operator.getCurrentTimestamp();
         Date historyValidStart = operator.getHistoryValidStart();
         Date conflictValidStart = operator.getConnectStart();
-        if (lastSynced.after(currentTimestamp))
+        Date lastRefreshed = operator.getLastRefreshed();
+        if (lastSynced.after(lastRefreshed))
         {
-            long diff = lastSynced.getTime() - currentTimestamp.getTime();
+            long diff = lastSynced.getTime() - lastRefreshed.getTime();
             getLogger().warn("Timestamp of client " + diff + " ms  after server ");
             lastSynced = currentTimestamp;
         }
@@ -444,7 +445,7 @@ public class UpdateDataManagerImpl implements  UpdateDataManager
     static boolean isTransferedToClient(RaplaObject obj)
     {
         Class<? extends RaplaObject> raplaType = obj.getTypeClass();
-        if (raplaType == Appointment.class || raplaType == Reservation.class || raplaType == ImportExportEntity.class)
+        if (raplaType == Appointment.class || raplaType == Reservation.class || raplaType == ExternalSyncEntity.class)
         {
             return false;
         }

@@ -1,7 +1,5 @@
 package org.rapla.framework;
 
-import jsinterop.annotations.JsMethod;
-import jsinterop.annotations.JsType;
 import org.rapla.components.i18n.I18nLocaleFormats;
 import org.rapla.components.util.SerializableDateTimeFormat;
 
@@ -39,7 +37,6 @@ If country code is not set, the system default will be used.
 </p>
 
  */
-@JsType
 public interface RaplaLocale
 {
 	TypedComponentRole<String>  LANGUAGE_ENTRY = new TypedComponentRole<>("org.rapla.language");
@@ -51,7 +48,6 @@ public interface RaplaLocale
     I18nLocaleFormats getFormats();
 
     /** sets time to 0:00:00 or 24:00:00 */
-    @JsMethod(name = "toDate_")
     Date toDate( Date date, boolean fillDate );
 
     /** Uses the first date parameter for year, month, date information and

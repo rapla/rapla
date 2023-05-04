@@ -1,6 +1,6 @@
 package org.rapla.facade.internal;
 
-import io.reactivex.functions.Action;
+import io.reactivex.rxjava3.functions.Action;
 import org.rapla.ConnectInfo;
 import org.rapla.RaplaResources;
 import org.rapla.components.util.TimeInterval;

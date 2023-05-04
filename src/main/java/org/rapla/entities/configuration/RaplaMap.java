@@ -12,7 +12,6 @@
 *--------------------------------------------------------------------------*/
 package org.rapla.entities.configuration;
 
-import jsinterop.annotations.JsType;
 import org.rapla.entities.RaplaObject;
 
 import java.util.Collection;
@@ -24,7 +23,6 @@ import java.util.Set;
  * (It  cannot hold references to appointments or attributes)
  * @see RaplaObject
  */
-@JsType
 public interface RaplaMap<T> extends RaplaObject {
     Map<String,T> toMap();
 

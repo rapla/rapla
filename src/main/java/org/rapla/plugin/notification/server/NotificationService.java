@@ -12,8 +12,8 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.plugin.notification.server;
 
-import io.reactivex.disposables.Disposable;
-import io.reactivex.functions.Action;
+import  io.reactivex.rxjava3.disposables.Disposable;
+import io.reactivex.rxjava3.functions.Action;
 import org.jetbrains.annotations.NotNull;
 import org.rapla.RaplaResources;
 import org.rapla.components.util.DateTools;

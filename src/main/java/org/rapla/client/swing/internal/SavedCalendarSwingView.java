@@ -1,6 +1,6 @@
 package org.rapla.client.swing.internal;
 
-import io.reactivex.functions.Action;
+import io.reactivex.rxjava3.functions.Action;
 import org.rapla.RaplaResources;
 import org.rapla.client.CalendarPlacePresenter;
 import org.rapla.client.PopupContext;

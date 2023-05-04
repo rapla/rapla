@@ -69,41 +69,16 @@ public class UrlEncryptionServletRequestResponsePreprocessor  implements Servlet
      */
     public HttpServletRequest handleEncryptedSource(HttpServletRequest request) {
         String parameters = request.getParameter(UrlEncryption.ENCRYPTED_PARAMETER_NAME);
-
         // If no encrypted parameters are provided return the original request.
         if (parameters == null)
             return request;
         try {
-            final String salt = request.getParameter(UrlEncryption.ENCRYPTED_SALT_PARAMETER_NAME);
-            parameters = urlEncryptor.decrypt(parameters, salt);
-        } catch (Exception e) {
+            final EncryptedHttpServletRequest servletRequest = new EncryptedHttpServletRequest(request, urlEncryptor);
+            return servletRequest;
+        } catch (Exception ex) {
+            logger.error(ex.getMessage(), ex);
             return null;
         }
-
-        final String requestUrl = request.getRequestURL().toString();
-        String newRequestUri = requestUrl;// + (requestUrl.contains("?") ? "&" : "?") + parameters;
-        Map<String, String[]> parameterMap = new TreeMap<>();
-        StringTokenizer valuePairs = new StringTokenizer(parameters, "&");
-        // parse the key - value pairs from the encrypted parameter
-        while (valuePairs.hasMoreTokens()) {
-            String[] pair = valuePairs.nextToken().split("=");
-            String enc = "UTF-8";
-			try {
-				String 	key = URLDecoder.decode(pair[0], enc);
-				try {
-					String value = URLDecoder.decode(pair[1],enc);
-					parameterMap.put(key, new String[]{value});
-	            } catch (ArrayIndexOutOfBoundsException e) {
-	                // In case, the given parameter doesn't have a value pass an empty array as value.
-	                parameterMap.put(key, new String[]{});
-	            }
-			} catch (UnsupportedEncodingException e1) {
-				logger.error(e1.getMessage(), e1);
-			}
-        }
-
-        final EncryptedHttpServletRequest servletRequest = new EncryptedHttpServletRequest(request, parameterMap, newRequestUri);
-        return servletRequest;
     }
 
     
@@ -118,9 +93,14 @@ public class UrlEncryptionServletRequestResponsePreprocessor  implements Servlet
     public boolean isCalendarExportCalledIllegally(HttpServletRequest request) throws RaplaException {
     	 String username = request.getParameter("user");
         final String contextPath = request.getPathInfo();
-        if ( contextPath == null || (!contextPath.toLowerCase().contains("cal"))) {
+        if ( contextPath != null && contextPath.toLowerCase().contains("terminal-export") ) {
+            return true;
+        }
+
+        if ( contextPath == null || (!contextPath.toLowerCase().contains("cal") )) {
             return false;
         }
+
         if (username== null)  {
              // no calendar information, so no model and no a
              return false;

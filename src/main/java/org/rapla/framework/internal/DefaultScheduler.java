@@ -1,8 +1,8 @@
 package org.rapla.framework.internal;
 
-import io.reactivex.functions.Action;
-import io.reactivex.functions.Consumer;
-import io.reactivex.functions.Function;
+import io.reactivex.rxjava3.functions.Action;
+import io.reactivex.rxjava3.functions.Consumer;
+import io.reactivex.rxjava3.functions.Function;
 import org.rapla.framework.Disposable;
 import org.rapla.inject.DefaultImplementation;
 import org.rapla.inject.InjectionContext;
@@ -52,20 +52,20 @@ public class DefaultScheduler extends UtilConcurrentCommandScheduler implements 
 	}
 
 
-	public io.reactivex.disposables.Disposable scheduleAtGivenTime(Action task, int hour,int minute)
+	public  io.reactivex.rxjava3.disposables.Disposable scheduleAtGivenTime(Action task, int hour,int minute)
 	{
 		Supplier<Long> delayProvider = ()->millisToNextPeriod( converter.getImportExportTimeZone(), hour,minute);
 		return scheduleAtGivenTime( task, delayProvider  );
 	}
 
-	public io.reactivex.disposables.Disposable scheduleAtGivenTime(Action task, Supplier<Long> delayProvider)
+	public  io.reactivex.rxjava3.disposables.Disposable scheduleAtGivenTime(Action task, Supplier<Long> delayProvider)
 	{
 		final Observable<Long> map = just(0l).flatMap((dummy) -> just(0l).delay(delayProvider.get())).map((t) ->
 		{
 			task.run();
 			return 0l;
 		});
-		io.reactivex.disposables.Disposable subscribe = map.onErrorResumeNext( (ex)->logger.error(ex.getMessage(),ex)).repeat().subscribe();
+		 io.reactivex.rxjava3.disposables.Disposable subscribe = map.onErrorResumeNext( (ex)->logger.error(ex.getMessage(),ex)).repeat().subscribe();
 		return subscribe;
 	}
 

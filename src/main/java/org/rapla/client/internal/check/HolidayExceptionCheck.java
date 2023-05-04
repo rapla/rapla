@@ -11,6 +11,7 @@ import org.rapla.client.extensionpoints.EventCheck;
 import org.rapla.components.util.TimeInterval;
 import org.rapla.entities.Category;
 import org.rapla.entities.User;
+import org.rapla.entities.configuration.Preferences;
 import org.rapla.entities.domain.Appointment;
 import org.rapla.entities.domain.Period;
 import org.rapla.entities.domain.Repeating;
@@ -26,16 +27,15 @@ import org.rapla.scheduler.ResolvedPromise;
 
 import javax.inject.Inject;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.Date;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
+import java.util.stream.Collectors;
 
 @Extension(provides = EventCheck.class, id = "holidayexception")
 public class HolidayExceptionCheck implements EventCheck
@@ -63,8 +63,7 @@ public class HolidayExceptionCheck implements EventCheck
     static public Map<Appointment, Set<Period>> getPeriodConflicts(RaplaFacade raplaFacade, Collection<Reservation> reservations) throws RaplaException
     {
         Map<Appointment, Set<Period>> periodConflicts = new LinkedHashMap<>();
-        final PeriodModel periodModel;
-        periodModel = raplaFacade.getPeriodModelFor("feiertag");
+        final PeriodModel periodModel = PeriodModel.getHoliday(raplaFacade);
         if (periodModel == null)
         {
             return periodConflicts;
@@ -73,11 +72,6 @@ public class HolidayExceptionCheck implements EventCheck
         {
             for (Appointment app : reservation.getAppointments())
             {
-                final Repeating repeating = app.getRepeating();
-                if (repeating == null)
-                {
-                    continue;
-                }
                 final TimeInterval interval = new TimeInterval(app.getStart(), app.getMaxEnd());
                 final List<Period> periodsFor = periodModel.getPeriodsFor(interval);
                 for (Period period : periodsFor)
@@ -102,13 +96,14 @@ public class HolidayExceptionCheck implements EventCheck
     @Override
     public Promise<Boolean> check(Collection<Reservation> reservations, PopupContext sourceComponent)
     {
+        boolean showWarning;
+        boolean showWarningSingleAppointments;
         try
         {
             final User user = clientFacade.getUser();
-            boolean showWarning = raplaFacade.getPreferences(user).getEntryAsBoolean(CalendarOptionsImpl.SHOW_HOLIDAY_WARNING, true);
-            if ( !showWarning ) {
-                return  new ResolvedPromise( true );
-            }
+            Preferences preferences = raplaFacade.getPreferences(user);
+            showWarning = preferences.getEntryAsBoolean(CalendarOptionsImpl.SHOW_HOLIDAY_WARNING, true);
+            showWarningSingleAppointments = preferences.getEntryAsBoolean(CalendarOptionsImpl.SHOW_HOLIDAY_WARNING_SINGLE_APPOINTMENT, true);
         }
         catch (RaplaException e)
         {
@@ -129,7 +124,13 @@ public class HolidayExceptionCheck implements EventCheck
         {
             return new ResolvedPromise<>(true);
         }
-        return showPeriodConflicts(sourceComponent, periodConflicts, false).thenApply((list) -> list != null);
+        Map<Appointment, Set<Period>> filteredConflicts = periodConflicts.entrySet().stream().filter(
+                entry -> (entry.getKey().getRepeating() == null && showWarningSingleAppointments) || (entry.getKey().getRepeating() != null && showWarning)
+        ).collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+        if ( filteredConflicts.isEmpty()) {
+            return new ResolvedPromise<>(true);
+        }
+        return showPeriodConflicts(sourceComponent, filteredConflicts, false).thenApply((list) -> list != null);
     }
 
     @NotNull
@@ -139,12 +140,13 @@ public class HolidayExceptionCheck implements EventCheck
         RaplaTreeNode root = createPeriodTree(list);
         final HolidayCheckDialogView.HolidayCheckPanel conflictPanel = checkDialogView.getConflictPanel(root, showCheckbox);
         DialogInterface dialog = dialogUiFactory
-                .createContentDialog(sourceComponent, conflictPanel.component, new String[] { i18n.getString("continue"), i18n.getString("cancel") });
+                .createContentDialog(sourceComponent, conflictPanel.component, new String[] {
+                        i18n.getString("continue"), i18n.getString("cancel") });
         dialog.setDefault(1);
         dialog.setIcon(i18n.getIcon("icon.big_folder_conflicts"));
         dialog.getAction(0).setIcon(i18n.getIcon("icon.save"));
         dialog.getAction(1).setIcon(i18n.getIcon("icon.cancel"));
-        dialog.setTitle("Wiederholungstermine überschneiden sich mit");
+        dialog.setTitle(i18n.getString("appointment_collision_title"));
         return dialog.start(true).thenApply(index -> {
             if (index == 0)
             {
@@ -210,11 +212,11 @@ public class HolidayExceptionCheck implements EventCheck
         {
             allPeriods.addAll(periods);
         }
-        final Category timetables = getTimetablesCategory();
+        final Category periodsCategory = getPeriodsCategory();
         Map<Category, List<Period>> list = new LinkedHashMap<>();
-        if (timetables != null)
+        if (periodsCategory != null)
         {
-            for (Category category : timetables.getCategoryList())
+            for (Category category : periodsCategory.getCategoryList())
             {
                 list.put(category, new ArrayList<>());
             }
@@ -233,9 +235,10 @@ public class HolidayExceptionCheck implements EventCheck
         return list;
     }
 
-    public Category getTimetablesCategory()
+    public Category getPeriodsCategory()
     {
-        return raplaFacade.getSuperCategory().getCategory("timetables");
+        Category superCategory = raplaFacade.getSuperCategory();
+        return PeriodModel.getPeriodsCategory( superCategory );
     }
 
 }

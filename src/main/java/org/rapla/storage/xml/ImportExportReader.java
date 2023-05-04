@@ -15,13 +15,13 @@ package org.rapla.storage.xml;
 
 import org.rapla.components.util.xml.RaplaSAXAttributes;
 import org.rapla.components.util.xml.RaplaSAXParseException;
-import org.rapla.entities.storage.internal.ImportExportEntityImpl;
+import org.rapla.entities.storage.internal.ExternalSyncEntityImpl;
 import org.rapla.framework.RaplaException;
 
 public class ImportExportReader extends RaplaXMLReader
 {
 
-    private ImportExportEntityImpl importExport;
+    private ExternalSyncEntityImpl importExport;
     public ImportExportReader(RaplaXMLContext context) throws RaplaException
     {
         super(context);
@@ -32,13 +32,15 @@ public class ImportExportReader extends RaplaXMLReader
     {
         if (localName.equals("importexport"))
         {
-            importExport = new ImportExportEntityImpl();
+            importExport = new ExternalSyncEntityImpl();
             final String id = getString(atts, "id");
             importExport.setId(id);
             final String raplaId = getString(atts, "raplaid", null);
             importExport.setRaplaId(raplaId);
             final String externalSystem = getString(atts, "externalsystem");
             importExport.setExternalSystem(externalSystem);
+            final String context = getString(atts, "context");
+            importExport.setContext(context);
             final String directionString = getString(atts, "direction");
             final int direction = parseLong(directionString).intValue();
             importExport.setDirection(direction);

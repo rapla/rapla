@@ -12,8 +12,6 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.components.util;
 
-import org.rapla.rest.GwtIncompatible;
-
 import java.io.BufferedInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
@@ -306,13 +304,11 @@ abstract public class IOUtil {
   }
 
     /** reads a table from a csv file. You can specify a minimum number of columns */
-    @GwtIncompatible
     public static String[][] csvRead(Reader reader, int expectedColumns) throws IOException {
     	return csvRead(reader, ';', expectedColumns);
     }
 
     /** reads a table from a csv file. You can specify the seperator and a minimum number of columns */
-    @GwtIncompatible
     public static String[][] csvRead(Reader reader, char seperator,int expectedColumns) throws IOException {
         //System.out.println( "Using Encoding " + reader.getEncoding() );
         StringBuffer buf = new StringBuffer();

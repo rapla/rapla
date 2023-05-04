@@ -672,7 +672,7 @@ final public class AttributeImpl extends SimpleEntity implements Attribute
         AttributeImpl clone = new AttributeImpl();
         super.deepClone(clone);
         clone.name = (MultiLanguageName) name.clone();
-        @SuppressWarnings("unchecked") HashMap<String, String> annotationClone = (HashMap<String, String>) ((HashMap<String, String>) annotations).clone();
+        HashMap<String, String> annotationClone = new LinkedHashMap<>( annotations);
         clone.annotations = annotationClone;
         clone.type = getType();
         clone.multiSelect = multiSelect;

@@ -48,7 +48,7 @@ import org.rapla.scheduler.CommandScheduler;
 import org.rapla.scheduler.Promise;
 import org.rapla.server.PromiseWait;
 import org.rapla.server.ServerServiceContainer;
-import org.rapla.server.dagger.DaggerServerCreator;
+import org.rapla.server.ServerCreator;
 import org.rapla.server.internal.PromiseWaitImpl;
 import org.rapla.server.internal.ServerContainerContext;
 import org.rapla.server.internal.ServerServiceImpl;
@@ -164,7 +164,7 @@ public abstract class RaplaTestCase
     @NotNull public static ServerContext createServerContext(Logger logger, ServerContainerContext containerContext, int port) throws Exception
     {
         FileOperator.setDefaultFileIO(new VoidFileIO());
-        final DaggerServerCreator.ServerContext serverContext = DaggerServerCreator.create(logger, containerContext);
+        final ServerCreator.ServerContext serverContext = ServerCreator.create(logger, containerContext);
         final ServerServiceContainer serviceContainer = serverContext.getServiceContainer();
         Injector injector = serverContext.getMembersInjector();
         final Server server = createServer(serviceContainer, injector, port);
@@ -244,7 +244,7 @@ public abstract class RaplaTestCase
         ServerContainerContext containerContext = new ServerContainerContext();
         containerContext.addFileDatasource("raplafile",getTestDataFile(xmlFile));
         FileOperator.setDefaultFileIO( new VoidFileIO());
-        final DaggerServerCreator.ServerContext serverContext = DaggerServerCreator.create(logger, containerContext);
+        final ServerCreator.ServerContext serverContext = ServerCreator.create(logger, containerContext);
         final ServerServiceContainer serverServiceContainer = serverContext.getServiceContainer();
         return serverServiceContainer;
     }
@@ -349,10 +349,6 @@ public abstract class RaplaTestCase
             if ( scheduler instanceof DefaultScheduler )
             {
                 ((DefaultScheduler)scheduler).dispose();
-            }
-            if ( scheduler instanceof org.rapla.scheduler.client.gwt.GwtCommandScheduler)
-            {
-                //((org.rapla.scheduler.client.gwt.GwtCommandScheduler)scheduler).dispose();
             }
         }
 

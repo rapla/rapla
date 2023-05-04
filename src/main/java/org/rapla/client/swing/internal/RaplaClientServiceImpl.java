@@ -90,7 +90,7 @@ public class RaplaClientServiceImpl implements ClientService, UpdateErrorListene
     final RaplaLocale raplaLocale;
     final BundleManager bundleManager;
     final CommandScheduler commandScheduler;
-    io.reactivex.disposables.Disposable schedule;
+     io.reactivex.rxjava3.disposables.Disposable schedule;
 
     Application application;
     final private Provider<Application> applicationProvider;

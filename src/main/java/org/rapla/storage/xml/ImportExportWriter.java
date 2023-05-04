@@ -14,7 +14,7 @@
 package org.rapla.storage.xml;
 
 import org.rapla.entities.RaplaObject;
-import org.rapla.entities.storage.ImportExportEntity;
+import org.rapla.entities.storage.ExternalSyncEntity;
 import org.rapla.framework.RaplaException;
 
 import java.io.IOException;
@@ -25,26 +25,27 @@ public class ImportExportWriter extends RaplaXMLWriter {
         super(sm);
     }
 
-    public void printImportExportEntity(ImportExportEntity importExportEntity) throws IOException,RaplaException {
+    public void printImportExportEntity(ExternalSyncEntity externalSyncEntity) throws IOException,RaplaException {
         final String tagName = "rapla:importexport";
         openTag(tagName);
-        printId(importExportEntity);
-        att("raplaid", importExportEntity.getRaplaId());
-        att("direction", importExportEntity.getDirection()+"");
-        att("externalsystem", importExportEntity.getExternalSystem());
+        printId(externalSyncEntity);
+        att("raplaid", externalSyncEntity.getRaplaId());
+        att("direction", externalSyncEntity.getDirection()+"");
+        att("context", externalSyncEntity.getContext());
+        att("externalsystem", externalSyncEntity.getExternalSystem());
         closeTag();
         {
             final String elementName = "data";
             openElementOnLine(elementName);
-            printEncode(importExportEntity.getData());
+            printEncode(externalSyncEntity.getData());
             closeElementOnLine(elementName);
             println();
         }
-        if(importExportEntity.getContext() != null)
+        if(externalSyncEntity.getContext() != null)
         {
             final String elementName = "context";
             openElementOnLine(elementName);
-            printEncode(importExportEntity.getContext());
+            printEncode(externalSyncEntity.getContext());
             closeElementOnLine(elementName);
             println();
         }
@@ -53,7 +54,7 @@ public class ImportExportWriter extends RaplaXMLWriter {
 
     
     public void writeObject(RaplaObject object) throws IOException, RaplaException {
-        printImportExportEntity( (ImportExportEntity) object);
+        printImportExportEntity( (ExternalSyncEntity) object);
     }
 
   

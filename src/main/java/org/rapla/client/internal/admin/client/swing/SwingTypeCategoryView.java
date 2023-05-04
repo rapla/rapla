@@ -1,6 +1,6 @@
 package org.rapla.client.internal.admin.client.swing;
 
-import io.reactivex.functions.BiFunction;
+import io.reactivex.rxjava3.functions.BiFunction;
 import org.jetbrains.annotations.NotNull;
 import org.rapla.RaplaResources;
 import org.rapla.client.RaplaWidget;

@@ -30,16 +30,13 @@ import org.rapla.entities.dynamictype.internal.DynamicTypeImpl;
 import org.rapla.entities.internal.CategoryImpl;
 import org.rapla.entities.internal.UserImpl;
 import org.rapla.entities.storage.EntityReferencer;
-import org.rapla.entities.storage.ImportExportEntity;
+import org.rapla.entities.storage.ExternalSyncEntity;
 import org.rapla.entities.storage.ReferenceInfo;
-import org.rapla.entities.storage.internal.ImportExportEntityImpl;
+import org.rapla.entities.storage.internal.ExternalSyncEntityImpl;
 import org.rapla.facade.Conflict;
 import org.rapla.facade.internal.ConflictImpl;
 import org.rapla.framework.RaplaException;
 
-import javax.xml.bind.annotation.XmlAccessType;
-import javax.xml.bind.annotation.XmlAccessorType;
-import javax.xml.bind.annotation.XmlRootElement;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -66,7 +63,7 @@ public class UpdateEvent
     List<AllocatableImpl> resources;
     List<ReservationImpl> reservations;
     List<ConflictImpl> conflicts;
-    List<ImportExportEntityImpl> importExports;
+    List<ExternalSyncEntityImpl> importExports;
 
     private Set<SerializableReferenceInfo> removeSet;
 
@@ -79,8 +76,6 @@ public class UpdateEvent
     private String lastValidated;
     private int timezoneOffset;
 
-    @XmlRootElement
-    @XmlAccessorType(XmlAccessType.FIELD)
     public static class SerializableReferenceInfo
     {
         String id;
@@ -313,7 +308,7 @@ public class UpdateEvent
                 conflicts = new ArrayList<>();
                 list = conflicts;
             }
-            else if (class1.equals(ImportExportEntity.class))
+            else if (class1.equals(ExternalSyncEntity.class))
             {
                 importExports = new ArrayList<>();
                 list = importExports;

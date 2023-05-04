@@ -6,6 +6,7 @@ import org.rapla.client.dialog.DialogUiFactoryInterface;
 import org.rapla.client.dialog.swing.DialogUI;
 import org.rapla.client.swing.RaplaGUIComponent;
 import org.rapla.client.TreeFactory;
+import org.rapla.client.swing.images.RaplaImages;
 import org.rapla.client.swing.internal.edit.ClassifiableFilterEdit;
 import org.rapla.client.swing.internal.edit.fields.BooleanField.BooleanFieldFactory;
 import org.rapla.client.swing.internal.edit.fields.DateField.DateFieldFactory;
@@ -19,20 +20,16 @@ import org.rapla.logger.Logger;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import javax.swing.JComponent;
-import javax.swing.JWindow;
+import javax.swing.*;
 import javax.swing.event.ChangeListener;
-import java.awt.Component;
-import java.awt.Dialog;
-import java.awt.Frame;
-import java.awt.Point;
+import java.awt.*;
 
 public class FilterEditButton extends RaplaGUIComponent
 {
     protected RaplaArrowButton filterButton;
     JWindow popup;
     ClassifiableFilterEdit ui;
-        
+
     private FilterEditButton(final ClientFacade facade, final RaplaResources i18n, final RaplaLocale raplaLocale, final Logger logger,
             final TreeFactory treeFactory, final ClassifiableFilter filter, final ChangeListener listener,
             final DateFieldFactory dateFieldFactory, final BooleanFieldFactory booleanFieldFactory, final DialogUiFactoryInterface dialogUiFactory,
@@ -101,7 +98,19 @@ public class FilterEditButton extends RaplaGUIComponent
     {
         return filterButton;
     }
-    
+
+    public void refresh()
+    {
+        filterButton.refreshChar();
+    }
+
+    public void setFiltered(boolean filtered) {
+        //filterButton.setBackground(filtered ? Color.red: null);
+        final ImageIcon icon = RaplaImages.getIcon("/org/rapla/gui/images/eclipse-icons/filter_small.gif");
+        filterButton.setAdditionalIcon(filtered ? icon: null);
+        filterButton.refreshChar();
+    }
+
     @Singleton
     public static class FilterEditButtonFactory
     {

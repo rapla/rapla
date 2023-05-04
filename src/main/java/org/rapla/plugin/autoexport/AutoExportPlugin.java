@@ -23,5 +23,6 @@ public class AutoExportPlugin
     public static final String HTML_EXPORT= PLUGIN_ENTRY + ".selected";
     public static final String PLUGIN_ID ="org.rapla.plugin.autoexport";
     public static final TypedComponentRole<Boolean> SHOW_CALENDAR_LIST_IN_HTML_MENU = new TypedComponentRole<>(PLUGIN_ID + "." + "show_calendar_list_in_html_menu");
+    public static final TypedComponentRole<Boolean> SHOW_TOOLTIP_IN_EXPORT_CONFIG_ENTRY = new TypedComponentRole<>(PLUGIN_ID + "."+ "show_tooltips_in_export");
 
 }

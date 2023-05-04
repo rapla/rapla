@@ -9,19 +9,23 @@ import org.rapla.components.layout.TableLayout;
 import org.rapla.entities.User;
 import org.rapla.entities.domain.Appointment;
 import org.rapla.entities.domain.Reservation;
+import org.rapla.entities.dynamictype.Attribute;
+import org.rapla.entities.dynamictype.Classification;
 import org.rapla.facade.client.ClientFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.logger.Logger;
 import org.rapla.plugin.eventtimecalculator.EventTimeCalculatorFactory;
+import org.rapla.plugin.eventtimecalculator.EventTimeCalculatorPlugin;
 import org.rapla.plugin.eventtimecalculator.EventTimeCalculatorResources;
 import org.rapla.plugin.eventtimecalculator.EventTimeModel;
 
 import javax.swing.JComponent;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
-import java.awt.Font;
+import java.awt.*;
 import java.util.Collection;
+import java.util.Locale;
 
 /**
  * @author Tobias Bertram
@@ -50,7 +54,7 @@ public class EventTimeCalculatorStatusWidget extends RaplaGUIComponent implement
         TableLayout tableLayout = new TableLayout(sizes);
         content.setLayout(tableLayout);
 
-        Font font1 = totalDurationLabel.getFont().deriveFont((float) 9.0);
+        Font font1 = totalDurationLabel.getFont().deriveFont((float) 11.0);
         totalDurationLabel.setFont(font1);
         selectedDurationLabel.setFont(font1);
 
@@ -109,7 +113,31 @@ public class EventTimeCalculatorStatusWidget extends RaplaGUIComponent implement
         if (totalDurationVisible) {
             long totalDuration = 0;
             totalDuration = eventTimeModel.calcDuration(event.getAppointments());
-            totalDurationLabel.setText(eventTimei18n.getString("total_duration") + ": " + eventTimeModel.format(totalDuration));
+            String format = eventTimeModel.format(totalDuration);
+            Classification classification = event.getClassification();
+            String annotation = classification.getType().getAnnotation(EventTimeCalculatorPlugin.EVENTIME_CONDITION_ANNOTATION_NAME);
+            if ( annotation != null && !annotation.isEmpty())
+            {
+                Locale locale = i18n.getLocale();
+                Object value = event.format(locale,EventTimeCalculatorPlugin.EVENTIME_CONDITION_ANNOTATION_NAME);
+                if ( value != null && value.toString().length() != 0) {
+                    try {
+                        long diff = Long.parseLong(value.toString());
+                        final Color color;
+                        if (diff > 0) {
+                            color = Color.red;
+                        } else if (diff < 0) {
+                            color = Color.red;
+                        } else {
+                            color = Color.green.darker().darker();
+                        }
+                        totalDurationLabel.setForeground(color);
+                    } catch (NumberFormatException ex) {
+                        getLogger().warn(ex.getMessage());
+                    }
+                }
+            }
+            totalDurationLabel.setText(eventTimei18n.getString("total_duration") + ": " + format);
         }
 
         final Collection<Appointment> selectedAppointmentsCollection = reservationEdit.getSelectedAppointments();

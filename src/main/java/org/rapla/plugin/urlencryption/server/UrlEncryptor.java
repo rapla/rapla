@@ -1,6 +1,7 @@
 package org.rapla.plugin.urlencryption.server;
 
 import org.apache.commons.codec.binary.Base64;
+import org.jetbrains.annotations.NotNull;
 import org.rapla.entities.User;
 import org.rapla.entities.configuration.Preferences;
 import org.rapla.facade.RaplaFacade;
@@ -60,7 +61,13 @@ public class UrlEncryptor
     public synchronized String encrypt(String plain, HttpServletRequest request) throws RaplaException
     {
         final User user = session.checkAndGetUser(request);
-        final String salt = Integer.toString(user.getId().hashCode());
+        return encrypt(plain, user.getId());
+    }
+
+    @NotNull
+    public synchronized String encrypt(String plain, String userId) throws RaplaException
+    {
+        final String salt = Integer.toString(userId.hashCode());
         final Base64 base64 = initForRequest();
         try
         {
@@ -110,7 +117,7 @@ public class UrlEncryptor
         }
         catch (Exception e)
         {
-            throw new Exception("The provided URL is not valid.");
+            throw new Exception("The provided URL is not valid." + e.getMessage());
         }
     }
 

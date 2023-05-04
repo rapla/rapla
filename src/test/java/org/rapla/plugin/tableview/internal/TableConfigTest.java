@@ -14,43 +14,12 @@ import org.rapla.framework.internal.RaplaLocaleImpl;
 import org.rapla.plugin.tableview.internal.TableConfig.TableColumnConfig;
 import org.rapla.plugin.tableview.internal.TableConfig.ViewDefinition;
 
-import javax.xml.bind.JAXBContext;
-import javax.xml.bind.JAXBException;
-import javax.xml.bind.Marshaller;
-import javax.xml.bind.Unmarshaller;
-import javax.xml.bind.annotation.XmlAccessType;
-import javax.xml.bind.annotation.XmlAccessorType;
-import javax.xml.bind.annotation.XmlRootElement;
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
 
 @RunWith(JUnit4.class)
 public class TableConfigTest
 {
-    @XmlRootElement
-    @XmlAccessorType(XmlAccessType.FIELD)
-    static class Transport
-    {
-        private Transport()
-        {
-
-        }
-
-        public Transport(TableConfig config)
-        {
-            this.config = config;
-        }
-
-        public TableConfig getConfig()
-        {
-            return config;
-        }
-
-        TableConfig config;
-    }
-
     @Test
-    public void serializationDesirialization() throws JAXBException, ConfigurationException
+    public void serializationDesirialization() throws ConfigurationException
     {
         TableConfig config = new TableConfig();
         final TableConfig.TableColumnConfig nameColumn;
@@ -91,26 +60,9 @@ public class TableConfigTest
         GsonBuilder builder = new GsonBuilder();
         final Gson gson = builder.setPrettyPrinting().create();
         final String json = gson.toJson(config);
-        System.out.println(json);
-        final TableConfig fromJson = gson.fromJson(json, TableConfig.class);
-        //System.out.println(fromJson.toString());
-        JAXBContext context = JAXBContext.newInstance(Transport.class);
-        final Marshaller marshaller = context.createMarshaller();
-        //        final TableConfig.DateAdapter dateAdapter = new TableConfig.DateAdapter();
-        //dateAdapter.setCutDate( true);
-        //marshaller.setAdapter(dateAdapter);
-        marshaller.setProperty(Marshaller.JAXB_FORMATTED_OUTPUT, true);
-        ByteArrayOutputStream out = new ByteArrayOutputStream();
-        marshaller.marshal(new Transport(config), out);
-        //System.out.println(out.toString());
-        final Unmarshaller unmarshaller = context.createUnmarshaller();
-        //unmarshaller.setAdapter(dateAdapter);
-        final Transport fromXml = (Transport) unmarshaller.unmarshal(new ByteArrayInputStream(out.toByteArray()));
-
-        final RaplaConfiguration raplaConfig = TableConfig.print(fromXml.config);
+        final RaplaConfiguration raplaConfig = TableConfig.print(config);
         final TableConfig test = TableConfig.read(raplaConfig, new RaplaLocaleImpl(new ServerBundleManager()));
         final String json2 = gson.toJson(test);
-        //System.out.println(json2);
         Assert.assertEquals(json, json2);
     }
 }

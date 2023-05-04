@@ -11,11 +11,9 @@
  | Definition as published by the Open Source Initiative (OSI).             |
  *--------------------------------------------------------------------------*/
 package org.rapla.entities;
-import jsinterop.annotations.JsType;
 
 import java.util.Locale;
 
-@JsType
 public interface Named {
     String getName(Locale locale);
 }

@@ -12,6 +12,8 @@ import java.util.LinkedHashMap;
 public interface MultiCalendarView extends RaplaWidget
 {
 
+    void setFiltered(boolean b);
+
     interface Presenter
     {
         void onViewSelectionChange(PopupContext context);

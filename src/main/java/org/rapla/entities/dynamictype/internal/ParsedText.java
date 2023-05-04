@@ -30,12 +30,7 @@ import org.rapla.entities.storage.ReferenceInfo;
 import org.rapla.storage.PermissionController;
 
 import java.io.Serializable;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Date;
-import java.util.List;
-import java.util.Locale;
+import java.util.*;
 
 /**
  * Enables text replacement of variables like {name} {email} with corresponding attribute values
@@ -376,7 +371,7 @@ public class ParsedText implements Serializable
                     final Object eval = parentFunction.eval(parent);
                     return eval;
                 }
-                return null;
+                return parentFunction.eval( context );
             }
 
             public String getRepresentation(ParseContext context)
@@ -405,6 +400,7 @@ public class ParsedText implements Serializable
             final Function resolvedParentFunction = context.resolveVariableFunction(variableName);
             if (resolvedParentFunction != null)
             {
+                // Also check Parent Context
                 final ParentParameterFunction parentParameterFunction = new ParentParameterFunction(resolvedParentFunction, variableName);
                 return parentParameterFunction;
             }
@@ -963,7 +959,8 @@ public class ParsedText implements Serializable
                 {
                     buf.append(", ");
                 }
-                buf.append(evalToString(element, context));
+                final String str = evalToString(element, context);
+                buf.append(str);
                 i++;
             }
             return buf.toString();
@@ -1046,9 +1043,12 @@ public class ParsedText implements Serializable
 
             final DynamicTypeImpl type = (DynamicTypeImpl) classification.getType();
             final String contextAnnotationName = context.getAnnotationName();
-            final String annotationName = type.getAnnotation(contextAnnotationName) != null ? contextAnnotationName: DynamicTypeAnnotations.KEY_NAME_FORMAT;
+            //final String annotationName = DynamicTypeAnnotations.KEY_NAME_FORMAT;
+            final boolean contextAnnotationNameSet = type.getAnnotation(contextAnnotationName) != null;
+            final String annotationName = contextAnnotationNameSet ? contextAnnotationName: DynamicTypeAnnotations.KEY_NAME_FORMAT;
             final List<Object> contextObjects = Collections.singletonList(object);
-            EvalContext contextClone = new EvalContext(locale, annotationName, permissionController, user, contextObjects, callStackDepth + 1);
+            Map<String, Object> environment = context.getEnvironment();
+            EvalContext contextClone = new EvalContext(locale, annotationName, permissionController, environment, user, contextObjects, callStackDepth + 1);
             ParsedText parsedAnnotation;
             //parsedAnnotation = type.getParsedAnnotation(contextClone.getAnnotationName());
             //if (parsedAnnotation == null)

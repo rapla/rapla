@@ -149,6 +149,8 @@ public final class ClassificationFilterImpl
             return;
         if (operator.equals("starts"))
             return;
+        if (operator.equals("ends"))
+            return;
         if (operator.equals("is"))
             return;
         if (operator.equals("<=")) 

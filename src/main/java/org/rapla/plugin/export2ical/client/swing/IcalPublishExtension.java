@@ -101,13 +101,13 @@ class IcalPublishExtension extends RaplaGUIComponent implements PublishExtension
 		 final String icalSelected = checkbox.isSelected() ? "true" : "false";
          model.setOption( Export2iCalPlugin.ICAL_EXPORT, icalSelected);
 	}
-	
-	public JTextField getURLField() 
-	{
-		return icalURL;
-	}
 
-	public boolean hasAddressCreationStrategy() {
+    @Override
+    public void setAdress(String generator, String address) {
+        icalURL.setText( address );
+    }
+
+    public boolean hasAddressCreationStrategy() {
 		return false;
 	}
 
@@ -115,8 +115,8 @@ class IcalPublishExtension extends RaplaGUIComponent implements PublishExtension
 		return null;
 	}
 	
-	public String getGenerator() {
-	     return Export2iCalPlugin.GENERATOR;
+	public String[] getGenerators() {
+	     return new String[] {Export2iCalPlugin.GENERATOR};
 	}
 	
 
