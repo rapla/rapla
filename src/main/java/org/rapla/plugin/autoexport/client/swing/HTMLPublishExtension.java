@@ -28,15 +28,13 @@ public class HTMLPublishExtension extends RaplaGUIComponent implements PublishEx
 	 final JCheckBox showNavField;
      final JCheckBox saveSelectedDateField;
      final JTextField htmlURL;
-	 final JTextField htmlInternURL;
-     final JCheckBox checkbox;
+	 final JCheckBox checkbox;
      final JTextField titleField;
      final JPanel statusHtml;
      final JCheckBox onlyAllocationInfoField;
      final JCheckBox asLinkListField;
 
-	 final JPanel intranetField;
-	AutoExportResources autoExportI18n;
+	 AutoExportResources autoExportI18n;
 	 RaplaResources i18n;
      private final IOInterface ioInterface;
 	JComboBox pagesBox;
@@ -54,7 +52,7 @@ public class HTMLPublishExtension extends RaplaGUIComponent implements PublishEx
 			 blockSizes[i] = String.valueOf(i+1);
 		 }
         panel.setLayout(new TableLayout( new double[][] {{TableLayout.PREFERRED,5,TableLayout.PREFERRED,5,TableLayout.FILL},
-                {TableLayout.PREFERRED,5,TableLayout.PREFERRED,5,TableLayout.PREFERRED,5,TableLayout.PREFERRED,5,TableLayout.PREFERRED, 5,TableLayout.PREFERRED, 5, TableLayout.PREFERRED,5,TableLayout.PREFERRED,5, TableLayout.PREFERRED,20  }}));
+                {TableLayout.PREFERRED,5,TableLayout.PREFERRED,5,TableLayout.PREFERRED,5,TableLayout.PREFERRED,5,TableLayout.PREFERRED, 5,TableLayout.PREFERRED, 5, TableLayout.PREFERRED,5, TableLayout.PREFERRED,20  }}));
 	   	titleField = new JTextField(20);
         addCopyPaste(titleField, i18n, raplaLocale, ioInterface, logger);
   
@@ -64,8 +62,6 @@ public class HTMLPublishExtension extends RaplaGUIComponent implements PublishEx
         asLinkListField = new JCheckBox();
 		htmlURL = new JTextField();
 		 statusHtml = createStatus( htmlURL, "URL:");
-		 htmlInternURL = new JTextField();
-		 intranetField = createStatus( htmlInternURL, "Intranet:");
 
 		 checkbox = new JCheckBox("HTML " + i18n.getString("publish"));
 		panel.add(checkbox,"0,0");
@@ -108,8 +104,6 @@ public class HTMLPublishExtension extends RaplaGUIComponent implements PublishEx
         panel.add(new JLabel(autoExportI18n.getString("resources_as_linklist")),"2,12");
         panel.add( asLinkListField, "4,12");
 		panel.add( statusHtml, "2,14,4,1");
-        panel.add( intranetField, "2,16,4,1");
-        
         {	
             final String entry = model.getOption(AutoExportPlugin.HTML_EXPORT);
             checkbox.setSelected( entry != null && entry.equals("true"));
@@ -231,8 +225,6 @@ public class HTMLPublishExtension extends RaplaGUIComponent implements PublishEx
 	public void setAdress(String generator, String address) {
 		if ( AutoExportPlugin.CALENDAR_GENERATOR.equals( generator)) {
 			htmlURL.setText(address);
-		} else {
-			htmlInternURL.setText(address);
 		}
 	}
 
@@ -248,7 +240,7 @@ public class HTMLPublishExtension extends RaplaGUIComponent implements PublishEx
 	
 	public String[] getGenerators()
 	{
-		return new String[] {AutoExportPlugin.CALENDAR_GENERATOR, "internal_calendar"};
+		return new String[] {AutoExportPlugin.CALENDAR_GENERATOR};
 	}
 	
 

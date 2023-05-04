@@ -1888,7 +1888,7 @@ class AllocationStorage extends EntityStorage<Appointment> implements SubStorage
 
     public AllocationStorage(RaplaXMLContext context) throws RaplaException
     {
-        super(context, "ALLOCATION", new String[] { "APPOINTMENT_ID VARCHAR(255) NOT NULL KEY", "RESOURCE_ID VARCHAR(255) NOT NULL", "PARENT_ORDER INTEGER","IS_RESTRICTION INTEGER" });
+        super(context, "ALLOCATION", new String[] { "APPOINTMENT_ID VARCHAR(255) NOT NULL KEY", "RESOURCE_ID VARCHAR(255) NOT NULL", "PARENT_ORDER INTEGER","IS_RESTRICTION INTEGER","STATUS INTEGER" });
     }
 
     @Override
@@ -1896,6 +1896,8 @@ class AllocationStorage extends EntityStorage<Appointment> implements SubStorage
     {
         super.createOrUpdateIfNecessary(schema);
         checkAndAdd(schema, "IS_RESTRICTION");
+        //Allocation status is to be added in future versions
+        checkAndAdd(schema, "STATUS");
     }
 
     @Override
@@ -1912,6 +1914,7 @@ class AllocationStorage extends EntityStorage<Appointment> implements SubStorage
             final Appointment[] restriction = event.getRestriction(allocatable);
             boolean isRestriction = restriction != null && restriction.length > 0;
             stmt.setInt(4, isRestriction ? 1:0);
+            stmt.setInt(5, 0);
             stmt.addBatch();
             count++;
         }

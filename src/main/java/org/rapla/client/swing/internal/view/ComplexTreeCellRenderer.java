@@ -27,6 +27,7 @@ import java.util.Date;
 public class ComplexTreeCellRenderer extends DefaultTreeCellRenderer {
     Icon bigFolderResourcesFiltered;
     Icon bigFolderResourcesUnfiltered;
+    Icon bigFolderUsers;
     Icon bigFolderCategories;
     Icon defaultIcon;
     Icon personIcon;
@@ -54,6 +55,7 @@ public class ComplexTreeCellRenderer extends DefaultTreeCellRenderer {
         setLeafIcon(defaultIcon);
         bigFolderResourcesFiltered = RaplaImages.getIcon(i18n.getIcon("icon.big_folder_resources_filtered"));
         bigFolderResourcesUnfiltered = RaplaImages.getIcon(i18n.getIcon("icon.big_folder_resources"));
+        bigFolderUsers = RaplaImages.getIcon(i18n.getIcon("icon.big_folder_users"));
         bigFolderCategories = RaplaImages.getIcon(i18n.getIcon("icon.big_folder_categories"));
         defaultIcon = RaplaImages.getIcon(i18n.getIcon("icon.tree.default"));
         personIcon = RaplaImages.getIcon(i18n.getIcon("icon.tree.persons"));
@@ -126,8 +128,14 @@ public class ComplexTreeCellRenderer extends DefaultTreeCellRenderer {
             setLeafIcon(bigFolderIcon);
             setFont(bigFont);
             value = i18n.getString("resources");
+        } else  if ( nodeInfo == CalendarModelImpl.USER_ROOT) {
+            Icon bigFolderIcon = bigFolderUsers;
+            setClosedIcon(bigFolderIcon);
+            setOpenIcon(bigFolderIcon);
+            setLeafIcon(bigFolderIcon);
+            setFont(bigFont);
+            value = i18n.getString("users");;
         } else {
-
             setClosedIcon(folderClosedIcon);
             setOpenIcon(folderOpenIcon);
             //if (leaf) {

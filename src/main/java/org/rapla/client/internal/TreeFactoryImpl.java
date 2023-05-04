@@ -400,11 +400,20 @@ public class TreeFactoryImpl extends RaplaComponent implements TreeFactory
      * @return
      * @throws RaplaException
      */
+    @Override
+    public RaplaTreeNode newResourceNode() {
+        return  newNode(CalendarModelImpl.ALLOCATABLES_ROOT);
+    }
+
+    @Override
+    public RaplaTreeNode newUsersNode() {
+        return  newNode(CalendarModelImpl.USER_ROOT);
+    }
 
     @Override
     public AllocatableNodes createAllocatableModel(ClassificationFilter[] filter) throws RaplaException
     {
-        RaplaTreeNode treeNode = newNode(CalendarModelImpl.ALLOCATABLES_ROOT);
+        RaplaTreeNode treeNode = newResourceNode();
         Map<DynamicType, RaplaTreeNode> nodeMap = new HashMap<>();
         boolean resourcesFiltered = false;
 
@@ -446,14 +455,6 @@ public class TreeFactoryImpl extends RaplaComponent implements TreeFactory
             treeNode.add(node);
             nodeMap.put(type, node);
         }
-//        RaplaTreeNode usersNode = newStringNode("Users");
-//        treeNode.add(usersNode);
-//
-//        User[] users = getQuery().getUsers();
-//        for (User user:users) {
-//            RaplaTreeNode node = newNamedNode(user);
-//            usersNode.add(node);
-//        }
         // adds elements to typ folders
         Allocatable[] filtered = getQuery().getAllocatablesWithFilter(filter);
         Collection<Allocatable> sorted = sorted(filtered, new SortedClassifiableComparator(getLocale()));

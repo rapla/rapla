@@ -26,7 +26,11 @@ public interface TreeFactory {
 
 	RaplaTreeNode newRootNode();
 
-	RaplaTreeNode createModel(Category rootCategory,  Predicate<Category> pattern);
+   RaplaTreeNode newResourceNode();
+
+   RaplaTreeNode newUsersNode();
+
+		RaplaTreeNode createModel(Category rootCategory,  Predicate<Category> pattern);
 
 	static Stream<Conflict> getConflicts(RaplaTreeNode treeNode)
 	{
