@@ -28,6 +28,7 @@ import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.net.URI;
 
 @Path("login")
 public class RaplaAuthRestPage
@@ -91,6 +92,10 @@ public class RaplaAuthRestPage
             @FormParam("connectAs") String connectAs, @Context HttpServletResponse response) throws Exception
     {
         final String targetUrl = url !=null ? Tools.createXssSafeString(url): "../apiTest.html";
+        URI uri = new URI(targetUrl);
+        if (uri.isAbsolute()) {
+            throw new RaplaSecurityException("Absolute target urls are not allowed at this point.");
+        }
         final String errorMessage;
         if (user != null)
         {

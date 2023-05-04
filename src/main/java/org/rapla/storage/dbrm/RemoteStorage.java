@@ -109,15 +109,17 @@ public interface RemoteStorage
 
     class QueryAppointments
     {
+        private String[] userIds;
         private String[] resources;
         private Date start;
         private Date end;
         private Map<String, String> annotations;
 
-        public QueryAppointments(String[] resources, Date start, Date end, Map<String, String> annotations)
+        public QueryAppointments(String[] userIds,String[] resources, Date start, Date end, Map<String, String> annotations)
         {
             super();
             this.resources = resources;
+            this.userIds = userIds;
             this.start = start;
             this.end = end;
             this.annotations = annotations;
@@ -127,6 +129,10 @@ public interface RemoteStorage
         {
         }
 
+
+        public String[] getUserIds() {
+            return userIds;
+        }
         public String[] getResources()
         {
             return resources;

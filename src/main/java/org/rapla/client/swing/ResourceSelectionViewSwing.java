@@ -37,10 +37,13 @@ import org.rapla.client.internal.TreeFactoryImpl;
 import org.rapla.client.swing.toolkit.*;
 import org.rapla.components.calendar.RaplaArrowButton;
 import org.rapla.components.layout.TableLayout;
+import org.rapla.entities.User;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.dynamictype.ClassificationFilter;
 import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.facade.ClassifiableFilter;
+import org.rapla.facade.RaplaFacade;
+import org.rapla.facade.client.ClientFacade;
 import org.rapla.facade.internal.CalendarModelImpl;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaInitializationException;
@@ -69,6 +72,7 @@ import java.util.Collection;
 @DefaultImplementation(context=InjectionContext.swing, of=ResourceSelectionView.class)
 public class ResourceSelectionViewSwing implements ResourceSelectionView
 {
+    private final ClientFacade facade;
     protected JPanel content = new JPanel();
     public RaplaTree treeSelection = new RaplaTree();
     TableLayout tableLayout;
@@ -92,11 +96,13 @@ public class ResourceSelectionViewSwing implements ResourceSelectionView
     public ResourceSelectionViewSwing(RaplaMenuBarContainer menuBar, RaplaResources i18n, Logger logger,
                                       TreeFactory treeFactory, MenuFactory menuFactory, InfoFactory infoFactory,
                                       DialogUiFactoryInterface dialogUiFactory, FilterEditButtonFactory filterEditButtonFactory,
-                                      final ComplexTreeCellRenderer renderer
-    ) throws RaplaInitializationException
+                                      final ComplexTreeCellRenderer renderer,
+                                      final ClientFacade facade
+                                      ) throws RaplaInitializationException
     {
 
         this.treeCellRenderer = renderer;
+        this.facade = facade;
         this.menuBar = menuBar;
         this.i18n = i18n;
         this.logger = logger;
@@ -240,6 +246,18 @@ public class ResourceSelectionViewSwing implements ResourceSelectionView
         treeCellRenderer.setFiltered( allocatableNodes.filtered);
         final RaplaTreeNode raplaTreeNode = treeFactory.newRootNode();
         raplaTreeNode.add( allocatableNodes.allocatableNode);
+
+        if (facade.isAdmin() && false) {
+            RaplaTreeNode usersNode = treeFactory.newUsersNode();
+            raplaTreeNode.add(usersNode);
+
+            User[] users = facade.getRaplaFacade().getUsers();
+            for (User user : users) {
+                RaplaTreeNode node = treeFactory.newNamedNode(user);
+                usersNode.add(node);
+            }
+
+        }
         DefaultTreeModel treeModel = new RaplaSwingTreeModel(raplaTreeNode);
         return treeModel;
     }
