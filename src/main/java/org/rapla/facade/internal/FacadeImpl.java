@@ -12,7 +12,7 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.facade.internal;
 
-import io.reactivex.functions.Consumer;
+import io.reactivex.rxjava3.functions.Consumer;
 import org.jetbrains.annotations.NotNull;
 import org.rapla.RaplaResources;
 import org.rapla.components.util.DateTools;

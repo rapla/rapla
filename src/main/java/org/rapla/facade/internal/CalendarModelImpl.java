@@ -13,7 +13,6 @@
 
 package org.rapla.facade.internal;
 
-import org.jetbrains.annotations.NotNull;
 import org.rapla.components.util.Assert;
 import org.rapla.components.util.DateTools;
 import org.rapla.components.util.SerializableDateTimeFormat;
@@ -112,6 +111,7 @@ public class CalendarModelImpl implements CalendarSelectionModel
     Map<DynamicType, ClassificationFilter> reservationFilter = new LinkedHashMap<>();
     Map<DynamicType, ClassificationFilter> allocatableFilter = new LinkedHashMap<>();
     public static final RaplaConfiguration ALLOCATABLES_ROOT = new RaplaConfiguration("rootnode", "allocatables");
+    public static final RaplaConfiguration USER_ROOT = new RaplaConfiguration("userroot", "users");
 
     @Inject public CalendarModelImpl(ClientFacade clientFacade, RaplaLocale locale) throws RaplaInitializationException
     {
@@ -238,7 +238,7 @@ public class CalendarModelImpl implements CalendarSelectionModel
         return false;
     }
 
-    public boolean setConfiguration(CalendarModelConfiguration config, final Map<String, String> alternativOptions) throws RaplaException
+    public boolean setConfiguration(CalendarModelConfiguration config, final Map<String, String> alternativOptions, boolean updateSelectedDates) throws RaplaException
     {
         ArrayList<RaplaObject> selectedObjects = new ArrayList<>();
         allocatableFilter.clear();
@@ -297,7 +297,7 @@ public class CalendarModelImpl implements CalendarSelectionModel
         {
             setSelectedDate(config.getSelectedDate());
         }
-        else
+        else if (updateSelectedDates)
         {
             setSelectedDate(operator.today());
         }
@@ -306,7 +306,7 @@ public class CalendarModelImpl implements CalendarSelectionModel
         {
             setStartDate(startDate);
         }
-        else
+        else if (updateSelectedDates)
         {
             setStartDate(operator.today());
         }
@@ -315,7 +315,7 @@ public class CalendarModelImpl implements CalendarSelectionModel
         {
             setEndDate(endDate);
         }
-        else
+        else if (updateSelectedDates)
         {
             setEndDate( (endDate != null && startDate != null) ? DateTools.addDays( getStartDate(), DateTools.countDays(startDate, endDate)) : DateTools.addYear(this.startDate));
         }
@@ -386,6 +386,25 @@ public class CalendarModelImpl implements CalendarSelectionModel
         boolean resourceRootSelected = selectedObjects.contains(ALLOCATABLES_ROOT);
         return newRaplaCalendarModel(selected, resourceRootSelected, allocatableFilter, eventFilter, title, startDate, endDate, selectedDate, viewName,
                 optionMap);
+    }
+
+    public static boolean isDefaultFilter(ClassificationFilter[] allocatableFilter, int allTypes) {
+        int filteredTypes = 0;
+        if (allocatableFilter != null)
+        {
+            for (ClassificationFilter entry : allocatableFilter)
+            {
+                filteredTypes++;
+                if (entry.ruleSize() > 0)
+                {
+                    return false;
+                }
+            }
+        }
+        if ( filteredTypes < allTypes) {
+            return false;
+        }
+        return true;
     }
 
     public CalendarModelConfigurationImpl newRaplaCalendarModel(Collection<Entity> selected, boolean resourceRootSelected,
@@ -634,6 +653,23 @@ public class CalendarModelImpl implements CalendarSelectionModel
 
     @Override public String getNonEmptyTitle()
     {
+        String annotationName = null;
+        return getNonEmptyTitle(annotationName);
+    }
+
+    public String getAnnotation(String annotationName) {
+        ParseContext parseContext = new CalendarModelParseContext();
+        ParsedText parsedTitle;
+        try {
+            parsedTitle = new ParsedText(title);
+            parsedTitle.init(parseContext);
+            return parsedTitle.getExternalRepresentation( parseContext);
+        } catch (IllegalAnnotationException e) {
+            return e.getMessage();
+        }
+    }
+
+    public String getNonEmptyTitle(String annotationName) {
         String title = getTitle();
         if (title != null && title.trim().length() > 0)
         {
@@ -649,7 +685,8 @@ public class CalendarModelImpl implements CalendarSelectionModel
                 return e.getMessage();
             }
             final PermissionController permissionController = operator.getPermissionController();
-            EvalContext evalContext = new EvalContext(locale, null, permissionController, user, Collections.singletonList(this));
+            Map<String, Object> environment = operator.getThreadContextMap();
+            EvalContext evalContext = new EvalContext(locale, annotationName, permissionController,environment, user, Collections.singletonList(this));
             String result = parsedTitle.formatName(evalContext);
             return result;
         }
@@ -911,7 +948,7 @@ public class CalendarModelImpl implements CalendarSelectionModel
             clone = new CalendarModelImpl(locale, user, operator, logger);
             CalendarModelConfiguration config = createConfiguration();
             Map<String, String> alternativOptions = null;
-            clone.setConfiguration(config, alternativOptions);
+            clone.setConfiguration(config, alternativOptions, true);
         }
         catch (RaplaException e)
         {
@@ -1284,7 +1321,7 @@ public class CalendarModelImpl implements CalendarSelectionModel
                     alternativeOptions.put(HTML_EXPORT_ENABLED, "true");
                 }
             }
-            setConfiguration(modelConfig, alternativeOptions);
+            setConfiguration(modelConfig, alternativeOptions,true);
         }
     }
 

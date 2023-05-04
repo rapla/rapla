@@ -27,9 +27,6 @@ import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
 import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.MediaType;
-import javax.xml.bind.annotation.XmlAccessType;
-import javax.xml.bind.annotation.XmlAccessorType;
-import javax.xml.bind.annotation.XmlRootElement;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
@@ -110,19 +107,19 @@ public interface RemoteStorage
     @Produces({ MediaType.APPLICATION_JSON, MediaType.APPLICATION_XML })
     Promise<AppointmentMap> queryAppointments(QueryAppointments job) throws RaplaException;
 
-    @XmlRootElement
-    @XmlAccessorType(XmlAccessType.FIELD)
     class QueryAppointments
     {
+        private String[] userIds;
         private String[] resources;
         private Date start;
         private Date end;
         private Map<String, String> annotations;
 
-        public QueryAppointments(String[] resources, Date start, Date end, Map<String, String> annotations)
+        public QueryAppointments(String[] userIds,String[] resources, Date start, Date end, Map<String, String> annotations)
         {
             super();
             this.resources = resources;
+            this.userIds = userIds;
             this.start = start;
             this.end = end;
             this.annotations = annotations;
@@ -132,6 +129,10 @@ public interface RemoteStorage
         {
         }
 
+
+        public String[] getUserIds() {
+            return userIds;
+        }
         public String[] getResources()
         {
             return resources;
@@ -259,8 +260,6 @@ public interface RemoteStorage
     @Produces({ MediaType.APPLICATION_JSON })
     Promise<Date> getNextAllocatableDate(NextAllocatableDateRequest job);
 
-    @XmlRootElement
-    @XmlAccessorType(XmlAccessType.FIELD)
     class NextAllocatableDateRequest
     {
         private String[] allocatableIds;
@@ -337,8 +336,6 @@ public interface RemoteStorage
     @Consumes({ MediaType.APPLICATION_JSON, MediaType.APPLICATION_XML })
     Promise<UpdateEvent> doMerge(MergeRequest job, @QueryParam("lastSynched") String lastSyncedTime);
 
-    @XmlRootElement
-    @XmlAccessorType(XmlAccessType.FIELD)
     class MergeRequest
     {
         private AllocatableImpl allocatable;
@@ -367,8 +364,6 @@ public interface RemoteStorage
         }
     }
 
-    @XmlRootElement
-    @XmlAccessorType(XmlAccessType.FIELD)
     class BindingMap
     {
         Map<String, List<String>> bindings;

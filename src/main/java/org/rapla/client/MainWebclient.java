@@ -14,7 +14,7 @@ package org.rapla.client;
 
 import org.rapla.ConnectInfo;
 import org.rapla.RaplaStartupEnvironment;
-import org.rapla.client.swing.internal.dagger.DaggerClientCreator;
+import org.rapla.client.swing.internal.ClientCreator;
 import org.rapla.framework.Disposable;
 import org.rapla.framework.StartupEnvironment;
 import org.rapla.logger.Logger;
@@ -74,7 +74,7 @@ public class MainWebclient
 
     private ClientService create(RaplaStartupEnvironment env) throws Exception
     {
-        return DaggerClientCreator.create(env, moduleId);
+        return ClientCreator.create(env);
     }
 
     protected void startRapla( ConnectInfo connectInfo) throws Exception {

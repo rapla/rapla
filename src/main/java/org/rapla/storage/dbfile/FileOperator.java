@@ -12,6 +12,7 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.storage.dbfile;
 
+import org.jetbrains.annotations.NotNull;
 import org.rapla.RaplaResources;
 import org.rapla.components.util.DateTools;
 import org.rapla.components.util.iterator.IterableChain;
@@ -35,7 +36,7 @@ import org.rapla.entities.dynamictype.Classification;
 import org.rapla.entities.extensionpoints.FunctionFactory;
 import org.rapla.entities.internal.CategoryImpl;
 import org.rapla.entities.internal.ModifiableTimestamp;
-import org.rapla.entities.storage.ImportExportEntity;
+import org.rapla.entities.storage.ExternalSyncEntity;
 import org.rapla.entities.storage.RefEntity;
 import org.rapla.entities.storage.ReferenceInfo;
 import org.rapla.facade.RaplaComponent;
@@ -87,6 +88,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 /** Use this Operator to keep the data stored in an XML-File.
  @see AbstractCachableOperator
@@ -154,7 +156,7 @@ final public class FileOperator extends LocalAbstractCachableOperator
 
     }
 
-    private final Map<ImportExportMapKey, Map<String,ImportExportEntity>> importExportEntities = new LinkedHashMap<>();
+    private final Map<ImportExportMapKey, Map<String, ExternalSyncEntity>> externalSyncEntities = new LinkedHashMap<>();
 
     public FileOperator(Logger logger, PromiseWait promiseWait,RaplaResources i18n, RaplaLocale raplaLocale, CommandScheduler scheduler,
             Map<String, FunctionFactory> functionFactoryMap, @Named(ServerService.ENV_RAPLAFILE_ID) String resolvedPath,
@@ -203,7 +205,7 @@ final public class FileOperator extends LocalAbstractCachableOperator
         {
             getLogger().info("Connecting: " + getURL());
             cache.clearAll();
-            importExportEntities.clear();
+            externalSyncEntities.clear();
             addInternalTypes(cache);
             loadData(cache);
             changeStatus(InitStatus.Loaded);
@@ -232,7 +234,7 @@ final public class FileOperator extends LocalAbstractCachableOperator
     final public void disconnect() throws RaplaException
     {
         super.disconnect();
-        importExportEntities.clear();
+        externalSyncEntities.clear();
     }
 
     @Override
@@ -295,10 +297,10 @@ final public class FileOperator extends LocalAbstractCachableOperator
             for (Iterator<Entity> iterator = list.iterator(); iterator.hasNext();)
             {
                 Entity entity = iterator.next();
-                if(entity instanceof ImportExportEntity)
+                if(entity instanceof ExternalSyncEntity)
                 {
                     iterator.remove();
-                    final ImportExportEntity cast = (ImportExportEntity) entity;
+                    final ExternalSyncEntity cast = (ExternalSyncEntity) entity;
                     insertIntoImportExportCache(cast);
                 }
             }
@@ -467,18 +469,18 @@ final public class FileOperator extends LocalAbstractCachableOperator
             for (Iterator<Entity> iterator = storeObjects.iterator(); iterator.hasNext();)
             {
                 Entity entity = iterator.next();
-                if(entity instanceof ImportExportEntity)
+                if(entity instanceof ExternalSyncEntity)
                 {
                     iterator.remove();
-                    ImportExportEntity cast = (ImportExportEntity) entity;
+                    ExternalSyncEntity cast = (ExternalSyncEntity) entity;
                     insertIntoImportExportCache(cast);
                 }
             }
-            Set<ReferenceInfo<ImportExportEntity>> removedImports = new HashSet<>();
+            Set<ReferenceInfo<ExternalSyncEntity>> removedImports = new HashSet<>();
             for (Iterator<ReferenceInfo> iterator = removeIds.iterator(); iterator.hasNext();)
             {
                 ReferenceInfo referenceInfo = iterator.next();
-                if(referenceInfo.getType() == ImportExportEntity.class)
+                if(referenceInfo.getType() == ExternalSyncEntity.class)
                 {
                     iterator.remove();
                     removedImports.add( referenceInfo);
@@ -486,7 +488,8 @@ final public class FileOperator extends LocalAbstractCachableOperator
             }
             removeFromImportExportCache(removedImports);
             refresh(since, until, storeObjects, preferencePatches, removeIds);
-            saveData(cache, null, includeIds);
+            List<ExternalSyncEntity> externalSyncEntityList = getAllExternalSyncEntities();
+            saveData(cache, externalSyncEntityList,null, includeIds);
         }
         finally
         {
@@ -494,6 +497,10 @@ final public class FileOperator extends LocalAbstractCachableOperator
         }
     }
 
+    @Override
+    public List<ExternalSyncEntity> getAllExternalSyncEntities() {
+        return externalSyncEntities.values().stream().flatMap(x -> x.values().stream()).collect(Collectors.toList());
+    }
 
 
     static class ImportExportMapKey
@@ -530,27 +537,27 @@ final public class FileOperator extends LocalAbstractCachableOperator
         }
     }
 
-    private void insertIntoImportExportCache(ImportExportEntity cast)
+    private void insertIntoImportExportCache(ExternalSyncEntity cast)
     {
         final ImportExportMapKey systemAndDirection = new ImportExportMapKey(cast.getExternalSystem(),cast.getDirection());
-        Map<String,ImportExportEntity> collection = importExportEntities.get(systemAndDirection);
+        Map<String, ExternalSyncEntity> collection = externalSyncEntities.get(systemAndDirection);
         if(collection == null)
         {
             collection = new LinkedHashMap<>();
-            importExportEntities.put(systemAndDirection, collection);
+            externalSyncEntities.put(systemAndDirection, collection);
         }
         collection.put(cast.getId(),cast);
     }
 
-    private void removeFromImportExportCache(Set<ReferenceInfo<ImportExportEntity>> removedImports)
+    private void removeFromImportExportCache(Set<ReferenceInfo<ExternalSyncEntity>> removedImports)
     {
-        for(Map<String,ImportExportEntity> list:importExportEntities.values())
+        for(Map<String, ExternalSyncEntity> list: externalSyncEntities.values())
         {
-            Iterator<ImportExportEntity> iterator = list.values().iterator();
+            Iterator<ExternalSyncEntity> iterator = list.values().iterator();
             while ( iterator.hasNext())
             {
-                ImportExportEntity entry = iterator.next();
-                final ReferenceInfo<ImportExportEntity> reference = entry.getReference();
+                ExternalSyncEntity entry = iterator.next();
+                final ReferenceInfo<ExternalSyncEntity> reference = entry.getReference();
                 if ( removedImports.contains(reference))
                 {
                     iterator.remove();
@@ -615,7 +622,8 @@ final public class FileOperator extends LocalAbstractCachableOperator
         final RaplaLock.WriteLock writeLock = writeLockIfLoaded("Saving data");
         try
         {
-            saveData(cache, null, includeIds);
+            List<ExternalSyncEntity> syncEntities = getAllExternalSyncEntities();
+            saveData(cache, syncEntities,null, includeIds);
         }
         finally
         {
@@ -623,14 +631,15 @@ final public class FileOperator extends LocalAbstractCachableOperator
         }
     }
 
-    synchronized final public void saveData(LocalCache cache, String version) throws RaplaException
+    @Override
+    synchronized final public void saveData(LocalCache cache, Collection<ExternalSyncEntity> syncEntities,String version) throws RaplaException
     {
-        saveData(cache, version, true);
+        saveData(cache,syncEntities, version, true);
     }
 
-    synchronized final private void saveData(LocalCache cache, String version, boolean includeIds) throws RaplaException
+    synchronized final private void saveData(LocalCache cache, Collection<ExternalSyncEntity> syncEntities, String version, boolean includeIds) throws RaplaException
     {
-        final RaplaMainWriter raplaMainWriter = getMainWriter(cache, version, includeIds);
+        final RaplaMainWriter raplaMainWriter = getMainWriter(cache, syncEntities,version, includeIds);
         try
         {
             FileIO.write(writer -> {
@@ -659,15 +668,10 @@ final public class FileOperator extends LocalAbstractCachableOperator
         void write(BufferedWriter writer) throws IOException;
     }
 
-    private RaplaMainWriter getMainWriter(LocalCache cache, String version, boolean includeIds) throws RaplaException
+    private RaplaMainWriter getMainWriter(LocalCache cache, Collection<ExternalSyncEntity> externalSyncEntityList,String version, boolean includeIds) throws RaplaException
     {
         RaplaDefaultXMLContext outputContext = new IOContext().createOutputContext(logger, raplaLocale, i18n, cache.getSuperCategoryProvider(), includeIds);
-        final ArrayList<ImportExportEntity> importExportEntityList = new ArrayList<>();
-        for (Map<String,ImportExportEntity> importExportEntitiyCollection : importExportEntities.values())
-        {
-            importExportEntityList.addAll(importExportEntitiyCollection.values());
-        }
-        RaplaMainWriter writer = new RaplaMainWriter(outputContext, cache, importExportEntityList);
+        RaplaMainWriter writer = new RaplaMainWriter(outputContext, cache, externalSyncEntityList);
         writer.setEncoding("utf-8");
         if (version != null)
         {
@@ -745,12 +749,12 @@ final public class FileOperator extends LocalAbstractCachableOperator
     }
     
     @Override
-    public Map<String, ImportExportEntity> getImportExportEntities(String systemId, int importExportDirection) throws RaplaException
+    public Map<String, ExternalSyncEntity> getImportExportEntities(String systemId, int importExportDirection) throws RaplaException
     {
         final RaplaLock.ReadLock lock = lockManager.readLock(getClass(), "getImportExportEntities for system " + systemId);
         try
         {
-            final Map<String,ImportExportEntity> collection = importExportEntities.get(new ImportExportMapKey(systemId,importExportDirection));
+            final Map<String, ExternalSyncEntity> collection = externalSyncEntities.get(new ImportExportMapKey(systemId,importExportDirection));
             if(collection != null)
             {
                 return collection;

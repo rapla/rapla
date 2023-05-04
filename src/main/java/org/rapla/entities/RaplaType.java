@@ -22,7 +22,7 @@ import org.rapla.entities.domain.Period;
 import org.rapla.entities.domain.Reservation;
 import org.rapla.entities.dynamictype.Attribute;
 import org.rapla.entities.dynamictype.DynamicType;
-import org.rapla.entities.storage.ImportExportEntity;
+import org.rapla.entities.storage.ExternalSyncEntity;
 import org.rapla.facade.Conflict;
 import org.rapla.framework.RaplaException;
 
@@ -64,7 +64,7 @@ public class RaplaType<T>  {
         new RaplaType<>(Period.class, "period");
         new RaplaType<>(Attribute.class, "attribute");
         new RaplaType<>(DynamicType.class, "dynamictype");
-        new RaplaType<>(ImportExportEntity.class, "importexport");
+        new RaplaType<>(ExternalSyncEntity.class, "importexport");
     }
 
 

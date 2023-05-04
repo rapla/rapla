@@ -19,6 +19,7 @@ import org.rapla.components.util.Assert;
 import org.rapla.components.util.iterator.FilterIterable;
 import org.rapla.entities.Category;
 import org.rapla.entities.Named;
+import org.rapla.entities.User;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.Permission;
 import org.rapla.entities.dynamictype.Attribute;
@@ -399,11 +400,20 @@ public class TreeFactoryImpl extends RaplaComponent implements TreeFactory
      * @return
      * @throws RaplaException
      */
+    @Override
+    public RaplaTreeNode newResourceNode() {
+        return  newNode(CalendarModelImpl.ALLOCATABLES_ROOT);
+    }
+
+    @Override
+    public RaplaTreeNode newUsersNode() {
+        return  newNode(CalendarModelImpl.USER_ROOT);
+    }
 
     @Override
     public AllocatableNodes createAllocatableModel(ClassificationFilter[] filter) throws RaplaException
     {
-        RaplaTreeNode treeNode = newNode(CalendarModelImpl.ALLOCATABLES_ROOT);
+        RaplaTreeNode treeNode = newResourceNode();
         Map<DynamicType, RaplaTreeNode> nodeMap = new HashMap<>();
         boolean resourcesFiltered = false;
 

@@ -3,8 +3,8 @@ package org.rapla.server.internal;
 import org.rapla.framework.RaplaException;
 import org.rapla.inject.Injector;
 import org.rapla.logger.Logger;
+import org.rapla.server.ServerCreator;
 import org.rapla.server.ServerServiceContainer;
-import org.rapla.server.dagger.DaggerServerCreator;
 import org.rapla.server.extensionpoints.ServletRequestPreprocessor;
 import org.rapla.server.internal.console.ImportExportManagerContainer;
 import org.rapla.storage.impl.DefaultRaplaLock;
@@ -54,7 +54,7 @@ public class ServerStarter
             {
                 backendContext.setShutdownService(new ShutdownServiceImpl());
             }
-            final DaggerServerCreator.ServerContext serverContext = DaggerServerCreator.create(logger, backendContext);
+            final ServerCreator.ServerContext serverContext = ServerCreator.create(logger, backendContext);
             server = serverContext.getServiceContainer();
             membersInjector = serverContext.getMembersInjector();
             logger.info("Rapla server started");
@@ -102,7 +102,7 @@ public class ServerStarter
 
     public ImportExportManagerContainer createManager() throws Exception
     {
-        return DaggerServerCreator.createImportExport(logger, backendContext);
+        return ServerCreator.createImportExport(logger, backendContext);
     }
 
 

@@ -18,8 +18,8 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 import org.rapla.entities.storage.ImportExportDirections;
-import org.rapla.entities.storage.ImportExportEntity;
-import org.rapla.entities.storage.internal.ImportExportEntityImpl;
+import org.rapla.entities.storage.ExternalSyncEntity;
+import org.rapla.entities.storage.internal.ExternalSyncEntityImpl;
 import org.rapla.facade.RaplaFacade;
 import org.rapla.logger.Logger;
 import org.rapla.storage.CachableStorageOperator;
@@ -112,7 +112,7 @@ public class FileOperatorTest extends AbstractOperatorTest {
     @Test
     public void testImportExportEntity() throws Exception
     {
-        final ImportExportEntityImpl importExportEntity = new ImportExportEntityImpl();
+        final ExternalSyncEntityImpl importExportEntity = new ExternalSyncEntityImpl();
         final String context = "context";
         final int direction = ImportExportDirections.EXPORT;
         final String externalSystem = "ExtSys";
@@ -128,9 +128,9 @@ public class FileOperatorTest extends AbstractOperatorTest {
         facade.store(importExportEntity);
         final CachableStorageOperator operator = getOperator();
         {
-            final Collection<ImportExportEntity> importExportEntities = operator.getImportExportEntities("ExtSys", ImportExportDirections.EXPORT).values();
+            final Collection<ExternalSyncEntity> importExportEntities = operator.getImportExportEntities("ExtSys", ImportExportDirections.EXPORT).values();
             Assert.assertEquals(1, importExportEntities.size());
-            final ImportExportEntity next = importExportEntities.iterator().next();
+            final ExternalSyncEntity next = importExportEntities.iterator().next();
             Assert.assertEquals(data, next.getData());
             Assert.assertEquals(context, next.getContext());
             Assert.assertEquals(direction, next.getDirection());
@@ -141,9 +141,9 @@ public class FileOperatorTest extends AbstractOperatorTest {
         operator.disconnect();
         operator.connect();
         {
-            final Collection<ImportExportEntity> importExportEntities = operator.getImportExportEntities("ExtSys", ImportExportDirections.EXPORT).values();
+            final Collection<ExternalSyncEntity> importExportEntities = operator.getImportExportEntities("ExtSys", ImportExportDirections.EXPORT).values();
             Assert.assertEquals(1, importExportEntities.size());
-            final ImportExportEntity next = importExportEntities.iterator().next();
+            final ExternalSyncEntity next = importExportEntities.iterator().next();
             Assert.assertEquals(data, next.getData());
             Assert.assertEquals(context, next.getContext());
             Assert.assertEquals(direction, next.getDirection());
@@ -153,14 +153,14 @@ public class FileOperatorTest extends AbstractOperatorTest {
         }
         facade.remove(importExportEntity);
         {
-            final Collection<ImportExportEntity> importExportEntities = operator.getImportExportEntities("ExtSys", ImportExportDirections.EXPORT).values();
+            final Collection<ExternalSyncEntity> importExportEntities = operator.getImportExportEntities("ExtSys", ImportExportDirections.EXPORT).values();
             Assert.assertEquals(0, importExportEntities.size());
         }
         operator.disconnect();
         operator.connect();
         facade.remove(importExportEntity);
         {
-            final Collection<ImportExportEntity> importExportEntities = operator.getImportExportEntities("ExtSys", ImportExportDirections.EXPORT).values();
+            final Collection<ExternalSyncEntity> importExportEntities = operator.getImportExportEntities("ExtSys", ImportExportDirections.EXPORT).values();
             Assert.assertEquals(0, importExportEntities.size());
         }
     }

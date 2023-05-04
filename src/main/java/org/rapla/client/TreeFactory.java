@@ -1,6 +1,5 @@
 package org.rapla.client;
 
-import jsinterop.annotations.JsType;
 import org.rapla.entities.Category;
 import org.rapla.entities.Named;
 import org.rapla.entities.domain.Allocatable;
@@ -13,7 +12,6 @@ import java.util.function.Predicate;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
-@JsType
 public interface TreeFactory {
 
 	AllocatableNodes createAllocatableModel(ClassificationFilter[] filter) throws RaplaException;
@@ -28,7 +26,11 @@ public interface TreeFactory {
 
 	RaplaTreeNode newRootNode();
 
-	RaplaTreeNode createModel(Category rootCategory,  Predicate<Category> pattern);
+   RaplaTreeNode newResourceNode();
+
+   RaplaTreeNode newUsersNode();
+
+		RaplaTreeNode createModel(Category rootCategory,  Predicate<Category> pattern);
 
 	static Stream<Conflict> getConflicts(RaplaTreeNode treeNode)
 	{
@@ -50,7 +52,6 @@ public interface TreeFactory {
 		return conflictStream;
 	}
 
-	@JsType
 	class AllocatableNodes
 	{
 		public final RaplaTreeNode allocatableNode;

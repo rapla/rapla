@@ -16,8 +16,6 @@
 
 package org.rapla.plugin.abstractcalendar;
 
-import jsinterop.annotations.JsIgnore;
-import jsinterop.annotations.JsType;
 import org.jetbrains.annotations.NotNull;
 import org.rapla.RaplaResources;
 import org.rapla.client.internal.AppointmentInfoUI;
@@ -59,6 +57,7 @@ import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.TypedComponentRole;
 import org.rapla.logger.Logger;
+import org.rapla.plugin.autoexport.AutoExportPlugin;
 import org.rapla.scheduler.Promise;
 import org.rapla.storage.PermissionController;
 
@@ -109,7 +108,6 @@ public class RaplaBuilder
 
     
     public static final TypedComponentRole<Boolean> SHOW_TOOLTIP_CONFIG_ENTRY = new TypedComponentRole<>("org.rapla.showTooltips");
-
 	Map<Appointment,Set<Appointment>> conflictingAppointments;
     
 	final private RaplaLocale raplaLocale;
@@ -395,7 +393,6 @@ public class RaplaBuilder
 		AppointmentBlock original;
     }
 
-    @JsIgnore
     static public List<AppointmentBlock> splitBlocks(Collection<AppointmentBlock> preparedBlocks, Date startDate, Date endDate, int offsetMinutes) {
         List<AppointmentBlock> result = new ArrayList<>();
         for (AppointmentBlock block:preparedBlocks) {
@@ -585,8 +582,7 @@ public class RaplaBuilder
     }
 
     /** This context contains the shared information for all RaplaBlocks.*/
-    @JsType
-    public static class BuildContext {
+        public static class BuildContext {
         boolean bResourceVisible = true;
         boolean bPersonVisible = true;
         boolean bRepeatingVisible = true;
@@ -601,6 +597,7 @@ public class RaplaBuilder
 		private boolean isResourceColoring;
 		private boolean isEventColoring;
         private boolean showTooltips;
+        private boolean showTooltipsInHtmlExport;
         final AppointmentInfoUI appointmentInfoUI;
         PermissionController permissionController;
         
@@ -623,7 +620,9 @@ public class RaplaBuilder
             this.isEventColoring = builder.isEventColoring;
             this.permissionController = builder.getPermissionController();
             try {
-                this.showTooltips = builder.getClientFacade().getPreferences(user).getEntryAsBoolean(RaplaBuilder.SHOW_TOOLTIP_CONFIG_ENTRY, true);
+                final RaplaFacade clientFacade = builder.getClientFacade();
+                this.showTooltipsInHtmlExport = clientFacade.getPreferences(null).getEntryAsBoolean(AutoExportPlugin.SHOW_TOOLTIP_IN_EXPORT_CONFIG_ENTRY, true);
+                this.showTooltips = clientFacade.getPreferences(user).getEntryAsBoolean(RaplaBuilder.SHOW_TOOLTIP_CONFIG_ENTRY, true);
             } catch (RaplaException e) {
                 this.showTooltips = true;
                 getLogger().error(e.getMessage(), e);
@@ -684,6 +683,10 @@ public class RaplaBuilder
 
         public boolean isShowToolTips() {
             return showTooltips;
+        }
+
+        public boolean isShowTooltipsInHtmlExport() {
+            return showTooltipsInHtmlExport;
         }
 
         AppointmentInfoUI getAppointmentInfo()

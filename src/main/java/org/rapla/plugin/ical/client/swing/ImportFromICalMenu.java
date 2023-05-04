@@ -78,6 +78,8 @@ public class ImportFromICalMenu extends RaplaComponent implements ImportMenuExte
     private final Provider<TreeAllocatableSelection> treeAllocatableSelectionProvider;
     private final IOInterface io;
     private final DialogUiFactoryInterface dialogUiFactory;
+	private boolean enabled;
+
 	@Inject
 	public ImportFromICalMenu(RaplaFacade facade, RaplaResources i18n, ImportFromICalResources iCalResources, RaplaLocale raplaLocale, Logger logger, ICalImport importService, ImportFromICalResources icalImportResources, Provider<TreeAllocatableSelection> treeAllocatableSelectionProvider, IOInterface io, MenuItemFactory menuItemFactory, DialogUiFactoryInterface dialogUiFactory)
 	{
@@ -326,7 +328,11 @@ public class ImportFromICalMenu extends RaplaComponent implements ImportMenuExte
 	@Override
 	public boolean isEnabled()
 	{
-		return true;
+		return this.enabled;
+	}
+
+	public void setEnabled( boolean enabled) {
+		this.enabled = enabled;
 	}
 
 	private class NamedListCellRenderer extends DefaultListCellRenderer {

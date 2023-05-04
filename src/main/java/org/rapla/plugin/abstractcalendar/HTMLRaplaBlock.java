@@ -129,6 +129,9 @@ public class HTMLRaplaBlock extends RaplaBlock implements HTMLBlock {
             if ( value == null)
                 continue;
             url = Tools.getUrl(value);
+            if ( url != null) {
+                break;
+            }
         }
             buf.append( "<a href=\"");
             if ( url != null) {
@@ -144,9 +147,8 @@ public class HTMLRaplaBlock extends RaplaBlock implements HTMLBlock {
             if ( url != null) {
                 buf.append( "</span>");
             }
-        if (getBuildContext().isShowToolTips() && !getContext().isAnonymous())
+        if (getBuildContext().isShowTooltipsInHtmlExport() && getBuildContext().isShowToolTips() && !getContext().isAnonymous())
         {
-
             buf.append( "<span class=\"tooltip\">");
             buf.append(getContext().getTooltip());
             buf.append( "</span>");

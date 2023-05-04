@@ -14,8 +14,6 @@ package org.rapla.entities;
 
 import org.rapla.components.util.DateTools;
 
-import javax.xml.bind.annotation.XmlAccessType;
-import javax.xml.bind.annotation.XmlAccessorType;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.Locale;
@@ -27,7 +25,6 @@ import java.util.TreeMap;
     support for multi-language-environments.
     @see MultiLanguageNamed
 */
-@XmlAccessorType(XmlAccessType.FIELD)
 public class MultiLanguageName implements java.io.Serializable {
     // Don't forget to increase the serialVersionUID when you change the fields
     private static final long serialVersionUID = 1;

@@ -73,7 +73,7 @@ public class ModifiableCalendarState
             }
             else if (beforeTemplateConf != null)
             {
-                model.setConfiguration(beforeTemplateConf, null);
+                model.setConfiguration(beforeTemplateConf, null, true);
                 beforeTemplateConf = null;
                 model.setTemplateId( null );
             }
@@ -102,7 +102,7 @@ public class ModifiableCalendarState
             }
         }
         {
-            if (evt.isModified(DynamicType.class) || evt.isModified(Category.class) || evt.isModified(User.class))
+            if (evt.isModified(DynamicType.class) || evt.isModified(Category.class) || (evt.isModified(User.class) && (model.getUser() != null && evt.hasChanged(model.getUser()))))
             {
                 CalendarModelConfigurationImpl config = model.createConfiguration();
                 updateConfig(evt, config);
@@ -110,7 +110,7 @@ public class ModifiableCalendarState
                 {
                     updateConfig(evt, beforeTemplateConf);
                 }
-                model.setConfiguration(config, null);
+                model.setConfiguration(config, null, false);
             }
         }
     }

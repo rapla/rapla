@@ -12,7 +12,7 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.client.menu.swing;
 
-import io.reactivex.functions.Consumer;
+import io.reactivex.rxjava3.functions.Consumer;
 import org.jetbrains.annotations.NotNull;
 import org.rapla.client.PopupContext;
 import org.rapla.client.RaplaWidget;
@@ -78,7 +78,7 @@ import java.awt.*;
 
             try {
                 action.accept( popupContext);
-            } catch (Exception ex) {
+            } catch (Throwable ex) {
                 dialogUiFactory.showException(ex, null);
             }
         }

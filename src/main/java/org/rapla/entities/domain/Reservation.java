@@ -13,7 +13,6 @@
 
 package org.rapla.entities.domain;
 
-import jsinterop.annotations.JsType;
 import org.rapla.entities.Annotatable;
 import org.rapla.entities.Named;
 import org.rapla.entities.Ownable;
@@ -38,7 +37,6 @@ import java.util.stream.Stream;
  *  @see Appointment
  *  @see Allocatable
  */
-@JsType
 public interface Reservation extends EntityPermissionContainer<Reservation>,Classifiable,Named,Ownable,Timestamp, Annotatable,Comparable
 {
     int MAX_RESERVATION_LENGTH = 100;

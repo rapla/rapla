@@ -12,7 +12,6 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.entities;
 
-import jsinterop.annotations.JsType;
 import org.rapla.entities.storage.ReferenceInfo;
 
 import java.util.Locale;
@@ -21,7 +20,6 @@ import java.util.Locale;
  * Categories can be used as attribute values.
  *   @see org.rapla.entities.dynamictype.Attribute
  */
-@JsType
 public interface Category extends MultiLanguageNamed,Entity<Category>,Timestamp, Annotatable, Comparable
 {
     ReferenceInfo<Category> SUPER_CATEGORY_REF = new ReferenceInfo<>("category_0", Category.class);

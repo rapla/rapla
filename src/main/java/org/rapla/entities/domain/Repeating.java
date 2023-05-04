@@ -11,7 +11,6 @@
  | Definition as published by the Open Source Initiative (OSI).             |
  *--------------------------------------------------------------------------*/
 package org.rapla.entities.domain;
-import jsinterop.annotations.JsType;
 import org.rapla.components.util.TimeInterval;
 
 import java.util.Date;
@@ -19,7 +18,6 @@ import java.util.Set;
 
 /** Encapsulates the repeating rule for an appointment.
     @see Appointment*/
-@JsType
 public interface Repeating {
 	RepeatingType DAILY = RepeatingType.DAILY;
 	RepeatingType WEEKLY = RepeatingType.WEEKLY;

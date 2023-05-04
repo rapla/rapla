@@ -12,13 +12,9 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.entities;
 
-import jsinterop.annotations.JsMethod;
-import jsinterop.annotations.JsType;
 
 /* @see MultiLanguageName */
-@JsType
 public interface MultiLanguageNamed extends Named {
-    @JsMethod(name = "getMultilanguageName")
     MultiLanguageName getName();
 }
 

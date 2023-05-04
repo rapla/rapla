@@ -8,8 +8,9 @@ import javax.swing.JTextField;
 public interface PublishExtension
 {
 	JPanel getPanel();
+
 	/** can return null if no url status should be displayed */
-	JTextField getURLField();
+	void setAdress(String generator, String address);
 	void mapOptionTo();
 	/** returns if getAddress can be used to generate an address */
 	boolean hasAddressCreationStrategy();
@@ -20,5 +21,5 @@ public interface PublishExtension
 	 * For the htmlexport plugin for example is this AutoExportPlugin.CALENDAR_GENERATOR
      * @see AutoExportPlugin
      **/
-	String getGenerator();
+	String[] getGenerators();
 }

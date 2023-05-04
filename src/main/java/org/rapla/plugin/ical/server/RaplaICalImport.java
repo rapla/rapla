@@ -2,18 +2,7 @@ package org.rapla.plugin.ical.server;
 
 import net.fortuna.ical4j.data.CalendarBuilder;
 import net.fortuna.ical4j.data.ParserException;
-import net.fortuna.ical4j.model.Calendar;
-import net.fortuna.ical4j.model.Component;
-import net.fortuna.ical4j.model.ComponentList;
-import net.fortuna.ical4j.model.DateTime;
-import net.fortuna.ical4j.model.Dur;
-import net.fortuna.ical4j.model.NumberList;
-import net.fortuna.ical4j.model.Period;
-import net.fortuna.ical4j.model.PeriodList;
-import net.fortuna.ical4j.model.Property;
-import net.fortuna.ical4j.model.PropertyList;
-import net.fortuna.ical4j.model.Recur;
-import net.fortuna.ical4j.model.WeekDayList;
+import net.fortuna.ical4j.model.*;
 import net.fortuna.ical4j.model.property.DateProperty;
 import net.fortuna.ical4j.model.property.RRule;
 import net.fortuna.ical4j.util.CompatibilityHints;
@@ -466,7 +455,7 @@ public class RaplaICalImport implements ICalImport {
             if ( hourList.size() > 0){
             	return null;
             }
-            NumberList monthList = recur.getMonthList();
+            MonthList monthList = recur.getMonthList();
 			if (monthList.size() > 1 || (monthList.size() == 1 && !recur.getFrequency().equals(Recur.MONTHLY)  ))
             {
             	return null;

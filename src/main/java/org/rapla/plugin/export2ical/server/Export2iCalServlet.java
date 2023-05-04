@@ -23,27 +23,22 @@ import org.rapla.logger.Logger;
 import org.rapla.plugin.export2ical.Export2iCalPlugin;
 import org.rapla.scheduler.Promise;
 import org.rapla.server.PromiseWait;
+import org.rapla.storage.StorageOperator;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import javax.ws.rs.GET;
-import javax.ws.rs.Path;
-import javax.ws.rs.Produces;
-import javax.ws.rs.QueryParam;
+import javax.ws.rs.*;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.text.SimpleDateFormat;
-import java.util.Collection;
-import java.util.Date;
-import java.util.Locale;
-import java.util.SimpleTimeZone;
+import java.util.*;
 
-@Path(Export2iCalPlugin.GENERATOR)
+@Path("{path:ical|internal_ical}")
 @Singleton
 public class Export2iCalServlet
 {
@@ -52,10 +47,10 @@ public class Export2iCalServlet
 
 //	private String username;
 //	private String filename;
-	
+
 	private boolean global_interval;
 	//private HttpServletResponse response;
-	
+
 	private SimpleDateFormat rfc1123DateFormat;
 
 //  private SimpleTimeZone gmt = new SimpleTimeZone(0, "GMT");
@@ -67,7 +62,7 @@ public class Export2iCalServlet
 	private int lastModifiedIntervall;
 	@Inject
 	Export2iCalConverter converter;
-	RaplaFacade facade;
+	public RaplaFacade facade;
 	Logger logger;
 	@Inject
 	RaplaLocale raplaLocale ;
@@ -81,7 +76,11 @@ public class Export2iCalServlet
     {
     }
 
-    @Inject
+	public RaplaFacade getFacade() {
+		return facade;
+	}
+
+	@Inject
     void setFacade(RaplaFacade facade)
     {
         this.facade = facade;
@@ -110,15 +109,14 @@ public class Export2iCalServlet
     {
         this.logger = logger.getChildLogger("ical");
     }
-    
-	private Logger getLogger()
-	{
+
+	private Logger getLogger() {
 		return logger;
 	}
 
 	@GET
-	@Produces({MediaType.TEXT_HTML,"text/calendar"})
-	public void generatePage(@Context HttpServletRequest request, @Context HttpServletResponse response, @QueryParam("file") final String filename, @QueryParam("user") final String username) throws IOException, ServletException {
+	@Produces({MediaType.TEXT_HTML, "text/calendar"})
+	public void generatePage(@PathParam("path")  String path, @Context HttpServletRequest request, @Context HttpServletResponse response, @QueryParam("file") final String filename, @QueryParam("user") final String username) throws IOException, ServletException {
 
 		//this.response = response;
         getLogger().debug("File: "+filename);
@@ -126,19 +124,23 @@ public class Export2iCalServlet
 
 		boolean isAllAppointmentsSet = request.getParameter("complete") != null;
 		// if param COMPLETE is given, retrieve all appointments
-
+		StorageOperator operator = getFacade().getOperator();
+		Map<String, Object> threadContextMap = operator.getThreadContextMap();
 		try {
-            final User user;
+			if ( path.startsWith("internal")) {
+				threadContextMap.put("internal_request", Boolean.TRUE);
+			}
+			final User user;
             String message = "The calendar '" + filename + "' you tried to retrieve is not published or available for the user " + username + ".";
 			try
             {
-            	user = facade.getUser(username);
+				user = facade.getUser(username);
             }
             catch (EntityNotFoundException ex)
             {
-            	response.getWriter().println(message);
+				response.getWriter().println(message);
 				response.getWriter().close();
-    			getLogger().getChildLogger("404").warn(message);
+				getLogger().getChildLogger("404").warn(message);
                 response.setStatus( 404);
                 return;
             }
@@ -149,23 +151,22 @@ public class Export2iCalServlet
             if (calModel == null) {
                 response.getWriter().println(message);
 				response.getWriter().close();
-    		    response.setStatus( 404);
-    			getLogger().getChildLogger("404").warn(message);
+				response.setStatus( 404);
+				getLogger().getChildLogger("404").warn(message);
                 return;
             }
 
 			response.setHeader("Last-Modified", rfc1123DateFormat.format(getLastModified(calModel)));
 			final Object isSet = calModel.getOption(Export2iCalPlugin.ICAL_EXPORT);
-            
-			if((isSet == null || isSet.equals("false")))
-			{
+
+			if((isSet == null || isSet.equals("false"))) {
 				response.getWriter().println(message);
 				response.getWriter().close();
-    			getLogger().getChildLogger("404").warn(message);
+				getLogger().getChildLogger("404").warn(message);
                 response.setStatus( 404);
 				return;
 			}
-			
+
 			if (request.getMethod().equals("HEAD")) {
 				return;
 			}
@@ -178,6 +179,8 @@ public class Export2iCalServlet
 			e.printStackTrace(response.getWriter());
 			response.getWriter().close();
 			getLogger().error( e.getMessage(), e);
+		} finally {
+			threadContextMap.remove("internal_request");
 		}
 	}
 
@@ -185,7 +188,7 @@ public class Export2iCalServlet
 	/**
 	 * Retrieves CalendarModel by username && filename, sets appropriate before
 	 * and after times (only if global intervall is false)
-	 * 
+	 *
 	 * @param user
 	 *            the Rapla-User
 	 * @param filename
@@ -216,27 +219,21 @@ public class Export2iCalServlet
 			//System.out.println("enddate - after "+ calModel.getStartDate() + " - " + daysAfter);
 
 			return calModel;
-		}
-		catch (CalendarNotFoundExeption ex)
-		{
+		} catch (CalendarNotFoundExeption ex) {
 			return null;
-		}
-		catch (RaplaException e) 
-		{
+		} catch (RaplaException e) {
 			getLogger().getChildLogger("404").error("The Calendarmodel " + filename + " could not be read for the user " + user + " due to " + e.getMessage());
 			return null;
-		} catch (NullPointerException e) 
-		{
+		} catch (NullPointerException e) {
 			return null;
 		}
 	}
 
 	private void write(final HttpServletResponse response, final Collection<Appointment> appointments, String filename, User user,final Preferences preferences) throws RaplaException, IOException {
 
-	    if (filename == null )
-	    {
-	        filename = i18n.getString("default");
-	    }
+		if (filename == null ) {
+			filename = i18n.getString("default");
+		}
 		response.setContentType("text/calendar; charset=" + raplaLocale.getCharsetNonUtf());
 		response.setHeader("Content-Disposition", "attachment; filename=" + filename + ".ics");
 
@@ -250,23 +247,21 @@ public class Export2iCalServlet
 			calOutputter.output(iCal, responseWriter);
 		} catch (ValidationException e) {
 			getLogger().error("The calendar file is invalid!\n" + e);
-		} finally
-		{
-		    responseWriter.close();
+		} finally {
+			responseWriter.close();
 		}
 	}
-	
+
 	/**
 	 * Calculates Global-Lastmod By modulo operations, this returns a fresh
 	 * last-mod every n days n can be set for all users in the last-modified
 	 * intervall settings
-	 * 
+	 *
 	 * @return
 	 */
-	private Date getGlobalLastModified() 
+	private Date getGlobalLastModified()
 	{
-		if (lastModifiedIntervall == -1) 
-		{
+		if (lastModifiedIntervall == -1) {
 			return firstPluginStartDate;
 		}
 		long nowInMillis = DateTools.cutDate(new Date()).getTime();
@@ -276,20 +271,19 @@ public class Export2iCalServlet
 
 	/**
 	 * Get last modified if a list of allocatables
-	 * 
+	 *
 	 */
 	private Date getLastModified(CalendarModel calModel) throws RaplaException {
 
 		Date endDate = null;
-        Date startDate = facade.today();
-        final Promise<Collection<Reservation>> reservationsPromise = calModel.queryReservations(new TimeInterval(startDate, endDate));
+	Date startDate = facade.today();
+	final Promise<Collection<Reservation>> reservationsPromise = calModel.queryReservations(new TimeInterval(startDate, endDate));
 		final Collection<Reservation> reservations = promiseWait.waitForWithRaplaException(reservationsPromise, 10000);
 		// set to minvalue
 		Date maxDate = new Date();
 		maxDate.setTime(0);
 
-		for (Reservation r:reservations) 
-		{
+		for (Reservation r:reservations) {
 			Date lastMod = r.getLastChanged();
 
 			if (lastMod != null && maxDate.before(lastMod)) {

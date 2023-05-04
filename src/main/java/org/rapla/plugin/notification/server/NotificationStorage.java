@@ -3,8 +3,8 @@ package org.rapla.plugin.notification.server;
 import org.rapla.components.util.DateTools;
 import org.rapla.entities.Entity;
 import org.rapla.entities.storage.ImportExportDirections;
-import org.rapla.entities.storage.ImportExportEntity;
-import org.rapla.entities.storage.internal.ImportExportEntityImpl;
+import org.rapla.entities.storage.ExternalSyncEntity;
+import org.rapla.entities.storage.internal.ExternalSyncEntityImpl;
 import org.rapla.facade.RaplaFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.plugin.notification.server.NotificationService.AllocationMail;
@@ -26,7 +26,7 @@ public class NotificationStorage
     private final CachableStorageOperator operator;
     private final RaplaFacade facade;
     private final JsonParserWrapper.JsonParser gson = JsonParserWrapper.defaultJson().get();
-    private  Map<String, ImportExportEntity> exportMails = new LinkedHashMap<>();
+    private  Map<String, ExternalSyncEntity> exportMails = new LinkedHashMap<>();
     private final Map<AllocationMail, String> mailToRaplaId = new LinkedHashMap<>();
 
     public static class NotificationContext
@@ -50,7 +50,7 @@ public class NotificationStorage
         exportMails = operator.getImportExportEntities(NotificationService.NOTIFICATION_LOCK_ID,
                 ImportExportDirections.EXPORT);
         final long currentTimeMillis = System.currentTimeMillis();
-        for (ImportExportEntity exportMailDb : exportMails.values())
+        for (ExternalSyncEntity exportMailDb : exportMails.values())
         {
             final AllocationMail mail = gson.fromJson(exportMailDb.getData(), AllocationMail.class);
             final String id = exportMailDb.getId();
@@ -70,7 +70,7 @@ public class NotificationStorage
         final ArrayList<Entity> toStore = new ArrayList<>();
         for (AllocationMail allocationMail : mailList)
         {
-            final ImportExportEntityImpl importExportEntityImpl = new ImportExportEntityImpl();
+            final ExternalSyncEntityImpl importExportEntityImpl = new ExternalSyncEntityImpl();
             final char[] charArray = UUID.randomUUID().toString().toCharArray();
             charArray[0] = 'n';
             importExportEntityImpl.setDirection(ImportExportDirections.EXPORT);
@@ -96,14 +96,14 @@ public class NotificationStorage
             if (knownMail.subject.equals(mail.subject) && knownMail.recipient.equals(mail.recipient) && knownMail.body.equals(mail.body))
             {
                 final String exportId = mailToRaplaId.get(knownMail);
-                final ImportExportEntity importExportEntity = exportMails.get(exportId);
-                if (importExportEntity != null)
+                final ExternalSyncEntity externalSyncEntity = exportMails.get(exportId);
+                if (externalSyncEntity != null)
                 {
-                    final NotificationContext context = gson.fromJson(importExportEntity.getContext(), NotificationContext.class);
+                    final NotificationContext context = gson.fromJson(externalSyncEntity.getContext(), NotificationContext.class);
                     context.retryCount++;
-                    final ImportExportEntityImpl edit = (ImportExportEntityImpl) facade.edit(importExportEntity);
+                    final ExternalSyncEntityImpl edit = (ExternalSyncEntityImpl) facade.edit(externalSyncEntity);
                     edit.setContext(gson.toJson(context));
-                    facade.store(importExportEntity);
+                    facade.store(externalSyncEntity);
                 }
             }
         }
@@ -117,10 +117,10 @@ public class NotificationStorage
             if (knownMail.subject.equals(mail.subject) && knownMail.recipient.equals(mail.recipient) && knownMail.body.equals(mail.body))
             {
                 final String exportId = mailToRaplaId.get(knownMail);
-                final ImportExportEntity importExportEntity = exportMails.get(exportId);
-                if (importExportEntity != null)
+                final ExternalSyncEntity externalSyncEntity = exportMails.get(exportId);
+                if (externalSyncEntity != null)
                 {
-                    facade.remove(importExportEntity);
+                    facade.remove(externalSyncEntity);
                     allocMailToRemove = knownMail;
                     exportMails.remove(exportId);
                 }

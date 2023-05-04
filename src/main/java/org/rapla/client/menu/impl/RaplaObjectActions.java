@@ -12,7 +12,7 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.client.menu.impl;
 
-import io.reactivex.functions.Consumer;
+import io.reactivex.rxjava3.functions.Consumer;
 import org.rapla.RaplaResources;
 import org.rapla.client.EditController;
 import org.rapla.client.PopupContext;

@@ -60,18 +60,18 @@ public class ConflictPeriodReservationButton extends RaplaGUIComponent implement
     @Override
     public Collection<RaplaWidget> createExtensionButtons(ReservationEdit edit)
     {
-        final Category timetablesCategory = check.getTimetablesCategory();
-        if (timetablesCategory == null)
+        final Category periodCategory = check.getPeriodsCategory();
+        if (periodCategory == null)
         {
             return Collections.emptyList();
         }
-        if ( timetablesCategory.getCategories().length == 0)
+        if ( periodCategory.getCategories().length == 0)
         {
         	return Collections.emptyList();
         }
         final PopupContext popupContext = new SwingPopupContext((Component) edit.getComponent(), null);
         button = new RaplaButton();
-        button.setText("Feiertage/Ferien");
+        button.setText(i18n.getString("holidays"));
         button.addActionListener((evt) ->
         {
             try
@@ -161,7 +161,7 @@ public class ConflictPeriodReservationButton extends RaplaGUIComponent implement
         {
             count += periods.size();
         }
-        button.setText("Feiertage/Ferien (" + count + ")");
+        button.setText(i18n.getString("holidays") + " (" + count + ")");
     }
 }
 

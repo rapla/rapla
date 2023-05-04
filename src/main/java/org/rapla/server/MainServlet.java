@@ -103,17 +103,17 @@ public class MainServlet extends HttpServlet
                 throw new ServletException(message);
             }
         }
+        String file = jndi.lookupEnvString("raplafile", true);
+        if (file != null)
+        {
+            backendContext.addFileDatasource("raplafile", file);
+        }
         if (split.length == 0)
         {
             final Object database = jndi.lookupResource("jdbc/rapladb", true);
             if (database != null)
             {
                 backendContext.addDbDatasource("jdbc/rapladb", (DataSource) database);
-            }
-            String file = jndi.lookupEnvString("raplafile", true);
-            if (file != null)
-            {
-                backendContext.addFileDatasource("raplafile", file);
             }
             if ( file == null && database == null)
             {

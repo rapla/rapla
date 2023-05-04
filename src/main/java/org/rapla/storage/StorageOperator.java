@@ -147,6 +147,8 @@ public interface StorageOperator extends EntityResolver {
     Promise<Collection<Conflict>> getConflicts(Reservation reservation);
 
     PermissionController getPermissionController();
+
+    Map<String,Object> getThreadContextMap();
 	//Collection<String> getTemplateNames() throws RaplaException;
 
     FunctionFactory getFunctionFactory(String functionName);

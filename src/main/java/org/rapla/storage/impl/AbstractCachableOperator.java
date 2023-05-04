@@ -96,6 +96,7 @@ public abstract class AbstractCachableOperator implements StorageOperator
     private PeriodModelImpl periodModelHoliday;
 
     protected RaplaLock lockManager;
+    ThreadLocal<Map<String,Object>> threadContextMap = new ThreadLocal<>();
 
     public AbstractCachableOperator(Logger logger, RaplaResources i18n, RaplaLocale raplaLocale, Map<String, FunctionFactory> functionFactoryMap,
             Set<PermissionExtension> permissionExtensions, RaplaLock lockManager)
@@ -112,6 +113,17 @@ public abstract class AbstractCachableOperator implements StorageOperator
         this.permissionController = new PermissionController(permissionExtensions, this);
         cache = new LocalCache(permissionController);
     }
+
+    @Override
+    public Map<String, Object> getThreadContextMap() {
+        Map<String, Object> map = threadContextMap.get();
+        if ( map == null) {
+            map = new LinkedHashMap<>();
+            threadContextMap.set( map );
+        }
+        return map;
+    }
+
 
     public PermissionController getPermissionController()
     {
@@ -422,17 +434,17 @@ public abstract class AbstractCachableOperator implements StorageOperator
             return periodModel;
         }
         if (periodModelHoliday == null) {
-            final Category timetablesCategory = getSuperCategory().getCategory("timetables");
-            if ( timetablesCategory == null)
+            final Category periodsCategory = PeriodModel.getPeriodsCategory(getSuperCategory());
+            if ( periodsCategory == null)
             {
                 return null;
             }
-            Category[] timetables = timetablesCategory.getCategories();
-            if ( timetables.length == 0)
+            Category[] periodsCategoryCategories = periodsCategory.getCategories();
+            if ( periodsCategoryCategories.length == 0)
             {
                 return null;
             }
-            periodModelHoliday = new PeriodModelImpl(this, timetables);
+            periodModelHoliday = new PeriodModelImpl(this, periodsCategoryCategories);
         }
         return periodModelHoliday;
     }

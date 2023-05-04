@@ -1,6 +1,6 @@
 package org.rapla.client.internal.admin.client;
 
-import io.reactivex.functions.BiFunction;
+import io.reactivex.rxjava3.functions.BiFunction;
 import org.rapla.RaplaResources;
 import org.rapla.client.PopupContext;
 import org.rapla.client.RaplaWidget;

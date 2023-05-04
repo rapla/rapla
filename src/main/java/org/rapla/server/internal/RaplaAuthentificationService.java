@@ -85,6 +85,11 @@ public class RaplaAuthentificationService
             Logger logger = getLogger().getChildLogger("login");
             user = authenticate(username, password, connectAs, logger);
         }
+        checkConnectAsRights(user, username, connectAs);
+        return user;
+    }
+
+    private void checkConnectAsRights(User user, String username, String connectAs) throws RaplaException {
         if (connectAs != null && connectAs.length() > 0)
         {
             final User user1 = operator.getUser(username);
@@ -93,7 +98,6 @@ public class RaplaAuthentificationService
                 throw new RaplaSecurityException("Non admin user is requesting switchToUser permission!");
             }
         }
-        return user;
     }
 
     public User getUserWithPassword(String username, String password) throws RaplaException
@@ -105,7 +109,7 @@ public class RaplaAuthentificationService
 
     public User authenticate(String username, String password, String connectAs, Logger logger) throws RaplaException
     {
-        User user;
+        User user = null;
         String toConnect = connectAs != null && !connectAs.isEmpty() ? connectAs : username;
         logger.info("User '" + username + "' is requesting login.");
         AuthenticationStore authenticationStoreSuccessfull = null;
@@ -161,7 +165,7 @@ public class RaplaAuthentificationService
             }
             catch (RaplaSecurityException ex)
             {
-                throw new RaplaSecurityException(i18n.getString("error.login"));
+                throw new RaplaSecurityException( i18n.getString("error.login")+ex.getMessage());
             }
             if (initUser)
             {
@@ -190,8 +194,9 @@ public class RaplaAuthentificationService
             operator.authenticate(username, password);
         }
 
-        if (connectAs != null && connectAs.length() > 0)
+        if (connectAs != null && connectAs.length() > 0 && user != null)
         {
+            checkConnectAsRights(user, username, connectAs);
             logger.info("Successfull login for '" + username + "' acts as user '" + connectAs + "'");
         }
         else

@@ -13,11 +13,12 @@
 
 package org.rapla.storage.impl.server;
 
-import io.reactivex.functions.Action;
+import io.reactivex.rxjava3.functions.Action;
 import org.apache.commons.collections4.BidiMap;
 import org.apache.commons.collections4.SortedBidiMap;
 import org.apache.commons.collections4.bidimap.DualHashBidiMap;
 import org.apache.commons.collections4.bidimap.DualTreeBidiMap;
+import org.jetbrains.annotations.NotNull;
 import org.rapla.RaplaResources;
 import org.rapla.components.util.Assert;
 import org.rapla.components.util.DateTools;
@@ -76,12 +77,11 @@ import org.rapla.entities.storage.CannotExistWithoutTypeException;
 import org.rapla.entities.storage.DynamicTypeDependant;
 import org.rapla.entities.storage.EntityReferencer;
 import org.rapla.entities.storage.EntityResolver;
-import org.rapla.entities.storage.ImportExportEntity;
+import org.rapla.entities.storage.ExternalSyncEntity;
 import org.rapla.entities.storage.RefEntity;
 import org.rapla.entities.storage.ReferenceInfo;
 import org.rapla.entities.storage.UnresolvableReferenceExcpetion;
 import org.rapla.entities.storage.internal.SimpleEntity;
-import org.rapla.facade.CalendarModel;
 import org.rapla.facade.Conflict;
 import org.rapla.facade.RaplaComponent;
 import org.rapla.framework.Disposable;
@@ -172,7 +172,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 
     private TimeZone systemTimeZone = TimeZone.getDefault();
     private CommandScheduler scheduler;
-    private List<io.reactivex.disposables.Disposable> scheduledTasks = new ArrayList<>();
+    private List< io.reactivex.rxjava3.disposables.Disposable> scheduledTasks = new ArrayList<>();
     private CalendarModelCache calendarModelCache;
     private Date connectStart;
     private final DefaultRaplaLock disconnectLock;
@@ -505,13 +505,16 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
         RaplaLock.ReadLock readLock = lockManager.readLock(getClass(),"runWithReadLock " + cmd.getClass());
         try
         {
-            cmd.execute(cache);
+            Collection<ExternalSyncEntity> externalSyncEntityList = getAllExternalSyncEntities();
+            cmd.execute(cache, externalSyncEntityList);
         }
         finally
         {
             lockManager.unlock(readLock);
         }
     }
+
+    protected abstract Collection<ExternalSyncEntity> getAllExternalSyncEntities() throws RaplaException;
 
     /**
      * @param user the owner of the reservation or null for reservations from all users
@@ -1030,7 +1033,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
                 disconnectLock.unlock(lock);
             }
         };
-        io.reactivex.disposables.Disposable schedule = scheduler.schedule(task, delay,period);
+        io.reactivex.rxjava3.disposables.Disposable schedule = scheduler.schedule(task, delay,period);
         scheduledTasks.add(schedule);
     }
 
@@ -1258,7 +1261,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 
         try
         {
-            for (io.reactivex.disposables.Disposable task : scheduledTasks)
+            for ( io.reactivex.rxjava3.disposables.Disposable task : scheduledTasks)
             {
                 task.dispose();
             }
@@ -2507,7 +2510,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
                 // also remove import export enitities
                 if (externalID != null)
                 {
-                    final ReferenceInfo ref = new ReferenceInfo(externalID, ImportExportEntity.class);
+                    final ReferenceInfo ref = new ReferenceInfo(externalID, ExternalSyncEntity.class);
                     evt.putRemoveId(ref);
                 }
             }
@@ -2603,7 +2606,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 
     protected void addChangedDynamicTypeDependant(UpdateEvent evt, User user, EntityStore store, DynamicTypeImpl type, boolean toRemove) throws RaplaException
     {
-        List<Entity> referencingEntities = getReferencingEntities(type, store);
+        Set<Entity> referencingEntities = getReferencingEntities(type, store);
         Iterator<Entity> it = referencingEntities.iterator();
         while (it.hasNext())
         {
@@ -2663,7 +2666,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
         {
             updateEvt.putRemove(preferences);
         }
-        List<Entity> referencingEntities = getReferencingEntities(user, store);
+        Set<Entity> referencingEntities = getReferencingEntities(user, store);
         Iterator<Entity> it = referencingEntities.iterator();
         List<Allocatable> templates = new ArrayList<>();
         while (it.hasNext())
@@ -2743,29 +2746,47 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
      * returns all entities that depend one the passed entities. In most cases
      * one object depends on an other object if it has a reference to it.
      */
-    final protected Set<Entity> getDependencies(Entity entity, EntityStore store)
+    final protected Map<ReferenceInfo,Set<Entity>> getDependencies(Collection<Entity> entityList, EntityStore store)
     {
-        Class<? extends Entity> type = entity.getTypeClass();
-        final Collection<Entity> referencingEntities;
-        if (Category.class == type || DynamicType.class == type || Allocatable.class == type || User.class == type)
-        {
-            HashSet<Entity> dependencyList = new HashSet<>();
-            referencingEntities = getReferencingEntities(entity, store);
-            dependencyList.addAll(referencingEntities);
-            return dependencyList;
-        }
-        return Collections.emptySet();
+        Set<ReferenceInfo> set = entityList.stream().filter(x -> {
+            Class<? extends Entity> type = x.getTypeClass();
+            return (Category.class == type || DynamicType.class == type || Allocatable.class == type || User.class == type);
+        }).map(Entity::getReference).collect(Collectors.toSet());
+        return getReferencingEntities(set, store);
     }
 
-    private List<Entity> getReferencingEntities(Entity entity, EntityStore store)
+    private Set<Entity> getReferencingEntities(Entity entity, EntityStore store)
     {
-        List<Entity> result = new ArrayList<>();
-        addReferers(cache.getReservations(), entity, result);
-        addReferers(cache.getAllocatables(), entity, result);
+        Map<ReferenceInfo, Set<Entity>> referencingEntities = getReferencingEntities(Collections.singleton(entity.getReference()), store);
+        Set<Entity> entities = referencingEntities.get(entity.getReference());
+        if ( entities == null) {
+            return Collections.emptySet();
+        }
+        return entities;
+    }
+
+    @Override
+    public Map<ReferenceInfo,Set<Entity>> getReferences(Set<ReferenceInfo> entityReferences) throws RaplaException {
+        RaplaLock.ReadLock readLock = lockManager.readLock(getClass(), "getReferences" );
+        try
+        {
+            return getReferencingEntities(entityReferences, new EntityStore(cache));
+        }
+        finally
+        {
+            lockManager.unlock(readLock);
+        }
+    }
+
+    @NotNull
+    private Map<ReferenceInfo, Set<Entity>> getReferencingEntities(Set<ReferenceInfo> entityReferences, EntityStore store) {
+        Map<ReferenceInfo,Set<Entity>> result = new LinkedHashMap<>();
+        addReferers(cache.getReservations(), entityReferences, result);
+        addReferers(cache.getAllocatables(), entityReferences, result);
         Collection<User> users = cache.getUsers();
-        addReferers(users, entity, result);
-        addReferers(cache.getDynamicTypes(), entity, result);
-        addReferers(CategoryImpl.getRecursive(cache.getSuperCategory()), entity, result);
+        addReferers(users, entityReferences, result);
+        addReferers(cache.getDynamicTypes(), entityReferences, result);
+        addReferers(CategoryImpl.getRecursive(cache.getSuperCategory()), entityReferences, result);
 
         List<Preferences> preferenceList = new ArrayList<>();
         for (User user : users)
@@ -2781,8 +2802,27 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
         {
             preferenceList.add(systemPreferences);
         }
-        addReferers(preferenceList, entity, result);
+        addReferers(preferenceList, entityReferences, result);
         return result;
+    }
+
+    private void addReferers(Iterable<? extends Entity> refererList, Set<ReferenceInfo> entityReferences, Map<ReferenceInfo,Set<Entity>> result)
+    {
+        for (Entity referer : refererList)
+        {
+            if (referer != null && !entityReferences.contains(referer.getReference()))
+            {
+                Iterable<ReferenceInfo> referenceInfo = ((EntityReferencer) referer).getReferenceInfo();
+                for (ReferenceInfo info : referenceInfo)
+                {
+                    if (entityReferences.contains( info ))
+                    {
+                        Set<Entity> entities = result.computeIfAbsent(info, (k) -> new HashSet<>());
+                        entities.add( referer);
+                    }
+                }
+            }
+        }
     }
 
     private void addReferers(Iterable<? extends Entity> refererList, Entity object, Collection<Entity> result)
@@ -3248,41 +3288,38 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
             }
         }
         //IterableChain<Entity> iteratorChain = new IterableChain<Entity>(deletedCategories, removeEntities);
-        for (Entity entity : removeEntities)
-        {
+        for (Entity entity : removeEntities) {
             // First we add the dependencies from the stored object list
-            for (Entity obj : storeObjects)
-            {
-                if (obj instanceof EntityReferencer)
-                {
-                    if (isRefering((EntityReferencer) obj, entity))
-                    {
+            for (Entity obj : storeObjects) {
+                if (obj instanceof EntityReferencer) {
+                    if (isRefering((EntityReferencer) obj, entity)) {
                         dep.add(obj);
                     }
                 }
             }
             // we check if the user deletes himself
-            if (entity instanceof User)
-            {
+            if (entity instanceof User) {
                 String eventUserId = evt.getUserId();
-                if (eventUserId != null && eventUserId.equals(entity.getId()))
-                {
+                if (eventUserId != null && eventUserId.equals(entity.getId())) {
                     List<String> emptyList = Collections.emptyList();
                     throw new DependencyException(i18n.getString("error.deletehimself"), emptyList);
                 }
             }
+        }
+        // Than we add the dependencies from the cache. It is important that
+        // we don't add the dependencies from the stored object list here,
+        // because a dependency could be removed in a stored object
+        Map<ReferenceInfo, Set<Entity>> dependencyMap = getDependencies(removeEntities, store);
 
-            // Than we add the dependencies from the cache. It is important that
-            // we don't add the dependencies from the stored object list here,
-            // because a dependency could be removed in a stored object
-            Set<Entity> dependencies = getDependencies(entity, store);
-            for (Entity dependency : dependencies)
-            {
-                if (!storeObjects.contains(dependency) && !removeEntities.contains(dependency))
-                {
+        for (Entity entity : removeEntities) {
+            Set<Entity> dependencies = dependencyMap.get(entity.getReference());
+            if ( dependencies == null) {
+                continue;
+            }
+            for (Entity dependency : dependencies) {
+                if (!storeObjects.contains(dependency) && !removeEntities.contains(dependency)) {
                     // only add the first 21 dependencies;
-                    if (dep.size() > MAX_DEPENDENCY)
-                    {
+                    if (dep.size() > MAX_DEPENDENCY) {
                         break;
                     }
                     dep.add(dependency);
@@ -3724,6 +3761,23 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
         setName(groupsCategory.getName(), groupsCategory.getKey());
         setNew(groupsCategory);
         store.put(groupsCategory);
+
+        CategoryImpl periodsCategory = new CategoryImpl(now, now);
+        periodsCategory.setKey("periods");
+        periodsCategory.setResolver(store);
+        setName(periodsCategory.getName(), periodsCategory.getKey());
+        setNew(periodsCategory);
+        store.put(periodsCategory);
+
+        CategoryImpl holidaysCategory = new CategoryImpl(now, now);
+
+        holidaysCategory.setKey("holiday");
+        holidaysCategory.setResolver(store);
+        setName(holidaysCategory.getName(), holidaysCategory.getKey());
+        setNew(holidaysCategory);
+        store.put(holidaysCategory);
+        periodsCategory.addCategory(holidaysCategory);
+
         for (String catName : userGroups)
         {
             CategoryImpl group = new CategoryImpl(now, now);
@@ -3736,6 +3790,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
         }
         final Category superCategory = store.resolve(Category.SUPER_CATEGORY_REF);
         superCategory.addCategory(groupsCategory);
+        superCategory.addCategory(periodsCategory);
 
         DynamicTypeImpl resourceType = newDynamicType(DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RESOURCE, "resource", groupsCategory, store);
         setName(resourceType.getName(), "resource");
@@ -4060,9 +4115,14 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
                 storeObjects.add(selectedObject);
             }
             {// now change the references
+                Set<ReferenceInfo>  allocatableReferences = allocatables.stream().map(Allocatable::getReference).collect(Collectors.toSet());
+                Map<ReferenceInfo, Set<Entity>> referencingEntityMap = getReferencingEntities(allocatableReferences, new EntityStore(this));
                 for (Allocatable allocatable : allocatables)
                 {
-                    final List<Entity> referencingEntities = getReferencingEntities(allocatable, new EntityStore(this));
+                    final Set<Entity> referencingEntities = referencingEntityMap.get( allocatable.getReference());
+                    if ( referencingEntities == null) {
+                        continue;
+                    }
                     for (Entity entity : referencingEntities)
                     {
                         final Entity editObject = editObject(entity, user);

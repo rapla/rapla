@@ -1,6 +1,6 @@
 package org.rapla.plugin.archiver.server;
 
-import io.reactivex.disposables.Disposable;
+import  io.reactivex.rxjava3.disposables.Disposable;
 import org.rapla.components.util.DateTools;
 import org.rapla.entities.configuration.RaplaConfiguration;
 import org.rapla.facade.RaplaFacade;

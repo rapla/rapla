@@ -19,15 +19,14 @@ import org.rapla.entities.Entity;
 import org.rapla.entities.User;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.Appointment;
-import org.rapla.entities.storage.ImportExportEntity;
+import org.rapla.entities.storage.ExternalSyncEntity;
 import org.rapla.entities.storage.ReferenceInfo;
 import org.rapla.framework.RaplaException;
 import org.rapla.scheduler.Promise;
+import org.rapla.storage.impl.EntityStore;
 
-import java.util.Collection;
-import java.util.Date;
-import java.util.Map;
-import java.util.TimeZone;
+import javax.xml.stream.events.EntityReference;
+import java.util.*;
 
 public interface CachableStorageOperator extends StorageOperator {
 
@@ -35,7 +34,7 @@ public interface CachableStorageOperator extends StorageOperator {
 	void runWithReadLock(CachableStorageOperatorCommand cmd) throws RaplaException;
     void dispatch(UpdateEvent evt) throws RaplaException;
     String authenticate(String username,String password) throws RaplaException;
-    void saveData(LocalCache cache, String version) throws RaplaException;
+    void saveData(LocalCache cache, Collection<ExternalSyncEntity> syncEntities, String version) throws RaplaException;
     
     Collection<Entity> getVisibleEntities(final User user) throws RaplaException;
     //Collection<Entity> getUpdatedEntities(final User user,Date timestamp) throws RaplaException;
@@ -50,10 +49,13 @@ public interface CachableStorageOperator extends StorageOperator {
     UpdateResult getUpdateResult(Date since) throws RaplaException;
     UpdateResult getUpdateResult(Date since,User user) throws RaplaException;
 
+    Date getLastRefreshed();
     Date getHistoryValidStart();
     Date getConnectStart();
 
-    Map<String, ImportExportEntity> getImportExportEntities(String systemId, int importExportDirection) throws RaplaException;
+    Map<ReferenceInfo,Set<Entity>> getReferences(Set<ReferenceInfo> entityReferences) throws RaplaException;
+
+    Map<String, ExternalSyncEntity> getImportExportEntities(String systemId, int importExportDirection) throws RaplaException;
     
     /**
      * Tries to receive the lock for the given id. If another System has the lock, a RaplaException is thrown

@@ -737,7 +737,8 @@ public class RemoteOperator
         final RemoteStorage serv = getRemoteStorage();
         Promise<Map<Allocatable, Collection<Appointment>>> result = refreshIfIdle().thenCompose((refreshed) -> {
             String[] allocatableId = getIdList(allocatables);
-            return serv.queryAppointments(new QueryAppointments(allocatableId, start, end, annotationQuery)).thenApply(list -> {
+            String[] userIds = new String[] {};
+            return serv.queryAppointments(new QueryAppointments(userIds,allocatableId, start, end, annotationQuery)).thenApply(list -> {
                 Map<Allocatable, Collection<Appointment>> filtered;
                 {
                     long time = System.currentTimeMillis();

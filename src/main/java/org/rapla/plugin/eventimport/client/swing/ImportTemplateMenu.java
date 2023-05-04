@@ -138,6 +138,11 @@ public class ImportTemplateMenu implements ImportMenuExtension, ActionListener
     }
 
     @Override
+    public void setEnabled(boolean enabled) {
+        this.enabled = enabled;
+    }
+
+    @Override
     public void actionPerformed( final ActionEvent evt )
     {
         final PopupContext popupContext = dialogFactory.createPopupContext( null);

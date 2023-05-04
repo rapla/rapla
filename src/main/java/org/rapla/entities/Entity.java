@@ -12,10 +12,8 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.entities;
 
-import jsinterop.annotations.JsType;
 import org.rapla.entities.storage.ReferenceInfo;
 
-@JsType
 public interface Entity<T extends Entity> extends RaplaObject<T> {
     /** returns true, if the passed object is an instance of Entity
      * and has the same id as the object. If both Entities have

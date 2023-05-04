@@ -82,8 +82,10 @@
             <!-- uncomment to support proxy protocol
             <Item>
               <New class="org.eclipse.jetty.server.ProxyConnectionFactory"/>
-            </Item>-->
-            <Item>
+            </Item>
+            -->
+
+              <Item>
               <New class="org.eclipse.jetty.server.HttpConnectionFactory">
                 <Arg name="config"><Ref refid="httpConfig" /></Arg>
               </New>
@@ -148,6 +150,7 @@
 
     <!-- Configure Proxy if you want to use nodejs server in dev mode-->
     <!--
+    -->
     <New id="proxy" class="org.eclipse.jetty.servlet.ServletContextHandler">
         <Set name="contextPath">/proxy</Set>
         <Call name="getServletHandler">
@@ -161,7 +164,6 @@
             </Call>
         </Call>
     </New>
-    -->
     <!-- =========================================================== -->
     <!-- Set handler Collection Structure                            -->
     <!-- =========================================================== -->
@@ -171,13 +173,11 @@
          <Array type="org.eclipse.jetty.server.Handler">
            <Item>
              <New id="contexts" class="org.eclipse.jetty.server.handler.ContextHandlerCollection">
-                 <!--
                  <Call name="addHandler">
                     <Arg>
                         <Ref id="proxy"/>
                     </Arg>
                  </Call>
-                 -->
              </New>
            </Item>
            <Item>
@@ -187,6 +187,7 @@
            <Item>
               <New id="RequestLogHandler" class="org.eclipse.jetty.server.handler.RequestLogHandler"/>
            </Item>
+
          </Array>
         </Set>
       </New>

@@ -25,7 +25,7 @@ import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.entities.extensionpoints.FunctionFactory;
 import org.rapla.entities.internal.CategoryImpl;
 import org.rapla.entities.internal.ModifiableTimestamp;
-import org.rapla.entities.storage.ImportExportEntity;
+import org.rapla.entities.storage.ExternalSyncEntity;
 import org.rapla.entities.storage.RefEntity;
 import org.rapla.entities.storage.ReferenceInfo;
 import org.rapla.facade.Conflict;
@@ -36,7 +36,6 @@ import org.rapla.logger.Logger;
 import org.rapla.scheduler.CommandScheduler;
 import org.rapla.server.PromiseWait;
 import org.rapla.storage.CachableStorageOperator;
-import org.rapla.storage.CachableStorageOperatorCommand;
 import org.rapla.storage.IdCreator;
 import org.rapla.storage.ImportExportManager;
 import org.rapla.storage.LocalCache;
@@ -325,7 +324,6 @@ import java.util.Set;
     }
 
 
-
     @Override protected Object getRefreshData()
     {
         if (!isConnected())
@@ -583,10 +581,10 @@ import java.util.Set;
             c = null;
             c = createConnection();
             final Connection conn = c;
-            sourceOperator.runWithReadLock(cache -> {
+            sourceOperator.runWithReadLock((cache, externalSyncEntityList) -> {
                 try
                 {
-                    saveData(conn, cache);
+                    saveData(conn, cache, externalSyncEntityList);
                 }
                 catch (SQLException ex)
                 {
@@ -934,7 +932,9 @@ import java.util.Set;
         }
     }
 
-    public synchronized void saveData(LocalCache cache, String version) throws RaplaException
+
+    @Override
+    public synchronized void saveData(LocalCache cache, Collection<ExternalSyncEntity> externalSyncEntityList,String version) throws RaplaException
     {
         Connection connection = createConnection();
         try
@@ -942,7 +942,8 @@ import java.util.Set;
             Map<String, TableDef> schema = loadDBSchema(connection);
             RaplaSQL raplaSQLOutput = new RaplaSQL(createOutputContext(cache));
             raplaSQLOutput.createOrUpdateIfNecessary(connection, schema);
-            saveData(connection, cache);
+            saveData(connection, cache, externalSyncEntityList);
+
         }
         catch (SQLException ex)
         {
@@ -954,7 +955,7 @@ import java.util.Set;
         }
     }
 
-    protected void saveData(Connection connection, LocalCache cache) throws RaplaException, SQLException
+    protected void saveData(Connection connection, LocalCache cache,Collection<ExternalSyncEntity> externalSyncEntityList) throws RaplaException, SQLException
     {
         String connectionName = getConnectionName();
         getLogger().info("Importing Data into " + connectionName);
@@ -972,6 +973,7 @@ import java.util.Set;
         }
         getLogger().info("Inserting new Data into " + connectionName);
         raplaSQLOutput.createAll(connection);
+        raplaSQLOutput.saveAllSyncEntities(connection, externalSyncEntityList );
         if (!connection.getAutoCommit())
         {
             connection.commit();
@@ -1103,13 +1105,28 @@ import java.util.Set;
 
     }
 
-    @Override public Map<String, ImportExportEntity> getImportExportEntities(String systemId, int importExportDirection) throws RaplaException
+    @Override public Map<String, ExternalSyncEntity> getImportExportEntities(String systemId, int importExportDirection) throws RaplaException
     {
         try (Connection con = createConnection())
         {
             final RaplaDefaultXMLContext context = createOutputContext(cache);
             final RaplaSQL raplaSQL = new RaplaSQL(context);
-            final Map<String,ImportExportEntity> importExportEntities = raplaSQL.getImportExportEntities(systemId, importExportDirection, con);
+            final Map<String, ExternalSyncEntity> importExportEntities = raplaSQL.getImportExportEntities(systemId, importExportDirection, con);
+            return importExportEntities;
+        }
+        catch (SQLException e)
+        {
+            throw new RaplaException("Error connecting to database reading importExport", e);
+        }
+    }
+
+    @Override
+    protected Collection<ExternalSyncEntity> getAllExternalSyncEntities() throws RaplaException{
+        try (Connection con = createConnection())
+        {
+            final RaplaDefaultXMLContext context = createOutputContext(cache);
+            final RaplaSQL raplaSQL = new RaplaSQL(context);
+            final Collection< ExternalSyncEntity> importExportEntities = raplaSQL.getAllSyncEntities(con);
             return importExportEntities;
         }
         catch (SQLException e)

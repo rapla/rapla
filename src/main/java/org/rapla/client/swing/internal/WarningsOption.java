@@ -40,13 +40,16 @@ public class WarningsOption extends RaplaGUIComponent implements UserOptionPanel
     JCheckBox showConflictWarningsField = new JCheckBox();
     JCheckBox showNotInCalendarWarningsField = new JCheckBox();
     JCheckBox showHolidayWarnings = new JCheckBox();
+
+    JCheckBox showHolidayWarningsSingleAppointment = new JCheckBox();
+
     final boolean isHolidayEnabled;
     @Inject
     public WarningsOption(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger) {
         super(facade, i18n, raplaLocale, logger);
         showConflictWarningsField.setText("");        
         double pre = TableLayout.PREFERRED;
-        panel.setLayout( new TableLayout(new double[][] {{pre, 5,pre}, {pre,5,pre,5,pre}}));
+        panel.setLayout( new TableLayout(new double[][] {{pre, 5,pre}, {pre,5,pre,5,pre,5,pre}}));
         panel.add( new JLabel(getString("warning.conflict")),"0,0");
         panel.add( showConflictWarningsField,"2,0");
         panel.add( new JLabel(getString("warning.not_in_calendar_option")),"0,2");
@@ -54,8 +57,10 @@ public class WarningsOption extends RaplaGUIComponent implements UserOptionPanel
         isHolidayEnabled = isHolidayEnabled(facade);
         if (isHolidayEnabled)
         {
-            panel.add(new JLabel("WARNUNG: Konflikt mit Feiertagen"), "0,4");
+            panel.add(new JLabel(getString("warning.repeating_conflicts_with_holiday")), "0,4");
             panel.add(showHolidayWarnings, "2,4");
+            panel.add(new JLabel(getString("warning.single_conflicts_with_holiday")), "0,6");
+            panel.add(showHolidayWarningsSingleAppointment, "2,6");
         }
     }
 
@@ -63,8 +68,8 @@ public class WarningsOption extends RaplaGUIComponent implements UserOptionPanel
     {
         try
         {
-            final PeriodModel feiertag = facade.getRaplaFacade().getPeriodModelFor("feiertag");
-            return feiertag != null;
+            final PeriodModel holiday = PeriodModel.getHoliday(facade.getRaplaFacade());
+            return holiday != null;
         }
         catch (RaplaException e)
         {
@@ -103,6 +108,9 @@ public class WarningsOption extends RaplaGUIComponent implements UserOptionPanel
         {
             boolean config = preferences.getEntryAsBoolean( CalendarOptionsImpl.SHOW_HOLIDAY_WARNING, true);
             showHolidayWarnings.setSelected( config);
+
+            boolean configSingle = preferences.getEntryAsBoolean( CalendarOptionsImpl.SHOW_HOLIDAY_WARNING_SINGLE_APPOINTMENT, true);
+            showHolidayWarningsSingleAppointment.setSelected( configSingle);
         }
     }
 
@@ -121,6 +129,11 @@ public class WarningsOption extends RaplaGUIComponent implements UserOptionPanel
         {
             boolean selected = showHolidayWarnings.isSelected();
             preferences.putEntry( CalendarOptionsImpl.SHOW_HOLIDAY_WARNING, selected);
+
+            boolean singleSelected = showHolidayWarningsSingleAppointment.isSelected();
+            preferences.putEntry( CalendarOptionsImpl.SHOW_HOLIDAY_WARNING_SINGLE_APPOINTMENT, singleSelected);
+
+
         }
     }
 

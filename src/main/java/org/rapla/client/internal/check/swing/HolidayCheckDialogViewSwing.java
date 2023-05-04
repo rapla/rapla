@@ -1,5 +1,6 @@
 package org.rapla.client.internal.check.swing;
 
+import org.rapla.RaplaResources;
 import org.rapla.client.RaplaTreeNode;
 import org.rapla.client.internal.check.ConflictDialogView;
 import org.rapla.client.internal.check.HolidayCheckDialogView;
@@ -24,9 +25,10 @@ import java.util.List;
 @DefaultImplementation(of= HolidayCheckDialogView.class,context = InjectionContext.swing)
 public class HolidayCheckDialogViewSwing implements HolidayCheckDialogView
 {
+    RaplaResources i18n;
     @Inject
-    public HolidayCheckDialogViewSwing() {
-
+    public HolidayCheckDialogViewSwing(RaplaResources i18n) {
+        this.i18n = i18n;
     }
     @Override
     public HolidayCheckPanel getConflictPanel(RaplaTreeNode root, boolean showCheckbox)
@@ -58,7 +60,7 @@ public class HolidayCheckDialogViewSwing implements HolidayCheckDialogView
 
         if ( showCheckbox )
         {
-            final JCheckBox ausnahmenCheck = new JCheckBox("Als Ausnahmen im Wiederholungstermin einfügen");
+            final JCheckBox ausnahmenCheck = new JCheckBox(i18n.getString("appointment.exceptions.add"));
             ausnahmenCheck.setSelected(true);
             result.checked = true;
             ausnahmenCheck.addChangeListener((e) -> {

@@ -145,8 +145,9 @@ public class RaplaKeyStorageImpl implements RaplaKeyStorage
     @Override
     public LoginInfo getSecrets(User user, TypedComponentRole<String> tagName) throws RaplaException
     {
-        String annotation = facade.getPreferences(user).getEntryAsString(tagName, null);
-        if ( annotation == null)
+        final Preferences preferences = facade.getPreferences(user);
+        String annotation = preferences.getEntryAsString(tagName, "");
+        if ( annotation == null || annotation.equals(""))
         {
             return null;
         }
@@ -187,7 +188,7 @@ public class RaplaKeyStorageImpl implements RaplaKeyStorage
     public void removeLoginInfo(User user, TypedComponentRole<String> tagName) throws RaplaException {
         Preferences preferences = facade.getPreferences(user);
         Preferences edit = facade.edit( preferences);
-        edit.putEntry(tagName, null);
+        edit.putEntry(tagName, "");
         facade.store( edit);
     }
 //    

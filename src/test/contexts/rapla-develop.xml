@@ -97,9 +97,8 @@ detected.
 	<!--  change to jdbc/rapladb,raplafile if you want to use a database as datasource -->
         <Arg type="java.lang.String">raplafile</Arg>
      <!--
-         <Arg type="java.lang.String">jdbc/rapladb,raplafile</Arg>
-            -->
-
+     <Arg type="java.lang.String">jdbc/rapladb,raplafile</Arg>
+-->
 
      <Arg type="boolean">true</Arg>
  </New>
@@ -109,7 +108,7 @@ detected.
   <New class="org.eclipse.jetty.plus.jndi.EnvEntry">
       <Arg></Arg>
       <Arg>raplaservices</Arg>
-      <Arg type="java.lang.String">org.rapla.plugin.notification=true,org.rapla.ExchangeConnector=true,org.rapla.plugin.archiver.server=false</Arg>
+      <Arg type="java.lang.String">org.rapla.plugin.notification=false,org.rapla.ExchangeConnector=false,org.rapla.plugin.archiver.server=false</Arg>
       <Arg type="boolean">true</Arg>
   </New>
 

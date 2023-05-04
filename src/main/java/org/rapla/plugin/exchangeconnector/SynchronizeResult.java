@@ -8,4 +8,10 @@ public class SynchronizeResult {
     public int removed;
     public int open;
     public List<SyncError> errorMessages = new ArrayList<>();
+
+    @Override
+    public String toString()
+    {
+        return "SynchronizeResult{" + "changed=" + changed + ", removed=" + removed + ", open=" + open + ", errorMessages=" + errorMessages + '}';
+    }
 }

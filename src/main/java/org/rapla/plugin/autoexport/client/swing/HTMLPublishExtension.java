@@ -28,11 +28,12 @@ public class HTMLPublishExtension extends RaplaGUIComponent implements PublishEx
 	 final JCheckBox showNavField;
      final JCheckBox saveSelectedDateField;
      final JTextField htmlURL;
-     final JCheckBox checkbox;
+	 final JCheckBox checkbox;
      final JTextField titleField;
      final JPanel statusHtml;
      final JCheckBox onlyAllocationInfoField;
      final JCheckBox asLinkListField;
+
 	 AutoExportResources autoExportI18n;
 	 RaplaResources i18n;
      private final IOInterface ioInterface;
@@ -51,7 +52,7 @@ public class HTMLPublishExtension extends RaplaGUIComponent implements PublishEx
 			 blockSizes[i] = String.valueOf(i+1);
 		 }
         panel.setLayout(new TableLayout( new double[][] {{TableLayout.PREFERRED,5,TableLayout.PREFERRED,5,TableLayout.FILL},
-                {TableLayout.PREFERRED,5,TableLayout.PREFERRED,5,TableLayout.PREFERRED,5,TableLayout.PREFERRED,5,TableLayout.PREFERRED, 5,TableLayout.PREFERRED, 5, TableLayout.PREFERRED,5, TableLayout.PREFERRED,50  }}));
+                {TableLayout.PREFERRED,5,TableLayout.PREFERRED,5,TableLayout.PREFERRED,5,TableLayout.PREFERRED,5,TableLayout.PREFERRED, 5,TableLayout.PREFERRED, 5, TableLayout.PREFERRED,5, TableLayout.PREFERRED,20  }}));
 	   	titleField = new JTextField(20);
         addCopyPaste(titleField, i18n, raplaLocale, ioInterface, logger);
   
@@ -59,10 +60,11 @@ public class HTMLPublishExtension extends RaplaGUIComponent implements PublishEx
         saveSelectedDateField = new JCheckBox();
         onlyAllocationInfoField = new JCheckBox();
         asLinkListField = new JCheckBox();
-        htmlURL = new JTextField();
-        checkbox = new JCheckBox("HTML " + i18n.getString("publish"));
-        statusHtml = createStatus( htmlURL);
-        panel.add(checkbox,"0,0");
+		htmlURL = new JTextField();
+		 statusHtml = createStatus( htmlURL, "URL:");
+
+		 checkbox = new JCheckBox("HTML " + i18n.getString("publish"));
+		panel.add(checkbox,"0,0");
        
         checkbox.addChangeListener(e -> updateCheck());
         
@@ -101,8 +103,7 @@ public class HTMLPublishExtension extends RaplaGUIComponent implements PublishEx
         panel.add( onlyAllocationInfoField, "4,10");
         panel.add(new JLabel(autoExportI18n.getString("resources_as_linklist")),"2,12");
         panel.add( asLinkListField, "4,12");
-        panel.add( statusHtml, "2,14,4,1");
-        
+		panel.add( statusHtml, "2,14,4,1");
         {	
             final String entry = model.getOption(AutoExportPlugin.HTML_EXPORT);
             checkbox.setSelected( entry != null && entry.equals("true"));
@@ -146,7 +147,7 @@ public class HTMLPublishExtension extends RaplaGUIComponent implements PublishEx
         asLinkListField.setEnabled( htmlEnabled);
     }
 	 
-	JPanel createStatus( final JTextField urlLabel)  
+	JPanel createStatus( final JTextField urlLabel, String title)
 	{
 		addCopyPaste(urlLabel, getI18n(), getRaplaLocale(), ioInterface, getLogger());
 		final RaplaButton copyButton = new RaplaButton();
@@ -164,7 +165,7 @@ public class HTMLPublishExtension extends RaplaGUIComponent implements PublishEx
 		urlLabel.setText("");
 		urlLabel.setEditable(true);
 		urlLabel.setFont(urlLabel.getFont().deriveFont((float) 10.0));
-		status.add( new JLabel("URL: "), BorderLayout.WEST );
+		status.add( new JLabel(title), BorderLayout.WEST );
 		status.add(urlLabel, BorderLayout.CENTER);
 		
 		copyButton.setBorder(BorderFactory.createEmptyBorder(2, 2, 2, 2));
@@ -219,9 +220,12 @@ public class HTMLPublishExtension extends RaplaGUIComponent implements PublishEx
 		return panel;
 	}
 
-	public JTextField getURLField() 
-	{
-		return htmlURL;
+
+	@Override
+	public void setAdress(String generator, String address) {
+		if ( AutoExportPlugin.CALENDAR_GENERATOR.equals( generator)) {
+			htmlURL.setText(address);
+		}
 	}
 
 	public boolean hasAddressCreationStrategy() 
@@ -234,9 +238,9 @@ public class HTMLPublishExtension extends RaplaGUIComponent implements PublishEx
 		return null;
 	}
 	
-	public String getGenerator()
+	public String[] getGenerators()
 	{
-	    return AutoExportPlugin.CALENDAR_GENERATOR;
+		return new String[] {AutoExportPlugin.CALENDAR_GENERATOR};
 	}
 	
 

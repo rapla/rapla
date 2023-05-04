@@ -3,66 +3,41 @@
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>org.rapla</groupId>
 	<artifactId>rapla-parent</artifactId>
-	<version>2.0-SNAPSHOT</version>
-	<url>https://github.com/rapla/rapla</url>
+	<version>2.0-beta2</version>
 	<description>rapla - parent</description>
 	<name>rapla - parent</name>
-	<inceptionYear>2000</inceptionYear>
-	<licenses>
-		<license>
-			<name>GNU GPL v3</name>
-			<url>http://www.gnu.org/licenses/gpl-3.0.html</url>
-			<distribution>repo</distribution>
-		</license>
-	</licenses>
 	<packaging>pom</packaging>
 	<properties>
 		<disableGwtCompile>false</disableGwtCompile>
-		<slf4j.version>1.7.25</slf4j.version>
-		<logback.version>1.2.3</logback.version>
+		<slf4j.version>1.7.36</slf4j.version>
+		<logback.version>1.3.7</logback.version>
 		<intellijAnnotations.version>12.0</intellijAnnotations.version>
-		<ical4j.version>3.0.1</ical4j.version>
-		<rxjava.version>2.1.12</rxjava.version>
-		<gwtbootstrap3.version>0.9.1</gwtbootstrap3.version>
-		<!--
-		<jetty.version>9.3.7.v20160115</jetty.version>
-		-->
-		<!--
-		<jetty.version>9.2.14.v20151106</jetty.version>
-		-->
+		<ical4j.version>3.2.11</ical4j.version>
+		<rxjava.version>3.1.5</rxjava.version>
+		<java.version>1.8</java.version>
 		<exchange.webservice.api>2.0</exchange.webservice.api>
-		<jetty.version>9.4.24.v20191120</jetty.version>
-		<!--
-		<jetty.version>9.4.9.v20180320</jetty.version>
-		-->
+		<jetty.version>9.4.51.v20230217</jetty.version>
 		<mail.version>1.4.7</mail.version>
+		<jackson.version>2.14.2</jackson.version>
 		<maven.install.skip>false</maven.install.skip>
-		<dagger.version>2.12</dagger.version>
 		<guava.version>21.0</guava.version>
-		<gwt.version>2.8.2</gwt.version>
 		<requestfactory.version>2.8.0</requestfactory.version>
-		<gwt.plugin.version>1.0.0</gwt.plugin.version>
 		<commons-codec.version>1.8</commons-codec.version>
 		<commons-lang.version>2.6</commons-lang.version>
 		<commons-collections.version>4.1</commons-collections.version>
-		<gson.version>2.8.2</gson.version>
+		<gson.version>2.10</gson.version>
 		<javax.inject.version>1</javax.inject.version>
-		<restinject.version>1.0-SNAPSHOT</restinject.version>
-		<!--
-		<restinject.version>1.0-alpha9</restinject.version>
-		-->
+		<restinject.version>2.0-RC7</restinject.version>
 		<resteasy.version>3.5.1.Final</resteasy.version>
 		<javax.ws.rs.version>2.1</javax.ws.rs.version>
-		<hsqldb.version>2.4.0</hsqldb.version>
+		<hsqldb.version>2.7.1</hsqldb.version>
 		<postgresql.version>9.1-901-1.jdbc4</postgresql.version>
-		<mysql.version>8.0.16</mysql.version>
-		<!--
-        <restinject.version>1-SNAPSHOT</restinject.version>
-         -->
+		<mysql.version>8.0.28</mysql.version>
 
-		<gwt.plugin.productionmode>false</gwt.plugin.productionmode>
 		<maven.compiler.source>1.8</maven.compiler.source>
 		<maven.compiler.target>1.8</maven.compiler.target>
+		<maven.compiler.release>8</maven.compiler.release>
+
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 		<webapp.dir>${project.build.directory}/${project.build.finalName}</webapp.dir>
 		<rapla.distribution.directory>${basedir}/src/main/distribution</rapla.distribution.directory>
@@ -72,7 +47,7 @@
 		<doc.version>${project.version}</doc.version>
 		<doc.buildtime>${maven.build.timestamp} GMT+0 </doc.buildtime>
 		<doc.revision></doc.revision>
-		<doc.year>2000-2021</doc.year>
+		<doc.year>2000-2023</doc.year>
 		<doc.copyright>Rapla Team</doc.copyright>
 		<doc.developer-list-link>http://lists.sourceforge.net/lists/listinfo/rapla-developers</doc.developer-list-link>
 		<doc.developer-list>rapla-developers@lists.sourceforge.net</doc.developer-list>
@@ -97,7 +72,7 @@
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-surefire-plugin</artifactId>
-				<version>2.20</version>
+				<version>3.0.0-M9</version>
 				<configuration>
 					<forkCount>0</forkCount>
 				</configuration>
@@ -116,16 +91,11 @@
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-compiler-plugin</artifactId>
-				<version>3.6.1</version>
+				<version>3.10.1</version>
 				<configuration>
 					<annotationProcessors>
 						<annotationProcessor>org.rapla.inject.generator.AnnotationInjectionProcessor</annotationProcessor>
-						<annotationProcessor>dagger.internal.codegen.ComponentProcessor</annotationProcessor>
 					</annotationProcessors>
-					<compilerArguments>
-					<AmoduleName>${project.groupId}.${project.artifactId}</AmoduleName>
-					<AparentModules>${org.rapla.parentModules}</AparentModules>
-					</compilerArguments>
 					<!--
 					<proc>none</proc>
 					-->
@@ -140,43 +110,24 @@
 							<artifactId>restinject</artifactId>
 							<version>${restinject.version}</version>
 						</annotationProcessorPath>
-						<annotationProcessorPath>
-							<groupId>com.google.guava</groupId>
-							<artifactId>guava</artifactId>
-							<version>${guava.version}</version>
-						</annotationProcessorPath>
-						<annotationProcessorPath>
-							<groupId>com.google.dagger</groupId>
-							<artifactId>dagger-compiler</artifactId>
-							<version>${dagger.version}</version>
-						</annotationProcessorPath>
-						<annotationProcessorPath>
-							<groupId>com.google.dagger</groupId>
-							<artifactId>dagger</artifactId>
-							<version>${dagger.version}</version>
-						</annotationProcessorPath>
 					</annotationProcessorPaths>
 				</configuration>
-				<!--
-				<dependencies>
-					<dependency>
-						<groupId>com.google.guava</groupId>
-						<artifactId>guava</artifactId>
-						<version>${guava.version}</version>
-					</dependency>
-					<dependency>
-						<groupId>com.google.dagger</groupId>
-						<artifactId>dagger-compiler</artifactId>
-						<version>${dagger.version}</version>
-					</dependency>
-					<dependency>
-						<groupId>com.google.gwt</groupId>
-						<artifactId>gwt-user</artifactId>
-						<version>${gwt.version}</version>
-					</dependency>
-				</dependencies>
-				-->
-
+				<executions>
+					<execution>
+						<id>compile-java-9</id>
+						<phase>compile</phase>
+						<goals>
+							<goal>compile</goal>
+						</goals>
+						<configuration>
+							<release>9</release>
+							<compileSourceRoots>
+								<compileSourceRoot>${project.basedir}/src/main/java9</compileSourceRoot>
+							</compileSourceRoots>
+							<multiReleaseOutput>true</multiReleaseOutput>
+						</configuration>
+					</execution>
+				</executions>
 			</plugin>
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
@@ -224,66 +175,9 @@
 				</executions>
 			</plugin>
 			<plugin>
-				<groupId>net.ltgt.gwt.maven</groupId>
-				<artifactId>gwt-maven-plugin</artifactId>
-				<version>${gwt.plugin.version}</version>
-				<extensions>true</extensions>
-				<executions>
-					<execution>
-						<phase>prepare-package</phase>
-						<goals>
-							<goal>compile</goal>
-						</goals>
-					</execution>
-				</executions>
-				<configuration>
-					<codeserverArgs>
-						<arg>-generateJsInteropExports</arg>
-					</codeserverArgs>
-					<compilerArgs>
-						<arg>-generateJsInteropExports</arg>
-					</compilerArgs>
-					<!--
-					<sourcesArtifacts>
-						<artifact>javax.xml.bind:jaxb-api</artifact>
-						<artifact>io.reactivex.rxjava2:rxjava</artifact>
-					</sourcesArtifacts>
-					-->
-					<moduleName>Rapla</moduleName>
-					<modules>Rapla</modules>
-					<sourceLevel>1.8</sourceLevel>
-					<logLevel>INFO</logLevel>
-					<detail>true</detail>
-					<classpathScope>compile+runtime</classpathScope>
-					<!--
-					-->
-					<optimize>8</optimize>
-					<style>OBFUSCATED</style>
-					<draftCompile>false</draftCompile>
-					<skipModuleMetadata>false</skipModuleMetadata>
-					<skipModule>false</skipModule>
-					<skipCompilation>${disableGwtCompile}</skipCompilation>
-					<!--
-					<moduleShortName>Rapla</moduleShortName>
--->
-					<!--
-					<outputDirectory>${project.build.directory}/gwt-sources</outputDirectory>
-					-->
-					<launcherDir>${project.basedir}/src/main/webapp/</launcherDir>
-
-				</configuration>
-			</plugin>
-			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
-				<artifactId>maven-source-plugin</artifactId>
-				<version>3.0.1</version>
-				<executions>
-					<execution>
-						<goals>
-							<goal>jar</goal>
-						</goals>
-					</execution>
-				</executions>
+				<artifactId>maven-jdeps-plugin</artifactId>
+				<version>3.1.2</version>
 			</plugin>
 		</plugins>
 		<pluginManagement>
@@ -339,9 +233,18 @@
 					<groupId>org.scannotation</groupId>
 				</exclusion>
 				<exclusion>
-					<groupId>org.jboss.spec.javax.ws.rs</groupId>
-					<artifactId>jboss-jaxrs-api_2.1_spec</artifactId>
+					<artifactId>jboss-annotations-api_1.2_spec</artifactId>
+					<groupId>org.jboss.spec.javax.annotation</groupId>
 				</exclusion>
+				<exclusion>
+					<artifactId>jboss-jaxrs-api_2.1_spec</artifactId>
+					<groupId>org.jboss.spec.javax.ws.rs</groupId>
+				</exclusion>
+				<exclusion>
+					<artifactId>jboss-annotations-api_1.2_spec</artifactId>
+					<groupId>org.jboss.spec.javax.annotation</groupId>
+				</exclusion>
+
 			</exclusions>
 			<scope>compile</scope>
 		</dependency>
@@ -360,8 +263,16 @@
 					<groupId>org.scannotation</groupId>
 				</exclusion>
 				<exclusion>
-					<groupId>org.jboss.spec.javax.ws.rs</groupId>
+					<artifactId>jboss-annotations-api_1.2_spec</artifactId>
+					<groupId>org.jboss.spec.javax.annotation</groupId>
+				</exclusion>
+				<exclusion>
 					<artifactId>jboss-jaxrs-api_2.1_spec</artifactId>
+					<groupId>org.jboss.spec.javax.ws.rs</groupId>
+				</exclusion>
+				<exclusion>
+					<artifactId>jboss-annotations-api_1.2_spec</artifactId>
+					<groupId>org.jboss.spec.javax.annotation</groupId>
 				</exclusion>
 			</exclusions>
 
@@ -373,31 +284,17 @@
 			<version>0.9.0</version>
 		</dependency>
 		-->
-		<!--
 		<dependency>
-			<groupId>de.juplo</groupId>
-			<artifactId>scannotation</artifactId>
-			<version>${scannotation.version}</version>
-		</dependency>
-		-->
-		<dependency>
-			<groupId>io.reactivex.rxjava2</groupId>
+			<groupId>io.reactivex.rxjava3</groupId>
 			<artifactId>rxjava</artifactId>
 			<version>${rxjava.version}</version>
 		</dependency>
 		<dependency>
-			<groupId>io.reactivex.rxjava2</groupId>
+			<groupId>io.reactivex.rxjava3</groupId>
 			<artifactId>rxjava</artifactId>
 			<classifier>sources</classifier>
 			<scope>provided</scope>
 			<version>${rxjava.version}</version>
-		</dependency>
-		<dependency>
-			<groupId>com.github.timofeevda</groupId>
-			<artifactId>gwt-rxjs-jsinterop</artifactId>
-			<version>1.1.4</version>
-			<classifier>sources</classifier>
-			<scope>provided</scope>
 		</dependency>
 		<dependency>
 			<groupId>javax.validation</groupId>
@@ -415,31 +312,6 @@
 			<artifactId>reactive-streams</artifactId>
 			<classifier>sources</classifier>
 			<version>1.0.0</version>
-			<scope>provided</scope>
-		</dependency>
-		<dependency>
-			<groupId>org.rapla</groupId>
-			<artifactId>restinject</artifactId>
-			<version>${restinject.version}</version>
-			<classifier>sources</classifier>
-			<scope>provided</scope>
-		</dependency>
-		<dependency>
-			<groupId>com.google.dagger</groupId>
-			<artifactId>dagger</artifactId>
-			<version>${dagger.version}</version>
-		</dependency>
-		<dependency>
-			<groupId>com.google.dagger</groupId>
-			<artifactId>dagger-compiler</artifactId>
-			<version>${dagger.version}</version>
-			<scope>provided</scope>
-		</dependency>
-		<dependency>
-			<groupId>com.google.dagger</groupId>
-			<artifactId>dagger</artifactId>
-			<version>${dagger.version}</version>
-			<classifier>sources</classifier>
 			<scope>provided</scope>
 		</dependency>
 		<!-- Code scanning for property files -->
@@ -461,6 +333,11 @@
 			<groupId>javax.ws.rs</groupId>
 			<artifactId>javax.ws.rs-api</artifactId>
 			<version>${javax.ws.rs.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>jakarta.xml.ws</groupId>
+			<artifactId>jakarta.xml.ws-api</artifactId>
+			<version>2.3.3</version>
 		</dependency>
 		<dependency>
 			<groupId>com.google.code.gson</groupId>
@@ -525,30 +402,24 @@
 			<version>${javax.inject.version}</version>
 		</dependency>
 		<dependency>
-			<groupId>javax.inject</groupId>
-			<artifactId>javax.inject</artifactId>
-			<version>${javax.inject.version}</version>
-			<scope>provided</scope>
-			<classifier>sources</classifier>
-		</dependency>
-		<!--
-		<dependency>
 			<groupId>com.fasterxml.jackson.core</groupId>
 			<artifactId>jackson-databind</artifactId>
-			<version>2.9.5</version>
+			<version>${jackson.version}</version>
 		</dependency>
-		-->
+		<dependency>
+			<groupId>com.fasterxml.jackson.core</groupId>
+			<artifactId>jackson-core</artifactId>
+			<version>${jackson.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>com.fasterxml.jackson.core</groupId>
+			<artifactId>jackson-annotations</artifactId>
+			<version>${jackson.version}</version>
+		</dependency>
 		<dependency>
 			<groupId>javax.servlet</groupId>
 			<artifactId>javax.servlet-api</artifactId>
 			<version>3.1.0</version>
-			<scope>provided</scope>
-		</dependency>
-		<dependency>
-			<groupId>javax.xml.bind</groupId>
-			<artifactId>jaxb-api</artifactId>
-			<version>2.3.0</version>
-			<classifier>sources</classifier>
 			<scope>provided</scope>
 		</dependency>
 		<dependency>
@@ -561,7 +432,7 @@
 		<dependency>
 			<groupId>junit</groupId>
 			<artifactId>junit</artifactId>
-			<version>4.12</version>
+			<version>4.13.1</version>
 			<scope>test</scope>
 		</dependency>
 
@@ -572,96 +443,14 @@
 			<version>55.1</version>
 			<scope>test</scope>
 		</dependency>
-		<!-- GWT -->
-		<!--
-		<dependency>
-			<groupId>com.google.gwt</groupId>
-			<artifactId>gwt-user</artifactId>
-			<version>${gwt.version}</version>
-			<scope>provided</scope>
-		</dependency>
-		<dependency>
-			<groupId>com.google.gwt</groupId>
-			<artifactId>gwt-dev</artifactId>
-			<version>${gwt.version}</version>
-			<scope>provided</scope>
-		</dependency>
--->
-		<dependency>
-			<groupId>com.google.gwt</groupId>
-			<artifactId>gwt-user</artifactId>
-			<version>${gwt.version}</version>
-			<scope>provided</scope>
-		</dependency>
-		<dependency>
-			<groupId>com.google.gwt</groupId>
-			<artifactId>gwt-dev</artifactId>
-			<version>${gwt.version}</version>
-			<scope>provided</scope>
-			<exclusions>
-				<exclusion>
-					<groupId>org.eclipse.jetty</groupId>
-					<artifactId>jetty-webapp</artifactId>
-				</exclusion>
-				<exclusion>
-					<groupId>org.eclipse.jetty</groupId>
-					<artifactId>jetty-servlets</artifactId>
-				</exclusion>
-				<exclusion>
-					<groupId>org.eclipse.jetty</groupId>
-					<artifactId>jetty-annotations</artifactId>
-				</exclusion>
-				<exclusion>
-					<groupId>org.eclipse.jetty</groupId>
-					<artifactId>apache-jsp</artifactId>
-				</exclusion>
-				<exclusion>
-					<groupId>org.eclipse.jetty.websocket</groupId>
-					<artifactId>websocket-client</artifactId>
-				</exclusion>
-				<exclusion>
-					<groupId>org.eclipse.jetty</groupId>
-					<artifactId>jetty-io</artifactId>
-				</exclusion>
-				<exclusion>
-					<groupId>org.eclipse.jetty</groupId>
-					<artifactId>jetty-util</artifactId>
-				</exclusion>
 
-			</exclusions>
-		</dependency>
-		<dependency>
-			<groupId>org.gwtbootstrap3</groupId>
-			<artifactId>gwtbootstrap3</artifactId>
-			<version>${gwtbootstrap3.version}</version>
-			<scope>provided</scope>
-		</dependency>
-		<dependency>
-			<groupId>org.gwtbootstrap3</groupId>
-			<artifactId>gwtbootstrap3</artifactId>
-			<version>${gwtbootstrap3.version}</version>
-			<classifier>sources</classifier>
-			<scope>provided</scope>
-		</dependency>
-		<dependency>
-			<groupId>org.gwtbootstrap3</groupId>
-			<artifactId>gwtbootstrap3-extras</artifactId>
-			<version>${gwtbootstrap3.version}</version>
-			<scope>provided</scope>
-		</dependency>
-		<dependency>
-			<groupId>org.gwtbootstrap3</groupId>
-			<artifactId>gwtbootstrap3-extras</artifactId>
-			<version>${gwtbootstrap3.version}</version>
-			<classifier>sources</classifier>
-			<scope>provided</scope>
-		</dependency>
 		<!-- Scope Runtime -->
 		<dependency>
 			<groupId>org.hsqldb</groupId>
 			<artifactId>hsqldb</artifactId>
 			<version>${hsqldb.version}</version>
 			<scope>provided</scope>
+			<classifier>jdk8</classifier>
 		</dependency>
 		<!--
 		<dependency>
@@ -710,26 +499,21 @@
 			<version>${logback.version}</version>
 			<scope>provided</scope>
 		</dependency>
-		<dependency>
-			<groupId>ch.qos.logback</groupId>
-			<artifactId>logback-core</artifactId>
-			<version>${logback.version}</version>
-			<classifier>sources</classifier>
-			<scope>provided</scope>
-		</dependency>
+		<!--
 		<dependency>
 			<groupId>org.slf4j</groupId>
 			<artifactId>jcl-over-slf4j</artifactId>
 			<version>${slf4j.version}</version>
 			<scope>provided</scope>
 		</dependency>
+		-->
 		<dependency>
 			<groupId>org.slf4j</groupId>
 			<artifactId>jul-to-slf4j</artifactId>
 			<version>${slf4j.version}</version>
 			<scope>provided</scope>
 		</dependency>
-        <dependency>
+		<dependency>
             <groupId>org.eclipse.jetty</groupId>
             <artifactId>jetty-server</artifactId>
             <version>${jetty.version}</version>
@@ -837,19 +621,6 @@
 			<artifactId>ews-java-api</artifactId>
 			<version>${exchange.webservice.api}</version>
 		</dependency>
-		<dependency>
-			<groupId>com.axellience</groupId>
-			<artifactId>vue-gwt</artifactId>
-			<version>1.0.1</version>
-		</dependency>
-		<!-- Annotation Processors for Vue GWT -->
-		<dependency>
-			<groupId>com.axellience</groupId>
-			<artifactId>vue-gwt-processors</artifactId>
-			<version>1.0.1</version>
-			<optional>true</optional>
-		</dependency>
-
 	</dependencies>
 	<repositories>
 		<repository>

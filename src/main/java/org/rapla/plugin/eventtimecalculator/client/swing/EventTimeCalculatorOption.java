@@ -47,16 +47,17 @@ public class EventTimeCalculatorOption extends RaplaGUIComponent {
      * creates the panel shown in the admin option dialog.
      */
     protected JPanel createPanel() {
-        
+
         JPanel content = new JPanel();
         double[][] sizes = new double[][]{
                 {5, TableLayout.PREFERRED, 5, TableLayout.PREFERRED, 5, TableLayout.PREFERRED, 5},
-                        {TableLayout.PREFERRED, 5,
+                {TableLayout.PREFERRED, 5,
                         TableLayout.PREFERRED, 5,
                         TableLayout.PREFERRED, 5,
                         TableLayout.PREFERRED, 5,
-                                TableLayout.PREFERRED, 5,
-                                TableLayout.PREFERRED, 5
+                        TableLayout.PREFERRED, 5,
+                        TableLayout.PREFERRED, 5,
+                        TableLayout.PREFERRED, 5
                 }};
         TableLayout tableLayout = new TableLayout(sizes);
         content.setLayout(tableLayout);
@@ -86,9 +87,9 @@ public class EventTimeCalculatorOption extends RaplaGUIComponent {
         content.add(timeFormat, "3,8");
         if ( adminOptions)
         {
-        	chkAllowUserPrefs = new JCheckBox();
-        	content.add(chkAllowUserPrefs, "3,10");
-        	content.add(new JLabel(eventTimei18n.getString("allow_user_prefs")), "1,10");
+            chkAllowUserPrefs = new JCheckBox();
+        	content.add(chkAllowUserPrefs, "3,12");
+        	content.add(new JLabel(eventTimei18n.getString("allow_user_prefs")), "1,12");
         }
         return content;
     }
