@@ -218,6 +218,7 @@ public class JNDIOption implements JNDIConf, PluginOptionPanel
     }
         
     protected void addChildren( DefaultConfiguration newConfig) {
+        setAttribute(newConfig,ENABLED, activate);
     	setAttribute(newConfig,CONNECTION_NAME, connectionName);
     	setAttribute(newConfig,CONNECTION_PASSWORD, connectionPassword );
     	setAttribute(newConfig,CONNECTION_URL, connectionURL );
@@ -230,18 +231,26 @@ public class JNDIOption implements JNDIConf, PluginOptionPanel
     	setAttribute(newConfig,USER_SEARCH, userSearch );
     }
     
-    public void setAttribute( DefaultConfiguration newConfig, String attributeName, JTextField text) {
-    	String value = text.getText().trim();
+    public void setAttribute( DefaultConfiguration newConfig, String attributeName, JTextField field) {
+    	String value = field.getText().trim();
     	if ( value.length() > 0)
     	{
     		newConfig.setAttribute( attributeName, value);	
     	}
     }
 
-    public void readAttribute( String attributeName, JTextField text) {
-    	readAttribute( attributeName, text, "");
+    public void setAttribute( DefaultConfiguration newConfig, String attributeName, JCheckBox field) {
+        boolean value = field.isSelected();
+        newConfig.setAttribute( attributeName, value);
     }
-    
+
+    public void readAttribute( String attributeName, JTextField field) {
+    	readAttribute( attributeName, field, "");
+    }
+    public void readAttribute( String attributeName, JCheckBox field) {
+        field.setSelected(Boolean.parseBoolean(config.getAttribute(attributeName, null)));
+    }
+
     public void readAttribute( String attributeName, JTextField text, String defaultValue) {
     	text.setText(config.getAttribute(attributeName, defaultValue));
     }
@@ -254,6 +263,7 @@ public class JNDIOption implements JNDIConf, PluginOptionPanel
         {
             this.config = configService.getConfig();
         }
+        readAttribute("enabled", activate);
         readAttribute("digest", digest);
         readAttribute("connectionName", connectionName, "uid=admin,ou=system" );
         readAttribute("connectionPassword", connectionPassword, "secret" );

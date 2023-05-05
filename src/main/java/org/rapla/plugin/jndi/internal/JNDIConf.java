@@ -1,6 +1,8 @@
 package org.rapla.plugin.jndi.internal;
 
 public interface JNDIConf {
+    String ENABLED = "enabled";
+
     String USER_BASE = "userBase";
     String USER_SEARCH = "userSearch";
     String USER_CN = "userCn";
