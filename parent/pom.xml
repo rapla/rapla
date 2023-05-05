@@ -9,7 +9,7 @@
 	<packaging>pom</packaging>
 	<properties>
 		<disableGwtCompile>false</disableGwtCompile>
-		<slf4j.version>1.7.36</slf4j.version>
+		<slf4j.version>2.0.7</slf4j.version>
 		<logback.version>1.3.7</logback.version>
 		<intellijAnnotations.version>12.0</intellijAnnotations.version>
 		<ical4j.version>3.2.11</ical4j.version>
