@@ -24,10 +24,7 @@ import org.rapla.entities.Entity;
 import org.rapla.entities.EntityNotFoundException;
 import org.rapla.entities.RaplaType;
 import org.rapla.entities.User;
-import org.rapla.entities.domain.Allocatable;
-import org.rapla.entities.domain.Appointment;
-import org.rapla.entities.domain.AppointmentStartComparator;
-import org.rapla.entities.domain.Reservation;
+import org.rapla.entities.domain.*;
 import org.rapla.entities.domain.internal.AllocatableImpl;
 import org.rapla.entities.domain.internal.AppointmentImpl;
 import org.rapla.entities.domain.internal.ReservationImpl;
@@ -732,14 +729,15 @@ public class RemoteOperator
         return result;
     }
 
-    public Promise<Map<Allocatable, Collection<Appointment>>> queryAppointments(User user, Collection<Allocatable> allocatables, Date start, Date end,
-                                                                                final ClassificationFilter[] filters, Map<String, String> annotationQuery) {
+    @Override
+    public Promise<AppointmentMapping> queryAppointments(User user, Collection<Allocatable> allocatables, Collection<User> owners, Date start, Date end,
+                                                             final ClassificationFilter[] filters, Map<String, String> annotationQuery) {
         final RemoteStorage serv = getRemoteStorage();
-        Promise<Map<Allocatable, Collection<Appointment>>> result = refreshIfIdle().thenCompose((refreshed) -> {
+        Promise<AppointmentMapping> result = refreshIfIdle().thenCompose((refreshed) -> {
             String[] allocatableId = getIdList(allocatables);
-            String[] userIds = new String[] {};
-            return serv.queryAppointments(new QueryAppointments(userIds,allocatableId, start, end, annotationQuery)).thenApply(list -> {
-                Map<Allocatable, Collection<Appointment>> filtered;
+            String[] ownerIds = getIdList( owners);
+            return serv.queryAppointments(new QueryAppointments(ownerIds,allocatableId, start, end, annotationQuery)).thenApply(list -> {
+                AppointmentMapping filtered;
                 {
                     long time = System.currentTimeMillis();
                     logger.debug("event server call took  " + (System.currentTimeMillis() - time) + " ms");
@@ -768,7 +766,7 @@ public class RemoteOperator
         });
     }
 
-    private Map<Allocatable, Collection<Appointment>> processReservationResult(AppointmentMap appointmentMap, ClassificationFilter[] filters)
+    private AppointmentMapping processReservationResult(AppointmentMap appointmentMap, ClassificationFilter[] filters)
             throws RaplaException {
         RaplaLock.ReadLock lock = lockManager.readLock(getClass(), "processReservationResult");
         try {

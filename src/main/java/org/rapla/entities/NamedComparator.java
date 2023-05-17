@@ -14,6 +14,7 @@ package org.rapla.entities;
 
 import org.rapla.components.util.Assert;
 
+import java.text.Collator;
 import java.util.Comparator;
 import java.util.Locale;
 
@@ -21,12 +22,12 @@ public class NamedComparator<T extends Named> implements Comparator<T>
 {
     Locale locale;
 
-    //Collator collator;
+    Collator collator;
     public NamedComparator(Locale locale)
     {
         this.locale = locale;
+        collator = Collator.getInstance(locale);
         Assert.notNull(locale);
-        //collator = Collator.getInstance(locale);
     }
 
     public int compare(Named o1, Named o2)
@@ -38,8 +39,8 @@ public class NamedComparator<T extends Named> implements Comparator<T>
         Named r2 = o2;
         final String name1 = r1.getName(locale);
         final String name2 = r2.getName(locale);
-        //int result = collator.compare(name1, name2);
-        int result = name1.compareTo( name2);
+        int result = collator.compare(name1, name2);
+        //int result = name1.compareTo( name2);
         if (result != 0)
             return result;
         else

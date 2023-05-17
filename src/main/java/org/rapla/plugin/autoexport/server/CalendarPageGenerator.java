@@ -31,6 +31,8 @@ import org.rapla.logger.Logger;
 import org.rapla.plugin.abstractcalendar.server.AbstractHTMLCalendarPage;
 import org.rapla.plugin.autoexport.AutoExportPlugin;
 import org.rapla.plugin.autoexport.AutoExportResources;
+import org.rapla.plugin.urlencryption.UrlEncryption;
+import org.rapla.plugin.urlencryption.UrlEncryptionPlugin;
 import org.rapla.server.extensionpoints.HTMLViewPage;
 import org.rapla.storage.StorageOperator;
 
@@ -165,7 +167,9 @@ public class CalendarPageGenerator
                 CalendarModelConfiguration defaultConf = preferences.getEntry(CalendarModelConfiguration.CONFIG_ENTRY);
                 if (defaultConf != null)
                 {
-                    completeMap.put(i18n.getString("default"), defaultConf);
+                    if (!isEncrypted( defaultConf)) {
+                        completeMap.put("", defaultConf);
+                    }
                 }
 
                 final RaplaMap<CalendarModelConfiguration> raplaMap = preferences.getEntry(AutoExportPlugin.PLUGIN_ENTRY);
@@ -174,7 +178,9 @@ public class CalendarPageGenerator
                     for (Map.Entry<String, CalendarModelConfiguration> entry : raplaMap.entrySet())
                     {
                         CalendarModelConfiguration value = entry.getValue();
-                        completeMap.put(entry.getKey(), value);
+                        if (!isEncrypted( value ) ) {
+                            completeMap.put(entry.getKey(), value);
+                        }
                     }
                 }
                 SortedMap<String, CalendarModelConfiguration> sortedMap = new TreeMap<>(new TitleComparator(completeMap));
@@ -207,7 +213,13 @@ public class CalendarPageGenerator
                     String filename = URLEncoder.encode(key, "UTF-8");
                     out.print("<li>");
                     String baseUrl = getBaseUrl(request);
-                    String link = baseUrl+"?user=" + user.getUsername() + "&file=" + filename + "&details=*" + "&folder=true";
+
+                    String link = baseUrl+"?user=" + user.getUsername();
+                    if ( filename != null && !filename.isEmpty()) {
+                        link += "&file=" + filename;
+                    }
+                    link+="&details=*";
+                    link+= "&folder=true";
                     out.print("<a href=\"" + link + "\">");
                     out.print(title);
                     out.print("</a>");
@@ -230,6 +242,11 @@ public class CalendarPageGenerator
         {
             out.close();
         }
+    }
+
+    private boolean isEncrypted(CalendarModelConfiguration conf) {
+        String encyrptionSelected = conf.getOptionMap().get(UrlEncryptionPlugin.URL_ENCRYPTION);
+        return "true".equals(encyrptionSelected);
     }
 
     @NotNull

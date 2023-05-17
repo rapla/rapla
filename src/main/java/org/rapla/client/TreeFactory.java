@@ -28,7 +28,7 @@ public interface TreeFactory {
 
    RaplaTreeNode newResourceNode();
 
-   RaplaTreeNode newUsersNode();
+   RaplaTreeNode newUsersNode() throws RaplaException;
 
 		RaplaTreeNode createModel(Category rootCategory,  Predicate<Category> pattern);
 

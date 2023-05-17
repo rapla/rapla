@@ -1,8 +1,11 @@
 package org.rapla.storage.dbrm;
 
 import org.rapla.components.util.Assert;
+import org.rapla.entities.Entity;
+import org.rapla.entities.User;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.Appointment;
+import org.rapla.entities.domain.AppointmentMapping;
 import org.rapla.entities.domain.Reservation;
 import org.rapla.entities.domain.internal.ReservationImpl;
 import org.rapla.entities.dynamictype.ClassificationFilter;
@@ -18,12 +21,12 @@ import java.util.Set;
 public class AppointmentMap
 {
     private Set<ReservationImpl> reservations;
-    private Map<String, Set<String>> allocatableIdToAppointmentIds;
+    private Map<String, Set<String>> entityIdToAppointmentIds;
     private transient EntityResolver resolver;
 
     public AppointmentMap()
     {
-
+        this.entityIdToAppointmentIds = new LinkedHashMap<>();
     }
 
     public void init(EntityResolver resolver)
@@ -36,20 +39,20 @@ public class AppointmentMap
         }
     }
 
-    public AppointmentMap(Map<Allocatable, Collection<Appointment>> map)
+    public AppointmentMap(AppointmentMapping mapping)
     {
-        this.allocatableIdToAppointmentIds = new LinkedHashMap<>();
+        this.entityIdToAppointmentIds = new LinkedHashMap<>();
         this.reservations = new LinkedHashSet<>();
-        for (Map.Entry<Allocatable, Collection<Appointment>> entry : map.entrySet())
+        for (Map.Entry<Entity, Collection<Appointment>> entry : mapping.entrySet())
         {
-            final Allocatable key = entry.getKey();
+            final Entity key = entry.getKey();
             Assert.notNull( key);
             final String allocatableId = key.getId();
-            Set<String> ids = allocatableIdToAppointmentIds.get(allocatableId);
+            Set<String> ids = entityIdToAppointmentIds.get(allocatableId);
             if (ids == null)
             {
                 ids = new LinkedHashSet<>();
-                allocatableIdToAppointmentIds.put(allocatableId, ids);
+                entityIdToAppointmentIds.put(allocatableId, ids);
             }
             final Collection<Appointment> value = entry.getValue();
             for (Appointment app : value)
@@ -65,7 +68,7 @@ public class AppointmentMap
         }
     }
 
-    public Map<Allocatable, Collection<Appointment>> getResult(ClassificationFilter[] filters)
+    public AppointmentMapping getResult(ClassificationFilter[] filters)
     {
         Map<String, Appointment> appointmentIdToAppointment = new LinkedHashMap<>();
         for (ReservationImpl reservation : reservations)
@@ -77,19 +80,24 @@ public class AppointmentMap
                 appointmentIdToAppointment.put(appId, app);
             }
         }
-        final LinkedHashMap<Allocatable, Collection<Appointment>> result = new LinkedHashMap<>();
-        for (Map.Entry<String, Set<String>> entry : allocatableIdToAppointmentIds.entrySet())
+        Map<Entity, Collection<Appointment>> appointmentMap = new LinkedHashMap<>();
+        final AppointmentMapping result = new AppointmentMapping(appointmentMap);
+
+        for (Map.Entry<String, Set<String>> entry : entityIdToAppointmentIds.entrySet())
         {
             final String key = entry.getKey();
             final Set<String> value = entry.getValue();
-            final Allocatable allocatable = resolver.tryResolve(new ReferenceInfo<Allocatable>(key, Allocatable.class));
-            if (allocatable != null)
+            Entity entity = resolver.tryResolve(key, Allocatable.class);
+            if ( entity == null) {
+                entity = resolver.tryResolve(key, User.class);
+            }
+            if (entity != null)
             {
-                Collection<Appointment> appointments = result.get(allocatable);
+                Collection<Appointment> appointments = appointmentMap.get(entity);
                 if (appointments == null)
                 {
                     appointments = new LinkedHashSet<>();
-                    result.put(allocatable, appointments);
+                    appointmentMap.put(entity, appointments);
                 }
                 for (String appointmentId : value)
                 {
@@ -108,7 +116,8 @@ public class AppointmentMap
                     }
                 }
             }
-        }return result;
+        }
+        return result;
 
     }
 
@@ -116,7 +125,7 @@ public class AppointmentMap
     {
         return "AppointmentMap{" +
                 "reservations=" + reservations +
-                ", allocatableIdToAppointmentIds=" + allocatableIdToAppointmentIds +
+                ", allocatableIdToAppointmentIds=" + entityIdToAppointmentIds +
                 '}';
     }
     

@@ -340,18 +340,16 @@ public final class AppointmentImpl extends SimpleEntity implements Appointment
         return true;
     }
 
+    @Override
     public void createBlocks(Date start,Date end,Collection<AppointmentBlock> blocks) {
         boolean excludeExceptions = true;
         createBlocks(start,end, blocks, excludeExceptions);
     }
 
 
-    public void createBlocksExcludeExceptions(Date start,Date end,Collection<AppointmentBlock> blocks)
-    {
-        createBlocks(start, end, blocks, true);
-    }
 
 
+    @Override
     public void createBlocks(Date start,Date end,Collection<AppointmentBlock> blocks, boolean excludeExceptions) {
         Assert.notNull(blocks);
         Assert.notNull(start,"You must set a startDate");

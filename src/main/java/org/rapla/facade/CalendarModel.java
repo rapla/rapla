@@ -3,10 +3,7 @@ package org.rapla.facade;
 import org.rapla.components.util.TimeInterval;
 import org.rapla.entities.RaplaObject;
 import org.rapla.entities.User;
-import org.rapla.entities.domain.Allocatable;
-import org.rapla.entities.domain.Appointment;
-import org.rapla.entities.domain.AppointmentBlock;
-import org.rapla.entities.domain.Reservation;
+import org.rapla.entities.domain.*;
 import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.framework.RaplaException;
 import org.rapla.scheduler.Promise;
@@ -77,7 +74,7 @@ public interface CalendarModel extends Cloneable, ClassifiableFilter
 
     Promise<Collection<Reservation>> queryReservations( TimeInterval interval );
     Promise<Collection<Appointment>> queryAppointments(TimeInterval interval);
-    Promise<Map<Allocatable,Collection<Appointment>>> queryAppointmentBindings(TimeInterval interval);
+    Promise<AppointmentMapping> queryAppointmentBindings(TimeInterval interval);
     Promise<List<AppointmentBlock>> queryBlocks(TimeInterval timeInterval);
 
 	boolean isMatchingSelectionAndFilter(Reservation reservation, Appointment appointment) throws RaplaException;
