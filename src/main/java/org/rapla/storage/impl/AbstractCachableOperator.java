@@ -24,10 +24,7 @@ import org.rapla.entities.Timestamp;
 import org.rapla.entities.User;
 import org.rapla.entities.configuration.Preferences;
 import org.rapla.entities.configuration.internal.PreferencesImpl;
-import org.rapla.entities.domain.Allocatable;
-import org.rapla.entities.domain.Appointment;
-import org.rapla.entities.domain.Reservation;
-import org.rapla.entities.domain.ResourceAnnotations;
+import org.rapla.entities.domain.*;
 import org.rapla.entities.domain.internal.AllocatableImpl;
 import org.rapla.entities.domain.permission.PermissionExtension;
 import org.rapla.entities.dynamictype.Attribute;
@@ -383,17 +380,19 @@ public abstract class AbstractCachableOperator implements StorageOperator
         }
     }
 
-    public Promise<Map<Allocatable, Collection<Appointment>>> queryAppointments(User user, Collection<Allocatable> allocatables, Date start, Date end,
-            ClassificationFilter[] reservationFilters, String templateId)
+
+    @Override
+    public Promise<AppointmentMapping> queryAppointments(User user, Collection<Allocatable> allocatables, Collection<User> owners, Date start, Date end,
+                                                         ClassificationFilter[] reservationFilters, String templateId)
     {
         Collection<Allocatable> allocList;
 
         {
             if (allocatables != null)
             {
-                if (allocatables.size() == 0 && templateId == null)
+                if (allocatables.size() == 0 && templateId == null && (owners == null || owners.size()==0))
                 {
-                    return new ResolvedPromise<>(Collections.emptyMap());
+                    return new ResolvedPromise<>(new AppointmentMapping());
                 }
                 allocList = allocatables;
             }
@@ -419,7 +418,7 @@ public abstract class AbstractCachableOperator implements StorageOperator
         {
             final Map<String, String> annotationQuery = null;
             final User callUser = templateId != null ? null : user;
-            Promise<Map<Allocatable, Collection<Appointment>>> query = queryAppointments(callUser, allocList, start, end, reservationFilters, annotationQuery);
+            Promise<AppointmentMapping> query = queryAppointments(callUser, allocList, owners,start, end, reservationFilters, annotationQuery);
             return query;
         }
     }

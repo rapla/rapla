@@ -12,6 +12,7 @@ import org.rapla.entities.User;
 import org.rapla.entities.configuration.Preferences;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.Appointment;
+import org.rapla.entities.domain.AppointmentMapping;
 import org.rapla.entities.domain.Reservation;
 import org.rapla.entities.domain.internal.AllocatableImpl;
 import org.rapla.entities.domain.internal.AppointmentImpl;
@@ -202,6 +203,7 @@ import java.util.stream.Collectors;
     {
         User sessionUser = checkSessionUser();
         String[] allocatableIds = job.getResources();
+        String[] ownerIds = job.getOwnerIds();
         Date start = job.getStart();
         Date end = job.getEnd();
         Map<String, String> annotationQuery = job.getAnnotations();
@@ -218,12 +220,19 @@ import java.util.stream.Collectors;
                 allocatables.add(allocatable);
             }
         }
+        Collection<User> owners = new ArrayList<>();
+        if (ownerIds != null) {
+            for (String id : ownerIds) {
+                User owner = operator.resolve(id, User.class);
+                owners.add(owner);
+            }
+        }
         ClassificationFilter[] classificationFilters = null;
-        final Promise<Map<Allocatable, Collection<Appointment>>> mapFutureResult = operator
-                .queryAppointments(user, allocatables, start, end, classificationFilters, annotationQuery);
-        Map<Allocatable, Collection<Appointment>> reservations = operator.waitForWithRaplaException(mapFutureResult, 50000);
+        final Promise<AppointmentMapping> mapFutureResult = operator
+                .queryAppointments(user, allocatables,owners, start, end, classificationFilters, annotationQuery);
+        AppointmentMapping reservations = operator.waitForWithRaplaException(mapFutureResult, 50000);
         AppointmentMap list = new AppointmentMap(reservations);
-        getLogger().debug("Get reservations " + start + " " + end + ": " + reservations.size() + "," + list.toString());
+        getLogger().debug("Get reservations " + start + " " + end + ": " + "," + list.toString());
         return new ResolvedPromise<>(list);
     }
 

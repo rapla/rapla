@@ -19,6 +19,7 @@ import org.rapla.components.util.Assert;
 import org.rapla.components.util.iterator.FilterIterable;
 import org.rapla.entities.Category;
 import org.rapla.entities.Named;
+import org.rapla.entities.NamedComparator;
 import org.rapla.entities.User;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.Permission;
@@ -406,8 +407,17 @@ public class TreeFactoryImpl extends RaplaComponent implements TreeFactory
     }
 
     @Override
-    public RaplaTreeNode newUsersNode() {
-        return  newNode(CalendarModelImpl.USER_ROOT);
+    public RaplaTreeNode newUsersNode() throws RaplaException {
+        RaplaTreeNode usersNode =  newNode(CalendarModelImpl.USER_ROOT);
+        RaplaLocale raplaLocale = getRaplaLocale();
+        Comparator< User> comperator = new NamedComparator<>(raplaLocale.getLocale());
+        Set<User> users = new TreeSet<>( comperator);
+        users.addAll(Arrays.asList(clientFacade.getRaplaFacade().getUsers()));
+        for (User user : users) {
+            RaplaTreeNode node = newNamedNode(user);
+            usersNode.add(node);
+        }
+        return usersNode;
     }
 
     @Override

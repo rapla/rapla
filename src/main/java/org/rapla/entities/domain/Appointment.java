@@ -116,7 +116,7 @@ public interface Appointment extends Entity<Appointment>, Comparable {
     /** adds all Appointment-blocks in the given period to the blocks collection.
     A block is in the period if its starttime&lt;end or its endtime&gt;start. You can specify if exceptions should be excluded. If this is set no blocks are added on an exception date.
     */
-    void createBlocksExcludeExceptions(Date start,Date end,Collection<AppointmentBlock> blocks);
+    void createBlocks(Date start,Date end,Collection<AppointmentBlock> blocks, boolean excludeExceptions);
 
     Appointment[] EMPTY_ARRAY = new Appointment[0];
     

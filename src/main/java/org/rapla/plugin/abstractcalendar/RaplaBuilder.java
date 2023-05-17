@@ -32,11 +32,7 @@ import org.rapla.entities.Category;
 import org.rapla.entities.CategoryAnnotations;
 import org.rapla.entities.NamedComparator;
 import org.rapla.entities.User;
-import org.rapla.entities.domain.Allocatable;
-import org.rapla.entities.domain.Appointment;
-import org.rapla.entities.domain.AppointmentBlock;
-import org.rapla.entities.domain.AppointmentFormater;
-import org.rapla.entities.domain.Reservation;
+import org.rapla.entities.domain.*;
 import org.rapla.entities.dynamictype.Attribute;
 import org.rapla.entities.dynamictype.AttributeAnnotations;
 import org.rapla.entities.dynamictype.Classifiable;
@@ -99,7 +95,7 @@ public class RaplaBuilder
     private boolean isEventColoring;
     private boolean nonFilteredEventsVisible;
     private BlockCreator blockCreator = (blockContext, start, end) -> new RaplaBlock(blockContext, start, end);
-    Map<Allocatable,Collection<Appointment>> bindings;
+    AppointmentMapping bindings;
 
     /** default buildStrategy is {@link GroupAllocatablesStrategy}.*/
     BuildStrategy buildStrategy;
@@ -154,7 +150,7 @@ public class RaplaBuilder
     {
         final RaplaBuilder builder = this;
         final TimeInterval interval = new TimeInterval( startDate, endDate);
-        final Promise<Map<Allocatable, Collection<Appointment>>> appointmentBindungsPromise = model.queryAppointmentBindings(interval);
+        final Promise<AppointmentMapping> appointmentBindungsPromise = model.queryAppointmentBindings(interval);
         final Promise<RaplaBuilder> builderPromise = appointmentBindungsPromise.thenApply((appointmentBindings) -> {
             Collection<Conflict> conflictsSelected = new ArrayList<>();
             conflictsSelected.addAll( ((CalendarModelImpl)model).getSelectedConflicts());
@@ -163,22 +159,15 @@ public class RaplaBuilder
             if ( !conflictsSelected.isEmpty() )
             {
                 allocatables = Util.getAllocatables( conflictsSelected );
-                Collection<Appointment> all = new LinkedHashSet<>();
-                for ( Collection<Appointment> appointments: bindings.values())
-                {
-                    all.addAll( appointments);
-                }
+                Collection<Appointment> all = bindings.getAllAppointments();
                 conflictingAppointments = ConflictImpl.getMap( conflictsSelected, all);
             }
             else
             {
                 Collection<Appointment> all = new LinkedHashSet<>();
-                allocatables = new ArrayList<>(bindings.keySet());
+                allocatables = new ArrayList<>(bindings.getAllocatables());
                 Collections.sort( (List)allocatables, new SortedClassifiableComparator(raplaLocale.getLocale()));
-                for ( Collection<Appointment> appointments: bindings.values())
-                {
-                    all.addAll( appointments);
-                }
+                all.addAll( bindings.getAllAppointments());
                 conflictingAppointments = null;
                 
 //            long time = System.currentTimeMillis();
@@ -200,7 +189,7 @@ public class RaplaBuilder
                 //        		filteredReservations = ((CalendarModelImpl)model).restrictReservations( allReservationsForAllocatables);
                 //        	}
             }
-            selectedReservations = CalendarModelImpl.getAllReservations(bindings );
+            selectedReservations = bindings.getAllReservations();
             User user = model.getUser();
             CalendarOptions calendarOptions = RaplaComponent.getCalendarOptions( user, getClientFacade());
             nonFilteredEventsVisible = calendarOptions.isNonFilteredEventsVisible();
@@ -435,29 +424,14 @@ public class RaplaBuilder
     	boolean nonFilteredEventsVisible = isNonFilteredEventsVisible();
 
         //long time = System.currentTimeMillis();
-        Collection<Appointment> appointments = CalendarModelImpl.getAllAppointments(bindings);
-        // FIXME
-        if ( nonFilteredEventsVisible)
-        {
-
-        }
-        else
-        {
-        }
+        Collection<Appointment> appointments = bindings.getAllAppointments();
         //= AppointmentImpl.getAppointments(	nonFilteredEventsVisible ? allReservations : selectedReservations, selectedAllocatables);
         //logger.info( "Get appointments took " + (System.currentTimeMillis() - time) + " ms.");
         // Add appointment to the blocks
         final List<AppointmentBlock> blocks = new ArrayList<>();
         for (Appointment app:appointments)
         {
-            if ( excludeExceptions)
-            {
-                app.createBlocksExcludeExceptions(start, end, blocks);
-            }
-            else
-            {
-                app.createBlocks(start, end, blocks);
-            }
+            app.createBlocks(start, end, blocks, excludeExceptions );
         }
         int offsetMinutes = buildStrategy.getOffsetMinutes();
         List<AppointmentBlock> preparedBlocks = splitBlocks(blocks, start, end, offsetMinutes);
@@ -755,9 +729,9 @@ public class RaplaBuilder
         	        matchingAllocatables.add(allocatable);
         	    }
             }
-            for(Allocatable alloc : builder.bindings.keySet())
+            for(Allocatable alloc : builder.bindings.getAllocatables())
             {
-                final Collection<Appointment> appointments = builder.bindings.get(alloc);
+                final Collection<Appointment> appointments = builder.bindings.getAppointments(alloc);
                 if(appointments.contains(appointment))
                 {
                     if ( selectedAllocatable == null ||  selectedAllocatable.equals( alloc) ) {

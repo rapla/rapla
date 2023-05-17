@@ -28,10 +28,7 @@ import org.rapla.entities.configuration.RaplaConfiguration;
 import org.rapla.entities.configuration.RaplaMap;
 import org.rapla.entities.configuration.internal.CalendarModelConfigurationImpl;
 import org.rapla.entities.configuration.internal.RaplaMapImpl;
-import org.rapla.entities.domain.Allocatable;
-import org.rapla.entities.domain.Appointment;
-import org.rapla.entities.domain.AppointmentBlock;
-import org.rapla.entities.domain.Reservation;
+import org.rapla.entities.domain.*;
 import org.rapla.entities.dynamictype.Classification;
 import org.rapla.entities.dynamictype.ClassificationFilter;
 import org.rapla.entities.dynamictype.DynamicType;
@@ -112,7 +109,6 @@ public class CalendarModelImpl implements CalendarSelectionModel
     Map<DynamicType, ClassificationFilter> allocatableFilter = new LinkedHashMap<>();
     public static final RaplaConfiguration ALLOCATABLES_ROOT = new RaplaConfiguration("rootnode", "allocatables");
     public static final RaplaConfiguration USER_ROOT = new RaplaConfiguration("userroot", "users");
-
     @Inject public CalendarModelImpl(ClientFacade clientFacade, RaplaLocale locale) throws RaplaInitializationException
     {
         this(locale.getLocale(), getUser(clientFacade), ((ClientFacadeImpl)clientFacade).getOperator(), ((ClientFacadeImpl) clientFacade).getLogger());
@@ -957,7 +953,7 @@ public class CalendarModelImpl implements CalendarSelectionModel
         return clone;
     }
 
-    @Override public Promise<Map<Allocatable, Collection<Appointment>>> queryAppointmentBindings(TimeInterval interval)
+    @Override public Promise<AppointmentMapping> queryAppointmentBindings(TimeInterval interval)
     {
         final boolean debugEnabled = logger.isDebugEnabled();
         final long start = debugEnabled ? System.currentTimeMillis() : 0;
@@ -971,12 +967,22 @@ public class CalendarModelImpl implements CalendarSelectionModel
             return new ResolvedPromise<>(e);
         }
 
+        Collection<User> owners;
+        try
+        {
+            owners= getSelectedUsersAsList();
+        }
+        catch (RaplaException e)
+        {
+            return new ResolvedPromise<>(e);
+        }
+
         final long selectedAllocatableTimes =  (debugEnabled) ?  System.currentTimeMillis() - start: 0;
         Date startDate = interval != null ? interval.getStart() : null;
         Date endDate = interval != null ? interval.getEnd() : null;
 
         boolean useFilter = getSelectedConflicts().isEmpty();
-        final Promise<Map<Allocatable, Collection<Appointment>>> reservations = queryAppointmentBindings(allocatables, startDate, endDate, useFilter);
+        final Promise<AppointmentMapping> reservations = queryAppointmentBindings(allocatables, owners, startDate, endDate, useFilter);
         reservations.thenAccept( (res) -> {
             if (debugEnabled)
             {
@@ -986,6 +992,7 @@ public class CalendarModelImpl implements CalendarSelectionModel
         });
         return reservations;
     }
+
 
     @Override public Promise<Collection<Reservation>> queryReservations(TimeInterval interval)
     {
@@ -997,8 +1004,8 @@ public class CalendarModelImpl implements CalendarSelectionModel
         }
         else
         {
-            final Promise<Map<Allocatable, Collection<Appointment>>> appointments1 = queryAppointmentBindings(interval);
-            appointments = appointments1.thenApply((apps) ->getAllAppointments(apps));
+            final Promise<AppointmentMapping> appointments1 = queryAppointmentBindings(interval);
+            appointments = appointments1.thenApply((apps) ->apps.getAllAppointments());
         }
         Promise<Collection<Reservation>> asList = appointments.thenApply((apps)->getAllReservations(apps));
         return asList;
@@ -1009,29 +1016,13 @@ public class CalendarModelImpl implements CalendarSelectionModel
         return appointments.stream().map(Appointment::getReservation).distinct().collect(Collectors.toList());
     }
 
-    public static Collection<Reservation> getAllReservations(Map<Allocatable, Collection<Appointment>> appointmentMap)
-    {
-        final Collection<Appointment> allAppointments = getAllAppointments(appointmentMap);
-        return getAllReservations(allAppointments);
-    }
-
-    public static Collection<Appointment> getAllAppointments(Map<Allocatable, Collection<Appointment>> appointmentMap)
-    {
-        Collection<Appointment> allAppointments = new LinkedHashSet<>();
-        for (Collection<Appointment> appointments : appointmentMap.values())
-        {
-            allAppointments.addAll(appointments);
-        }
-        return allAppointments;
-    }
-
     String templateId = null;
 
     private String cacheValidString;
-    private Map<Allocatable, Collection<Appointment>> cachedReservations;
+    private AppointmentMapping cachedReservations;
     private boolean cachingEnabled = false;
 
-    private Promise<Map<Allocatable, Collection<Appointment>>> queryAppointmentBindings(Collection<Allocatable> allocatables, Date start, Date end, boolean useFilter)
+    private Promise<AppointmentMapping> queryAppointmentBindings(Collection<Allocatable> allocatables,final Collection<User> owners, Date start, Date end, boolean useFilter)
     {
         final String cacheKey = createCacheKey(allocatables, start, end);
         if (cachingEnabled)
@@ -1050,8 +1041,8 @@ public class CalendarModelImpl implements CalendarSelectionModel
 		}
 		// FIXME Evalute if its only the owner
 		User user = null;
-        final Promise<Map<Allocatable, Collection<Appointment>>> reservationsAsync = operator
-                .queryAppointments(user, allocatables, start, end, reservationFilters, templateId);
+        final Promise<AppointmentMapping> reservationsAsync = operator
+                .queryAppointments(user, allocatables, owners, start, end, reservationFilters, templateId);
 
         return reservationsAsync.thenApply((map) -> {
             if (cachingEnabled)
@@ -1158,6 +1149,22 @@ public class CalendarModelImpl implements CalendarSelectionModel
 
         return result;
     }
+
+    private Collection<User> getSelectedUsersAsList() throws RaplaException {
+        Collection<User> result = new HashSet<>();
+
+        Collection<RaplaObject> selectedObjectsAndChildren = getSelectedObjectsAndChildren();
+        for (RaplaObject object : selectedObjectsAndChildren)
+        {
+            if (object.getTypeClass() == User.class)
+            {
+                User owner  = (User) object;
+                result.add( owner);
+            }
+        }
+        return result;
+    }
+
 
     public Collection<Conflict> getSelectedConflicts()
     {
@@ -1337,14 +1344,16 @@ public class CalendarModelImpl implements CalendarSelectionModel
             }
             else if (filename != null && !isDefault)
             {
-                Map<String, CalendarModelConfiguration> exportMap = preferences.getEntry(EXPORT_ENTRY).toMap();
+                RaplaMap<CalendarModelConfiguration> entry = preferences.getEntry(EXPORT_ENTRY);
                 final CalendarModelConfiguration config;
-                if (exportMap != null)
-                {
-                    config = exportMap.get(filename);
-                }
-                else
-                {
+                if ( entry != null) {
+                    Map<String, CalendarModelConfiguration> exportMap = entry.toMap();
+                    if (exportMap != null) {
+                        config = exportMap.get(filename);
+                    } else {
+                        config = null;
+                    }
+                } else {
                     config = null;
                 }
                 if (config == null && isOldDefaultNameBehavoir(filename))
@@ -1533,15 +1542,8 @@ public class CalendarModelImpl implements CalendarSelectionModel
 
     public Promise<Collection<Appointment>> queryAppointments(TimeInterval interval)
     {
-        Promise<Map<Allocatable, Collection<Appointment>>> bindings = queryAppointmentBindings(interval);
-        return bindings.thenApply( (bind) -> {
-            Set<Appointment> result = new LinkedHashSet<>();
-            for (Collection<Appointment> appointments : bind.values())
-            {
-                result.addAll(appointments);
-            }
-            return result;
-        });
+        Promise<AppointmentMapping> bindings = queryAppointmentBindings(interval);
+        return bindings.thenApply( (binding) -> binding.getAllAppointments());
     }
 
     public static String getStartEndDate(RaplaLocale raplaLocale, CalendarSelectionModel model) {

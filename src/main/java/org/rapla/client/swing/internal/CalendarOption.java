@@ -64,7 +64,7 @@ public class CalendarOption extends RaplaGUIComponent implements UserOptionPanel
     		, CalendarOptionsImpl.COLOR_EVENTS_AND_RESOURCES
     }
     													);
-    RaplaNumber rowsPerHourField = new RaplaNumber(new Double(1),new Double(1),new Double(12), false);
+    RaplaNumber rowsPerHourField = new RaplaNumber(Double.valueOf(1),Double.valueOf(1), Double.valueOf(12), false);
     Preferences preferences;
     CalendarOptions options;
     RaplaTime worktimeStart;
@@ -72,7 +72,6 @@ public class CalendarOption extends RaplaGUIComponent implements UserOptionPanel
     JPanel excludeDaysPanel =  new JPanel();
     JCheckBox[] box = new JCheckBox[7];
     WeekdayMapper mapper;
-    RaplaNumber nTimesField = new RaplaNumber(new Double(1),new Double(1),new Double(365), false);
 
     @SuppressWarnings({ "unchecked" })
     JComboBox nonFilteredEvents = new JComboBox( new String[]
@@ -100,7 +99,7 @@ public class CalendarOption extends RaplaGUIComponent implements UserOptionPanel
                double pre = TableLayout.PREFERRED;
         double fill = TableLayout.FILL;
         // rows = 8 columns = 4
-        panel.setLayout( new TableLayout(new double[][] {{pre, 5, pre, 5 , pre, 5, pre}, {pre,5,pre,5,pre,5,pre,5,pre,5,pre,5,pre,5,pre,5,pre,5,pre,5,pre,5,pre,5,pre,5,fill}}));
+        panel.setLayout( new TableLayout(new double[][] {{pre, 5, pre, 5 , pre, 5, pre}, {pre,5,pre,5,pre,5,pre,5,pre,5,pre,5,pre,5,pre,5,pre,5,0,0,pre,5,pre,5,pre,5,fill}}));
 
         panel.add( new JLabel(getString("rows_per_hour")),"0,0"  );
         panel.add( rowsPerHourField,"2,0");
@@ -123,8 +122,8 @@ public class CalendarOption extends RaplaGUIComponent implements UserOptionPanel
         panel.add( new JLabel(getString("display_exceptions")),"0,8");
         panel.add( showExceptionsField,"2,8");
         
-        panel.add( new JLabel(getString("events_not_matched_by_filter")),"0,10");
-        panel.add( nonFilteredEvents,"2,10");
+        //panel.add( new JLabel(getString("events_not_matched_by_filter")),"0,10");
+        //panel.add( nonFilteredEvents,"2,10");
         setRenderer();
 
         final String[] weekdayNames = mapper.getNames();
@@ -211,7 +210,7 @@ public class CalendarOption extends RaplaGUIComponent implements UserOptionPanel
         
         showExceptionsField.setSelected( options.isExceptionsVisible());
         
-        rowsPerHourField.setNumber( new Long(options.getRowsPerHour()));
+        rowsPerHourField.setNumber( Long.valueOf(options.getRowsPerHour()));
         
         int workTime = options.getWorktimeStartMinutes();
         worktimeStart.setTime(  new Date(DateTools.toTime(workTime / 60, workTime % 60, 0)));
@@ -220,13 +219,13 @@ public class CalendarOption extends RaplaGUIComponent implements UserOptionPanel
         
         for ( int i=0;i<box.length;i++) {
             int weekday = mapper.dayForIndex( i);
-            box[i].setSelected( options.getExcludeDays().contains( new Integer( weekday)));
+            box[i].setSelected( options.getExcludeDays().contains(  Integer.valueOf( weekday)));
         }
         int firstDayOfWeek2 = options.getFirstDayOfWeek();
         firstDayOfWeek.setSelectedIndex(  firstDayOfWeek2 == 0 ? 7 :mapper.indexForDay( firstDayOfWeek2));
         
         daysInWeekview.setNumber( options.getDaysInWeekview());
-        minBlockWidth.setSelectedItem( new Integer(options.getMinBlockWidth()));
+        minBlockWidth.setSelectedItem(  Integer.valueOf(options.getMinBlockWidth()));
         nonFilteredEvents.setSelectedItem( options.isNonFilteredEventsVisible() ? CalendarOptionsImpl.NON_FILTERED_EVENTS_TRANSPARENT : CalendarOptionsImpl.NON_FILTERED_EVENTS_HIDDEN);
     }
 

@@ -29,6 +29,7 @@ import org.rapla.entities.User;
 import org.rapla.entities.configuration.Preferences;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.Appointment;
+import org.rapla.entities.domain.AppointmentMapping;
 import org.rapla.entities.domain.Reservation;
 import org.rapla.entities.dynamictype.ClassificationFilter;
 import org.rapla.entities.dynamictype.DynamicType;
@@ -106,9 +107,9 @@ public interface StorageOperator extends EntityResolver {
      * @param allocatables 
      * @param reservationFilters 
      * @param annotationQuery */
-    Promise<Map<Allocatable,Collection<Appointment>>> queryAppointments(User user, Collection<Allocatable> allocatables, Date start, Date end,  ClassificationFilter[] reservationFilters, Map<String, String> annotationQuery);
+    Promise<AppointmentMapping> queryAppointments(User user, Collection<Allocatable> allocatables,Collection<User> owners, Date start, Date end,  ClassificationFilter[] reservationFilters, Map<String, String> annotationQuery);
 
-    Promise<Map<Allocatable, Collection<Appointment>>> queryAppointments( User user,Collection<Allocatable> allocatables, Date start, Date end, ClassificationFilter[] reservationFilters, String templateId);
+    Promise<AppointmentMapping> queryAppointments(User user, Collection<Allocatable> allocatables, Collection<User> owners, Date start, Date end, ClassificationFilter[] reservationFilters, String templateId);
 
 	Collection<Allocatable> getAllocatables(ClassificationFilter[] filters) throws RaplaException;
 
