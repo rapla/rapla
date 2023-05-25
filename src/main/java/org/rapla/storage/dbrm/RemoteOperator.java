@@ -14,6 +14,7 @@
 package org.rapla.storage.dbrm;
 
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import org.rapla.ConnectInfo;
 import org.rapla.RaplaResources;
 import org.rapla.components.util.Assert;
@@ -359,21 +360,7 @@ public class RemoteOperator
         if (entity != null) {
             return entity;
         }
-        if (entityClass != null && isAllocatableClass(entityClass)) {
-            AllocatableImpl unresolved = new AllocatableImpl(null, null);
-            unresolved.setId(id);
-            DynamicType dynamicType = resolver.getDynamicType(UNRESOLVED_RESOURCE_TYPE);
-            if (dynamicType == null) {
-                //throw new IllegalStateException("Unresolved resource type not found");
-                return null;
-            }
-            getLogger().debug("ResourceReference with ID " + id + " not loaded ");
-            Classification newClassification = dynamicType.newClassification();
-            unresolved.setClassification(newClassification);
-            @SuppressWarnings("unchecked") T casted = (T) unresolved;
-            return casted;
-        }
-        return null;
+        return tryResolveMissingAllocatable(resolver, id, entityClass);
     }
 
     // problem of resolving the bootstrap loading of unreadable resources before resource type is referencable
@@ -384,17 +371,7 @@ public class RemoteOperator
                 if (tryResolve != null) {
                     return tryResolve;
                 } else {
-                    if (entityClass != null && isAllocatableClass(entityClass)) {
-                        AllocatableImpl unresolved = new AllocatableImpl(null, null);
-                        unresolved.setId(id);
-                        DynamicType dynamicType = getDynamicType(StorageOperator.UNRESOLVED_RESOURCE_TYPE);
-                        ((DynamicTypeImpl) dynamicType).setReadOnly();
-                        Classification newClassification = dynamicType.newClassification();
-                        unresolved.setClassification(newClassification);
-                        @SuppressWarnings("unchecked") T casted = (T) unresolved;
-                        return casted;
-                    }
-                    return null;
+                    return tryResolveMissingAllocatable(this, id, entityClass);
                 }
             }
         };
@@ -413,6 +390,25 @@ public class RemoteOperator
                 testResolve(store, (EntityReferencer) entity);
             }
         }
+    }
+
+    @Nullable
+    private <T extends Entity> T tryResolveMissingAllocatable(EntityResolver dynamicTypeResolver, String id, Class<T> entityClass) {
+        if (entityClass != null && isAllocatableClass(entityClass)) {
+            AllocatableImpl unresolved = new AllocatableImpl(null, null);
+            unresolved.setId(id);
+            DynamicType dynamicType = dynamicTypeResolver.getDynamicType(UNRESOLVED_RESOURCE_TYPE);
+            if (dynamicType == null) {
+                getLogger().error("Unresolved resource type not initialized. Don't call during startup");
+                return null;
+            }
+            getLogger().debug("ResourceReference with ID " + id + " not loaded ");
+            Classification newClassification = dynamicType.newClassification();
+            unresolved.setClassification(newClassification);
+            @SuppressWarnings("unchecked") T casted = (T) unresolved;
+            return casted;
+        }
+        return null;
     }
 
     protected void testResolve(EntityResolver resolver, EntityReferencer obj, ReferenceInfo reference) throws EntityNotFoundException {

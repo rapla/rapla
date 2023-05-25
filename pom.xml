@@ -331,6 +331,29 @@
 
                 </executions>
             </plugin>
+            <!--
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-jlink-plugin</artifactId>
+                <version>3.1.0</version>
+                <extensions>true</extensions>
+                <executions>
+                    <execution>
+                        <id>create-runtime</id>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>jlink</goal>
+                        </goals>
+                        <configuration>
+                            <verbose>true</verbose>
+                            <compress>0</compress>
+                            <noHeaderFiles>true</noHeaderFiles>
+                            <classifier>package</classifier>
+                            <noManPages>true</noManPages>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>-->
         </plugins>
     </build>
     <profiles>
