@@ -18,17 +18,17 @@
 		<exchange.webservice.api>2.0</exchange.webservice.api>
 		<jetty.version>9.4.51.v20230217</jetty.version>
 		<mail.version>1.4.7</mail.version>
-		<jackson.version>2.14.2</jackson.version>
+		<jackson.version>2.15.1</jackson.version>
 		<maven.install.skip>false</maven.install.skip>
 		<guava.version>21.0</guava.version>
 		<requestfactory.version>2.8.0</requestfactory.version>
 		<commons-codec.version>1.8</commons-codec.version>
 		<commons-lang.version>2.6</commons-lang.version>
 		<commons-collections.version>4.1</commons-collections.version>
-		<gson.version>2.10</gson.version>
+		<gson.version>2.10.1</gson.version>
 		<javax.inject.version>1</javax.inject.version>
-		<restinject.version>2.0-RC7</restinject.version>
-		<resteasy.version>3.5.1.Final</resteasy.version>
+		<restinject.version>2.0-RC9</restinject.version>
+		<resteasy.version>3.15.6.Final</resteasy.version>
 		<javax.ws.rs.version>2.1</javax.ws.rs.version>
 		<hsqldb.version>2.7.1</hsqldb.version>
 		<postgresql.version>9.1-901-1.jdbc4</postgresql.version>
@@ -240,10 +240,6 @@
 					<artifactId>jboss-jaxrs-api_2.1_spec</artifactId>
 					<groupId>org.jboss.spec.javax.ws.rs</groupId>
 				</exclusion>
-				<exclusion>
-					<artifactId>jboss-annotations-api_1.2_spec</artifactId>
-					<groupId>org.jboss.spec.javax.annotation</groupId>
-				</exclusion>
 
 			</exclusions>
 			<scope>compile</scope>
@@ -262,6 +258,7 @@
 					<artifactId>scannotation</artifactId>
 					<groupId>org.scannotation</groupId>
 				</exclusion>
+				<!--
 				<exclusion>
 					<artifactId>jboss-annotations-api_1.2_spec</artifactId>
 					<groupId>org.jboss.spec.javax.annotation</groupId>
@@ -274,6 +271,7 @@
 					<artifactId>jboss-annotations-api_1.2_spec</artifactId>
 					<groupId>org.jboss.spec.javax.annotation</groupId>
 				</exclusion>
+				-->
 			</exclusions>
 
 		</dependency>
@@ -401,6 +399,7 @@
 			<artifactId>javax.inject</artifactId>
 			<version>${javax.inject.version}</version>
 		</dependency>
+		<!--
 		<dependency>
 			<groupId>com.fasterxml.jackson.core</groupId>
 			<artifactId>jackson-databind</artifactId>
@@ -416,6 +415,7 @@
 			<artifactId>jackson-annotations</artifactId>
 			<version>${jackson.version}</version>
 		</dependency>
+		-->
 		<dependency>
 			<groupId>javax.servlet</groupId>
 			<artifactId>javax.servlet-api</artifactId>
