@@ -303,6 +303,11 @@ public class JNDIAuthenticationStore implements AuthenticationStore,Disposable,J
     }
 
     private void initWithMap(Map<String,String> config) throws RaplaException {
+        Boolean enabled = Boolean.valueOf(getAttribute(config, ENABLED, "false"));
+        setEnabled(enabled);
+        if (!enabled) {
+            return;
+        }
         try {
             setDigest( getAttribute( config,DIGEST, null ) );
         } catch (NoSuchAlgorithmException e) {
@@ -318,7 +323,6 @@ public class JNDIAuthenticationStore implements AuthenticationStore,Disposable,J
         setUserMail( getAttribute( config,USER_MAIL, null ) );
         setUserCn( getAttribute( config,USER_CN, null ) );
         setUserSearch( getAttribute( config,USER_SEARCH, null) );
-        setEnabled(Boolean.valueOf(getAttribute( config,ENABLED, null)));
     }
 
     private String getAttribute(Map<String,String> config, String key, String defaultValue) {
