@@ -98,7 +98,7 @@ public final class ReservationImpl extends SimpleEntity implements Reservation, 
         }
         if (reservation.getAllocatables().length == 0 && template == null)
         {
-            throw new RaplaException(i18n.getString("warning.no_allocatables_selected") + " " + name + " [" + reservation.getId() + "]");
+         //   throw new RaplaException(i18n.getString("warning.no_allocatables_selected") + " " + name + " [" + reservation.getId() + "]");
         }
     }
 
@@ -431,6 +431,10 @@ public final class ReservationImpl extends SimpleEntity implements Reservation, 
         return isRefering("resources",allocatable.getId());
     }
 
+    public boolean hasAllocatedRef(ReferenceInfo<Allocatable> allocatableRef) {
+        return isRefering("resources",allocatableRef.getId());
+    }
+
     public boolean hasAllocatedOn(Allocatable allocatable,Appointment appointment) {
         if (!hasAllocated(allocatable))
             return false;
@@ -439,6 +443,18 @@ public final class ReservationImpl extends SimpleEntity implements Reservation, 
         	return true;
         }
         List<String> r = this.restrictions.get(allocatable.getId());
+        String appointmentId = appointment.getId();
+        return r == null || r.size() == 0 || r.contains(appointmentId);
+    }
+
+    public boolean hasAllocatedOnRef(ReferenceInfo<Allocatable> allocatableRef,Appointment appointment) {
+        if (!hasAllocatedRef(allocatableRef))
+            return false;
+        if  (restrictions == null)
+        {
+            return true;
+        }
+        List<String> r = this.restrictions.get(allocatableRef.getId());
         String appointmentId = appointment.getId();
         return r == null || r.size() == 0 || r.contains(appointmentId);
     }
@@ -650,19 +666,22 @@ public final class ReservationImpl extends SimpleEntity implements Reservation, 
         final Stream<Allocatable> allocatableStream = list.stream().filter((allocId) -> {
             List<String> restrictions = getRestrictionPrivate(allocId);
             return restrictions.isEmpty() || restrictions.contains(appointmentId);
-        }).map(allocId -> resolve(allocId, Allocatable.class));
+        }).map(allocId -> {
+            Allocatable allocatable = resolveWithMissingAllocatable(allocId, Allocatable.class);
+            return allocatable;
+        }
+        );
         return allocatableStream;
     }
 
-    private <T extends Entity> T resolve( String id, Class<T> tClass)
-    {
-        final EntityResolver resolver = getResolver();
-        final T alloc = resolver.tryResolve(id,tClass);
-        if ( alloc == null)
-        {
-            throw new UnresolvableReferenceExcpetion( tClass.getName() + ":" + id, toString());
-        }
-        return alloc;
+    public Stream<ReferenceInfo<Allocatable>> getAllocatablesReferences(Appointment appointment) {
+        Collection<String> list = getIds("resources");
+        String appointmentId = appointment.getId();
+        final Stream<ReferenceInfo<Allocatable>> allocatableStream = list.stream().filter((allocId) -> {
+            List<String> restrictions = getRestrictionPrivate(allocId);
+            return restrictions.isEmpty() || restrictions.contains(appointmentId);
+        }).map(allocId -> new ReferenceInfo<>(allocId, Allocatable.class));
+        return allocatableStream;
     }
 
     public Appointment findAppointment(Appointment copy) {

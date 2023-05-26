@@ -71,6 +71,7 @@ public class UpdateEvent
     private String userId;
 
     private boolean needResourcesRefresh = false;
+    private boolean forceAllocatableDeletesIgnoreDependencies = false;
 
     private TimeInterval invalidateInterval;
     private String lastValidated;
@@ -449,4 +450,11 @@ public class UpdateEvent
         return getInfoString();
     }
 
+    public boolean isForceAllocatableDeletesIgnoreDependencies() {
+        return forceAllocatableDeletesIgnoreDependencies;
+    }
+
+    public void setForceAllocatableDeletesIgnoreDependencies(boolean forceAllocatableDeletesIgnoreDependencies) {
+        this.forceAllocatableDeletesIgnoreDependencies = forceAllocatableDeletesIgnoreDependencies;
+    }
 }

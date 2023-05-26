@@ -36,11 +36,15 @@ public class DeleteDialogSwing extends RaplaGUIComponent implements DeleteDialog
         this.infoFactory = infoFactory;
     }
 
-    @Override
     public Promise<Boolean> showDeleteDialog(PopupContext context, Object[] deletables) {
+        return showDeleteDialog( context, deletables, false);
+    }
+
+    @Override
+    public Promise<Boolean> showDeleteDialog(PopupContext context, Object[] deletables, boolean confirmForceDelete) {
         DialogInterface dlg ;
         try {
-            dlg = createDeleteDialog(deletables, context);
+            dlg = createDeleteDialog(deletables, context,   confirmForceDelete);
         } catch (RaplaException ex) {
             return new ResolvedPromise<>(ex);
         }
@@ -51,7 +55,7 @@ public class DeleteDialogSwing extends RaplaGUIComponent implements DeleteDialog
     /* (non-Javadoc)
      * @see org.rapla.client.swing.gui.view.IInfoUIFactory#createDeleteDialog(java.lang.Object[], java.awt.ServerComponent)
      */
-    public DialogInterface createDeleteDialog( Object[] deletables, PopupContext popupContext ) throws RaplaException {
+    public DialogInterface createDeleteDialog( Object[] deletables, PopupContext popupContext, boolean confirmForceDelete ) throws RaplaException {
         if ( popupContext == null)
         {
             popupContext = dialogUiFactory.createPopupContext( null);
@@ -71,7 +75,11 @@ public class DeleteDialogSwing extends RaplaGUIComponent implements DeleteDialog
         dlg.getAction(1).setIcon(i18n.getIcon("icon.abort"));
         dlg.setDefault(1);
         viewTable.updateInfo( deletables, deleteView );
-        dlg.setTitle( viewTable.getDialogTitle() );
+        if  ( confirmForceDelete ) {
+            dlg.setTitle(i18n.getString("delete.force_delete"));
+        } else {
+            dlg.setTitle(viewTable.getDialogTitle());
+        }
         return dlg;
     }
 }

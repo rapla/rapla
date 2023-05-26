@@ -49,12 +49,6 @@ import java.util.Set;
 
 public interface StorageOperator extends EntityResolver {
 	int MAX_DEPENDENCY = 20;
-	   
-	String UNRESOLVED_RESOURCE_TYPE = "rapla:unresolvedResource";
-	String ANONYMOUSEVENT_TYPE = "rapla:anonymousEvent";
-	String DEFAULT_USER_TYPE = "rapla:defaultUser";
-	String PERIOD_TYPE = "rapla:period";
-	String RAPLA_TEMPLATE = "rapla:template";
 
 
     String getUsername(ReferenceInfo<User> userId) throws RaplaException;
@@ -89,7 +83,7 @@ public interface StorageOperator extends EntityResolver {
      storage.*/
     <T extends Entity, S extends Entity> void storeAndRemove(Collection<T> storeObjects,Collection<ReferenceInfo<S>> removeObjects,User user) throws RaplaException;
 
-    <T extends Entity, S extends Entity> Promise<Void> storeAndRemoveAsync(Collection<T> storeObjects,Collection<ReferenceInfo<S>> removeObjects,User user);
+    <T extends Entity, S extends Entity> Promise<Void> storeAndRemoveAsync(Collection<T> storeObjects, Collection<ReferenceInfo<S>> removeObjects, User user, boolean forceRessourceDelete);
 
     <T extends Entity> List<ReferenceInfo<T>> createIdentifier(Class<T> raplaType, int count) throws RaplaException;
 
@@ -137,9 +131,9 @@ public interface StorageOperator extends EntityResolver {
     
     boolean supportsActiveMonitoring();
 
-    Promise<Map<Allocatable, Collection<Appointment>>> getFirstAllocatableBindings(Collection<Allocatable> allocatables, Collection<Appointment> appointments, Collection<Reservation> ignoreList);
+    Promise<Map<ReferenceInfo<Allocatable>, Collection<Appointment>>> getFirstAllocatableBindings(Collection<Allocatable> allocatables, Collection<Appointment> appointments, Collection<Reservation> ignoreList);
     
-    Promise<Map<Allocatable, Map<Appointment,Collection<Appointment>>>> getAllAllocatableBindings(Collection<Allocatable> allocatables, Collection<Appointment> appointments, Collection<Reservation> ignoreList);
+    Promise<Map<ReferenceInfo<Allocatable>, Map<Appointment,Collection<Appointment>>>> getAllAllocatableBindings(Collection<Allocatable> allocatables, Collection<Appointment> appointments, Collection<Reservation> ignoreList);
 
     Promise<Date> getNextAllocatableDate(Collection<Allocatable> allocatables,Appointment appointment, Collection<Reservation> ignoreList, Integer worktimeStartMinutes,Integer worktimeEndMinutes, Integer[] excludedDays, Integer rowsPerHour);
     
