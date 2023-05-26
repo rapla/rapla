@@ -1930,27 +1930,26 @@ class AllocationStorage extends EntityStorage<Appointment> implements SubStorage
             return;
         }
         ReservationImpl event = (ReservationImpl) appointment.getReservation();
-        Allocatable allocatable = resolveFromId(rset, 2, Allocatable.class);
+        ReferenceInfo<Allocatable> allocatableReferenceInfo = readId(rset, 2, Allocatable.class);
         boolean isRestriction = rset.getInt(4) == 1;
-        if (allocatable == null)
+        if (allocatableReferenceInfo == null)
         {
             return;
         }
-        if (!event.hasAllocated(allocatable))
+        if (!event.hasAllocatedRef(allocatableReferenceInfo))
         {
-            event.addAllocatable(allocatable);
+            event.addId("resources", allocatableReferenceInfo.getId());
         }
-        Appointment[] appointments = event.getRestriction(allocatable);
-        Appointment[] newAppointments = new Appointment[appointments.length + 1];
-        System.arraycopy(appointments, 0, newAppointments, 0, appointments.length);
-        newAppointments[appointments.length] = appointment;
-        if (event.getAppointmentList().size() > newAppointments.length || isRestriction)
+        List<String> appointments = event.getRestrictionPrivate(allocatableReferenceInfo.getId());
+        List<String> newRestrictions = new ArrayList<>( appointments);
+        newRestrictions.add(appointment.getId() );
+        if (event.getAppointmentList().size() > newRestrictions.size() || isRestriction)
         {
-            event.setRestriction(allocatable, newAppointments);
+            event.setRestrictionForReference(allocatableReferenceInfo, newRestrictions);
         }
         else
         {
-            event.setRestriction(allocatable, new Appointment[] {});
+            event.setRestrictionForReference(allocatableReferenceInfo, Collections.emptyList());
         }
     }
 
@@ -3031,6 +3030,39 @@ class ImportExportStorage extends RaplaTypeStorage<ExternalSyncEntity>
     }
 
     @Override
+    public void save( Iterable<ExternalSyncEntity> entitiesOrig ) throws RaplaException, SQLException{
+        Collection<ReferenceInfo<ExternalSyncEntity>> toDelete = new ArrayList<>();
+        List<ExternalSyncEntity> entities = new ArrayList<>();
+        for (ExternalSyncEntity entity:entitiesOrig)
+        {
+            if ( entity.getExternalSystem() == null) {
+                String id = entity.getId();
+                if (id != null) {
+                    Map<String, ExternalSyncEntity> load = load(id);
+                    ExternalSyncEntity existing = load.get(id );
+                    if ( existing == null ){
+                        continue;
+                    }
+                    ExternalSyncEntityImpl entityClone = (ExternalSyncEntityImpl) existing.clone();
+                    if ( entity.getData() != null) {
+                        entityClone.setData( entity.getData());
+                    }
+                    entity = entityClone;
+                } else {
+                    continue;
+                }
+            }
+            entities.add( entity);
+        }
+        for (ExternalSyncEntity entity:entities)
+        {
+            toDelete.add( entity.getReference());
+        }
+        deleteEntities(  toDelete );
+        insert( entities );
+    }
+
+    @Override
     void insertAll() throws SQLException, RaplaException
     {
         // do nothing
@@ -3066,6 +3098,17 @@ class ImportExportStorage extends RaplaTypeStorage<ExternalSyncEntity>
             return load(stmt);
         }
     }
+
+    public Map<String, ExternalSyncEntity> load(String id) throws SQLException
+    {
+        final String sqlLoadByExternalSystemAndDirection = selectSql + " WHERE FOREIGN_ID = ?";
+        try (PreparedStatement stmt = con.prepareStatement(sqlLoadByExternalSystemAndDirection))
+        {
+            stmt.setString(1, id);
+            return load(stmt);
+        }
+    }
+
 
     @NotNull
     private Map<String, ExternalSyncEntity> load(PreparedStatement stmt) throws SQLException {

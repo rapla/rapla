@@ -236,10 +236,11 @@ public abstract class AbstractCachableOperator implements StorageOperator
     @SuppressWarnings("rawtypes")
     @Override
     public <T extends Entity,S extends Entity> void storeAndRemove(final Collection<T> storeObjects,
-            final Collection<ReferenceInfo<S>> removeObjects, final User user) throws RaplaException
+                                                                   final Collection<ReferenceInfo<S>> removeObjects, final User user,  boolean forceRessourceDelete) throws RaplaException
     {
         checkConnected();
         UpdateEvent evt = createUpdateEvent(storeObjects, removeObjects, user);
+        evt.setForceAllocatableDeletesIgnoreDependencies( forceRessourceDelete );
         dispatch(evt);
     }
 

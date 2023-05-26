@@ -21,7 +21,7 @@ public class ExternalSyncEntityImpl extends SimpleEntity implements ExternalSync
     }
 
     @Override
-    public ExternalSyncEntity clone()
+    public ExternalSyncEntityImpl clone()
     {
         ExternalSyncEntityImpl newImportExportEntity = new ExternalSyncEntityImpl();
         super.deepClone(newImportExportEntity);

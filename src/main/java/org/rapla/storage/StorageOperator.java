@@ -77,11 +77,15 @@ public interface StorageOperator extends EntityResolver {
     
     Map<Entity,Entity> getPersistant(Collection<? extends Entity> entity) throws RaplaException;
 
+    default <T extends Entity, S extends Entity> void storeAndRemove(Collection<T> storeObjects,Collection<ReferenceInfo<S>> removeObjects,User user) throws RaplaException {
+        storeAndRemove(storeObjects, removeObjects,user, false);
+    }
+
     //Promise<Map<Entity,Entity>> getPersistantAsync(Collection<? extends Entity> entity);
     /** Stores and/or removes entities and specifies a user that is responsible for the changes.
      * Notifies  all registered StorageUpdateListeners after a successful
      storage.*/
-    <T extends Entity, S extends Entity> void storeAndRemove(Collection<T> storeObjects,Collection<ReferenceInfo<S>> removeObjects,User user) throws RaplaException;
+    <T extends Entity, S extends Entity> void storeAndRemove(Collection<T> storeObjects,Collection<ReferenceInfo<S>> removeObjects,User user, boolean forceRessourceDelete) throws RaplaException;
 
     <T extends Entity, S extends Entity> Promise<Void> storeAndRemoveAsync(Collection<T> storeObjects, Collection<ReferenceInfo<S>> removeObjects, User user, boolean forceRessourceDelete);
 

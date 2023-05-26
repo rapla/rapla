@@ -39,6 +39,7 @@ import org.rapla.entities.internal.ModifiableTimestamp;
 import org.rapla.entities.storage.ExternalSyncEntity;
 import org.rapla.entities.storage.RefEntity;
 import org.rapla.entities.storage.ReferenceInfo;
+import org.rapla.entities.storage.internal.ExternalSyncEntityImpl;
 import org.rapla.facade.RaplaComponent;
 import org.rapla.framework.DefaultConfiguration;
 import org.rapla.framework.RaplaException;
@@ -537,16 +538,30 @@ final public class FileOperator extends LocalAbstractCachableOperator
         }
     }
 
-    private void insertIntoImportExportCache(ExternalSyncEntity cast)
+    private void insertIntoImportExportCache(ExternalSyncEntity entity)
     {
-        final ImportExportMapKey systemAndDirection = new ImportExportMapKey(cast.getExternalSystem(),cast.getDirection());
+        final ImportExportMapKey systemAndDirection = new ImportExportMapKey(entity.getExternalSystem(),entity.getDirection());
         Map<String, ExternalSyncEntity> collection = externalSyncEntities.get(systemAndDirection);
         if(collection == null)
         {
             collection = new LinkedHashMap<>();
             externalSyncEntities.put(systemAndDirection, collection);
         }
-        collection.put(cast.getId(),cast);
+        String id = entity.getId();
+        if ( id == null){
+            return;
+        }
+        if ( entity.getExternalSystem() == null ) {
+            ExternalSyncEntity existing = collection.get(id);
+            if ( existing != null ){
+                ExternalSyncEntityImpl entityClone = (ExternalSyncEntityImpl) existing.clone();
+                if ( entity.getData() != null) {
+                    entityClone.setData( entity.getData());
+                }
+                entity = entityClone;
+            }
+        }
+        collection.put(id,entity);
     }
 
     private void removeFromImportExportCache(Set<ReferenceInfo<ExternalSyncEntity>> removedImports)

@@ -488,7 +488,7 @@ public class ClassificationImpl implements Classification,DynamicTypeDependant, 
         Class<? extends Entity> refType = attribute.getRefType();
         if (refType != null)
         {
-            Entity resolved = resolver.tryResolve( value, refType );
+            Entity resolved = resolver.resolve( value, refType );
             return resolved;
         }
         try

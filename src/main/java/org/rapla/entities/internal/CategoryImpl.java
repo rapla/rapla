@@ -258,7 +258,7 @@ final public class CategoryImpl extends SimpleEntity implements Category, Modifi
         {
             return infoClass;
         }
-        if ( key.equals("childs"))
+        if ( key.equals("childs") || key.equals("parent"))
         {
             return Category.class;
         }
