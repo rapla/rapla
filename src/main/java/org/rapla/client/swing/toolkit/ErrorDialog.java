@@ -19,18 +19,16 @@ import org.rapla.client.swing.internal.SwingPopupContext;
 import org.rapla.components.i18n.I18nBundle;
 import org.rapla.framework.RaplaException;
 import org.rapla.logger.Logger;
+import org.rapla.scheduler.Promise;
+import org.rapla.scheduler.ResolvedPromise;
+import org.rapla.scheduler.UnsynchronizedPromise;
+import org.rapla.scheduler.sync.SynchronizedCompletablePromise;
 
 import javax.inject.Inject;
-import javax.swing.DefaultListModel;
-import javax.swing.JCheckBox;
-import javax.swing.JList;
-import javax.swing.JPanel;
-import javax.swing.JScrollPane;
+import javax.swing.*;
 import java.awt.BorderLayout;
 import java.awt.Component;
 import java.awt.Dimension;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
 import java.lang.reflect.Method;
 
 final public class ErrorDialog {
@@ -82,20 +80,12 @@ final public class ErrorDialog {
 
     public void show(String message) {
         test(message,ERROR_MESSAGE);
-        try {
-            showDialog(createTitle("error"),message,null);
-        } catch (Exception ex) {
-            getLogger().error(message);
-        }
+        showDialog(createTitle("error"),message,null);
     }
 
-    public void showWarningDialog(String message,Component owner) {
+    public Promise<Void> showWarningDialog(String message,Component owner) {
         test(message,WARNING_MESSAGE);
-        try {
-            showWarningDialog(createTitle("warning"),message,owner);
-        } catch (Exception ex) {
-            getLogger().error(message);
-        }
+        return showWarningDialog(createTitle("warning"),message,owner);
     }
 
     static private String getCause(Throwable e) {
@@ -116,7 +106,7 @@ final public class ErrorDialog {
         return message;
     }
 
-    public void showExceptionDialog(Throwable e,Component owner) {
+    public Promise<Void> showExceptionDialog(Throwable e,Component owner) {
         test(e,EXCEPTION_MESSAGE);
         try {
             String message = getMessage(e);
@@ -180,33 +170,41 @@ final public class ErrorDialog {
             DialogInterface dlg = dialogUiFactory.createContentDialog(popupContext, component, new String[] {getI18n().getString("ok")});
             dlg.setTitle(createTitle("error"));
             dlg.setIcon(i18n.getIcon("icon.error"));
-            dlg.start(true);
+            return startAndPack(dlg);
         } catch (Exception ex) {
             getLogger().error( e.getMessage(), e);
             getLogger().error("Can't show errorDialog " + ex);
+            return new ResolvedPromise<>( ex );
         }
     }
 
-    private void showDialog(String title, String message,Component owner) {
+    private Promise<Void> showDialog(String title, String message,Component owner) {
         try {
             final SwingPopupContext popupContext = new SwingPopupContext(owner, null);
             DialogInterface dlg = dialogUiFactory.createInfoDialog(popupContext, title,message);
             dlg.setIcon(i18n.getIcon("icon.error"));
-            dlg.start(true);
+            return startAndPack(dlg);
         } catch (Exception ex2) {
             getLogger().error(ex2.getMessage());
+            return new ResolvedPromise<>( ex2 );
         }
     }
 
-    public void showWarningDialog(String title, String message,Component owner) {
+    public Promise<Void> showWarningDialog(String title, String message, Component owner) {
         try {
             final SwingPopupContext popupContext = new SwingPopupContext(owner, null);
             DialogInterface dlg = dialogUiFactory.createInfoDialog(popupContext, title,message);
             dlg.setIcon(i18n.getIcon("icon.warning"));
-            dlg.start(true);
+            return startAndPack(dlg);
         } catch (Exception ex2) {
             getLogger().error(ex2.getMessage());
+            return ResolvedPromise.VOID_PROMISE;
         }
+    }
+
+    private Promise<Void> startAndPack(DialogInterface dlg) {
+        Promise<Integer> promise = dlg.start(true);
+        return promise.thenAccept((x)-> x=x);
     }
 }
 

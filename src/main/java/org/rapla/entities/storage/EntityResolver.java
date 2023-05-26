@@ -15,6 +15,7 @@ package org.rapla.entities.storage;
 import org.rapla.entities.Entity;
 import org.rapla.entities.EntityNotFoundException;
 import org.rapla.entities.dynamictype.DynamicType;
+import org.rapla.entities.storage.internal.SimpleEntity;
 
 /** resolves the id to a proper reference to the object.
     @see org.rapla.entities.storage.internal.ReferenceHandler
@@ -22,15 +23,38 @@ import org.rapla.entities.dynamictype.DynamicType;
 
 public interface EntityResolver
 {
+    // Internal Types
+    // Internal Types
+    String UNRESOLVED_RESOURCE_TYPE = "rapla:unresolvedResource";
+    String ANONYMOUSEVENT_TYPE = "rapla:anonymousEvent";
+    String DEFAULT_USER_TYPE = "rapla:defaultUser";
+    String PERIOD_TYPE = "rapla:period";
+    String RAPLA_TEMPLATE = "rapla:template";
+
+    static boolean isInternalType(DynamicType type) {
+        return type.getKey().startsWith("rapla:");
+    }
+
     /** same as resolve but returns null when an entity is not found instead of throwing an {@link EntityNotFoundException} */
     <T extends Entity> T tryResolve(String id, Class<T> entityClass);
 
-    <T extends Entity> T tryResolve(ReferenceInfo<T> referenceInfo);
+    default <T extends Entity> T tryResolve(ReferenceInfo<T> referenceInfo) {
+        final Class<T> type = (Class<T>) referenceInfo.getType();
+        return tryResolve(referenceInfo.getId(), type);
+    }
     
     /** now the type safe version */
-    <T extends Entity> T resolve(String id, Class<T> entityClass) throws EntityNotFoundException;
+    default <T extends Entity> T resolve(String id, Class<T> entityClass) throws EntityNotFoundException {
+        T entity = tryResolve(id, entityClass);
+        SimpleEntity.checkResolveResult(id, entityClass, entity);
+        return entity;
 
-    <T extends Entity> T resolve(ReferenceInfo<T> referenceInfo) throws EntityNotFoundException;
+    }
+
+    default <T extends Entity> T resolve(ReferenceInfo<T> referenceInfo) throws EntityNotFoundException {
+        final Class<T> type = (Class<T>) referenceInfo.getType();
+        return resolve(referenceInfo.getId(), type);
+    }
     
     DynamicType getDynamicType(String key);
 

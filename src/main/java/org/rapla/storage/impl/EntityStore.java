@@ -135,26 +135,6 @@ public class EntityStore implements EntityResolver {
         return passwordList.get(userid);
     }
 
-    public <T extends Entity> T resolve(String id,Class<T> entityClass) throws EntityNotFoundException {
-        T entity = tryResolve(id, entityClass);
-        SimpleEntity.checkResolveResult(id, entityClass, entity);
-        return entity;
-    }
-
-    @Override
-    public <T extends Entity> T tryResolve(ReferenceInfo<T> referenceInfo)
-    {
-        final Class<T> type = (Class<T>)referenceInfo.getType();
-        return tryResolve( referenceInfo.getId(), type);
-    }
-
-    @Override
-    public <T extends Entity> T resolve(ReferenceInfo<T> referenceInfo) throws EntityNotFoundException
-    {
-        final Class<T> type = (Class<T>)referenceInfo.getType();
-        return resolve(referenceInfo.getId(), type);
-    }
-
     @Override
     public <T extends Entity> T tryResolve(String id,Class<T> entityClass)  {
         Assert.notNull( id);
