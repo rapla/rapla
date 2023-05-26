@@ -2526,11 +2526,13 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
             if (entity instanceof Annotatable)
             {
                 final String externalID = ((Annotatable) entity).getAnnotation(RaplaObjectAnnotations.KEY_EXTERNALID);
-                // also remove import export enitities
+                // also remove import export entities
                 if (externalID != null)
                 {
-                    final ReferenceInfo ref = new ReferenceInfo(externalID, ExternalSyncEntity.class);
-                    evt.putRemoveId(ref);
+                    if ( isDeleteExportEntity( entity)) {
+                        final ReferenceInfo ref = new ReferenceInfo(externalID, ExternalSyncEntity.class);
+                        evt.putRemoveId(ref);
+                    }
                 }
             }
             if (Appointment.class == raplaType)
@@ -2567,6 +2569,21 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
         {
             addCategoryToRemove(evt, categoriesToStore, categoryId, 0);
         }
+    }
+
+    private boolean isDeleteExportEntity(Entity entity) {
+        if ( ! ( entity instanceof Classifiable )){
+            return  true;
+        }
+        Classification classification = ((Classifiable) entity).getClassification();
+        if (classification == null) {
+            return true;
+        }
+        String annotation = classification.getType().getAnnotation(DynamicTypeAnnotations.KEY_DELETE_EXTERNALS_ON_RESOURCE_DELETE);
+        if ( "false".equalsIgnoreCase(annotation)) {
+            return false;
+        }
+        return true;
     }
 
     private boolean isInDeleted(Category exisitingParent, Set<String> categoriesToRemove, int depth)
