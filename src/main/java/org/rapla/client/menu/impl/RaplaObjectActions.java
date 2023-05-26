@@ -24,11 +24,7 @@ import org.rapla.client.menu.IdentifiableMenuEntry;
 import org.rapla.client.menu.MenuInterface;
 import org.rapla.client.menu.MenuItemFactory;
 import org.rapla.components.i18n.I18nIcon;
-import org.rapla.entities.Category;
-import org.rapla.entities.Entity;
-import org.rapla.entities.Named;
-import org.rapla.entities.RaplaObject;
-import org.rapla.entities.User;
+import org.rapla.entities.*;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.Period;
 import org.rapla.entities.domain.Reservation;
@@ -434,10 +430,9 @@ public class RaplaObjectActions {
 
     private void delete(List<Entity<?>> list)
     {
-        handleException(deleteDialogInterface.showDeleteDialog(popupContext,list.toArray()).thenCompose((result->result ? delete((Collection<Entity<?>>) list): ResolvedPromise.VOID_PROMISE)));
+        handleDeleteException(list,deleteDialogInterface.showDeleteDialog(popupContext,list.toArray()).thenCompose((result->result ? delete((Collection<Entity<?>>) list, false): ResolvedPromise.VOID_PROMISE)));
     }
-
-    protected Promise<Void> delete(Collection<Entity<?>>  objects) throws RaplaException
+    protected Promise<Void> delete(Collection<Entity<?>>  objects, boolean forceDelete) throws RaplaException
 	{
 		Collection<Entity<?>> entities = new ArrayList<>();
 	    boolean undoable = true;
@@ -452,6 +447,7 @@ public class RaplaObjectActions {
 	    }
 	    @SuppressWarnings({ "rawtypes", "unchecked" })
         DeleteUndo<? extends Entity<?>> deleteCommand = new DeleteUndo(raplaFacade,i18n, entities, clientFacade.getUser());
+        deleteCommand.setForceRessourceDelete( forceDelete );
         final Promise<Void> promise;
 	    if ( undoable)
 	    {
@@ -463,6 +459,35 @@ public class RaplaObjectActions {
 	    }
         return promise;
 	}
+
+    private Promise handleDeleteException(List<Entity<?>> list,Promise promise) {
+
+        return promise.exceptionally(ex->
+                showDeleteException((Throwable) ex, list)
+        );
+    }
+
+    private void showDeleteException(Throwable ex, List<Entity<?>> list) {
+        if ( ex instanceof DependencyException) {
+            dialogUiFactory.showException(ex, popupContext).thenRun(()->
+            {
+                boolean allocatablesOnly = Allocatable.isAllocatablesOnly(list);
+                if ( allocatablesOnly && clientFacade.getUser().isAdmin()) {
+                    deleteDialogInterface.showDeleteDialog( popupContext, list.toArray(), true ).thenAccept(
+                            confirm-> {
+                                if (confirm) {
+                                    delete(list, true).exceptionally(ex1-> dialogUiFactory.showException(ex1, popupContext));
+                                }
+                            }
+                    );
+                }
+            }
+            );
+        } else {
+            dialogUiFactory.showException(ex, popupContext);
+        }
+    }
+
 
     protected Promise handleException(Promise promise)
     {

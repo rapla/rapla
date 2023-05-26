@@ -108,7 +108,7 @@ import java.util.stream.Collectors;
                 evt.addStore(entity);
             }
         }
-        evt.setLastValidated(serverTime);
+        evt.setLastValidated(operator.getLastRefreshed());
         return evt;
     }
 
@@ -179,7 +179,7 @@ import java.util.stream.Collectors;
             getLogger().debug("Get entity " + entity);
         }
         UpdateEvent evt = new UpdateEvent();
-        evt.setLastValidated(repositoryVersion);
+        evt.setLastValidated(operator.getLastRefreshed());
         for (Entity entity : completeList)
         {
             evt.addStore(entity);
@@ -447,11 +447,11 @@ import java.util.stream.Collectors;
         }
     }
 
-    public Promise<UpdateEvent> refresh(String lastSyncedTime)
+    public Promise<UpdateEvent> refresh(String lastValidated)
     {
         try
         {
-            return new ResolvedPromise<>(refreshSync(lastSyncedTime));
+            return new ResolvedPromise<>(refreshSync(lastValidated));
         }
         catch (RaplaException e)
         {
@@ -609,9 +609,9 @@ import java.util.stream.Collectors;
         Promise<BindingMap> promise = operator.getFirstAllocatableBindings(allocatables, asList, ignoreList).thenApply((bindings) ->
         {
             Map<String, List<String>> result = new LinkedHashMap<>();
-            for (Allocatable alloc : bindings.keySet())
+            for (ReferenceInfo<Allocatable> allocRef : bindings.keySet())
             {
-                Collection<Appointment> apps = bindings.get(alloc);
+                Collection<Appointment> apps = bindings.get(allocRef);
                 if (apps == null)
                 {
                     apps = Collections.emptyList();
@@ -627,7 +627,7 @@ import java.util.stream.Collectors;
                         }
                     }
                 }
-                result.put(alloc.getId(), indexArray);
+                result.put(allocRef.getId(), indexArray);
             }
             return new BindingMap(result);
         });
@@ -666,9 +666,9 @@ import java.util.stream.Collectors;
         Promise<List<ReservationImpl>> promise = operator.getAllAllocatableBindings(allocatables, asList, ignoreList).thenApply((bindings) ->
         {
             Set<ReservationImpl> result = new HashSet<>();
-            for (Allocatable alloc : bindings.keySet())
+            for (ReferenceInfo<Allocatable> allocRef : bindings.keySet())
             {
-                Map<Appointment, Collection<Appointment>> appointmentBindings = bindings.get(alloc);
+                Map<Appointment, Collection<Appointment>> appointmentBindings = bindings.get(allocRef);
                 for (Appointment app : appointmentBindings.keySet())
                 {
                     Collection<Appointment> bound = appointmentBindings.get(app);
@@ -696,9 +696,11 @@ import java.util.stream.Collectors;
         User sessionUser = checkSessionUser();
         for (String id : allocatableIds)
         {
-            Allocatable entity = operator.resolve(id, Allocatable.class);
-            allocatables.add(entity);
-            security.checkRead(sessionUser, entity);
+            Allocatable entity = operator.tryResolve(id, Allocatable.class);
+            if ( entity != null) {
+                allocatables.add(entity);
+                security.checkRead(sessionUser, entity);
+            }
         }
         return allocatables;
     }

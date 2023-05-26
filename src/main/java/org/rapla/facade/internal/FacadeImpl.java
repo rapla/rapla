@@ -237,7 +237,7 @@ public class FacadeImpl implements RaplaFacade {
 		return objects;
 	}
 
-	public Promise<Collection<Reservation>> getReservationsAsync(User user, Allocatable[] allocatables, Date start, Date end, ClassificationFilter[] reservationFilters) {
+	public Promise<Collection<Reservation>> getReservationsAsync(User user, Allocatable[] allocatables, User[] owners,Date start, Date end, ClassificationFilter[] reservationFilters) {
         final CommandScheduler scheduler = getScheduler();
         final Promise<Collection<Allocatable>> allocatablesPromise = scheduler.supply(() ->
         {
@@ -254,8 +254,8 @@ public class FacadeImpl implements RaplaFacade {
         });
         final Promise<AppointmentMapping> appointmentMapPromise = allocatablesPromise.thenCompose((allocatablesCollection) ->
         {
-			List<User> owners = Collections.emptyList();
-			final Promise<AppointmentMapping> appointmentsAsync = operator.queryAppointments(user, allocatablesCollection, owners,
+			List<User> ownersList = owners != null ? Arrays.asList(owners) : Collections.emptyList() ;
+			final Promise<AppointmentMapping> appointmentsAsync = operator.queryAppointments(user, allocatablesCollection, ownersList,
                     start, end, reservationFilters, templateId);
             return appointmentsAsync;
         });
@@ -349,12 +349,13 @@ public class FacadeImpl implements RaplaFacade {
 	}
 	
 	public Promise<Collection<Reservation>> getReservations(User user, Date start, Date end,ClassificationFilter[] reservationFilters) {
-        Promise<Collection<Reservation>>collection = getReservationsAsync(user, null,start, end, reservationFilters);
+        User[] users = user != null ? new User[] {user} : new User[] {};
+		Promise<Collection<Reservation>>collection = getReservationsAsync(user, null,users,start, end, reservationFilters);
         return collection;
 	}
 	
 	public Promise<Collection<Reservation>> getReservationsForAllocatable(Allocatable[] allocatables, Date start, Date end,ClassificationFilter[] reservationFilters) {
-        Promise<Collection<Reservation>> collection = getReservationsAsync(null, allocatables,start, end, reservationFilters);
+        Promise<Collection<Reservation>> collection = getReservationsAsync(null, allocatables,null,start, end, reservationFilters);
         return collection;
     }
 
@@ -491,7 +492,7 @@ public class FacadeImpl implements RaplaFacade {
 //
 //	}
 	
-	public Promise<Map<Allocatable,Collection<Appointment>>> getAllocatableBindings(Collection<Allocatable> allocatables, Collection<Appointment> appointments)  {
+	public Promise<Map<ReferenceInfo<Allocatable>,Collection<Appointment>>> getAllocatableBindings(Collection<Allocatable> allocatables, Collection<Appointment> appointments)  {
 		Collection<Reservation> ignoreList = new HashSet<>();
 		if ( appointments != null)
 		{
@@ -1300,6 +1301,11 @@ public class FacadeImpl implements RaplaFacade {
 	@Override
 	public <T extends Entity,S extends Entity> Promise<Void> dispatch( Collection<T> storeList, Collection<ReferenceInfo<S>> removeList)
 	{
+		boolean forceRessourceDelete = false;
+		return _dispatch(storeList, removeList, forceRessourceDelete);
+	}
+
+	private <T extends Entity, S extends Entity> Promise<Void> _dispatch(Collection<T> storeList, Collection<ReferenceInfo<S>> removeList, boolean forceRessourceDelete) {
 		User user;
 		try
 		{
@@ -1314,7 +1320,12 @@ public class FacadeImpl implements RaplaFacade {
 		{
 			return new ResolvedPromise<>(ex);
 		}
-		return operator.storeAndRemoveAsync(storeList, removeList, user);
+		return operator.storeAndRemoveAsync(storeList, removeList, user, forceRessourceDelete);
+	}
+
+	@Override
+	public <T extends Entity<T>> Promise<Void> dispatchRemove(Collection<ReferenceInfo<T>> toRemove, boolean forceRessourceDelete) {
+		return _dispatch( Collections.emptyList(), toRemove, forceRessourceDelete);
 	}
 
 	private <T extends Entity, S extends Entity> void dispatchSynchronized(Collection<T> storeList, Collection<ReferenceInfo<S>> removeList, User user)

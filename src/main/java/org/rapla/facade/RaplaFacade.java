@@ -89,7 +89,7 @@ public interface RaplaFacade
      @param reservationFilters  you can specify classificationfilters or null for all reservations .
      */
     Promise<Collection<Reservation>> getReservations(User user,Date start,Date end,ClassificationFilter[] reservationFilters);
-    Promise<Collection<Reservation>> getReservationsAsync(User user, Allocatable[] allocatables, Date start, Date end, ClassificationFilter[] reservationFilters);
+    Promise<Collection<Reservation>> getReservationsAsync(User user, Allocatable[] allocatables, User[] owners, Date start, Date end, ClassificationFilter[] reservationFilters);
 
 
 
@@ -109,7 +109,7 @@ public interface RaplaFacade
     Date today();
 
     /** returns all allocatables from the set of passed allocatables, that are already allocated by different parallel reservations at the time-slices, that are described by the appointment */
-    Promise<Map<Allocatable, Collection<Appointment>>> getAllocatableBindings(Collection<Allocatable> allocatables, Collection<Appointment> forAppointment);
+    Promise<Map<ReferenceInfo<Allocatable>, Collection<Appointment>>> getAllocatableBindings(Collection<Allocatable> allocatables, Collection<Appointment> forAppointment);
 
     /** returns all existing conflicts with the reservation */
     Promise<Collection<Conflict>> getConflictsForReservation(Reservation reservation);
@@ -214,6 +214,8 @@ public interface RaplaFacade
 
     <T extends Entity, S extends Entity> Promise<Void> dispatch( Collection<T> storeList, Collection<ReferenceInfo<S>> removeList);
 
+    <T extends Entity<T>> Promise<Void> dispatchRemove(Collection<ReferenceInfo<T>> toRemove, boolean forceRessourceDelete);
+
     /**
      * Does a merge of allocatables. A merge is defined as the given object will be stored if writeable and then
      * all references to the provided allocatableIds are replaced with the selected allocatable. Afterwards the
@@ -313,6 +315,7 @@ public interface RaplaFacade
     PeriodModel getPeriodModelFor(String key) throws RaplaException;
 
     Promise<Void> moveCategory(Category categoryToMove, Category targetCategory);
+
 
     enum ChangeState
     {

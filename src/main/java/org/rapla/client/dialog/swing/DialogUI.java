@@ -33,9 +33,9 @@ import org.rapla.framework.RaplaInitializationException;
 import org.rapla.inject.DefaultImplementation;
 import org.rapla.inject.InjectionContext;
 import org.rapla.logger.Logger;
-import org.rapla.scheduler.CommandScheduler;
-import org.rapla.scheduler.CompletablePromise;
-import org.rapla.scheduler.Promise;
+import org.rapla.scheduler.*;
+import org.rapla.scheduler.sync.SynchronizedCompletablePromise;
+import org.rapla.scheduler.sync.SynchronizedPromise;
 import org.rapla.storage.dbrm.RaplaConnectException;
 import org.rapla.storage.dbrm.RaplaRestartingException;
 
@@ -49,6 +49,7 @@ import java.awt.event.WindowEvent;
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyVetoException;
 import java.beans.VetoableChangeListener;
+import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Iterator;
@@ -363,7 +364,15 @@ public class DialogUI extends JDialog
     @Override
     public Promise<Integer> start(boolean pack) {
         packFrame = pack;
-        start(p);
+        if ( SwingUtilities.isEventDispatchThread()) {
+            start(p);
+        } else {
+            try {
+                SwingUtilities.invokeAndWait( () -> start(p));
+            } catch (Exception e) {
+                completable.completeExceptionally( e );
+            }
+        }
         return completable;
     }
 
@@ -424,8 +433,8 @@ public class DialogUI extends JDialog
         PropertyChangeEvent evt = new PropertyChangeEvent(
                 this
                 ,"visible"
-                ,new Boolean(true)
-                ,new Boolean(false)
+                ,Boolean.valueOf(true)
+                ,Boolean.valueOf(false)
         )
                 ;
         VetoableChangeListener[] listeners = getVetoableChangeListeners();
@@ -524,7 +533,7 @@ public class DialogUI extends JDialog
         }
 
         @Override
-        public Void showException(Throwable ex, PopupContext popupContext)
+        public Promise<Void> showException(Throwable ex, PopupContext popupContext)
         {
             if ( popupContext == null)
             {
@@ -533,78 +542,43 @@ public class DialogUI extends JDialog
             return showException(ex, popupContext, i18n,  logger);
         }
 
-        private Void showException(Throwable ex, PopupContext popupContext, RaplaResources i18n, Logger logger)
+        private Promise<Void> showException(Throwable ex, PopupContext popupContext, RaplaResources i18n, Logger logger)
         {
             if ( ex instanceof CommandAbortedException)
             {
-                return null;
+                return ResolvedPromise.VOID_PROMISE;
             }
-            final Runnable runnable = () ->
+            Component owner = SwingPopupContext.extractParent(popupContext);
+            ErrorDialog dialog = new ErrorDialog(logger, i18n, this);
+            if (ex instanceof RaplaConnectException)
             {
-                Component owner = SwingPopupContext.extractParent(popupContext);
-                if (ex instanceof RaplaConnectException)
+                String message = ex.getMessage();
+                Throwable cause = ex.getCause();
+                String additionalInfo = "";
+                if (cause != null)
                 {
-                    String message = ex.getMessage();
-                    Throwable cause = ex.getCause();
-                    String additionalInfo = "";
-                    if (cause != null)
-                    {
-                        additionalInfo = " " + cause.getClass() + ":" + cause.getMessage();
-                    }
+                    additionalInfo = " " + cause.getClass() + ":" + cause.getMessage();
+                }
 
-                    logger.warn(message + additionalInfo);
-                    if (ex instanceof RaplaRestartingException)
-                    {
-                        return;
-                    }
-                    try
-                    {
-                        ErrorDialog dialog = new ErrorDialog(logger, i18n, this);
-                        dialog.showWarningDialog(message, owner);
-                    }
-                    catch (Throwable e)
-                    {
-                        logger.error(e.getMessage(), e);
-                    }
-                    return;
-                }
-                try
+                logger.warn(message + additionalInfo);
+                if (ex instanceof RaplaRestartingException)
                 {
-                    ErrorDialog dialog = new ErrorDialog(logger, i18n,  this);
-                    if (ex instanceof DependencyException)
-                    {
-                        dialog.showWarningDialog(getHTML((DependencyException) ex), owner);
-                    }
-                    else if (Util.isWarningOnly(ex))
-                    {
-                        dialog.showWarningDialog(ex.getMessage(), owner);
-                    }
-                    else
-                    {
-                        dialog.showExceptionDialog(ex, owner);
-                    }
+                    return ResolvedPromise.VOID_PROMISE;
                 }
-                catch (Throwable ex2)
-                {
-                    logger.error(ex2.getMessage(), ex2);
-                }
-            };
-            try
-            {
-                if ( SwingUtilities.isEventDispatchThread())
-                {
-                    runnable.run();
-                }
-                else
-                {
-                    SwingUtilities.invokeAndWait(runnable);
-                }
+                return dialog.showWarningDialog(message, owner);
             }
-            catch (Exception e)
+            if (ex instanceof DependencyException)
             {
-                logger.error(ex.getMessage(), ex);
+                return dialog.showWarningDialog(getHTML((DependencyException) ex), owner);
             }
-            return Promise.VOID;
+            else if (Util.isWarningOnly(ex))
+            {
+                return dialog.showWarningDialog(ex.getMessage(), owner);
+            }
+            else
+            {
+                return dialog.showExceptionDialog(ex, owner);
+            }
         }
 
         static private String getHTML(DependencyException ex)
@@ -636,33 +610,17 @@ public class DialogUI extends JDialog
          * @see org.rapla.client.swing.toolkit.DialogUiFactoryInterface#showWarning(java.lang.String, org.rapla.client.PopupContext)
          */
         @Override
-        public Void showWarning(final String warning, final PopupContext popupContext)
+        public Promise<Void> showWarning(final String warning, final PopupContext popupContext)
         {
-            Runnable runnable = ()->
+
+            PopupContext popupContext2 = popupContext;
+            if (popupContext2 == null)
             {
-                PopupContext popupContext2 = popupContext;
-                if (popupContext2 == null)
-                {
-                    popupContext2 = createPopupContext(null);
-                }
-                showWarning(warning, popupContext2, i18n,  logger);
-            };
-            try
-            {
-                if ( SwingUtilities.isEventDispatchThread())
-                {
-                    runnable.run();
-                }
-                else
-                {
-                    SwingUtilities.invokeAndWait(runnable);
-                }
+                popupContext2 = createPopupContext(null);
             }
-            catch (Exception e)
-            {
-                logger.error(e.getMessage(), e);
-            }
-            return null;
+            Component owner = SwingPopupContext.extractParent(popupContext2);
+            ErrorDialog dialog = new ErrorDialog(logger, i18n, this);
+            return dialog.showWarningDialog(warning, owner);
         }
 
         @Override public PopupContext createPopupContext(RaplaWidget widget)
@@ -681,19 +639,6 @@ public class DialogUI extends JDialog
             return new SwingPopupContext(component,null);
         }
 
-        private void showWarning(String warning, PopupContext popupContext, RaplaResources i18n,  Logger logger)
-        {
-            try
-            {
-                Component owner = SwingPopupContext.extractParent(popupContext);
-                ErrorDialog dialog = new ErrorDialog(logger, i18n, this);
-                dialog.showWarningDialog(warning, owner);
-            }
-            catch (Throwable ex2)
-            {
-                logger.error(ex2.getMessage(), ex2);
-            }
-        }
 
         @Override
         public void busy(String text)
