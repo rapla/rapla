@@ -38,6 +38,7 @@ import org.rapla.entities.storage.EntityReferencer;
 import org.rapla.entities.storage.EntityResolver;
 import org.rapla.entities.storage.RefEntity;
 import org.rapla.entities.storage.ReferenceInfo;
+import org.rapla.entities.storage.internal.ReferenceHandler;
 import org.rapla.entities.storage.internal.SimpleEntity;
 import org.rapla.facade.Conflict;
 import org.rapla.facade.PeriodModel;
@@ -286,14 +287,18 @@ public abstract class AbstractCachableOperator implements StorageOperator
         final Collection<Allocatable> allocatables = Arrays.asList(reservation.getAllocatables());
         final Collection<Appointment> appointments = Arrays.asList(reservation.getAppointments());
         final Collection<Reservation> ignoreList = Collections.singleton(reservation);
-        final Promise<Map<Allocatable, Map<Appointment, Collection<Appointment>>>> allAllocatableBindingsPromise = getAllAllocatableBindings(allocatables,
+        final Promise<Map<ReferenceInfo<Allocatable>, Map<Appointment, Collection<Appointment>>>> allAllocatableBindingsPromise = getAllAllocatableBindings(allocatables,
                 appointments, ignoreList);
         final Promise<Collection<Conflict>> promise = allAllocatableBindingsPromise.thenApply((map) ->
         {
             ArrayList<Conflict> conflictList = new ArrayList<>();
-            for (Map.Entry<Allocatable, Map<Appointment, Collection<Appointment>>> entry : map.entrySet())
+            for (Map.Entry<ReferenceInfo<Allocatable>, Map<Appointment, Collection<Appointment>>> entry : map.entrySet())
             {
-                Allocatable allocatable = entry.getKey();
+                ReferenceInfo<Allocatable> allocatableRef = entry.getKey();
+                Allocatable allocatable = tryResolve(allocatableRef);
+                if ( allocatable == null) {
+                    continue;
+                }
                 String annotation = allocatable.getAnnotation(ResourceAnnotations.KEY_CONFLICT_CREATION);
                 boolean holdBackConflicts = annotation != null && annotation.equals(ResourceAnnotations.VALUE_CONFLICT_CREATION_IGNORE);
                 if (holdBackConflicts)
@@ -753,7 +758,16 @@ public abstract class AbstractCachableOperator implements StorageOperator
         String id = reference.getId();
         if (tryResolve(resolver, id, class1) == null)
         {
-            String prefix = (class1 != null) ? class1.getName() : " unkown type";
+            final String prefix;
+            if ( class1 != null) {
+                // Resolve might not work because its not in cache yet
+                if (ReferenceHandler.tryResolveMissingAllocatable( resolver, id, class1) != null) {
+                    return;
+                }
+                prefix = class1.getName();
+            } else {
+                prefix = "unkown type";
+            }
             throw new EntityNotFoundException(prefix + " with id " + id + " not found for " + obj);
         }
     }
@@ -776,6 +790,10 @@ public abstract class AbstractCachableOperator implements StorageOperator
     {
         if (!isLoaded())
         {
+            if ( cache != null )
+            {
+                return cache.getDynamicType( key );
+            }
             return null;
         }
         RaplaLock.ReadLock readLock = null;
@@ -796,18 +814,6 @@ public abstract class AbstractCachableOperator implements StorageOperator
         {
             lockManager.unlock(readLock);
         }
-    }
-
-    @Override public <T extends Entity> T tryResolve(ReferenceInfo<T> referenceInfo)
-    {
-        final Class<T> type = (Class<T>) referenceInfo.getType();
-        return tryResolve(referenceInfo.getId(), type);
-    }
-
-    @Override public <T extends Entity> T resolve(ReferenceInfo<T> referenceInfo) throws EntityNotFoundException
-    {
-        final Class<T> type = (Class<T>) referenceInfo.getType();
-        return resolve(referenceInfo.getId(), type);
     }
 
     @Override public <T extends Entity> T tryResolve(String id, Class<T> entityClass)
@@ -831,33 +837,13 @@ public abstract class AbstractCachableOperator implements StorageOperator
         }
     }
 
-    @Override public <T extends Entity> T resolve(String id, Class<T> entityClass) throws EntityNotFoundException
-    {
-        RaplaLock.ReadLock readLock;
-        try
-        {
-            readLock = lockManager.readLock(getClass(),"resolve " + entityClass +":" + id);
-        }
-        catch (RaplaException e)
-        {
-            throw new EntityNotFoundException(e.getMessage() + " " + e.getCause());
-        }
-        try
-        {
-            return resolve(cache, id, entityClass);
-        }
-        finally
-        {
-            lockManager.unlock(readLock);
-        }
-    }
-
     protected <T extends Entity> T resolve(EntityResolver resolver, String id, Class<T> entityClass) throws EntityNotFoundException
     {
         T entity = tryResolve(resolver, id, entityClass);
         SimpleEntity.checkResolveResult(id, entityClass, entity);
         return entity;
     }
+
 
     protected <T extends Entity> T tryResolve(EntityResolver resolver, String id, Class<T> entityClass)
     {
@@ -886,10 +872,6 @@ public abstract class AbstractCachableOperator implements StorageOperator
         return null;
     }
 
-    protected  <T extends Entity> boolean isAllocatableClass(Class<T> entityClass)
-    {
-        return entityClass.equals(Allocatable.class) || entityClass.equals(AllocatableImpl.class);
-    }
 
     final protected UpdateResult update(Date since, Date until, Collection<Entity> storeObjects1, Collection<PreferencePatch> preferencePatches,
             Collection<ReferenceInfo> removedIds) throws RaplaException

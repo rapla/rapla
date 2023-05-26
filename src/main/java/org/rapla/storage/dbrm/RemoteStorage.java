@@ -169,12 +169,12 @@ public interface RemoteStorage
     @POST
     @Path("refreshSync")
     @Produces({ MediaType.APPLICATION_JSON, MediaType.APPLICATION_XML })
-    UpdateEvent refreshSync(@QueryParam("lastSynched") String lastSyncedTime) throws RaplaException;
+    UpdateEvent refreshSync(@QueryParam("lastValidated") String lastSyncedTime) throws RaplaException;
 
     @POST
     @Path("refresh")
     @Produces({ MediaType.APPLICATION_JSON, MediaType.APPLICATION_XML })
-    Promise<UpdateEvent> refresh(@QueryParam("lastSynched") String lastSyncedTime);
+    Promise<UpdateEvent> refresh(@QueryParam("lastValidated") String lastValidated);
 
     @POST
     @Path("restart")

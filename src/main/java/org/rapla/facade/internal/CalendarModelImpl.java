@@ -1269,7 +1269,7 @@ public class CalendarModelImpl implements CalendarSelectionModel
             }
             return Collections.singleton(clone);
         });
-        Promise<Void> result = modifyPromise.thenCompose((toStore) -> operator.storeAndRemoveAsync(toStore, Collections.emptyList(), user));
+        Promise<Void> result = modifyPromise.thenCompose((toStore) -> operator.storeAndRemoveAsync(toStore, Collections.emptyList(), user, false ));
         return result;
     }
 

@@ -57,6 +57,7 @@ import org.rapla.entities.dynamictype.Classification;
 import org.rapla.entities.dynamictype.ClassificationFilter;
 import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.entities.dynamictype.DynamicTypeAnnotations;
+import org.rapla.entities.storage.ReferenceInfo;
 import org.rapla.facade.CalendarModel;
 import org.rapla.facade.CalendarSelectionModel;
 import org.rapla.facade.ModificationEvent;
@@ -172,7 +173,7 @@ public class AllocatableSelection extends RaplaGUIComponent implements Appointme
     AllocatablesModel completeModel = new CompleteModel();
     AllocatablesModel selectedModel = new SelectedModel();
 
-    Map<Allocatable, Collection<Appointment>> allocatableBindings = new HashMap<>();
+    Map<ReferenceInfo<Allocatable>, Collection<Appointment>> allocatableBindings = new HashMap<>();
     //	Map<Appointment,Collection<Allocatable>> appointmentMap	= new HashMap<Appointment,Collection<Allocatable>>();
     Appointment[] appointments;
     String[] appointmentStrings;
@@ -420,7 +421,7 @@ public class AllocatableSelection extends RaplaGUIComponent implements Appointme
             allocatableBindings.clear();
             for (Allocatable allocatable : allAllocatables)
             {
-                allocatableBindings.put(allocatable, new HashSet<>());
+                allocatableBindings.put(allocatable.getReference(), new HashSet<>());
             }
             appointments = new ArrayList<>();
             for (Reservation r : mutableReservations)
@@ -446,20 +447,20 @@ public class AllocatableSelection extends RaplaGUIComponent implements Appointme
         }
 
             //      System.out.println("getting allocated resources");
-            final Promise<Map<Allocatable, Collection<Appointment>>> promise = getQuery()
+            final Promise<Map<ReferenceInfo<Allocatable>, Collection<Appointment>>> promise = getQuery()
                     .getAllocatableBindings(allAllocatables, appointmentsWithoutTemplates);
             final Collection<Appointment> finalApps = appointments;
             promise.thenAccept( (allocatableBindings) -> {
                 //Map<Allocatable, Collection<Appointment>> allocatableBindings = ((Promise<Map<Allocatable, Collection<Appointment>>>) promise)
                 removeFromBindings(finalApps);
-                for (Map.Entry<Allocatable, Collection<Appointment>> entry : allocatableBindings.entrySet())
+                for (Map.Entry<ReferenceInfo<Allocatable>, Collection<Appointment>> entry : allocatableBindings.entrySet())
                 {
-                    Allocatable alloc = entry.getKey();
-                    Collection<Appointment> list = this.allocatableBindings.get(alloc);
+                    ReferenceInfo<Allocatable> allocRef = entry.getKey();
+                    Collection<Appointment> list = this.allocatableBindings.get(allocRef);
                     if (list == null)
                     {
                         list = new HashSet<>();
-                        this.allocatableBindings.put(alloc, list);
+                        this.allocatableBindings.put(allocRef, list);
                     }
                     Collection<Appointment> bindings = entry.getValue();
                     list.addAll(bindings);
@@ -1273,7 +1274,7 @@ public class AllocatableSelection extends RaplaGUIComponent implements Appointme
         for (int i = 0; i < appointments.length; i++)
         {
             Appointment appointment = appointments[i];
-            Collection<Appointment> collection = allocatableBindings.get(allocatable);
+            Collection<Appointment> collection = allocatableBindings.get(allocatable.getReference());
             boolean conflictingAppointments = collection != null && collection.contains(appointment);
             result.conflictingAppointments[i] = false;
             final RequestStatus status = appointment.getReservation().getRequestStatus(allocatable);
@@ -2076,7 +2077,7 @@ public class AllocatableSelection extends RaplaGUIComponent implements Appointme
                 boolean conflict = false;
                 for (Appointment app : restriction)
                 {
-                    Collection<Appointment> list = allocatableBindings.get(allocatable);
+                    Collection<Appointment> list = allocatableBindings.get(allocatable.getReference());
                     if (list.contains(app))
                     {
                         conflict = true;

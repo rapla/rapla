@@ -115,7 +115,8 @@ public class ViewTable<T> extends RaplaGUIComponent
     public void updateInfo(T object, HTMLInfo<T> info) throws RaplaException {
         linkMap.clear();
         final String html = info.createHTMLAndFillLinks( object, this, getUser());
-        setTitle (info.getTitle( object));
+        String title = info.getTitle(object);
+        setTitle (title);
         updateInfoHtml(html);
      }
     
