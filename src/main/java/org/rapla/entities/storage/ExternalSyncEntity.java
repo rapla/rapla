@@ -15,4 +15,5 @@ public interface ExternalSyncEntity extends Entity<ExternalSyncEntity>
     
     int getDirection();
 
+
 }
