@@ -73,6 +73,7 @@ import org.rapla.entities.storage.ExternalSyncEntity;
 import org.rapla.entities.storage.RefEntity;
 import org.rapla.entities.storage.ReferenceInfo;
 import org.rapla.entities.storage.UnresolvableReferenceExcpetion;
+import org.rapla.entities.storage.internal.ExternalSyncEntityImpl;
 import org.rapla.entities.storage.internal.ReferenceHandler;
 import org.rapla.entities.storage.internal.SimpleEntity;
 import org.rapla.facade.Conflict;
@@ -224,9 +225,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
         return scheduler.run(()
                 ->
         {
-            checkConnected();
-            UpdateEvent evt = createUpdateEvent(storeObjects, removeObjects, user);
-            dispatch(evt);
+
         });
     }
 
@@ -379,41 +378,6 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
     }
 
     @SuppressWarnings("rawtypes")
-    @Override
-    public <T extends Entity,S extends Entity> void storeAndRemove(final Collection<T> storeObjects,
-                                                                   final Collection<ReferenceInfo<S>> removeObjects, final User user) throws RaplaException
-    {
-        checkConnected();
-
-        UpdateEvent evt = new UpdateEvent();
-        if (user != null)
-        {
-            evt.setUserId(user.getId());
-        }
-        for (Entity obj : storeObjects)
-        {
-            if (obj instanceof Preferences)
-            {
-                PreferencePatch patch = ((PreferencesImpl) obj).getPatch();
-                evt.putPatch(patch);
-            }
-            else
-            {
-                evt.addStore(obj);
-            }
-        }
-        for (ReferenceInfo<?> entity : removeObjects)
-        {
-            Class<? extends Entity> type = entity.getType();
-            if (Appointment.class == type || Attribute.class == type)
-            {
-                String name = getName(entity);
-                throw new RaplaException(getI18n().format("error.remove_object", name));
-            }
-            evt.putRemoveId(entity);
-        }
-        dispatch(evt);
-    }
     @Override
     public Date getConnectStart()
     {
@@ -2529,9 +2493,15 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
                 // also remove import export entities
                 if (externalID != null)
                 {
+                    final ReferenceInfo<ExternalSyncEntity> ref = new ReferenceInfo(externalID, ExternalSyncEntity.class);
                     if ( isDeleteExportEntity( entity)) {
-                        final ReferenceInfo ref = new ReferenceInfo(externalID, ExternalSyncEntity.class);
                         evt.putRemoveId(ref);
+                    }  else {
+                        ExternalSyncEntityImpl syncEntity = new ExternalSyncEntityImpl();
+                        // if we only set the id but no system then we just replace the data entry of an exisiting entry
+                        syncEntity.setId( ref );
+                        syncEntity.setData("");
+                        evt.addStore(syncEntity);
                     }
                 }
             }
@@ -3076,9 +3046,9 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
             for (ReferenceInfo referenceInfo : referencer.getReferenceInfo())
             {
                 Class type = referenceInfo.getType();
-                if (Preferences.class.isAssignableFrom( type ) || Conflict.class.isAssignableFrom( type) || Reservation.class.isAssignableFrom(type) || Appointment.class.isAssignableFrom(type))
+                if (type == null || ExternalSyncEntity.class.isAssignableFrom( type ) || Preferences.class.isAssignableFrom( type ) || Conflict.class.isAssignableFrom( type) || Reservation.class.isAssignableFrom(type) || Appointment.class.isAssignableFrom(type))
                 {
-                    throw new RaplaException("The current version of Rapla doesn't allow references to objects of type " + type);
+                    throw new RaplaException("The current version of Rapla doesn't allow references to objects of type " + type + " id " + referenceInfo.getId());
                 }
             }
         }

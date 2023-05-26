@@ -144,7 +144,7 @@ public class RaplaResourcesRestPage  {
 		securityManager.checkDeletePermissions(user, resource);
 		Collection<ReferenceInfo<Allocatable>> removeObjects = Collections.singleton(resource.getReference());
 		List<Allocatable> storeObjects = Collections.emptyList();
-		operator.storeAndRemove(storeObjects, removeObjects, user);
+		operator.storeAndRemove(storeObjects, removeObjects, user, false);
 	}
 
 	@PUT
