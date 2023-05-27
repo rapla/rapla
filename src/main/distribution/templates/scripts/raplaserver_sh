@@ -35,7 +35,6 @@ findDirectory()
 PRG=$0
 ACTION=$1
 
-
 while [ -h "$PRG" ] ; do
   ls=`ls -ld "$PRG"`
   link=`expr "$ls" : '.*-> \(.*\)$'`
