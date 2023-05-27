@@ -171,7 +171,7 @@ public class ArchiverOption  implements PluginOptionPanel,ActionListener  {
         {
             days = 30;
         }
-        dayField.setNumber( new Integer(days));
+        dayField.setNumber( Integer.valueOf(days));
     	boolean exportSelected= config.getChild(ArchiverService.EXPORT).getValueAsBoolean(false);
     	try {
 			boolean exportEnabled = archiver.isExportEnabled();
