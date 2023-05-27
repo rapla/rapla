@@ -16,6 +16,7 @@ raplaserver.sh run (Unix)
 
 If you want to install Rapla-Server as a SERVICE on Win 11 or linux
 use the scripts in the service/bin folder to test/install/uninstall rapla as a service.
+You may need to download the 32 bit version of java. As the community edition of the service wrapper only supports 32 bit java.
 
 You can also try the script service/bin/TestWrapper instead of raplaserver if it fails 
 because java command is not found.

@@ -7,33 +7,63 @@ https://github.com/rapla/rapla/
 Requirements:
 
 You need JAVA: Java 8 at least (17 recommended).
+Check if you have already installed java by running the java command on your console
+
 There are multiple sources of openjdk here are two popular examples
-
-Amazon Corretto
-
-https://aws.amazon.com/corretto/
 
 Eclipse Temurin
 
 https://projects.eclipse.org/projects/adoptium.temurin
 
+Amazon Corretto
+
+https://aws.amazon.com/corretto/
+
+
+Note: If you install rapla as a service later under windows you may need to download the x86 version of java.
+
+CONFIGURE JAVA:
+
+You can either install java via the installation process of the different java distributions or just download the zip for you plattform.
+
+Option 1: Don't install java and just use it for rapla
+
+Donwload the zip file for your plattform unzip the contents into your rapla folder. Place it in a folder named java and make sure it has the following structure
+
+/rapla-folder1
+  rapla.bat
+  rapla.sh
+  ...
+  /webapps
+     rapla.war
+  /java
+     /bin
+         java
+     /lib
+
+This way rapla can run java even when you don't install the java distribution
+
+Option 2: Configure an installed java
+
+If you installed java via the installation process of one of the java distribution on some System you may need to configure the environment variables.
+
+You should set either JAVA_HOME to point at your Java installation or PATH to point at the java command.
+You can either add the following commands to rapla.bat (Windows) / rapla.sh (unix) or edit your environment variables
+
+Example JAVA_HOME:
+setenv JAVA_HOME /usr/local/java  (Unix)
+set JAVA_HOME=c:\Programme\Java\jre\bin  (Windows)
+
+Example PATH:
+setenv PATH $PATH:/usr/local/java/bin  (Unix)
+set PATH=%PATH%:c:\Programme\Java\jre\bin  (Windows)
+
 
 STARTING RAPLA SERVER:
 
-Start raplaserver.bat (raplaserver.sh under Unix).
-
-After installing java to start Rapla from the command-line, you may to set the java command
-in your PATH-Variable (if its not already there),
-
-Example:
-setenv PATH $PATH:/usr/local/java/bin  (Unix)
-set PATH=%PATH%:c:\Programme\Java\jre\bin  (Windows) 
-
-Then type:
 
 raplaserver.sh (Unix)
-raplaserver.bat (XP/Vista/7/8).
-call raplaserver.bat (win NT/2000)
+raplaserver.bat (XP/Vista/7/8/10/11).
 
 and open rapla in your browser. Locally its
 
