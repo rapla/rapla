@@ -4,7 +4,6 @@ import org.jetbrains.annotations.Nullable;
 import org.rapla.RaplaResources;
 import org.rapla.client.EditController;
 import org.rapla.client.PopupContext;
-import org.rapla.client.RaplaTreeNode;
 import org.rapla.client.dialog.DialogInterface;
 import org.rapla.client.dialog.DialogUiFactoryInterface;
 import org.rapla.client.swing.RaplaGUIComponent;
@@ -14,8 +13,6 @@ import org.rapla.client.swing.internal.edit.fields.BooleanField.BooleanFieldFact
 import org.rapla.client.swing.internal.edit.fields.ClassificationField.ClassificationFieldFactory;
 import org.rapla.client.swing.internal.edit.fields.PermissionListField.PermissionListFieldFactory;
 import org.rapla.client.swing.internal.edit.reservation.SortedListModel;
-import org.rapla.client.swing.internal.view.RaplaSwingTreeModel;
-import org.rapla.entities.Category;
 import org.rapla.entities.Entity;
 import org.rapla.entities.Named;
 import org.rapla.entities.NamedComparator;
@@ -332,6 +329,8 @@ public class TemplateEdit extends RaplaGUIComponent
         {
             toRemove.add(template);
             items.remove(template);
+            templateList.getList().clearSelection();
+            rebuildList();
         }
     }
 
