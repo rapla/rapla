@@ -114,7 +114,7 @@ public class CSVExportMenu extends RaplaGUIComponent implements ExportMenuExtens
             promise = model.queryBlocks(model.getTimeIntervall()).thenApply((list) ->
                     new ArrayList<>(list));
         } else {
-            throw new RaplaException("Unknown table view " + viewId);
+            throw new RaplaException(i18n.getString("error.cvs_export_only_works_with_tableviews"));
         }
         promise.thenCompose((objects) ->
         {
