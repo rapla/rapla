@@ -218,7 +218,6 @@
 		</pluginManagement>
 	</build>
 	<dependencies>
-		<!-- Code generation -->
 		<dependency>
 			<groupId>org.jboss.resteasy</groupId>
 			<artifactId>resteasy-jaxrs</artifactId>
@@ -240,7 +239,6 @@
 					<artifactId>jboss-jaxrs-api_2.1_spec</artifactId>
 					<groupId>org.jboss.spec.javax.ws.rs</groupId>
 				</exclusion>
-
 			</exclusions>
 			<scope>compile</scope>
 		</dependency>
