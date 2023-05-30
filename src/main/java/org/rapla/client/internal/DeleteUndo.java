@@ -28,6 +28,10 @@ public class DeleteUndo<T extends Entity<T>>  implements CommandUndo<RaplaExcept
 	RaplaFacade facade;
 	RaplaResources i18n;
 	User user;
+
+	boolean forceRessourceDelete = false;
+
+
 	public DeleteUndo( RaplaFacade facade,RaplaResources i18n,Collection<T> entities, User user)
 	{
 	    this.facade = facade;
@@ -59,13 +63,12 @@ public class DeleteUndo<T extends Entity<T>>  implements CommandUndo<RaplaExcept
 	
 	public Promise<Void> execute()
 	{
-	    Collection<Entity<?>> toStore = Collections.emptyList();
 	    Collection<ReferenceInfo<T>> toRemove = new ArrayList<>();
 	    for ( T entity: entities)
 		{
             toRemove.add( entity.getReference());
     	}
-		return getFacade().dispatch(toStore,toRemove);
+		return getFacade().dispatchRemove(toRemove, forceRessourceDelete);
 	}
 	
 	public Promise<Void> undo()
@@ -99,6 +102,15 @@ public class DeleteUndo<T extends Entity<T>>  implements CommandUndo<RaplaExcept
 	         buf.append( " " +  getI18n().getString(localname));
 	     }
          return buf.toString();
-     }   
-	    
+     }
+
+	public boolean isForceRessourceDelete() {
+		return forceRessourceDelete;
+	}
+
+	public void setForceRessourceDelete(boolean forceRessourceDelete) {
+		this.forceRessourceDelete = forceRessourceDelete;
+	}
+
+
 }

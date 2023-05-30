@@ -39,9 +39,6 @@ detected.
         <Arg></Arg>
         <Arg>raplafile</Arg>
         <Arg type="java.lang.String">data/data.xml</Arg>
-    <!--
-    <Arg type="java.lang.String">data/wochenplan.xml</Arg>
-        -->
         <Arg type="boolean">true</Arg>
     </New>
 
@@ -108,7 +105,7 @@ detected.
   <New class="org.eclipse.jetty.plus.jndi.EnvEntry">
       <Arg></Arg>
       <Arg>raplaservices</Arg>
-      <Arg type="java.lang.String">org.rapla.plugin.notification=false,org.rapla.ExchangeConnector=false,org.rapla.plugin.archiver.server=false</Arg>
+      <Arg type="java.lang.String">org.rapla.plugin.notification=true,org.rapla.ExchangeConnector=true,org.rapla.plugin.archiver.server=true</Arg>
       <Arg type="boolean">true</Arg>
   </New>
 

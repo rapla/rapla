@@ -43,17 +43,9 @@ import org.rapla.entities.UniqueKeyException;
 import org.rapla.entities.User;
 import org.rapla.entities.configuration.Preferences;
 import org.rapla.entities.configuration.internal.PreferencesImpl;
-import org.rapla.entities.domain.Allocatable;
-import org.rapla.entities.domain.Appointment;
-import org.rapla.entities.domain.AppointmentStartComparator;
-import org.rapla.entities.domain.EntityPermissionContainer;
-import org.rapla.entities.domain.Permission;
+import org.rapla.entities.domain.*;
 import org.rapla.entities.domain.Permission.AccessLevel;
-import org.rapla.entities.domain.PermissionContainer;
 import org.rapla.entities.domain.PermissionContainer.Util;
-import org.rapla.entities.domain.RaplaObjectAnnotations;
-import org.rapla.entities.domain.Reservation;
-import org.rapla.entities.domain.ResourceAnnotations;
 import org.rapla.entities.domain.internal.AllocatableImpl;
 import org.rapla.entities.domain.internal.AppointmentImpl;
 import org.rapla.entities.domain.internal.PermissionImpl;
@@ -81,6 +73,8 @@ import org.rapla.entities.storage.ExternalSyncEntity;
 import org.rapla.entities.storage.RefEntity;
 import org.rapla.entities.storage.ReferenceInfo;
 import org.rapla.entities.storage.UnresolvableReferenceExcpetion;
+import org.rapla.entities.storage.internal.ExternalSyncEntityImpl;
+import org.rapla.entities.storage.internal.ReferenceHandler;
 import org.rapla.entities.storage.internal.SimpleEntity;
 import org.rapla.facade.Conflict;
 import org.rapla.facade.RaplaComponent;
@@ -115,26 +109,7 @@ import org.rapla.storage.impl.RaplaLock;
 
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.LinkedHashMap;
-import java.util.LinkedHashSet;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-import java.util.Set;
-import java.util.SortedMap;
-import java.util.SortedSet;
-import java.util.TimeZone;
-import java.util.TreeSet;
-import java.util.UUID;
+import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -245,14 +220,12 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
     @SuppressWarnings("rawtypes")
     @Override
     public <T extends Entity,S extends Entity> Promise<Void> storeAndRemoveAsync(final Collection<T> storeObjects,
-                                                                                 final Collection<ReferenceInfo<S>> removeObjects, final User user)
+                                                                                 final Collection<ReferenceInfo<S>> removeObjects, final User user, boolean forceRessourceDelete)
     {
         return scheduler.run(()
                 ->
         {
-            checkConnected();
-            UpdateEvent evt = createUpdateEvent(storeObjects, removeObjects, user);
-            dispatch(evt);
+
         });
     }
 
@@ -281,7 +254,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
             for (String lang : raplaLocale.getAvailableLanguages())
             {
                 Locale locale = new Locale(lang);
-                name.setName(lang, i18n.getString("not_visible", locale));
+                name.setName(lang, i18n.getString("not_visible_or_deleted", locale));
             }
             {
                 Permission newPermission = type.newPermission();
@@ -406,41 +379,6 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 
     @SuppressWarnings("rawtypes")
     @Override
-    public <T extends Entity,S extends Entity> void storeAndRemove(final Collection<T> storeObjects,
-                                                                   final Collection<ReferenceInfo<S>> removeObjects, final User user) throws RaplaException
-    {
-        checkConnected();
-
-        UpdateEvent evt = new UpdateEvent();
-        if (user != null)
-        {
-            evt.setUserId(user.getId());
-        }
-        for (Entity obj : storeObjects)
-        {
-            if (obj instanceof Preferences)
-            {
-                PreferencePatch patch = ((PreferencesImpl) obj).getPatch();
-                evt.putPatch(patch);
-            }
-            else
-            {
-                evt.addStore(obj);
-            }
-        }
-        for (ReferenceInfo<?> entity : removeObjects)
-        {
-            Class<? extends Entity> type = entity.getType();
-            if (Appointment.class == type || Attribute.class == type)
-            {
-                String name = getName(entity);
-                throw new RaplaException(getI18n().format("error.remove_object", name));
-            }
-            evt.putRemoveId(entity);
-        }
-        dispatch(evt);
-    }
-    @Override
     public Date getConnectStart()
     {
         return connectStart;
@@ -519,34 +457,44 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
     /**
      * @param user the owner of the reservation or null for reservations from all users
      */
-    public Promise<Map<Allocatable, Collection<Appointment>>> queryAppointments(final User user, final Collection<Allocatable> allocatables, final Date start,
-            final Date end, final ClassificationFilter[] filters, final Map<String, String> annotationQuery)
+    @Override
+    public Promise<AppointmentMapping> queryAppointments(final User user, final Collection<Allocatable> allocatables, final Collection<User> owners, final Date start,
+                                                         final Date end, final ClassificationFilter[] filters, final Map<String, String> annotationQuery)
     {
 
-        final Promise<Map<Allocatable, Collection<Appointment>>> promise = scheduler.supply(() ->
+        final Promise<AppointmentMapping> promise = scheduler.supply(() ->
         {
             boolean excludeExceptions = false;
             boolean isResourceTemplate = containsResourceTemplate(allocatables);
-            final Collection<Allocatable> allocs;
+            final Collection<Entity> entities;
             final Set<Allocatable> nonTemplates;
+
             if ( isResourceTemplate)
             {
-                allocs = allocatables.stream().filter(this::isTemplate).collect(Collectors.toList());
+                entities = allocatables.stream().filter(this::isTemplate).collect(Collectors.toList());
                 nonTemplates = allocatables.stream().filter( (alloc)->!isTemplate(alloc)).collect(Collectors.toSet());
             }
             else
             {
-                allocs = (allocatables == null || allocatables.size() == 0) ? getAllocatables(null) : allocatables;
+                entities = (allocatables != null)  ? new LinkedHashSet<>(allocatables  ) : new LinkedHashSet<>();
+                if ( owners != null && owners.size() > 0) {
+                    entities.addAll(owners);
+                }
                 nonTemplates = Collections.emptySet();
             }
-            Map<Allocatable, Collection<Appointment>> result = new LinkedHashMap<>();
-            for (Allocatable allocatable: allocs)
+            Map<Entity, Collection<Appointment>> allocatableMap = new LinkedHashMap<>();
+            for (Entity entity: entities)
             {
                 RaplaLock.ReadLock readLock = lockManager.readLock(getClass(), "queryAppointments");
                 SortedSet<Appointment> appointmentSet;
                 try
                 {
-                    SortedSet<Appointment> appointments = getAppointments(allocatable);
+                    final SortedSet<Appointment> appointments;
+                    if (entity.getTypeClass()==User.class) {
+                        appointments = getAppointmentsForUser(((User) entity).getReference());
+                    } else {
+                        appointments = getAppointments((Allocatable) entity);
+                    }
                     appointmentSet = AppointmentImpl.getAppointments(appointments, user, start, end, excludeExceptions);
                 }
                 finally
@@ -580,15 +528,17 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
                     {
                         continue;
                     }
-                    Collection<Appointment> appointmentCollection = result.get(allocatable);
+                    Collection<Appointment> appointmentCollection = allocatableMap.get(entity);
                     if (appointmentCollection == null)
                     {
                         appointmentCollection = new LinkedHashSet<>();
-                        result.put(allocatable, appointmentCollection);
+                        allocatableMap.put(entity, appointmentCollection);
                     }
                     appointmentCollection.add(appointment);
                 }
             };
+
+            AppointmentMapping result = new AppointmentMapping(allocatableMap);
             return result;
         });
         return promise;
@@ -1484,14 +1434,25 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
                     getLogger().error("can't find last entry before update for " + id + " rebuilding appointmentbindings index");
                     break;
                 }
+                ReferenceInfo<User> newOwner = newReservation.getOwnerRef();
+                ReferenceInfo<User> oldOwner = oldReservation.getOwnerRef();
+                boolean changeOwner = !Objects.equals(oldOwner, newOwner);
+
+
                 for (Appointment oldApp : oldReservation.getAppointments())
                 {
                     updateBindings(toUpdate, oldReservation, oldApp, true);
+                    if ( changeOwner && oldOwner != null ) {
+                        appointmentBindings.removeAppointmentBinding( oldApp, oldOwner);
+                    }
                 }
                 Appointment[] newAppointments = newReservation.getAppointments();
                 for (Appointment newApp : newAppointments)
                 {
                     updateBindings(toUpdate, newReservation, newApp, false);
+                    if ( changeOwner && newOwner != null ) {
+                        appointmentBindings.addAppointmentBinding( newApp, newOwner);
+                    }
                 }
             }
             if (lastKnown instanceof DynamicType)
@@ -1550,10 +1511,6 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
                     removedAllocatables.add(reference);
                 }
             }
-        }
-        if (!rebuildAllBindings)
-        {
-            appointmentBindings.removeBindings(removedAllocatables);
         }
         if (rebuildAllBindings)
         {
@@ -1927,7 +1884,6 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
     {
 
         Set<ReferenceInfo<Allocatable>> allocatablesToProcess = new HashSet<>();
-        allocatablesToProcess.add(null);
         if (reservation != null)
         {
             final Collection<ReferenceInfo<Allocatable>> allocatableIdsFor = ((ReservationImpl) reservation).getAllocatableIdsFor(app);
@@ -1967,6 +1923,12 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
             getLogger().error("Appointment without reservation found " + app + " ignoring.");
         }
 
+        ReferenceInfo<User> ownerRef = reservation.getOwnerRef();
+        if ( remove ) {
+            appointmentBindings.removeAppointmentBinding(app, ownerRef);
+        } else {
+            appointmentBindings.addAppointmentBinding(app, ownerRef);
+        }
         for (ReferenceInfo<Allocatable> allocatableRef : allocatablesToProcess)
         {
             AllocationChange updateSet;
@@ -2011,11 +1973,6 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
         Set<ReferenceInfo<Allocatable>> allocatableIds = cache.getDependentRef(reference);
         if (allocatableIds.size() == 0)
         {
-            SortedSet<Appointment> s = appointmentBindings.getAppointments(null);
-            if (s != null)
-            {
-                return s;
-            }
             return EMPTY_SORTED_SET;
         }
         else
@@ -2033,11 +1990,21 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
         }
     }
 
+    protected SortedSet<Appointment> getAppointmentsForUser(ReferenceInfo<User> user) {
+        SortedSet<Appointment> s = appointmentBindings.getAppointmentsForUser(user);
+        if (s != null) {
+            return s;
+        }
+        return EMPTY_SORTED_SET;
+    }
+
     static final class AppointmentMapClass
     {
         final private Logger logger;
+        private Map<ReferenceInfo<User>, SortedSet<Appointment>> appointmentUserMap;
         private Map<ReferenceInfo<Allocatable>, SortedSet<Appointment>> appointmentMap;
         Set<String> problematicIdSet = Collections.synchronizedSet(new HashSet<>());
+
 
         private AppointmentMapClass(Logger newLogger)
         {
@@ -2047,16 +2014,17 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
         private void initAppointmentBindings(Collection<Reservation> reservations)
         {
             appointmentMap = new HashMap<>();
+            appointmentUserMap = new HashMap<>();
             for (Reservation r : reservations)
             {
                 for (Appointment app : ((ReservationImpl) r).getAppointmentList())
                 {
                     ReservationImpl reservation = (ReservationImpl) app.getReservation();
-                    Collection<ReferenceInfo<Allocatable>> allocatables = reservation.getAllocatableIdsFor(app);
-                    {
-                        final ReferenceInfo<Allocatable> alloc = null;
-                        addAppointmentBinding(app, alloc);
+                    ReferenceInfo<User> ownerRef = reservation.getOwnerRef();
+                    if ( ownerRef != null) {
+                        addAppointmentBinding(app, ownerRef);
                     }
+                    Collection<ReferenceInfo<Allocatable>> allocatables = reservation.getAllocatableIdsFor(app);
                     for (ReferenceInfo<Allocatable> alloc : allocatables)
                     {
                         addAppointmentBinding(app, alloc);
@@ -2069,59 +2037,63 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
                     }
                 }
             }
+
         }
 
-        private void removeAppointmentBinding(Appointment app, ReferenceInfo<Allocatable> allocationId)
+        private void removeAppointmentBinding(Appointment app, ReferenceInfo referenceInfo)
         {
-            Collection<Appointment> appointmentSet = appointmentMap.get(allocationId);
-            if (appointmentSet == null)
-            {
+            if ( referenceInfo == null) {
+                logger.warn("Empty reference info for app " + app);
                 return;
             }
 
+            Map<? extends ReferenceInfo<? extends Entity<?>>, SortedSet<Appointment>> map = ( referenceInfo.getType() == User.class) ? appointmentUserMap : appointmentMap;
+            Collection<Appointment> appointmentSet = map.get( referenceInfo ) ;
+            if (appointmentSet != null) {
+                removeAppointmentFromSet(app, appointmentSet);
+                if ( appointmentSet.isEmpty()) {
+                    map.remove( referenceInfo );
+                }
+            }
+        }
+
+        private void addAppointmentBinding(Appointment appRef, ReferenceInfo referenceInfo)
+        {
+            if ( referenceInfo == null) {
+                logger.warn("Empty reference info for app " + appRef);
+                return;
+            }
+            SortedSet<Appointment> set =( referenceInfo.getType() == User.class) ? appointmentUserMap.get(referenceInfo) : appointmentMap.get( referenceInfo);
+            if (set == null)
+            {
+                set = new TreeSet<>(new AppointmentStartComparator());
+                if ( referenceInfo.getType() == User.class ) {
+                    appointmentUserMap.put(referenceInfo, set);
+                } else {
+                    appointmentMap.put(referenceInfo, set);
+                }
+            }
+            set.add(appRef);
+        }
+
+
+
+        private void removeAppointmentFromSet(Appointment app, Collection<Appointment> appointmentSet) {
             // binary search could fail if the appointment has changed since the last add, which should not
             // happen as we only put and search immutable objects in the map. But the method is left here as a failsafe
             // with a log messaget
-            if (!appointmentSet.remove(app))
-            {
+            if (!appointmentSet.remove(app)) {
                 logger.error("Appointent has changed, so its not found in indexed binding map. Removing via full search");
                 // so we need to traverse all appointment
                 Iterator<Appointment> it = appointmentSet.iterator();
-                while (it.hasNext())
-                {
-                    if (app.equals(it.next()))
-                    {
+                while (it.hasNext()) {
+                    if (app.equals(it.next())) {
                         it.remove();
                         break;
                     }
                 }
             }
         }
-
-        private void removeBindings(List<ReferenceInfo<Allocatable>> removedAllocatables)
-        {
-            for (ReferenceInfo<Allocatable> alloc : removedAllocatables)
-            {
-                SortedSet<Appointment> sortedSet = appointmentMap.get(alloc);
-                if (sortedSet != null && !sortedSet.isEmpty())
-                {
-                    logger.error("Removing non empty appointment map for resource " + alloc + " Appointments:" + sortedSet);
-                }
-                appointmentMap.remove(alloc);
-            }
-        }
-
-        private void addAppointmentBinding(Appointment appRef, ReferenceInfo<Allocatable> allocationId)
-        {
-            SortedSet<Appointment> set = appointmentMap.get(allocationId);
-            if (set == null)
-            {
-                set = new TreeSet<>(new AppointmentStartComparator());
-                appointmentMap.put(allocationId, set);
-            }
-            set.add(appRef);
-        }
-
 
 
         // this check is only there to detect rapla bugs in the conflict api and can be removed if it causes performance issues
@@ -2212,6 +2184,17 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
             }
             return EMPTY_SORTED_REF_SET;
         }
+
+        public SortedSet<Appointment> getAppointmentsForUser(ReferenceInfo<User> userId)
+        {
+            final SortedSet<Appointment> referenceInfos = appointmentUserMap.get(userId);
+            if (referenceInfos != null)
+            {
+                return referenceInfos;
+            }
+            return EMPTY_SORTED_REF_SET;
+        }
+
     }
 
     protected UpdateResult refresh(Date since, Date until, Collection<Entity> storeObjects, Collection<PreferencePatch> preferencePatches,
@@ -2507,11 +2490,19 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
             if (entity instanceof Annotatable)
             {
                 final String externalID = ((Annotatable) entity).getAnnotation(RaplaObjectAnnotations.KEY_EXTERNALID);
-                // also remove import export enitities
+                // also remove import export entities
                 if (externalID != null)
                 {
-                    final ReferenceInfo ref = new ReferenceInfo(externalID, ExternalSyncEntity.class);
-                    evt.putRemoveId(ref);
+                    final ReferenceInfo<ExternalSyncEntity> ref = new ReferenceInfo(externalID, ExternalSyncEntity.class);
+                    if ( isDeleteExportEntity( entity)) {
+                        evt.putRemoveId(ref);
+                    }  else {
+                        ExternalSyncEntityImpl syncEntity = new ExternalSyncEntityImpl();
+                        // if we only set the id but no system then we just replace the data entry of an exisiting entry
+                        syncEntity.setId( ref );
+                        syncEntity.setData("");
+                        evt.addStore(syncEntity);
+                    }
                 }
             }
             if (Appointment.class == raplaType)
@@ -2548,6 +2539,21 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
         {
             addCategoryToRemove(evt, categoriesToStore, categoryId, 0);
         }
+    }
+
+    private boolean isDeleteExportEntity(Entity entity) {
+        if ( ! ( entity instanceof Classifiable )){
+            return  true;
+        }
+        Classification classification = ((Classifiable) entity).getClassification();
+        if (classification == null) {
+            return true;
+        }
+        String annotation = classification.getType().getAnnotation(DynamicTypeAnnotations.KEY_DELETE_EXTERNALS_ON_RESOURCE_DELETE);
+        if ( "false".equalsIgnoreCase(annotation)) {
+            return false;
+        }
+        return true;
     }
 
     private boolean isInDeleted(Category exisitingParent, Set<String> categoriesToRemove, int depth)
@@ -2632,7 +2638,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
         DynamicTypeDependant dependant = (DynamicTypeDependant) evt.findEntity(entity);
         if (dependant == null)
         {
-            // no, then createInfoDialog a clone of the classfiable object and add to list
+            // no, then create a clone of the classfiable object and add to list
 
             Class<Entity> entityType = entity.getTypeClass();
             Entity persistant = store.tryResolve(entity.getId(), entityType);
@@ -2891,10 +2897,14 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
             {
                 String id = info.getId();
                 // Reference in cache or store?
-                if (store.tryResolve(id, info.getType()) != null)
+                Class class1 = info.getType();
+                Entity resolved = store.tryResolve(id, class1);
+                if (resolved != null)
                     continue;
-
-                throw new EntityNotFoundException(i18n.format("error.reference_not_stored", info.getType() + ":" + id));
+                resolved = ReferenceHandler.tryResolveMissingAllocatable(store, id, class1);
+                if (resolved != null)
+                    continue;
+                throw new EntityNotFoundException(i18n.format("error.reference_not_stored", class1 + ":" + id));
             }
         }
     }
@@ -3035,10 +3045,10 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
         {
             for (ReferenceInfo referenceInfo : referencer.getReferenceInfo())
             {
-                Entity reference = store.resolve(referenceInfo.getId(), referenceInfo.getType());
-                if (reference instanceof Preferences || reference instanceof Conflict || reference instanceof Reservation || reference instanceof Appointment)
+                Class type = referenceInfo.getType();
+                if (type == null || ExternalSyncEntity.class.isAssignableFrom( type ) || Preferences.class.isAssignableFrom( type ) || Conflict.class.isAssignableFrom( type) || Reservation.class.isAssignableFrom(type) || Appointment.class.isAssignableFrom(type))
                 {
-                    throw new RaplaException("The current version of Rapla doesn't allow references to objects of type " + reference.getTypeClass());
+                    throw new RaplaException("The current version of Rapla doesn't allow references to objects of type " + type + " id " + referenceInfo.getId());
                 }
             }
         }
@@ -3250,7 +3260,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
                 continue;
             }
 
-            if (reservation.getSortedAppointments().size() == 0 || (allocatables.length == 0 && !RaplaComponent.isTemplate(reservation)))
+            if (reservation.getSortedAppointments().size() == 0 )
             {
                 reservations.add(reservation);
                 for (Appointment app : reservation.getAppointments())
@@ -3268,7 +3278,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
         if (reservations.size() != 0)
         {
             JsonParserWrapper.JsonParser gson = JsonParserWrapper.defaultJson().get();
-            getLogger().error("The following events will be removed because they have no resources or appointments: \n" + gson.toJson(reservations));
+            getLogger().error("The following events will be removed because they have no appointments: \n" + gson.toJson(reservations));
         }
         return reservationRefs;
     }
@@ -3348,14 +3358,17 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 
         if (dep.size() > 0)
         {
-            Collection<String> names = new ArrayList<>();
-            for (Entity obj : dep)
-            {
-                String string = getDependentName(obj);
-                names.add(string);
+            if (!Allocatable.isAllocatablesOnly( removeEntities) || !evt.isForceAllocatableDeletesIgnoreDependencies()) {
+                Collection<String> names = new ArrayList<>();
+                for (Entity obj : dep)
+                {
+                    String string = getDependentName(obj);
+                    names.add(string);
+                }
+                if ( names.size() > 0 ) {
+                    throw new DependencyException(getString("error.dependencies"), names.toArray(new String[]{}));
+                }
             }
-            //throw new WebApplicationException(getString("error.dependencies"));
-            throw new DependencyException(getString("error.dependencies"), names.toArray(new String[] {}));
         }
         // Count dynamic-types to ensure that there is least one dynamic type
         // for reservations and one for resources or persons
@@ -3524,19 +3537,19 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
     }
 
     @Override
-    public Promise<Map<Allocatable, Collection<Appointment>>> getFirstAllocatableBindings(Collection<Allocatable> allocatables,
+    public Promise<Map<ReferenceInfo<Allocatable>, Collection<Appointment>>> getFirstAllocatableBindings(Collection<Allocatable> allocatables,
             Collection<Appointment> appointments, Collection<Reservation> ignoreList)
     {
-        final Promise<Map<Allocatable, Collection<Appointment>>> prom = scheduler
+        final Promise<Map<ReferenceInfo<Allocatable>, Collection<Appointment>>> prom = scheduler
                 .supply(() -> getFirstAllocatableBindingsMap(allocatables, appointments, ignoreList));
         return prom;
     }
 
-    private Map<Allocatable, Collection<Appointment>> getFirstAllocatableBindingsMap(Collection<Allocatable> allocatables, Collection<Appointment> appointments,
+    private Map<ReferenceInfo<Allocatable>, Collection<Appointment>> getFirstAllocatableBindingsMap(Collection<Allocatable> allocatables, Collection<Appointment> appointments,
             Collection<Reservation> ignoreList) throws RaplaException
     {
         final RaplaLock.ReadLock readLock = lockManager.readLock(getClass(),"getFirstAllocableBindings");
-        Map<Allocatable, Map<Appointment, Collection<Appointment>>> allocatableBindings;
+        Map<ReferenceInfo<Allocatable>, Map<Appointment, Collection<Appointment>>> allocatableBindings;
         try
         {
             allocatableBindings = getAllocatableBindings(allocatables, appointments, ignoreList, true);
@@ -3545,10 +3558,10 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
         {
             lockManager.unlock(readLock);
         }
-        Map<Allocatable, Collection<Appointment>> map = new HashMap<>();
-        for (Map.Entry<Allocatable, Map<Appointment, Collection<Appointment>>> entry : allocatableBindings.entrySet())
+        Map<ReferenceInfo<Allocatable>, Collection<Appointment>> map = new HashMap<>();
+        for (Map.Entry<ReferenceInfo<Allocatable>, Map<Appointment, Collection<Appointment>>> entry : allocatableBindings.entrySet())
         {
-            Allocatable alloc = entry.getKey();
+            ReferenceInfo<Allocatable> alloc = entry.getKey();
             Collection<Appointment> list = entry.getValue().keySet();
             map.put(alloc, list);
         }
@@ -3556,7 +3569,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
     }
 
     @Override
-    public Promise<Map<Allocatable, Map<Appointment, Collection<Appointment>>>> getAllAllocatableBindings(Collection<Allocatable> allocatables,
+    public Promise<Map<ReferenceInfo<Allocatable>, Map<Appointment, Collection<Appointment>>>> getAllAllocatableBindings(Collection<Allocatable> allocatables,
             Collection<Appointment> appointments, Collection<Reservation> ignoreList)
     {
         return scheduler.supply(() ->
@@ -3564,7 +3577,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
             RaplaLock.ReadLock readLock = lockManager.readLock(getClass(), "getAllocatableBindings" );
             try
             {
-                Map<Allocatable, Map<Appointment, Collection<Appointment>>> allocatableBindings = getAllocatableBindings(allocatables, appointments, ignoreList,
+                Map<ReferenceInfo<Allocatable>, Map<Appointment, Collection<Appointment>>> allocatableBindings = getAllocatableBindings(allocatables, appointments, ignoreList,
                         false);
                 return allocatableBindings;
             }
@@ -3575,10 +3588,10 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
         });
     }
 
-    public Map<Allocatable, Map<Appointment, Collection<Appointment>>> getAllocatableBindings(Collection<Allocatable> allocatables,
+    public Map<ReferenceInfo<Allocatable>, Map<Appointment, Collection<Appointment>>> getAllocatableBindings(Collection<Allocatable> allocatables,
             Collection<Appointment> appointments, Collection<Reservation> ignoreList, boolean onlyFirstConflictingAppointment)
     {
-        Map<Allocatable, Map<Appointment, Collection<Appointment>>> map = new HashMap<>();
+        Map<ReferenceInfo<Allocatable>, Map<Appointment, Collection<Appointment>>> map = new HashMap<>();
         for (Allocatable allocatable : allocatables)
         {
             {
@@ -3594,7 +3607,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
                 {
                     continue;
                 }
-                map.put(allocatable, new HashMap<>());
+                map.put(allocatable.getReference(), new HashMap<>());
                 for (Appointment appointment : appointments)
                 {
                     Set<Appointment> conflictingAppointments = AppointmentImpl
@@ -3605,7 +3618,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
                         if (appMap == null)
                         {
                             appMap = new HashMap<>();
-                            map.put(allocatable, appMap);
+                            map.put(allocatable.getReference(), appMap);
                         }
                         appMap.put(appointment, conflictingAppointments);
                     }
@@ -3690,9 +3703,9 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 
     private boolean isAllocated(Collection<Allocatable> allocatables, Appointment appointment, Collection<Reservation> ignoreList) throws Exception
     {
-        Map<Allocatable, Collection<Appointment>> firstAllocatableBindings = getFirstAllocatableBindingsMap(allocatables, Collections.singleton(appointment),
+        Map<ReferenceInfo<Allocatable>, Collection<Appointment>> firstAllocatableBindings = getFirstAllocatableBindingsMap(allocatables, Collections.singleton(appointment),
                 ignoreList);
-        for (Map.Entry<Allocatable, Collection<Appointment>> entry : firstAllocatableBindings.entrySet())
+        for (Map.Entry<ReferenceInfo<Allocatable>, Collection<Appointment>> entry : firstAllocatableBindings.entrySet())
         {
             if (entry.getValue().size() > 0)
             {

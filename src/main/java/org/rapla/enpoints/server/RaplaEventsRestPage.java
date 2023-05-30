@@ -4,6 +4,7 @@ import org.rapla.entities.Entity;
 import org.rapla.entities.User;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.Appointment;
+import org.rapla.entities.domain.AppointmentMapping;
 import org.rapla.entities.domain.Reservation;
 import org.rapla.entities.domain.internal.AppointmentImpl;
 import org.rapla.entities.domain.internal.ReservationImpl;
@@ -59,7 +60,7 @@ import java.util.Map;
     private Collection<String> CLASSIFICATION_TYPES = Arrays.asList(DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RESERVATION);
 
     @GET @Produces({ MediaType.APPLICATION_JSON, MediaType.APPLICATION_XML }) public List<ReservationImpl> list(@QueryParam("start") Date start,
-            @QueryParam("end") Date end, @QueryParam("resources") List<String> resources, @QueryParam("eventTypes") Collection<String> eventTypes,
+            @QueryParam("end") Date end, @QueryParam("resources") List<String> resources,@QueryParam("owners") List<String> ownersId, @QueryParam("eventTypes") Collection<String> eventTypes,
             @QueryParam("attributeFilter") Map<String, String> simpleFilter) throws Exception
     {
         final User user = session.checkAndGetUser(request);
@@ -70,14 +71,21 @@ import java.util.Map;
             allocatables.add(allocatable);
         }
 
+        Collection<User> owners = new ArrayList<>();
+        for (String id : ownersId)
+        {
+            User owner = facade.resolve(new ReferenceInfo<User>(id, User.class));
+            owners.add(owner);
+        }
+
         final ClassificationFilter[] filters = RaplaResourcesRestPage.getClassificationFilter(facade, simpleFilter, CLASSIFICATION_TYPES, eventTypes);
         final Map<String, String> annotationQuery = null;
         final User owner = null;
-        final Promise<Map<Allocatable, Collection<Appointment>>> promise = operator
-                .queryAppointments(owner, allocatables, start, end, filters, annotationQuery);
-        final Map<Allocatable, Collection<Appointment>> appMap = promiseWait.waitForWithRaplaException(promise, 20000);
+        final Promise<AppointmentMapping> promise = operator
+                .queryAppointments(owner, allocatables, owners, start, end, filters, annotationQuery);
+        final AppointmentMapping appMap = promiseWait.waitForWithRaplaException(promise, 20000);
         final List<ReservationImpl> result = new ArrayList<>();
-        final Collection<Reservation> reservations = CalendarModelImpl.getAllReservations(appMap);
+        final Collection<Reservation> reservations = appMap.getAllReservations();
         PermissionController permissionController = facade.getPermissionController();
         for (Reservation r : reservations)
         {

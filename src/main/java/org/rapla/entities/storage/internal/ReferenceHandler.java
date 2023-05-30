@@ -12,12 +12,19 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.entities.storage.internal;
 
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import org.rapla.components.util.Assert;
 import org.rapla.entities.Entity;
+import org.rapla.entities.domain.Allocatable;
+import org.rapla.entities.domain.internal.AllocatableImpl;
+import org.rapla.entities.dynamictype.Classification;
+import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.entities.storage.EntityReferencer;
 import org.rapla.entities.storage.EntityResolver;
 import org.rapla.entities.storage.ReferenceInfo;
 import org.rapla.entities.storage.UnresolvableReferenceExcpetion;
+import org.rapla.storage.StorageOperator;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -30,6 +37,8 @@ import java.util.Map.Entry;
 import java.util.Set;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
+
+import static org.rapla.entities.storage.EntityResolver.UNRESOLVED_RESOURCE_TYPE;
 
 /** The ReferenceHandler takes care of serializing and deserializing references to Entity objects.
 <p>
@@ -269,26 +278,44 @@ abstract public class ReferenceHandler /*extends HashMap<String,List<String>>*/ 
 		{
 			return Collections.emptyList();
 		}
-		List<T> entries = new ArrayList<>(ids.size());
+        List<T> entries = new ArrayList<>(ids.size());
 		for ( String id:ids)
 		{
-			T entity = tryResolve(id, entityClass);
-			if ( entity != null)
-			{
-				entries.add( entity );
-			}
-			else
-			{
-				throw new UnresolvableReferenceExcpetion( entityClass.getName() + ":" + id, toString() );
-			}
+			T entity = resolveWithMissingAllocatable(id, entityClass);
+            entries.add( entity );
 		}
 		return Collections.unmodifiableCollection(entries);
 	}
 
-	protected <T extends Entity> T tryResolve(String id,Class<T> entityClass)
+    @Nullable
+    static public <T extends Entity> T tryResolveMissingAllocatable(EntityResolver resolver, String id, Class<T> entityClass) {
+        if (entityClass != null && isAllocatableClass(entityClass)) {
+            DynamicType unresolvedType = resolver.getDynamicType(UNRESOLVED_RESOURCE_TYPE);
+            if (unresolvedType == null) {
+                throw new IllegalStateException("Unresolved Type not set at this point");
+            }
+            AllocatableImpl unresolved = new AllocatableImpl(null, null);
+            unresolved.setId(id);
+            Classification newClassification = unresolvedType.newClassification();
+            unresolved.setClassification(newClassification);
+            unresolved.setReadOnly();
+            @SuppressWarnings("unchecked") T casted = (T) unresolved;
+            return casted;
+        }
+        return null;
+    }
+
+    static protected <T extends Entity> boolean isAllocatableClass(Class<T> entityClass)
+    {
+        return entityClass.isAssignableFrom(Allocatable.class);
+    }
+
+
+    protected <T extends Entity> T tryResolve(String id,Class<T> entityClass)
 	{
         return resolver.tryResolve( id , entityClass);
-	}	
+	}
+
 
 //    public Entity getEntity(String key) {
 //    	
@@ -304,19 +331,28 @@ abstract public class ReferenceHandler /*extends HashMap<String,List<String>>*/ 
         String id  = entries.get(0);
         if (id == null)
             return null;
+        return resolveWithMissingAllocatable( id, entityClass);
+    }
+
+    @NotNull
+    protected  <T extends Entity> T resolveWithMissingAllocatable( String id, Class<T> entityClass) {
         if ( resolver == null)
         {
             throw new IllegalStateException("Resolver not set");
         }
-        T resolved = tryResolve(id, entityClass);
-        if ( resolved == null)
+        T entity = tryResolve(id, entityClass);
+        if ( entity == null )
+        {
+            entity = tryResolveMissingAllocatable( resolver, id, entityClass);
+        }
+        if ( entity == null)
         {
             throw new UnresolvableReferenceExcpetion(entityClass.getName() + ":" + id);
         }
-        return resolved;
+        return entity;
     }
 
-	public boolean removeWithKey(String key) {
+    public boolean removeWithKey(String key) {
     	synchronized (this) 
         {
 			return links.remove(key) != null;

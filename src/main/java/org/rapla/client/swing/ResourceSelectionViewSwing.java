@@ -37,6 +37,7 @@ import org.rapla.client.internal.TreeFactoryImpl;
 import org.rapla.client.swing.toolkit.*;
 import org.rapla.components.calendar.RaplaArrowButton;
 import org.rapla.components.layout.TableLayout;
+import org.rapla.entities.NamedComparator;
 import org.rapla.entities.User;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.dynamictype.ClassificationFilter;
@@ -67,7 +68,7 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.FocusEvent;
 import java.awt.event.FocusListener;
-import java.util.Collection;
+import java.util.*;
 
 @DefaultImplementation(context=InjectionContext.swing, of=ResourceSelectionView.class)
 public class ResourceSelectionViewSwing implements ResourceSelectionView
@@ -247,17 +248,10 @@ public class ResourceSelectionViewSwing implements ResourceSelectionView
         final RaplaTreeNode raplaTreeNode = treeFactory.newRootNode();
         raplaTreeNode.add( allocatableNodes.allocatableNode);
 
-        if (facade.isAdmin() && false) {
-            RaplaTreeNode usersNode = treeFactory.newUsersNode();
-            raplaTreeNode.add(usersNode);
+        RaplaTreeNode usersNode = treeFactory.newUsersNode();
+        raplaTreeNode.add(usersNode);
 
-            User[] users = facade.getRaplaFacade().getUsers();
-            for (User user : users) {
-                RaplaTreeNode node = treeFactory.newNamedNode(user);
-                usersNode.add(node);
-            }
 
-        }
         DefaultTreeModel treeModel = new RaplaSwingTreeModel(raplaTreeNode);
         return treeModel;
     }

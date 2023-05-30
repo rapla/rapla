@@ -176,8 +176,8 @@ public class ClassificationEditUI extends AbstractEditUI<Classification> {
 		SetGetField<?> field = null;
 
 		if (type.equals(AttributeType.STRING)) {
-			Integer rows = new Integer(attribute.getAnnotation(	AttributeAnnotations.KEY_EXPECTED_ROWS, "1"));
-			Integer columns = new Integer(attribute.getAnnotation( AttributeAnnotations.KEY_EXPECTED_COLUMNS,String.valueOf(TextField.DEFAULT_LENGTH)));
+			Integer rows = Integer.valueOf(attribute.getAnnotation(	AttributeAnnotations.KEY_EXPECTED_ROWS, "1"));
+			Integer columns = Integer.valueOf(attribute.getAnnotation( AttributeAnnotations.KEY_EXPECTED_COLUMNS,String.valueOf(TextField.DEFAULT_LENGTH)));
 			TextField textField = textFieldFactory.create(label, rows.intValue(),columns.intValue());
             boolean isColor = attribute.getKey().equals("color") || attribute.getAnnotation(AttributeAnnotations.KEY_COLOR, "false").equals("true");
             textField.setColorPanel(  isColor);

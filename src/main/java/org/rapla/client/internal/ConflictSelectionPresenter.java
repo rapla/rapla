@@ -53,7 +53,7 @@ public class ConflictSelectionPresenter implements Presenter
 {
     protected final CalendarSelectionModel model;
     private final Logger logger;
-    private Collection<Conflict> conflicts;
+    private Collection<Conflict> conflicts = Collections.emptySet();
     private final CalendarEventBus eventBus;
     private final DialogUiFactoryInterface dialogUiFactory;
     private final ClientFacade facade;

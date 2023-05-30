@@ -29,6 +29,7 @@ import org.rapla.entities.User;
 import org.rapla.entities.configuration.Preferences;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.Appointment;
+import org.rapla.entities.domain.AppointmentMapping;
 import org.rapla.entities.domain.Reservation;
 import org.rapla.entities.dynamictype.ClassificationFilter;
 import org.rapla.entities.dynamictype.DynamicType;
@@ -48,12 +49,6 @@ import java.util.Set;
 
 public interface StorageOperator extends EntityResolver {
 	int MAX_DEPENDENCY = 20;
-	   
-	String UNRESOLVED_RESOURCE_TYPE = "rapla:unresolvedResource";
-	String ANONYMOUSEVENT_TYPE = "rapla:anonymousEvent";
-	String DEFAULT_USER_TYPE = "rapla:defaultUser";
-	String PERIOD_TYPE = "rapla:period";
-	String RAPLA_TEMPLATE = "rapla:template";
 
 
     String getUsername(ReferenceInfo<User> userId) throws RaplaException;
@@ -82,13 +77,17 @@ public interface StorageOperator extends EntityResolver {
     
     Map<Entity,Entity> getPersistant(Collection<? extends Entity> entity) throws RaplaException;
 
+    default <T extends Entity, S extends Entity> void storeAndRemove(Collection<T> storeObjects,Collection<ReferenceInfo<S>> removeObjects,User user) throws RaplaException {
+        storeAndRemove(storeObjects, removeObjects,user, false);
+    }
+
     //Promise<Map<Entity,Entity>> getPersistantAsync(Collection<? extends Entity> entity);
     /** Stores and/or removes entities and specifies a user that is responsible for the changes.
      * Notifies  all registered StorageUpdateListeners after a successful
      storage.*/
-    <T extends Entity, S extends Entity> void storeAndRemove(Collection<T> storeObjects,Collection<ReferenceInfo<S>> removeObjects,User user) throws RaplaException;
+    <T extends Entity, S extends Entity> void storeAndRemove(Collection<T> storeObjects,Collection<ReferenceInfo<S>> removeObjects,User user, boolean forceRessourceDelete) throws RaplaException;
 
-    <T extends Entity, S extends Entity> Promise<Void> storeAndRemoveAsync(Collection<T> storeObjects,Collection<ReferenceInfo<S>> removeObjects,User user);
+    <T extends Entity, S extends Entity> Promise<Void> storeAndRemoveAsync(Collection<T> storeObjects, Collection<ReferenceInfo<S>> removeObjects, User user, boolean forceRessourceDelete);
 
     <T extends Entity> List<ReferenceInfo<T>> createIdentifier(Class<T> raplaType, int count) throws RaplaException;
 
@@ -106,9 +105,9 @@ public interface StorageOperator extends EntityResolver {
      * @param allocatables 
      * @param reservationFilters 
      * @param annotationQuery */
-    Promise<Map<Allocatable,Collection<Appointment>>> queryAppointments(User user, Collection<Allocatable> allocatables, Date start, Date end,  ClassificationFilter[] reservationFilters, Map<String, String> annotationQuery);
+    Promise<AppointmentMapping> queryAppointments(User user, Collection<Allocatable> allocatables,Collection<User> owners, Date start, Date end,  ClassificationFilter[] reservationFilters, Map<String, String> annotationQuery);
 
-    Promise<Map<Allocatable, Collection<Appointment>>> queryAppointments( User user,Collection<Allocatable> allocatables, Date start, Date end, ClassificationFilter[] reservationFilters, String templateId);
+    Promise<AppointmentMapping> queryAppointments(User user, Collection<Allocatable> allocatables, Collection<User> owners, Date start, Date end, ClassificationFilter[] reservationFilters, String templateId);
 
 	Collection<Allocatable> getAllocatables(ClassificationFilter[] filters) throws RaplaException;
 
@@ -136,9 +135,9 @@ public interface StorageOperator extends EntityResolver {
     
     boolean supportsActiveMonitoring();
 
-    Promise<Map<Allocatable, Collection<Appointment>>> getFirstAllocatableBindings(Collection<Allocatable> allocatables, Collection<Appointment> appointments, Collection<Reservation> ignoreList);
+    Promise<Map<ReferenceInfo<Allocatable>, Collection<Appointment>>> getFirstAllocatableBindings(Collection<Allocatable> allocatables, Collection<Appointment> appointments, Collection<Reservation> ignoreList);
     
-    Promise<Map<Allocatable, Map<Appointment,Collection<Appointment>>>> getAllAllocatableBindings(Collection<Allocatable> allocatables, Collection<Appointment> appointments, Collection<Reservation> ignoreList);
+    Promise<Map<ReferenceInfo<Allocatable>, Map<Appointment,Collection<Appointment>>>> getAllAllocatableBindings(Collection<Allocatable> allocatables, Collection<Appointment> appointments, Collection<Reservation> ignoreList);
 
     Promise<Date> getNextAllocatableDate(Collection<Allocatable> allocatables,Appointment appointment, Collection<Reservation> ignoreList, Integer worktimeStartMinutes,Integer worktimeEndMinutes, Integer[] excludedDays, Integer rowsPerHour);
     
