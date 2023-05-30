@@ -109,8 +109,8 @@ public class SecurityManagerTest extends AbstractTestWithServer {
 			DynamicType eventType = facade1.getDynamicType("event");
 			ClassificationFilter eventFilter = eventType.newClassificationFilter();
 			eventFilter.addEqualsRule("name", "conflicting event");
-			
-			Reservation event = RaplaTestCase.waitForWithRaplaException(facade1.getReservationsForAllocatable( null, null, null, eventFilter.toArray()), 10000).iterator().next();
+			User user = facade1.getUser("monty");
+			Reservation event = RaplaTestCase.waitForWithRaplaException(facade1.getReservations(user, null, null,  eventFilter.toArray()), 10000).iterator().next();
 				// But moving back the appointment to today should fail
 			event = facade1.edit( event );
 			Date startPlus1 = new Date( start.getTime() + DateTools.MILLISECONDS_PER_HOUR) ;
