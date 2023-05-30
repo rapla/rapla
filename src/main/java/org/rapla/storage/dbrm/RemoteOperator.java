@@ -16,7 +16,6 @@ package org.rapla.storage.dbrm;
 import org.jetbrains.annotations.NotNull;
 import org.rapla.ConnectInfo;
 import org.rapla.RaplaResources;
-import org.rapla.components.util.Assert;
 import org.rapla.components.util.DateTools;
 import org.rapla.components.util.SerializableDateTimeFormat;
 import org.rapla.components.util.TimeInterval;
@@ -24,22 +23,20 @@ import org.rapla.entities.Entity;
 import org.rapla.entities.EntityNotFoundException;
 import org.rapla.entities.RaplaType;
 import org.rapla.entities.User;
-import org.rapla.entities.domain.Allocatable;
-import org.rapla.entities.domain.Appointment;
-import org.rapla.entities.domain.AppointmentStartComparator;
-import org.rapla.entities.domain.Reservation;
+import org.rapla.entities.domain.*;
 import org.rapla.entities.domain.internal.AllocatableImpl;
 import org.rapla.entities.domain.internal.AppointmentImpl;
 import org.rapla.entities.domain.internal.ReservationImpl;
 import org.rapla.entities.domain.permission.PermissionExtension;
-import org.rapla.entities.dynamictype.Classification;
 import org.rapla.entities.dynamictype.ClassificationFilter;
 import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.entities.dynamictype.internal.DynamicTypeImpl;
 import org.rapla.entities.extensionpoints.FunctionFactory;
 import org.rapla.entities.storage.EntityReferencer;
 import org.rapla.entities.storage.EntityResolver;
+import org.rapla.entities.storage.RefEntity;
 import org.rapla.entities.storage.ReferenceInfo;
+import org.rapla.entities.storage.internal.ReferenceHandler;
 import org.rapla.facade.Conflict;
 import org.rapla.facade.client.ClientFacade;
 import org.rapla.facade.internal.ModificationEventImpl;
@@ -108,7 +105,7 @@ public class RemoteOperator
     protected CommandScheduler commandQueue;
 
     Date lastSyncedTimeLocal;
-    Date lastSyncedTime;
+    Date lastValidatedTimeServer;
     int timezoneOffset;
     RemoteConnectionInfo connectionInfo;
 
@@ -194,7 +191,7 @@ public class RemoteOperator
     }
 
     public Date getCurrentTimestamp() {
-        if (lastSyncedTime == null) {
+        if (lastValidatedTimeServer == null) {
             return new Date(System.currentTimeMillis());
         }
         // no matter what the client clock says we always sync to the server clock
@@ -202,7 +199,7 @@ public class RemoteOperator
         if (passedMillis < 0) {
             passedMillis = 0;
         }
-        long correctTime = this.lastSyncedTime.getTime() + passedMillis;
+        long correctTime = this.lastValidatedTimeServer.getTime() + passedMillis;
         Date date = new Date(correctTime);
         return date;
     }
@@ -258,7 +255,7 @@ public class RemoteOperator
 
     @Override
     synchronized public void refresh() throws RaplaException {
-        String clientRepoVersion = getLastSyncedTime();
+        String clientRepoVersion = getLastValidatedTimeServer();
         RemoteStorage serv = getRemoteStorage();
         try {
             UpdateEvent evt = serv.refreshSync(clientRepoVersion);
@@ -289,7 +286,7 @@ public class RemoteOperator
     @Override
      public Promise<Void> refreshAsync() {
 
-        String clientRepoVersion = getLastSyncedTime();
+        String clientRepoVersion = getLastValidatedTimeServer();
         RemoteStorage serv = getRemoteStorage();
         refreshInProgress = true;
         final Promise<UpdateEvent> updateEventPromise = serv.refresh(clientRepoVersion);
@@ -304,8 +301,8 @@ public class RemoteOperator
         return returnPromise;
     }
 
-    private String getLastSyncedTime() {
-        return SerializableDateTimeFormat.INSTANCE.formatTimestamp(lastSyncedTime);
+    private String getLastValidatedTimeServer() {
+        return SerializableDateTimeFormat.INSTANCE.formatTimestamp(lastValidatedTimeServer);
     }
 
     /**
@@ -356,51 +353,19 @@ public class RemoteOperator
         }
     }
 
-    protected <T extends Entity> T tryResolve(EntityResolver resolver, String id, Class<T> entityClass) {
-        Assert.notNull(id);
-        T entity = resolver.tryResolve(id, entityClass);
-        if (entity != null) {
-            return entity;
-        }
-        if (entityClass != null && isAllocatableClass(entityClass)) {
-            AllocatableImpl unresolved = new AllocatableImpl(null, null);
-            unresolved.setId(id);
-            DynamicType dynamicType = resolver.getDynamicType(UNRESOLVED_RESOURCE_TYPE);
-            if (dynamicType == null) {
-                //throw new IllegalStateException("Unresolved resource type not found");
-                return null;
-            }
-            getLogger().debug("ResourceReference with ID " + id + " not loaded ");
-            Classification newClassification = dynamicType.newClassification();
-            unresolved.setClassification(newClassification);
-            @SuppressWarnings("unchecked") T casted = (T) unresolved;
-            return casted;
-        }
-        return null;
-    }
-
     // problem of resolving the bootstrap loading of unreadable resources before resource type is referencable
     protected void testResolveInitial(Collection<? extends Entity> entities) throws EntityNotFoundException {
-        EntityStore store = new EntityStore(this) {
-            protected <T extends Entity> T tryResolveParent(String id, Class<T> entityClass) {
-                T tryResolve = super.tryResolveParent(id, entityClass);
-                if (tryResolve != null) {
-                    return tryResolve;
-                } else {
-                    if (entityClass != null && isAllocatableClass(entityClass)) {
-                        AllocatableImpl unresolved = new AllocatableImpl(null, null);
-                        unresolved.setId(id);
-                        DynamicType dynamicType = getDynamicType(StorageOperator.UNRESOLVED_RESOURCE_TYPE);
-                        ((DynamicTypeImpl) dynamicType).setReadOnly();
-                        Classification newClassification = dynamicType.newClassification();
-                        unresolved.setClassification(newClassification);
-                        @SuppressWarnings("unchecked") T casted = (T) unresolved;
-                        return casted;
-                    }
-                    return null;
-                }
-            }
-        };
+        EntityStore store = new EntityStore(this);
+//        {
+//            protected <T extends Entity> T tryResolveParent(String id, Class<T> entityClass) {
+//                T tryResolve = super.tryResolveParent(id, entityClass);
+//                if (tryResolve != null) {
+//                    return tryResolve;
+//                } else {
+//                    return tryResolveMissingAllocatable(this, id, entityClass);
+//                }
+//            }
+//        };
         store.addAll(entities);
         for (Entity entity : entities) {
             if (entity instanceof DynamicType) {
@@ -418,14 +383,18 @@ public class RemoteOperator
         }
     }
 
+    @Override
     protected void testResolve(EntityResolver resolver, EntityReferencer obj, ReferenceInfo reference) throws EntityNotFoundException {
-        Class<? extends Entity> class1 = reference.getType();
-        String id = reference.getId();
-        if (tryResolve(resolver, id, class1) == null) {
-            if (class1 != User.class || (userId == null || userId.equals(id))) {
-                String prefix = (class1 != null) ? class1.getName() : " unkown type";
-                throw new EntityNotFoundException(prefix + " with id " + id + " not found for " + obj);
+        try {
+            super.testResolve(resolver, obj, reference);
+        } catch ( EntityNotFoundException ex ) {
+            Class<? extends Entity> class1 = reference.getType();
+            String id = reference.getId();
+            if ((class1 == User.class && !(userId == null || userId.equals(id)))) {
+                // We ignore user not found expecptions if its not the current useradmin
+                return;
             }
+            throw ex;
         }
     }
 
@@ -457,6 +426,13 @@ public class RemoteOperator
             updateTimestamps(evt);
             Collection<Entity> storeObjects = evt.getStoreObjects();
             cache.clearAll();
+            for (Entity entity: storeObjects) {
+                if ( entity.getTypeClass() == DynamicType.class) {
+                    if (EntityResolver.isInternalType((DynamicType) entity)) {
+                        ((RefEntity) entity).setReadOnly();
+                    }
+                }
+            }
             testResolveInitial(storeObjects);
             setResolver(storeObjects);
             for (Entity entity : storeObjects) {
@@ -476,7 +452,7 @@ public class RemoteOperator
             throw new RaplaException("Server sync time is missing");
         }
         lastSyncedTimeLocal = new Date(System.currentTimeMillis());
-        lastSyncedTime = evt.getLastValidated();
+        lastValidatedTimeServer = evt.getLastValidated();
         timezoneOffset = evt.getTimezoneOffset();
         //long offset = TimeZoneConverterImpl.getOffset( DateTools.getTimeZone(), systemTimeZone, time);
 
@@ -501,16 +477,17 @@ public class RemoteOperator
     }
 
     @Override
-    public <T extends Entity, S extends Entity> Promise<Void> storeAndRemoveAsync(Collection<T> storeObjects, Collection<ReferenceInfo<S>> removeObjects, User user) {
+    public <T extends Entity, S extends Entity> Promise<Void> storeAndRemoveAsync(Collection<T> storeObjects, Collection<ReferenceInfo<S>> removeObjects, User user, boolean forceRessourceDelete) {
         final UpdateEvent evt;
         try {
             evt = createUpdateEvent(storeObjects, removeObjects, user);
+            evt.setForceAllocatableDeletesIgnoreDependencies( forceRessourceDelete );
             logEvent(evt);
         } catch (RaplaException ex)
         {
             return new ResolvedPromise<>(ex);
         }
-        evt.setLastValidated(lastSyncedTime);
+        evt.setLastValidated(lastValidatedTimeServer);
 
         RemoteStorage serv = getRemoteStorage();
         return serv.dispatch(evt).thenAccept((serverEvent)->refresh(serverEvent));
@@ -521,7 +498,7 @@ public class RemoteOperator
         checkConnected();
         logEvent(evt);
         RemoteStorage serv = getRemoteStorage();
-        evt.setLastValidated(lastSyncedTime);
+        evt.setLastValidated(lastValidatedTimeServer);
         try {
             UpdateEvent serverClosure = serv.store(evt);
             refresh(serverClosure);
@@ -732,14 +709,15 @@ public class RemoteOperator
         return result;
     }
 
-    public Promise<Map<Allocatable, Collection<Appointment>>> queryAppointments(User user, Collection<Allocatable> allocatables, Date start, Date end,
-                                                                                final ClassificationFilter[] filters, Map<String, String> annotationQuery) {
+    @Override
+    public Promise<AppointmentMapping> queryAppointments(User user, Collection<Allocatable> allocatables, Collection<User> owners, Date start, Date end,
+                                                             final ClassificationFilter[] filters, Map<String, String> annotationQuery) {
         final RemoteStorage serv = getRemoteStorage();
-        Promise<Map<Allocatable, Collection<Appointment>>> result = refreshIfIdle().thenCompose((refreshed) -> {
+        Promise<AppointmentMapping> result = refreshIfIdle().thenCompose((refreshed) -> {
             String[] allocatableId = getIdList(allocatables);
-            String[] userIds = new String[] {};
-            return serv.queryAppointments(new QueryAppointments(userIds,allocatableId, start, end, annotationQuery)).thenApply(list -> {
-                Map<Allocatable, Collection<Appointment>> filtered;
+            String[] ownerIds = getIdList( owners);
+            return serv.queryAppointments(new QueryAppointments(ownerIds,allocatableId, start, end, annotationQuery)).thenApply(list -> {
+                AppointmentMapping filtered;
                 {
                     long time = System.currentTimeMillis();
                     logger.debug("event server call took  " + (System.currentTimeMillis() - time) + " ms");
@@ -759,7 +737,7 @@ public class RemoteOperator
     protected Promise<Promise<Boolean>> refreshIfIdle() {
         return getScheduler().supply(() -> {
             // if a refresh is due, we assume the system went to sleep so we refresh before we continue
-            if (intervalLength > 0 && lastSyncedTime != null && (lastSyncedTime.getTime() + intervalLength * 2) < getCurrentTimestamp().getTime()) {
+            if (intervalLength > 0 && lastValidatedTimeServer != null && (lastValidatedTimeServer.getTime() + intervalLength * 2) < getCurrentTimestamp().getTime()) {
                 getLogger().info("cache not uptodate. Refreshing first.");
                 return refreshAsync().thenApply((dummy)->true);
             } else {
@@ -768,7 +746,7 @@ public class RemoteOperator
         });
     }
 
-    private Map<Allocatable, Collection<Appointment>> processReservationResult(AppointmentMap appointmentMap, ClassificationFilter[] filters)
+    private AppointmentMapping processReservationResult(AppointmentMap appointmentMap, ClassificationFilter[] filters)
             throws RaplaException {
         RaplaLock.ReadLock lock = lockManager.readLock(getClass(), "processReservationResult");
         try {
@@ -941,7 +919,7 @@ public class RemoteOperator
     }
 
     @Override
-    public Promise<Map<Allocatable, Collection<Appointment>>> getFirstAllocatableBindings(final Collection<Allocatable> allocatables,
+    public Promise<Map<ReferenceInfo<Allocatable>, Collection<Appointment>>> getFirstAllocatableBindings(final Collection<Allocatable> allocatables,
                                                                                           Collection<Appointment> appointments, Collection<Reservation> ignoreList) {
         final RemoteStorage serv = getRemoteStorage();
         final String[] allocatableIds = getIdList(allocatables);
@@ -955,9 +933,9 @@ public class RemoteOperator
         }
         final Promise<BindingMap> bindingMapPromise = serv.getFirstAllocatableBindings(new AllocatableBindingsRequest(allocatableIds, appointmentList, reservationIds));
 
-        Promise<Map<Allocatable, Collection<Appointment>>> resultPromise = bindingMapPromise.thenApply((bindingMap) -> {
+        Promise<Map<ReferenceInfo<Allocatable>, Collection<Appointment>>> resultPromise = bindingMapPromise.thenApply((bindingMap) -> {
             Map<String, List<String>> resultMap = bindingMap.get();
-            HashMap<Allocatable, Collection<Appointment>> result = new HashMap<>();
+            HashMap<ReferenceInfo<Allocatable>, Collection<Appointment>> result = new HashMap<>();
             for (Allocatable alloc : allocatables) {
                 List<String> list = resultMap.get(alloc.getId());
                 if (list != null) {
@@ -968,7 +946,7 @@ public class RemoteOperator
                             appointmentBinding.add(e);
                         }
                     }
-                    result.put(alloc, appointmentBinding);
+                    result.put(alloc.getReference(), appointmentBinding);
                 }
             }
             return result;
@@ -977,7 +955,7 @@ public class RemoteOperator
     }
 
     @Override
-    public Promise<Map<Allocatable, Map<Appointment, Collection<Appointment>>>> getAllAllocatableBindings(final Collection<Allocatable> allocatables,
+    public Promise<Map<ReferenceInfo<Allocatable>, Map<Appointment, Collection<Appointment>>>> getAllAllocatableBindings(final Collection<Allocatable> allocatables,
                                                                                                           final Collection<Appointment> appointments, final Collection<Reservation> ignoreList) {
         final RemoteStorage serv = getRemoteStorage();
         final String[] allocatableIds = getIdList(allocatables);
@@ -987,7 +965,7 @@ public class RemoteOperator
         return listPromise.thenApply((serverResult) -> getMap(allocatables, appointments, ignoreList, serverResult));
     }
 
-    private Map<Allocatable, Map<Appointment, Collection<Appointment>>> getMap(Collection<Allocatable> allocatables, Collection<Appointment> appointments,
+    private Map<ReferenceInfo<Allocatable>, Map<Appointment, Collection<Appointment>>> getMap(Collection<Allocatable> allocatables, Collection<Appointment> appointments,
                                                                                Collection<Reservation> ignoreList, List<ReservationImpl> serverResult) throws RaplaException {
         testResolve(serverResult);
         setResolver(serverResult);
@@ -996,18 +974,14 @@ public class RemoteOperator
             allAppointments.addAll(reservation.getAppointmentList());
         }
 
-        Map<Allocatable, Map<Appointment, Collection<Appointment>>> result = new HashMap<>();
+        Map<ReferenceInfo<Allocatable>, Map<Appointment, Collection<Appointment>>> result = new HashMap<>();
         for (Allocatable alloc : allocatables) {
             final Set<ReferenceInfo<Allocatable>> dependent = cache.getDependent(Collections.singleton(alloc));
-            final Set<Allocatable> dependentAllocatables = new LinkedHashSet<>();
-            for (ReferenceInfo<Allocatable> referenceInfo : dependent) {
-                dependentAllocatables.add(cache.resolve(referenceInfo));
-            }
             Map<Appointment, Collection<Appointment>> appointmentBinding = new HashMap<>();
             for (Appointment appointment : appointments) {
                 final boolean onlyFirstConflictingAppointment = false;
                 Set<Appointment> allConflictingAppointments = new LinkedHashSet<>();
-                for (Allocatable dependentAlloc : dependentAllocatables) {
+                for (ReferenceInfo<Allocatable> dependentAlloc : dependent) {
                     SortedSet<Appointment> appointmentSet = getAppointments(dependentAlloc, allAppointments);
                     Set<Appointment> conflictingAppointments = AppointmentImpl
                             .getConflictingAppointments(appointmentSet, appointment, ignoreList, onlyFirstConflictingAppointment);
@@ -1016,7 +990,7 @@ public class RemoteOperator
                 }
                 appointmentBinding.put(appointment, allConflictingAppointments);
             }
-            result.put(alloc, appointmentBinding);
+            result.put(alloc.getReference(), appointmentBinding);
         }
         return result;
     }
@@ -1033,11 +1007,11 @@ public class RemoteOperator
         return nextAllocatableDate;
     }
 
-    static private SortedSet<Appointment> getAppointments(Allocatable alloc, SortedSet<Appointment> allAppointments) {
+    static private SortedSet<Appointment> getAppointments(ReferenceInfo<Allocatable> allocRef, SortedSet<Appointment> allAppointments) {
         SortedSet<Appointment> result = new TreeSet<>(new AppointmentStartComparator());
         for (Appointment appointment : allAppointments) {
-            Reservation reservation = appointment.getReservation();
-            if (reservation.hasAllocatedOn(alloc, appointment)) {
+            ReservationImpl reservation = (ReservationImpl)appointment.getReservation();
+            if (reservation.hasAllocatedOnRef(allocRef, appointment)) {
                 result.add(appointment);
             }
         }
@@ -1066,7 +1040,7 @@ public class RemoteOperator
 
     @Override
     public Promise<Allocatable> doMerge(Allocatable selectedObject, Set<ReferenceInfo<Allocatable>> allocatableIds, User user) {
-        String lastSyncedTime = getLastSyncedTime();
+        String lastSyncedTime = getLastValidatedTimeServer();
         List<String> allocIds = new ArrayList<>(allocatableIds.size());
         for (ReferenceInfo<Allocatable> allocId : allocatableIds) {
             allocIds.add(allocId.getId());

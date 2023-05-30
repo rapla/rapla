@@ -256,7 +256,7 @@ final public class DynamicTypeImpl extends SimpleEntity implements DynamicType, 
 
     public ClassificationFilter newClassificationFilter() {
     	if ( !isReadOnly()) {
-    		throw new IllegalStateException("You can only createInfoDialog ClassificationFilters from a persistant Version of DynamicType");
+    		throw new IllegalStateException("You can only create ClassificationFilters from a persistant Version of DynamicType");
     	}
         return newClassificationFilterWithoutCheck();
     }

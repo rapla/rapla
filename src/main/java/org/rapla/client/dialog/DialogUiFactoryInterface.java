@@ -2,6 +2,7 @@ package org.rapla.client.dialog;
 
 import org.rapla.client.PopupContext;
 import org.rapla.client.RaplaWidget;
+import org.rapla.scheduler.Promise;
 import org.rapla.storage.RaplaNewVersionException;
 import org.rapla.storage.RaplaSecurityException;
 import org.rapla.storage.dbrm.RaplaConnectException;
@@ -19,10 +20,10 @@ public interface  DialogUiFactoryInterface
     /** Creates a new ErrorDialog with the specified owner and displays the exception
     @param ex the exception that should be displayed.
     */
-    Void showException(Throwable ex, PopupContext popupContext);
+    Promise<Void> showException(Throwable ex, PopupContext popupContext);
 
     /** Creates a new ErrorDialog with the specified owner and displays the waring */
-    Void showWarning(String warning, PopupContext popupContext);
+    Promise<Void> showWarning(String warning, PopupContext popupContext);
     
     class Util
     {

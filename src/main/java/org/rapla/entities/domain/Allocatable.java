@@ -13,19 +13,21 @@
 package org.rapla.entities.domain;
 
 import org.rapla.components.util.TimeInterval;
-import org.rapla.entities.Annotatable;
-import org.rapla.entities.Named;
-import org.rapla.entities.Ownable;
-import org.rapla.entities.Timestamp;
-import org.rapla.entities.User;
+import org.rapla.entities.*;
 import org.rapla.entities.dynamictype.Classifiable;
 
+import java.util.Collection;
 import java.util.Date;
+import java.util.List;
 
 /** Objects that implement allocatable can be allocated by reservations.
     @see Reservation
  */
 public interface Allocatable extends EntityPermissionContainer<Allocatable>,Named,Classifiable,Ownable,Timestamp, Annotatable {
+
+    static <T extends Entity> boolean isAllocatablesOnly(Collection<T> list) {
+        return list.stream().allMatch(entity -> entity.getTypeClass() == Allocatable.class);
+    }
 
     /** Conflicts for this allocatable should be ignored, if this flag is enabled.
      * @deprecated use getAnnotation(IGNORE_CONFLICTS) instead*/
@@ -44,6 +46,7 @@ public interface Allocatable extends EntityPermissionContainer<Allocatable>,Name
     /** same as  DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_PERSON.equals(allocatable.getType().getAnnotation(DynamicTypeAnnotations.KEY_CLASSIFICATION_TYPE))
      */
     boolean isPerson();
+
 }
 
 

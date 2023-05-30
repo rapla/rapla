@@ -11,7 +11,7 @@ rem You shall use it only in accordance with the terms of the
 rem license agreement you entered into with Tanuki Software.
 rem http://wrapper.tanukisoftware.com/doc/english/licenseOverview.html
 rem
-rem Java Service Wrapper script - Start as an NT service.
+rem Java Service Wrapper setup script.
 rem
 
 rem -----------------------------------------------------------------------------
@@ -137,7 +137,7 @@ if not [%1]==[] (
     goto preexitpause
 )
 
-%_WRAPPER_EXE% -t %_WRAPPER_CONF%
+%_WRAPPER_EXE% -su %_WRAPPER_CONF%
 
 if not errorlevel 1 goto :eof
 

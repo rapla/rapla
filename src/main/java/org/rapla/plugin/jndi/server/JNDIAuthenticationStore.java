@@ -69,6 +69,7 @@ import org.rapla.framework.Configuration;
 import org.rapla.framework.DefaultConfiguration;
 import org.rapla.framework.Disposable;
 import org.rapla.framework.RaplaException;
+import org.rapla.inject.Extension;
 import org.rapla.logger.ConsoleLogger;
 import org.rapla.logger.Logger;
 import org.rapla.plugin.jndi.JNDIPlugin;
@@ -76,6 +77,8 @@ import org.rapla.plugin.jndi.internal.JNDIConf;
 import org.rapla.server.AuthenticationStore;
 import org.rapla.storage.RaplaSecurityException;
 
+import javax.inject.Inject;
+import javax.inject.Singleton;
 import javax.naming.CommunicationException;
 import javax.naming.Context;
 import javax.naming.Name;
@@ -134,6 +137,9 @@ import java.util.TreeMap;
  */
 
 
+
+@Extension(id = "org.rapla.jndi.server.auth", provides = AuthenticationStore.class)
+@Singleton
 public class JNDIAuthenticationStore implements AuthenticationStore,Disposable,JNDIConf {
     // ----------------------------------------------------- Instance Variables
 
@@ -212,6 +218,7 @@ public class JNDIAuthenticationStore implements AuthenticationStore,Disposable,J
     
 
 
+    private boolean enabled = false;
     /**
      * The MessageFormat object associated with the current
      * <code>userSearch</code>.
@@ -227,6 +234,9 @@ public class JNDIAuthenticationStore implements AuthenticationStore,Disposable,J
     Logger logger;
     RaplaFacade facade;
     
+
+
+    @Inject
     public JNDIAuthenticationStore(RaplaFacade facade,Logger logger) throws RaplaException {
         this.logger = logger.getChildLogger("ldap");
         this.facade = facade;
@@ -249,9 +259,13 @@ public class JNDIAuthenticationStore implements AuthenticationStore,Disposable,J
 
     public boolean isEnabled()
     {
-        return false;
+        return enabled;
     }
-    
+
+    public void setEnabled(boolean enabled) {
+        this.enabled = enabled;
+    }
+
     public void initWithConfig(Configuration config) throws RaplaException
     {
         Map<String,String> map = generateMap(config);
@@ -261,7 +275,7 @@ public class JNDIAuthenticationStore implements AuthenticationStore,Disposable,J
     public JNDIAuthenticationStore() {
         this.logger = new ConsoleLogger();
     }
-    
+
     private JNDIAuthenticationStore(Map<String,String> config, Logger logger) throws RaplaException
     {
         this.logger = logger.getChildLogger("ldap");
@@ -289,6 +303,11 @@ public class JNDIAuthenticationStore implements AuthenticationStore,Disposable,J
     }
 
     private void initWithMap(Map<String,String> config) throws RaplaException {
+        Boolean enabled = Boolean.valueOf(getAttribute(config, ENABLED, "false"));
+        setEnabled(enabled);
+        if (!enabled) {
+            return;
+        }
         try {
             setDigest( getAttribute( config,DIGEST, null ) );
         } catch (NoSuchAlgorithmException e) {

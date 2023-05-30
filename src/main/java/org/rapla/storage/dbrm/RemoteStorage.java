@@ -1,5 +1,5 @@
 /*--------------------------------------------------------------------------*
- | Copyright (C) 2006 ?, Christopher Kohlhaas                               |
+ | Copyright (C) 2023    Christopher Kohlhaas                               |
  |                                                                          |
  | This program is free software; you can redistribute it and/or modify     |
  | it under the terms of the GNU General Public License as published by the |
@@ -109,17 +109,17 @@ public interface RemoteStorage
 
     class QueryAppointments
     {
-        private String[] userIds;
+        private String[] ownerIds;
         private String[] resources;
         private Date start;
         private Date end;
         private Map<String, String> annotations;
 
-        public QueryAppointments(String[] userIds,String[] resources, Date start, Date end, Map<String, String> annotations)
+        public QueryAppointments(String[] ownerIds, String[] resources, Date start, Date end, Map<String, String> annotations)
         {
             super();
             this.resources = resources;
-            this.userIds = userIds;
+            this.ownerIds = ownerIds;
             this.start = start;
             this.end = end;
             this.annotations = annotations;
@@ -130,8 +130,8 @@ public interface RemoteStorage
         }
 
 
-        public String[] getUserIds() {
-            return userIds;
+        public String[] getOwnerIds() {
+            return ownerIds;
         }
         public String[] getResources()
         {
@@ -169,12 +169,12 @@ public interface RemoteStorage
     @POST
     @Path("refreshSync")
     @Produces({ MediaType.APPLICATION_JSON, MediaType.APPLICATION_XML })
-    UpdateEvent refreshSync(@QueryParam("lastSynched") String lastSyncedTime) throws RaplaException;
+    UpdateEvent refreshSync(@QueryParam("lastValidated") String lastSyncedTime) throws RaplaException;
 
     @POST
     @Path("refresh")
     @Produces({ MediaType.APPLICATION_JSON, MediaType.APPLICATION_XML })
-    Promise<UpdateEvent> refresh(@QueryParam("lastSynched") String lastSyncedTime);
+    Promise<UpdateEvent> refresh(@QueryParam("lastValidated") String lastValidated);
 
     @POST
     @Path("restart")
