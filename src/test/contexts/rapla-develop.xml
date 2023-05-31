@@ -47,23 +47,22 @@ detected.
         <Arg>jdbc/rapladb</Arg>
     	<Arg>
 		<!--  HSQLDB is provided with the jetty bundled with rapla	-->
-       <New class="org.hsqldb.jdbc.JDBCDataSource">
-         <Set name="Url">jdbc:hsqldb:data/rapla-hsqldb</Set>
-         <Set name="User">db_user</Set>
-         <Set name="Password">your_pwd</Set>
-	   </New>
-        <!--
-        -->
+           <New class="org.hsqldb.jdbc.JDBCDataSource">
+             <Set name="Url">jdbc:hsqldb:data/rapla-hsqldb</Set>
+             <Set name="User">db_user</Set>
+             <Set name="Password">your_pwd</Set>
+           </New>
+            <!--
+          -->
 
   <!-- Mysql Database -->
-  <!--
-	   <New class="com.mysql.jdbc.jdbc2.optional.MysqlConnectionPoolDataSource">
-         <Set name="Url">jdbc:mysql://localhost/your_db_name</Set>
-         <Set name="User">db_user</Set>
-         <Set name="Password">your_pwd</Set>
-	   </New>
-  -->
-	   
+            <!--
+            <New class="com.mysql.cj.jdbc.MysqlDataSource">
+                <Set name="Url">jdbc:mysql://localhost/rapla</Set>
+                <Set name="User">db_user</Set>
+                <Set name="Password">your_pwd</Set>
+            </New>
+            -->
    <!-- Postgres database-->
    <!--   
 	   <New class="org.postgresql.ds.PGPoolingDataSource">
@@ -90,9 +89,9 @@ detected.
 
  <New class="org.eclipse.jetty.plus.jndi.EnvEntry">
     <Arg></Arg>
-	<Arg>rapladatasource</Arg>
+	<Arg>rapladatafile</Arg>
 	<!--  change to jdbc/rapladb,raplafile if you want to use a database as datasource -->
-        <Arg type="java.lang.String">raplafile</Arg>
+        <Arg type="java.lang.String">rapladb</Arg>
      <!--
      <Arg type="java.lang.String">jdbc/rapladb,raplafile</Arg>
 -->

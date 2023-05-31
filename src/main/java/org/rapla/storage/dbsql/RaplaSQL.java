@@ -1495,7 +1495,7 @@ class AttributeValueStorage<T extends Entity<T>> extends EntityStorage<T> implem
             throws RaplaException
     {
         super(context, tablename,
-                new String[] { foreignKeyName + " VARCHAR(255) NOT NULL KEY", "ATTRIBUTE_KEY VARCHAR(255)", "ATTRIBUTE_VALUE VARCHAR(20000)" });
+                new String[] { foreignKeyName + " VARCHAR(255) NOT NULL KEY", "ATTRIBUTE_KEY VARCHAR(255)", "ATTRIBUTE_VALUE VARCHAR(15000)" });
         this.foreignKeyName = foreignKeyName;
         this.classificationMap = classificationMap;
         this.annotableMap = annotableMap;
