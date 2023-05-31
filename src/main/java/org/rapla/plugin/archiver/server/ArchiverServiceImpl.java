@@ -128,7 +128,8 @@ public class ArchiverServiceImpl  implements ArchiverService
     static public void delete(Integer removeOlderInDays, RaplaFacade raplaFacade, Logger logger) throws RaplaException
     {
         Date endDate = new Date(raplaFacade.today().getTime() - removeOlderInDays * DateTools.MILLISECONDS_PER_DAY);
-        Promise<Collection<Reservation>> eventsPromise = raplaFacade.getReservations(null, null, endDate, null); 
+        User[] owners = raplaFacade.getUsers();
+        Promise<Collection<Reservation>> eventsPromise = raplaFacade.getReservationsAsync(null, null,owners,null, endDate, null);
         eventsPromise.thenAccept((events) ->
         {
             List<Reservation> toRemove = new ArrayList<>();
