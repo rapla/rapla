@@ -37,13 +37,10 @@ import org.rapla.facade.ModificationEvent;
 import org.rapla.facade.RaplaComponent;
 import org.rapla.facade.RaplaFacade;
 import org.rapla.facade.client.ClientFacade;
+import org.rapla.facade.internal.CalendarOptionsImpl;
 import org.rapla.framework.RaplaException;
 import org.rapla.inject.Extension;
-import org.rapla.scheduler.CommandScheduler;
-import org.rapla.scheduler.Observable;
-import org.rapla.scheduler.Promise;
-import org.rapla.scheduler.ResolvedPromise;
-import org.rapla.scheduler.Subject;
+import org.rapla.scheduler.*;
 
 import javax.inject.Inject;
 import javax.inject.Provider;
@@ -451,7 +448,19 @@ public class EditTaskPresenter implements TaskPresenter
 
     private Promise<Void> processStop(PopupContext popupContext)
     {
-            DialogInterface dlg = dialogUiFactory.createTextDialog(popupContext, i18n.getString("confirm-close.title"), i18n.getString("confirm-close.question"),
+        final Preferences preferences;
+        try {
+            final User user = clientFacade.getUser();
+            preferences = raplaFacade.getPreferences(user);
+            boolean config = preferences.getEntryAsBoolean( CalendarOptionsImpl.SHOW_ABORT_EDIT_WARNING, true);
+            if (!config) {
+                return ResolvedPromise.VOID_PROMISE;
+            }
+        } catch (RaplaException e) {
+
+        }
+
+        DialogInterface dlg = dialogUiFactory.createTextDialog(popupContext, i18n.getString("warning.confirm-abort"), i18n.getString("confirm-close.question"),
                     new String[] { i18n.getString("confirm-close.ok"), i18n.getString("back") });
             dlg.setIcon(i18n.getIcon("icon.question"));
             dlg.setDefault(1);
