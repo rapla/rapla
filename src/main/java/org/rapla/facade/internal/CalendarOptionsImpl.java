@@ -37,6 +37,7 @@ public class CalendarOptionsImpl implements CalendarOptions {
     public final static TypedComponentRole<Boolean> SHOW_HOLIDAY_WARNING = new TypedComponentRole<>("org.rapla.holiday.showWarning");
     public final static TypedComponentRole<Boolean> SHOW_HOLIDAY_WARNING_SINGLE_APPOINTMENT = new TypedComponentRole<>("org.rapla.holiday.showWarningSingle");
     public final static TypedComponentRole<Boolean> SHOW_NOT_IN_CALENDAR_WARNING = new TypedComponentRole<>("org.rapla.calendar.showNotInCalendarWarning");
+    public final static TypedComponentRole<Boolean> SHOW_ABORT_EDIT_WARNING = new TypedComponentRole<>("org.rapla.abortEditWarning");
 
     public static final String WORKTIME = "worktime";
     public static final String EXCLUDE_DAYS = "exclude-days";
@@ -69,18 +70,18 @@ public class CalendarOptionsImpl implements CalendarOptions {
   
     Set<Integer> excludeDays = new LinkedHashSet<>();
 
-    int maxtimeMinutes = -1;
-    int mintimeMinutes = -1;
-    int rowsPerHour = 4;
+    final int maxtimeMinutes;
+    final int mintimeMinutes;
+    final int rowsPerHour;
     boolean exceptionsVisible;
     boolean compactColumns = false;  // use for strategy.setFixedSlotsEnabled
-    Configuration config;
-    String colorField;
-    boolean nonFilteredEventsVisible = false;
+    final Configuration config;
+    final String colorField;
+    final boolean nonFilteredEventsVisible;
    
-    int daysInWeekview;
-	int firstDayOfWeek;
-	private int minBlockWidth;
+    final int daysInWeekview;
+	final int firstDayOfWeek;
+	final private int minBlockWidth;
 
     @Inject
 	public CalendarOptionsImpl() throws RaplaInitializationException {
@@ -103,6 +104,7 @@ public class CalendarOptionsImpl implements CalendarOptions {
     		else
     		{
     			mintimeMinutes = parseMinutes( worktimesString);
+                maxtimeMinutes = -1;
     		}
         } catch ( NumberFormatException e ) {
             throw new RaplaInitializationException( "Invalid time in " + worktime  + ". use the following format : 8-18 or 8:30-18:00!");
@@ -117,7 +119,7 @@ public class CalendarOptionsImpl implements CalendarOptions {
 		    {
 		        String normalizedToken = token.toLowerCase().trim();
 		        try {
-		            excludeDays.add( new Integer(normalizedToken) );
+		            excludeDays.add( Integer.valueOf(normalizedToken) );
 		        } catch ( NumberFormatException e ) {
 		            throw new RaplaInitializationException("Invalid day in " + excludeDays  + ". only numbers are allowed!");
 		        }
@@ -178,11 +180,6 @@ public class CalendarOptionsImpl implements CalendarOptions {
         return nonFilteredEventsVisible;
     }
 
-    public void setNonFilteredEventsVisible(boolean nonFilteredEventsVisible)
-    {
-        this.nonFilteredEventsVisible = nonFilteredEventsVisible;
-    }
-    
     public boolean isExceptionsVisible() {
         return exceptionsVisible;
     }

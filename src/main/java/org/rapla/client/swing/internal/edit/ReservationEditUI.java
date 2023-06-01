@@ -1,5 +1,5 @@
 /*--------------------------------------------------------------------------*
- | Copyright (C) 2014 Christopher Kohlhaas                                  |
+ | Copyright (C) 2023 Christopher Kohlhaas                                  |
  |                                                                          |
  | This program is free software; you can redistribute it and/or modify     |
  | it under the terms of the GNU General Public License as published by the |
@@ -13,28 +13,15 @@
 package org.rapla.client.swing.internal.edit;
 
 import org.rapla.RaplaResources;
-import org.rapla.client.dialog.DialogUiFactoryInterface;
-import org.rapla.client.dialog.InfoFactory;
-import org.rapla.client.menu.MenuFactory;
 import org.rapla.client.swing.EditComponent;
-import org.rapla.client.swing.EditField;
-import org.rapla.client.TreeFactory;
-import org.rapla.client.swing.internal.FilterEditButton.FilterEditButtonFactory;
-import org.rapla.client.swing.internal.MultiCalendarPresenter;
-import org.rapla.client.swing.internal.edit.fields.BooleanField.BooleanFieldFactory;
 import org.rapla.client.swing.internal.edit.fields.ClassificationField;
 import org.rapla.client.swing.internal.edit.fields.ClassificationField.ClassificationFieldFactory;
-import org.rapla.client.swing.internal.edit.fields.DateField.DateFieldFactory;
-import org.rapla.client.swing.internal.edit.fields.EditFieldLayout;
-import org.rapla.client.swing.internal.edit.fields.EditFieldWithLayout;
 import org.rapla.client.swing.internal.edit.fields.PermissionListField;
 import org.rapla.client.swing.internal.edit.fields.PermissionListField.PermissionListFieldFactory;
 import org.rapla.client.swing.internal.edit.reservation.AllocatableSelection;
 import org.rapla.components.util.undo.CommandHistory;
-import org.rapla.entities.domain.AppointmentFormater;
 import org.rapla.entities.domain.Permission;
 import org.rapla.entities.domain.Reservation;
-import org.rapla.facade.CalendarSelectionModel;
 import org.rapla.facade.RaplaFacade;
 import org.rapla.facade.client.ClientFacade;
 import org.rapla.framework.RaplaException;
@@ -45,9 +32,7 @@ import org.rapla.logger.Logger;
 import org.rapla.storage.PermissionController;
 
 import javax.inject.Inject;
-import javax.inject.Provider;
 import javax.swing.JComponent;
-import javax.swing.event.ChangeListener;
 import java.awt.BorderLayout;
 import java.awt.Dimension;
 import java.util.Collection;
@@ -107,41 +92,6 @@ public class ReservationEditUI  extends AbstractEditUI<Reservation>  {
             }
         });
         editPanel.setPreferredSize( new Dimension(800,600));
-        
-    }
-    
-    class AllocatableField implements EditField,EditFieldWithLayout
-    {
-
-        @Override
-        public JComponent getComponent() {
-            return allocatableSelection.getComponent();
-        }
-
-        @Override
-        public String getFieldName() {
-            return "";
-        }
-
-        @Override
-        public void addChangeListener(ChangeListener listener) {
-            
-        }
-
-        @Override
-        public void removeChangeListener(ChangeListener listener) {
-        }
-
-        EditFieldLayout layout = new EditFieldLayout();
-        {
-            layout.setBlock(true);
-            layout.setVariableSized(false);
-        }
-        
-        @Override
-        public EditFieldLayout getLayout() {
-            return layout;
-        }
         
     }
 

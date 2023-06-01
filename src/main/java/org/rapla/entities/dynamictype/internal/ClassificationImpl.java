@@ -69,7 +69,11 @@ public class ClassificationImpl implements Classification,DynamicTypeDependant, 
     class TextCache
     {
         String nameString;
+        Locale lastLocale;
+
         ParsedText lastParsedAnnotation;
+
+
         public String getName(Locale locale, String keyNameFormat) {
     		DynamicTypeImpl type = getType();
     		ParsedText parsedAnnotation = type.getParsedAnnotation( keyNameFormat );
@@ -79,9 +83,10 @@ public class ClassificationImpl implements Classification,DynamicTypeDependant, 
 
             if (nameString != null)
             {
-                if (parsedAnnotation.equals(lastParsedAnnotation))
+                if (parsedAnnotation.equals(lastParsedAnnotation) && (this.lastLocale == locale || locale!=null && locale.equals(this.lastLocale) ))
                     return nameString;
             }
+            lastLocale = locale;
             lastParsedAnnotation =  parsedAnnotation;
             nameString = format(locale, keyNameFormat);
             return nameString;
@@ -573,7 +578,8 @@ public class ClassificationImpl implements Classification,DynamicTypeDependant, 
                      first = false;
                  }
                  String key = attribute.getKey();
-                 String valueAsString = getValueAsString(attribute, null);
+                 List<String> strings = data.get(key);
+                 String valueAsString =  strings != null ? strings.toString() : null;
                  builder.append(key);
                  builder.append(':');
                  builder.append(valueAsString);
