@@ -769,8 +769,15 @@ public abstract class AbstractCachableOperator implements StorageOperator
             } else {
                 prefix = "unkown type";
             }
-            throw new EntityNotFoundException(prefix + " with id " + id + " not found for " + obj);
+            if ( isEntityNotFoundWarningFor( reference)) {
+                throw new EntityNotFoundException(prefix + " with id " + id + " not found for " + obj);
+            }
         }
+    }
+
+    /** override if you want to ignore certain reference eg for users on client*/
+    protected boolean isEntityNotFoundWarningFor(ReferenceInfo reference) {
+        return true;
     }
 
     protected String getName(Object object)

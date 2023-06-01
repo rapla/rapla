@@ -384,19 +384,16 @@ public class RemoteOperator
     }
 
     @Override
-    protected void testResolve(EntityResolver resolver, EntityReferencer obj, ReferenceInfo reference) throws EntityNotFoundException {
-        try {
-            super.testResolve(resolver, obj, reference);
-        } catch ( EntityNotFoundException ex ) {
-            Class<? extends Entity> class1 = reference.getType();
-            String id = reference.getId();
-            if ((class1 == User.class && !(userId == null || userId.equals(id)))) {
-                // We ignore user not found expecptions if its not the current useradmin
-                return;
-            }
-            throw ex;
+    protected boolean isEntityNotFoundWarningFor(ReferenceInfo reference) {
+        Class<? extends Entity> class1 = reference.getType();
+        String id = reference.getId();
+        if ((class1 == User.class && !(userId == null || userId.equals(id)))) {
+            // We ignore user not found expecptions if its not the current useradmin
+            return false;
         }
+        return true;
     }
+
 
     private User loadData() throws RaplaException {
         RemoteStorage serv = getRemoteStorage();
@@ -713,8 +710,7 @@ public class RemoteOperator
     public Promise<AppointmentMapping> queryAppointments(User user, Collection<Allocatable> allocatables, Collection<User> owners, Date start, Date end,
                                                              final ClassificationFilter[] filters, Map<String, String> annotationQuery) {
         final RemoteStorage serv = getRemoteStorage();
-        Promise<AppointmentMapping> result = refreshIfIdle().thenCompose((refreshed) -> {
-            String[] allocatableId = getIdList(allocatables);
+        Promise<AppointmentMapping> result = refreshIfIdle().thenCompose((refreshed) -> {String[] allocatableId = getIdList(allocatables);
             String[] ownerIds = getIdList( owners);
             return serv.queryAppointments(new QueryAppointments(ownerIds,allocatableId, start, end, annotationQuery)).thenApply(list -> {
                 AppointmentMapping filtered;
