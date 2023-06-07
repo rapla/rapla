@@ -28,6 +28,7 @@ import org.rapla.entities.storage.EntityReferencer;
 import org.rapla.entities.storage.EntityResolver;
 import org.rapla.entities.storage.ReferenceInfo;
 import org.rapla.entities.storage.UnresolvableReferenceExcpetion;
+import org.rapla.entities.storage.internal.ReferenceHandler;
 import org.rapla.framework.RaplaException;
 
 import java.util.ArrayList;
@@ -493,7 +494,13 @@ public class ClassificationImpl implements Classification,DynamicTypeDependant, 
         Class<? extends Entity> refType = attribute.getRefType();
         if (refType != null)
         {
-            Entity resolved = resolver.resolve( value, refType );
+            if ( value ==null) {
+                return null;
+            }
+            Entity resolved = resolver.tryResolve( value, refType );
+            if ( resolved == null ) {
+                resolved = ReferenceHandler.tryResolveMissingAllocatable(resolver, value, refType);
+            }
             return resolved;
         }
         try
