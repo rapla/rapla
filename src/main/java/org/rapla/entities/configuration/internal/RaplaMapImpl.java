@@ -537,7 +537,8 @@ public class RaplaMapImpl implements EntityReferencer, DynamicTypeDependant, Rap
             List<Entity> result = new ArrayList<>();
             for (Map.Entry<String, Object> entry : entrySet())
             {
-                result.add((Entity) entry.getValue());
+                Entity value = (Entity) entry.getValue();
+                result.add(value);
             }
             //    		Iterable<String> values = links.getReferencedIds();
             //    		for (String id: values)
@@ -640,6 +641,9 @@ public class RaplaMapImpl implements EntityReferencer, DynamicTypeDependant, Rap
             }
             final Class<? extends Entity> linkClass = links.getLinkClass();
             Entity resolve = resolver.tryResolve(id, linkClass);
+            if ( resolve == null) {
+                resolve = ReferenceHandler.tryResolveMissingAllocatable( resolver, id, linkClass);
+            }
             return resolve;
         }
 
