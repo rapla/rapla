@@ -168,7 +168,7 @@ public class RaplaJNLPPageGenerator
         }
         response.setContentType("application/x-java-jnlp-file;charset=utf-8");
         out.println("<?xml version=\"1.0\" encoding=\"UTF-8\"?>");
-        out.println("<jnlp spec=\"1.0+\" codebase=\"" + getCodebase(request) + "\" href=\"" + getCodebase(request) + "rapla/raplaclient.jnlp\" >");
+        out.println("<jnlp spec=\"6.0+\" codebase=\"" + getCodebase(request) + "\" href=\"" + getCodebase(request) + "rapla/raplaclient.jnlp\" >");
         out.println("<information>");
         out.println(" <title>" + menuName + "</title>");
         out.println(" <vendor>Rapla team</vendor>");
@@ -179,10 +179,8 @@ public class RaplaJNLPPageGenerator
         //out.println(" <icon kind=\"default\" href=\"" + webstartRoot + "/webclient/rapla_64x64.png\" width=\"64\" height=\"64\"/> ");
         //out.println(" <icon kind=\"desktop\" href=\"" + webstartRoot + "/webclient/rapla_128x128.png\" width=\"128\" height=\"128\"/> ");
         //out.println(" <icon kind=\"shortcut\" href=\"" + webstartRoot + "/webclient/rapla_64x64.png\" width=\"64\" height=\"64\"/> ");
-        // and here aswell
-
-        out.println(" <icon kind=\"splash\" href=\"" + webstartRoot + "/webclient/logo.png\"/> ");
-        out.println(" <update check=\"always\" policy=\"always\"/>");
+        // and here aswell12
+        //out.println(" <icon kind=\"splash\" href=\"" + webstartRoot + "/webclient/logo.png\"/> ");
         if (createShortcut)
         {
             out.println(" <shortcut online=\"true\">");
@@ -191,6 +189,7 @@ public class RaplaJNLPPageGenerator
             out.println(" </shortcut>");
         }
         out.println("</information>");
+        out.println("<update check=\"always\" policy=\"always\"/>");
         out.println("<security>");
         out.println("  <all-permissions/>");
         out.println("</security>");
@@ -224,7 +223,6 @@ public class RaplaJNLPPageGenerator
             out.println("  <argument>" + it.next() + "</argument> ");
         }
         out.println("</application-desc>");
-
         out.println("</jnlp>");
         out.close();
     }
