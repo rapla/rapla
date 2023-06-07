@@ -58,16 +58,7 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
+import java.util.*;
 import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
 
@@ -104,7 +95,7 @@ public class TemplateEdit extends RaplaGUIComponent
             protected void mapFromObjects() throws RaplaException
             {
                 super.mapFromObjects();
-                permissionListField.setPermissionLevels(Permission.READ, Permission.EDIT);
+                permissionListField.setPermissionLevels(Permission.READ, Permission.EDIT, Permission.ADMIN);
                 classificationField.setScrollingAlwaysEnabled(false);
                 for (Allocatable allocatable:objectList)
                 {
@@ -193,7 +184,8 @@ public class TemplateEdit extends RaplaGUIComponent
 
             }
         );
-        final ReferenceInfo<User> currentUser = getCurrentUserId();
+        final ReferenceInfo<User> currentUserId = getCurrentUserId();
+
         templateList.getList().setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
         templateList.getList().setCellRenderer(new DefaultListCellRenderer()
         {
@@ -202,13 +194,13 @@ public class TemplateEdit extends RaplaGUIComponent
             {
                 if (value instanceof Allocatable)
                 {
-                    final Allocatable value1 = (Allocatable) value;
-                    final ReferenceInfo<User> ownerRef = value1.getOwnerRef();
-                    value = value1.getName(getRaplaLocale().getLocale());
-                    if (ownerRef != null && !ownerRef.equals(currentUser))
+                    final Allocatable allocatable = (Allocatable) value;
+                    final ReferenceInfo<User> ownerRef = allocatable.getOwnerRef();
+                    value = allocatable.getName(getRaplaLocale().getLocale());
+                    if (ownerRef != null && !ownerRef.equals(currentUserId))
                     {
                         String username = getUsername(ownerRef);
-                        value+=  " ["  + username  + "]" ;
+                        value+=  " ["  + username  + "]";
                     }
                 }
                 return super.getListCellRendererComponent(list, value, index, isSelected, cellHasFocus);
@@ -574,36 +566,30 @@ public class TemplateEdit extends RaplaGUIComponent
             items.add(template);
         }
         User user = getUser();
+        ReferenceInfo<User> currentUserId = getCurrentUserId();
+
         Comparator comp = new NamedComparator(getLocale())
         {
-            Permission.AccessLevel getLevel( Allocatable allocatable)
-            {
-                if ( allocatable == null)
-                {
-                    return Permission.AccessLevel.DENIED;
-                }
-                if ( permissionController.canAdmin( allocatable, user))
-                {
-                    return Permission.AccessLevel.ADMIN;
-                }
-                else if (permissionController.canModify( allocatable, user))
-                {
-                    return Permission.AccessLevel.EDIT;
-                }
-                else
-                {
-                    return Permission.AccessLevel.READ;
-                }
-            }
             @Override
             public int compare(Named o1, Named o2)
             {
-                Permission.AccessLevel accessLevel = getLevel((Allocatable) o1);
-                Permission.AccessLevel accessLevel2 = getLevel((Allocatable) o2);
+                Allocatable alloc1 = (Allocatable) o1;
+                Allocatable alloc2 = (Allocatable) o2;
+                boolean ownerOfAlloc1 = Objects.equals(currentUserId,alloc1.getOwnerRef());
+                boolean ownerOfAlloc2 = Objects.equals(currentUserId,alloc2.getOwnerRef());
+                if (ownerOfAlloc1 && !ownerOfAlloc2) {
+                    return -1;
+                }
+                if (ownerOfAlloc2 && !ownerOfAlloc1) {
+                    return 1;
+                }
+                Permission.AccessLevel accessLevel = getLevel(alloc1, user);
+                Permission.AccessLevel accessLevel2 = getLevel(alloc2, user);
                 final int compare = accessLevel.compareTo(accessLevel2);
                 if ( compare != 0)
                 {
-                    return compare;
+                    // Admin permissions have the highest order
+                    return -compare;
                 }
                 return super.compare(o1, o2);
             }
@@ -623,6 +609,26 @@ public class TemplateEdit extends RaplaGUIComponent
 
         }
 
+    }
+
+    private Permission.AccessLevel getLevel( Allocatable allocatable, User user)
+    {
+        if ( allocatable == null)
+        {
+            return Permission.AccessLevel.DENIED;
+        }
+        if ( permissionController.canAdmin( allocatable, user))
+        {
+            return Permission.AccessLevel.ADMIN;
+        }
+        else if (permissionController.canModify( allocatable, user))
+        {
+            return Permission.AccessLevel.EDIT;
+        }
+        else
+        {
+            return Permission.AccessLevel.READ;
+        }
     }
 
 }

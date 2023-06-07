@@ -180,7 +180,7 @@ public class AllocatableEditUI  extends AbstractEditUI<Allocatable>  {
         }
         else
         {
-            permissionListField.setPermissionLevels( Permission.DENIED,  Permission.READ );
+            permissionListField.setPermissionLevels( Permission.DENIED,  Permission.READ, Permission.EDIT, Permission.ADMIN );
         }
         if ( internal)
         {
