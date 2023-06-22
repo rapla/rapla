@@ -491,7 +491,8 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
                 {
                     final SortedSet<Appointment> appointments;
                     if (entity.getTypeClass()==User.class) {
-                        appointments = getAppointmentsForUser(((User) entity).getReference());
+                        ReferenceInfo<User> reference = ((User) entity).getReference();
+                        appointments = getAppointmentsForUser(reference);
                     } else {
                         appointments = getAppointments((Allocatable) entity);
                     }
@@ -2758,8 +2759,52 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
             Class<? extends Entity> type = x.getTypeClass();
             return (Category.class == type || DynamicType.class == type || Allocatable.class == type || User.class == type);
         }).map(Entity::getReference).collect(Collectors.toSet());
-        return getReferencingEntities(set, store);
+        Map<ReferenceInfo, Set<Entity>> referencingEntities = getReferencingEntities(set, store);
+        return referencingEntities;
     }
+
+    private void removeLastChangedReference(Collection<Entity> entityList, Map<ReferenceInfo, Set<Entity>> referencingEntities) {
+        for (Entity entity:entityList) {
+            Class<? extends Entity> type = entity.getTypeClass();
+            if ( type != User.class) {
+                continue;
+            }
+            ReferenceInfo<User> reference = entity.getReference();
+            Set<Entity> entities = referencingEntities.get(reference);
+            if ( entities == null) {
+                continue;
+            }
+            for (Iterator<Entity> it= entities.iterator();it.hasNext();){
+                Entity referencing = it.next();
+                if ( entityList.contains( referencing)) {
+                    it.remove();
+                    continue;
+                }
+                if (isOnlyLastChangedReference(reference, referencing)) {
+                    it.remove();
+                }
+            }
+        }
+    }
+
+    private static boolean isOnlyLastChangedReference(ReferenceInfo<User> reference, Entity referencing) {
+        SimpleEntity simpleEntity = (SimpleEntity) referencing;
+        ReferenceInfo<User> lastChangedBy = simpleEntity.getLastChangedBy();
+        int count = 0;
+        if ( reference.equals( lastChangedBy) && !reference.equals( simpleEntity.getOwnerRef())) {
+            Class<? extends Entity> typeOfReferencing = referencing.getTypeClass();
+            if (typeOfReferencing == Allocatable.class || typeOfReferencing == Reservation.class || typeOfReferencing == Category.class){
+                for (ReferenceInfo referenceInfo : simpleEntity.getReferenceInfo()) {
+                    if ( referenceInfo.equals(reference)) {
+                        count++;
+                    }
+                }
+            }
+        }
+        boolean isOnlyLastChanged = count == 1;
+        return isOnlyLastChanged;
+    }
+
 
     private Set<Entity> getReferencingEntities(Entity entity, EntityStore store)
     {
@@ -3302,8 +3347,11 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
             // First we add the dependencies from the stored object list
             for (Entity obj : storeObjects) {
                 if (obj instanceof EntityReferencer) {
-                    if (isRefering((EntityReferencer) obj, entity)) {
-                        dep.add(obj);
+                    EntityReferencer referencer = (EntityReferencer) obj;
+                    if (isRefering(referencer, entity)) {
+                        if (!isOnlyLastChangedReference(entity.getReference(),(Entity)referencer)) {
+                            dep.add(obj);
+                        }
                     }
                 }
             }
@@ -3320,7 +3368,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
         // we don't add the dependencies from the stored object list here,
         // because a dependency could be removed in a stored object
         Map<ReferenceInfo, Set<Entity>> dependencyMap = getDependencies(removeEntities, store);
-
+        removeLastChangedReference(removeEntities, dependencyMap);
         for (Entity entity : removeEntities) {
             Set<Entity> dependencies = dependencyMap.get(entity.getReference());
             if ( dependencies == null) {
@@ -3403,7 +3451,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
         }
         else if (obj instanceof Category)
         {
-            buf.append(getString("categorie"));
+            buf.append(getString("category"));
         }
         else if (obj instanceof Allocatable)
         {
