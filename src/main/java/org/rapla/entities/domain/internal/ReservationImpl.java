@@ -51,6 +51,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public final class ReservationImpl extends SimpleEntity implements Reservation, ModifiableTimestamp, DynamicTypeDependant, ParentEntity
@@ -622,21 +623,25 @@ public final class ReservationImpl extends SimpleEntity implements Reservation, 
     }
 
     public Allocatable[] getRestrictedAllocatables(Appointment appointment) {
-        HashSet<Allocatable> set = new HashSet<>();
-        for (String allocatableId: getIds("resources")) {
-            for (String restriction:getRestrictionPrivate( allocatableId ))
-            {
-            	if ( restriction.equals( appointment.getId() ) ) {
-            		Allocatable alloc = getResolver().tryResolve( allocatableId, Allocatable.class);
-            		if ( alloc == null)
-            		{
-            			throw new UnresolvableReferenceExcpetion( allocatableId, toString());
-            		}
-            		set.add( alloc );
-                }
-            }
+        Allocatable[] result = getRestrictedAllocatablesPrivate(appointment)
+                .map(this::resolveAllocatable)
+                .collect(Collectors.toSet())
+                .toArray(Allocatable.ALLOCATABLE_ARRAY);
+        return result;
+    }
+
+    private Allocatable resolveAllocatable(String allocatableId) {
+        Allocatable alloc = getResolver().tryResolve(allocatableId, Allocatable.class);
+        if (alloc == null) {
+            alloc = tryResolveMissingAllocatable(resolver,allocatableId, Allocatable.class);
         }
-        return set.toArray( Allocatable.ALLOCATABLE_ARRAY);
+        return alloc;
+    }
+
+    public Stream<String> getRestrictedAllocatablesPrivate(Appointment appointment) {
+        Assert.notNull( appointment );
+        Stream<String> restrictionIds = getIds("resources").stream().filter( id-> getRestrictionPrivate( id ).contains( appointment.getId() ));
+        return restrictionIds;
     }
 
     public Collection<ReferenceInfo<Allocatable>> getAllocatableIdsFor(Appointment appointment)

@@ -4021,11 +4021,12 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
     public UpdateResult getUpdateResult(Date since, User user) throws RaplaException
     {
         checkConnected();
-        // date when current history begins. history entries before that date can be deleted, so they should be ingnored her
+        // date when current history begins. history entries before that date can be deleted, so they should be ingnored here
         final Date historyValidStart = getHistoryValidStart();
         // check if we can use the history to return a result
-        if (since.before(historyValidStart))
+        if (since == null || since.before(historyValidStart))
         {
+            since = historyValidStart;
             // if not we tell the server what would be a valid history
             // 10 minutes
             final Date until = new Date(historyValidStart.getTime() + DateTools.MILLISECONDS_PER_MINUTE * 10);

@@ -437,7 +437,7 @@ import java.util.stream.Collectors;
         final User user = checkSessionUser();
         try
         {
-            Date clientRepoVersion = SerializableDateTimeFormat.INSTANCE.parseTimestamp(lastSyncedTime);
+            Date clientRepoVersion = lastSyncedTime != null ? SerializableDateTimeFormat.INSTANCE.parseTimestamp(lastSyncedTime) : null;
             UpdateEvent event = updateDataManager.createUpdateEvent(user, clientRepoVersion);
             return event;
         }
