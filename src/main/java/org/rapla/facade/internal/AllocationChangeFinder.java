@@ -25,6 +25,7 @@ import org.rapla.entities.dynamictype.Classification;
 import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.entities.storage.EntityResolver;
 import org.rapla.entities.storage.ReferenceInfo;
+import org.rapla.entities.storage.internal.ReferenceHandler;
 import org.rapla.facade.AllocationChangeEvent;
 import org.rapla.logger.Logger;
 import org.rapla.storage.StorageOperator;
@@ -133,20 +134,9 @@ public class AllocationChangeFinder
             Allocatable alloc = resolver.tryResolve(allocatableId);
             if (alloc == null)
             {
-                AllocatableImpl unresolved = new AllocatableImpl(null, null);
-                unresolved.setId(allocatableId.getId());
-                DynamicType dynamicType = resolver.getDynamicType(StorageOperator.UNRESOLVED_RESOURCE_TYPE);
-                if (dynamicType == null)
-                {// TODO log?
-                    continue;
-                }
-                Classification newClassification = dynamicType.newClassification();
-                unresolved.setClassification(newClassification);
+                alloc = ReferenceHandler.tryResolveMissingAllocatable( resolver, allocatableId.getId(), Allocatable.class );
             }
-            else
-            {
-                result.add(alloc);
-            }
+            result.add(alloc);
         }
         return result;
     }

@@ -167,7 +167,7 @@ final public class DynamicTypeImpl extends SimpleEntity implements DynamicType, 
     
     public Classification newClassification(boolean useDefaults) {
         if ( !isReadOnly()) {
-            throw new IllegalStateException("You can only createInfoDialog Classifications from a persistant Version of DynamicType");
+            throw new IllegalStateException("You can only create Classifications from a persistant Version of DynamicType");
         }
         return newClassificationWithoutCheck( useDefaults);
     }

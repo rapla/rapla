@@ -3295,16 +3295,6 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
                 continue;
             }
             Reservation reservation = (Reservation) entity;
-            final Allocatable[] allocatables;
-            try
-            {
-                allocatables= reservation.getAllocatables();
-            } catch (UnresolvableReferenceExcpetion ex)
-            {
-                reservations.add( reservation);
-                continue;
-            }
-
             if (reservation.getSortedAppointments().size() == 0 )
             {
                 reservations.add(reservation);
