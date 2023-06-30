@@ -235,7 +235,7 @@ public final class LoginDialog extends JFrame implements LocaleChangeListener
 		// ################## BEGIN FRAME ###################
 		
 		// these are the dimensions of the rapla picture
-		int picturewidth = 362;
+		int picturewidth = 372;
 		int pictureheight = 182;
 		// and a border around it
 		int border = 10;
