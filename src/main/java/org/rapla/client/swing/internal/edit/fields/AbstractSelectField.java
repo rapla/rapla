@@ -70,6 +70,8 @@ public abstract class AbstractSelectField<T> extends AbstractEditField implement
 
     private boolean useDefault = true;
     private boolean useNull = true;
+
+    boolean saveButtonEnabled = true;
     boolean multipleValues = false;
     boolean multipleSelectionPossible = false;
     private final TreeFactory treeFactory;
@@ -93,7 +95,7 @@ public abstract class AbstractSelectField<T> extends AbstractEditField implement
             public void setEnabled(boolean enabled)
             {
                 super.setEnabled(enabled);
-                selectButton.setEnabled(enabled);
+                saveButtonEnabled = enabled;
             }
         };
         useDefault = defaultValue != null;
@@ -294,35 +296,41 @@ public abstract class AbstractSelectField<T> extends AbstractEditField implement
         }
 
         final PopupContext popupContext = new SwingPopupContext(parent, null);
+        String[] options = saveButtonEnabled ? new String[] {i18n.getString("apply"), i18n.getString("cancel")} : new String[] {i18n.getString("cancel")};
         dialog = dialogUiFactory.createContentDialog(
                 popupContext
                                  ,
                 panel
-                                 ,new String[] { i18n.getString("apply"),i18n.getString("cancel")});
+                                 , options);
 
         final Collection<T> newValues = new LinkedHashSet<>();
-        tree.addMouseListener(new MouseAdapter() {
-            // End dialog when a leaf is double clicked
-            public void mousePressed(MouseEvent e) {
-                // we only add the double click when multiselect is not enabled
-                // because it will cause a deselect on double clicking an item
-                if ( multipleSelectionPossible)
-                {
-                    return;
-                }
-                TreePath selPath = tree.getPathForLocation(e.getX(), e.getY());
-                if (selPath != null && e.getClickCount() == 2) {
-                    DefaultMutableTreeNode node = (DefaultMutableTreeNode)selPath.getLastPathComponent();
-                    if (node.isLeaf()) {
-                        newValues.addAll(getValues(tree));
-                        dialog.getAction(0).execute();
+        if ( saveButtonEnabled ) {
+            tree.addMouseListener(new MouseAdapter() {
+                // End dialog when a leaf is double clicked
+                public void mousePressed(MouseEvent e) {
+                    // we only add the double click when multiselect is not enabled
+                    // because it will cause a deselect on double clicking an item
+                    if (multipleSelectionPossible) {
+                        return;
+                    }
+                    TreePath selPath = tree.getPathForLocation(e.getX(), e.getY());
+                    if (selPath != null && e.getClickCount() == 2) {
+                        DefaultMutableTreeNode node = (DefaultMutableTreeNode) selPath.getLastPathComponent();
+                        if (node.isLeaf()) {
+                            newValues.addAll(getValues(tree));
+                            dialog.getAction(0).execute();
+                        }
                     }
                 }
-            }
-        });
+            });
+        }
         dialog.setTitle(i18n.getString("select"));
         dialog.start(true).thenAccept(index->
                 {
+                    if ( !saveButtonEnabled )
+                    {
+                        return;
+                    }
                     // we did a double clidk
                     if (!newValues.isEmpty()) {
                         if (!newValues.equals(selectedValues)) {
