@@ -81,7 +81,6 @@ public class AppointmentMap
             }
         }
         Map<Entity, Collection<Appointment>> appointmentMap = new LinkedHashMap<>();
-        final AppointmentMapping result = new AppointmentMapping(appointmentMap);
 
         for (Map.Entry<String, Set<String>> entry : entityIdToAppointmentIds.entrySet())
         {
@@ -117,6 +116,7 @@ public class AppointmentMap
                 }
             }
         }
+        final AppointmentMapping result = new AppointmentMapping(appointmentMap);
         return result;
 
     }
