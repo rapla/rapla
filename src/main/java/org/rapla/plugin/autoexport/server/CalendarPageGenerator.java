@@ -308,7 +308,7 @@ public class CalendarPageGenerator
             }
             catch (EntityNotFoundException ex)
             {
-                String message = "404 Calendar not availabe  " + username + "/" + filename;
+                String message = "404 Calendar not available  " + username + "/" + filename;
                 write404(response, message);
                 logger.getChildLogger("html.404").warn("404 User not found " + username);
                 return;
@@ -320,7 +320,7 @@ public class CalendarPageGenerator
             }
             catch (CalendarNotFoundExeption ex)
             {
-                String message = "404 Calendar not availabe  " + user + "/" + filename;
+                String message = "404 Calendar not available  " + user + "/" + filename;
                 write404(response, message);
                 return;
             }
