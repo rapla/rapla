@@ -2829,6 +2829,32 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
         }
     }
 
+    public Set<ReferenceInfo<Allocatable>> filterAllocatablesWithNonTemplateReservations(Set<ReferenceInfo<Allocatable>> allocatables) {
+        Iterable<Reservation> refererList = cache.getReservations();
+        Set<ReferenceInfo<Allocatable>> entityReferences = allocatables;
+        Set<ReferenceInfo<Allocatable>> result = new HashSet<>();
+        for (Reservation referer : refererList)
+        {
+            // we ingnore Templates
+            if (RaplaComponent.isTemplate( referer ))
+            {
+                continue;
+            }
+            if (referer != null && !entityReferences.contains(referer.getReference()))
+            {
+                Iterable<ReferenceInfo> referenceInfo = ((EntityReferencer) referer).getReferenceInfo();
+                for (ReferenceInfo info : referenceInfo)
+                {
+                    if (entityReferences.contains( info ))
+                    {
+                        result.add( info);
+                    }
+                }
+            }
+        }
+        return result;
+    }
+
     @NotNull
     private Map<ReferenceInfo, Set<Entity>> getReferencingEntities(Set<ReferenceInfo> entityReferences, EntityStore store) {
         Map<ReferenceInfo,Set<Entity>> result = new LinkedHashMap<>();

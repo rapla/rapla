@@ -75,6 +75,8 @@ public interface CachableStorageOperator extends StorageOperator {
     Collection<ReferenceInfo<User>> findUsersThatExport(Allocatable allocatable) throws RaplaException;
 
     <T> T  waitForWithRaplaException(Promise<T> promise, int millis) throws RaplaException;
+
+    Set<ReferenceInfo<Allocatable>> filterAllocatablesWithNonTemplateReservations(Set<ReferenceInfo<Allocatable>> allocatables);
 }
 
 
