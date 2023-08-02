@@ -1,42 +1,9 @@
 package org.rapla.plugin.exchangeconnector;
 
+import java.util.Objects;
+
 public class SyncError    {
-    @Override
-    public int hashCode()
-    {
-        final int prime = 31;
-        int result = 1;
-        result = prime * result + ((appointmentDetail == null) ? 0 : appointmentDetail.hashCode());
-        result = prime * result + ((errorMessage == null) ? 0 : errorMessage.hashCode());
-        return result;
-    }
-    
-    @Override
-    public boolean equals(Object obj)
-    {
-        if (this == obj)
-            return true;
-        if (obj == null)
-            return false;
-        if (getClass() != obj.getClass())
-            return false;
-        SyncError other = (SyncError) obj;
-        if (appointmentDetail == null)
-        {
-            if (other.appointmentDetail != null)
-                return false;
-        }
-        else if (!appointmentDetail.equals(other.appointmentDetail))
-            return false;
-        if (errorMessage == null)
-        {
-            if (other.errorMessage != null)
-                return false;
-        }
-        else if (!errorMessage.equals(other.errorMessage))
-            return false;
-        return true;
-    }
+
     // Empty constructor for json serializer
     SyncError()
     {
@@ -45,6 +12,12 @@ public class SyncError    {
         this.appointmentDetail = appointmentDetail;
         this.errorMessage = errorMessage;
     }
+
+    @Override
+    public String toString() {
+        return errorMessage + " " + appointmentDetail;
+    }
+
     String appointmentDetail;
     String errorMessage;
     public String getAppointmentDetail() {
@@ -52,5 +25,18 @@ public class SyncError    {
     }
     public String getErrorMessage() {
         return errorMessage;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        SyncError syncError = (SyncError) o;
+        return Objects.equals(errorMessage, syncError.errorMessage);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(errorMessage);
     }
 }

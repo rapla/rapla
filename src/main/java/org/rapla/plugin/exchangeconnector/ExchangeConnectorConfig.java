@@ -47,7 +47,7 @@ public interface ExchangeConnectorConfig
 //	public static final TypedComponentRole<String> PASSWORD = new TypedComponentRole<String>("exchangeconnector.password");
 //	public static final TypedComponentRole<Boolean> SYNC_FROM_EXCHANGE_ENABLED_KEY = new TypedComponentRole<Boolean>("sync_from_exchange");
 //	public static final boolean DEFAULT_SYNC_FROM_EXCHANGE_ENABLED = false;
-String ENABLED_BY_ADMIN_STRING = "exchange_connector_enabled_by_admin";
+    String ENABLED_BY_ADMIN_STRING = "exchange_connector_enabled_by_admin";
 	TypedComponentRole<Boolean> ENABLED_BY_ADMIN = new TypedComponentRole<>(ENABLED_BY_ADMIN_STRING);
 	boolean DEFAULT_ENABLED_BY_ADMIN = false;
 //	public static final String PULL_FREQUENCY_KEY = "exch-pull-freq";

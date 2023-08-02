@@ -150,7 +150,7 @@ public class AppointmentSynchronizer
     static public Collection<String> remove(Logger logger, final String url, String exchangeUsername, String exchangePassword) throws RaplaException
     {
         WebCredentials credentials = new WebCredentials(exchangeUsername, exchangePassword);
-        Collection<String> result = new LinkedHashSet<>();
+        Collection<String> errors = new LinkedHashSet<>();
         final Logger ewsLogger = logger.getChildLogger("webservice");
         final SearchFilter searchFilter = new SearchFilter.Exists(RAPLA_APPOINTMENT_MARKER);
         List<Item> items = new ArrayList<>();
@@ -191,7 +191,7 @@ public class AppointmentSynchronizer
             throw new RaplaException(ex.getMessage(), ex);
         }
         if (itemIds.isEmpty())
-            return result;
+            return errors;
         AffectedTaskOccurrence affectedTaskOccurrences = AffectedTaskOccurrence.AllOccurrences;
         SendCancellationsMode sendCancellationsMode = SendCancellationsMode.SendToNone;
         DeleteMode deleteMode = DeleteMode.HardDelete;
@@ -231,11 +231,11 @@ public class AppointmentSynchronizer
                 {
                     errorMessage = "Fehler beim Termin mit dem Betreff " + subject + ": " + errorMessage;
                 }
-                result.add(errorMessage);
+                errors.add(errorMessage);
             }
             index++;
         }
-        return result;
+        return errors;
     }
 
     public Logger getLogger()
