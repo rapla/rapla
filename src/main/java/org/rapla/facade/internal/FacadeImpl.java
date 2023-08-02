@@ -505,7 +505,25 @@ public class FacadeImpl implements RaplaFacade {
 				}
 			}
 		}
-        return operator.getFirstAllocatableBindings(allocatables, appointments, ignoreList);
+		Promise<Map<ReferenceInfo<Allocatable>, Collection<Appointment>>> result;
+		Promise<Map<ReferenceInfo<Allocatable>, Map<Appointment, Collection<Appointment>>>> allAllocatableBindings = operator.getAllAllocatableBindings(allocatables, appointments, ignoreList);
+		result = allAllocatableBindings.thenApply((allocatableBindings) -> {
+			Map<ReferenceInfo<Allocatable>, Collection<Appointment>> map = new HashMap<>();
+			for (Map.Entry<ReferenceInfo<Allocatable>, Map<Appointment, Collection<Appointment>>> entry : allocatableBindings.entrySet()) {
+				ReferenceInfo<Allocatable> alloc = entry.getKey();
+				Map<Appointment, Collection<Appointment>> appointmentMap = entry.getValue();
+				for (Map.Entry<Appointment,Collection<Appointment>> appointmentMapEntry : appointmentMap.entrySet()) {
+
+					Collection<Appointment> conflictingAppointments = appointmentMapEntry.getValue();
+					if ( !conflictingAppointments.isEmpty()) {
+						Appointment originalAppointment = appointmentMapEntry.getKey();
+						map.computeIfAbsent(alloc, (s)->new HashSet<>()).add(originalAppointment);
+					}
+				}
+			}
+			return map;
+		});
+		return result;
 	}
 	
 	
