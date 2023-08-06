@@ -98,6 +98,10 @@ public final class ClassificationFilterRuleImpl extends ReferenceHandler
 
     public void commitChange(Attribute typeAttribute) {
         Object[] ruleValues = getValues();
+        if ( typeAttribute != null) {
+            attributeKey = typeAttribute.getKey();
+            attributeId = typeAttribute.getId();
+        }
         for (int i=0;i<ruleValues.length;i++) {
             Object oldValue = ruleValues[i];
             Object newValue = typeAttribute.convertValue(oldValue);
@@ -405,7 +409,7 @@ public final class ClassificationFilterRuleImpl extends ReferenceHandler
     {
     	StringBuilder buf = new StringBuilder();
         buf.append(attributeKey);
-    	Object[] values = getValues();
+    	String[] values = ruleValues;
     	String[] operators = getOperators();
     	for ( int i=0;i<values.length;i++)
     	{

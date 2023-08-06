@@ -26,11 +26,8 @@ import org.rapla.client.TreeFactory;
 import org.rapla.client.swing.images.RaplaImages;
 import org.rapla.client.swing.internal.FilterEditButton;
 import org.rapla.client.swing.internal.FilterEditButton.FilterEditButtonFactory;
-import org.rapla.client.swing.internal.MultiCalendarPresenter;
 import org.rapla.client.swing.internal.SwingPopupContext;
 import org.rapla.client.swing.internal.edit.ClassifiableFilterEdit;
-import org.rapla.client.swing.internal.edit.fields.BooleanField.BooleanFieldFactory;
-import org.rapla.client.swing.internal.edit.fields.DateField.DateFieldFactory;
 import org.rapla.client.swing.internal.view.RaplaSwingTreeModel;
 import org.rapla.client.RaplaTreeNode;
 import org.rapla.client.swing.toolkit.AWTColorUtil;
@@ -39,7 +36,6 @@ import org.rapla.client.swing.toolkit.PopupEvent;
 import org.rapla.client.swing.toolkit.PopupListener;
 import org.rapla.client.swing.toolkit.RaplaButton;
 import org.rapla.client.swing.toolkit.RaplaMenu;
-import org.rapla.client.swing.toolkit.RaplaMenuItem;
 import org.rapla.client.swing.toolkit.RaplaPopupMenu;
 import org.rapla.client.swing.toolkit.RaplaSeparator;
 import org.rapla.components.layout.TableLayout;
@@ -58,7 +54,6 @@ import org.rapla.entities.dynamictype.ClassificationFilter;
 import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.entities.dynamictype.DynamicTypeAnnotations;
 import org.rapla.entities.storage.ReferenceInfo;
-import org.rapla.facade.CalendarModel;
 import org.rapla.facade.CalendarSelectionModel;
 import org.rapla.facade.ModificationEvent;
 import org.rapla.facade.RaplaComponent;
@@ -72,7 +67,6 @@ import org.rapla.scheduler.ResolvedPromise;
 import org.rapla.storage.PermissionController;
 
 import javax.inject.Inject;
-import javax.inject.Provider;
 import javax.inject.Singleton;
 import javax.swing.AbstractAction;
 import javax.swing.DefaultCellEditor;
@@ -612,7 +606,7 @@ public class AllocatableSelection extends RaplaGUIComponent implements Appointme
     protected Collection<Allocatable> getSelectedAllocatables(JTree tree)
     {
         // allow folders to be selected
-        Collection<?> selectedElementsIncludingChildren = getSelectedElementsIncludingChildren(tree);
+        Collection<?> selectedElementsIncludingChildren = getSelectedElements(tree);
         List<Allocatable> allocatables = new ArrayList<>();
         for (Object obj : selectedElementsIncludingChildren)
         {
@@ -624,7 +618,7 @@ public class AllocatableSelection extends RaplaGUIComponent implements Appointme
         return allocatables;
     }
 
-    protected Collection<?> getSelectedElementsIncludingChildren(JTree tree)
+    protected Collection<?> getSelectedElements(JTree tree)
     {
         TreePath[] paths = tree.getSelectionPaths();
         List<Object> list = new LinkedList<>();
@@ -634,25 +628,26 @@ public class AllocatableSelection extends RaplaGUIComponent implements Appointme
         }
         for (TreePath p : paths)
         {
+
             DefaultMutableTreeNode node = (DefaultMutableTreeNode) p.getLastPathComponent();
             {
                 Object obj = node.getUserObject();
                 if (obj != null ) {
                     if ( obj instanceof DynamicType)
                     {
-                        continue;
+                        Enumeration<?> tt = node.children();
+                        for (; tt.hasMoreElements();)
+                        {
+                            DefaultMutableTreeNode nodeChild = (DefaultMutableTreeNode) tt.nextElement();
+                            Object objChild = nodeChild.getUserObject();
+                            if ( objChild != null)
+                            {
+                                list.add(objChild);
+                            }
+                        }
+                    } else {
+                        list.add(obj);
                     }
-                    list.add(obj);
-                }
-            }
-            Enumeration<?> tt = node.children();
-            for (; tt.hasMoreElements();)
-            {
-                DefaultMutableTreeNode nodeChild = (DefaultMutableTreeNode) tt.nextElement();
-                Object obj = nodeChild.getUserObject();
-                if (obj != null)
-                {
-                    list.add(obj);
                 }
             }
         }

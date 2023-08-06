@@ -366,14 +366,7 @@ abstract class EntityStorage<T extends Entity<T>> extends AbstractTableStorage i
                 }
                 if(commitNeeded)
                 {
-                    final int[] executeBatch = stmt.executeBatch();
-                    for (int i : executeBatch)
-                    {
-                        if (i != 1)
-                        {
-                            throw new RaplaException("Entry already deleted");
-                        }
-                    }
+                    stmt.executeBatch();
                 }
             }
             finally

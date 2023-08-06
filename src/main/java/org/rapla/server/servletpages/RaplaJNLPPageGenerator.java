@@ -168,7 +168,8 @@ public class RaplaJNLPPageGenerator
         }
         response.setContentType("application/x-java-jnlp-file;charset=utf-8");
         out.println("<?xml version=\"1.0\" encoding=\"UTF-8\"?>");
-        out.println("<jnlp spec=\"6.0+\" codebase=\"" + getCodebase(request) + "\" href=\"" + getCodebase(request) + "rapla/raplaclient.jnlp\" >");
+        String codebase = getCodebase(request);
+        out.println("<jnlp spec=\"6.0+\" codebase=\"" + codebase + "\" href=\"" + codebase + "rapla/raplaclient.jnlp\" >");
         out.println("<information>");
         out.println(" <title>" + menuName + "</title>");
         out.println(" <vendor>Rapla team</vendor>");
@@ -176,9 +177,9 @@ public class RaplaJNLPPageGenerator
         out.println(" <description>Resource Scheduling Application</description>");
         // we changed the logo from .gif to .png to make it more sexy
         //differentiate between icon and splash because of different sizes!
-        //out.println(" <icon kind=\"default\" href=\"" + webstartRoot + "/webclient/rapla_64x64.png\" width=\"64\" height=\"64\"/> ");
-        //out.println(" <icon kind=\"desktop\" href=\"" + webstartRoot + "/webclient/rapla_128x128.png\" width=\"128\" height=\"128\"/> ");
-        //out.println(" <icon kind=\"shortcut\" href=\"" + webstartRoot + "/webclient/rapla_64x64.png\" width=\"64\" height=\"64\"/> ");
+        out.println(" <icon kind=\"default\" href=\"" + codebase + "/webclient/rapla_64x64.png\" width=\"64\" height=\"64\"/> ");
+        out.println(" <icon kind=\"desktop\" href=\"" + codebase + "/webclient/rapla_128x128.png\" width=\"128\" height=\"128\"/> ");
+        out.println(" <icon kind=\"shortcut\" href=\"" + codebase + "/webclient/rapla_64x64.png\" width=\"64\" height=\"64\"/> ");
         // and here aswell12
         //out.println(" <icon kind=\"splash\" href=\"" + webstartRoot + "/webclient/logo.png\"/> ");
         if (createShortcut)
