@@ -87,7 +87,6 @@ public class CommunicatorTest extends AbstractTestWithServer
        }
     }
 
-    @Ignore
     @Test
     public void testUmlaute() throws Exception
     {

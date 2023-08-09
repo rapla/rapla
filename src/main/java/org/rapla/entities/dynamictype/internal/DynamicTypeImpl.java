@@ -45,6 +45,7 @@ import org.rapla.entities.storage.ParentEntity;
 import org.rapla.entities.storage.ReferenceInfo;
 import org.rapla.entities.storage.internal.SimpleEntity;
 import org.rapla.framework.RaplaException;
+import org.rapla.storage.LocalCache;
 import org.rapla.storage.PermissionController;
 import org.rapla.storage.StorageOperator;
 import org.rapla.storage.dbrm.RemoteOperator;
@@ -114,9 +115,11 @@ final public class DynamicTypeImpl extends SimpleEntity implements DynamicType, 
     public void setResolver( EntityResolver resolver) {
         super.setResolver( resolver);
         // TODO replace with seperate method for setting StorageOperator
-        if ( resolver instanceof StorageOperator)
+        if ( resolver instanceof StorageOperator || resolver instanceof LocalCache)
         {
-            operator = (StorageOperator) resolver;
+            if ( resolver instanceof StorageOperator) {
+                operator = (StorageOperator) resolver;
+            }
             for ( ParsedText annotation: annotations.values())
             {
                 try {

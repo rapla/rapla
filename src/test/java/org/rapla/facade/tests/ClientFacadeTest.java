@@ -180,7 +180,8 @@ public class ClientFacadeTest  {
 
                 for (Allocatable allocatable : allocatables)
                 {
-                    final Collection<Appointment> allocatedAppointments = new HashSet(allocatableCollectionMap.get(allocatable.getReference()));
+                    Collection<Appointment> appointments = allocatableCollectionMap.get(allocatable.getReference());
+                    final Collection<Appointment> allocatedAppointments = new HashSet(appointments != null ? appointments : Collections.emptyList());
                     Assert.assertEquals(0, allocatedAppointments.size());
                 }
             }
@@ -296,7 +297,7 @@ public class ClientFacadeTest  {
                 for (Allocatable allocatable : allocatablesFromAppointment)
                 {
                     final Collection<Appointment> collection = result.get(allocatable.getReference());
-                    Assert.assertEquals(0, collection.size());
+                    Assert.assertTrue(collection == null || collection.size() == 0);
                 }
             }
             facade.store(reservation1);

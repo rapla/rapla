@@ -133,7 +133,7 @@ public class PermissionTest extends AbstractTestWithServer {
         // Uncovers bug 1237332,
         ClassificationFilter filter = testFacade.getDynamicType("event").newClassificationFilter();
         filter.addEqualsRule("name","R1");
-        final Collection<Reservation> reservationsForAllocatable = RaplaTestCase.waitForWithRaplaException(testFacade.getReservationsForAllocatable(null, null, null, new ClassificationFilter[] { filter }), 10000);
+        final Collection<Reservation> reservationsForAllocatable = RaplaTestCase.waitForWithRaplaException(testFacade.getReservationsForAllocatable(new Allocatable[] {allocatable3,allocatable}, null, null, new ClassificationFilter[] { filter }), 10000);
         Assert.assertEquals(1, reservationsForAllocatable.size());
         Reservation evt = reservationsForAllocatable.iterator().next();
         final User owner = testFacade.tryResolve(evt.getOwnerRef());
