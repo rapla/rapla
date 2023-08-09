@@ -15,12 +15,8 @@ import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.inject.Extension;
 import org.rapla.logger.Logger;
-import org.rapla.plugin.exchangeconnector.ExchangeConnectorConfig;
+import org.rapla.plugin.exchangeconnector.*;
 import org.rapla.plugin.exchangeconnector.ExchangeConnectorConfig.ConfigReader;
-import org.rapla.plugin.exchangeconnector.ExchangeConnectorPlugin;
-import org.rapla.plugin.exchangeconnector.ExchangeConnectorRemote;
-import org.rapla.plugin.exchangeconnector.ExchangeConnectorResources;
-import org.rapla.plugin.exchangeconnector.SynchronizationStatus;
 
 import javax.inject.Inject;
 import javax.swing.JCheckBox;
@@ -67,16 +63,17 @@ public class ExchangeConnectorUserOptions implements UserOptionPanel
     private boolean connected;
     private final ExchangeConnectorResources exchangeConnectorResources;
     private final DialogUiFactoryInterface dialogUiFactory;
-    private final ConfigReader config;
     private final RaplaLocale raplaLocale;
     private final RaplaResources i18n;
     private final ClientFacade clientFacade;
     private Preferences preferences;
     private Logger logger;
 
+    private final ShowExchangeForUser showExchangeForUser;
+
     @Inject
     public ExchangeConnectorUserOptions(ClientFacade clientFacade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, ExchangeConnectorRemote service,
-            ExchangeConnectorResources exchangeConnectorResources, DialogUiFactoryInterface dialogUiFactory, ConfigReader config)
+            ExchangeConnectorResources exchangeConnectorResources, DialogUiFactoryInterface dialogUiFactory, ShowExchangeForUser showExchangeForUser)
     {
         this.exchangeConnectorResources = exchangeConnectorResources;
         this.logger = logger;
@@ -85,14 +82,19 @@ public class ExchangeConnectorUserOptions implements UserOptionPanel
         this.raplaLocale = raplaLocale;
         this.service = service;
         this.dialogUiFactory = dialogUiFactory;
-        this.config = config;
+        this.showExchangeForUser = showExchangeForUser;
     }
 
     @Override
     public boolean isEnabled()
     {
-        return config.isEnabled();
+        try {
+            return showExchangeForUser.isExchangeEnabledFor(clientFacade.getUser());
+        } catch (RaplaException e) {
+            return false;
+        }
     }
+
 
     public JComponent getComponent()
     {

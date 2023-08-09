@@ -14,6 +14,7 @@ import org.rapla.facade.internal.CalendarModelImpl;
 import org.rapla.framework.RaplaException;
 import org.rapla.logger.Logger;
 import org.rapla.plugin.exchangeconnector.ExchangeConnectorPlugin;
+import org.rapla.plugin.exchangeconnector.ShowExchangeForUser;
 import org.rapla.scheduler.CommandScheduler;
 import org.rapla.storage.CachableStorageOperator;
 import org.rapla.storage.UpdateOperation;
@@ -42,6 +43,8 @@ public class CalendarModelCache
     final Logger logger;
     final CommandScheduler scheduler;
 
+    ShowExchangeForUser showExchangeForUser;
+
     public CalendarModelCache(CachableStorageOperator operator, RaplaResources i18n, Logger logger, final CommandScheduler scheduler)
     {
         this.operator = operator;
@@ -49,6 +52,7 @@ public class CalendarModelCache
         this.scheduler = scheduler;
         this.logger = logger;
         this.lockManager = new DefaultRaplaLock(logger);
+        this.showExchangeForUser = new ShowExchangeForUser( operator );
     }
 
     private void removeCalendarModelFor(ReferenceInfo<User> userId) throws RaplaException
@@ -118,21 +122,20 @@ public class CalendarModelCache
             configList.addAll(exportMap.values());
         }
         // at this point configList contains all exported calendars for the user
-        for (CalendarModelConfiguration config : configList)
-        {
-            // is exchange export enabled in export config?
-            if (hasExchangeExport(config))
-            {
-                // calculate tasks depending on the current calendarModel and put all exported appointments into appointmentFound set
-                final CalendarModelImpl calendarModelImpl;
-                {
-                    final Locale locale = i18n.getLocale();
-                    calendarModelImpl = new CalendarModelImpl(locale, user, operator,logger);
-                    Map<String, String> alternativOptions = null;
-                    calendarModelImpl.setConfiguration(config, alternativOptions, true);
-                    calendarModelList.add(calendarModelImpl);
+        if ( showExchangeForUser.isExchangeEnabledFor( user )) {
+            for (CalendarModelConfiguration config : configList) {
+                // is exchange export enabled in export config?
+                if (hasExchangeExport(config)) {
+                    // calculate tasks depending on the current calendarModel and put all exported appointments into appointmentFound set
+                    final CalendarModelImpl calendarModelImpl;
+                    {
+                        final Locale locale = i18n.getLocale();
+                        calendarModelImpl = new CalendarModelImpl(locale, user, operator, logger);
+                        Map<String, String> alternativOptions = null;
+                        calendarModelImpl.setConfiguration(config, alternativOptions, true);
+                        calendarModelList.add(calendarModelImpl);
+                    }
                 }
-
             }
         }
 

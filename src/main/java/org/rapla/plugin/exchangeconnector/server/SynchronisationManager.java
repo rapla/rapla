@@ -8,6 +8,7 @@ import org.rapla.components.util.DateTools;
 import org.rapla.components.util.TimeInterval;
 import org.rapla.components.i18n.CompoundI18n;
 import org.rapla.components.i18n.I18nBundle;
+import org.rapla.entities.Category;
 import org.rapla.entities.Entity;
 import org.rapla.entities.EntityNotFoundException;
 import org.rapla.entities.User;
@@ -26,13 +27,8 @@ import org.rapla.framework.RaplaInitializationException;
 import org.rapla.framework.TypedComponentRole;
 import org.rapla.inject.Extension;
 import org.rapla.logger.Logger;
-import org.rapla.plugin.exchangeconnector.ExchangeConnectorConfig;
+import org.rapla.plugin.exchangeconnector.*;
 import org.rapla.plugin.exchangeconnector.ExchangeConnectorConfig.ConfigReader;
-import org.rapla.plugin.exchangeconnector.ExchangeConnectorPlugin;
-import org.rapla.plugin.exchangeconnector.ExchangeConnectorResources;
-import org.rapla.plugin.exchangeconnector.SyncError;
-import org.rapla.plugin.exchangeconnector.SynchronizationStatus;
-import org.rapla.plugin.exchangeconnector.SynchronizeResult;
 import org.rapla.plugin.exchangeconnector.extensionpoints.ExchangeConfigExtensionPoint;
 import org.rapla.plugin.exchangeconnector.server.SynchronizationTask.SyncStatus;
 import org.rapla.plugin.exchangeconnector.server.exchange.AppointmentSynchronizer;
@@ -96,11 +92,13 @@ public class SynchronisationManager implements ServerExtension
     private final Set<ExchangeConfigExtensionPoint> configExtensions;
     private final MailToUserImpl mailToUserInterface;
     Disposable schedule;
+    boolean enabled;
+    ShowExchangeForUser showExchangeForUser;
 
     @Inject
     public SynchronisationManager(RaplaFacade facade, RaplaResources i18nRapla, ExchangeConnectorResources i18nExchange, Logger logger,
-            TimeZoneConverter converter, AppointmentFormater appointmentFormater, RaplaKeyStorage keyStorage, ExchangeAppointmentStorage appointmentStorage,
-            CommandScheduler scheduler, ConfigReader config, Set<ExchangeConfigExtensionPoint> configExtensions, MailToUserImpl mailToUserInterface) throws
+                                  TimeZoneConverter converter, AppointmentFormater appointmentFormater, RaplaKeyStorage keyStorage, ExchangeAppointmentStorage appointmentStorage,
+                                  CommandScheduler scheduler, ConfigReader config, Set<ExchangeConfigExtensionPoint> configExtensions, MailToUserImpl mailToUserInterface, ShowExchangeForUser showExchangeForUser) throws
             RaplaInitializationException
     {
         super();
@@ -120,8 +118,10 @@ public class SynchronisationManager implements ServerExtension
         exchangeTimezoneId = config.getExchangeTimezone();
         exchangeAppointmentCategory = config.getAppointmentCategory();
         syncPeriodPast = config.getSyncPeriodPast();
+        enabled = config.isEnabled();
 
         this.appointmentStorage = appointmentStorage;
+        this.showExchangeForUser = showExchangeForUser;
 
         //final Timer scheduledDownloadTimer = new Timer("ScheduledDownloadThread",true);
         //scheduledDownloadTimer.schedule(new ScheduledDownloadHandler(context, clientFacade, getLogger()), 30000, ExchangeConnectorPlugin.PULL_FREQUENCY*1000);
@@ -130,6 +130,9 @@ public class SynchronisationManager implements ServerExtension
     @Override
     public void start()
     {
+        if ( !enabled ) {
+            return;
+        }
         long delay = 0;
         logger.info("Scheduling Exchange synchronization tasks");
         final Action synchronizeAction = () ->
@@ -234,9 +237,9 @@ public class SynchronisationManager implements ServerExtension
     {
         final Collection<ReferenceInfo> addedAndChangedIds = evt.getAddedAndChangedIds();
         if ( addedAndChangedIds.size() >0) {
-            SynchronisationManager.this.logger.info("Update triggered. Looking for " + addedAndChangedIds.size() + " synchronisation tasks since " + evt.getSince() );
+            SynchronisationManager.this.logger.debug("Update triggered. Looking for " + addedAndChangedIds.size() + " synchronisation tasks since " + evt.getSince() );
         } else if (firstExecution){
-            SynchronisationManager.this.logger.info("empty update since " + evt.getSince());
+            SynchronisationManager.this.logger.debug("empty update since " + evt.getSince());
         }
 
         appointmentStorage.refresh();
@@ -430,8 +433,10 @@ public class SynchronisationManager implements ServerExtension
                     {
                         Collection<SynchronizationTask> result = updateTasksForUser(owner);
                         tasks.addAll(result);
+                        if ( !result.isEmpty() ) {
+                            logger.info("update changes for " + owner + " " + result.size());
+                        }
                     }
-                    logger.info("update user for " + owner + " collected.");
                 }
             }
             else if (raplaType == Allocatable.class)
@@ -447,12 +452,14 @@ public class SynchronisationManager implements ServerExtension
                         for (ReferenceInfo<User> userId : users)
                         {
                             User owner = facade.tryResolve(userId);
-                            logger.info("update changes  for " + owner );
+                            logger.debug("update changes  for " + owner );
                             if (owner != null)
                             {
                                 Collection<SynchronizationTask> result = updateTasksForUser(owner);
                                 tasks.addAll(result);
-                                logger.info("update changes for " + owner + " collected.");
+                                if ( !result.isEmpty() ) {
+                                    logger.info("update changes for " + owner + " " + result.size());
+                                }
                             }
                         }
                     }
@@ -651,7 +658,6 @@ public class SynchronisationManager implements ServerExtension
     {
         final Collection<SynchronizationTask> toStore = new HashSet<>();
         final Collection<SynchronizationTask> toRemove = new HashSet<>();
-
         final SynchronizeResult result = new SynchronizeResult();
         for (SynchronizationTask task : tasks)
         {
@@ -672,6 +678,12 @@ public class SynchronisationManager implements ServerExtension
                 toRemove.add(task);
                 continue;
             }
+            if ( !showExchangeForUser.isExchangeEnabledFor(user)) {
+                logger.info("Removing synchronize " + task.getAppointmentId() + " because user "  + user.getUsername() + " does not belong to group " + ExchangeConnectorPlugin.EXCHANGE_SYNCHRONIZATION_GROUP);
+                toRemove.add(  task );
+                continue;
+            }
+
             if ((beforeStatus == SyncStatus.deleted) || (appointment != null && !isInSyncInterval(appointment)))
             {
                 toRemove.add(task);

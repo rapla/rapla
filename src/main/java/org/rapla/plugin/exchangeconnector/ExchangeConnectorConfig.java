@@ -7,6 +7,7 @@ import org.rapla.framework.Configuration;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaInitializationException;
 import org.rapla.framework.TypedComponentRole;
+import org.rapla.storage.StorageOperator;
 
 import javax.inject.Inject;
 import java.util.HashMap;
@@ -80,17 +81,17 @@ public interface ExchangeConnectorConfig
 		    
                 
 		    @Inject
-	    	public ConfigReader(RaplaFacade facade) throws RaplaInitializationException
+	    	public ConfigReader(StorageOperator operator) throws RaplaInitializationException
 	    	{
-		        this(getSystemPreferences(facade).getEntry(ExchangeConnectorConfig.EXCHANGESERVER_CONFIG,new RaplaConfiguration()), getSystemPreferences(facade)
+		        this(getSystemPreferences(operator).getEntry(ExchangeConnectorConfig.EXCHANGESERVER_CONFIG,new RaplaConfiguration()), getSystemPreferences(operator)
 						.getEntry(EXCHANGE_CLIENT_CONFIG, new RaplaConfiguration()));
 	    	}
 
-			public static Preferences getSystemPreferences(RaplaFacade facade) throws RaplaInitializationException
+			public static Preferences getSystemPreferences(StorageOperator op) throws RaplaInitializationException
 			{
 				try
 				{
-					return facade.getSystemPreferences();
+					return op.getPreferences(null, true);
 				}
 				catch (RaplaException e)
 				{

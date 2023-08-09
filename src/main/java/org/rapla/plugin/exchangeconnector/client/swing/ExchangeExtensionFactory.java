@@ -14,6 +14,7 @@ import org.rapla.plugin.exchangeconnector.ExchangeConnectorConfig.ConfigReader;
 import org.rapla.plugin.exchangeconnector.ExchangeConnectorPlugin;
 import org.rapla.plugin.exchangeconnector.ExchangeConnectorRemote;
 import org.rapla.plugin.exchangeconnector.ExchangeConnectorResources;
+import org.rapla.plugin.exchangeconnector.ShowExchangeForUser;
 
 import javax.inject.Inject;
 import java.beans.PropertyChangeListener;
@@ -23,14 +24,14 @@ public class ExchangeExtensionFactory extends RaplaGUIComponent implements Publi
 {
 	private final ExchangeConnectorRemote remote;
     private final ExchangeConnectorResources exchangeConnectorResources;
-    private final ConfigReader config;
+    private final ShowExchangeForUser showExchangeForUser;
 	@Inject
-	public ExchangeExtensionFactory(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, ExchangeConnectorRemote remote, ExchangeConnectorResources exchangeConnectorResources, ConfigReader config)
+	public ExchangeExtensionFactory(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, ExchangeConnectorRemote remote, ExchangeConnectorResources exchangeConnectorResources, ShowExchangeForUser config)
 	{
 		super(facade, i18n, raplaLocale, logger);
 		this.remote = remote;
         this.exchangeConnectorResources = exchangeConnectorResources;
-        this.config = config;
+        this.showExchangeForUser = config;
 	}
 
 	public PublishExtension creatExtension(CalendarSelectionModel model,
@@ -42,7 +43,11 @@ public class ExchangeExtensionFactory extends RaplaGUIComponent implements Publi
 	@Override
 	public boolean isEnabled()
 	{
-	    return config.isEnabled();
+		try {
+			return showExchangeForUser.isExchangeEnabledFor(getClientFacade().getUser());
+		} catch (RaplaException e) {
+			return false;
+		}
 	}
 
 	
