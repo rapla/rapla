@@ -14,6 +14,7 @@ import org.rapla.server.RemoteSession;
 import javax.inject.Inject;
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.core.Context;
+import java.util.Collection;
 
 @DefaultImplementation(context=InjectionContext.server, of=ExchangeConnectorRemote.class)
 public class ExchangeConnectorRemoteObjectFactory implements ExchangeConnectorRemote
@@ -56,15 +57,16 @@ public class ExchangeConnectorRemoteObjectFactory implements ExchangeConnectorRe
     }
 
     @Override
-    public void changeUser(String exchangeUsername, String exchangePassword) throws RaplaException
+    public Collection<String> changeUser(String exchangeUsername, String exchangePassword) throws RaplaException
     {
         final User user = session.checkAndGetUser(request);
         String raplaUsername = user.getUsername();
         getLogger().info("Invoked add exchange user for rapla " + raplaUsername + " with exchange user " + exchangeUsername);
-        manager.testConnection( exchangeUsername, exchangePassword, user);
+        Collection<String> sharedMailboxes = manager.testConnection(exchangeUsername, exchangePassword, user);
         getLogger().debug("Invoked change connection for user " + user.getUsername());
         keyStorage.storeLoginInfo( user, ExchangeConnectorServerPlugin.EXCHANGE_USER_STORAGE, exchangeUsername, exchangePassword);
         getLogger().info("New exchangename stored for " + user.getUsername());
+        return sharedMailboxes;
     }
 
     @Override

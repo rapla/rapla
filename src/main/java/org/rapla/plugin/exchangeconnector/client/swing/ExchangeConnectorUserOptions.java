@@ -27,6 +27,7 @@ import javax.swing.JPasswordField;
 import javax.swing.JTextField;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.util.Collection;
 import java.util.Date;
 import java.util.Locale;
 
@@ -193,7 +194,14 @@ public class ExchangeConnectorUserOptions implements UserOptionPanel
                 String username = content.getUsername();
                 String password = content.getPassword();
                 try {
-                    service.changeUser(username, password);
+                    Collection<String> sharedMailboxes = service.changeUser(username, password);
+                    if ( sharedMailboxes.size() > 0) {
+                        String mailboxString = "Gefundene geteilte Mailboxen: <br>";
+                        for ( String mailbox:sharedMailboxes) {
+                            mailboxString += mailbox + "<br>";
+                        }
+                        dialogUiFactory.createTextDialog(popupContext, "Shared Mailboxes", mailboxString, new String [] {}).start(true);
+                    }
                 } catch (RaplaException ex) {
                     dialogUiFactory.showException(ex, popupContext);
                     return;

@@ -3,12 +3,15 @@ package org.rapla.plugin.exchangeconnector.server;
 import  io.reactivex.rxjava3.disposables.Disposable;
 import io.reactivex.rxjava3.functions.Action;
 import microsoft.exchange.webservices.data.core.exception.http.HttpErrorException;
+import microsoft.exchange.webservices.data.core.service.folder.CalendarFolder;
+import microsoft.exchange.webservices.data.credential.WebCredentials;
+import microsoft.exchange.webservices.data.property.complex.FolderId;
+import org.jetbrains.annotations.Nullable;
 import org.rapla.RaplaResources;
 import org.rapla.components.util.DateTools;
 import org.rapla.components.util.TimeInterval;
 import org.rapla.components.i18n.CompoundI18n;
 import org.rapla.components.i18n.I18nBundle;
-import org.rapla.entities.Category;
 import org.rapla.entities.Entity;
 import org.rapla.entities.EntityNotFoundException;
 import org.rapla.entities.User;
@@ -19,7 +22,7 @@ import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.Appointment;
 import org.rapla.entities.domain.AppointmentFormater;
 import org.rapla.entities.domain.Reservation;
-import org.rapla.entities.dynamictype.Classifiable;
+import org.rapla.entities.dynamictype.*;
 import org.rapla.entities.storage.ReferenceInfo;
 import org.rapla.facade.RaplaFacade;
 import org.rapla.framework.RaplaException;
@@ -46,20 +49,9 @@ import org.rapla.storage.UpdateResult;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import java.io.IOException;
-import java.io.PrintWriter;
-import java.io.StringWriter;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Date;
-import java.util.HashSet;
-import java.util.LinkedHashMap;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-import java.util.Set;
-import java.util.TreeMap;
+import java.util.*;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static org.rapla.entities.configuration.CalendarModelConfiguration.EXPORT_ENTRY;
 
@@ -393,7 +385,6 @@ public class SynchronisationManager implements ServerExtension
                     {
                         final Preferences resolve = facade.resolve(preferences.getReference());
                         final User resolvedUser = facade.tryResolve(preferences.getOwnerRef());
-                        logger.info("saving new preferences for  " + resolvedUser);
                         final Preferences editPreferences = facade.edit(resolve);
                         editPreferences.putEntry(RESYNC_USER, false);
                         editPreferences.putEntry(RETRY_USER, false);
@@ -411,10 +402,8 @@ public class SynchronisationManager implements ServerExtension
                     if (ownerId != null)
                     {
                         User owner = facade.resolve(ownerId);
-                        logger.info("update tasks for " + owner);
                         Collection<SynchronizationTask> result = updateTasksForUser(owner);
                         tasks.addAll(result);
-                        logger.info("update tasks for " + owner + " collected.");
                     }
                 }
             }
@@ -423,7 +412,6 @@ public class SynchronisationManager implements ServerExtension
                 ReferenceInfo<User> userId = operation.getReference();
                 if (operation instanceof UpdateResult.Remove)
                 {
-                    logger.info("Remove user " + userId);
                     appointmentStorage.removeTasksForUser(userId);
                 }
                 else if (operation instanceof UpdateResult.Change)
@@ -627,27 +615,24 @@ public class SynchronisationManager implements ServerExtension
     {
         final String username = secrets.login;
         final String password = secrets.secret;
-        final Collection<String> exchangeUrls = extractExchangeUrls(user);
+        final String exchangeUrl = extractExchangeUrl(user);
         Collection<SyncError> result = new LinkedHashSet<>();
-        for (String exchangeUrl : exchangeUrls)
+        try
         {
-            try
+            Collection<String> appointments = AppointmentSynchronizer.remove(logger, exchangeUrl, username, password);
+            for (String errorMessage : appointments)
             {
-                Collection<String> appointments = AppointmentSynchronizer.remove(logger, exchangeUrl, username, password);
-                for (String errorMessage : appointments)
+                // appointment remove failed
+                if (errorMessage != null && !errorMessage.isEmpty())
                 {
-                    // appointment remove failed
-                    if (errorMessage != null && !errorMessage.isEmpty())
-                    {
-                        SyncError error = new SyncError(errorMessage, errorMessage);
-                        result.add(error);
-                    }
+                    SyncError error = new SyncError(errorMessage, errorMessage);
+                    result.add(error);
                 }
             }
-            catch (Exception ex)
-            {
-                logger.error(ex.getMessage(),ex);
-            }
+        }
+        catch (Exception ex)
+        {
+            logger.error(ex.getMessage(),ex);
         }
         ReferenceInfo<User> userId = user.getReference();
         appointmentStorage.removeTasksForUser(userId);
@@ -656,142 +641,180 @@ public class SynchronisationManager implements ServerExtension
 
     private SynchronizeResult processTasks(Collection<SynchronizationTask> tasks, boolean skipNotification) throws RaplaException
     {
+        Map<String, List<SynchronizationTask>> groups = tasks.stream().collect(Collectors.groupingBy(SynchronizationTask::getUserId));
         final Collection<SynchronizationTask> toStore = new HashSet<>();
         final Collection<SynchronizationTask> toRemove = new HashSet<>();
         final SynchronizeResult result = new SynchronizeResult();
-        for (SynchronizationTask task : tasks)
-        {
-            final ReferenceInfo<User> userId = new ReferenceInfo<>(task.getUserId(), User.class);
-            final ReferenceInfo<Appointment> appointmentId = new ReferenceInfo<>(task.getAppointmentId(), Appointment.class);
-            final Appointment appointment;
+        for ( Map.Entry<String,List<SynchronizationTask>> entry:groups.entrySet()) {
+            final ReferenceInfo<User> userId = new ReferenceInfo<>(entry.getKey(), User.class);
+            List<SynchronizationTask> tasksForUser = entry.getValue();
+
             final User user;
-            final SyncStatus beforeStatus = task.getStatus();
-            try
-            {
+            try {
                 // we don't resolve the appointment if we delete
-                appointment = beforeStatus != SyncStatus.toDelete ? facade.tryResolve(appointmentId) : null;
                 user = facade.resolve(userId);
-            }
-            catch (EntityNotFoundException e)
-            {
-                logger.info("Removing synchronize " + task + " due to " + e.getMessage());
-                toRemove.add(task);
+            } catch (EntityNotFoundException e) {
+                logger.info("Removing synchronize tasks for user with id  " + userId + " due to " + e.getMessage());
+                toRemove.addAll(tasksForUser);
                 continue;
             }
-            if ( !showExchangeForUser.isExchangeEnabledFor(user)) {
-                logger.info("Removing synchronize " + task.getAppointmentId() + " because user "  + user.getUsername() + " does not belong to group " + ExchangeConnectorPlugin.EXCHANGE_SYNCHRONIZATION_GROUP);
-                toRemove.add(  task );
+            if (!showExchangeForUser.isExchangeEnabledFor(user)) {
+                logger.info("Removing synchronize taks fr  user " + user.getUsername() + ". He does not belong to group " + ExchangeConnectorPlugin.EXCHANGE_SYNCHRONIZATION_GROUP);
+                toRemove.addAll(tasksForUser);
                 continue;
             }
 
-            if ((beforeStatus == SyncStatus.deleted) || (appointment != null && !isInSyncInterval(appointment)))
-            {
-                toRemove.add(task);
+            final LoginInfo secrets = keyStorage.getSecrets(user, ExchangeConnectorServerPlugin.EXCHANGE_USER_STORAGE);
+            if ( secrets == null) {
+                logger.info("No exchange secrets found for user " + user.getUsername() + ". Ignoring updates");
+                toRemove.addAll(tasksForUser);
                 continue;
             }
-            if (beforeStatus == SyncStatus.synched)
-            {
-                continue;
+            final String username = secrets.login;
+            final String password = secrets.secret;
+            final boolean notificationMail;
+            if (skipNotification) {
+                notificationMail = false;
+            } else {
+                Preferences preferences = facade.getPreferences(user);
+                notificationMail = preferences.getEntryAsBoolean(ExchangeConnectorConfig.EXCHANGE_SEND_INVITATION_AND_CANCELATION,
+                        ExchangeConnectorConfig.DEFAULT_EXCHANGE_SEND_INVITATION_AND_CANCELATION);
             }
-            final Collection<AppointmentSynchronizer> workers;
-            try
-            {
-                workers = createAppoinmentSynchronizer(skipNotification, task, appointment, user);
-                if (workers == null)
-                {
-                    logger.info("User no longer connected to Exchange ");
-                    toRemove.add(task);
-                    continue;
-                }
-            }
-            catch (RaplaException ex)
-            {
-                String message = "Internal error while processing SynchronizationTask " + task + ". Ignoring task. ";
-                task.increaseRetries(message);
+
+            final String exchangeUrl = extractExchangeUrl(user);
+            EWSConnector ewsConnector;
+            Map<String, CalendarFolder> sharedMailboxes;
+            try {
+                final Logger ewsLogger = logger.getChildLogger("webservice");
+                ewsConnector = new EWSConnector(exchangeUrl, username,password , ewsLogger);
+                //            final PropertySet propertySet = new PropertySet(RAPLA_ID_PROPERTY_DEFINITION);
+                //            final ExchangeService service = ewsConnector.getService();
+                //            final Folder folder = Folder.bind(service, WellKnownFolderName.Calendar, propertySet);
+                //            folder.setExtendedProperty(RAPLA_ID_PROPERTY_DEFINITION, true);
+                //            folder.update();
+                ewsConnector.test();
+                sharedMailboxes = ewsConnector.getSharedMailboxes();
+            } catch (Exception ex) {
+                String message = "Internal error while processing SynchronizationTask for " +username + ". Ignoring task. ";
+                tasksForUser.stream().forEach(t->t.increaseRetries( message));
                 logger.error(message, ex);
                 continue;
             }
-            try
-            {
-                for (AppointmentSynchronizer worker : workers)
-                {
-                    worker.execute();
+            for (SynchronizationTask task : tasksForUser) {
+                final SyncStatus beforeStatus = task.getStatus();
+                final ReferenceInfo<Appointment> appointmentId = new ReferenceInfo<>(task.getAppointmentId(), Appointment.class);
+                final Appointment appointment = beforeStatus != SyncStatus.toDelete ? facade.tryResolve(appointmentId) : null;
+
+                if ((beforeStatus == SyncStatus.deleted) || (appointment != null && !isInSyncInterval(appointment))) {
+                    toRemove.add(task);
+                    continue;
                 }
-                final Preferences userPreferences = facade.getPreferences(user);
-                if(userPreferences.getEntryAsBoolean(PASSWORD_MAIL_USER, false))
-                {
-                    final Preferences userPreferencesEdit = facade.edit(userPreferences);
-                    userPreferencesEdit.putEntry(PASSWORD_MAIL_USER, false);
-                    facade.store(userPreferencesEdit);
+                if (beforeStatus == SyncStatus.synched) {
+                    continue;
                 }
-            }
-            catch (Exception e)
-            {
-                String message = e.getMessage();
-                Throwable cause = e.getCause();
-                if (cause != null && cause.getCause() != null)
-                {
-                    cause = cause.getCause();
+
+                if ( appointment == null) {
+                    continue;
                 }
-                if (cause instanceof HttpErrorException)
+                Optional<String> mailboxOptional = appointment.getReservation().getAllocatablesFor(appointment).map(Classifiable::getClassification).map(c ->
                 {
-                    int httpErrorCode = ((HttpErrorException) cause).getHttpErrorCode();
-                    if (httpErrorCode == 401)
-                    {
-                        message = "Exchangezugriff verweigert. Ist das eingetragenen Exchange Passwort noch aktuell fuer den user '" + user.getUsername() + "' ?";
-                        final Preferences preferences = facade.getPreferences(user);
-                        final Boolean mailSent = preferences.getEntryAsBoolean(PASSWORD_MAIL_USER, false);
-                        if(!mailSent)
-                        {
-                            final Preferences editPreferences = facade.edit(preferences);
-                            editPreferences.putEntry(PASSWORD_MAIL_USER, true);
-                            facade.store(editPreferences);
-                            try
-                            {
-                                mailToUserInterface.sendMail(user.getUsername(), "Rapla Exchangezugriff", message);
-                            }
-                            catch(Throwable me)
-                            {
-                                logger.error("Error sending password mail to user " + user.getUsername() + ": " + me.getMessage(), me);
+                    String mailbox = getAttribute(c, "exchangeMailbox");
+                    if ( mailbox != null ){
+                        return mailbox;
+                    }
+                    Attribute[] attributes = c.getAttributes();
+                    for ( Attribute attribute: attributes) {
+                        String annotation = attribute.getAnnotation(AttributeAnnotations.KEY_EMAIL);
+                        if ( annotation !=null && Boolean.TRUE.toString().equalsIgnoreCase( annotation)) {
+                            mailbox = (String) c.getValueForAttribute( attribute);
+                        }
+                    }
+                    if ( mailbox == null ) {
+                        mailbox = getAttribute(c, "email");
+                    }
+                    return mailbox;
+                }).filter(Objects::nonNull).findFirst();
+                if ( !mailboxOptional.isPresent()) {
+                    continue;
+                }
+
+                CalendarFolder calendarFolder = sharedMailboxes.get(mailboxOptional.get());
+                if ( calendarFolder == null) {
+                    continue;
+                }
+                FolderId folderId = calendarFolder.getId();
+                final Logger logger = this.logger.getChildLogger("exchange");
+                final AppointmentSynchronizer worker = new AppointmentSynchronizer(logger, converter, exchangeTimezoneId, exchangeAppointmentCategory, user, ewsConnector,
+                        notificationMail, task, appointment, i18n.getLocale(), folderId);
+
+                try {
+                    try {
+                        worker.execute();
+                    } catch (RaplaException ex) {
+                        String message = "Internal error while processing SynchronizationTask " + task + ". Ignoring task. ";
+                        task.increaseRetries(message);
+                        logger.error(message, ex);
+                    }
+                    final Preferences userPreferences = facade.getPreferences(user);
+                    if (userPreferences.getEntryAsBoolean(PASSWORD_MAIL_USER, false)) {
+                        final Preferences userPreferencesEdit = facade.edit(userPreferences);
+                        userPreferencesEdit.putEntry(PASSWORD_MAIL_USER, false);
+                        facade.store(userPreferencesEdit);
+                    }
+                } catch (Exception e) {
+                    String message = e.getMessage();
+                    Throwable cause = e.getCause();
+                    if (cause != null && cause.getCause() != null) {
+                        cause = cause.getCause();
+                    }
+                    if (cause instanceof HttpErrorException) {
+                        int httpErrorCode = ((HttpErrorException) cause).getHttpErrorCode();
+                        if (httpErrorCode == 401) {
+                            message = "Exchangezugriff verweigert. Ist das eingetragenen Exchange Passwort noch aktuell fuer den user '" + user.getUsername() + "' ?";
+                            final Preferences preferences = facade.getPreferences(user);
+                            final Boolean mailSent = preferences.getEntryAsBoolean(PASSWORD_MAIL_USER, false);
+                            if (!mailSent) {
+                                final Preferences editPreferences = facade.edit(preferences);
+                                editPreferences.putEntry(PASSWORD_MAIL_USER, true);
+                                facade.store(editPreferences);
+                                try {
+                                    mailToUserInterface.sendMail(user.getUsername(), "Rapla Exchangezugriff", message);
+                                } catch (Throwable me) {
+                                    logger.error("Error sending password mail to user " + user.getUsername() + ": " + me.getMessage(), me);
+                                }
                             }
                         }
                     }
-                }
-                if (cause instanceof IOException)
-                {
-                    message = "Keine Verbindung zum Exchange " + cause.getMessage();
-                }
+                    if (cause instanceof IOException) {
+                        message = "Keine Verbindung zum Exchange " + cause.getMessage();
+                    }
 
-                //if ( message != null && message.indexOf("Connection not estab") >=0)
+                    //if ( message != null && message.indexOf("Connection not estab") >=0)
 
-                String toString = getAppointmentMessage(task);
+                    String toString = getAppointmentMessage(task);
 
-                if (message != null)
-                {
-                    message = message.replaceAll("The request failed. ", "");
-                    message = message.replaceAll("The request failed.", "");
+                    if (message != null) {
+                        message = message.replaceAll("The request failed. ", "");
+                        message = message.replaceAll("The request failed.", "");
+                    } else {
+                        message = "Synchronisierungsfehler mit exchange " + e.toString();
+                    }
+                    task.increaseRetries(message);
+                    result.errorMessages.add(new SyncError(toString, message));
+                    logger.warn("Can't synchronize " + task + " " + toString + " " + message);
+                    result.open++;
+                    toStore.add(task);
+
                 }
-                else
-                {
-                    message = "Synchronisierungsfehler mit exchange " + e.toString();
+                SyncStatus after = task.getStatus();
+                if (after == SyncStatus.deleted && beforeStatus != SyncStatus.deleted) {
+                    toRemove.add(task);
+                    result.removed++;
                 }
-                task.increaseRetries(message);
-                result.errorMessages.add(new SyncError(toString, message));
-                logger.warn("Can't synchronize " + task + " " + toString + " " + message);
-                result.open++;
-                toStore.add(task);
-
-            }
-            SyncStatus after = task.getStatus();
-            if (after == SyncStatus.deleted && beforeStatus != SyncStatus.deleted)
-            {
-                toRemove.add(task);
-                result.removed++;
-            }
-            if (after == SyncStatus.synched && beforeStatus != SyncStatus.synched)
-            {
-                toStore.add(task);
-                result.changed++;
+                if (after == SyncStatus.synched && beforeStatus != SyncStatus.synched) {
+                    toStore.add(task);
+                    result.changed++;
+                }
             }
         }
         if (!toStore.isEmpty() || !toRemove.isEmpty())
@@ -801,43 +824,20 @@ public class SynchronisationManager implements ServerExtension
         return result;
     }
 
-    private Collection<AppointmentSynchronizer> createAppoinmentSynchronizer(boolean skipNotification, SynchronizationTask task, final Appointment appointment,
-            final User user) throws RaplaException
-    {
-        final Collection<AppointmentSynchronizer> workers;
-        final LoginInfo secrets = keyStorage.getSecrets(user, ExchangeConnectorServerPlugin.EXCHANGE_USER_STORAGE);
-        if (secrets != null)
-        {
-            workers = new ArrayList<>();
-            final String username = secrets.login;
-            final String password = secrets.secret;
-            final boolean notificationMail;
-            if (skipNotification)
-            {
-                notificationMail = false;
-            }
-            else
-            {
-                Preferences preferences = facade.getPreferences(user);
-                notificationMail = preferences.getEntryAsBoolean(ExchangeConnectorConfig.EXCHANGE_SEND_INVITATION_AND_CANCELATION,
-                        ExchangeConnectorConfig.DEFAULT_EXCHANGE_SEND_INVITATION_AND_CANCELATION);
-            }
-            final Logger logger = this.logger.getChildLogger("exchange");
-            final Locale locale = i18n.getLocale();
-            final Collection<String> exchangeUrls = extractExchangeUrls(user);
-            for (String exchangeUrl : exchangeUrls)
-            {
-                final AppointmentSynchronizer worker = new AppointmentSynchronizer(logger, converter, exchangeUrl, exchangeTimezoneId, exchangeAppointmentCategory, user, username, password,
-                        notificationMail, task, appointment, locale);
-                workers.add(worker);
-                
-            }
+    @Nullable
+    private String getAttribute( Classification c, String attributeKey) {
+        final Locale locale = i18n.getLocale();
+        Attribute exchangeMailbox = c.getAttribute(attributeKey);
+        if (exchangeMailbox == null)
+            return null;
+        String mailbox = c.getValueAsString(exchangeMailbox, locale);
+        if (mailbox == null) {
+            return null;
         }
-        else
-        {
-            workers = null;
+        if (mailbox.isEmpty()) {
+            return null;
         }
-        return workers;
+        return mailbox.toLowerCase();
     }
 
     private TimeInterval getSyncRange()
@@ -911,16 +911,14 @@ public class SynchronisationManager implements ServerExtension
         logger.info("Removed exchange export infos for " + user);
     }
 
-    public void testConnection(String exchangeUsername, String exchangePassword, User user) throws RaplaException
+    public Collection<String> testConnection(String exchangeUsername, String exchangePassword, User user) throws RaplaException
     {
         try
         {
-            final Collection<String> exchangeUrls = extractExchangeUrls(user);
-            for (String exchangeUrl : exchangeUrls)
-            {
-                final EWSConnector connector = new EWSConnector(exchangeUrl, exchangeUsername, exchangePassword, null);
-                connector.test();
-            }
+            String exchangeUrl = extractExchangeUrl(user);
+            final EWSConnector connector = new EWSConnector(exchangeUrl, exchangeUsername, exchangePassword, logger);
+            connector.test();
+            return connector.getSharedMailboxes().keySet();
         }
         catch (Exception e)
         {
@@ -928,9 +926,8 @@ public class SynchronisationManager implements ServerExtension
         }
     }
 
-    private Collection<String> extractExchangeUrls(User user)
+    private String extractExchangeUrl(User user)
     {
-        final Collection<String> exchangeConnectionUrls = new ArrayList<>();
         if (configExtensions != null)
         {
             for (ExchangeConfigExtensionPoint exchangeConfigExtension : configExtensions)
@@ -940,15 +937,11 @@ public class SynchronisationManager implements ServerExtension
                     final String exchangeUrl = exchangeConfigExtension.getExchangeUrl(user);
                     if (exchangeUrl != null && !exchangeUrl.isEmpty())
                     {
-                        exchangeConnectionUrls.add(exchangeUrl);
+                        return exchangeUrl;
                     }
                 }
             }
         }
-        if(exchangeConnectionUrls.isEmpty())
-        {
-            exchangeConnectionUrls.add(exchangeUrl);
-        }
-        return exchangeConnectionUrls;
+        return exchangeUrl;
     }
 }

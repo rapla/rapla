@@ -9,6 +9,7 @@ import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
 import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.MediaType;
+import java.util.Collection;
 
 @Path("exchange/connect")
 public interface ExchangeConnectorRemote 
@@ -22,17 +23,17 @@ public interface ExchangeConnectorRemote
     @Path("synchronize")
     void synchronize() throws RaplaException;
 
-	/** 
+	/**
 	 * Add an Exchange user to the user list (register a user to the Exchange Server)
 	 * (User wants to have his Exchange Account synchronized with the Rapla system)
-	 * 
-	 * @param exchangeUsername  
+	 *
+	 * @param exchangeUsername
 	 * @param exchangePassword
 	 * @return {@link ClientMessage}
 	 * @throws RaplaException
 	 */
 	@POST
-	void changeUser(@QueryParam("user")String exchangeUsername, String exchangePassword/*, Boolean downloadFromExchange*/) throws RaplaException;
+	Collection<String> changeUser(@QueryParam("user")String exchangeUsername, String exchangePassword/*, Boolean downloadFromExchange*/) throws RaplaException;
 
 	@POST
 	@Path("remove")

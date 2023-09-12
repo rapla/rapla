@@ -5,6 +5,7 @@ import org.rapla.logger.Logger;
 import org.rapla.logger.RaplaBootstrapLogger;
 import org.rapla.rest.JsonParserWrapper;
 import org.rapla.storage.RaplaInvalidTokenException;
+import org.rapla.storage.RaplaSecurityException;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.NotFoundException;
@@ -32,7 +33,7 @@ public class ExceptionResponseBuilder
             final Response build = entity.build();
             return build;
         }
-        if (cause instanceof RaplaInvalidTokenException)
+        if (cause instanceof RaplaInvalidTokenException )
         {
             final Response.ResponseBuilder entity = Response.status(Response.Status.UNAUTHORIZED).entity(cause);
             final Response build = entity.build();
@@ -60,6 +61,12 @@ public class ExceptionResponseBuilder
         {
             final Response.ResponseBuilder entity = Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity(cause);
             final Response build = entity.build();
+            return build;
+        }
+        if ( cause instanceof  RaplaSecurityException) {
+            final Response.ResponseBuilder entity = Response.status(Response.Status.UNAUTHORIZED).entity(cause);
+            final Response build = entity.build();
+            raplaLogger.warn( cause.getMessage());
             return build;
         }
         if (cause instanceof NotFoundException)
