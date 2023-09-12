@@ -76,7 +76,7 @@ public class UrlEncryptionServletRequestResponsePreprocessor  implements Servlet
             final EncryptedHttpServletRequest servletRequest = new EncryptedHttpServletRequest(request, urlEncryptor);
             return servletRequest;
         } catch (Exception ex) {
-            logger.error(ex.getMessage(), ex);
+            logger.error(ex.getMessage());
             return null;
         }
     }
