@@ -72,7 +72,6 @@ import org.rapla.entities.storage.EntityResolver;
 import org.rapla.entities.storage.ExternalSyncEntity;
 import org.rapla.entities.storage.RefEntity;
 import org.rapla.entities.storage.ReferenceInfo;
-import org.rapla.entities.storage.UnresolvableReferenceExcpetion;
 import org.rapla.entities.storage.internal.ExternalSyncEntityImpl;
 import org.rapla.entities.storage.internal.ReferenceHandler;
 import org.rapla.entities.storage.internal.SimpleEntity;
@@ -110,6 +109,8 @@ import org.rapla.storage.impl.RaplaLock;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -485,23 +486,15 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
             Map<Entity, Collection<Appointment>> allocatableMap = new LinkedHashMap<>();
             for (Entity entity: entities)
             {
-                RaplaLock.ReadLock readLock = lockManager.readLock(getClass(), "queryAppointments");
                 SortedSet<Appointment> appointmentSet;
-                try
-                {
-                    final SortedSet<Appointment> appointments;
-                    if (entity.getTypeClass()==User.class) {
-                        ReferenceInfo<User> reference = ((User) entity).getReference();
-                        appointments = getAppointmentsForUser(reference);
-                    } else {
-                        appointments = getAppointments((Allocatable) entity);
-                    }
-                    appointmentSet = AppointmentImpl.getAppointments(appointments, user, start, end, excludeExceptions);
+                final SortedSet<Appointment> appointments;
+                if (entity.getTypeClass()==User.class) {
+                    ReferenceInfo<User> reference = ((User) entity).getReference();
+                    appointments = getAppointmentsForUser(reference);
+                } else {
+                    appointments = getAppointments((Allocatable) entity);
                 }
-                finally
-                {
-                    lockManager.unlock(readLock);
-                }
+                appointmentSet = AppointmentImpl.getAppointments(appointments, user, start, end, excludeExceptions);
                 for (Appointment appointment : appointmentSet)
                 {
                     Reservation reservation = appointment.getReservation();
@@ -674,26 +667,18 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
     public String authenticate(String username, String password) throws RaplaException
     {
         checkConnected();
-        RaplaLock.ReadLock readLock = lockManager.readLock(getClass(), "authenticate " +username);
-        try
+        getLogger().debug("Check password for User " + username);
+        User user = cache.getUser(username);
+        if (user != null)
         {
-            getLogger().debug("Check password for User " + username);
-            User user = cache.getUser(username);
-            if (user != null)
+            String userId = user.getId();
+            if (checkPassword(user.getReference(), password))
             {
-                String userId = user.getId();
-                if (checkPassword(user.getReference(), password))
-                {
-                    return userId;
-                }
+                return userId;
             }
-            getLogger().warn("Login failed for " + username);
-            throw new RaplaSecurityException(i18n.getString("error.login"));
         }
-        finally
-        {
-            lockManager.unlock(readLock);
-        }
+        getLogger().warn("Login failed for " + username);
+        throw new RaplaSecurityException(i18n.getString("error.login"));
     }
 
     public boolean canChangePassword() throws RaplaException
@@ -704,26 +689,15 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
     public void changePassword(User user, char[] oldPassword, char[] newPassword) throws RaplaException
     {
         getLogger().info("Change password for User " + user.getUsername());
-        ReferenceInfo<User> userId = user.getReference();
         String password = new String(newPassword);
         if (encryption != null)
             password = encrypt(encryption, password);
-        RaplaLock.WriteLock writeLock = writeLockIfLoaded("changing password for " + user.getId());
-        try
-        {
-            cache.putPassword(userId, password);
-        }
-        finally
-        {
-            lockManager.unlock(writeLock);
-        }
         User editObject = editObject(user, null);
-        List<Entity> editList = new ArrayList<>(1);
-        editList.add(editObject);
-        Collection<ReferenceInfo<Entity>> removeList = Collections.emptyList();
-        // synchronization will be done in the dispatch method
-        storeAndRemove(editList, removeList, user);
+
+        changePassword( editObject, password);
     }
+
+    abstract protected void changePassword(User user, String password) throws RaplaException;
 
     public void changeName(User user, String title, String firstname, String surname) throws RaplaException
     {
@@ -925,19 +899,14 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
     {
         return scheduler.supply(()-> {
             checkConnected();
-            RaplaLock.ReadLock readLock = lockManager.readLock(getClass(), "getConflicts for " + user);
-            try {
-                Collection<Conflict> conflictList = new HashSet<>();
-                final Collection<Conflict> conflicts = conflictFinder.getConflicts(user);
-                for (Conflict conflict : conflicts) {
-                    // conflict is filled with disable/enable status from cache
-                    Conflict conflictClone = cache.fillConflictDisableInformation(user, conflict);
-                    conflictList.add(conflictClone);
-                }
-                return conflictList;
-            } finally {
-                lockManager.unlock(readLock);
+            Collection<Conflict> conflictList = new HashSet<>();
+            final Collection<Conflict> conflicts = conflictFinder.getConflicts(user);
+            for (Conflict conflict : conflicts) {
+                // conflict is filled with disable/enable status from cache
+                Conflict conflictClone = cache.fillConflictDisableInformation(user, conflict);
+                conflictList.add(conflictClone);
             }
+            return conflictList;
         });
     }
 
@@ -1535,62 +1504,47 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 
     private void addToDeleteUpdate(ReferenceInfo referenceInfo, Date timestamp, boolean isDelete, Entity current)
     {
-        final Class<? extends Entity> type = referenceInfo.getType();
-        String id = referenceInfo.getId();
+        synchronized ( deleteUpdateSet ) {
+            final Class<? extends Entity> type = referenceInfo.getType();
+            String id = referenceInfo.getId();
 
-        DeleteUpdateEntry entry = deleteUpdateSet.get(id);
-        if (entry == null)
-        {
-            entry = new DeleteUpdateEntry(referenceInfo, timestamp, isDelete);
-        }
-        else
-        {
-            DeleteUpdateEntry remove = deleteUpdateSet.remove(id);
-            entry.isDelete = isDelete;
-            entry.timestamp = timestamp;
-            if (isDelete && remove == null)
-            {
-                getLogger().warn("Can't remove entry for id " + id);
+            DeleteUpdateEntry entry = deleteUpdateSet.get(id);
+            if (entry == null) {
+                entry = new DeleteUpdateEntry(referenceInfo, timestamp, isDelete);
+            } else {
+                DeleteUpdateEntry remove = deleteUpdateSet.remove(id);
+                entry.isDelete = isDelete;
+                entry.timestamp = timestamp;
+                if (isDelete && remove == null) {
+                    getLogger().warn("Can't remove entry for id " + id);
+                }
             }
-        }
-        if (type == User.class && current != null)
-        {
-            final Collection<String> groupIdList = ((UserImpl) current).getGroupIdList();
-            entry.addGroupIds(groupIdList);
-        }
-        else if (current instanceof EntityPermissionContainer)
-        {
-            entry.addPermissions((EntityPermissionContainer) current, Permission.READ_NO_ALLOCATION);
-        }
-        else if (type == Category.class)
-        {
-            entry.affectAll = true;
-        }
-        else if (type == Conflict.class)
-        {
-            if (entry.isDelete)
-            {
+            if (type == User.class && current != null) {
+                final Collection<String> groupIdList = ((UserImpl) current).getGroupIdList();
+                entry.addGroupIds(groupIdList);
+            } else if (current instanceof EntityPermissionContainer) {
+                entry.addPermissions((EntityPermissionContainer) current, Permission.READ_NO_ALLOCATION);
+            } else if (type == Category.class) {
                 entry.affectAll = true;
+            } else if (type == Conflict.class) {
+                if (entry.isDelete) {
+                    entry.affectAll = true;
+                } else {
+                    Conflict conflict = (Conflict) current;
+                    addPermissions(deleteUpdateSet, entry, conflict.getReservation1());
+                    addPermissions(deleteUpdateSet, entry, conflict.getReservation2());
+                }
+            } else if (current instanceof Preferences) {
+                ReferenceInfo<User> owner = ((PreferencesImpl) current).getOwnerRef();
+                if (owner != null) {
+                    entry.addUserIds(Collections.singletonList(owner.getId()));
+                }
             }
-            else
-            {
-                Conflict conflict = (Conflict) current;
-                addPermissions(entry, conflict.getReservation1());
-                addPermissions(entry, conflict.getReservation2());
-            }
+            deleteUpdateSet.put(entry.getId(), entry);
         }
-        else if (current instanceof Preferences)
-        {
-            ReferenceInfo<User> owner = ((PreferencesImpl) current).getOwnerRef();
-            if (owner != null)
-            {
-                entry.addUserIds(Collections.singletonList(owner.getId()));
-            }
-        }
-        deleteUpdateSet.put(entry.getId(), entry);
     }
 
-    private void addPermissions(DeleteUpdateEntry entry, ReferenceInfo<Reservation> reservation)
+    private void addPermissions(SortedBidiMap<String, DeleteUpdateEntry> deleteUpdateSet, DeleteUpdateEntry entry, ReferenceInfo<Reservation> reservation)
     {
         Reservation event = tryResolve(reservation);
         if (event != null)
@@ -1854,10 +1808,9 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
         DeleteUpdateEntry fromElement = new DeleteUpdateEntry(new ReferenceInfo(dummyId, Allocatable.class), new Date(timestamp.getTime() + 1), isDelete);
         LinkedList<ReferenceInfo> result = new LinkedList<>();
 
-        RaplaLock.ReadLock lock = lockManager.readLock(getClass(), "getEntities for "+ user);
         final Collection<String> groupsIncludingParents = user != null ? UserImpl.getGroupsIncludingParents(user) : null;
         String userId = user != null ? user.getId() : null;
-        try
+        synchronized ( deleteUpdateSet )
         {
             SortedMap<DeleteUpdateEntry, String> tailMap = deleteUpdateSet.inverseBidiMap().tailMap(fromElement);
             Set<DeleteUpdateEntry> tailSet = tailMap.keySet();
@@ -1874,10 +1827,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
                 }
             }
         }
-        finally
-        {
-            lockManager.unlock(lock);
-        }
+
         return result;
     }
 
@@ -2014,8 +1964,8 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 
         private void initAppointmentBindings(Collection<Reservation> reservations)
         {
-            appointmentMap = new HashMap<>();
-            appointmentUserMap = new HashMap<>();
+            appointmentMap = new ConcurrentHashMap<>();
+            appointmentUserMap = new ConcurrentHashMap<>();
             for (Reservation r : reservations)
             {
                 for (Appointment app : ((ReservationImpl) r).getAppointmentList())
@@ -2067,7 +2017,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
             SortedSet<Appointment> set =( referenceInfo.getType() == User.class) ? appointmentUserMap.get(referenceInfo) : appointmentMap.get( referenceInfo);
             if (set == null)
             {
-                set = new TreeSet<>(new AppointmentStartComparator());
+                set = new ConcurrentSkipListSet<>(new AppointmentStartComparator());
                 if ( referenceInfo.getType() == User.class ) {
                     appointmentUserMap.put(referenceInfo, set);
                 } else {
@@ -2076,8 +2026,6 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
             }
             set.add(appRef);
         }
-
-
 
         private void removeAppointmentFromSet(Appointment app, Collection<Appointment> appointmentSet) {
             // binary search could fail if the appointment has changed since the last add, which should not
@@ -2095,7 +2043,6 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
                 }
             }
         }
-
 
         // this check is only there to detect rapla bugs in the conflict api and can be removed if it causes performance issues
         private void checkAbandonedAppointments(LocalCache cache)
@@ -2214,17 +2161,9 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 
     private void removeOldHistory() throws RaplaException
     {
-        final RaplaLock.ReadLock readLock = lockManager.readLock(getClass(), "removeOldHistory");
-        try
-        {
-            Date lastUpdated = getLastRefreshed();
-            Date date = new Date(lastUpdated.getTime() - HISTORY_DURATION);
-            history.removeUnneeded(date);
-        }
-        finally
-        {
-            lockManager.unlock(readLock);
-        }
+        Date lastUpdated = getLastRefreshed();
+        Date date = new Date(lastUpdated.getTime() - HISTORY_DURATION);
+        history.removeUnneeded(date);
     }
 
     private void removeOldConflicts() throws RaplaException
@@ -2232,17 +2171,9 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
         Date today = today();
         Set<ReferenceInfo<Conflict>> conflictsToDelete;
         {
-            RaplaLock.ReadLock readLock = lockManager.readLock(getClass(), "removeOldConflicts");
-            try
-            {
-                conflictsToDelete = new HashSet<>();
-                conflictsToDelete.addAll(conflictFinder.removeOldConflicts(today));
-                conflictsToDelete.retainAll(cache.getDisabledConflictIds());
-            }
-            finally
-            {
-                lockManager.unlock(readLock);
-            }
+            conflictsToDelete = new HashSet<>();
+            conflictsToDelete.addAll(conflictFinder.removeOldConflicts(today));
+            conflictsToDelete.retainAll(cache.getDisabledConflictIds());
         }
 
         Collection<Conflict> conflicts = cache.getDisabledConflicts();
@@ -2259,16 +2190,8 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
             final String message = "Removing old conflicts " + conflictsToDelete.size();
             getLogger().info(message);
             removeConflictsFromDatabase(conflictsToDelete);
-            RaplaLock.WriteLock writeLock = writeLockIfLoaded(message);
-            try
-            {
-                //Order is important they can't be removed from database if they are not in cache
-                removeConflictsFromCache(conflictsToDelete);
-            }
-            finally
-            {
-                lockManager.unlock(writeLock);
-            }
+            //Order is important they can't be removed from database if they are not in cache
+            removeConflictsFromCache(conflictsToDelete);
         }
     }
 
@@ -2814,19 +2737,6 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
             return Collections.emptySet();
         }
         return entities;
-    }
-
-    @Override
-    public Map<ReferenceInfo,Set<Entity>> getReferences(Set<ReferenceInfo> entityReferences) throws RaplaException {
-        RaplaLock.ReadLock readLock = lockManager.readLock(getClass(), "getReferences" );
-        try
-        {
-            return getReferencingEntities(entityReferences, new EntityStore(cache));
-        }
-        finally
-        {
-            lockManager.unlock(readLock);
-        }
     }
 
     public Set<ReferenceInfo<Allocatable>> filterAllocatablesWithNonTemplateReservations(Set<ReferenceInfo<Allocatable>> allocatables) {
@@ -3610,18 +3520,9 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
     }
 
     private Map<ReferenceInfo<Allocatable>, Collection<Appointment>> getFirstAllocatableBindingsMap(Collection<Allocatable> allocatables, Collection<Appointment> appointments,
-            Collection<Reservation> ignoreList) throws RaplaException
+            Collection<Reservation> ignoreList)
     {
-        final RaplaLock.ReadLock readLock = lockManager.readLock(getClass(),"getFirstAllocableBindings");
-        Map<ReferenceInfo<Allocatable>, Map<Appointment, Collection<Appointment>>> allocatableBindings;
-        try
-        {
-            allocatableBindings = getAllocatableBindings(allocatables, appointments, ignoreList, true);
-        }
-        finally
-        {
-            lockManager.unlock(readLock);
-        }
+        Map<ReferenceInfo<Allocatable>, Map<Appointment, Collection<Appointment>>> allocatableBindings = getAllocatableBindings(allocatables, appointments, ignoreList, true);
         Map<ReferenceInfo<Allocatable>, Collection<Appointment>> map = new HashMap<>();
         for (Map.Entry<ReferenceInfo<Allocatable>, Map<Appointment, Collection<Appointment>>> entry : allocatableBindings.entrySet())
         {
@@ -3638,17 +3539,9 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
     {
         return scheduler.supply(() ->
         {
-            RaplaLock.ReadLock readLock = lockManager.readLock(getClass(), "getAllocatableBindings" );
-            try
-            {
-                Map<ReferenceInfo<Allocatable>, Map<Appointment, Collection<Appointment>>> allocatableBindings = getAllocatableBindings(allocatables, appointments, ignoreList,
-                        false);
-                return allocatableBindings;
-            }
-            finally
-            {
-                lockManager.unlock(readLock);
-            }
+            Map<ReferenceInfo<Allocatable>, Map<Appointment, Collection<Appointment>>> allocatableBindings = getAllocatableBindings(allocatables, appointments, ignoreList,
+                    false);
+            return allocatableBindings;
         });
     }
 
@@ -3699,41 +3592,33 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
     {
         Promise<Date> promise = scheduler.supply(() ->
         {
-            RaplaLock.ReadLock readLock = lockManager.readLock(getClass(), "getNextAllocatableDate");
-            try
+            Appointment newState = appointment;
+            Date firstStart = appointment.getStart();
+            boolean startDateExcluded = isExcluded(excludedDays, firstStart);
+            boolean wholeDay = appointment.isWholeDaysSet();
+            boolean inWorktime = inWorktime(appointment, worktimeStartMinutes, worktimeEndMinutes);
+            final int rowsPerHourInt = (rowsPerHour == null || rowsPerHour <= 1) ? 1 : rowsPerHour;
+            for (int i = 0; i < 366 * 24 * rowsPerHourInt; i++)
             {
-                Appointment newState = appointment;
-                Date firstStart = appointment.getStart();
-                boolean startDateExcluded = isExcluded(excludedDays, firstStart);
-                boolean wholeDay = appointment.isWholeDaysSet();
-                boolean inWorktime = inWorktime(appointment, worktimeStartMinutes, worktimeEndMinutes);
-                final int rowsPerHourInt = (rowsPerHour == null || rowsPerHour <= 1) ? 1 : rowsPerHour;
-                for (int i = 0; i < 366 * 24 * rowsPerHourInt; i++)
+                newState = ((AppointmentImpl) newState).clone();
+                Date start = newState.getStart();
+                long millisToAdd = wholeDay ? DateTools.MILLISECONDS_PER_DAY : (DateTools.MILLISECONDS_PER_HOUR / rowsPerHourInt);
+                Date newStart = new Date(start.getTime() + millisToAdd);
+                if (!startDateExcluded && isExcluded(excludedDays, newStart))
                 {
-                    newState = ((AppointmentImpl) newState).clone();
-                    Date start = newState.getStart();
-                    long millisToAdd = wholeDay ? DateTools.MILLISECONDS_PER_DAY : (DateTools.MILLISECONDS_PER_HOUR / rowsPerHourInt);
-                    Date newStart = new Date(start.getTime() + millisToAdd);
-                    if (!startDateExcluded && isExcluded(excludedDays, newStart))
-                    {
-                        continue;
-                    }
-                    newState.moveTo(newStart);
-                    if (!wholeDay && inWorktime && !inWorktime(newState, worktimeStartMinutes, worktimeEndMinutes))
-                    {
-                        continue;
-                    }
-                    if (!isAllocated(allocatables, newState, ignoreList))
-                    {
-                        return newStart;
-                    }
+                    continue;
                 }
-                return null;
+                newState.moveTo(newStart);
+                if (!wholeDay && inWorktime && !inWorktime(newState, worktimeStartMinutes, worktimeEndMinutes))
+                {
+                    continue;
+                }
+                if (!isAllocated(allocatables, newState, ignoreList))
+                {
+                    return newStart;
+                }
             }
-            finally
-            {
-                lockManager.unlock(readLock);
-            }
+            return null;
         });
         return promise;
     }
@@ -3782,15 +3667,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
     public Collection<Entity> getVisibleEntities(final User user) throws RaplaException
     {
         checkLoaded();
-        RaplaLock.ReadLock readLock = lockManager.readLock(getClass(), "getVisibleEntities for " + user );
-        try
-        {
-            return cache.getVisibleEntities(user);
-        }
-        finally
-        {
-            lockManager.unlock(readLock);
-        }
+        return cache.getVisibleEntities(user);
     }
 
     @SuppressWarnings("deprecation")

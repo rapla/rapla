@@ -45,6 +45,7 @@ import java.util.LinkedHashSet;
 import java.util.LinkedList;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 
 class ConflictFinder {
 	AllocationMap  allocationMap;
@@ -57,7 +58,7 @@ class ConflictFinder {
     	this.logger = logger;
     	this.allocationMap = allocationMap;
         this.permissionController = permissionController;
-    	conflictMap = new HashMap<>();
+    	conflictMap = new ConcurrentHashMap<>();
     	long startTime = System.currentTimeMillis();
     	int conflictSize = 0;
         for (Allocatable allocatable:allocationMap.getAllocatables())
@@ -131,7 +132,7 @@ class ConflictFinder {
 //                conflictList.add( conflict );
 //            }
 //        }
-        Map<ReferenceInfo<Conflict>,Conflict> conflictList =   updateConflicts(allocatable, today, allAppointments);
+        Map<ReferenceInfo<Conflict>,Conflict> conflictList = updateConflicts(allocatable, today, allAppointments);
         //updateConflictsOld(allocatable, today, allAppointments, changedAppointments, conflictList);
         if ( conflictList.isEmpty())
         {
@@ -605,7 +606,7 @@ class ConflictFinder {
 		
 
     	Set<Conflict> added = new HashSet<>();
-    	// this will recalculate the conflicts for that resource and the chan;ged appointments
+    	// this will recalculate the conflicts for that resource and the changed appointments
     	for ( Map.Entry<ReferenceInfo<Allocatable>, AllocationChange> entry:toUpdate.entrySet())
     	{
             ReferenceInfo<Allocatable> allocatableId = entry.getKey();
@@ -623,10 +624,11 @@ class ConflictFinder {
     		}
             Allocatable allocatable = resolver.tryResolve( allocatableId);
 			Map<ReferenceInfo<Conflict>,Conflict> conflictListAfter;
-            if  (allocatable != null)
-             conflictListAfter = calculateConflicts( allocatable , today);
-            else
-             conflictListAfter= Collections.emptyMap();
+            if  (allocatable != null) {
+                conflictListAfter = calculateConflicts(allocatable, today);
+            } else {
+                conflictListAfter = new ConcurrentHashMap<>();
+            }
 			conflictMap.put( allocatableId, conflictListAfter);
 			//User user = evt.getUserFromRequest();
 		
@@ -729,9 +731,13 @@ class ConflictFinder {
     	for ( Conflict oldConflict:updateList)
     	{
     		Conflict newConflict = toUpdateConflicts.get( oldConflict);
-    		Map<ReferenceInfo<Conflict>,Conflict> conflicts = conflictMap.get( oldConflict.getAllocatableId());
-    		conflicts.remove( oldConflict.getReference() );
-    		conflicts.put(newConflict.getReference(), newConflict);
+            ReferenceInfo<Allocatable> allocatableId = oldConflict.getAllocatableId();
+            Map<ReferenceInfo<Conflict>,Conflict> conflicts = conflictMap.get(allocatableId);
+            // Replace with update
+            HashMap<ReferenceInfo<Conflict>,Conflict> newSet = new HashMap<>(conflicts);
+            newSet.remove( oldConflict.getReference() );
+            newSet.put(newConflict.getReference(), newConflict);
+            conflictMap.put( allocatableId, newSet);
     		// we add a change operation 
     		// TODO Note that this list also contains the NEW conflicts, but the UpdateResult.NEW could still contain the old conflicts
     		//if ( added.contains( oldConflict))
@@ -762,9 +768,13 @@ class ConflictFinder {
 	public Set<ReferenceInfo<Conflict>> removeOldConflicts(Date today)
 	{
         Set<ReferenceInfo<Conflict>> result = new LinkedHashSet<>();
-		for (Map<ReferenceInfo<Conflict>,Conflict> conflictMap: this.conflictMap.values())
+		for (Map.Entry<ReferenceInfo<Allocatable>,Map<ReferenceInfo<Conflict>,Conflict>> conflictMapEntry: this.conflictMap.entrySet())
 		{
-			Iterator<Map.Entry<ReferenceInfo<Conflict>,Conflict>> it = conflictMap.entrySet().iterator();
+            ReferenceInfo<Allocatable> key = conflictMapEntry.getKey();
+            Map<ReferenceInfo<Conflict>, Conflict> conflicts = conflictMapEntry.getValue();
+            Map<ReferenceInfo<Conflict>,Conflict> newMap = new HashMap<>(conflicts);
+            Set<Map.Entry<ReferenceInfo<Conflict>, Conflict>> entries = newMap.entrySet();
+            Iterator<Map.Entry<ReferenceInfo<Conflict>,Conflict>> it = entries.iterator();
 			while (it.hasNext())
 			{
                 Map.Entry<ReferenceInfo<Conflict>,Conflict> conflictEntry = it.next();
@@ -775,6 +785,9 @@ class ConflictFinder {
 					result.add(conflict.getReference());
 				}
 			}
+            if ( newMap.size() < conflicts.size()) {
+                conflictMap.put(  key, newMap);
+            }
 		}
 		return result;
 		

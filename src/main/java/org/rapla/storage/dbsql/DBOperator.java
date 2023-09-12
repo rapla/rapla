@@ -808,7 +808,6 @@ import java.util.Set;
                 getLogger().debug("Commiting");
                 connection.commit();
             }
-            //            refreshWithoutLock(connection);
         }
         catch (Exception ex)
         {
@@ -876,6 +875,13 @@ import java.util.Set;
         return false;
     }
 
+    protected void changePassword(User user, String password) throws RaplaException {
+        ReferenceInfo<User> userId = user.getReference();
+        List<Entity> editList = new ArrayList<>(1);
+        editList.add(user);
+        storeAndRemove(editList, Collections.emptyList(), user);
+        cache.putPassword( userId, password);
+    }
     @Override protected void removeConflictsFromDatabase(Collection<ReferenceInfo<Conflict>> disabledConflicts)
     {
         super.removeConflictsFromDatabase(disabledConflicts);

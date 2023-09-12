@@ -40,22 +40,23 @@ import org.rapla.framework.RaplaException;
 
 import javax.inject.Provider;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class LocalCache implements EntityResolver
 {
-    Map<String, String> passwords = new HashMap<>();
+    Map<String, String> passwords = new ConcurrentHashMap<>();
     Map<String, Entity> entities;
 
     //Map<String,ConflictImpl> disabledConflicts = new HashMap<String,ConflictImpl>();
-    Map<String,ReferenceInfo<Appointment>> disabledConflictApp1 = new HashMap<>();
-    Map<String,ReferenceInfo<Appointment>> disabledConflictApp2 = new HashMap<>();
-    Map<String, Date> conflictLastChanged = new HashMap<>();
+    Map<String,ReferenceInfo<Appointment>> disabledConflictApp1 = new ConcurrentHashMap<>();
+    Map<String,ReferenceInfo<Appointment>> disabledConflictApp2 = new ConcurrentHashMap<>();
+    Map<String, Date> conflictLastChanged = new ConcurrentHashMap<>();
 
     Map<String, DynamicTypeImpl> dynamicTypes;
     Map<String, UserImpl> users;
     Map<String, AllocatableImpl> resources;
     Map<String, ReservationImpl> reservations;
-    Map<ReferenceInfo<Allocatable>, GraphNode> graph = new LinkedHashMap<>();
+    Map<ReferenceInfo<Allocatable>, GraphNode> graph = new ConcurrentHashMap<>();
 
     private String clientUserId;
     private final PermissionController permissionController;
@@ -63,12 +64,12 @@ public class LocalCache implements EntityResolver
     public LocalCache(PermissionController permissionController)
     {
         this.permissionController = permissionController;
-        entities = new HashMap<>();
+        entities = new ConcurrentHashMap<>();
         // top-level-entities
-        reservations = new LinkedHashMap<>();
-        users = new LinkedHashMap<>();
-        resources = new LinkedHashMap<>();
-        dynamicTypes = new LinkedHashMap<>();
+        reservations = new ConcurrentHashMap<>();
+        users = new ConcurrentHashMap<>();
+        resources = new ConcurrentHashMap<>();
+        dynamicTypes = new ConcurrentHashMap<>();
         //initSuperCategory();
     }
 
@@ -432,10 +433,8 @@ public class LocalCache implements EntityResolver
             lastChanged = new Date();
         }
         conflict.setLastChanged(lastChanged);
-        EntityResolver cache = this;
         if (user != null)
         {
-
             final ReferenceInfo<Reservation> reservation1Id = conflict.getReservation1();
             final ReferenceInfo<Reservation> reservation2Id = conflict.getReservation2();
             Reservation reservation1 = tryResolve(reservation1Id);
@@ -552,7 +551,7 @@ public class LocalCache implements EntityResolver
             }
         }
 
-        Map<GraphNode, ConnectionType> connections = new LinkedHashMap<>();
+        Map<GraphNode, ConnectionType> connections = new ConcurrentHashMap<>();
 
         @Override public String toString()
         {

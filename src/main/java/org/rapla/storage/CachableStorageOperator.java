@@ -53,8 +53,6 @@ public interface CachableStorageOperator extends StorageOperator {
     Date getHistoryValidStart();
     Date getConnectStart();
 
-    Map<ReferenceInfo,Set<Entity>> getReferences(Set<ReferenceInfo> entityReferences) throws RaplaException;
-
     Map<String, ExternalSyncEntity> getImportExportEntities(String systemId, int importExportDirection) throws RaplaException;
     
     /**

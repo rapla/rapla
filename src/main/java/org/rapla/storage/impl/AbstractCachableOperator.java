@@ -357,33 +357,17 @@ public abstract class AbstractCachableOperator implements StorageOperator
     public Collection<User> getUsers() throws RaplaException
     {
         checkLoaded();
-        RaplaLock.ReadLock readLock = lockManager.readLock(getClass(), "getUsers");
-        try
-        {
-            Collection<User> collection = cache.getUsers();
-            // We return a clone to avoid synchronization Problems
-            return new LinkedHashSet<>(collection);
-        }
-        finally
-        {
-            lockManager.unlock(readLock);
-        }
+        Collection<User> collection = cache.getUsers();
+        // We return a clone to avoid synchronization Problems
+        return collection;
     }
 
     public Collection<DynamicType> getDynamicTypes() throws RaplaException
     {
         checkLoaded();
-        RaplaLock.ReadLock readLock = lockManager.readLock(getClass(),"getDynamicTypes");
-        try
-        {
-            Collection<DynamicType> collection = cache.getDynamicTypes();
-            // We return a clone to avoid synchronization Problems
-            return new ArrayList<>(collection);
-        }
-        finally
-        {
-            lockManager.unlock(readLock);
-        }
+        Collection<DynamicType> collection = cache.getDynamicTypes();
+        // We return a clone to avoid synchronization Problems
+        return collection;
     }
 
 
@@ -463,18 +447,7 @@ public abstract class AbstractCachableOperator implements StorageOperator
     protected Collection<Allocatable> getAllocatables(ClassificationFilter[] filters, int maxPerType) throws RaplaException
     {
         checkLoaded();
-        Collection<Allocatable> allocatables = new LinkedHashSet<>();
-        RaplaLock.ReadLock readLock = lockManager.readLock(getClass(),"getAllocatables");
-        try
-        {
-            Collection<Allocatable> collection = cache.getAllocatables();
-            // We return a clone to avoid synchronization Problems
-            allocatables.addAll(collection);
-        }
-        finally
-        {
-            lockManager.unlock(readLock);
-        }
+        Collection<Allocatable> allocatables = cache.getAllocatables();
         Map<DynamicType,Integer> typeCount = new LinkedHashMap<>();
 
             Iterator<? extends Classifiable> it = allocatables.iterator();
@@ -525,15 +498,7 @@ public abstract class AbstractCachableOperator implements StorageOperator
     public User getUser(final String username) throws RaplaException
     {
         checkLoaded();
-        RaplaLock.ReadLock readLock = lockManager.readLock(getClass(),"getUser");
-        try
-        {
-            return cache.getUser(username);
-        }
-        finally
-        {
-            lockManager.unlock(readLock);
-        }
+        return cache.getUser(username);
     }
 
     protected Map<ReferenceInfo<Preferences>, PreferencesImpl> emptyPreferencesProxy = new HashMap<>();
@@ -622,24 +587,16 @@ public abstract class AbstractCachableOperator implements StorageOperator
             throws RaplaException
     {
         checkLoaded();
-        RaplaLock.ReadLock readLock = lockManager.readLock(getClass(),"getFromId");
-        try
+        Map<ReferenceInfo<T>, T> result = new HashMap<>();
+        for (ReferenceInfo<T> id : idSet)
         {
-            Map<ReferenceInfo<T>, T> result = new LinkedHashMap();
-            for (ReferenceInfo<T> id : idSet)
+            T persistant = (throwEntityNotFound ? cache.resolve(id) : cache.tryResolve(id));
+            if (persistant != null)
             {
-                T persistant = (throwEntityNotFound ? cache.resolve(id) : cache.tryResolve(id));
-                if (persistant != null)
-                {
-                    result.put(id, persistant);
-                }
+                result.put(id, persistant);
             }
-            return result;
         }
-        finally
-        {
-            lockManager.unlock(readLock);
-        }
+        return result;
     }
 
     public RaplaLock.WriteLock writeLockIfLoaded(String name) throws RaplaException
@@ -782,10 +739,12 @@ public abstract class AbstractCachableOperator implements StorageOperator
 
     protected String getName(Object object)
     {
-        if (object == null)
+        if (object == null) {
             return null;
-        if (object instanceof Named)
+        }
+        if (object instanceof Named) {
             return (((Named) object).getName(i18n.getLocale()));
+        }
         return object.toString();
     }
 
@@ -796,53 +755,18 @@ public abstract class AbstractCachableOperator implements StorageOperator
 
     public DynamicType getDynamicType(String key)
     {
-        if (!isLoaded())
-        {
-            if ( cache != null )
-            {
-                return cache.getDynamicType( key );
-            }
+        if ( cache != null ) {
+            return cache.getDynamicType( key );
+        } else if (!isLoaded()) {
             return null;
-        }
-        RaplaLock.ReadLock readLock = null;
-        try
-        {
-            readLock = lockManager.readLock(getClass(),"getDynamicType" + key);
-        }
-        catch (RaplaException e)
-        {
-            // this is not so dangerous
-            getLogger().warn("Returning type " + key + " without read lock ");
-        }
-        try
-        {
-            return cache.getDynamicType(key);
-        }
-        finally
-        {
-            lockManager.unlock(readLock);
+        } else {
+            throw new IllegalStateException("Cache not initialized");
         }
     }
 
     @Override public <T extends Entity> T tryResolve(String id, Class<T> entityClass)
     {
-        RaplaLock.ReadLock readLock = null;
-        try
-        {
-            readLock = lockManager.readLock(getClass(), "tryResolve " + entityClass + ":" +id);
-        }
-        catch (RaplaException e)
-        {
-            getLogger().warn("Returning object for id  " + id + " without read lock ");
-        }
-        try
-        {
-            return tryResolve(cache, id, entityClass);
-        }
-        finally
-        {
-            lockManager.unlock(readLock);
-        }
+        return tryResolve(cache, id, entityClass);
     }
 
     protected <T extends Entity> T resolve(EntityResolver resolver, String id, Class<T> entityClass) throws EntityNotFoundException

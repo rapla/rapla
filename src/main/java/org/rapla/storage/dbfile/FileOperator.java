@@ -503,6 +503,15 @@ final public class FileOperator extends LocalAbstractCachableOperator
         return externalSyncEntities.values().stream().flatMap(x -> x.values().stream()).collect(Collectors.toList());
     }
 
+    @Override
+    protected void changePassword(User user, String password) throws RaplaException {
+        ReferenceInfo<User> userId = user.getReference();
+        List<Entity> editList = new ArrayList<>(1);
+        cache.putPassword( userId, password);
+        editList.add(user);
+        storeAndRemove(editList, Collections.emptyList(), user);
+    }
+
 
     static class ImportExportMapKey
     {

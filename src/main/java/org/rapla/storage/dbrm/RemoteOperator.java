@@ -690,13 +690,8 @@ public class RemoteOperator
     private <T extends Entity> Map<ReferenceInfo<T>, T> resolveLocal(UpdateEvent entityList, Collection<ReferenceInfo<T>> idSet) throws RaplaException {
         Map<ReferenceInfo<T>, T> result = new HashMap();
         Collection<Entity> list = entityList.getStoreObjects();
-        RaplaLock.ReadLock lock = lockManager.readLock(getClass(),"resolveLocale");
-        try {
-            testResolve(list);
-            setResolver(list);
-        } finally {
-            lockManager.unlock(lock);
-        }
+        testResolve(list);
+        setResolver(list);
         for (Entity entity : list) {
             ReferenceInfo<T> ref = entity.getReference();
             if (idSet.contains(ref)) {
@@ -742,16 +737,10 @@ public class RemoteOperator
         });
     }
 
-    private AppointmentMapping processReservationResult(AppointmentMap appointmentMap, ClassificationFilter[] filters)
-            throws RaplaException {
-        RaplaLock.ReadLock lock = lockManager.readLock(getClass(), "processReservationResult");
-        try {
-            final RemoteOperator resolver = this;
-            appointmentMap.init(resolver);
-            return appointmentMap.getResult(filters);
-        } finally {
-            lockManager.unlock(lock);
-        }
+    private AppointmentMapping processReservationResult(AppointmentMap appointmentMap, ClassificationFilter[] filters) {
+        final RemoteOperator resolver = this;
+        appointmentMap.init(resolver);
+        return appointmentMap.getResult(filters);
     }
 
     //    public List<String> getTemplateNames() throws RaplaException {

@@ -23,13 +23,12 @@ import org.rapla.rest.JsonParserWrapper;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.Date;
 import java.util.HashMap;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class EntityHistory
 {
@@ -85,7 +84,7 @@ public class EntityHistory
         }
     }
 
-    private final Map<ReferenceInfo, List<EntityHistory.HistoryEntry>> map = new LinkedHashMap<>();
+    private final Map<ReferenceInfo, List<EntityHistory.HistoryEntry>> map = new ConcurrentHashMap<>();
     private final JsonParserWrapper.JsonParser gson;
 
     public EntityHistory()
@@ -100,7 +99,9 @@ public class EntityHistory
         {
             throw new RaplaException("History not available for id " + id);
         }
-        return historyEntries.get(historyEntries.size() - 1);
+        synchronized ( historyEntries) {
+            return historyEntries.get(historyEntries.size() - 1);
+        }
     }
 
     public boolean hasHistory(ReferenceInfo id)
@@ -117,64 +118,54 @@ public class EntityHistory
         {
             throw new RaplaException("History not available for id " + id);
         }
-        final EntityHistory.HistoryEntry emptyEntryWithTimestamp = new EntityHistory.HistoryEntry();
-        emptyEntryWithTimestamp.timestamp = since.getTime();
-        int index = Collections.binarySearch(historyEntries, emptyEntryWithTimestamp, (o1, o2) -> (int) (o1.timestamp - o2.timestamp));
-        /*
-        * possible results:
-        * we get an index >= 0 -> We found an entry, which has the timestamp of the last update from the client. We need to get this one
-        * we get an index < 0 -> We have no entry within the list, which has the timestamp. Corresponding to the binary search API -index -1 is the index where to insert a entry having this timestamp. So we need -index -1 to get the last one with an timestamp smaller than the requested one.
-        */
-        if (index < 0)
-        {
-            index = -index - 2;
-        }
-        if (index < 0 && !historyEntries.isEmpty())
-        {
-            EntityHistory.HistoryEntry entry = historyEntries.get(0);
-            final Date lastChanged = getLastChanged(entry);
-            if ( lastChanged.before( since))
-            {
-                return getEntity( entry);
+        synchronized ( historyEntries) {
+            final EntityHistory.HistoryEntry emptyEntryWithTimestamp = new EntityHistory.HistoryEntry();
+            emptyEntryWithTimestamp.timestamp = since.getTime();
+            int index = Collections.binarySearch(historyEntries, emptyEntryWithTimestamp, (o1, o2) -> (int) (o1.timestamp - o2.timestamp));
+            /*
+             * possible results:
+             * we get an index >= 0 -> We found an entry, which has the timestamp of the last update from the client. We need to get this one
+             * we get an index < 0 -> We have no entry within the list, which has the timestamp. Corresponding to the binary search API -index -1 is the index where to insert a entry having this timestamp. So we need -index -1 to get the last one with an timestamp smaller than the requested one.
+             */
+            if (index < 0) {
+                index = -index - 2;
             }
-            else
-                {
-                return null;
-            }
-        }
-        EntityHistory.HistoryEntry entry = historyEntries.get(index);
-        final Entity entity = getEntity(entry);
-        if ( index >=0)
-        {
-            // if two history entries have the same timestamp
-            // then check the timestamp on the entities and return
-            EntityHistory.HistoryEntry entryBefore = null;
-            if ( index > 0)
-            {
-                entryBefore = historyEntries.get(index - 1);
-            }
-            if (index + 1< historyEntries.size() && (entryBefore == null || entryBefore.getTimestamp() != entry.getTimestamp() ))
-            {
-                entryBefore = historyEntries.get(index + 1);
-            }
-            if (entryBefore != null && entryBefore.getTimestamp() == entry.getTimestamp())
-            {
-                Entity otherEntity = getEntity( entryBefore);
-                final Date lastChanged1 = ((Timestamp) entity).getLastChanged();
-                final Date lastChanged2= ((Timestamp) (otherEntity)).getLastChanged();
-                // we return the newest change
-                if ( lastChanged2.after( lastChanged1))
-                {
-                    return otherEntity;
+            if (index < 0 && !historyEntries.isEmpty()) {
+                EntityHistory.HistoryEntry entry = historyEntries.get(0);
+                final Date lastChanged = getLastChanged(entry);
+                if (lastChanged.before(since)) {
+                    return getEntity(entry);
+                } else {
+                    return null;
                 }
             }
+            EntityHistory.HistoryEntry entry = historyEntries.get(index);
+            final Entity entity = getEntity(entry);
+            if (index >= 0) {
+                // if two history entries have the same timestamp
+                // then check the timestamp on the entities and return
+                EntityHistory.HistoryEntry entryBefore = null;
+                if (index > 0) {
+                    entryBefore = historyEntries.get(index - 1);
+                }
+                if (index + 1 < historyEntries.size() && (entryBefore == null || entryBefore.getTimestamp() != entry.getTimestamp())) {
+                    entryBefore = historyEntries.get(index + 1);
+                }
+                if (entryBefore != null && entryBefore.getTimestamp() == entry.getTimestamp()) {
+                    Entity otherEntity = getEntity(entryBefore);
+                    final Date lastChanged1 = ((Timestamp) entity).getLastChanged();
+                    final Date lastChanged2 = ((Timestamp) (otherEntity)).getLastChanged();
+                    // we return the newest change
+                    if (lastChanged2.after(lastChanged1)) {
+                        return otherEntity;
+                    }
+                }
+            }
+            return entity;
         }
-
-        return entity;
     }
 
     Map<Class<? extends Entity>, Class<? extends Entity>> typeImpl = new HashMap<>();
-
     {
         addMap(Reservation.class, ReservationImpl.class);
         //addMap(Appointment.class, AppointmentImpl.class);
@@ -203,59 +194,51 @@ public class EntityHistory
 
     public EntityHistory.HistoryEntry addHistoryEntry(ReferenceInfo id, String json, Date timestamp, boolean isDelete)
     {
-        List<EntityHistory.HistoryEntry> historyEntries = map.get(id);
-        if (historyEntries == null)
-        {
-            historyEntries = new ArrayList<>();
-            map.put(id, historyEntries);
-        }
+        List<EntityHistory.HistoryEntry> historyEntries = map.putIfAbsent(id, new ArrayList<>());
         final EntityHistory.HistoryEntry newEntry = new EntityHistory.HistoryEntry(id, timestamp.getTime(), json, isDelete);
-        int index = historyEntries.size();
-        insert(historyEntries, newEntry, index);
+        synchronized ( historyEntries) {
+            int index = historyEntries.size();
+            insert(historyEntries, newEntry, index);
+        }
         return newEntry;
     }
 
     private void insert(List<EntityHistory.HistoryEntry> historyEntries, EntityHistory.HistoryEntry newEntry, int index)
     {
-        synchronized ( historyEntries)
+        if (index == 0)
         {
-            if (index == 0)
+            historyEntries.add(0, newEntry);
+        }
+        else
+        {
+            final HistoryEntry lastEntry = historyEntries.get(index - 1);
+            final long timestamp = lastEntry.timestamp;
+            if (timestamp > newEntry.timestamp)
             {
-                historyEntries.add(0, newEntry);
+                insert(historyEntries, newEntry, index - 1);
+            }
+            else if (timestamp == newEntry.timestamp)
+            {
+                final String json = newEntry.json;
+                if (json != null && !json.equals( lastEntry.json))
+                {
+                    Date lastChanged1 = getLastChanged(newEntry);
+                    Date lastChanged2 = getLastChanged(lastEntry);
+                    if ( lastChanged1.before(lastChanged2))
+                    {
+                        historyEntries.add(index-1, newEntry);
+                    }
+                    else
+                    {
+                        historyEntries.add(index, newEntry);
+                    }
+                }
             }
             else
             {
-                final HistoryEntry lastEntry = historyEntries.get(index - 1);
-                final long timestamp = lastEntry.timestamp;
-                if (timestamp > newEntry.timestamp)
-                {
-                    insert(historyEntries, newEntry, index - 1);
-                }
-                else if (timestamp == newEntry.timestamp)
-                {
-                    final String json = newEntry.json;
-                    if (json != null && !json.equals( lastEntry.json))
-                    {
-                        Date lastChanged1 = getLastChanged(newEntry);
-                        Date lastChanged2 = getLastChanged(lastEntry);
-                        if ( lastChanged1.before(lastChanged2))
-                        {
-                            historyEntries.add(index-1, newEntry);
-                        }
-                        else
-                        {
-                            historyEntries.add(index, newEntry);
-                        }
-                    }
-                }
-                else
-                {
-                    historyEntries.add(index, newEntry);
-                }
+                historyEntries.add(index, newEntry);
             }
         }
-
-
     }
 
     private Date getLastChanged(HistoryEntry newEntry)
@@ -269,13 +252,6 @@ public class EntityHistory
         final ReferenceInfo id = entity.getReference();
         final String json = gson.toJson(entity);
         return addHistoryEntry(id, json, timestamp, isDelete);
-    }
-
-    public EntityHistory.HistoryEntry addHistoryDeleteEntry(Entity entity, Date timestamp, boolean isDelete)
-    {
-        final ReferenceInfo id = entity.getReference();
-        final String json = gson.toJson(entity);
-        return addHistoryEntry(id, json,  timestamp, isDelete);
     }
 
     public void clear()
