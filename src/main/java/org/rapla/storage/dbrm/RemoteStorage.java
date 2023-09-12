@@ -12,6 +12,7 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.storage.dbrm;
 
+import org.jboss.resteasy.annotations.GZIP;
 import org.rapla.entities.domain.internal.AllocatableImpl;
 import org.rapla.entities.domain.internal.AppointmentImpl;
 import org.rapla.entities.domain.internal.ReservationImpl;
@@ -94,17 +95,20 @@ public interface RemoteStorage
     @GET
     @Path("resourcesSync")
     @Produces({ MediaType.APPLICATION_JSON, MediaType.APPLICATION_XML })
+    @GZIP
     UpdateEvent getResourcesSync() throws RaplaException;
 
     @GET
     @Path("resources")
     @Produces({ MediaType.APPLICATION_JSON, MediaType.APPLICATION_XML })
+    @GZIP
     Promise<UpdateEvent> getResources();
 
     /** delegates the corresponding method in the StorageOperator. */
     //    FutureResult<List<ReservationImpl>> getReservations(@WebParam(name="resources")String[] allocatableIds,@WebParam(name="start")Date start,@WebParam(name="end")Date end, @WebParam(name="annotations")Map<String, String> annotationQuery);
     @POST
     @Produces({ MediaType.APPLICATION_JSON, MediaType.APPLICATION_XML })
+    @GZIP
     Promise<AppointmentMap> queryAppointments(QueryAppointments job) throws RaplaException;
 
     class QueryAppointments
@@ -169,11 +173,13 @@ public interface RemoteStorage
     @POST
     @Path("refreshSync")
     @Produces({ MediaType.APPLICATION_JSON, MediaType.APPLICATION_XML })
+    @GZIP
     UpdateEvent refreshSync(@QueryParam("lastValidated") String lastSyncedTime) throws RaplaException;
 
     @POST
     @Path("refresh")
     @Produces({ MediaType.APPLICATION_JSON, MediaType.APPLICATION_XML })
+    @GZIP
     Promise<UpdateEvent> refresh(@QueryParam("lastValidated") String lastValidated);
 
     @POST
@@ -183,11 +189,13 @@ public interface RemoteStorage
     @POST
     @Path("dispatchSync")
     @Produces({ MediaType.APPLICATION_JSON, MediaType.APPLICATION_XML })
+    @GZIP
     UpdateEvent store(UpdateEvent event) throws RaplaException;
 
     @POST
     @Path("dispatch")
     @Produces({ MediaType.APPLICATION_JSON, MediaType.APPLICATION_XML })
+    @GZIP
     Promise<UpdateEvent> dispatch(UpdateEvent event);
 
     //	@ResultType(value=String.class,container=List.class)
@@ -206,12 +214,14 @@ public interface RemoteStorage
     @GET
     @Path("conflicts")
     @Produces({ MediaType.APPLICATION_JSON, MediaType.APPLICATION_XML })
+    @GZIP
     Promise<List<ConflictImpl>> getConflicts() ;
 
     @POST
     @Path("allocatable/bindings/first")
     @Consumes({ MediaType.APPLICATION_JSON, MediaType.APPLICATION_XML })
     @Produces({ MediaType.APPLICATION_JSON, MediaType.APPLICATION_XML })
+    @GZIP
     Promise<BindingMap> getFirstAllocatableBindings(AllocatableBindingsRequest job);
 
     class AllocatableBindingsRequest
@@ -252,6 +262,7 @@ public interface RemoteStorage
     @Path("allocatable/bindings/all")
     @Consumes({ MediaType.APPLICATION_JSON, MediaType.APPLICATION_XML })
     @Produces({ MediaType.APPLICATION_JSON, MediaType.APPLICATION_XML })
+    @GZIP
     Promise<List<ReservationImpl>> getAllAllocatableBindings(AllocatableBindingsRequest job);
 
     @POST

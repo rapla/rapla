@@ -327,6 +327,10 @@ public class MainServlet extends HttpServlet
                             return "true";
                         case "javax.ws.rs.Application":
                             return RestApplication.class.getCanonicalName();
+                        case "resteasy.gzip.max.input":
+                            return "51000000";
+                        case "resteasy.providers":
+                            return org.jboss.resteasy.plugins.interceptors.encoding.GZIPEncodingInterceptor.class.getCanonicalName();
                     }
                     return config.getInitParameter(name);
                 }
