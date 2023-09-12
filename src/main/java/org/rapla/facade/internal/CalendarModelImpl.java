@@ -13,6 +13,7 @@
 
 package org.rapla.facade.internal;
 
+import org.jetbrains.annotations.NotNull;
 import org.rapla.components.util.Assert;
 import org.rapla.components.util.DateTools;
 import org.rapla.components.util.SerializableDateTimeFormat;
@@ -957,20 +958,19 @@ public class CalendarModelImpl implements CalendarSelectionModel
     {
         final boolean debugEnabled = logger.isDebugEnabled();
         final long start = debugEnabled ? System.currentTimeMillis() : 0;
-        Collection<Allocatable> allocatables;
+        Collection<Allocatable> allocatables = new LinkedHashSet<>();
+        Collection<User> owners = new LinkedHashSet<>();
         try
         {
-            allocatables= getSelectedAllocatablesAsList();
-        }
-        catch (RaplaException e)
-        {
-            return new ResolvedPromise<>(e);
-        }
-
-        Collection<User> owners;
-        try
-        {
-            owners= getSelectedUsersAsList();
+            Collection<RaplaObject> selectedRaplaObjects = getSelectedRaplaObjects(true);
+            for ( RaplaObject raplaObject :selectedRaplaObjects) {
+                if (raplaObject instanceof Allocatable) {
+                    allocatables.add( (Allocatable) raplaObject);
+                }
+                if (raplaObject instanceof User) {
+                    owners.add( (User) raplaObject);
+                }
+            }
         }
         catch (RaplaException e)
         {
@@ -1108,15 +1108,21 @@ public class CalendarModelImpl implements CalendarSelectionModel
         return result;
     }
 
+
     public Collection<Allocatable> getSelectedAllocatablesAsList() throws RaplaException
     {
+        Collection<Allocatable> selectedRaplaObjects = getSelectedRaplaObjects(false).stream().map(x->(Allocatable)x).collect(Collectors.toSet());
+        return selectedRaplaObjects;
+    }
 
+    @NotNull
+    private Collection<RaplaObject> getSelectedRaplaObjects(boolean addUser) throws RaplaException {
         long start = 0;
         final boolean debugEnabled = logger.isDebugEnabled();
         if (debugEnabled)
             start = System.currentTimeMillis();
 
-        Collection<Allocatable> result = new HashSet<>();
+        Collection<RaplaObject> result = new HashSet<>();
         Collection<RaplaObject> selectedObjectsAndChildren = getSelectedObjectsAndChildren();
         boolean conflictsDetected = false;
         for (RaplaObject object : selectedObjectsAndChildren)
@@ -1141,27 +1147,17 @@ public class CalendarModelImpl implements CalendarSelectionModel
             {
                 result.add(alloc);
             }
+            if (object.getTypeClass() == User.class && addUser)
+            {
+                User owner  = (User) object;
+                result.add( owner);
+            }
         }
         if (debugEnabled)
         {
             logger.debug("getSelectedAllocatables took " + (System.currentTimeMillis() - start) + " ms for " + result.size() + " objects.");
         }
 
-        return result;
-    }
-
-    private Collection<User> getSelectedUsersAsList() throws RaplaException {
-        Collection<User> result = new HashSet<>();
-
-        Collection<RaplaObject> selectedObjectsAndChildren = getSelectedObjectsAndChildren();
-        for (RaplaObject object : selectedObjectsAndChildren)
-        {
-            if (object.getTypeClass() == User.class)
-            {
-                User owner  = (User) object;
-                result.add( owner);
-            }
-        }
         return result;
     }
 

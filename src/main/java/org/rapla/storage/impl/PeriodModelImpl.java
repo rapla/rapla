@@ -55,19 +55,17 @@ class PeriodModelImpl implements PeriodModel
     Period defaultPeriod;
     Set<Category> categories;
 
-    PeriodModelImpl( StorageOperator query,Category[] keys) throws RaplaException {
+    PeriodModelImpl( StorageOperator query,Category[] keys,Collection<Allocatable> allPeriods) throws RaplaException {
         this.operator = query;
         this.categories = new HashSet<>(Arrays.asList(keys));
-        update();
+        update(allPeriods);
     }
 
-    public void update() throws RaplaException {
+    public void update(Collection<Allocatable> allPeriods) throws RaplaException {
         TreeSet<PeriodImpl> newSet = createPeriodSet();
         DynamicType type = operator.getDynamicType(StorageOperator.PERIOD_TYPE);
-        ClassificationFilter[] filters = type.newClassificationFilter().toArray();
-        Collection<Allocatable> allocatables = operator.getAllocatables( filters);
         final Attribute categoryAtt = type.getAttribute("category");
-        for ( Allocatable alloc:allocatables)
+        for ( Allocatable alloc:allPeriods)
         {
         	Classification classification = alloc.getClassification();
         	String name = (String)classification.getValue("name");
@@ -100,12 +98,12 @@ class PeriodModelImpl implements PeriodModel
         return  false;
     }
 
-    public void update(Collection<Entity> updatedEntities, Collection<ReferenceInfo> toRemove) throws RaplaException
+    public void update(Collection<Allocatable> allPeriods,Collection<Entity> updatedEntities, Collection<ReferenceInfo> toRemove) throws RaplaException
 	{
 
     	if (isPeriodModified(updatedEntities, toRemove))
     	{
-    		update();
+    		update(allPeriods);
     	}
 	}
 

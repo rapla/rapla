@@ -359,7 +359,7 @@ public abstract class AbstractCachableOperator implements StorageOperator
         checkLoaded();
         Collection<User> collection = cache.getUsers();
         // We return a clone to avoid synchronization Problems
-        return collection;
+        return new LinkedHashSet<>(collection);
     }
 
     public Collection<DynamicType> getDynamicTypes() throws RaplaException
@@ -367,7 +367,7 @@ public abstract class AbstractCachableOperator implements StorageOperator
         checkLoaded();
         Collection<DynamicType> collection = cache.getDynamicTypes();
         // We return a clone to avoid synchronization Problems
-        return collection;
+        return new LinkedHashSet<>(collection);
     }
 
 
@@ -415,14 +415,11 @@ public abstract class AbstractCachableOperator implements StorageOperator
 
     @Override
     public PeriodModel getPeriodModelFor(String key) throws RaplaException {
-        if ( key == null)
-        {
-            if (periodModel == null) {
-                periodModel = new PeriodModelImpl(this, new Category[] {});
-            }
-            return periodModel;
-        }
-        if (periodModelHoliday == null) {
+        if (periodModel == null || periodModelHoliday == null) {
+            DynamicType type = getDynamicType(StorageOperator.PERIOD_TYPE);
+            ClassificationFilter[] filters = type.newClassificationFilter().toArray();
+            Collection<Allocatable> allPeriods = getAllocatables( filters);
+            periodModel = new PeriodModelImpl(this, new Category[] {}, allPeriods);
             final Category periodsCategory = PeriodModel.getPeriodsCategory(getSuperCategory());
             if ( periodsCategory == null)
             {
@@ -433,9 +430,16 @@ public abstract class AbstractCachableOperator implements StorageOperator
             {
                 return null;
             }
-            periodModelHoliday = new PeriodModelImpl(this, periodsCategoryCategories);
+            periodModelHoliday = new PeriodModelImpl(this, periodsCategoryCategories, allPeriods);
         }
-        return periodModelHoliday;
+        if ( key == null)
+        {
+            return periodModel;
+        }
+        else
+        {
+            return periodModelHoliday;
+        }
     }
 
 
@@ -447,7 +451,7 @@ public abstract class AbstractCachableOperator implements StorageOperator
     protected Collection<Allocatable> getAllocatables(ClassificationFilter[] filters, int maxPerType) throws RaplaException
     {
         checkLoaded();
-        Collection<Allocatable> allocatables = cache.getAllocatables();
+        Collection<Allocatable> allocatables = new HashSet<>(cache.getAllocatables());
         Map<DynamicType,Integer> typeCount = new LinkedHashMap<>();
 
             Iterator<? extends Classifiable> it = allocatables.iterator();
@@ -900,20 +904,27 @@ public abstract class AbstractCachableOperator implements StorageOperator
     }
 
     private void updatePeriods(Collection<Entity> updatedEntities,Collection<ReferenceInfo> toRemove) {
-        if (periodModel != null ) {
-            try {
-                periodModel.update(updatedEntities, toRemove);
-            } catch (RaplaException e) {
-                getLogger().error("Can't update Period Model", e);
-            }
+        if (periodModel == null || periodModelHoliday == null)
+        {
+            return;
         }
-        if (periodModelHoliday != null ) {
-            try {
-                periodModelHoliday.update(updatedEntities, toRemove);
-            } catch (RaplaException e) {
-                getLogger().error("Can't update Period Model", e);
+
+        try {
+            DynamicType type = getDynamicType(StorageOperator.PERIOD_TYPE);
+            ClassificationFilter[] filters = type.newClassificationFilter().toArray();
+            Collection<Allocatable> allPeriods = getAllocatables( filters);
+
+            if (periodModel != null ) {
+                periodModel.update(allPeriods, updatedEntities, toRemove);
             }
+            if (periodModelHoliday != null ) {
+                periodModelHoliday.update(allPeriods, updatedEntities, toRemove);
+
+            }
+        } catch (RaplaException e) {
+            getLogger().error("Can't update Period Model", e);
         }
+
     }
 
     protected Entity findPersistant(Entity entity)

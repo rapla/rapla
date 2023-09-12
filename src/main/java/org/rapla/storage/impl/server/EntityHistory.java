@@ -194,7 +194,7 @@ public class EntityHistory
 
     public EntityHistory.HistoryEntry addHistoryEntry(ReferenceInfo id, String json, Date timestamp, boolean isDelete)
     {
-        List<EntityHistory.HistoryEntry> historyEntries = map.putIfAbsent(id, new ArrayList<>());
+        List<EntityHistory.HistoryEntry> historyEntries = map.computeIfAbsent(id, x-> new ArrayList());
         final EntityHistory.HistoryEntry newEntry = new EntityHistory.HistoryEntry(id, timestamp.getTime(), json, isDelete);
         synchronized ( historyEntries) {
             int index = historyEntries.size();

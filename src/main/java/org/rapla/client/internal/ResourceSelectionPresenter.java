@@ -72,9 +72,9 @@ public class ResourceSelectionPresenter implements Presenter
         try
         {
             updateMenu();
-            ClassificationFilter[] filter = model.getAllocatableFilter();
-            Collection<Object> selectedObjects = new ArrayList<>(model.getSelectedObjects());
-            view.update(filter, model, selectedObjects);
+            //ClassificationFilter[] filter = model.getAllocatableFilter();
+            //Collection<Object> selectedObjects = new ArrayList<>(model.getSelectedObjects());
+            //view.update(filter, model, selectedObjects);
         }
         catch (RaplaException e)
         {

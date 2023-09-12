@@ -44,13 +44,13 @@ import java.util.concurrent.ConcurrentHashMap;
 
 public class LocalCache implements EntityResolver
 {
-    Map<String, String> passwords = new ConcurrentHashMap<>();
+    Map<String, String> passwords = Collections.synchronizedMap(new HashMap<>());
     Map<String, Entity> entities;
 
     //Map<String,ConflictImpl> disabledConflicts = new HashMap<String,ConflictImpl>();
-    Map<String,ReferenceInfo<Appointment>> disabledConflictApp1 = new ConcurrentHashMap<>();
-    Map<String,ReferenceInfo<Appointment>> disabledConflictApp2 = new ConcurrentHashMap<>();
-    Map<String, Date> conflictLastChanged = new ConcurrentHashMap<>();
+    Map<String,ReferenceInfo<Appointment>> disabledConflictApp1 = Collections.synchronizedMap(new HashMap<>());
+    Map<String,ReferenceInfo<Appointment>> disabledConflictApp2 = Collections.synchronizedMap(new HashMap<>());
+    Map<String, Date> conflictLastChanged = Collections.synchronizedMap(new HashMap<>());;
 
     Map<String, DynamicTypeImpl> dynamicTypes;
     Map<String, UserImpl> users;
@@ -613,12 +613,7 @@ public class LocalCache implements EntityResolver
 
     private GraphNode getOrCreate(ReferenceInfo<Allocatable> allocatable)
     {
-        GraphNode graphNode = graph.get(allocatable);
-        if (graphNode == null)
-        {
-            graphNode = new GraphNode(allocatable);
-            graph.put(allocatable, graphNode);
-        }
+        GraphNode graphNode = graph.computeIfAbsent(allocatable , GraphNode::new);
         return graphNode;
     }
 
