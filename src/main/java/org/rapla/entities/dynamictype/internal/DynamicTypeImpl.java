@@ -62,6 +62,8 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+import static org.rapla.entities.storage.EntityResolver.UNRESOLVED_RESOURCE_TYPE;
+
 final public class DynamicTypeImpl extends SimpleEntity implements DynamicType, ParentEntity, ModifiableTimestamp
 {
     private Date lastChanged;
@@ -169,7 +171,7 @@ final public class DynamicTypeImpl extends SimpleEntity implements DynamicType, 
     }
     
     public Classification newClassification(boolean useDefaults) {
-        if ( !isReadOnly()) {
+        if ( (!isInternal() || !UNRESOLVED_RESOURCE_TYPE.equals(key)) && !isReadOnly()) {
             throw new IllegalStateException("You can only create Classifications from a persistant Version of DynamicType");
         }
         return newClassificationWithoutCheck( useDefaults);
