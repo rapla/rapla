@@ -120,7 +120,8 @@ import java.util.Set;
     {
         {
             final int delay = 30000;
-            final int period = 1000*60*10;
+            // remove locks every minute
+            final int period = 1000*60*1;
             scheduleConnectedTasks(()->
                 {
                     //final RaplaLock.WriteLock writeLock = lockManager.writeLockIfAvaliable(getClass(), "scheduleCleanupAndRefresh");

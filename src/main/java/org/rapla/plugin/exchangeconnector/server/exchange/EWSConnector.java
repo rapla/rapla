@@ -52,12 +52,14 @@ public class EWSConnector {
     private final WebCredentials credentials;
     private final Logger logger;
     private String exchangeUsername;
+    private String mailboxAddress;
 
 //	private final Character DOMAIN_SEPERATION_SYMBOL = new Character('@');
 
-    public EWSConnector(String fqdn, String exchangeUsername,String exchangePassword, Logger logger) throws URISyntaxException  {
+    public EWSConnector(String fqdn, String exchangeUsername,String exchangePassword, Logger logger, String mailboxAddress) throws URISyntaxException  {
     	this( fqdn,new WebCredentials(exchangeUsername, exchangePassword), logger);
         this.exchangeUsername = exchangeUsername;
+        this.mailboxAddress = mailboxAddress;
     }
     /**
      * The constructor
@@ -73,18 +75,6 @@ public class EWSConnector {
         this.logger = logger;
         uri = new URI(fqdn.toLowerCase().endsWith("/ews/exchange.asmx") ? fqdn : fqdn + "/EWS/Exchange.asmx");
         this.credentials = credentials;
-        
-        // removed because auto is discovery not yet support
-        // tmpService.autodiscoverUrl(getUserName()+this.DOMAIN_SEPERATION_SYMBOL+getFqdn());//autodiscover the URL with the parameter "username@fqdn
-        //this.service = tmpService;
-
-        /*   // test if connection works
-        getService().resolveName(getUserName(), ResolveNameSearchLocation.DirectoryOnly, true);
-        FindItemsResults<Item> items = tmpService.findItems(WellKnownFolderName.Calendar, new SearchFilter.IsEqualTo(EmailMessageSchema.IsRead, Boolean.TRUE), new ItemView(100));
-        for (Item item : items) {
-            System.out.println(item.getSubject());
-        }*/
-        //SynchronisationManager.logInfo("Connected to Exchange at + " + uri + " at timezone: " + DateTools.getTimeZone());
     }
 
     /**
@@ -104,7 +94,6 @@ public class EWSConnector {
         }
         tmpService.setCredentials(credentials);
         tmpService.setTimeout(SERVICE_DEFAULT_TIMEOUT);
-
         //define connection url to mail server, assume https
         tmpService.setUrl(uri);
 
@@ -130,25 +119,17 @@ public class EWSConnector {
         ExchangeService service = getService();
         FolderView view = new FolderView(1000);
 
-
         CalendarFolder calendarFolder  = CalendarFolder.bind( service, WellKnownFolderName.Calendar);
-
         ArrayList<Folder> folders = service.findFolders(WellKnownFolderName.Root,sfSearchFilter, view).getFolders();
         Map<String, CalendarFolder> rtList = new LinkedHashMap<>();
-        NameResolutionCollection resolvedNames = service.resolveName(exchangeUsername, ResolveNameSearchLocation.ContactsThenDirectory, true);
-       // String mailboxAddress = service.getRequestedServerVersion().name();
-        FolderId id = calendarFolder.getId();
-        Mailbox mailbox1 = id.getMailbox();
-        Folder inbox = Folder.bind(service, new FolderId(WellKnownFolderName.Inbox, new Mailbox(exchangeUsername)));
-       // System.out.println("Mailbox Address: " + inbox.g());
-
-        String mailboxAddress = mailbox1.getAddress();
-        //String mailboxAddress = from.getAddress();
-        rtList.put( mailboxAddress, calendarFolder);
-        for (NameResolution nameResolution : resolvedNames) {
-            String address = nameResolution.getMailbox().getAddress();
-            rtList.put( address, calendarFolder);
-            break;
+        if ( !mailboxAddress.isEmpty()) {
+            NameResolutionCollection resolvedNames = service.resolveName(mailboxAddress, ResolveNameSearchLocation.ContactsThenDirectory, true);
+            if (resolvedNames.getCount() > 0) {
+                EmailAddress mailbox = resolvedNames.iterator().next().getMailbox();
+                if (mailbox != null) {
+                    rtList.put(mailbox.getAddress().toLowerCase(), calendarFolder);
+                }
+            }
         }
         if (folders.size() == 1) {
 
@@ -160,12 +141,12 @@ public class EWSConnector {
             ItemView iv = new ItemView(1000);
             iv.setPropertySet(psPropset);
             iv.setTraversal(ItemTraversal.Associated);
-            // Can also find this using PidTagWlinkType = wblSharedFolder
             Folder folder = folders.get(0);
             FindItemsResults<Item> fiResults = folder.findItems(new SearchFilter.IsEqualTo(PidTagWlinkGroupName, "Weitere Kalender"), iv);
             if ( fiResults.getTotalCount() == 0 ){
                 fiResults = folder.findItems(new SearchFilter.IsEqualTo(PidTagWlinkGroupName, "Other Calendars"), iv);
             }
+            // TODO add other languages
             //logger.info(" Found " + fiResults);t
             for ( Item itItem : fiResults) {
                 OutParam<Object> WlinkAddressBookEID = new OutParam<>();
@@ -175,9 +156,6 @@ public class EWSConnector {
                 {
                     byte[] ssStoreID = (byte[])WlinkAddressBookEID.getParam();
                     int leLegDnStart = 0;
-                    // Can also extract the DN by getting the 28th(or 30th?) byte to the second to last byte
-                    //https://msdn.microsoft.com/en-us/library/ee237564(v=exchg.80).aspx
-                    //https://msdn.microsoft.com/en-us/library/hh354838(v=exchg.80).aspx
                     String lnLegDN = "";
                     for (int ssArraynum = (ssStoreID.length - 2); ssArraynum != 0; ssArraynum--)
                     {
@@ -188,17 +166,16 @@ public class EWSConnector {
                             ssArraynum = 1;
                         }
                     }
-                    NameResolutionCollection ncCol = getService().resolveName(lnLegDN, ResolveNameSearchLocation.DirectoryOnly, false);
-                    if (ncCol.getCount() > 0)
+                    NameResolutionCollection resolvedNames = getService().resolveName(lnLegDN, ResolveNameSearchLocation.DirectoryOnly, false);
+                    if (resolvedNames.getCount() > 0)
                     {
-                        String mailbox = ncCol.iterator().next().getMailbox().getAddress();
+                        String mailbox = resolvedNames.iterator().next().getMailbox().getAddress();
                         FolderId SharedCalendarId = new FolderId(WellKnownFolderName.Calendar, new Mailbox(mailbox));
                         CalendarFolder SharedCalendaFolder = (CalendarFolder) Folder.bind(service, SharedCalendarId);
                         rtList.put(mailbox.toLowerCase(), SharedCalendaFolder);
                     }
 
                 } else {
-
                     logger.warn("Could not find calendar for " + itItem.getSubject());
                 }
             }

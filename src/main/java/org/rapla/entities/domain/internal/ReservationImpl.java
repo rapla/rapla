@@ -673,12 +673,8 @@ public final class ReservationImpl extends SimpleEntity implements Reservation, 
     }
 
     public Stream<Allocatable> getAllocatablesFor(Appointment appointment) {
-        Collection<String> list = getIds("resources");
-        String appointmentId = appointment.getId();
-        final Stream<Allocatable> allocatableStream = list.stream().filter((allocId) -> {
-            List<String> restrictions = getRestrictionPrivate(allocId);
-            return restrictions.isEmpty() || restrictions.contains(appointmentId);
-        }).map(allocId -> {
+        Stream<String> resources = getAllocatableIdsFor(appointment.getReference());
+        final Stream<Allocatable> allocatableStream = resources.map(allocId -> {
             Allocatable allocatable = resolveWithMissingAllocatable(allocId, Allocatable.class);
             return allocatable;
         }
@@ -686,13 +682,16 @@ public final class ReservationImpl extends SimpleEntity implements Reservation, 
         return allocatableStream;
     }
 
-    public Stream<ReferenceInfo<Allocatable>> getAllocatablesReferences(Appointment appointment) {
-        Collection<String> list = getIds("resources");
-        String appointmentId = appointment.getId();
-        final Stream<ReferenceInfo<Allocatable>> allocatableStream = list.stream().filter((allocId) -> {
+    @NotNull
+    public Stream<String> getAllocatableIdsFor(ReferenceInfo<Appointment> appointmentRef) {
+        return getIds("resources").stream().filter((allocId) -> {
             List<String> restrictions = getRestrictionPrivate(allocId);
-            return restrictions.isEmpty() || restrictions.contains(appointmentId);
-        }).map(allocId -> new ReferenceInfo<>(allocId, Allocatable.class));
+            return restrictions.isEmpty() || restrictions.contains(appointmentRef.getId());
+        });
+    }
+
+    public Stream<ReferenceInfo<Allocatable>> getAllocatablesReferences(ReferenceInfo<Appointment> appointment) {
+        final Stream<ReferenceInfo<Allocatable>> allocatableStream = getAllocatableIdsFor(appointment).map(allocId -> new ReferenceInfo<>(allocId, Allocatable.class));
         return allocatableStream;
     }
 

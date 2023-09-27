@@ -1,6 +1,7 @@
 package org.rapla.plugin.exchangeconnector.server;
 
 import org.rapla.entities.User;
+import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.Appointment;
 import org.rapla.entities.storage.ReferenceInfo;
 
@@ -27,8 +28,11 @@ public class SynchronizationTask implements Serializable
 	}
 
 	private static final long serialVersionUID = 219323872273312836L;
+	String mailboxName;
 	String userId;
 	String appointmentId;
+
+	String resourceId;
 	Date lastRetry;
 	private int retries = -1;
 	String lastError;
@@ -37,13 +41,19 @@ public class SynchronizationTask implements Serializable
 	SyncStatus status;
 	private String persistantId;
 	
-	public SynchronizationTask(ReferenceInfo<Appointment> appointmentId, ReferenceInfo<User> userId, int retries, Date lastRetry, String lastError) {
+	public SynchronizationTask(String mailboxName, ReferenceInfo<Appointment> appointmentId, ReferenceInfo<User> userId, ReferenceInfo<Allocatable> resourceId, int retries, Date lastRetry, String lastError) {
 		this.userId = userId.getId();
 		this.appointmentId = appointmentId.getId();
+		this.mailboxName = mailboxName;
 		status = SyncStatus.toUpdate;
 		this.retries = retries;
+		this.resourceId = resourceId.getId();
 		this.lastRetry = lastRetry;
 		this.lastError = lastError;
+	}
+
+	public SynchronizationTask(SynchronisationManager.SynchronizationBox box, ReferenceInfo<Appointment> appointmentId) {
+		this( box.getMailboxName(), appointmentId, box.getUserId(), box.getResourceId(), 0, null, null);
 	}
 	
 	public void increaseRetries(String lastError)
@@ -62,6 +72,10 @@ public class SynchronizationTask implements Serializable
 		return userId;
 	}
 
+	public String getResourceId() {
+		return resourceId;
+	}
+
 	public ReferenceInfo<User> getUserRef()
 	{
 		return new ReferenceInfo<>(userId, User.class);
@@ -71,8 +85,15 @@ public class SynchronizationTask implements Serializable
 	public String getAppointmentId() {
 		return appointmentId;
 	}
-	
-//	public TimeInterval getSyncInterval() {
+
+	public String getMailboxName() {
+		return mailboxName;
+	}
+
+	public void setMailboxName(String mailboxName) {
+		this.mailboxName = mailboxName;
+	}
+	//	public TimeInterval getSyncInterval() {
 //		return syncInterval;
 //	}
 //	public void setSyncInterval(TimeInterval syncInterval) {
@@ -198,6 +219,16 @@ public class SynchronizationTask implements Serializable
 		}
 		final String secondId = otherId.getId();
 		boolean b = secondId == this.userId ||  secondId.equals(this.userId);
+		return b;
+	}
+
+	public boolean matchesMailbox(String mailboxName)
+	{
+		if ( mailboxName == null )
+		{
+			return false;
+		}
+		boolean b = mailboxName == this.mailboxName ||  mailboxName.equals(this.mailboxName);
 		return b;
 	}
 

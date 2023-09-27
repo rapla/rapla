@@ -66,12 +66,6 @@ public interface CachableStorageOperator extends StorageOperator {
     Date requestLock(String id, Long validMilliseconds) throws RaplaException;
     void releaseLock(String id, Date updatedUntil) throws RaplaException;
 
-    Collection<Appointment> getAppointmentsFromUserCalendarModels(ReferenceInfo<User> userId, TimeInterval syncRange) throws RaplaException;
-
-    Collection<ReferenceInfo<User>> findUsersThatExport(Appointment appointment) throws RaplaException;
-
-    Collection<ReferenceInfo<User>> findUsersThatExport(Allocatable allocatable) throws RaplaException;
-
     <T> T  waitForWithRaplaException(Promise<T> promise, int millis) throws RaplaException;
 
     Set<ReferenceInfo<Allocatable>> filterAllocatablesWithNonTemplateReservations(Set<ReferenceInfo<Allocatable>> allocatables);

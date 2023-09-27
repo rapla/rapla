@@ -4,6 +4,7 @@ import org.rapla.components.util.SerializableDateTimeFormat;
 import org.rapla.entities.Entity;
 import org.rapla.entities.User;
 import org.rapla.entities.configuration.Preferences;
+import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.Appointment;
 import org.rapla.entities.storage.ImportExportDirections;
 import org.rapla.entities.storage.ExternalSyncEntity;
@@ -35,6 +36,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * This singleton class provides the functionality to save data related to the {@link ExchangeConnectorPlugin}. This includes
@@ -50,8 +52,8 @@ import java.util.UUID;
 public class ExchangeAppointmentStorage
 {
     private static final String EXCHANGE_ID = "exchange";
-    private final Map<String, Set<SynchronizationTask>> tasks = new LinkedHashMap<>();
-    private Map<String, ExternalSyncEntity> importExportEntities = new LinkedHashMap<>();
+    private final Map<String, Set<SynchronizationTask>> tasks = new ConcurrentHashMap<>();
+    private Map<String, ExternalSyncEntity> importExportEntities = new ConcurrentHashMap<>();
     //CachableStorageOperator operator;
     TypedComponentRole<String> LAST_SYNC_ERROR_CHANGE_HASH = new TypedComponentRole<>("org.rapla.plugin.exchangconnector.last_sync_error_change_hash");
     private final JsonParserWrapper.JsonParser gson = JsonParserWrapper.defaultJson().get();
@@ -60,7 +62,6 @@ public class ExchangeAppointmentStorage
     final private Logger logger;
     final private RaplaFacade facade;
     private final CachableStorageOperator operator;
-    private final RaplaLock lockManager;
 
 
     /**
@@ -73,57 +74,40 @@ public class ExchangeAppointmentStorage
         this.facade = facade;
         this.logger = logger;
         this.operator = operator;
-        lockManager = new DefaultRaplaLock(logger);
     }
 
     public Collection<SynchronizationTask> getAllTasks() throws RaplaException
     {
         List<SynchronizationTask> result = new ArrayList<>();
-        RaplaLock.ReadLock lock = lockManager.readLock(getClass(),"getAllTasks");
-        try
+        for (Collection<SynchronizationTask> list : tasks.values())
         {
-            for (Collection<SynchronizationTask> list : tasks.values())
+            if (list != null)
             {
-                if (list != null)
-                {
-                    result.addAll(list);
-                }
+                result.addAll(list);
             }
-            logger.debug("Found " + result.size() + " existing exchange tasks. ");
-            return result;
         }
-        finally
-        {
-            lockManager.unlock(lock);
-        }
+        logger.debug("Found " + result.size() + " existing exchange tasks. ");
+        return result;
     }
 
     public Collection<SynchronizationTask> getTasksForUser(ReferenceInfo<User> userId) throws RaplaException
     {
         // TODO add another index (userId to Collection<SynchronizationTask>) so we can do this faster
         List<SynchronizationTask> result = new ArrayList<>();
-        RaplaLock.ReadLock lock = lockManager.readLock(getClass(),"getTasksForUser " + userId);
-        try
+        for (Collection<SynchronizationTask> list : tasks.values())
         {
-            for (Collection<SynchronizationTask> list : tasks.values())
+            if (list != null)
             {
-                if (list != null)
+                for (SynchronizationTask task : list)
                 {
-                    for (SynchronizationTask task : list)
+                    if (task.matchesUserId( userId ))
                     {
-                        if (task.matchesUserId( userId ))
-                        {
-                            result.add(task);
-                        }
+                        result.add(task);
                     }
                 }
             }
-            return result;
         }
-        finally
-        {
-            lockManager.unlock(lock);
-        }
+        return result;
     }
     
     public void removeTasksForUser(ReferenceInfo<User> userId) throws RaplaException
@@ -133,27 +117,19 @@ public class ExchangeAppointmentStorage
         storeAndRemove(toStore, toRemove);
     }
 
-    synchronized public SynchronizationTask getTask(Appointment appointment, ReferenceInfo<User> userId) throws RaplaException
+    synchronized public SynchronizationTask getTask(Appointment appointment, String mailboxName)
     {
         String appointmentId = appointment.getId();
-        RaplaLock.ReadLock lock = lockManager.readLock(getClass(), "getTask " + appointmentId + " for " + userId);
-        try
+        Set<SynchronizationTask> set = tasks.get(appointmentId);
+        if (set != null)
         {
-            Set<SynchronizationTask> set = tasks.get(appointmentId);
-            if (set != null)
+            for (SynchronizationTask task : set)
             {
-                for (SynchronizationTask task : set)
+                if (task.matchesMailbox(mailboxName))
                 {
-                    if (task.matchesUserId(userId))
-                    {
-                        return task;
-                    }
+                    return task;
                 }
             }
-        }
-        finally
-        {
-            lockManager.unlock(lock);
         }
         return null;
     }
@@ -161,29 +137,14 @@ public class ExchangeAppointmentStorage
     public Collection<SynchronizationTask> getTasks(ReferenceInfo appointment) throws RaplaException
     {
         String appointmentId = appointment.getId();
-        RaplaLock.ReadLock lock = lockManager.readLock(getClass(), "getTasks " + appointmentId);
-        try
+        Set<SynchronizationTask> set = tasks.get(appointmentId);
+        if (set == null)
         {
-            Set<SynchronizationTask> set = tasks.get(appointmentId);
-            if (set == null)
-            {
-                return Collections.emptyList();
-            }
-            return new ArrayList<>(set);
+            return Collections.emptyList();
         }
-        finally
-        {
-            lockManager.unlock(lock);
-        }
+        return new ArrayList<>(set);
     }
 
-    synchronized public SynchronizationTask createTask(Appointment appointment, ReferenceInfo<User> userId)
-    {
-        int retries = 0;
-        Date date = null;
-        String lastError = null;
-        return new SynchronizationTask(appointment.getReference(), userId, retries, date, lastError);
-    }
 
     //	public void remove(SynchronizationTask appointmentTask) throws RaplaException {
     //		String appointmentId = appointmentTask.getAppointmentId();
@@ -211,42 +172,33 @@ public class ExchangeAppointmentStorage
     //	
     public void storeAndRemove(Collection<SynchronizationTask> toStore, Collection<SynchronizationTask> toRemove) throws RaplaException
     {
-        RaplaLock.WriteLock lock = lockManager.writeLock(getClass()," appointments " +toStore.size() + " to store and " + toRemove + " to Remove." ,60);
-        try
+        for (SynchronizationTask task : toStore)
         {
-            for (SynchronizationTask task : toStore)
+            String appointmentId = task.getAppointmentId();
+            Set<SynchronizationTask> set = tasks.get(appointmentId);
+            if (set != null)
             {
-                String appointmentId = task.getAppointmentId();
-                Set<SynchronizationTask> set = tasks.get(appointmentId);
-                if (set != null)
-                {
-                    set.remove(task);
-                }
-                else
-                {
-                    set = new HashSet<>();
-                    tasks.put(appointmentId, set);
-                }
-                set.add(task);
+                set.remove(task);
             }
-            for (SynchronizationTask task : toRemove)
+            else
             {
-                String appointmentId = task.getAppointmentId();
-                Set<SynchronizationTask> set = tasks.get(appointmentId);
-                if (set != null)
-                {
-                    set.remove(task);
-                    if (set.isEmpty())
-                    {
-                        tasks.remove(appointmentId);
-                    }
-                }
+                set = new HashSet<>();
+                tasks.put(appointmentId, set);
             }
-
+            set.add(task);
         }
-        finally
+        for (SynchronizationTask task : toRemove)
         {
-            lockManager.unlock(lock);
+            String appointmentId = task.getAppointmentId();
+            Set<SynchronizationTask> set = tasks.get(appointmentId);
+            if (set != null)
+            {
+                set.remove(task);
+                if (set.isEmpty())
+                {
+                    tasks.remove(appointmentId);
+                }
+            }
         }
 
         Collection<Entity> storeObjects = new HashSet<>();
@@ -257,18 +209,10 @@ public class ExchangeAppointmentStorage
             String appointmentId = task.getAppointmentId();
             if (appointmentId != null)
             {
-                RaplaLock.WriteLock writeLock = lockManager.writeLock(getClass(), " removing appointment " + appointmentId ,60);
-                try
-                {
-                    //remove tasks from appointmenttask 
-                    final Set<SynchronizationTask> set = tasks.get(appointmentId);
-                    if (set != null)
-                        set.remove(task);
-                }
-                finally
-                {
-                    lockManager.unlock(writeLock);
-                }
+                //remove tasks from appointmenttask
+                final Set<SynchronizationTask> set = tasks.get(appointmentId);
+                if (set != null)
+                    set.remove(task);
             }
 
             // remove task from database
@@ -398,23 +342,31 @@ public class ExchangeAppointmentStorage
             SynchronizationTask synchronizationTask = gson.fromJson(persistant.getData(), SynchronizationTask.class);
             if (synchronizationTask.getUserId() == null)
             {
-                getLogger().error("Synchronization task " + persistant.getId() + " has no userId. Ignoring.");
+                getLogger().debug("Synchronization task " + persistant.getId() + " has no userId. Ignoring.");
+                continue;
+            }
+            if (synchronizationTask.getResourceId() == null) {
+                getLogger().debug("Synchronization task " + persistant.getId() + " has no resourceId. Ignoring.");
+                continue;
+            }
+            if (synchronizationTask.getMailboxName() == null) {
+                getLogger().debug("Synchronization task " + persistant.getId() + " has no mailboxName. Ignoring.");
                 continue;
             }
             if (synchronizationTask.getRetries() < 0)
             {
-                getLogger().error("Synchronization task " + persistant.getId() + " has invalid retriesString. Ignoring.");
+                getLogger().debug("Synchronization task " + persistant.getId() + " has invalid retriesString. Ignoring.");
                 continue;
             }
             if (synchronizationTask.getStatus() == null)
             {
-                getLogger().error("Synchronization task " + persistant.getId() + " has no status. Ignoring.");
+                getLogger().debug("Synchronization task " + persistant.getId() + " has no status. Ignoring.");
                 continue;
             }
             final String appointmentId = synchronizationTask.getAppointmentId();
             if(appointmentId == null)
             {
-                getLogger().error("Synchronization task " + persistant.getId() + " has no appointmentId. Ignoring.");
+                getLogger().debug("Synchronization task " + persistant.getId() + " has no appointmentId. Ignoring.");
                 continue;
             }
             Set<SynchronizationTask> taskList = tasks.get(appointmentId);

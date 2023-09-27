@@ -149,7 +149,6 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
     private TimeZone systemTimeZone = TimeZone.getDefault();
     private CommandScheduler scheduler;
     private List< io.reactivex.rxjava3.disposables.Disposable> scheduledTasks = new ArrayList<>();
-    private CalendarModelCache calendarModelCache;
     private Date connectStart;
     private final DefaultRaplaLock disconnectLock;
     private final PromiseWait promiseWait;
@@ -164,7 +163,6 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
         //context.lookupDeprecated( CommandScheduler.class);
         this.history = new EntityHistory();
         appointmentBindings = new AppointmentMapClass(logger);
-        calendarModelCache = new CalendarModelCache(this, i18n, logger, scheduler);
     }
 
     @Override
@@ -1076,7 +1074,6 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
             Date timestamp = preference.getLastChanged();
             addToDeleteUpdate(referenceInfo, timestamp, isDelete, preference);
         }
-        calendarModelCache.initCalendarMap();
         final long delayCleanup = DateTools.MILLISECONDS_PER_HOUR;
         scheduleConnectedTasks(cleanUpConflicts, delayCleanup, DateTools.MILLISECONDS_PER_HOUR);
         final int refreshPeriod = 1000 * 20;
@@ -1230,7 +1227,6 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
     /** updates the bindings of the resources and returns a map with all processed allocation changes*/
     private Collection<ConflictFinder.ConflictChangeOperation> updateIndizes(UpdateResult result) throws RaplaException
     {
-        calendarModelCache.synchronizeCalendars(result);
         final Collection<UpdateOperation> conflictChanges = new ArrayList<>();
         for (UpdateOperation op : result.getOperations())
         {
@@ -4021,26 +4017,6 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
         return getUpdateResult(since, null);
     }
 
-    @Override
-    public Collection<Appointment> getAppointmentsFromUserCalendarModels(ReferenceInfo<User> userId, TimeInterval syncRange) throws RaplaException
-    {
-        checkConnected();
-        return calendarModelCache.getAppointments(userId, syncRange);
-    }
-
-    @Override
-    public Collection<ReferenceInfo<User>> findUsersThatExport(Allocatable allocatable) throws RaplaException
-    {
-        checkConnected();
-        return calendarModelCache.findMatchingUsers(allocatable);
-    }
-
-    @Override
-    public Collection<ReferenceInfo<User>> findUsersThatExport(Appointment appointment) throws RaplaException
-    {
-        checkConnected();
-        return calendarModelCache.findMatchingUser(appointment);
-    }
 
     /*
      * Dependencies for belongsTo and package
