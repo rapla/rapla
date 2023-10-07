@@ -294,7 +294,10 @@ public class SynchronisationManager implements ServerExtension
         for ( Attribute attribute: attributes) {
             String annotation = attribute.getAnnotation(AttributeAnnotations.KEY_EMAIL);
             if ( annotation !=null && Boolean.TRUE.toString().equalsIgnoreCase( annotation)) {
-                mailbox = (String) c.getValueForAttribute( attribute);
+                Object valueForAttribute = c.getValueForAttribute(attribute);
+                if ( valueForAttribute instanceof  String) {
+                    mailbox = (String) valueForAttribute;
+                }
             }
         }
         if ( mailbox == null ) {

@@ -1178,11 +1178,12 @@ public class FacadeImpl implements RaplaFacade {
 
 		// then we set new ids for all appointments
 		Appointment[] clonedAppointments = clone.getAppointments();
-		setNew(Arrays.asList(clonedAppointments),appoimtmentIds, user);
-		
 		for (Appointment clonedAppointment:clonedAppointments) {
 			clone.removeAppointment(clonedAppointment);
 		}
+		setNew(Arrays.asList(clonedAppointments),appoimtmentIds, user);
+		
+
 
 		// and now a new id for the reservation
 		setNew( Collections.singletonList(clone), reservationIds,user );

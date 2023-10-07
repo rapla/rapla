@@ -33,7 +33,7 @@ public class AbstractTableStorage implements TableStorage
 	protected Connection con;
 	protected Logger logger;
 	private String dbProductName = "";
-	private Map<String,ColumnDef> columns = new LinkedHashMap<>();
+	final private Map<String,ColumnDef> columns = new LinkedHashMap<>();
 	protected String insertSql;
 	protected String deleteSql;
 	protected String deleteSqlWithoutCheck;
@@ -42,7 +42,7 @@ public class AbstractTableStorage implements TableStorage
 	protected String containsSql;
 	protected String selectUpdateSql;
 	protected String idName;
-	private Calendar datetimeCal;
+	final private Calendar datetimeCal;
 	private Date connectionTimestamp;
 
 
@@ -147,75 +147,6 @@ public class AbstractTableStorage implements TableStorage
         return type;
     }
 
-	protected void checkAndRename( Map<String, TableDef> schema, String oldColumnName,
-			String newColumnName) throws SQLException
-    {
-		String errorPrefix = "Can't rename " + oldColumnName + " " + newColumnName + " in table " + tableName;
-		TableDef tableDef = schema.get(tableName);
-		if (tableDef.getColumn( newColumnName) != null )
-    	{
-    		return;
-    	}
-		ColumnDef oldColumn = tableDef.getColumn( oldColumnName);
-		if (oldColumn == null)
-    	{
-			throw new SQLException(errorPrefix + " old column " + oldColumnName + " not found.");
-    	}
-		ColumnDef newCol = getColumn(newColumnName);
-		if ( newCol == null)
-		{
-			throw new IllegalArgumentException("Column " + newColumnName + " not found in table schema " + tableName);
-		}
-		getLogger().warn("Patching Database for table " + tableName + " renaming column "+ oldColumnName + " to " + newColumnName);
-        String sql = "ALTER TABLE " + tableName + " RENAME COLUMN " + oldColumnName + " TO " + newColumnName;
-		if ( isMysql())
-        {
-			sql =   "ALTER TABLE " + tableName + " CHANGE COLUMN " +oldColumnName + " ";
-			String columnSql = getColumnCreateStatemet(newCol, false, true);
-			sql+= columnSql;
-
-        }
-		Statement stmt = con.createStatement();
-		try
-		{
-			stmt.execute( sql);
-		}
-		finally
-		{
-			stmt.close();
-		}
-		con.commit();
-        tableDef.removeColumn( oldColumnName);
-        tableDef.addColumn( newCol);
-	}
-
-	protected void checkAndRetype(Map<String, TableDef> schema, String columnName) throws RaplaException
-	{
-		TableDef tableDef = schema.get(tableName);
-		ColumnDef oldDef = tableDef.getColumn( columnName);
-		ColumnDef newDef = getColumn(columnName);
-		if (oldDef == null  || newDef == null)
-    	{
-			throw new RaplaException("Can't retype column " + columnName + " it is not found");
-    	}
-		boolean includePrimaryKey = false;
-		boolean includeDefaults = false;
-		String stmt1 = getColumnCreateStatemet(oldDef, includePrimaryKey, includeDefaults);
-		String stmt2 = getColumnCreateStatemet(newDef, includePrimaryKey, includeDefaults);
-		if ( stmt1.equals( stmt2))
-		{
-			return;
-		}
-
-		String columnSql = getColumnCreateStatemet(newDef, false, true);
-		getLogger().warn("Column "+ tableName + "."+ columnName + " change from '" + stmt1+  "' to new type '" + columnSql + "'");
-		getLogger().warn("You should patch the database accordingly.");
-// We do not autopatch colum types yet
-//		String sql =   "ALTER TABLE " + tableName + " ALTER COLUMN " ;
-	//	sql+= columnSql;
-    //    con.createStatement().execute(sql);
-	}
-
 	protected String getColumnCreateStatemet(ColumnDef col, boolean includePrimaryKey, boolean includeDefaults) {
 		StringBuffer buf = new StringBuffer();
 		String colName = col.getName();
@@ -254,7 +185,7 @@ public class AbstractTableStorage implements TableStorage
 	}
 
 	protected boolean isMysql() {
-		boolean result = dbProductName.contains("mysql");
+		boolean result = dbProductName.contains("mysql") || dbProductName.contains("mariadb");
 		return result;
 	}
 
@@ -276,34 +207,6 @@ public class AbstractTableStorage implements TableStorage
 	protected boolean isH2() {
 		boolean result = dbProductName.contains("h2");
 		return result;
-	}
-
-	protected void checkRenameTable( Map<String, TableDef> tableMap, String oldTableName) throws SQLException
-    {
-        boolean isOldTableName = false;
-		if ( tableMap.get( oldTableName) != null)
-        {
-            isOldTableName = true;
-        }
-
-		if ( tableMap.get(tableName) != null)
-        {
-            isOldTableName = false;
-        }
-
-	    if ( isOldTableName)
-	    {
-	    	getLogger().warn("Table " + tableName + " not found. Patching Database : Renaming " + oldTableName + " to "+ tableName);
-	    	String sql = "ALTER TABLE " + oldTableName + " RENAME TO " + tableName + "";
-
-			try ( Statement stmt = con.createStatement())
-			{
-				stmt.execute( sql);
-			}
-			con.commit();
-			tableMap.put( tableName, tableMap.get( oldTableName));
-			tableMap.remove( oldTableName);
-	    }
 	}
 
 	protected void checkAndDrop(Map<String, TableDef> schema, String columnName) throws SQLException {
@@ -400,30 +303,20 @@ public class AbstractTableStorage implements TableStorage
             {
             	String sql = "ALTER TABLE " + tableName + " ADD COLUMN ";
                 sql += getColumnCreateStatemet( col, true, true);
-    			Statement stmt = con.createStatement();
-    			try
+    			try (Statement stmt = con.createStatement())
     			{
     				stmt.execute( sql);
     			}
-    			finally
-    			{
-    				stmt.close();
-    			}
-
             	con.commit();
             }
 			if ( col.isKey() && !col.isPrimary())
 			{
 				String sql = createKeySQL(tableName, name);
 	            getLogger().info("Adding index for " + name);
-	            Statement stmt = con.createStatement();
-    			try
+
+    			try (Statement stmt = con.createStatement())
     			{
     				stmt.execute( sql);
-    			}
-    			finally
-    			{
-    				stmt.close();
     			}
 	            con.commit();
 			}
@@ -439,18 +332,15 @@ public class AbstractTableStorage implements TableStorage
             return currentTimestamp;
         }
         Date date = new Date( timestamp.getTime());
-        if ( date != null)
+		if ( date.after( currentTimestamp))
 		{
-		    if ( date.after( currentTimestamp))
-		    {
-		        getLogger().error("Timestamp in table " + getTableName() + " in the future. " + date+ " > "+ currentTimestamp +" Ignoring.");
-		    }
-		    else
-		    {
-		        return date;
-		    }
+			getLogger().error("Timestamp in table " + getTableName() + " in the future. " + date+ " > "+ currentTimestamp +" Ignoring.");
 		}
-        return currentTimestamp;
+		else
+		{
+			return date;
+		}
+	    return currentTimestamp;
 	}
 
 	protected Date getTimestamp(ResultSet rset, int column, boolean checkCurrent) throws SQLException {
@@ -461,18 +351,15 @@ public class AbstractTableStorage implements TableStorage
             return null;
         }
         Date date = new Date( timestamp.getTime());
-        if ( date != null)
-        {
-            if ( date.after( currentTimestamp) && checkCurrent)
-            {
-                getLogger().error("Timestamp in table " + getTableName() + " in the future. Something went wrong");
-            }
-            else
-            {
-                return date;
-            }
-        }
-        return null;
+		if ( date.after( currentTimestamp) && checkCurrent)
+		{
+			getLogger().error("Timestamp in table " + getTableName() + " in the future. Something went wrong");
+			return null;
+		}
+		else
+		{
+			return date;
+		}
     }
 
 	protected void setDate(PreparedStatement stmt,int column, Date time) throws SQLException {
@@ -551,7 +438,7 @@ public class AbstractTableStorage implements TableStorage
 	}
 
 	protected String getEntryList(Collection<ColumnDef> entries) {
-        StringBuffer buf = new StringBuffer();
+        StringBuilder buf = new StringBuilder();
         for (ColumnDef col: entries) {
             if (buf.length() > 0 )
             {
@@ -563,7 +450,7 @@ public class AbstractTableStorage implements TableStorage
     }
 
 	protected String getMarkerList(int length) {
-        StringBuffer buf = new StringBuffer();
+        StringBuilder buf = new StringBuilder();
         for (int i=0;i<length; i++) {
             buf.append('?');
             if (i < length - 1)
@@ -599,7 +486,7 @@ public class AbstractTableStorage implements TableStorage
 
 	protected void setInt(PreparedStatement stmt, int column, Integer number) throws SQLException {
         if ( number != null) {
-            stmt.setInt( column, number.intValue() );
+            stmt.setInt( column, number );
         } else {
             stmt.setObject(column, null, Types.INTEGER);
         }
@@ -617,19 +504,11 @@ public class AbstractTableStorage implements TableStorage
 	protected Integer getInt( ResultSet rset,int column) throws SQLException
     {
         Integer value = rset.getInt( column);
-        if (rset.wasNull() || value == null)
+        if (rset.wasNull())
         {
             return null;
         }
         return value;
-    }
-
-	protected void setLong(PreparedStatement stmt, int column, Long number) throws SQLException {
-        if ( number != null) {
-            stmt.setLong( column, number.longValue() );
-        } else {
-            stmt.setObject(column, null, Types.BIGINT);
-        }
     }
 
 	protected void setString(PreparedStatement stmt, int column, String object) throws SQLException {
@@ -698,16 +577,4 @@ public class AbstractTableStorage implements TableStorage
         con.commit();
     }
 
-	protected String getUpdateList(Collection<ColumnDef> entries) {
-		StringBuffer buf = new StringBuffer();
-		for (ColumnDef col: entries) {
-			if (buf.length() > 0 )
-		    {
-		    	buf.append(", ");
-		    }
-			buf.append(col.getName());
-		    buf.append("=? ");
-		}
-		return buf.toString();
-    }
 }

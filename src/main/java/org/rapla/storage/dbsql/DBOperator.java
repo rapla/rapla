@@ -22,6 +22,7 @@ import org.rapla.entities.Timestamp;
 import org.rapla.entities.User;
 import org.rapla.entities.domain.permission.PermissionExtension;
 import org.rapla.entities.dynamictype.DynamicType;
+import org.rapla.entities.dynamictype.internal.DynamicTypeImpl;
 import org.rapla.entities.extensionpoints.FunctionFactory;
 import org.rapla.entities.internal.CategoryImpl;
 import org.rapla.entities.internal.ModifiableTimestamp;
@@ -1058,6 +1059,7 @@ import java.util.Set;
             }
         }
         cache.putAll(list);
+        cache.getDynamicTypes().stream().map(t->(DynamicTypeImpl)t).forEach(DynamicTypeImpl::setReadOnly);
         resolveInitial(list, this);
         removeInconsistentEntities(cache, list);
         Collection<Entity> migratedTemplates = migrateTemplates();

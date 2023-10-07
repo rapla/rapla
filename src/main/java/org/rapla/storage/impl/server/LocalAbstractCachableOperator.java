@@ -2102,7 +2102,8 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
                                 else
                                 {
                                     logger.error("Reservation not stored in cache " + original + " removing binding for " + app);
-                                    it.remove();
+                                    removeAppointmentBinding( app, allocatable.getReference());
+                                    //it.remove();
                                     continue;
                                 }
                             }
@@ -3919,7 +3920,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
             // if not we tell the server what would be a valid history
             // 10 minutes
             final Date until = new Date(historyValidStart.getTime() + DateTools.MILLISECONDS_PER_MINUTE * 10);
-            return new UpdateResult(null, until, null, null);
+            return new UpdateResult(null, until, Collections.emptyMap(), Collections.emptyMap());
         }
         Date until = getLastRefreshed();
         final Collection<ReferenceInfo> toUpdate = getEntities(user, since, false);

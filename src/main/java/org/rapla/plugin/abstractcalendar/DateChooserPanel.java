@@ -118,7 +118,9 @@ public class DateChooserPanel extends RaplaGUIComponent
         listenersEnabled = false;
         try {
             final PeriodModel periodModel = getPeriodModel();
-            periodChooser.setPeriodModel( periodModel);
+            if ( periodModel != null) {
+                periodChooser.setPeriodModel(periodModel);
+            }
             if ( model.getSelectedDate() == null) {
 				Date today = getQuery().today();
 				model.setSelectedDate( today);
@@ -126,7 +128,7 @@ public class DateChooserPanel extends RaplaGUIComponent
             Date date = model.getSelectedDate();
             periodChooser.setDate( date);
             dateSelection.setDate( date);
-            periodPanel.setVisible( periodModel.getSize() > 0);
+            periodPanel.setVisible( periodModel != null && periodModel.getSize() > 0);
 
         } finally {
             listenersEnabled = true;

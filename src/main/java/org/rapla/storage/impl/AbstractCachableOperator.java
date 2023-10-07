@@ -25,7 +25,6 @@ import org.rapla.entities.User;
 import org.rapla.entities.configuration.Preferences;
 import org.rapla.entities.configuration.internal.PreferencesImpl;
 import org.rapla.entities.domain.*;
-import org.rapla.entities.domain.internal.AllocatableImpl;
 import org.rapla.entities.domain.permission.PermissionExtension;
 import org.rapla.entities.dynamictype.Attribute;
 import org.rapla.entities.dynamictype.Classifiable;
@@ -91,6 +90,7 @@ public abstract class AbstractCachableOperator implements StorageOperator
     private volatile Date lastRefreshed;
     final protected PermissionController permissionController;
     private PeriodModelImpl periodModel;
+
     private PeriodModelImpl periodModelHoliday;
 
     protected RaplaLock lockManager;
@@ -146,7 +146,7 @@ public abstract class AbstractCachableOperator implements StorageOperator
     // Implementation of StorageOperator
     public <T extends Entity> T editObject(T o, User user) throws RaplaException
     {
-        Set<Entity> singleton = Collections.singleton((Entity) o);
+        Set<Entity> singleton = Collections.singleton(o);
         Map<Entity,Entity> list = editObjects(singleton, user);
         Entity first = list.values().iterator().next();
         @SuppressWarnings("unchecked") T casted = (T) first;
@@ -178,7 +178,6 @@ public abstract class AbstractCachableOperator implements StorageOperator
 
     /** checks if the user that  is the user that last changed the entites
      *
-     * @return the latest persistant map of the entities
      * @throws RaplaException if the logged in user is not the lastChanged user of any entities. If isNew is false then an exception is also thrown, when an entity is not found in persistant storage
      */
      protected void checkLastChanged(Collection<Entity> objList, User user, Map<ReferenceInfo<Entity>, Entity> map) throws RaplaException {
@@ -380,7 +379,7 @@ public abstract class AbstractCachableOperator implements StorageOperator
         {
             if (allocatables != null)
             {
-                if (allocatables.size() == 0 && templateId == null && (owners == null || owners.size()==0))
+                if (allocatables.isEmpty() && templateId == null && (owners == null || owners.isEmpty()))
                 {
                     return new ResolvedPromise<>(new AppointmentMapping());
                 }
@@ -413,22 +412,24 @@ public abstract class AbstractCachableOperator implements StorageOperator
         }
     }
 
+
     @Override
     public PeriodModel getPeriodModelFor(String key) throws RaplaException {
         if (periodModel == null || periodModelHoliday == null) {
             DynamicType type = getDynamicType(StorageOperator.PERIOD_TYPE);
             ClassificationFilter[] filters = type.newClassificationFilter().toArray();
             Collection<Allocatable> allPeriods = getAllocatables( filters);
-            periodModel = new PeriodModelImpl(this, new Category[] {}, allPeriods);
+            PeriodModelImpl emptyPeriodModel = new PeriodModelImpl(this, Category.CATEGORY_ARRAY, Collections.emptyList());
+            periodModel = new PeriodModelImpl(this, Category.CATEGORY_ARRAY, allPeriods);
             final Category periodsCategory = PeriodModel.getPeriodsCategory(getSuperCategory());
             if ( periodsCategory == null)
             {
-                return null;
+                return emptyPeriodModel;
             }
             Category[] periodsCategoryCategories = periodsCategory.getCategories();
             if ( periodsCategoryCategories.length == 0)
             {
-                return null;
+                return emptyPeriodModel;
             }
             periodModelHoliday = new PeriodModelImpl(this, periodsCategoryCategories, allPeriods);
         }
@@ -487,25 +488,13 @@ public abstract class AbstractCachableOperator implements StorageOperator
         return allocatables;
     }
 
-    protected boolean isInFilter(Classifiable classifiable, ClassificationFilter[] filters)
-    {
-        if (filters == null)
-        {
-            return (!Classifiable.ClassifiableUtil.isInternalType(classifiable));
-        }
-        else
-        {
-            return ClassificationFilter.Util.matches(filters, classifiable);
-        }
-    }
-
     public User getUser(final String username) throws RaplaException
     {
         checkLoaded();
         return cache.getUser(username);
     }
 
-    protected Map<ReferenceInfo<Preferences>, PreferencesImpl> emptyPreferencesProxy = new HashMap<>();
+    final protected Map<ReferenceInfo<Preferences>, PreferencesImpl> emptyPreferencesProxy = new HashMap<>();
 
     public Preferences getPreferences(final User user, boolean createIfNotNull) throws RaplaException
     {
@@ -952,15 +941,14 @@ public abstract class AbstractCachableOperator implements StorageOperator
         for (Entity toUpdate : updatedEntities)
         {
             Entity newEntity = toUpdate;
-            boolean createdBeforeSince = isCreatedBeforeSince(since, newEntity);
-            if (createdBeforeSince)
+            boolean createdAfterSince = isCreatedAfterSince(since, newEntity);
+            if (createdAfterSince)
             {
-                result.addOperation(new UpdateResult.Change(newEntity.getReference()));
+                result.addOperation(new UpdateResult.Add(newEntity.getReference()));
             }
             else
             {
-
-                result.addOperation(new UpdateResult.Add(newEntity.getReference()));
+                result.addOperation(new UpdateResult.Change(newEntity.getReference()));
             }
         }
 
@@ -972,33 +960,35 @@ public abstract class AbstractCachableOperator implements StorageOperator
         return result;
     }
 
-    protected boolean isCreatedBeforeSince(Date since, Entity newEntity)
+    protected boolean isCreatedAfterSince(Date since, Entity newEntity)
     {
-        boolean createdBeforeSince;
+        boolean createdAfterSince;
         if (since == null)
         {
-            return false;
+            return true;
         }
         if (newEntity instanceof Timestamp)
         {
             Date createTime = ((Timestamp) newEntity).getCreateDate();
             if (createTime != null)
             {
-                createdBeforeSince = createTime.before(since);
+                createdAfterSince = createTime.after(since);
+                 //logger.info(" create time " + createTime + " since " + since + " afterS " + createdAfterSince);
             }
             else
             {
                 getLogger().warn("No createInfoDialog date set for entity " + newEntity.getReference());
-                createdBeforeSince = true;
+                createdAfterSince = false;
             }
         }
         else
         {
             getLogger().warn("entity  " + newEntity.getReference() + " does not implement timestamp");
-            createdBeforeSince = true;
+            createdAfterSince = false;
         }
-        return createdBeforeSince;
+        return createdAfterSince;
     }
+
 
     @Override public FunctionFactory getFunctionFactory(String functionName)
     {

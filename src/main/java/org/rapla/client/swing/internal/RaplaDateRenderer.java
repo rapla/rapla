@@ -72,7 +72,7 @@ public class RaplaDateRenderer implements DateRenderer {
     {
         final Date date = raplaLocale.toRaplaDate(year, month, day);
         PeriodModel periodModel = getPeriodModel();
-        Period period = periodModel.getPeriodFor(date);
+        Period period = periodModel != null ? periodModel.getPeriodFor(date) : null;
         final RenderingInfo renderingInfo = renderer.getRenderingInfo(dayOfWeek, day, month, year);
         if (period != null)
         {

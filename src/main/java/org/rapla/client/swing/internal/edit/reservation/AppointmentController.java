@@ -46,6 +46,7 @@ import org.rapla.entities.domain.Reservation;
 import org.rapla.entities.domain.ReservationHelper;
 import org.rapla.entities.domain.internal.AppointmentImpl;
 import org.rapla.facade.CalendarOptions;
+import org.rapla.facade.PeriodModel;
 import org.rapla.facade.client.ClientFacade;
 import org.rapla.framework.Disposable;
 import org.rapla.framework.RaplaException;
@@ -654,13 +655,13 @@ public class AppointmentController extends RaplaGUIComponent implements Disposab
             addCopyPaste(interval.getNumberField(), getI18n(), getRaplaLocale(), ioInterface, getLogger());
         }
 
-        RaplaNumber weekdayInMonth = new RaplaNumber(null, RaplaNumber.ONE, new Integer(5), false);
+        RaplaNumber weekdayInMonth = new RaplaNumber(null, RaplaNumber.ONE, Integer.valueOf(5), false);
 
         {
             addCopyPaste(weekdayInMonth.getNumberField(), getI18n(), getRaplaLocale(), ioInterface, getLogger());
         }
 
-        RaplaNumber dayInMonth = new RaplaNumber(null, RaplaNumber.ONE, new Integer(31), false);
+        RaplaNumber dayInMonth = new RaplaNumber(null, RaplaNumber.ONE, Integer.valueOf(31), false);
 
         {
             addCopyPaste(dayInMonth.getNumberField(), getI18n(), getRaplaLocale(), ioInterface, getLogger());
@@ -681,7 +682,7 @@ public class AppointmentController extends RaplaGUIComponent implements Disposab
         RaplaTime endTime;
         public final int SAME_DAY = 0, NEXT_DAY = 1, X_DAYS = 2;
         JComboBox dayChooser;
-        RaplaNumber days = new RaplaNumber(null, new Integer(2), null, false);
+        RaplaNumber days = new RaplaNumber(null, Integer.valueOf(2), null, false);
 
         {
             addCopyPaste(days.getNumberField(), getI18n(), getRaplaLocale(), ioInterface, getLogger());
@@ -813,7 +814,7 @@ public class AppointmentController extends RaplaGUIComponent implements Disposab
             endingChooser.addActionListener(this);
 
             number.setColumns(3);
-            number.setNumber(new Integer(1));
+            number.setNumber(Integer.valueOf(1));
             number.addChangeListener(this);
             numberPanel.setLayout(new BorderLayout());
             numberPanel.add(number, BorderLayout.WEST);
@@ -1237,7 +1238,7 @@ public class AppointmentController extends RaplaGUIComponent implements Disposab
                 if (exceptionEditor != null)
                     exceptionEditor.mapFromAppointment();
 
-                interval.setNumber(new Integer(repeating.getInterval()));
+                interval.setNumber(Integer.valueOf(repeating.getInterval()));
 
                 Date start = appointment.getStart();
                 startDate.setDate(start);
@@ -1255,7 +1256,7 @@ public class AppointmentController extends RaplaGUIComponent implements Disposab
                 {
                     endDate.setDate(DateTools.subDay(repeating.getEnd()));
                     endDatePeriod.setDate(DateTools.cutDate(endDate.getDate()));
-                    number.setNumber(new Integer(repeating.getNumber()));
+                    number.setNumber(Integer.valueOf(repeating.getNumber()));
                     if (!repeating.isFixedNumber())
                     {
                         endingChooser.setSelectedIndex(REPEAT_UNTIL);
@@ -1307,13 +1308,13 @@ public class AppointmentController extends RaplaGUIComponent implements Disposab
                     monthChooser.setVisible(true);
                     monthChooser.selectMonth(DateTools.getMonth(start));
                     int numb = DateTools.getDayOfMonth(start);
-                    dayInMonth.setNumber(new Integer(numb));
+                    dayInMonth.setNumber(Integer.valueOf(numb));
                 }
 
                 if (repeating.isMonthly())
                 {
                     int numb = DateTools.getDayOfWeekInMonth(start);
-                    weekdayInMonth.setNumber(new Integer(numb));
+                    weekdayInMonth.setNumber(Integer.valueOf(numb));
                 }
 
                 if (repeating.isDaily())
@@ -1340,7 +1341,7 @@ public class AppointmentController extends RaplaGUIComponent implements Disposab
                 else
                 {
                     dayChooser.setSelectedIndex(X_DAYS);
-                    days.setNumber(new Integer(daysBetween));
+                    days.setNumber(Integer.valueOf(daysBetween));
                     days.setVisible(true);
                 }
                 final boolean wholeDaysSet = appointment.isWholeDaysSet();
@@ -1362,7 +1363,8 @@ public class AppointmentController extends RaplaGUIComponent implements Disposab
         {
             try
             {
-                return getFacade().getPeriodModel().getSize() > 0;
+                PeriodModel periodModel = getFacade().getPeriodModel();
+                return periodModel != null && periodModel.getSize() > 0;
             }
             catch (RaplaException e)
             {
