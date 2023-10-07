@@ -98,23 +98,23 @@ public class UndoTests extends GUITestCase {
         //it will createInfoDialog a new appointment and add it to the end of the array
         //Then comparing the starttimes of the nonPersistantEvent-Appointment and the PersistantEvent-Appointment
 		{
-			Reservation persistant = facade.getRaplaFacade().getPersistant( event );
+			Reservation persistant = facade.getRaplaFacade().getPersistent( event );
 			Appointment appOrig = event.getAppointments()[0];
 			Appointment appCpy = persistant.getAppointments()[0];
 			Assert.assertFalse(appOrig.matches(appCpy));
 		}
 		{
 			facade.getCommandHistory().undo();
-			Reservation persistant = facade.getRaplaFacade().getPersistant( event );
+			Reservation persistant = facade.getRaplaFacade().getPersistent( event );
 			Appointment appOrig = event.getAppointments()[0];
 			Appointment appCpy = persistant.getAppointments()[0];
 			Assert.assertTrue(appOrig.matches(appCpy));
 		}
 		{
 			facade.getCommandHistory().redo();
-			Reservation persistant = facade.getRaplaFacade().getPersistant( event );
+			Reservation persistent = facade.getRaplaFacade().getPersistent( event );
 			Appointment appOrig = event.getAppointments()[0];
-			Appointment appCpy = persistant.getAppointments()[0];
+			Appointment appCpy = persistent.getAppointments()[0];
 			Assert.assertFalse(appOrig.matches(appCpy));
 		}
     }
@@ -150,21 +150,21 @@ public class UndoTests extends GUITestCase {
         //it will createInfoDialog a new appointment and add it to the end of the array.
         //Then comparing the starttimes of the nonPersistantEvent-Appointment and the PersistantEvent-Appointment
 		{
-			Reservation persistant = facade.getRaplaFacade().getPersistant( event );
+			Reservation persistant = facade.getRaplaFacade().getPersistent( event );
 			Appointment appOrig = event.getAppointments()[0];
 			Appointment appCpy = persistant.getAppointments()[0];
 			Assert.assertFalse(appOrig.matches(appCpy));
 		}
 		{
 			facade.getCommandHistory().undo();
-			Reservation persistant = facade.getRaplaFacade().getPersistant( event );
+			Reservation persistant = facade.getRaplaFacade().getPersistent( event );
 			Appointment appOrig = event.getAppointments()[0];
 			Appointment appCpy = persistant.getAppointments()[0];
 			Assert.assertTrue(appOrig.matches(appCpy));
 		}
 		{
 			facade.getCommandHistory().redo();
-			Reservation persistant = facade.getRaplaFacade().getPersistant( event );
+			Reservation persistant = facade.getRaplaFacade().getPersistent( event );
 			Appointment appOrig = event.getAppointments()[0];
 			Appointment appCpy = persistant.getAppointments()[0];
 			Assert.assertFalse(appOrig.matches(appCpy));
@@ -189,7 +189,7 @@ public class UndoTests extends GUITestCase {
         
         //Creating Event
         createEvent(nonPersistantAllocatable, nonPersistantEvent);
-        final Reservation persistantEvent = facade.getRaplaFacade().getPersistant( nonPersistantEvent );
+        final Reservation persistantEvent = facade.getRaplaFacade().getPersistent( nonPersistantEvent );
     	int buttonNr = 1;
 		executeControlAndPressButton(new Runnable() {
 			
@@ -202,7 +202,7 @@ public class UndoTests extends GUITestCase {
         Reservation exist=null;
         try {
         	//if you deleted the whole event, it will throw an exception at this point
-        	exist = facade.getRaplaFacade().getPersistant(nonPersistantEvent);
+        	exist = facade.getRaplaFacade().getPersistent(nonPersistantEvent);
         	
         	//checks if an appointment was deleted (not used if exception is thrown)
 			Assert.assertNotNull(exist.getAppointments()[0].getRepeating().getExceptions());
@@ -210,14 +210,14 @@ public class UndoTests extends GUITestCase {
 			facade.getCommandHistory().undo();
 		}
         try {
-        	exist = facade.getRaplaFacade().getPersistant(nonPersistantEvent);
+        	exist = facade.getRaplaFacade().getPersistent(nonPersistantEvent);
             Assert.assertNotNull(exist);
 		} catch (EntityNotFoundException e) {
 			e.printStackTrace();
 		}
         facade.getCommandHistory().redo();
         try {
-        	exist = facade.getRaplaFacade().getPersistant(nonPersistantEvent);
+        	exist = facade.getRaplaFacade().getPersistent(nonPersistantEvent);
 			Assert.assertNotNull(exist.getAppointments()[0].getRepeating().getExceptions());
 		} catch (Exception e) {
 		}

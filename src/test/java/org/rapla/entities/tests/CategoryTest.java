@@ -117,7 +117,7 @@ import java.util.Map;
         final Category edit2Remove = raplaFacade.edit(subDepartment);
         department.removeCategory(edit2Remove);
         raplaFacade.store(department);
-        final Map<Category, Category> persistant = raplaFacade.getPersistantForList(Collections.singleton(edit2Remove));
+        final Map<Category, Category> persistant = raplaFacade.getPersistentForList(Collections.singleton(edit2Remove));
         Assert.assertEquals(0, persistant.size());
     }
 

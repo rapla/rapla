@@ -96,17 +96,10 @@ public class UpdateResult
     public void addOperation(Entity<?> newEntity, Entity<?> oldEntity, UpdateOperation operation)
     {
         addOperation(operation);
-        if(operation instanceof Remove)
-        {
+        if (oldEntity !=null) {
             oldEntities.put(oldEntity.getReference(), oldEntity);
         }
-        else if(operation instanceof Change)
-        {
-            oldEntities.put(oldEntity.getReference(), oldEntity);
-            updatedEntities.put(newEntity.getReference(), newEntity);
-        }
-        else if(operation instanceof Add)
-        {
+        if (newEntity !=null) {
             updatedEntities.put(newEntity.getReference(), newEntity);
         }
     }

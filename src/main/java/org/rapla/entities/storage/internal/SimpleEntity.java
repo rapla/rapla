@@ -76,7 +76,7 @@ public abstract class SimpleEntity extends ReferenceHandler implements RefEntity
         }
     }
 
-    protected Collection<Entity> getNonpersistantEntities()
+    protected Collection<Entity> getNonPersistentEntities()
     {
         if ( nonpersistantEntities == null)
         {

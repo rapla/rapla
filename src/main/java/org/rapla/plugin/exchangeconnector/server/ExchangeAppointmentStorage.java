@@ -216,13 +216,13 @@ public class ExchangeAppointmentStorage
             }
 
             // remove task from database
-            String persistantId = task.getPersistantId();
-            if (persistantId != null)
+            String persistentId = task.getPersistantId();
+            if (persistentId != null)
             {
-                ExternalSyncEntity persistant = importExportEntities.get(persistantId);
-                if (persistant != null)
+                ExternalSyncEntity persistent = importExportEntities.get(persistentId);
+                if (persistent != null)
                 {
-                    removeObjects.add(((Entity)persistant).getReference());
+                    removeObjects.add(((Entity)persistent).getReference());
                 }
             }
 
@@ -231,13 +231,13 @@ public class ExchangeAppointmentStorage
 
         for (SynchronizationTask task : toStore)
         {
-            final String persistantId = task.getPersistantId();
-            if (persistantId != null)
+            final String persistentId = task.getPersistantId();
+            if (persistentId != null)
             {
-                final Entity persistant = importExportEntities.get(persistantId);
-                if (persistant != null)
+                final Entity persistent = importExportEntities.get(persistentId);
+                if (persistent != null)
                 {
-                    final Entity edit = facade.edit(persistant);
+                    final Entity edit = facade.edit(persistent);
                     ((ExternalSyncEntityImpl)edit).setData(gson.toJson(task));
                     storeObjects.add(edit);
                 }
@@ -337,36 +337,36 @@ public class ExchangeAppointmentStorage
     {
         importExportEntities = operator.getImportExportEntities(EXCHANGE_ID, ImportExportDirections.EXPORT);
         tasks.clear();
-        for (ExternalSyncEntity persistant : importExportEntities.values())
+        for (ExternalSyncEntity persistent : importExportEntities.values())
         {
-            SynchronizationTask synchronizationTask = gson.fromJson(persistant.getData(), SynchronizationTask.class);
+            SynchronizationTask synchronizationTask = gson.fromJson(persistent.getData(), SynchronizationTask.class);
             if (synchronizationTask.getUserId() == null)
             {
-                getLogger().debug("Synchronization task " + persistant.getId() + " has no userId. Ignoring.");
+                getLogger().debug("Synchronization task " + persistent.getId() + " has no userId. Ignoring.");
                 continue;
             }
             if (synchronizationTask.getResourceId() == null) {
-                getLogger().debug("Synchronization task " + persistant.getId() + " has no resourceId. Ignoring.");
+                getLogger().debug("Synchronization task " + persistent.getId() + " has no resourceId. Ignoring.");
                 continue;
             }
             if (synchronizationTask.getMailboxName() == null) {
-                getLogger().debug("Synchronization task " + persistant.getId() + " has no mailboxName. Ignoring.");
+                getLogger().debug("Synchronization task " + persistent.getId() + " has no mailboxName. Ignoring.");
                 continue;
             }
             if (synchronizationTask.getRetries() < 0)
             {
-                getLogger().debug("Synchronization task " + persistant.getId() + " has invalid retriesString. Ignoring.");
+                getLogger().debug("Synchronization task " + persistent.getId() + " has invalid retriesString. Ignoring.");
                 continue;
             }
             if (synchronizationTask.getStatus() == null)
             {
-                getLogger().debug("Synchronization task " + persistant.getId() + " has no status. Ignoring.");
+                getLogger().debug("Synchronization task " + persistent.getId() + " has no status. Ignoring.");
                 continue;
             }
             final String appointmentId = synchronizationTask.getAppointmentId();
             if(appointmentId == null)
             {
-                getLogger().debug("Synchronization task " + persistant.getId() + " has no appointmentId. Ignoring.");
+                getLogger().debug("Synchronization task " + persistent.getId() + " has no appointmentId. Ignoring.");
                 continue;
             }
             Set<SynchronizationTask> taskList = tasks.get(appointmentId);

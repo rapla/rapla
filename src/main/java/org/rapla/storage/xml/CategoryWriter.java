@@ -57,8 +57,8 @@ public class CategoryWriter extends RaplaXMLWriter {
         closeElement("rapla:category");
     }
     
-    public void writeObject(RaplaObject persistant) throws RaplaException, IOException {
-        printCategory( (Category) persistant, false);
+    public void writeObject(RaplaObject persistent) throws RaplaException, IOException {
+        printCategory( (Category) persistent, false);
     }
 
 

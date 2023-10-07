@@ -642,14 +642,14 @@ public class TreeFactoryImpl extends RaplaComponent implements TreeFactory
         Map<Category, RaplaTreeNode> nodeMap = new HashMap<>();
         Category superCategory = null;
         {
-            Category persistantSuperCategory = getQuery().getSuperCategory();
-            if (persistantSuperCategory.equals(rootCategory))
+            Category persistentSuperCategory = getQuery().getSuperCategory();
+            if (persistentSuperCategory.equals(rootCategory))
             {
                 superCategory = rootCategory;
             }
             if (superCategory == null)
             {
-                superCategory = persistantSuperCategory;
+                superCategory = persistentSuperCategory;
             }
         }
         nodeMap.put(superCategory, newNamedNode(superCategory));

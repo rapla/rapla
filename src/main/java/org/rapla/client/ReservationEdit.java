@@ -34,7 +34,7 @@ public interface ReservationEdit<T> extends EditTaskPresenter.EditTaskView<Reser
     void addExceptionsToCurrentAppointment(List<TimeInterval> exceptions);
 
     void setReservation(Reservation reservation, Appointment appointment) throws RaplaException;
-    //void updateReservation(Reservation persistant) throws RaplaException;
+    //void updateReservation(Reservation persistent) throws RaplaException;
 
     //void deleteReservation() throws RaplaException;
 

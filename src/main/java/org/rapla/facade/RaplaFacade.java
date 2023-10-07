@@ -197,7 +197,7 @@ public interface RaplaFacade
     User newUser() throws RaplaException;
 
     /** Clones an entity. The entities will get new identifier and
-     won't be equal to the original. The resulting object is not persistant and therefore
+     won't be equal to the original. The resulting object is not persistent and therefore
      can be editet.
      */
     <T extends Entity> T clone(T obj,User user) throws RaplaException;
@@ -232,7 +232,7 @@ public interface RaplaFacade
 
     /** This call will be delegated to the {@link org.rapla.storage.StorageOperator}. It
      * returns an editable working copyReservations of an object. Only objects return by this method and new objects are editable.
-     * To get the persistant, non-editable version of a working copyReservations use {@link #getPersistant} */
+     * To get the persistent, non-editable version of a working copyReservations use {@link #getPersistant} */
     <T extends Entity> T edit(T obj) throws RaplaException;
 
     /** Returns the persistant version of a working copyReservations.
@@ -241,9 +241,9 @@ public interface RaplaFacade
      * @see #edit
      * @see #clone
      */
-    <T extends Entity> T getPersistant(T working) throws RaplaException;
+    <T extends Entity> T getPersistent(T working) throws RaplaException;
 
-    <T extends Entity> Map<T,T> getPersistantForList(Collection<T> list) throws RaplaException;
+    <T extends Entity> Map<T,T> getPersistentForList(Collection<T> list) throws RaplaException;
 
     /** This call will be delegated to the {@link org.rapla.storage.StorageOperator} */
     <T extends Entity> void storeObjects(T[] obj) throws RaplaException;

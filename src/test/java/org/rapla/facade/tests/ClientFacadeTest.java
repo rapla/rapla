@@ -119,7 +119,7 @@ public class ClientFacadeTest  {
             classification.setValue("name","erwin_left");
             final Allocatable resourceChild = facade.newAllocatable(classification, user);
             facade.store( resourceChild);
-            childResource = facade.getPersistant( resourceChild);
+            childResource = facade.getPersistent( resourceChild);
         }
         final Allocatable childChildResource;
         {
@@ -128,7 +128,7 @@ public class ClientFacadeTest  {
             classification.setValue("name","erwin_left_left");
             final Allocatable resourceChild = facade.newAllocatable(classification, user);
             facade.store( resourceChild);
-            childChildResource = facade.getPersistant( resourceChild);
+            childChildResource = facade.getPersistent( resourceChild);
         }
 
         orig.getClassification().setValue("name", "new");

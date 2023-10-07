@@ -158,7 +158,7 @@ public class RaplaResourcesRestPage  {
 		resource.setResolver(operator);
 		securityManager.checkWritePermissions( user, resource);
 		facade.store(resource);
-		AllocatableImpl result = facade.getPersistant(resource);
+		AllocatableImpl result = facade.getPersistent(resource);
 		return result;
 	}
 
@@ -179,7 +179,7 @@ public class RaplaResourcesRestPage  {
 		resource.setResolver(operator);
 		resource.setOwner(user);
 		facade.storeAndRemove(new Entity[]{resource},Entity.ENTITY_ARRAY, user);
-		AllocatableImpl result = facade.getPersistant(resource);
+		AllocatableImpl result = facade.getPersistent(resource);
 		return result;
 	}
 

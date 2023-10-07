@@ -196,10 +196,10 @@ public interface PermissionContainer extends Ownable
         /** old permission_modify should sync with new permission model for a while or until permission_modify attribute is removed
          * @deprecated 
          * @param entity
-         * @param persistant
+         * @param persistent
          */
         @Deprecated
-        static public void processOldPermissionModify(Classifiable entity, Classifiable persistant) 
+        static public void processOldPermissionModify(Classifiable entity, Classifiable persistent)
         {
             Classification classification = entity.getClassification();
             if ( classification == null)
@@ -212,11 +212,11 @@ public interface PermissionContainer extends Ownable
                 return;
             }
             Collection<Object> newValues = classification.getValues(attribute);
-            Collection<Object> oldValues = persistant != null ? persistant.getClassification().getValues(attribute) : Collections.emptyList();
+            Collection<Object> oldValues = persistent != null ? persistent.getClassification().getValues(attribute) : Collections.emptyList();
             boolean permissionModifyChanged = !newValues.equals( oldValues);
             PermissionContainer permissionContainer = (PermissionContainer) entity;
             Collection<Permission> newPermissionList = permissionContainer.getPermissionList();
-            boolean permissionChanged = persistant != null && differs(newPermissionList, ((PermissionContainer)persistant).getPermissionList());
+            boolean permissionChanged = persistent != null && differs(newPermissionList, ((PermissionContainer)persistent).getPermissionList());
             // changed permissions take precedence over changed permission_modify
             if ( permissionChanged )
             {

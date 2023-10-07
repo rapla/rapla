@@ -80,7 +80,7 @@ public final class ReservationControllerTest extends GUITestCase
                 c.moveAppointment(appointmentBlock, newStart, createPopupContext(), keepTime).
                         thenRun( ()->
                         {
-                            Appointment app = raplaFacade.getPersistant(reservation).getAppointments()[0];
+                            Appointment app = raplaFacade.getPersistent(reservation).getAppointments()[0];
                             Assert.assertEquals(DateTools.addDay(from), app.getStart());
                         })
                         .exceptionally(
@@ -113,9 +113,9 @@ public final class ReservationControllerTest extends GUITestCase
 
         //Testing undo & redo function
         clientFacade.getCommandHistory().undo();
-        Assert.assertEquals(from, raplaFacade.getPersistant(reservation).getAppointments()[0].getStart());
+        Assert.assertEquals(from, raplaFacade.getPersistent(reservation).getAppointments()[0].getStart());
         clientFacade.getCommandHistory().redo();
-        Assert.assertEquals(DateTools.addDay(from), raplaFacade.getPersistant(reservation).getAppointments()[0].getStart());
+        Assert.assertEquals(DateTools.addDay(from), raplaFacade.getPersistent(reservation).getAppointments()[0].getStart());
     }
 
     public void testPeriodChange() throws Exception

@@ -220,7 +220,7 @@ public class ServerTest
         raplaFacade2.refresh();
 
         // test for modify in second facade
-        Reservation persistant = raplaFacade2.getPersistant(r2);
+        Reservation persistant = raplaFacade2.getPersistent(r2);
         Assert.assertEquals(2, persistant.getAllocatables().length);
         logout(clientFacade2);
     }
@@ -637,7 +637,7 @@ public class ServerTest
         ClassificationFilter f = r.getClassification().getType().newClassificationFilter();
         f.addEqualsRule("name", "newReservation");
         raplaFacade1.store(r);
-        r = raplaFacade1.getPersistant(r);
+        r = raplaFacade1.getPersistent(r);
         raplaFacade1.remove(r);
         Collection<Reservation> allRes = RaplaTestCase
                 .waitForWithRaplaException(raplaFacade1.getReservationsForAllocatable(null, null, null, new ClassificationFilter[] { f }), 10000);

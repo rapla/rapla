@@ -83,19 +83,19 @@ public class SaveUndo<T extends Entity> implements CommandUndo<RaplaException> {
 		{
 			return facade.dispatch( newEntities ,Collections.emptyList());
 		}
-		return facade.editListAsync(oldEntities).thenCompose( (newEntitiesPersistant)->
+		return facade.editListAsync(oldEntities).thenCompose( (newEntitiespersistent)->
 			{
 				List<T> toStore = new ArrayList<>();
 				for (T entity : newEntities) {
 					@SuppressWarnings("unchecked") T mutableEntity = (T) entity.clone();
-					if (newEntitiesPersistant != null) {
-						@SuppressWarnings("null") Entity persistant = newEntitiesPersistant.get(entity);
+					if (newEntitiespersistent != null) {
+						@SuppressWarnings("null") Entity persistent = newEntitiespersistent.get(entity);
 						try {
 							checkConsistency(mutableEntity);
 						} catch (EntityNotFoundException ex) {
 							return new ResolvedPromise<>(ex);
 						}
-						setNewTimestamp(mutableEntity, persistant);
+						setNewTimestamp(mutableEntity, persistent);
 					}
 					toStore.add(mutableEntity);
 				}
@@ -111,14 +111,14 @@ public class SaveUndo<T extends Entity> implements CommandUndo<RaplaException> {
 					{
 						List<T> toStore = new ArrayList<>();
 						List<ReferenceInfo<T>> toRemove = new ArrayList<>();
-						Map<T, T> oldEntitiesPersistant = map;
+						Map<T, T> oldEntitiespersistent = map;
 						for (T entity : oldEntities)
 						{
 							if ( !isNew.get( entity)) {
 								@SuppressWarnings("unchecked") T mutableEntity = (T) entity.clone();
-								T persistantVersion = oldEntitiesPersistant.get(entity);
+								T persistentVersion = oldEntitiespersistent.get(entity);
 								checkConsistency(mutableEntity);
-								setNewTimestamp(mutableEntity, persistantVersion);
+								setNewTimestamp(mutableEntity, persistentVersion);
 								toStore.add(mutableEntity);
 							}
 							else
@@ -152,10 +152,10 @@ public class SaveUndo<T extends Entity> implements CommandUndo<RaplaException> {
 		
 	}
 	
-	private  void setNewTimestamp( Entity dest, Entity persistant) {
-		 if ( persistant instanceof ModifiableTimestamp)
+	private  void setNewTimestamp( Entity dest, Entity persistent) {
+		 if ( persistent instanceof ModifiableTimestamp)
 		 {
-			 Date version = ((ModifiableTimestamp)persistant).getLastChanged();
+			 Date version = ((ModifiableTimestamp)persistent).getLastChanged();
 			 ((ModifiableTimestamp)dest).setLastChanged(version);
 		 }
 	 }

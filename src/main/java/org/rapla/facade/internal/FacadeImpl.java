@@ -1222,13 +1222,13 @@ public class FacadeImpl implements RaplaFacade {
 	}
 
 	@Override
-	public <T extends Entity> T getPersistant(T entity) throws RaplaException {
-		Set<T> persistantList = Collections.singleton( entity);
-		Map<T,T> map = getPersistantForList( persistantList);
+	public <T extends Entity> T getPersistent(T entity) throws RaplaException {
+		Set<T> persistentList = Collections.singleton( entity);
+		Map<T,T> map = getPersistentForList( persistentList);
 		T result = map.get( entity);
 		if ( result == null)
 		{
-			throw new EntityNotFoundException(	"There is no persistant version of " + entity);
+			throw new EntityNotFoundException(	"There is no persistent version of " + entity);
 		}
 		return result;
 	}
@@ -1276,8 +1276,8 @@ public class FacadeImpl implements RaplaFacade {
 	}
 
 	@Override
-	public <T extends Entity> Map<T,T> getPersistantForList(Collection<T> list) throws RaplaException {
-		Map<Entity,Entity> result = operator.getPersistant(list);
+	public <T extends Entity> Map<T,T> getPersistentForList(Collection<T> list) throws RaplaException {
+		Map<Entity,Entity> result = operator.getPersistent(list);
 		LinkedHashMap<T, T> castedResult = new LinkedHashMap<>();
 		for ( Map.Entry<Entity,Entity> entry: result.entrySet())
 		{
@@ -1465,7 +1465,7 @@ public class FacadeImpl implements RaplaFacade {
     public Promise<ChangeState> getUpdateState(Entity entity)
     {
         try {
-            final Map<Entity, Entity> persistant = operator.getPersistant(Collections.singletonList(entity));
+            final Map<Entity, Entity> persistent = operator.getPersistent(Collections.singletonList(entity));
             return new ResolvedPromise<>(ChangeState.latest);
         } catch (RaplaException e) {
             return new ResolvedPromise<>(e);

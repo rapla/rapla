@@ -578,7 +578,7 @@ class ConflictFinder {
 	public Collection<ConflictChangeOperation> updateConflicts(LocalAbstractCachableOperator.UpdateBindingsResult bindingsResult,UpdateResult currentUpdateResult, Date today)
 	{
         Collection<ConflictChangeOperation> conflictChanges = new ArrayList<>();
-        Map<ReferenceInfo<Allocatable>, AllocationChange> toUpdate = bindingsResult.toUpdate;
+        Set<ReferenceInfo<Allocatable>> toUpdate = bindingsResult.toUpdate;
         Collection<ReferenceInfo<Allocatable>> removedAllocatables = bindingsResult.removedAllocatables;
 		for (UpdateResult.Change change:currentUpdateResult.getOperations(UpdateResult.Change.class))
 		{
@@ -594,12 +594,12 @@ class ConflictFinder {
 					if (isConflictIgnored(old) != isConflictIgnored(newAlloc))
 					{
 						// add and recalculate all if holdbackconflicts changed
-						toUpdate.put( allocatableId, null);
+						toUpdate.remove( allocatableId );
 					}
 				}
                 if (old ==null)
                 {
-                    toUpdate.put( allocatableId, null);
+                    toUpdate.remove( allocatableId );
                 }
 			}
 		}
@@ -607,17 +607,9 @@ class ConflictFinder {
 
     	Set<Conflict> added = new HashSet<>();
     	// this will recalculate the conflicts for that resource and the changed appointments
-    	for ( Map.Entry<ReferenceInfo<Allocatable>, AllocationChange> entry:toUpdate.entrySet())
+    	for ( ReferenceInfo<Allocatable> allocatableId:toUpdate)
     	{
-            ReferenceInfo<Allocatable> allocatableId = entry.getKey();
-    		
-    		AllocationChange changedAppointments = entry.getValue();
-    		if ( changedAppointments == null)
-			{
-				conflictMap.remove( allocatableId);
-			}
-			
-    		Map<ReferenceInfo<Conflict>,Conflict> conflictListBefore =  conflictMap.get(allocatableId);
+            Map<ReferenceInfo<Conflict>,Conflict> conflictListBefore =  conflictMap.get(allocatableId);
     		if ( conflictListBefore == null)
     		{
     			conflictListBefore = new LinkedHashMap<>();

@@ -145,7 +145,7 @@ public class SQLOperatorRemoteTest extends ServerTest
         roomType.addAttribute(attribute);
         facade.store(roomType);
 
-        roomType = facade.getPersistant(roomType);
+        roomType = facade.getPersistent(roomType);
 
         Allocatable[] allocatables = facade.getAllocatablesWithFilter(new ClassificationFilter[] { roomType.newClassificationFilter() });
         Allocatable allocatable = facade.edit(allocatables[0]);

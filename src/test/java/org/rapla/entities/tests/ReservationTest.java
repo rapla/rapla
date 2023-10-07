@@ -93,7 +93,7 @@ public class ReservationTest {
         facade.storeObjects(new Entity[] { allocatable1, allocatable2, reserv1 });
         String eventId;
         {
-	        Reservation persistantReservation = facade.getPersistant( reserv1);
+	        Reservation persistantReservation = facade.getPersistent( reserv1);
 	        eventId = persistantReservation.getId();
 	        @SuppressWarnings("unused")
 			Appointment oldAppointment= persistantReservation.getAppointments()[0];

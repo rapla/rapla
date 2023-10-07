@@ -178,17 +178,17 @@ public abstract class AbstractCachableOperator implements StorageOperator
 
     /** checks if the user that  is the user that last changed the entites
      *
-     * @throws RaplaException if the logged in user is not the lastChanged user of any entities. If isNew is false then an exception is also thrown, when an entity is not found in persistant storage
+     * @throws RaplaException if the logged in user is not the lastChanged user of any entities. If isNew is false then an exception is also thrown, when an entity is not found in persistent storage
      */
      protected void checkLastChanged(Collection<Entity> objList, User user, Map<ReferenceInfo<Entity>, Entity> map) throws RaplaException {
         for ( Entity entity:objList)
         {
             if ( entity instanceof ModifiableTimestamp)
             {
-                Entity persistant = map.get( entity.getReference());
-                if ( persistant != null)
+                Entity persistent = map.get( entity.getReference());
+                if ( persistent != null)
                 {
-                    ReferenceInfo<User> lastChangedBy = ((ModifiableTimestamp) persistant).getLastChangedBy();
+                    ReferenceInfo<User> lastChangedBy = ((ModifiableTimestamp) persistent).getLastChangedBy();
                     if (lastChangedBy != null && !user.getReference().equals(lastChangedBy))
                     {
                         final Locale locale = i18n.getLocale();
@@ -205,20 +205,20 @@ public abstract class AbstractCachableOperator implements StorageOperator
         Map<Entity,Entity> toEdit = new LinkedHashMap<>();
         for (Entity o : list)
         {
-            Entity persistant = resolvedList.get(o.getReference());
-            Entity refEntity = editObject(o, persistant, user);
-            Entity key = persistant != null ? persistant : o;
+            Entity persistent = resolvedList.get(o.getReference());
+            Entity refEntity = editObject(o, persistent, user);
+            Entity key = persistent != null ? persistent : o;
             toEdit.put(key,refEntity);
         }
         return toEdit;
     }
 
-    protected <T extends Entity> T editObject(T newObj, T persistant, User user)
+    protected <T extends Entity> T editObject(T newObj, T persistent, User user)
     {
         final SimpleEntity clone;
-        if (persistant != null)
+        if (persistent != null)
         {
-            clone = (SimpleEntity) persistant.clone();
+            clone = (SimpleEntity) persistent.clone();
         }
         else
         {
@@ -583,10 +583,10 @@ public abstract class AbstractCachableOperator implements StorageOperator
         Map<ReferenceInfo<T>, T> result = new HashMap<>();
         for (ReferenceInfo<T> id : idSet)
         {
-            T persistant = (throwEntityNotFound ? cache.resolve(id) : cache.tryResolve(id));
-            if (persistant != null)
+            T persistent = (throwEntityNotFound ? cache.resolve(id) : cache.tryResolve(id));
+            if (persistent != null)
             {
-                result.put(id, persistant);
+                result.put(id, persistent);
             }
         }
         return result;
@@ -614,7 +614,7 @@ public abstract class AbstractCachableOperator implements StorageOperator
         return lock;
     }
 
-    @Override public Map<Entity, Entity> getPersistant(Collection<? extends Entity> list) throws RaplaException
+    @Override public Map<Entity, Entity> getPersistent(Collection<? extends Entity> list) throws RaplaException
     {
         Map<ReferenceInfo<Entity>, Entity> idMap = createReferenceInfoMap(list);
         Map<ReferenceInfo<Entity>, Entity> resolvedList = getFromId(idMap.keySet(), false);
@@ -802,8 +802,8 @@ public abstract class AbstractCachableOperator implements StorageOperator
         Collection<Entity> storeObjects = new LinkedHashSet<>(storeObjects1);
         for (Entity entity : storeObjects)
         {
-            Entity persistantEntity = findPersistant(entity);
-            if (persistantEntity == null)
+            Entity persistentEntity = findPersistent(entity);
+            if (persistentEntity == null)
             {
                 continue;
             }
@@ -813,15 +813,15 @@ public abstract class AbstractCachableOperator implements StorageOperator
                 getLogger().debug("Storing old: " + entity);
             }
 
-            if (persistantEntity instanceof Appointment)// || ((persistantEntity instanceof Category) && storeObjects.contains( ((Category) persistantEntity).getParent())))
+            if (persistentEntity instanceof Appointment)// || ((persistantEntity instanceof Category) && storeObjects.contains( ((Category) persistantEntity).getParent())))
             {
-                throw new RaplaException(persistantEntity.getTypeClass() + " can only be stored via parent entity ");
+                throw new RaplaException(persistentEntity.getTypeClass() + " can only be stored via parent entity ");
                 // we ingore subentities, because these are added as bellow via addSubentites. The originals will be contain false parent references (to the new parents) when copyReservations is called
             }
             else
             {
-                Entity oldEntity = persistantEntity;
-                oldEntities.put(persistantEntity.getReference(), oldEntity);
+                Entity oldEntity = persistentEntity;
+                oldEntities.put(persistentEntity.getReference(), oldEntity);
             }
 
         }
@@ -847,9 +847,9 @@ public abstract class AbstractCachableOperator implements StorageOperator
         // Then update the new entities
         for (Entity entity : storeObjects)
         {
-            Entity persistant = findPersistant(entity);
+            Entity persistent = findPersistent(entity);
             // do nothing, because the persitantVersion is always read only
-            if (persistant == entity)
+            if (persistent == entity)
             {
                 continue;
             }
@@ -912,11 +912,11 @@ public abstract class AbstractCachableOperator implements StorageOperator
 
     }
 
-    protected Entity findPersistant(Entity entity)
+    protected Entity findPersistent(Entity entity)
     {
         @SuppressWarnings("unchecked") Class<? extends Entity> typeClass = entity.getTypeClass();
-        Entity persistantEntity = cache.tryResolve(entity.getId(), typeClass);
-        return persistantEntity;
+        Entity persistentEntity = cache.tryResolve(entity.getId(), typeClass);
+        return persistentEntity;
     }
 
     protected UpdateResult createUpdateResult(Map<ReferenceInfo, Entity> oldEntities, Collection<Entity> updatedEntities, Collection<ReferenceInfo> toRemove,
@@ -958,7 +958,6 @@ public abstract class AbstractCachableOperator implements StorageOperator
 
     protected boolean isCreatedAfterSince(Date since, Entity newEntity)
     {
-        boolean createdAfterSince;
         if (since == null)
         {
             return true;
@@ -968,21 +967,20 @@ public abstract class AbstractCachableOperator implements StorageOperator
             Date createTime = ((Timestamp) newEntity).getCreateDate();
             if (createTime != null)
             {
-                createdAfterSince = createTime.after(since);
+                return createTime.after(since);
                  //logger.info(" create time " + createTime + " since " + since + " afterS " + createdAfterSince);
             }
             else
             {
-                getLogger().warn("No createInfoDialog date set for entity " + newEntity.getReference());
-                createdAfterSince = false;
+                getLogger().warn("No create date set for entity " + newEntity.getReference());
+                return false;
             }
         }
         else
         {
             getLogger().warn("entity  " + newEntity.getReference() + " does not implement timestamp");
-            createdAfterSince = false;
+            return false;
         }
-        return createdAfterSince;
     }
 
 

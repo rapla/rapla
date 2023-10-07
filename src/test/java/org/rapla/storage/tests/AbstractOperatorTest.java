@@ -147,7 +147,7 @@ public abstract class AbstractOperatorTest  {
 
 	        facade.storeAndRemove(new Entity[]{type}, Entity.ENTITY_ARRAY, user);
 
-	        r.setClassification( facade.getPersistant(type).newClassification() );
+	        r.setClassification( facade.getPersistent(type).newClassification() );
 
 	        r.getClassification().setValue("name","myTest");
 	        r.getClassification().setValue("test-att","test-att-value");

@@ -173,8 +173,8 @@ final public class CategoryImpl extends SimpleEntity implements Category, Modifi
     public Collection<Category> getCategoryList()
     {
         final Collection<Category> childs = getList("childs", Category.class);
-        final Collection<Category> nonpersistantEntities = getTransientCategoryList();
-        if (nonpersistantEntities.isEmpty())
+        final Collection<Category> nonpersistentEntities = getTransientCategoryList();
+        if (nonpersistentEntities.isEmpty())
         {
             return childs;
         }
@@ -182,7 +182,7 @@ final public class CategoryImpl extends SimpleEntity implements Category, Modifi
         {
             Set<Category> set = new LinkedHashSet<>();
             set.addAll( childs);
-            set.addAll(nonpersistantEntities );
+            set.addAll(nonpersistentEntities );
             return set;
         }
     }
@@ -224,13 +224,13 @@ final public class CategoryImpl extends SimpleEntity implements Category, Modifi
 
     public Collection<Category> getTransientCategoryList()
     {
-        final Collection<Entity> nonpersistantEntities = getNonpersistantEntities();
-        if ( nonpersistantEntities.isEmpty())
+        final Collection<Entity> nonpersistentEntities = getNonPersistentEntities();
+        if ( nonpersistentEntities.isEmpty())
         {
             return Collections.emptySet();
         }
         final Collection<Category> result = new ArrayList<>();
-        for ( Entity entity:nonpersistantEntities)
+        for ( Entity entity:nonpersistentEntities)
         {
             if (!(entity instanceof Category))
             {

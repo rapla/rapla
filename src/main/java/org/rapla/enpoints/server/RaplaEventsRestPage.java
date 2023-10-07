@@ -113,7 +113,7 @@ import java.util.Map;
         setResolver(event);
         securityManager.checkWritePermissions(user, event);
         facade.store(event);
-        ReservationImpl result = facade.getPersistant(event);
+        ReservationImpl result = facade.getPersistent(event);
         return result;
     }
 
@@ -129,7 +129,7 @@ import java.util.Map;
         setResolver(event);
         securityManager.checkWritePermissions(user, event);
         facade.store(event);
-        ReservationImpl result = facade.getPersistant(event);
+        ReservationImpl result = facade.getPersistent(event);
         return result;
     }
 
@@ -170,7 +170,7 @@ import java.util.Map;
         }
         event.setOwner(user);
         facade.storeAndRemove(new Entity[] { event }, Entity.ENTITY_ARRAY, user);
-        ReservationImpl result = facade.getPersistant(event);
+        ReservationImpl result = facade.getPersistent(event);
         return result;
     }
 

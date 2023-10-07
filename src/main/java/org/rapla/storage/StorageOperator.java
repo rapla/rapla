@@ -75,13 +75,13 @@ public interface StorageOperator extends EntityResolver {
     /** if an id is not found and throwEntityNotFound is set to false then the resulting map does not contain an entry for the missing id*/
     <T extends Entity> Promise<Map<ReferenceInfo<T>,T>> getFromIdAsync(Collection<ReferenceInfo<T>> idSet, boolean throwEntityNotFound);
     
-    Map<Entity,Entity> getPersistant(Collection<? extends Entity> entity) throws RaplaException;
+    Map<Entity,Entity> getPersistent(Collection<? extends Entity> entity) throws RaplaException;
 
     default <T extends Entity, S extends Entity> void storeAndRemove(Collection<T> storeObjects,Collection<ReferenceInfo<S>> removeObjects,User user) throws RaplaException {
         storeAndRemove(storeObjects, removeObjects,user, false);
     }
 
-    //Promise<Map<Entity,Entity>> getPersistantAsync(Collection<? extends Entity> entity);
+    //Promise<Map<Entity,Entity>> getpersistentAsync(Collection<? extends Entity> entity);
     /** Stores and/or removes entities and specifies a user that is responsible for the changes.
      * Notifies  all registered StorageUpdateListeners after a successful
      storage.*/

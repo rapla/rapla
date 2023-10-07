@@ -92,7 +92,7 @@ public class ClassificationTest  {
     	} catch (EntityNotFoundException ex) {
     	}
 		facade.storeObjects( new Entity[] { rootC, type } );
-    	type =  facade.getPersistant( type );
+    	type =  facade.getPersistent( type );
 
     	Classification classification = type.newClassification();
         classification.setValue("name", "test-resource");
@@ -101,7 +101,7 @@ public class ClassificationTest  {
 		Allocatable resource = facade.newAllocatable(classification, user);
     	facade.storeObjects( new Entity[] {  resource } );
     	{
-	        Allocatable persistantResource = facade.getPersistant(resource);
+	        Allocatable persistantResource = facade.getPersistent(resource);
 	        Collection<Object> values = persistantResource.getClassification().getValues( classification.getAttribute("test-attribute"));
 	        Assert.assertEquals(2, values.size());
 	        Iterator<Object> iterator = values.iterator();
@@ -116,7 +116,7 @@ public class ClassificationTest  {
     	a1.setConstraint( ConstraintIds.KEY_ROOT_CATEGORY, c2 );
     	facade.store( type );
     	{
-	    	Allocatable persistantResource = facade.getPersistant(resource);
+	    	Allocatable persistantResource = facade.getPersistent(resource);
 	        Classification classification2 = persistantResource.getClassification();
 	        Collection<Object> values = classification2.getValues( classification.getAttribute("test-attribute"));
 			Assert.assertEquals(0, values.size());

@@ -148,7 +148,7 @@ public class SQLOperatorTest extends AbstractOperatorTest
         operator.refresh();
 
         Set<Reservation> singleton = Collections.singleton(event);
-        final Map<Entity, Entity> persistantMap = operator.getPersistant(singleton);
+        final Map<Entity, Entity> persistantMap = operator.getPersistent(singleton);
         Reservation event1 = (Reservation) persistantMap.get(event);
         final Appointment[] appointments = event1.getAppointments();
         final Appointment appointment1 = appointments[0];
