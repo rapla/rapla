@@ -80,7 +80,7 @@ public class RaplaDateRenderer implements DateRenderer {
             Color backgroundColor = null;
 
             final Set<Category> categories = period.getCategories();
-            if ( categories.size() > 0)
+            if (!categories.isEmpty())
             {
                 final Category first = categories.iterator().next();
                 final String color = first.getAnnotation(CategoryAnnotations.KEY_NAME_COLOR);
@@ -94,10 +94,6 @@ public class RaplaDateRenderer implements DateRenderer {
             if ( backgroundColor == null)
             {
                 backgroundColor = periodColor;
-            }
-            else
-            {
-
             }
             String tooltipText = "<html>" +  period.getName(raplaLocale.getLocale()) + "</html>";
             return new RenderingInfo(backgroundColor, foregroundColor, tooltipText);

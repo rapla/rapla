@@ -76,7 +76,6 @@ import java.util.Set;
 @Singleton public class DBOperator extends LocalAbstractCachableOperator
 {
     //protected String datasourceName;
-    Properties dbProperties = new Properties();
     boolean bSupportsTransactions = false;
     boolean hsqldb = false;
 
@@ -125,23 +124,16 @@ import java.util.Set;
             final int period = 1000*60*1;
             scheduleConnectedTasks(()->
                 {
-                    //final RaplaLock.WriteLock writeLock = lockManager.writeLockIfAvaliable(getClass(), "scheduleCleanupAndRefresh");
-                    //if ( writeLock != null)
                     {
                         try (final Connection connection = createConnection(false))
                         {
                             final RaplaDefaultXMLContext context = createOutputContext(cache);
                             final RaplaSQL raplaSQL = new RaplaSQL(context);
                             raplaSQL.cleanupOldLocks(connection);
-                            //connection.commit();
                         }
                         catch (Throwable t)
                         {
                             DBOperator.this.logger.error("Could not release old locks", t);
-                        }
-                        finally
-                        {
-                            //lockManager.unlock(writeLock);
                         }
                     }
 
@@ -365,7 +357,7 @@ import java.util.Set;
         return refreshObject;
     }
 
-    private class RefreshObject
+    private static class RefreshObject
     {
         Date lastUpdated;
         Date connectionTime;
@@ -461,22 +453,6 @@ import java.util.Set;
         {
             lockManager.unlock(writeLock);
             close(c);
-            c = null;
-        }
-    }
-
-    // Only for testing purpose
-    private void clearAllHistory() throws RaplaException
-    {
-        try
-        {
-            Connection connection = createConnection();
-            connection.createStatement().execute("DELETE FROM CHANGES;");
-            connection.commit();
-            connection.close();
-        } catch (SQLException ex)
-        {
-            throw new RaplaException( ex);
         }
     }
 
@@ -751,23 +727,26 @@ import java.util.Set;
     private void dbStore(Collection<Entity> storeObjects, List<PreferencePatch> preferencePatches, Collection<ReferenceInfo> removeObjects,
             Connection connection, String userId) throws RaplaException
     {
-        if (( storeObjects == null || storeObjects.size() == 0) && (preferencePatches == null || preferencePatches.size() == 0)
-                && (removeObjects == null || removeObjects.size() == 0))
+        if (( storeObjects == null || storeObjects.isEmpty()) && (preferencePatches == null || preferencePatches.isEmpty())
+                && (removeObjects == null || removeObjects.isEmpty()))
         {
             return;
         }
         final LinkedHashSet<ReferenceInfo> ids = new LinkedHashSet<>();
-        for (Entity entity : storeObjects)
-        {
-            ids.add(entity.getReference());
+        if ( storeObjects != null ) {
+            for (Entity entity : storeObjects) {
+                ids.add(entity.getReference());
+            }
         }
-        for (ReferenceInfo referenceInfo : removeObjects)
-        {
-            ids.add(referenceInfo);
+        if ( removeObjects != null ) {
+            for (ReferenceInfo referenceInfo : removeObjects) {
+                ids.add(referenceInfo);
+            }
         }
-        for (PreferencePatch patch : preferencePatches)
-        {
-            ids.add(patch.getReference());
+        if ( preferencePatches != null ) {
+            for (PreferencePatch patch : preferencePatches) {
+                ids.add(patch.getReference());
+            }
         }
 
         final boolean needsGlobalLock = containsDynamicType(ids);

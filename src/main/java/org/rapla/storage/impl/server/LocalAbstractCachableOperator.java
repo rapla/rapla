@@ -24,7 +24,6 @@ import org.rapla.components.util.Assert;
 import org.rapla.components.util.DateTools;
 import org.rapla.components.util.IOUtil;
 import org.rapla.components.util.SerializableDateTimeFormat;
-import org.rapla.components.util.TimeInterval;
 import org.rapla.components.util.Tools;
 import org.rapla.components.util.iterator.IterableChain;
 import org.rapla.entities.Annotatable;
@@ -1030,7 +1029,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
             @SuppressWarnings("unchecked")
             public Collection<Allocatable> getAllocatables()
             {
-                return (Collection) cache.getAllocatables();
+                return cache.getAllocatables();
             }
         };
         // The conflict map
@@ -1153,7 +1152,6 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
         catch (Exception ex)
         {
             getLogger().error("Could not get writeLock. Scheduled task is probably running > 10sec. Forcing disconnect." + ex.getMessage(), ex);
-            writeLock = null;
         }
         RaplaLock.WriteLock disconnectWrite;
         try
@@ -2059,15 +2057,15 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
                     {
                         Appointment app = it.next();
                         Reservation reservation = app.getReservation();
-                        final String annotation = reservation.getAnnotation(RaplaObjectAnnotations.KEY_TEMPLATE);
-                        Allocatable template = annotation != null ? cache.tryResolve(annotation, Allocatable.class) : null;
                         if (reservation == null)
                         {
                             logger.error("Appointment without a reservation stored in cache " + app);
                             it.remove();
                             continue;
                         }
-                        else if (!reservation.hasAllocatedOn(allocatable, app) && (template == null || !template.equals(allocatable)))
+                        final String annotation = reservation.getAnnotation(RaplaObjectAnnotations.KEY_TEMPLATE);
+                        Allocatable template = annotation != null ? cache.tryResolve(annotation, Allocatable.class) : null;
+                        if (!reservation.hasAllocatedOn(allocatable, app) && (template == null || !template.equals(allocatable)))
                         {
                             logger.error(
                                     "Allocation is not stored correctly for " + reservation + " " + app + " " + allocatable + " removing binding for " + app);
@@ -2156,20 +2154,19 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
         return update;
     }
 
-    private void removeOldHistory() throws RaplaException
+    private void removeOldHistory()
     {
         Date lastUpdated = getLastRefreshed();
         Date date = new Date(lastUpdated.getTime() - HISTORY_DURATION);
         history.removeUnneeded(date);
     }
 
-    private void removeOldConflicts() throws RaplaException
+    private void removeOldConflicts()
     {
         Date today = today();
         Set<ReferenceInfo<Conflict>> conflictsToDelete;
         {
-            conflictsToDelete = new HashSet<>();
-            conflictsToDelete.addAll(conflictFinder.removeOldConflicts(today));
+            conflictsToDelete = new HashSet<>(conflictFinder.removeOldConflicts(today));
             conflictsToDelete.retainAll(cache.getDisabledConflictIds());
         }
 
@@ -2182,7 +2179,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
             }
         }
 
-        if (conflictsToDelete.size() > 0)
+        if (!conflictsToDelete.isEmpty())
         {
             final String message = "Removing old conflicts " + conflictsToDelete.size();
             getLogger().info(message);
@@ -2343,7 +2340,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
                     if (exisiting != null)
                     {
                         final Collection<String> exisitingChildIds = exisiting.getChildIds();
-                        final Collection<String> toRemove = new HashSet(exisitingChildIds);
+                        final Collection<String> toRemove = new HashSet<>(exisitingChildIds);
                         toRemove.removeAll(storedChildIds);
                         categoriesToRemove.addAll(toRemove);
                     }
@@ -2425,10 +2422,6 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
                         evt.addStore(syncEntity);
                     }
                 }
-            }
-            if (Appointment.class == raplaType)
-            {
-
             }
             if (Category.class == raplaType)
             {
@@ -2534,12 +2527,8 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
     protected void addChangedDynamicTypeDependant(UpdateEvent evt, User user, EntityStore store, DynamicTypeImpl type, boolean toRemove) throws RaplaException
     {
         Set<Entity> referencingEntities = getReferencingEntities(type, store);
-        Iterator<Entity> it = referencingEntities.iterator();
-        while (it.hasNext())
-        {
-            Entity entity = it.next();
-            if (!(entity instanceof DynamicTypeDependant))
-            {
+        for (Entity entity : referencingEntities) {
+            if (!(entity instanceof DynamicTypeDependant)) {
                 continue;
             }
             DynamicTypeDependant dependant = (DynamicTypeDependant) entity;
@@ -2554,7 +2543,6 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
     }
 
     private void addChangedDependencies(UpdateEvent evt, User user, EntityStore store, DynamicTypeImpl type, Entity entity, boolean toRemove)
-            throws RaplaException
     {
         DynamicTypeDependant dependant = (DynamicTypeDependant) evt.findEntity(entity);
         if (dependant == null)
@@ -2896,14 +2884,12 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
     {
         for (Entity entity : evt.getStoreObjects())
         {
-            String name = "";
-            Entity entity2 = null;
             final Class<? extends Entity> typeClass = entity.getTypeClass();
             if (DynamicType.class == typeClass)
             {
                 DynamicType type = (DynamicType) entity;
-                name = type.getKey();
-                entity2 = store.getDynamicType(name);
+                String name = type.getKey();
+                Entity entity2 = store.getDynamicType(name);
                 if (entity2 != null && !entity2.equals(entity))
                     throwNotUnique(name);
             }
@@ -2930,14 +2916,14 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 
             if (User.class == entity.getTypeClass())
             {
-                name = ((User) entity).getUsername();
-                if (name == null || name.trim().length() == 0)
+                String name = ((User) entity).getUsername();
+                if (name == null || name.trim().isEmpty())
                 {
                     String message = i18n.format("error.no_entry_for", getString("username"));
                     throw new RaplaException(message);
                 }
                 // FIXME Replace with store.getUserFromRequest for the rare case that two users with the same username are stored in one operation
-                entity2 = cache.getUser(name);
+                Entity entity2 = cache.getUser(name);
                 if (entity2 != null && !entity2.equals(entity))
                     throwNotUnique(name);
             }
@@ -3012,9 +2998,9 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 
     /** Check if the objects are consistent, so that they can be safely stored. */
     /**
-     * @param evt
-     * @param store
-     * @throws RaplaException
+     * @param evt the update event to check
+     * @param store the store to lookup the references
+     * @throws RaplaException if an inconsistence is found
      */
     protected void checkConsistency(UpdateEvent evt, EntityStore store) throws RaplaException
     {
@@ -3228,7 +3214,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
                 continue;
             }
             Reservation reservation = (Reservation) entity;
-            if (reservation.getSortedAppointments().size() == 0 )
+            if (reservation.getSortedAppointments().isEmpty())
             {
                 reservations.add(reservation);
                 for (Appointment app : reservation.getAppointments())
@@ -3243,7 +3229,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
             store.remove(ref);
         }
 
-        if (reservations.size() != 0)
+        if (!reservations.isEmpty())
         {
             JsonParserWrapper.JsonParser gson = JsonParserWrapper.defaultJson().get();
             getLogger().error("The following events will be removed because they have no appointments: \n" + gson.toJson(reservations));
@@ -3327,7 +3313,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
         //			}
         //		}
 
-        if (dep.size() > 0)
+        if (!dep.isEmpty())
         {
             if (!Allocatable.isAllocatablesOnly( removeEntities) || !evt.isForceAllocatableDeletesIgnoreDependencies()) {
                 Collection<String> names = new ArrayList<>();
@@ -3336,7 +3322,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
                     String string = getDependentName(obj);
                     names.add(string);
                 }
-                if ( names.size() > 0 ) {
+                if (!names.isEmpty()) {
                     throw new DependencyException(getString("error.dependencies"), names.toArray(new String[]{}));
                 }
             }
@@ -3345,7 +3331,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
         // for reservations and one for resources or persons
         checkDynamicType(removeEntities, Collections.singleton(DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RESERVATION));
         checkDynamicType(removeEntities, new HashSet<>(Arrays.asList(
-                new String[]{DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RESOURCE, DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_PERSON})));
+                DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RESOURCE, DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_PERSON)));
     }
 
     private boolean isRefering(EntityReferencer referencer, Entity entity)
@@ -3363,7 +3349,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
     protected String getDependentName(Entity obj)
     {
         Locale locale = raplaLocale.getLocale();
-        StringBuffer buf = new StringBuffer();
+        StringBuilder buf = new StringBuilder();
         if (obj instanceof Reservation)
         {
             buf.append(getString("reservation"));
@@ -3444,8 +3430,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
             int dot = idShort.lastIndexOf('.');
             buf.append(" (" + idShort.substring(dot + 1) + ")");
         }
-        String string = buf.toString();
-        return string;
+        return buf.toString();
     }
 
     private void storeUser(User refUser) throws RaplaException
@@ -3920,7 +3905,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
             // if not we tell the server what would be a valid history
             // 10 minutes
             final Date until = new Date(historyValidStart.getTime() + DateTools.MILLISECONDS_PER_MINUTE * 10);
-            return new UpdateResult(null, until, Collections.emptyMap(), Collections.emptyMap());
+            return new UpdateResult(since, until, Collections.emptyMap(), Collections.emptyMap());
         }
         Date until = getLastRefreshed();
         final Collection<ReferenceInfo> toUpdate = getEntities(user, since, false);
@@ -3974,37 +3959,25 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
             }
         }
         Collection<ReferenceInfo> toRemove = getEntities(user, since, true);
-        for (Iterator<ReferenceInfo> it = toRemove.iterator(); it.hasNext(); )
-        {
-            ReferenceInfo update = it.next();
+        for (ReferenceInfo update : toRemove) {
             Entity entity;
-            if (update.getType() == Conflict.class)
-            {
+            if (update.getType() == Conflict.class) {
                 entity = null;
-            }
-            else
-            {
+            } else {
                 entity = history.get(update, since);
             }
             Entity oldEntity = null;
-            if (entity != null)
-            {
+            if (entity != null) {
                 oldEntity = entity;
-            }
-            else if (update.getType() != Conflict.class)
-            {
+            } else if (update.getType() != Conflict.class) {
                 final EntityHistory.HistoryEntry latest = history.getLatest(update);
-                if (latest != null)
-                {
+                if (latest != null) {
                     oldEntity = history.getEntity(latest);
-                }
-                else
-                {
+                } else {
                     getLogger().warn("the entity " + update + " was deleted but not found in the history.");
                 }
             }
-            if (oldEntity != null)
-            {
+            if (oldEntity != null) {
                 oldEntities.put(update, oldEntity);
             }
         }

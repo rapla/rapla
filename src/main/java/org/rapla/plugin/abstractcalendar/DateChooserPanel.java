@@ -175,7 +175,7 @@ public class DateChooserPanel extends RaplaGUIComponent
      *  when the a different date is selected.
     */
     protected void fireDateChange(Date date) {
-        if (listenerList.size() == 0)
+        if (listenerList.isEmpty())
             return;
         DateChangeListener[] listeners = getDateChangeListeners();
         DateChangeEvent evt = new DateChangeEvent(this,date);
@@ -224,7 +224,7 @@ public class DateChooserPanel extends RaplaGUIComponent
                 Period period = periodChooser.getPeriod();
                 final Date start = period.getStart();
                 final Date end = period.getEnd();
-                if ( period == null || start == null || end == null)
+                if ( start == null || end == null)
                 {
                     getLogger().warn("Period start or end can't be null");
                     return;
