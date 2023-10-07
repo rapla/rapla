@@ -51,7 +51,13 @@ import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Date;
+import java.util.List;
+import java.util.Locale;
+import java.util.Set;
 
 public class AttributeDefaultConstraints extends AbstractEditField implements ActionListener, ChangeListener
 {
@@ -65,15 +71,15 @@ public class AttributeDefaultConstraints extends AbstractEditField implements Ac
     JLabel multiSelectLabel = new JLabel();
     JLabel tabLabel = new JLabel();
     JLabel specialkeyLabel = new JLabel(); // BJO
-    AttributeType[] types = { AttributeType.BOOLEAN, AttributeType.STRING, AttributeType.INT, AttributeType.CATEGORY, AttributeType.ALLOCATABLE,
+    AttributeType types[] = { AttributeType.BOOLEAN, AttributeType.STRING, AttributeType.INT, AttributeType.CATEGORY, AttributeType.ALLOCATABLE,
             AttributeType.DATE };
 
-    String[] tabs = { AttributeAnnotations.VALUE_EDIT_VIEW_MAIN, AttributeAnnotations.VALUE_EDIT_VIEW_ADDITIONAL,
+    String tabs[] = { AttributeAnnotations.VALUE_EDIT_VIEW_MAIN, AttributeAnnotations.VALUE_EDIT_VIEW_ADDITIONAL,
             AttributeAnnotations.VALUE_EDIT_VIEW_NO_VIEW };
 
-    String[] multiSelectOptions = { "yes", "no" };
+    String multiSelectOptions[] = { "yes", "no" };
 
-    String[] multiSelectOptionsAllocatable = { "yes", "no", "belongsTo", "package" };
+    String multiSelectOptionsAllocatable[] = { "yes", "no", "belongsTo", "package" };
     boolean mapping = false;
     MultiLanguageField name;
     TextField key;
@@ -85,7 +91,7 @@ public class AttributeDefaultConstraints extends AbstractEditField implements Ac
     TextField defaultSelectText;
     BooleanField defaultSelectBoolean;
     JComboBox multiSelect = new JComboBox();
-    RaplaNumber defaultSelectNumber = new RaplaNumber(Long.valueOf(0), null, null, false);
+    RaplaNumber defaultSelectNumber = new RaplaNumber(new Long(0), null, null, false);
     RaplaCalendar defaultSelectDate;
     RaplaButton annotationButton = new RaplaButton(RaplaButton.DEFAULT);
     JComboBox tabSelect = new JComboBox();
@@ -425,7 +431,7 @@ public class AttributeDefaultConstraints extends AbstractEditField implements Ac
             final Object defaultValue = defaultSelectText.getValue();
             attribute.setDefaultValue(defaultValue);
         }
-        List<Annotatable> asList = List.of(attribute);
+        List<Annotatable> asList = Arrays.asList((Annotatable) attribute);
         annotationEdit.mapTo(asList);
         String selectedTab = tabs[tabSelect.getSelectedIndex()];
         if (selectedTab != null && !selectedTab.equals(AttributeAnnotations.VALUE_EDIT_VIEW_MAIN))
@@ -441,7 +447,7 @@ public class AttributeDefaultConstraints extends AbstractEditField implements Ac
     private void update() throws RaplaException
     {
         AttributeType type = types[classSelect.getSelectedIndex()];
-        List<Annotatable> asList = Collections.singletonList(attribute);
+        List<Annotatable> asList = Arrays.asList((Annotatable) attribute);
         annotationEdit.setObjects(asList);
         final boolean categoryVisible = type.equals(AttributeType.CATEGORY);
         final boolean allocatableVisible = type.equals(AttributeType.ALLOCATABLE);

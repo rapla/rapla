@@ -57,7 +57,7 @@ import java.util.Map;
         this.request = request;
     }
 
-    private final Collection<String> CLASSIFICATION_TYPES = List.of(DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RESERVATION);
+    private Collection<String> CLASSIFICATION_TYPES = Arrays.asList(DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RESERVATION);
 
     @GET @Produces({ MediaType.APPLICATION_JSON, MediaType.APPLICATION_XML }) public List<ReservationImpl> list(@QueryParam("start") Date start,
             @QueryParam("end") Date end, @QueryParam("resources") List<String> resources,@QueryParam("owners") List<String> ownersId, @QueryParam("eventTypes") Collection<String> eventTypes,
