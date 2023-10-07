@@ -187,7 +187,7 @@ class DelegationHandler implements RaplaSAXHandler
     /**
      * @throws SAXException  
      */
-    public void processCharacters( char ch[], int start, int length )
+    public void processCharacters(char[] ch, int start, int length )
     {
         if (currentText != null)
             currentText.append( ch, start, length );

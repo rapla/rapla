@@ -562,7 +562,7 @@ public abstract class DateTools
 	   
 	   public long getMilliseconds()
 	   {
-	       return hour * MILLISECONDS_PER_HOUR + minute * MILLISECONDS_PER_MINUTE + second * 1000 + milliseconds;
+	       return hour * MILLISECONDS_PER_HOUR + minute * MILLISECONDS_PER_MINUTE + second * 1000L + milliseconds;
 	   }
    }
    
@@ -584,7 +584,7 @@ public abstract class DateTools
    public static long toTime(int hour, int minute, int second, int millisecond) {
 	   long millis = hour * MILLISECONDS_PER_HOUR;
 	   millis += minute * MILLISECONDS_PER_MINUTE;
-	   millis += second * 1000;
+	   millis += second * 1000L;
 	   millis += millisecond;
 	   return millis;
 	}

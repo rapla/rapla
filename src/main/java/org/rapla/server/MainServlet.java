@@ -129,7 +129,7 @@ public class MainServlet extends HttpServlet
                 {
                     String[] split2 = key.split("=");
                     String service = split2[0].trim();
-                    boolean disabled = split2.length > 1 && split2[1].trim().toLowerCase().equals("false");
+                    boolean disabled = split2.length > 1 && split2[1].trim().equalsIgnoreCase("false");
                     backendContext.putServiceState(service, !disabled);
                 }
             }

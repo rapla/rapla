@@ -50,7 +50,7 @@ public class RaplaMapWriter extends RaplaXMLWriter {
             String key = entry.getKey();
             String obj =  entry.getValue();
             openTag("rapla:mapentry");
-            att("key", key.toString());
+            att("key", key);
             if ( obj instanceof String)
             {
                 String value = obj;

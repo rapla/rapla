@@ -66,7 +66,7 @@ public class DialogUI extends JDialog
 
     protected List<RaplaButton> buttons;
     protected JComponent content;
-    private JPanel jPanelButtonFrame = new JPanel();
+    private final JPanel jPanelButtonFrame = new JPanel();
     private JLabel label = null;
     private boolean useDefaultOptions = false;
     private boolean bClosed = false;
@@ -75,9 +75,9 @@ public class DialogUI extends JDialog
     protected boolean packFrame = true;
     private AbstractBundleManager localeSelector;
     private RaplaResources i18n;
-    private CommandScheduler scheduler;
+    private final CommandScheduler scheduler;
 
-    private AbortListener abortListener = new AbortListener();
+    private final AbortListener abortListener = new AbortListener();
     private boolean m_modal;
 
     private Runnable closeAction = () -> close();

@@ -29,8 +29,8 @@ import java.util.HashMap;
 import java.util.Map;
 
 public abstract class RaplaAction extends RaplaGUIComponent implements Action {
-    private Map<String,Object> values = new HashMap<>();
-    private ArrayList<PropertyChangeListener> listenerList = new ArrayList<>();
+    private final Map<String,Object> values = new HashMap<>();
+    private final ArrayList<PropertyChangeListener> listenerList = new ArrayList<>();
     I18nIcon icon;
 
     public RaplaAction(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger)
@@ -82,7 +82,7 @@ public abstract class RaplaAction extends RaplaGUIComponent implements Action {
     }
 
     public void setEnabled(boolean enabled) {
-        putValue("enabled", new Boolean(enabled));
+        putValue("enabled", Boolean.valueOf(enabled));
     }
 
     public boolean isEnabled() {

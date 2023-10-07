@@ -21,8 +21,8 @@ import java.util.Collections;
 
 public class DependencyException extends RaplaException {
     private static final long serialVersionUID = 1L;
-    private static String SPLIT_SEPERATOR = "\\|\\|";
-    private static String SPLIT_SEPERATOR_UNENCODED = "||";
+    private static final String SPLIT_SEPERATOR = "\\|\\|";
+    private static final String SPLIT_SEPERATOR_UNENCODED = "||";
 
     public DependencyException(String message)
     {

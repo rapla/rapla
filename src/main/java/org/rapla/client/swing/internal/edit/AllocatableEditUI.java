@@ -170,7 +170,7 @@ public class AllocatableEditUI  extends AbstractEditUI<Allocatable>  {
 			    canAdmin = false;
 			}
         }
-        if ( canAdmin == false)
+        if (!canAdmin)
         {
             permissionListField.getComponent().setVisible( false );
         }

@@ -27,13 +27,13 @@ import java.util.TimeZone;
  * Calendar object.
  */
 final class DateModel {
-    private Calendar m_calendar;
+    private final Calendar m_calendar;
     private int m_daysMonth;
     private int m_daysLastMonth;
     private int m_firstWeekday;
-    private Locale m_locale;
-    private DateFormat m_yearFormat;
-    private DateFormat m_currentDayFormat;
+    private final Locale m_locale;
+    private final DateFormat m_yearFormat;
+    private final DateFormat m_currentDayFormat;
 
     ArrayList<DateChangeListener> listenerList = new ArrayList<>();
 

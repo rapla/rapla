@@ -36,7 +36,7 @@ import java.net.URL;
     LocalCache and converts it to a newer version if necessary.
  */
 public final class RaplaInput {
-    private Logger logger;
+    private final Logger logger;
     private URL fileSource;
     private Reader reader;
     

@@ -32,6 +32,7 @@ import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
 import java.io.StringReader;
+import java.nio.charset.StandardCharsets;
 
 @Ignore
 @RunWith(JUnit4.class)
@@ -49,7 +50,7 @@ public class FileOperatorDiffTest
         boolean bDiffer = false;
         try
         {
-            in1 = new BufferedReader(new StringReader(new String(bytes, "utf-8")));
+            in1 = new BufferedReader(new StringReader(new String(bytes, StandardCharsets.UTF_8)));
             in2 = new BufferedReader(new FileReader(file2));
             int line = 0;
             while (true)
@@ -106,10 +107,10 @@ public class FileOperatorDiffTest
     public void testSave() throws RaplaException, IOException
     {
         String testFile = new File(resolvedPath).getCanonicalFile().toURI().toURL().getFile();
-        Assert.assertTrue(differ(fileIO.data, testFile) == false);
+        Assert.assertFalse(differ(fileIO.data, testFile));
         operator.connect();
         ((FileOperator) operator).saveData();
-        Assert.assertTrue("stored version differs from orginal " + testFile, differ(fileIO.data, testFile) == false);
+        Assert.assertFalse("stored version differs from orginal " + testFile, differ(fileIO.data, testFile));
     }
 
 }

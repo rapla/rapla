@@ -52,7 +52,7 @@ public class Export2iCalAdminOption extends RaplaGUIComponent implements PluginO
 	private JCheckBox chkExportAttendees;
 	private JTextArea txtEMailRessourceAttribute;
     private JComboBox cbDefaultParticipationsStatusRessourceAttribute;
-    private ICalConfigService configService;
+    private final ICalConfigService configService;
     private final IOInterface ioInterface;
 	protected Preferences preferences;
 
@@ -154,7 +154,7 @@ public class Export2iCalAdminOption extends RaplaGUIComponent implements PluginO
 		newConfig.getMutableChild(Export2iCalPlugin.DAYS_AFTER, true).setValue(Integer.parseInt(spiDaysAfter.getValue().toString()));
 		newConfig.getMutableChild(Export2iCalPlugin.GLOBAL_INTERVAL, true).setValue(optGlobalInterval.isSelected());
 
-		String lastModIntervall = chkUseLastModifiedIntervall.isSelected() ? new String("-1") : spiLastModifiedInterval.getValue().toString();
+		String lastModIntervall = chkUseLastModifiedIntervall.isSelected() ? "-1" : spiLastModifiedInterval.getValue().toString();
 		newConfig.getMutableChild(Export2iCalPlugin.LAST_MODIFIED_INTERVALL, true).setValue(lastModIntervall);
 
 		newConfig.getMutableChild(Export2iCalPlugin.ENABLED_STRING, true).setValue(activate.isSelected());
@@ -221,7 +221,7 @@ public class Export2iCalAdminOption extends RaplaGUIComponent implements PluginO
 			lblLastModifiedInterval.setEnabled(false);
 			chkUseLastModifiedIntervall.setSelected(true);
 		} else {
-			spiLastModifiedInterval.setValue(new Integer(lastModifiedIntervall));
+			spiLastModifiedInterval.setValue(Integer.valueOf(lastModifiedIntervall));
 			lblLastModifiedInterval.setEnabled(true);
 			chkUseLastModifiedIntervall.setSelected(false);
 		}
@@ -229,8 +229,8 @@ public class Export2iCalAdminOption extends RaplaGUIComponent implements PluginO
 		optGlobalInterval.setSelected(global_interval);
 		optUserInterval.setSelected(!global_interval);
 
-		spiDaysBefore.setValue(new Integer(daysBefore));
-		spiDaysAfter.setValue(new Integer(daysAfter));
+		spiDaysBefore.setValue(Integer.valueOf(daysBefore));
+		spiDaysAfter.setValue(Integer.valueOf(daysAfter));
 
 		
 

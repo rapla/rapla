@@ -27,14 +27,14 @@ public class SwingPopupContext implements PopupContext
     
     public static Component extractParent(PopupContext popupContext){
         if(popupContext != null && popupContext instanceof SwingPopupContext){
-            return SwingPopupContext.class.cast(popupContext).getParent();
+            return ((SwingPopupContext) popupContext).getParent();
         }
         return null;
     }
     
     public static Point extractPoint(PopupContext popupContext){
         if(popupContext != null && popupContext instanceof SwingPopupContext){
-            return SwingPopupContext.class.cast(popupContext).getPoint();
+            return ((SwingPopupContext) popupContext).getPoint();
         }
         return null;
     }

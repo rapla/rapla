@@ -138,7 +138,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
      * set encryption if you want to enable password encryption. Possible values
      * are "sha" or "md5".
      */
-    private String encryption = "sha-1";
+    private final String encryption = "sha-1";
     private ConflictFinder conflictFinder;
     //private SortedSet<LastChangedTimestamp> timestampSet;
     // we need a bidi to sort the values instead of the keys
@@ -146,8 +146,8 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
     private SortedBidiMap<String, DeleteUpdateEntry> deleteUpdateSet;
 
     private TimeZone systemTimeZone = TimeZone.getDefault();
-    private CommandScheduler scheduler;
-    private List< io.reactivex.rxjava3.disposables.Disposable> scheduledTasks = new ArrayList<>();
+    private final CommandScheduler scheduler;
+    private final List< io.reactivex.rxjava3.disposables.Disposable> scheduledTasks = new ArrayList<>();
     private Date connectStart;
     private final DefaultRaplaLock disconnectLock;
     private final PromiseWait promiseWait;
@@ -527,7 +527,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
                     }
                     appointmentCollection.add(appointment);
                 }
-            };
+            }
 
             AppointmentMapping result = new AppointmentMapping(allocatableMap);
             return result;
@@ -1427,7 +1427,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
                 String conflictsOld = old != null ? old.getAnnotation(DynamicTypeAnnotations.KEY_CONFLICTS) : null;
                 if (conflictsNew != conflictsOld)
                 {
-                    if (conflictsNew == null || conflictsOld == null || !conflictsNew.equals(conflictsOld))
+                    if (conflictsNew == null || !conflictsNew.equals(conflictsOld))
                     {
                         Collection<Reservation> reservations = cache.getReservations();
                         for (Reservation reservation : reservations)
@@ -1582,10 +1582,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
             }
             if (entry.affectedUserIds != null)
             {
-                if (entry.affectedUserIds.contains(userId))
-                {
-                    return true;
-                }
+                return entry.affectedUserIds.contains(userId);
             }
         }
         return false;
@@ -1705,7 +1702,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
             for (Permission p : permissions)
             {
                 String groupId = ((PermissionImpl) p).getGroupId();
-                String userId = ((PermissionImpl) p).getUserId();
+                String userId = p.getUserId();
                 Permission.AccessLevel accessLevel = p.getAccessLevel();
                 if (minimumLevel.includes(accessLevel))
                 {
@@ -2464,10 +2461,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
             return true;
         }
         String annotation = classification.getType().getAnnotation(DynamicTypeAnnotations.KEY_DELETE_EXTERNALS_ON_RESOURCE_DELETE);
-        if ( "false".equalsIgnoreCase(annotation)) {
-            return false;
-        }
-        return true;
+        return !"false".equalsIgnoreCase(annotation);
     }
 
     private boolean isInDeleted(Category exisitingParent, Set<String> categoriesToRemove, int depth)
@@ -2906,7 +2900,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
                     {
                         final Category category2 = categories[j];
                         String key2 = category2.getKey();
-                        if (key == key2 || (key != null && key.equals(key2)))
+                        if (Objects.equals(key, key2))
                         {
                             throwNotUnique(key);
                         }
@@ -3483,10 +3477,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
             if (encryptionGuess.contains("sha") || encryptionGuess.contains("md5"))
             {
                 password = encrypt(encryptionGuess, password);
-                if (correct_pw.equals(password))
-                {
-                    return true;
-                }
+                return correct_pw.equals(password);
             }
         }
         return false;

@@ -118,7 +118,7 @@ public class ReservationInfoUI extends ClassificationInfoUI<Reservation> {
         if ( excludeAdditionalInfos )
         {
             ReferenceInfo<User> lastChangeById = reservation.getLastChangedBy();
-            if (lastChangeById != null && (ownerId == null || !lastChangeById.equals(ownerId)))
+            if (lastChangeById != null && (!lastChangeById.equals(ownerId)))
             {
                 final String lastChangedName = getUsername(lastChangeById);
                 String lastChangeByText = encode(lastChangedName);

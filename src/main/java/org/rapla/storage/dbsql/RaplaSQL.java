@@ -200,7 +200,7 @@ class RaplaSQL
     {
         Date connectionTimestamp = getDatabaseTimestamp(con);
         final Collection<TableStorage> storeIt = (Collection) stores.values();
-        final Collection<TableStorage> lockStorages = (Collection) Collections.singletonList(lockStorage);
+        final Collection<TableStorage> lockStorages = Collections.singletonList(lockStorage);
         for (TableStorage storage : new IterableChain<>(storeIt, lockStorages))
         {
             storage.setConnection(con, connectionTimestamp);
@@ -889,7 +889,7 @@ class LockStorage extends AbstractTableStorage
                     else {
                         // wait for max 30 seconds
                         final long actualTime = System.currentTimeMillis();
-                        if ((actualTime - startWaitingTime) > 30000l) {
+                        if ((actualTime - startWaitingTime) > 30000L) {
                             removeLocks(Collections.singleton(GLOBAL_LOCK), null, false);
                             if (con.getMetaData().supportsTransactions()) {// Commit so others do not see the global lock any more
                                 con.commit();
@@ -1627,7 +1627,7 @@ class AttributeValueStorage<T extends Entity<T>> extends EntityStorage<T> implem
 class PermissionStorage<T extends EntityPermissionContainer<T>> extends EntityStorage<T> implements SubStorage<T>
 {
     Map<ReferenceInfo<? extends Entity>, T> referenceMap;
-    private Class<? extends Entity> parentStoreClass;
+    private final Class<? extends Entity> parentStoreClass;
 
     public PermissionStorage(RaplaXMLContext context, String type, Map<ReferenceInfo<? extends Entity>, T> idMap, Class<? extends Entity> parentStoreClass)
             throws RaplaException
@@ -1787,7 +1787,7 @@ class AppointmentStorage extends RaplaTypeStorage<Appointment>
                     }
                     builder.append(weekday);
                 }
-                repeatingTypeAsString += ":" + builder.toString();
+                repeatingTypeAsString += ":" + builder;
             }
             setString(stmt, 5, repeatingTypeAsString);
             int number = repeating.getNumber();
@@ -2637,7 +2637,7 @@ class UserGroupStorage extends EntityStorage<User> implements SubStorage<User>
 class HistoryStorage<T extends Entity<T>> extends RaplaTypeStorage<T>
 {
 
-    private JsonParserWrapper.JsonParser gson;
+    private final JsonParserWrapper.JsonParser gson;
     private final Date supportTimestamp;
     private final String loadAllUpdatesSql;
 

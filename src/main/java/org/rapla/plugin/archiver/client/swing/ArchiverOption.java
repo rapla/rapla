@@ -46,7 +46,7 @@ import java.util.Locale;
 public class ArchiverOption  implements PluginOptionPanel,ActionListener  {
 
     JPanel content;
-    RaplaNumber dayField = new RaplaNumber(new Integer(25), new Integer(0),null,false);
+    RaplaNumber dayField = new RaplaNumber(Integer.valueOf(25), Integer.valueOf(0),null,false);
     JCheckBox removeOlderYesNo = new JCheckBox();
     JCheckBox exportToDataXML = new JCheckBox();
     RaplaButton deleteNow;
@@ -207,7 +207,7 @@ public class ArchiverOption  implements PluginOptionPanel,ActionListener  {
                 Number days =  dayField.getNumber();
                 if ( days != null)
                 {
-                    result = archiver.delete(new Integer(days.intValue()));
+                    result = archiver.delete(Integer.valueOf(days.intValue()));
                 }
                 else
                 {

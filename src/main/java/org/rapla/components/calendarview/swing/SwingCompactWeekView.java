@@ -43,7 +43,7 @@ import java.util.Map;
 public class SwingCompactWeekView extends AbstractSwingCalendar
 {
     private SmallDaySlot[] slots = new SmallDaySlot[0];
-    private List<List<Block>> rows = new ArrayList<>();
+    private final List<List<Block>> rows = new ArrayList<>();
     DraggingHandler draggingHandler = new DraggingHandler(this, false);
     SelectionHandler selectionHandler = new SelectionHandler(this);
     String[] rowNames = new String[] {};
@@ -131,7 +131,7 @@ public class SwingCompactWeekView extends AbstractSwingCalendar
         slots = new SmallDaySlot[rowsize * columns];
         for (int row=0;row<rowsize;row++) {
             tableLayout.insertRow(row, TableLayout.PREFERRED );
-            jCenter.add(createRowLabel( row ), "" + 0 + "," + row + ",f,t");
+            jCenter.add(createRowLabel( row ), 0 + "," + row + ",f,t");
             for (int column=0;column < columns; column++) {
                 int fieldNumber = row * columns + column;
                 SmallDaySlot field = createField(   );
@@ -141,7 +141,7 @@ public class SwingCompactWeekView extends AbstractSwingCalendar
                 }
 				slots[fieldNumber] = field;
                 if ( !isExcluded( column ) ) {
-                    jCenter.add(slots[fieldNumber], "" + (column + 1) + "," + row);
+                    jCenter.add(slots[fieldNumber], (column + 1) + "," + row);
                 }
             }
         }

@@ -142,7 +142,7 @@ public class ViewTable<T> extends RaplaGUIComponent
     }
 
     public void createLink(Object object,String link,StringBuffer buf) {
-        linkMap.put(new Integer(linkId),object);
+        linkMap.put(Integer.valueOf(linkId),object);
         buf.append("<A href=\"");
         buf.append(linkId++);
         buf.append("\">");

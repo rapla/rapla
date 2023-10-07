@@ -97,32 +97,24 @@ public class LongField extends AbstractEditField implements ChangeListener, Focu
 	
 	public Long getValue()  {
 		if (field.getNumber() != null)
-			return new Long(field.getNumber().longValue());
+			return Long.valueOf(field.getNumber().longValue());
 		else
 			return null;
 	}
 	
 	public Integer getIntValue()  {
 		if (field.getNumber() != null)
-			return new Integer(field.getNumber().intValue());
+			return Integer.valueOf(field.getNumber().intValue());
 		else
 			return null;
 	}
 
 	public void setValue(Long object) {
-		if (object != null) {
-			field.setNumber( object);
-		} else {
-			field.setNumber(null);
-		}
+        field.setNumber(object);
 	}
 	
 	public void setValue(Integer object) {
-		if (object != null) {
-			field.setNumber( object);
-		} else {
-			field.setNumber(null);
-		}
+        field.setNumber(object);
 	}
 
 	public void stateChanged(ChangeEvent evt) {

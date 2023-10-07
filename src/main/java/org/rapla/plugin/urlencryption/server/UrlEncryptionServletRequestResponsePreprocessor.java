@@ -28,9 +28,9 @@ import java.util.TreeMap;
  */
 @Extension(provides = ServletRequestPreprocessor.class,id= UrlEncryptionPlugin.PLUGIN_ID)
 public class UrlEncryptionServletRequestResponsePreprocessor  implements ServletRequestPreprocessor {
-    private UrlEncryptor urlEncryptor;
-    private RaplaFacade facade;
-    private Logger logger;
+    private final UrlEncryptor urlEncryptor;
+    private final RaplaFacade facade;
+    private final Logger logger;
     @Inject
     public UrlEncryptionServletRequestResponsePreprocessor(UrlEncryptor urlEncryptor, RaplaFacade facade, Logger logger)
     {

@@ -185,11 +185,7 @@ public class PermissionController
         {
             return true;
         }
-        if (canWriteTemplate( object, user))
-        {
-            return true;
-        }
-        return false;
+        return canWriteTemplate(object, user);
     }
 
 
@@ -605,10 +601,7 @@ public class PermissionController
             {
                 return true;
             }
-            if (canModifyEvent(conflict.getReservation2(), user))
-            {
-                return true;
-            }
+            return canModifyEvent(conflict.getReservation2(), user);
         }
         return false;
     }
@@ -624,7 +617,7 @@ public class PermissionController
     private boolean canWriteTemplate(Entity entity, User user)
     {
         EntityResolver resolver = this.operator;
-        Class<? extends Entity> type  = ((Entity) entity).getTypeClass();
+        Class<? extends Entity> type  = entity.getTypeClass();
         if (type == Allocatable.class ||  type == Reservation.class)
         {
             Annotatable annotatable = (Annotatable) entity;
@@ -634,10 +627,7 @@ public class PermissionController
                 Allocatable template = resolver.tryResolve(templateId, Allocatable.class);
                 if (template != null)
                 {
-                    if (canModify(template, user))
-                    {
-                        return true;
-                    }
+                    return canModify(template, user);
                 }
             }
         }
@@ -653,10 +643,7 @@ public class PermissionController
             Allocatable template = resolver.tryResolve(templateId, Allocatable.class);
             if (template != null)
             {
-                if (canRead(template, user))
-                {
-                    return true;
-                }
+                return canRead(template, user);
             }
         }
         return false;
@@ -751,10 +738,7 @@ public class PermissionController
                     break;
                 }
             }
-            if ( belongsTo )
-            {
-                return true;
-            }
+            return belongsTo;
         }
         return false;
         // belongsto Could be replaced with a real membership

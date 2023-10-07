@@ -18,6 +18,7 @@ import org.rapla.facade.client.ClientFacade;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.logger.Logger;
 
+import java.util.Collections;
 import java.util.Vector;
 
 public class CategoryListField extends ListField<Category>  {
@@ -29,8 +30,7 @@ public class CategoryListField extends ListField<Category>  {
 
         Vector<Category> list = new Vector<>();
         Category[] obj = this.rootCategory.getCategories();
-        for (int i=0;i<obj.length;i++)
-            list.add(obj[i]);
+        Collections.addAll(list, obj);
         setVector(list);
     }
 }

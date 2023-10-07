@@ -211,8 +211,7 @@ abstract public class IOUtil {
               out.write( buf, 0, n );
 			  n = in.read(buf, 0, buf.length );
 		  }
-		  return;
-	  }
+      }
 
 	  public static void deleteAll(File f)
 	  {
@@ -291,7 +290,7 @@ abstract public class IOUtil {
             return bytes.toString();
         }
 
-    private static TimeZone timeZone =TimeZone.getTimeZone("GMT");
+    private static final TimeZone timeZone =TimeZone.getTimeZone("GMT");
 
     /**
    This method always returns GMT+0. This is used for all internal calls. All dates and times are stored internaly with this Timezone.

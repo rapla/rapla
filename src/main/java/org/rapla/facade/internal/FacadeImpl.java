@@ -92,7 +92,7 @@ import java.util.stream.Stream;
 @DefaultImplementation(of = RaplaFacade.class, context = InjectionContext.all)
 public class FacadeImpl implements RaplaFacade {
 	private StorageOperator operator;
-	private RaplaResources i18n;
+	private final RaplaResources i18n;
 
 	Locale locale;
 
@@ -349,7 +349,7 @@ public class FacadeImpl implements RaplaFacade {
 	}
 	
 	public Promise<Collection<Reservation>> getReservations(User user, Date start, Date end,ClassificationFilter[] reservationFilters) {
-        User[] users = user != null ? new User[] {user} : new User[] {};
+        User[] users = user != null ? new User[] {user} : User.USER_ARRAY;
 		Promise<Collection<Reservation>>collection = getReservationsAsync(user, null,users,start, end, reservationFilters);
         return collection;
 	}
@@ -1148,9 +1148,8 @@ public class FacadeImpl implements RaplaFacade {
 				result = _clone(obj,idProvider,user);
 			} catch (ClassCastException ex) {
 				throw new RaplaException("This entity can't be cloned ", ex);
-			} finally {
 			}
-		}
+        }
 		return result;
 	}
 
@@ -1399,9 +1398,7 @@ public class FacadeImpl implements RaplaFacade {
 		for (S toRemove : removedObjects) {
 			removeList.add( toRemove.getReference());
 		}
-		for (T toStore : storedObjects) {
-			storeList.add( toStore);
-		}
+        Collections.addAll(storeList, storedObjects);
 		dispatchSynchronized(storeList, removeList, user);
 	}
 

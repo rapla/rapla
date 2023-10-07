@@ -231,7 +231,7 @@ public class ImportTemplateMenu implements ImportMenuExtension, ActionListener
 
         private static final long serialVersionUID = 1L;
 
-        private Locale locale;
+        private final Locale locale;
 
         {
             locale = getLocale();
@@ -339,11 +339,7 @@ public class ImportTemplateMenu implements ImportMenuExtension, ActionListener
         public boolean isStorno()
         {
             final String string = entries.get(TemplateImport.STORNO_KEY);
-            if ( string != null && string.trim().length() > 0 )
-            {
-                return true;
-            }
-            return false;
+            return string != null && string.trim().length() > 0;
         }
 
         public Status getStatus()
@@ -472,7 +468,7 @@ public class ImportTemplateMenu implements ImportMenuExtension, ActionListener
                 final String value = e.getValue();
                 if ( key.equals(TemplateImport.PRIMARY_KEY) && value != null )
                 {
-                    reservation.setAnnotation(RaplaObjectAnnotations.KEY_EXTERNALID, value.toString());
+                    reservation.setAnnotation(RaplaObjectAnnotations.KEY_EXTERNALID, value);
                 }
                 final Attribute attribute = c.getAttribute(key);
                 if ( attribute != null && value != null )
@@ -483,7 +479,7 @@ public class ImportTemplateMenu implements ImportMenuExtension, ActionListener
             }
             if ( reservation.getAnnotation(RaplaObjectAnnotations.KEY_EXTERNALID) == null )
             {
-                throw new RaplaException("Primary Key [" + TemplateImport.PRIMARY_KEY + "] not set in row " + entries.toString());
+                throw new RaplaException("Primary Key [" + TemplateImport.PRIMARY_KEY + "] not set in row " + entries);
             }
         }
 
@@ -676,7 +672,7 @@ public class ImportTemplateMenu implements ImportMenuExtension, ActionListener
             final int rowCount = dataModel.getRowCount();
             for ( int row = 0; row < rowCount; row++ )
             {
-                dataModel.setValueAt(new Boolean(set), row, selectCol);
+                dataModel.setValueAt(Boolean.valueOf(set), row, selectCol);
             }
         };
         everythingButton.addActionListener(listener);

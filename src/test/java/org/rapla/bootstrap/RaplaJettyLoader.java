@@ -20,7 +20,7 @@ public class RaplaJettyLoader
     	}
     	for ( String arg:args)
     	{
-    		if ( arg != null && arg.toLowerCase().equals("server"))
+    		if ( arg != null && arg.equalsIgnoreCase("server"))
     		{
     			System.setProperty( "java.awt.headless", "true" );
     		}

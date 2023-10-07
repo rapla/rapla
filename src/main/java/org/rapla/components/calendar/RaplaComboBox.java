@@ -59,7 +59,7 @@ public abstract class RaplaComboBox extends JPanel {
    // with the following flags:
    private boolean m_closing = false;
    private boolean m_pressed = false;
-   private Listener m_listener = new Listener();
+   private final Listener m_listener = new Listener();
 
    public RaplaComboBox(JComponent editorComponent) {
        this(true,editorComponent);

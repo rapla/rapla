@@ -62,7 +62,7 @@ import java.util.List;
 
 public abstract class AbstractSelectField<T> extends AbstractEditField implements MultiEditField, SetGetField<T>, SetGetCollectionField<T>
 {
-    private RaplaButton selectButton = new RaplaButton(RaplaButton.SMALL);
+    private final RaplaButton selectButton = new RaplaButton(RaplaButton.SMALL);
     JPanel panel;
     JLabel selectText = new JLabel();
     private Collection<T> selectedValues = new ArrayList<>();

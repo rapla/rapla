@@ -197,10 +197,8 @@ public final class PermissionImpl extends ReferenceHandler implements Permission
         if ( maxAdvance != null && today != null) {
             long pEndTime = today.getTime()
                 + DateTools.MILLISECONDS_PER_DAY * (maxAdvance.longValue() + 1);
-            if (  pEndTime < today.getTime() ) {
-                //System.out.println( " end after permission " + end  + " > " + pEndTime );
-                return false;
-            }
+            //System.out.println( " end after permission " + end  + " > " + pEndTime );
+            return pEndTime >= today.getTime();
         }
         return true;
     }
@@ -235,10 +233,8 @@ public final class PermissionImpl extends ReferenceHandler implements Permission
             }
             long pEndTime = today.getTime()
                 + DateTools.MILLISECONDS_PER_DAY * (maxAdvance.longValue() + 1);
-            if ( end == null || end.getTime() > pEndTime   ) {
-                //System.out.println( " end after permission " + end  + " > " + pEndTime );
-                return false;
-            }
+            //System.out.println( " end after permission " + end  + " > " + pEndTime );
+            return end != null && end.getTime() <= pEndTime;
         }
         return true;
     }
@@ -296,7 +292,7 @@ public final class PermissionImpl extends ReferenceHandler implements Permission
  	private void append(StringBuilder buf, Object obj) {
  		if ( obj != null)
  		{
- 			buf.append( obj.toString());
+ 			buf.append(obj);
  		}
 	}
 

@@ -40,8 +40,8 @@ final public class DateField extends AbstractBlockField {
 
     private DateFormat m_outputFormat;
     private DateFormat m_parsingFormat;
-    private Calendar m_calendar;
-    private int m_rank[] = null;
+    private final Calendar m_calendar;
+    private int[] m_rank = null;
     private char[] m_separators;
     private SimpleDateFormat m_weekdayFormat;
     private boolean m_weekdaysVisible = true;
@@ -113,7 +113,7 @@ final public class DateField extends AbstractBlockField {
         int mp = monthPos.getBeginIndex();
         int dp = datePos.getBeginIndex();
         int yp = yearPos.getBeginIndex();
-        int pos[] = null;
+        int[] pos = null;
         //      System.out.println(formatStr + " day:"+dp+" month:"+mp+" year:"+yp);
         if (mp<0 || dp<0 || yp<0) {
             throw new IllegalArgumentException("Can't parse the date-format for this locale");

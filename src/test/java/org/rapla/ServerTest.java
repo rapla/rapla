@@ -77,7 +77,7 @@ import java.util.Locale;
 public class ServerTest
 {
 
-    private int port = 8052;
+    private final int port = 8052;
     protected ClientFacade clientFacade1;
     protected ClientFacade clientFacade2;
     Locale locale;
@@ -183,8 +183,8 @@ public class ServerTest
     public void testLogin() throws Exception
     {
         logout(clientFacade1);
-        Assert.assertEquals(false, login(clientFacade1,"non_existant_user", "".toCharArray()));
-        Assert.assertEquals(false, login(clientFacade1,"non_existant_user", "fake".toCharArray()));
+        Assert.assertFalse(login(clientFacade1, "non_existant_user", "".toCharArray()));
+        Assert.assertFalse(login(clientFacade1, "non_existant_user", "fake".toCharArray()));
     }
 
     @Test
@@ -281,7 +281,7 @@ public class ServerTest
         }
         DynamicType typeEdit2 = getRaplaFacade1().edit(type);
         Attribute attributeLater = typeEdit2.getAttribute("test");
-        Assert.assertTrue("Attributes identy changed after storing ", attributeLater.equals(newAttribute));
+        Assert.assertEquals("Attributes identy changed after storing ", attributeLater, newAttribute);
         typeEdit2.removeAttribute(attributeLater);
         getRaplaFacade1().store(typeEdit2);
         {
@@ -598,7 +598,7 @@ public class ServerTest
         final RaplaFacade raplaFacade1 = getRaplaFacade1();
         final PermissionController permissionController = DefaultPermissionControllerSupport.getController(raplaFacade1.getOperator());
         User user = raplaFacade1.edit(raplaFacade1.getUser("monty"));
-        Category[] groups = user.getGroupList().toArray(new Category[] {});
+        Category[] groups = user.getGroupList().toArray(Category.CATEGORY_ARRAY);
         Assert.assertTrue("No groups found!", groups.length > 0);
         Category myGroup = raplaFacade1.getUserGroupsCategory().getCategory("my-group");
         Assert.assertTrue(Arrays.asList(groups).contains(myGroup));

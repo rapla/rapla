@@ -265,7 +265,7 @@ final class RepeatingImpl implements Repeating,java.io.Serializable {
     @see #getInterval
     */
     public long getFixedIntervalLength() {
-        long intervalDays = frequency * interval;
+        long intervalDays = (long) frequency * interval;
 		return intervalDays * DateTools.MILLISECONDS_PER_DAY;
     }
 
@@ -468,7 +468,7 @@ final class RepeatingImpl implements Repeating,java.io.Serializable {
 		copy( source, dest);
     }
 
-    private static Date[] DATE_ARRAY = new Date[0];
+    private static final Date[] DATE_ARRAY = new Date[0];
     public Date[] getExceptions() {
         if (!arrayUpToDate) {
             if (exceptions != null) {
@@ -485,7 +485,7 @@ final class RepeatingImpl implements Repeating,java.io.Serializable {
         return exceptions != null && exceptions.size()>0;
     }
 
-    final public long getIntervalLength( long s )
+    public long getIntervalLength(long s)
     {
         if ( isFixedIntervalLength())
         {
@@ -579,7 +579,7 @@ final class RepeatingImpl implements Repeating,java.io.Serializable {
 
     }
 
-    final public boolean isFixedIntervalLength()
+    public boolean isFixedIntervalLength()
     {
         return !monthly &&!yearly && !(weekdays != null && weekdays.size() >1);
     }

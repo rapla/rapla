@@ -150,9 +150,8 @@ public class UserEditUI  extends AbstractEditUI<User> {
 				{
 	        	    dialogUiFactory.showException(ex, new SwingPopupContext(getComponent(), null));
 				}
-			}  
-	        return;
-		}
+			}
+        }
 		
 		private Boolean isOneAdmin() throws RaplaException {
             if ( !user.isAdmin())
@@ -322,10 +321,7 @@ public class UserEditUI  extends AbstractEditUI<User> {
                         }
                     else if (selPath != null && e.getClickCount() == 1) {
                         final Object lastPathComponent = selPath.getLastPathComponent();
-                        if (((TreeNode) lastPathComponent).isLeaf() ) 
-                            dialog.getAction(0).setEnabled(true);
-                        else
-                            dialog.getAction(0).setEnabled(false);                       
+                        dialog.getAction(0).setEnabled(((TreeNode) lastPathComponent).isLeaf());
                     }
                 }
             });

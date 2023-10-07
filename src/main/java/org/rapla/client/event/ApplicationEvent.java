@@ -96,12 +96,9 @@ public class ApplicationEvent
             return false;
         if (info == null)
         {
-            if (other.info != null)
-                return false;
+            return other.info == null;
         }
-        else if (!info.equals(other.info))
-            return false;
-        return true;
+        else return info.equals(other.info);
     }
 
     public PopupContext getPopupContext()

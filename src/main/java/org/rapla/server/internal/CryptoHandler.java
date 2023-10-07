@@ -7,6 +7,7 @@ import javax.crypto.Cipher;
 import javax.crypto.NoSuchPaddingException;
 import javax.crypto.spec.SecretKeySpec;
 import java.io.UnsupportedEncodingException;
+import java.nio.charset.StandardCharsets;
 import java.security.InvalidKeyException;
 import java.security.Key;
 import java.security.MessageDigest;
@@ -19,7 +20,7 @@ public class CryptoHandler {
     String syncEncryptionAlg = "AES/ECB/PKCS5Padding";
     private Cipher encryptionCipher;
     private Cipher decryptionCipher;
-    private Base64 base64;
+    private final Base64 base64;
 	private static final String ENCODING = "UTF-8";
 
 	public CryptoHandler( String pepper) throws RaplaException
@@ -34,7 +35,7 @@ public class CryptoHandler {
 	}
 
 	 private void initializeCiphers(String pepper) throws InvalidKeyException, UnsupportedEncodingException, NoSuchAlgorithmException, NoSuchPaddingException {
-    	byte[] key = pepper.getBytes("UTF-8");
+    	byte[] key = pepper.getBytes(StandardCharsets.UTF_8);
     	MessageDigest sha = MessageDigest.getInstance("SHA-1");
     	key = sha.digest(key);
     	key = Arrays.copyOf(key, 16); // use only first 128 bit

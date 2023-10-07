@@ -100,7 +100,6 @@ public class UserAction  {
             }
         } catch (RaplaException ex) {
             setEnabled(false);
-            return;
         }
 
     }

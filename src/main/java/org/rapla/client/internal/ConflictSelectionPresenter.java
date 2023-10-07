@@ -381,7 +381,7 @@ public class ConflictSelectionPresenter implements Presenter
             {
                 return 1;
             }
-            return new Integer(c1.hashCode()).compareTo(new Integer(c2.hashCode()));
+            return Integer.valueOf(c1.hashCode()).compareTo(Integer.valueOf(c2.hashCode()));
         }
 
     }

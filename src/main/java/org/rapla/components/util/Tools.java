@@ -42,8 +42,7 @@ public abstract class Tools
 
     private static boolean validStart(char c)
     {
-        return (c == '_' || c =='-' || Character.isLetter(c)) ?
-            true : false;
+        return c == '_' || c == '-' || Character.isLetter(c);
     }
 
     private static boolean validLetter(char c) {
@@ -111,7 +110,7 @@ public abstract class Tools
      * This method is taken form the apache jakarata
      * tomcat project.
      */
-    public static String convert(byte bytes[]) {
+    public static String convert(byte[] bytes) {
         StringBuffer sb = new StringBuffer(bytes.length * 2);
         for (int i = 0; i < bytes.length; i++) {
             sb.append(convertDigit(bytes[i] >> 4));
@@ -133,15 +132,10 @@ public abstract class Tools
 
     public static boolean equalsOrBothNull(Object o1, Object o2) {
         if (o1 == null) {
-            if (o2 != null) {
-                return false;
-            }
+            return o2 == null;
         } else if ( o2 == null) {
             return false;
-        } else if (!o1.equals( o2 ) ) {
-            return false;
-        }
-        return true;
+        } else return o1.equals(o2);
     }
 
     /** 1.3 compatibility method */

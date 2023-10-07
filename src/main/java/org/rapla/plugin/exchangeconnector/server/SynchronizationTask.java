@@ -153,12 +153,9 @@ public class SynchronizationTask implements Serializable
 		} else if (!appointmentId.equals(other.appointmentId))
 			return false;
 		if (userId == null) {
-			if (other.userId != null)
-				return false;
-		} else if (!userId.equals(other.userId))
-			return false;
-		return true;
-	}
+            return other.userId == null;
+		} else return userId.equals(other.userId);
+    }
 	
 	@Override
 	public String toString() {
@@ -180,27 +177,17 @@ public class SynchronizationTask implements Serializable
 	public boolean matches(Appointment appointment) {
 		Comparable other_appointmentId = appointment.getId();
 		if (appointmentId == null) {
-			if (other_appointmentId != null)
-				return false;
-		} else if (!appointmentId.equals(other_appointmentId))
-		{
-			return false;
-		}
-		return true;
-	}
+            return other_appointmentId == null;
+		} else return appointmentId.equals(other_appointmentId);
+    }
 
 	public boolean matches(User user) {
 		Comparable other_userId = user.getId();
 		if (userId == null) {
-			if (other_userId != null)
-				return false;
+            return other_userId == null;
 		} 
-		else if (!userId.equals(other_userId))
-		{
-			return false;
-		}
-		return true;
-	}
+		else return userId.equals(other_userId);
+    }
 
 	public void setPersistantId(String id) {
 		this.persistantId = id;

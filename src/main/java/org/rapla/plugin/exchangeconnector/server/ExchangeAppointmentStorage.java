@@ -302,7 +302,7 @@ public class ExchangeAppointmentStorage
             final Preferences userPreferences = facade.getPreferences(user);
             final String newHash = LocalAbstractCachableOperator.encrypt("sha-1", hashableString.toString());
             final String hash = userPreferences.getEntryAsString(LAST_SYNC_ERROR_CHANGE_HASH, null);
-            if (hash == null || !newHash.equals(hash))
+            if (!newHash.equals(hash))
             {
                 Preferences edit = facade.edit(userPreferences);
                 String timestampOfFailure = new SerializableDateTimeFormat().formatTimestamp(operator.getCurrentTimestamp());

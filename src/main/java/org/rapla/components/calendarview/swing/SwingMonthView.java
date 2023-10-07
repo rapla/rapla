@@ -167,7 +167,7 @@ public class SwingMonthView extends AbstractSwingCalendar
             int row = (DateTools.getDayOfMonth(counter) + 6 - column ) /  7;
             if ( !isExcluded( column ) ) {
                 int effectiveColumn = column - exclusionBefore[column];
-                jCenter.add( slots[i] , "" + effectiveColumn + "," + row);
+                jCenter.add( slots[i] , effectiveColumn + "," + row);
             } 
             else
             {

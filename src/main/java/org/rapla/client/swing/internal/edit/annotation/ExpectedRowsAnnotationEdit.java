@@ -25,7 +25,7 @@ import java.util.Collections;
 public class ExpectedRowsAnnotationEdit extends RaplaGUIComponent implements AnnotationEditAttributeExtension
 {
     protected String annotationName = AttributeAnnotations.KEY_EXPECTED_ROWS;
-    protected Long DEFAULT_VALUE = new Long(1);
+    protected Long DEFAULT_VALUE = Long.valueOf(1);
     private final IOInterface service;
     private final LongFieldFactory longFieldFactory;
     

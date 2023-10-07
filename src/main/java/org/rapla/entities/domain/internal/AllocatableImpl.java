@@ -46,7 +46,7 @@ import java.util.Map;
 public final class AllocatableImpl extends SimpleEntity implements Allocatable,DynamicTypeDependant, ModifiableTimestamp {
     
     private ClassificationImpl classification;
-    private List<PermissionImpl> permissions = new ArrayList<>();
+    private final List<PermissionImpl> permissions = new ArrayList<>();
     private Date lastChanged;
     private Date createDate;
     private Map<String,String> annotations;
@@ -256,7 +256,7 @@ public final class AllocatableImpl extends SimpleEntity implements Allocatable,D
         clone.createDate = createDate;
         clone.lastChanged = lastChanged;
         @SuppressWarnings("unchecked")
-    	Map<String,String> annotationClone = (Map<String, String>) (annotations != null ?  new HashMap<>(annotations) : null);
+    	Map<String,String> annotationClone = annotations != null ?  new HashMap<>(annotations) : null;
         clone.annotations = annotationClone;
         return clone;
     }
@@ -270,7 +270,7 @@ public final class AllocatableImpl extends SimpleEntity implements Allocatable,D
         try
         {
 	        if ( getClassification() != null) {
-	            buf.append (getClassification().toString()) ;
+	            buf.append (getClassification()) ;
 	        }
         }
         catch ( NullPointerException ex)

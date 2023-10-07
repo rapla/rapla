@@ -51,8 +51,8 @@ public class DynamicTypeReader extends RaplaXMLReader
     boolean isDynamictypeActive = false;
     HashMap<String,String> typeAnnotations = new LinkedHashMap<>();
     HashMap<String,String> attributeAnnotations = new LinkedHashMap<>();
-	private HashMap<String, Map<Attribute,String>> unresolvedDynamicTypeConstraints = new HashMap<>();
-	private PermissionReader permissionHandler;
+	private final HashMap<String, Map<Attribute,String>> unresolvedDynamicTypeConstraints = new HashMap<>();
+	private final PermissionReader permissionHandler;
 	
     public DynamicTypeReader( RaplaXMLContext context ) throws RaplaException
     {

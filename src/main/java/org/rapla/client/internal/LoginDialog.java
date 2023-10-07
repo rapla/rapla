@@ -335,8 +335,7 @@ public final class LoginDialog extends JFrame implements LocaleChangeListener
 			if (event.getSource() == password)
 			{
 				loginBtn.doClick();
-				return;
-			}
+            }
 		}
 	}
 	

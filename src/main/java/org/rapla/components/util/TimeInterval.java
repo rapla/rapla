@@ -56,7 +56,7 @@ public final class TimeInterval implements Serializable
 		}
 		else
 		{
-			if ( start2 == null || !start.equals(start2))
+			if (!start.equals(start2))
 			{
 				return false;
 			}
@@ -64,21 +64,13 @@ public final class TimeInterval implements Serializable
 		
 		if ( end == null  )
 		{
-			if (end != end2)
-			{
-				return false;
-			}
+            return end == end2;
 		}
 		else
 		{
-			if ( end2 == null || !end.equals(end2))
-			{
-				return false;
-			}
+            return end.equals(end2);
 		}
-		
-		return true;
-	}
+    }
 	
 	@Override
 	public int hashCode() 
@@ -121,10 +113,7 @@ public final class TimeInterval implements Serializable
 		{
 			if ( start2 != null)
 			{
-				if ( !start2.before(end))
-				{
-					return false;
-				}
+                return start2.before(end);
 			}
 		}
 		return true;

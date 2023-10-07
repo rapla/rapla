@@ -128,7 +128,7 @@ public class AppointmentController extends RaplaGUIComponent implements Disposab
     // Button for splitting appointments
     RaplaButton convertButton = new RaplaButton();
 
-    private CommandHistory commandHistory;
+    private final CommandHistory commandHistory;
 
     Date selectedEditDate = null;
 
@@ -169,8 +169,8 @@ public class AppointmentController extends RaplaGUIComponent implements Disposab
 
         Border emptyLineBorder = new Border()
         {
-            Insets insets = new Insets(1, 0, 0, 0);
-            Color COLOR = Color.LIGHT_GRAY;
+            final Insets insets = new Insets(1, 0, 0, 0);
+            final Color COLOR = Color.LIGHT_GRAY;
 
             public void paintBorder(Component c, Graphics g, int x, int y, int width, int height)
             {
@@ -368,7 +368,7 @@ public class AppointmentController extends RaplaGUIComponent implements Disposab
         public SingleEditor()
         {
             double pre = TableLayout.PREFERRED;
-            double size[][] = { { pre, 5, pre, 10, pre, 5, pre, 5, pre }, // Columns
+            double[][] size = { { pre, 5, pre, 10, pre, 5, pre, 5, pre }, // Columns
                     { ROW_SIZE, 6, ROW_SIZE, 6, ROW_SIZE } }; // Rows
             TableLayout tableLayout = new TableLayout(size);
             content.setLayout(tableLayout);
@@ -719,7 +719,7 @@ public class AppointmentController extends RaplaGUIComponent implements Disposab
             // Create a TableLayout for the frame
             double pre = TableLayout.PREFERRED;
             double fill = TableLayout.FILL;
-            double size[][] = { { pre, 5, pre, 5, fill }, // Columns
+            double[][] size = { { pre, 5, pre, 5, fill }, // Columns
                     { ROW_SIZE, 1, 18, 10, ROW_SIZE, 5, ROW_SIZE, 15, ROW_SIZE, 6, ROW_SIZE, 0 } }; // Rows
             TableLayout tableLayout = new TableLayout(size);
             content.setLayout(tableLayout);
@@ -1284,7 +1284,7 @@ public class AppointmentController extends RaplaGUIComponent implements Disposab
                     for (Map.Entry<Integer, JCheckBox> entry: weekdaysChecker.entrySet())
                     {
                         final Integer weekday = entry.getKey();
-                        boolean toCheck = (boolean) weekdays.contains(weekday) || weekday == DateTools.getWeekday( appointment.getStart());
+                        boolean toCheck = weekdays.contains(weekday) || weekday == DateTools.getWeekday( appointment.getStart());
                         final JCheckBox checkBox = entry.getValue();
                         checkBox.setSelected( toCheck);
                         checkBox.setEnabled( weekday != DateTools.getWeekday( appointment.getStart()));
@@ -1412,7 +1412,7 @@ public class AppointmentController extends RaplaGUIComponent implements Disposab
             double min = TableLayout.MINIMUM;
             double fill = TableLayout.FILL;
             double yborder = 8;
-            double size[][] = { { pre, pre, 0.1, 50, 100, 0.4, 15, 0.4 }, // Columns
+            double[][] size = { { pre, pre, 0.1, 50, 100, 0.4, 15, 0.4 }, // Columns
                     { yborder, min, min, fill } }; // Rows
             TableLayout tableLayout = new TableLayout(size);
             content.setLayout(tableLayout);

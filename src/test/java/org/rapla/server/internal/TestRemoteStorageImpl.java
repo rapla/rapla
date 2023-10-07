@@ -195,7 +195,7 @@ public class TestRemoteStorageImpl extends AbstractTestWithServer
             superCategory.removeCategory(cat1);
             cat2.removeCategory(cat3);
             RaplaResources i18n = ((FacadeImpl) raplaFacade).getI18n();
-            final List<Category> entities = Arrays.asList(new Category[] { cat1, cat3 });
+            final List<Category> entities = Arrays.asList(cat1, cat3);
             DeleteUndo<Category> undo = new DeleteUndo<Category>(raplaFacade, i18n, entities,clientFacade.getUser());
             final Logger logger = getLogger();
             SynchronizedCompletablePromise.waitFor(undo.execute(),1000, logger);

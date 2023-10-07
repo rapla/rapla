@@ -941,7 +941,7 @@ public class SQLOperatorTest extends AbstractOperatorTest
     		Assert.assertEquals(0, updates.getIds(UpdateResult.Add.class).size());
     		Assert.assertEquals(1, updates.getIds(UpdateResult.Change.class).size());
     		Assert.assertEquals(1, updates.getIds(UpdateResult.Remove.class).size());
-    		Assert.assertFalse(((Category)updates.getLastKnown(superCategory.getReference())).hasCategory(entity));
+    		Assert.assertFalse(updates.getLastKnown(superCategory.getReference()).hasCategory(entity));
     	}
     	// we check a very old client and expect to ignore the removes
     	final UpdateResult updates = operator.getUpdateResult(startAll);

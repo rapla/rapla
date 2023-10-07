@@ -139,7 +139,7 @@ public class LocalCacheTest  {
         Allocatable[] resources = cache.getAllocatables().toArray(Allocatable.ALLOCATABLE_ARRAY);
         Assert.assertEquals(3, resources.length);
         String name = resources[1].getName(locale);
-        Assert.assertTrue(name.equals("Beta"));
+        Assert.assertEquals("Beta", name);
     }
 
     @Test

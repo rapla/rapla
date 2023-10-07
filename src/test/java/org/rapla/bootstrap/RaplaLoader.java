@@ -88,10 +88,7 @@ public class RaplaLoader
         classname = args[2];
 
         applicationArgs = new String[args.length - 3];
-        for (int i = 0; i < applicationArgs.length; i++)
-        {
-            applicationArgs[i] = args[i + 3];
-        }
+        System.arraycopy(args, 3, applicationArgs, 0, applicationArgs.length);
         start(baseDir, dirList, classname, "main", new Object[] { applicationArgs });
     }
 

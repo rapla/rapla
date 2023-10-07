@@ -25,17 +25,15 @@ import java.util.logging.Logger;
 @SuppressWarnings({ "rawtypes", "unchecked" })
 public class CustomJettyStarter 
 {
-    public static final String USAGE = new String (
-            "Usage : \n"
-            + "[-?|-c PATH_TO_CONFIG_FILE] [ACTION]\n"
-            + "Possible actions:\n"
-            + "  standalone  : Starts the rapla-gui with embedded server (this is the default)\n"
-            + "  server  : Starts the rapla-server \n"
-            + "  client  : Starts the rapla-client \n"
-            + "  import  : Import from file into the database\n"
-            + "  export  : Export from database into file\n"
-            + "the config file is jetty.xml generally located in etc/jetty.xml"
-            );
+    public static final String USAGE = "Usage : \n"
+			+ "[-?|-c PATH_TO_CONFIG_FILE] [ACTION]\n"
+			+ "Possible actions:\n"
+			+ "  standalone  : Starts the rapla-gui with embedded server (this is the default)\n"
+			+ "  server  : Starts the rapla-server \n"
+			+ "  client  : Starts the rapla-client \n"
+			+ "  import  : Import from file into the database\n"
+			+ "  export  : Export from database into file\n"
+			+ "the config file is jetty.xml generally located in etc/jetty.xml";
 
 
 
@@ -117,7 +115,7 @@ public class CustomJettyStarter
                bInvalid = true;
                break;
            }
-           if ( arg.substring( 0, 1 ).equals( "-" ) )
+           if (arg.charAt(0) == '-')
            {
                bInvalid = true;
                break;

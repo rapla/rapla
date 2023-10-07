@@ -313,7 +313,7 @@ public class AppointmentFormaterImpl
     {
         StringBuffer b = new StringBuffer();
         int numb = DateTools.getDayOfWeekInMonth( date );
-        b.append( String.valueOf(numb));
+        b.append(numb);
         b.append( '.');
         b.append( ' ');
         return b.toString();
@@ -323,7 +323,7 @@ public class AppointmentFormaterImpl
     {
         StringBuffer b = new StringBuffer();
         int numb = DateTools.getDayOfMonth( date );
-        b.append( String.valueOf(numb));
+        b.append(numb);
         b.append( '.');
         b.append( ' ');
         return b.toString();

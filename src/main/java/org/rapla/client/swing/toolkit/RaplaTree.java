@@ -608,11 +608,7 @@ final public class RaplaTree extends JScrollPane {
                         && ((DefaultMutableTreeNode) targetPath.getLastPathComponent()).getUserObject() instanceof Category)
                 {
                     Category targetCategory = (Category) ((DefaultMutableTreeNode) targetPath.getLastPathComponent()).getUserObject();
-                    if(targetCategory.getId().equals(Category.SUPER_CATEGORY_REF.getId()))
-                    {
-                        return false;
-                    }
-                    return true;
+                    return !targetCategory.getId().equals(Category.SUPER_CATEGORY_REF.getId());
                 }
                 return false;
             }

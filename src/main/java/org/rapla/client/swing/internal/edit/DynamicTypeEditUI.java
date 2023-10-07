@@ -344,7 +344,7 @@ public class DynamicTypeEditUI extends RaplaGUIComponent
         dialog.getAction(0).setRunnable( new Runnable() {
             private static final long serialVersionUID = 1L;
             public void run() {
-                List<Annotatable> asList = Arrays.asList((Annotatable)dynamicType);
+                List<Annotatable> asList = Collections.singletonList(dynamicType);
                 try {
                     annotationEdit.mapTo(asList);
                 } catch (Exception e1) {
@@ -398,7 +398,7 @@ public class DynamicTypeEditUI extends RaplaGUIComponent
         
         annotationText.setText( dynamicType.getAnnotation( DynamicTypeAnnotations.KEY_NAME_FORMAT ) );
         //annotationTreeText.setText( dynamicType.getAnnotation( DynamicTypeAnnotations.KEY_NAME_FORMAT_PLANNING,"" ) );
-        List<Annotatable> asList = Arrays.asList((Annotatable)dynamicType);
+        List<Annotatable> asList = Collections.singletonList(dynamicType);
         annotationEdit.setObjects(asList);
         try
         {

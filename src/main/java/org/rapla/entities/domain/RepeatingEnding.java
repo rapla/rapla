@@ -26,7 +26,7 @@ public class RepeatingEnding implements Serializable {
     //  Don't forget to increase the serialVersionUID when you change the fields
     private static final long serialVersionUID = 1;
     
-    private String type;
+    private final String type;
     
     final static public RepeatingEnding END_DATE = new RepeatingEnding("repeating.end_date");
     final static public RepeatingEnding N_TIMES = new RepeatingEnding("repeating.n_times");

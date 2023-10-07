@@ -80,14 +80,14 @@ class AppointmentListEdit extends AbstractAppointmentEditor
         ,Disposable
 {
 
-    private AppointmentController appointmentController;
-    private RaplaListEdit<Appointment> listEdit;
+    private final AppointmentController appointmentController;
+    private final RaplaListEdit<Appointment> listEdit;
 
     private CommandHistory commandHistory;
 	private boolean disableInternSelectionListener = false;
 
     protected Reservation mutableReservation;
-    private Listener listener = new Listener();
+    private final Listener listener = new Listener();
     // use sorted model to start with sorting
     // respect dependencies ! on other components
     @SuppressWarnings("rawtypes")
@@ -217,7 +217,7 @@ class AppointmentListEdit extends AbstractAppointmentEditor
         }
 
         public void setAppointment(Appointment appointment,int index) {
-            identifier.setText(getRaplaLocale().formatNumber(new Long(index + 1)));
+            identifier.setText(getRaplaLocale().formatNumber(Long.valueOf(index + 1)));
             identifier.setIndex(index);
             content.setLayout(new BoxLayout(content,BoxLayout.Y_AXIS));
             content.removeAll();
@@ -422,7 +422,7 @@ class AppointmentListEdit extends AbstractAppointmentEditor
 	
 	//Erstellt von Matthias Both
 	public class NewAppointment implements CommandUndo<RuntimeException> {
-		private Appointment newAppointment;
+		private final Appointment newAppointment;
 		public NewAppointment( Appointment appointment) {
 			this.newAppointment = appointment;
 		}

@@ -85,8 +85,8 @@ final public class RaplaListEdit<T> implements
     JPanel jointPanel = new JPanel() {
         private static final long serialVersionUID = 1L;
 
-            int xa[] = new int[4];
-            int ya[] = new int[4];
+            final int[] xa = new int[4];
+            final int[] ya = new int[4];
             public void paint(Graphics g) {
                 super.paint(g);
                 Dimension dim = getSize();
@@ -140,8 +140,8 @@ final public class RaplaListEdit<T> implements
     public RaplaButton copyButton = new RaplaButton();
 
     CardLayout cardLayout = new CardLayout();
-    private Listener listener = new Listener();
-    private ActionListener callback;
+    private final Listener listener = new Listener();
+    private final ActionListener callback;
 
     JPanel toolbar = new JPanel();
     
@@ -228,7 +228,7 @@ final public class RaplaListEdit<T> implements
                 keyPressHandler(e);
             }
             
-            private int MILLISECONDS_UNTIL_RESET = 1000;
+            private final int MILLISECONDS_UNTIL_RESET = 1000;
             private String m_key;
             private long m_time;
              
@@ -385,8 +385,7 @@ final public class RaplaListEdit<T> implements
                     )
             );
              nothingSelectedLabel.setText(size ==  0 ? i18n.getString("nothing_selected") : i18n.getString("multi_select"));
-            return;
-        } else {
+         } else {
             cardLayout.last(editPanel);
             int index = getSelectedIndex();
             next.setEnabled((index + 1)<list.getModel().getSize());

@@ -107,7 +107,7 @@ public class RaplaMenuBar extends RaplaGUIComponent
     private final EditController editController;
     private final DialogUiFactoryInterface dialogUiFactory;
     private final Provider<TemplateEdit> templateEditFactory;
-    private CalendarSelectionModel model;
+    private final CalendarSelectionModel model;
     Provider<LicenseInfoUI> licenseInfoUIProvider;
     final private ApplicationEventBus appEventBus;
     private final RaplaSystemInfo systemInfo;

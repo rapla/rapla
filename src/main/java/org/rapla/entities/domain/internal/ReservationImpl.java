@@ -57,8 +57,8 @@ import java.util.stream.Stream;
 public final class ReservationImpl extends SimpleEntity implements Reservation, ModifiableTimestamp, DynamicTypeDependant, ParentEntity
 {
     private ClassificationImpl classification;
-    private List<AppointmentImpl> appointments = new ArrayList<>(1);
-    private List<PermissionImpl> permissions = new ArrayList<>(1);
+    private final List<AppointmentImpl> appointments = new ArrayList<>(1);
+    private final List<PermissionImpl> permissions = new ArrayList<>(1);
     private Map<String,List<String>> restrictions;
     private Map<String,String> annotations;
     private Date lastChanged;
@@ -197,7 +197,7 @@ public final class ReservationImpl extends SimpleEntity implements Reservation, 
     
     public String format(Locale locale, String annotationName)
     {
-        return formatAppointment( locale, annotationName, (Appointment)null);
+        return formatAppointment( locale, annotationName, null);
     }
 
     public String formatAppointment(Locale locale, String annotationName, Appointment appointment)
@@ -659,8 +659,9 @@ public final class ReservationImpl extends SimpleEntity implements Reservation, 
             else
             {
                 for (String rest:restriction) {
-                    if ( rest.equals( id ) ) {
+                    if (rest.equals(id)) {
                         found = true;
+                        break;
                     }
                 }
             }
@@ -749,7 +750,7 @@ public final class ReservationImpl extends SimpleEntity implements Reservation, 
         }
         clone.createDate = createDate;
         clone.lastChanged = lastChanged;
-        Map<String,String> annotationClone = (Map<String, String>) (annotations != null ?  new LinkedHashMap<>(annotations) : null);
+        Map<String,String> annotationClone = annotations != null ?  new LinkedHashMap<>(annotations) : null;
 		clone.annotations = annotationClone;
         return clone;
     }
@@ -850,7 +851,7 @@ public final class ReservationImpl extends SimpleEntity implements Reservation, 
         try
         {
             if ( getClassification() != null) {
-                buf.append (getClassification().toString()) ;
+                buf.append (getClassification()) ;
             }
         }
         catch ( NullPointerException ex)

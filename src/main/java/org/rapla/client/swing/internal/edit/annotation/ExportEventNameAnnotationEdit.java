@@ -69,7 +69,7 @@ public class ExportEventNameAnnotationEdit extends RaplaGUIComponent implements 
             String value = ((TextField)field).getValue();
             if ( value != null && !value.equals(DEFAULT_VALUE))
             {
-                annotatable.setAnnotation(annotationName, value.toString());
+                annotatable.setAnnotation(annotationName, value);
                 return;
             }
         }

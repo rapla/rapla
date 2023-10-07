@@ -58,11 +58,11 @@ import java.util.Iterator;
         final Collection<?> selectedObjects = menuContext.getSelectedObjects();
         if (selectedObjects != null && selectedObjects.size() <= 1)
         {
-            return new IdentifiableMenuEntry[0];
+            return IdentifiableMenuEntry.EMPTY_ARRAY;
         }
         if ( !canAdmin(selectedObjects))
         {
-            return new IdentifiableMenuEntry[0];
+            return IdentifiableMenuEntry.EMPTY_ARRAY;
         }
         Iterator<?> it = selectedObjects.iterator();
         Object last = it.next();
@@ -71,19 +71,19 @@ import java.util.Iterator;
             final Object next = it.next();
             if (!next.getClass().equals(last.getClass()))
             {
-                return new IdentifiableMenuEntry[0];
+                return IdentifiableMenuEntry.EMPTY_ARRAY;
             }
             if (next instanceof Allocatable)
             {
                 if (!((Allocatable) next).getClassification().getType().equals(((Allocatable) last).getClassification().getType()) || !permissionController
                         .canAdmin((Allocatable) next, user))
                 {
-                    return new IdentifiableMenuEntry[0];
+                    return IdentifiableMenuEntry.EMPTY_ARRAY;
                 }
             }
             else
             {
-                return new IdentifiableMenuEntry[0];
+                return IdentifiableMenuEntry.EMPTY_ARRAY;
             }
         }
         IdentifiableMenuEntry[] menuItem = new IdentifiableMenuEntry[1];

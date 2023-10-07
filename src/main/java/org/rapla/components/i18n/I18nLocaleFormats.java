@@ -2,17 +2,17 @@ package org.rapla.components.i18n;
 
 public class I18nLocaleFormats
 {
-    private boolean isAmPm;
-    private String[] amPm;
-    private String formatDateShort;
-    private String formatDateLong;
-    private String[] weekdays;
-    private String[] shortWeekdays;
-    private String[] months;
-    private String[] shortMonths;
-    private String formatHour;
+    private final boolean isAmPm;
+    private final String[] amPm;
+    private final String formatDateShort;
+    private final String formatDateLong;
+    private final String[] weekdays;
+    private final String[] shortWeekdays;
+    private final String[] months;
+    private final String[] shortMonths;
+    private final String formatHour;
     private String formatMonthYear;
-    private String formatTime;
+    private final String formatTime;
 
     public I18nLocaleFormats()
     {

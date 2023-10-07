@@ -6,9 +6,9 @@ import java.util.Map;
 
 public class ServerContainerContext
 {
-    private Map<String,DataSource> dbDatasources = new LinkedHashMap<String,DataSource>();
-    private Map<String,String> fileDatasources = new LinkedHashMap<String,String>();
-    private Map<String,String> services = new LinkedHashMap<>();
+    private final Map<String,DataSource> dbDatasources = new LinkedHashMap<String,DataSource>();
+    private final Map<String,String> fileDatasources = new LinkedHashMap<String,String>();
+    private final Map<String,String> services = new LinkedHashMap<>();
     private Object mailSession;
     Runnable shutdownCommand;
     String patchScript;

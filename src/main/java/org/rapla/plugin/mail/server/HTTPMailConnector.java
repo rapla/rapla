@@ -12,6 +12,7 @@ import java.io.Writer;
 import java.net.HttpURLConnection;
 import java.net.ProtocolException;
 import java.net.URL;
+import java.nio.charset.StandardCharsets;
 import java.util.Base64;
 import java.util.Map;
 import java.util.zip.GZIPInputStream;
@@ -21,8 +22,7 @@ import java.util.zip.InflaterInputStream;
 public class HTTPMailConnector implements JsonRemoteConnector
 {
     public CallResult sendCallWithString(String requestMethod, URL methodURL, String body, String authenticationToken,
-            Map<String, String> additionalHeaders) throws IOException, ProtocolException, UnsupportedEncodingException
-    {
+            Map<String, String> additionalHeaders) throws IOException {
         return sendCallWithString(requestMethod, methodURL, body, authenticationToken, "application/json", additionalHeaders);
     }
 
@@ -73,7 +73,7 @@ public class HTTPMailConnector implements JsonRemoteConnector
             try
             {
                 outputStream = conn.getOutputStream();
-                wr = new OutputStreamWriter(outputStream, "UTF-8");
+                wr = new OutputStreamWriter(outputStream, StandardCharsets.UTF_8);
                 if (body != null)
                 {
                     wr.write(body);
@@ -148,7 +148,7 @@ public class HTTPMailConnector implements JsonRemoteConnector
 
     private String readResultToString(InputStream input) throws IOException
     {
-        InputStreamReader in = new InputStreamReader(input, "UTF-8");
+        InputStreamReader in = new InputStreamReader(input, StandardCharsets.UTF_8);
         char[] buf = new char[4096];
         StringBuffer buffer = new StringBuffer();
         while (true)

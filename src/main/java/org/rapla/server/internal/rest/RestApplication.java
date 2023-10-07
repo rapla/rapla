@@ -18,7 +18,7 @@ import java.util.Set;
 
 public class RestApplication extends Application
 {
-    private Set<Class<?>> classes;
+    private final Set<Class<?>> classes;
 
     public RestApplication(@Context ServletContext context) throws IOException
     {

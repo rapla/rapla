@@ -19,7 +19,7 @@ import java.util.TreeSet;
 
 public class HTMLWeekViewPresenter extends AbstractHTMLView
 {
-    private CalendarWeekView<?> view;
+    private final CalendarWeekView<?> view;
 
     private int endMinutes;
     private int minMinute;

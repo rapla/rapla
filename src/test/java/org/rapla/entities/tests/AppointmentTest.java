@@ -28,8 +28,7 @@ import org.rapla.rest.client.internal.isodate.ISODateTimeFormat;
 
 import java.util.*;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 
 @RunWith(JUnit4.class)
 @SuiteClasses(value=AppointmentTest.class)
@@ -81,16 +80,16 @@ public class AppointmentTest {
 
         Comparator<Appointment> comp = new AppointmentStartComparator();
         // First the single Appointments
-        assertTrue(comp.compare(a1,a2) == -1);
-        assertTrue(comp.compare(a2,a1) == 1);
-        assertTrue(comp.compare(a1,a3) == -1);
-        assertTrue(comp.compare(a3,a1) == 1);
+        assertEquals(-1, comp.compare(a1, a2));
+        assertEquals(1, comp.compare(a2, a1));
+        assertEquals(-1, comp.compare(a1, a3));
+        assertEquals(1, comp.compare(a3, a1));
         assertTrue(a1.overlapsAppointment(a3));
         assertTrue(a3.overlapsAppointment(a1));
-        assertTrue(!a2.overlapsAppointment(a3));
-        assertTrue(!a3.overlapsAppointment(a2));
-        assertTrue(!a1.overlapsAppointment(a2));
-        assertTrue(!a2.overlapsAppointment(a1));
+        assertFalse(a2.overlapsAppointment(a3));
+        assertFalse(a3.overlapsAppointment(a2));
+        assertFalse(a1.overlapsAppointment(a2));
+        assertFalse(a2.overlapsAppointment(a1));
 
 
         // Now we test repeatings
@@ -123,14 +122,14 @@ public class AppointmentTest {
         assertTrue(a1.overlapsAppointment(a3));
         assertTrue("overlap is not symetric",a3.overlapsAppointment(a1));
 
-        assertTrue(!a2.overlapsAppointment(a3));
-        assertTrue("overlap is not symetric",!a3.overlapsAppointment(a2));
+        assertFalse(a2.overlapsAppointment(a3));
+        assertFalse("overlap is not symetric", a3.overlapsAppointment(a2));
 
         // No appointment in first week of repeating
         repeating1.addException(createDate("2002-05-025"));
 
-        assertTrue("appointments should not overlap, because of exception", !a1.overlapsAppointment(a3));
-        assertTrue("overlap is not symetric",!a3.overlapsAppointment(a1));
+        assertFalse("appointments should not overlap, because of exception", a1.overlapsAppointment(a3));
+        assertFalse("overlap is not symetric", a3.overlapsAppointment(a1));
     }
 
     @Test
@@ -259,8 +258,8 @@ public class AppointmentTest {
         repeating2.setType(Repeating.WEEKLY);
 
         repeating1.addException(createDate("2002-04-10"));
-        assertTrue( !a1.matches( a2 ) );
-        assertTrue( !a2.matches( a1 ) );
+        assertFalse(a1.matches(a2));
+        assertFalse(a2.matches(a1));
     }
     
     @Test

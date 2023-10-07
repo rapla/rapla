@@ -232,7 +232,7 @@ import java.util.stream.Collectors;
                 .queryAppointments(user, allocatables,owners, start, end, classificationFilters, annotationQuery);
         AppointmentMapping reservations = operator.waitForWithRaplaException(mapFutureResult, 50000);
         AppointmentMap list = new AppointmentMap(reservations);
-        getLogger().debug("Get reservations " + start + " " + end + ": " + "," + list.toString());
+        getLogger().debug("Get reservations " + start + " " + end + ": " + "," + list);
         return new ResolvedPromise<>(list);
     }
 
@@ -336,7 +336,7 @@ import java.util.stream.Collectors;
             {
                 throw new RaplaSecurityException("Rapla can't change your password. Authentication handled by ldap plugin.");
             }
-            operator.authenticate(username, new String(oldPassword));
+            operator.authenticate(username, oldPassword);
         }
         operator.changePassword(user, oldPassword.toCharArray(), newPassword.toCharArray());
     }
@@ -384,7 +384,7 @@ import java.util.stream.Collectors;
         {
             String subject = getString("security_code");
             Preferences prefs = operator.getPreferences(null, true);
-            String mailbody = "" + getString("send_code_mail_body_1") + user.getUsername() + ",\n\n" + getString("send_code_mail_body_2") + "\n\n" + getString(
+            String mailbody = getString("send_code_mail_body_1") + user.getUsername() + ",\n\n" + getString("send_code_mail_body_2") + "\n\n" + getString(
                     "security_code") + Math.abs(user.getEmail().hashCode()) + "\n\n" + getString("send_code_mail_body_3") + "\n\n"
                     + "-----------------------------------------------------------------------------------" + "\n\n" + getString("send_code_mail_body_4")
                     + prefs.getEntryAsString(AbstractRaplaLocale.TITLE, getString("rapla.title")) + " " + getString("send_code_mail_body_5");
@@ -392,7 +392,7 @@ import java.util.stream.Collectors;
             final MailInterface mail = mailInterface.get();
             final String defaultSender = prefs.getEntryAsString(MailPlugin.DEFAULT_SENDER_ENTRY, "");
 
-            mail.sendMail(defaultSender, newEmail, subject, "" + mailbody);
+            mail.sendMail(defaultSender, newEmail, subject, mailbody);
         }
         else
         {
@@ -690,8 +690,7 @@ import java.util.stream.Collectors;
         return promise;
     }
 
-    private List<Allocatable> resolveAllocatables(String[] allocatableIds) throws RaplaException, RaplaSecurityException
-    {
+    private List<Allocatable> resolveAllocatables(String[] allocatableIds) throws RaplaException {
         List<Allocatable> allocatables = new ArrayList<>();
         User sessionUser = checkSessionUser();
         for (String id : allocatableIds)

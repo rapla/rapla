@@ -98,31 +98,31 @@ public class TableLayout implements
 
 
 /** Default row/column size */
-protected static final double defaultSize[][] = {{}, {}};
+protected static final double[][] defaultSize = {{}, {}};
 
 
 
 /** Widths of columns expressed in absolute and relative terms */
-protected double columnSpec[];
+protected double[] columnSpec;
 
 /** Heights of rows expressed in absolute and relative terms */
-protected double rowSpec[];
+protected double[] rowSpec;
 
 /** Widths of columns in pixels */
-protected int columnSize[];
+protected int[] columnSize;
 
 /** Heights of rows in pixels */
-protected int rowSize[];
+protected int[] rowSize;
 
 /** Offsets of columns in pixels.  The left boarder of column n is at
  columnOffset[n] and the right boarder is at columnOffset[n + 1] for all
  columns including the last one.  columnOffset.length = columnSize.length + 1 */
-protected int columnOffset[];
+protected int[] columnOffset;
 
 /** Offsets of rows in pixels.  The left boarder of row n is at
  rowOffset[n] and the right boarder is at rowOffset[n + 1] for all
  rows including the last one.  rowOffset.length = rowSize.length + 1 */
-protected int rowOffset[];
+protected int[] rowOffset;
 
 /** List of components and their sizes */
 protected LinkedList<Entry> list;
@@ -167,14 +167,14 @@ public TableLayout ()
  *                exactly one row and one column.
  */
 
-public TableLayout (double size[][])
+public TableLayout (double[][] size)
 {
     // Make sure rows and columns and nothing else is specified
     if ((size != null) && (size.length == 2))
     {
         // Get the rows and columns
-        double tempCol[] = size[0];
-        double tempRow[] = size[1];
+        double[] tempCol = size[0];
+        double[] tempRow = size[1];
 
         // Create new rows and columns
         columnSpec = new double[tempCol.length];
@@ -205,8 +205,8 @@ public TableLayout (double size[][])
     }
     else
     {
-        double tempCol[] = {FILL};
-        double tempRow[] = {FILL};
+        double[] tempCol = {FILL};
+        double[] tempRow = {FILL};
 
         setColumn (tempCol);
         setRow (tempRow);
@@ -313,7 +313,7 @@ public void setConstraints
  * @see #getColumn
  */
 
-public void setColumn (double column[])
+public void setColumn (double[] column)
 {
     // Copy columns
     columnSpec = new double[column.length];
@@ -359,7 +359,7 @@ public void setColumn (double column[])
  * @see #getRow
  */
 
-public void setRow (double row[])
+public void setRow (double[] row)
 {
     // Copy rows
     rowSpec = new double[row.length];
@@ -484,7 +484,7 @@ public void setRow (int i, double size)
 public double [] getColumn ()
 {
     // Copy columns
-    double column[] = new double[columnSpec.length];
+    double[] column = new double[columnSpec.length];
     System.arraycopy (columnSpec, 0, column, 0, column.length);
 
     return column;
@@ -503,7 +503,7 @@ public double [] getColumn ()
 public double [] getRow ()
 {
     // Copy rows
-    double row[] = new double[rowSpec.length];
+    double[] row = new double[rowSpec.length];
     System.arraycopy (rowSpec, 0, row, 0, row.length);
 
     return row;
@@ -609,7 +609,7 @@ public void insertColumn (int i, double size)
     }
 
     // Copy columns
-    double column[] = new double[columnSpec.length + 1];
+    double[] column = new double[columnSpec.length + 1];
     System.arraycopy (columnSpec, 0, column, 0, i);
     System.arraycopy (columnSpec, i, column, i + 1, columnSpec.length - i);
 
@@ -672,7 +672,7 @@ public void insertRow (int i, double size)
     }
 
     // Copy rows
-    double row[] = new double[rowSpec.length + 1];
+    double[] row = new double[rowSpec.length + 1];
     System.arraycopy (rowSpec, 0, row, 0, i);
     System.arraycopy (rowSpec, i, row, i + 1, rowSpec.length - i);
 
@@ -725,7 +725,7 @@ public void deleteColumn (int i)
              (columnSpec.length - 1) + "].");
 
     // Copy columns
-    double column[] = new double[columnSpec.length - 1];
+    double[] column = new double[columnSpec.length - 1];
     System.arraycopy (columnSpec, 0, column, 0, i);
     System.arraycopy (columnSpec, i + 1, column, i, columnSpec.length - i - 1);
 
@@ -778,7 +778,7 @@ public void deleteRow (int i)
              (rowSpec.length - 1) + "].");
 
     // Copy rows
-    double row[] = new double[rowSpec.length - 1];
+    double[] row = new double[rowSpec.length - 1];
     System.arraycopy (rowSpec, 0, row, 0, i);
     System.arraycopy (rowSpec, i + 1, row, i, rowSpec.length - i - 1);
 
@@ -961,7 +961,7 @@ public boolean overlapping ()
     boolean overlapping = false;
 
     // Put entries in an array
-    Entry entry[] =  list.toArray(new Entry[numEntry]);
+    Entry[] entry =  list.toArray(new Entry[numEntry]);
 
     // Check all components
     for (int knowUnique = 1; knowUnique < numEntry; knowUnique++)
@@ -1281,7 +1281,7 @@ public void layoutContainer (Container container)
         calculateSize (container);
 
     // Get components
-    Component component[] = container.getComponents();
+    Component[] component = container.getComponents();
 
     // Layout components
     for (int counter = 0; counter < component.length; counter++)
@@ -1494,7 +1494,7 @@ public Dimension preferredLayoutSize (Container container)
         fillHeightRatio = 0.0;
 
     // Calculate preferred/minimum column widths
-    int columnPrefMin[] = new int[columnSpec.length];
+    int[] columnPrefMin = new int[columnSpec.length];
 
     for (counter = 0; counter < columnSpec.length; counter++)
         // Is the current column a preferred/minimum size
@@ -1531,7 +1531,7 @@ public Dimension preferredLayoutSize (Container container)
 
 
     // Calculate preferred/minimum row heights
-    int rowPrefMin[] = new int[rowSpec.length];
+    int[] rowPrefMin = new int[rowSpec.length];
 
     for (counter = 0; counter < rowSpec.length; counter++)
         // Is the current row a preferred/minimum size

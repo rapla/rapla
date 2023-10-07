@@ -208,7 +208,7 @@ public class ClassifiableFilterEdit extends RaplaGUIComponent
 		                    	 enabled = false;
 		                    	 JButton source = (JButton)evt.getSource();
 		                    	 boolean isEverything = source == everythingButton;
-		                    	 source.setSelected( isEverything ? true : false);
+		                    	 source.setSelected(isEverything);
 		                    	 boolean deselectAllIfFilterIsNull = !isEverything;
 		                    	 mapFromIntern( null, deselectAllIfFilterIsNull);
 		                         fireFilterChanged();
@@ -305,7 +305,7 @@ public class ClassifiableFilterEdit extends RaplaGUIComponent
         }
         else
         {
-            filters = new ClassificationFilter[] {};
+            filters = ClassificationFilter.CLASSIFICATIONFILTER_ARRAY;
         }
         boolean nothingSelectable = false;
         for (int i=0;i<types.length;i++) {
@@ -350,7 +350,7 @@ public class ClassifiableFilterEdit extends RaplaGUIComponent
                 list.add(filter);
             }
         }
-        return list.toArray(new ClassificationFilter[] {});
+        return list.toArray(ClassificationFilter.CLASSIFICATIONFILTER_ARRAY);
     }
 
     public void actionPerformed(ActionEvent evt) {
@@ -916,7 +916,7 @@ class ClassificationEdit extends RaplaGUIComponent implements ItemListener {
                 BooleanField newField = booleanFieldFactory.create();
 				field = newField;
 				test = newField;
-                ruleValue = new Boolean(false);
+                ruleValue = Boolean.FALSE;
             }
            
             Assert.notNull(field,"Unknown AttributeType");

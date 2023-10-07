@@ -18,10 +18,10 @@ public class ServerStarter
 
     private ServerServiceContainer server;
     private Injector membersInjector;
-    private Logger logger;
-    private RaplaLock restartLock;
+    private final Logger logger;
+    private final RaplaLock restartLock;
     private Collection<ServletRequestPreprocessor> processors;
-    private ServerContainerContext backendContext;
+    private final ServerContainerContext backendContext;
 
     public ServerStarter(Logger logger, ServerContainerContext backendContext)
     {

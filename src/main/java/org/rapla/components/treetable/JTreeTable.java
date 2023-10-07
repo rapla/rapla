@@ -73,7 +73,7 @@ import java.util.List;
 public class JTreeTable extends JTable {
     private static final long serialVersionUID = 1L;
 
-    private RendererTree tree = new RendererTree();
+    private final RendererTree tree = new RendererTree();
     private TreeTableEditor treeCellEditor;
     private TableToolTipRenderer toolTipRenderer = null;
     private int focusedRow = -1;

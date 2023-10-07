@@ -45,15 +45,15 @@ public class RaplaXMLReader extends DelegationHandler implements Namespaces
 {
     public static TypedComponentRole<Double> VERSION = new TypedComponentRole<>("org.rapla.version");
     protected EntityStore store;
-    private Logger logger;
-    private IdCreator idTable;
-    private Map<String,Class<? extends RaplaObject>> localnameMap;
-    private Map<Class<? extends RaplaObject>,RaplaXMLReader> readerMap;
-    private SerializableDateTimeFormat dateTimeFormat;
-    private RaplaResources i18n;
-    private Date now;
-    private RaplaXMLContext context;
-    private KeyAndPathResolver keyAndPathResolver;
+    private final Logger logger;
+    private final IdCreator idTable;
+    private final Map<String,Class<? extends RaplaObject>> localnameMap;
+    private final Map<Class<? extends RaplaObject>,RaplaXMLReader> readerMap;
+    private final SerializableDateTimeFormat dateTimeFormat;
+    private final RaplaResources i18n;
+    private final Date now;
+    private final RaplaXMLContext context;
+    private final KeyAndPathResolver keyAndPathResolver;
     
     public static class TimestampDates
     {
@@ -173,7 +173,7 @@ public class RaplaXMLReader extends DelegationHandler implements Namespaces
     {
         try
         {
-            return new Long( text );
+            return Long.valueOf(text);
         }
         catch (NumberFormatException ex)
         {
@@ -183,7 +183,7 @@ public class RaplaXMLReader extends DelegationHandler implements Namespaces
     
     public Boolean parseBoolean( String text ) 
     {
-        return new Boolean( text );
+        return Boolean.valueOf(text);
     }
 
     public Date parseDate( String date, boolean fillDate ) throws RaplaSAXParseException

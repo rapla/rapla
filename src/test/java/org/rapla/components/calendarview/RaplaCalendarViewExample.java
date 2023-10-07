@@ -45,9 +45,9 @@ import java.util.Set;
 
 /** Test class for RaplaCalendar and RaplaTime */
 public final class RaplaCalendarViewExample {
-    private JTabbedPane tabbedPane = new JTabbedPane();
+    private final JTabbedPane tabbedPane = new JTabbedPane();
     JFrame frame;
-    private List<Appointment> appointments = new ArrayList<Appointment>();
+    private final List<Appointment> appointments = new ArrayList<Appointment>();
     
     RaplaLocaleImpl raplaLocale = new RaplaLocaleImpl(null);
     public RaplaCalendarViewExample() {
@@ -113,8 +113,8 @@ public final class RaplaCalendarViewExample {
         wv.setLocale( raplaLocale );
         // we exclude Saturday and Sunday
         List<Integer> excludeDays = new ArrayList<Integer>();
-        excludeDays.add( new Integer(1));
-        excludeDays.add( new Integer(7));
+        excludeDays.add(Integer.valueOf(1));
+        excludeDays.add(Integer.valueOf(7));
         wv.setExcludeDays( excludeDays );
         // Worktime is from 9 to 17 
         wv.setWorktime( 9, 17);
@@ -155,7 +155,7 @@ public final class RaplaCalendarViewExample {
         Date mondayOfWeek = cal.getTime();
         for (int i=0;i<8;i++) {
             if ( i != cal.get( Calendar.DAY_OF_WEEK)) {
-                excludeDays.add( new Integer(i));
+                excludeDays.add(Integer.valueOf(i));
             }
         }
         dv.setExcludeDays( excludeDays );
@@ -194,8 +194,8 @@ public final class RaplaCalendarViewExample {
         mv.setLocale( raplaLocale );
         // we exclude Saturday and Sunday
         List<Integer> excludeDays = new ArrayList<Integer>();
-        excludeDays.add( new Integer(1));
-        excludeDays.add( new Integer(7));
+        excludeDays.add(Integer.valueOf(1));
+        excludeDays.add(Integer.valueOf(7));
         mv.setExcludeDays( excludeDays );
         //      set weekview date to Today
         mv.setToDate( today );

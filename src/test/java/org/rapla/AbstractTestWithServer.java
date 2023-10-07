@@ -31,7 +31,7 @@ public abstract class AbstractTestWithServer
     private Provider<ClientFacade> clientFacadeProvider;
     private Logger logger;
     private ServerServiceImpl serviceContainer;
-    private int port = 8052;
+    private final int port = 8052;
 
     @Before
     public void createServerAndSetup() throws Exception

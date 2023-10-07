@@ -147,10 +147,7 @@ public class DefaultRaplaLock implements RaplaLock
         {
             final int maxLength = Math.min(25,stackTrace.length - excludeFirstStackTraceRows);
             StackTraceElement[] newStackTrace = new StackTraceElement[maxLength];
-            for (int i = 0; i < maxLength; i++)
-            {
-                newStackTrace[i] = stackTrace[i + excludeFirstStackTraceRows];
-            }
+            System.arraycopy(stackTrace, 3, newStackTrace, 0, maxLength);
             stackTrace = newStackTrace;
         }
         return stackTrace;

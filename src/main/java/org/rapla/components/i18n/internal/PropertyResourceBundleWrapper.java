@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.util.Enumeration;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
@@ -15,10 +16,10 @@ import java.util.Vector;
 
 public class PropertyResourceBundleWrapper extends ResourceBundle {
 
-    private Map<String,Object> lookup;
+    private final Map<String,Object> lookup;
     String name;
 
-    static Charset charset = Charset.forName("UTF-8");
+    static Charset charset = StandardCharsets.UTF_8;
 	
 	@SuppressWarnings({ "unchecked", "rawtypes" })
 	public PropertyResourceBundleWrapper(InputStream stream,String name) throws IOException {

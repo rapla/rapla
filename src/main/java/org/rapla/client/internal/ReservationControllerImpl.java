@@ -73,7 +73,7 @@ public class ReservationControllerImpl implements ReservationController {
      */
     AppointmentFormater appointmentFormater;
     ClientFacade facade;
-    private RaplaLocale raplaLocale;
+    private final RaplaLocale raplaLocale;
     private final Logger logger;
     private final RaplaResources i18n;
     private final CalendarSelectionModel calendarModel;
@@ -278,8 +278,8 @@ public class ReservationControllerImpl implements ReservationController {
         final Set<Appointment> appointmentsToRemove;
         final Map<Appointment, List<Date>> exceptionsToAdd;
 
-        private Map<Appointment, Allocatable[]> allocatablesRemoved = new HashMap<>();
-        private Map<Appointment, Reservation> parentReservations = new HashMap<>();
+        private final Map<Appointment, Allocatable[]> allocatablesRemoved = new HashMap<>();
+        private final Map<Appointment, Reservation> parentReservations = new HashMap<>();
 
         public DeleteBlocksCommand(ClientFacade clientFacade, RaplaResources i18n, Set<Reservation> reservationsToRemove, Set<Appointment> appointmentsToRemove,
                                    Map<Appointment, List<Date>> exceptionsToAdd) throws RaplaException {
@@ -501,9 +501,7 @@ public class ReservationControllerImpl implements ReservationController {
                             blockswithException++;
                         }
                     }
-                    if (blockswithException >= blocks.size()) {
-                        return false;
-                    }
+                    return blockswithException < blocks.size();
                 }
 
             }
@@ -1117,7 +1115,7 @@ public class ReservationControllerImpl implements ReservationController {
 
         private Appointment lastCopy;
         private boolean firstTimeCall = true;
-        private boolean keepTime;
+        private final boolean keepTime;
 
         public AppointmentResize(Appointment appointment, Date oldStart, Date oldEnd, Date newStart, Date newEnd, PopupContext sourceComponent,
                                  DialogAction dialogResult, boolean keepTime) {
@@ -1203,7 +1201,7 @@ public class ReservationControllerImpl implements ReservationController {
 
                         Repeating repeating = mutableAppointment.getRepeating();
                         if (repeating == null) {
-                            appointments = Arrays.asList(mutableAppointment);
+                            appointments = List.of(mutableAppointment);
                         } else {
                             if (undo) {
                                 mutableReservation.removeAppointment(lastCopy);
@@ -1213,7 +1211,7 @@ public class ReservationControllerImpl implements ReservationController {
                             } else {
                                 lastCopy = appointmentClone;
                                 lastCopy.setRepeatingEnabled(false);
-                                appointments = Arrays.asList(lastCopy);
+                                appointments = Collections.singletonList(lastCopy);
                             }
                         }
 

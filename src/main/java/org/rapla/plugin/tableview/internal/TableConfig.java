@@ -40,8 +40,8 @@ public class TableConfig
     public static final String APPOINTMENTS_VIEW = "appointments";
     public static final String EVENTS_VIEW = "events";
     public static final String APPOINTMENTS_PER_DAY_VIEW = "appointments_per_day";
-    private Set<TableColumnConfig> column = new LinkedHashSet<>();
-    private Map<String, ViewDefinition> views = new LinkedHashMap<>();
+    private final Set<TableColumnConfig> column = new LinkedHashSet<>();
+    private final Map<String, ViewDefinition> views = new LinkedHashMap<>();
 
     public TableConfig()
     {
@@ -110,7 +110,7 @@ public class TableConfig
         {
             Locale locale = raplaLocale.newLocale(lang, null);
             final String translation = i18n.getString(key, locale);
-            if (defaultValue == null || lang.equals("en") || !translation.equals(defaultValue))
+            if (lang.equals("en") || !translation.equals(defaultValue))
             {
                 name.setName(lang, translation);
             }
@@ -241,12 +241,9 @@ public class TableConfig
             TableColumnConfig other = (TableColumnConfig) obj;
             if (key == null)
             {
-                if (other.key != null)
-                    return false;
+                return other.key == null;
             }
-            else if (!key.equals(other.key))
-                return false;
-            return true;
+            else return key.equals(other.key);
         }
 
         public String getKey()

@@ -66,7 +66,7 @@ public class EditTaskViewSwing implements EditTaskViewFactory<Component>
                 }
                 else
                 {
-                    throw new RuntimeException("Can't edit objects of type " + typeClass.toString());
+                    throw new RuntimeException("Can't edit objects of type " + typeClass);
                 }
             }
         }

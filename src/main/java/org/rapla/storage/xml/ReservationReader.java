@@ -41,10 +41,10 @@ public class ReservationReader extends RaplaXMLReader {
     private AppointmentImpl appointment = null;
     private Repeating repeating = null;
     
-    private DynAttReader dynAttHandler;
+    private final DynAttReader dynAttHandler;
 	private String annotationKey;
 	private Annotatable currentAnnotatable;
-	private PermissionReader permissionHandler;
+	private final PermissionReader permissionHandler;
     public ReservationReader( RaplaXMLContext context) throws RaplaException  {
         super( context);
         dynAttHandler = new DynAttReader( context);

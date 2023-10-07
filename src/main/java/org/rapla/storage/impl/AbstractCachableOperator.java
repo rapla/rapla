@@ -774,10 +774,7 @@ public abstract class AbstractCachableOperator implements StorageOperator
     {
         Assert.notNull(id);
         T entity = resolver.tryResolve(id, entityClass);
-        if (entity != null)
-        {
-            return entity;
-        }
+        return entity;
 //        if (entityClass != null && isAllocatableClass(entityClass))
 //        {
 //            AllocatableImpl unresolved = new AllocatableImpl(null, null);
@@ -794,7 +791,6 @@ public abstract class AbstractCachableOperator implements StorageOperator
 //            @SuppressWarnings("unchecked") T casted = (T) unresolved;
 //            return casted;
 //        }
-        return null;
     }
 
 

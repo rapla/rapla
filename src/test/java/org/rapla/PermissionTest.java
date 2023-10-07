@@ -196,9 +196,9 @@ public class PermissionTest extends AbstractTestWithServer {
         Allocatable a = getTestResource();
         Assert.assertNotNull(a);
         Assert.assertTrue(permissionController.canRead(a, user));
-        Assert.assertTrue(!permissionController.canModify(a, user));
-        Assert.assertTrue(!permissionController.canCreateConflicts(a, user));
-        Assert.assertTrue(!permissionController.canAllocate(a, user, null, null, testFacade.today()));
+        Assert.assertFalse(permissionController.canModify(a, user));
+        Assert.assertFalse(permissionController.canCreateConflicts(a, user));
+        Assert.assertFalse(permissionController.canAllocate(a, user, null, null, testFacade.today()));
     }
 
     private void clientAllocatePermissions() throws Exception {
@@ -209,7 +209,7 @@ public class PermissionTest extends AbstractTestWithServer {
         Assert.assertTrue(permissionController.canRead(allocatable, user));
         Date start1 = DateTools.addDay(testFacade.today());
         Date end1 = new Date(start1.getTime() + DateTools.MILLISECONDS_PER_HOUR * 2);
-        Date start2 = new Date(start1.getTime() + DateTools.MILLISECONDS_PER_HOUR * 1);
+        Date start2 = new Date(start1.getTime() + DateTools.MILLISECONDS_PER_HOUR);
         Date end2 = new Date(start1.getTime() + DateTools.MILLISECONDS_PER_HOUR * 3);
         Assert.assertTrue(permissionController.canAllocate(allocatable, user, null, null, testFacade.today()));
 

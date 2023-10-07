@@ -46,7 +46,7 @@ public abstract class AbstractHTMLView extends AbstractCalendar implements Calen
     protected class HTMLSmallDaySlot extends ArrayList<Block> {
         private static final long serialVersionUID = 1L;
 
-        private String date;
+        private final String date;
         private Date startTime;
         public HTMLSmallDaySlot(String date) {
             super(2);

@@ -67,12 +67,12 @@ public class CalendarPrintDialog extends DialogUI
 {
     private static final long serialVersionUID = 1L;
     
-    private JPanel titlePanel = new JPanel();
-    private JPanel southPanel = new JPanel();
-    private JLabel titleLabel = new JLabel();
-    private JLabel sizeLabel = new JLabel();
+    private final JPanel titlePanel = new JPanel();
+    private final JPanel southPanel = new JPanel();
+    private final JLabel titleLabel = new JLabel();
+    private final JLabel sizeLabel = new JLabel();
     private JComboBox endDate;
-    private JTextField titleEdit = new JTextField();
+    private final JTextField titleEdit = new JTextField();
 
     private RaplaButton cancelbutton;
     private RaplaButton formatbutton;
@@ -104,7 +104,7 @@ public class CalendarPrintDialog extends DialogUI
     int pageCount;
 
 
-    private JComponent page = new JComponent()
+    private final JComponent page = new JComponent()
     {
 		private static final long serialVersionUID = 1L;
 
@@ -132,7 +132,7 @@ public class CalendarPrintDialog extends DialogUI
         	   }
         	   paintPaper( g, m_format );
         	   printable.print( g, m_format, curPage);
-        	   pageLabel.setText(""+ (curPage +1) + "/" + pageCount);
+        	   pageLabel.setText((curPage +1) + "/" + pageCount);
     		       
         	   boolean isLast = curPage >= pageCount -1;
         	   nextPage.setEnabled( !isLast);
@@ -200,7 +200,7 @@ public class CalendarPrintDialog extends DialogUI
         }
         else
         {
-        	Component comp = (Component)currentView.getComponent();
+        	Component comp = currentView.getComponent();
             printable = new ComponentPrinter( comp, comp.getPreferredSize());
         }
         String title = model.getTitle();
@@ -248,7 +248,7 @@ public class CalendarPrintDialog extends DialogUI
         southPanel.setMinimumSize( new Dimension(1,1));
         southPanel.setPreferredSize( new Dimension(1,1));
         southPanel.setLayout( null);
-        southPanel.add( (Component)currentView.getComponent());
+        southPanel.add(currentView.getComponent());
       
         scrollPane.getVerticalScrollBar().setUnitIncrement(10);
         scrollPane.getHorizontalScrollBar().setUnitIncrement(10);

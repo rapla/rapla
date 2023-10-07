@@ -55,9 +55,9 @@ import java.util.Locale;
 @Extension(provides = PluginOptionPanel.class,id= MailPlugin.PLUGIN_ID)
 public class MailOption extends RaplaGUIComponent implements PluginOptionPanel {
 
-	private static int NO_AUTH_DEFAULT_PORT = 25;
-	private static int SSL_DEFAULT_PORT = 465;
-	private static int STARTTLS_DEFAULT_PORT = 587;
+	private static final int NO_AUTH_DEFAULT_PORT = 25;
+	private static final int SSL_DEFAULT_PORT = 465;
+	private static final int STARTTLS_DEFAULT_PORT = 587;
 
     TextField mailServer;
     RaplaNumber smtpPortField ;
@@ -102,7 +102,7 @@ public class MailOption extends RaplaGUIComponent implements PluginOptionPanel {
 	protected void createPanel() throws RaplaException {
 		externalConfigEnabled = configService.isExternalConfigEnabled();
 		mailServer = textFieldFactory.create();
-		smtpPortField = new RaplaNumber(new Integer(25), new Integer(0),null,false);
+		smtpPortField = new RaplaNumber(Integer.valueOf(25), Integer.valueOf(0),null,false);
 		defaultSender = new JTextField();
 		username = new JTextField();
 		password = new JPasswordField();
@@ -177,20 +177,20 @@ public class MailOption extends RaplaGUIComponent implements PluginOptionPanel {
 		useNoSecurityProtocol.addActionListener(e -> {
             if ( listenersEnabled)
             {
-                smtpPortField.setNumber( new Integer(NO_AUTH_DEFAULT_PORT));
+                smtpPortField.setNumber(Integer.valueOf(NO_AUTH_DEFAULT_PORT));
             }
         });
 		useSsl.addActionListener(e -> {
             if ( listenersEnabled)
             {
-                smtpPortField.setNumber( new Integer(SSL_DEFAULT_PORT));
+                smtpPortField.setNumber(Integer.valueOf(SSL_DEFAULT_PORT));
             }
 
         });
 		useStartTls.addActionListener(e -> {
             if ( listenersEnabled)
             {
-                smtpPortField.setNumber( new Integer(STARTTLS_DEFAULT_PORT));
+                smtpPortField.setNumber(Integer.valueOf(STARTTLS_DEFAULT_PORT));
             }
         });
 
@@ -300,7 +300,7 @@ public class MailOption extends RaplaGUIComponent implements PluginOptionPanel {
 			useSsl.setSelected( config.getChild("ssl").getValueAsBoolean( false ));
 			useStartTls.setSelected( config.getChild("startTls").getValueAsBoolean( false ) );
 	        mailServer.setValue( config.getChild("smtp-host").getValue("localhost"));
-	        smtpPortField.setNumber( new Integer(config.getChild("smtp-port").getValueAsInteger(25)));
+	        smtpPortField.setNumber(Integer.valueOf(config.getChild("smtp-port").getValueAsInteger(25)));
 	        username.setText( config.getChild("username").getValue(""));
             password.setText( config.getChild("password").getValue(""));
     	}

@@ -22,7 +22,7 @@ import javax.inject.Provider;
 public class MyCustomConnector implements CustomConnector
 {
     private final RemoteConnectionInfo remoteConnectionInfo;
-    private Provider<RemoteAuthentificationService> authentificationService;
+    private final Provider<RemoteAuthentificationService> authentificationService;
     //private final String errorString;
     private final CommandScheduler commandQueue;
     Provider<RaplaResources> i18n;

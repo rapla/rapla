@@ -211,7 +211,7 @@ public class UndoTests extends GUITestCase {
 		}
         try {
         	exist = facade.getRaplaFacade().getPersistant(nonPersistantEvent);
-			Assert.assertTrue(exist != null);
+            Assert.assertNotNull(exist);
 		} catch (EntityNotFoundException e) {
 			e.printStackTrace();
 		}

@@ -368,9 +368,9 @@ public class EditTaskPresenter implements TaskPresenter
             boolean canUndo = true;
             for (T obj : saveObjects)
             {
-                if (obj instanceof Preferences || obj instanceof DynamicType || obj instanceof Category)
-                {
+                if (obj instanceof Preferences || obj instanceof DynamicType || obj instanceof Category) {
                     canUndo = false;
+                    break;
                 }
             }
             if ( isMerge)

@@ -9,11 +9,11 @@ import java.util.Set;
 public class LocalePackage
 {
 
-    private I18nLocaleFormats formats;
-    private Map<String, Map<String, String>> bundles;
-    private Set<String> availableLanguages;
-    private String language;
-    private String country;
+    private final I18nLocaleFormats formats;
+    private final Map<String, Map<String, String>> bundles;
+    private final Set<String> availableLanguages;
+    private final String language;
+    private final String country;
 
     public LocalePackage()
     {

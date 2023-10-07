@@ -25,7 +25,7 @@ import java.awt.print.PrinterException;
  */ 
 public class ComponentPrinter implements Printable
 {
-  private Component component;
+  private final Component component;
   protected Dimension scaleToFit;
 
   public ComponentPrinter(Component c, Dimension scaleToFit)

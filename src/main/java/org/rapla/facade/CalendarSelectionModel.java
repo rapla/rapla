@@ -31,7 +31,7 @@ public interface CalendarSelectionModel extends CalendarModel{
     void resetExports();
     Promise<Void> save(final String filename);
 
-    void load(final String filename) throws RaplaException, CalendarNotFoundExeption;
+    void load(final String filename) throws RaplaException;
     
     CalendarSelectionModel clone();
 	

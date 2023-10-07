@@ -67,18 +67,17 @@ final public class HTMLView extends JTextPane  {
         }
     }
     static public String createHTMLPage(String body,String styles) {
-        StringBuffer buf = new StringBuffer();
-        buf.append("<html>");
-        buf.append("<head>");
-        buf.append("<style type=\"text/css\">");
-        buf.append(styles);
-        buf.append("</style>");
-        buf.append("</head>");
-        buf.append("<body>");
-        buf.append(body);
-        buf.append("</body>");
-        buf.append("</html>");
-        return buf.toString();
+        String buf = "<html>" +
+                "<head>" +
+                "<style type=\"text/css\">" +
+                styles +
+                "</style>" +
+                "</head>" +
+                "<body>" +
+                body +
+                "</body>" +
+                "</html>";
+        return buf;
     }
 
     static public String createHTMLPage(String body) {

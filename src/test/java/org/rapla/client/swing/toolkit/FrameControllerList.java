@@ -35,7 +35,7 @@ import java.util.Stack;
 */
 @Singleton
 final public class FrameControllerList {
-    private Stack<FrameController> openFrameController = new Stack<FrameController>();
+    private final Stack<FrameController> openFrameController = new Stack<FrameController>();
     Point center;
     Logger logger = null;
     ArrayList<FrameControllerListener> listenerList = new ArrayList<FrameControllerListener>();

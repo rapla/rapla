@@ -25,15 +25,15 @@ public class ToolsTest
     @Test
     public void testEqualsOrBothNull()
     {
-        Integer a = new Integer(1);
-        Integer b = new Integer(1);
-        Integer c = new Integer(2);
-        Assert.assertTrue(a != b);
+        Integer a = Integer.valueOf(1);
+        Integer b = Integer.valueOf(1);
+        Integer c = Integer.valueOf(2);
+        Assert.assertNotSame(a, b);
         Assert.assertEquals(a, b);
         Assert.assertTrue(Tools.equalsOrBothNull(null, null));
-        Assert.assertTrue(!Tools.equalsOrBothNull(a, null));
-        Assert.assertTrue(!Tools.equalsOrBothNull(null, b));
+        Assert.assertFalse(Tools.equalsOrBothNull(a, null));
+        Assert.assertFalse(Tools.equalsOrBothNull(null, b));
         Assert.assertTrue(Tools.equalsOrBothNull(a, b));
-        Assert.assertTrue(!Tools.equalsOrBothNull(b, c));
+        Assert.assertFalse(Tools.equalsOrBothNull(b, c));
     }
 }

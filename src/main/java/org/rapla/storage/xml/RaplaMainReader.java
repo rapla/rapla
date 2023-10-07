@@ -37,7 +37,7 @@ import java.util.Map;
 
 public class RaplaMainReader extends RaplaXMLReader
 {
-    private Map<String,RaplaXMLReader> localnameTable = new HashMap<>();
+    private final Map<String,RaplaXMLReader> localnameTable = new HashMap<>();
     public final static String INPUT_FILE_VERSION = RaplaMainWriter.OUTPUT_FILE_VERSION;
     private TimeInterval invalidateInterval = null;
     private boolean resourcesRefresh = false;
@@ -121,14 +121,14 @@ public class RaplaMainReader extends RaplaXMLReader
 
             double versionNr;
             try {
-                versionNr = new Double(version).doubleValue();
+                versionNr = Double.parseDouble(version);
             } catch (NumberFormatException ex) {
                 throw new RaplaException("Invalid version tag (double-value expected)!");
             }
             if (!version.equals( INPUT_FILE_VERSION ))
             {
                 // get the version number of the data-schema
-                if (versionNr > new Double(RaplaMainReader.INPUT_FILE_VERSION).doubleValue())
+                if (versionNr > Double.parseDouble(RaplaMainReader.INPUT_FILE_VERSION))
                     throw new RaplaException("This version of Rapla cannot read files with a version-number"
                                              + " greater than " + RaplaMainReader.INPUT_FILE_VERSION
                                              + ", try out the latest version.");

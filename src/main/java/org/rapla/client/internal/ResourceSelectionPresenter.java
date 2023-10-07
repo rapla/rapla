@@ -52,7 +52,7 @@ public class ResourceSelectionPresenter implements Presenter
     private final ClientFacade facade;
     private final Logger logger;
     private PresenterChangeCallback callback;
-    private CommandScheduler scheduler;
+    private final CommandScheduler scheduler;
 
     @Inject
     public ResourceSelectionPresenter(ClientFacade facade, Logger logger, CalendarSelectionModel model, EditController editController,

@@ -616,10 +616,7 @@ import java.util.TreeMap;
         if (!editableObjects.isEmpty())
         {
             Class<?> raplaType = editableObjects.iterator().next().getTypeClass();
-            if (raplaType == Allocatable.class || raplaType == User.class || raplaType == Reservation.class)
-            {
-                return true;
-            }
+            return raplaType == Allocatable.class || raplaType == User.class || raplaType == Reservation.class;
         }
         return false;
     }

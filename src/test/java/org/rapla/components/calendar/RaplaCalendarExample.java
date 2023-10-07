@@ -33,8 +33,8 @@ import java.util.TimeZone;
 public final class RaplaCalendarExample
 {
     /** TextField for displaying the selected date, time*/
-    private JTextField textField = new JTextField( 20 );
-    private JTabbedPane tabbedPane = new JTabbedPane();
+    private final JTextField textField = new JTextField( 20 );
+    private final JTabbedPane tabbedPane = new JTabbedPane();
     /** Listener for all {@link DateChangeEvent}s. */
     DateChangeListener listener;
     JFrame frame;
@@ -143,7 +143,7 @@ public final class RaplaCalendarExample
     {
         RaplaCalendar testCalendar = new RaplaCalendar();
         RaplaTime timeField = new RaplaTime();
-        RaplaNumber numberField = new RaplaNumber( new Long( 0 ), new Long( 0 ), new Long( 60 ), false );
+        RaplaNumber numberField = new RaplaNumber(Long.valueOf(0), Long.valueOf(0), Long.valueOf(60), false );
 
         testCalendar.addDateChangeListener( listener );
         timeField.addDateChangeListener( listener );
@@ -165,7 +165,7 @@ public final class RaplaCalendarExample
         TimeZone timeZone = TimeZone.getTimeZone( "Europe/Berlin" );
         RaplaCalendar testCalendar = new RaplaCalendar( locale, timeZone );
         RaplaTime timeField = new RaplaTime( locale, timeZone );
-        RaplaNumber numberField = new RaplaNumber( new Long( 0 ), new Long( 0 ), new Long( 60 ), false );
+        RaplaNumber numberField = new RaplaNumber(Long.valueOf(0), Long.valueOf(0), Long.valueOf(60), false );
         Font font = new Font( "SansSerif", Font.PLAIN, 9 );
 
         testCalendar.setFont( font );
@@ -201,7 +201,7 @@ public final class RaplaCalendarExample
         TimeZone timeZone = TimeZone.getTimeZone( "GMT+8" );
         RaplaCalendar testCalendar = new RaplaCalendar( locale, timeZone );
         RaplaTime timeField = new RaplaTime( locale, timeZone );
-        RaplaNumber numberField = new RaplaNumber( new Long( 0 ), new Long( 0 ), new Long( 60 ), false );
+        RaplaNumber numberField = new RaplaNumber(Long.valueOf(0), Long.valueOf(0), Long.valueOf(60), false );
         Font font = new Font( "Serif", Font.PLAIN, 18 );
 
         testCalendar.setFont( font );

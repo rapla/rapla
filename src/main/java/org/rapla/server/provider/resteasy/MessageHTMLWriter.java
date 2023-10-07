@@ -34,6 +34,6 @@ public class MessageHTMLWriter implements MessageBodyWriter<WebApplicationExcept
     public void writeTo(WebApplicationException e, Class<?> aClass, Type type, Annotation[] annotations, MediaType mediaType,
             MultivaluedMap<String, Object> multivaluedMap, OutputStream outputStream) throws IOException, WebApplicationException
     {
-        outputStream.write( e.getMessage().toString().getBytes());
+        outputStream.write( e.getMessage().getBytes());
     }
 }

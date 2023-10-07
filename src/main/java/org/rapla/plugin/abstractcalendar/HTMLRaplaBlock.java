@@ -114,7 +114,7 @@ public class HTMLRaplaBlock extends RaplaBlock implements HTMLBlock {
                   }
                   if (  !getBuildContext().isResourceVisible() && buffer.length() > 0)
                   {
-                  	timeString = timeString + " " + buffer.toString();
+                  	timeString = timeString + " " + buffer;
                   }
               
         	label = timeString + "<br/>" + label;

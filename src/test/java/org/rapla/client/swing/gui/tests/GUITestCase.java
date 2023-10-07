@@ -69,8 +69,6 @@ public abstract class GUITestCase  {
             } catch (Exception ex) {
                 logger.error(ex.getMessage(), ex);
                 System.exit(1);
-            } finally {
-                //tearDown();
             }
         } catch (Exception ex) {
             ex.printStackTrace();

@@ -97,7 +97,6 @@ public class PasswordChangeAction {
             }
         } catch (RaplaException ex) {
             setEnabled(false);
-            return;
         }
 
     }

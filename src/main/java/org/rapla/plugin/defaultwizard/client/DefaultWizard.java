@@ -52,7 +52,7 @@ import java.util.List;
     private final MenuItemFactory menuItemFactory;
     private final RaplaResources i18n;
     RaplaFacade raplaFacade;
-    private ClientFacade clientFacade;
+    private final ClientFacade clientFacade;
 
     @Inject public DefaultWizard(ClientFacade clientFacade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, CalendarModel model,
                                   ApplicationEventBus eventBus, MenuItemFactory menuFactory)

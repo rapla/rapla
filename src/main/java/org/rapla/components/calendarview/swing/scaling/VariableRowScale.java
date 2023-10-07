@@ -9,10 +9,10 @@ import java.util.Date;
 public class VariableRowScale implements IRowScale
 {
     PeriodRow[] periodRows;
-    private int hourSize = 60; 
+    private final int hourSize = 60;
     final private static int MINUTES_PER_HOUR= 60;
     
-    private int mintime =0 ;
+    private final int mintime =0 ;
     /*
     private int maxtime = 24;
     private int workstart = 0;

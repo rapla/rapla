@@ -228,9 +228,7 @@ abstract public class ReferenceHandler /*extends HashMap<String,List<String>>*/ 
     		return null;
     	}
     	String entry  = entries.get(0);
-    	if (entry == null)
-    		return null;
-    	return entry;
+        return entry;
     }
 
     public <T extends Entity> ReferenceInfo<T> getRef(String key,Class<T> clazz)

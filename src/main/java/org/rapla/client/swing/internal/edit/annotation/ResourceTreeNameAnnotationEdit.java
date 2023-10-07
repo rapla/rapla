@@ -24,7 +24,7 @@ import java.util.Collections;
 public class ResourceTreeNameAnnotationEdit extends RaplaGUIComponent implements AnnotationEditTypeExtension
 {
     protected String annotationName = DynamicTypeAnnotations.KEY_NAME_FORMAT_PLANNING;
-    protected String DEFAULT_VALUE = new String();
+    protected String DEFAULT_VALUE = "";
     private final IOInterface ioInterface;
     private final TextFieldFactory textFieldFactory;
     
@@ -68,7 +68,7 @@ public class ResourceTreeNameAnnotationEdit extends RaplaGUIComponent implements
             String value = ((TextField)field).getValue();
             if ( value != null && !value.equals(DEFAULT_VALUE))
             {
-                annotatable.setAnnotation(annotationName, value.toString());
+                annotatable.setAnnotation(annotationName, value);
                 return;
             }
         }

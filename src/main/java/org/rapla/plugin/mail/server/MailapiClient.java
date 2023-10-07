@@ -74,7 +74,6 @@ public class MailapiClient implements MailInterface
         if ( externalMailSession != null)
         {
             send(senderMail, recipient, subject, mailBody, externalMailSession);
-            return;
         }
         else
         {
@@ -127,7 +126,7 @@ public class MailapiClient implements MailInterface
     private Object createSessionFromProperties(String mailhost, int port, SecurityProtocol protocol, String username, String password) throws MailException {
         Properties props = new Properties();
         props.put("mail.smtp.host", mailhost);
-        props.put("mail.smtp.port", new Integer(port));
+        props.put("mail.smtp.port", Integer.valueOf(port));
 
         boolean usernameSet = username != null && username.trim().length() > 0;
         if ( usernameSet)
@@ -145,7 +144,7 @@ public class MailapiClient implements MailInterface
         if (protocol == SecurityProtocol.SSL)
         {
             props.put("mail.smtp.socketFactory.class", "javax.net.ssl.SSLSocketFactory");
-            props.put("mail.smtp.socketFactory.port",  new Integer(port));
+            props.put("mail.smtp.socketFactory.port", Integer.valueOf(port));
         } else if (protocol == SecurityProtocol.STARTTLS) {
             props.put("mail.smtp.starttls.enable", "true");
         }

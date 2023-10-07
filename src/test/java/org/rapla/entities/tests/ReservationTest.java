@@ -78,13 +78,13 @@ public class ReservationTest {
     @Test
     public void testHasAllocated() {
         Assert.assertTrue(reserv1.hasAllocated(allocatable1));
-        Assert.assertTrue(!reserv1.hasAllocated(allocatable2));
+        Assert.assertFalse(reserv1.hasAllocated(allocatable2));
     }
 
     @Test
     public void testEqual() {
-        Assert.assertTrue(!reserv1.equals(reserv2));
-        Assert.assertTrue(reserv1.equals(reserv1));
+        Assert.assertFalse(reserv1.equals(reserv2));
+        Assert.assertEquals(reserv1, reserv1);
     }
 
     @Test
@@ -100,7 +100,7 @@ public class ReservationTest {
 	
 	        // Clone the reservation
 	        Reservation clone =  facade.edit(persistantReservation);
-            Assert.assertTrue(persistantReservation.equals(clone));
+            Assert.assertEquals(persistantReservation, clone);
             Assert.assertTrue(clone.hasAllocated(allocatable1));
 	
 	        // Modify the cloned appointment
@@ -128,11 +128,11 @@ public class ReservationTest {
 		// Check if oldAppointment has been modified
 		Appointment[] appointments = persistantReservation.getAppointments();
         cal.setTime(appointments[0].getStart());
-        Assert.assertTrue(cal.get(Calendar.DAY_OF_WEEK) == Calendar.TUESDAY);
-        Assert.assertTrue(cal.get(Calendar.HOUR_OF_DAY) == 12);
+        Assert.assertEquals(Calendar.TUESDAY, cal.get(Calendar.DAY_OF_WEEK));
+        Assert.assertEquals(12, cal.get(Calendar.HOUR_OF_DAY));
 
         // Check if newAppointmentDeprecated has been added
-        Assert.assertTrue(appointments.length == 2);
+        Assert.assertEquals(2, appointments.length);
         cal.setTime(appointments[1].getEnd());
         Assert.assertEquals(17, cal.get(Calendar.HOUR_OF_DAY));
         Assert.assertEquals(Calendar.MONDAY, cal.get(Calendar.DAY_OF_WEEK));

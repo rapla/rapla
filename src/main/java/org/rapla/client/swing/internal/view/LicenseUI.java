@@ -30,6 +30,7 @@ import java.awt.GridLayout;
 import java.awt.Point;
 import java.io.IOException;
 import java.net.URL;
+import java.nio.charset.StandardCharsets;
 
 public class LicenseUI 
     implements
@@ -68,7 +69,7 @@ public class LicenseUI
 
     private String getLicense() throws IOException {
         URL url= ConfigTools.class.getClassLoader().getResource("META-INF/license.txt");
-        return new String(IOUtil.readBytes(url),"UTF-8");
+        return new String(IOUtil.readBytes(url), StandardCharsets.UTF_8);
     }
 
     public void showTop() {

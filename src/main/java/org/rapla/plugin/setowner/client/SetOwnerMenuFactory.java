@@ -204,7 +204,7 @@ public class SetOwnerMenuFactory implements ObjectMenuFactory
                 )
                 .subscribe();
         return dialog.start(true).thenApply((index)->
-            index == 0 ?  (User)listView.getSelected():null
+            index == 0 ? listView.getSelected() :null
             );
     }
     

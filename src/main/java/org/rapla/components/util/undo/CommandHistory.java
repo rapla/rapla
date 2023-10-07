@@ -9,11 +9,11 @@ import java.util.Vector;
 
 
 public class  CommandHistory {
-	private List<CommandUndo<?>> history = new ArrayList<>();
+	private final List<CommandUndo<?>> history = new ArrayList<>();
 	private int current = -1;
 	private int maxSize = 100;
 	
-	private Vector<CommandHistoryChangedListener> listenerList = new Vector<>();
+	private final Vector<CommandHistoryChangedListener> listenerList = new Vector<>();
 	
 	private void fireChangeEvent() {
 		for (CommandHistoryChangedListener listener: listenerList.toArray(new CommandHistoryChangedListener[] {}))

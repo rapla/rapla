@@ -58,7 +58,7 @@ public abstract class ConfigTools
         // Investigate the passed arguments
         for ( int i = 0; i < args.length; i++ )
         {
-            if ( args[i].toLowerCase().equals( "-c" ) )
+            if ( args[i].equalsIgnoreCase( "-c" ) )
             {
                 if ( i + 1 == args.length )
                 {
@@ -68,12 +68,12 @@ public abstract class ConfigTools
                 config = args[++i];
                 continue;
             }
-            if ( args[i].toLowerCase().equals( "-?" ) )
+            if ( args[i].equalsIgnoreCase( "-?" ) )
             {
                 bInvalid = true;
                 break;
             }
-            if ( args[i].toLowerCase().substring( 0, 1 ).equals( "-" ) )
+            if (args[i].toLowerCase().charAt(0) == '-')
             {
                 bInvalid = true;
                 break;

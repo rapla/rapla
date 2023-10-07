@@ -256,7 +256,7 @@ public class TestUpdateDataManager
                 }
             }
             final Collection<Reservation> reservations = RaplaTestCase
-                    .waitForWithRaplaException(facade.getReservationsForAllocatable(toDelete.toArray(new Allocatable[0]), null, null, null), 10000);
+                    .waitForWithRaplaException(facade.getReservationsForAllocatable(toDelete.toArray(Allocatable.ALLOCATABLE_ARRAY), null, null, null), 10000);
             if ( createAndRemoveEvents)
             {
                 for ( Reservation event:reservations)

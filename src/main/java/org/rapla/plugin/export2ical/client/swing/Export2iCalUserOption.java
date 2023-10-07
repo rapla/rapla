@@ -37,7 +37,7 @@ import java.util.Locale;
 public class Export2iCalUserOption extends RaplaGUIComponent implements UserOptionPanel, ActionListener {
 	
 	private Preferences preferences;
-	private JPanel panel = new JPanel();
+	private final JPanel panel = new JPanel();
 	
 	private JSpinner spiDaysBefore;
 	private JSpinner spiDaysAfter;
@@ -133,10 +133,10 @@ public class Export2iCalUserOption extends RaplaGUIComponent implements UserOpti
 		chkUseUserdefinedIntervall.setSelected(userdefined);
 		interval.add(chkUseUserdefinedIntervall);
 		int before = global_interval ? global_days_before : user_days_before;
-		spiDaysBefore.setValue(new Integer(before));
+		spiDaysBefore.setValue(Integer.valueOf(before));
 		
 		int after = global_interval ? global_days_after : user_days_after;
-		spiDaysAfter.setValue(new Integer(after));
+		spiDaysAfter.setValue(Integer.valueOf(after));
 		
 		if (addButtons) {
 			panel.add(new JLabel(i18nIcal.getString("user_interval_setting_text")), "1,0");
@@ -202,8 +202,8 @@ public class Export2iCalUserOption extends RaplaGUIComponent implements UserOpti
 			preferences.putEntry(Export2iCalPlugin.PREF_BEFORE_DAYS, null);
 			preferences.putEntry(Export2iCalPlugin.PREF_AFTER_DAYS, null);
 		}else{
-			preferences.putEntry(Export2iCalPlugin.PREF_BEFORE_DAYS, new Integer(this.spiDaysBefore.getValue().toString()));
-			preferences.putEntry(Export2iCalPlugin.PREF_AFTER_DAYS, new Integer(this.spiDaysAfter.getValue().toString()));
+			preferences.putEntry(Export2iCalPlugin.PREF_BEFORE_DAYS, Integer.valueOf(this.spiDaysBefore.getValue().toString()));
+			preferences.putEntry(Export2iCalPlugin.PREF_AFTER_DAYS, Integer.valueOf(this.spiDaysAfter.getValue().toString()));
 		}
 
         preferences.putEntry(Export2iCalPlugin.EXPORT_ATTENDEES_PREFERENCE, chkExportAttendees.isSelected());

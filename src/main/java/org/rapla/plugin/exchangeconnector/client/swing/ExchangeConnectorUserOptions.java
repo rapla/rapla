@@ -68,7 +68,7 @@ public class ExchangeConnectorUserOptions implements UserOptionPanel
     private final RaplaResources i18n;
     private final ClientFacade clientFacade;
     private Preferences preferences;
-    private Logger logger;
+    private final Logger logger;
 
     private final ShowExchangeForUser showExchangeForUser;
 
@@ -348,10 +348,10 @@ public class ExchangeConnectorUserOptions implements UserOptionPanel
     class SyncDialog extends JPanel
     {
         private static final long serialVersionUID = 1L;
-        private JTextField usernameTextField;
-        private JPasswordField passwordTextField;
-        private JLabel usernameLabel;
-        private JLabel passwordLabel;
+        private final JTextField usernameTextField;
+        private final JPasswordField passwordTextField;
+        private final JLabel usernameLabel;
+        private final JLabel passwordLabel;
 
         {
             this.usernameTextField = new JTextField();

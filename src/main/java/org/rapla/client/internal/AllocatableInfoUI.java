@@ -93,7 +93,7 @@ public class AllocatableInfoUI extends ClassificationInfoUI<Allocatable> {
             String ownerText = encode(ownerName);
             att.add( new Row(getString("resource.owner"), ownerText));
         }
-        if ( lastChangeById != null && (ownerId == null || !lastChangeById.equals(ownerId))) {
+        if ( lastChangeById != null && (!lastChangeById.equals(ownerId))) {
             final String lastChangedName = getUsername(lastChangeById);
             String lastChangeByText = encode(lastChangedName);
             att.add( new Row(getString("last_changed_by"), lastChangeByText));

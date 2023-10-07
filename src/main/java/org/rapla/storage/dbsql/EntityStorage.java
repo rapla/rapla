@@ -47,11 +47,11 @@ abstract class EntityStorage<T extends Entity<T>> extends AbstractTableStorage i
 
     protected LocalCache cache;
     protected EntityStore entityStore;
-    private RaplaLocale raplaLocale;
+    private final RaplaLocale raplaLocale;
     
     protected final EntityHistory history;
     protected Collection<SubStorage<T>> subStores = new ArrayList<>();
-	private int lastParameterIndex;
+	private final int lastParameterIndex;
     RaplaXMLContext context;
 
     protected EntityStorage( RaplaXMLContext context, String table,String[] entries) throws RaplaException {

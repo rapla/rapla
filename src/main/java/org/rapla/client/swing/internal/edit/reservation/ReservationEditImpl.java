@@ -377,7 +377,7 @@ public final class ReservationEditImpl extends AbstractAppointmentEditor impleme
         Appointment mutableAppointment = null;
         for (Appointment app : mutableReservation.getAppointments())
         {
-            if (appointment != null && app.equals(appointment))
+            if (app.equals(appointment))
             {
                 mutableAppointment = app;
             }

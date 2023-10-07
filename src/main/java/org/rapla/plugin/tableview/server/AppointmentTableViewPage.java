@@ -40,7 +40,7 @@ import java.util.Map;
 @Extension(provides = HTMLViewPage.class, id = TableViewPlugin.TABLE_APPOINTMENTS_VIEW) public class AppointmentTableViewPage
         implements HTMLViewPage
 {
-    private TableViewPage<AppointmentBlock> tableViewPage;
+    private final TableViewPage<AppointmentBlock> tableViewPage;
 
     @Inject public AppointmentTableViewPage(PromiseWait waiter,RaplaLocale raplaLocale, final TableConfig.TableConfigLoader tableConfigLoader)
     {

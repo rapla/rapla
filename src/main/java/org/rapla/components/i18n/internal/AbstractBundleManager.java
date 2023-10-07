@@ -24,7 +24,7 @@ import java.util.Vector;
 
 public abstract class AbstractBundleManager implements BundleManager {
     private I18nLocaleFormats formats;
-    private LinkedHashMap<String,ResourceBundle> packMap = new LinkedHashMap<>();
+    private final LinkedHashMap<String,ResourceBundle> packMap = new LinkedHashMap<>();
     private final Set<String> availableLanguages;
     Locale locale;
     Vector<LocaleChangeListener> localeChangeListeners = new Vector<>();

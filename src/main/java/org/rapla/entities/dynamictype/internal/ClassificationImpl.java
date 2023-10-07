@@ -31,19 +31,8 @@ import org.rapla.entities.storage.UnresolvableReferenceExcpetion;
 import org.rapla.entities.storage.internal.ReferenceHandler;
 import org.rapla.framework.RaplaException;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
+import java.util.*;
 import java.util.Map.Entry;
-import java.util.NoSuchElementException;
-import java.util.Set;
 
 /** Use the method <code>newClassification()</code> of class <code>DynamicType</code> to
  *  createInfoDialog a classification. Once created it is not possible to change the
@@ -56,7 +45,7 @@ public class ClassificationImpl implements Classification,DynamicTypeDependant, 
 
 	private String typeId;
 	private String type;
-	private Map<String,List<String>> data = new LinkedHashMap<>();
+	private final Map<String,List<String>> data = new LinkedHashMap<>();
 	private transient boolean readOnly = false;
 
 	private transient TextCache name;
@@ -84,7 +73,7 @@ public class ClassificationImpl implements Classification,DynamicTypeDependant, 
 
             if (nameString != null)
             {
-                if (parsedAnnotation.equals(lastParsedAnnotation) && (this.lastLocale == locale || locale!=null && locale.equals(this.lastLocale) ))
+                if (parsedAnnotation.equals(lastParsedAnnotation) && (Objects.equals(locale, this.lastLocale)))
                     return nameString;
             }
             lastLocale = locale;

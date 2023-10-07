@@ -73,7 +73,7 @@ public class NotificationService implements ServerExtension
 
     private final Logger logger;
     private final NotificationStorage notificationStorage;
-    private List<Disposable> scheduleList = new ArrayList<>();
+    private final List<Disposable> scheduleList = new ArrayList<>();
 
     @Inject
     public NotificationService(RaplaFacade facade, RaplaResources i18nBundle, NotificationResources notificationI18n, AppointmentFormater appointmentFormater,
@@ -123,7 +123,7 @@ public class NotificationService implements ServerExtension
                 }
             }
         };
-        scheduleList.add( scheduler.schedule( sentUpdateMails,0,30000l));
+        scheduleList.add( scheduler.schedule( sentUpdateMails,0, 30000L));
         Action retryMails = () ->
         {
             Date lastUpdated = null;
@@ -145,7 +145,7 @@ public class NotificationService implements ServerExtension
                 }
             }
         };
-        scheduleList.add(scheduler.schedule( retryMails,45000l,DateTools.MILLISECONDS_PER_MINUTE * 15 + 531l));
+        scheduleList.add(scheduler.schedule( retryMails, 45000L,DateTools.MILLISECONDS_PER_MINUTE * 15 + 531L));
     }
 
     public void stop()

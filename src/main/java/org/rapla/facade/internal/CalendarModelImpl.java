@@ -398,10 +398,7 @@ public class CalendarModelImpl implements CalendarSelectionModel
                 }
             }
         }
-        if ( filteredTypes < allTypes) {
-            return false;
-        }
-        return true;
+        return filteredTypes >= allTypes;
     }
 
     public CalendarModelConfigurationImpl newRaplaCalendarModel(Collection<Entity> selected, boolean resourceRootSelected,
@@ -1294,8 +1291,7 @@ public class CalendarModelImpl implements CalendarSelectionModel
         return translations.contains(filename);
     }
 
-    @Override public void load(final String filename) throws RaplaException, CalendarNotFoundExeption
-    {
+    @Override public void load(final String filename) throws RaplaException {
         final CalendarModelConfiguration modelConfig;
         boolean createIfNotNull = false;
 

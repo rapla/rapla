@@ -50,7 +50,7 @@ import java.util.concurrent.ConcurrentHashMap;
 class ConflictFinder {
 	AllocationMap  allocationMap;
     // stores all conflicts (can be without enable/disable information)
-    private Map<ReferenceInfo<Allocatable>,Map<ReferenceInfo<Conflict>,Conflict>> conflictMap;
+    private final Map<ReferenceInfo<Allocatable>,Map<ReferenceInfo<Conflict>,Conflict>> conflictMap;
     Logger logger;
     EntityResolver resolver;
     private final PermissionController permissionController;
@@ -467,7 +467,7 @@ class ConflictFinder {
 			{
 			    start = today;
 			}
-            ((AppointmentImpl)appointment).createBlocks(start, DateTools.fillDate(maxEnd), allAppointmentBlocks);
+            appointment.createBlocks(start, DateTools.fillDate(maxEnd), allAppointmentBlocks);
 		}
     }
 

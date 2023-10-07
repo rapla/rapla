@@ -48,11 +48,11 @@ public class RaplaStartOption extends RaplaGUIComponent implements SystemOptionP
     JPanel panel = new JPanel();
     JTextField calendarName;
     Preferences preferences;
-	private JComboBox cboTimezone;
-    private LanguageChooser languageChooser;
-    private CountryChooser countryChooser;
+	private final JComboBox cboTimezone;
+    private final LanguageChooser languageChooser;
+    private final CountryChooser countryChooser;
 	ICalTimezones timezoneService;
-	RaplaNumber seconds = new RaplaNumber(new Double(10),new Double(10),null, false);
+	RaplaNumber seconds = new RaplaNumber(Double.valueOf(10),Double.valueOf(10),null, false);
     boolean isRestartPossible;
 
     @Override
@@ -150,7 +150,7 @@ public class RaplaStartOption extends RaplaGUIComponent implements SystemOptionP
 	    }
 
         int delay = preferences.getEntryAsInteger( ClientFacade.REFRESH_INTERVAL_ENTRY, ClientFacade.REFRESH_INTERVAL_DEFAULT);
-        seconds.setNumber( new Long(delay / 1000));
+        seconds.setNumber(Long.valueOf(delay / 1000));
         seconds.setEnabled(isRestartPossible);
 
     }

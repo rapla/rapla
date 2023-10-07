@@ -49,7 +49,7 @@ public class Application implements ApplicationView.Presenter, ModificationListe
     private final ClientFacade clientFacade;
     private final AbstractActivityController abstractActivityController;
     private ApplicationView mainView;
-    private Provider<ApplicationView> mainViewProvider;
+    private final Provider<ApplicationView> mainViewProvider;
     private final RaplaResources i18n;
 
     private final ApplicationEventBus eventBus;

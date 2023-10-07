@@ -18,7 +18,7 @@ public interface JNDIConfig
     @Consumes({MediaType.APPLICATION_JSON, MediaType.APPLICATION_XML})
     Promise<Boolean> test(MailTestRequest job) throws RaplaException;
 
-    public static class MailTestRequest
+    class MailTestRequest
     {
         private DefaultConfiguration config;
         private String username;

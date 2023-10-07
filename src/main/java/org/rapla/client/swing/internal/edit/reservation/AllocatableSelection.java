@@ -217,7 +217,7 @@ public class AllocatableSelection extends RaplaGUIComponent implements Appointme
         this.dialogUiFactory = dialogUiFactory;
         double pre = TableLayout.PREFERRED;
         double fill = TableLayout.FILL;
-        double tableSize[][] = { { pre, 12, pre, 3, fill, pre }, // Columns
+        double[][] tableSize = { { pre, 12, pre, 3, fill, pre }, // Columns
                 { pre, fill } }; // Rows
         leftPanel.setLayout(new TableLayout(tableSize));
 
@@ -572,7 +572,7 @@ public class AllocatableSelection extends RaplaGUIComponent implements Appointme
         for (int i = 0; i < appointments.length; i++)
         {
             this.appointmentStrings[i] = appointmentFormater.getVeryShortSummary(appointments[i]);
-            this.appointmentIndexStrings[i] = getRaplaLocale().formatNumber(new Long(i + 1));
+            this.appointmentIndexStrings[i] = getRaplaLocale().formatNumber(Long.valueOf(i + 1));
         }
     }
 
@@ -636,8 +636,7 @@ public class AllocatableSelection extends RaplaGUIComponent implements Appointme
                     if ( obj instanceof DynamicType)
                     {
                         Enumeration<?> tt = node.children();
-                        for (; tt.hasMoreElements();)
-                        {
+                        while (tt.hasMoreElements()) {
                             DefaultMutableTreeNode nodeChild = (DefaultMutableTreeNode) tt.nextElement();
                             Object objChild = nodeChild.getUserObject();
                             if ( objChild != null)
@@ -1221,7 +1220,7 @@ public class AllocatableSelection extends RaplaGUIComponent implements Appointme
             Appointment[] restriction = r.getRestriction(alloc);
             restrictions.addAll(Arrays.asList(restriction));
         }
-        return restrictions.toArray(new Appointment[] {});
+        return restrictions.toArray(Appointment.EMPTY_ARRAY);
     }
 
     private Collection<Appointment> getAllAppointmentsFor(Allocatable alloc)
@@ -1254,7 +1253,7 @@ public class AllocatableSelection extends RaplaGUIComponent implements Appointme
 
     class AllocationRendering
     {
-        boolean conflictingAppointments[] = new boolean[appointments.length]; // stores the temp conflicting appointments
+        boolean[] conflictingAppointments = new boolean[appointments.length]; // stores the temp conflicting appointments
         int conflictCount = 0; // temp value for conflicts
         int permissionConflictCount = 0; // temp value for conflicts that are the result of denied permission
         RequestStatus requestStatus;
@@ -1876,8 +1875,10 @@ public class AllocatableSelection extends RaplaGUIComponent implements Appointme
             boolean test = true;
             for (int i = 0; i < appointments.length; i++)
             {
-                if (allocBinding.conflictingAppointments[i])
+                if (allocBinding.conflictingAppointments[i]) {
                     test = false;
+                    break;
+                }
             }
             if (test)
             {
@@ -2201,7 +2202,7 @@ public class AllocatableSelection extends RaplaGUIComponent implements Appointme
 
         String command;
 
-        private TreeFactory treeFactory;
+        private final TreeFactory treeFactory;
 
         public AllocatableAction(TreeFactory treeFactory)
         {

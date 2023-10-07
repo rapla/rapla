@@ -26,7 +26,7 @@ public class AllocationChangeEvent
 
     public static class Type
     {
-        private String type;
+        private final String type;
 
         Type( String type )
         {

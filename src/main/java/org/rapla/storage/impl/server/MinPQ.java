@@ -77,28 +77,6 @@ public class MinPQ<Key> implements Iterable<Key> {
     }
 
     /**
-     * Initializes an empty priority queue using the given comparator.
-     * @param comparator the order to use when comparing keys
-     */
-    public MinPQ(Comparator<Key> comparator) { this(1, comparator); }
-
-    /**
-     * Initializes a priority queue from the array of keys.
-     * Takes time proportional to the number of keys, using sink-based heap construction.
-     * @param keys the array of keys
-     */
-    @SuppressWarnings("unchecked")
-    public MinPQ(Key[] keys) {
-        N = keys.length;
-        pq = (Key[]) new Object[keys.length + 1];
-        for (int i = 0; i < N; i++)
-            pq[i+1] = keys[i];
-        for (int k = N/2; k >= 1; k--)
-            sink(k);
-        assert isMinHeap();
-    }
-
-    /**
      * Is the priority queue empty?
      * @return true if the priority queue is empty; false otherwise
      */
@@ -129,7 +107,7 @@ public class MinPQ<Key> implements Iterable<Key> {
         assert capacity > N;
         @SuppressWarnings("unchecked")
         Key[] temp = (Key[]) new Object[capacity];
-        for (int i = 1; i <= N; i++) temp[i] = pq[i];
+        if (N >= 0) System.arraycopy(pq, 1, temp, 1, N);
         pq = temp;
     }
 
@@ -233,7 +211,7 @@ public class MinPQ<Key> implements Iterable<Key> {
 
     private class HeapIterator implements Iterator<Key> {
         // createInfoDialog a new pq
-        private MinPQ<Key> copy;
+        private final MinPQ<Key> copy;
 
         // add all items to copyReservations of heap
         // takes linear time since already in heap order so no keys move

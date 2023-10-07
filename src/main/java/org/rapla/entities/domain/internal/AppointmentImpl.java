@@ -120,7 +120,7 @@ public final class AppointmentImpl extends SimpleEntity implements Appointment
     public String toString() {
         if (start != null && end != null)
             return f(start.getTime(),end.getTime()) +
-                ((repeating != null) ? (" [" + repeating.toString()) + "]": "");
+                ((repeating != null) ? (" [" + repeating) + "]": "");
         else
             return start + "-" + end;
     }
@@ -523,8 +523,8 @@ public final class AppointmentImpl extends SimpleEntity implements Appointment
         RepeatingImpl r1 = getRepeating();
         RepeatingImpl r2 = (RepeatingImpl)a2.getRepeating();
         DD=DE?BUG: print("Testing overlap of");
-        DD=DE?BUG: print(" A1: " + toString());
-        DD=DE?BUG: print(" A2: " + a2.toString());
+        DD=DE?BUG: print(" A1: " + this);
+        DD=DE?BUG: print(" A2: " + a2);
 
         if (r1 == null && r2 == null) {
             return !(e2 <= s1 || e1 <= s2);
@@ -859,7 +859,7 @@ public final class AppointmentImpl extends SimpleEntity implements Appointment
 		    	continue;
 		    }
 		    // Don't test overlapping for the same reservations
-		    if ( r1 != null && r2 != null && r1.equals( r2) )
+		    if (r1 != null && r1.equals(r2))
 		    {
 		        continue;
 		    }
@@ -887,16 +887,11 @@ public final class AppointmentImpl extends SimpleEntity implements Appointment
 
 	 private static boolean equalsOrBothNull(Object o1, Object o2) {
 	        if (o1 == null) {
-	            if (o2 != null) {
-	                return false;
-	            }
+                return o2 == null;
 	        } else if ( o2 == null) {
 	            return false;
-	        } else if (!o1.equals( o2 ) ) {
-	            return false;
-	        }
-	        return true;
-	    }
+	        } else return o1.equals(o2);
+     }
 
 	 public ReferenceInfo<User> getOwnerRef()
 	 {

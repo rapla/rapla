@@ -11,9 +11,9 @@ import java.util.stream.Collectors;
 public class RaplaTableModel<T>
 {
     private List<T> rows = new ArrayList<>();
-    private RaplaTableColumn<T>[] columns;
+    private final RaplaTableColumn<T>[] columns;
     private List<Object[]> data = new ArrayList<>();
-    private List<String> columnNames = new ArrayList<>();
+    private final List<String> columnNames = new ArrayList<>();
 
     public RaplaTableModel( Collection<RaplaTableColumn<T>> columnPlugins) {
         columns = new RaplaTableColumn[columnPlugins.size()];

@@ -81,7 +81,7 @@ public class RaplaBuilder
 {
 
     private Collection<Reservation> selectedReservations;
-    private Collection<Allocatable> selectedAllocatables = new LinkedHashSet<>();
+    private final Collection<Allocatable> selectedAllocatables = new LinkedHashSet<>();
 
     private boolean bExceptionsExcluded = false;
     private boolean bResourceVisible = true;
@@ -89,7 +89,7 @@ public class RaplaBuilder
     private boolean bRepeatingVisible = true;
     private boolean bTimeVisible = true; //Shows time <from - till> in top of all HTML- and Swing-View Blocks
     private boolean splitByAllocatables = false;
-    private HashMap<Allocatable,String> colors = new HashMap<>(); //This currently only works with HashMap
+    private final HashMap<Allocatable,String> colors = new HashMap<>(); //This currently only works with HashMap
     private User editingUser;
     private boolean isResourceColoring;
     private boolean isEventColoring;
@@ -435,7 +435,7 @@ public class RaplaBuilder
         }
         int offsetMinutes = buildStrategy.getOffsetMinutes();
         List<AppointmentBlock> preparedBlocks = splitBlocks(blocks, start, end, offsetMinutes);
-        int minHour = 0 + offsetMinutes * 60;
+        int minHour = offsetMinutes * 60;
         int maxHour = 24 + offsetMinutes * 60;
         // calculate new start and end times
         int max =minHour * 60;
@@ -568,8 +568,8 @@ public class RaplaBuilder
         Logger logger;
         User user;
         List<Block> blocks;
-		private boolean isResourceColoring;
-		private boolean isEventColoring;
+		private final boolean isResourceColoring;
+		private final boolean isEventColoring;
         private boolean showTooltips;
         private boolean showTooltipsInHtmlExport;
         final AppointmentInfoUI appointmentInfoUI;

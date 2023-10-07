@@ -34,7 +34,7 @@ public class StandardFunctions implements FunctionFactory
 {
     public static final String NAMESPACE = "org.rapla";
 
-    private RaplaLocale raplaLocale;
+    private final RaplaLocale raplaLocale;
 
     @Inject
     public StandardFunctions(RaplaLocale raplaLocale)
@@ -84,7 +84,7 @@ public class StandardFunctions implements FunctionFactory
     public static class IsPerson extends Function
     {
         public static final String ID = "isPerson";
-        private String valueClassificationType;
+        private final String valueClassificationType;
         private Function subFunction;
 
         public IsPerson(List<Function> args) throws IllegalAnnotationException
@@ -171,7 +171,7 @@ public class StandardFunctions implements FunctionFactory
     {
 
         public static final String ID = "not";
-        private Function subFunction;
+        private final Function subFunction;
 
         public NotFunction(List<Function> args) throws IllegalAnnotationException
         {
@@ -191,7 +191,7 @@ public class StandardFunctions implements FunctionFactory
     {
 
         public static final String ID = "and";
-        private List<Function> subFunctions;
+        private final List<Function> subFunctions;
 
         public AndFunction(List<Function> args) throws IllegalAnnotationException
         {
@@ -218,7 +218,7 @@ public class StandardFunctions implements FunctionFactory
     {
 
         public static final String ID = "or";
-        private List<Function> subFunctions;
+        private final List<Function> subFunctions;
 
         public OrFunction(List<Function> args) throws IllegalAnnotationException
         {
@@ -244,7 +244,7 @@ public class StandardFunctions implements FunctionFactory
     public static class AppointmentBlockFunction extends Function
     {
         public static final String ID = "number";
-        private Function subFunction;
+        private final Function subFunction;
 
         AppointmentBlockFunction(List<Function> args) throws IllegalAnnotationException
         {
@@ -394,7 +394,7 @@ public class StandardFunctions implements FunctionFactory
     {
 
         public static final String ID = "end";
-        private Function subFunction;
+        private final Function subFunction;
 
         AppointmentEndFunction(List<Function> args) throws IllegalAnnotationException
         {
@@ -502,7 +502,7 @@ public class StandardFunctions implements FunctionFactory
     {
 
         public static final String ID = "start";
-        private Function subFunction;
+        private final Function subFunction;
 
         AppointmentStartFunction(List<Function> args) throws IllegalAnnotationException
         {
@@ -550,7 +550,7 @@ public class StandardFunctions implements FunctionFactory
     {
 
         public static final String ID = "times";
-        private Function subFunction;
+        private final Function subFunction;
         RaplaLocale raplaLocale;
 
         AppointmentTimesFunction(List<Function> args, RaplaLocale raplaLocale) throws IllegalAnnotationException
@@ -633,8 +633,8 @@ public class StandardFunctions implements FunctionFactory
     {
 
         public static final String ID = "attribute";
-        private Function objectFunction;
-        private Function keyFunction;
+        private final Function objectFunction;
+        private final Function keyFunction;
 
         public AttributeFunction(List<Function> args) throws IllegalAnnotationException
         {
@@ -666,11 +666,7 @@ public class StandardFunctions implements FunctionFactory
         public Attribute findAttribute(DynamicTypeImpl type, String key)
         {
             Attribute attribute = type.getAttribute(key);
-            if (attribute != null)
-            {
-                return attribute;
-            }
-            return null;
+            return attribute;
         }
     }
 
@@ -969,7 +965,7 @@ public class StandardFunctions implements FunctionFactory
     {
 
         public static final String ID = "date";
-        private Function subFunction;
+        private final Function subFunction;
 
         DateFunction(List<Function> args) throws IllegalAnnotationException
         {
@@ -1014,7 +1010,7 @@ public class StandardFunctions implements FunctionFactory
     {
 
         public static final String ID = "intervall";
-        private Function subFunction;
+        private final Function subFunction;
 
         IntervallFunction(List<Function> args) throws IllegalAnnotationException
         {
@@ -1343,7 +1339,7 @@ public class StandardFunctions implements FunctionFactory
     public static class LastChangedFunction extends Function
     {
         public static final String ID = "lastchanged";
-        private Function subFunction;
+        private final Function subFunction;
 
         LastChangedFunction(List<Function> args) throws IllegalAnnotationException
         {

@@ -9,7 +9,7 @@ import java.util.Collections;
 import java.util.Date;
 
 public abstract class  AbstractCalendar {
-	protected int offsetMinutes = 0* 60;
+	protected int offsetMinutes = 0;
 
 	private int daysInView = 7;
 	private int firstWeekday = 2;//Calendar.inject().getFirstDayOfWeek();
@@ -51,7 +51,7 @@ public abstract class  AbstractCalendar {
 //		blockCalendar.set(Calendar.DAY_OF_WEEK, );
 //    	blockCalendar.add(Calendar.DATE, column);
 //    	int weekday = blockCalendar.get(Calendar.DAY_OF_WEEK);
-    	if ( !excludeDays.contains(new Integer( weekday )) ) {
+    	if ( !excludeDays.contains(Integer.valueOf(weekday)) ) {
     		return false;
         }
     	boolean empty = isEmpty(column);

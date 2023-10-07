@@ -176,12 +176,8 @@ public class SwingCompactCalendar extends AbstractRaplaSwingCalendar
             	int lastMinuteOfDay;
 				DateTools.TimeWithoutTimezone timeWithoutTimezone = DateTools.toTime(block.getStart().getTime());
 				lastMinuteOfDay = timeWithoutTimezone.hour  * 60 +  timeWithoutTimezone.minute;
-            	boolean sameTimeSlot = true;
-            	if ( lastMinuteOfDay < time)
-            	{
-            		sameTimeSlot = false;
-            	}
-            	if ( rowIndex +1 < timeslots.size())
+            	boolean sameTimeSlot = lastMinuteOfDay >= time;
+                if ( rowIndex +1 < timeslots.size())
             	{
             		Timeslot nextTimeslot = timeslots.get(rowIndex+1);
             		if ( lastMinuteOfDay >= nextTimeslot.getMinuteOfDay() )

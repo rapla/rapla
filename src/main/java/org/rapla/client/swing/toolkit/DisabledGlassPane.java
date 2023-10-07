@@ -29,7 +29,7 @@ public class DisabledGlassPane extends JComponent
     implements KeyListener
 {
     private final static Border MESSAGE_BORDER = new EmptyBorder(10, 10, 10, 10);
-    private JLabel message = new JLabel();
+    private final JLabel message = new JLabel();
 
     public DisabledGlassPane()
     {

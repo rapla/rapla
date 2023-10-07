@@ -71,7 +71,7 @@ final public class DynamicTypeImpl extends SimpleEntity implements DynamicType, 
 
     // added an attribute array for performance reasons
 	List<AttributeImpl> attributes = new ArrayList<>();
-    private List<PermissionImpl> permissions = new ArrayList<>(1);
+    private final List<PermissionImpl> permissions = new ArrayList<>(1);
     MultiLanguageName name  = new MultiLanguageName();
     String key = "";
     //Map<String,String> unparsedAnnotations = new HashMap<String,String>();
@@ -757,7 +757,7 @@ final public class DynamicTypeImpl extends SimpleEntity implements DynamicType, 
     
     
 	public static class DynamicTypeParseContext implements ParseContext {
-		private DynamicTypeImpl type;
+		private final DynamicTypeImpl type;
 
 		DynamicTypeParseContext( DynamicType type)
 		{
@@ -815,7 +815,7 @@ final public class DynamicTypeImpl extends SimpleEntity implements DynamicType, 
         class AttributeFunction extends ParsedText.Variable
 		{
 			Object id;
-            private boolean shortForm;
+            private final boolean shortForm;
 			AttributeFunction(Attribute attribute, boolean shortForm )
 			{
 				super("attribute:"+attribute.getKey());
@@ -843,10 +843,7 @@ final public class DynamicTypeImpl extends SimpleEntity implements DynamicType, 
 
             public Attribute findAttribute(DynamicTypeImpl type) {
                 Attribute attribute =  type.findAttributeForId( id );
-				if ( attribute!= null) {
-					return attribute;
-	            }
-				return null;
+                return attribute;
             }
 			
 			@Override

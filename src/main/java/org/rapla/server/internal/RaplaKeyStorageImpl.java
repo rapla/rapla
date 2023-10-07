@@ -37,7 +37,7 @@ public class RaplaKeyStorageImpl implements RaplaKeyStorage
     private String rootKey;
 	private String rootPublicKey;
 
-	private Base64 base64;
+	private final Base64 base64;
 	CryptoHandler cryptoHandler;
 	
 	RaplaFacade facade;

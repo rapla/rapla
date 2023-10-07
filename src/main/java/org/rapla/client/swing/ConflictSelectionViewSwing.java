@@ -56,7 +56,7 @@ import java.util.Collection;
 @DefaultImplementation(context = InjectionContext.swing, of = ConflictSelectionView.class)
 public class ConflictSelectionViewSwing implements ConflictSelectionView<Component>
 {
-    private RaplaTree treeSelection = new RaplaTree();
+    private final RaplaTree treeSelection = new RaplaTree();
     protected JPanel content = new JPanel();
     JLabel summary = new JLabel();
     private final Listener listener = new Listener();
@@ -99,11 +99,7 @@ public class ConflictSelectionViewSwing implements ConflictSelectionView<Compone
         {
             return true;
         }
-        if (object instanceof DynamicType)
-        {
-            return true;
-        }
-        return false;
+        return object instanceof DynamicType;
     }
 
     @Override

@@ -34,6 +34,7 @@ import java.lang.reflect.Method;
 import java.net.URL;
 import java.nio.charset.Charset;
 import java.nio.charset.CharsetDecoder;
+import java.nio.charset.StandardCharsets;
 import java.util.Map;
 
 public class StandaloneStarter extends GUIStarter implements JsonRemoteConnector
@@ -213,7 +214,7 @@ public class StandaloneStarter extends GUIStarter implements JsonRemoteConnector
         {
             final HttpTransportMetricsImpl httpTransportMetrics = new HttpTransportMetricsImpl();
             MessageConstraints constraints = null;
-            CharsetDecoder charsetDecoder = Charset.forName("UTF-8").newDecoder();
+            CharsetDecoder charsetDecoder = StandardCharsets.UTF_8.newDecoder();
             int minChunkLimit = 0;
             SessionInputBufferImpl inputBuffer = new SessionInputBufferImpl(httpTransportMetrics, Math.max(1000,bytes1.length+100), minChunkLimit, constraints, charsetDecoder);
             inputBuffer.bind(new ByteArrayInputStream(bytes1));
@@ -270,7 +271,7 @@ public class StandaloneStarter extends GUIStarter implements JsonRemoteConnector
         buf.print("\r\n");
         buf.print("Content-Type: " + contentType + ";charset=utf-8");
         buf.print("\r\n");
-        buf.print("Content-Length: " + body.getBytes(Charset.forName("UTF-8")).length);
+        buf.print("Content-Length: " + body.getBytes(StandardCharsets.UTF_8).length);
         buf.print("\r\n");
         buf.print("Accept: " + contentType);
         buf.print("\r\n");

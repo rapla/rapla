@@ -106,7 +106,7 @@ public class NumberField extends AbstractBlockField {
     public void setNullPermitted(boolean isNullPermitted) {
         m_isNullPermitted = isNullPermitted;
         if (m_number == null && !isNullPermitted)
-            m_number = new Double(defaultValue());
+            m_number = Double.valueOf(defaultValue());
     }
 
     private long defaultValue() {
@@ -132,7 +132,7 @@ public class NumberField extends AbstractBlockField {
             text = "";
         }
         String previous = getText();
-		if ( previous != null && text.equals( previous))
+		if (text.equals(previous))
 		{
 			return;
 		}
@@ -178,7 +178,7 @@ public class NumberField extends AbstractBlockField {
             longValue = m_minimum.longValue();
         if (m_maximum != null && longValue>m_maximum.longValue())
             longValue = m_maximum.longValue();
-        updateNumber(new Long(longValue));
+        updateNumber(Long.valueOf(longValue));
         calcBlocks(blocks);
         markBlock(blocks,block);
     }
@@ -195,7 +195,7 @@ public class NumberField extends AbstractBlockField {
             long newLong = Long.parseLong(text);
             if ((m_minimum == null || newLong>=m_minimum.longValue())
                 && (m_maximum == null || newLong<=m_maximum.longValue())) {
-                m_number = new Long(newLong);
+                m_number = Long.valueOf(newLong);
                 return true;
             }
         } catch (NumberFormatException e) {

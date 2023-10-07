@@ -270,6 +270,7 @@ public class DefaultConfiguration implements Configuration {
         for ( int i=0;i<childList.length;i++) {
             if (childList[i] == newChild) {
                 present = true;
+                break;
             }
         }
         if (!present) {
@@ -330,11 +331,8 @@ public class DefaultConfiguration implements Configuration {
         } else if (!name.equals(other.name))
             return false;
         if (value == null) {
-            if (other.value != null)
-                return false;
-        } else if (!value.equals(other.value))
-            return false;
-        return true;
+            return other.value == null;
+        } else return value.equals(other.value);
     }
     
     @Override

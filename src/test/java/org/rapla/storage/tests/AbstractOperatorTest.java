@@ -99,7 +99,7 @@ public abstract class AbstractOperatorTest  {
         operator.connect();
         {
             User u = facade.getUser("kohlhaas");
-            Category[] groups = u.getGroupList().toArray( new Category [] {});
+            Category[] groups = u.getGroupList().toArray(Category.CATEGORY_ARRAY);
 			Assert.assertEquals(groups.length, 4);
 			Assert.assertEquals(facade.getUserGroupsCategory().getCategory("my-group"), groups[3]);
 			Assert.assertFalse(u.isAdmin());

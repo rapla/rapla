@@ -32,7 +32,7 @@ public enum AttributeType {
 	    CATEGORY("rapla:category"),
 	    ALLOCATABLE("rapla:allocatable");
     
-    private String type;
+    private final String type;
    
 
     AttributeType(String type) {

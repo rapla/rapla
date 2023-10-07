@@ -40,12 +40,12 @@ public class ClientFacadeImpl implements ClientFacade, StorageUpdateListener {
     protected CommandScheduler notifyQueue;
 
     RaplaFacade raplaFacade;
-    private Vector<ModificationListener> modificatonListenerList = new Vector<>();
+    private final Vector<ModificationListener> modificatonListenerList = new Vector<>();
     //private Vector<AllocationChangeListener> allocationListenerList = new Vector<AllocationChangeListener>();
-    private Vector<UpdateErrorListener> errorListenerList = new Vector<>();
+    private final Vector<UpdateErrorListener> errorListenerList = new Vector<>();
 
     //	private ConflictFinder conflictFinder;
-    private Vector<ModificationListener> directListenerList = new Vector<>();
+    private final Vector<ModificationListener> directListenerList = new Vector<>();
     public CommandHistory commandHistory = new CommandHistory();
     Logger logger;
 
@@ -155,10 +155,6 @@ public class ClientFacadeImpl implements ClientFacade, StorageUpdateListener {
             }
         } catch (RaplaSecurityException ex) {
             return false;
-        } finally {
-            // Clear password
-//				for (int i = 0; i < password.length; i++)
-//					password[i] = 0;
         }
 //       String username = connectInfo.getUsername();
 //       if  ( connectInfo.getConnectAs() != null)

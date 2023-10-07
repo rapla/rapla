@@ -98,7 +98,7 @@ public abstract class AbstractRaplaLocale implements RaplaLocale {
 
 	public String formatMinuteOfDay(int minuteOfDay) {
 
-        Date date = new Date(0 + minuteOfDay * DateTools.MILLISECONDS_PER_MINUTE);
+        Date date = new Date(minuteOfDay * DateTools.MILLISECONDS_PER_MINUTE);
         return formatTime(date);
 //        boolean useAM_PM = isAmPmFormat();
 //        int minute = minuteOfDay%60;
@@ -449,7 +449,7 @@ public abstract class AbstractRaplaLocale implements RaplaLocale {
     {
         if ( number <10)
         {
-            return "0" + Integer.toString( number);
+            return "0" + number;
         }
         else
         {

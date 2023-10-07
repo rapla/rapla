@@ -297,7 +297,7 @@ public class TemplateEdit extends RaplaGUIComponent
         }
         for (int i = 0; i < items.size(); i++)
         {
-            Allocatable template = (Allocatable) items.get(i);
+            Allocatable template = items.get(i);
             templateNames.add(template.getName(locale));
         }
         int index = 0;

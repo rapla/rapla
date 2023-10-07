@@ -17,7 +17,7 @@ public class ResourceBundleLoader
      * ResourceBundle.getBundle(String className) in the java-api.*/
     static public ResourceBundle loadResourceBundle( String className, Locale locale ) throws MissingResourceException
     {
-        String tries[] = new String[7];
+        String[] tries = new String[7];
         StringBuffer buf = new StringBuffer();
         tries[6] = className != null ? className : "";
         
@@ -30,7 +30,7 @@ public class ResourceBundleLoader
             }
             buf.append( locale.getLanguage() );
             if(locale.getLanguage().equalsIgnoreCase("en")){
-                tries[2] = buf.toString().substring(0, buf.toString().length()-3);
+                tries[2] = buf.substring(0, buf.toString().length()-3);
             }else{
                 tries[2] = buf.toString();
             }
@@ -65,7 +65,7 @@ public class ResourceBundleLoader
             if(locale.getLanguage().equalsIgnoreCase("en")){
                 tries[5] = buf.toString();
             }else{
-                tries[5] = buf.toString().substring(0, buf.toString().length()-3);
+                tries[5] = buf.substring(0, buf.toString().length()-3);
             }
         }
         if ( defaultLocale.getCountry().length() > 0 )

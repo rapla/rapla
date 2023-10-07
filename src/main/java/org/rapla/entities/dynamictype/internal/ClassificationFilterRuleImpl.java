@@ -144,7 +144,7 @@ public final class ClassificationFilterRuleImpl extends ReferenceHandler
         }
         else
         {
-            throw new IllegalStateException("neither attribute Key nor Attribute Id is set in filter rule "+ toString());
+            throw new IllegalStateException("neither attribute Key nor Attribute Id is set in filter rule "+ this);
         }
 		return attribute;
     }

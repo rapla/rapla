@@ -96,22 +96,22 @@ public final class ReservationEditTest extends GUITestCase{
         allocatableEdit.selectedTable.selectAll();
         allocatableEdit.btnRemove.doClick();
         int secondState = getAllocatableSize(allocatableEdit);
-        Assert.assertFalse(firstState == secondState);
+        Assert.assertNotEquals(firstState, secondState);
         internalWindow.commandHistory.undo();
         int thirdState = getAllocatableSize(allocatableEdit);
-        Assert.assertTrue(firstState == thirdState);
+        Assert.assertEquals(firstState, thirdState);
         
         //adding all allocatables
         allocatableEdit.completeTable.selectAll();
         allocatableEdit.btnAdd.doClick();
         int fourthState = getAllocatableSize(allocatableEdit);
-        Assert.assertFalse(firstState == fourthState);
+        Assert.assertNotEquals(firstState, fourthState);
         internalWindow.commandHistory.undo();
         int fifthState = getAllocatableSize(allocatableEdit);
-        Assert.assertTrue(firstState == fifthState);
+        Assert.assertEquals(firstState, fifthState);
         internalWindow.commandHistory.redo();
         int sixthState = getAllocatableSize(allocatableEdit);
-        Assert.assertTrue(fourthState == sixthState);
+        Assert.assertEquals(fourthState, sixthState);
     }
     
     public void testRepeatingEdit() throws Exception{
@@ -121,7 +121,7 @@ public final class ReservationEditTest extends GUITestCase{
     	String firstSelected = getSelectedRadioButton(appointmentEdit.getAppointmentController());
     	appointmentEdit.getAppointmentController().yearlyRepeating.doClick();
     	String secondSelected = getSelectedRadioButton(appointmentEdit.getAppointmentController());
-        Assert.assertFalse(firstSelected.equals(secondSelected));
+        Assert.assertNotEquals(firstSelected, secondSelected);
     	internalWindow.commandHistory.undo();
         Assert.assertEquals(firstSelected, getSelectedRadioButton(appointmentEdit.getAppointmentController()));
     	internalWindow.commandHistory.redo();

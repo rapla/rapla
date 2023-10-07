@@ -226,7 +226,7 @@ public class ClientFacadeTest  {
             final Appointment firstAppointment = orig.getAppointments()[0];
             final Collection<Allocatable> allocatables = Arrays.asList(orig.getAllocatables());
             final Promise<Map<ReferenceInfo<Allocatable>, Collection<Appointment>>> allocatableBindings = facade
-                    .getAllocatableBindings(allocatables, Arrays.asList(firstAppointment));
+                    .getAllocatableBindings(allocatables, Collections.singletonList(firstAppointment));
             final Map<ReferenceInfo<Allocatable>, Collection<Appointment>> allocatableCollectionMap = RaplaTestCase.waitForWithRaplaException(allocatableBindings, 10000);
             for (Allocatable allocatable : allocatables)
             {
@@ -245,7 +245,7 @@ public class ClientFacadeTest  {
             final Appointment firstAppointment = orig.getAppointments()[0];
             final Collection<Allocatable> allocatables = Arrays.asList(orig.getAllocatables());
             final Promise<Map<ReferenceInfo<Allocatable>, Collection<Appointment>>> allocatableBindings = facade
-                    .getAllocatableBindings(allocatables, Arrays.asList(firstAppointment));
+                    .getAllocatableBindings(allocatables, Collections.singletonList(firstAppointment));
             final Map<ReferenceInfo<Allocatable>, Collection<Appointment>> allocatableCollectionMap = RaplaTestCase.waitForWithRaplaException(allocatableBindings, 10000);
             for (Allocatable allocatable : allocatables)
             {
@@ -290,7 +290,7 @@ public class ClientFacadeTest  {
             reservation1.addAppointment(facade.newAppointmentDeprecated(DateTools.toDateTime(new Date(), new Date(DateTools.toTime(10, 00, 00))), DateTools.toDateTime(new Date(), new Date(DateTools.toTime(12, 00, 00)))));
             reservation1.addAllocatable(alloc1);
             {
-                Collection<Allocatable> allocatablesFromAppointment = Arrays.asList(reservation1.getAllocatables()[0]);
+                Collection<Allocatable> allocatablesFromAppointment = Collections.singletonList(reservation1.getAllocatables()[0]);
                 Collection<Appointment> forAppointment = Arrays.asList(reservation1.getAppointmentsFor(allocatablesFromAppointment.iterator().next()));
                 final Promise<Map<ReferenceInfo<Allocatable>, Collection<Appointment>>> allocatableBindings = facade.getAllocatableBindings(allocatablesFromAppointment, forAppointment);
                 final Map<ReferenceInfo<Allocatable>, Collection<Appointment>> result = RaplaTestCase.waitForWithRaplaException(allocatableBindings, 10000);
@@ -308,7 +308,7 @@ public class ClientFacadeTest  {
             clone.removeAllocatable(alloc1);
             clone.addAllocatable(packageAllocatable);
             {
-                Collection<Allocatable> allocatablesFromAppointment = Arrays.asList(clone.getAllocatables()[0]);
+                Collection<Allocatable> allocatablesFromAppointment = Collections.singletonList(clone.getAllocatables()[0]);
                 Collection<Appointment> forAppointment = Arrays.asList(clone.getAppointmentsFor(allocatablesFromAppointment.iterator().next()));
                 final Promise<Map<ReferenceInfo<Allocatable>, Collection<Appointment>>> allocatableBindings = facade.getAllocatableBindings(allocatablesFromAppointment, forAppointment);
                 final Map<ReferenceInfo<Allocatable>, Collection<Appointment>> result = RaplaTestCase.waitForWithRaplaException(allocatableBindings, 10000);
@@ -321,7 +321,7 @@ public class ClientFacadeTest  {
             facade.store(clone);
         }
         {// check other direction
-            Collection<Allocatable> allocatablesFromAppointment = Arrays.asList(reservation1.getAllocatables()[0]);
+            Collection<Allocatable> allocatablesFromAppointment = Collections.singletonList(reservation1.getAllocatables()[0]);
             Collection<Appointment> forAppointment = Arrays.asList(reservation1.getAppointmentsFor(allocatablesFromAppointment.iterator().next()));
             final Promise<Map<ReferenceInfo<Allocatable>, Collection<Appointment>>> allocatableBindings = facade.getAllocatableBindings(allocatablesFromAppointment, forAppointment);
             final Map<ReferenceInfo<Allocatable>, Collection<Appointment>> result = RaplaTestCase.waitForWithRaplaException(allocatableBindings, 10000);
@@ -333,7 +333,7 @@ public class ClientFacadeTest  {
         }
         {// remove other so clone has no conflict any more
             facade.remove(reservation1);
-            Collection<Allocatable> allocatablesFromAppointment = Arrays.asList(clone.getAllocatables()[0]);
+            Collection<Allocatable> allocatablesFromAppointment = Collections.singletonList(clone.getAllocatables()[0]);
             Collection<Appointment> forAppointment = Arrays.asList(clone.getAppointmentsFor(allocatablesFromAppointment.iterator().next()));
             final Promise<Map<ReferenceInfo<Allocatable>, Collection<Appointment>>> allocatableBindings = facade.getAllocatableBindings(allocatablesFromAppointment, forAppointment);
             final Map<ReferenceInfo<Allocatable>, Collection<Appointment>> result = RaplaTestCase.waitForWithRaplaException(allocatableBindings, 10000);
@@ -469,10 +469,10 @@ public class ClientFacadeTest  {
 
         // now we get a second edit copyReservations of the event
         Reservation nonPersistantEventVersion2 =  facade.edit(persistantEvent);
-        Assert.assertTrue(nonPersistantEventVersion2 != event);
+        Assert.assertNotSame(nonPersistantEventVersion2, event);
 
         // Both allocatables are persitant, so they have the same reference
-        Assert.assertTrue(persistantEvent.getAllocatables()[0] == nonPersistantEventVersion2.getAllocatables()[0]);
+        Assert.assertSame(persistantEvent.getAllocatables()[0], nonPersistantEventVersion2.getAllocatables()[0]);
     }
 
 

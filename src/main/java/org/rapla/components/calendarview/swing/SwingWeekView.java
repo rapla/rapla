@@ -40,7 +40,7 @@ public class SwingWeekView extends AbstractSwingCalendar
 {
     public final static int SLOT_GAP = 5;
     LargeDaySlot[] daySlots = new LargeDaySlot[] {};
-    private int startMinutes = 0*60;
+    private int startMinutes = 0;
     private int endMinutes = 24 * 60;
     BoxLayout boxLayout2 = new BoxLayout(jCenter, BoxLayout.X_AXIS);
     TimeScale timeScale = new TimeScale();
@@ -267,7 +267,7 @@ public class SwingWeekView extends AbstractSwingCalendar
                 throw new IllegalStateException("builder.getMax() is greater than 24");
         }
 
-        int minHour = 0 + offsetMinutes / 60;
+        int minHour = offsetMinutes / 60;
         int maxHour = 24 + offsetMinutes / 60;
         //rowScale = new VariableRowScale();
         if (rowScale instanceof LinearRowScale)

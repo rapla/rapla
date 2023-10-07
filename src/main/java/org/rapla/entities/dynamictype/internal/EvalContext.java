@@ -10,13 +10,13 @@ import java.util.Map;
 
 final public class EvalContext
 {
-    private int callStackDepth;
-    private Locale locale;
-    private String annotationName;
-    private List<?> contextObjects;
+    private final int callStackDepth;
+    private final Locale locale;
+    private final String annotationName;
+    private final List<?> contextObjects;
     private EvalContext parent;
     private PermissionController permissionController;
-    private User user;
+    private final User user;
     Map<String,Object> environment;
 
     public EvalContext(Locale locale, String annotationName, PermissionController permissionController,Map<String,Object> environment, User user, List contextObjects)

@@ -29,8 +29,8 @@ public class SwingMenuContext implements MenuContext
     private final PopupContext popupContext;
 
     private Date selectedDate;
-    private JComponent component;
-    private Point point;
+    private final JComponent component;
+    private final Point point;
     
     public SwingMenuContext( Object focusedObject) {
         this(  focusedObject, null, null, null );

@@ -21,7 +21,7 @@ import java.util.Set;
 public class AppointmentMap
 {
     private Set<ReservationImpl> reservations;
-    private Map<String, Set<String>> entityIdToAppointmentIds;
+    private final Map<String, Set<String>> entityIdToAppointmentIds;
     private transient EntityResolver resolver;
 
     public AppointmentMap()

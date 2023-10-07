@@ -30,17 +30,17 @@ public class UrlEncryptor
 {
 
     @Deprecated
-    private static TypedComponentRole<String> KEY_PREFERENCE_ENTRY = new TypedComponentRole<>("org.rapla.plugin.urlencryption.urlEncKey");
+    private static final TypedComponentRole<String> KEY_PREFERENCE_ENTRY = new TypedComponentRole<>("org.rapla.plugin.urlencryption.urlEncKey");
     private static final int NUM_SHUFFELS = 2;
     private final String syncEncryptionAlg = "AES/ECB/PKCS5Padding";
 
     private Cipher encryptionCipher;
     private Cipher decryptionCipher;
 
-    private RaplaFacade facade;
-    private Logger logger;
-    private RaplaKeyStorage keyStore;
-    private RemoteSession session;
+    private final RaplaFacade facade;
+    private final Logger logger;
+    private final RaplaKeyStorage keyStore;
+    private final RemoteSession session;
 
     @Inject
     public UrlEncryptor(RaplaFacade facade, Logger logger, RaplaKeyStorage keyStore, RemoteSession session)

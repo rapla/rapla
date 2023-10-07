@@ -65,7 +65,7 @@ public class ConflictCreationAnnotationEdit extends RaplaGUIComponent implements
             
                 if ( value != null)
                 {
-                    String lookupString = "conflicts."+value.toString();
+                    String lookupString = "conflicts."+ value;
                     value =getString(lookupString);
                 }
                 return super.getListCellRendererComponent(list, value, index, isSelected, cellHasFocus);

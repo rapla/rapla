@@ -41,7 +41,7 @@ import java.util.*;
 @Extension(provides = HTMLViewPage.class, id = TableViewPlugin.TABLE_APPOINTMENTS_PER_DAY_VIEW) public class AppointmentPerDayViewPage
         implements HTMLViewPage
 {
-    private TableViewPage<AppointmentBlock> tableViewPage;
+    private final TableViewPage<AppointmentBlock> tableViewPage;
     RaplaLocale raplaLocale;
     String getDayString(AppointmentBlock block)
     {

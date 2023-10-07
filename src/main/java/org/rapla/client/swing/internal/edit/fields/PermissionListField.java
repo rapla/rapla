@@ -60,7 +60,7 @@ public class PermissionListField extends AbstractEditField implements EditFieldW
     JList permissionList = new JList();
     JPanel jPanel = new JPanel();
     PermissionField permissionField;
-    private RaplaListEdit<Permission> listEdit;
+    private final RaplaListEdit<Permission> listEdit;
     Listener listener = new Listener();
     PermissionContainer firstAllocatable;
     DefaultListModel model = new DefaultListModel();

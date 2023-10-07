@@ -27,7 +27,7 @@ import java.util.Set;
 
 public class UpdateResult
 {
-    private List<UpdateOperation> operations = new ArrayList<>();
+    private final List<UpdateOperation> operations = new ArrayList<>();
 	//Set<RaplaType> modified = new HashSet<RaplaType>();
 	private final Date since;
 	private final Date until;

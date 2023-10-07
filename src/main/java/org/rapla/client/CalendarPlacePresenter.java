@@ -46,10 +46,10 @@ import java.util.Date;
     boolean listenersDisabled = false;
 
     private final CalendarPlaceView view;
-    private DialogUiFactoryInterface dialogUiFactory;
+    private final DialogUiFactoryInterface dialogUiFactory;
     private final RaplaFacade facade;
     private final CalendarSelectionModel model;
-    private Logger logger;
+    private final Logger logger;
 
     final private ResourceSelectionPresenter resourceSelectionPresenter;
     final private SavedCalendarInterface savedViews;

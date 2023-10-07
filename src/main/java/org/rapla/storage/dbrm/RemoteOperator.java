@@ -387,11 +387,8 @@ public class RemoteOperator
     protected boolean isEntityNotFoundWarningFor(ReferenceInfo reference) {
         Class<? extends Entity> class1 = reference.getType();
         String id = reference.getId();
-        if ((class1 == User.class && !(userId == null || userId.equals(id)))) {
-            // We ignore user not found expecptions if its not the current useradmin
-            return false;
-        }
-        return true;
+        // We ignore user not found expecptions if its not the current useradmin
+        return class1 != User.class || (userId == null || userId.equals(id));
     }
 
 
@@ -728,7 +725,7 @@ public class RemoteOperator
     protected Promise<Promise<Boolean>> refreshIfIdle() {
         return getScheduler().supply(() -> {
             // if a refresh is due, we assume the system went to sleep so we refresh before we continue
-            if (intervalLength > 0 && lastValidatedTimeServer != null && (lastValidatedTimeServer.getTime() + intervalLength * 2) < getCurrentTimestamp().getTime()) {
+            if (intervalLength > 0 && lastValidatedTimeServer != null && (lastValidatedTimeServer.getTime() + intervalLength * 2L) < getCurrentTimestamp().getTime()) {
                 getLogger().info("cache not uptodate. Refreshing first.");
                 return refreshAsync().thenApply((dummy)->true);
             } else {
@@ -766,7 +763,7 @@ public class RemoteOperator
         if (entities != null) {
             for (Entity entity : entities) {
                 if (entity != null)
-                    idList.add(entity.getId().toString());
+                    idList.add(entity.getId());
             }
         }
         String[] ids = idList.toArray(new String[]{});

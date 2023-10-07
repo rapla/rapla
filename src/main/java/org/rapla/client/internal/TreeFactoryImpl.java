@@ -271,7 +271,7 @@ public class TreeFactoryImpl extends RaplaComponent implements TreeFactory
                 if (target instanceof Classifiable)
                 {
                     final Classifiable classifiable = (Classifiable) target;
-                    RaplaTreeNode childNode = newNamedNode((Named) classifiable);
+                    RaplaTreeNode childNode = newNamedNode(classifiable);
                     node.add(childNode);
                     final Classification childClassification = classifiable.getClassification();
                     fillPackages(childClassification, childNode);
@@ -542,12 +542,9 @@ public class TreeFactoryImpl extends RaplaComponent implements TreeFactory
             //                return false;
             if (text == null)
             {
-                if (other.text != null)
-                    return false;
+                return other.text == null;
             }
-            else if (!text.equals(other.text))
-                return false;
-            return true;
+            else return text.equals(other.text);
         }
 
     }
@@ -614,7 +611,7 @@ public class TreeFactoryImpl extends RaplaComponent implements TreeFactory
             Allocatable allocatable = conflict.getAllocatable();
             allocatables.add(allocatable);
         }
-        Collection<Allocatable> sorted = sorted(allocatables.toArray(new Allocatable[] {}), new SortedClassifiableComparator(getLocale()));
+        Collection<Allocatable> sorted = sorted(allocatables.toArray(Allocatable.ALLOCATABLE_ARRAY), new SortedClassifiableComparator(getLocale()));
         Map<Classifiable, Collection<RaplaTreeNode>> childMap = addClassifiables(nodeMap, sorted, true);
         for (Iterator<Conflict> it = conflicts.iterator(); it.hasNext(); )
         {

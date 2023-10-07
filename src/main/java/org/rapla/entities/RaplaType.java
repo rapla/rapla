@@ -42,8 +42,8 @@ public class RaplaType<T>  {
 
 
 
-    private Class<T> type;
-    private String localname;
+    private final Class<T> type;
+    private final String localname;
     private static final  Map<Class<? extends RaplaObject>,RaplaType> registeredTypes;
     private static final  Map<String,RaplaType> registeredTypeNames;
 

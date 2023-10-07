@@ -196,11 +196,8 @@ public class SavedCalendarSwingView extends RaplaGUIComponent implements SavedCa
             if (isDefault != other.isDefault)
                 return false;
             if (name == null) {
-                if (other.name != null)
-                    return false;
-            } else if (!name.equals(other.name))
-                return false;
-            return true;
+                return other.name == null;
+            } else return name.equals(other.name);
         }
         
 
@@ -379,7 +376,7 @@ public class SavedCalendarSwingView extends RaplaGUIComponent implements SavedCa
     
     private Promise<Void> save(final String filename)
     {
-        return ((CalendarModelImpl)model).save(filename);
+        return model.save(filename);
 
         // TODO Enable undo with a specific implementation, that does not overwrite all preference changes and regards dynamic type changes
 //        Map<Preferences, Preferences> originalMap = getModification().getPersistant(Collections.singletonList(preferences) );

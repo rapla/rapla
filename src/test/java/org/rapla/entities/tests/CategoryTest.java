@@ -69,10 +69,10 @@ import java.util.Map;
 
         superCategory.addCategory(areas);
         raplaFacade.store(superCategory);
-        Assert.assertTrue(areas.getId() != null);
+        Assert.assertNotNull(areas.getId());
         Category editObject = raplaFacade.edit(superCategory);
         raplaFacade.store(editObject);
-        Assert.assertTrue("reference to subcategory has changed", areas == superCategory.getCategory("areas"));
+        Assert.assertSame("reference to subcategory has changed", areas, superCategory.getCategory("areas"));
     }
 
     @Ignore
@@ -82,13 +82,13 @@ import java.util.Map;
         superCategory.addCategory(areas);
         User user = clientFacade.getUser();
         raplaFacade.storeAndRemove(new Entity[]{superCategory}, new Entity[] {}, user);
-        Assert.assertTrue(areas.getId() != null);
+        Assert.assertNotNull(areas.getId());
         raplaFacade.refresh();
         Category[] categories = raplaFacade.getSuperCategory().getCategories();
         for (int i = 0; i < categories.length; i++)
             if (categories[i].equals(areas))
                 return;
-        Assert.assertTrue("category not stored!", false);
+        Assert.fail("category not stored!");
     }
 
     @Test public void testStore3() throws Exception
@@ -135,8 +135,8 @@ import java.util.Map;
     {
         String path = "category[key='51']/category[key='A']/category[key='1']";
         Category sub = areas.getCategoryFromPath(path);
-        Assert.assertTrue(sub != null);
-        Assert.assertTrue(sub.getName().getName("en").equals("floor 1"));
+        Assert.assertNotNull(sub);
+        Assert.assertEquals("floor 1", sub.getName().getName("en"));
         String path2 = areas.getPathForCategory(sub);
         //      System.out.println(path2);
         Assert.assertEquals(path, path2);
@@ -147,7 +147,7 @@ import java.util.Map;
         String path = "category[key='51']/category[key='A']/category[key='1']";
         Category sub = areas.getCategoryFromPath(path);
         Assert.assertTrue(areas.isAncestorOf(sub));
-        Assert.assertTrue(!sub.isAncestorOf(areas));
+        Assert.assertFalse(sub.isAncestorOf(areas));
     }
 }
 

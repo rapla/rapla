@@ -44,7 +44,7 @@ class LargeDaySlot extends AbstractDaySlot
     public static Color WORKTIME_BACKGROUND = Color.white;
     public static Color NON_WORKTIME_BACKGROUND = new Color(0xcc, 0xcc, 0xcc);
 
-    private List<Slot> slots= new ArrayList<>();
+    private final List<Slot> slots= new ArrayList<>();
     private int slotxsize;
     
     private int selectionStart = -1;
@@ -59,7 +59,7 @@ class LargeDaySlot extends AbstractDaySlot
     JComponent header;
     IRowScale rowScale;
     
-    private BlockListener blockListener = new BlockListener();
+    private final BlockListener blockListener = new BlockListener();
     /**
        es muss auch noch setTimeIntervall() aufgerufen werden, um die initialisierung
        fertig zu stellen (wie beim konstruktor von Slot).
@@ -338,7 +338,7 @@ class LargeDaySlot extends AbstractDaySlot
     {
         private static final long serialVersionUID = 1L;
 
-        private Collection<Block> blocks= new ArrayList<>();
+        private final Collection<Block> blocks= new ArrayList<>();
        
         public Slot()  {
             setLayout(null);

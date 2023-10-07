@@ -257,7 +257,7 @@ public class RaplaClientServiceImpl implements ClientService, UpdateErrorListene
                 ((SwingBundleManager) bundleManager).setLocale(locale);
                 if ( language != null)
                 {
-                    ((SwingBundleManager) bundleManager).setLanguage(language);
+                    bundleManager.setLanguage(language);
                 }
             }
 

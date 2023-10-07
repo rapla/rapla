@@ -60,10 +60,10 @@ public class DefaultScheduler extends UtilConcurrentCommandScheduler implements 
 
 	public  io.reactivex.rxjava3.disposables.Disposable scheduleAtGivenTime(Action task, Supplier<Long> delayProvider)
 	{
-		final Observable<Long> map = just(0l).flatMap((dummy) -> just(0l).delay(delayProvider.get())).map((t) ->
+		final Observable<Long> map = just(0L).flatMap((dummy) -> just(0L).delay(delayProvider.get())).map((t) ->
 		{
 			task.run();
-			return 0l;
+			return 0L;
 		});
 		 io.reactivex.rxjava3.disposables.Disposable subscribe = map.onErrorResumeNext( (ex)->logger.error(ex.getMessage(),ex)).repeat().subscribe();
 		return subscribe;

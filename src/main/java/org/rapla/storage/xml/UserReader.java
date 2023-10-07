@@ -85,7 +85,7 @@ public class UserReader extends RaplaXMLReader
                 ReferenceInfo<Category> group = getGroupWithKeyRef( groupKey);
                 if (group != null)
                 {
-                    ((UserImpl)user).addGroupId( group );
+                    user.addGroupId( group );
                 }
             }
         }

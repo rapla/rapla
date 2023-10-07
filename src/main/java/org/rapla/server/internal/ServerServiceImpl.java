@@ -249,9 +249,6 @@ public class ServerServiceImpl implements ServerServiceContainer
         {
             logger.error("Could not disconnect operator ", e);
         }
-        finally
-        {
-        }
 
         if (wasConnected)
         {

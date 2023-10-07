@@ -35,18 +35,18 @@ public class SmallDaySlot extends AbstractDaySlot
     public static Color LINE_COLOR = new Color(0xaa, 0xaa, 0xaa);
     public static Color WORKTIME_BACKGROUND = Color.white;
     
-    private List<Block> blocks = new LinkedList<>();
+    private final List<Block> blocks = new LinkedList<>();
     private int slotxsize;
-    private Color headerColor;
-    private Color headerBackground;
-    private int rowSize = 15;
+    private final Color headerColor;
+    private final Color headerBackground;
+    private final int rowSize = 15;
     
     private boolean selected;
 
     int slot_space = 3;
 
-   private BlockListener blockListener = new BlockListener();
-   private String headerText;
+   private final BlockListener blockListener = new BlockListener();
+   private final String headerText;
 
     public SmallDaySlot(String headerText,int slotxsize,Color headerColor, Color headerBackground
                     ) {

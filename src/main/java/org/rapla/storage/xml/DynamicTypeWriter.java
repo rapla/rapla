@@ -47,7 +47,7 @@ public class DynamicTypeWriter extends RaplaXMLWriter
         printTranslation(type.getName());
         printAnnotations(type);
         
-        Attribute att[] =  type.getAttributes();
+        Attribute[] att =  type.getAttributes();
         for (int i = 0; i< att.length; i ++) {
             printAttribute(att[i]);
         }
@@ -64,7 +64,7 @@ public class DynamicTypeWriter extends RaplaXMLWriter
 
     private String getCategoryPath( Category category) throws EntityNotFoundException {
         Category rootCategory = getSuperCategory();
-        if ( category != null && rootCategory.equals( category) )
+        if (rootCategory.equals(category))
         {
             return "";
         }

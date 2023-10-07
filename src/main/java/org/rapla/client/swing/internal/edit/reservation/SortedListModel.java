@@ -323,8 +323,8 @@ public class SortedListModel extends AbstractListModel {
         return insertionPoint;
     }
 
-    private List<SortedListEntry> sortedModel;
-    private ListModel unsortedModel;
+    private final List<SortedListEntry> sortedModel;
+    private final ListModel unsortedModel;
     private Comparator<Object> comparator;
     private SortOrder sortOrder;
 

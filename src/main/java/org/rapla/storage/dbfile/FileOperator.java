@@ -78,17 +78,7 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.net.URI;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 /** Use this Operator to keep the data stored in an XML-File.
@@ -200,7 +190,7 @@ final public class FileOperator extends LocalAbstractCachableOperator
 
     /** Sets the isConnected-flag and calls loadData.*/
     @Override
-    final public void connect() throws RaplaException
+    public void connect() throws RaplaException
     {
         if (!isConnected())
         {
@@ -232,7 +222,7 @@ final public class FileOperator extends LocalAbstractCachableOperator
     }
 
     @Override
-    final public void disconnect() throws RaplaException
+    public void disconnect() throws RaplaException
     {
         super.disconnect();
         externalSyncEntities.clear();
@@ -254,7 +244,7 @@ final public class FileOperator extends LocalAbstractCachableOperator
 
 
 
-    final protected void loadData(LocalCache cache) throws RaplaException
+    protected void loadData(LocalCache cache) throws RaplaException
     {
         if (getLogger().isDebugEnabled())
             getLogger().debug("Reading data from file:" + getURL());
@@ -535,7 +525,7 @@ final public class FileOperator extends LocalAbstractCachableOperator
 
             if (direction != that.direction)
                 return false;
-            return !(system != null ? !system.equals(that.system) : that.system != null);
+            return !(!Objects.equals(system, that.system));
 
         }
 
@@ -641,7 +631,7 @@ final public class FileOperator extends LocalAbstractCachableOperator
     }
 
 
-    synchronized final public void saveData() throws RaplaException
+    synchronized public void saveData() throws RaplaException
     {
         final RaplaLock.WriteLock writeLock = writeLockIfLoaded("Saving data");
         try
@@ -656,12 +646,12 @@ final public class FileOperator extends LocalAbstractCachableOperator
     }
 
     @Override
-    synchronized final public void saveData(LocalCache cache, Collection<ExternalSyncEntity> syncEntities,String version) throws RaplaException
+    synchronized public void saveData(LocalCache cache, Collection<ExternalSyncEntity> syncEntities, String version) throws RaplaException
     {
         saveData(cache,syncEntities, version, true);
     }
 
-    synchronized final private void saveData(LocalCache cache, Collection<ExternalSyncEntity> syncEntities, String version, boolean includeIds) throws RaplaException
+    synchronized private void saveData(LocalCache cache, Collection<ExternalSyncEntity> syncEntities, String version, boolean includeIds) throws RaplaException
     {
         final RaplaMainWriter raplaMainWriter = getMainWriter(cache, syncEntities,version, includeIds);
         try

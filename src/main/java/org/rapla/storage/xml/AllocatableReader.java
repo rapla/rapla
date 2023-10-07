@@ -25,11 +25,11 @@ import org.rapla.framework.RaplaException;
 
 public class AllocatableReader extends RaplaXMLReader
 {
-    private DynAttReader dynAttHandler;
+    private final DynAttReader dynAttHandler;
     private AllocatableImpl allocatable;
 	private String annotationKey;
 	private Annotatable currentAnnotatable;
-	private PermissionReader permissionHandler;
+	private final PermissionReader permissionHandler;
 	
     public AllocatableReader( RaplaXMLContext context ) throws RaplaException
     {
@@ -72,8 +72,7 @@ public class AllocatableReader extends RaplaXMLReader
                     namespaceURI,
                     localName,
                     atts );
-            return;
-            
+
         }
         else if (localName.equals( "annotation" ) )
         {

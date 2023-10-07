@@ -18,7 +18,7 @@ import java.util.*;
  */
 public class EncryptedHttpServletRequest extends HttpServletRequestWrapper
 {
-	private Map<String, String[]> parameters;
+	private final Map<String, String[]> parameters;
 	private final String newRequestUri;
 	private final static String encoding = "UTF-8";
 

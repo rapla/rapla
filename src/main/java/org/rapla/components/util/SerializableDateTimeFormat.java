@@ -223,12 +223,10 @@ public class SerializableDateTimeFormat
     }
 
     public String formatTimestamp( Date date ) {
-    	StringBuilder builder = new StringBuilder();
-    	builder.append(formatDate( date, false));
-    	builder.append( DATE_TIME_SEPERATOR);
-    	builder.append( formatTime( date , true));
-    	builder.append( 'Z');
-		String timestamp = builder.toString();
+        String timestamp = formatDate(date, false) +
+                DATE_TIME_SEPERATOR +
+                formatTime(date, true) +
+                'Z';
         return timestamp;
     }
 

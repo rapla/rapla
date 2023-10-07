@@ -65,7 +65,7 @@ final public class CategoryImpl extends SimpleEntity implements Category, Modifi
         result.add( cat );
         for (Category child:cat.getCategoryList())
         {
-            addRecursive((CategoryImpl)child, result,depth + 1);
+            addRecursive(child, result,depth + 1);
         }
     }
 
@@ -224,7 +224,7 @@ final public class CategoryImpl extends SimpleEntity implements Category, Modifi
 
     public Collection<Category> getTransientCategoryList()
     {
-        final Collection<Entity> nonpersistantEntities = (Collection) getNonpersistantEntities();
+        final Collection<Entity> nonpersistantEntities = getNonpersistantEntities();
         if ( nonpersistantEntities.isEmpty())
         {
             return Collections.emptySet();
@@ -354,7 +354,7 @@ final public class CategoryImpl extends SimpleEntity implements Category, Modifi
 
     public String getPath(Category rootCategory,Locale locale) {
         StringBuffer buf = new StringBuffer();
-        if (rootCategory != null && this.equals(rootCategory))
+        if (this.equals(rootCategory))
             return "";
         if (this.getParent() != null) {
             String path = this.getParent().getPath(rootCategory,locale);
@@ -368,7 +368,7 @@ final public class CategoryImpl extends SimpleEntity implements Category, Modifi
     
     public List<String> getKeyPath(Category rootCategory) {
     	LinkedList<String> result = new LinkedList<>();
-        if (rootCategory != null && this.equals(rootCategory))
+        if (this.equals(rootCategory))
             return result;
        
         Category cat = this;
@@ -389,7 +389,7 @@ final public class CategoryImpl extends SimpleEntity implements Category, Modifi
     public String toString() {
         MultiLanguageName name = getName();
         if (name != null) {
-            return name.toString() + " ID='" + getId() + "' key='" + getKey()+"'" ;
+            return name + " ID='" + getId() + "' key='" + getKey()+"'" ;
         }  else {
             return getKey()  + " " + getId();
         }

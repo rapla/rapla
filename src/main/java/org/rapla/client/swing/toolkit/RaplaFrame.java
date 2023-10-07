@@ -102,8 +102,8 @@ public class RaplaFrame extends JFrame
         PropertyChangeEvent evt = new PropertyChangeEvent(
                                                           this
                                                           ,"visible"
-                                                          ,new Boolean(true)
-                                                          ,new Boolean(false)
+                                                          , Boolean.TRUE
+                                                          , Boolean.FALSE
                                                           )
             ;
         VetoableChangeListener[] listeners = getVetoableChangeListeners();

@@ -48,9 +48,9 @@ abstract public class RaplaXMLWriter extends XMLWriter
 {
 
     //protected NamespaceSupport namespaceSupport = new NamespaceSupport();
-    private boolean isPrintId;
+    private final boolean isPrintId;
 
-    private Map<String,Class<? extends RaplaObject>> localnameMap;
+    private final Map<String,Class<? extends RaplaObject>> localnameMap;
     Logger logger;
     Map<Class<? extends RaplaObject>,RaplaXMLWriter> writerMap;
     protected RaplaXMLContext context;

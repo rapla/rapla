@@ -107,7 +107,7 @@ public class TokenHandler
     {
         String userId = user.getId();
         Date now = operator.getCurrentTimestamp();
-        Date validUntil = new Date(now.getTime() + 1000 * accessTokenValiditySeconds);
+        Date validUntil = new Date(now.getTime() + 1000L * accessTokenValiditySeconds);
         String signedToken = null;
         try
         {

@@ -121,7 +121,7 @@ import java.util.Set;
         {
             final int delay = 30000;
             // remove locks every minute
-            final int period = 1000*60*1;
+            final int period = 1000 * 60;
             scheduleConnectedTasks(()->
                 {
                     {
@@ -1044,7 +1044,7 @@ import java.util.Set;
         Collection<Entity> migratedTemplates = migrateTemplates();
         cache.putAll(migratedTemplates);
         List<PreferencePatch> preferencePatches = Collections.emptyList();
-        Collection<ReferenceInfo> removeObjects = (Collection)entitiesToRemove;
+        Collection<ReferenceInfo> removeObjects = entitiesToRemove;
         dbStore(migratedTemplates, preferencePatches, removeObjects, connection, null);
         // It is important to do the read only later because some resolve might involve write to referenced objects
         for (Entity entity : list)

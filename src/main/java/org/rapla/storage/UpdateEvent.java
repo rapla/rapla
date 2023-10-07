@@ -37,16 +37,7 @@ import org.rapla.facade.Conflict;
 import org.rapla.facade.internal.ConflictImpl;
 import org.rapla.framework.RaplaException;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Date;
-import java.util.HashSet;
-import java.util.LinkedHashMap;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collector;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -101,9 +92,9 @@ public class UpdateEvent
 
             SerializableReferenceInfo that = (SerializableReferenceInfo) o;
 
-            if (id != null ? !id.equals(that.id) : that.id != null)
+            if (!Objects.equals(id, that.id))
                 return false;
-            return !(localname != null ? !localname.equals(that.localname) : that.localname != null);
+            return !(!Objects.equals(localname, that.localname));
 
         }
 
@@ -341,10 +332,7 @@ public class UpdateEvent
             removeSet = new LinkedHashSet<>();
             removeSet.add(id);
         }
-        else if (!removeSet.contains(id))
-        {
-            removeSet.add(id);
-        }
+        else removeSet.add(id);
 
     }
 

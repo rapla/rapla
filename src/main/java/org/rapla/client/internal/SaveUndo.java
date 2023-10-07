@@ -30,7 +30,7 @@ public class SaveUndo<T extends Entity> implements CommandUndo<RaplaException> {
 	final Map<T,T> storeListCopy;
 	final private Map<T,Boolean> isNew;
 	protected final String commandoName;
-   	private RaplaFacade facade;
+   	private final RaplaFacade facade;
    	RaplaResources i18n;
    	boolean firstTime = true;
 

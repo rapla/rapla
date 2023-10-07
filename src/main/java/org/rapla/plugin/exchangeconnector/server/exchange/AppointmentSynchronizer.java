@@ -103,7 +103,7 @@ public class AppointmentSynchronizer
     private final boolean sendNotificationMail;
     private final Logger logger;
     private final Map<ReferenceInfo<Allocatable>, CalendarFolder> usedSharedMailboxes;
-    private EWSConnector ewsConnector;
+    private final EWSConnector ewsConnector;
     private final String exchangeTimezoneId;
     private final String exchangeAppointmentCategory;
     private final Locale locale;
@@ -242,7 +242,6 @@ public class AppointmentSynchronizer
             case toUpdate:
                 addOrUpdate();
                 appointmentTask.setStatus(SyncStatus.synched);
-                return;
         }
     }
 
@@ -313,7 +312,7 @@ public class AppointmentSynchronizer
             {
                 try
                 {
-                    getLogger().debug("Deleting  " + exchangeAppointment.getId().getUniqueId() + " " + exchangeAppointment.toString());
+                    getLogger().debug("Deleting  " + exchangeAppointment.getId().getUniqueId() + " " + exchangeAppointment);
                     exchangeAppointment.delete(DeleteMode.HardDelete, SendCancellationsMode.SendToNone);
                 }
                 catch (ServiceResponseException e)
@@ -365,7 +364,7 @@ public class AppointmentSynchronizer
                 final Item item = items.iterator().next();
                 if (item instanceof microsoft.exchange.webservices.data.core.service.item.Appointment)
                 {
-                    return microsoft.exchange.webservices.data.core.service.item.Appointment.class.cast(item);
+                    return (microsoft.exchange.webservices.data.core.service.item.Appointment) item;
                 }
                 final ItemId id = item.getId();
                 return microsoft.exchange.webservices.data.core.service.item.Appointment.bind(service, id);
@@ -569,7 +568,7 @@ public class AppointmentSynchronizer
             {
                 if (email != null  && sendNotificationMail)
                 {
-                    final Attendee attendee = new Attendee(email.toString());
+                    final Attendee attendee = new Attendee(email);
                     attendee.setMailboxType(MailboxType.Mailbox);
                     attendee.setRoutingType("SMTP");
                     attendee.setName(name);
@@ -779,7 +778,7 @@ public class AppointmentSynchronizer
             }
             if (exceptionDates.contains(exchangeException))
             {
-                getLogger().info("Removing exception for " + occurrence.getId().getUniqueId() + " " + occurrence.toString());
+                getLogger().info("Removing exception for " + occurrence.getId().getUniqueId() + " " + occurrence);
                 occurrence.delete(DeleteMode.MoveToDeletedItems, SendCancellationsMode.SendOnlyToAll);
             }
         }

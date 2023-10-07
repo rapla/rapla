@@ -255,11 +255,7 @@ public class SwingCompactDayCalendar extends AbstractRaplaSwingCalendar
                 int minuteOfDayBefore;
                 final DateTools.TimeWithoutTimezone timeWithoutTimezone = DateTools.toTime(block.getStart().getTime());
                 minuteOfDayBefore = timeWithoutTimezone.hour * 60 + timeWithoutTimezone.minute;
-                boolean sameTimeSlot = true;
-                if (minuteOfDayBefore != time)
-                {
-                    sameTimeSlot = false;
-                }
+                boolean sameTimeSlot = minuteOfDayBefore == time;
                 if (rowIndex + 1 < timeslots.size())
                 {
                     Timeslot nextTimeslot = timeslots.get(rowIndex + 1);

@@ -94,7 +94,7 @@ public class Export2iCalConverter
         this.logger = logger;
         this.i18n = i18n;
         TimeZone zone = timezoneConverter.getImportExportTimeZone();
-        DynamicType[] dynamicTypes = new DynamicType[0];
+        DynamicType[] dynamicTypes = DynamicType.DYNAMICTYPE_ARRAY;
         RaplaConfiguration config = null;
         try
         {
@@ -578,16 +578,9 @@ public class Export2iCalConverter
     {
         if (hasLocationType)
         {
-            if (alloc.getClassification().getType().getAnnotation(DynamicTypeAnnotations.KEY_LOCATION) == null)
-            {
-                return false;
-            }
+            return alloc.getClassification().getType().getAnnotation(DynamicTypeAnnotations.KEY_LOCATION) != null;
         }
-        else if (alloc.isPerson())
-        {
-            return false;
-        }
-        return true;
+        else return !alloc.isPerson();
     }
 
     /**

@@ -85,7 +85,7 @@ public class ClassificationFilterTest  {
         filter =  configuration.getFilter();
         Iterator<? extends ClassificationFilterRule> it = filter[0].ruleIterator();
         it.next();
-        Assert.assertTrue("second rule should be removed.", !it.hasNext());
+        Assert.assertFalse("second rule should be removed.", it.hasNext());
 
     }
 

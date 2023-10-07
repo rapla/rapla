@@ -91,7 +91,7 @@ public class ReservationInfoEdit extends RaplaGUIComponent
     private Classification classification;
     private Classification lastClassification = null;
     private Classifiable classifiable;
-    private CommandHistory commandHistory;
+    private final CommandHistory commandHistory;
     
     ArrayList<ChangeListener> listenerList = new ArrayList<>();
     ArrayList<DetailListener> detailListenerList = new ArrayList<>();
@@ -513,7 +513,7 @@ public class ReservationInfoEdit extends RaplaGUIComponent
                     
                 }
                 UndoClassificationChange classificationChange = new UndoClassificationChange(oldValue, newValue, keyName);
-                if (oldValue != newValue && (oldValue == null || newValue == null || !oldValue.equals(newValue))) {
+                if (oldValue != newValue && (oldValue == null || !oldValue.equals(newValue))) {
                     handleException(commandHistory.storeAndExecute(classificationChange));
                 }
         }
@@ -564,7 +564,7 @@ public class ReservationInfoEdit extends RaplaGUIComponent
                 try
                 {
                     Object attValue = getAttValue(keyName);
-                    if (attValue != valueToSet && (attValue == null || valueToSet == null || !attValue.equals(valueToSet)))
+                    if (attValue != valueToSet && (attValue == null || !attValue.equals(valueToSet)))
                     {
                         SetGetField<?> editField = (SetGetField<?>) getEditField();
 

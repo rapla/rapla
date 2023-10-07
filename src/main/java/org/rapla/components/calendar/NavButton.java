@@ -148,7 +148,7 @@ public class NavButton extends AbstractButton implements MouseListener {
         long startMillis;
         long startDelay;
         public void start() {
-            startDelay = m_delay * 8;
+            startDelay = m_delay * 8L;
             fireAndReset();
             if (m_delay > 0)
                 SwingUtilities.invokeLater(this);

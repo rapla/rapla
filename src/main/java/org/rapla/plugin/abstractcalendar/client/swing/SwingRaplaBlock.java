@@ -117,9 +117,9 @@ public class SwingRaplaBlock extends RaplaBlock implements SwingBlock
 
     static Map<Integer,Map<String,Color>> alphaMap = new HashMap<>();
 
-    private static Color LINECOLOR_INACTIVE = Color.darkGray;
-    private static Color LINECOLOR_ACTIVE = new Color( 255, 90, 10 );
-    private static Color LINECOLOR_SAME_RESERVATION = new Color( 180, 20, 120 );
+    private static final Color LINECOLOR_INACTIVE = Color.darkGray;
+    private static final Color LINECOLOR_ACTIVE = new Color( 255, 90, 10 );
+    private static final Color LINECOLOR_SAME_RESERVATION = new Color( 180, 20, 120 );
 
     // The Linecolor is not static because it can be changed depending on the mouse move
     private Color linecolor = LINECOLOR_INACTIVE;
@@ -263,7 +263,7 @@ public class SwingRaplaBlock extends RaplaBlock implements SwingBlock
                     }
                     if (  !getBuildContext().isResourceVisible() && buffer.length() > 0)
                     {
-                    	timeString = timeString + " " + buffer.toString();
+                    	timeString = timeString + " " + buffer;
                     }
                     y = drawString( g, timeString, y, 2, false ) - 1;
                 }

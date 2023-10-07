@@ -24,7 +24,7 @@ import java.util.Set;
 public class DeleteUndo<T extends Entity<T>>  implements CommandUndo<RaplaException> {
 	// FIXME Delete of categories in multiple levels can cause the lower levels not to be deleted if it contains categories higher in rank but same hierarchy that are also deleted
 	// FIXME Needs a check last changed
-	private Set<T> entities;
+	private final Set<T> entities;
 	RaplaFacade facade;
 	RaplaResources i18n;
 	User user;

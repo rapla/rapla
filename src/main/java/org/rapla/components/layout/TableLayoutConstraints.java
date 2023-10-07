@@ -76,21 +76,21 @@ public TableLayoutConstraints (String constraints)
     {
         // Get the first column (assume component is in only one column)
         token = st.nextToken();
-        col1 = new Integer(token).intValue();
+        col1 = Integer.parseInt(token);
         col2 = col1;
 
         // Get the first row (assume component is in only one row)
         token = st.nextToken();
-        row1 = new Integer(token).intValue();
+        row1 = Integer.parseInt(token);
         row2 = row1;
 
         // Get the second column
         token = st.nextToken();
-        col2 = new Integer(token).intValue();
+        col2 = Integer.parseInt(token);
 
         // Get the second row
         token = st.nextToken();
-        row2 = new Integer(token).intValue();
+        row2 = Integer.parseInt(token);
     }
     catch (NoSuchElementException error) {}
     catch (NumberFormatException error)
@@ -99,7 +99,7 @@ public TableLayoutConstraints (String constraints)
         {
             // Check if token means horizontally justification the component
             @SuppressWarnings("null") // Can't be null because nextToken is called before the Integer parsing
-            String t = token.toString();
+            String t = token;
             if (t.equalsIgnoreCase("L"))
                 hAlign = LEFT;
             else if (t.equalsIgnoreCase("C"))
@@ -187,8 +187,8 @@ public String toString ()
     
     if ((row1 == row2) && (col1 == col2))
     {
-        final char h[] = {'L', 'C', 'F', 'R'};
-        final char v[] = {'T', 'C', 'F', 'B'};
+        final char[] h = {'L', 'C', 'F', 'R'};
+        final char[] v = {'T', 'C', 'F', 'B'};
         
         buffer.append (h[hAlign]);
         buffer.append (", ");

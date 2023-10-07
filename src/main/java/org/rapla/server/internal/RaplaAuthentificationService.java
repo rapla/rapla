@@ -151,7 +151,7 @@ public class RaplaAuthentificationService
             }
             else
             {
-                Set<Entity> singleton = Collections.singleton((Entity) user);
+                Set<Entity> singleton = Collections.singleton(user);
                 Map<Entity,Entity> editList = operator.editObjects(singleton, null);
                 user = (User) editList.values().iterator().next();
             }

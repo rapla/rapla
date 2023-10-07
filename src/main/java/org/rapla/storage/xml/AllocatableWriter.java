@@ -45,7 +45,7 @@ public class AllocatableWriter extends ClassifiableWriter {
         }
         else
         {
-        	throw new RaplaException("No or unknown classification type '" + annotation + "'  set for " + allocatable.toString()  + " ignoring ");
+        	throw new RaplaException("No or unknown classification type '" + annotation + "'  set for " + allocatable + " ignoring ");
         }
         openTag(tagName);
         printId(allocatable);

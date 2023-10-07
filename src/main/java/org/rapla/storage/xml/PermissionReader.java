@@ -112,8 +112,8 @@ public class PermissionReader extends RaplaXMLReader
     @Override
     public void processEnd( String namespaceURI, String localName ) throws RaplaSAXParseException
     {
-        if (!namespaceURI.equals( RAPLA_NS ))
-            return;
+        if (!namespaceURI.equals( RAPLA_NS )) {
+        }
 
     }
 

@@ -484,11 +484,11 @@ final public class AttributeImpl extends SimpleEntity implements Attribute
                 return null;
 
             if (value instanceof Boolean)
-                return ((Boolean) value).booleanValue() ? new Long(1) : new Long(0);
+                return ((Boolean) value).booleanValue() ? Long.valueOf(1) : Long.valueOf(0);
             String str = value.toString().trim().toLowerCase();
             try
             {
-                return new Long(str);
+                return Long.valueOf(str);
             }
             catch (NumberFormatException ex)
             {
@@ -515,10 +515,7 @@ final public class AttributeImpl extends SimpleEntity implements Attribute
             if (value instanceof String)
             {
                 Allocatable result = resolver.tryResolve((String) value, Allocatable.class);
-                if (result != null)
-                {
-                    return result;
-                }
+                return result;
             }
             else if (value instanceof Allocatable)
             {
@@ -551,7 +548,7 @@ final public class AttributeImpl extends SimpleEntity implements Attribute
                     {
                         String key = keyPath.get(i);
                         String rootCatKey = keyPathRootCategory.size() > i ? keyPathRootCategory.get(i) : null;
-                        if (rootCatKey == null || !key.equals(rootCatKey))
+                        if (!key.equals(rootCatKey))
                         {
                             differInKeys = true;
                         }
@@ -621,10 +618,6 @@ final public class AttributeImpl extends SimpleEntity implements Attribute
             if (rootCategory != null)
             {
                 Category category = rootCategory.getCategory(value.toString());
-                if (category == null)
-                {
-                    return null;
-                }
                 return category;
             }
         }
@@ -694,7 +687,7 @@ final public class AttributeImpl extends SimpleEntity implements Attribute
         MultiLanguageName name = getName();
         if (name != null)
         {
-            return name.toString() + " ID='" + getId() + "'";
+            return name + " ID='" + getId() + "'";
         }
         else
         {
@@ -783,14 +776,14 @@ final public class AttributeImpl extends SimpleEntity implements Attribute
         AttributeType type = attribute.getType();
         if (type.equals(AttributeType.ALLOCATABLE))
         {
-            return ((Entity) value).getId().toString();
+            return ((Entity) value).getId();
         }
         if (type.equals(AttributeType.CATEGORY))
         {
             CategoryImpl rootCategory = (CategoryImpl) attribute.getConstraint(ConstraintIds.KEY_ROOT_CATEGORY);
             if (idOnly)
             {
-                return ((Entity) value).getId().toString();
+                return ((Entity) value).getId();
             }
             else
             {
@@ -827,11 +820,11 @@ final public class AttributeImpl extends SimpleEntity implements Attribute
                 return null;
 
             if (value instanceof Boolean)
-                return ((Boolean) value).booleanValue() ? new Long(1) : new Long(0);
+                return ((Boolean) value).booleanValue() ? Long.valueOf(1) : Long.valueOf(0);
             String str = value.toString().trim().toLowerCase();
             try
             {
-                return new Long(str);
+                return Long.valueOf(str);
             }
             catch (NumberFormatException ex)
             {

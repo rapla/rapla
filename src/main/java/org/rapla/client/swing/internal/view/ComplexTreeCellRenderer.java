@@ -134,7 +134,7 @@ public class ComplexTreeCellRenderer extends DefaultTreeCellRenderer {
             setOpenIcon(bigFolderIcon);
             setLeafIcon(bigFolderIcon);
             setFont(bigFont);
-            value = i18n.getString("users");;
+            value = i18n.getString("users");
         } else {
             setClosedIcon(folderClosedIcon);
             setOpenIcon(folderOpenIcon);

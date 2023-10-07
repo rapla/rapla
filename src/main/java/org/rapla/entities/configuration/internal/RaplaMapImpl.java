@@ -35,16 +35,7 @@ import org.rapla.entities.storage.ReferenceInfo;
 import org.rapla.entities.storage.internal.ReferenceHandler;
 import org.rapla.rest.GenericObjectSerializable;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.TreeMap;
+import java.util.*;
 
 /** Maps can only support one type value at a time. Especially  a mixture out of references and other values is not supported*/
 public class RaplaMapImpl implements EntityReferencer, DynamicTypeDependant, RaplaObject, RaplaMap, GenericObjectSerializable
@@ -58,7 +49,7 @@ public class RaplaMapImpl implements EntityReferencer, DynamicTypeDependant, Rap
     transient protected Map<String, Object> map;
     transient EntityResolver resolver;
 
-    static private Class<?extends Entity>[] SUPPORTED_TYPES = new Class[] { Allocatable.class, Category.class, DynamicType.class };
+    static private final Class<?extends Entity>[] SUPPORTED_TYPES = new Class[] { Allocatable.class, Category.class, DynamicType.class };
     // this map only stores the references
 
     // this map only stores the child objects (not the references)
@@ -156,7 +147,7 @@ public class RaplaMapImpl implements EntityReferencer, DynamicTypeDependant, Rap
             {
                 System.err.println("Adding null value in list");
             }
-            map.put(new String(String.valueOf(key++)), next);
+            map.put(String.valueOf(key++), next);
         }
         return map;
     }
@@ -591,7 +582,7 @@ public class RaplaMapImpl implements EntityReferencer, DynamicTypeDependant, Rap
                 throw new IllegalArgumentException("Unsupported Linktype in map " + linkType);
             }
             else {
-                throw new IllegalArgumentException("Linktype in map not set "  + toString());
+                throw new IllegalArgumentException("Linktype in map not set "  + this);
             }
 
         }
@@ -746,15 +737,15 @@ public class RaplaMapImpl implements EntityReferencer, DynamicTypeDependant, Rap
 
         RaplaMapImpl raplaMap = (RaplaMapImpl) o;
 
-        if (constants != null ? !constants.equals(raplaMap.constants) : raplaMap.constants != null)
+        if (!Objects.equals(constants, raplaMap.constants))
             return false;
-        if (configurations != null ? !configurations.equals(raplaMap.configurations) : raplaMap.configurations != null)
+        if (!Objects.equals(configurations, raplaMap.configurations))
             return false;
-        if (maps != null ? !maps.equals(raplaMap.maps) : raplaMap.maps != null)
+        if (!Objects.equals(maps, raplaMap.maps))
             return false;
-        if (calendars != null ? !calendars.equals(raplaMap.calendars) : raplaMap.calendars != null)
+        if (!Objects.equals(calendars, raplaMap.calendars))
             return false;
-        return links != null ? links.equals(raplaMap.links) : raplaMap.links == null;
+        return Objects.equals(links, raplaMap.links);
 
     }
 

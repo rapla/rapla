@@ -177,7 +177,7 @@ class CategoryDetail extends RaplaGUIComponent implements ChangeListener
     class CategoryListCellRenderer extends DefaultListCellRenderer
     {
         private static final long serialVersionUID = 1L;
-        private boolean filterStyle;
+        private final boolean filterStyle;
 
         public CategoryListCellRenderer(boolean filterStyle)
         {
@@ -227,14 +227,7 @@ class CategoryDetail extends RaplaGUIComponent implements ChangeListener
         name.setValue((MultiLanguageName) category.getName().clone());
         key.setValue(category.getKey());
         String color = category.getAnnotation(CategoryAnnotations.KEY_NAME_COLOR);
-        if (color != null)
-        {
-            colorTextField.setValue(color);
-        }
-        else
-        {
-            colorTextField.setValue(null);
-        }
+        colorTextField.setValue(color);
         currentCategory = category;
     }
 
@@ -242,7 +235,7 @@ class CategoryDetail extends RaplaGUIComponent implements ChangeListener
     {
         category.getName().setTo(name.getValue());
         category.setKey(key.getValue());
-        String colorValue = colorTextField.getValue().toString().trim();
+        String colorValue = colorTextField.getValue().trim();
         if (colorValue.length() > 0)
         {
             category.setAnnotation(CategoryAnnotations.KEY_NAME_COLOR, colorValue);

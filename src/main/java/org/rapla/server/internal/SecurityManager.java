@@ -230,7 +230,7 @@ import java.util.*;
                 //Category group = getUserGroupsCategory().getCategory( Permission.GROUP_CAN_CREATE_EVENTS);
                 if (!canCreate)
                 {
-                    throw new RaplaSecurityException(i18n.format("error.create_not_allowed", new Object[] { user.toString(), entity.toString() }));
+                    throw new RaplaSecurityException(i18n.format("error.create_not_allowed", user.toString(), entity.toString()));
                 }
             }
             checkPermissions(user, reservation, originalReservation, all);
@@ -376,9 +376,7 @@ import java.util.*;
                         }
                     }
                 }
-                if (!validRequestStatusChange) {
-                    return false;
-                }
+                return validRequestStatusChange;
             }
             return true;
         }

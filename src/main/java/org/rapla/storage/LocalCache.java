@@ -50,7 +50,7 @@ public class LocalCache implements EntityResolver
     //Map<String,ConflictImpl> disabledConflicts = new HashMap<String,ConflictImpl>();
     Map<String,ReferenceInfo<Appointment>> disabledConflictApp1 = Collections.synchronizedMap(new HashMap<>());
     Map<String,ReferenceInfo<Appointment>> disabledConflictApp2 = Collections.synchronizedMap(new HashMap<>());
-    Map<String, Date> conflictLastChanged = Collections.synchronizedMap(new HashMap<>());;
+    Map<String, Date> conflictLastChanged = Collections.synchronizedMap(new HashMap<>());
 
     Map<String, DynamicTypeImpl> dynamicTypes;
     Map<String, UserImpl> users;

@@ -65,7 +65,7 @@ public class CompactViewFactory implements SwingViewFactory
     private final Logger logger;
     private final IOInterface ioInterface;
     private final AppointmentFormater appointmentFormater;
-    private RaplaConfiguration config;
+    private final RaplaConfiguration config;
     private final EditController editController;
 
     @Inject

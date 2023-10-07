@@ -38,7 +38,7 @@ import java.util.Map;
 @Path("resources")
 public class RaplaResourcesRestPage  {
 
-	private Collection<String> CLASSIFICATION_TYPES = Arrays.asList(DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RESOURCE,
+	private final Collection<String> CLASSIFICATION_TYPES = Arrays.asList(DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RESOURCE,
 			DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_PERSON);
 
 	@Inject
@@ -106,7 +106,7 @@ public class RaplaResourcesRestPage  {
                     filterList.add(classificationFilter);
                 }
             }
-            filters = filterList.toArray(new ClassificationFilter[] {});
+            filters = filterList.toArray(ClassificationFilter.CLASSIFICATIONFILTER_ARRAY);
         }
         return filters;
     }

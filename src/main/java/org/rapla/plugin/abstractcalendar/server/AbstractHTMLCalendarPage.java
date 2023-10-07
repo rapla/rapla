@@ -376,9 +376,9 @@ public abstract class AbstractHTMLCalendarPage  implements HTMLViewPage
     }
 
     static public void printAllocatableList(HttpServletRequest request, java.io.PrintWriter out, Locale locale, String title, Collection<Allocatable> selectedAllocatables, boolean addCSV) throws UnsupportedEncodingException {
-    	String base = request.getRequestURI().toString();
+    	String base = request.getRequestURI();
         String forwardProto = request.getHeader("X-Forwarded-Proto");
-        boolean secure = (forwardProto != null && forwardProto.toLowerCase().equals("https")) || request.isSecure();
+        boolean secure = (forwardProto != null && forwardProto.equalsIgnoreCase("https")) || request.isSecure();
         if ( secure) {
             base = base.replaceAll("http://", "https://");
         }

@@ -33,7 +33,7 @@ public abstract class AbstractGroupStrategy implements BuildStrategy {
     public static long MILLISECONDS_PER_DAY = 24 * 3600 * 1000;
     private boolean m_fixedSlots;
     private boolean m_conflictResolving;
-    private int offsetMinutes = 0 * 60;
+    private int offsetMinutes = 0;
 
     protected Comparator<Block> blockComparator = new BlockComparator();
 

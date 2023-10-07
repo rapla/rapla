@@ -46,8 +46,8 @@ final class RaplaTreeEdit implements
     JPanel jointPanel = new JPanel() {
         private static final long serialVersionUID = 1L;
 
-            int xa[] = new int[4];
-            int ya[] = new int[4];
+            final int[] xa = new int[4];
+            final int[] ya = new int[4];
             public void paint(Graphics g) {
                 super.paint(g);
                 TreePath selectedPath = tree.getPathForRow( getSelectedIndex() );
@@ -91,8 +91,8 @@ final class RaplaTreeEdit implements
         };
 
     CardLayout cardLayout = new CardLayout();
-    private Listener listener = new Listener();
-    private ActionListener callback;
+    private final Listener listener = new Listener();
+    private final ActionListener callback;
     I18nBundle i18n;
 
     public RaplaTreeEdit(I18nBundle i18n,JComponent detailContent,ActionListener callback) {
@@ -167,7 +167,6 @@ final class RaplaTreeEdit implements
         Object selected = getSelectedValue();
         if (selected == null) {
             cardLayout.first(editPanel);
-            return;
         } else {
             cardLayout.last(editPanel);
             callback.actionPerformed(new ActionEvent(this

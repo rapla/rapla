@@ -30,7 +30,7 @@ public class FilterIteratorTest  {
     public void testIterator() {
         List<Integer> list = new ArrayList<Integer>();
         for (int i=0;i<6;i++) {
-            list.add( new Integer(i));
+            list.add(Integer.valueOf(i));
         }
         Iterator<Integer> it = (new FilterIterable<Integer>(list) {
             protected boolean isInIterator( Object obj )
@@ -40,9 +40,9 @@ public class FilterIteratorTest  {
         }).iterator();
         for (int i=0;i<6;i++) {
             if ( i % 2 == 0)
-                Assert.assertEquals(new Integer(i), it.next());
+                Assert.assertEquals(Integer.valueOf(i), it.next());
         }
-        Assert.assertTrue(it.hasNext() == false);
+        Assert.assertFalse(it.hasNext());
     }
 }
 

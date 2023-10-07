@@ -63,11 +63,11 @@ import java.util.TimeZone;
 @Singleton
 public class UpdateDataManagerImpl implements  UpdateDataManager
 {
-    private CachableStorageOperator operator;
+    private final CachableStorageOperator operator;
 
-    private SecurityManager security;
+    private final SecurityManager security;
 
-    private Logger logger;
+    private final Logger logger;
 
     private final PermissionController permissionController;
 
@@ -263,7 +263,7 @@ public class UpdateDataManagerImpl implements  UpdateDataManager
             Set<String> groupsConflictRefresh = new HashSet<>();
             for (Permission permission : invalidatePermissions)
             {
-                String permissionUser = ((PermissionImpl)permission).getUserId();
+                String permissionUser = permission.getUserId();
                 if (permissionUser != null && permissionUser.equals(user.getId()))
                 {
                     resourceRefresh = true;
@@ -284,7 +284,7 @@ public class UpdateDataManagerImpl implements  UpdateDataManager
             {
                 for (Permission permission : invalidateEventPermissions)
                 {
-                    String permissionUser = ((PermissionImpl)permission).getUserId();
+                    String permissionUser = permission.getUserId();
                     if (permissionUser != null && permissionUser.equals(user.getId()))
                     {
                         conflictRefresh = true;
@@ -428,7 +428,7 @@ public class UpdateDataManagerImpl implements  UpdateDataManager
                 final Collection<Category> adminGroups = PermissionController.getGroupsToAdmin(user);
                 if ( adminGroups.size() > 0)
                 {
-                    clientStore = permissionController.canAdmin( (User) obj, user);
+                    clientStore = permissionController.canAdmin(obj, user);
                 }
             }
         }
@@ -461,10 +461,7 @@ public class UpdateDataManagerImpl implements  UpdateDataManager
         }
         if (obj instanceof Classifiable)
         {
-            if (!DynamicTypeImpl.isTransferedToClient((Classifiable) obj))
-            {
-                return false;
-            }
+            return DynamicTypeImpl.isTransferedToClient((Classifiable) obj);
         }
         return true;
 

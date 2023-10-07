@@ -64,24 +64,24 @@ final class DaySelection extends JComponent implements DateChangeListener,MouseL
     /** stores the weekdays order e.g so,mo,tu,.. or mo,tu.
      * Requirement: The week has seven days
      */
-    private int[] weekday2slot = new int[8];
+    private final int[] weekday2slot = new int[8];
     /** stores the weekdayNames mon - sun.
      * Requirement: The week has seven days.
     */
-    private String[] weekdayNames  = new String[7];
+    private final String[] weekdayNames  = new String[7];
 
 
     /** stores the days 1 - 31 days[1] = 1
      * <br>maximum days per month 40
      */
-    private String[] days = new String[40];
+    private final String[] days = new String[40];
 
 
 
     private int selectedField = 10;
     private int focusedField = 10;
-    private DateModel model;
-    private DateModel focusModel;
+    private final DateModel model;
+    private final DateModel focusModel;
 
     private int lastFocusedMonth; // performance improvement
     private int lastFocusedYear;  // performance improvement
@@ -158,16 +158,16 @@ final class DaySelection extends JComponent implements DateChangeListener,MouseL
 
         e.fontWidth = maxWidth;
         e.cellWidth = maxWidth + HGAP * 2 ;
-        int width = COLUMNS * e.cellWidth + HBORDER *2;
-        setPreferredSize(new Dimension( width,(ROWS) * e.cellHeight  + 2*HBORDER));
-        setMinimumSize(new Dimension( width,(ROWS) * e.cellHeight  + 2*VBORDER));
+        int width = COLUMNS * e.cellWidth;
+        setPreferredSize(new Dimension( width, (ROWS) * e.cellHeight));
+        setMinimumSize(new Dimension( width, (ROWS) * e.cellHeight));
         invalidate();
     }
 
     public void setFont(Font font) {
         super.setFont(font);
-        if (font == null)
-            return;
+        if (font == null) {
+        }
         else
             // We need the font-size to calculate the component size
             calculateSizes();
@@ -420,7 +420,7 @@ final class DaySelection extends JComponent implements DateChangeListener,MouseL
         Point p = e.p;
 
         g.setColor(HEADER_BACKGROUND);
-        g.fillRect(HBORDER,VBORDER, getSize().width - 2 * HBORDER, e.cellHeight);
+        g.fillRect(HBORDER,VBORDER, getSize().width, e.cellHeight);
         g.setColor(HEADER);
         for ( int i=0; i < COLUMNS; i++) {
             calculateTextPos(0,i);
@@ -447,7 +447,7 @@ final class DaySelection extends JComponent implements DateChangeListener,MouseL
     }
 
     private void updateEnvironment(Graphics g) {
-        e.cellWidth = (getSize().width - HBORDER * 2) / COLUMNS;
+        e.cellWidth = (getSize().width) / COLUMNS;
         e.g = g;
     }
 

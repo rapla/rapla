@@ -172,14 +172,7 @@ public class TableColumnAnnotationEdit extends RaplaGUIComponent implements Anno
             final String keyName = columnConfig.getKey();
             final String columnAnnotationPrefix = TableViewPlugin.COLUMN_ANNOTATION;
             String annotationName = columnAnnotationPrefix + keyName;
-            if ( value != null)
-            {
-                annotatable.setAnnotation(annotationName, value);
-            }
-            else
-            {
-                annotatable.setAnnotation(annotationName, null);
-            }
+            annotatable.setAnnotation(annotationName, value);
         }
         else
         {

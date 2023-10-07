@@ -68,7 +68,7 @@ public class SortingAnnotationEdit extends RaplaGUIComponent implements Annotati
             
                 if ( value != null)
                 {
-                    String lookupString = "sorting."+value.toString();
+                    String lookupString = "sorting."+ value;
                     value =getString(lookupString);
                 }
                 return super.getListCellRendererComponent(list, value, index, isSelected, cellHasFocus);

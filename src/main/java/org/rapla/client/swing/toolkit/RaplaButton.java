@@ -23,8 +23,8 @@ public class RaplaButton extends JButton {
     public static int LARGE = 1;
     public static int DEFAULT = 0;
 
-    private static Insets smallInsets = new Insets(0,0,0,0);
-    private static Insets largeInsets = new Insets(5,10,5,10);
+    private static final Insets smallInsets = new Insets(0,0,0,0);
+    private static final Insets largeInsets = new Insets(5,10,5,10);
 
     public RaplaButton(String text,int style) {
         this(style);

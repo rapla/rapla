@@ -33,7 +33,7 @@ public class HTMLCompactWeekView extends AbstractHTMLView {
     /** shared calendar instance. Only used for temporary stored values. */
     HTMLSmallDaySlot[] slots = {};
     String[] slotNames = {}; 
-    private ArrayList<List<Block>> rows = new ArrayList<>();
+    private final ArrayList<List<Block>> rows = new ArrayList<>();
     Map<Block, Integer> columnMap = new HashMap<>();
 	private double leftColumnSize = 0.1;
     String weeknumber = "";

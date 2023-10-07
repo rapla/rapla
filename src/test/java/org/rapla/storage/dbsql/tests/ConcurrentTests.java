@@ -27,15 +27,15 @@ import java.util.concurrent.atomic.AtomicReference;
     private Connection con1;
     private Connection con2;
     private Connection con3;
-    private String insertT1 = "INSERT INTO T1 (ID, NAME, LAST_CHANGED) VALUES (?, ?, ?)";
-    private String insertT2 = "INSERT INTO T2 (ID, T1_ID, LAST_CHANGED) VALUES (?, ?, ?)";
-    private String selectT1 = "SELECT * FROM T1 WHERE ID = ?";
-    private String selectT2 = "SELECT * FROM T2 WHERE ID = ?";
-    private String selectT2ByT1 = "SELECT * FROM T2 WHERE T1_ID = ?";
-    private String deleteT1 = "DELETE FROM T1 WHERE ID = ? and LAST_CHANGED = ?";
-    private String deleteT2 = "DELETE FROM T2 WHERE ID = ? and LAST_CHANGED = ?";
-    private String updateT1 = "UPDATE T1 set LAST_CHANGED = ? where ID = ? ";
-    private String updateT2 = "UPDATE T2 set LAST_CHANGED = ? where ID = ? ";
+    private final String insertT1 = "INSERT INTO T1 (ID, NAME, LAST_CHANGED) VALUES (?, ?, ?)";
+    private final String insertT2 = "INSERT INTO T2 (ID, T1_ID, LAST_CHANGED) VALUES (?, ?, ?)";
+    private final String selectT1 = "SELECT * FROM T1 WHERE ID = ?";
+    private final String selectT2 = "SELECT * FROM T2 WHERE ID = ?";
+    private final String selectT2ByT1 = "SELECT * FROM T2 WHERE T1_ID = ?";
+    private final String deleteT1 = "DELETE FROM T1 WHERE ID = ? and LAST_CHANGED = ?";
+    private final String deleteT2 = "DELETE FROM T2 WHERE ID = ? and LAST_CHANGED = ?";
+    private final String updateT1 = "UPDATE T1 set LAST_CHANGED = ? where ID = ? ";
+    private final String updateT2 = "UPDATE T2 set LAST_CHANGED = ? where ID = ? ";
     Logger logger = RaplaBootstrapLogger.createRaplaLogger();
 
     private static class T1Obj
@@ -52,8 +52,8 @@ import java.util.concurrent.atomic.AtomicReference;
         private Date lastChanged;
     }
 
-    private List<T1Obj> t1Objs = new ArrayList<ConcurrentTests.T1Obj>();
-    private List<T2Obj> t2Objs = new ArrayList<ConcurrentTests.T2Obj>();
+    private final List<T1Obj> t1Objs = new ArrayList<ConcurrentTests.T1Obj>();
+    private final List<T2Obj> t2Objs = new ArrayList<ConcurrentTests.T2Obj>();
 
     @Before public void createDb() throws Exception
     {
@@ -191,7 +191,7 @@ import java.util.concurrent.atomic.AtomicReference;
         // So the first thread will call writer for delete, the second will insert with the same ID in the second table
         final Thread t1 = new Thread(new Runnable()
         {
-            private Connection con = con1;
+            private final Connection con = con1;
 
             public void run()
             {
@@ -225,7 +225,7 @@ import java.util.concurrent.atomic.AtomicReference;
         t1.start();
         final Thread t2 = new Thread(new Runnable()
         {
-            private Connection con = con2;
+            private final Connection con = con2;
 
             public void run()
             {
@@ -267,7 +267,7 @@ import java.util.concurrent.atomic.AtomicReference;
         // so every thread will first delete the entry with its time stamp and then createInfoDialog a new one
         final Thread t1 = new Thread(new Runnable()
         {
-            private Connection con = con1;
+            private final Connection con = con1;
 
             public void run()
             {
@@ -300,7 +300,7 @@ import java.util.concurrent.atomic.AtomicReference;
         t1.start();
         final Thread t2 = new Thread(new Runnable()
         {
-            private Connection con = con2;
+            private final Connection con = con2;
 
             public void run()
             {
@@ -404,7 +404,7 @@ import java.util.concurrent.atomic.AtomicReference;
     {
         private final AtomicReference<Timestamp> x;
         private final Semaphore semaphore;
-        private Connection con;
+        private final Connection con;
         final String threadname ;
 
         public MyRunnable(String threadname,Connection con,AtomicReference<Timestamp> x, Semaphore semaphore)
@@ -494,7 +494,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
         final Runnable writer = new Runnable()
         {
-            private Connection con = con2;
+            private final Connection con = con2;
 
             public void run()
             {
@@ -576,7 +576,7 @@ import java.util.concurrent.atomic.AtomicReference;
         // so every thread will first delete the entry with its time stamp and then createInfoDialog a new one
         final Thread t1 = new Thread(new Runnable()
         {
-            private Connection con = con1;
+            private final Connection con = con1;
 
             public void run()
             {
@@ -606,7 +606,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
         final Thread t2 = new Thread(new Runnable()
         {
-            private Connection con = con2;
+            private final Connection con = con2;
 
             public void run()
             {

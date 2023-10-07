@@ -303,7 +303,7 @@ public class ApplicationViewSwing implements ApplicationView<JComponent>
         }
         AtomicReference<DialogUI> frame = new AtomicReference<>();
         final Disposable subscribe = busyIdleObservable.subscribe((message) -> {if ( message!= null && message.length() > 0) frame.get().busy( message); else frame.get().idle();});
-        final Container component = (Container) objectRaplaWidget.getComponent();
+        final Container component = objectRaplaWidget.getComponent();
         String[] options = new String[] {"ok"};
         final DialogUI dialog = (DialogUI) dialogUiFactory.createContentDialog( popupContext, component, options);
         frame.set(dialog);

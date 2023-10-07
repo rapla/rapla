@@ -28,7 +28,7 @@ public class AppointmentBlock implements Comparable<AppointmentBlock>
     long start;
     long end;
     boolean isException;
-    private Appointment	appointment;
+    private final Appointment	appointment;
 	
 	/**
 	 * Basic constructor

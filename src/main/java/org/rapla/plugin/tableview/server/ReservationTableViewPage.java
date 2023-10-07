@@ -42,14 +42,14 @@ import java.util.Map;
 @Extension(provides = HTMLViewPage.class, id = TableViewPlugin.TABLE_EVENT_VIEW)
 public class ReservationTableViewPage implements HTMLViewPage
 {
-    private TableViewPage<Reservation> tableViewPage;
+    private final TableViewPage<Reservation> tableViewPage;
 
     @Inject
     public ReservationTableViewPage(PromiseWait waiter,RaplaLocale raplaLocale, TableConfig.TableConfigLoader tableConfigLoader)
     {
         tableViewPage = new TableViewPage<Reservation>(raplaLocale)
         {
-            Comparator<Reservation> comparator = new ReservationStartComparator(raplaLocale.getLocale());
+            final Comparator<Reservation> comparator = new ReservationStartComparator(raplaLocale.getLocale());
             protected String getCalendarBody() throws RaplaException
             {
                 final Collection<Reservation> reservations = waiter.waitForWithRaplaException(model.queryReservations(model.getTimeIntervall()),

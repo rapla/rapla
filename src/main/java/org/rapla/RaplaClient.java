@@ -58,7 +58,7 @@ public class RaplaClient
     public RaplaClient(  final URL startupUrl) throws Exception
     {
         this(  new StartupEnvironment() {
-            Logger logger = RaplaBootstrapLogger.createRaplaLogger();
+            final Logger logger = RaplaBootstrapLogger.createRaplaLogger();
             @Override
             public int getStartupMode() {
                 return CONSOLE;

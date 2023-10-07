@@ -87,15 +87,11 @@ public class RaplaICalImport implements ICalImport {
             String eventTypeKey = job.getEventTypeKey();
             String eventTypeNameAttributeKey = job.getEventTypeNameAttributeKey();
             List<Allocatable> allocatables = new ArrayList<>();
-            if ( allocatableIds.length > 0)
-            {
-                for ( String id:allocatableIds)
-                {
-                    Allocatable allocatable = getAllocatable(id);
-                    allocatables.add ( allocatable);
-                }
-            }
-            User user = session.checkAndGetUser(request);
+        for (String id : allocatableIds) {
+            Allocatable allocatable = getAllocatable(id);
+            allocatables.add(allocatable);
+        }
+        User user = session.checkAndGetUser(request);
             final Promise<Integer[]> count = importCalendar(content, isURL, allocatables, user, eventTypeKey, eventTypeNameAttributeKey);
             return promiseWait.waitForWithRaplaException( count, 10000);
 
@@ -206,14 +202,14 @@ public class RaplaICalImport implements ICalImport {
     		            classification.setValue(eventTypeNameAttributeKey, name);
     				}
                 	Reservation event = lookupEvent;
-    			    DateProperty startDateProperty = (DateProperty)component.getProperty("DTSTART");
+    			    DateProperty startDateProperty = component.getProperty("DTSTART");
                     Date startdate =  startDateProperty.getDate();
                     Date enddate =  null;
     				boolean wholeDay = false;
     				long duration_millis = 0;
     				Dur duration;
     				if (component.getProperties("DTEND").size() > 0) {
-    				    DateProperty endDateProperty = (DateProperty)component.getProperty("DTEND");
+    				    DateProperty endDateProperty = component.getProperty("DTEND");
     				    enddate = endDateProperty.getDate();
     					duration = null;
     				} else if (component.getProperties("DURATION").size() > 0) {
@@ -262,7 +258,7 @@ public class RaplaICalImport implements ICalImport {
 		                List<Recur> recurList = new ArrayList<>(rrules.size());
                         for ( int i=0;i<rrules.size();i++)
                         {
-                            Property prop = (Property)rrules.get( i);
+                            Property prop = rrules.get( i);
                             RRule rrule = new RRule(prop.getParameters(),prop.getValue());
                             recurList.add(rrule.getRecur());
                         }

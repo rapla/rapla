@@ -46,7 +46,7 @@ final public class RaplaColors {
     public final static String HIGHLICHT_COLOR = "#DC1E1E";
 
 
-    private static ArrayList<String> colors = new ArrayList<>(Arrays.asList(COLORS));
+    private static final ArrayList<String> colors = new ArrayList<>(Arrays.asList(COLORS));
     private static Random randomA = null;
     private static Random randomB = null;
 

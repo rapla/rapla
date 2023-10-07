@@ -430,7 +430,7 @@ public class RaplaObjectActions {
 
     private void delete(List<Entity<?>> list)
     {
-        handleDeleteException(list,deleteDialogInterface.showDeleteDialog(popupContext,list.toArray()).thenCompose((result->result ? delete((Collection<Entity<?>>) list, false): ResolvedPromise.VOID_PROMISE)));
+        handleDeleteException(list,deleteDialogInterface.showDeleteDialog(popupContext,list.toArray()).thenCompose((result->result ? delete(list, false): ResolvedPromise.VOID_PROMISE)));
     }
     protected Promise<Void> delete(Collection<Entity<?>>  objects, boolean forceDelete) throws RaplaException
 	{

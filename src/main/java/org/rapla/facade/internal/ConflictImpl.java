@@ -652,10 +652,7 @@ public class ConflictImpl extends SimpleEntity implements Conflict, ModifiableTi
             {
                 if (type2 != null)
                 {
-                    if (type1.equals(type2))
-                    {
-                        return false;
-                    }
+                    return !type1.equals(type2);
                 }
             }
         }
@@ -675,10 +672,7 @@ public class ConflictImpl extends SimpleEntity implements Conflict, ModifiableTi
             {
                 if (type2 != null)
                 {
-                    if (type1.equals(type2))
-                    {
-                        return false;
-                    }
+                    return !type1.equals(type2);
                 }
             }
         }

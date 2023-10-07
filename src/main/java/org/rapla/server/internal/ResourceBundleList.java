@@ -14,7 +14,7 @@ import java.util.Set;
 
 @Singleton public class ResourceBundleList
 {
-    private Set<String> bundleIds;
+    private final Set<String> bundleIds;
     private final BundleManager bundleManager;
 
     @Inject public ResourceBundleList(Set<I18nBundle> i18nBundles, BundleManager bundleManager)

@@ -33,7 +33,7 @@ final public class TimeField extends AbstractBlockField {
     private DateFormat m_outputFormat;
     private DateFormat m_parsingFormat;
     private Calendar m_calendar;
-    private int m_rank[] = null;
+    private int[] m_rank = null;
     private char[] m_separators;
     private boolean m_useAM_PM = false;
     private boolean americanAM_PM_character = false;
@@ -93,7 +93,7 @@ final public class TimeField extends AbstractBlockField {
         int ap = amPmPos.getBeginIndex();
         int hp = Math.max( hourPos.getBeginIndex(), hourPos1.getBeginIndex() );
 
-        int pos[] = null;
+        int[] pos = null;
 
         // Use am/pm
         if (amPmPos.getEndIndex()>0) {

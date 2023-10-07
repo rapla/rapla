@@ -33,9 +33,9 @@ public final class RaplaNumber extends JPanel{
     private static final long serialVersionUID = 1L;
 
     NumberField m_numberField = null;
-    public static Number ZERO = new Long(0);
-    public static Number ONE = new Long(1);
-    public static Number DEFAULT_STEP_SIZE = new Long(1);
+    public static Number ZERO = Long.valueOf(0);
+    public static Number ONE = Long.valueOf(1);
+    public static Number DEFAULT_STEP_SIZE = Long.valueOf(1);
     EventListenerList m_listenerList;
     Listener m_listener = new Listener();
     Number m_emptyValue = ZERO;

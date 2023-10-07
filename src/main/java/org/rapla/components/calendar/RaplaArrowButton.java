@@ -142,7 +142,7 @@ public class RaplaArrowButton extends JButton  {
         long startMillis;
         long startDelay;
         public void start() {
-            startDelay = m_delay * 10;
+            startDelay = m_delay * 10L;
             startMillis = System.currentTimeMillis();
             if (m_delay > 0)
                 SwingUtilities.invokeLater(this);

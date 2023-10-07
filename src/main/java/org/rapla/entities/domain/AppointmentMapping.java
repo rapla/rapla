@@ -7,9 +7,9 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 public class AppointmentMapping {
-    private Map<Entity, Collection<Appointment>> appointmentMap;
-    private Set<Allocatable> allocatables;
-    private Set<User> users;
+    private final Map<Entity, Collection<Appointment>> appointmentMap;
+    private final Set<Allocatable> allocatables;
+    private final Set<User> users;
 
     public AppointmentMapping() {
         this(new HashMap<>());

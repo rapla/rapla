@@ -180,7 +180,6 @@ public abstract class AbstractBlockField extends JTextField {
             case KeyEvent.VK_PAGE_DOWN:
                 changeSelectedBlock(-10);
                 evt.consume();
-                return;
             }
             
         }
@@ -242,7 +241,7 @@ public abstract class AbstractBlockField extends JTextField {
         if (!blocksValid()) {
             return;
         }
-        int blockstart[] = new int[blockCount()];
+        int[] blockstart = new int[blockCount()];
         int block = calcBlocks(blockstart);
         markBlock(blockstart,block);
     }
@@ -291,7 +290,7 @@ public abstract class AbstractBlockField extends JTextField {
     private void advance() {
         if (blockCount()<2)
             return;
-        int blockstart[] = new int[blockCount()];
+        int[] blockstart = new int[blockCount()];
         int block = calcBlocks(blockstart);
         if (block >= blockCount() -1)
             return;
@@ -303,7 +302,7 @@ public abstract class AbstractBlockField extends JTextField {
 
     /**  changes the value of the selected Block. Adds the count value. */
     private void changeSelectedBlock(int count) {
-        int blockstart[] = new int[blockCount()];
+        int[] blockstart = new int[blockCount()];
         int block = calcBlocks(blockstart);
         int start = (block == 0) ? 0 : blockstart[block] + 1;
         int end = (block == blockCount() -1) ? getText().length() : blockstart[block+1];
@@ -315,7 +314,7 @@ public abstract class AbstractBlockField extends JTextField {
     private void setBlock(int count) {
         if (blockCount()<1)
             return;
-        int blockstart[] = new int[blockCount()];
+        int[] blockstart = new int[blockCount()];
         int block = calcBlocks(blockstart);
         if (count !=0)
             markBlock(blockstart,Math.min(Math.max(0,block + count),blockCount()-1));

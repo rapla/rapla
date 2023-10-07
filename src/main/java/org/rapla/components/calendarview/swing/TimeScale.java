@@ -33,15 +33,15 @@ public class TimeScale extends JComponent
     private int mintime;
     private int maxtime;
     private boolean useAM_PM = false;
-    private Font fontLarge= new Font("SansSerif", Font.PLAIN, 14);
-    private Font fontSmall= new Font("SansSerif", Font.PLAIN, 9);
-    private FontMetrics fm1 = getFontMetrics(fontLarge);
-    private FontMetrics fm2 = getFontMetrics(fontSmall);
+    private final Font fontLarge= new Font("SansSerif", Font.PLAIN, 14);
+    private final Font fontSmall= new Font("SansSerif", Font.PLAIN, 9);
+    private final FontMetrics fm1 = getFontMetrics(fontLarge);
+    private final FontMetrics fm2 = getFontMetrics(fontSmall);
     String[] hours;
-    private int SCALE_WIDTH = 35;
+    private final int SCALE_WIDTH = 35;
     private boolean smallSize = false;
     private int repeat = 1;
-    private String days[] ;
+    private String[] days;
 
     
     public TimeScale() {
@@ -93,7 +93,7 @@ public class TimeScale extends JComponent
 
      public void paint(Graphics g)  {
         super.paint(g);
-        int indent[];
+        int[] indent;
         int heightHour = (int) fm1.getLineMetrics("12",g).getHeight() ;
         int heightEnding = (int) fm2.getLineMetrics("12",g).getHeight() ;
         int current_y ;

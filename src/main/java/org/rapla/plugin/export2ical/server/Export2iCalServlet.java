@@ -57,7 +57,7 @@ public class Export2iCalServlet
 
 	//private java.util.Calendar calendar;
     //private Preferences preferences;
-	private Date firstPluginStartDate = new Date(0);
+	private final Date firstPluginStartDate = new Date(0);
 	//private TimeZone pluginTimeZone;
 	private int lastModifiedIntervall;
 	@Inject

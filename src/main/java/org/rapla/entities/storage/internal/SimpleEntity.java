@@ -305,7 +305,7 @@ public abstract class SimpleEntity extends ReferenceHandler implements RefEntity
 
     public String toString() {
         if (id != null)
-            return id.toString();
+            return id;
         return "no id for " + super.toString();
     }
 

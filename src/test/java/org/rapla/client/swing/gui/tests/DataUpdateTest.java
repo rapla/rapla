@@ -48,7 +48,7 @@ public class DataUpdateTest  {
         Thread.sleep(1500);
         if (error != null)
             throw error;
-        Assert.assertTrue("User-list varied during refresh! ", facade.getUsers()[0].equals(user));
+        Assert.assertEquals("User-list varied during refresh! ", facade.getUsers()[0], user);
     }
     boolean fail;
     

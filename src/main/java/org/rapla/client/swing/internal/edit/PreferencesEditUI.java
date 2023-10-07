@@ -68,7 +68,7 @@ public class PreferencesEditUI extends RaplaGUIComponent
         EditComponent<Preferences,JComponent>
         ,ChangeListener
 {
-    private JSplitPane content = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT);
+    private final JSplitPane content = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT);
     protected TitledBorder selectionBorder;
     protected RaplaTree jPanelSelection = new RaplaTree();
     protected JPanel jPanelContainer = new JPanel();
@@ -103,8 +103,8 @@ public class PreferencesEditUI extends RaplaGUIComponent
         jPanelContainer.add(messages, BorderLayout.SOUTH);
         messages.setForeground(Color.red);
         Border  emptyLineBorder = new Border() {
-            Insets insets = new Insets(2,0,2,0);
-            Color COLOR = Color.LIGHT_GRAY;
+            final Insets insets = new Insets(2,0,2,0);
+            final Color COLOR = Color.LIGHT_GRAY;
             public void paintBorder( Component c, Graphics g, int x, int y, int width, int height )
             {
                 g.setColor( COLOR );

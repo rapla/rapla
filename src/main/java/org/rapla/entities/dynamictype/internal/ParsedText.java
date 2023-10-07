@@ -419,7 +419,7 @@ public class ParsedText implements Serializable
     private static class BoundFunction extends Function
     {
 
-        private Function next;
+        private final Function next;
 
         public BoundFunction(ArrayList<String> boundParameters, Function next)
         {
@@ -902,12 +902,12 @@ public class ParsedText implements Serializable
 
         public String getRepresentation(ParseContext context)
         {
-            return "\"" + s.toString() + "\"";
+            return "\"" + s + "\"";
         }
 
         public String toString()
         {
-            return s.toString();
+            return s;
         }
 
     }

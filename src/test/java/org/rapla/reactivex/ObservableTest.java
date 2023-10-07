@@ -73,7 +73,7 @@ public class ObservableTest {
         final Disposable subscribe = Flowable
                 .just("Hallo")
                 .flatMap(i -> {
-                    System.out.println("" + i);
+                    System.out.println(i);
                     return Flowable.just(i).delay(1000,TimeUnit.MILLISECONDS);
                 }).delay(900, TimeUnit.MILLISECONDS)
                 .repeat()
@@ -88,12 +88,12 @@ public class ObservableTest {
         final ConsoleLogger logger = new ConsoleLogger();
         UtilConcurrentCommandScheduler scheduler = new UtilConcurrentCommandScheduler(logger);
         long start = System.currentTimeMillis();
-        final Observable<Long> repeat = scheduler.just(1l).delay(500).concatWith(scheduler.just("Scheduler").flatMap((dummy) -> scheduler.just(1).map((t)->
+        final Observable<Long> repeat = scheduler.just(1L).delay(500).concatWith(scheduler.just("Scheduler").flatMap((dummy) -> scheduler.just(1).map((t)->
         {
             logger.info("Calling method at " + ( System.currentTimeMillis()-start));
             Thread.sleep(500);
             logger.info("method called");
-            return 1l;
+            return 1L;
         })).delay(500).repeat());
         Disposable subscribe = repeat.subscribe();
         Thread.sleep(5000);

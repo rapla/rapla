@@ -293,7 +293,7 @@ public class SynchronisationManager implements ServerExtension
         Attribute[] attributes = c.getAttributes();
         for ( Attribute attribute: attributes) {
             String annotation = attribute.getAnnotation(AttributeAnnotations.KEY_EMAIL);
-            if ( annotation !=null && Boolean.TRUE.toString().equalsIgnoreCase( annotation)) {
+            if (Boolean.TRUE.toString().equalsIgnoreCase(annotation)) {
                 Object valueForAttribute = c.getValueForAttribute(attribute);
                 if ( valueForAttribute instanceof  String) {
                     mailbox = (String) valueForAttribute;
@@ -650,7 +650,7 @@ public class SynchronisationManager implements ServerExtension
                     catch(Throwable em)
                     {
                         logger.error(
-                                "Error sending mail to user " + user.getUsername() + " [" + sb.toString() + "] for synchronizsation result: " + em.getMessage(),
+                                "Error sending mail to user " + user.getUsername() + " [" + sb + "] for synchronizsation result: " + em.getMessage(),
                                 em);
                     }
                 }
@@ -891,7 +891,7 @@ public class SynchronisationManager implements ServerExtension
                     continue;
                 }
                 Map<ReferenceInfo<Allocatable>, CalendarFolder> usedSharedMailboxes = mailboxForResources.entrySet().stream()
-                        .filter(x -> x.getValue() != null && userConnect.sharedMailboxes.keySet().contains(x.getValue()))
+                        .filter(x -> x.getValue() != null && userConnect.sharedMailboxes.containsKey(x.getValue()))
                         .collect(Collectors.toMap(Map.Entry::getKey, x -> {
                                     ReferenceInfo<Allocatable> key = x.getKey();
                                     SynchronizationBox synchronizationBox = synchronizationBoxMap.get(key);
@@ -953,7 +953,7 @@ public class SynchronisationManager implements ServerExtension
                         message = message.replaceAll("The request failed. ", "");
                         message = message.replaceAll("The request failed.", "");
                     } else {
-                        message = "Synchronisierungsfehler mit exchange " + e.toString();
+                        message = "Synchronisierungsfehler mit exchange " + e;
                     }
                     task.increaseRetries(message);
                     result.errorMessages.add(new SyncError(toString, message));

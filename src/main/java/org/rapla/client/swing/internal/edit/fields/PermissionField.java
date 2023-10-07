@@ -133,7 +133,7 @@ public class PermissionField extends AbstractEditField implements  ChangeListene
         startDate = dateFieldFactory.create();
         reservationPanel.add( startDate.getComponent() , "4,0,l,f" );
 
-        minAdvance = longFieldFactory.create(new Long(0) );
+        minAdvance = longFieldFactory.create(Long.valueOf(0));
         reservationPanel.add( minAdvance.getComponent() , "4,0,l,f" );
 
         reservationPanel.add( new JLabel( i18n.getString("end_date") + ":" ), "0,2,l,f" );
@@ -144,7 +144,7 @@ public class PermissionField extends AbstractEditField implements  ChangeListene
         endDate = dateFieldFactory.create();
         reservationPanel.add( endDate.getComponent() , "4,2,l,f" );
 
-        maxAdvance = longFieldFactory.create(new Long(1) );
+        maxAdvance = longFieldFactory.create(Long.valueOf(1));
         reservationPanel.add( maxAdvance.getComponent() , "4,2,l,f" );
 
         userPanel.add( new JLabel(i18n.getString("permission.access") + ":"), "0,4,f,f" );
@@ -289,8 +289,8 @@ public class PermissionField extends AbstractEditField implements  ChangeListene
                 permission.setStart( today );
                 startDate.setValue( today);
             } if ( i == 2 ) {
-                permission.setMinAdvance( new Integer(0) );
-                minAdvance.setValue( new Integer(0 ));
+                permission.setMinAdvance(Integer.valueOf(0));
+                minAdvance.setValue(Integer.valueOf(0));
             }
         }
         if (evt.getSource() == endSelection) {
@@ -304,8 +304,8 @@ public class PermissionField extends AbstractEditField implements  ChangeListene
                 permission.setEnd( today );
                 endDate.setValue( today);
             } if ( i == 2 ) {
-                permission.setMaxAdvance( new Integer( 30 ) );
-                maxAdvance.setValue( new Integer(30));
+                permission.setMaxAdvance(Integer.valueOf(30));
+                maxAdvance.setValue(Integer.valueOf(30));
             }
         }
         toggleVisibility();

@@ -27,7 +27,7 @@ import java.net.URLDecoder;
 public class MainWebclient  
 {
     /** The default config filename for client-mode raplaclient.xconf*/
-    private Logger logger = RaplaBootstrapLogger.createRaplaLogger();
+    private final Logger logger = RaplaBootstrapLogger.createRaplaLogger();
     RaplaStartupEnvironment env = new RaplaStartupEnvironment();
     Disposable raplaContainer;
 

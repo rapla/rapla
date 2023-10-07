@@ -37,8 +37,8 @@ public class MenuScroller {
   //private JMenu menu;
   private JPopupMenu menu;
   private Component[] menuItems;
-  private MenuScrollItem upItem;
-  private MenuScrollItem downItem;
+  private final MenuScrollItem upItem;
+  private final MenuScrollItem downItem;
   private final MenuScrollListener menuListener = new MenuScrollListener();
   private int scrollCount;
   private int interval;
@@ -430,7 +430,7 @@ public class MenuScroller {
    * @see MenuScroller#dispose()
    */
   @Override
-  public void finalize() throws Throwable {
+  protected void finalize() throws Throwable {
     dispose();
   }
 
@@ -512,7 +512,7 @@ public class MenuScroller {
           implements ChangeListener {
 
 	private static final long serialVersionUID = 1L;
-	private Timer timer;
+	private final Timer timer;
 
     public MenuScrollItem(MenuIcon icon, int increment) {
       setIcon(icon);

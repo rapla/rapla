@@ -37,6 +37,7 @@ import java.io.OutputStreamWriter;
 import java.net.URI;
 import java.nio.ByteBuffer;
 import java.nio.channels.AsynchronousFileChannel;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
@@ -89,13 +90,13 @@ public class FileOperatorTest extends AbstractOperatorTest {
         @Override public InputSource getInputSource(URI storageURL) throws IOException
         {
             ByteArrayInputStream in = new ByteArrayInputStream(data);
-            return new InputSource(new InputStreamReader(in, "utf-8"));
+            return new InputSource(new InputStreamReader(in, StandardCharsets.UTF_8));
         }
 
         @Override public void write(FileOperator.RaplaWriter writer, URI storageURL) throws IOException
         {
             ByteArrayOutputStream outBytes =new ByteArrayOutputStream();
-            BufferedWriter out = new BufferedWriter(new OutputStreamWriter(outBytes,"utf-8"));
+            BufferedWriter out = new BufferedWriter(new OutputStreamWriter(outBytes, StandardCharsets.UTF_8));
             writer.write(out);
             out.close();
             data = outBytes.toByteArray();

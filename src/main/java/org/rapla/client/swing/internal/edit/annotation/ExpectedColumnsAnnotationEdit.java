@@ -21,7 +21,7 @@ public class ExpectedColumnsAnnotationEdit extends ExpectedRowsAnnotationEdit im
     public ExpectedColumnsAnnotationEdit(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, IOInterface ioInterface, LongFieldFactory longFieldFactory) {
         super(facade, i18n, raplaLocale, logger, ioInterface, longFieldFactory);
         annotationName = AttributeAnnotations.KEY_EXPECTED_COLUMNS;
-        DEFAULT_VALUE = new Long(TextField.DEFAULT_LENGTH);
+        DEFAULT_VALUE = Long.valueOf(TextField.DEFAULT_LENGTH);
     }
 
 
