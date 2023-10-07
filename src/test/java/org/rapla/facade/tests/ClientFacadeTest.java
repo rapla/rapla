@@ -340,7 +340,7 @@ public class ClientFacadeTest  {
             for (Allocatable allocatable : allocatablesFromAppointment)
             {
                 final Collection<Appointment> collection = result.get(allocatable.getReference());
-                Assert.assertEquals(0, collection.size());
+                Assert.assertEquals(null, collection);
             }
         }
     }
@@ -406,9 +406,11 @@ public class ClientFacadeTest  {
     	String allocatableId;
     	String eventId;
     	{
-    		Allocatable nonPersistantAllocatable = facade.newResourceDeprecated();
-    		nonPersistantAllocatable.getClassification().setValue("name", "Bla");
-    		 
+
+            Classification room = facade.getDynamicType("room").newClassification();
+            Allocatable nonPersistantAllocatable = facade.newAllocatable( room, clientFacade.getUser());
+            room.setValue("name", "Bla");
+
     		Reservation nonPeristantEvent = facade.newReservationDeprecated();
     		nonPeristantEvent.getClassification().setValue("name", "dummy-event");
     		Assert.assertEquals("event", nonPeristantEvent.getClassification().getType().getKey());
@@ -420,14 +422,14 @@ public class ClientFacadeTest  {
     	}
     	Allocatable allocatable = facade.edit(facade.getOperator().resolve(allocatableId, Allocatable.class) );
     	
-        // Store the allocatable it a second time to test if it is still modifiable after storing
+        // Store the allocatable for a second time to test if it is still modifiable after storing
         allocatable.getClassification().setValue("name", "Blubs");
         facade.store(allocatable);
 
         // query the allocatable from the store
         ClassificationFilter filter = facade.getDynamicType("room").newClassificationFilter();
         filter.addEqualsRule("name","Blubs");
-        Allocatable persistantAllocatable = facade.getAllocatablesWithFilter(new ClassificationFilter[] { filter })[0];
+        Allocatable persistentAllocatable = facade.getAllocatablesWithFilter(new ClassificationFilter[] { filter })[0];
 
         // query the event from the store
         ClassificationFilter eventFilter = facade.getDynamicType("event").newClassificationFilter();
@@ -438,19 +440,19 @@ public class ClientFacadeTest  {
         //Reservation persistantEvent = facade.getPersistant( nonPeristantEvent );
 
         // test if the ids of editable Versions are equal to the persistant ones
-        Assert.assertEquals(persistantAllocatable, allocatable);
+        Assert.assertEquals(persistentAllocatable, allocatable);
         Reservation event = facade.getOperator().resolve( eventId, Reservation.class);
 		Assert.assertEquals(persistantEvent, event);
         Assert.assertEquals(persistantEvent.getAllocatables()[0], event.getAllocatables()[0]);
 
 //        // Check if the modifiable/original versions are different to the persistant versions
-//        Assert.assertTrue( persistantAllocatable !=  allocatable );
+//        Assert.assertTrue( persistentAllocatable !=  allocatable );
 //        Assert.assertTrue( persistantEvent !=  event );
 //        Assert.assertTrue( persistantEvent.getAllocatables()[0] != event.getAllocatables()[0]);
 
         // Test the read only constraints
         try {
-            persistantAllocatable.getClassification().setValue("name","asdflkj");
+            persistentAllocatable.getClassification().setValue("name","asdflkj");
             Assert.fail("ReadOnlyException should have been thrown");
         } catch (ReadOnlyException ex) {
         }

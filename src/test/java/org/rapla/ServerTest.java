@@ -313,10 +313,11 @@ public class ServerTest
 
     public void removeAnAttribute() throws Exception
     {
-        DynamicType typeEdit3 = getRaplaFacade1().edit(getRaplaFacade1().getDynamicType("room"));
+        DynamicType room = getRaplaFacade1().getDynamicType("room");
+        DynamicType typeEdit3 = getRaplaFacade1().edit(room);
         typeEdit3.removeAttribute(typeEdit3.getAttribute("belongsto"));
-        Allocatable allocatable = getRaplaFacade1().getAllocatables()[0];
-        Assert.assertEquals("erwin", allocatable.getName(locale));
+        Allocatable allocatable = getRaplaFacade1().getAllocatablesWithFilter(room.newClassificationFilter().toArray())[0];
+        Assert.assertEquals("Room A66", allocatable.getName(locale));
 
         Allocatable allocatableClone = getRaplaFacade1().edit(allocatable);
         Assert.assertEquals(3, allocatable.getClassification().getAttributes().length);
@@ -330,7 +331,7 @@ public class ServerTest
         Assert.assertEquals(7, getRaplaFacade2().getAllocatables().length);
 
         ClassificationFilter filter = getRaplaFacade2().getDynamicType("room").newClassificationFilter();
-        filter.addIsRule("name", "erwin");
+        filter.addIsRule("name", "Room A66");
         {
             Allocatable rAfter = getRaplaFacade2().getAllocatablesWithFilter(filter.toArray())[0];
             final Attribute[] attributes1 = rAfter.getClassification().getAttributes();

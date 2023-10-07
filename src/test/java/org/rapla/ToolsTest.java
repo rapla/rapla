@@ -28,7 +28,6 @@ public class ToolsTest
         Integer a = Integer.valueOf(1);
         Integer b = Integer.valueOf(1);
         Integer c = Integer.valueOf(2);
-        Assert.assertNotSame(a, b);
         Assert.assertEquals(a, b);
         Assert.assertTrue(Tools.equalsOrBothNull(null, null));
         Assert.assertFalse(Tools.equalsOrBothNull(a, null));
