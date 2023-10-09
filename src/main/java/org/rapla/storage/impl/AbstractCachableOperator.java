@@ -419,18 +419,9 @@ public abstract class AbstractCachableOperator implements StorageOperator
             DynamicType type = getDynamicType(StorageOperator.PERIOD_TYPE);
             ClassificationFilter[] filters = type.newClassificationFilter().toArray();
             Collection<Allocatable> allPeriods = getAllocatables( filters);
-            PeriodModelImpl emptyPeriodModel = new PeriodModelImpl(this, Category.CATEGORY_ARRAY, Collections.emptyList());
             periodModel = new PeriodModelImpl(this, Category.CATEGORY_ARRAY, allPeriods);
             final Category periodsCategory = PeriodModel.getPeriodsCategory(getSuperCategory());
-            if ( periodsCategory == null)
-            {
-                return emptyPeriodModel;
-            }
-            Category[] periodsCategoryCategories = periodsCategory.getCategories();
-            if ( periodsCategoryCategories.length == 0)
-            {
-                return emptyPeriodModel;
-            }
+            Category[] periodsCategoryCategories = periodsCategory != null ? periodsCategory.getCategories() :Category.CATEGORY_ARRAY;
             periodModelHoliday = new PeriodModelImpl(this, periodsCategoryCategories, allPeriods);
         }
         if ( key == null)

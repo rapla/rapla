@@ -348,11 +348,11 @@ public class ClientFacadeTest  {
     @Test
     public void testConflicts() throws Exception {
         Collection<Conflict> conflicts= RaplaTestCase.waitForWithRaplaException(facade.getConflicts( ), 5000);
-        Promise<Collection<Reservation>> all = facade.getReservationsForAllocatable(null, null, null, null);
+        Promise<Collection<Reservation>> all = facade.getReservationsForAllocatable(facade.getAllocatables(), null, null, null);
         facade.removeObjects( RaplaTestCase.waitForWithRaplaException(all, 10000).toArray(Reservation.RESERVATION_ARRAY) );
         Reservation orig =  facade.newReservationDeprecated();
         orig.getClassification().setValue("name","new");
-        Date start = DateTools.toDateTime(new Date(), new Date(DateTools.toTime(10, 0, 0)));
+        Date start = DateTools.toDateTime(DateTools.addDay(new Date()), new Date(DateTools.toTime(10, 0, 0)));
         Date end = DateTools.toDateTime( start,new Date(DateTools.toTime(  12,0,0)));
         orig.addAppointment( facade.newAppointmentDeprecated( start, end));
 
@@ -818,8 +818,10 @@ public class ClientFacadeTest  {
     {
         Classification classification = facade.getDynamicTypes(DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RESERVATION)[0].newClassification();
         User user = clientFacade.getUser();
-        Date startDate = DateTools.toDateTime(new Date(System.currentTimeMillis()), new Date(DateTools.toTime(10, 00, 00)));
-        Date endDate = DateTools.toDateTime(new Date(System.currentTimeMillis()), new Date(DateTools.toTime(12, 00, 00)));
+        Date tomorrow = DateTools.addDay(new Date(System.currentTimeMillis()));
+
+        Date startDate = DateTools.toDateTime(tomorrow, new Date(DateTools.toTime(10, 00, 00)));
+        Date endDate = DateTools.toDateTime(tomorrow, new Date(DateTools.toTime(12, 00, 00)));
         {// Store new Reservation with resource
             final Reservation newReservation = facade.newReservation(classification, user);
             final Allocatable montyAllocatable = facade.getOperator().tryResolve("r9b69d90-46a0-41bb-94fa-82079b424c03", Allocatable.class);//facade.getOperator().tryResolve("f92e9a11-c342-4413-a924-81eee17ccf92", Allocatable.class);
@@ -841,8 +843,9 @@ public class ClientFacadeTest  {
     {
         Classification classification = facade.getDynamicTypes(DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RESERVATION)[0].newClassification();
         User user = clientFacade.getUser();
-        Date startDate = DateTools.toDateTime(new Date(System.currentTimeMillis()), new Date(DateTools.toTime(10, 00, 00)));
-        Date endDate = DateTools.toDateTime(new Date(System.currentTimeMillis()), new Date(DateTools.toTime(12, 00, 00)));
+        Date tomorrow = DateTools.addDay(new Date(System.currentTimeMillis()));
+        Date startDate = DateTools.toDateTime(tomorrow, new Date(DateTools.toTime(10, 00, 00)));
+        Date endDate = DateTools.toDateTime(tomorrow, new Date(DateTools.toTime(12, 00, 00)));
         {// Store new Reservation with resource
             final Reservation newReservation = facade.newReservation(classification, user);
             final Allocatable roomA66Allocatable = facade.getOperator().tryResolve("c24ce517-4697-4e52-9917-ec000c84563c", Allocatable.class);

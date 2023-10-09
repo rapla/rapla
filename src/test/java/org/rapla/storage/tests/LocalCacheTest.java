@@ -157,30 +157,32 @@ public class LocalCacheTest  {
 			    try
 				{
 		            ClassificationFilter[] filters = null;
-		            Map<String, String> annotationQuery = null;
+                    List<Allocatable> list = Arrays.asList(facade.getAllocatables());
+
+                    Map<String, String> annotationQuery = null;
 		            {
 		                final Period period = periods[2];
-		                AppointmentMapping reservations = storage.waitForWithRaplaException(storage.queryAppointments(null, null, users,period.getStart(), period.getEnd(), filters,
+                        AppointmentMapping reservations = storage.waitForWithRaplaException(storage.queryAppointments(null, list, users,period.getStart(), period.getEnd(), filters,
                                 annotationQuery), 10000);
                         Assert.assertEquals(0, reservations.getAllAppointments().size());
 		            }
 		            {
 		                final Period period = periods[1];
-                        AppointmentMapping reservations = storage.waitForWithRaplaException(storage.queryAppointments(null, null, users, period.getStart(), period.getEnd(), filters,
+                        AppointmentMapping reservations = storage.waitForWithRaplaException(storage.queryAppointments(null, list, users, period.getStart(), period.getEnd(), filters,
                                 annotationQuery), 10000);
                         Set<Appointment> allAppointments = reservations.getAllAppointments();
                         Assert.assertEquals(3, allAppointments.size());
 		            }
 		            {
     		            User user = cache.getUser("homer");
-                        AppointmentMapping reservations = storage.waitForWithRaplaException(storage.queryAppointments(user, null, Collections.singletonList(user),null, null, filters, annotationQuery), 10000);
+                        AppointmentMapping reservations = storage.waitForWithRaplaException(storage.queryAppointments(user, list, Collections.singletonList(user),null, null, filters, annotationQuery), 10000);
                         Set<Appointment> allAppointments = reservations.getAllAppointments();
                         Assert.assertEquals(9, allAppointments.size());
 		            }
 		            {
 		                User user = cache.getUser("homer");
 		                final Period period = periods[1];
-                        AppointmentMapping reservations = storage.waitForWithRaplaException(storage.queryAppointments(user, null, users,  period.getStart(), period.getEnd(), filters,
+                        AppointmentMapping reservations = storage.waitForWithRaplaException(storage.queryAppointments(user, list, users,  period.getStart(), period.getEnd(), filters,
                                 annotationQuery), 10000);
                         Set<Appointment> allAppointments = reservations.getAllAppointments();
                         Assert.assertEquals(3, allAppointments.size());
@@ -197,7 +199,7 @@ public class LocalCacheTest  {
 		                {
 		                    continue;
 		                }
-                        Assert.assertEquals("erwin", next.getName(locale));
+                        Assert.assertEquals("Room A66", next.getName(locale));
 		                break;
 		            }
 		        }		

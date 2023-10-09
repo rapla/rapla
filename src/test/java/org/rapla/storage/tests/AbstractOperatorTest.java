@@ -72,7 +72,7 @@ public abstract class AbstractOperatorTest  {
 	        ClassificationFilter filter = facade.getDynamicType( defaultReservation ).newClassificationFilter();
 	        filter.addRule("name",new Object[][] { {"contains","myTest"}});
 	        Reservation reservation = RaplaTestCase
-                    .waitForWithRaplaException(facade.getReservationsForAllocatable( null, null, null, new ClassificationFilter[] {filter} ), 10000).iterator().next();
+                    .waitForWithRaplaException(facade.getReservationsForAllocatable( facade.getAllocatables(), null, null, new ClassificationFilter[] {filter} ), 10000).iterator().next();
 	        Appointment[] apps = reservation.getAppointments();
 	        Allocatable resource = reservation.getAllocatables()[0];
 	        Assert.assertEquals(2, apps.length);
@@ -172,7 +172,7 @@ public abstract class AbstractOperatorTest  {
 	        ClassificationFilter filter = facade.getDynamicType( defaultReservation ).newClassificationFilter();
 	        filter.addRule("name",new Object[][] { {"contains","myTest"}});
 	        Reservation reservation = RaplaTestCase
-                    .waitForWithRaplaException(facade.getReservationsForAllocatable( null, null, null, new ClassificationFilter[] {filter} ), 10000).iterator().next();
+                    .waitForWithRaplaException(facade.getReservationsForAllocatable( facade.getAllocatables(), null, null, new ClassificationFilter[] {filter} ), 10000).iterator().next();
 	        Appointment[] apps = reservation.getAppointments();
 	        Allocatable resource = reservation.getAllocatables()[0];
 			Assert.assertEquals("test-att-value", reservation.getClassification().getValue("test-att"));
