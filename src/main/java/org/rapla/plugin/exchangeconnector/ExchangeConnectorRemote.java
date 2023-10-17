@@ -29,7 +29,6 @@ public interface ExchangeConnectorRemote
 	 *
 	 * @param exchangeUsername
 	 * @param exchangePassword
-	 * @return {@link ClientMessage}
 	 * @throws RaplaException
 	 */
 	@POST
@@ -40,8 +39,8 @@ public interface ExchangeConnectorRemote
 	void removeUser() throws RaplaException;
 	
 	@POST
-	@Path("retry")
-	void retry() throws RaplaException;
+	@Path("refreshMailboxes")
+	Collection<String> refreshMailboxes() throws RaplaException;
 	
 	/**
 	 * Remove an existing user from the user list (unregister a user from the Exchange Server)

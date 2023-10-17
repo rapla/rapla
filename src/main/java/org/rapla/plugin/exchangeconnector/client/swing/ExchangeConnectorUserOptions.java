@@ -16,7 +16,6 @@ import org.rapla.framework.RaplaLocale;
 import org.rapla.inject.Extension;
 import org.rapla.logger.Logger;
 import org.rapla.plugin.exchangeconnector.*;
-import org.rapla.plugin.exchangeconnector.ExchangeConnectorConfig.ConfigReader;
 
 import javax.inject.Inject;
 import javax.swing.JCheckBox;
@@ -25,8 +24,6 @@ import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JPasswordField;
 import javax.swing.JTextField;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
 import java.util.Collection;
 import java.util.Date;
 import java.util.Locale;
@@ -59,7 +56,7 @@ public class ExchangeConnectorUserOptions implements UserOptionPanel
     RaplaButton loginButton;
     RaplaButton syncButton;
     RaplaButton removeButton;
-    RaplaButton retryButton;
+    RaplaButton refreshMailboxesButton;
 
     private boolean connected;
     private final ExchangeConnectorResources exchangeConnectorResources;
@@ -153,31 +150,31 @@ public class ExchangeConnectorUserOptions implements UserOptionPanel
         loginButton = new RaplaButton();
         syncButton = new RaplaButton();
         removeButton = new RaplaButton();
-        retryButton = new RaplaButton();
+        refreshMailboxesButton = new RaplaButton();
         //loginButton.setText("Set Login");
         removeButton.setText(exchangeConnectorResources.getString("disconnect"));
         syncButton.setText(exchangeConnectorResources.getString("resync.exchange"));
         syncButton.setToolTipText(exchangeConnectorResources.getString("resync.exchange.tooltip"));
-        retryButton.setText(exchangeConnectorResources.getString("retry"));
+        refreshMailboxesButton.setText(exchangeConnectorResources.getString("refresh_mailboxes"));
         usernameInfoLabel.setText(exchangeConnectorResources.getString("exchange_user"));
         //usernameLabel.setText("not connected");
         this.optionsPanel.add(usernameInfoLabel, "1, 0");
         this.optionsPanel.add(usernameLabel, "3, 0");
         this.optionsPanel.add(loginButton, "3, 2");
         this.optionsPanel.add(removeButton, "3, 4");
+        this.optionsPanel.add(refreshMailboxesButton, "3, 6");
 
-        this.optionsPanel.add(new JLabel(exchangeConnectorResources.getString("synchronization")), "1, 6");
+        this.optionsPanel.add(new JLabel(exchangeConnectorResources.getString("synchronization")), "1, 8");
         enableNotifyBox = new JCheckBox(exchangeConnectorResources.getString("mail_on_invitation_cancelation"));
         if (isAdmin())
         {
-            this.optionsPanel.add(this.enableNotifyBox, "3,6");
+            this.optionsPanel.add(this.enableNotifyBox, "3,8");
         }
         enableNotifyBox.setEnabled(false);
-        this.optionsPanel.add(syncIntervalLabel, "3, 8");
-        this.optionsPanel.add(syncButton, "3, 10");
-        this.optionsPanel.add(new JLabel(i18n.getString("appointments") + ":"), "1, 12");
-        //this.optionsPanel.add(synchronizedLabel, "3, 12");
-        this.optionsPanel.add(retryButton, "3, 14");
+        this.optionsPanel.add(syncIntervalLabel, "3, 10");
+        this.optionsPanel.add(syncButton, "3, 12");
+        this.optionsPanel.add(new JLabel(i18n.getString("appointments") + ":"), "1, 14");
+        //this.optionsPanel.add(synchronizedLabel, "3, 14");
         final PopupContext popupContext = dialogUiFactory.createPopupContext(ExchangeConnectorUserOptions.this);
 
         loginButton.addActionListener(e -> {
@@ -195,13 +192,7 @@ public class ExchangeConnectorUserOptions implements UserOptionPanel
                 String password = content.getPassword();
                 try {
                     Collection<String> sharedMailboxes = service.changeUser(username, password);
-                    if ( sharedMailboxes.size() > 0) {
-                        String mailboxString = "Gefundene geteilte Mailboxen: <br>";
-                        for ( String mailbox:sharedMailboxes) {
-                            mailboxString += mailbox + "<br>";
-                        }
-                        dialogUiFactory.createTextDialog(popupContext, "Shared Mailboxes", mailboxString, new String [] {}).start(true);
-                    }
+                    showMailboxes(popupContext, sharedMailboxes);
                 } catch (RaplaException ex) {
                     dialogUiFactory.showException(ex, popupContext);
                     return;
@@ -238,11 +229,11 @@ public class ExchangeConnectorUserOptions implements UserOptionPanel
                 logger.error("The operation was not successful!", ex);
             }
         });
-        retryButton.addActionListener(e -> {
+        refreshMailboxesButton.addActionListener(e -> {
             try
             {
-                service.retry();
-                showResultWillBeSentByMailDialog();
+                Collection<String> sharedMailboxes = service.refreshMailboxes();
+                showMailboxes(popupContext, sharedMailboxes);
                 updateComponentState();
             }
             catch (RaplaException ex)
@@ -278,6 +269,16 @@ public class ExchangeConnectorUserOptions implements UserOptionPanel
         //        this.optionsPanel.add(this.filterCategoryField, "3,10");
         //        this.optionsPanel.add(this.securityInformationLabel, "3,12");
 
+    }
+
+    private void showMailboxes(PopupContext popupContext, Collection<String> sharedMailboxes) {
+        if ( sharedMailboxes.size() > 0) {
+            String mailboxString = "Gefundene geteilte Mailboxen: <br>";
+            for ( String mailbox: sharedMailboxes) {
+                mailboxString += mailbox + "<br>";
+            }
+            dialogUiFactory.createTextDialog(popupContext, "Shared Mailboxes", mailboxString, new String [] {}).start(true);
+        }
     }
 
     private void showResultWillBeSentByMailDialog() throws RaplaException
@@ -432,7 +433,7 @@ public class ExchangeConnectorUserOptions implements UserOptionPanel
         this.removeButton.setEnabled(connected);
         this.removeButton.setToolTipText(exchangeConnectorResources.getString("disable.sync.rapla.exchange"));
         this.syncButton.setEnabled(connected);
-        this.retryButton.setEnabled(connected);
+        this.refreshMailboxesButton.setEnabled(connected);
 
     }
     //	enableSynchronisationBox.setEnabled(ExchangeConnectorConfig.ENABLED_BY_ADMIN);

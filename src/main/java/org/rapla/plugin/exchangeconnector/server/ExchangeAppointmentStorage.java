@@ -16,6 +16,7 @@ import org.rapla.framework.TypedComponentRole;
 import org.rapla.logger.Logger;
 import org.rapla.plugin.exchangeconnector.ExchangeConnectorPlugin;
 import org.rapla.plugin.exchangeconnector.ExchangeConnectorRemote;
+import org.rapla.plugin.exchangeconnector.ShowExchangeForUser;
 import org.rapla.rest.JsonParserWrapper;
 import org.rapla.storage.CachableStorageOperator;
 import org.rapla.storage.impl.DefaultRaplaLock;
@@ -63,17 +64,18 @@ public class ExchangeAppointmentStorage
     final private RaplaFacade facade;
     private final CachableStorageOperator operator;
 
-
+    ShowExchangeForUser showExchangeForUser;
     /**
      * public constructor of the class to read a particular file
 
      */
     @Inject
-    public ExchangeAppointmentStorage(RaplaFacade facade, Logger logger,CachableStorageOperator operator)
+    public ExchangeAppointmentStorage(RaplaFacade facade, Logger logger,CachableStorageOperator operator, ShowExchangeForUser showExchangeForUser)
     {
         this.facade = facade;
         this.logger = logger;
         this.operator = operator;
+        this.showExchangeForUser = showExchangeForUser;
     }
 
     public Collection<SynchronizationTask> getAllTasks() throws RaplaException
@@ -337,37 +339,64 @@ public class ExchangeAppointmentStorage
     {
         importExportEntities = operator.getImportExportEntities(EXCHANGE_ID, ImportExportDirections.EXPORT);
         tasks.clear();
+        List<User> removeForUser = new ArrayList<>();
+        List<ReferenceInfo<ExternalSyncEntity>> toRemove = new ArrayList<>();
         for (ExternalSyncEntity persistent : importExportEntities.values())
         {
             SynchronizationTask synchronizationTask = gson.fromJson(persistent.getData(), SynchronizationTask.class);
+            ReferenceInfo<ExternalSyncEntity> reference = persistent.getReference();
             if (synchronizationTask.getUserId() == null)
             {
-                getLogger().debug("Synchronization task " + persistent.getId() + " has no userId. Ignoring.");
+                getLogger().debug("Synchronization task " + persistent.getId() + " has no userId. Removing.");
+                toRemove.add( reference );
                 continue;
             }
             if (synchronizationTask.getResourceId() == null) {
-                getLogger().debug("Synchronization task " + persistent.getId() + " has no resourceId. Ignoring.");
+                getLogger().debug("Synchronization task " + persistent.getId() + " has no resourceId. Removing.");
+                toRemove.add( reference );
                 continue;
             }
+            Allocatable allocatable = operator.tryResolve( synchronizationTask.getResourceId(), Allocatable.class);
+            if (allocatable == null) {
+                getLogger().debug("Synchronization task " + persistent.getId() + " has non existant resource. Removing.");
+                toRemove.add( reference );
+                continue;
+            }
+
             if (synchronizationTask.getMailboxName() == null) {
-                getLogger().debug("Synchronization task " + persistent.getId() + " has no mailboxName. Ignoring.");
+                getLogger().debug("Synchronization task " + persistent.getId() + " has no mailboxName. Removing.");
+                toRemove.add( reference );
                 continue;
             }
             if (synchronizationTask.getRetries() < 0)
             {
-                getLogger().debug("Synchronization task " + persistent.getId() + " has invalid retriesString. Ignoring.");
+                getLogger().debug("Synchronization task " + persistent.getId() + " has invalid retriesString. Removing.");
+                toRemove.add( reference );
                 continue;
             }
             if (synchronizationTask.getStatus() == null)
             {
-                getLogger().debug("Synchronization task " + persistent.getId() + " has no status. Ignoring.");
+                getLogger().debug("Synchronization task " + persistent.getId() + " has no status. Removing.");
+                toRemove.add( reference );
                 continue;
             }
             final String appointmentId = synchronizationTask.getAppointmentId();
             if(appointmentId == null)
             {
-                getLogger().debug("Synchronization task " + persistent.getId() + " has no appointmentId. Ignoring.");
+                getLogger().debug("Synchronization task " + persistent.getId() + " has no appointmentId. Removing.");
+                toRemove.add( reference );
                 continue;
+            }
+            User user = operator.tryResolve(synchronizationTask.getUserId(), User.class);
+            if ( user == null) {
+                getLogger().info("Synchronization task " + persistent.getId() + " has no valid user. Removing.");
+                toRemove.add( reference );
+                continue;
+            }
+            if (!showExchangeForUser.isExchangeEnabledFor( user )) {
+                getLogger().info("Synchronization task " + persistent.getId() + " has no a user that has no exchange group. Removing.");
+                toRemove.add( reference );
+                removeForUser.add(user);
             }
             Set<SynchronizationTask> taskList = tasks.get(appointmentId);
             if (taskList == null)
@@ -377,5 +406,13 @@ public class ExchangeAppointmentStorage
             }
             taskList.add(synchronizationTask);
         }
+        if ( !toRemove.isEmpty() ) {
+            for ( User user: removeForUser) {
+                getLogger().info("Removing tasks for user " + user);
+            }
+            getLogger().info("Removing old unused synchronisation tasks " + toRemove.size()) ;
+            operator.storeAndRemove(Collections.emptyList(), toRemove, (User) null);
+        }
+
     }
 }

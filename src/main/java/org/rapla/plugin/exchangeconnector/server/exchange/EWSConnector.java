@@ -171,7 +171,13 @@ public class EWSConnector {
                     {
                         String mailbox = resolvedNames.iterator().next().getMailbox().getAddress();
                         FolderId SharedCalendarId = new FolderId(WellKnownFolderName.Calendar, new Mailbox(mailbox));
-                        CalendarFolder SharedCalendaFolder = (CalendarFolder) Folder.bind(service, SharedCalendarId);
+                        CalendarFolder SharedCalendaFolder;
+                        try {
+                            SharedCalendaFolder= (CalendarFolder) Folder.bind(service, SharedCalendarId);
+                        } catch (Exception ex) {
+                            logger.warn("Can't bind calendar folder for mailbox " + mailbox + " Cause " + ex.getMessage());
+                            continue;
+                        }
                         rtList.put(mailbox.toLowerCase(), SharedCalendaFolder);
                     }
 

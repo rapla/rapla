@@ -23,8 +23,6 @@ public class ExchangeConnectorRemoteObjectFactory implements ExchangeConnectorRe
     @Inject
     SynchronisationManager manager;
     @Inject
-	RaplaKeyStorage keyStorage;
-	@Inject
     Logger logger;
 	@Inject
 	RemoteSession session;
@@ -62,10 +60,7 @@ public class ExchangeConnectorRemoteObjectFactory implements ExchangeConnectorRe
         final User user = session.checkAndGetUser(request);
         String raplaUsername = user.getUsername();
         getLogger().info("Invoked add exchange user for rapla " + raplaUsername + " with exchange user " + exchangeUsername);
-        Collection<String> sharedMailboxes = manager.testConnection(exchangeUsername, exchangePassword, user);
-        getLogger().debug("Invoked change connection for user " + user.getUsername());
-        keyStorage.storeLoginInfo( user, ExchangeConnectorServerPlugin.EXCHANGE_USER_STORAGE, exchangeUsername, exchangePassword);
-        getLogger().info("New exchangename stored for " + user.getUsername());
+        Collection<String> sharedMailboxes = manager.changeUser(exchangeUsername, exchangePassword, user);
         return sharedMailboxes;
     }
 
@@ -74,27 +69,14 @@ public class ExchangeConnectorRemoteObjectFactory implements ExchangeConnectorRe
     {
         final User user = session.checkAndGetUser(request);
         getLogger().info("Removing exchange connection for user " + user);
-        keyStorage.removeLoginInfo(user, ExchangeConnectorServerPlugin.EXCHANGE_USER_STORAGE);
-        getLogger().info("Removed login info for " + user);
         manager.removeTasksAndExports(user);
     }
 
     @Override
-    public void retry() throws RaplaException
+    public Collection<String> refreshMailboxes() throws RaplaException
     {
         final User user = session.checkAndGetUser(request);
-        LoginInfo secrets = keyStorage.getSecrets(user, ExchangeConnectorServerPlugin.EXCHANGE_USER_STORAGE);
-        if ( secrets != null)
-        {
-            //String exchangeUsername = secrets.login;
-            //String exchangePassword = secrets.secret;
-            //manager.testConnection(exchangeUsername, exchangePassword);
-            manager.retry(user);
-        }
-        else
-        {
-            throw new RaplaException("User " + user.getUsername() + " not connected to exchange");
-        }
+        return manager.refreshMailboxes(user);
     }
 	
 
