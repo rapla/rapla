@@ -1265,7 +1265,7 @@ class AllocatableStorage extends RaplaTypeStorage<Allocatable>
     public AllocatableStorage(RaplaXMLContext context) throws RaplaException
     {
         super(context, Allocatable.class, "RAPLA_RESOURCE",
-                new String[] { "ID VARCHAR(255) NOT NULL PRIMARY KEY", "TYPE_KEY VARCHAR(255) NOT NULL", "OWNER_ID VARCHAR(255)", "CREATION_TIME TIMESTAMP",
+                new String[] { "ID VARCHAR(255) NOT NULL PRIMARY KEY", "TYPE_KEPY VARCHAR(255) NOT NULL", "OWNER_ID VARCHAR(255)", "CREATION_TIME TIMESTAMP",
                         "LAST_CHANGED TIMESTAMP KEY", "LAST_CHANGED_BY VARCHAR(255) DEFAULT NULL" });
         resourceAttributeStorage = new AttributeValueStorage<>(context, "RESOURCE_ATTRIBUTE_VALUE", "RESOURCE_ID", classificationMap,
                 allocatableMap);
@@ -1312,7 +1312,7 @@ class AllocatableStorage extends RaplaTypeStorage<Allocatable>
         final Date lastChanged = getTimestampOrNow(rset, 5);
 
         AllocatableImpl allocatable = new AllocatableImpl(createDate, lastChanged);
-        allocatable.setLastChangedBy(resolveFromId(rset, 6, User.class));
+        allocatable.setLastChangedBy(resolveFromId(rset, 6, User.class, false));
         allocatable.setId(id);
         allocatable.setResolver(entityStore);
         DynamicType type = null;
@@ -1326,7 +1326,7 @@ class AllocatableStorage extends RaplaTypeStorage<Allocatable>
             return;
         }
         {
-            final User user = resolveFromId(rset, 3, User.class);
+            final User user = resolveFromId(rset, 3, User.class,true);
             allocatable.setOwner(user);
         }
         Classification classification = ((DynamicTypeImpl) type).newClassificationWithoutCheck(false);
@@ -1445,7 +1445,7 @@ class ReservationStorage extends RaplaTypeStorage<Reservation>
             return;
         }
         {
-            User user = resolveFromId(rset, 3, User.class);
+            User user = resolveFromId(rset, 3, User.class, true);
             if (user == null)
             {
                 return;
@@ -1453,7 +1453,7 @@ class ReservationStorage extends RaplaTypeStorage<Reservation>
             event.setOwner(user);
         }
         {
-            User user = resolveFromId(rset, 6, User.class);
+            User user = resolveFromId(rset, 6, User.class, false);
             event.setLastChangedBy(user);
         }
 
@@ -1672,8 +1672,8 @@ class PermissionStorage<T extends EntityPermissionContainer<T>> extends EntitySt
             return;
         }
         PermissionImpl permission = new PermissionImpl();
-        permission.setUser(resolveFromId(rset, 2, User.class));
-        permission.setGroup(resolveFromId(rset, 3, Category.class));
+        permission.setUser(resolveFromId(rset, 2, User.class, true));
+        permission.setGroup(resolveFromId(rset, 3, Category.class, true));
         Integer accessLevel = getInt(rset, 4);
         if (accessLevel != null)
         {
@@ -1804,7 +1804,7 @@ class AppointmentStorage extends RaplaTypeStorage<Appointment>
     protected void load(ResultSet rset) throws SQLException, RaplaException
     {
         ReferenceInfo<Appointment> id = readId(rset, 1, Appointment.class);
-        Reservation reservation = resolveFromId(rset, 2, Reservation.class);
+        Reservation reservation = resolveFromId(rset, 2, Reservation.class, true);
         if (reservation == null)
         {
             return;
@@ -1924,7 +1924,7 @@ class AllocationStorage extends EntityStorage<Appointment> implements SubStorage
     @Override
     protected void load(ResultSet rset) throws SQLException, RaplaException
     {
-        Appointment appointment = resolveFromId(rset, 1, Appointment.class);
+        Appointment appointment = resolveFromId(rset, 1, Appointment.class, true);
         if (appointment == null)
         {
             return;
@@ -1984,7 +1984,7 @@ class AppointmentExceptionStorage extends EntityStorage<Appointment> implements 
     @Override
     protected void load(ResultSet rset) throws SQLException, RaplaException
     {
-        Appointment appointment = resolveFromId(rset, 1, Appointment.class);
+        Appointment appointment = resolveFromId(rset, 1, Appointment.class, true);
         if (appointment == null)
         {
             return;
@@ -2620,12 +2620,12 @@ class UserGroupStorage extends EntityStorage<User> implements SubStorage<User>
     @Override
     protected void load(ResultSet rset) throws SQLException, RaplaException
     {
-        User user = resolveFromId(rset, 1, User.class);
+        User user = resolveFromId(rset, 1, User.class, true);
         if (user == null)
         {
             return;
         }
-        Category category = resolveFromId(rset, 2, Category.class);
+        Category category = resolveFromId(rset, 2, Category.class, true);
         if (category == null)
         {
             return;

@@ -2856,8 +2856,9 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
         }
     }
 
-    protected void removeInconsistentEntities(LocalCache cache, Collection<Entity> list)
+    protected Collection<ReferenceInfo> removeInconsistentEntities(LocalCache cache, Collection<Entity> list)
     {
+        List<ReferenceInfo> toRemove = new ArrayList<>();
         for (Iterator iterator = list.iterator(); iterator.hasNext(); )
         {
             Entity entity = (Entity) iterator.next();
@@ -2881,10 +2882,12 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
                 {
                     getLogger().error("Not loading entity with id: " + entity.getId(), e);
                 }
+                toRemove.add( entity.getReference() );
                 cache.remove(entity);
                 iterator.remove();
             }
         }
+        return toRemove;
     }
 
     /** Check if the objects are consistent, so that they can be safely stored. */

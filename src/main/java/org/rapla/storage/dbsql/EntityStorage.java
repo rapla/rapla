@@ -153,7 +153,7 @@ abstract class EntityStorage<T extends Entity<T>> extends AbstractTableStorage i
 		return new ReferenceInfo(id, class1);
 	}
 
-    protected <S extends Entity> S resolveFromId(ResultSet rset, int column, Class<S> class1) throws SQLException
+    protected <S extends Entity> S resolveFromId(ResultSet rset, int column, Class<S> class1,  boolean printWarningIfNotFound) throws SQLException
     {
 		String id = rset.getString( column );
         if  (rset.wasNull() || id == null)
@@ -166,7 +166,9 @@ abstract class EntityStorage<T extends Entity<T>> extends AbstractTableStorage i
         }
         catch ( EntityNotFoundException ex)
         {
-			getLogger().warn("Could not find "  + class1.getName() +"  with id "+ id + " in the " + getTableName() + " table. Ignoring." );
+            if (printWarningIfNotFound) {
+                getLogger().warn("Could not find " + class1.getName() + "  with id " + id + " in the " + getTableName() + " table. Ignoring.");
+            }
             return null;
         }
     }

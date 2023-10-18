@@ -1024,7 +1024,7 @@ import java.util.Set;
         RaplaSQL raplaSQLInput = new RaplaSQL(inputContext);
         raplaSQLInput.loadAll(connection);
 
-        final Collection<ReferenceInfo> entitiesToRemove = removeInconsistentReservations(entityStore);
+        final Collection<ReferenceInfo> eventsToRemove = removeInconsistentReservations(entityStore);
 
         Collection<Entity> list = entityStore.getList();
         if (history.hasHistory(Category.SUPER_CATEGORY_REF))
@@ -1040,7 +1040,8 @@ import java.util.Set;
         cache.putAll(list);
         cache.getDynamicTypes().stream().map(t->(DynamicTypeImpl)t).forEach(DynamicTypeImpl::setReadOnly);
         resolveInitial(list, this);
-        removeInconsistentEntities(cache, list);
+        Collection<ReferenceInfo> entitiesToRemove = new HashSet<>(removeInconsistentEntities(cache, list));
+        entitiesToRemove.addAll( eventsToRemove );
         Collection<Entity> migratedTemplates = migrateTemplates();
         cache.putAll(migratedTemplates);
         List<PreferencePatch> preferencePatches = Collections.emptyList();
