@@ -844,7 +844,7 @@ public final class ReservationImpl extends SimpleEntity implements Reservation, 
     
     public String toString() {
         StringBuffer buf = new StringBuffer();
-        buf.append(getTypeClass());
+        buf.append(getTypeClass().getName());
         buf.append(" [");
         buf.append(super.toString());
         buf.append("] ");

@@ -465,13 +465,14 @@ public class SynchronisationManager implements ServerExtension
                 {
                     UpdateOperation<Allocatable> op = operation;
                     Allocatable allocatable = evt.getLastKnown(op.getReference());
-                    final boolean isInternal = Classifiable.ClassifiableUtil.isInternalType(allocatable);
-                    if (!isInternal)
-                    {
-                        SynchronizationBox synchronizationBox = synchronizationBoxMap.get(allocatable.getReference());
-                        if ( synchronizationBox != null) {
-                            //allocatablesRemoved
-                            // find task that export the resource and update them
+                    if (allocatable != null) {
+                        final boolean isInternal = Classifiable.ClassifiableUtil.isInternalType(allocatable);
+                        if (!isInternal) {
+                            SynchronizationBox synchronizationBox = synchronizationBoxMap.get(allocatable.getReference());
+                            if (synchronizationBox != null) {
+                                //allocatablesRemoved
+                                // find task that export the resource and update them
+                            }
                         }
                     }
                 }
