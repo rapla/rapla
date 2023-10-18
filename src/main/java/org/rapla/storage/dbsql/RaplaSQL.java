@@ -1265,7 +1265,7 @@ class AllocatableStorage extends RaplaTypeStorage<Allocatable>
     public AllocatableStorage(RaplaXMLContext context) throws RaplaException
     {
         super(context, Allocatable.class, "RAPLA_RESOURCE",
-                new String[] { "ID VARCHAR(255) NOT NULL PRIMARY KEY", "TYPE_KEPY VARCHAR(255) NOT NULL", "OWNER_ID VARCHAR(255)", "CREATION_TIME TIMESTAMP",
+                new String[] { "ID VARCHAR(255) NOT NULL PRIMARY KEY", "TYPE_KEY VARCHAR(255) NOT NULL", "OWNER_ID VARCHAR(255)", "CREATION_TIME TIMESTAMP",
                         "LAST_CHANGED TIMESTAMP KEY", "LAST_CHANGED_BY VARCHAR(255) DEFAULT NULL" });
         resourceAttributeStorage = new AttributeValueStorage<>(context, "RESOURCE_ATTRIBUTE_VALUE", "RESOURCE_ID", classificationMap,
                 allocatableMap);

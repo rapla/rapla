@@ -1,9 +1,5 @@
 package org.rapla.plugin.exchangeconnector.server.exchange;
 
-import microsoft.exchange.webservices.data.autodiscover.AutodiscoverService;
-import microsoft.exchange.webservices.data.autodiscover.IAutodiscoverRedirectionUrl;
-import microsoft.exchange.webservices.data.autodiscover.enumeration.UserSettingName;
-import microsoft.exchange.webservices.data.autodiscover.response.GetUserSettingsResponse;
 import microsoft.exchange.webservices.data.core.ExchangeService;
 import microsoft.exchange.webservices.data.core.PropertySet;
 import microsoft.exchange.webservices.data.core.enumeration.misc.ExchangeVersion;
@@ -19,12 +15,10 @@ import microsoft.exchange.webservices.data.core.service.item.EmailMessage;
 import microsoft.exchange.webservices.data.core.service.item.Item;
 import microsoft.exchange.webservices.data.core.service.schema.FolderSchema;
 import microsoft.exchange.webservices.data.credential.WebCredentials;
-import microsoft.exchange.webservices.data.misc.NameResolution;
 import microsoft.exchange.webservices.data.misc.NameResolutionCollection;
 import microsoft.exchange.webservices.data.misc.OutParam;
 import microsoft.exchange.webservices.data.property.complex.*;
 import microsoft.exchange.webservices.data.property.definition.ExtendedPropertyDefinition;
-import microsoft.exchange.webservices.data.search.FindFoldersResults;
 import microsoft.exchange.webservices.data.search.FindItemsResults;
 import microsoft.exchange.webservices.data.search.FolderView;
 import microsoft.exchange.webservices.data.search.ItemView;
@@ -34,10 +28,7 @@ import org.rapla.logger.Logger;
 
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.util.ArrayList;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
  * This class is obliged with the task to provide a connection to a specific Exchange Server-instance
@@ -114,7 +105,7 @@ public class EWSConnector {
 		//throw new Exception("Credentials are invalid!");
 	}
 
-    public Map<String, CalendarFolder> getSharedMailboxes() throws Exception {
+    public UserConnect loadMailboxes() throws Exception {
         SearchFilter sfSearchFilter = new SearchFilter.IsEqualTo(FolderSchema.DisplayName, "Common Views");
         ExchangeService service = getService();
         FolderView view = new FolderView(1000);
@@ -131,6 +122,7 @@ public class EWSConnector {
                 }
             }
         }
+        Set<String> errorMessages = new HashSet<>();
         if (folders.size() == 1) {
 
             PropertySet psPropset = new PropertySet(BasePropertySet.FirstClassProperties);
@@ -176,6 +168,7 @@ public class EWSConnector {
                             SharedCalendaFolder= (CalendarFolder) Folder.bind(service, SharedCalendarId);
                         } catch (Exception ex) {
                             logger.warn("Can't bind calendar folder for mailbox " + mailbox + " Cause " + ex.getMessage());
+                            errorMessages.add(mailbox + " Error: cannot bind " );
                             continue;
                         }
                         rtList.put(mailbox.toLowerCase(), SharedCalendaFolder);
@@ -186,6 +179,36 @@ public class EWSConnector {
                 }
             }
         }
-        return rtList;
+        return new UserConnect(this, rtList,errorMessages, exchangeUsername);
+    }
+
+    public static class UserConnect {
+        private final EWSConnector ewsConnector;
+        private final Map<String, CalendarFolder> sharedMailboxes;
+        private Set<String> errorMessages;
+        private final String username;
+
+        public UserConnect(EWSConnector ewsConnector, Map<String, CalendarFolder> sharedMailboxes, Set<String> errorMessages, String username) {
+            this.ewsConnector = ewsConnector;
+            this.errorMessages = errorMessages;
+            this.sharedMailboxes = sharedMailboxes;
+            this.username = username;
+        }
+
+        public EWSConnector getEwsConnector() {
+            return ewsConnector;
+        }
+
+        public Map<String, CalendarFolder> getSharedMailboxes() {
+            return sharedMailboxes;
+        }
+
+        public Set<String> getErrorMessages() {
+            return errorMessages;
+        }
+
+        public String getUsername() {
+            return username;
+        }
     }
 }

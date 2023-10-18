@@ -92,7 +92,7 @@ public class SynchronisationManager implements ServerExtension
     boolean enabled;
     ShowExchangeForUser showExchangeForUser;
 
-    Map<ReferenceInfo<User>, UserConnect> connectMap = new ConcurrentHashMap<>();
+    Map<ReferenceInfo<User>, EWSConnector.UserConnect> connectMap = new ConcurrentHashMap<>();
     Map<ReferenceInfo<Allocatable>, SynchronizationBox> synchronizationBoxMap = new ConcurrentHashMap<>();
     @Inject
     public SynchronisationManager(RaplaFacade facade, RaplaResources i18nRapla, ExchangeConnectorResources i18nExchange, Logger logger,
@@ -181,7 +181,7 @@ public class SynchronisationManager implements ServerExtension
 
     boolean firstExecution = true;
 
-    public Set<String> refreshMailboxes(User user) throws RaplaException
+    public Collection<String> refreshMailboxes(User user) throws RaplaException
     {
 
         LoginInfo secrets = keyStorage.getSecrets(user, ExchangeConnectorServerPlugin.EXCHANGE_USER_STORAGE);
@@ -199,15 +199,46 @@ public class SynchronisationManager implements ServerExtension
             final Preferences userPreferences = facade.edit(facade.getPreferences(user));
             userPreferences.putEntry(REFRESH_MAILBOXES, true);
             facade.store(userPreferences);
-            return connector.getSharedMailboxes().keySet();
+            List<String> result = loadMailboxes(connector);
+            return result;
         }
         catch (Exception e)
         {
             throw new RaplaException("Kann die Verbindung zu Exchange nicht herstellen: " + e.getMessage());
         }
 
-
     }
+
+    public Collection<String> changeUser(String exchangeUsername, String exchangePassword, User user) throws RaplaException
+    {
+        try
+        {
+            String exchangeUrl = extractExchangeUrl(user);
+            final EWSConnector connector = new EWSConnector(exchangeUrl, exchangeUsername, exchangePassword, logger, user.getEmail());
+            connector.test();
+            logger.debug("Invoked change connection for user " + user.getUsername());
+            keyStorage.storeLoginInfo( user, ExchangeConnectorServerPlugin.EXCHANGE_USER_STORAGE, exchangeUsername, exchangePassword);
+            logger.info("New exchangename stored for " + user.getUsername());
+            final Preferences userPreferences = facade.edit(facade.getPreferences(user));
+            userPreferences.putEntry(REFRESH_MAILBOXES, true);
+            facade.store(userPreferences);
+            return loadMailboxes(connector);
+        }
+        catch (Exception e)
+        {
+            throw new RaplaException("Kann die Verbindung zu Exchange nicht herstellen: " + e.getMessage());
+        }
+    }
+
+    @NotNull
+    private static List<String> loadMailboxes(EWSConnector connector) throws Exception {
+        EWSConnector.UserConnect userConnect = connector.loadMailboxes();
+        List<String> result = new ArrayList<>(userConnect.getSharedMailboxes().keySet());
+        result.addAll( userConnect.getErrorMessages());
+        Collections.sort( result );
+        return result;
+    }
+
 
     public SynchronizationStatus getSynchronizationStatus(User user) throws RaplaException
     {
@@ -315,7 +346,7 @@ public class SynchronisationManager implements ServerExtension
             return mailboxName;
         }
 
-        public UserConnect getUserConnect() {
+        public EWSConnector.UserConnect getUserConnect() {
             return userConnect;
         }
         ReferenceInfo<User> userId;
@@ -326,7 +357,7 @@ public class SynchronisationManager implements ServerExtension
 
         String exchangeUserId;
 
-        UserConnect userConnect;
+        EWSConnector.UserConnect userConnect;
 
         @Override
         public String toString() {
@@ -662,21 +693,21 @@ public class SynchronisationManager implements ServerExtension
         final String password = secrets.secret;
 
         final String exchangeUrl = extractExchangeUrl(user);
-        UserConnect userConnect;
+        EWSConnector.UserConnect userConnect;
         try {
             final Logger ewsLogger = logger.getChildLogger("webservice");
             String mailboxAddress = user.getEmail();
             EWSConnector ewsConnector = new EWSConnector(exchangeUrl, username,password , ewsLogger, mailboxAddress);
             ewsConnector.test();
-            Map<String, CalendarFolder> sharedMailboxes = ewsConnector.getSharedMailboxes();
-            userConnect = new UserConnect(ewsConnector, sharedMailboxes, username);
+            userConnect = ewsConnector.loadMailboxes();
+            //userConnect = new UserConnect(ewsConnector, sharedMailboxes, username);
         } catch (Exception ex) {
             logger.error("Internal error while fetching mailboxes for  " +username + ". Ignoring task. " + ex.getMessage());
             return;
         }
         if (userConnect != null ){
             connectMap.put( user.getReference(), userConnect);
-            Map<String, CalendarFolder> sharedMailboxes = userConnect.sharedMailboxes;
+            Map<String, CalendarFolder> sharedMailboxes = userConnect.getSharedMailboxes();
             for (Map.Entry<String,CalendarFolder> entry :sharedMailboxes.entrySet()) {
                 String mailbox = entry.getKey();
                 CalendarFolder folder = entry.getValue();
@@ -685,7 +716,7 @@ public class SynchronisationManager implements ServerExtension
                     ReferenceInfo<Allocatable> reference = allocatable.getReference();
                     SynchronizationBox existingBox = synchronizationBoxMap.get(reference);
                     SynchronizationBox newBox = new SynchronizationBox();
-                    newBox.exchangeUserId = userConnect.username;
+                    newBox.exchangeUserId = userConnect.getUsername();
                     newBox.calendarFolder = folder;
                     newBox.resourceId = reference;
                     newBox.userConnect = userConnect;
@@ -889,12 +920,12 @@ public class SynchronisationManager implements ServerExtension
                 toRemove.addAll(tasksForUser);
                 continue;
             }
-            UserConnect userConnect = connectMap.get(userId);
+            EWSConnector.UserConnect userConnect = connectMap.get(userId);
             if ( userConnect == null ){
                 continue;
             }
             try {
-                userConnect.ewsConnector.test();
+                userConnect.getEwsConnector().test();
             } catch (Exception ex) {
                 String message = "Internal error while processing SynchronizationTask for " +user.getUsername() + ". Ignoring task. ";
                 tasksForUser.stream().forEach(t->t.increaseRetries( message));
@@ -946,7 +977,7 @@ public class SynchronisationManager implements ServerExtension
                     continue;
                 }
                 Map<ReferenceInfo<Allocatable>, CalendarFolder> usedSharedMailboxes = mailboxForResources.entrySet().stream()
-                        .filter(x -> x.getValue() != null && userConnect.sharedMailboxes.containsKey(x.getValue()))
+                        .filter(x -> x.getValue() != null && userConnect.getSharedMailboxes().containsKey(x.getValue()))
                         .collect(Collectors.toMap(Map.Entry::getKey, x -> {
                                     ReferenceInfo<Allocatable> key = x.getKey();
                                     SynchronizationBox synchronizationBox = synchronizationBoxMap.get(key);
@@ -959,7 +990,7 @@ public class SynchronisationManager implements ServerExtension
                     continue;
                 }
                 final Logger logger = this.logger.getChildLogger("exchange");
-                final AppointmentSynchronizer worker = new AppointmentSynchronizer(logger, converter, exchangeTimezoneId, exchangeAppointmentCategory, user, userConnect.ewsConnector,
+                final AppointmentSynchronizer worker = new AppointmentSynchronizer(logger, converter, exchangeTimezoneId, exchangeAppointmentCategory, user, userConnect.getEwsConnector(),
                         notificationMail, task, appointment, i18n.getLocale(), usedSharedMailboxes);
 
                 try {
@@ -1034,18 +1065,7 @@ public class SynchronisationManager implements ServerExtension
         return result;
     }
 
-    private static class UserConnect {
-        public final EWSConnector ewsConnector;
-        public final Map<String, CalendarFolder> sharedMailboxes;
-        public final String username;
 
-        public UserConnect(EWSConnector ewsConnector, Map<String, CalendarFolder> sharedMailboxes, String username) {
-            this.ewsConnector = ewsConnector;
-            this.sharedMailboxes = sharedMailboxes;
-            this.username = username;
-        }
-
-    }
 
     @Nullable
     private String getAttribute( Classification c, String attributeKey) {
@@ -1134,27 +1154,6 @@ public class SynchronisationManager implements ServerExtension
         }
         facade.store(preferences);
         logger.info("Removed exchange export infos for " + user);
-    }
-
-    public Collection<String> changeUser(String exchangeUsername, String exchangePassword, User user) throws RaplaException
-    {
-        try
-        {
-            String exchangeUrl = extractExchangeUrl(user);
-            final EWSConnector connector = new EWSConnector(exchangeUrl, exchangeUsername, exchangePassword, logger, user.getEmail());
-            connector.test();
-            logger.debug("Invoked change connection for user " + user.getUsername());
-            keyStorage.storeLoginInfo( user, ExchangeConnectorServerPlugin.EXCHANGE_USER_STORAGE, exchangeUsername, exchangePassword);
-            logger.info("New exchangename stored for " + user.getUsername());
-            final Preferences userPreferences = facade.edit(facade.getPreferences(user));
-            userPreferences.putEntry(REFRESH_MAILBOXES, true);
-            facade.store(userPreferences);
-            return connector.getSharedMailboxes().keySet();
-        }
-        catch (Exception e)
-        {
-            throw new RaplaException("Kann die Verbindung zu Exchange nicht herstellen: " + e.getMessage());
-        }
     }
 
     private String extractExchangeUrl(User user)
