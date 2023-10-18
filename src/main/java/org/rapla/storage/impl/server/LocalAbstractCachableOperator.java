@@ -1836,7 +1836,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
                                 } else {
                                     // check if appointment has changed; if so remove it and we add it later
                                     Appointment newAppointment = event.findAppointment( app );
-                                    if ( !newAppointment.matches( app) ) {
+                                    if ( newAppointment == null || !newAppointment.matches( app) ) {
                                         toUpdate.add( alloc );
                                         it.remove();
                                         break;

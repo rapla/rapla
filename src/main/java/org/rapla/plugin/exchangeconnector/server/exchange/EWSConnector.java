@@ -175,7 +175,9 @@ public class EWSConnector {
                     }
 
                 } else {
-                    logger.warn("Could not find calendar for " + itItem.getSubject());
+                    String message = "Could not find calendar for " + itItem.getSubject();
+                    errorMessages.add(message);
+                    logger.warn(message);
                 }
             }
         }

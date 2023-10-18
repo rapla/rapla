@@ -94,8 +94,8 @@ public class Export2iCalConverter
         this.logger = logger;
         this.i18n = i18n;
         TimeZone zone = timezoneConverter.getImportExportTimeZone();
-        DynamicType[] dynamicTypes = DynamicType.DYNAMICTYPE_ARRAY;
-        RaplaConfiguration config = null;
+        DynamicType[] dynamicTypes;
+        RaplaConfiguration config;
         try
         {
             config = facade.getSystemPreferences().getEntry(Export2iCalPlugin.ICAL_CONFIG, new RaplaConfiguration());
@@ -263,7 +263,8 @@ public class Export2iCalConverter
      * @param appointment
      * @param properties
      */
-    private void addOrganizer(Appointment appointment, PropertyList properties, boolean doExportAsMeeting)
+    private void
+    addOrganizer(Appointment appointment, PropertyList properties, boolean doExportAsMeeting)
     {
         // means we do not export attendees so we do not have a meeting
         if (!doExportAsMeeting)

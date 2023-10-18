@@ -444,7 +444,7 @@ public class SynchronisationManager implements ServerExtension
                     if (preferences.getEntryAsBoolean(REFRESH_MAILBOXES, false))
                     {
                         final User resolvedUser = facade.tryResolve(preferences.getOwnerRef());
-                        logger.info("retry user  " + resolvedUser);
+                        logger.info("refresh mailbox for user  " + resolvedUser);
                         if(resolvedUser != null)
                         {
                             refreshMailbox(resolvedUser, getAllocatableForMailbox(), true);
@@ -999,7 +999,11 @@ public class SynchronisationManager implements ServerExtension
                     } catch (RaplaException ex) {
                         String message = "Internal error while processing SynchronizationTask " + task + ". Ignoring task. ";
                         task.increaseRetries(message);
-                        logger.error(message, ex);
+                        if ( message.contains("Read timed out ")) {
+                            logger.warn(message + ex.getMessage());
+                        } else {
+                            logger.error(message, ex);
+                        }
                     }
                     final Preferences userPreferences = facade.getPreferences(user);
                     if (userPreferences.getEntryAsBoolean(PASSWORD_MAIL_USER, false)) {
