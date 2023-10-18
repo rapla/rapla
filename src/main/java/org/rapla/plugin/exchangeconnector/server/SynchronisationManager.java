@@ -149,6 +149,13 @@ public class SynchronisationManager implements ServerExtension
             Date updatedUntil = null;
             try {
                 lastUpdated = cachableStorageOperator.requestLock(EXCHANGE_LOCK_ID, VALID_LOCK_DURATION);
+            } catch (Throwable t) {
+                SynchronisationManager.this.logger.error("Can't get exchange lock. Another Process maybe blocking. Waiting unitl its released again ");
+            }
+            if (lastUpdated == null) {
+                return;
+            }
+            try {
                 final UpdateResult updateResult = cachableStorageOperator.getUpdateResult(lastUpdated);
                 synchronize(updateResult);
                 // set it as last, so update must have been successful
@@ -156,9 +163,7 @@ public class SynchronisationManager implements ServerExtension
             } catch (Throwable t) {
                 SynchronisationManager.this.logger.error("Error updating exchange queue", t);
             } finally {
-                if (lastUpdated != null) {
-                    cachableStorageOperator.releaseLock(EXCHANGE_LOCK_ID, updatedUntil);
-                }
+                cachableStorageOperator.releaseLock(EXCHANGE_LOCK_ID, updatedUntil);
             }
         };
         schedule = scheduler.schedule(synchronizeAction, 0, SCHEDULE_PERIOD);
