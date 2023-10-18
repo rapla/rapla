@@ -464,7 +464,7 @@ public class SynchronisationManager implements ServerExtension
                 if (operation instanceof UpdateResult.Remove)
                 {
                     UpdateOperation<Allocatable> op = operation;
-                    Allocatable allocatable = evt.getLastKnown(op.getReference());
+                    Allocatable allocatable = evt.getLastEntryBeforeUpdate(op.getReference());
                     if (allocatable != null) {
                         final boolean isInternal = Classifiable.ClassifiableUtil.isInternalType(allocatable);
                         if (!isInternal) {
