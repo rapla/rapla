@@ -16,7 +16,7 @@
 		<rxjava.version>3.1.5</rxjava.version>
 		<java.version>1.8</java.version>
 		<exchange.webservice.api>2.0</exchange.webservice.api>
-		<jetty.version>9.4.51.v20230217</jetty.version>
+		<jetty.version>9.4.53.v20231009</jetty.version>
 		<mail.version>1.4.7</mail.version>
 		<jackson.version>2.15.1</jackson.version>
 		<maven.install.skip>false</maven.install.skip>
