@@ -175,7 +175,7 @@
              <New id="contexts" class="org.eclipse.jetty.server.handler.ContextHandlerCollection">
                  <Call name="addHandler">
                     <Arg>
-                        <Ref id="proxy"/>
+                        <Ref refid="proxy"/>
                     </Arg>
                  </Call>
              </New>
@@ -193,7 +193,7 @@
       </New>
    </Set>
 
-   <Ref id="RequestLogHandler">
+   <Ref refid="RequestLogHandler">
       <Set name="requestLog">
         <New id="requestLogImpl" class="ch.qos.logback.access.jetty.RequestLogImpl">
            <Set name="fileName"><SystemProperty name="jetty.home"/>/resources/logback-access.xml</Set>
@@ -206,7 +206,7 @@
     <Arg>
       <New id="DeploymentManager" class="org.eclipse.jetty.deploy.DeploymentManager">
         <Set name="contexts">
-          <Ref id="contexts"/>
+          <Ref refid="contexts"/>
         </Set>
         <Call name="addAppProvider">
             <Arg>
