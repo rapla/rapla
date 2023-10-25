@@ -88,6 +88,19 @@ public class ClassificationImpl implements Classification,DynamicTypeDependant, 
 
     }
 
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        ClassificationImpl that = (ClassificationImpl) o;
+        return Objects.equals(typeId, that.typeId) && Objects.equals(type, that.type) && Objects.equals(data, that.data);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(typeId, type, data);
+    }
+
     ClassificationImpl(DynamicTypeImpl dynamicType) {
         typeId = dynamicType.getId();
         type = dynamicType.getKey();

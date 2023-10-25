@@ -600,7 +600,11 @@ public class SynchronisationManager implements ServerExtension
                                 Set<String> newAllocatables = ((ReservationImpl)newReservation).getAllocatableIdsFor( newApp.getReference()).collect(Collectors.toSet());
                                 if (oldAllocatables.equals( newAllocatables))
                                 {
-                                    continue;
+                                    Classification classification1 = oldReservation.getClassification();
+                                    Classification classification2 = newReservation.getClassification();
+                                    if ( classification1 != null && classification2 != null && classification1.equals(classification2)) {
+                                        continue;
+                                    }
                                 }
                             }
                         }
