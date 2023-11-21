@@ -18,12 +18,7 @@ import org.rapla.logger.Logger;
 import org.rapla.plugin.exchangeconnector.*;
 
 import javax.inject.Inject;
-import javax.swing.JCheckBox;
-import javax.swing.JComponent;
-import javax.swing.JLabel;
-import javax.swing.JPanel;
-import javax.swing.JPasswordField;
-import javax.swing.JTextField;
+import javax.swing.*;
 import java.util.Collection;
 import java.util.Date;
 import java.util.Locale;
@@ -47,7 +42,7 @@ public class ExchangeConnectorUserOptions implements UserOptionPanel
     private JLabel usernameLabel;
     private JLabel usernameInfoLabel;
     //private JLabel synchronizedLabel;
-    private JLabel syncIntervalLabel;
+    private JComboBox mailboxSelect;
     //private JTextField filterCategoryField;
     //private String filterCategory;
     //private JLabel eventTypesLabel;
@@ -138,7 +133,7 @@ public class ExchangeConnectorUserOptions implements UserOptionPanel
         usernameLabel = new JLabel();
         usernameInfoLabel = new JLabel();
         //synchronizedLabel = new JLabel();
-        syncIntervalLabel = new JLabel();
+        mailboxSelect = new JComboBox<>();
 
         double[][] sizes = new double[][] { { 5, TableLayout.PREFERRED, 30, TableLayout.FILL, 5 },
                 { TableLayout.PREFERRED, 10, TableLayout.PREFERRED, 10, TableLayout.PREFERRED, 40, TableLayout.PREFERRED, 10, TableLayout.PREFERRED, 10,
@@ -148,12 +143,14 @@ public class ExchangeConnectorUserOptions implements UserOptionPanel
         TableLayout tableLayout = new TableLayout(sizes);
         this.optionsPanel.setLayout(tableLayout);
         loginButton = new RaplaButton();
+        loginButton = new RaplaButton();
         syncButton = new RaplaButton();
         removeButton = new RaplaButton();
         refreshMailboxesButton = new RaplaButton();
         //loginButton.setText("Set Login");
         removeButton.setText(exchangeConnectorResources.getString("disconnect"));
         syncButton.setText(exchangeConnectorResources.getString("resync.exchange"));
+        syncButton.setEnabled(false);
         syncButton.setToolTipText(exchangeConnectorResources.getString("resync.exchange.tooltip"));
         refreshMailboxesButton.setText(exchangeConnectorResources.getString("refresh_mailboxes"));
         usernameInfoLabel.setText(exchangeConnectorResources.getString("exchange_user"));
@@ -171,7 +168,7 @@ public class ExchangeConnectorUserOptions implements UserOptionPanel
             this.optionsPanel.add(this.enableNotifyBox, "3,8");
         }
         enableNotifyBox.setEnabled(false);
-        this.optionsPanel.add(syncIntervalLabel, "3, 10");
+        this.optionsPanel.add(mailboxSelect, "3, 10");
         this.optionsPanel.add(syncButton, "3, 12");
         this.optionsPanel.add(new JLabel(i18n.getString("appointments") + ":"), "1, 14");
         //this.optionsPanel.add(synchronizedLabel, "3, 14");
@@ -204,17 +201,17 @@ public class ExchangeConnectorUserOptions implements UserOptionPanel
             );
         });
         syncButton.addActionListener(e -> {
-            try
-            {
-                service.synchronize();
-                showResultWillBeSentByMailDialog();
-                updateComponentState();
-            }
-            catch (RaplaException ex)
-            {
-                dialogUiFactory.showException(ex, popupContext);
-                logger.error("The operation was not successful!", ex);
-            }
+            Object selectedItem = mailboxSelect.getSelectedItem();
+            if (selectedItem != null) {
+               try {
+                   service.synchronize(selectedItem.toString());
+                   showResultWillBeSentByMailDialog();
+                   updateComponentState();
+               } catch (RaplaException ex) {
+                   dialogUiFactory.showException(ex, popupContext);
+                   logger.error("The operation was not successful!", ex);
+               }
+           }
 
         });
         removeButton.addActionListener(e -> {
@@ -277,6 +274,8 @@ public class ExchangeConnectorUserOptions implements UserOptionPanel
             for ( String mailbox: sharedMailboxes) {
                 mailboxString += mailbox + "<br>";
             }
+            mailboxSelect.setModel(new DefaultComboBoxModel(sharedMailboxes.toArray()));
+            syncButton.setEnabled( !sharedMailboxes.isEmpty());
             dialogUiFactory.createTextDialog(popupContext, "Shared Mailboxes", mailboxString, new String [] {}).start(true);
         }
     }
@@ -426,13 +425,12 @@ public class ExchangeConnectorUserOptions implements UserOptionPanel
             intervalText = buf.toString();
         }
 
-        this.syncIntervalLabel.setText(i18n.format("in_period.format", intervalText));
+        //this.mailboxSelect.setText(i18n.format("in_period.format", intervalText));
         this.loginButton.setText(getConnectButtonString());
         this.loginButton.setToolTipText(getConnectButtonTooltip());
         this.enableNotifyBox.setEnabled(connected);
         this.removeButton.setEnabled(connected);
         this.removeButton.setToolTipText(exchangeConnectorResources.getString("disable.sync.rapla.exchange"));
-        this.syncButton.setEnabled(connected);
         this.refreshMailboxesButton.setEnabled(connected);
 
     }

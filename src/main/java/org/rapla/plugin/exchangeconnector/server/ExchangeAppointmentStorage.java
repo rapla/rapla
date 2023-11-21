@@ -78,9 +78,9 @@ public class ExchangeAppointmentStorage
         this.showExchangeForUser = showExchangeForUser;
     }
 
-    public Collection<SynchronizationTask> getAllTasks() throws RaplaException
+    public Set<SynchronizationTask> getAllTasks() throws RaplaException
     {
-        List<SynchronizationTask> result = new ArrayList<>();
+        Set<SynchronizationTask> result = new HashSet<>();
         for (Collection<SynchronizationTask> list : tasks.values())
         {
             if (list != null)
@@ -92,7 +92,7 @@ public class ExchangeAppointmentStorage
         return result;
     }
 
-    public Collection<SynchronizationTask> getTasksForUser(ReferenceInfo<User> userId) throws RaplaException
+    public Collection<SynchronizationTask> getTasksForUser(ReferenceInfo<User> userId, String mailbox) throws RaplaException
     {
         // TODO add another index (userId to Collection<SynchronizationTask>) so we can do this faster
         List<SynchronizationTask> result = new ArrayList<>();
@@ -104,7 +104,9 @@ public class ExchangeAppointmentStorage
                 {
                     if (task.matchesUserId( userId ))
                     {
-                        result.add(task);
+                        if (mailbox == null || mailbox.equals(task.getMailboxName())) {
+                            result.add(task);
+                        }
                     }
                 }
             }
@@ -112,9 +114,9 @@ public class ExchangeAppointmentStorage
         return result;
     }
     
-    public void removeTasksForUser(ReferenceInfo<User> userId) throws RaplaException
+    public void removeTasksForUser(ReferenceInfo<User> userId, String mailbox) throws RaplaException
     {
-        Collection<SynchronizationTask> toRemove = getTasksForUser(userId);
+        Collection<SynchronizationTask> toRemove = getTasksForUser(userId, mailbox);
         Collection<SynchronizationTask> toStore = Collections.emptyList();
         storeAndRemove(toStore, toRemove);
     }

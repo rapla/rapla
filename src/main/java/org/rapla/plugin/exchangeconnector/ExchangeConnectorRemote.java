@@ -21,7 +21,7 @@ public interface ExchangeConnectorRemote
 
     @POST
     @Path("synchronize")
-    void synchronize() throws RaplaException;
+    void synchronize(String mailbox) throws RaplaException;
 
 	/**
 	 * Add an Exchange user to the user list (register a user to the Exchange Server)

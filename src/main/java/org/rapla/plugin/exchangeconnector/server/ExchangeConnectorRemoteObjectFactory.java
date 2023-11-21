@@ -46,12 +46,12 @@ public class ExchangeConnectorRemoteObjectFactory implements ExchangeConnectorRe
     }
 
     @Override
-    public void synchronize() throws RaplaException
+    public void synchronize(String mailbox) throws RaplaException
     {
         final User user = session.checkAndGetUser(request);
         // Synchronize this user after registering
         getLogger().debug("Invoked change sync for user " + user.getUsername());
-        manager.synchronizeUser(user);
+        manager.synchronizeUser(user, mailbox);
     }
 
     @Override

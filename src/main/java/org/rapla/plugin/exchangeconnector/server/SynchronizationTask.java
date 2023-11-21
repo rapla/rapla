@@ -7,6 +7,7 @@ import org.rapla.entities.storage.ReferenceInfo;
 
 import java.io.Serializable;
 import java.util.Date;
+import java.util.Objects;
 
 public class SynchronizationTask implements Serializable
 {
@@ -126,37 +127,20 @@ public class SynchronizationTask implements Serializable
 		    lastError = null;
 		}
 	}
-	
-	
+
+	@Override
+	public boolean equals(Object o) {
+		if (this == o) return true;
+		if (o == null || getClass() != o.getClass()) return false;
+		SynchronizationTask that = (SynchronizationTask) o;
+		return Objects.equals(userId, that.userId) && Objects.equals(appointmentId, that.appointmentId) && Objects.equals(resourceId, that.resourceId);
+	}
+
 	@Override
 	public int hashCode() {
-		final int prime = 31;
-		int result = 1;
-		result = prime * result
-				+ ((appointmentId == null) ? 0 : appointmentId.hashCode());
-		result = prime * result + ((userId == null) ? 0 : userId.hashCode());
-		return result;
+		return Objects.hash(userId, appointmentId, resourceId);
 	}
-	
-	@Override
-	public boolean equals(Object obj) {
-		if (this == obj)
-			return true;
-		if (obj == null)
-			return false;
-		if (getClass() != obj.getClass())
-			return false;
-		SynchronizationTask other = (SynchronizationTask) obj;
-		if (appointmentId == null) {
-			if (other.appointmentId != null)
-				return false;
-		} else if (!appointmentId.equals(other.appointmentId))
-			return false;
-		if (userId == null) {
-            return other.userId == null;
-		} else return userId.equals(other.userId);
-    }
-	
+
 	@Override
 	public String toString() {
 		return "SynchronizationTask [userId=" + userId + ", appointmentId="
