@@ -112,7 +112,7 @@ public class PreferencesImpl extends SimpleEntity implements Preferences, Modifi
         updateMap(role, entry);
     }
 
-    private void updateMap(String role, Object entry)
+    private void updateMap(String role, Object entry )
     {
         checkWritable();
         map.putPrivate(role, entry);
@@ -296,11 +296,12 @@ public class PreferencesImpl extends SimpleEntity implements Preferences, Modifi
         for (String key : patch.keySet())
         {
             Object value = patch.get(key);
-            updateMap(key, value);
+            map.putPrivate(key, value);
         }
+
         for (String remove : removedEntries)
         {
-            updateMap(remove, null);
+            map.putPrivate( remove, null );
         }
         Date lastChangedPatch = patch.getLastChanged();
         if (lastChangedPatch != null)

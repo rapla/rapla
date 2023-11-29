@@ -202,6 +202,13 @@ public class UpdateResult
         return result;
     }
 
+    public Collection<ReferenceInfo> getRemovedIds()
+    {
+        Set<ReferenceInfo> result = new LinkedHashSet<>();
+        fillIds(result, Remove.class);
+        return result;
+    }
+
     private <T extends UpdateOperation> void fillIds(Set<ReferenceInfo> result, final Class<T> operationClass)
     {
         final Collection<T> operations = getOperations(operationClass);

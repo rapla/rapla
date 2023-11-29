@@ -126,7 +126,7 @@ public class AppointmentSynchronizer
         this.exchangeAppointmentCategory = exchangeAppointmentCategory;
     }
 
-    static public Collection<String> remove(Logger logger, EWSConnector ewsConnector, String mailboxAddress) throws RaplaException
+    static public Collection<String> remove(Logger logger, EWSConnector ewsConnector, CalendarFolder folder) throws RaplaException
     {
         Collection<String> errors = new LinkedHashSet<>();
         final Logger ewsLogger = logger.getChildLogger("webservice");
@@ -143,7 +143,7 @@ public class AppointmentSynchronizer
             {
                 final ItemView view = new ItemView(maxRequestedAppointments, offset);
                 ExchangeService service = ewsConnector.getService();
-                final FindItemsResults<Item> foundItems = service.findItems(new FolderId(WellKnownFolderName.Calendar), searchFilter, view);
+                final FindItemsResults<Item> foundItems = service.findItems(folder.getId(), searchFilter, view);
                 if (foundItems.getItems().size() == maxRequestedAppointments)
                 {
                     offset++;
