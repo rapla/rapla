@@ -161,7 +161,7 @@ public class CSVExportMenu extends RaplaGUIComponent implements ExportMenuExtens
     @Override
     public boolean isEnabled() {
         try {
-           return getFacade().getSystemPreferences().getEntryAsBoolean(CSVExportPlugin.ENABLED, true);
+           return getFacade().getSystemPreferences().getEntryAsBoolean(CSVExportPlugin.ENABLED, false);
         } catch (RaplaException e) {
             return false;
         }

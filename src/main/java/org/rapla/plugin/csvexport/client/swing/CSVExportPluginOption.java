@@ -61,7 +61,7 @@ public class CSVExportPluginOption implements PluginOptionPanel
     @Override
     public void show() throws RaplaException
     {
-        final Boolean entry = preferences.getEntryAsBoolean(CSVExportPlugin.ENABLED, true);
+        final Boolean entry = preferences.getEntryAsBoolean(CSVExportPlugin.ENABLED, false);
         component = createPanel();
         booleanField.setSelected(entry);
     }
