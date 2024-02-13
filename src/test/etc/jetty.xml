@@ -98,7 +98,7 @@
         <Set name="soLingerTime"><Property name="jetty.http.soLingerTime" deprecated="http.soLingerTime" default="-1"/></Set>
         <Set name="acceptorPriorityDelta"><Property name="jetty.http.acceptorPriorityDelta" deprecated="http.acceptorPriorityDelta" default="0"/></Set>
         <Set name="acceptQueueSize"><Property name="jetty.http.acceptQueueSize" deprecated="http.acceptQueueSize" default="0"/></Set>
-        <Set name="reuseAddress">false</Set>
+        <Set name="reuseAddress">true</Set>
       </New>
     </Arg>
   </Call>
