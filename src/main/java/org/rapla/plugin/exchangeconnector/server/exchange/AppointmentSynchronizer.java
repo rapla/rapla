@@ -251,8 +251,6 @@ public class AppointmentSynchronizer
     {
         //ewsConnector.test();
         long time = System.currentTimeMillis();
-        Logger logger = getLogger().getChildLogger("exchangeupdate");
-        logger.info("Updating appointment " + raplaAppointment);
         ExchangeService service = ewsConnector.getService();
         {
             microsoft.exchange.webservices.data.core.service.item.Appointment exchangeAppointment = getExchangeAppointmentByRaplaId(service, raplaAppointment.getId());
@@ -265,7 +263,8 @@ public class AppointmentSynchronizer
         saveToExchangeServer(exchangeAppointment, sendNotificationMail);
         // FIXME it an error occurs exceptions may not be serialized correctly
         removeRecurrenceExceptions(exchangeAppointment);
-        logger.info("Updated appointment " + raplaAppointment + " took " + (System.currentTimeMillis() - time) + " ms ");
+        Logger logger = getLogger().getChildLogger("exchangeupdate");
+        logger.info(getMailboxName() + " updated appointment " + raplaAppointment + " took " + (System.currentTimeMillis() - time) + " ms ");
     }
 
     private synchronized void delete() throws Exception
@@ -301,7 +300,6 @@ public class AppointmentSynchronizer
         String identifier = appointmentTask.getAppointmentId();
         Logger logger = getLogger().getChildLogger("exchangeupdate");
         long time = System.currentTimeMillis();
-        logger.info("Deleting appointment with id " + identifier);
         try
         {
             ExchangeService service = ewsConnector.getService();
@@ -325,7 +323,7 @@ public class AppointmentSynchronizer
         }
         //delete on the Exchange Server side
         //remove it from the "to-be-removed"-list
-        logger.info("Deleted appointment with id " + identifier + " took " + (System.currentTimeMillis() - time) + " ms ");
+        logger.info(getMailboxName() + " Deleted appointment with id " + identifier + " took " + (System.currentTimeMillis() - time) + " ms ");
     }
 
     private void saveToExchangeServer(microsoft.exchange.webservices.data.core.service.item.Appointment exchangeAppointment, boolean notify) throws Exception
@@ -335,17 +333,21 @@ public class AppointmentSynchronizer
         {
             FolderId folderId = getFolderId();
 
-            getLogger().info("Adding " + exchangeAppointment.getSubject() + " to exchange");
+            getLogger().info(getMailboxName() +  "Adding " + exchangeAppointment.getSubject() + " to exchange");
             SendInvitationsMode sendMode = notify ? SendInvitationsMode.SendOnlyToAll : SendInvitationsMode.SendToNone;
             exchangeAppointment.save(folderId,sendMode);
         }
         else
         {
-            getLogger().info("Updating " + exchangeAppointment.getId() + " " + exchangeAppointment.getSubject() + "," + exchangeAppointment.getWhen());
+            getLogger().info(getMailboxName() +  "Updating " + exchangeAppointment.getId() + " " + exchangeAppointment.getSubject() + "," + exchangeAppointment.getWhen());
             SendInvitationsOrCancellationsMode sendMode = notify ? SendInvitationsOrCancellationsMode.SendOnlyToAll
                     : SendInvitationsOrCancellationsMode.SendToNone;
             exchangeAppointment.update(ConflictResolutionMode.AlwaysOverwrite, sendMode);
         }
+    }
+
+    private String getMailboxName() {
+        return appointmentTask != null ? appointmentTask.getMailboxName() :"unkown";
     }
 
     private microsoft.exchange.webservices.data.core.service.item.Appointment getExchangeAppointmentByRaplaId(ExchangeService service, String raplaId) throws Exception
@@ -776,7 +778,7 @@ public class AppointmentSynchronizer
             }
             if (exceptionDates.contains(exchangeException))
             {
-                getLogger().info("Removing exception for " + occurrence.getId().getUniqueId() + " " + occurrence);
+                getLogger().info(getMailboxName() + " Removing exception for " + occurrence.getId().getUniqueId() + " " + occurrence);
                 occurrence.delete(DeleteMode.MoveToDeletedItems, SendCancellationsMode.SendOnlyToAll);
             }
         }

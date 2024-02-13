@@ -1076,7 +1076,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
         }
         final long delayCleanup = DateTools.MILLISECONDS_PER_HOUR;
         scheduleConnectedTasks(cleanUpConflicts, delayCleanup, DateTools.MILLISECONDS_PER_HOUR);
-        final int refreshPeriod = 1000 * 20;
+        final int refreshPeriod = 1000 * 60;
         final long delayRefresh = 1000;
         scheduleConnectedTasks(()->
             {

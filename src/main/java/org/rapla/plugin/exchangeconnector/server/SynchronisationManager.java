@@ -1022,16 +1022,21 @@ public class SynchronisationManager implements ServerExtension
                     toRemove.add(task);
                     continue;
                 }
-                Map<ReferenceInfo<Allocatable>, CalendarFolder> usedSharedMailboxes = mailboxForResources.entrySet().stream()
-                        .filter(x -> x.getValue() != null && userConnect.getSharedMailboxes().containsKey(x.getValue()))
-                        .collect(Collectors.toMap(Map.Entry::getKey, x -> {
-                                    ReferenceInfo<Allocatable> key = x.getKey();
-                                    SynchronizationBox synchronizationBox = synchronizationBoxMap.get(key);
-                                    CalendarFolder calendarFolder = synchronizationBox.getCalendarFolder();
-                                    //CalendarFolder calendarFolder = connectResult.sharedMailboxes.get(key);
-                            return  calendarFolder;
-                        }
-                        ));
+                Map<ReferenceInfo<Allocatable>, CalendarFolder> usedSharedMailboxes = new HashMap<>();
+                Map<String, CalendarFolder> sharedMailboxes = userConnect.getSharedMailboxes();
+                mailboxForResources.entrySet().stream()
+                        .filter(x -> x.getValue() != null && sharedMailboxes.containsKey(x.getValue())).forEach(x ->
+                        {
+                            ReferenceInfo<Allocatable> key = x.getKey();
+                            SynchronizationBox synchronizationBox = synchronizationBoxMap.get(key);
+                            if (synchronizationBox == null) {
+                                return;
+                            }
+                            CalendarFolder calendarFolder = synchronizationBox.getCalendarFolder();
+                            usedSharedMailboxes.put( key, calendarFolder);
+                });
+
+
                 if (usedSharedMailboxes.isEmpty()) {
                     continue;
                 }
