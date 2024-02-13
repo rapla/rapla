@@ -234,9 +234,10 @@ public class Export2iCalServlet
 		if (filename == null ) {
 			filename = i18n.getString("default");
 		}
-		response.setContentType("text/calendar; charset=" + raplaLocale.getCharsetNonUtf());
+		//response.setContentType("text/calendar; charset=" + raplaLocale.getCharsetNonUtf());
+		response.setContentType("text/calendar; charset=UTF-8");
 		response.setHeader("Content-Disposition", "attachment; filename=" + filename + ".ics");
-
+		response.setCharacterEncoding("UTF-8");
 		if (appointments == null) {
 			throw new RaplaException("Error with returning '" + filename);
 		}
