@@ -860,8 +860,8 @@ import java.util.Set;
         ReferenceInfo<User> userId = user.getReference();
         List<Entity> editList = new ArrayList<>(1);
         editList.add(user);
-        storeAndRemove(editList, Collections.emptyList(), user);
         cache.putPassword( userId, password);
+        storeAndRemove(editList, Collections.emptyList(), user);
     }
     @Override protected void removeConflictsFromDatabase(Collection<ReferenceInfo<Conflict>> disabledConflicts)
     {

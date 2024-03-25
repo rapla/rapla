@@ -585,6 +585,9 @@ public class RemoteOperator
             remoteMethod.changePassword(new PasswordPost(username, new String(oldPassword), new String(newPassword)));
             refresh();
         } catch (RaplaSecurityException ex) {
+            if ( ex.getMessage().contains("authentication store plugin")) {
+                throw  ex;
+            }
             throw new RaplaSecurityException(i18n.getString("error.wrong_password"));
         } catch (RaplaException ex) {
             throw ex;

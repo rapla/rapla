@@ -332,9 +332,9 @@ import java.util.stream.Collectors;
         User user = operator.getUser(username);
         if (!PermissionController.canAdminUser(sessionUser, user))
         {
-            if (authenticationStore != null && authenticationStore.size() > 0)
+            if (authenticationStore != null && authenticationStore.stream().anyMatch(store->store.isEnabled()))
             {
-                throw new RaplaSecurityException("Rapla can't change your password. Authentication handled by ldap plugin.");
+                throw new RaplaSecurityException("Rapla can't change your password. Authentication handled by authentication store plugin like ldap.");
             }
             operator.authenticate(username, oldPassword);
         }
