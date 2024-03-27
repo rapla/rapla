@@ -106,46 +106,37 @@
 
 
 <!-- Example configuration for ssl connector
-	 <Call name="addConnector">
-	     <Arg>
-	       <New class="org.eclipse.jetty.server.ssl.SslSelectChannelConnector">
-	         <Arg>
-	           <New class="org.eclipse.jetty.http.ssl.SslContextFactory">
-	             <Set name="keyStore"><SystemProperty name="jetty.home" default="." />/.keystore</Set>
-	             <Set name="keyStorePassword">secret</Set>
-	             <Set name="certAlias">rapla</Set>
-	             <Set name="ExcludeCipherSuites">
-				   <Array type="String">
-				     <Item>SSL_RSA_WITH_DES_CBC_SHA</Item>
-				     <Item>SSL_DHE_RSA_WITH_DES_CBC_SHA</Item>
-				     <Item>SSL_DHE_DSS_WITH_DES_CBC_SHA</Item>
-				     <Item>SSL_RSA_EXPORT_WITH_RC4_40_MD5</Item>
-				     <Item>SSL_RSA_EXPORT_WITH_DES40_CBC_SHA</Item>
-				     <Item>SSL_DHE_RSA_EXPORT_WITH_DES40_CBC_SHA</Item>
-				     <Item>SSL_DHE_RSA_WITH_3DES_EDE_CBC_SHA</Item>
-				     <Item>SSL_DHE_DSS_WITH_3DES_EDE_CBC_SHA</Item>
-				     <Item>TLS_DHE_RSA_WITH_AES_256_CBC_SHA256</Item>
-				     <Item>TLS_DHE_DSS_WITH_AES_256_CBC_SHA256</Item>
-				     <Item>TLS_DHE_RSA_WITH_AES_256_CBC_SHA</Item>
-				     <Item>TLS_DHE_DSS_WITH_AES_256_CBC_SHA</Item>
-				     <Item>TLS_DHE_RSA_WITH_AES_128_CBC_SHA256</Item>
-				     <Item>TLS_DHE_DSS_WITH_AES_128_CBC_SHA256</Item>
-				     <Item>TLS_DHE_RSA_WITH_AES_128_CBC_SHA</Item>
-				     <Item>TLS_DHE_DSS_WITH_AES_128_CBC_SHA</Item>
-				   </Array>
-	             </Set>
-				 <Set name="ExcludeProtocols">
-				   <Array type="java.lang.String">
-				      <Item>SSLv3</Item>
-				   </Array>
-				 </Set>
-	           </New>
-	         </Arg>
-	         <Set name="port">8443</Set>
-	         <Set name="maxIdleTime">30000</Set>
-	       </New>
-	     </Arg>
-	   </Call>
+
+    <New id="sslContextFactory" class="org.eclipse.jetty.util.ssl.SslContextFactory$Server">
+        <Set name="keyStorePath"><SystemProperty name="jetty.home" default="." />/.keystore</Set>
+	    <Set name="keyStorePassword">secret</Set>
+	    <Set name="certAlias">rapla</Set>
+        <Set name="keyStorePassword">secret</Set>
+    </New>
+
+    <Call name="addConnector">
+        <Arg>
+            <New class="org.eclipse.jetty.server.ServerConnector">
+                <Arg><Ref refid="Server"/></Arg>
+                <Arg>
+                    <Array type="org.eclipse.jetty.server.ConnectionFactory">
+                        <Item>
+                            <New class="org.eclipse.jetty.server.SslConnectionFactory">
+                                <Arg><Ref refid="sslContextFactory"/></Arg>
+                                <Arg>http/1.1</Arg>
+                            </New>
+                        </Item>
+                        <Item>
+                            <New class="org.eclipse.jetty.server.HttpConnectionFactory">
+                                <Arg><Ref id="httpConfig"/></Arg>
+                            </New>
+                        </Item>
+                    </Array>
+                </Arg>
+                <Set name="port">8443</Set>
+            </New>
+        </Arg>
+    </Call>
 	  -->
 
     <!-- Configure Proxy if you want to use nodejs server in dev mode-->
