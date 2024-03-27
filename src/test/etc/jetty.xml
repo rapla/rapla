@@ -106,6 +106,37 @@
 
 
 <!-- Example configuration for ssl connector
+
+    <New id="sslContextFactory" class="org.eclipse.jetty.util.ssl.SslContextFactory$Server">
+        <Set name="keyStorePath"><SystemProperty name="jetty.home" default="." />/.keystore</Set>
+	    <Set name="keyStorePassword">secret</Set>
+	    <Set name="certAlias">rapla</Set>
+        <Set name="keyStorePassword">secret</Set>
+    </New>
+
+    <Call name="addConnector">
+        <Arg>
+            <New class="org.eclipse.jetty.server.ServerConnector">
+                <Arg><Ref refid="Server"/></Arg>
+                <Arg>
+                    <Array type="org.eclipse.jetty.server.ConnectionFactory">
+                        <Item>
+                            <New class="org.eclipse.jetty.server.SslConnectionFactory">
+                                <Arg><Ref refid="sslContextFactory"/></Arg>
+                                <Arg>http/1.1</Arg>
+                            </New>
+                        </Item>
+                        <Item>
+                            <New class="org.eclipse.jetty.server.HttpConnectionFactory">
+                                <Arg><Ref id="httpConfig"/></Arg>
+                            </New>
+                        </Item>
+                    </Array>
+                </Arg>
+                <Set name="port">8443</Set>
+            </New>
+        </Arg>
+    </Call>
 	 <Call name="addConnector">
 	     <Arg>
 	       <New class="org.eclipse.jetty.server.ssl.SslSelectChannelConnector">
