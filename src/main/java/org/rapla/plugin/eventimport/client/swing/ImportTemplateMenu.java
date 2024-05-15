@@ -720,10 +720,12 @@ public class ImportTemplateMenu implements ImportMenuExtension, ActionListener
 
     protected Promise<Map<String, List<Reservation>>> getImportedReservations() throws RaplaException
     {
-        final User user = null;
+        final User user = clientFacade.getUser();
         final Date start = facade.today();
         final Date end = null;
-        final Promise<Map<String, List<Reservation>>> result = facade.getReservations(user, start, end, null).thenApply(( reservations ) -> {
+        Allocatable[] allocatables =facade.getAllocatables();
+        User[] owners = new User[] {};
+        final Promise<Map<String, List<Reservation>>> result = facade.getReservationsAsync(user, allocatables, owners,start, end, null).thenApply((reservations ) -> {
             final Map<String, List<Reservation>> keyMap = new LinkedHashMap<>();
             for ( final Reservation r : reservations )
             {

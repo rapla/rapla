@@ -13,7 +13,7 @@
     </parent>
     <packaging>pom</packaging>
     <properties>
-        <rapla.version>2.0-RC8</rapla.version>
+        <rapla.version>2.0-RC9</rapla.version>
     </properties>
     <dependencies>
         <dependency>
