@@ -2,6 +2,7 @@ package org.rapla.plugin.tableview;
 
 import org.jetbrains.annotations.NotNull;
 import org.rapla.components.util.DateTools;
+import org.rapla.entities.Entity;
 import org.rapla.entities.dynamictype.DynamicTypeAnnotations;
 import org.rapla.facade.CalendarModel;
 
@@ -120,9 +121,13 @@ public class RaplaTableModel<T>
 
     private static final String LINE_BREAK = "\n";
     private static final String CELL_BREAK = ";";
-    static public <T> String getCSV(List<RaplaTableColumn<T>> columns, List<T> rows, String contextAnnotationName)
+    static public <T> String getCSV(List<RaplaTableColumn<T>> columns, List<T> rows, String contextAnnotationName, boolean addIds)
     {
         StringBuffer buf = new StringBuffer();
+        if ( addIds ) {
+            buf.append("id");
+            buf.append(CELL_BREAK);
+        }
         for (RaplaTableColumn column : columns)
         {
             buf.append(column.getColumnName());
@@ -131,9 +136,14 @@ public class RaplaTableModel<T>
         for (T row : rows)
         {
             buf.append(LINE_BREAK);
+            T rowObject = row;
+            if ( addIds ) {
+                if (rowObject instanceof Entity)
+                    buf.append(((Entity) rowObject).getId());
+                buf.append(CELL_BREAK);
+            }
             for (RaplaTableColumn column : columns)
             {
-                T rowObject = row;
                 Object value = column.getValue(rowObject, contextAnnotationName);
                 Class columnClass = column.getColumnClass();
                 boolean isDate = columnClass.equals(java.util.Date.class);
@@ -158,6 +168,7 @@ public class RaplaTableModel<T>
         final String result = buf.toString();
         return result;
     }
+
 
     static private String escape(Object cell) {
         return cell.toString().replace(LINE_BREAK, " ").replace(CELL_BREAK, " ");
