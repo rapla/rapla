@@ -1182,7 +1182,8 @@ public class AppointmentController extends RaplaGUIComponent implements Disposab
 
         private void updateExceptionCount()
         {
-            int count = repeating.getExceptions().length;
+            Date[] exceptions = repeating.getExceptions();
+            int count = exceptions != null ? exceptions.length :0;
             if (count > 0)
             {
                 exceptionButton.setForeground(Color.red);
