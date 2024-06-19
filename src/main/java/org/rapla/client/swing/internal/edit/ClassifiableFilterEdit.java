@@ -825,8 +825,10 @@ class ClassificationEdit extends RaplaGUIComponent implements ItemListener {
                     operator = "contains";
                 if (operator.equals("contains"))
                     box.setSelectedIndex(0);
-                if (operator.equals("starts"))
+                else if (operator.equals("starts"))
                     box.setSelectedIndex(1);
+                else if (operator.equals("ends"))
+                    box.setSelectedIndex(2);
             }
         }
 
