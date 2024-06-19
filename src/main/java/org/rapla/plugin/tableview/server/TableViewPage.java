@@ -24,6 +24,7 @@ abstract public class TableViewPage<T>
 
     private final RaplaLocale raplaLocale;
     private boolean csv;
+    private boolean addIds;
 
     public TableViewPage(RaplaLocale raplaLocale)
     {
@@ -41,6 +42,8 @@ abstract public class TableViewPage<T>
         this.model = model.clone();
         final String pathTranslated = request.getPathTranslated();
         csv = pathTranslated.endsWith(".csv");
+        String withId =request.getParameter("addIds");
+        addIds =withId != null && withId.equals("true");
         if (csv)
         {
             generagePageCSV(request, response, model);
@@ -142,7 +145,7 @@ abstract public class TableViewPage<T>
         if (isCsv())
         {
             String contextAnnotationName = DynamicTypeAnnotations.KEY_NAME_FORMAT;
-            return RaplaTableModel.getCSV(columPlugins, rows, contextAnnotationName);
+            return RaplaTableModel.getCSV(columPlugins, rows, contextAnnotationName, addIds);
         }
         else
         {

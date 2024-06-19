@@ -700,7 +700,7 @@ public class Export2iCalConverter
 
     private DtEnd getDtEndFromAllDayEvent(Date endDate)
     {
-        Date date = DateTools.addDay(DateTools.cutDate(endDate));
+        Date date = DateTools.cutDate(endDate);
         DtEnd end = new DtEnd(new net.fortuna.ical4j.model.Date(date));
         return end;
     }

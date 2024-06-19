@@ -143,7 +143,7 @@ public class CSVExportMenu extends RaplaGUIComponent implements ExportMenuExtens
         Map<RaplaTableColumn<T>, Integer> sortDirections = RaplaTableModel.getSortDirections(model,columnPlugins, tableViewName);
         String contextAnnotationName = DynamicTypeAnnotations.KEY_NAME_FORMAT;
         final List<T> rows = RaplaTableModel.sortRows(objects, sortDirections, fallBackComparator, contextAnnotationName);
-        return RaplaTableModel.getCSV(columnPlugins, rows, contextAnnotationName);
+        return RaplaTableModel.getCSV(columnPlugins, rows, contextAnnotationName, false);
     }
 
     protected Promise<Void> exportFinished(Component topLevel) {
