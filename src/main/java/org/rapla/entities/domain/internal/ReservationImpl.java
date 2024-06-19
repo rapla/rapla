@@ -197,7 +197,11 @@ public final class ReservationImpl extends SimpleEntity implements Reservation, 
     
     public String format(Locale locale, String annotationName)
     {
-        return formatAppointment( locale, annotationName, null);
+        try {
+            return formatAppointment(locale, annotationName, null);
+        } catch (Exception ex) {
+            return getId() + " " + ex.getMessage() ;
+        }
     }
 
     public String formatAppointment(Locale locale, String annotationName, Appointment appointment)

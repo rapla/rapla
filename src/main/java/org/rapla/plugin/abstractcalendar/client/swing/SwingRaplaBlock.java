@@ -293,7 +293,7 @@ public class SwingRaplaBlock extends RaplaBlock implements SwingBlock
             }
 
             final Reservation reservation = getReservation();
-            String label = getName(reservation);
+            String label = getReservationName();
             buf.append(label);
             y = drawString( g, buf.toString(), y, 2, true ) + 2;
 
