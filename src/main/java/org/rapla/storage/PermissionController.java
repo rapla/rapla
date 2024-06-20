@@ -320,17 +320,17 @@ public class PermissionController
         return false;
     }
 
-    public boolean canReadOnlyInformation(Allocatable classifiable, User user)
+    public boolean canReadOnlyInformation(Classifiable entity, User user)
     {
-        if (!canReadType(classifiable, user))
-        {
-            return false;
-        }
-        if (isOwner(classifiable, user))
+        if (entity instanceof  Ownable && isOwner((Ownable) entity, user))
         {
             return true;
         }
-        return hasAccess(classifiable, user, Permission.READ_NO_ALLOCATION);
+        if (!canReadType( entity, user))
+        {
+            return false;
+        }
+        return entity instanceof Entity && hasAccess((Entity) entity, user, Permission.READ_NO_ALLOCATION);
     }
 
     /**

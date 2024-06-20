@@ -1,5 +1,6 @@
 package org.rapla.entities.dynamictype.internal;
 
+import org.jetbrains.annotations.NotNull;
 import org.rapla.components.util.DateTools;
 import org.rapla.components.util.TimeInterval;
 import org.rapla.entities.Category;
@@ -9,14 +10,9 @@ import org.rapla.entities.MultiLanguageNamed;
 import org.rapla.entities.Named;
 import org.rapla.entities.RaplaObject;
 import org.rapla.entities.Timestamp;
-import org.rapla.entities.domain.Allocatable;
-import org.rapla.entities.domain.Appointment;
-import org.rapla.entities.domain.AppointmentBlock;
-import org.rapla.entities.domain.Reservation;
-import org.rapla.entities.dynamictype.Attribute;
-import org.rapla.entities.dynamictype.Classification;
-import org.rapla.entities.dynamictype.DynamicType;
-import org.rapla.entities.dynamictype.DynamicTypeAnnotations;
+import org.rapla.entities.domain.*;
+import org.rapla.entities.domain.internal.ReservationImpl;
+import org.rapla.entities.dynamictype.*;
 import org.rapla.entities.extensionpoints.Function;
 import org.rapla.entities.extensionpoints.FunctionFactory;
 import org.rapla.facade.CalendarModel;
@@ -830,15 +826,6 @@ public class StandardFunctions implements FunctionFactory
             {
                 obj = context.getFirstContextObject();
             }
-            if (obj instanceof AppointmentBlock)
-            {
-                obj = ((AppointmentBlock) obj).getAppointment().getReservation();
-            }
-            else if (obj instanceof Appointment)
-            {
-                obj = ((Appointment) obj).getReservation();
-            }
-
             if (obj instanceof MultiLanguageName)
             {
                 MultiLanguageNamed raplaObject = (MultiLanguageNamed) obj;

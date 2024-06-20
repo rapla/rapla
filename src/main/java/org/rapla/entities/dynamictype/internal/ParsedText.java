@@ -34,7 +34,7 @@ import java.util.*;
 
 /**
  * Enables text replacement of variables like {name} {email} with corresponding attribute values
- * Also some functions like {substring(name,1,2)} are available for simple text processing  
+ * Also some functions like {substring(name,1,2)} are available for simple text processing
  *
  */
 public class ParsedText implements Serializable
@@ -929,12 +929,6 @@ public class ParsedText implements Serializable
 
     }
 
-    static class AttributeValue
-    {
-        Attribute attribute;
-        Object value;
-    }
-
     public static String evalToString(Object object, EvalContext context)
     {
 
@@ -1013,7 +1007,7 @@ public class ParsedText implements Serializable
             Attribute attribute = (Attribute) object;
             return attribute.getName(locale);
         }
-        else if (object instanceof Classifiable || object instanceof Classification)
+        else if (object instanceof Classifiable || object instanceof Classification || object instanceof  Appointment || object instanceof AppointmentBlock)
         {
             Classification classification;
             boolean readable = true;
@@ -1026,12 +1020,29 @@ public class ParsedText implements Serializable
             }
             else
             {
-                final Classifiable classifiable = (Classifiable) object;
+                final Classifiable classifiable;
+                if (object instanceof  Classifiable)
+                {
+                    classifiable = (Classifiable) object;
+                }
+                else if ( object instanceof Appointment)
+                {
+                    classifiable = ((Appointment) object).getReservation();
+                }
+                else if ( object instanceof AppointmentBlock)
+                {
+                    classifiable = ((AppointmentBlock) object).getAppointment().getReservation();
+                }
+                else
+                {
+                    throw new IllegalStateException("object type " + object.getClass().getName() + " not supported");
+                }
+
                 if (user != null)
                 {
                     if (classifiable instanceof PermissionContainer)
                     {
-                        readable = permissionController.canReadOnlyInformation((Allocatable) classifiable, user);
+                        readable = permissionController.canReadOnlyInformation( classifiable, user);
                     }
                 }
                 classification = classifiable.getClassification();
@@ -1047,14 +1058,8 @@ public class ParsedText implements Serializable
             final boolean contextAnnotationNameSet = type.getAnnotation(contextAnnotationName) != null;
             final String annotationName = contextAnnotationNameSet ? contextAnnotationName: DynamicTypeAnnotations.KEY_NAME_FORMAT;
             final List<Object> contextObjects = Collections.singletonList(object);
-            Map<String, Object> environment = context.getEnvironment();
-            EvalContext contextClone = new EvalContext(locale, annotationName, permissionController, environment, user, contextObjects, callStackDepth + 1);
-            ParsedText parsedAnnotation;
-            //parsedAnnotation = type.getParsedAnnotation(contextClone.getAnnotationName());
-            //if (parsedAnnotation == null)
-            {
-                parsedAnnotation = type.getParsedAnnotation(annotationName);
-            }
+            EvalContext contextClone = new EvalContext(locale, annotationName, permissionController, context.getEnvironment(), user, contextObjects, callStackDepth + 1);
+            ParsedText parsedAnnotation = type.getParsedAnnotation(annotationName);
             if (parsedAnnotation != null)
             {
                 String format = parsedAnnotation.formatName(contextClone);
@@ -1062,7 +1067,7 @@ public class ParsedText implements Serializable
             }
             else
             {
-                ((Named) object).getName(locale);
+                classification.getName(locale);
             }
         }
         else if (object instanceof MultiLanguageNamed)
