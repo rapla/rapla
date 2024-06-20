@@ -198,7 +198,7 @@ public final class ReservationImpl extends SimpleEntity implements Reservation, 
     public String format(Locale locale, String annotationName)
     {
         try {
-            return formatAppointment(locale, annotationName, null);
+            return format(locale, annotationName, this);
         } catch (Exception ex) {
             return getId() + " " + ex.getMessage() ;
         }
@@ -206,34 +206,24 @@ public final class ReservationImpl extends SimpleEntity implements Reservation, 
 
     public String formatAppointment(Locale locale, String annotationName, Appointment appointment)
     {
+        return format(locale, annotationName, appointment);
+    }
+
+    private @NotNull String format(Locale locale, String annotationName, Object object) {
         DynamicTypeImpl type = (DynamicTypeImpl)getClassification().getType();
-        ParsedText parsedAnnotation = type.getParsedAnnotation( annotationName );
+        EvalContext evalContext = type.createEvalContext(locale, annotationName, object != null ? object : this);
+        ParsedText parsedAnnotation = type.getParsedAnnotation(annotationName);
         if (parsedAnnotation == null)
         {
             return "";
         }
-        EvalContext evalContext = appointment != null ? createEvalContext(locale, annotationName, appointment ) : createEvalContext(locale, annotationName, this);
         String nameString = parsedAnnotation.formatName(evalContext).trim();
         return nameString;
     }
 
     public String formatAppointmentBlock(Locale locale, String annotationName, AppointmentBlock block)
     {
-        DynamicTypeImpl type = (DynamicTypeImpl)getClassification().getType();
-        ParsedText parsedAnnotation = type.getParsedAnnotation( annotationName );
-        if (parsedAnnotation == null)
-        {
-            return "";
-        }
-        EvalContext evalContext = block != null ? createEvalContext(locale,  annotationName, block ) : createEvalContext(locale,  annotationName, this);
-        String nameString = parsedAnnotation.formatName(evalContext).trim();
-        return nameString;
-    }
-    
-    private EvalContext createEvalContext(Locale locale, String annotationName, Object object)
-    {
-        DynamicTypeImpl type = (DynamicTypeImpl)getClassification().getType();
-        return type.createEvalContext(locale, annotationName, object);
+        return format(locale, annotationName, block);
     }
     
     public Date getLastChanged() {
