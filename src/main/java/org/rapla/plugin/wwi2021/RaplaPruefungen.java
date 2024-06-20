@@ -40,18 +40,34 @@ public class RaplaPruefungen {
     @Inject
     public RaplaFacade facade;
 
-    @Inject
-    RemoteSession session;
-    private final HttpServletRequest request;
-
 
     @Inject
     public Logger logger;
 
     @Inject
-    public RaplaPruefungen(@Context HttpServletRequest request)
-    {
+    RemoteSession session;
+    private final HttpServletRequest request;
+
+    @Inject
+    public RaplaPruefungen(@Context HttpServletRequest request) {
         this.request = request;
+    }
+
+    @GET
+    @Produces(MediaType.TEXT_HTML)
+    @Path("secure")
+    public void generateScurePage( @Context HttpServletRequest request, @Context HttpServletResponse response ) throws Exception {
+        User user = session.checkAndGetUser(request);
+        java.io.PrintWriter out = response.getWriter();
+        out.println( "<html>" );
+        out.println( "<head>" );
+        out.println("  <title>Abgesicherte Seite</title>");
+        out.println("</head>" );
+        out.println( "<body>" );
+        out.println( "Username " + user.getUsername());
+        out.println( "</body>" );
+        out.println( "</html>" );
+        out.close();
     }
 
     @GET
@@ -89,7 +105,6 @@ public class RaplaPruefungen {
     @Produces(MediaType.TEXT_HTML)
     public void generatePage( @Context HttpServletRequest request, @Context HttpServletResponse response ) throws Exception {
         // check if token if a bearer token is passed valid
-        User user =session.checkAndGetUser(request);
         java.io.PrintWriter out = response.getWriter();
         response.setContentType("text/html; charset=ISO-8859-1");
         String linkPrefix = request.getPathTranslated() != null ? "../": "";
