@@ -5,6 +5,7 @@ package org.rapla.plugin.wwi2021;
 
 import org.rapla.RaplaSystemInfo;
 import org.rapla.entities.Entity;
+import org.rapla.entities.User;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.Reservation;
 import org.rapla.entities.dynamictype.ClassificationFilter;
@@ -15,6 +16,7 @@ import org.rapla.framework.RaplaException;
 import org.rapla.logger.Logger;
 import org.rapla.scheduler.Promise;
 import org.rapla.scheduler.sync.SynchronizedCompletablePromise;
+import org.rapla.server.RemoteSession;
 import org.rapla.server.internal.RaplaStatusEntry;
 import org.rapla.server.internal.ServerContainerContext;
 
@@ -39,12 +41,17 @@ public class RaplaPruefungen {
     public RaplaFacade facade;
 
     @Inject
-    public Logger logger;
-    @Inject RaplaSystemInfo m_i18n;
-    @Inject ServerContainerContext serverContainerContext;
+    RemoteSession session;
+    private final HttpServletRequest request;
+
+
     @Inject
-    public RaplaPruefungen()
+    public Logger logger;
+
+    @Inject
+    public RaplaPruefungen(@Context HttpServletRequest request)
     {
+        this.request = request;
     }
 
     @GET
@@ -77,9 +84,12 @@ public class RaplaPruefungen {
         out.close();
     }
 
+
     @GET
     @Produces(MediaType.TEXT_HTML)
     public void generatePage( @Context HttpServletRequest request, @Context HttpServletResponse response ) throws Exception {
+        // check if token if a bearer token is passed valid
+        User user =session.checkAndGetUser(request);
         java.io.PrintWriter out = response.getWriter();
         response.setContentType("text/html; charset=ISO-8859-1");
         String linkPrefix = request.getPathTranslated() != null ? "../": "";
@@ -117,6 +127,8 @@ public class RaplaPruefungen {
         Reservation resolve = facade.resolve(reservationId);
         Reservation editableReservation = facade.edit(resolve);
     }
+
+
 
 
     }
