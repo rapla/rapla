@@ -584,6 +584,9 @@ public class TreeFactoryImpl extends RaplaComponent implements TreeFactory
         {
             protected boolean isInIterator(Object obj)
             {
+                if (obj == null) {
+                    return false;
+                }
                 boolean inIterator = ((Conflict) obj).checkEnabled() == enabledState;
                 return inIterator;
             }
