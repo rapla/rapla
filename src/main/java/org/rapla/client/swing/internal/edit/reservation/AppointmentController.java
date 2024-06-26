@@ -17,6 +17,7 @@ import org.rapla.client.PopupContext;
 import org.rapla.client.RaplaWidget;
 import org.rapla.client.dialog.DialogInterface;
 import org.rapla.client.dialog.DialogUiFactoryInterface;
+import org.rapla.client.extensionpoints.AppointmentEditExtensionFactory;
 import org.rapla.client.swing.RaplaGUIComponent;
 import org.rapla.client.swing.images.RaplaImages;
 import org.rapla.client.swing.internal.SwingPopupContext;
@@ -100,9 +101,10 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
+import java.util.function.Consumer;
 
 /** GUI for editing a single Appointment. */
-public class AppointmentController extends RaplaGUIComponent implements Disposable, RaplaWidget
+public class AppointmentController extends RaplaGUIComponent implements Disposable, RaplaWidget, AppointmentEditExtensionFactory.AppointmentEditExtensionEvents
 {
     JPanel panel = new JPanel();
 
@@ -140,7 +142,7 @@ public class AppointmentController extends RaplaGUIComponent implements Disposab
     private TimeInterval lastModifiedExceptionDialogInterval = null;
 
     public AppointmentController(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, CommandHistory commandHistory,
-            DateRenderer dateRenderer, DialogUiFactoryInterface dialogUiFactory, IOInterface ioInterface) throws RaplaException
+            DateRenderer dateRenderer, DialogUiFactoryInterface dialogUiFactory, IOInterface ioInterface, Set<AppointmentEditExtensionFactory> appointmentEditFactory) throws RaplaException
     {
         super(facade, i18n, raplaLocale, logger);
         this.commandHistory = commandHistory;
@@ -165,7 +167,19 @@ public class AppointmentController extends RaplaGUIComponent implements Disposab
         buttonGroup.add(monthlyRepeating);
         buttonGroup.add(yearlyRepeating);
 
+        if ( appointmentEditFactory.size() > 0) {
+            JPanel editExtensionPanel = new JPanel();
+            for ( AppointmentEditExtensionFactory factory:appointmentEditFactory) {
+                RaplaWidget widget = factory.createStatus( this);
+                if ( widget != null) {
+                    editExtensionPanel.add((JComponent)widget.getComponent(), BorderLayout.SOUTH);
+                }
+            }
+            panel.add(editExtensionPanel, BorderLayout.SOUTH);
+        }
+
         panel.add(repeatingContainer, BorderLayout.CENTER);
+
 
         Border emptyLineBorder = new Border()
         {
@@ -265,9 +279,20 @@ public class AppointmentController extends RaplaGUIComponent implements Disposab
         savedRepeatingType = getCurrentRepeatingType();
     }
 
+    List<Consumer<Appointment>> appointmentChangedConsumer = new ArrayList<>();
+    @Override
+    public void init(Consumer<Appointment> appointmentChanged) {
+        this.appointmentChangedConsumer.add( appointmentChanged);
+    }
+
     public Appointment getAppointment()
     {
         return appointment;
+    }
+
+    @Override
+    public void appointmentChanged() {
+        fireAppointmentChanged();
     }
 
     public void setSelectedEditDate(Date selectedEditDate)
@@ -514,6 +539,9 @@ public class AppointmentController extends RaplaGUIComponent implements Disposab
                 startTime.setVisible(!wholeDaysSet);
                 endTime.setVisible(!wholeDaysSet);
                 endTimeLabel.setVisible(!wholeDaysSet);
+                for (Consumer<Appointment> consumer: appointmentChangedConsumer) {
+                    consumer.accept(appointment);
+                }
             }
             finally
             {

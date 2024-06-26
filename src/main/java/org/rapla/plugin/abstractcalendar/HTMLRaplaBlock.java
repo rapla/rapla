@@ -19,6 +19,7 @@ import org.rapla.components.util.xml.XMLWriter;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.NameFormatUtil;
 import org.rapla.entities.dynamictype.Attribute;
+import org.rapla.entities.dynamictype.internal.EvalContext;
 import org.rapla.plugin.abstractcalendar.RaplaBuilder.RaplaBlockContext;
 
 import java.util.Date;
@@ -30,10 +31,12 @@ public class HTMLRaplaBlock extends RaplaBlock implements HTMLBlock {
     private int m_row;
     private int m_rowCount;
     private int index = 0;
+    EvalContext context;
     public HTMLRaplaBlock( RaplaBlockContext context, Date start, Date end)
     {
         super( context, start, end);
     	timeStringSeperator ="&#160;-";
+
     }
 
     @Override
@@ -80,7 +83,7 @@ public class HTMLRaplaBlock extends RaplaBlock implements HTMLBlock {
 
     public String toString() {
         StringBuffer buf = new StringBuffer();
-        String label = XMLWriter.encode(getNameFor( getReservation()));
+        String label = XMLWriter.encode(getReservationName());
         String timeString = getTimeString(false);
 
         if ( getContext().isAnonymous()) {

@@ -13,7 +13,7 @@ import java.lang.reflect.Type;
 
 @Provider
 @Produces({MediaType.TEXT_HTML, MediaType.APPLICATION_OCTET_STREAM})
-public class MessageHTMLWriter implements MessageBodyWriter<WebApplicationException>
+public class MessageHTMLWriter implements MessageBodyWriter<Exception>
 {
     @Override
     public boolean isWriteable(Class<?> aClass, Type type, Annotation[] annotations, MediaType mediaType)
@@ -22,7 +22,7 @@ public class MessageHTMLWriter implements MessageBodyWriter<WebApplicationExcept
     }
 
     @Override
-    public long getSize(final WebApplicationException e,
+    public long getSize(final Exception e,
                         final Class<?> aClass,
                         final Type type,
                         final Annotation[] annotations,
@@ -31,7 +31,7 @@ public class MessageHTMLWriter implements MessageBodyWriter<WebApplicationExcept
     }
 
     @Override
-    public void writeTo(WebApplicationException e, Class<?> aClass, Type type, Annotation[] annotations, MediaType mediaType,
+    public void writeTo(Exception e, Class<?> aClass, Type type, Annotation[] annotations, MediaType mediaType,
             MultivaluedMap<String, Object> multivaluedMap, OutputStream outputStream) throws IOException, WebApplicationException
     {
         outputStream.write( e.getMessage().getBytes());

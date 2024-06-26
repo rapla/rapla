@@ -816,9 +816,11 @@ final public class DynamicTypeImpl extends SimpleEntity implements DynamicType, 
 		{
 			Object id;
             private final boolean shortForm;
+            String key;
 			AttributeFunction(Attribute attribute, boolean shortForm )
 			{
 				super("attribute:"+attribute.getKey());
+                this.key = attribute.getKey();
                 this.shortForm = shortForm;
 				id =attribute.getId() ;
 				
@@ -837,12 +839,18 @@ final public class DynamicTypeImpl extends SimpleEntity implements DynamicType, 
 				Classification classification = getRootClassification( context);
 				DynamicTypeImpl type = (DynamicTypeImpl) classification.getType();
 				final Attribute attribute = findAttribute(type);
+                if (attribute == null) {
+                    return null;
+                }
 				final Object result = ParsedText.getProxy(classification, attribute);
 				return result;
 			}
 
             public Attribute findAttribute(DynamicTypeImpl type) {
                 Attribute attribute =  type.findAttributeForId( id );
+                if ( attribute == null) {
+                    attribute = type.getAttribute( key);
+                }
                 return attribute;
             }
 			
