@@ -45,6 +45,7 @@ public interface Permission
         CREATE(30),
         READ_NO_ALLOCATION(50),
         READ(100),
+        REQUEST(150),
         ALLOCATE(200),
         ALLOCATE_CONFLICTS(300),
         EDIT(350),
@@ -95,6 +96,7 @@ public interface Permission
     AccessLevel CREATE = AccessLevel.CREATE;
     AccessLevel READ_NO_ALLOCATION = AccessLevel.READ_NO_ALLOCATION;
     AccessLevel READ = AccessLevel.READ;
+    AccessLevel REQUEST = AccessLevel.REQUEST;
     AccessLevel ALLOCATE = AccessLevel.ALLOCATE;
     AccessLevel ALLOCATE_CONFLICTS = AccessLevel.ALLOCATE_CONFLICTS;
     AccessLevel EDIT = AccessLevel.EDIT;

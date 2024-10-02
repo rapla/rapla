@@ -549,6 +549,59 @@ public class TreeFactoryImpl extends RaplaComponent implements TreeFactory
 
     }
 
+    public class ResourceRequesttRoot
+    {
+        final String text;
+        int conflictNumber = 0;
+
+        ResourceRequesttRoot(String text, int conflictNumber)
+        {
+            this.text = text;
+            this.conflictNumber = conflictNumber;
+        }
+
+        public void setConflictNumber(int conflictNumber)
+        {
+            this.conflictNumber = conflictNumber;
+        }
+
+        @Override
+        public String toString()
+        {
+            String result = "Resourcenafnragen (1)";
+            return result;
+        }
+
+        @Override
+        public int hashCode()
+        {
+            final int prime = 31;
+            int result = 1;
+            result = prime * result + ((text == null) ? 0 : text.hashCode());
+            return result;
+        }
+
+        @Override
+        public boolean equals(Object obj)
+        {
+            if (this == obj)
+                return true;
+            if (obj == null)
+                return false;
+            if (getClass() != obj.getClass())
+                return false;
+            ConflictRoot other = (ConflictRoot) obj;
+            //            if (conflictNumber != other.conflictNumber)
+            //                return false;
+            if (text == null)
+            {
+                return other.text == null;
+            }
+            else return text.equals(other.text);
+        }
+
+    }
+
     public RaplaTreeNode
     createConflictModel(Collection<Conflict> conflicts) throws RaplaException
     {
@@ -561,6 +614,34 @@ public class TreeFactoryImpl extends RaplaComponent implements TreeFactory
             List<RaplaTreeNode> conflictList = new ArrayList<>();
             int conflict_number = addConflicts(filter(conflicts, true), conflictList);
             ConflictRoot conflictRootObj = new ConflictRoot("conflictUC", conflict_number);
+            RaplaTreeNode treeNode = newNode(conflictRootObj);
+            conflictList.forEach(treeNode::add);
+            rootNode.add(treeNode);
+        }
+        List<RaplaTreeNode> disableConflictList = new ArrayList<>();
+        int conflict_disabled_number = addConflicts(filter(conflicts, false), disableConflictList);
+        if (conflict_disabled_number > 0)
+        {
+            ConflictRoot conflictDisabledRootObj = new ConflictRoot("disabledConflictUC", conflict_disabled_number);
+            RaplaTreeNode treeNode = newNode( conflictDisabledRootObj);
+            disableConflictList.forEach(treeNode::add);
+            rootNode.add(treeNode);
+        }
+        return rootNode;
+    }
+
+    public RaplaTreeNode
+    createResourceRequestModel(Collection<Conflict> conflicts) throws RaplaException
+    {
+        RaplaTreeNode rootNode = newRootNode();
+        if (conflicts == null)
+        {
+            return rootNode;
+        }
+        {
+            List<RaplaTreeNode> conflictList = new ArrayList<>();
+            int conflict_number = addConflicts(filter(conflicts, true), conflictList);
+            ResourceRequesttRoot conflictRootObj = new ResourceRequesttRoot("conflictUC", conflict_number);
             RaplaTreeNode treeNode = newNode(conflictRootObj);
             conflictList.forEach(treeNode::add);
             rootNode.add(treeNode);

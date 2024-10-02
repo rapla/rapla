@@ -51,26 +51,31 @@ public class AllocationChangeEvent
 
     User m_user;
     Reservation m_newReservation;
+    Reservation m_oldReservation;
     Allocatable m_allocatable;
     Appointment m_newAppointment;
     Appointment m_oldAppointment;
 
-    public AllocationChangeEvent( Type type, User user, Reservation newReservation, Allocatable allocatable,
+    public AllocationChangeEvent( Type type, User user, Reservation newReservation, Reservation oldReservation, Allocatable allocatable,
             Appointment appointment )
     {
         m_user = user;
         m_type = type;
         m_allocatable = allocatable;
-        if ( type.equals( REMOVE ) )
-            m_oldAppointment = appointment;
         m_newAppointment = appointment;
         m_newReservation = newReservation;
+        m_oldReservation = oldReservation;
+        if ( type.equals( REMOVE ) ) {
+            m_oldAppointment = appointment;
+            m_oldReservation = newReservation;
+        }
+
     }
 
-    public AllocationChangeEvent( User user, Reservation newReservation, Allocatable allocatable,
+    public AllocationChangeEvent( User user, Reservation newReservation,Reservation oldReservation, Allocatable allocatable,
             Appointment newAppointment, Appointment oldApp )
     {
-        this( CHANGE, user, newReservation, allocatable, newAppointment );
+        this( CHANGE, user, newReservation, oldReservation, allocatable, newAppointment );
         m_oldAppointment = oldApp;
     }
 

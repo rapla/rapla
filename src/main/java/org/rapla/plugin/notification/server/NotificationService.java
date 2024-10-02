@@ -40,21 +40,11 @@ import org.rapla.scheduler.CommandScheduler;
 import org.rapla.server.extensionpoints.ServerExtension;
 import org.rapla.storage.CachableStorageOperator;
 import org.rapla.storage.StorageOperator;
-import org.rapla.storage.UpdateOperation;
 import org.rapla.storage.UpdateResult;
 
 import javax.inject.Inject;
 import javax.inject.Provider;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 /** Sends Notification Mails on allocation change.*/
 
@@ -194,54 +184,74 @@ public class NotificationService implements ServerExtension
             return mailList;
         }
         User owner = null;
+        Map<String,List<AllocationChangeEvent>> eventsPerEmail = new LinkedHashMap<>();
         final List<AllocationChangeEvent> changeEvents = AllocationChangeFinder.getTriggerEvents(updateResult, owner, logger, operator);
         for (AllocationChangeEvent event: changeEvents) 
         {
             final Allocatable allocatable = event.getAllocatable();
-            if (event.getType() == AllocationChangeEvent.REQUESTED) {
-                final Reservation newReservation = event.getNewReservation();
-                final String email = (String) allocatable.getClassification().getValue("Email");
-                final AllocationMail allocationMail = new AllocationMail();
-                allocationMail.recipient = email;
-                allocationMail.subject = "Buchungsanfrage für " + allocatable.getName( getLocale() );
-                StringBuilder buf = new StringBuilder();
-                printReservation(newReservation, buf);
-                allocationMail.body = buf.toString();
-                mailList.add( allocationMail );
+            final String email;
+            AllocationChangeEvent.Type type = event.getType();
+            if (type == AllocationChangeEvent.REQUESTED) {
+                email = (String) allocatable.getClassification().getValue("Email");
             }
-            if (event.getType() == AllocationChangeEvent.CONFIRMED) {
+            else if (type == AllocationChangeEvent.CONFIRMED || type == AllocationChangeEvent.DENIED) {
                 final Reservation newReservation = event.getNewReservation();
-
                 final ReferenceInfo<User> ownerRef = newReservation.getOwnerRef();
                 final User user = operator.tryResolve(ownerRef);
                 if (user != null ) {
-                    final String email = user.getUsername();
-                    final AllocationMail allocationMail = new AllocationMail();
-                    allocationMail.recipient = email;
-                    allocationMail.subject = "Buchungsanfrage genehmigt für " + allocatable.getName(getLocale());
+                     email = user.getEmail();
+                } else {
+                    email = null;
+                }
+             } else {
+                email = null;
+            }
+            if ( email != null && !email.trim().isEmpty()) {
+                eventsPerEmail.computeIfAbsent(email, l -> new ArrayList<>()).add(event);
+            }
+        }
+        for ( Map.Entry<String,List<AllocationChangeEvent>> entry:eventsPerEmail.entrySet()) {
+            String email = entry.getKey();
+
+            final AllocationMail allocationMail = new AllocationMail();
+            allocationMail.subject = "Buchungsanfrage für " ;
+            Set<Allocatable> processed = new HashSet<>();
+            allocationMail.recipient = email;
+            allocationMail.body = "";
+            for (AllocationChangeEvent event: entry.getValue())
+            {
+                final Allocatable allocatable = event.getAllocatable();
+                if ( processed.contains( allocatable)){
+                    continue;
+                } else {
+                    processed.add(allocatable);
+                }
+                if (event.getType() == AllocationChangeEvent.REQUESTED) {
+                    final Reservation newReservation = event.getNewReservation();
+                    allocationMail.subject+=  allocatable.getName( getLocale() ) + " gestellt ";
                     StringBuilder buf = new StringBuilder();
                     printReservation(newReservation, buf);
-                    allocationMail.body = buf.toString();
-                    mailList.add( allocationMail );
+                    allocationMail.body += buf.toString();
                 }
-            }
-
-            if (event.getType() == AllocationChangeEvent.DENIED) {
-                final Reservation newReservation = event.getNewReservation();
-
-                final ReferenceInfo<User> ownerRef = newReservation.getOwnerRef();
-                final User user = operator.tryResolve(ownerRef);
-                if (user != null ) {
-                    final String email = user.getUsername();
-                    final AllocationMail allocationMail = new AllocationMail();
+                if (event.getType() == AllocationChangeEvent.CONFIRMED) {
+                    final Reservation newReservation = event.getNewReservation();
                     allocationMail.recipient = email;
-                    allocationMail.subject = "Buchungsanfrage abgelehnt für " + allocatable.getName(getLocale());
+                    allocationMail.subject += allocatable.getName(getLocale()) + " genehmigt ";
                     StringBuilder buf = new StringBuilder();
                     printReservation(newReservation, buf);
-                    allocationMail.body = buf.toString();
-                    mailList.add( allocationMail );
+                    allocationMail.body += buf.toString();
+                }
+
+                if (event.getType() == AllocationChangeEvent.DENIED) {
+                    final Reservation newReservation = event.getNewReservation();
+                    allocationMail.recipient = email;
+                    allocationMail.subject += allocatable.getName(getLocale()) + " abgelehnt ";
+                    StringBuilder buf = new StringBuilder();
+                    printReservation(newReservation, buf);
+                    allocationMail.body += buf.toString();
                 }
             }
+            mailList.add( allocationMail );
         }
         return mailList;
     }
@@ -295,8 +305,7 @@ public class NotificationService implements ServerExtension
             getLogger().info("AllocationChange. Sending mail to " + mail.recipient);
             try
             {
-
-                mailToUserInterface.get().sendMail(mail.recipient, mail.subject, mail.body);
+                mailToUserInterface.get().sendMailToEmail(mail.recipient, mail.subject, mail.body);
                 notificationStorage.markSent(mail);
                 getLogger().info("AllocationChange. Mail sent.");
             }
@@ -376,7 +385,7 @@ public class NotificationService implements ServerExtension
         buf.append(notificationI18n.format("disclaimer_2", allocatablesString));
         mail.subject = notificationI18n.format("mail_subject", allocatablesString);
         mail.body = buf.toString();
-        mail.recipient = owner.getUsername();
+        mail.recipient = owner.getEmail();
         return mail;
     }
 

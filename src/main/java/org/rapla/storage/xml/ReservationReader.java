@@ -19,12 +19,7 @@ import org.rapla.components.util.xml.RaplaSAXParseException;
 import org.rapla.entities.Annotatable;
 import org.rapla.entities.Category;
 import org.rapla.entities.IllegalAnnotationException;
-import org.rapla.entities.domain.Allocatable;
-import org.rapla.entities.domain.Appointment;
-import org.rapla.entities.domain.Permission;
-import org.rapla.entities.domain.PermissionContainer;
-import org.rapla.entities.domain.Repeating;
-import org.rapla.entities.domain.RepeatingType;
+import org.rapla.entities.domain.*;
 import org.rapla.entities.domain.internal.AppointmentImpl;
 import org.rapla.entities.domain.internal.PermissionImpl;
 import org.rapla.entities.domain.internal.ReservationImpl;
@@ -171,8 +166,18 @@ public class ReservationReader extends RaplaXMLReader {
 
         if (localName.equals("allocate")) {
             String id = getString( atts, "idref" );
+            String requestStatusString = getString( atts, "request-status" , null);
             allocatableId = getId( Allocatable.class, id);
             reservation.addId("resources", allocatableId.getId() );
+            if ( requestStatusString != null) {
+                RequestStatus requestStatus = RequestStatus.findForString(requestStatusString);
+                if (requestStatus != null){
+                    reservation.setRequestStatusForId(allocatableId.getId(), requestStatus);
+                } else {
+                    getLogger().error("Unknown request status " + requestStatusString + " for " + reservation.getId());
+                }
+
+            }
             if ( appointment != null )
             {
                 reservation.addRestrictionForId( allocatableId.getId(), appointment.getId());

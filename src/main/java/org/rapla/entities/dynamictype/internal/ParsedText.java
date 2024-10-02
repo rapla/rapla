@@ -13,10 +13,7 @@ import org.rapla.entities.MultiLanguageName;
 import org.rapla.entities.MultiLanguageNamed;
 import org.rapla.entities.Named;
 import org.rapla.entities.User;
-import org.rapla.entities.domain.Allocatable;
-import org.rapla.entities.domain.Appointment;
-import org.rapla.entities.domain.AppointmentBlock;
-import org.rapla.entities.domain.PermissionContainer;
+import org.rapla.entities.domain.*;
 import org.rapla.entities.dynamictype.Attribute;
 import org.rapla.entities.dynamictype.AttributeType;
 import org.rapla.entities.dynamictype.Classifiable;
@@ -1051,7 +1048,29 @@ public class ParsedText implements Serializable
             {
                 return "???";
             }
+            String addRequestStatus = null;
+            if ( object instanceof Allocatable) {
 
+                Object firstContextObject = context.getFirstContextObject();
+                Reservation reservation = null;
+                if ( firstContextObject instanceof AppointmentBlock) {
+                    reservation = ((AppointmentBlock) firstContextObject).getAppointment().getReservation();
+                }
+                if ( firstContextObject instanceof Appointment) {
+                    reservation = ((Appointment) firstContextObject).getReservation();
+                }
+                if ( firstContextObject instanceof Reservation) {
+                    reservation = (Reservation) firstContextObject;
+                }
+                if ( reservation != null) {
+                    final Allocatable allocatable = (Allocatable) object;
+                    final RequestStatus requestStatus = reservation.getRequestStatus(allocatable);
+                    if ( requestStatus != null)
+                    {
+                        addRequestStatus = " (" + requestStatus.getName( locale) + ")";
+                    }
+                }
+            }
             final DynamicTypeImpl type = (DynamicTypeImpl) classification.getType();
             final String contextAnnotationName = context.getAnnotationName();
             //final String annotationName = DynamicTypeAnnotations.KEY_NAME_FORMAT;
@@ -1062,12 +1081,15 @@ public class ParsedText implements Serializable
             ParsedText parsedAnnotation = type.getParsedAnnotation(annotationName);
             if (parsedAnnotation != null)
             {
-                String format = parsedAnnotation.formatName(contextClone);
+                String format = parsedAnnotation.formatName(contextClone) ;
+                if ( addRequestStatus !=null) {
+                    format = format + addRequestStatus;
+                }
                 return format;
             }
             else
             {
-                classification.getName(locale);
+                return classification.getName(locale) + addRequestStatus != null ? addRequestStatus : "";
             }
         }
         else if (object instanceof MultiLanguageNamed)

@@ -13,19 +13,15 @@
 package org.rapla.entities.domain;
 
 
+import java.util.Locale;
+
 /**Currently Rapla supports the following request status:
   <ul>
-        <li>prerequest</li>
         <li>requested</li>
-        <li>confirmed</li>
-        <li>denied</li>
  </ul>
  */
 public enum RequestStatus {
-    REQUESTED("requested"),
-    CHANGED("newrequest"),
-    CONFIRMED("confirmed"),
-    DENIED("denied");
+    REQUESTED("requested");
 
     String type;
     RequestStatus(String type) {
@@ -53,7 +49,14 @@ public enum RequestStatus {
     public String toString() {
         return type;
     }
-    
+
+    public String getName(Locale locale) {
+        if ( locale.getLanguage().contains("de")) {
+            return "Anfrage";
+        } else {
+             return "request";
+        }
+    }
 }
 
 

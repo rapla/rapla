@@ -36,6 +36,8 @@ import java.util.*;
 /** checks if the client can store or delete an entity */
 @Singleton public class SecurityManager
 {
+    // Can be enababled to check if user has the right to remove an allocation
+    private static final boolean CHECK_IF_REMOVE_ALLOCATION_ALLOWED = false;
     final RaplaResources i18n;
     final AppointmentFormater appointmentFormater;
     final CachableStorageOperator operator;
@@ -359,11 +361,11 @@ import java.util.*;
                     RequestStatus oldStatus = oldReservation.getRequestStatus( allocatable );
                     RequestStatus newStatus = newReservation.getRequestStatus( allocatable );
                     if ( oldStatus != newStatus) {
-                        if ( newStatus == RequestStatus.CONFIRMED && oldStatus != RequestStatus.CONFIRMED) {
+                        if ( newStatus == null && oldStatus != null) {
                             validRequestStatusChange = true;
-                        }
-                        else if ( newStatus == RequestStatus.DENIED && (oldStatus == RequestStatus.CHANGED || oldStatus == RequestStatus.REQUESTED || oldStatus == RequestStatus.CONFIRMED)) {
-                            validRequestStatusChange = true;
+  //                      }
+                        //else if ( newStatus == RequestStatus.DENIED && (oldStatus == RequestStatus.REQUESTED || oldStatus == RequestStatus.CONFIRMED)) {
+//                            validRequestStatusChange = true;
                         } else {
                             validRequestStatusChange = false;
                             break;
@@ -473,12 +475,7 @@ import java.util.*;
                 Date today = operator.today();
                 if (r.hasAllocatedOn(allocatable, appointment) && !permissionController.hasPermissionToAllocate(user, appointment, allocatable, original, today))
                 {
-                    if (permissionController.canRequest( allocatable, user)) {
-                        final RequestStatus requestStatus = r.getRequestStatus(allocatable);
-                        if ( RequestStatus.CHANGED == requestStatus) {
-                            r.setRequestStatus(allocatable, RequestStatus.CHANGED);
-                        }
-                    } else {
+                    if (!permissionController.canRequest( allocatable, user)) {
                         String all = allocatable.getName(i18n.getLocale());
                         String app = appointmentFormater.getSummary(appointment);
                         String error = i18n.format("warning.no_reserve_permission", all, app);
@@ -499,22 +496,25 @@ import java.util.*;
         for (int i = 0; i < allocatables.length; i++)
         {
             Allocatable allocatable = allocatables[i];
-            for (int j = 0; j < appointments.length; j++)
-            {
-                Appointment appointment = appointments[j];
-                if (original.hasAllocatedOn(allocatable, appointment) && !r.hasAllocatedOn(allocatable, appointment))
-                {
-                    Date start = appointment.getStart();
-                    Date end = appointment.getMaxEnd();
-                    if (!permissionController.canAllocate(allocatable, user, start, end, today))
-                    {
-                        if (permissionController.canRequest( allocatable, user)) {
-                            r.setRequestStatus( allocatable, RequestStatus.CHANGED);
-                        } else {
-                            String all = allocatable.getName(i18n.getLocale());
-                            String app = appointmentFormater.getSummary(appointment);
-                            String error = i18n.format("warning.no_reserve_permission", all, app);
-                            throw new RaplaSecurityException(error);
+            // if the allocatble does not exist  anymore, we can skip the check
+            if (operator.tryResolve( allocatable.getReference()) == null){
+                continue;
+            }
+            if ( CHECK_IF_REMOVE_ALLOCATION_ALLOWED ) {
+                for (int j = 0; j < appointments.length; j++) {
+                    Appointment appointment = appointments[j];
+                    if (original.hasAllocatedOn(allocatable, appointment) && !r.hasAllocatedOn(allocatable, appointment)) {
+                        Date start = appointment.getStart();
+                        Date end = appointment.getMaxEnd();
+                        if (!permissionController.canAllocate(allocatable, user, start, end, today)) {
+                            if (permissionController.canRequest(allocatable, user)) {
+                                r.setRequestStatus(allocatable, RequestStatus.REQUESTED);
+                            } else {
+                                String all = allocatable.getName(i18n.getLocale());
+                                String app = appointmentFormater.getSummary(appointment);
+                                String error = i18n.format("warning.no_reserve_permission", all, app);
+                                throw new RaplaSecurityException(error);
+                            }
                         }
                     }
                 }

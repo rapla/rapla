@@ -376,11 +376,12 @@ public class AllocatableSelection extends RaplaGUIComponent implements Appointme
     }
 
     private void changeRequestStatus() {
+        Date today = getQuery().today();
         for (Reservation reservation:mutableReservations) {
             for (Allocatable allocatable:reservation.getAllocatables()) {
                 final RequestStatus status = reservation.getRequestStatus(allocatable);
-                if (status == RequestStatus.CONFIRMED || status == RequestStatus.REQUESTED) {
-                    reservation.setRequestStatus( allocatable, RequestStatus.CHANGED );
+                if (status == null && permissionController.isRequestOnly( allocatable, user, today)) {
+                    reservation.setRequestStatus( allocatable, RequestStatus.REQUESTED );
                 }
             }
         }
@@ -491,7 +492,7 @@ public class AllocatableSelection extends RaplaGUIComponent implements Appointme
         Date today = getQuery().today();
         for (Allocatable alloc : allocatables)
         {
-            if (permissionController.canAllocate(alloc, user, today) || permissionController.canRequest(alloc, user))
+            if (permissionController.canAllocate(alloc, user, today) || permissionController.isRequestOnly(alloc, user, today))
             {
                 rightsToAllocate.add(alloc);
             }
@@ -525,7 +526,7 @@ public class AllocatableSelection extends RaplaGUIComponent implements Appointme
                 for (Reservation reservation: mutableReservation) {
                     final RequestStatus requestStatus = reservation.getRequestStatus(allocatable);
                     if (requestStatus == null) {
-                        reservation.setRequestStatus( allocatable, RequestStatus.CHANGED );
+                        reservation.setRequestStatus( allocatable, RequestStatus.REQUESTED );
                     }
                 }
             }
@@ -690,7 +691,7 @@ public class AllocatableSelection extends RaplaGUIComponent implements Appointme
                 {
                     r.addAllocatable(a);
                     if (permissionController.isRequestOnly( a, user, today)) {
-                        r.setRequestStatus( a, RequestStatus.CHANGED);
+                        r.setRequestStatus( a, RequestStatus.REQUESTED);
                     }
                     bChanged = true;
                 }
@@ -1275,14 +1276,6 @@ public class AllocatableSelection extends RaplaGUIComponent implements Appointme
             if ( status != null) {
                 if (result.requestStatus == null) {
                     result.requestStatus = status;
-                } else if ( status == RequestStatus.DENIED) {
-                    result.requestStatus = RequestStatus.DENIED;
-                 } else if ( result.requestStatus != RequestStatus.DENIED) {
-                    if(status == RequestStatus.CHANGED) {
-                        result.requestStatus = RequestStatus.CHANGED;
-                    } else if (result.requestStatus!= RequestStatus.CHANGED && status == RequestStatus.REQUESTED) {
-                        result.requestStatus = RequestStatus.REQUESTED;
-                    }
                 }
             }
             if (conflictingAppointments)
@@ -2045,10 +2038,7 @@ public class AllocatableSelection extends RaplaGUIComponent implements Appointme
             if (checkRestrictions && permissionController.isRequestOnly( allocatable, user,  today))
             {
                 final RequestStatus requestStatus = allocBinding.requestStatus;
-                if (requestStatus == RequestStatus.DENIED) {
-                    return forbiddenIcon;
-                }
-                if (requestStatus == RequestStatus.CHANGED || requestStatus == RequestStatus.REQUESTED) {
+                if ( requestStatus == RequestStatus.REQUESTED) {
                     return requestIcon;
                 }
             }
@@ -2116,11 +2106,8 @@ public class AllocatableSelection extends RaplaGUIComponent implements Appointme
                         if (mutableReservations.size() == 1)
                         {
                             final RequestStatus requestStatus = mutableReservations.iterator().next().getRequestStatus(allocatable);
-                            if (requestStatus==RequestStatus.CHANGED || requestStatus == RequestStatus.REQUESTED) {
+                            if ( requestStatus == RequestStatus.REQUESTED) {
                                 value = "Anfrage:" + value;
-                            }
-                            if (requestStatus==RequestStatus.DENIED ) {
-                                value = "Abgelehnt:" + value;
                             }
                         }
                     }

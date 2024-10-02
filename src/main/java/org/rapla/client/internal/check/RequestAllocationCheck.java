@@ -63,7 +63,7 @@ public class RequestAllocationCheck implements EventCheck
             {
                 for(Allocatable allocatable :  reservation.getAllocatables()){
                     final RequestStatus requestStatus = reservation.getRequestStatus(allocatable);
-                    if (requestStatus == RequestStatus.CHANGED) {
+                    if (requestStatus == RequestStatus.REQUESTED) {
                         view.addWarning("Wollen Sie eine Buchungsanfrage für die Ressource '" + allocatable.getName( null ) + "' erstellen?");
                     }
                 }

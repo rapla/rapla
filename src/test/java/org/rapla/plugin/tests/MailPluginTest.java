@@ -55,7 +55,7 @@ public class MailPluginTest {
         Logger logger = null;
 
         MailToUserImpl mail = new MailToUserImpl(mailMock, facade, logger);
-        mail.sendMail( "homer","Subject", "MyBody");
+        mail.sendMailToUser( "homer","Subject", "MyBody");
 
         Thread.sleep( 1000);
 

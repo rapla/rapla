@@ -768,17 +768,20 @@ final public class FileOperator extends LocalAbstractCachableOperator
         final RaplaLock.ReadLock lock = lockManager.readLock(getClass(), "getImportExportEntities for system " + systemId);
         try
         {
-            final Map<String, ExternalSyncEntity> collection = externalSyncEntities.get(new ImportExportMapKey(systemId,importExportDirection));
-            if(collection != null)
+            ImportExportMapKey key = new ImportExportMapKey(systemId, importExportDirection);
+            Map<String, ExternalSyncEntity> collection = externalSyncEntities.get(key);
+            if(collection == null)
             {
-                return collection;
+                collection = new LinkedHashMap<>();
+                externalSyncEntities.put(key, collection);
             }
+            return collection;
         }
         finally
         {
             lockManager.unlock(lock);
         }
-        return Collections.emptyMap();
+
     }
 
 }

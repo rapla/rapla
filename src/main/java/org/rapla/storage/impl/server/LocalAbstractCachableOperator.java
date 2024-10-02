@@ -1825,7 +1825,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
                             if ( parent == null) {
                                 toUpdate.add( alloc );
                                 it.remove();
-                                break;
+                                continue;
                             }
                             ReferenceInfo<Reservation> referenceParent = parent.getReference();
                             if (referenceParent.equals( reference)) {
@@ -1833,14 +1833,14 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
                                 if (remove || !(event.hasAllocatedOnRef(alloc, app) && !alloc.equals( templateAlloc))) {
                                     toUpdate.add( alloc );
                                     it.remove();
-                                    break;
+                                    continue;
                                 } else {
                                     // check if appointment has changed; if so remove it and we add it later
                                     Appointment newAppointment = event.findAppointment( app );
                                     if ( newAppointment == null || !newAppointment.matches( app) ) {
                                         toUpdate.add( alloc );
                                         it.remove();
-                                        break;
+                                        continue;
                                     }
                                 }
                             }

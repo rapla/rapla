@@ -11,6 +11,8 @@ import org.rapla.client.swing.extensionpoints.SwingViewFactory;
 import org.rapla.client.swing.images.RaplaImages;
 import org.rapla.client.swing.internal.RaplaMenuBarContainer;
 import org.rapla.components.iolayer.IOInterface;
+import org.rapla.entities.Category;
+import org.rapla.entities.User;
 import org.rapla.entities.domain.Reservation;
 import org.rapla.facade.CalendarModel;
 import org.rapla.facade.client.ClientFacade;
@@ -82,7 +84,15 @@ public class ResourceRequestViewFactory implements SwingViewFactory
     @Override
     public boolean isEnabled()
     {
-        return true;
+        try {
+            Category userGroupsCategory = facade.getRaplaFacade().getUserGroupsCategory();
+            User user = facade.getUser();
+            Category roomadmin = userGroupsCategory.getCategory("room-administration");
+            boolean isRoomAdmin = roomadmin != null && user.belongsTo(roomadmin);
+            return isRoomAdmin;
+        } catch (RaplaException e) {
+            return  false;
+        }
     }
 
     public final static String TABLE_VIEW = ResourceRequestPlugin.RESOURCE_REQUEST_TABLE_VIEW;

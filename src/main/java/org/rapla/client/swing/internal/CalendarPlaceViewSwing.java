@@ -133,6 +133,14 @@ import java.awt.event.ActionListener;
         left.add(conflictsViewComponent, c);
     }
 
+    @Override public void addResourceRequestView(RaplaWidget<Component> resourceRequestView)
+    {
+        c.weighty = 1.0;
+        c.gridy = 4;
+        conflictsViewComponent = resourceRequestView.getComponent();
+        left.add(conflictsViewComponent, c);
+    }
+
     @Override public void addCalendarView(RaplaWidget<Component> calendarView)
     {
         content.setRightComponent(calendarView.getComponent());

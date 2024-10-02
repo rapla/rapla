@@ -342,18 +342,8 @@ public class PermissionController
         return hasAccess(container, user, Permission.ALLOCATE, start, end, today, false);
     }
 
-    public boolean canRequest(Allocatable alloc, User user) {
-        final Classification classification = alloc.getClassification();
-        final Attribute emailAtt = classification.getType().getAttribute("Email");
-        if (canRead(alloc, user)  && emailAtt!= null)
-        {
-            final Object email = classification.getValue("Email");
-            if (email != null) {
-                final boolean emailSet = !email.toString().trim().isEmpty();
-                return emailSet;
-            }
-        }
-        return  false;
+    public boolean canRequest(Allocatable container, User user) {
+        return hasAccess(container, user, Permission.REQUEST);
     }
 
     public boolean isRequestOnly(Allocatable alloc, User user, Date today) {
@@ -746,4 +736,5 @@ public class PermissionController
         //boolean disjoint =Collections.disjoint( groupList, adminGroups);
         //return !disjoint;
     }
+
 }

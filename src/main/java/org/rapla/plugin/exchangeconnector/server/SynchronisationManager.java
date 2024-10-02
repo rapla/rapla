@@ -683,7 +683,7 @@ public class SynchronisationManager implements ServerExtension
                     }
                     try
                     {
-                        mailToUserInterface.sendMail(user.getUsername(), "Rapla Exchange synchronization", sb.toString());
+                        mailToUserInterface.sendMailToUser(user.getUsername(), "Rapla Exchange synchronization", sb.toString());
                     }
                     catch(Throwable em)
                     {
@@ -1079,7 +1079,7 @@ public class SynchronisationManager implements ServerExtension
                                 editPreferences.putEntry(PASSWORD_MAIL_USER, true);
                                 facade.store(editPreferences);
                                 try {
-                                    mailToUserInterface.sendMail(user.getUsername(), "Rapla Exchangezugriff", message);
+                                    mailToUserInterface.sendMailToUser(user.getUsername(), "Rapla Exchangezugriff", message);
                                 } catch (Throwable me) {
                                     logger.error("Error sending password mail to user " + user.getUsername() + ": " + me.getMessage(), me);
                                 }

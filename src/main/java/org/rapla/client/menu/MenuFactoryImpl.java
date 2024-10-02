@@ -213,14 +213,15 @@ import java.util.TreeMap;
             {
                 createAction( popupContext).setDelete(appointmentBlock).addTo( menu, f);
             }
+        } else if ( raplaFacade.canExchangeAllocatables( user, reservation)) {
+            createAction(popupContext).setEdit(appointmentBlock).addTo(menu, f);
         }
+
         for (Allocatable alloc:reservation.getAllocatables()) {
             final RequestStatus requestStatus = reservation.getRequestStatus(alloc);
             if (requestStatus != null && permissionController.canAllocate(  appointment.getStart(), appointment.getMaxEnd(),alloc, user)) {
-                if (requestStatus !=  RequestStatus.CONFIRMED) {
+                if (requestStatus ==  RequestStatus.REQUESTED ) {
                     createAction(popupContext).setConfirm(appointmentBlock, alloc).addTo(menu, f);
-                }
-                if (requestStatus ==  RequestStatus.REQUESTED || requestStatus ==  RequestStatus.CHANGED || requestStatus ==  RequestStatus.CONFIRMED) {
                     createAction(popupContext).setDeny(appointmentBlock, alloc).addTo(menu, f);
                 }
             }
@@ -337,7 +338,7 @@ import java.util.TreeMap;
         Date end = getEndDate(model, start);
         for (Allocatable alloc : selectedAllocatables)
         {
-            if (permissionController.canAllocate(alloc, user, start, end, today) || permissionController.canRequest(alloc, user))
+            if (permissionController.canAllocate(alloc, user, start, end, today) || permissionController.isRequestOnly(alloc, user, today))
                 canAllocate = true;
         }
         boolean canAllocateSelected = canAllocate || (selectedAllocatables.size() == 0 && permissionController.canUserAllocateSomething(user));

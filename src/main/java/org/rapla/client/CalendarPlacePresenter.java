@@ -7,9 +7,9 @@ import org.rapla.client.event.ApplicationEvent;
 import org.rapla.client.event.CalendarEventBus;
 import org.rapla.client.event.TaskPresenter;
 import org.rapla.client.internal.ConflictSelectionPresenter;
+import org.rapla.client.internal.RequestSelectionPresenter;
 import org.rapla.client.internal.ResourceSelectionPresenter;
 import org.rapla.client.internal.SavedCalendarInterface;
-import org.rapla.entities.Entity;
 import org.rapla.entities.User;
 import org.rapla.entities.configuration.Preferences;
 import org.rapla.facade.CalendarModel;
@@ -17,14 +17,12 @@ import org.rapla.facade.CalendarSelectionModel;
 import org.rapla.facade.ModificationEvent;
 import org.rapla.facade.RaplaFacade;
 import org.rapla.facade.client.ClientFacade;
-import org.rapla.facade.internal.ModificationEventImpl;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaInitializationException;
 import org.rapla.framework.TypedComponentRole;
 import org.rapla.inject.Extension;
 import org.rapla.logger.Logger;
 import org.rapla.scheduler.CommandScheduler;
-import org.rapla.scheduler.Observable;
 import org.rapla.scheduler.Promise;
 import org.rapla.scheduler.ResolvedPromise;
 import org.rapla.scheduler.Subject;
@@ -43,6 +41,7 @@ import java.util.Date;
     public static final String SHOW_CONFLICTS_MENU_ENTRY = "show_conflicts";
     private static final String TODAY_DATE = "today";
     private final Subject<String> busyIdleObservable;
+    private final RequestSelectionPresenter resourceRequestPresenter;
     boolean listenersDisabled = false;
 
     private final CalendarPlaceView view;
@@ -60,6 +59,7 @@ import java.util.Date;
     @SuppressWarnings({ "rawtypes", "unchecked" }) @Inject public CalendarPlacePresenter(final CalendarPlaceView view, final ClientFacade clientFacade,
             final RaplaResources i18n, final CalendarSelectionModel model, final Logger logger, final CalendarEventBus eventBus,/*, Map<String, CalendarPlugin> views*/
             ResourceSelectionPresenter resourceSelectionPresenter, SavedCalendarInterface savedViews, ConflictSelectionPresenter conflictsSelectionPresenter,
+                                                                                         RequestSelectionPresenter requestSelectionPresenter,
             CalendarContainer calendarContainer,final CommandScheduler scheduler, DialogUiFactoryInterface dialogUiFactory) throws RaplaInitializationException
     {
         this.view = view;
@@ -72,6 +72,7 @@ import java.util.Date;
         this.savedViews = savedViews;
         this.conflictsView = conflictsSelectionPresenter;
         this.calendarContainer = calendarContainer;
+        this.resourceRequestPresenter = requestSelectionPresenter;
         this.busyIdleObservable = scheduler.createPublisher();
         resourceSelectionPresenter.setCallback(() ->
         {
@@ -80,6 +81,13 @@ import java.util.Date;
         view.addSavedViews(savedViews);
         view.addResourceSelectionView(resourceSelectionPresenter.provideContent());
         view.addConflictsView(conflictsSelectionPresenter.getConflictsView());
+        try {
+            if (clientFacade.getUser().getUsername().equals("roomadmin")) {
+                view.addResourceRequestView(resourceRequestPresenter.getRequestView());
+            }
+        } catch (RaplaException e) {
+            throw new RuntimeException(e);
+        }
         view.addSummaryView(conflictsSelectionPresenter.getSummaryComponent());
         view.addCalendarView(calendarContainer.provideContent());
         try

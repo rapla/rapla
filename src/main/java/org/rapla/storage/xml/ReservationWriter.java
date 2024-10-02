@@ -14,11 +14,7 @@
 package org.rapla.storage.xml;
 
 import org.rapla.entities.RaplaObject;
-import org.rapla.entities.domain.Allocatable;
-import org.rapla.entities.domain.Appointment;
-import org.rapla.entities.domain.Repeating;
-import org.rapla.entities.domain.RepeatingType;
-import org.rapla.entities.domain.Reservation;
+import org.rapla.entities.domain.*;
 import org.rapla.framework.RaplaException;
 
 import java.io.IOException;
@@ -57,6 +53,11 @@ public class ReservationWriter extends ClassifiableWriter {
             }
             openTag("rapla:allocate");
             printIdRef( allocatable );
+            RequestStatus requestStatus = r.getRequestStatus(allocatable);
+            if ( requestStatus != null)
+            {
+                att("request-status",requestStatus.toString());
+            }
             closeElementTag();
         }
         printPermissions( r);

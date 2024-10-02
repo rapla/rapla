@@ -2,6 +2,7 @@ package org.rapla.client;
 
 public interface CalendarPlaceView<W> extends  RaplaWidget<W>
 {
+
     interface Presenter
     {
         void minmaxPressed();
@@ -12,6 +13,7 @@ public interface CalendarPlaceView<W> extends  RaplaWidget<W>
     void addSavedViews(RaplaWidget<W> savedViews);
     void addSummaryView(RaplaWidget<W> summaryView);
 
+    void addResourceRequestView(RaplaWidget<W> resourceRequestView);
     void addConflictsView(RaplaWidget<W> conflictsView);
 
     void addCalendarView(RaplaWidget<W> calendarView);

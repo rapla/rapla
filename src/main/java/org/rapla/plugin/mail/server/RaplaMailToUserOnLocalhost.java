@@ -39,7 +39,7 @@ public class RaplaMailToUserOnLocalhost implements MailToUserInterface
     @Override public void sendMail(String username, String subject, String body) throws RaplaException
     {
         final User user = session.checkAndGetUser(request);
-        mail.sendMail(username,subject, body);
+        mail.sendMailToUser(username,subject, body);
     }
 }
 

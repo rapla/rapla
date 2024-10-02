@@ -19,6 +19,7 @@ public interface TreeFactory {
 	RaplaTreeNode createClassifiableModel(Allocatable[] classifiables, boolean useCategorizations);
 
 	RaplaTreeNode createConflictModel(Collection<Conflict> conflicts ) throws RaplaException;
+	RaplaTreeNode createResourceRequestModel(Collection<Conflict> conflicts ) throws RaplaException;
 
     RaplaTreeNode newNamedNode(Named element);
 

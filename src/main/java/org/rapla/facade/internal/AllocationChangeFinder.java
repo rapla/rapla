@@ -79,11 +79,12 @@ public class AllocationChangeFinder
     	return finder.changeList; 
     }
 
-    private void added(RaplaObject entity, User user) {
+    private void added(RaplaObject entity,  User user) {
         if ( entity.getTypeClass() == Reservation.class ) {
             Reservation newRes = (Reservation) entity;
             addAppointmentAdd(
                               user
+                              ,newRes
                               ,newRes
                               ,Arrays.asList(newRes.getAllocatables())
                               ,Arrays.asList(newRes.getAppointments())
@@ -162,12 +163,12 @@ public class AllocationChangeFinder
             ArrayList<Allocatable> removeList = new ArrayList<>(alloc1);
             removeList.removeAll(alloc2);
             // add removed allocations to the change list
-            addAppointmentRemove(user, oldRes,newRes, removeList, app1);
+            addAppointmentRemove(user, newRes, oldRes, removeList, app1);
 
             ArrayList<Allocatable> addList = new ArrayList<>(alloc2);
             addList.removeAll(alloc1);
             // add new allocations to the change list
-            addAppointmentAdd(user, newRes, addList, app2);
+            addAppointmentAdd(user, newRes,oldRes, addList, app2);
 
             ArrayList<Allocatable> changeList = new ArrayList<>(alloc2);
             changeList.retainAll(alloc1);
@@ -192,10 +193,10 @@ public class AllocationChangeFinder
         List<Appointment> app2 = Arrays.asList(newRes.getAppointments());
         ArrayList<Appointment> removeList = new ArrayList<>(app1);
         removeList.removeAll(app2);
-        addAppointmentRemove(user, oldRes,newRes,allocatableList,removeList);
+        addAppointmentRemove(user, newRes, oldRes, allocatableList,removeList);
         ArrayList<Appointment> addList = new ArrayList<>(app2);
         addList.removeAll(app1);
-        addAppointmentAdd(user, newRes,allocatableList,addList);
+        addAppointmentAdd(user, newRes,oldRes,allocatableList,addList);
         /*
         System.out.println("OLD appointments");
         printList(app1);
@@ -232,32 +233,37 @@ public class AllocationChangeFinder
                 boolean newAllocated = newRes.hasAllocatedOn(allocatable, newApp);
                 final RequestStatus requestStatus = newRes.getRequestStatus(allocatable);
                 final RequestStatus oldRequestStatus = oldRes.getRequestStatus(allocatable);
+                boolean denied = false;
                 if (!oldAllocated && !newAllocated) {
                     continue;
                 }
                 else if (!oldAllocated && newAllocated)
                 {
-                    changeList.add(new AllocationChangeEvent(AllocationChangeEvent.ADD,user,newRes,allocatable,newApp));
+                    changeList.add(new AllocationChangeEvent(AllocationChangeEvent.ADD,user,newRes,oldRes, allocatable,newApp));
                 }
                 else if (oldAllocated && !newAllocated)
                 {
-                    changeList.add(new AllocationChangeEvent(AllocationChangeEvent.REMOVE,user,newRes,allocatable,newApp));
+                    changeList.add(new AllocationChangeEvent(AllocationChangeEvent.REMOVE,user,newRes, oldRes,allocatable,newApp));
+                    if ( oldRes.getRequestStatus( allocatable) == RequestStatus.REQUESTED ) {
+                        changeList.add(new AllocationChangeEvent(AllocationChangeEvent.DENIED,user, newRes,oldRes,allocatable,newApp));
+                        denied = true;
+                    }
                 }
                 else if (!newApp.matches(oldApp))
                 {
                     getLogger().debug("\n" + newApp + " doesn't match \n" + oldApp);
-                    changeList.add(new AllocationChangeEvent(user,newRes,allocatable,newApp,oldApp));
+                    changeList.add(new AllocationChangeEvent(user,newRes,oldRes,allocatable,newApp,oldApp));
                 }
                 if (requestStatus != oldRequestStatus ){
-                    if (  requestStatus == RequestStatus.CHANGED) {
-                        changeList.add(new AllocationChangeEvent(AllocationChangeEvent.REQUESTED,user, newRes,allocatable,newApp));
+                    if (  requestStatus == RequestStatus.REQUESTED) {
+                        changeList.add(new AllocationChangeEvent(AllocationChangeEvent.REQUESTED,user, newRes,oldRes,allocatable,newApp));
                     }
-                    if (  requestStatus == RequestStatus.CONFIRMED) {
-                        changeList.add(new AllocationChangeEvent(AllocationChangeEvent.CONFIRMED,user, newRes,allocatable,newApp));
-                    }
-                    if (  requestStatus == RequestStatus.DENIED) {
-                        changeList.add(new AllocationChangeEvent(AllocationChangeEvent.DENIED, user, newRes, allocatable, newApp));
-
+                    if (  requestStatus == null) {
+                        if ( newRes != null && newRes.hasAllocated( allocatable)) {
+                            changeList.add(new AllocationChangeEvent(AllocationChangeEvent.CONFIRMED, user, newRes, oldRes,allocatable, newApp));
+                         } else {
+                            changeList.add(new AllocationChangeEvent(AllocationChangeEvent.DENIED, user, newRes, oldRes,allocatable, newApp));
+                        }
                     }
                 }
             }
@@ -269,24 +275,24 @@ public class AllocationChangeFinder
 		Collections.sort(oldList);
 	}
 
-    private void addAppointmentAdd(User user,Reservation newRes,List<Allocatable> allocatables,List<Appointment> appointments) {
+    private void addAppointmentAdd(User user,Reservation newRes,Reservation oldRes,List<Allocatable> allocatables,List<Appointment> appointments) {
         for (Allocatable allocatable:allocatables)
         {
             for (Appointment appointment:appointments)
             {
                 final RequestStatus requestStatus = newRes.getRequestStatus(allocatable);
-                if (  requestStatus == RequestStatus.REQUESTED || requestStatus == RequestStatus.CHANGED) {
-                    changeList.add(new AllocationChangeEvent(AllocationChangeEvent.REQUESTED,user, newRes,allocatable,appointment));
+                if (  requestStatus == RequestStatus.REQUESTED ) {
+                    changeList.add(new AllocationChangeEvent(AllocationChangeEvent.REQUESTED,user, newRes,oldRes,allocatable,appointment));
                 }
                 if (!newRes.hasAllocatedOn(allocatable,appointment))
                     continue;
 
-                changeList.add(new AllocationChangeEvent(AllocationChangeEvent.ADD,user, newRes,allocatable,appointment));
+                changeList.add(new AllocationChangeEvent(AllocationChangeEvent.ADD,user, newRes,oldRes,allocatable,appointment));
             }
         }
     }
 
-    private void addAppointmentRemove(User user,Reservation oldRes,Reservation newRes,List<Allocatable> allocatables,List<Appointment> appointments) {
+    private void addAppointmentRemove(User user,Reservation newRes,Reservation oldRes,List<Allocatable> allocatables,List<Appointment> appointments) {
     	 for (Allocatable allocatable:allocatables)
          {
          	for (Appointment appointment:appointments)
@@ -294,7 +300,7 @@ public class AllocationChangeFinder
                 if (!oldRes.hasAllocatedOn(allocatable,appointment))
                     continue;
 
-                changeList.add(new AllocationChangeEvent(AllocationChangeEvent.REMOVE,user, newRes,allocatable,appointment));
+                changeList.add(new AllocationChangeEvent(AllocationChangeEvent.REMOVE,user, newRes,oldRes,allocatable,appointment));
             }
         }
     }

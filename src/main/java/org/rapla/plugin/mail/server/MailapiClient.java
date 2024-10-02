@@ -147,6 +147,7 @@ public class MailapiClient implements MailInterface
             props.put("mail.smtp.socketFactory.port", Integer.valueOf(port));
         } else if (protocol == SecurityProtocol.STARTTLS) {
             props.put("mail.smtp.starttls.enable", "true");
+            props.put("mail.smtp.ssl.protocols", "TLSv1.2");
         }
         if ( mailhost.contains("https://api.mailjet.com/v3/send"))
         //if ( protocol == SecurityProtocol.MAILJET)

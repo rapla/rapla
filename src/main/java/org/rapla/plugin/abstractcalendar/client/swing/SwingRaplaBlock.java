@@ -143,12 +143,9 @@ public class SwingRaplaBlock extends RaplaBlock implements SwingBlock
         {
             final RequestStatus requestStatus = reservation.getRequestStatus(allocatable);
             String name = this.getName(allocatable);
-            if (RequestStatus.CHANGED == requestStatus || RequestStatus.REQUESTED == requestStatus) {
+            if ( RequestStatus.REQUESTED == requestStatus) {
                 name = "Anfrage:" + name;
-            } else if (RequestStatus.DENIED == requestStatus ) {
-                name = "Abgelehnt:" + name;
             }
-
             return name;
         }
 

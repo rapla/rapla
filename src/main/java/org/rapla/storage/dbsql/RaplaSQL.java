@@ -28,15 +28,8 @@ import org.rapla.entities.User;
 import org.rapla.entities.configuration.Preferences;
 import org.rapla.entities.configuration.internal.PreferencesImpl;
 import org.rapla.entities.configuration.internal.RaplaMapImpl;
-import org.rapla.entities.domain.Allocatable;
-import org.rapla.entities.domain.Appointment;
-import org.rapla.entities.domain.EntityPermissionContainer;
-import org.rapla.entities.domain.Permission;
+import org.rapla.entities.domain.*;
 import org.rapla.entities.domain.Permission.AccessLevel;
-import org.rapla.entities.domain.PermissionContainer;
-import org.rapla.entities.domain.Repeating;
-import org.rapla.entities.domain.RepeatingType;
-import org.rapla.entities.domain.Reservation;
 import org.rapla.entities.domain.internal.AllocatableImpl;
 import org.rapla.entities.domain.internal.AppointmentImpl;
 import org.rapla.entities.domain.internal.PermissionImpl;
@@ -1914,7 +1907,8 @@ class AllocationStorage extends EntityStorage<Appointment> implements SubStorage
             final Appointment[] restriction = event.getRestriction(allocatable);
             boolean isRestriction = restriction != null && restriction.length > 0;
             stmt.setInt(4, isRestriction ? 1:0);
-            stmt.setInt(5, 0);
+            RequestStatus requestStatus = event.getRequestStatus(allocatable);
+            stmt.setInt(5, requestStatus != null ? requestStatus.ordinal() +1 : 0 );
             stmt.addBatch();
             count++;
         }
@@ -1950,6 +1944,12 @@ class AllocationStorage extends EntityStorage<Appointment> implements SubStorage
         else
         {
             event.setRestrictionForReference(allocatableReferenceInfo, Collections.emptyList());
+        }
+        int requestStatusInt = rset.getInt(5);
+        if ( requestStatusInt > 0)
+        {
+            RequestStatus requestStatus = RequestStatus.values()[requestStatusInt -1];
+            event.setRequestStatusForId(allocatableReferenceInfo.getId(), requestStatus);
         }
     }
 

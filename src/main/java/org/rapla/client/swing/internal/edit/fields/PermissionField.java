@@ -167,6 +167,10 @@ public class PermissionField extends AbstractEditField implements  ChangeListene
                        String typeName = eventType ? i18n.getString("reservation_type") : i18n.getString("resource_type");
                        value = i18n.format("permission." + key, typeName );
                    }
+                   else  if (key.equalsIgnoreCase(Permission.REQUEST.name()))
+                   {
+                       value =i18n.getString("permission.request" );
+                   }
                    else  if (key.equalsIgnoreCase(Permission.READ.name()) && permissionLevels.contains(Permission.READ_NO_ALLOCATION))
                    {
                        value = i18n.getString("permission.read_allocation"  );

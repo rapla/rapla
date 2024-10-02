@@ -252,6 +252,7 @@ public class AppointmentAction extends RaplaComponent  {
         return this;
     }
 
+
     public AppointmentAction setConfirm(AppointmentBlock appointmentBlock, Allocatable allocatable) throws RaplaException {
         this.appointmentBlock = appointmentBlock;
         this.allocatable = allocatable;
@@ -298,7 +299,8 @@ public class AppointmentAction extends RaplaComponent  {
         final Reservation reservation = appointmentBlock.getAppointment().getReservation();
         final RaplaFacade raplaFacade = clientFacade.getRaplaFacade();
         final Reservation edit = raplaFacade.edit(reservation);
-        edit.setRequestStatus(allocatable, RequestStatus.DENIED);
+        edit.removeAllocatable( allocatable );
+        edit.setRequestStatus(allocatable, null);
         raplaFacade.store( edit);
     }
 
@@ -306,7 +308,7 @@ public class AppointmentAction extends RaplaComponent  {
         final Reservation reservation = appointmentBlock.getAppointment().getReservation();
         final RaplaFacade raplaFacade = clientFacade.getRaplaFacade();
         final Reservation edit = raplaFacade.edit(reservation);
-        edit.setRequestStatus(allocatable, RequestStatus.CONFIRMED);
+        edit.setRequestStatus(allocatable, null);
         raplaFacade.store( edit);
 
     }

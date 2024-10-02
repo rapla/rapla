@@ -24,7 +24,7 @@ public class MailToUserImpl
         this.logger = logger;
     }
 
-    public void sendMail(String userName, String subject, String body) throws RaplaException
+    public void sendMailToUser(String userName, String subject, String body) throws RaplaException
     {
         User recipientUser = facade.getUser(userName);
         // O.K. We need to generate the mail
@@ -35,9 +35,14 @@ public class MailToUserImpl
             return;
         }
 
+        sendMailToEmail( recipientEmail, subject, body );
+
+    }
+
+    public void sendMailToEmail( String recipientEmail,String subject, String body) throws RaplaException {
         Preferences prefs = facade.getSystemPreferences();
         final String defaultSender = prefs.getEntryAsString(MailPlugin.DEFAULT_SENDER_ENTRY, "");
         mail.sendMail(defaultSender, recipientEmail, subject, body);
-        logger.getChildLogger("mail").info("Email send to user " + userName);
+        logger.getChildLogger("mail").info("Email send to user " + recipientEmail);
     }
 }
