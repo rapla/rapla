@@ -510,7 +510,7 @@ public class ServerTest
     public void testCalendarStore() throws Exception
     {
         final RaplaFacade raplaFacade1 = getRaplaFacade1();
-        final Date today = DateTools.addDays(raplaFacade1.today(),1);
+        final Date today = raplaFacade1.today();
         Date futureDate = new Date(today.getTime() + DateTools.MILLISECONDS_PER_WEEK * 10);
         Reservation r = newReservation( clientFacade1);
         r.addAppointment(raplaFacade1.newAppointmentDeprecated(futureDate, futureDate));

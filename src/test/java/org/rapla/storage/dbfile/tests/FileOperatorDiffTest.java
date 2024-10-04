@@ -34,7 +34,6 @@ import java.io.IOException;
 import java.io.StringReader;
 import java.nio.charset.StandardCharsets;
 
-@Ignore
 @RunWith(JUnit4.class)
 public class FileOperatorDiffTest
 {
@@ -110,6 +109,7 @@ public class FileOperatorDiffTest
         Assert.assertFalse(differ(fileIO.data, testFile));
         operator.connect();
         ((FileOperator) operator).saveData();
+        String test = new String(fileIO.data);
         Assert.assertFalse("stored version differs from orginal " + testFile, differ(fileIO.data, testFile));
     }
 

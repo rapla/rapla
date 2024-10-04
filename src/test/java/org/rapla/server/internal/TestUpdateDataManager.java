@@ -17,6 +17,8 @@ import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.AppointmentFormater;
 import org.rapla.entities.domain.Reservation;
 import org.rapla.entities.dynamictype.Classification;
+import org.rapla.entities.dynamictype.ClassificationFilter;
+import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.entities.dynamictype.DynamicTypeAnnotations;
 import org.rapla.entities.storage.ReferenceInfo;
 import org.rapla.facade.RaplaFacade;
@@ -78,7 +80,6 @@ public class TestUpdateDataManager
     }
 
     @Test
-    @Ignore
     public void testInsertChangeAndDeleteSimple() throws Exception
     {
         testInsertChangeAndDelete(1, 1);
@@ -103,17 +104,20 @@ public class TestUpdateDataManager
         final int storedReservations;
         final int maxNumberGeneratedItems = countInsert;
         final int storedAllocatables;
+        DynamicType firstResourceType = facade.getDynamicTypes(DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RESOURCE)[0];
+        ClassificationFilter[] filter = firstResourceType.newClassificationFilter().toArray();
+
         {// createInfoDialog some Data
             List<Entity> entitiesToStore = new ArrayList<Entity>();
-            Allocatable[] allocatables = facade.getAllocatables();
+            Allocatable[] allocatables = facade.getAllocatablesWithFilter(filter);
             startAllocatables = allocatables.length;
             if ( createAndRemoveResources)
             {
                 for (int i = 0; i < maxNumberGeneratedItems; i++)
                 {
-                    Classification classification = facade.getDynamicTypes(DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RESOURCE)[0].newClassification();
+                    Classification classification = firstResourceType.newClassification();
                     final Allocatable newResource = facade.newAllocatable(classification, writeUser);
-                    newResource.getClassification().setValue("name", "newResourceDeprecated" + i);
+                    newResource.getClassification().setValue("name", "newResource" + i);
                     entitiesToStore.add(newResource);
                 }
                 storedAllocatables = entitiesToStore.size();
@@ -124,7 +128,7 @@ public class TestUpdateDataManager
             {
                 storedAllocatables = 0;
             }
-            allocatables = facade.getAllocatables();
+            allocatables = facade.getAllocatablesWithFilter(filter);
             if ( createAndRemoveEvents)
             {
                 for (int i = 0; i < maxNumberGeneratedItems; i++)
@@ -163,7 +167,7 @@ public class TestUpdateDataManager
                 if (storeObject instanceof Allocatable)
                 {
                     final Object value = ((Allocatable) storeObject).getClassification().getValue("name");
-                    Assert.assertTrue("name should start with newResourceDeprecated but found " + value, value.toString().startsWith("newResourceDeprecated"));
+                    Assert.assertTrue("name should start with newResource but found " + value, value.toString().startsWith("newResource"));
                 }
                 //                else if (storeObject instanceof Reservation)
                 //                {
@@ -182,7 +186,7 @@ public class TestUpdateDataManager
         final int updatedReservations;
 
         {// change some reservations and allocatables
-            final Allocatable[] allocatables = facade.getAllocatables();
+            final Allocatable[] allocatables = facade.getAllocatablesWithFilter(filter);
             final int maxChangesPerType = countInsert;
             final ArrayList<Entity> changedEntities = new ArrayList<Entity>();
             if ( createAndRemoveResources)
@@ -243,7 +247,7 @@ public class TestUpdateDataManager
             }
         }
         {
-            final Allocatable[] allocatables = facade.getAllocatables();
+            final Allocatable[] allocatables = facade.getAllocatablesWithFilter(filter);
             final int maxToDelete = countDelete;
             List<Entity> toDelete = new ArrayList<Entity>();
             Set<ReferenceInfo> removedIds = new HashSet<ReferenceInfo>();
@@ -269,7 +273,7 @@ public class TestUpdateDataManager
             facade.storeAndRemove(Entity.ENTITY_ARRAY, toDelete.toArray(new Entity[0]), writeUser);
             final UpdateEvent updateEvent = updateManager.createUpdateEvent(readUser, lastSynced);
             final Collection<ReferenceInfo> removeIds = updateEvent.getRemoveIds();
-            Assert.assertFalse(removeIds.isEmpty());
+            Assert.assertFalse(removeIds.isEmpty() && countDelete>0);
             for (ReferenceInfo removedId : removeIds)
             {
                 Assert.assertTrue("found removed id (" + removedId + ") which is not in the list of deleted resources: " + removedIds,
@@ -282,7 +286,6 @@ public class TestUpdateDataManager
      * Test weather insert and deletion of the same resource in one updateEvent are
      * removed, so not affected by the client.
      */
-    @Ignore
     @Test
     public void testInsertDeleteInOne() throws Exception
     {
@@ -295,7 +298,7 @@ public class TestUpdateDataManager
         lastSynced = updateEvent.getLastValidated();
         Classification classification = facade.getDynamicTypes(DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RESOURCE)[0].newClassification();
         final Allocatable newResource = facade.newAllocatable(classification, writeUser);
-        newResource.getClassification().setValue("name", "newResourceDeprecated");
+        newResource.getClassification().setValue("name", "newResource");
         facade.storeAndRemove(new Entity[]{newResource}, Entity.ENTITY_ARRAY, writeUser);
         final UpdateEvent updateWithInsert = updateManager.createUpdateEvent(readUser, lastSynced);
         final Date lastValidatedAfterInsert = updateWithInsert.getLastValidated();
