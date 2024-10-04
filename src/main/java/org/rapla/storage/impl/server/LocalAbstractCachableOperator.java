@@ -3445,7 +3445,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
                             .getConflictingAppointments(appointmentSet, appointment, ignoreList, onlyFirstConflictingAppointment);
                     if (conflictingAppointments.size() > 0)
                     {
-                        Map<Appointment, Collection<Appointment>> appMap = map.get(allocatable);
+                        Map<Appointment, Collection<Appointment>> appMap = map.get(allocatable.getReference());
                         if (appMap == null)
                         {
                             appMap = new HashMap<>();
