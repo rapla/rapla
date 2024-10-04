@@ -72,7 +72,7 @@ public class AllocatableEditUI  extends AbstractEditUI<Allocatable>  {
             throw new RaplaInitializationException(e1);
         }
         
-        this.permissionListField.setPermissionLevels( Permission.DENIED,  Permission.READ_NO_ALLOCATION, Permission.READ, Permission.ALLOCATE, Permission.ALLOCATE_CONFLICTS, Permission.EDIT, Permission.ADMIN);
+        this.permissionListField.setPermissionLevels( Permission.DENIED,  Permission.READ_NO_ALLOCATION, Permission.READ, Permission.REQUEST,Permission.ALLOCATE, Permission.ALLOCATE_CONFLICTS, Permission.EDIT, Permission.ADMIN);
         final JComponent permissionPanel = permissionListField.getComponent();
         editPanel.setLayout( new BorderLayout());
         editPanel.add( classificationField.getComponent(), BorderLayout.CENTER);
@@ -176,7 +176,7 @@ public class AllocatableEditUI  extends AbstractEditUI<Allocatable>  {
         }
         if ( allPermissions)
         {
-            permissionListField.setPermissionLevels( Permission.DENIED,  Permission.READ_NO_ALLOCATION, Permission.READ, Permission.ALLOCATE, Permission.ALLOCATE_CONFLICTS, Permission.EDIT, Permission.ADMIN);
+            permissionListField.setPermissionLevels( Permission.DENIED,  Permission.READ_NO_ALLOCATION, Permission.READ, Permission.REQUEST,Permission.ALLOCATE, Permission.ALLOCATE_CONFLICTS, Permission.EDIT, Permission.ADMIN);
         }
         else
         {
