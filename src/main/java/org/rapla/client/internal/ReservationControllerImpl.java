@@ -30,12 +30,7 @@ import org.rapla.components.i18n.I18nBundle;
 import org.rapla.components.i18n.I18nIcon;
 import org.rapla.entities.Entity;
 import org.rapla.entities.User;
-import org.rapla.entities.domain.Allocatable;
-import org.rapla.entities.domain.Appointment;
-import org.rapla.entities.domain.AppointmentBlock;
-import org.rapla.entities.domain.AppointmentFormater;
-import org.rapla.entities.domain.Repeating;
-import org.rapla.entities.domain.Reservation;
+import org.rapla.entities.domain.*;
 import org.rapla.entities.storage.ReferenceInfo;
 import org.rapla.facade.CalendarSelectionModel;
 import org.rapla.facade.RaplaFacade;
@@ -47,6 +42,7 @@ import org.rapla.inject.InjectionContext;
 import org.rapla.logger.Logger;
 import org.rapla.scheduler.Promise;
 import org.rapla.scheduler.ResolvedPromise;
+import org.rapla.storage.PermissionController;
 
 import javax.inject.Inject;
 import javax.inject.Provider;
@@ -80,7 +76,7 @@ public class ReservationControllerImpl implements ReservationController {
     private final RaplaClipboard clipboard;
     private final DialogUiFactoryInterface dialogUI;
     private final DeleteDialogInterface deleteDialog;
-
+    private final PermissionController permissionController;
     private final Provider<Set<EventCheck>> eventCheckers;
 
     @Inject
@@ -96,6 +92,7 @@ public class ReservationControllerImpl implements ReservationController {
         this.dialogUI = dialogUI;
         this.deleteDialog = deleteDialog;
         this.eventCheckers = eventCheckers;
+        this.permissionController = facade.getRaplaFacade().getPermissionController();
     }
 
     protected RaplaFacade getFacade() {
@@ -1248,6 +1245,14 @@ public class ReservationControllerImpl implements ReservationController {
                             mutableReservation.setRestrictionForAppointment(lastCopy, restrictedAllocatables);
                             repeating.addException(oldStart);
                         }
+                    }
+                }
+                User user = facade.getUser();
+                Date today = facade.getRaplaFacade().today();
+                for (Allocatable allocatable:mutableReservation.getAllocatables()) {
+                    final RequestStatus status = mutableReservation.getRequestStatus(allocatable);
+                    if (status == null && permissionController.isRequestOnly( allocatable, user, today)) {
+                        mutableReservation.setRequestStatus( allocatable, RequestStatus.REQUESTED );
                     }
                 }
                 return mutableReservation;

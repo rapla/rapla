@@ -1067,7 +1067,7 @@ public class ParsedText implements Serializable
                     final RequestStatus requestStatus = reservation.getRequestStatus(allocatable);
                     if ( requestStatus != null)
                     {
-                        addRequestStatus = " (" + requestStatus.getName( locale) + ")";
+                        addRequestStatus =  requestStatus.getName( locale) +":";
                     }
                 }
             }
@@ -1083,13 +1083,13 @@ public class ParsedText implements Serializable
             {
                 String format = parsedAnnotation.formatName(contextClone) ;
                 if ( addRequestStatus !=null) {
-                    format = format + addRequestStatus;
+                    format =  (addRequestStatus != null ? addRequestStatus : "") + format;
                 }
                 return format;
             }
             else
             {
-                return classification.getName(locale) + addRequestStatus != null ? addRequestStatus : "";
+                return (addRequestStatus != null ? addRequestStatus : "") + classification.getName(locale)  ;
             }
         }
         else if (object instanceof MultiLanguageNamed)

@@ -6,6 +6,7 @@ import org.rapla.components.i18n.I18nBundle;
 import org.rapla.entities.Entity;
 import org.rapla.entities.EntityNotFoundException;
 import org.rapla.entities.RaplaType;
+import org.rapla.entities.User;
 import org.rapla.entities.dynamictype.Classifiable;
 import org.rapla.entities.internal.ModifiableTimestamp;
 import org.rapla.entities.storage.ReferenceInfo;
@@ -89,7 +90,8 @@ public class SaveUndo<T extends Entity> implements CommandUndo<RaplaException> {
 				for (T entity : newEntities) {
 					@SuppressWarnings("unchecked") T mutableEntity = (T) entity.clone();
 					if (newEntitiespersistent != null) {
-						@SuppressWarnings("null") Entity persistent = newEntitiespersistent.get(entity);
+						@SuppressWarnings("null")
+						Entity persistent = newEntitiespersistent.get(entity);
 						try {
 							checkConsistency(mutableEntity);
 						} catch (EntityNotFoundException ex) {
@@ -138,7 +140,9 @@ public class SaveUndo<T extends Entity> implements CommandUndo<RaplaException> {
 		{
 			for ( ReferenceInfo info: ((SimpleEntity) entity).getReferenceInfo())
 			{
-				getFacade().resolve( info );
+				if ( info.getType() != User.class) {
+					getFacade().resolve(info);
+				}
 			}
 		}
 		if ( entity instanceof Classifiable)

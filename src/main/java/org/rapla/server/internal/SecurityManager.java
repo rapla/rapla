@@ -362,23 +362,20 @@ import java.util.*;
                     RequestStatus newStatus = newReservation.getRequestStatus( allocatable );
                     if ( oldStatus != newStatus) {
                         if ( newStatus == null && oldStatus != null) {
-                            validRequestStatusChange = true;
-  //                      }
-                        //else if ( newStatus == RequestStatus.DENIED && (oldStatus == RequestStatus.REQUESTED || oldStatus == RequestStatus.CONFIRMED)) {
-//                            validRequestStatusChange = true;
-                        } else {
-                            validRequestStatusChange = false;
-                            break;
+                            if (permissionController.canAllocate( allocatable, user, today)) {
+                                validRequestStatusChange = true;
+                            } else {
+                                return false;
+                            }
+                        } else if (oldStatus == null && newStatus != null) {
+                            return false;
                         }
 
                     }
-                    if (validRequestStatusChange) {
-                        if ( !permissionController.canAllocate( allocatable, user, today)) {
-                            validRequestStatusChange = false;
-                        }
-                    }
                 }
-                return validRequestStatusChange;
+                if ( !validRequestStatusChange) {
+                    return false;
+                }
             }
             return true;
         }
@@ -475,7 +472,8 @@ import java.util.*;
                 Date today = operator.today();
                 if (r.hasAllocatedOn(allocatable, appointment) && !permissionController.hasPermissionToAllocate(user, appointment, allocatable, original, today))
                 {
-                    if (!permissionController.canRequest( allocatable, user)) {
+                    boolean canRequest = permissionController.canRequest(allocatable, user);
+                    if (!canRequest || (r.getRequestStatus(allocatable) == null && !permissionController.hasPermissionToAllocate(user, appointment, allocatable, original, today))) {
                         String all = allocatable.getName(i18n.getLocale());
                         String app = appointmentFormater.getSummary(appointment);
                         String error = i18n.format("warning.no_reserve_permission", all, app);
