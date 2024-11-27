@@ -261,7 +261,7 @@ public class CalendarPageGenerator
 
     @GET
     //@Produces("text/html;charset=ISO-8859-1")
-    @Produces("text/html;UTF-8")
+    @Produces({"text/html;UTF-8","text/calendar;UTF-8"})
     public void generatePage(@PathParam("path")  String path, @Context HttpServletRequest request, @Context HttpServletResponse response) throws IOException, ServletException
     {
         StorageOperator operator = getFacade().getOperator();
@@ -406,7 +406,15 @@ public class CalendarPageGenerator
         }
 
     }
-
+/*
+    @GET
+    //@Produces("text/html;charset=ISO-8859-1")
+    @Produces("text/calendar;UTF-8")
+    public void notFound(@PathParam("path")  String path, @Context HttpServletRequest request, @Context HttpServletResponse response) throws IOException, ServletException
+    {
+        writeUnsupported(response, "text/calendar format not supported. Use ical export instead.");
+    }
+*/
     private void writeStacktrace(HttpServletResponse response, Exception ex) throws IOException
     {
         String charsetNonUtf = raplaLocale.getCharsetNonUtf();
@@ -423,6 +431,14 @@ public class CalendarPageGenerator
         logger.getChildLogger("html.404").warn(message);
         response.getWriter().close();
     }
+
+    protected void writeUnsupported(HttpServletResponse response, String message) throws IOException
+    {
+        response.setStatus(415);
+        response.getWriter().print(message);
+        response.getWriter().close();
+    }
+
 
     private void writeError(HttpServletResponse response, String message) throws IOException
     {

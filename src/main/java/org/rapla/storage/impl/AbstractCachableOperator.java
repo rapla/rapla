@@ -853,8 +853,7 @@ public abstract class AbstractCachableOperator implements StorageOperator
             //		parent.replace( category);
             //	}
             //}
-
-            cache.put(entity);
+            addToCache(entity);
             updatedEntities.add(entity);
         }
         Collection<ReferenceInfo> toRemove = new HashSet<>();
@@ -867,7 +866,7 @@ public abstract class AbstractCachableOperator implements StorageOperator
                 oldEntities.put(id, persistantVersion);
                 toRemove.add(id);
             }
-            else if (id.getType() == Conflict.class)
+            else if (id.getType() == Conflict.class || id.getType() == Reservation.class)
             {
                 toRemove.add(id);
             }
@@ -877,6 +876,10 @@ public abstract class AbstractCachableOperator implements StorageOperator
         final UpdateResult updateResult = createUpdateResult(oldEntities, updatedEntities, toRemove, since, until);
         setLastRefreshed(until);
         return updateResult;
+    }
+
+    protected void addToCache(Entity entity) {
+        cache.put(entity);
     }
 
     private void updatePeriods(Collection<Entity> updatedEntities,Collection<ReferenceInfo> toRemove) {

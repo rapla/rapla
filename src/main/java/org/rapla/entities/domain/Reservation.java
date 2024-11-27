@@ -18,10 +18,9 @@ import org.rapla.entities.Named;
 import org.rapla.entities.Ownable;
 import org.rapla.entities.Timestamp;
 import org.rapla.entities.dynamictype.Classifiable;
+import org.rapla.facade.Conflict;
 
-import java.util.Collection;
-import java.util.Date;
-import java.util.Locale;
+import java.util.*;
 import java.util.stream.Stream;
 
 /** The <code>Reservation</code> interface is the central interface of
@@ -118,6 +117,27 @@ public interface Reservation extends EntityPermissionContainer<Reservation>,Clas
 
     RequestStatus getRequestStatus(Allocatable allocatable);
 
+    default Collection<Allocatable> getRequestedAllocatables() {
+        return Util.getRequestedAllocatables(Collections.singletonList(this));
+    }
+
+
+    class Util {
+
+        public static Collection<Allocatable> getRequestedAllocatables(
+                Collection<Reservation> requestsSelected) {
+            LinkedHashSet<Allocatable> allocatables = new LinkedHashSet<>();
+            for (Reservation request : requestsSelected) {
+                for (Allocatable allocatable : request.getAllocatables()){
+                    if ( request.getRequestStatus(allocatable) != null){
+                        allocatables.add(allocatable);
+                    }
+                }
+            }
+            return allocatables;
+        }
+
+    }
 
 }
 

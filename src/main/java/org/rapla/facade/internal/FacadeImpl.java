@@ -267,6 +267,44 @@ public class FacadeImpl implements RaplaFacade {
         return promise;
 	}
 
+	public Promise<Collection<Reservation>> getResourceRequests()  {
+        final User workingUser;
+        try {
+            workingUser = getWorkingUser();
+        } catch (EntityNotFoundException e) {
+            return new ResolvedPromise<>(e);
+        }
+        Date start = null;
+		Date end = null;
+		ClassificationFilter[] reservationFilters = null;
+		Collection<User> ownersList = Collections.emptyList();
+		ClassificationFilter[] allocFilters = null;
+        Collection<Allocatable> allocatablesCollection;
+        try {
+            allocatablesCollection = operator.getAllocatables(allocFilters);
+        } catch (RaplaException e) {
+			return new ResolvedPromise<>(e);
+        }
+        PermissionController permissionController = getPermissionController();
+		Iterator<Allocatable> it = allocatablesCollection.iterator();
+		while (it.hasNext()) {
+			Allocatable allocatable = it.next();
+			if (!permissionController.canModify(allocatable, workingUser))
+				it.remove();
+		}
+
+		final Promise<AppointmentMapping> appointmentsAsync = operator.queryAppointments(workingUser, allocatablesCollection, ownersList,
+				start, end, reservationFilters, templateId);
+		final Promise<Collection<Reservation>> promise = appointmentsAsync.thenApply((appointments) ->
+		{
+			final Collection<Reservation> allReservations = appointments.getAllReservations().stream().filter((reservation) -> permissionController.isRequestFor(reservation, workingUser)).collect(Collectors.toList());
+
+			return allReservations;
+		});
+		return promise;
+
+	}
+
 	public Allocatable[] getAllocatables() throws RaplaException {
 		return getAllocatablesWithFilter(null);
 	}
@@ -434,7 +472,8 @@ public class FacadeImpl implements RaplaFacade {
 				}
 			);
 	}
-	
+
+
 //	public boolean canReadReservationsFromOthers(User user) {
 //		return hasGroupRights(user, Permission.GROUP_CAN_READ_EVENTS_FROM_OTHERS);
 //	}

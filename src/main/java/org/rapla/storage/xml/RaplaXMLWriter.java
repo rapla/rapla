@@ -133,6 +133,11 @@ abstract public class RaplaXMLWriter extends XMLWriter
     }
 
     protected void printPermission(Permission p) throws IOException,RaplaException {
+        Permission.AccessLevel accessLevel = p.getAccessLevel();
+        if (accessLevel == null) {
+            logger.warn("Permission without access level found. Ignoring permission");
+            return;
+        }
         openTag("rapla:permission");
         if ( p.getUser() != null ) {
             att("user", getId( p.getUser() ));
@@ -151,7 +156,7 @@ abstract public class RaplaXMLWriter extends XMLWriter
         if ( p.getEnd() != null ) {
             att ( "end-date", dateTimeFormat.formatDate(  p.getEnd() ) );
         }
-        att("access", p.getAccessLevel().name().toLowerCase() );
+        att("access", accessLevel.name().toLowerCase() );
         closeElementTag();
     }
 

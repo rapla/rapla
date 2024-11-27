@@ -30,6 +30,7 @@ import org.rapla.entities.configuration.RaplaMap;
 import org.rapla.entities.configuration.internal.CalendarModelConfigurationImpl;
 import org.rapla.entities.configuration.internal.RaplaMapImpl;
 import org.rapla.entities.domain.*;
+import org.rapla.entities.domain.internal.ReservationImpl;
 import org.rapla.entities.dynamictype.Classification;
 import org.rapla.entities.dynamictype.ClassificationFilter;
 import org.rapla.entities.dynamictype.DynamicType;
@@ -370,7 +371,7 @@ public class CalendarModelImpl implements CalendarSelectionModel
         Collection<RaplaObject> selectedObjects = getSelectedObjects();
         for (RaplaObject object : selectedObjects)
         {
-            if (!(object instanceof Conflict) && (object instanceof Entity))
+            if (!(object instanceof Conflict || object instanceof Reservation) && (object instanceof Entity))
             {
                 //  throw new RaplaException("Storing the conflict view is not possible with Rapla.");
                 selected.add((Entity) object);
@@ -978,7 +979,7 @@ public class CalendarModelImpl implements CalendarSelectionModel
         Date startDate = interval != null ? interval.getStart() : null;
         Date endDate = interval != null ? interval.getEnd() : null;
 
-        boolean useFilter = getSelectedConflicts().isEmpty();
+        boolean useFilter = getSelectedConflicts().isEmpty() && getSelectedResourceRequests().isEmpty();
         final Promise<AppointmentMapping> reservations = queryAppointmentBindings(allocatables, owners, startDate, endDate, useFilter);
         reservations.thenAccept( (res) -> {
             if (debugEnabled)
@@ -995,9 +996,14 @@ public class CalendarModelImpl implements CalendarSelectionModel
     {
         Promise<Collection<Appointment>> appointments;
         Collection<Conflict> conflicts = getSelectedConflicts();
+        Collection<Reservation> requests = getSelectedResourceRequests();
         if (conflicts.size() > 0)
         {
             appointments = getAppointments(conflicts);
+        }
+        else if (requests.size() > 0)
+        {
+            appointments = getAppointmentsForRequests(requests);
         }
         else
         {
@@ -1163,6 +1169,12 @@ public class CalendarModelImpl implements CalendarSelectionModel
     {
         return getSelected(Conflict.class);
     }
+
+    public Collection<Reservation> getSelectedResourceRequests()
+    {
+        return getSelected(Reservation.class);
+    }
+
 
     public Set<DynamicType> getSelectedTypes(String classificationType) throws RaplaException
     {
@@ -1404,11 +1416,35 @@ public class CalendarModelImpl implements CalendarSelectionModel
         );
     }
 
+    private Promise<Collection<Appointment>> getAppointmentsForRequests(Collection<Reservation> requests)
+    {
+        Collection<Appointment> selectedAppointments = ReservationImpl.getRequestedAppointments(requests);
+        Collection<ReferenceInfo<Reservation>> ids = new HashSet<>();
+        for (Reservation request : requests) {
+            ids.add(request.getReference());
+        }
+
+        return operator.getFromIdAsync(ids, true).thenApply(values->
+            {
+                Stream<Appointment> appointments = values.values().stream().flatMap(Reservation::getAppointmentStream).filter( (app)->selectedAppointments.contains(app));
+                return  appointments.collect(Collectors.toList());
+            }
+        );
+    }
+
+
+
     @Override public Promise<List<AppointmentBlock>> queryBlocks(final TimeInterval timeInterval)
     {
         List<AppointmentBlock> appointments = new ArrayList<>();
         Collection<Conflict> selectedConflicts = getSelectedConflicts();
-        Promise<Collection<Appointment>> reservations = getAppointments(selectedConflicts);
+        Collection<Reservation> requests = getSelectedResourceRequests();
+        Promise<Collection<Appointment>> reservations;
+        if ( !selectedConflicts.isEmpty()) {
+            reservations = getAppointments(selectedConflicts);
+        } else {
+            reservations = getAppointmentsForRequests(requests);
+        }
         final Promise<Collection<Appointment>> appointmentPromise = queryAppointments(timeInterval);
         return appointmentPromise.thenCombine(reservations, ( allAppointments, conflictAppointments) -> {
 

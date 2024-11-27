@@ -59,7 +59,7 @@ public class ConflictSelectionPresenter implements Presenter
     private final ClientFacade facade;
     private final RaplaFacade raplaFacade;
     private final ConflictSelectionView<?> view;
-
+    private PresenterChangeCallback callback;
 
     @Inject
     public ConflictSelectionPresenter(ClientFacade facade, Logger logger, final CalendarSelectionModel model, CalendarEventBus eventBus,
@@ -82,6 +82,12 @@ public class ConflictSelectionPresenter implements Presenter
         Collection<Conflict> selectedConflicts = getSelectedConflicts();
         showConflicts(selectedConflicts);
     }
+
+    public void setCallback(PresenterChangeCallback callback)
+    {
+        this.callback = callback;
+    }
+
 
     @Override
     public void showTreePopup(PopupContext c)
@@ -401,4 +407,9 @@ public class ConflictSelectionPresenter implements Presenter
         view.clearSelection();
     }
 
+    @Override
+    public void treeSelectionChanged()
+    {
+        callback.onChange();
+    }
 }

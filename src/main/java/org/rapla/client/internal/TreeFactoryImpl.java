@@ -23,6 +23,7 @@ import org.rapla.entities.NamedComparator;
 import org.rapla.entities.User;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.Permission;
+import org.rapla.entities.domain.Reservation;
 import org.rapla.entities.dynamictype.Attribute;
 import org.rapla.entities.dynamictype.AttributeAnnotations;
 import org.rapla.entities.dynamictype.Classifiable;
@@ -549,12 +550,12 @@ public class TreeFactoryImpl extends RaplaComponent implements TreeFactory
 
     }
 
-    public class ResourceRequesttRoot
+    public class ResourceRequestRoot
     {
         final String text;
         int conflictNumber = 0;
 
-        ResourceRequesttRoot(String text, int conflictNumber)
+        ResourceRequestRoot(String text, int conflictNumber)
         {
             this.text = text;
             this.conflictNumber = conflictNumber;
@@ -568,7 +569,7 @@ public class TreeFactoryImpl extends RaplaComponent implements TreeFactory
         @Override
         public String toString()
         {
-            String result = "Resourcenafnragen (1)";
+            String result = getI18n().format(text, conflictNumber);
             return result;
         }
 
@@ -590,7 +591,7 @@ public class TreeFactoryImpl extends RaplaComponent implements TreeFactory
                 return false;
             if (getClass() != obj.getClass())
                 return false;
-            ConflictRoot other = (ConflictRoot) obj;
+            ResourceRequestRoot other = (ResourceRequestRoot) obj;
             //            if (conflictNumber != other.conflictNumber)
             //                return false;
             if (text == null)
@@ -630,29 +631,19 @@ public class TreeFactoryImpl extends RaplaComponent implements TreeFactory
         return rootNode;
     }
 
-    public RaplaTreeNode
-    createResourceRequestModel(Collection<Conflict> conflicts) throws RaplaException
+    public RaplaTreeNode createResourceRequestModel(Collection<Reservation> requests) throws RaplaException
     {
         RaplaTreeNode rootNode = newRootNode();
-        if (conflicts == null)
+        if (requests == null)
         {
             return rootNode;
         }
         {
-            List<RaplaTreeNode> conflictList = new ArrayList<>();
-            int conflict_number = addConflicts(filter(conflicts, true), conflictList);
-            ResourceRequesttRoot conflictRootObj = new ResourceRequesttRoot("conflictUC", conflict_number);
-            RaplaTreeNode treeNode = newNode(conflictRootObj);
-            conflictList.forEach(treeNode::add);
-            rootNode.add(treeNode);
-        }
-        List<RaplaTreeNode> disableConflictList = new ArrayList<>();
-        int conflict_disabled_number = addConflicts(filter(conflicts, false), disableConflictList);
-        if (conflict_disabled_number > 0)
-        {
-            ConflictRoot conflictDisabledRootObj = new ConflictRoot("disabledConflictUC", conflict_disabled_number);
-            RaplaTreeNode treeNode = newNode( conflictDisabledRootObj);
-            disableConflictList.forEach(treeNode::add);
+            List<RaplaTreeNode> requestList = new ArrayList<>();
+            int request_number = addRequests(requests, requestList);
+            ResourceRequestRoot requestRootObj = new ResourceRequestRoot("resourceRequestsUC", request_number);
+            RaplaTreeNode treeNode = newNode(requestRootObj);
+            requestList.forEach(treeNode::add);
             rootNode.add(treeNode);
         }
         return rootNode;
@@ -673,6 +664,7 @@ public class TreeFactoryImpl extends RaplaComponent implements TreeFactory
             }
         };
     }
+
 
     private int addConflicts(Iterable<Conflict> conflicts, List<RaplaTreeNode> toAdd) throws RaplaException
     {
@@ -714,6 +706,56 @@ public class TreeFactoryImpl extends RaplaComponent implements TreeFactory
             }
         }
         return conflictsAdded;
+    }
+
+
+    private int addRequests(Iterable<Reservation> requests, List<RaplaTreeNode> toAdd) throws RaplaException
+    {
+        int requestsAdded = 0;
+        Map<DynamicType, RaplaTreeNode> nodeMap = new LinkedHashMap<>();
+
+        String[] classificationTypes = new String[] {DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RESOURCE,DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_PERSON};
+        for (String classificationType: classificationTypes) {
+            final DynamicType[] dynamicTypes = getQuery().getDynamicTypes(classificationType);
+            for (DynamicType type: dynamicTypes) {
+                RaplaTreeNode node = newNamedNode(type);
+                nodeMap.put(type, node);
+            }
+        }
+
+        Collection<Allocatable> allocatables = new LinkedHashSet<>();
+        for (Iterator<Reservation> it = requests.iterator(); it.hasNext(); )
+        {
+            Reservation reservation = it.next();
+
+            for (Allocatable allocatable: reservation.getAllocatables()) {
+                if ( reservation.getRequestStatus( allocatable) != null) {
+                    allocatables.add(allocatable);
+                }
+            }
+        }
+        Collection<Allocatable> sorted = sorted(allocatables.toArray(Allocatable.ALLOCATABLE_ARRAY), new SortedClassifiableComparator(getLocale()));
+        Map<Classifiable, Collection<RaplaTreeNode>> childMap = addClassifiables(nodeMap, sorted, true);
+        for (Iterator<Reservation> it = requests.iterator(); it.hasNext(); )
+        {
+            Reservation request = it.next();
+            requestsAdded++;
+            for (Allocatable allocatable: request.getAllocatables()) {
+                if ( request.getRequestStatus( allocatable) != null) {
+                    for (RaplaTreeNode allocatableNode : childMap.get(allocatable))
+                    {
+                        allocatableNode.add(newNamedNode(request));
+                    }
+                }
+            }
+        }
+        for ( RaplaTreeNode node:nodeMap.values())
+        {
+            if ( node.getChildCount() > 0) {
+                toAdd.add(node);
+            }
+        }
+        return requestsAdded;
     }
 
     @Override

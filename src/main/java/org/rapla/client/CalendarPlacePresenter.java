@@ -41,7 +41,6 @@ import java.util.Date;
     public static final String SHOW_CONFLICTS_MENU_ENTRY = "show_conflicts";
     private static final String TODAY_DATE = "today";
     private final Subject<String> busyIdleObservable;
-    private final RequestSelectionPresenter resourceRequestPresenter;
     boolean listenersDisabled = false;
 
     private final CalendarPlaceView view;
@@ -52,7 +51,8 @@ import java.util.Date;
 
     final private ResourceSelectionPresenter resourceSelectionPresenter;
     final private SavedCalendarInterface savedViews;
-    final private ConflictSelectionPresenter conflictsView;
+    final private ConflictSelectionPresenter conflictsPresenter;
+    private final RequestSelectionPresenter resourceRequestPresenter;
     final private CalendarContainer calendarContainer;
     final ClientFacade clientFacade;
 
@@ -70,13 +70,21 @@ import java.util.Date;
         this.logger = logger;
         this.resourceSelectionPresenter = resourceSelectionPresenter;
         this.savedViews = savedViews;
-        this.conflictsView = conflictsSelectionPresenter;
+        this.conflictsPresenter = conflictsSelectionPresenter;
         this.calendarContainer = calendarContainer;
         this.resourceRequestPresenter = requestSelectionPresenter;
         this.busyIdleObservable = scheduler.createPublisher();
         resourceSelectionPresenter.setCallback(() ->
         {
             resourceSelectionChanged();
+        });
+        conflictsSelectionPresenter.setCallback(() ->
+        {
+            conflictSelectionChanged();
+        });
+        resourceRequestPresenter.setCallback(() ->
+        {
+            resourceRequestSelectionChanged();
         });
         view.addSavedViews(savedViews);
         view.addResourceSelectionView(resourceSelectionPresenter.provideContent());
@@ -120,6 +128,7 @@ import java.util.Date;
         }
 
     }
+
 
     @Override
     public Subject<String> getBusyIdleObservable() {
@@ -240,7 +249,8 @@ import java.util.Date;
         try
         {
             resourceSelectionPresenter.dataChanged(evt);
-            conflictsView.dataChanged(evt);
+            conflictsPresenter.dataChanged(evt);
+            resourceRequestPresenter.dataChanged(evt);
             calendarContainer.update(evt);
             savedViews.update();
             updateViews();
@@ -338,8 +348,25 @@ import java.util.Date;
         {
             return;
         }
-        conflictsView.clearSelection();
-        
+        conflictsPresenter.clearSelection();
+        resourceRequestPresenter.clearSelection();
     }
+
+    private void conflictSelectionChanged() {
+        if (listenersDisabled)
+        {
+            return;
+        }
+        resourceRequestPresenter.clearSelection();
+    }
+
+    private void resourceRequestSelectionChanged() {
+        if (listenersDisabled)
+        {
+            return;
+        }
+        conflictsPresenter.clearSelection();
+    }
+
 
 }

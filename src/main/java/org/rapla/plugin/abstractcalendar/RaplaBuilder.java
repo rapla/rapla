@@ -33,6 +33,7 @@ import org.rapla.entities.CategoryAnnotations;
 import org.rapla.entities.NamedComparator;
 import org.rapla.entities.User;
 import org.rapla.entities.domain.*;
+import org.rapla.entities.domain.internal.ReservationImpl;
 import org.rapla.entities.dynamictype.Attribute;
 import org.rapla.entities.dynamictype.AttributeAnnotations;
 import org.rapla.entities.dynamictype.Classifiable;
@@ -104,7 +105,7 @@ public class RaplaBuilder
 
     
     public static final TypedComponentRole<Boolean> SHOW_TOOLTIP_CONFIG_ENTRY = new TypedComponentRole<>("org.rapla.showTooltips");
-	Map<Appointment,Set<Appointment>> conflictingAppointments;
+	Map<Appointment,Set<Appointment>> conflictingOrRequestAppointments;
     
 	final private RaplaLocale raplaLocale;
 	final private RaplaFacade raplaFacade;
@@ -154,13 +155,22 @@ public class RaplaBuilder
         final Promise<RaplaBuilder> builderPromise = appointmentBindungsPromise.thenApply((appointmentBindings) -> {
             Collection<Conflict> conflictsSelected = new ArrayList<>();
             conflictsSelected.addAll( ((CalendarModelImpl)model).getSelectedConflicts());
+
+            Collection<Reservation> requestsSelected = new ArrayList<>();
+            requestsSelected.addAll( ((CalendarModelImpl)model).getSelectedResourceRequests());
+
             bindings = appointmentBindings;
             Collection<Allocatable> allocatables ;
             if ( !conflictsSelected.isEmpty() )
             {
                 allocatables = Util.getAllocatables( conflictsSelected );
                 Collection<Appointment> all = bindings.getAllAppointments();
-                conflictingAppointments = ConflictImpl.getMap( conflictsSelected, all);
+                conflictingOrRequestAppointments = ConflictImpl.getMap( conflictsSelected, all);
+            } else if ( !requestsSelected.isEmpty() )
+            {
+                allocatables = Reservation.Util.getRequestedAllocatables( requestsSelected );
+                Collection<Appointment> all = bindings.getAllAppointments();
+                conflictingOrRequestAppointments = ReservationImpl.getRequestMap( requestsSelected, all);
             }
             else
             {
@@ -168,7 +178,7 @@ public class RaplaBuilder
                 allocatables = new ArrayList<>(bindings.getAllocatables());
                 Collections.sort( (List)allocatables, new SortedClassifiableComparator(raplaLocale.getLocale()));
                 all.addAll( bindings.getAllAppointments());
-                conflictingAppointments = null;
+                conflictingOrRequestAppointments = null;
                 
 //            long time = System.currentTimeMillis();
                 
@@ -499,7 +509,7 @@ public class RaplaBuilder
     	Appointment appointment = block.getAppointment();
         final Reservation reservation = appointment.getReservation();
         boolean isBlockSelected = selectedReservations.contains(reservation);
-        boolean isConflictsSelected = isConflictsSelected();
+        boolean isConflictsSelected = isConflictsOrRequestSelected();
 		if ( !isBlockSelected && (!nonFilteredEventsVisible && !isConflictsSelected))
         {
             return new RaplaBlockContext[] {};
@@ -507,7 +517,7 @@ public class RaplaBuilder
         if ( isConflictsSelected)
         {
             boolean found = false;
-            Collection<Appointment> collection = conflictingAppointments.get(appointment);
+            Collection<Appointment> collection = conflictingOrRequestAppointments.get(appointment);
             if ( collection != null)
             {
 	            for (Appointment conflictingApp:collection)
@@ -551,8 +561,8 @@ public class RaplaBuilder
         return selectedReservations.contains( reservation ) && getPermissionController().canModify(reservation, editingUser);
     }
 
-    public boolean isConflictsSelected() {
-        return conflictingAppointments != null;
+    public boolean isConflictsOrRequestSelected() {
+        return conflictingOrRequestAppointments != null;
     }
 
     /** This context contains the shared information for all RaplaBlocks.*/
@@ -561,7 +571,7 @@ public class RaplaBuilder
         boolean bPersonVisible = true;
         boolean bRepeatingVisible = true;
         boolean bTimeVisible = false;
-        boolean conflictsSelected = false;
+        boolean conflictsOrRequestSelected = false;
         Map<Allocatable,String> colors;
         RaplaResources i18n;
         RaplaLocale raplaLocale;
@@ -589,7 +599,7 @@ public class RaplaBuilder
             this.i18n =builder.getI18n();
             this.logger = builder.getLogger();
             this.user = builder.editingUser;
-            this.conflictsSelected = builder.isConflictsSelected();
+            this.conflictsOrRequestSelected = builder.isConflictsOrRequestSelected();
             this.isResourceColoring = builder.isResourceColoring;
             this.isEventColoring = builder.isEventColoring;
             this.permissionController = builder.getPermissionController();
@@ -637,9 +647,9 @@ public class RaplaBuilder
             return colors.get(allocatable);
         }
 
-        public boolean isConflictSelected() 
+        public boolean isConflictOrRequestSelected()
         {
-            return conflictsSelected;
+            return conflictsOrRequestSelected;
         }
 
 		public boolean isResourceColoringEnabled() {

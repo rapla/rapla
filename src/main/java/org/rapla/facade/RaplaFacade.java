@@ -303,6 +303,8 @@ public interface RaplaFacade
      */
     Promise<Collection<Conflict>> getConflicts();
 
+    Promise<Collection<Reservation>> getResourceRequests();
+
     /** returns all available periods */
     Period[] getPeriods() throws RaplaException;
 

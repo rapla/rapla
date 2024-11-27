@@ -1668,10 +1668,12 @@ class PermissionStorage<T extends EntityPermissionContainer<T>> extends EntitySt
         permission.setUser(resolveFromId(rset, 2, User.class, true));
         permission.setGroup(resolveFromId(rset, 3, Category.class, true));
         Integer accessLevel = getInt(rset, 4);
-        if (accessLevel != null)
-        {
+        if (accessLevel != null) {
             AccessLevel enumLevel = AccessLevel.find(accessLevel);
             permission.setAccessLevel(enumLevel);
+        } else {
+            getLogger().warn("Permission with id " + referenceIdInt + " has no access level. Ignoring.");
+            return;
         }
         permission.setMinAdvance(getInt(rset, 5));
         permission.setMaxAdvance(getInt(rset, 6));

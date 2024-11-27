@@ -33,8 +33,10 @@ import org.rapla.entities.dynamictype.Classifiable;
 import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.entities.dynamictype.internal.DynamicTypeImpl;
 import org.rapla.entities.internal.UserImpl;
+import org.rapla.entities.storage.EntityReferencer;
 import org.rapla.entities.storage.ExternalSyncEntity;
 import org.rapla.entities.storage.ReferenceInfo;
+import org.rapla.entities.storage.internal.ReferenceHandler;
 import org.rapla.facade.Conflict;
 import org.rapla.framework.RaplaException;
 import org.rapla.inject.DefaultImplementation;
@@ -348,7 +350,7 @@ public class UpdateDataManagerImpl implements  UpdateDataManager
                     }
                 }
                     // Add entity to result
-                processClientReadable(user, safeResultEvent, obj, false);
+                processClientReadable(user, safeResultEvent, updateResult, obj, false);
             }
             Collection<Remove> removedEntities = updateResult.getOperations(UpdateResult.Remove.class);
             for (Remove remove : removedEntities)
@@ -384,11 +386,25 @@ public class UpdateDataManagerImpl implements  UpdateDataManager
     }
 
     // adds an object to the update event if the client can see it
-    protected void processClientReadable(User user, UpdateEvent safeResultEvent, Entity obj, boolean remove)
+    protected void processClientReadable(User user, UpdateEvent safeResultEvent, UpdateResult updateResult, Entity obj, boolean remove)
     {
         if (!UpdateDataManagerImpl.isTransferedToClient(obj))
         {
-            return;
+            if ( obj instanceof Reservation ) {
+                Reservation event = (Reservation)obj;
+                final Entity lastEntryBeforeUpdate  = updateResult.getLastEntryBeforeUpdate(obj.getReference());
+                if ( lastEntryBeforeUpdate != null) {
+                    ((ReferenceHandler) lastEntryBeforeUpdate).setResolver(((ReferenceHandler) event).getResolver());
+                }
+                if (permissionController.isRequestFor(event, user) || (lastEntryBeforeUpdate != null && permissionController.isRequestFor((Reservation)lastEntryBeforeUpdate, user))){
+                    logger.debug("Request for " + user + " is transfered to client");
+                } else {
+                    return;
+                }
+            } else  {
+                return;
+            }
+
         }
         boolean clientStore = true;
         if (user != null)

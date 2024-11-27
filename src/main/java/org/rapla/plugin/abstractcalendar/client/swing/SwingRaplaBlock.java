@@ -156,7 +156,7 @@ public class SwingRaplaBlock extends RaplaBlock implements SwingBlock
             {
                 text = getI18n().getString( "not_visible.help" );
             }
-            else if ( !getContext().isBlockSelected() && !getBuildContext().isConflictSelected() )
+            else if ( !getContext().isBlockSelected() && !getBuildContext().isConflictOrRequestSelected() )
             {
                 text = getI18n().getString( "not_selected.help" );
             }

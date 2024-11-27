@@ -19,7 +19,8 @@ public interface ConflictSelectionView<T> extends RaplaWidget<T>
         void enableConflicts(PopupContext context);
         
         void disableConflicts(PopupContext context);
-        
+
+        void treeSelectionChanged();
     }
     
     void setPresenter(Presenter p);

@@ -89,18 +89,6 @@ public interface Conflict extends Named, Entity<Conflict>, Timestamp {
       return allocatables;
     }
 
-    //		static public List<Reservation> getReservations(Collection<Conflict> conflicts) {
-    //			Collection<Reservation> reservations = new LinkedHashSet<Reservation>();
-    //			for (Conflict conflict:conflicts)
-    //			{
-    //				reservations.add(conflict.getReservation1());
-    //				reservations.add(conflict.getReservation2());
-    //
-    //			}
-    //			return new ArrayList<Reservation>( reservations);
-    //		}
-    //
-
   }
 
   boolean hasAppointment(Appointment appointment);

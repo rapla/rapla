@@ -439,7 +439,10 @@ public class NotificationService implements ServerExtension
             //            	changes.append(", ");
             if (!event.getType().equals(AllocationChangeEvent.ADD))
             {
-                printAppointment(buf, event.getOldAppointment());
+                Appointment oldAppointment = event.getOldAppointment();
+                if ( oldAppointment!= null) {
+                    printAppointment(buf, oldAppointment);
+                }
             }
             if (event.getType().equals(AllocationChangeEvent.CHANGE))
             {
@@ -447,7 +450,10 @@ public class NotificationService implements ServerExtension
             }
             if (!event.getType().equals(AllocationChangeEvent.REMOVE))
             {
-                printAppointment(buf, event.getNewAppointment());
+                Appointment newAppointment = event.getNewAppointment();
+                if (newAppointment != null) {
+                    printAppointment(buf, newAppointment);
+                }
             }
             /*
             if ( event.getUserFromRequest() != null) {

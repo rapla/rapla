@@ -124,6 +124,7 @@ import java.awt.event.ActionListener;
     }
 
     private Component conflictsViewComponent;
+    private Component requestsViewComponent;
 
     @Override public void addConflictsView(RaplaWidget<Component> conflictsView)
     {
@@ -137,8 +138,8 @@ import java.awt.event.ActionListener;
     {
         c.weighty = 1.0;
         c.gridy = 4;
-        conflictsViewComponent = resourceRequestView.getComponent();
-        left.add(conflictsViewComponent, c);
+        requestsViewComponent = resourceRequestView.getComponent();
+        left.add(requestsViewComponent, c);
     }
 
     @Override public void addCalendarView(RaplaWidget<Component> calendarView)
@@ -202,6 +203,10 @@ import java.awt.event.ActionListener;
         boolean showSavedViews = !templateMode;
 
         conflictsViewComponent.setVisible(showConflictsFull);
+        if ( requestsViewComponent != null) {
+            requestsViewComponent.setVisible(!templateMode);
+        }
+
         conflictsSummaryViewComponent.setVisible(showConflictsMin);
         //        if ( templateMode)
         //        {

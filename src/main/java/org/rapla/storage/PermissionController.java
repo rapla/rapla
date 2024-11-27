@@ -737,4 +737,16 @@ public class PermissionController
         //return !disjoint;
     }
 
+    public boolean isRequestFor(Reservation reservation, User workingUser) {
+        if (workingUser == null)
+        {
+            return false;
+        }
+        for (Allocatable allocatable:reservation.getAllocatables()) {
+            if (reservation.getRequestStatus(allocatable) != null && canModify(allocatable, workingUser)) {
+                return true;
+            }
+        }
+        return false;
+    }
 }

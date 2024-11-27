@@ -49,7 +49,6 @@ public class UpdateEvent
     List<DynamicTypeImpl> types;
     List<UserImpl> users;
     List<PreferencePatch> preferencesPatches;
-
     List<PreferencesImpl> preferences;
     List<AllocatableImpl> resources;
     List<ReservationImpl> reservations;

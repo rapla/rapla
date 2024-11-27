@@ -161,7 +161,7 @@ public class EWSConnector {
                     NameResolutionCollection resolvedNames = getService().resolveName(lnLegDN, ResolveNameSearchLocation.DirectoryOnly, false);
                     if (resolvedNames.getCount() > 0)
                     {
-                        String mailbox = resolvedNames.iterator().next().getMailbox().getAddress();
+                        String mailbox = resolvedNames.iterator().next().getMailbox().getAddress().toLowerCase();
                         FolderId SharedCalendarId = new FolderId(WellKnownFolderName.Calendar, new Mailbox(mailbox));
                         CalendarFolder SharedCalendaFolder;
                         try {

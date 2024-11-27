@@ -219,7 +219,7 @@ import java.util.TreeMap;
 
         for (Allocatable alloc:reservation.getAllocatables()) {
             final RequestStatus requestStatus = reservation.getRequestStatus(alloc);
-            if (requestStatus != null && permissionController.canAllocate(  appointment.getStart(), appointment.getMaxEnd(),alloc, user)) {
+            if (requestStatus != null && permissionController.canModify( alloc, user)) {
                 if (requestStatus ==  RequestStatus.REQUESTED ) {
                     createAction(popupContext).setConfirm(appointmentBlock, alloc).addTo(menu, f);
                     createAction(popupContext).setDeny(appointmentBlock, alloc).addTo(menu, f);

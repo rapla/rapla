@@ -184,11 +184,6 @@ public class ConflictImpl extends SimpleEntity implements Conflict, ModifiableTi
         }
     }
 
-    public static boolean isConflictId(String id)
-    {
-        return splitConflictId(id) != null;
-    }
-
     public Date getLastChanged()
     {
         return lastChanged;

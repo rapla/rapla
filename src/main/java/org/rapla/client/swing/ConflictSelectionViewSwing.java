@@ -64,6 +64,7 @@ public class ConflictSelectionViewSwing implements ConflictSelectionView<Compone
     private final DialogUiFactoryInterface dialogUiFactory;
     private final RaplaResources i18n;
     private Presenter presenter;
+    private boolean selectionFromProgram = false;
 
     @Inject
     public ConflictSelectionViewSwing(RaplaResources i18n,  Logger logger, TreeFactory treeFactory,
@@ -83,6 +84,14 @@ public class ConflictSelectionViewSwing implements ConflictSelectionView<Compone
         tree.setShowsRootHandles(true);
         tree.setCellRenderer(treeCellRenderer);
         tree.setSelectionModel(new DelegatingTreeSelectionModel(this::isSelectable));
+        treeSelection.addChangeListener((evt) ->
+        {
+            if ( selectionFromProgram )
+            {
+                return;
+            }
+            getPresenter().treeSelectionChanged();
+        });
         treeSelection.addPopupListener(listener);
         navTree.addTreeSelectionListener(listener);
     }
@@ -209,7 +218,16 @@ public class ConflictSelectionViewSwing implements ConflictSelectionView<Compone
 
     public void clearSelection()
     {
-        treeSelection.getTree().setSelectionPaths(new TreePath[] {});
+        try
+        {
+            selectionFromProgram = true;
+            treeSelection.getTree().setSelectionPaths(new TreePath[] {});
+        }
+        finally
+        {
+            selectionFromProgram = false;
+        }
+
     }
 
     @Override

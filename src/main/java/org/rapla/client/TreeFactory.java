@@ -3,6 +3,7 @@ package org.rapla.client;
 import org.rapla.entities.Category;
 import org.rapla.entities.Named;
 import org.rapla.entities.domain.Allocatable;
+import org.rapla.entities.domain.Reservation;
 import org.rapla.entities.dynamictype.ClassificationFilter;
 import org.rapla.facade.Conflict;
 import org.rapla.framework.RaplaException;
@@ -19,7 +20,7 @@ public interface TreeFactory {
 	RaplaTreeNode createClassifiableModel(Allocatable[] classifiables, boolean useCategorizations);
 
 	RaplaTreeNode createConflictModel(Collection<Conflict> conflicts ) throws RaplaException;
-	RaplaTreeNode createResourceRequestModel(Collection<Conflict> conflicts ) throws RaplaException;
+	RaplaTreeNode createResourceRequestModel(Collection<Reservation> requests ) throws RaplaException;
 
     RaplaTreeNode newNamedNode(Named element);
 
@@ -48,6 +49,26 @@ public interface TreeFactory {
 		final Stream<Conflict> conflictStream = IntStream.range(0, children)
 				.mapToObj(treeNode::getChild)
 				.flatMap(TreeFactory::getConflicts)
+				.distinct()
+				;
+		return conflictStream;
+	}
+
+	static Stream<Reservation> getRequests(RaplaTreeNode treeNode)
+	{
+		Object userObject = treeNode.getUserObject();
+		if (userObject != null && userObject instanceof Reservation)
+		{
+			return Stream.of( (Reservation) userObject);
+		}
+		int children = treeNode.getChildCount();
+		if (children == 0)
+		{
+			return Stream.empty();
+		}
+		final Stream<Reservation> conflictStream = IntStream.range(0, children)
+				.mapToObj(treeNode::getChild)
+				.flatMap(TreeFactory::getRequests)
 				.distinct()
 				;
 		return conflictStream;

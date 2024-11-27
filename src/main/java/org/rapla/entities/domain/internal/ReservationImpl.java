@@ -39,18 +39,10 @@ import org.rapla.entities.storage.ParentEntity;
 import org.rapla.entities.storage.ReferenceInfo;
 import org.rapla.entities.storage.UnresolvableReferenceExcpetion;
 import org.rapla.entities.storage.internal.SimpleEntity;
+import org.rapla.facade.Conflict;
 import org.rapla.framework.RaplaException;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -102,6 +94,44 @@ public final class ReservationImpl extends SimpleEntity implements Reservation, 
         {
          //   throw new RaplaException(i18n.getString("warning.no_allocatables_selected") + " " + name + " [" + reservation.getId() + "]");
         }
+    }
+
+    public static Map<Appointment, Set<Appointment>> getRequestMap(Collection<Reservation> requestsSelected, Collection<Appointment> appointments) {
+        Map<Appointment, Set<Appointment>> result = new HashMap<>();
+        Map<ReferenceInfo<Appointment>, Appointment> map = new HashMap<>();
+        for (Appointment app : appointments)
+        {
+            map.put(app.getReference(), app);
+        }
+        Collection<Appointment> requestedAppointments = getRequestedAppointments(requestsSelected);
+        for (Appointment appointment : requestedAppointments)
+        {
+            Appointment app1 = map.get(appointment.getReference());
+            Set<Appointment> set = result.get(app1);
+            if (set == null)
+            {
+                set = new HashSet<>();
+                result.put(app1, set);
+            }
+            set.add(app1);
+        }
+        return result;
+    }
+
+    public static Collection<Appointment> getRequestedAppointments(Collection<Reservation> requests) {
+        Collection<Appointment> selectedAppointments = new HashSet<>();
+        for (Reservation request : requests) {
+            Collection<Allocatable> requestedAllocatables = request.getRequestedAllocatables();
+            for (Appointment appointment : request.getAppointments())
+            {
+                for (Allocatable allocatable:requestedAllocatables) {
+                    if (request.hasAllocatedOn(allocatable, appointment)) {
+                        selectedAppointments.add(appointment);
+                    }
+                }
+            }
+        }
+        return selectedAppointments;
     }
 
     public void setResolver( EntityResolver resolver)  {

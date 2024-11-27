@@ -19,16 +19,17 @@ import org.rapla.client.event.CalendarEventBus;
 import org.rapla.client.event.CalendarRefreshEvent;
 import org.rapla.components.util.TimeInterval;
 import org.rapla.components.util.undo.CommandHistory;
-import org.rapla.components.util.undo.CommandUndo;
 import org.rapla.entities.RaplaObject;
 import org.rapla.entities.RaplaType;
+import org.rapla.entities.domain.Appointment;
+import org.rapla.entities.domain.Reservation;
+import org.rapla.entities.domain.internal.ReservationImpl;
 import org.rapla.entities.storage.ReferenceInfo;
 import org.rapla.facade.CalendarSelectionModel;
 import org.rapla.facade.Conflict;
 import org.rapla.facade.ModificationEvent;
 import org.rapla.facade.RaplaFacade;
 import org.rapla.facade.client.ClientFacade;
-import org.rapla.facade.internal.ConflictImpl;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaInitializationException;
 import org.rapla.logger.Logger;
@@ -36,19 +37,18 @@ import org.rapla.scheduler.Promise;
 
 import javax.inject.Inject;
 import java.util.*;
-import java.util.stream.Collectors;
 
 public class RequestSelectionPresenter implements ResourceRequestSelectionView.Presenter
 {
     protected final CalendarSelectionModel model;
     private final Logger logger;
-    private Collection<Conflict> conflicts = Collections.emptySet();
+    private Collection<Reservation> requests = Collections.emptySet();
     private final CalendarEventBus eventBus;
     private final DialogUiFactoryInterface dialogUiFactory;
     private final ClientFacade facade;
     private final RaplaFacade raplaFacade;
     private final ResourceRequestSelectionView<?> view;
-
+    private PresenterChangeCallback callback;
 
     @Inject
     public RequestSelectionPresenter(ClientFacade facade, Logger logger, final CalendarSelectionModel model, CalendarEventBus eventBus,
@@ -62,14 +62,19 @@ public class RequestSelectionPresenter implements ResourceRequestSelectionView.P
         this.view = view;
         raplaFacade = facade.getRaplaFacade();
         view.setPresenter(this);
-        queryAllConflicts();
+        queryAllRequests();
     }
 
     @Override
-    public void showConflicts(PopupContext context)
+    public void showRequests(PopupContext context)
     {
-        Collection<Conflict> selectedConflicts = getSelectedConflicts();
-        showConflicts(selectedConflicts);
+        Collection<Reservation> selectedRequests = getSelectedRequests();
+        showRequests(selectedRequests);
+    }
+
+    public void setCallback(PresenterChangeCallback callback)
+    {
+        this.callback = callback;
     }
 
     @Override
@@ -78,52 +83,14 @@ public class RequestSelectionPresenter implements ResourceRequestSelectionView.P
         try
         {
             // Object obj = evt.getSelected();
-            final List<Conflict> enabledConflicts = getConflicts(true);
-            final List<Conflict> disabledConflicts = getConflicts(false);
-            view.showMenuPopup(c, !disabledConflicts.isEmpty(), !enabledConflicts.isEmpty());
+            Collection<?> list = view.getSelectedElements(true);
+
+            //view.showMenuPopup(c, !disabledConflicts.isEmpty(), !enabledConflicts.isEmpty());
         }
         catch (Exception ex)
         {
             dialogUiFactory.showException(ex, null);
         }
-    }
-
-    private List<Conflict> getConflicts(boolean enabled)
-    {
-        Collection<?> list = view.getSelectedElements(true);
-        final List<Conflict> result = new ArrayList<>();
-        for (Object selected : list)
-        {
-            if (selected instanceof Conflict)
-            {
-                Conflict conflict = (Conflict) selected;
-                if (conflict.checkEnabled() == enabled)
-                {
-                    result.add(conflict);
-                }
-            }
-        }
-        return result;
-    }
-
-    @Override
-    public void enableConflicts(PopupContext context)
-    {
-        final List<Conflict> disabledConflicts = getConflicts(false);
-        CommandUndo<RaplaException> command = new ConflictEnable(disabledConflicts, true);
-        CommandHistory commanHistory = getCommandHistory();
-        final Promise promise = commanHistory.storeAndExecute(command);
-        handleException(promise, context);
-    }
-
-    @Override
-    public void disableConflicts(PopupContext context)
-    {
-        List<Conflict> enabledConflicts = getConflicts(true);
-        CommandUndo<RaplaException> command = new ConflictEnable(enabledConflicts, false);
-        CommandHistory commanHistory = getCommandHistory();
-        final Promise promise = commanHistory.storeAndExecute(command);
-        handleException(promise, context);
     }
 
     protected Promise handleException(Promise promise, PopupContext context)
@@ -138,61 +105,6 @@ public class RequestSelectionPresenter implements ResourceRequestSelectionView.P
         return facade.getCommandHistory();
     }
 
-    public class ConflictEnable implements CommandUndo<RaplaException>
-    {
-        boolean enable;
-        Collection<String> conflictStrings;
-
-        public ConflictEnable(List<Conflict> conflicts, boolean enable)
-        {
-
-            this.enable = enable;
-            conflictStrings = new HashSet<>();
-            for (Conflict conflict : conflicts)
-            {
-                conflictStrings.add(conflict.getId());
-            }
-        }
-
-        @Override
-        public Promise<Void> execute()
-        {
-            return store_(enable);
-        }
-
-        @Override
-        public Promise<Void> undo()
-        {
-            return store_(!enable);
-        }
-
-        @Override
-        public String getCommandoName()
-        {
-            return (enable ? "enable" : "disable") + " conflicts";
-        }
-
-        private Promise<Void> store_(boolean newFlag)
-        {
-            Collection<Conflict> conflictOrig = RequestSelectionPresenter.this.conflicts.stream()
-                    .filter((conflict) -> conflictStrings.contains(conflict.getId())).collect(Collectors.toList());
-            return raplaFacade.updateList(conflictOrig,
-                    (editableConflicts) -> editableConflicts.stream().forEach((conflict) -> setEnabled(((ConflictImpl) conflict), newFlag)))
-                    .thenRun(() -> updateTree(conflicts));
-        }
-    }
-
-    private void setEnabled(ConflictImpl conflictImpl, boolean enabled)
-    {
-        if (conflictImpl.isAppointment1Editable())
-        {
-            conflictImpl.setAppointment1Enabled(enabled);
-        }
-        if (conflictImpl.isAppointment2Editable())
-        {
-            conflictImpl.setAppointment2Enabled(enabled);
-        }
-    }
 
     protected CalendarSelectionModel getModel()
     {
@@ -208,25 +120,25 @@ public class RequestSelectionPresenter implements ResourceRequestSelectionView.P
         TimeInterval invalidateInterval = evt.getInvalidateInterval();
         if (invalidateInterval != null && invalidateInterval.getStart() == null)
         {
-            queryAllConflicts();
+            queryAllRequests();
         }
         else if (evt.isModified())
         {
-            Set<Conflict> changed = RaplaType.retainObjects(evt.getChanged(), conflicts);
-            removeAll(conflicts, changed);
+            Set<Reservation> changed = RaplaType.retainObjects(evt.getChanged(), requests);
+            removeAll(requests, changed);
 
-            removeConflict(conflicts, evt.getRemovedReferences());
+            removeRequests(requests, evt.getRemovedReferences());
 
-            conflicts.addAll(changed);
+            requests.addAll(changed);
             for (RaplaObject obj : evt.getAddObjects())
             {
-                if (obj.getTypeClass() == Conflict.class)
+                if (obj.getTypeClass() == Reservation.class)
                 {
-                    Conflict conflict = (Conflict) obj;
-                    conflicts.add(conflict);
+                    Reservation reservation = (Reservation) obj;
+                    requests.add(reservation);
                 }
             }
-            updateTree(conflicts);
+            updateTree(requests);
         }
         else
         {
@@ -234,22 +146,22 @@ public class RequestSelectionPresenter implements ResourceRequestSelectionView.P
         }
     }
 
-    protected void queryAllConflicts()  {
-        raplaFacade.getConflicts()
-                   .thenAccept(conflicts->updateTree(conflicts))
+    protected void queryAllRequests()  {
+        raplaFacade.getResourceRequests()
+                   .thenAccept(requests->updateTree(requests))
                    .exceptionally(ex -> {
                        logger.error(ex.getMessage(), ex);
                    });
     }
 
-    private void removeConflict(Collection<Conflict> conflicts, Set<ReferenceInfo> removedReferences)
+    private void removeRequests(Collection<Reservation> requests, Set<ReferenceInfo> removedReferences)
     {
         Set<String> removedIds = new LinkedHashSet<>();
         for (ReferenceInfo removedReference : removedReferences)
         {
             removedIds.add(removedReference.getId());
         }
-        Iterator<Conflict> it = conflicts.iterator();
+        Iterator<Reservation> it = requests.iterator();
         while (it.hasNext())
         {
             if (removedIds.contains(it.next().getId()))
@@ -259,9 +171,9 @@ public class RequestSelectionPresenter implements ResourceRequestSelectionView.P
         }
     }
 
-    private void removeAll(Collection<Conflict> list, Set<Conflict> changed)
+    private void removeAll(Collection<Reservation> list, Set<Reservation> changed)
     {
-        Iterator<Conflict> it = list.iterator();
+        Iterator<Reservation> it = list.iterator();
         while (it.hasNext())
         {
             if (changed.contains(it.next()))
@@ -272,88 +184,90 @@ public class RequestSelectionPresenter implements ResourceRequestSelectionView.P
 
     }
 
-    private void showConflicts(Collection<Conflict> selectedConflicts)
+    private void showRequests(Collection<Reservation> selectedRequests)
     {
         ArrayList<RaplaObject> arrayList = new ArrayList<>(model.getSelectedObjects());
         for (Iterator<RaplaObject> it = arrayList.iterator(); it.hasNext(); )
         {
             RaplaObject obj = it.next();
-            if (obj.getTypeClass() == Conflict.class)
+            if (obj.getTypeClass() == Reservation.class)
             {
                 it.remove();
             }
         }
-        arrayList.addAll(selectedConflicts);
+        arrayList.addAll(selectedRequests);
         model.setSelectedObjects(arrayList);
-        if (!selectedConflicts.isEmpty())
+        if (!selectedRequests.isEmpty())
         {
-            Conflict conflict = selectedConflicts.iterator().next();
-            Date date = conflict.getStartDate();
-            if (date != null)
-            {
-                model.setSelectedDate(date);
+            Collection<Appointment> requestedAppointments = ReservationImpl.getRequestedAppointments(selectedRequests);
+            if ( !requestedAppointments.isEmpty()) {
+                Date date = requestedAppointments.iterator().next().getStart();
+                if (date != null) {
+                    model.setSelectedDate(date);
+                }
             }
         }
         eventBus.publish(new CalendarRefreshEvent());
     }
 
-    private Collection<Conflict> getSelectedConflictsInModel()
+    private Collection<Reservation> getSelectedRequestsInModel()
     {
-        Set<Conflict> result = new LinkedHashSet<>();
+        Set<Reservation> result = new LinkedHashSet<>();
         for (RaplaObject obj : model.getSelectedObjects())
         {
-            if (obj.getTypeClass() == Conflict.class)
+            if (obj.getTypeClass() == Reservation.class)
             {
-                result.add((Conflict) obj);
+                result.add((Reservation) obj);
             }
         }
         return result;
     }
 
-    private Collection<Conflict> getSelectedConflicts()
+    private Collection<Reservation> getSelectedRequests()
     {
         Collection<Object> lastSelected = view.getSelectedElements(false);
-        Set<Conflict> selectedConflicts = new LinkedHashSet<>();
+        Set<Reservation> selectedRequests = new LinkedHashSet<>();
         for (Object selected : lastSelected)
         {
-            if (selected instanceof Conflict)
+            if (selected instanceof Reservation)
             {
-                selectedConflicts.add((Conflict) selected);
+                selectedRequests.add((Reservation) selected);
             }
         }
-        return selectedConflicts;
+        return selectedRequests;
     }
 
-    private void updateTree(Collection<Conflict> newConflicts)
+    private void updateTree(Collection<Reservation> newRequests)
     {
-        this.conflicts = newConflicts;
-        Collection<Conflict> selectedConflicts = new ArrayList<>(getSelectedConflicts());
-        Collection<Conflict> conflicts = getConflicts();
-        view.updateTree(selectedConflicts, conflicts);
-        Collection<Conflict> inModel = new ArrayList<>(getSelectedConflictsInModel());
-        if (!selectedConflicts.equals(inModel))
+        this.requests = newRequests;
+        Collection<Reservation> selectedRequests = new ArrayList<>(getSelectedRequests());
+        Collection<Reservation> requests = getRequests();
+        view.updateTree(selectedRequests, requests);
+        Collection<Reservation> inModel = new ArrayList<>(getSelectedRequestsInModel());
+        if (!selectedRequests.equals(inModel))
         {
-            showConflicts(inModel);
+            showRequests(inModel);
         }
     }
 
-    public Collection<Conflict> getConflicts()
+    public Collection<Reservation> getRequests()
     {
-        List<Conflict> result = new ArrayList<>(conflicts);
-        Collections.sort(result, new ConflictStartDateComparator());
+        List<Reservation> result = new ArrayList<>(requests);
+        // FIXME: sort reservations by some means
+        Collections.sort(result, new RequestStartDateComparator());
         return result;
     }
 
-    class ConflictStartDateComparator implements Comparator<Conflict>
+    class RequestStartDateComparator implements Comparator<Reservation>
     {
-        public int compare(Conflict c1, Conflict c2)
+        public int compare(Reservation c1, Reservation c2)
         {
             if (c1.equals(c2))
             {
                 return 0;
             }
-            Date d1 = c1.getStartDate();
-            Date d2 = c2.getStartDate();
+            Date d1 = c1.getFirstDate();
+            Date d2 = c2.getFirstDate();
             if (d1 != null)
             {
                 if (d2 == null)
@@ -388,6 +302,12 @@ public class RequestSelectionPresenter implements ResourceRequestSelectionView.P
     public void clearSelection()
     {
         view.clearSelection();
+    }
+
+    @Override
+    public void treeSelectionChanged()
+    {
+        callback.onChange();
     }
 
 }

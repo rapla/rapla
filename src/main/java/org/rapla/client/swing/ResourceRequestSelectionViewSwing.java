@@ -18,15 +18,16 @@ import org.rapla.client.PopupContext;
 import org.rapla.client.RaplaTreeNode;
 import org.rapla.client.TreeFactory;
 import org.rapla.client.dialog.DialogUiFactoryInterface;
-import org.rapla.client.internal.ConflictSelectionView;
 import org.rapla.client.internal.ResourceRequestSelectionView;
 import org.rapla.client.internal.TreeFactoryImpl;
 import org.rapla.client.swing.internal.SwingPopupContext;
 import org.rapla.client.swing.internal.view.ConflictTreeCellRenderer;
 import org.rapla.client.swing.internal.view.DelegatingTreeSelectionModel;
 import org.rapla.client.swing.internal.view.RaplaSwingTreeModel;
+import org.rapla.client.swing.internal.view.RequestTreeCellRenderer;
 import org.rapla.client.swing.toolkit.*;
 import org.rapla.entities.domain.Allocatable;
+import org.rapla.entities.domain.Reservation;
 import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.facade.Conflict;
 import org.rapla.framework.RaplaException;
@@ -48,6 +49,7 @@ import java.util.Collection;
 public class ResourceRequestSelectionViewSwing implements ResourceRequestSelectionView<Component>
 {
     private final RaplaTree treeSelection = new RaplaTree();
+    private boolean selectionFromProgram = false;
     protected JPanel content = new JPanel();
     JLabel summary = new JLabel();
     private final Listener listener = new Listener();
@@ -58,7 +60,7 @@ public class ResourceRequestSelectionViewSwing implements ResourceRequestSelecti
 
     @Inject
     public ResourceRequestSelectionViewSwing(RaplaResources i18n, Logger logger, TreeFactory treeFactory,
-                                             DialogUiFactoryInterface dialogUiFactory, ConflictTreeCellRenderer treeCellRenderer) throws RaplaInitializationException
+                                             DialogUiFactoryInterface dialogUiFactory, RequestTreeCellRenderer treeCellRenderer) throws RaplaInitializationException
     {
         this.i18n = i18n;
         this.treeFactory = treeFactory;
@@ -74,6 +76,14 @@ public class ResourceRequestSelectionViewSwing implements ResourceRequestSelecti
         tree.setShowsRootHandles(true);
         tree.setCellRenderer(treeCellRenderer);
         tree.setSelectionModel(new DelegatingTreeSelectionModel(this::isSelectable));
+        treeSelection.addChangeListener((evt) ->
+        {
+            if ( selectionFromProgram )
+            {
+                return;
+            }
+            getPresenter().treeSelectionChanged();
+        });
         treeSelection.addPopupListener(listener);
         navTree.addTreeSelectionListener(listener);
     }
@@ -82,7 +92,7 @@ public class ResourceRequestSelectionViewSwing implements ResourceRequestSelecti
     {
         Object lastPathComponent = treePath.getLastPathComponent();
         Object object = TreeFactoryImpl.getUserObject(lastPathComponent);
-        if (object instanceof Conflict)
+        if (object instanceof Reservation)
         {
             return true;
         }
@@ -107,25 +117,6 @@ public class ResourceRequestSelectionViewSwing implements ResourceRequestSelecti
     public void showMenuPopup(PopupContext context, boolean enabledButtonEnabled, boolean disableButtonEnabled)
     {
         RaplaPopupMenu menu = new RaplaPopupMenu(context);
-        RaplaMenuItem disable = new RaplaMenuItem("disable");
-        disable.setText(i18n.getString("disable_conflicts"));
-        disable.setEnabled( disableButtonEnabled );
-        RaplaMenuItem enable = new RaplaMenuItem("enable");
-        enable.setText(i18n.getString("enable_conflicts"));
-        enable.setEnabled( enabledButtonEnabled );
-
-        disable.addActionListener(e -> {
-            PopupContext context12 = new SwingPopupContext(disable, null);
-            getPresenter().disableConflicts(context12);
-        });
-
-        enable.addActionListener(e -> {
-            PopupContext context1 = new SwingPopupContext(enable, null);
-            getPresenter().enableConflicts(context1);
-        });
-
-        menu.add(disable);
-        menu.add(enable);
         JComponent component = (JComponent) SwingPopupContext.extractParent(context);
         final Point p = SwingPopupContext.extractPoint(context);
         menu.show(component, p.x, p.y);
@@ -136,7 +127,7 @@ public class ResourceRequestSelectionViewSwing implements ResourceRequestSelecti
         public void valueChanged(TreeSelectionEvent e)
         {
             PopupContext context = new SwingPopupContext(treeSelection, null);
-            getPresenter().showConflicts(context);
+            getPresenter().showRequests(context);
         }
 
         @Override
@@ -176,13 +167,13 @@ public class ResourceRequestSelectionViewSwing implements ResourceRequestSelecti
     }
 
     @Override
-    public void updateTree(Collection<Conflict> selectedConflicts, Collection<Conflict> conflicts)
+    public void updateTree(Collection<Reservation> selectedRequests, Collection<Reservation> requests)
     {
         TreeModel treeModel;
         try
         {
-            final RaplaTreeNode conflictModel = getTreeFactory().createResourceRequestModel(conflicts);
-            treeModel = new RaplaSwingTreeModel( conflictModel);
+            final RaplaTreeNode requestModel = getTreeFactory().createResourceRequestModel(requests);
+            treeModel = new RaplaSwingTreeModel( requestModel);
         }
         catch (RaplaException e)
         {
@@ -193,14 +184,19 @@ public class ResourceRequestSelectionViewSwing implements ResourceRequestSelecti
                 {
                     treeSelection.exchangeTreeModel(treeModel);
                     treeSelection.getTree().expandRow(0);
-                    summary.setText(i18n.getString("conflicts") + " (" + conflicts.size() + ") ");
+                    summary.setText(i18n.getString("conflicts") + " (" + requests.size() + ") ");
                 }
         );
     }
 
     public void clearSelection()
     {
-        treeSelection.getTree().setSelectionPaths(new TreePath[] {});
+        try {
+            selectionFromProgram = true;
+            treeSelection.getTree().setSelectionPaths(new TreePath[]{});
+        } finally {
+            selectionFromProgram = false;
+        }
     }
 
     @Override

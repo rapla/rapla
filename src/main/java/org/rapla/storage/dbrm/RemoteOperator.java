@@ -810,6 +810,17 @@ public class RemoteOperator
         }
     }
 
+    @Override
+    protected void addToCache(Entity entity) {
+
+        if ( entity instanceof  Reservation) {
+            // We ignore Reservations on the client cache
+            logger.debug("Ignoring reservation " + entity);
+        } else {
+            super.addToCache(entity);
+        }
+    }
+
     protected void refreshAll() throws RaplaException {
         UpdateResult result;
         Collection<Entity> oldEntities;
