@@ -37,6 +37,7 @@ import org.rapla.storage.PermissionController;
 
 import javax.inject.Inject;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Date;
 import java.util.Iterator;
 
@@ -245,10 +246,12 @@ public class AppointmentAction extends RaplaComponent  {
         this.type = EDIT;
         setIcon(i18n.getIcon("icon.edit"));
         Appointment appointment = appointmentBlock.getAppointment();
-        boolean canExchangeAllocatables = getQuery().canExchangeAllocatables(getUser(),appointment.getReservation());
-		boolean canModify = permissionController.canModify(appointment.getReservation(), getUser());
-		name = !canModify && canExchangeAllocatables ?  getString("exchange_allocatables") : getString("edit");
-		setEnabled(canModify || canExchangeAllocatables );
+        Reservation reservation = appointment.getReservation();
+        User user = getUser();
+        boolean canExchangeOnly = raplaFacade.canExchangeAllocatablesOnly(Collections.singletonList(reservation), user);
+        name = canExchangeOnly ?  getString("exchange_allocatables") : getString("edit");
+        setEnabled( permissionController.canModify(reservation, user)
+         || canExchangeOnly );
         return this;
     }
 

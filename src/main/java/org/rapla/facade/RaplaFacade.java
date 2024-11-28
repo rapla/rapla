@@ -318,12 +318,17 @@ public interface RaplaFacade
 
     Promise<Void> moveCategory(Category categoryToMove, Category targetCategory);
 
+    boolean canExchangeAllocatablesOnly(Collection<Reservation> reservation, User user);
+
 
     enum ChangeState
     {
         latest,newerVersionAvailable,deleted
     }
     Promise<ChangeState> getUpdateState(Entity original);
+
+    /** returns if the current user can admin any resources that have permissions to Request*/
+    boolean canAdminResourceRequests();
 }
 
 

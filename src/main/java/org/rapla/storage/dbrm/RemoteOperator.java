@@ -703,11 +703,11 @@ public class RemoteOperator
 
     @Override
     public Promise<AppointmentMapping> queryAppointments(User user, Collection<Allocatable> allocatables, Collection<User> owners, Date start, Date end,
-                                                             final ClassificationFilter[] filters, Map<String, String> annotationQuery) {
+                                                             final ClassificationFilter[] filters, Map<String, String> annotationQuery, boolean requestsOnly) {
         final RemoteStorage serv = getRemoteStorage();
         Promise<AppointmentMapping> result = refreshIfIdle().thenCompose((refreshed) -> {String[] allocatableId = getIdList(allocatables);
             String[] ownerIds = getIdList( owners);
-            return serv.queryAppointments(new QueryAppointments(ownerIds,allocatableId, start, end, annotationQuery)).thenApply(list -> {
+            return serv.queryAppointments(new QueryAppointments(ownerIds,allocatableId, start, end, annotationQuery, requestsOnly)).thenApply(list -> {
                 AppointmentMapping filtered;
                 {
                     long time = System.currentTimeMillis();
@@ -918,7 +918,7 @@ public class RemoteOperator
     public Promise<Map<ReferenceInfo<Allocatable>, Collection<Appointment>>> getFirstAllocatableBindings(final Collection<Allocatable> allocatables,
                                                                                           Collection<Appointment> appointments, Collection<Reservation> ignoreList) {
         final RemoteStorage serv = getRemoteStorage();
-        final String[] allocatableIds = getIdList(allocatables);
+        final String[] allocatableIds = getIdList(removeUnresolvedAllocatables(allocatables));
         //AppointmentImpl[] appointmentArray = appointments.toArray( new AppointmentImpl[appointments.size()]);
         final String[] reservationIds = getIdList(ignoreList);
         final List<AppointmentImpl> appointmentList = new ArrayList<>();
@@ -954,11 +954,21 @@ public class RemoteOperator
     public Promise<Map<ReferenceInfo<Allocatable>, Map<Appointment, Collection<Appointment>>>> getAllAllocatableBindings(final Collection<Allocatable> allocatables,
                                                                                                           final Collection<Appointment> appointments, final Collection<Reservation> ignoreList) {
         final RemoteStorage serv = getRemoteStorage();
-        final String[] allocatableIds = getIdList(allocatables);
+        final String[] allocatableIds = getIdList(removeUnresolvedAllocatables(allocatables));
         final List<AppointmentImpl> appointmentArray = Arrays.asList(appointments.toArray(new AppointmentImpl[]{}));
         final String[] reservationIds = getIdList(ignoreList);
         final Promise<List<ReservationImpl>> listPromise = serv.getAllAllocatableBindings(new AllocatableBindingsRequest(allocatableIds, appointmentArray, reservationIds));
         return listPromise.thenApply((serverResult) -> getMap(allocatables, appointments, ignoreList, serverResult));
+    }
+
+    private Collection<? extends Entity> removeUnresolvedAllocatables(Collection<Allocatable> allocatables) {
+        Collection<Entity> result = new ArrayList<>();
+        for (Allocatable alloc : allocatables) {
+            if (tryResolve(alloc.getReference()) != null) {
+                result.add(alloc);
+            }
+        }
+        return result;
     }
 
     private Map<ReferenceInfo<Allocatable>, Map<Appointment, Collection<Appointment>>> getMap(Collection<Allocatable> allocatables, Collection<Appointment> appointments,
@@ -995,7 +1005,7 @@ public class RemoteOperator
     public Promise<Date> getNextAllocatableDate(Collection<Allocatable> allocatables, Appointment appointment, Collection<Reservation> ignoreList,
                                                 Integer worktimeStartMinutes, Integer worktimeEndMinutes, Integer[] excludedDays, Integer rowsPerHour) {
         RemoteStorage serv = getRemoteStorage();
-        String[] allocatableIds = getIdList(allocatables);
+        String[] allocatableIds = getIdList(removeUnresolvedAllocatables(allocatables));
         String[] reservationIds = getIdList(ignoreList);
         Promise<Date> nextAllocatableDate = serv.getNextAllocatableDate(
                 new NextAllocatableDateRequest(allocatableIds, (AppointmentImpl) appointment, reservationIds, worktimeStartMinutes, worktimeEndMinutes,

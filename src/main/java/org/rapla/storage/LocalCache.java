@@ -15,7 +15,6 @@ package org.rapla.storage;
 import org.rapla.components.util.Assert;
 import org.rapla.entities.Category;
 import org.rapla.entities.Entity;
-import org.rapla.entities.EntityNotFoundException;
 import org.rapla.entities.User;
 import org.rapla.entities.configuration.Preferences;
 import org.rapla.entities.configuration.internal.PreferencesImpl;
@@ -33,7 +32,6 @@ import org.rapla.entities.internal.UserImpl;
 import org.rapla.entities.storage.EntityResolver;
 import org.rapla.entities.storage.ParentEntity;
 import org.rapla.entities.storage.ReferenceInfo;
-import org.rapla.entities.storage.internal.SimpleEntity;
 import org.rapla.facade.Conflict;
 import org.rapla.facade.internal.ConflictImpl;
 import org.rapla.framework.RaplaException;
@@ -350,7 +348,7 @@ public class LocalCache implements EntityResolver
         }
         for (Allocatable alloc : getAllocatables())
         {
-            if (forUser == null || forUser.isAdmin() || permissionController.canReadOnlyInformation(alloc, forUser))
+            if (forUser == null || forUser.isAdmin() || permissionController.canReadInformation(alloc, forUser))
             {
                 result.add(alloc);
             }

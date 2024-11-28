@@ -1275,12 +1275,22 @@ public class ReservationControllerImpl implements ReservationController {
         return checkEvents(eventCheckers, entities, sourceComponent);
     }
 
-    public static Promise<Boolean> checkEvents(Provider<Set<EventCheck>> checkers, Collection<? extends Entity> entities, PopupContext sourceComponent) {
+    private Promise<Boolean> checkEvents(Provider<Set<EventCheck>> checkers, Collection<? extends Entity> entities, PopupContext sourceComponent) {
         List<Reservation> reservations = new ArrayList<>();
         for (Entity entity : entities) {
             if (entity.getTypeClass() == Reservation.class) {
                 reservations.add((Reservation) entity);
             }
+        }
+        // We don't do the checks for exchange only
+        final User user;
+        try {
+            user = facade.getUser();
+        } catch (RaplaException e) {
+            return  new ResolvedPromise<>(e);
+        }
+        if (facade.getRaplaFacade().canExchangeAllocatablesOnly(reservations, user)) {
+            return new ResolvedPromise<>(true);
         }
         final Set<EventCheck> set = checkers.get();
         Promise<Boolean> check = new ResolvedPromise<>(true);

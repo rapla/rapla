@@ -776,7 +776,7 @@ public class RaplaBuilder
             User user = buildContext.user;
             final PermissionController permissionController = getBuildContext().getPermissionController();
 
-            if ( user != null && !permissionController.canReadOnlyInformation(allocatable, user) ) {
+            if ( user != null && !permissionController.canReadInformation(allocatable, user) ) {
                 return false;
             }
             return matchingAllocatables.contains(allocatable);

@@ -49,29 +49,16 @@ public class RequestAllocationCheck implements EventCheck
         this.view = view;
     }
 
-
-
     public Promise<Boolean> check(Collection<Reservation> reservations, PopupContext sourceComponent)
     {
-        try
+        for (Reservation reservation : reservations)
         {
-            User user = clientFacade.getUser();
-            Preferences preferences = clientFacade.getRaplaFacade().getPreferences(user);
-            final boolean showNotInCalendar = preferences.getEntryAsBoolean(CalendarOptionsImpl.SHOW_NOT_IN_CALENDAR_WARNING, true);
-            RaplaFacade raplaFacade = clientFacade.getRaplaFacade();
-            for (Reservation reservation : reservations)
-            {
-                for(Allocatable allocatable :  reservation.getAllocatables()){
-                    final RequestStatus requestStatus = reservation.getRequestStatus(allocatable);
-                    if (requestStatus == RequestStatus.REQUESTED) {
-                        view.addWarning("Wollen Sie eine Buchungsanfrage für die Ressource '" + allocatable.getName( null ) + "' erstellen?");
-                    }
+            for(Allocatable allocatable :  reservation.getAllocatables()){
+                final RequestStatus requestStatus = reservation.getRequestStatus(allocatable);
+                if (requestStatus == RequestStatus.REQUESTED) {
+                    view.addWarning("Wollen Sie eine Buchungsanfrage für die Ressource '" + allocatable.getName( null ) + "' erstellen?");
                 }
             }
-        }
-        catch (RaplaException ex)
-        {
-            view.addWarning(ex.getMessage());
         }
         if (view.hasMessages())
         {

@@ -162,7 +162,7 @@ public class AllocatableSelection extends RaplaGUIComponent implements Appointme
     RaplaButton btnCalendar2 = new RaplaButton(RaplaButton.SMALL);
 
     Collection<Reservation> mutableReservations = Collections.emptyList();
-    Collection<Reservation> originalReservation = Collections.emptyList();
+    Collection<Reservation> originalReservations = Collections.emptyList();
 
     AllocatablesModel completeModel = new CompleteModel();
     AllocatablesModel selectedModel = new SelectedModel();
@@ -512,9 +512,9 @@ public class AllocatableSelection extends RaplaGUIComponent implements Appointme
 
     private boolean bWorkaround = false; // Workaround for Bug ID  4480264 on developer.java.sun.com
 
-    public void setReservation(Collection<Reservation> mutableReservation, Collection<Reservation> originalReservation) throws RaplaException
+    public void setReservation(Collection<Reservation> mutableReservation, Collection<Reservation> originalReservations) throws RaplaException
     {
-        this.originalReservation = originalReservation;
+        this.originalReservations = originalReservations;
         this.mutableReservations = mutableReservation;
         this.user = getUser();
         setAppointments(mutableReservation);
@@ -526,7 +526,10 @@ public class AllocatableSelection extends RaplaGUIComponent implements Appointme
                 for (Reservation reservation: mutableReservation) {
                     final RequestStatus requestStatus = reservation.getRequestStatus(allocatable);
                     if (requestStatus == null) {
-                        reservation.setRequestStatus( allocatable, RequestStatus.REQUESTED );
+                        Reservation originalReservation = findMatchingOriginalReservation(reservation, originalReservations);
+                        if ( originalReservation == null || (originalReservation.hasAllocated( allocatable ) && originalReservation.getRequestStatus(allocatable) != null)) {
+                            reservation.setRequestStatus(allocatable, RequestStatus.REQUESTED);
+                        }
                     }
                 }
             }
@@ -556,6 +559,18 @@ public class AllocatableSelection extends RaplaGUIComponent implements Appointme
         //		btnFilter.setAction(filterAction);
         // We have to add this after processing, because the Adapter in the JTreeTable does the same
         SwingUtilities.invokeLater(() -> selectObjects(model.getSelectedObjects(), completeTable.getTree()));
+    }
+
+    private Reservation findMatchingOriginalReservation(Reservation reservation, Collection<Reservation> originalReservations) {
+        if ( originalReservations == null) {
+            return null;
+        }
+        for (Reservation original: this.originalReservations) {
+            if (original.equals(reservation)) {
+                return original;
+            }
+        }
+        return null;
     }
 
     private void setAppointments(Collection<Reservation> reservations)
@@ -2166,13 +2181,13 @@ public class AllocatableSelection extends RaplaGUIComponent implements Appointme
             getLogger().error("Can't get permissions!", ex);
             return false;
         }
-        if (originalReservation == null || originalReservation.size() == 0)
+        if (originalReservations == null || originalReservations.size() == 0)
         {
             return permissionController.canAllocate(allocatable, workingUser, appointment.getStart(), appointment.getMaxEnd(), today);
         }
         else
         {
-            for (Reservation r : originalReservation)
+            for (Reservation r : originalReservations)
             {
                 if (!permissionController.hasPermissionToAllocate(workingUser, appointment, allocatable, r, today))
                 {

@@ -33,7 +33,6 @@ import org.rapla.entities.dynamictype.Classifiable;
 import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.entities.dynamictype.internal.DynamicTypeImpl;
 import org.rapla.entities.internal.UserImpl;
-import org.rapla.entities.storage.EntityReferencer;
 import org.rapla.entities.storage.ExternalSyncEntity;
 import org.rapla.entities.storage.ReferenceInfo;
 import org.rapla.entities.storage.internal.ReferenceHandler;
@@ -426,7 +425,7 @@ public class UpdateDataManagerImpl implements  UpdateDataManager
             else if (obj instanceof Allocatable)
             {
                 Allocatable alloc = (Allocatable) obj;
-                if (!permissionController.canReadOnlyInformation(alloc, user))
+                if (!permissionController.canReadInformation(alloc, user))
                 {
                     clientStore = false;
                 }

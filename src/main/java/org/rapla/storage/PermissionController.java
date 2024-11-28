@@ -320,7 +320,7 @@ public class PermissionController
         return false;
     }
 
-    public boolean canReadOnlyInformation(Classifiable entity, User user)
+    public boolean canReadInformation(Classifiable entity, User user)
     {
         if (entity instanceof  Ownable && isOwner((Ownable) entity, user))
         {

@@ -82,7 +82,7 @@ import java.util.Map;
         final Map<String, String> annotationQuery = null;
         final User owner = null;
         final Promise<AppointmentMapping> promise = operator
-                .queryAppointments(owner, allocatables, owners, start, end, filters, annotationQuery);
+                .queryAppointments(owner, allocatables, owners, start, end, filters, annotationQuery, false);
         final AppointmentMapping appMap = promiseWait.waitForWithRaplaException(promise, 20000);
         final List<ReservationImpl> result = new ArrayList<>();
         final Collection<Reservation> reservations = appMap.getAllReservations();

@@ -216,8 +216,9 @@ import java.util.stream.Collectors;
             for (String id : allocatableIds)
             {
                 Allocatable allocatable = operator.resolve(id, Allocatable.class);
-                security.checkRead(sessionUser, allocatable);
-                allocatables.add(allocatable);
+                if ( security.getPermissionController().canReadInformation( allocatable, sessionUser)) {
+                    allocatables.add(allocatable);
+                }
             }
         }
         Collection<User> owners = new ArrayList<>();
@@ -228,8 +229,9 @@ import java.util.stream.Collectors;
             }
         }
         ClassificationFilter[] classificationFilters = null;
+        boolean requestsOnly = job.isRequestsOnly();
         final Promise<AppointmentMapping> mapFutureResult = operator
-                .queryAppointments(user, allocatables,owners, start, end, classificationFilters, annotationQuery);
+                .queryAppointments(user, allocatables,owners, start, end, classificationFilters, annotationQuery, requestsOnly);
         AppointmentMapping reservations = operator.waitForWithRaplaException(mapFutureResult, 50000);
         AppointmentMap list = new AppointmentMap(reservations);
         getLogger().debug("Get reservations " + start + " " + end + ": " + "," + list);

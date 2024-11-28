@@ -19,7 +19,6 @@ public interface RaplaObjectAnnotations
 	String KEY_TEMPLATE_COPYOF = "copyof";
 	/** Template externalid annotation */
     String KEY_EXTERNALID = "externalid";
-	
 }
 
 

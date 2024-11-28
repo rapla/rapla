@@ -458,7 +458,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
      */
     @Override
     public Promise<AppointmentMapping> queryAppointments(final User user, final Collection<Allocatable> allocatables, final Collection<User> owners, final Date start,
-                                                         final Date end, final ClassificationFilter[] filters, final Map<String, String> annotationQuery)
+                                                         final Date end, final ClassificationFilter[] filters, final Map<String, String> annotationQuery, boolean requestsOnly)
     {
 
         final Promise<AppointmentMapping> promise = scheduler.supply(() ->
@@ -500,10 +500,17 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
                     {
                         continue;
                     }
-                    final Stream<Allocatable> allocatablesFor = reservation.getAllocatablesFor(appointment);
                     if ( !nonTemplates.isEmpty())
                     {
+                        final Stream<Allocatable> allocatablesFor = reservation.getAllocatablesFor(appointment);
                         if (!allocatablesFor.anyMatch(nonTemplates::contains))
+                        {
+                            continue;
+                        }
+                    }
+                    if ( requestsOnly ) {
+                        final Stream<Allocatable> allocatablesFor = reservation.getAllocatablesFor(appointment);
+                        if (!allocatablesFor.anyMatch(alloc->reservation.getRequestStatus(alloc) != null))
                         {
                             continue;
                         }

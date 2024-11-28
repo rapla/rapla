@@ -21,6 +21,7 @@ import org.rapla.components.util.TimeInterval;
 import org.rapla.components.util.undo.CommandHistory;
 import org.rapla.entities.RaplaObject;
 import org.rapla.entities.RaplaType;
+import org.rapla.entities.User;
 import org.rapla.entities.domain.Appointment;
 import org.rapla.entities.domain.Reservation;
 import org.rapla.entities.domain.internal.ReservationImpl;
@@ -62,7 +63,9 @@ public class RequestSelectionPresenter implements ResourceRequestSelectionView.P
         this.view = view;
         raplaFacade = facade.getRaplaFacade();
         view.setPresenter(this);
-        queryAllRequests();
+        if (raplaFacade.canAdminResourceRequests()) {
+            queryAllRequests();
+        }
     }
 
     @Override
@@ -128,8 +131,14 @@ public class RequestSelectionPresenter implements ResourceRequestSelectionView.P
             removeAll(requests, changed);
 
             removeRequests(requests, evt.getRemovedReferences());
+            User user = facade.getUser();
 
-            requests.addAll(changed);
+            for ( Reservation reservation : changed)
+            {
+                if ( raplaFacade.getPermissionController().isRequestFor(reservation, user))  {
+                    requests.add(reservation);
+                }
+            }
             for (RaplaObject obj : evt.getAddObjects())
             {
                 if (obj.getTypeClass() == Reservation.class)

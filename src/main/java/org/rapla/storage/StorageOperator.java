@@ -105,7 +105,7 @@ public interface StorageOperator extends EntityResolver {
      * @param allocatables 
      * @param reservationFilters 
      * @param annotationQuery */
-    Promise<AppointmentMapping> queryAppointments(User user, Collection<Allocatable> allocatables,Collection<User> owners, Date start, Date end,  ClassificationFilter[] reservationFilters, Map<String, String> annotationQuery);
+    Promise<AppointmentMapping> queryAppointments(User user, Collection<Allocatable> allocatables,Collection<User> owners, Date start, Date end,  ClassificationFilter[] reservationFilters, Map<String, String> annotationQuery, boolean requestsOnly);
 
     Promise<AppointmentMapping> queryAppointments(User user, Collection<Allocatable> allocatables, Collection<User> owners, Date start, Date end, ClassificationFilter[] reservationFilters, String templateId);
 

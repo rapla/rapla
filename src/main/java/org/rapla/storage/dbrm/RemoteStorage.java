@@ -118,8 +118,9 @@ public interface RemoteStorage
         private Date start;
         private Date end;
         private Map<String, String> annotations;
+        private boolean requestsOnly = false;
 
-        public QueryAppointments(String[] ownerIds, String[] resources, Date start, Date end, Map<String, String> annotations)
+        public QueryAppointments(String[] ownerIds, String[] resources, Date start, Date end, Map<String, String> annotations, boolean requestsOnly)
         {
             super();
             this.resources = resources;
@@ -127,6 +128,7 @@ public interface RemoteStorage
             this.start = start;
             this.end = end;
             this.annotations = annotations;
+            this.requestsOnly = requestsOnly;
         }
 
         public QueryAppointments()
@@ -145,6 +147,15 @@ public interface RemoteStorage
         public Date getStart()
         {
             return start;
+        }
+
+        public boolean isRequestsOnly()
+        {
+            return requestsOnly;
+        }
+
+        public void setRequestsOnly(boolean requestsOnly) {
+            this.requestsOnly = requestsOnly;
         }
 
         public Date getEnd()

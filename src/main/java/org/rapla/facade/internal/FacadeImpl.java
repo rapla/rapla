@@ -267,6 +267,35 @@ public class FacadeImpl implements RaplaFacade {
         return promise;
 	}
 
+	public boolean canAdminResourceRequests() {
+		try {
+			User user = getWorkingUser();
+			ClassificationFilter[] allocFilters = null;
+			for (Allocatable allocatable : operator.getAllocatables(allocFilters)) {
+				if (canAdminResourceRequests(allocatable, user)) {
+					return true;
+				}
+			}
+			return false;
+		} catch (Exception e) {
+			logger.error( e.getMessage(), e );
+			return false;
+		}
+	}
+
+	private boolean canAdminResourceRequests(Allocatable allocatable, User user) {
+		Collection<Permission> permissionList = allocatable.getPermissionList();
+		for ( Permission permission : permissionList) {
+			if ( permission.getAccessLevel() == Permission.REQUEST) {
+				if (getPermissionController().canModify(allocatable, user)) {
+					return true;
+				}
+			}
+		}
+		return false;
+	}
+
+
 	public Promise<Collection<Reservation>> getResourceRequests()  {
         final User workingUser;
         try {
@@ -274,13 +303,9 @@ public class FacadeImpl implements RaplaFacade {
         } catch (EntityNotFoundException e) {
             return new ResolvedPromise<>(e);
         }
-        Date start = null;
-		Date end = null;
-		ClassificationFilter[] reservationFilters = null;
-		Collection<User> ownersList = Collections.emptyList();
 		ClassificationFilter[] allocFilters = null;
-        Collection<Allocatable> allocatablesCollection;
-        try {
+		Collection<Allocatable> allocatablesCollection;
+		try {
             allocatablesCollection = operator.getAllocatables(allocFilters);
         } catch (RaplaException e) {
 			return new ResolvedPromise<>(e);
@@ -289,12 +314,22 @@ public class FacadeImpl implements RaplaFacade {
 		Iterator<Allocatable> it = allocatablesCollection.iterator();
 		while (it.hasNext()) {
 			Allocatable allocatable = it.next();
-			if (!permissionController.canModify(allocatable, workingUser))
+			if (!canAdminResourceRequests(allocatable, workingUser)) {
 				it.remove();
+			}
 		}
+		if ( allocatablesCollection.isEmpty()) {
+			return new ResolvedPromise<>(Collections.emptyList());
+		}
+		Date start = null;
+		Date end = null;
+		ClassificationFilter[] reservationFilters = null;
+		Collection<User> ownersList = Collections.emptyList();
 
+		Map<String, String> annotationQuery = Collections.emptyMap();
+		boolean requestsOnly = true;
 		final Promise<AppointmentMapping> appointmentsAsync = operator.queryAppointments(workingUser, allocatablesCollection, ownersList,
-				start, end, reservationFilters, templateId);
+				start, end, reservationFilters, annotationQuery, requestsOnly);
 		final Promise<Collection<Reservation>> promise = appointmentsAsync.thenApply((appointments) ->
 		{
 			final Collection<Reservation> allReservations = appointments.getAllReservations().stream().filter((reservation) -> permissionController.isRequestFor(reservation, workingUser)).collect(Collectors.toList());
@@ -377,7 +412,7 @@ public class FacadeImpl implements RaplaFacade {
 		Map<String,String> annotationQuery = null;
 		//Map<String,String> annotationQuery = new LinkedHashMap<String,String>();
 		//annotationQuery.put(RaplaObjectAnnotations.KEY_TEMPLATE, template.getId());
-        final Promise<AppointmentMapping> promiseMap = operator.queryAppointments(user, allocList, owners, start, end, null, annotationQuery);
+        final Promise<AppointmentMapping> promiseMap = operator.queryAppointments(user, allocList, owners, start, end, null, annotationQuery, false);
         final Promise<Collection<Reservation>> reservationPromise = promiseMap.thenApply((appointmentMapping) ->
         {
             final Collection<Reservation> result = appointmentMapping.getAllReservations();
@@ -1512,4 +1547,13 @@ public class FacadeImpl implements RaplaFacade {
 
     }
 
+	@Override
+	public boolean canExchangeAllocatablesOnly(Collection<Reservation> reservations, User user) {
+		for (Reservation reservation : reservations) {
+			if (!getPermissionController().canModify(reservation, user) && canExchangeAllocatables(user, reservation)) {
+				return true;
+			}
+		}
+		return false;
+	}
 }

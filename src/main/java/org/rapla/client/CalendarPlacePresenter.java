@@ -12,6 +12,8 @@ import org.rapla.client.internal.ResourceSelectionPresenter;
 import org.rapla.client.internal.SavedCalendarInterface;
 import org.rapla.entities.User;
 import org.rapla.entities.configuration.Preferences;
+import org.rapla.entities.domain.Allocatable;
+import org.rapla.entities.domain.Permission;
 import org.rapla.facade.CalendarModel;
 import org.rapla.facade.CalendarSelectionModel;
 import org.rapla.facade.ModificationEvent;
@@ -29,6 +31,7 @@ import org.rapla.scheduler.Subject;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
+import java.util.Collection;
 import java.util.Date;
 
 @Singleton
@@ -89,12 +92,8 @@ import java.util.Date;
         view.addSavedViews(savedViews);
         view.addResourceSelectionView(resourceSelectionPresenter.provideContent());
         view.addConflictsView(conflictsSelectionPresenter.getConflictsView());
-        try {
-            if (clientFacade.getUser().getUsername().equals("roomadmin")) {
-                view.addResourceRequestView(resourceRequestPresenter.getRequestView());
-            }
-        } catch (RaplaException e) {
-            throw new RuntimeException(e);
+        if (clientFacade.getRaplaFacade().canAdminResourceRequests()) {
+            view.addResourceRequestView(resourceRequestPresenter.getRequestView());
         }
         view.addSummaryView(conflictsSelectionPresenter.getSummaryComponent());
         view.addCalendarView(calendarContainer.provideContent());

@@ -53,6 +53,10 @@ import java.util.*;
         permissionController = operator.getPermissionController();
     }
 
+    public PermissionController getPermissionController() {
+        return permissionController;
+    }
+
     public void checkDeletePermissions(User user, Entity entity) throws RaplaSecurityException
     {
         checkModifyPermissions(user, entity, true);
@@ -526,7 +530,7 @@ import java.util.*;
         if (raplaType == Allocatable.class)
         {
             Allocatable allocatable = (Allocatable) entity;
-            if (!permissionController.canReadOnlyInformation(allocatable, user))
+            if (!permissionController.canReadInformation(allocatable, user))
             {
                 throw new RaplaSecurityException(i18n.format("error.read_not_allowed", user, allocatable.getName(null)));
             }

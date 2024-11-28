@@ -196,7 +196,7 @@ public class RaplaJNLPPageGenerator
         out.println("<resources>");
         if (vmXmsSize != null && vmXmsSize > 0)
         {
-            out.println("  <j2se version=\"1.8+\" java-vm-args=\"-Xms" + vmXmsSize + "m\"/>");
+            out.println("  <j2se version=\"1.8+ \" java-vm-args=\"-Xms" + vmXmsSize + "m\"/>");
         }
         else
         {

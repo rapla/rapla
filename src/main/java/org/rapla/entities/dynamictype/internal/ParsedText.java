@@ -1039,7 +1039,7 @@ public class ParsedText implements Serializable
                 {
                     if (classifiable instanceof PermissionContainer)
                     {
-                        readable = permissionController.canReadOnlyInformation( classifiable, user);
+                        readable = permissionController.canReadInformation( classifiable, user);
                     }
                 }
                 classification = classifiable.getClassification();

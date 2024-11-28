@@ -61,7 +61,7 @@ public class ReservationInfoUI extends ClassificationInfoUI<Reservation> {
         StringBuffer buf = new StringBuffer();
         for (int i = 0;i<allocatables.length;i++) {
             Allocatable allocatable = allocatables[i];
-            if ( user != null && !permissionController.canReadOnlyInformation(allocatable, user))
+            if ( user != null && !permissionController.canReadInformation(allocatable, user))
                 continue;
             final String name = getAllocatableName(allocatable);
             if ( name == null || name.isEmpty())

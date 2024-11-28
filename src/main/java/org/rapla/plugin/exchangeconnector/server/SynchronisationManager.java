@@ -800,7 +800,7 @@ public class SynchronisationManager implements ServerExtension
         String mailboxName = firstBox.getMailboxName();
         EWSConnector.UserConnect userConnect = firstBox.getUserConnect();
         removeAllAppointmentsFromExchangeAndAppointmentStore(userRef,userConnect, mailboxName);
-        Promise<AppointmentMapping> appointmentMappingPromise = cachableStorageOperator.queryAppointments(null, allocatables, Collections.emptyList(), null, null, null, Collections.emptyMap());
+        Promise<AppointmentMapping> appointmentMappingPromise = cachableStorageOperator.queryAppointments(null, allocatables, Collections.emptyList(), null, null, null, Collections.emptyMap(), false);
 
         AppointmentMapping appointmentMapping = SynchronizedCompletablePromise.waitFor(appointmentMappingPromise, 5000, logger);
         Set<Appointment> appointments = appointmentMapping.getAllAppointments();

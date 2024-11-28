@@ -407,7 +407,7 @@ public abstract class AbstractCachableOperator implements StorageOperator
         {
             final Map<String, String> annotationQuery = null;
             final User callUser = templateId != null ? null : user;
-            Promise<AppointmentMapping> query = queryAppointments(callUser, allocList, owners,start, end, reservationFilters, annotationQuery);
+            Promise<AppointmentMapping> query = queryAppointments(callUser, allocList, owners,start, end, reservationFilters, annotationQuery, false);
             return query;
         }
     }
