@@ -76,7 +76,7 @@ public class ComplexTreeCellRenderer extends DefaultTreeCellRenderer {
                 Date today = raplaFacade.today();
                 final PermissionController permissionController = raplaFacade.getPermissionController();
                 if (!permissionController.canAllocate(allocatable, user, today)) {
-                    if ( permissionController.canRequest( allocatable, user) ) {
+                    if ( permissionController.isRequestOnly( allocatable, user, today) ) {
                         icon = requestIcon;
                     } else {
                         icon = forbiddenIcon;

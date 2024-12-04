@@ -125,6 +125,11 @@ public class RaplaBlock implements Block
         ;
     }
 
+    public boolean isRequest(Allocatable allocatable) {
+        return getReservation().getRequestStatus( allocatable) != null;
+    }
+
+
     public String[] getColorsAsHex() {
         BuildContext buildContext = getBuildContext();
     	LinkedHashSet<String> colorList = new LinkedHashSet<>();
