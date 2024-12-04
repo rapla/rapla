@@ -1131,7 +1131,7 @@ public class CalendarModelImpl implements CalendarSelectionModel
         for (RaplaObject object : selectedObjectsAndChildren)
         {
             Allocatable alloc = null;
-            if (object.getTypeClass() == Conflict.class)
+            if (object.getTypeClass() == Conflict.class || object.getTypeClass() == Reservation.class)
             {
                 if (!conflictsDetected)
                 {
@@ -1139,7 +1139,12 @@ public class CalendarModelImpl implements CalendarSelectionModel
                     result.clear();
                     conflictsDetected = true;
                 }
-                alloc = ((Conflict) object).getAllocatable();
+                if (object.getTypeClass() == Conflict.class) {
+                    alloc = ((Conflict) object).getAllocatable();
+                } else {
+                    Collection<Allocatable> requestedAllocatables = ((Reservation) object).getRequestedAllocatables();
+                    result.addAll( requestedAllocatables );
+                }
 
             }
             if (!conflictsDetected && object.getTypeClass() == Allocatable.class)

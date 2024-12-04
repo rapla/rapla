@@ -177,7 +177,7 @@ public class EditTaskPresenter implements TaskPresenter
                 final DynamicType type = (DynamicType) resolve;
                 final User user = clientFacade.getUser();
                 final Promise<List<Reservation>> newReservations = RaplaComponent.newReservation(type, user, raplaFacade, model)
-                        .thenApply(r->RaplaComponent.addAllocatables(model, Collections.singletonList(r), user));
+                        .thenApply(r->RaplaComponent.addAllocatables(model, Collections.singletonList(r), user, raplaFacade));
                 editTaskView = newReservations.thenCompose( list->createEditDialog(list, popupContext, applicationEvent));
 
             }
@@ -216,7 +216,7 @@ public class EditTaskPresenter implements TaskPresenter
                             }
                             app.move(app.getStart(), end);
                         }
-                        List<Reservation> list = RaplaComponent.addAllocatables(model, newReservations, user);
+                        List<Reservation> list = RaplaComponent.addAllocatables(model, newReservations, user, raplaFacade);
                         return createEditDialog(list, popupContext, applicationEvent);
                     });
                 });

@@ -93,7 +93,7 @@ public class RaplaDefaultPermissionImpl implements PermissionExtension
             int effectLevel = PermissionContainer.Util.getUserEffect(user, p, groups);
             if (effectLevel >= maxEffectLevel && effectLevel > PermissionImpl.NO_PERMISSION)
             {
-                if (p.hasTimeLimits() && accessLevel.includes(Permission.ALLOCATE) && today != null)
+                if (p.hasTimeLimits() && (accessLevel.includes(Permission.ALLOCATE) || accessLevel.includes(Permission.REQUEST)) && today != null)
                 {
                     if (p.getAccessLevel() != Permission.ADMIN)
                     {

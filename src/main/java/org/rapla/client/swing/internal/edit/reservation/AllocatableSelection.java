@@ -2033,7 +2033,7 @@ public class AllocatableSelection extends RaplaGUIComponent implements Appointme
                 {
                     if (!checkRestrictions)
                     {
-                        if (permissionController.canRequest( allocatable, user)) {
+                        if (permissionController.canRequest( allocatable, user, today)) {
                             return requestIcon;
                         } else {
                             return forbiddenIcon;

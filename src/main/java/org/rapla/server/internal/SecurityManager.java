@@ -476,7 +476,7 @@ import java.util.*;
                 Date today = operator.today();
                 if (r.hasAllocatedOn(allocatable, appointment) && !permissionController.hasPermissionToAllocate(user, appointment, allocatable, original, today))
                 {
-                    boolean canRequest = permissionController.canRequest(allocatable, user);
+                    boolean canRequest = permissionController.canRequest(allocatable, user, today);
                     if (!canRequest || (r.getRequestStatus(allocatable) == null && !permissionController.hasPermissionToAllocate(user, appointment, allocatable, original, today))) {
                         String all = allocatable.getName(i18n.getLocale());
                         String app = appointmentFormater.getSummary(appointment);
@@ -509,7 +509,7 @@ import java.util.*;
                         Date start = appointment.getStart();
                         Date end = appointment.getMaxEnd();
                         if (!permissionController.canAllocate(allocatable, user, start, end, today)) {
-                            if (permissionController.canRequest(allocatable, user)) {
+                            if (permissionController.canRequest(allocatable, user, today)) {
                                 r.setRequestStatus(allocatable, RequestStatus.REQUESTED);
                             } else {
                                 String all = allocatable.getName(i18n.getLocale());

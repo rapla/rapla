@@ -23,13 +23,10 @@ import org.rapla.entities.Named;
 import org.rapla.entities.RaplaObject;
 import org.rapla.entities.User;
 import org.rapla.entities.configuration.RaplaConfiguration;
-import org.rapla.entities.domain.Allocatable;
-import org.rapla.entities.domain.Appointment;
-import org.rapla.entities.domain.Permission;
-import org.rapla.entities.domain.RaplaObjectAnnotations;
-import org.rapla.entities.domain.Reservation;
+import org.rapla.entities.domain.*;
 import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.entities.storage.ReferenceInfo;
+import org.rapla.facade.internal.CalendarModelImpl;
 import org.rapla.facade.internal.CalendarOptionsImpl;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaInitializationException;
@@ -37,12 +34,9 @@ import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.TypedComponentRole;
 import org.rapla.logger.Logger;
 import org.rapla.scheduler.Promise;
+import org.rapla.storage.PermissionController;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Date;
-import java.util.List;
-import java.util.Locale;
+import java.util.*;
 
 /**
     Base class for most components. Eases
@@ -63,22 +57,36 @@ public class RaplaComponent
         this.raplaLocale = raplaLocale;
     }
 
-    public static List<Reservation> addAllocatables(CalendarModel model, Collection<Reservation> newReservations, User user) throws RaplaException
+    public static List<Reservation> addAllocatables(CalendarModel model, Collection<Reservation> newReservations, User user, RaplaFacade facade) throws RaplaException
     {
         Collection<Allocatable> markedAllocatables = model.getMarkedAllocatables();
+        Collection<Allocatable> allocatables;
         if (markedAllocatables == null || markedAllocatables.size() == 0)
         {
-            Collection<Allocatable> allocatables = model.getSelectedAllocatablesAsList();
-            if (allocatables.size() == 1)
-            {
-                addAlloctables(newReservations, allocatables);
-            }
+            Collection<Allocatable> allocatablesAsList = model.getSelectedAllocatablesAsList();
+            allocatables = allocatablesAsList.size() == 1 ? allocatablesAsList : Collections.emptyList();
         }
         else
         {
-            Collection<Allocatable> allocatables = markedAllocatables;
-            addAlloctables(newReservations, allocatables);
+            allocatables = markedAllocatables;
         }
+
+        Date today = facade.today();
+        PermissionController permissionController = facade.getPermissionController();
+        for (Reservation event : newReservations)
+        {
+            for (Allocatable alloc : allocatables)
+            {
+
+                event.addAllocatable(alloc);
+                if (permissionController.isRequestOnly( alloc, user, today)) {
+                    event.setRequestStatus( alloc, RequestStatus.REQUESTED);
+                }
+
+                event.addAllocatable(alloc);
+            }
+        }
+
         List<Reservation> list = new ArrayList<>();
         for (Reservation reservation : newReservations)
         {
@@ -93,16 +101,6 @@ public class RaplaComponent
         return list;
     }
 
-    static private void addAlloctables(Collection<Reservation> events, Collection<Allocatable> allocatables)
-    {
-        for (Reservation event : events)
-        {
-            for (Allocatable alloc : allocatables)
-            {
-                event.addAllocatable(alloc);
-            }
-        }
-    }
 
     public static Promise<Reservation> newReservation(DynamicType type, User user, RaplaFacade raplaFacade, CalendarSelectionModel model)
     {

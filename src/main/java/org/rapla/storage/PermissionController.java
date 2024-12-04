@@ -342,15 +342,15 @@ public class PermissionController
         return hasAccess(container, user, Permission.ALLOCATE, start, end, today, false);
     }
 
-    public boolean canRequest(Allocatable container, User user) {
-        return hasAccess(container, user, Permission.REQUEST);
+    public boolean canRequest(Allocatable container, User user,Date today) {
+        return hasAccess(container, user, Permission.REQUEST, null, null, today, true);
     }
 
     public boolean isRequestOnly(Allocatable alloc, User user, Date today) {
         if (canAllocate( alloc, user, today)) {
             return false;
         }
-        return canRequest(alloc, user);
+        return canRequest(alloc, user, today);
     }
 
     /**

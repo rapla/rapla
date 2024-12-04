@@ -1006,7 +1006,7 @@ public class ReservationControllerImpl implements ReservationController {
                     modifiableReservation.removeAllocatable(oldAllocatable);
                 }
                 if (addAllocatable) {
-                    modifiableReservation.addAllocatable(newAllocatable);
+                    addAllocable(modifiableReservation, newAllocatable);
                 }
                 oldRestrictions = new HashMap<>();
                 for (Allocatable alloc : reservation.getAllocatables()) {
@@ -1065,7 +1065,7 @@ public class ReservationControllerImpl implements ReservationController {
                     }
                 }
                 if (removeAllocatable) {
-                    modifiableReservation.addAllocatable(oldAllocatable);
+                    addAllocable(modifiableReservation,oldAllocatable);
                 }
                 if (addAllocatable) {
                     modifiableReservation.removeAllocatable(newAllocatable);
@@ -1089,6 +1089,16 @@ public class ReservationControllerImpl implements ReservationController {
         public String getCommandoName() {
             return getI18n().getString("exchange_allocatables");
         }
+    }
+
+    private void addAllocable(Reservation modifiableReservation, Allocatable allocatable) throws RaplaException {
+
+        modifiableReservation.addAllocatable(allocatable);
+        User user = getClientFacade().getUser();
+        if (permissionController.isRequestOnly( allocatable, user, getFacade().today())) {
+            modifiableReservation.setRequestStatus( allocatable, RequestStatus.REQUESTED);
+        }
+
     }
 
     /**

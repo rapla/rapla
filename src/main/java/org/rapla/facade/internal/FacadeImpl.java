@@ -144,7 +144,7 @@ public class FacadeImpl implements RaplaFacade {
 			final PermissionController permissionController = getPermissionController();
 			if (!permissionController.canAllocate(start, end, allo, user))
 			{
-				if (permissionController.canRequest(allo, user)) {
+				if (permissionController.canRequest(allo, user, today())) {
  				} else {
 					canAllocate = false;
 				}
