@@ -171,7 +171,7 @@ public class RaplaJNLPPageGenerator extends RaplaComponent implements RaplaPageG
     		out.println("</security>");
 		}
         out.println("<resources>");
-		out.println("  <j2se version=\"1.6+\"/>");
+		out.println("  <j2se version=\"1.8\"/>");
 		
 		String passedUsername = request.getParameter("username");
 		if ( passedUsername != null)
