@@ -30,7 +30,6 @@ public class RestAPITest extends AbstractTestWithServer {
         TestCase.assertEquals( map, deserialized);
     }
 
-    @Ignore
     @Test
     public void testRestApi() throws Exception
     {
@@ -71,7 +70,7 @@ public class RestAPITest extends AbstractTestWithServer {
             TestCase.assertTrue( result.getResult().contains("<title>Rapla"));
         }
         {
-            URL baseUrl = new URL("http://localhost:"+getPort()+"/rapla/auth");
+            URL baseUrl = new URL("http://localhost:"+getPort()+"/rapla/login");
             final JsonRemoteConnector.CallResult  result = connector.sendCallWithString("GET", baseUrl, body, authenticationToken, "text/html", additionalHeaders);
 
             TestCase.assertNotNull(result);

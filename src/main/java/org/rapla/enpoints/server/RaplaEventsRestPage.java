@@ -72,10 +72,11 @@ import java.util.Map;
         }
 
         Collection<User> owners = new ArrayList<>();
-        for (String id : ownersId)
-        {
-            User owner = facade.resolve(new ReferenceInfo<User>(id, User.class));
-            owners.add(owner);
+        if ( ownersId != null ) {
+            for (String id : ownersId) {
+                User owner = facade.resolve(new ReferenceInfo<User>(id, User.class));
+                owners.add(owner);
+            }
         }
 
         final ClassificationFilter[] filters = RaplaResourcesRestPage.getClassificationFilter(facade, simpleFilter, CLASSIFICATION_TYPES, eventTypes);

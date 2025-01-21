@@ -37,7 +37,7 @@ public class RestAPIExample {
         // first we login using the auth method
         String authenticationToken = null;
         {
-            URL methodURL =new URL(baseUrl,"auth");
+            URL methodURL =new URL(baseUrl,"login");
             JsonObject callObj = new JsonObject();
             callObj.addProperty("username", username);
             callObj.addProperty("password", password);
