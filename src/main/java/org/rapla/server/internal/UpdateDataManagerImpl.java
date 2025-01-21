@@ -445,6 +445,10 @@ public class UpdateDataManagerImpl implements  UpdateDataManager
                 {
                     clientStore = permissionController.canAdmin(obj, user);
                 }
+                else
+                {
+                    clientStore = user.isAdmin();
+                }
             }
         }
         if (clientStore)
