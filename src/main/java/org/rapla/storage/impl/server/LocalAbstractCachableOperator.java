@@ -1429,8 +1429,15 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
                 final Class<? extends Entity> type = reference.getType();
                 if (type == Reservation.class)
                 {
-                    final Entity lastKnown = result.getLastEntryBeforeUpdate(reference);
-                    appointmentBindings.updateReservation( (Reservation) lastKnown, toUpdate, true);
+                    Entity lastKnown = result.getLastEntryBeforeUpdate(reference);
+                    if ( lastKnown == null ) {
+                        lastKnown = tryResolve(reference);
+                    }
+                    if ( lastKnown == null ) {
+                        logger.error("Reservation thats is scheduled to delete not found " + reference.getId());
+                    } else {
+                        appointmentBindings.updateReservation((Reservation) lastKnown, toUpdate, true);
+                    }
                 }
                 else if (type == Allocatable.class)
                 {
