@@ -464,8 +464,8 @@ public class SynchronisationManager implements ServerExtension
                     preferences = evt.getLastKnown(op.getReference());
                     boolean savePreferences = false;
                     ReferenceInfo<User> userRef = preferences.getOwnerRef();
-                    String mailbox = preferences.getEntryAsString(RESYNC_USER, null);
-                    boolean resyncMailboxSet= (mailbox != null && !mailbox.equalsIgnoreCase("false") && ! mailbox.equalsIgnoreCase("true"));
+                    String mailboxForResync = preferences.getEntryAsString(RESYNC_USER, null);
+                    boolean resyncMailboxSet= (mailboxForResync != null && !mailboxForResync.equalsIgnoreCase("false") && ! mailboxForResync.equalsIgnoreCase("true"));
                     if (preferences.getEntryAsBoolean(REFRESH_MAILBOXES, false) )
                     {
                         final User resolvedUser = facade.tryResolve(userRef);
@@ -485,8 +485,8 @@ public class SynchronisationManager implements ServerExtension
                             final LoginInfo secrets = keyStorage.getSecrets(user, ExchangeConnectorServerPlugin.EXCHANGE_USER_STORAGE);
                             if (secrets != null)
                             {
-                                logger.info("resync user  " + user + " mailbox " + mailbox);
-                                resynchronizeUsers.add(new UserAndMailbox(userRef,mailbox));
+                                logger.info("resync user  " + user + " mailbox " + mailboxForResync);
+                                resynchronizeUsers.add(new UserAndMailbox(userRef,mailboxForResync));
                             }
                             else
                             {

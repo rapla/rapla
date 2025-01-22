@@ -932,7 +932,7 @@ public abstract class AbstractCachableOperator implements StorageOperator
         {
             Entity newEntity = toUpdate;
             boolean createdAfterSince = isCreatedAfterSince(since, newEntity);
-            if (createdAfterSince)
+            if ( oldEntities.get(newEntity.getReference())== null || createdAfterSince )
             {
                 result.addOperation(new UpdateResult.Add(newEntity.getReference()));
             }

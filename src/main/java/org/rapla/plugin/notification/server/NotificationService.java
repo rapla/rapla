@@ -264,7 +264,8 @@ public class NotificationService implements ServerExtension
         for (int i = 0; i < users.length; i++)
         {
             User user = users[i];
-            if (user.getEmail().trim().length() == 0)
+            String email = user.getEmail();
+            if (email == null || email.trim().length() == 0)
                 continue;
 
             Preferences preferences = raplaFacade.getPreferences(user);

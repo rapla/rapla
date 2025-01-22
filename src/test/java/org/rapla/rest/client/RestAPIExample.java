@@ -127,6 +127,7 @@ public class RestAPIExample {
             JsonObject resultBody = connector.sendGet( methodURL,  authenticationToken);
             assertNoError(resultBody);
             JsonArray resultList = resultBody.get("result").getAsJsonArray();
+            System.out.println( resultList );
             assertTrue( resultList.size() > 0);
             for (JsonElement obj:resultList)
             {
@@ -172,7 +173,9 @@ public class RestAPIExample {
             }
             {
                 URL methodURL =new URL(baseUrl,"events");
+                System.out.println( eventObject );
                 JsonObject resultBody = connector.sendPost( methodURL, eventObject, authenticationToken);
+                System.out.println( resultBody );
                 // we test if the new event has the name and extract the id for later testing
                 printAttributesAndAssertName(resultBody,  objectName);
                 eventId = resultBody.get("result").getAsJsonObject().get("id").getAsString();
@@ -181,6 +184,7 @@ public class RestAPIExample {
             {
                 URL methodURL =new URL(baseUrl,"events/"+eventId);
                 JsonObject resultBody = connector.sendGet( methodURL, authenticationToken);
+                System.out.println( resultBody );
                 printAttributesAndAssertName(resultBody,  objectName);
             }
         }
@@ -195,8 +199,10 @@ public class RestAPIExample {
             String attributeFilter = URLEncoder.encode("{'name' :'"+ eventName +"'}","UTF-8");
             URL methodURL =new URL(baseUrl,"events?start="+start + "&end="+end + "&resources="+resources +"&eventTypes=" + eventTypes +"&attributeFilter="+attributeFilter) ;
             JsonObject resultBody = connector.sendGet( methodURL,  authenticationToken);
+
             assertNoError(resultBody);
             JsonArray resultList = resultBody.get("result").getAsJsonArray();
+            System.out.println( resultList );
             assertTrue( resultList.size() > 0);
             for (JsonElement obj:resultList)
             {
@@ -224,6 +230,7 @@ public class RestAPIExample {
             URL methodURL =new URL(baseUrl, "events/"+eventId);
             {
                 JsonObject resultBody = connector.sendPatch( methodURL, patchObject, authenticationToken);
+                System.out.println( resultBody );
                 // we test if the new event is in the patched result
                 printAttributesAndAssertName(resultBody,  newReservationName);
             }
