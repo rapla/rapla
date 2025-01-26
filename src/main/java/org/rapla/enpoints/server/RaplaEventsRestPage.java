@@ -162,7 +162,7 @@ import java.util.Map;
         ReferenceInfo<Reservation> eventId = operator.createIdentifier(Reservation.class, 1).get(0);
         event.setId(eventId.getId());
         Appointment[] appointments = event.getAppointments();
-        List<ReferenceInfo<Appointment>> appointmentIds = operator.createIdentifier(Appointment.class, 1);
+        List<ReferenceInfo<Appointment>> appointmentIds = operator.createIdentifier(Appointment.class, appointments.length);
         for (int i = 0; i < appointments.length; i++)
         {
             AppointmentImpl app = (AppointmentImpl) appointments[i];
