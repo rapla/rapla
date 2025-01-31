@@ -1,7 +1,6 @@
 package org.rapla.client.extensionpoints;
 
 import org.rapla.client.RaplaWidget;
-import org.rapla.client.ReservationEdit;
 import org.rapla.entities.domain.Appointment;
 import org.rapla.framework.RaplaException;
 import org.rapla.inject.ExtensionPoint;
@@ -16,7 +15,7 @@ import java.util.function.Consumer;
 @ExtensionPoint(context = InjectionContext.swing,id = AppointmentEditExtensionFactory.ID)
 public interface AppointmentEditExtensionFactory {
 	String ID = "appointmentedit";
-	RaplaWidget createStatus(AppointmentEditExtensionEvents events) throws RaplaException;
+	RaplaWidget createField(AppointmentEditExtensionEvents events) throws RaplaException;
 
 	interface AppointmentEditExtensionEvents
 	{

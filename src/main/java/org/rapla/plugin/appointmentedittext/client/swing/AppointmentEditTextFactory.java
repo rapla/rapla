@@ -36,7 +36,7 @@ public class AppointmentEditTextFactory implements AppointmentEditExtensionFacto
         this.logger = logger;
     }
     @Override
-    public RaplaWidget createStatus(AppointmentEditExtensionEvents events) throws RaplaException {
+    public RaplaWidget createField(AppointmentEditExtensionEvents events) throws RaplaException {
         return new AppointmentEditTextFactory.AppointmentCounter(events);
     }
 

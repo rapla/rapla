@@ -170,7 +170,7 @@ public class AppointmentController extends RaplaGUIComponent implements Disposab
         if ( appointmentEditFactory.size() > 0) {
             JPanel editExtensionPanel = new JPanel();
             for ( AppointmentEditExtensionFactory factory:appointmentEditFactory) {
-                RaplaWidget widget = factory.createStatus( this);
+                RaplaWidget widget = factory.createField( this);
                 if ( widget != null) {
                     editExtensionPanel.add((JComponent)widget.getComponent(), BorderLayout.SOUTH);
                 }
