@@ -70,7 +70,7 @@ import java.util.stream.Collectors;
     @Inject SecurityManager security;
     @Inject ShutdownService shutdownService;
     @Inject Set<PrePostDispatchProcessor> prePostDispatchProcessors;
-
+    @Inject Logger logger;
     @Inject Set<AuthenticationStore> authenticationStore;
 
     @Inject RaplaResources i18n;
@@ -463,7 +463,8 @@ import java.util.stream.Collectors;
 
     public Logger getLogger()
     {
-        return session.getLogger();
+        //return session.getLogger();
+        return logger;
     }
 
     private User checkSessionUser() throws RaplaException

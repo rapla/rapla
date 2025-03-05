@@ -2,6 +2,7 @@ package org.rapla.entities.domain;
 
 import org.rapla.entities.Entity;
 import org.rapla.entities.User;
+import org.rapla.entities.storage.ReferenceInfo;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -41,6 +42,18 @@ public class AppointmentMapping {
         if (appointmentMap != null) {
             for (Collection<Appointment> appointments : appointmentMap.values()) {
                 result.addAll(appointments);
+            }
+        }
+        return result;
+    }
+
+    public Map<ReferenceInfo<Appointment>,Appointment> getAllAppointmentsByReference() {
+        Map<ReferenceInfo<Appointment>,Appointment> result = new LinkedHashMap<>();
+        if (appointmentMap != null) {
+            for (Collection<Appointment> appointments : appointmentMap.values()) {
+                for (Appointment appointment : appointments) {
+                    result.put(appointment.getReference(),appointment);
+                }
             }
         }
         return result;

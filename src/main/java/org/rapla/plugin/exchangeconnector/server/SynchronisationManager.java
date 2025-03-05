@@ -33,6 +33,7 @@ import org.rapla.plugin.exchangeconnector.extensionpoints.ExchangeConfigExtensio
 import org.rapla.plugin.exchangeconnector.server.SynchronizationTask.SyncStatus;
 import org.rapla.plugin.exchangeconnector.server.exchange.AppointmentSynchronizer;
 import org.rapla.plugin.exchangeconnector.server.exchange.EWSConnector;
+import org.rapla.plugin.exchangeconnector.server.exchange.ExchangeAppointment;
 import org.rapla.plugin.mail.server.MailToUserImpl;
 import org.rapla.scheduler.CommandScheduler;
 import org.rapla.scheduler.Promise;
@@ -62,7 +63,7 @@ public class SynchronisationManager implements ServerExtension
 {
     private static final long SCHEDULE_PERIOD = DateTools.MILLISECONDS_PER_MINUTE / 10;
 
-    private static final long SCHEDULE_PERIOD_REFRESH_MAILBOXES = DateTools.MILLISECONDS_PER_MINUTE * 20;
+    private static final long SCHEDULE_PERIOD_REFRESH_MAILBOXES = DateTools.MILLISECONDS_PER_MINUTE * 60;
 
     private static final long VALID_LOCK_DURATION = DateTools.MILLISECONDS_PER_MINUTE /30;
     private static final String EXCHANGE_LOCK_ID = "EXCHANGE";
@@ -138,12 +139,95 @@ public class SynchronisationManager implements ServerExtension
             logger.info("Synchronizing mailboxes");
             Collection<User> users = cachableStorageOperator.getUsers();
             Map<String, Allocatable> allocatablesPerMailbox = getAllocatableForMailbox();
+            Set<SynchronizationTask> synchronizationTasks = reloadSyncTasks();
             for (User user:users) {
-                try {
-                    refreshMailbox(user, allocatablesPerMailbox, false);
-                } catch ( Throwable e) {
-                    logger.error("Aborting refresh");
-                }
+                    EWSConnector.UserConnect userConnect;
+                    try {
+                        userConnect = refreshMailbox(user, allocatablesPerMailbox, false);
+                    } catch (Throwable e) {
+                        logger.error("Aborting refresh");
+                        continue;
+                    }
+                    if (userConnect == null) {
+                        continue;
+                    }
+                    for (Map.Entry<String, CalendarFolder> mailbox : userConnect.getSharedMailboxes().entrySet()) {
+                        try {
+                            String mailboxName = mailbox.getKey();
+
+//                            if (!mailboxName.contains("kohlhaas") && !mailboxName.contains("mosbach")) {
+//                                continue;
+//                            }
+                            CalendarFolder folder = mailbox.getValue();
+                            Allocatable allocatable = allocatablesPerMailbox.get(mailboxName);
+                            if (allocatable == null) {
+                                logger.warn("Resource for mailbox " + mailboxName + " not found  Skipping mailbox ");
+                                continue;
+                            }
+                            List<ExchangeAppointment> exchangeAppointments = AppointmentSynchronizer.getExchangeAppointments(userConnect.getEwsConnector(), folder);
+                            Map<ReferenceInfo<Appointment>, Collection<ExchangeAppointment>> exchangeAppointmentsByReference = new LinkedHashMap<>();
+                            for ( ExchangeAppointment exchangeAppointment: exchangeAppointments) {
+                                ReferenceInfo<Appointment> raplaAppointmentId = exchangeAppointment.getRaplaAppointmentId();
+                                Collection<ExchangeAppointment> exchangeAppointmentList = exchangeAppointmentsByReference.computeIfAbsent(raplaAppointmentId, x -> new ArrayList<ExchangeAppointment>());
+                                exchangeAppointmentList.add( exchangeAppointment );
+                            }
+                            Map<ReferenceInfo<Appointment>, Appointment> appointmentsByReference = queryAppointments(Collections.singleton(allocatable)).getAllAppointmentsByReference();
+                            List<Appointment> appointmentsToUpdate = new ArrayList<>();
+                            List<ExchangeAppointment> appointmentsToDelete = new ArrayList<>();
+                            for (Appointment appointment : appointmentsByReference.values()) {
+                                Reservation reservation = appointment.getReservation();
+                                if (reservation == null) {
+                                    continue;
+                                }
+                                ReferenceInfo<Appointment> reference = appointment.getReference();
+                                Collection<ExchangeAppointment> exchangeAppointmentList = exchangeAppointmentsByReference.get(reference);
+                                String lastUpdate = AppointmentSynchronizer.getLastUpdate(appointment);
+                                if (exchangeAppointmentList == null || exchangeAppointmentList.isEmpty()) {
+                                    appointmentsToUpdate.add(appointment);
+                                } else {
+                                    boolean changed = false;
+                                    for ( ExchangeAppointment exchangeAppointment: exchangeAppointmentList) {
+                                        if (!exchangeAppointment.getRaplaAppointmentLastChanged().equals(lastUpdate)) {
+                                            changed = true;
+                                            break;
+                                        }
+                                    }
+                                    if ( changed ) {
+                                        appointmentsToUpdate.add(appointment);
+                                    }
+                                }
+                            }
+                            for (ExchangeAppointment exchangeAppointment : exchangeAppointments) {
+                                ReferenceInfo<Appointment> raplaAppointmentId = exchangeAppointment.getRaplaAppointmentId();
+                                if (!appointmentsByReference.containsKey(raplaAppointmentId)) {
+                                    appointmentsToDelete.add(exchangeAppointment);
+                                }
+                            }
+
+
+                            for (Appointment appointment : appointmentsToUpdate) {
+                                Collection<SynchronizationTask> result = updateOrCreateTasks(appointment);
+                                synchronizationTasks.removeAll(result);
+                                synchronizationTasks.addAll(result);
+                            }
+                            for (ExchangeAppointment exchangeAppointment : appointmentsToDelete) {
+                                SynchronizationBox box = synchronizationBoxMap.get(allocatable.getReference());
+                                SynchronizationTask task = new SynchronizationTask(box,exchangeAppointment.getRaplaAppointmentId());
+                                task.setStatus(SyncStatus.toDelete);
+                                synchronizationTasks.add(task);
+                            }
+                            if (appointmentsToUpdate.size() > 0 || appointmentsToDelete.size() > 0) {
+                                logger.info("Synchronizing " + appointmentsToUpdate.size() + " and deleting " + appointmentsToDelete.size() + " appointments for mailbox " + mailboxName);
+                            }
+                        } catch (Exception ex) {
+                            logger.error("Error synchronizing mailbox " + mailbox + " " + ex.getMessage());
+                        }
+                    }
+            }
+            logger.info("Executing " + synchronizationTasks.size() + " Synchronization tasks.");
+            executeTasks(synchronizationTasks );
+            if ( synchronizationTasks.size() >0 ) {
+                logger.info("Executing done.");
             }
         };
         scheduleMailboxes = scheduler.schedule(synchronizeMailboxesAction, 0, SCHEDULE_PERIOD_REFRESH_MAILBOXES);
@@ -264,7 +348,10 @@ public class SynchronisationManager implements ServerExtension
 
     private Collection<SynchronizationTask> updateTasksSetDelete(ReferenceInfo<Appointment> appointmentId) throws RaplaException
     {
+
+
         Collection<SynchronizationTask> result = new HashSet<>();
+
         Collection<SynchronizationTask> taskList = appointmentStorage.getTasks(appointmentId);
         for (SynchronizationTask task : taskList)
         {
@@ -277,10 +364,10 @@ public class SynchronisationManager implements ServerExtension
     private Collection<SynchronizationTask> updateOrCreateTasks(Appointment appointment) throws RaplaException
     {
         Collection<SynchronizationTask> result = new HashSet<>();
-        if (isInSyncInterval(appointment))
+        //if (isInSyncInterval(appointment))
         {
-            Collection<SynchronizationTask> taskList = appointmentStorage.getTasks(appointment.getReference());
-            result.addAll(taskList);
+            Collection<SynchronizationTask> taskList = Collections.emptyList();//appointmentStorage.getTasks(appointment.getReference());
+            //result.addAll(taskList);
             Map<String, SynchronizationBox> boxMap = appointment.getReservation().getAllocatablesFor(appointment).map(Entity::getReference).map(synchronizationBoxMap::get).filter(Objects::nonNull).collect(Collectors.toMap(SynchronizationBox::getMailboxName, Function.identity()));
 
             //Collection<ReferenceInfo<User>> matchingUserIds = cachableStorageOperator.findUsersThatExport(appointment);
@@ -297,8 +384,8 @@ public class SynchronisationManager implements ServerExtension
             for (Map.Entry<String,SynchronizationBox> entry:boxMap.entrySet()){
                 String mailboxName = entry.getKey();
                 SynchronizationBox box = entry.getValue();
-                SynchronizationTask task = appointmentStorage.getTask(appointment, mailboxName);
-                if (task == null)
+                SynchronizationTask task;// = appointmentStorage.getTask(appointment, mailboxName);
+                //if (task == null)
                 {
 
                     task = new SynchronizationTask(box,appointment.getReference());
@@ -530,30 +617,9 @@ public class SynchronisationManager implements ServerExtension
                 }
             }
         }
-        appointmentStorage.refresh();
-        Set<SynchronizationTask> allTasks = appointmentStorage.getAllTasks();
-        Set<SynchronizationTask> includedTasks = new HashSet<>();
-        final Date now = new Date();
-        for (SynchronizationTask task : allTasks)
-        {
-            final int retries = task.getRetries();
-            if (retries > 5 && !firstExecution)
-            {
-                final Date lastRetry = task.getLastRetry();
-                if (lastRetry != null)
-                {
-                    // skip a schedule Period for the time of retries
-                    if (lastRetry.getTime() > now.getTime() - (retries - 5) * SCHEDULE_PERIOD)
-                    {
-                        continue;
-                    }
-                }
-            }
-            includedTasks.add(task);
-        }
-        firstExecution = false;
 
-        Collection<SynchronizationTask> tasks = includedTasks;
+        Collection<SynchronizationTask> tasks = reloadSyncTasks();
+
         for (UserAndMailbox userAndMailbox:resynchronizeUsers) {
 
             Collection<SynchronizationTask> synchronizationTasks = updateTasksForMailbox(userAndMailbox);
@@ -561,6 +627,7 @@ public class SynchronisationManager implements ServerExtension
             tasks.removeAll( synchronizationTasks );
             tasks.addAll(synchronizationTasks);
         }
+
 
         for (UpdateOperation operation : evt.getOperations())
         {
@@ -643,62 +710,93 @@ public class SynchronisationManager implements ServerExtension
             }
 
         }
-        final int size = tasks.size();
-        if (size > 0)
+        executeTasks(tasks);
+        if(!resynchronizeUsers.isEmpty())
         {
-            Collection<SynchronizationTask> toRemove = Collections.emptyList();
-            appointmentStorage.storeAndRemove(tasks, toRemove);
-            final SynchronizeResult execute = execute(tasks );
-            if (execute.changed>0 || execute.open > 0 || execute.removed> 0 || execute.errorMessages.size() > 0)
+            for (UserAndMailbox userAndMailbox : resynchronizeUsers)
             {
-                logger.info("synchronisaction result " + execute);
-            }
-            if(!resynchronizeUsers.isEmpty())
-            {
-                for (UserAndMailbox userAndMailbox : resynchronizeUsers)
+                ReferenceInfo<User> userRef = userAndMailbox.getUserRef();
+                final Collection<SynchronizationTask> userTasks = appointmentStorage.getTasksForUser(userRef, userAndMailbox.getMailbox());
+                User user = facade.tryResolve( userRef);
+                if ( user == null) {
+                    continue;
+                }
+                final StringBuilder sb = new StringBuilder();
+                for (SynchronizationTask synchronizationTask : userTasks)
                 {
-                    ReferenceInfo<User> userRef = userAndMailbox.getUserRef();
-                    final Collection<SynchronizationTask> userTasks = appointmentStorage.getTasksForUser(userRef, userAndMailbox.getMailbox());
-                    User user = facade.tryResolve( userRef);
-                    if ( user == null) {
-                        continue;
-                    }
-                    final StringBuilder sb = new StringBuilder();
-                    for (SynchronizationTask synchronizationTask : userTasks)
+                    final String lastError = synchronizationTask.getLastError();
+                    if(lastError != null)
                     {
-                        final String lastError = synchronizationTask.getLastError();
-                        if(lastError != null)
+                        if(sb.length() == 0)
                         {
-                            if(sb.length() == 0)
-                            {
-                                sb.append("Errors occured:\n");
-                            }
-                            sb.append(lastError);
-                            sb.append("\n");
+                            sb.append("Errors occured:\n");
                         }
-                    }
-                    if(sb.length() == 0)
-                    {
-                        sb.append("No errors occured, all sychronized");
-                    }
-                    try
-                    {
-                        mailToUserInterface.sendMailToUser(user.getUsername(), "Rapla Exchange synchronization", sb.toString());
-                    }
-                    catch(Throwable em)
-                    {
-                        logger.error(
-                                "Error sending mail to user " + user.getUsername() + " [" + sb + "] for synchronizsation result: " + em.getMessage());
+                        sb.append(lastError);
+                        sb.append("\n");
                     }
                 }
+                if(sb.length() == 0)
+                {
+                    sb.append("No errors occured, all sychronized");
+                }
+                try
+                {
+                    mailToUserInterface.sendMailToUser(user.getUsername(), "Rapla Exchange synchronization", sb.toString());
+                }
+                catch(Throwable em)
+                {
+                    logger.error(
+                            "Error sending mail to user " + user.getUsername() + " [" + sb + "] for synchronizsation result: " + em.getMessage());
+                }
             }
-            
         }
         if (!preferencesToStore.isEmpty())
         {
             facade.storeObjects(preferencesToStore.toArray(new Entity[preferencesToStore.size()]));
             logger.info("Synchronizing new preferences <done>.");
         }
+    }
+
+    private void executeTasks(Collection<SynchronizationTask> tasks) throws RaplaException {
+        final int size = tasks.size();
+        if (size > 0) {
+            Collection<SynchronizationTask> toRemove = Collections.emptyList();
+            //appointmentStorage.storeAndRemove(tasks, toRemove);
+            final SynchronizeResult execute = execute(tasks);
+            if (execute.changed > 0 || execute.open > 0 || execute.removed > 0 || execute.errorMessages.size() > 0) {
+                logger.info("synchronisaction result " + execute);
+            }
+        }
+    }
+
+    @NotNull
+    private Set<SynchronizationTask> reloadSyncTasks() throws RaplaException {
+        if ( true ) {
+            return new LinkedHashSet<>();
+        }
+        appointmentStorage.refresh();
+        Set<SynchronizationTask> allTasks = appointmentStorage.getAllTasks();
+        Set<SynchronizationTask> includedTasks = new HashSet<>();
+        final Date now = new Date();
+        for (SynchronizationTask task : allTasks)
+        {
+            final int retries = task.getRetries();
+            if (retries > 5 && !firstExecution)
+            {
+                final Date lastRetry = task.getLastRetry();
+                if (lastRetry != null)
+                {
+                    // skip a schedule Period for the time of retries
+                    if (lastRetry.getTime() > now.getTime() - (retries - 5) * SCHEDULE_PERIOD)
+                    {
+                        continue;
+                    }
+                }
+            }
+            includedTasks.add(task);
+        }
+        firstExecution = false;
+        return includedTasks;
     }
 
     @NotNull
@@ -714,21 +812,22 @@ public class SynchronisationManager implements ServerExtension
         return allocatablesPerMailbox;
     }
 
-    synchronized private void refreshMailbox(User user, Map<String, Allocatable> allocatablesPerMailbox, boolean forceReplace) throws RaplaException {
+    synchronized private EWSConnector.UserConnect refreshMailbox(User user, Map<String, Allocatable> allocatablesPerMailbox, boolean forceReplace) throws Exception {
         if (!showExchangeForUser.isExchangeEnabledFor(user)) {
-            return;
+            return null;
         }
 
         final LoginInfo secrets = keyStorage.getSecrets(user, ExchangeConnectorServerPlugin.EXCHANGE_USER_STORAGE);
         if ( secrets == null) {
             logger.debug("No exchange secrets found for user " + user.getUsername() + ". Ignoring updates");
-            return;
+            return null;
         }
         final String username = secrets.login;
         final String password = secrets.secret;
 
         final String exchangeUrl = extractExchangeUrl(user);
         EWSConnector.UserConnect userConnect;
+        
         try {
             final Logger ewsLogger = logger.getChildLogger("webservice");
             String mailboxAddress = user.getEmail();
@@ -738,7 +837,7 @@ public class SynchronisationManager implements ServerExtension
             //userConnect = new UserConnect(ewsConnector, sharedMailboxes, username);
         } catch (Exception ex) {
             logger.error("Internal error while fetching mailboxes for  " +username + ". Ignoring task. " + ex.getMessage());
-            return;
+            return null;
         }
         if (userConnect != null ){
             connectMap.put( user.getReference(), userConnect);
@@ -748,25 +847,28 @@ public class SynchronisationManager implements ServerExtension
                 CalendarFolder folder = entry.getValue();
                 Allocatable allocatable = allocatablesPerMailbox.get(mailbox);
                 if ( allocatable != null) {
-                    ReferenceInfo<Allocatable> reference = allocatable.getReference();
-                    SynchronizationBox existingBox = synchronizationBoxMap.get(reference);
+                    ReferenceInfo<Allocatable> resourceId = allocatable.getReference();
+                    SynchronizationBox existingBox = synchronizationBoxMap.get(resourceId);
                     SynchronizationBox newBox = new SynchronizationBox();
                     newBox.exchangeUserId = userConnect.getUsername();
                     newBox.calendarFolder = folder;
-                    newBox.resourceId = reference;
+                    newBox.resourceId = resourceId;
                     newBox.userConnect = userConnect;
                     newBox.mailboxName = mailbox;
                     newBox.userId = user.getReference();
+                    logger.info("Found mailbox " + newBox);
                     if (existingBox != null && !forceReplace )
                     {
                         if ( !existingBox.equals( newBox)) {
                             logger.info("Replacing mailbox for  " + allocatable.getName(null)  + " with " + newBox);
-                            synchronizationBoxMap.put( reference, newBox);
+                            synchronizationBoxMap.put( resourceId, newBox);
+                        } else {
                         }
                     } else {
-                        synchronizationBoxMap.put( reference, newBox);
-                        logger.info("Found mailbox " + newBox);
+                        synchronizationBoxMap.put( resourceId, newBox);
                     }
+
+
                 } else {
                     // todo remove all rapla appointments
                 }
@@ -781,29 +883,26 @@ public class SynchronisationManager implements ServerExtension
         } else {
             connectMap.remove( user.getReference());
         }
-
+        return userConnect;
     }
 
     // is called when the calendarModel is changed (e.g. store of preferences), not when the reservation changes
     private Collection<SynchronizationTask> updateTasksForMailbox(UserAndMailbox userAndMailbox) throws Exception
     {
-        final ReferenceInfo<User> userRef = userAndMailbox.getUserRef();
+        Map<ReferenceInfo<Allocatable>, SynchronizationBox> boxMapForUser = getSynchronizationBoxes(userAndMailbox);
+        Set<Allocatable> allocatables = boxMapForUser.keySet().stream().map(cachableStorageOperator::tryResolve).filter(Objects::nonNull).collect(Collectors.toSet());
         String mailbox = userAndMailbox.getMailbox();
 
-        Map<ReferenceInfo<Allocatable>, SynchronizationBox> boxMapForUser = synchronizationBoxMap.entrySet().stream().filter(entry -> userRef.equals(entry.getValue().getUserId()) && mailbox.equals( entry.getValue().getMailboxName())).collect(Collectors.toMap(entry -> entry.getKey(), entry -> entry.getValue()));
-        Set<Allocatable> allocatables = boxMapForUser.keySet().stream().map(cachableStorageOperator::tryResolve).filter(Objects::nonNull).collect(Collectors.toSet());
         Optional<SynchronizationBox> first = boxMapForUser.values().stream().findFirst();
         if ( !first.isPresent() ) {
             return  Collections.emptyList();
         }
+        final ReferenceInfo<User> userRef = userAndMailbox.getUserRef();
         SynchronizationBox firstBox = first.get();
         String mailboxName = firstBox.getMailboxName();
         EWSConnector.UserConnect userConnect = firstBox.getUserConnect();
         removeAllAppointmentsFromExchangeAndAppointmentStore(userRef,userConnect, mailboxName);
-        Promise<AppointmentMapping> appointmentMappingPromise = cachableStorageOperator.queryAppointments(null, allocatables, Collections.emptyList(), null, null, null, Collections.emptyMap(), false);
-
-        AppointmentMapping appointmentMapping = SynchronizedCompletablePromise.waitFor(appointmentMappingPromise, 5000, logger);
-        Set<Appointment> appointments = appointmentMapping.getAllAppointments();
+        Set<Appointment> appointments = queryAppointments(allocatables).getAllAppointments();
         final Collection<SynchronizationTask> result = new HashSet<>();
         Set<String> appointmentsFound = new HashSet<>();
         Collection<SynchronizationTask> newTasksFromCalendar = new HashSet<>();
@@ -858,6 +957,17 @@ public class SynchronisationManager implements ServerExtension
         }
 
         return result;
+    }
+
+    private AppointmentMapping queryAppointments(Set<Allocatable> allocatables) throws Exception {
+        Promise<AppointmentMapping> appointmentMappingPromise = cachableStorageOperator.queryAppointments(null, allocatables, Collections.emptyList(), null, null, null, Collections.emptyMap(), false);
+        AppointmentMapping appointmentMapping = SynchronizedCompletablePromise.waitFor(appointmentMappingPromise, 5000, logger);
+        return appointmentMapping;
+    }
+
+    @NotNull
+    private Map<ReferenceInfo<Allocatable>, SynchronizationBox> getSynchronizationBoxes(UserAndMailbox userAndMailbox) {
+        return synchronizationBoxMap.entrySet().stream().filter(entry -> userAndMailbox.getUserRef().equals(entry.getValue().getUserId()) && userAndMailbox.getMailbox().equals(entry.getValue().getMailboxName())).collect(Collectors.toMap(entry -> entry.getKey(), entry -> entry.getValue()));
     }
 
     private SynchronizeResult execute(Collection<SynchronizationTask> tasks) throws RaplaException
@@ -1115,7 +1225,7 @@ public class SynchronisationManager implements ServerExtension
         }
         if (!toStore.isEmpty() || !toRemove.isEmpty())
         {
-            appointmentStorage.storeAndRemove(toStore, toRemove);
+            //appointmentStorage.storeAndRemove(toStore, toRemove);
         }
         return result;
     }
@@ -1148,6 +1258,9 @@ public class SynchronisationManager implements ServerExtension
 
     private boolean isInSyncInterval(Appointment appointment)
     {
+        if ( true ) {
+            return true;
+        }
         final Date start = appointment.getStart();
         final TimeInterval appointmentRange = new TimeInterval(start, appointment.getMaxEnd());
         final TimeInterval syncRange = getSyncRange();

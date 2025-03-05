@@ -1874,24 +1874,24 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
                         Reservation parent = app.getReservation();
                         if ( parent == null) {
                             it.remove();
-                            break;
+                            continue;
                         }
                         if (parent.getReference().equals( reference)) {
                             if ( !parent.getOwnerRef().equals(newUser) ) {
                                 it.remove();
-                                break;
+                                continue;
                             }
                             // check if appointment still allocates reservation
                             Appointment newAppointment = event.findAppointment( app );
 
                             if (remove || newAppointment == null) {
                                 it.remove();
-                                break;
+                                continue;
                             } else {
                                 // check if appointment has changed; if so remove it and we add it later
                                 if ( !newAppointment.matches( app) ) {
                                     it.remove();
-                                    break;
+                                    continue;
                                 }
                             }
                         }
@@ -2544,7 +2544,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
                     Entity persistant = cache.tryResolve(entity.getId(), typeClass);
                     Entity dependant = editObject(entity, persistant, user);
                     ((SimpleEntity) dependant).setLastChangedBy(null);
-                    updateEvt.addToStoreIfNotExisitant(entity);
+                    updateEvt.addToStoreIfNotExisitant(dependant);
                 }
             }
         }

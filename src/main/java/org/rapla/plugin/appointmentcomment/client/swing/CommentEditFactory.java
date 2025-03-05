@@ -35,7 +35,7 @@ import java.awt.event.FocusEvent;
 import java.awt.event.FocusListener;
 import java.util.function.Consumer;
 
-@Extension (provides = AppointmentEditExtensionFactory.class, id = "appointmentcomment")
+//@Extension (provides = AppointmentEditExtensionFactory.class, id = "appointmentcomment")
 @Singleton
 public class CommentEditFactory implements AppointmentEditExtensionFactory {
     private final ClientFacade facade;

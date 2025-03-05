@@ -240,7 +240,10 @@ public class HTMLRaplaBlock extends RaplaBlock implements HTMLBlock {
 
     protected String getAllocatableName(Allocatable allocatable)
     {
-        final String exportName = NameFormatUtil.getExportName(allocatable, m_raplaLocale.getLocale());
+         String exportName = NameFormatUtil.getExportName(allocatable, m_raplaLocale.getLocale());
+        if (isRequest( allocatable)) {
+            exportName = "Anfrage:" + exportName;
+        }
         return exportName;
     }
 }

@@ -3,12 +3,7 @@ package org.rapla.plugin.exchangeconnector.server.exchange;
 import microsoft.exchange.webservices.data.core.ExchangeService;
 import microsoft.exchange.webservices.data.core.PropertySet;
 import microsoft.exchange.webservices.data.core.enumeration.misc.error.ServiceError;
-import microsoft.exchange.webservices.data.core.enumeration.property.BodyType;
-import microsoft.exchange.webservices.data.core.enumeration.property.DefaultExtendedPropertySet;
-import microsoft.exchange.webservices.data.core.enumeration.property.LegacyFreeBusyStatus;
-import microsoft.exchange.webservices.data.core.enumeration.property.MailboxType;
-import microsoft.exchange.webservices.data.core.enumeration.property.MapiPropertyType;
-import microsoft.exchange.webservices.data.core.enumeration.property.WellKnownFolderName;
+import microsoft.exchange.webservices.data.core.enumeration.property.*;
 import microsoft.exchange.webservices.data.core.enumeration.property.time.DayOfTheWeek;
 import microsoft.exchange.webservices.data.core.enumeration.property.time.DayOfTheWeekIndex;
 import microsoft.exchange.webservices.data.core.enumeration.property.time.Month;
@@ -29,20 +24,18 @@ import microsoft.exchange.webservices.data.core.service.folder.CalendarFolder;
 import microsoft.exchange.webservices.data.core.service.item.Item;
 import microsoft.exchange.webservices.data.core.service.schema.AppointmentSchema;
 import microsoft.exchange.webservices.data.credential.WebCredentials;
-import microsoft.exchange.webservices.data.property.complex.Attendee;
-import microsoft.exchange.webservices.data.property.complex.DeletedOccurrenceInfo;
-import microsoft.exchange.webservices.data.property.complex.DeletedOccurrenceInfoCollection;
-import microsoft.exchange.webservices.data.property.complex.FolderId;
-import microsoft.exchange.webservices.data.property.complex.ItemId;
-import microsoft.exchange.webservices.data.property.complex.MessageBody;
+import microsoft.exchange.webservices.data.misc.OutParam;
+import microsoft.exchange.webservices.data.property.complex.*;
 import microsoft.exchange.webservices.data.property.complex.recurrence.pattern.Recurrence;
 import microsoft.exchange.webservices.data.property.complex.time.TimeZoneDefinition;
 import microsoft.exchange.webservices.data.property.definition.ExtendedPropertyDefinition;
 import microsoft.exchange.webservices.data.search.FindItemsResults;
 import microsoft.exchange.webservices.data.search.ItemView;
 import microsoft.exchange.webservices.data.search.filter.SearchFilter;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.rapla.components.util.DateTools;
+import org.rapla.components.util.SerializableDateTimeFormat;
 import org.rapla.entities.User;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.Appointment;
@@ -79,12 +72,16 @@ public class AppointmentSynchronizer
 
     private static final ExtendedPropertyDefinition RAPLA_APPOINTMENT_MARKER;
     private static final ExtendedPropertyDefinition RAPLA_APPOINTMENT_ID;
+    private static final ExtendedPropertyDefinition RAPLA_LAST_UPDATED_TIME;
+    public static final String T_00_00_00_Z = "1970-01-01T00:00:00Z";
+
     static
     {
         try
         {
             RAPLA_APPOINTMENT_ID = new ExtendedPropertyDefinition(DefaultExtendedPropertySet.Appointment, "raplaId", MapiPropertyType.String);
             RAPLA_APPOINTMENT_MARKER = new ExtendedPropertyDefinition(DefaultExtendedPropertySet.Appointment, "isRaplaMeeting", MapiPropertyType.Boolean);
+            RAPLA_LAST_UPDATED_TIME = new ExtendedPropertyDefinition(DefaultExtendedPropertySet.Appointment, "raplaLastUpdate", MapiPropertyType.String);
         }
         catch (Exception e)
         {
@@ -130,44 +127,9 @@ public class AppointmentSynchronizer
     {
         Collection<String> errors = new LinkedHashSet<>();
         final Logger ewsLogger = logger.getChildLogger("webservice");
-        final SearchFilter searchFilter = new SearchFilter.Exists(RAPLA_APPOINTMENT_MARKER);
-        List<Item> items = new ArrayList<>();
-        Collection<ItemId> itemIds = new ArrayList<>();
 
-        try
-        {
-            boolean newRequestNeeded = true;
-            int offset = 0;
-            final int maxRequestedAppointments = 1;
-            while (newRequestNeeded)
-            {
-                final ItemView view = new ItemView(maxRequestedAppointments, offset);
-                ExchangeService service = ewsConnector.getService();
-                final FindItemsResults<Item> foundItems = service.findItems(folder.getId(), searchFilter, view);
-                if (foundItems.getItems().size() == maxRequestedAppointments)
-                {
-                    offset++;
-                }
-                else
-                {
-                    newRequestNeeded = false;
-                }
-                for (Item item : foundItems)
-                {
-                    ItemId id = item.getId();
-                    if (id != null)
-                    {
-                        itemIds.add(id);
-                        items.add(item);
-                    }
-                }
-            }
-        }
-        catch (Exception ex)
-        {
-            throw new RaplaException(ex.getMessage(), ex);
-        }
-        if (itemIds.isEmpty())
+        List<ExchangeAppointment> exchangeAppointments = getExchangeAppointments(ewsConnector, folder);
+        if (exchangeAppointments.isEmpty())
             return errors;
         AffectedTaskOccurrence affectedTaskOccurrences = AffectedTaskOccurrence.AllOccurrences;
         SendCancellationsMode sendCancellationsMode = SendCancellationsMode.SendToNone;
@@ -176,6 +138,7 @@ public class AppointmentSynchronizer
         try
         {
             ExchangeService service = ewsConnector.getService();
+            Iterable<ItemId> itemIds = exchangeAppointments.stream().map(ExchangeAppointment::getItemId).collect(Collectors.toList());
             deleteItems = service.deleteItems(itemIds, deleteMode, sendCancellationsMode, affectedTaskOccurrences);
         }
         catch (Exception e)
@@ -188,7 +151,7 @@ public class AppointmentSynchronizer
             ServiceResult code = resultItem.getResult();
             if (code == ServiceResult.Error)
             {
-                Item item = items.get(index);
+                ExchangeAppointment item = exchangeAppointments.get(index);
                 String errorMessage = resultItem.getErrorMessage();
                 if (errorMessage == null || errorMessage.isEmpty())
                 {
@@ -197,7 +160,7 @@ public class AppointmentSynchronizer
                 String subject;
                 try
                 {
-                    subject = item.getSubject();
+                    subject = item.getExchangeAppointment().getSubject();
                 }
                 catch (Exception e)
                 {
@@ -212,6 +175,74 @@ public class AppointmentSynchronizer
             index++;
         }
         return errors;
+    }
+
+    @NotNull
+    public static List<ExchangeAppointment> getExchangeAppointments(EWSConnector ewsConnector, CalendarFolder folder) throws RaplaException {
+        List<ExchangeAppointment> exchangeAppointments = new ArrayList<>();
+        try
+        {
+            boolean newRequestNeeded = true;
+            int offset = 0;
+            final int maxRequestedAppointments = 5;
+            final SearchFilter searchFilter = new SearchFilter.Exists(RAPLA_APPOINTMENT_MARKER);
+            while (newRequestNeeded)
+            {
+                final ItemView view = new ItemView(maxRequestedAppointments, offset);
+                view.setPropertySet(new PropertySet(BasePropertySet.FirstClassProperties, RAPLA_APPOINTMENT_ID, RAPLA_APPOINTMENT_MARKER, RAPLA_LAST_UPDATED_TIME));
+                ExchangeService service = ewsConnector.getService();
+                final FindItemsResults<Item> foundItems = service.findItems(folder.getId(), searchFilter, view);
+                if (foundItems.getItems().size() == maxRequestedAppointments)
+                {
+                    offset++;
+                }
+                else
+                {
+                    newRequestNeeded = false;
+                }
+
+                for (Item item : foundItems)
+                {
+
+                    if (! (item instanceof microsoft.exchange.webservices.data.core.service.item.Appointment)) {
+                        continue;
+                    }
+
+                    ItemId id = item.getId();
+                    if (id == null) {
+                        continue;
+                    }
+
+                    ExtendedPropertyCollection extendedProperties = item.getExtendedProperties();
+                    String raplaAppointmentId;
+                    {
+                        OutParam<String> out = new OutParam<>();
+                        if (!extendedProperties.tryGetValue(String.class, RAPLA_APPOINTMENT_ID, out)) {
+                            continue;
+                        }
+                        raplaAppointmentId = out.getParam();
+                    }
+                    String raplaAppointmentLastChanged;
+                    {
+                        OutParam<String> out = new OutParam<>();
+                        if (extendedProperties.tryGetValue(String.class, RAPLA_LAST_UPDATED_TIME, out)) {
+                            raplaAppointmentLastChanged = out.getParam();
+                        } else {
+                            raplaAppointmentLastChanged = T_00_00_00_Z;
+                        }
+                    }
+                    microsoft.exchange.webservices.data.core.service.item.Appointment appointment = (microsoft.exchange.webservices.data.core.service.item.Appointment) item;
+                    String exchangeAppointmentId = id.getUniqueId();
+                    ExchangeAppointment exchangeAppointment = new ExchangeAppointment(new ReferenceInfo<>(raplaAppointmentId, Appointment.class), exchangeAppointmentId, id, appointment, raplaAppointmentLastChanged);
+                    exchangeAppointments.add(exchangeAppointment);
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            throw new RaplaException(ex.getMessage(), ex);
+        }
+        return exchangeAppointments;
     }
 
     public Logger getLogger()
@@ -411,6 +442,7 @@ public class AppointmentSynchronizer
         Date end = raplaAppointment.getEnd();
         Date startDate = rapla2exchange(start);
         Date endDate = rapla2exchange(end);
+
         exchangeAppointment.setStart(startDate);
         //String[] availableIDs = TimeZone.getAvailableIDs();
         //        TimeZone timeZone = TimeZone.getTimeZone("Etc/UTC");//timeZoneConverter.getImportExportTimeZone();
@@ -444,7 +476,9 @@ public class AppointmentSynchronizer
         // add category for filtering
         exchangeAppointment.getCategories().add(exchangeAppointmentCategory);
         // add category for each event type
-        String categoryName = raplaAppointment.getReservation().getClassification().getType().getName(locale);
+        Reservation reservation = raplaAppointment.getReservation();
+        String lastUpdated = getLastUpdate(raplaAppointment);
+        String categoryName = reservation.getClassification().getType().getName(locale);
         exchangeAppointment.getCategories().add(categoryName);
 
         //setExchangeRecurrence( );
@@ -459,9 +493,20 @@ public class AppointmentSynchronizer
 
         exchangeAppointment.setExtendedProperty(RAPLA_APPOINTMENT_ID, raplaAppointment.getId());
         exchangeAppointment.setExtendedProperty(RAPLA_APPOINTMENT_MARKER, Boolean.TRUE);
+        exchangeAppointment.setExtendedProperty(RAPLA_LAST_UPDATED_TIME, lastUpdated);
         addPersonsAndResources(exchangeAppointment);
 
         return exchangeAppointment;
+    }
+
+    public static String getLastUpdate(Appointment raplaAppointment) {
+        Reservation reservation = raplaAppointment.getReservation();
+        if ( reservation == null) {
+            return T_00_00_00_Z;
+        }
+        Date lastChanged = reservation.getLastChanged();
+        String lastUpdated = lastChanged != null ? new SerializableDateTimeFormat().formatTimestamp(lastChanged) : T_00_00_00_Z;
+        return lastUpdated;
     }
 
     static class MyTimeZoneDefinition extends TimeZoneDefinition
