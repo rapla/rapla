@@ -14,6 +14,7 @@ package org.rapla.client.internal;
 
 import org.rapla.RaplaResources;
 import org.rapla.entities.Category;
+import org.rapla.entities.Entity;
 import org.rapla.entities.User;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.facade.client.ClientFacade;
@@ -54,6 +55,7 @@ public class UserInfoUI extends HTMLInfo<User> {
             Collection<Row> classificationAttributes = classificationInfo.getClassificationAttributes(person, false, null, user);
 			att.addAll(classificationAttributes);
         }
+        att.add(new Row("Rapla Id", user.getId()));
         createTable(att,buf,false);
         
         Category userGroupsCategory;

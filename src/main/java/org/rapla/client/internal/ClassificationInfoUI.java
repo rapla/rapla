@@ -14,6 +14,7 @@
 package org.rapla.client.internal;
 
 import org.rapla.RaplaResources;
+import org.rapla.entities.Entity;
 import org.rapla.entities.User;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.dynamictype.Attribute;
@@ -102,6 +103,9 @@ public class ClassificationInfoUI<T extends Classifiable> extends HTMLInfo<T> {
 	            att.add (new Row(pre,valueString));
 	            pre = "";
             }
+        }
+        if ( classifiable instanceof Entity) {
+            att.add(new Row("Rapla Id", ((Entity) classifiable).getId()));
         }
         return att;
     }

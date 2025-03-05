@@ -98,9 +98,7 @@ public class AllocatableInfoUI extends ClassificationInfoUI<Allocatable> {
             String lastChangeByText = encode(lastChangedName);
             att.add( new Row(getString("last_changed_by"), lastChangeByText));
         }
-        if (user != null && user.isAdmin()) {
-            att.add(new Row("Rapla Id", allocatable.getId()));
-        }
+
         return att;
     }
 
