@@ -299,8 +299,10 @@ public class AllocationChangeFinder
              {
                 if (!oldRes.hasAllocatedOn(allocatable,appointment))
                     continue;
-
-                changeList.add(new AllocationChangeEvent(AllocationChangeEvent.REMOVE,user, newRes,oldRes,allocatable,appointment));
+                 changeList.add(new AllocationChangeEvent(AllocationChangeEvent.REMOVE, user, newRes, oldRes, allocatable, appointment));
+                 if ( oldRes.getRequestStatus( allocatable) == RequestStatus.REQUESTED ) {
+                     changeList.add(new AllocationChangeEvent(AllocationChangeEvent.DENIED, user, newRes, oldRes, allocatable, appointment));
+                 }
             }
         }
     }
