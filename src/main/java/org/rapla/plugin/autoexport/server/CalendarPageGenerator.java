@@ -320,7 +320,7 @@ public class CalendarPageGenerator
             }
             catch (CalendarNotFoundExeption ex)
             {
-                String message = "404 Calendar not available  " + user + "/" + filename;
+                String message = "404 Calendar not available  " + user.getId() + "/" + filename;
                 write404(response, message);
                 return;
             }
