@@ -10,7 +10,7 @@
 	<properties>
 		<disableGwtCompile>false</disableGwtCompile>
 		<slf4j.version>2.0.7</slf4j.version>
-		<logback.version>1.3.12</logback.version>
+		<logback.version>1.3.15</logback.version>
 		<intellijAnnotations.version>12.0</intellijAnnotations.version>
 		<ical4j.version>3.2.14</ical4j.version>
 		<rxjava.version>3.1.5</rxjava.version>
