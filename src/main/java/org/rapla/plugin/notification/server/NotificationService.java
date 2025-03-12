@@ -251,7 +251,18 @@ public class NotificationService implements ServerExtension
                     allocationMail.body += buf.toString();
                 }
             }
-            mailList.add( allocationMail );
+            String[] recipients = allocationMail.recipient.split(";");
+            if ( recipients.length > 1 && !recipients[1].trim().isEmpty()) {
+                for ( String recipient : recipients) {
+                    AllocationMail clone = allocationMail.clone();
+                    if ( !recipient.trim().isEmpty()) {
+                        clone.recipient = recipient;
+                        mailList.add(clone);
+                    }
+                }
+            } else{
+                mailList.add(allocationMail);
+            }
         }
         return mailList;
     }
@@ -306,7 +317,8 @@ public class NotificationService implements ServerExtension
             getLogger().info("AllocationChange. Sending mail to " + mail.recipient);
             try
             {
-                mailToUserInterface.get().sendMailToEmail(mail.recipient, mail.subject, mail.body);
+                MailToUserImpl mailToUser = mailToUserInterface.get();
+                mailToUser.sendMailToEmail(mail.recipient, mail.subject, mail.body);
                 notificationStorage.markSent(mail);
                 getLogger().info("AllocationChange. Mail sent.");
             }
@@ -626,6 +638,15 @@ public class NotificationService implements ServerExtension
         public String toString()
         {
             return "TO Username: " + recipient + "\n" + "Subject: " + subject + "\n" + body;
+        }
+
+        public AllocationMail clone()
+        {
+            AllocationMail clone = new AllocationMail();
+            clone.recipient = recipient;
+            clone.subject = subject;
+            clone.body = body;
+            return clone;
         }
     }
 
