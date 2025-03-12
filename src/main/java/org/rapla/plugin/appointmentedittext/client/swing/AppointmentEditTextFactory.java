@@ -18,7 +18,7 @@ import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
 import java.util.function.Consumer;
 
-//@Extension(provides = AppointmentEditExtensionFactory.class, id="appointmenteditcomment")
+@Extension(provides = AppointmentEditExtensionFactory.class, id="appointmenteditcomment")
 @Singleton
 public class AppointmentEditTextFactory implements AppointmentEditExtensionFactory {
     private final ClientFacade facade;

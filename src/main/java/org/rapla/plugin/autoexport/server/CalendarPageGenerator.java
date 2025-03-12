@@ -308,9 +308,9 @@ public class CalendarPageGenerator
             }
             catch (EntityNotFoundException ex)
             {
-                String message = "404 Calendar not available  " + username + "/" + filename;
+                String message = "404 Calendar not available. User not found ";
                 write404(response, message);
-                logger.getChildLogger("html.404").warn("404 User not found " + username);
+                logger.getChildLogger("html.404").warn("404 Username not found ");
                 return;
             }
             try
@@ -320,7 +320,14 @@ public class CalendarPageGenerator
             }
             catch (CalendarNotFoundExeption ex)
             {
-                String message = "404 Calendar not available  " + user.getId() + "/" + filename;
+                String message = "404 Calendar not found for " + user.getId() ;
+                write404(response, message);
+                return;
+            }
+            final Object isSet = model.getOption(AutoExportPlugin.HTML_EXPORT);
+            if (isSet == null || isSet.equals("false"))
+            {
+                String message = "404 Calendar not published for " + user.getId();
                 write404(response, message);
                 return;
             }
@@ -347,18 +354,12 @@ public class CalendarPageGenerator
                 }
                 else
                 {
-                    String message = "404 allocatable with id '" + allocatableId + "' not found for calendar " + user + "/" + filename;
+                    String message = "404 Ressource with id '" + allocatableId + "' not found for calendar " + user.getId() + "/" + filename;
                     write404(response, message);
                     return;
                 }
             }
-            final Object isSet = model.getOption(AutoExportPlugin.HTML_EXPORT);
-            if (isSet == null || isSet.equals("false"))
-            {
-                String message = "404 Calendar not published " + username + "/" + filename;
-                write404(response, message);
-                return;
-            }
+
 
             final String viewId = model.getViewId();
             final Provider<HTMLViewPage> htmlViewPageProvider = factoryMap.get(viewId);
