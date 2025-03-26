@@ -40,25 +40,29 @@ public class AppointmentCommentFunctions  implements FunctionFactory{
 
         }
 
-        public static void setComment(Appointment appointment, String comment) {
+        public static void setNote(Appointment appointment, String comment) {
             try {
                 Reservation event = appointment.getReservation();
-                event.setAnnotation("appointment_comment_" + appointment.getId(), comment);
+                event.setAnnotation("appointment_note_" + appointment.getId(), comment);
             } catch (IllegalAnnotationException ex) {
                 throw new IllegalStateException(ex);
             }
         }
 
-    public static String getComment(Appointment appointment) {
-        return appointment.getReservation().getAnnotation("appointment_comment_" + appointment.getId());
+    public static String getNote(Appointment appointment) {
+        Reservation reservation = appointment.getReservation();
+        if (reservation == null) {
+            return null;
+        }
+        return reservation.getAnnotation("appointment_note_" + appointment.getId());
     }
 
 
     @Override public Function createFunction(String functionName, List<Function> args) throws IllegalAnnotationException
         {
-            if ( functionName.equals(CommentFunction.name))
+            if ( functionName.equals(AppointmentNoteFunction.name))
             {
-                return new CommentFunction(args);
+                return new AppointmentNoteFunction(args);
             }
             return null;
         }
@@ -76,7 +80,7 @@ public class AppointmentCommentFunctions  implements FunctionFactory{
                 appointment = null;
             }
             if ( appointment != null ) {
-                String comment = getComment(appointment);
+                String comment = getNote(appointment);
                 if (comment != null && !comment.trim().isEmpty())
                 {
                     return  "\n" + "(" + comment + ")";
@@ -85,12 +89,12 @@ public class AppointmentCommentFunctions  implements FunctionFactory{
             return "";
         }
 
-        class CommentFunction extends Function
+        class AppointmentNoteFunction extends Function
         {
-            static public final String name = "comment";
+            static public final String name = "note";
             Function arg;
 
-            public CommentFunction( List<Function> args) throws IllegalAnnotationException
+            public AppointmentNoteFunction(List<Function> args) throws IllegalAnnotationException
             {
                 super(NAMESPACE,name, args);
                 assertArgs(0,1);

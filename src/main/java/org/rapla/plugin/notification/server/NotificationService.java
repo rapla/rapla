@@ -62,18 +62,16 @@ public class NotificationService implements ServerExtension
     private final CachableStorageOperator operator;
 
     private final Logger logger;
-    private final NotificationStorage notificationStorage;
     private final List<Disposable> scheduleList = new ArrayList<>();
 
     @Inject
     public NotificationService(RaplaFacade facade, RaplaResources i18nBundle, NotificationResources notificationI18n, AppointmentFormater appointmentFormater,
-                               Provider<MailToUserImpl> mailToUserInterface, CommandScheduler scheduler, Logger logger, NotificationStorage notificationStorage)
+                               Provider<MailToUserImpl> mailToUserInterface, CommandScheduler scheduler, Logger logger/*, NotificationStorage notificationStorage */)
 
     {
         this.notificationI18n = notificationI18n;
         this.raplaFacade = facade;
         this.raplaI18n = i18nBundle;
-        this.notificationStorage = notificationStorage;
         this.logger = logger.getChildLogger("notification");
         //setChildBundleName( NotificationPlugin.RESOURCE_FILE );
         this.mailToUserInterface = mailToUserInterface;
@@ -103,7 +101,7 @@ public class NotificationService implements ServerExtension
             }
             catch (Throwable t)
             {
-                NotificationService.this.logger.warn("Could not prepare mail: " + t.getMessage(),t);
+                NotificationService.this.logger.warn("Could not send mail: " + t.getMessage(),t);
             }
             finally
             {
@@ -114,6 +112,7 @@ public class NotificationService implements ServerExtension
             }
         };
         scheduleList.add( scheduler.schedule( sentUpdateMails,0, 30000L));
+        /*
         Action retryMails = () ->
         {
             Date lastUpdated = null;
@@ -136,6 +135,7 @@ public class NotificationService implements ServerExtension
             }
         };
         scheduleList.add(scheduler.schedule( retryMails, 45000L,DateTools.MILLISECONDS_PER_MINUTE * 15 + 531L));
+         */
     }
 
     public void stop()
@@ -153,29 +153,29 @@ public class NotificationService implements ServerExtension
         return raplaI18n.getLocale();
     }
 
-    private void changed(UpdateResult updateResult)
+    private void changed(UpdateResult updateResult) throws RaplaException
     {
-        try
-        {
-            getLogger().debug("Mail check triggered");
-            List<AllocationMail> mailList = getAllocationMails(updateResult);
+        getLogger().debug("Mail check triggered");
+        List<AllocationMail> mailList = getAllocationMails(updateResult);
+        List<AllocationMail> mailList2 = getBookingRequestMails(updateResult);
+        try {
             if (!mailList.isEmpty())
             {
-                notificationStorage.store(mailList);
-                sendMails(mailList);
+                //notificationStorage.store(mailList);
+                sendMails( mailList, "AllocationChange");
             }
-            List<AllocationMail> mailList2 = getBookingRequestMails(updateResult);
             if (!mailList2.isEmpty())
             {
-                notificationStorage.store(mailList2);
-                sendMails(mailList2);
+                //notificationStorage.store(mailList2);
+                sendMails(mailList2, "BookingRequest");
             }
         }
-        catch (RaplaException ex)
+        catch (Throwable ex)
         {
-            getLogger().error("Can't trigger notification service." + ex.getMessage(), ex);
+            getLogger().error("Could not sent all mails. Not rerolling" + ex.getMessage(), ex);
         }
     }
+
 
     @NotNull
     private List<AllocationMail> getBookingRequestMails(UpdateResult updateResult) throws RaplaException {
@@ -218,50 +218,54 @@ public class NotificationService implements ServerExtension
             Set<Allocatable> processed = new HashSet<>();
             allocationMail.recipient = email;
             allocationMail.body = "";
-            for (AllocationChangeEvent event: entry.getValue())
-            {
-                final Allocatable allocatable = event.getAllocatable();
-                if ( processed.contains( allocatable)){
-                    continue;
-                } else {
-                    processed.add(allocatable);
-                }
-                if (event.getType() == AllocationChangeEvent.REQUESTED) {
-                    final Reservation newReservation = event.getNewReservation();
-                    allocationMail.subject+=  allocatable.getName( getLocale() ) + " gestellt ";
-                    StringBuilder buf = new StringBuilder();
-                    printReservation(newReservation, buf);
-                    allocationMail.body += buf.toString();
-                }
-                if (event.getType() == AllocationChangeEvent.CONFIRMED) {
-                    final Reservation newReservation = event.getNewReservation();
-                    allocationMail.recipient = email;
-                    allocationMail.subject += allocatable.getName(getLocale()) + " genehmigt ";
-                    StringBuilder buf = new StringBuilder();
-                    printReservation(newReservation, buf);
-                    allocationMail.body += buf.toString();
-                }
+            try {
+                for (AllocationChangeEvent event: entry.getValue())
+                {
+                    final Allocatable allocatable = event.getAllocatable();
+                    if ( processed.contains( allocatable)){
+                        continue;
+                    } else {
+                        processed.add(allocatable);
+                    }
+                    if (event.getType() == AllocationChangeEvent.REQUESTED) {
+                        final Reservation newReservation = event.getNewReservation();
+                        allocationMail.subject+=  allocatable.getName( getLocale() ) + " gestellt ";
+                        StringBuilder buf = new StringBuilder();
+                        printReservation(newReservation, buf);
+                        allocationMail.body += buf.toString();
+                    }
+                    if (event.getType() == AllocationChangeEvent.CONFIRMED) {
+                        final Reservation newReservation = event.getNewReservation();
+                        allocationMail.recipient = email;
+                        allocationMail.subject += allocatable.getName(getLocale()) + " genehmigt ";
+                        StringBuilder buf = new StringBuilder();
+                        printReservation(newReservation, buf);
+                        allocationMail.body += buf.toString();
+                    }
 
-                if (event.getType() == AllocationChangeEvent.DENIED) {
-                    final Reservation newReservation = event.getNewReservation();
-                    allocationMail.recipient = email;
-                    allocationMail.subject += allocatable.getName(getLocale()) + " abgelehnt ";
-                    StringBuilder buf = new StringBuilder();
-                    printReservation(newReservation, buf);
-                    allocationMail.body += buf.toString();
-                }
-            }
-            String[] recipients = allocationMail.recipient.split(";");
-            if ( recipients.length > 1 && !recipients[1].trim().isEmpty()) {
-                for ( String recipient : recipients) {
-                    AllocationMail clone = allocationMail.clone();
-                    if ( !recipient.trim().isEmpty()) {
-                        clone.recipient = recipient;
-                        mailList.add(clone);
+                    if (event.getType() == AllocationChangeEvent.DENIED) {
+                        final Reservation newReservation = event.getNewReservation();
+                        allocationMail.recipient = email;
+                        allocationMail.subject += allocatable.getName(getLocale()) + " abgelehnt ";
+                        StringBuilder buf = new StringBuilder();
+                        printReservation(newReservation, buf);
+                        allocationMail.body += buf.toString();
                     }
                 }
-            } else{
-                mailList.add(allocationMail);
+                String[] recipients = allocationMail.recipient.split(";");
+                if ( recipients.length > 1 && !recipients[1].trim().isEmpty()) {
+                    for ( String recipient : recipients) {
+                        AllocationMail clone = allocationMail.clone();
+                        if ( !recipient.trim().isEmpty()) {
+                            clone.recipient = recipient;
+                            mailList.add(clone);
+                        }
+                    }
+                } else{
+                    mailList.add(allocationMail);
+                }
+            } catch (Throwable t) {
+                getLogger().error("Could not send mail to " + email + " Cause: " + t.getMessage(), t);
             }
         }
         return mailList;
@@ -276,7 +280,7 @@ public class NotificationService implements ServerExtension
         {
             User user = users[i];
             String email = user.getEmail();
-            if (email == null || email.trim().length() == 0)
+            if (email == null || email.trim().isEmpty())
                 continue;
 
             Preferences preferences = raplaFacade.getPreferences(user);
@@ -306,7 +310,7 @@ public class NotificationService implements ServerExtension
         return mailList;
     }
 
-    private void sendMails(Collection<AllocationMail> mails) throws RaplaException
+    private void sendMails(Collection<AllocationMail> mails, String context) throws RaplaException
     {
         Iterator<AllocationMail> it = mails.iterator();
         while (it.hasNext())
@@ -314,18 +318,18 @@ public class NotificationService implements ServerExtension
             AllocationMail mail = it.next();
             if (getLogger().isDebugEnabled())
                 getLogger().debug("Sending mail " + mail.toString());
-            getLogger().info("AllocationChange. Sending mail to " + mail.recipient);
+            getLogger().info(context + ": Sending mail to " + mail.recipient);
             try
             {
                 MailToUserImpl mailToUser = mailToUserInterface.get();
                 mailToUser.sendMailToEmail(mail.recipient, mail.subject, mail.body);
-                notificationStorage.markSent(mail);
-                getLogger().info("AllocationChange. Mail sent.");
+                //notificationStorage.markSent(mail);
+                getLogger().info(context + ": Mail sent.");
             }
             catch (RaplaException ex)
             {
                 getLogger().error("Could not send mail to " + mail.recipient + " Cause: " + ex.getMessage(), ex);
-                notificationStorage.increateAndStoreRetryCount(mail);
+                //notificationStorage.increateAndStoreRetryCount(mail);
             }
         }
     }

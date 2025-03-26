@@ -106,8 +106,23 @@ public final class AppointmentImpl extends SimpleEntity implements Appointment
 
     public void move(Date start,Date end) {
         checkWritable();
+        Date oldStart = this.start;
         this.start = start;
         this.end = end;
+        if ( repeating != null && repeating.isWeekly() ) {
+            Set<Integer> weekdays = repeating.getWeekdays();
+            if (weekdays != null && !weekdays.isEmpty()) {
+                int oldWeekday = DateTools.getWeekday(oldStart);
+                int newWeekday = DateTools.getWeekday(start);
+                Set<Integer> newWeekdays = new HashSet<>(weekdays);
+                if (oldWeekday != newWeekday && !weekdays.contains(newWeekday)) {
+                    newWeekdays.remove(oldWeekday);
+                }
+                newWeekdays.add(newWeekday);
+                repeating.setWeekdays(newWeekdays);
+            }
+
+        }
         if ( isWholeDaysSet)
         {
             if (start.getTime() != DateTools.cutDate(start.getTime()) || end.getTime() != DateTools.cutDate(end.getTime()))

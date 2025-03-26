@@ -169,10 +169,11 @@ public class AppointmentController extends RaplaGUIComponent implements Disposab
 
         if ( appointmentEditFactory.size() > 0) {
             JPanel editExtensionPanel = new JPanel();
+            editExtensionPanel.setLayout(new BoxLayout(editExtensionPanel, BoxLayout.X_AXIS));
             for ( AppointmentEditExtensionFactory factory:appointmentEditFactory) {
                 RaplaWidget widget = factory.createField( this);
                 if ( widget != null) {
-                    editExtensionPanel.add((JComponent)widget.getComponent(), BorderLayout.SOUTH);
+                    editExtensionPanel.add((JComponent)widget.getComponent());
                 }
             }
             panel.add(editExtensionPanel, BorderLayout.SOUTH);
@@ -275,7 +276,6 @@ public class AppointmentController extends RaplaGUIComponent implements Disposab
             repeatingCard.show(repeatingContainer, "0");
             noRepeating.setSelected(true);
         }
-
         savedRepeatingType = getCurrentRepeatingType();
     }
 
@@ -1379,6 +1379,9 @@ public class AppointmentController extends RaplaGUIComponent implements Disposab
                 dayChooser.setEnabled(!wholeDaysSet);
                 days.setEnabled(!wholeDaysSet);
                 oneDayEventCheckBox.setSelected(wholeDaysSet);
+                for (Consumer<Appointment> consumer: appointmentChangedConsumer) {
+                    consumer.accept(appointment);
+                }
             }
             finally
             {

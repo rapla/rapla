@@ -18,9 +18,7 @@ package org.rapla.plugin.appointmentcomment.client.swing;
 import org.rapla.RaplaResources;
 import org.rapla.client.RaplaWidget;
 import org.rapla.client.extensionpoints.AppointmentEditExtensionFactory;
-import org.rapla.entities.IllegalAnnotationException;
 import org.rapla.entities.domain.Appointment;
-import org.rapla.entities.domain.Reservation;
 import org.rapla.facade.client.ClientFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
@@ -35,7 +33,7 @@ import java.awt.event.FocusEvent;
 import java.awt.event.FocusListener;
 import java.util.function.Consumer;
 
-//@Extension (provides = AppointmentEditExtensionFactory.class, id = "appointmentcomment")
+@Extension (provides = AppointmentEditExtensionFactory.class, id = "appointmentnote")
 @Singleton
 public class CommentEditFactory implements AppointmentEditExtensionFactory {
     private final ClientFacade facade;
@@ -60,16 +58,27 @@ public class CommentEditFactory implements AppointmentEditExtensionFactory {
 
     class CommentEditor implements RaplaWidget, Consumer<Appointment>
     {
-        JTextField commentField = new JTextField(10);
+        JPanel panel = new JPanel();
+        JLabel label = new JLabel();
+        JTextField hoteField = new JTextField(10);
         private boolean isSaving = false; // Flag to prevent infinite loop
 
         AppointmentEditExtensionEvents events;
         CommentEditor(AppointmentEditExtensionEvents events)
         {
             this.events = events;
+            //Appointment appointment = events.getAppointment();
+            //accept( appointment);
+            panel.setLayout(new BoxLayout(panel, BoxLayout.X_AXIS));
+            panel.add(Box.createHorizontalStrut(10));
+            label.setText(i18n.getString("appointment.note"));
+            panel.add(label);
+            panel.add(Box.createHorizontalStrut(10));
+            panel.add(hoteField);
+            panel.add(Box.createHorizontalGlue()    );
             events.init(this);
 
-            commentField.addFocusListener(new FocusListener() {
+            hoteField.addFocusListener(new FocusListener() {
                 @Override
                 public void focusGained(FocusEvent e) {
                     // Do nothing
@@ -81,8 +90,8 @@ public class CommentEditFactory implements AppointmentEditExtensionFactory {
                     if (!isSaving) {
                         isSaving = true;
                         Appointment appointment = events.getAppointment();
-                        String comment = commentField.getText();
-                        AppointmentCommentFunctions.setComment(appointment, comment);
+                        String comment = hoteField.getText();
+                        AppointmentCommentFunctions.setNote(appointment, comment);
                         try {
                             events.appointmentChanged();
                         } finally {
@@ -98,13 +107,13 @@ public class CommentEditFactory implements AppointmentEditExtensionFactory {
 
         public JComponent getComponent()
         {
-            return commentField;
+            return panel;
         }
 
         @Override
         public void accept(Appointment appointment) {
-            String comment = AppointmentCommentFunctions.getComment(appointment);
-            commentField.setText(comment);
+            String comment = AppointmentCommentFunctions.getNote(appointment);
+            hoteField.setText(comment);
         }
     }
 
