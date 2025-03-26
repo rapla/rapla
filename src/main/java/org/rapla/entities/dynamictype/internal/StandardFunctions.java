@@ -1,6 +1,5 @@
 package org.rapla.entities.dynamictype.internal;
 
-import org.jetbrains.annotations.NotNull;
 import org.rapla.components.util.DateTools;
 import org.rapla.components.util.TimeInterval;
 import org.rapla.entities.Category;
@@ -11,7 +10,6 @@ import org.rapla.entities.Named;
 import org.rapla.entities.RaplaObject;
 import org.rapla.entities.Timestamp;
 import org.rapla.entities.domain.*;
-import org.rapla.entities.domain.internal.ReservationImpl;
 import org.rapla.entities.dynamictype.*;
 import org.rapla.entities.extensionpoints.Function;
 import org.rapla.entities.extensionpoints.FunctionFactory;
@@ -64,6 +62,7 @@ public class StandardFunctions implements FunctionFactory
             case IfFunction.ID: return new IfFunction(args);
             case SortFunction.ID: return new SortFunction(args);
             case IndexFunction.ID: return new IndexFunction(args);
+            case FormatFunction.ID: return new FormatFunction(args);
             case SubstringFunction.ID: return new SubstringFunction(args);
             case ReverseFunction.ID: return new ReverseFunction(args);
             case StringComparatorFunction.ID: return new StringComparatorFunction(args);
@@ -1252,6 +1251,47 @@ public class StandardFunctions implements FunctionFactory
             {
                 return stringResult.substring(Math.min(firstIndex.intValue(), stringResult.length()), Math.min(lastIndex.intValue(), stringResult.length()));
             }
+
+        }
+    }
+
+    public static class FormatFunction extends Function
+    {
+
+        public static final String ID = "format";
+        private final Function format;
+        public FormatFunction(List<Function> args) throws IllegalAnnotationException
+        {
+            super(NAMESPACE,ID, args);
+            assertArgs(2, Integer.MAX_VALUE);
+
+            format = args.get(0);
+            testMethod();
+        }
+
+        private void testMethod() throws IllegalAnnotationException
+        {
+        }
+
+        @Override public String eval(EvalContext context)
+        {
+            Object formatObject = format.eval(context);
+            String formatResult = ParsedText.evalToString(formatObject, context);
+            if (formatResult == null)
+            {
+                return null;
+            }
+            Object[] formatArgs = new Object[args.size() - 1];
+            boolean isNull = true   ;
+            for  (int i = 1; i < args.size(); i++) {
+                formatArgs[i-1] = args.get(i).eval(context);
+                if (formatArgs[i-1] != null)
+                {
+                    isNull = false;
+                }
+            }
+            String result = isNull ? "" : String.format(formatResult, formatArgs);
+            return result;
 
         }
     }

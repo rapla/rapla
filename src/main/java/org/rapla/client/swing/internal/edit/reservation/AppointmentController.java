@@ -285,6 +285,11 @@ public class AppointmentController extends RaplaGUIComponent implements Disposab
         this.appointmentChangedConsumer.add( appointmentChanged);
     }
 
+    @Override
+    public CommandHistory getCommandHistory() {
+        return commandHistory;
+    }
+
     public Appointment getAppointment()
     {
         return appointment;

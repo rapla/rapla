@@ -577,7 +577,6 @@ class AppointmentListEdit extends AbstractAppointmentEditor
 		}
 		
 		private void setAppointment(Appointment toAppointment) {
-			appointmentController.setAppointment(toAppointment);
 			selectAppointment(toAppointment, true);
 		}
 		

@@ -1,6 +1,7 @@
 package org.rapla.client.extensionpoints;
 
 import org.rapla.client.RaplaWidget;
+import org.rapla.components.util.undo.CommandHistory;
 import org.rapla.entities.domain.Appointment;
 import org.rapla.framework.RaplaException;
 import org.rapla.inject.ExtensionPoint;
@@ -22,5 +23,6 @@ public interface AppointmentEditExtensionFactory {
 		void init(Consumer<Appointment> appointmentChanged);
 		Appointment getAppointment();
 		void appointmentChanged();
+		CommandHistory getCommandHistory();
 	}
 }
