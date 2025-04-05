@@ -1284,8 +1284,9 @@ public class StandardFunctions implements FunctionFactory
             Object[] formatArgs = new Object[args.size() - 1];
             boolean isNull = true   ;
             for  (int i = 1; i < args.size(); i++) {
-                formatArgs[i-1] = args.get(i).eval(context);
-                if (formatArgs[i-1] != null)
+                Object eval = args.get(i).eval(context);
+                formatArgs[i-1] = eval;
+                if (eval != null && !eval.toString().trim().isEmpty())
                 {
                     isNull = false;
                 }
