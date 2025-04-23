@@ -140,7 +140,7 @@ public class TextField extends AbstractEditField implements ActionListener, Focu
 
     public String getValue()
     {
-        return field.getText().trim();
+        return field.getText();
     }
 
     public void setValue(String string)

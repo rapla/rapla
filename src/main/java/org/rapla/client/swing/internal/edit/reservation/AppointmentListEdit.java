@@ -169,8 +169,8 @@ class AppointmentListEdit extends AbstractAppointmentEditor
 		try {
 			boolean shouldScroll = true;
 			listEdit.getList().clearSelection();
-			listEdit.getList().setSelectedValue(  appointment ,shouldScroll );
 			appointmentController.setAppointment( appointment );
+			listEdit.getList().setSelectedValue(  appointment ,shouldScroll );
 		} finally {
 			if (disableListeners)
 			{
@@ -269,7 +269,7 @@ class AppointmentListEdit extends AbstractAppointmentEditor
 				Appointment newAppointment = (Appointment) listEdit.getList().getSelectedValue();
 				Appointment oldAppointment = appointmentController.getAppointment();
 				
-				if (!disableInternSelectionListener)
+				if (!disableInternSelectionListener && oldAppointment != newAppointment)
 				{
 				    if (oldAppointment!=null && !newAppointment.equals(oldAppointment) ) {
 				        AppointmentSelectionChange appointmentCommand = new AppointmentSelectionChange(oldAppointment, newAppointment);

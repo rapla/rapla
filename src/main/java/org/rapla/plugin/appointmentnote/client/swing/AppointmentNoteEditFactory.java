@@ -18,6 +18,7 @@ package org.rapla.plugin.appointmentnote.client.swing;
 import org.rapla.RaplaResources;
 import org.rapla.client.RaplaWidget;
 import org.rapla.client.extensionpoints.AppointmentEditExtensionFactory;
+import org.rapla.client.swing.internal.edit.fields.TextField;
 import org.rapla.components.util.undo.CommandUndo;
 import org.rapla.entities.domain.Appointment;
 import org.rapla.facade.client.ClientFacade;
@@ -44,15 +45,17 @@ public class AppointmentNoteEditFactory implements AppointmentEditExtensionFacto
     private final RaplaResources i18n;
     private final RaplaLocale raplaLocale;
     private final Logger logger;
+    private final TextField.TextFieldFactory textFieldFactory;
 
     @Inject
-    public AppointmentNoteEditFactory(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger)
+    public AppointmentNoteEditFactory(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, TextField.TextFieldFactory textFieldFactory)
     {
         super();
         this.facade = facade;
         this.i18n = i18n;
         this.raplaLocale = raplaLocale;
         this.logger = logger;
+        this.textFieldFactory = textFieldFactory;
     }
 
     @Override
@@ -74,15 +77,17 @@ public class AppointmentNoteEditFactory implements AppointmentEditExtensionFacto
 
     class NoteEditor implements RaplaWidget, Consumer<Appointment>
     {
+        TextField textField;
         JPanel panel = new JPanel();
         JLabel label = new JLabel();
-        JTextField noteField = new JTextField(10);
+        //JTextField noteField = new JTextField(10);
         private boolean isSaving = false; // Flag to prevent infinite loop
         Appointment appointment;
         AppointmentEditExtensionEvents events;
         NoteEditor(AppointmentEditExtensionEvents events)
         {
             this.events = events;
+            textField = textFieldFactory.create("appointment.note");
             //Appointment appointment = events.getAppointment();
             //accept( appointment);
             panel.setLayout(new BoxLayout(panel, BoxLayout.X_AXIS));
@@ -90,10 +95,24 @@ public class AppointmentNoteEditFactory implements AppointmentEditExtensionFacto
             label.setText(i18n.getString("appointment.note"));
             panel.add(label);
             panel.add(Box.createHorizontalStrut(10));
-            panel.add(noteField);
+            panel.add(textField.getComponent());
             panel.add(Box.createHorizontalGlue()    );
             events.init(this);
 
+            textField.addChangeListener(e->
+            {
+                if (!isSaving) {
+                    String comment = textField.getValue();
+                    isSaving = true;
+                    try {
+                        UndoNoteChange undoCommentChange = new UndoNoteChange(appointment, comment);
+                        events.getCommandHistory().storeAndExecute(undoCommentChange);
+                    } finally {
+                        isSaving = false;
+                    }
+                }
+            });
+            /*
             noteField.addFocusListener(new FocusListener() {
                 @Override
                 public void focusGained(FocusEvent e) {
@@ -116,7 +135,7 @@ public class AppointmentNoteEditFactory implements AppointmentEditExtensionFacto
                     }
                 }
             });
-
+*/
 
         }
 
@@ -131,7 +150,7 @@ public class AppointmentNoteEditFactory implements AppointmentEditExtensionFacto
             SwingUtilities.invokeLater(()-> {
                 this.appointment = appointment;
                 String comment = AppointmentNoteFunctions.getNote(appointment);
-                noteField.setText(comment);
+                textField.setValue(comment);
             });
         }
 
@@ -151,7 +170,7 @@ public class AppointmentNoteEditFactory implements AppointmentEditExtensionFacto
             public Promise<Void> execute() {
                 AppointmentNoteFunctions.setNote(appointment, newComment);
                 try {
-                    noteField.setText(newComment);
+                    textField.setValue(newComment);
                     events.appointmentChanged();
                 } finally {
                     isSaving = false;
@@ -163,7 +182,7 @@ public class AppointmentNoteEditFactory implements AppointmentEditExtensionFacto
             public Promise<Void> undo() {
                 AppointmentNoteFunctions.setNote(appointment, oldComment);
                 try {
-                    noteField.setText(oldComment);
+                    textField.setValue(oldComment);
                     events.appointmentChanged();
                 } finally {
                     isSaving = false;

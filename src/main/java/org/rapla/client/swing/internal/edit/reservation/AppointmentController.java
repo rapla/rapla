@@ -297,7 +297,6 @@ public class AppointmentController extends RaplaGUIComponent implements Disposab
 
     @Override
     public void appointmentChanged() {
-        fireAppointmentChanged();
     }
 
     public void setSelectedEditDate(Date selectedEditDate)
