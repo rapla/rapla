@@ -239,7 +239,8 @@ final class RepeatingImpl implements Repeating,java.io.Serializable {
         {
             return appointmentStart;
         }
-        
+        long appointmentLength = appointment.getEnd().getTime() - appointment.getStart().getTime();
+
         if ( !isFixedIntervalLength())
         {
             int counts =  ((number -1) * interval) ;
@@ -247,16 +248,19 @@ final class RepeatingImpl implements Repeating,java.io.Serializable {
             for ( int i=0;i< counts;i++)
             {
                 long newTime = gotoNextStep(appointmentStart, newDate);
-            	newDate = new Date( newTime);
+                newDate = new Date( newTime + appointmentLength);
             }
             return newDate;
         }
         else
         {
             long intervalLength = getFixedIntervalLength();
-            endTime.setTime(DateTools.fillDate(appointmentStart .getTime()
-                                           + (this.number -1)* intervalLength
-                                           ));
+            long newTime = appointmentStart.getTime()
+                    + (this.number - 1) * intervalLength;
+            long endOfDay = DateTools.fillDate(newTime
+            );
+            long newEndTime = Math.max(endOfDay, newTime + appointmentLength);
+            endTime.setTime(newEndTime);
         }
         return endTime;
     }
