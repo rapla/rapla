@@ -170,7 +170,10 @@ public class AppointmentNoteEditFactory implements AppointmentEditExtensionFacto
             public Promise<Void> execute() {
                 AppointmentNoteFunctions.setNote(appointment, newComment);
                 try {
-                    textField.setValue(newComment);
+                    isSaving = true;
+                    if (!textField.getValue().equals(newComment)) {
+                        textField.setValue(newComment);
+                    }
                     events.appointmentChanged();
                 } finally {
                     isSaving = false;
@@ -182,7 +185,10 @@ public class AppointmentNoteEditFactory implements AppointmentEditExtensionFacto
             public Promise<Void> undo() {
                 AppointmentNoteFunctions.setNote(appointment, oldComment);
                 try {
-                    textField.setValue(oldComment);
+                    isSaving = true;
+                    if (!textField.getValue().equals(oldComment)) {
+                        textField.setValue(oldComment);
+                    }
                     events.appointmentChanged();
                 } finally {
                     isSaving = false;

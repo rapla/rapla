@@ -215,7 +215,9 @@ public final class ReservationEditImpl extends AbstractAppointmentEditor impleme
                 String undoKeyString = modifier + "-Z";
                 redoAction.putValue(Action.SHORT_DESCRIPTION, getString("redo") + ": " + commandHistory.getRedoText() + "  " + redoKeyString);
                 undoAction.putValue(Action.SHORT_DESCRIPTION, getString("undo") + ": " + commandHistory.getUndoText() + "  " + undoKeyString);
-                setHasChanged( true );
+                if ( commandHistory.size() >0 ) {
+                    setHasChanged(true);
+                }
         });
 
         toolBar.add(back);
