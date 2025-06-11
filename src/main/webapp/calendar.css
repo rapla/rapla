@@ -341,7 +341,10 @@ a:hover{
 .link {
    text-decoration: underline;
 }
-
+span.link
+{
+    color: blueviolet;
+}
 .eventtable
 {
   width:100%;
