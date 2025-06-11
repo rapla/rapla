@@ -31,7 +31,6 @@ import org.rapla.logger.Logger;
 import org.rapla.plugin.abstractcalendar.server.AbstractHTMLCalendarPage;
 import org.rapla.plugin.autoexport.AutoExportPlugin;
 import org.rapla.plugin.autoexport.AutoExportResources;
-import org.rapla.plugin.urlencryption.UrlEncryption;
 import org.rapla.plugin.urlencryption.UrlEncryptionPlugin;
 import org.rapla.server.extensionpoints.HTMLViewPage;
 import org.rapla.storage.StorageOperator;
@@ -144,7 +143,7 @@ public class CalendarPageGenerator
         java.io.PrintWriter out = response.getWriter();
         try
         {
-            response.setContentType("text/html; charset=" + raplaLocale.getCharsetNonUtf());
+            response.setContentType("text/html; charset=" + raplaLocale.getCharsetForHtml());
 
             SortedSet<User> sortedUsers = new TreeSet<>(User.USER_COMPARATOR);
             sortedUsers.addAll(Arrays.asList(users));
@@ -153,7 +152,7 @@ public class CalendarPageGenerator
             out.println("<html>");
             out.println("<head>");
             out.println("<title>" + calendarName + "</title>");
-            String charset = raplaLocale.getCharsetNonUtf();//
+            String charset = raplaLocale.getCharsetForHtml();//
             out.println("  <meta HTTP-EQUIV=\"Content-Type\" content=\"text/html; charset=" + charset + "\">");
             out.println("</head>");
             out.println("<body>");
@@ -418,7 +417,7 @@ public class CalendarPageGenerator
 */
     private void writeStacktrace(HttpServletResponse response, Exception ex) throws IOException
     {
-        String charsetNonUtf = raplaLocale.getCharsetNonUtf();
+        String charsetNonUtf = raplaLocale.getCharsetForHtml();
         response.setContentType("text/html; charset=" + charsetNonUtf);
         java.io.PrintWriter out = response.getWriter();
         out.println(IOUtil.getStackTraceAsString(ex));
@@ -444,7 +443,7 @@ public class CalendarPageGenerator
     private void writeError(HttpServletResponse response, String message) throws IOException
     {
         response.setStatus(500);
-        response.setContentType("text/html; charset=" + raplaLocale.getCharsetNonUtf());
+        response.setContentType("text/html; charset=" + raplaLocale.getCharsetForHtml());
         java.io.PrintWriter out = response.getWriter();
         out.println(message);
         out.close();

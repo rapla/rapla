@@ -61,7 +61,7 @@ abstract public class TableViewPage<T>
 
     private void generagePageCSV(HttpServletRequest request, HttpServletResponse response, CalendarModel model) throws IOException, ServletException
     {
-        response.setContentType("text/comma-separated-values; charset=" + raplaLocale.getCharsetNonUtf());
+        response.setContentType("text/comma-separated-values; charset=" + raplaLocale.getCharsetForHtml());
         String filename = model.getFilename();
         response.setHeader("Content-Disposition","attachment; filename=\""+filename+".csv\"");
         java.io.PrintWriter out = response.getWriter();
@@ -81,7 +81,7 @@ abstract public class TableViewPage<T>
 
     private void generagePageHtml(HttpServletRequest request, HttpServletResponse response, CalendarModel model) throws IOException, ServletException
     {
-        response.setContentType("text/html; charset=" + raplaLocale.getCharsetNonUtf());
+        response.setContentType("text/html; charset=" + raplaLocale.getCharsetForHtml());
         java.io.PrintWriter out = response.getWriter();
 
         String linkPrefix = request.getPathTranslated() != null ? "../" : "";
@@ -97,7 +97,7 @@ abstract public class TableViewPage<T>
         out.println("  <link REL=\"stylesheet\" href=\"" + linkPrefix + "export.css\" type=\"text/css\">");
         // tell the html page where its favourite icon is stored
         out.println("    <link REL=\"shortcut icon\" type=\"image/x-icon\" href=\"/images/favicon.ico\">");
-        out.println("  <meta HTTP-EQUIV=\"Content-Type\" content=\"text/html; charset=" + raplaLocale.getCharsetNonUtf() + "\">");
+        out.println("  <meta HTTP-EQUIV=\"Content-Type\" content=\"text/html; charset=" + raplaLocale.getCharsetForHtml() + "\">");
         out.println("</head>");
         String filename = request.getParameter("file");
         String pageId = Tools.createXssSafeString( filename);

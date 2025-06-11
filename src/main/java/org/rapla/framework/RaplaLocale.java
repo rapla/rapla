@@ -82,7 +82,7 @@ public interface RaplaLocale
      /** Monthname of date. */
     String formatMonth( Date date );
 
-    String getCharsetNonUtf();
+    String getCharsetForHtml();
 
     Locale getLocale();
 

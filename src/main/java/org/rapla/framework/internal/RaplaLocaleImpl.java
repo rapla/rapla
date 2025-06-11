@@ -38,7 +38,8 @@ public class RaplaLocaleImpl extends AbstractRaplaLocale  {
     {
         super(bundleManager);
         importExportTimeZone = TimeZone.getDefault();
-        charsetForHtml = "ISO-8859-1";
+        //charsetForHtml = "ISO-8859-1";
+        charsetForHtml = "UTF-8";
     }
 
 	public Date fromUTCTimestamp(Date date)
@@ -63,7 +64,7 @@ public class RaplaLocaleImpl extends AbstractRaplaLocale  {
 		return NumberFormat.getInstance( locale).format(number );
     }
 
-    public String getCharsetNonUtf()
+    public String getCharsetForHtml()
     {
         return charsetForHtml;
     }

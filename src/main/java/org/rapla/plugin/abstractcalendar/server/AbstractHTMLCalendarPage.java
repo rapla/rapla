@@ -14,7 +14,6 @@ package org.rapla.plugin.abstractcalendar.server;
 
 import org.rapla.RaplaResources;
 import org.rapla.components.calendarview.html.AbstractHTMLView;
-import org.rapla.components.i18n.I18nBundle;
 import org.rapla.components.util.DateTools;
 import org.rapla.components.util.ParseDateException;
 import org.rapla.components.util.SerializableDateTimeFormat;
@@ -155,7 +154,7 @@ public abstract class AbstractHTMLCalendarPage  implements HTMLViewPage
     public void generatePage( ServletContext context,HttpServletRequest request, HttpServletResponse response,CalendarModel calendarModel) throws ServletException, IOException
     {
         this.model = calendarModel.clone();
-        response.setContentType("text/html; charset=" + raplaLocale.getCharsetNonUtf());
+        response.setContentType("text/html; charset=" + raplaLocale.getCharsetForHtml());
         java.io.PrintWriter out = response.getWriter();
 
         Date calendarview = model.getSelectedDate();
