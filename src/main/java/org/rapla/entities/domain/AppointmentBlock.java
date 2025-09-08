@@ -15,6 +15,7 @@ package org.rapla.entities.domain;
 import org.rapla.components.util.DateTools;
 import org.rapla.components.util.TimeInterval;
 
+import java.time.LocalDateTime;
 import java.util.Date;
 
 
@@ -80,7 +81,16 @@ public class AppointmentBlock implements Comparable<AppointmentBlock>
 	{
 		return end;
 	}
-	
+
+	public LocalDateTime getStartDateTime() {
+		return DateTools.toLocalDateTime(start);
+	}
+
+	public LocalDateTime getEndDateTime() {
+		return DateTools.toLocalDateTime(end);
+	}
+
+
 	/**
      * Returns if the block is an exception from the appointment rule
      * 

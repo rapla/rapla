@@ -84,6 +84,8 @@ public interface RaplaLocale
 
     String getCharsetForHtml();
 
+    String getCharsetForCsv();
+
     Locale getLocale();
 
 	SerializableDateTimeFormat getSerializableFormat();

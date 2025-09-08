@@ -61,8 +61,9 @@ abstract public class TableViewPage<T>
 
     private void generagePageCSV(HttpServletRequest request, HttpServletResponse response, CalendarModel model) throws IOException, ServletException
     {
-        response.setContentType("text/comma-separated-values; charset=" + raplaLocale.getCharsetForHtml());
+        response.setContentType("text/comma-separated-values; charset=" + raplaLocale.getCharsetForCsv());
         String filename = model.getFilename();
+        response.setCharacterEncoding(raplaLocale.getCharsetForCsv());
         response.setHeader("Content-Disposition","attachment; filename=\""+filename+".csv\"");
         java.io.PrintWriter out = response.getWriter();
         try

@@ -107,11 +107,12 @@ public class TokenHandler
     {
         String userId = user.getId();
         Date now = operator.getCurrentTimestamp();
-        Date validUntil = new Date(now.getTime() + 1000L * accessTokenValiditySeconds);
+        long validityInSeconds = accessTokenValiditySeconds;
+        Date validUntil = new Date(now.getTime() + 1000L * validityInSeconds);
         String signedToken = null;
         try
         {
-            signedToken = accessTokenSigner.newToken(userId, now);
+            signedToken = getSignedToken(userId, now);
         }
         catch (TokenInvalidException e)
         {
@@ -120,6 +121,10 @@ public class TokenHandler
 
         return new LoginTokens(signedToken, validUntil);
 
+    }
+
+    public String getSignedToken(String userId, Date now) throws TokenInvalidException {
+        return accessTokenSigner.newToken(userId, now);
     }
 
     public String getRefreshToken(User user) throws RaplaException
@@ -144,7 +149,7 @@ public class TokenHandler
         String generatedAPIKey;
         try
         {
-            generatedAPIKey = accessTokenSigner.newToken(userId, now);
+            generatedAPIKey = getSignedToken(userId, now);
         }
         catch (TokenInvalidException e)
         {

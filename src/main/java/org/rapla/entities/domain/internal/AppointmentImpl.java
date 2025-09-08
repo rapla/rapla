@@ -26,6 +26,7 @@ import org.rapla.entities.storage.ReferenceInfo;
 import org.rapla.entities.storage.internal.SimpleEntity;
 import org.rapla.facade.RaplaComponent;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -92,6 +93,14 @@ public final class AppointmentImpl extends SimpleEntity implements Appointment
 
     public Date getStart() { return start;}
     public Date getEnd() { return end;}
+
+    public LocalDateTime getStartDateTime() {
+        return DateTools.toLocalDateTime(start);
+    }
+
+    public LocalDateTime getEndDateTime() {
+        return DateTools.toLocalDateTime(end);
+    }
 
     public void setReadOnly() {
         super.setReadOnly( );
@@ -227,6 +236,15 @@ public final class AppointmentImpl extends SimpleEntity implements Appointment
         if (maxDate == null || maxDate.getTime() != end)
             maxDate = new Date(end);
         return maxDate;
+    }
+
+    public LocalDateTime getMaxEndDateTime() {
+        Date maxEnd = getMaxEnd();
+        if ( maxEnd == null)
+        {
+            return null;
+        }
+        return DateTools.toLocalDateTime(maxEnd);
     }
 
     public RepeatingImpl getRepeating() {

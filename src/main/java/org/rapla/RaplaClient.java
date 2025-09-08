@@ -21,6 +21,7 @@ import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.StartupEnvironment;
 import org.rapla.logger.Logger;
 import org.rapla.logger.RaplaBootstrapLogger;
+import org.rapla.storage.dbrm.RemoteOperator;
 
 import java.net.URL;
 
@@ -93,5 +94,7 @@ public class RaplaClient
     {
         return facade;
     }
+
+
 }
 

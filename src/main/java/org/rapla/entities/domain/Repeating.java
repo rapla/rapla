@@ -11,8 +11,10 @@
  | Definition as published by the Open Source Initiative (OSI).             |
  *--------------------------------------------------------------------------*/
 package org.rapla.entities.domain;
+import org.rapla.components.util.DateTools;
 import org.rapla.components.util.TimeInterval;
 
+import java.time.LocalDateTime;
 import java.util.Date;
 import java.util.Set;
 
@@ -52,6 +54,14 @@ public interface Repeating {
     void setEnd(Date end);
     /* @return end of repeating or null if unlimited */
     Date getEnd();
+
+    default LocalDateTime getEndDateTime() {
+        Date end = getEnd();
+        if (end == null) {
+            return null;
+        }
+        return DateTools.toLocalDateTime(end);
+    }
     /** Set a fixed number of repeating.
      * If this value is set to -1
      * and the repeating end is set to null the appointment will
@@ -69,6 +79,7 @@ public interface Repeating {
     void setType(RepeatingType type);
     /* exceptions for this repeating. */
     Date[] getExceptions();
+
     boolean hasExceptions();
 
     boolean isWeekly();

@@ -188,6 +188,12 @@ public interface RemoteStorage
     UpdateEvent refreshSync(@QueryParam("lastValidated") String lastSyncedTime) throws RaplaException;
 
     @POST
+    @Path("refreshSyncAllEvents")
+    @Produces({ MediaType.APPLICATION_JSON, MediaType.APPLICATION_XML })
+    @GZIP
+    UpdateEvent refreshSyncAllEvents(@QueryParam("lastValidated") String lastSyncedTime) throws RaplaException;
+
+    @POST
     @Path("refresh")
     @Produces({ MediaType.APPLICATION_JSON, MediaType.APPLICATION_XML })
     @GZIP

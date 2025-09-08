@@ -449,6 +449,21 @@ import java.util.stream.Collectors;
         }
     }
 
+    public UpdateEvent refreshSyncAllEvents(String lastSyncedTime) throws RaplaException
+    {
+        final User user = checkSessionUser();
+        try
+        {
+            Date clientRepoVersion = lastSyncedTime != null ? SerializableDateTimeFormat.INSTANCE.parseTimestamp(lastSyncedTime) : null;
+            UpdateEvent event = updateDataManager.createUpdateEventReservations(user, clientRepoVersion);
+            return event;
+        }
+        catch (ParseDateException e)
+        {
+            throw new RaplaException("Illegal last synced date " + lastSyncedTime + " caused " + e.getMessage(), e);
+        }
+    }
+
     public Promise<UpdateEvent> refresh(String lastValidated)
     {
         try

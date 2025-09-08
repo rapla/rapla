@@ -157,7 +157,10 @@ public class ServerServiceImpl implements ServerServiceContainer
                         }
                     }
                 }
-                ((RaplaLocaleImpl) raplaLocale).setImportExportTimeZone(timeZone);
+                RaplaLocaleImpl raplaLocaleImpl = (RaplaLocaleImpl) raplaLocale;
+                raplaLocaleImpl.setImportExportTimeZone(timeZone);
+                raplaLocaleImpl.setCharsetForCsv( preferences.getEntryAsString(AbstractRaplaLocale.CSV_CHARSET, AbstractRaplaLocale.CSV_CHARSET_DEFAULT));
+                raplaLocaleImpl.setCharsetForHtml( preferences.getEntryAsString(AbstractRaplaLocale.HTML_CHARSET, AbstractRaplaLocale.HTML_CHARSET_DEFAULT));
                 ((TimeZoneConverterImpl) importExportLocale).setImportExportTimeZone(timeZone);
                 if (operator instanceof LocalAbstractCachableOperator)
                 {

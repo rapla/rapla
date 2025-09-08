@@ -429,7 +429,9 @@ public class UpdateEvent
 
     public String getInfoString()
     {
-        return getUserId() + " made " + getObjectStream( ).count() + " stores " + ((removeSet!=null)? removeSet.size() : 0) + " removes";
+        String userId = getUserId();
+        String s = userId != null ? userId + " made ":"";
+        return s + getObjectStream().count() + " stores " + ((removeSet != null) ? removeSet.size() : 0) + " removes";
     }
 
     public String toString()

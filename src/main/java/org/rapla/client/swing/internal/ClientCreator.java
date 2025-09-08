@@ -6,13 +6,19 @@ import org.rapla.client.UserClientService;
 import org.rapla.components.iolayer.DefaultIO;
 import org.rapla.components.iolayer.IOInterface;
 import org.rapla.components.iolayer.WebstartIO;
+import org.rapla.facade.RaplaFacade;
 import org.rapla.facade.client.ClientFacade;
+import org.rapla.facade.internal.ClientFacadeImpl;
+import org.rapla.facade.internal.FacadeImpl;
 import org.rapla.framework.StartupEnvironment;
 import org.rapla.inject.InjectionContext;
 import org.rapla.inject.raplainject.SimpleRaplaInjector;
 import org.rapla.inject.scanning.ScanningClassLoader;
 import org.rapla.inject.scanning.ServiceInfLoader;
 import org.rapla.logger.Logger;
+import org.rapla.server.internal.RemoteStorageImpl;
+import org.rapla.storage.dbrm.RemoteOperator;
+import org.rapla.storage.dbrm.RemoteStorage;
 
 import javax.inject.Provider;
 import java.util.Collection;
@@ -77,9 +83,10 @@ public class ClientCreator
 
     public static ClientFacade createFacade(StartupEnvironment startupEnvironment) throws Exception
     {
-        final SimpleRaplaInjector simpleRaplaInjector = initInjector(startupEnvironment, InjectionContext.client);
-        final ClientFacade facade = simpleRaplaInjector.inject(ClientFacade.class);
-        return facade;
+        final SimpleRaplaInjector simpleRaplaInjector = initInjector(startupEnvironment, InjectionContext.swing);
+        final RaplaClientServiceImpl client = (RaplaClientServiceImpl)simpleRaplaInjector.getInstance( ClientService.class);
+        return client.getClientFacade();
     }
 
 }
+

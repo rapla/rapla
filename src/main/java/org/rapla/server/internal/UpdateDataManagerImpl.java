@@ -118,6 +118,11 @@ public class UpdateDataManagerImpl implements  UpdateDataManager
 
     public UpdateEvent createUpdateEvent(User user, Date lastSynced) throws RaplaException
     {
+        return createUpdateEventInternal(user, lastSynced, false);
+    }
+
+    public UpdateEvent createUpdateEventInternal(User user, Date lastSynced, boolean addReservations) throws RaplaException
+    {
         Date currentTimestamp = operator.getCurrentTimestamp();
         Date historyValidStart = operator.getHistoryValidStart();
         Date conflictValidStart = operator.getConnectStart();
@@ -324,7 +329,6 @@ public class UpdateDataManagerImpl implements  UpdateDataManager
 
         //if ( lastSynced.before( currentTimestamp ))
         {
-            String userId = user.getId();
             safeResultEvent.setNeedResourcesRefresh(resourceRefresh);
         }
         if (!resourceRefresh)
@@ -349,7 +353,7 @@ public class UpdateDataManagerImpl implements  UpdateDataManager
                     }
                 }
                     // Add entity to result
-                processClientReadable(user, safeResultEvent, updateResult, obj, false);
+                processClientReadable(user, safeResultEvent, updateResult, obj, false, addReservations);
             }
             Collection<Remove> removedEntities = updateResult.getOperations(UpdateResult.Remove.class);
             for (Remove remove : removedEntities)
@@ -384,10 +388,15 @@ public class UpdateDataManagerImpl implements  UpdateDataManager
         return safeResultEvent;
     }
 
-    // adds an object to the update event if the client can see it
-    protected void processClientReadable(User user, UpdateEvent safeResultEvent, UpdateResult updateResult, Entity obj, boolean remove)
+    public UpdateEvent createUpdateEventReservations(User user, Date lastSynced) throws RaplaException
     {
-        if (!UpdateDataManagerImpl.isTransferedToClient(obj))
+        return createUpdateEventInternal(user, lastSynced, true);
+    }
+
+    // adds an object to the update event if the client can see it
+    protected void processClientReadable(User user, UpdateEvent safeResultEvent, UpdateResult updateResult, Entity obj, boolean remove, boolean addReservations)
+    {
+        if (!UpdateDataManagerImpl.isTransferedToClient(obj, addReservations))
         {
             if ( obj instanceof Reservation ) {
                 Reservation event = (Reservation)obj;
@@ -466,8 +475,22 @@ public class UpdateDataManagerImpl implements  UpdateDataManager
 
     static boolean isTransferedToClient(RaplaObject obj)
     {
+        return isTransferedToClient(obj, false);
+    }
+
+    static boolean isTransferedToClient(RaplaObject obj, boolean addReservations)
+    {
         Class<? extends RaplaObject> raplaType = obj.getTypeClass();
-        if (raplaType == Appointment.class || raplaType == Reservation.class || raplaType == ExternalSyncEntity.class)
+
+        if ( addReservations  ) {
+            if (raplaType == Reservation.class)
+            {
+                return DynamicTypeImpl.isTransferedToClient( (Classifiable) obj);
+            }
+            return false;
+        }
+
+        if (raplaType == Appointment.class || raplaType == Reservation.class  || raplaType == ExternalSyncEntity.class)
         {
             return false;
         }

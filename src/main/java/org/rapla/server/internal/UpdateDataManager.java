@@ -12,4 +12,5 @@ import java.util.Date;
 public interface UpdateDataManager
 {
     UpdateEvent createUpdateEvent(User user, Date lastSynced) throws RaplaException;
+    UpdateEvent createUpdateEventReservations(User user, Date lastSynced) throws RaplaException;
 }

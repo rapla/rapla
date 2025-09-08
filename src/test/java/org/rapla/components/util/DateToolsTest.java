@@ -4,11 +4,15 @@ import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
+
 import org.rapla.components.util.DateTools.DateWithoutTimezone;
 
+import java.time.LocalDateTime;
+import java.time.Month;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.TimeZone;
+
 
 @RunWith(JUnit4.class)
 public class DateToolsTest
@@ -162,10 +166,24 @@ public class DateToolsTest
     public void testFormat()
     {
         long date = DateTools.toDate( 2000, 1, 1);
-        long time = DateTools.toTime(12, 30, 0);
+        long time = DateTools.toTime(13, 30, 0);
         Date dateTime = new Date(date + time);
         final String format = DateTools.formatDateTime( dateTime);
-        org.junit.Assert.assertEquals("2000-01-01 12:30:00", format);
+        Assert.assertEquals("2000-01-01 13:30:00", format);
+        LocalDateTime localDateTime = DateTools.toLocalDateTime(dateTime);
+        int dayOfMonth = localDateTime.getDayOfMonth();
+        Month month = localDateTime.getMonth();
+        int year = localDateTime.getYear();
+        int hour = localDateTime.getHour();
+        int minute = localDateTime.getMinute();
+        int second = localDateTime.getSecond();
+        Assert.assertEquals(2000, year);
+        Assert.assertEquals(Month.JANUARY, month);
+        Assert.assertEquals(1, dayOfMonth);
+        Assert.assertEquals(13, hour);
+        Assert.assertEquals(30, minute);
+        Assert.assertEquals(0, second);
+
     }
 
     public final class Day implements Comparable<Day>

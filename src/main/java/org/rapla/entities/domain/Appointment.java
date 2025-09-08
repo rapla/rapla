@@ -17,6 +17,7 @@ import org.rapla.entities.Entity;
 import org.rapla.entities.User;
 import org.rapla.entities.storage.ReferenceInfo;
 
+import java.time.LocalDateTime;
 import java.util.Collection;
 import java.util.Date;
 import java.util.LinkedHashMap;
@@ -38,7 +39,12 @@ public interface Appointment extends Entity<Appointment>, Comparable {
         @see #getEnd
         @see Repeating
     */
+
+    LocalDateTime getStartDateTime();
+    LocalDateTime getEndDateTime();
+
     Date getMaxEnd();
+    LocalDateTime getMaxEndDateTime();
 
     ReferenceInfo<User> getOwnerRef();
 

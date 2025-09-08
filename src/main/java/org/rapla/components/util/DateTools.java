@@ -12,6 +12,10 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.components.util;
 
+import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.time.ZoneOffset;
 import java.util.Date;
 import java.util.Locale;
 
@@ -29,6 +33,7 @@ public abstract class DateTools
         final Date result = DateTools.addDays(date, diff);
         return result;
     }
+
 
     public enum IncrementSize
     {
@@ -78,8 +83,17 @@ public abstract class DateTools
         String string = SerializableDateTimeFormat.INSTANCE.formatTime( date);
         return string;
 	}
-	
-	public static String formatDateTime(Date date)
+
+    public static LocalDateTime toLocalDateTime(long dateTimeInMillis) {
+        LocalDateTime result = LocalDateTime.ofEpochSecond( dateTimeInMillis / 1000, 0, ZoneOffset.UTC);
+        return result;
+    }
+
+    public static LocalDateTime toLocalDateTime(Date dateTime) {
+        return toLocalDateTime( dateTime.getTime() );
+    }
+
+    public static String formatDateTime(Date date)
 	{
         return formatDateTime(date, null);
 	}

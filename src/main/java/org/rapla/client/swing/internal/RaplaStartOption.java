@@ -42,6 +42,7 @@ import javax.swing.JPanel;
 import javax.swing.JTextField;
 import java.util.List;
 import java.util.Locale;
+import java.util.Stack;
 
 @Extension(provides = SystemOptionPanel.class, id="startOption")
 public class RaplaStartOption extends RaplaGUIComponent implements SystemOptionPanel {
@@ -49,6 +50,9 @@ public class RaplaStartOption extends RaplaGUIComponent implements SystemOptionP
     JTextField calendarName;
     Preferences preferences;
 	private final JComboBox cboTimezone;
+    private final JComboBox htmlCharset;
+    private final JComboBox csvCharset;
+
     private final LanguageChooser languageChooser;
     private final CountryChooser countryChooser;
 	ICalTimezones timezoneService;
@@ -68,7 +72,7 @@ public class RaplaStartOption extends RaplaGUIComponent implements SystemOptionP
         super(facade, i18n, raplaLocale, logger);
         isRestartPossible = restartServer.isRestartPossible();
         double pre = TableLayout.PREFERRED;
-        panel.setLayout( new TableLayout(new double[][] {{pre, 5,pre, 5, pre}, {pre,5,pre, 5 , pre, 5, pre,5 , pre, 5, pre}}));
+        panel.setLayout( new TableLayout(new double[][] {{pre, 5,pre, 5, pre}, {pre,5,pre, 5 , pre, 5, pre,5 , pre, 5, pre ,5 , pre, 5, pre}}));
         this.timezoneService = timezoneService;      
         calendarName = new JTextField();
         addCopyPaste(calendarName, i18n, raplaLocale, ioInterface, logger);
@@ -90,7 +94,11 @@ public class RaplaStartOption extends RaplaGUIComponent implements SystemOptionP
 		@SuppressWarnings("unchecked")
 		JComboBox jComboBox = new JComboBox(timeZoneIDs);
 		cboTimezone = jComboBox;
-		panel.add(cboTimezone, "2,2");
+        String[] charsets = {AbstractRaplaLocale.ISO_8859_1_CHARSET, AbstractRaplaLocale.UTF_CHARSET};
+        htmlCharset = new JComboBox(charsets);
+        csvCharset = new JComboBox(charsets);
+
+        panel.add(cboTimezone, "2,2");
 		cboTimezone.setEditable(false);
 
         languageChooser = new LanguageChooser(getLogger(),i18n,raplaLocale);
@@ -109,6 +117,10 @@ public class RaplaStartOption extends RaplaGUIComponent implements SystemOptionP
         panel.add( new JLabel(getString("seconds")),"4,8"  );
         panel.add( seconds,"2,8");
         panel.add( new JLabel(getString("connection") + ": " + getI18n().format("interval.format", "","")),"0,8"  );
+        panel.add( new JLabel("HTML Export Charset"),"0,10"  );
+        panel.add(htmlCharset, "2,10");
+        panel.add( new JLabel("CSV Export Charset"),"0,12"  );
+        panel.add(csvCharset, "2,12");
         addCopyPaste( seconds.getNumberField(), i18n, raplaLocale, ioInterface, logger);
     }
 
@@ -130,6 +142,9 @@ public class RaplaStartOption extends RaplaGUIComponent implements SystemOptionP
     	try {
     		String timezoneId = preferences.getEntryAsString( AbstractRaplaLocale.TIMEZONE,timezoneService.getDefaultTimezone());
 			cboTimezone.setSelectedItem(timezoneId);
+
+            csvCharset.setSelectedItem( preferences.getEntryAsString(AbstractRaplaLocale.CSV_CHARSET, AbstractRaplaLocale.CSV_CHARSET_DEFAULT));
+            htmlCharset.setSelectedItem( preferences.getEntryAsString(AbstractRaplaLocale.HTML_CHARSET, AbstractRaplaLocale.HTML_CHARSET_DEFAULT));
 
             String localeId = preferences.getEntryAsString( AbstractRaplaLocale.LOCALE,null);
             if ( localeId != null) {
@@ -180,6 +195,26 @@ public class RaplaStartOption extends RaplaGUIComponent implements SystemOptionP
         }
     	int delay = seconds.getNumber().intValue() * 1000;
     	preferences.putEntry( ClientFacade.REFRESH_INTERVAL_ENTRY, delay );
+        Object selectedItem = htmlCharset.getSelectedItem();
+        if (selectedItem != null)
+        {
+            String string = selectedItem.toString();
+            if (!preferences.getEntryAsString(AbstractRaplaLocale.HTML_CHARSET, AbstractRaplaLocale.HTML_CHARSET_DEFAULT).equals( string ))
+            {
+                preferences.putEntry(AbstractRaplaLocale.HTML_CHARSET, string);
+            }
+        }
+        selectedItem = csvCharset.getSelectedItem();
+        if (selectedItem != null)
+        {
+            String string = selectedItem.toString();
+            if (!preferences.getEntryAsString(AbstractRaplaLocale.CSV_CHARSET, AbstractRaplaLocale.CSV_CHARSET_DEFAULT).equals( string ))
+            {
+                preferences.putEntry(AbstractRaplaLocale.CSV_CHARSET, string);
+            }
+        }
+         preferences.getEntryAsString(AbstractRaplaLocale.HTML_CHARSET, AbstractRaplaLocale.HTML_CHARSET_DEFAULT);
+
     }
     
 	/**

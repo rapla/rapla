@@ -14,8 +14,16 @@ import java.util.Locale;
 public abstract class AbstractRaplaLocale implements RaplaLocale {
 
     public final static TypedComponentRole<String> TIMEZONE = new TypedComponentRole<>("org.rapla.timezone");
+    public final static TypedComponentRole<String> CSV_CHARSET = new TypedComponentRole<>("org.rapla.csv.charset");
+    public final static TypedComponentRole<String> HTML_CHARSET = new TypedComponentRole<>("org.rapla.html.charset");
     public final static TypedComponentRole<String> LOCALE = new TypedComponentRole<>("org.rapla.locale");
     public final static TypedComponentRole<String> TITLE = new TypedComponentRole<>("org.rapla.title");
+    public static final String UTF_CHARSET = "UTF-8";
+    public static final String ISO_8859_1_CHARSET = "ISO-8859-1";
+    public static final String HTML_CHARSET_DEFAULT = UTF_CHARSET;
+    public static final String CSV_CHARSET_DEFAULT = ISO_8859_1_CHARSET;
+
+
     protected final BundleManager bundleManager;
 
     protected AbstractRaplaLocale(BundleManager bundleManager){

@@ -301,6 +301,13 @@ public class RemoteOperator
         return returnPromise;
     }
 
+    public UpdateEvent refreshEventsSync(String lastSyncedTime) throws RaplaException {
+        UpdateEvent updateEvent = remoteStorage.refreshSyncAllEvents(lastSyncedTime);
+        Collection<Entity> storeObjects = updateEvent.getStoreObjects();
+        setResolver( storeObjects);
+        return updateEvent;
+    }
+
     private String getLastValidatedTimeServer() {
         return SerializableDateTimeFormat.INSTANCE.formatTimestamp(lastValidatedTimeServer);
     }
@@ -539,7 +546,7 @@ public class RemoteOperator
         return getRemoteStorage().createIdentifier(localname, count).thenApply( (ids)->createReferenceInfos(raplaType, ids));
     }
 
-    private RemoteStorage getRemoteStorage() {
+    public RemoteStorage getRemoteStorage() {
         return remoteStorage;
     }
 

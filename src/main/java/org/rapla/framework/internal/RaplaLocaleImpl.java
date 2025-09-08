@@ -31,15 +31,14 @@ import java.util.TimeZone;
 @Singleton
 public class RaplaLocaleImpl extends AbstractRaplaLocale  {
 
-    String charsetForHtml;
+    String charsetForHtml = AbstractRaplaLocale.HTML_CHARSET_DEFAULT;
+    String charsetForCsv  = AbstractRaplaLocale.CSV_CHARSET_DEFAULT;
     private TimeZone importExportTimeZone;
     @Inject
     public RaplaLocaleImpl(BundleManager bundleManager)
     {
         super(bundleManager);
         importExportTimeZone = TimeZone.getDefault();
-        //charsetForHtml = "ISO-8859-1";
-        charsetForHtml = "UTF-8";
     }
 
 	public Date fromUTCTimestamp(Date date)
@@ -52,6 +51,14 @@ public class RaplaLocaleImpl extends AbstractRaplaLocale  {
 	
 	public void setImportExportTimeZone(TimeZone importExportTimeZone) {
         this.importExportTimeZone = importExportTimeZone;
+    }
+
+    public void setCharsetForHtml(String charsetForHtml) {
+        this.charsetForHtml = charsetForHtml;
+    }
+
+    public void setCharsetForCsv(String charsetForCsv) {
+        this.charsetForCsv = charsetForCsv;
     }
 
     public TimeZone getTimeZone() {
@@ -67,6 +74,11 @@ public class RaplaLocaleImpl extends AbstractRaplaLocale  {
     public String getCharsetForHtml()
     {
         return charsetForHtml;
+    }
+
+    public String getCharsetForCsv()
+    {
+        return charsetForCsv;
     }
 
     @Override
