@@ -2,12 +2,14 @@ package org.rapla.facade;
 
 import org.rapla.components.util.TimeInterval;
 import org.rapla.entities.domain.Allocatable;
+import org.rapla.entities.domain.Appointment;
 import org.rapla.entities.dynamictype.ClassificationFilter;
 import org.rapla.framework.RaplaException;
 import org.rapla.scheduler.Promise;
 
 import java.util.Collection;
 import java.util.Date;
+import java.util.function.Predicate;
 
 public interface CalendarSelectionModel extends CalendarModel{
     String getTitle();
@@ -43,4 +45,5 @@ public interface CalendarSelectionModel extends CalendarModel{
 
     boolean isMarkedIntervalTimeEnabled();
 
+    void setAppointmentFilter(Predicate<Appointment> appointmentFilter);
 }

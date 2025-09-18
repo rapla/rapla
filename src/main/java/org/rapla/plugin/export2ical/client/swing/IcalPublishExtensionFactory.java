@@ -17,7 +17,7 @@ import javax.inject.Inject;
 import java.beans.PropertyChangeListener;
 
 @Extension(provides=PublishExtensionFactory.class,id="ical")
-public class IcalPublicExtensionFactory implements PublishExtensionFactory
+public class IcalPublishExtensionFactory implements PublishExtensionFactory
 {
     private final ClientFacade facade;
     private final RaplaResources i18n;
@@ -26,7 +26,7 @@ public class IcalPublicExtensionFactory implements PublishExtensionFactory
     private final IOInterface ioInterface;
 
     @Inject
-	public IcalPublicExtensionFactory(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, IOInterface ioInterface)
+	public IcalPublishExtensionFactory(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, IOInterface ioInterface)
 	{
         this.facade = facade;
         this.i18n = i18n;

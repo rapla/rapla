@@ -74,6 +74,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.function.BiFunction;
 import java.util.function.Function;
+import java.util.function.Predicate;
 
 public class RaplaBuilder
     implements
@@ -112,7 +113,7 @@ public class RaplaBuilder
 	final private RaplaResources i18n;
 	final private Logger logger;
 	final private AppointmentFormater appointmentFormater;
-
+    Predicate<Appointment> appointmentFilter= null;
 	@Inject
 	public RaplaBuilder(RaplaLocale raplaLocale, RaplaFacade raplaFacade, RaplaResources i18n, Logger logger, AppointmentFormater appointmentFormater) {
         Locale locale = raplaLocale.getLocale();
@@ -152,6 +153,7 @@ public class RaplaBuilder
         final RaplaBuilder builder = this;
         final TimeInterval interval = new TimeInterval( startDate, endDate);
         final Promise<AppointmentMapping> appointmentBindungsPromise = model.queryAppointmentBindings(interval);
+        appointmentFilter = model.getAppointmentFilter();
         final Promise<RaplaBuilder> builderPromise = appointmentBindungsPromise.thenApply((appointmentBindings) -> {
             Collection<Conflict> conflictsSelected = new ArrayList<>();
             conflictsSelected.addAll( ((CalendarModelImpl)model).getSelectedConflicts());
@@ -164,12 +166,12 @@ public class RaplaBuilder
             if ( !conflictsSelected.isEmpty() )
             {
                 allocatables = Util.getAllocatables( conflictsSelected );
-                Collection<Appointment> all = bindings.getAllAppointments();
+                Collection<Appointment> all = bindings.getAllAppointments(appointmentFilter);
                 conflictingOrRequestAppointments = ConflictImpl.getMap( conflictsSelected, all);
             } else if ( !requestsSelected.isEmpty() )
             {
                 allocatables = Reservation.Util.getRequestedAllocatables( requestsSelected );
-                Collection<Appointment> all = bindings.getAllAppointments();
+                Collection<Appointment> all = bindings.getAllAppointments(appointmentFilter);
                 conflictingOrRequestAppointments = ReservationImpl.getRequestMap( requestsSelected, all);
             }
             else
@@ -199,7 +201,7 @@ public class RaplaBuilder
                 //        		filteredReservations = ((CalendarModelImpl)model).restrictReservations( allReservationsForAllocatables);
                 //        	}
             }
-            selectedReservations = bindings.getAllReservations();
+            selectedReservations = bindings.getAllReservationsFiltered(appointmentFilter);
             User user = model.getUser();
             CalendarOptions calendarOptions = RaplaComponent.getCalendarOptions( user, getClientFacade());
             nonFilteredEventsVisible = calendarOptions.isNonFilteredEventsVisible();
@@ -432,9 +434,8 @@ public class RaplaBuilder
         end = new Date( end.getTime() );
         boolean excludeExceptions = isExceptionsExcluded();
     	boolean nonFilteredEventsVisible = isNonFilteredEventsVisible();
-
         //long time = System.currentTimeMillis();
-        Collection<Appointment> appointments = bindings.getAllAppointments();
+        Collection<Appointment> appointments = bindings.getAllAppointments(appointmentFilter);
         //= AppointmentImpl.getAppointments(	nonFilteredEventsVisible ? allReservations : selectedReservations, selectedAllocatables);
         //logger.info( "Get appointments took " + (System.currentTimeMillis() - time) + " ms.");
         // Add appointment to the blocks

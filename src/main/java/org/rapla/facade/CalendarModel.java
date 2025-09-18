@@ -12,6 +12,7 @@ import java.util.Collection;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Predicate;
 
 
 public interface CalendarModel extends Cloneable, ClassifiableFilter
@@ -79,6 +80,5 @@ public interface CalendarModel extends Cloneable, ClassifiableFilter
 
 	boolean isMatchingSelectionAndFilter(Reservation reservation, Appointment appointment) throws RaplaException;
 
-
-
+    Predicate<Appointment> getAppointmentFilter();
 }

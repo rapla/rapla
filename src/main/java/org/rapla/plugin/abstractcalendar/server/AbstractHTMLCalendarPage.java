@@ -26,12 +26,14 @@ import org.rapla.facade.CalendarModel;
 import org.rapla.facade.CalendarOptions;
 import org.rapla.facade.RaplaComponent;
 import org.rapla.facade.RaplaFacade;
+import org.rapla.facade.internal.CalendarModelImpl;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.logger.Logger;
 import org.rapla.plugin.abstractcalendar.HTMLRaplaBuilder;
 import org.rapla.plugin.abstractcalendar.MultiCalendarPrint;
 import org.rapla.plugin.abstractcalendar.RaplaBuilder;
+import org.rapla.plugin.planningstatus.PlanningStatusPlugin;
 import org.rapla.scheduler.Promise;
 import org.rapla.server.PromiseWait;
 import org.rapla.server.extensionpoints.HTMLViewPage;
@@ -94,8 +96,9 @@ public abstract class AbstractHTMLCalendarPage  implements HTMLViewPage
         Date startDate = view.getStartDate();
 		Date endDate = view.getEndDate();
         builder.setNonFilteredEventsVisible( false);
-		final Promise<RaplaBuilder> initBuilder = builder.initFromModel( model, startDate, endDate  );
+        final Promise<RaplaBuilder> initBuilder = builder.initFromModel( model, startDate, endDate  );
         final RaplaBuilder raplaBuilder = promiseWait.waitForWithRaplaException(initBuilder, 9000);
+
         return raplaBuilder;
     }
 

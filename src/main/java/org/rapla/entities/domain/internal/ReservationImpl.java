@@ -721,9 +721,13 @@ public final class ReservationImpl extends SimpleEntity implements Reservation, 
     }
 
     public Appointment findAppointment(Appointment copy) {
-		updateIndex();
         String id = copy.getId();
-		return appointmentIndex.get( id);
+        return getAppointmentForId(id);
+    }
+
+    public AppointmentImpl getAppointmentForId(String id) {
+        updateIndex();
+        return appointmentIndex.get(id);
     }
 
 

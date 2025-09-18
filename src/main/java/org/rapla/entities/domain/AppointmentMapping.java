@@ -5,6 +5,7 @@ import org.rapla.entities.User;
 import org.rapla.entities.storage.ReferenceInfo;
 
 import java.util.*;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 public class AppointmentMapping {
@@ -38,10 +39,21 @@ public class AppointmentMapping {
     }
 
     public Set<Appointment> getAllAppointments() {
+        return getAllAppointments( null);
+    }
+
+    public Set<Appointment> getAllAppointments(Predicate<Appointment> filter) {
         Set<Appointment> result = new LinkedHashSet<>();
         if (appointmentMap != null) {
             for (Collection<Appointment> appointments : appointmentMap.values()) {
-                result.addAll(appointments);
+                if ( filter != null)
+                {
+                    appointments.stream().filter(filter).forEach(result::add);
+                }
+                else
+                {
+                    result.addAll(appointments);
+                }
             }
         }
         return result;
@@ -61,7 +73,11 @@ public class AppointmentMapping {
 
     public Collection<Reservation> getAllReservations()
     {
-        final Collection<Appointment> allAppointments = getAllAppointments();
+        return getAllReservationsFiltered(null);
+    }
+    public Collection<Reservation> getAllReservationsFiltered(Predicate<Appointment> appointmentFilter)
+    {
+        final Collection<Appointment> allAppointments = getAllAppointments(appointmentFilter);
         return getAllReservations(allAppointments);
     }
 
@@ -81,4 +97,5 @@ public class AppointmentMapping {
     public Iterable<? extends Map.Entry<Entity, Collection<Appointment>>> entrySet() {
         return appointmentMap.entrySet();
     }
+
 }

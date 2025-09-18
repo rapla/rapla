@@ -31,11 +31,7 @@ import org.rapla.entities.configuration.internal.CalendarModelConfigurationImpl;
 import org.rapla.entities.configuration.internal.RaplaMapImpl;
 import org.rapla.entities.domain.*;
 import org.rapla.entities.domain.internal.ReservationImpl;
-import org.rapla.entities.dynamictype.Classification;
-import org.rapla.entities.dynamictype.ClassificationFilter;
-import org.rapla.entities.dynamictype.DynamicType;
-import org.rapla.entities.dynamictype.DynamicTypeAnnotations;
-import org.rapla.entities.dynamictype.SortedClassifiableComparator;
+import org.rapla.entities.dynamictype.*;
 import org.rapla.entities.dynamictype.internal.EvalContext;
 import org.rapla.entities.dynamictype.internal.ParseContext;
 import org.rapla.entities.dynamictype.internal.ParsedText;
@@ -55,6 +51,7 @@ import org.rapla.framework.internal.AbstractRaplaLocale;
 import org.rapla.inject.DefaultImplementation;
 import org.rapla.inject.InjectionContext;
 import org.rapla.logger.Logger;
+import org.rapla.plugin.planningstatus.PlanningStatusPlugin;
 import org.rapla.scheduler.Promise;
 import org.rapla.scheduler.ResolvedPromise;
 import org.rapla.storage.PermissionController;
@@ -77,6 +74,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -111,6 +109,9 @@ public class CalendarModelImpl implements CalendarSelectionModel
     Map<DynamicType, ClassificationFilter> allocatableFilter = new LinkedHashMap<>();
     public static final RaplaConfiguration ALLOCATABLES_ROOT = new RaplaConfiguration("rootnode", "allocatables");
     public static final RaplaConfiguration USER_ROOT = new RaplaConfiguration("userroot", "users");
+
+    Predicate<Appointment> appointmentFilter;
+
     @Inject public CalendarModelImpl(ClientFacade clientFacade, RaplaLocale locale) throws RaplaInitializationException
     {
         this(locale.getLocale(), getUser(clientFacade), ((ClientFacadeImpl)clientFacade).getOperator(), ((ClientFacadeImpl) clientFacade).getLogger());
@@ -239,6 +240,7 @@ public class CalendarModelImpl implements CalendarSelectionModel
     public boolean setConfiguration(CalendarModelConfiguration config, final Map<String, String> alternativOptions, boolean updateSelectedDates) throws RaplaException
     {
         ArrayList<RaplaObject> selectedObjects = new ArrayList<>();
+
         allocatableFilter.clear();
         reservationFilter.clear();
         if (config == null)
@@ -944,6 +946,7 @@ public class CalendarModelImpl implements CalendarSelectionModel
             CalendarModelConfiguration config = createConfiguration();
             Map<String, String> alternativOptions = null;
             clone.setConfiguration(config, alternativOptions, true);
+            clone.setAppointmentFilter( appointmentFilter);
         }
         catch (RaplaException e)
         {
@@ -1042,6 +1045,7 @@ public class CalendarModelImpl implements CalendarSelectionModel
 		} catch (RaplaException ex) {
 			return new ResolvedPromise<>( ex);
 		}
+
 		// FIXME Evalute if its only the owner
 		User user = null;
         final Promise<AppointmentMapping> reservationsAsync = operator
@@ -1326,13 +1330,20 @@ public class CalendarModelImpl implements CalendarSelectionModel
             Map<String, String> alternativeOptions = new HashMap<>();
             if (modelConfig != null && modelConfig.getOptionMap() != null)
             {
+
                 // All old default calendars have no selected date
-                if (isDefault && (modelConfig.getOptionMap().get(CalendarModel.SAVE_SELECTED_DATE) == null))
+                Map<String, String> optionMap = modelConfig.getOptionMap();
+                String notPlanned = optionMap.get(PlanningStatusPlugin.PUBLISH_NON_PLANNED);
+                if ( notPlanned == null)
+                {
+                    alternativeOptions.put(PlanningStatusPlugin.PUBLISH_NON_PLANNED, "true");
+                }
+                if (isDefault && (optionMap.get(CalendarModel.SAVE_SELECTED_DATE) == null))
                 {
                     alternativeOptions.put(CalendarModel.SAVE_SELECTED_DATE, "false");
                 }
                 // All old calendars are exported
-                if (!isDefault && modelConfig.getOptionMap().get(HTML_EXPORT_ENABLED) == null)
+                if (!isDefault && optionMap.get(HTML_EXPORT_ENABLED) == null)
                 {
                     alternativeOptions.put(HTML_EXPORT_ENABLED, "true");
                 }
@@ -1576,7 +1587,7 @@ public class CalendarModelImpl implements CalendarSelectionModel
     public Promise<Collection<Appointment>> queryAppointments(TimeInterval interval)
     {
         Promise<AppointmentMapping> bindings = queryAppointmentBindings(interval);
-        return bindings.thenApply( (binding) -> binding.getAllAppointments());
+        return bindings.thenApply( (binding) -> binding.getAllAppointments(appointmentFilter));
     }
 
     public static String getStartEndDate(RaplaLocale raplaLocale, CalendarSelectionModel model) {
@@ -1589,6 +1600,15 @@ public class CalendarModelImpl implements CalendarSelectionModel
         return dateString;
     }
 
+    @Override
+    public void setAppointmentFilter(Predicate<Appointment> appointmentFilter) {
+        this.appointmentFilter = appointmentFilter;
+    }
+
+    @Override
+    public Predicate<Appointment> getAppointmentFilter() {
+        return appointmentFilter;
+    }
 }
 
 
