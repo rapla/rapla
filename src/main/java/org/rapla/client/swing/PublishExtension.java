@@ -9,7 +9,7 @@ public interface PublishExtension
 {
 	JPanel getPanel();
 
-	/** can return null if no url status should be displayed */
+	/** can pass null if no url status should be displayed */
 	void setAdress(String generator, String address);
 	void mapOptionTo();
 	/** returns if getAddress can be used to generate an address */

@@ -36,6 +36,7 @@ import org.rapla.logger.Logger;
 import org.rapla.plugin.mail.server.MailToUserImpl;
 import org.rapla.plugin.notification.NotificationPlugin;
 import org.rapla.plugin.notification.NotificationResources;
+import org.rapla.plugin.planningstatus.PlanningStatusPlugin;
 import org.rapla.scheduler.CommandScheduler;
 import org.rapla.server.extensionpoints.ServerExtension;
 import org.rapla.storage.CachableStorageOperator;
@@ -55,6 +56,7 @@ public class NotificationService implements ServerExtension
     private static final long VALID_LOCK = DateTools.MILLISECONDS_PER_MINUTE * 5;
     private final RaplaFacade raplaFacade;
     private final Provider<MailToUserImpl> mailToUserInterface;
+    private final boolean planningStatusEnabled;
     protected CommandScheduler scheduler;
     private final AppointmentFormater appointmentFormater;
     private final NotificationResources notificationI18n;
@@ -66,9 +68,7 @@ public class NotificationService implements ServerExtension
 
     @Inject
     public NotificationService(RaplaFacade facade, RaplaResources i18nBundle, NotificationResources notificationI18n, AppointmentFormater appointmentFormater,
-                               Provider<MailToUserImpl> mailToUserInterface, CommandScheduler scheduler, Logger logger/*, NotificationStorage notificationStorage */)
-
-    {
+                               Provider<MailToUserImpl> mailToUserInterface, CommandScheduler scheduler, Logger logger/*, NotificationStorage notificationStorage */) throws RaplaException {
         this.notificationI18n = notificationI18n;
         this.raplaFacade = facade;
         this.raplaI18n = i18nBundle;
@@ -79,7 +79,7 @@ public class NotificationService implements ServerExtension
         //raplaFacade.addAllocationChangedListener(this);
         this.appointmentFormater = appointmentFormater;
         this.operator = (CachableStorageOperator) facade.getOperator();
-
+        planningStatusEnabled = raplaFacade.getSystemPreferences().getEntryAsBoolean(PlanningStatusPlugin.ENABLED, PlanningStatusPlugin.ENABLE_BY_DEFAULT);
     }
 
     @Override
@@ -354,6 +354,21 @@ public class NotificationService implements ServerExtension
             {
                 continue;
             }
+            if (planningStatusEnabled )
+            {
+                Classification classification = reservation.getClassification();
+                Attribute attribute = classification.getAttribute("status");
+                if (attribute != null)
+                {
+                    Object valueForAttribute = classification.getValueForAttribute(attribute);
+                    if (valueForAttribute != null && valueForAttribute.equals(Boolean.FALSE))
+                    {
+                        // skip non plannable events
+                        continue;
+                    }
+                }
+            }
+
             // Did the user opt in for the resource?
             if (!allocatablesTheUsersListensTo.contains(allocatable))
                 continue;

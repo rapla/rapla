@@ -23,7 +23,7 @@ import java.util.Collection;
 import java.util.Collections;
 
 
-@Extension(provides= AnnotationEditTypeExtension.class, id=PlanningStatusPlugin.PLANNINGSTATUS_CONDITION_ANNOTATION_NAME)
+//@Extension(provides= AnnotationEditTypeExtension.class, id=PlanningStatusPlugin.PLANNINGSTATUS_CONDITION_ANNOTATION_NAME)
 public class PlanningStatusAnnotationEdit extends RaplaGUIComponent implements AnnotationEditTypeExtension
 {
     protected String annotationName = PlanningStatusPlugin.PLANNINGSTATUS_CONDITION_ANNOTATION_NAME;

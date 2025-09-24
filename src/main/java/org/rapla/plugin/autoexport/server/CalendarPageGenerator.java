@@ -31,7 +31,7 @@ import org.rapla.logger.Logger;
 import org.rapla.plugin.abstractcalendar.server.AbstractHTMLCalendarPage;
 import org.rapla.plugin.autoexport.AutoExportPlugin;
 import org.rapla.plugin.autoexport.AutoExportResources;
-import org.rapla.plugin.planningstatus.PlanningStatusAppointmentFilter;
+import org.rapla.plugin.planningstatus.PlanningStatusFilter;
 import org.rapla.plugin.planningstatus.PlanningStatusPlugin;
 import org.rapla.plugin.urlencryption.UrlEncryptionPlugin;
 import org.rapla.server.extensionpoints.HTMLViewPage;
@@ -321,7 +321,7 @@ public class CalendarPageGenerator
                 model.load(filename);
                 if ( planningStatusEnabled )
                 {
-                    model.setAppointmentFilter(PlanningStatusAppointmentFilter.createFromCalendarModel( model));
+                    model.setAppointmentFilter(PlanningStatusFilter.createFromCalendarModel( model));
                 }
             }
             catch (CalendarNotFoundExeption ex)

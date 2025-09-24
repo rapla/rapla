@@ -26,17 +26,15 @@ public class PlanningStatusPublishExtensionFactory implements PublishExtensionFa
     private final PlanningStatusResources i18nPlanninsgStatus;
     private final RaplaLocale raplaLocale;
     private final Logger logger;
-    private final IOInterface ioInterface;
 
     @Inject
-	public PlanningStatusPublishExtensionFactory(ClientFacade facade, RaplaResources i18n, PlanningStatusResources i18nPlanninsgStatus,RaplaLocale raplaLocale, Logger logger, IOInterface ioInterface)
+	public PlanningStatusPublishExtensionFactory(ClientFacade facade, RaplaResources i18n, PlanningStatusResources i18nPlanninsgStatus,RaplaLocale raplaLocale, Logger logger)
 	{
         this.facade = facade;
         this.i18n = i18n;
         this.i18nPlanninsgStatus = i18nPlanninsgStatus;
         this.raplaLocale = raplaLocale;
         this.logger = logger;
-        this.ioInterface = ioInterface;
 	}
     
     @Override
@@ -57,7 +55,7 @@ public class PlanningStatusPublishExtensionFactory implements PublishExtensionFa
 	public PublishExtension creatExtension(CalendarSelectionModel model,
 			PropertyChangeListener revalidateCallback) throws RaplaException 
 	{
-		return new PlanningStatusPublishExtension(facade, i18n, raplaLocale, logger, model, ioInterface, i18nPlanninsgStatus);
+		return new PlanningStatusPublishExtension(facade, i18n, raplaLocale, logger, model, i18nPlanninsgStatus);
 	}
 
 	
