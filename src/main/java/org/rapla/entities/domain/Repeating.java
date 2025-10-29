@@ -55,13 +55,7 @@ public interface Repeating {
     /* @return end of repeating or null if unlimited */
     Date getEnd();
 
-    default LocalDateTime getEndDateTime() {
-        Date end = getEnd();
-        if (end == null) {
-            return null;
-        }
-        return DateTools.toLocalDateTime(end);
-    }
+    LocalDateTime getEndDateTime();
     /** Set a fixed number of repeating.
      * If this value is set to -1
      * and the repeating end is set to null the appointment will

@@ -22,6 +22,10 @@ import org.rapla.entities.domain.AppointmentBlock;
 import org.rapla.entities.domain.Repeating;
 import org.rapla.entities.domain.RepeatingType;
 
+import java.time.DayOfWeek;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -218,23 +222,32 @@ final class RepeatingImpl implements Repeating,java.io.Serializable {
         this.end = end;
     }
 
-    transient Date endTime;
+    transient LocalDateTime endTime;
     public Date getEnd() {
-        if (!isFixedNumber)
-            return end;
+        LocalDateTime endDateTime = getEndDateTime();
+        if ( endDateTime == null)
+        {
+            return null;
+        }
+        return new Date(endDateTime.toInstant(ZoneOffset.UTC).toEpochMilli());
+    }
+
+    @Override
+    public LocalDateTime getEndDateTime() {
+        if (!isFixedNumber) {
+            return end!= null ? DateTools.toLocalDateTime(end) : null;
+        }
         if ( this.appointment == null)
         {
             throw new IllegalStateException("Appointment not set");
         }
 
-        if (endTime == null)
-            endTime = new Date();
 
         if ( number < 0 )
         {
             return null;
         }
-        final Date appointmentStart = appointment.getStart();
+        final LocalDateTime appointmentStart = appointment.getStartDateTime();
         if ( number == 0 )
         {
             return appointmentStart;
@@ -244,25 +257,21 @@ final class RepeatingImpl implements Repeating,java.io.Serializable {
         if ( !isFixedIntervalLength())
         {
             int counts =  ((number -1) * interval) ;
-            Date newDate = appointmentStart;
+            LocalDateTime newDate = appointmentStart;
             for ( int i=0;i< counts;i++)
             {
-                long newTime = gotoNextStep(appointmentStart, newDate);
-                newDate = new Date( newTime + appointmentLength);
+                newDate = gotoNextStep( newDate);
             }
-            return newDate;
+            LocalDateTime end = newDate.plusSeconds(appointmentLength / 1000);
+            return end;
         }
         else
         {
-            long intervalLength = getFixedIntervalLength();
-            long newTime = appointmentStart.getTime()
-                    + (this.number - 1) * intervalLength;
-            long endOfDay = DateTools.fillDate(newTime
-            );
-            long newEndTime = Math.max(endOfDay, newTime + appointmentLength);
-            endTime.setTime(newEndTime);
+            long intervalLength = getFixedIntervalLength()/1000;
+            LocalDateTime newTime = appointmentStart.plusSeconds((this.number - 1) * intervalLength);
+            LocalDateTime end = newTime.plusSeconds(appointmentLength / 1000);
+            return end;
         }
-        return endTime;
     }
 
     /** returns interval-length in milliseconds.
@@ -324,16 +333,16 @@ final class RepeatingImpl implements Repeating,java.io.Serializable {
         }
         else
         {
-            Date appointmentStart = appointment.getStart();
+            LocalDateTime appointmentStart = appointment.getStartDateTime();
             int number = 0;
-            Date newDate = appointmentStart;
+            LocalDateTime newDate = appointmentStart;
+            LocalDateTime localEnd   = DateTools.toLocalDateTime( end);
             do 
             {
                 number ++;
-                long newTime = gotoNextStep(appointmentStart, newDate);
-                newDate  = new Date( newTime);
+                newDate = gotoNextStep( newDate);
             }
-            while ( newDate.before( end));
+            while ( newDate.isBefore( localEnd));
             return number;
         }            
     }
@@ -495,93 +504,78 @@ final class RepeatingImpl implements Repeating,java.io.Serializable {
         {
             return getFixedIntervalLength();
         }
-        Date appointmentStart = appointment.getStart();
-        Date newDate = new Date(s);
-        long newTime = gotoNextStep(appointmentStart, newDate);
+        LocalDateTime appointmentStart = DateTools.toLocalDateTime( new Date(s));
+        LocalDateTime localDateTime = gotoNextStep( appointmentStart);
+        long newTime = localDateTime.toInstant(ZoneOffset.UTC).toEpochMilli();
         Assert.isTrue( newTime > s );
         return  newTime- s;
         // yearly
         
     }
 
-    private long gotoNextStep(Date appointmentStart, Date startDate)
+    private LocalDateTime gotoNextStep( LocalDateTime startDate)
     {
-        long newTime;
+        LocalDateTime newTime;
         if ( monthly)
         {
-            newTime = gotoNextMonth(  appointmentStart,startDate);
+            newTime = gotoNextMonth( startDate);
         }
         else if ( yearly)
         {
-            newTime = gotoNextYear(  appointmentStart,startDate);
+            newTime = gotoNextYear( startDate );
         }
         else
         {
-            newTime = gotoNextWeekday(  appointmentStart,startDate);
+            newTime = gotoNextWeekday(  startDate);
         }
         return newTime;
     }
 
-    private long gotoNextMonth(  Date start,Date beginDate )
-    {
-        int dayofweekinmonth = DateTools.getDayOfWeekInMonth( start);
-        Date newDate = DateTools.addWeeks( beginDate, 4);
-        while ( DateTools.getDayOfWeekInMonth( newDate) != dayofweekinmonth )
-        {
-        	newDate = DateTools.addWeeks( newDate, 1);
+    private LocalDateTime gotoNextYear(  LocalDateTime beginDate ) {
+        int yearAdd = 1;
+        if (beginDate.getMonth().getValue() == 2 && beginDate.getDayOfMonth() == 29) {
+            int startYear = beginDate.getYear();
+            while (!DateTools.isLeapYear(startYear + yearAdd)) {
+                yearAdd++;
+            }
         }
-        return newDate.getTime();
+        LocalDateTime newDate = beginDate.plusYears( yearAdd );
+        return newDate;
     }
 
-    private long gotoNextWeekday(  Date start,Date beginDate )
+
+
+        private LocalDateTime gotoNextWeekday( LocalDateTime beginDate )
     {
         if ( weekdays.size() > 1)
         {
-            Date newDate = beginDate;
+            LocalDateTime newDate = beginDate;
             for (int i = 0; i < 7; i++)
             {
-                newDate = DateTools.addDay(newDate);
-                Integer weekday = DateTools.getWeekday(newDate);
+                newDate = newDate.plusDays(1);
+                DayOfWeek dayOfWeek = newDate.getDayOfWeek();
+                Integer weekday = DateTools.mapDateAPIToRapla(dayOfWeek);
                 if (weekdays.contains(weekday))
                 {
-                    return newDate.getTime();
+                    return newDate;
                 }
             }
         }
-        Date newDate = DateTools.addDays(beginDate,7);
-        return newDate.getTime();
+        return beginDate.plusDays( 7);
     }
 
-    private long gotoNextYear(  Date start,Date beginDate )
+    private LocalDateTime gotoNextMonth(   LocalDateTime beginDate )
     {
-        DateWithoutTimezone dateObj = DateTools.toDate( start.getTime());
-		int dayOfMonth = dateObj.day;
-		int month = dateObj.month;
-		int yearAdd = 1;
-		if ( month == 2 && dayOfMonth ==29)
-		{
-			int startYear = DateTools.toDate( beginDate.getTime()).year;
-			while (!DateTools.isLeapYear( startYear + yearAdd ))
-			{
-				yearAdd++;
-			}
-		}
-		Date newDate = DateTools.addYears( beginDate, yearAdd);
-		return newDate.getTime();
-        
-//        cal.setTime( start);
-//        int dayOfMonth = cal.get( Calendar.DAY_OF_MONTH);
-//        int month = cal.get( Calendar.MONTH);
-//        cal.setTime( beginDate);
-//        cal.add( Calendar.YEAR,1);
-//        while ( cal.get( Calendar.DAY_OF_MONTH) != dayOfMonth)
-//        {
-//            cal.add( Calendar.YEAR,1);
-//            cal.set( Calendar.MONTH, month);
-//            cal.set( Calendar.DAY_OF_MONTH, dayOfMonth);
-//        }
-
+        int dayofweekinmonth = DateTools.getDayOfWeekInMonth( beginDate.toLocalDate());
+        LocalDateTime newDate = beginDate.plusWeeks(4);
+        while ( DateTools.getDayOfWeekInMonth( newDate.toLocalDate()) != dayofweekinmonth )
+        {
+            newDate = newDate.plusWeeks(1);
+        }
+        return newDate;
     }
+
+
 
     public boolean isFixedIntervalLength()
     {
