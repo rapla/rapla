@@ -24,6 +24,8 @@ import org.rapla.inject.InjectionContext;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.Date;
 import java.util.Iterator;
 import java.util.List;
@@ -76,7 +78,7 @@ public class AppointmentFormaterImpl
             if (repeating.isMonthly())
             {
                 String weekday = loc.getWeekday(appointment.getStart());
-                return getWeekdayOfMonth(appointment.getStart()) + weekday + timeString;
+                return getWeekdayOfMonth(appointment.getStartDateTime().toLocalDate()) + weekday + timeString;
             }
             if (repeating.isYearly())
             {
@@ -175,6 +177,7 @@ public class AppointmentFormaterImpl
         Repeating repeating = a.getRepeating();
         final boolean wholeDaysSet = a.isWholeDaysSet();
         Date start = a.getStart();
+        LocalDate startDate = a.getStartDateTime().toLocalDate();
 		Date end = a.getEnd();
 		if ( repeating == null )
         {
@@ -212,7 +215,7 @@ public class AppointmentFormaterImpl
         {
             if( repeating.isMonthly())
             {
-                buf.append( getWeekdayOfMonth( start ));
+                buf.append( getWeekdayOfMonth( startDate ));
             }
             if (repeating.isYearly())
             {
@@ -309,7 +312,7 @@ public class AppointmentFormaterImpl
         return buf.toString();
     }
 
-    private String getWeekdayOfMonth( Date date )
+    private String getWeekdayOfMonth( LocalDate date )
     {
         StringBuffer b = new StringBuffer();
         int numb = DateTools.getDayOfWeekInMonth( date );

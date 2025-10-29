@@ -3,6 +3,8 @@ package org.rapla.plugin.ical.server;
 import net.fortuna.ical4j.data.CalendarBuilder;
 import net.fortuna.ical4j.data.ParserException;
 import net.fortuna.ical4j.model.*;
+import net.fortuna.ical4j.model.Calendar;
+import net.fortuna.ical4j.model.component.CalendarComponent;
 import net.fortuna.ical4j.model.property.DateProperty;
 import net.fortuna.ical4j.model.property.RRule;
 import net.fortuna.ical4j.util.CompatibilityHints;
@@ -39,14 +41,11 @@ import java.io.StringReader;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.text.ParseException;
-import java.util.ArrayList;
-import java.util.Collection;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.time.temporal.Temporal;
+import java.util.*;
 import java.util.Date;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
 import java.util.TimeZone;
 
 @DefaultImplementation(context=InjectionContext.server, of=ICalImport.class)
@@ -136,209 +135,212 @@ public class RaplaICalImport implements ICalImport {
 	public Promise<Integer[]> importCalendar(String content, boolean isURL, List<Allocatable> resources, User user, String eventTypeKey, String eventTypeNameAttributeKey) throws RaplaException {
         final TimeZone timeZone = timeZoneConverter.getImportExportTimeZone();
 
-	    CompatibilityHints.setHintEnabled( CompatibilityHints.KEY_NOTES_COMPATIBILITY, true);
-	    CompatibilityHints.setHintEnabled( CompatibilityHints.KEY_OUTLOOK_COMPATIBILITY, true);
-	    CompatibilityHints.setHintEnabled( CompatibilityHints.KEY_RELAXED_PARSING, true);
-	    CompatibilityHints.setHintEnabled( CompatibilityHints.KEY_RELAXED_UNFOLDING, true);
-	    CompatibilityHints.setHintEnabled( CompatibilityHints.KEY_RELAXED_VALIDATION, true);
-	    CalendarBuilder builder = new CalendarBuilder();
-		Calendar calendar = null;
-        int eventsInICal = 0;
-		int eventsSkipped = 0;
-		try {
-    		if (isURL) {
-    		    InputStream in = new URL(content).openStream();
-    		    calendar = builder.build(in);
-    		    in.close();
-    		} 
-    		else 
-    		{
-    		    StringReader fin = new StringReader(content);
-    		    calendar = builder.build(fin);
-    		}
-		} catch (IOException ioe) {
-		    throw new RaplaException(ioe.getMessage());
-		} catch (ParserException pe) {
-            throw new RaplaException(pe.getMessage());
-        } catch (IllegalArgumentException pe) {
-          throw new RaplaException(pe.getMessage());
-        }	
-		
-		ComponentList events = calendar.getComponents();
-		@SuppressWarnings("unchecked")
-        Iterator<Component> iterator = events.iterator();
-		List<Reservation> eventList = new ArrayList<>();
-	    Map<String, Reservation> reservationMap = new HashMap<>();
-	    while (iterator.hasNext()) {
-			Component component = iterator.next();
-			if (component.getName().equalsIgnoreCase("VEVENT") ) {
-                try {
-                	eventsInICal ++;
-                	String uid = null;
-    				Reservation lookupEvent = null;
-    				String name = component.getProperty("SUMMARY").getValue();
-    				Property uidProperty = component.getProperty("UID");
-    				if ( uidProperty != null)
-    				{
-    				    uid = uidProperty.getValue();
-    				    lookupEvent = reservationMap.get( uid);
-    				}
-    				if (name == null || name.trim().length() == 0)
-    				{
-    					logger.debug("Ignoring event with empty name [" + uid + "]");
-				    	eventsSkipped ++;
-				    	continue;
-    				}
+//	    CompatibilityHints.setHintEnabled( CompatibilityHints.KEY_NOTES_COMPATIBILITY, true);
+//	    CompatibilityHints.setHintEnabled( CompatibilityHints.KEY_OUTLOOK_COMPATIBILITY, true);
+//	    CompatibilityHints.setHintEnabled( CompatibilityHints.KEY_RELAXED_PARSING, true);
+//	    CompatibilityHints.setHintEnabled( CompatibilityHints.KEY_RELAXED_UNFOLDING, true);
+//	    CompatibilityHints.setHintEnabled( CompatibilityHints.KEY_RELAXED_VALIDATION, true);
+//	    CalendarBuilder builder = new CalendarBuilder();
+//		Calendar calendar = null;
+//        int eventsInICal = 0;
+//		int eventsSkipped = 0;
+//		try {
+//    		if (isURL) {
+//    		    InputStream in = new URL(content).openStream();
+//    		    calendar = builder.build(in);
+//    		    in.close();
+//    		}
+//    		else
+//    		{
+//    		    StringReader fin = new StringReader(content);
+//    		    calendar = builder.build(fin);
+//    		}
+//		} catch (IOException ioe) {
+//		    throw new RaplaException(ioe.getMessage());
+//		} catch (ParserException pe) {
+//            throw new RaplaException(pe.getMessage());
+//        } catch (IllegalArgumentException pe) {
+//          throw new RaplaException(pe.getMessage());
+//        }
+//
+//        List<CalendarComponent> events = calendar.getComponents();
+//		@SuppressWarnings("unchecked")
+//		List<Reservation> eventList = new ArrayList<>();
+//	    Map<String, Reservation> reservationMap = new HashMap<>();
+//	    for (CalendarComponent component:events) {
+//			if (component.getName().equalsIgnoreCase("VEVENT") ) {
+//                try {
+//                	eventsInICal ++;
+//                	String uid = null;
+//    				Reservation lookupEvent = null;
+//                    Optional<Property> summary = component.getProperty("SUMMARY");
+//                    String name = summary.isPresent() ? summary.get().getValue(): null ;
+//    				Optional<Property> uidProperty = component.getProperty("UID");
+//    				if ( uidProperty.isPresent())
+//    				{
+//    				    uid = uidProperty.get().getValue();
+//    				    lookupEvent = reservationMap.get( uid);
+//    				}
+//    				if (name == null || name.trim().length() == 0)
+//    				{
+//    					logger.debug("Ignoring event with empty name [" + uid + "]");
+//				    	eventsSkipped ++;
+//				    	continue;
+//    				}
+//
+//                	if ( lookupEvent == null)
+//    				{
+//    					// createInfoDialog the reservation
+//    					Classification classification = facade.getDynamicType(eventTypeKey).newClassification();
+//    				    lookupEvent = facade.newReservation(classification,user);
+//    				    if ( uid != null)
+//    				    {
+//    				    	lookupEvent.setAnnotation( RaplaObjectAnnotations.KEY_EXTERNALID, uid);
+//    				    }
+//    		            classification.setValue(eventTypeNameAttributeKey, name);
+//    				}
+//                	Reservation event = lookupEvent;
+//    			    DateProperty<LocalDateTime> startDateProperty = (DateProperty<LocalDateTime>) component.getProperty("DTSTART").get();
+//                    LocalDateTime startdate =  startDateProperty.getDate();
+//                    LocalDateTime enddate =  null;
+//    				boolean wholeDay = false;
+//    				long duration_millis = 0;
+//    				Dur duration;
+//    				if (component.getProperties("DTEND").size() > 0) {
+//                        DateProperty<LocalDateTime> endDateProperty =  (DateProperty<LocalDateTime>)  component.getProperty("DTEND").get();
+//    				    enddate = endDateProperty.getDate();
+//    					duration = null;
+//    				} else if (!component.getProperties("DURATION").isEmpty()) {
+//    				    duration = new Dur(component.getProperty("DURATION").get().getValue());
+//    			        Date t1 = new Date();
+//    			        Date t2 = duration.getTime(t1);
+//    			        duration_millis = t2.getTime() - t1.getTime();
+//    				} else {
+//    					logger.warn("Error in ics File. There is an event without DTEND or DURATION. " + "SUMMARY: " + name + ", DTSTART: " + startdate);
+//    					eventsSkipped ++;
+//    					continue;
+//    				}
+//
+//
+//
+//		            for (Allocatable allocatable: resources)
+//                    {
+//                        event.addAllocatable(allocatable);
+//                    }
+//
+//		            if (duration_millis == 0 && enddate != null) {
+//                        ZoneId zone = ZoneId.systemDefault();
+//                        long millis1 = enddate.atZone(zone).toInstant().toEpochMilli();
+//                        long millis2 = startdate.atZone(zone).toInstant().toEpochMilli();
+//                        duration_millis = millis2 - millis1;
+//
+//                    }
+//		            // createInfoDialog appointment
+//
+//
+//		            Appointment appointment;
+//		        	if ( !(startdate instanceof DateTime))
+//		            {
+//		            	Date begin = new Date( startdate.getTime());
+//			            Date end = new Date(begin.getTime() + duration_millis);
+//			            appointment = newAppointment(user,begin, end);
+//		            	wholeDay = true;
+//			            appointment.setWholeDays(wholeDay);
+//		            }
+//		            else
+//		            {
+//                        Date begin = timeZoneConverter.toRaplaTime(timeZone, startdate);
+//			            Date end = new Date(begin.getTime() + duration_millis);
+//			            appointment = newAppointment(user,begin, end);
+//		            }
+//
+//		            List<Property> rrules = component.getProperties("RRULE");
+//		            if ( rrules.size() >0)
+//		            {
+//		                List<Recur> recurList = new ArrayList<>(rrules.size());
+//                        for ( int i=0;i<rrules.size();i++)
+//                        {
+//                            Property prop = rrules.get( i);
+//                            RRule rrule = new RRule(prop.getParameterList(),prop.getValue());
+//                            recurList.add(rrule.getRecur());
+//                        }
+//                        List<Appointment> list = calcRepeating( recurList, appointment);
+//                        if  ( list != null)
+//                        {
+//                            for ( Appointment app: list)
+//                            {
+//                                event.addAppointment( app);
+//                            }
+//                        }
+//                        else
+//                        {
+//                            net.fortuna.ical4j.model.Date periodEnd = null;
+//                            for (Recur recur: recurList)
+//                            {
+//                                net.fortuna.ical4j.model.Date until = recur.getUntil();
+//                                if ( until != null)
+//                                {
+//                                    if ( periodEnd == null || periodEnd.before( until))
+//                                    {
+//                                        periodEnd = until;
+//                                    }
+//                                }
+//                            }
+//
+//                            if ( periodEnd == null)
+//                            {
+//                                periodEnd = new net.fortuna.ical4j.model.Date(startdate.getTime() + DateTools.MILLISECONDS_PER_WEEK * 52 *6);
+//                            }
+//                            Set<Period> periodList;
+//                            {
+//                                long e4 = DateTools.addDays( periodEnd, 1).getTime();
+//                                long s1 = startdate.getTime();
+//                                Period period = new Period(new DateTime( s1), new DateTime(e4));
+//                                periodList = component.calculateRecurrenceSet(period);
+//                            }
+//                            for ( @SuppressWarnings("unchecked") Iterator<Period> it = periodList.iterator();it.hasNext();)
+//                            {
+//                                Period p = it.next();
+//
+//								Date s = timeZoneConverter.toRaplaTime(timeZone, p.getStart());
+//                                Date e = timeZoneConverter.toRaplaTime(timeZone,p.getEnd());
+//                                Appointment singleAppointment = newAppointment( user,s, e);
+//                                event.addAppointment( singleAppointment);
+//                            }
+//                        }
+//		            }
+//		            else
+//		            {
+//		                event.addAppointment( appointment);
+//		            }
+//
+//
+//
+//		            if (uid  != null)
+//				    {
+//				        reservationMap.put( uid, lookupEvent);
+//				    }
+//		            eventList.add( lookupEvent);
+//                }
+//                catch (ParseException ex)
+//                {
+//
+//                }
+//
+//			} else if (component.getName().equalsIgnoreCase("VTIMEZONE")) {
+//				if (component.getProperties("TZID").size() > 0) {
+//				//	TimeZone timezoneFromICal = TimeZone.getTimeZone(component.getProperty("TZID").getValue());
+//				}
+//			}
+//        }
 
-                	if ( lookupEvent == null)
-    				{
-    					// createInfoDialog the reservation
-    					Classification classification = facade.getDynamicType(eventTypeKey).newClassification();
-    				    lookupEvent = facade.newReservation(classification,user);
-    				    if ( uid != null)
-    				    {
-    				    	lookupEvent.setAnnotation( RaplaObjectAnnotations.KEY_EXTERNALID, uid);
-    				    }
-    		            classification.setValue(eventTypeNameAttributeKey, name);
-    				}
-                	Reservation event = lookupEvent;
-    			    DateProperty startDateProperty = component.getProperty("DTSTART");
-                    Date startdate =  startDateProperty.getDate();
-                    Date enddate =  null;
-    				boolean wholeDay = false;
-    				long duration_millis = 0;
-    				Dur duration;
-    				if (component.getProperties("DTEND").size() > 0) {
-    				    DateProperty endDateProperty = component.getProperty("DTEND");
-    				    enddate = endDateProperty.getDate();
-    					duration = null;
-    				} else if (component.getProperties("DURATION").size() > 0) {
-    				    duration = new Dur(component.getProperty("DURATION").getValue());
-    			        Date t1 = new Date();
-    			        Date t2 = duration.getTime(t1);
-    			        duration_millis = t2.getTime() - t1.getTime();
-    				} else {
-    					logger.warn("Error in ics File. There is an event without DTEND or DURATION. " + "SUMMARY: " + name + ", DTSTART: " + startdate);
-    					eventsSkipped ++;
-    					continue;
-    				}
-    
-    				
-    				
-		            for (Allocatable allocatable: resources)
-                    {
-                        event.addAllocatable(allocatable);
-                    }
-		            
-		            if (duration_millis == 0 && enddate != null) {
-                        duration_millis = enddate.getTime() - startdate.getTime();
-                    }
-		            // createInfoDialog appointment
-		            
+//        final int eventsInICalFinal = eventsInICal;
+//        int eventsSkippedFinal = eventsSkipped;
+        Date minStart = null;
+        final int eventsInICalFinal = 0;
+        int eventsSkippedFinal = 0;
+        List<Reservation> eventList = new ArrayList<>();
 
-		            Appointment appointment;
-		        	if ( !(startdate instanceof DateTime))
-		            {
-		            	Date begin = new Date( startdate.getTime());
-			            Date end = new Date(begin.getTime() + duration_millis);
-			            appointment = newAppointment(user,begin, end);
-		            	wholeDay = true;
-			            appointment.setWholeDays(wholeDay);
-		            }
-		            else
-		            {
-                        Date begin = timeZoneConverter.toRaplaTime(timeZone, startdate);
-			            Date end = new Date(begin.getTime() + duration_millis);
-			            appointment = newAppointment(user,begin, end);
-		            }
-		            
-		            PropertyList<Property> rrules = component.getProperties("RRULE");
-		            if ( rrules.size() >0)
-		            {
-		                List<Recur> recurList = new ArrayList<>(rrules.size());
-                        for ( int i=0;i<rrules.size();i++)
-                        {
-                            Property prop = rrules.get( i);
-                            RRule rrule = new RRule(prop.getParameters(),prop.getValue());
-                            recurList.add(rrule.getRecur());
-                        }
-                        List<Appointment> list = calcRepeating( recurList, appointment);
-                        if  ( list != null)
-                        {
-                            for ( Appointment app: list)
-                            {
-                                event.addAppointment( app);
-                            }
-                        }
-                        else
-                        {
-                            net.fortuna.ical4j.model.Date periodEnd = null;
-                            for (Recur recur: recurList)
-                            {
-                                net.fortuna.ical4j.model.Date until = recur.getUntil();
-                                if ( until != null)
-                                {
-                                    if ( periodEnd == null || periodEnd.before( until))
-                                    {
-                                        periodEnd = until;
-                                    }
-                                }
-                            }
-                           
-                            if ( periodEnd == null)
-                            {
-                                periodEnd = new net.fortuna.ical4j.model.Date(startdate.getTime() + DateTools.MILLISECONDS_PER_WEEK * 52 *6);
-                            }
-                            PeriodList periodList;
-                            {
-                                long e4 = DateTools.addDays( periodEnd, 1).getTime();
-                                long s1 = startdate.getTime();
-                                Period period = new Period(new DateTime( s1), new DateTime(e4));
-                                periodList = component.calculateRecurrenceSet(period);
-                            }
-                            for ( @SuppressWarnings("unchecked") Iterator<Period> it = periodList.iterator();it.hasNext();)
-                            {
-                                Period p = it.next();
-                               
-								Date s = timeZoneConverter.toRaplaTime(timeZone, p.getStart());
-                                Date e = timeZoneConverter.toRaplaTime(timeZone,p.getEnd());
-                                Appointment singleAppointment = newAppointment( user,s, e);
-                                event.addAppointment( singleAppointment);
-                            }
-                        }
-		            }
-		            else
-		            {
-		                event.addAppointment( appointment);
-		            }
-
-		            		            
-					/*
-					 * get a date iterable for given startdate and recurrance
-					 * rule.
-					 * timezone passed is UTC, because timezone calculation has
-					 * already been taken care of earlier
-					 */
-		            if (uid  != null)
-				    {
-				        reservationMap.put( uid, lookupEvent);
-				    }
-		            eventList.add( lookupEvent);
-                }
-                catch (ParseException ex)
-                {
-                    
-                }
-
-			} else if (component.getName().equalsIgnoreCase("VTIMEZONE")) {
-				if (component.getProperties("TZID").size() > 0) {
-				//	TimeZone timezoneFromICal = TimeZone.getTimeZone(component.getProperty("TZID").getValue());
-				}
-			}
-        }
-		Date minStart = null;
-        final int eventsInICalFinal = eventsInICal;
-        int eventsSkippedFinal = eventsSkipped;
 		Promise<Map<String, List<Entity<Reservation>>>> importedPromise = getImportedReservations(minStart);
         return importedPromise.thenApply((imported) ->
         {
@@ -372,6 +374,7 @@ public class RaplaICalImport implements ICalImport {
             facade.storeObjects(toImport.toArray(Reservation.RESERVATION_ARRAY));
             return new Integer[] { eventsInICalFinal, eventsImported, eventsPresent, eventsSkippedFinal };
         });
+
 	}
 
     protected Promise<Map<String, List<Entity<Reservation>>>> getImportedReservations(Date start)
@@ -433,25 +436,25 @@ public class RaplaICalImport implements ICalImport {
 			User owner = facade.tryResolve(ownerId) ;
             final Appointment appointment = facade.newAppointmentWithUser(start.getStart(), start.getEnd(), owner);
             appointment.setRepeatingEnabled(true);
-            WeekDayList dayList = recur.getDayList();
+            List<WeekDay> dayList = recur.getDayList();
             if (dayList.size() > 1 || (dayList.size() == 1 && !recur.getFrequency().equals(Recur.WEEKLY)  ))
             {
             	return null;
             }
-            NumberList yearDayList = recur.getYearDayList();
+            List<Integer> yearDayList = recur.getYearDayList();
             if ( yearDayList.size() > 0)
             {
             	return null;
             }
-            NumberList weekNoList = recur.getWeekNoList();
+            List<Integer> weekNoList = recur.getWeekNoList();
             if ( weekNoList.size() > 0){
             	return null;
             }
-            NumberList hourList = recur.getHourList();
+            List<Integer> hourList = recur.getHourList();
             if ( hourList.size() > 0){
             	return null;
             }
-            MonthList monthList = recur.getMonthList();
+            List<Month> monthList = recur.getMonthList();
 			if (monthList.size() > 1 || (monthList.size() == 1 && !recur.getFrequency().equals(Recur.MONTHLY)  ))
             {
             	return null;
@@ -470,19 +473,17 @@ public class RaplaICalImport implements ICalImport {
 			appointment.getRepeating().setNumber(count);
             if (count <= 0) 
             {
-				net.fortuna.ical4j.model.Date until = recur.getUntil();
+				Temporal until = recur.getUntil();
 				Date repeatingEnd;
-				if ( until instanceof DateTime)
+				if ( until == null )
 				{
-					repeatingEnd = timeZoneConverter.toRaplaTime( timeZone, until);
-				}
-				else if ( until != null)
-				{
-					repeatingEnd = new Date(until.getTime());
+                    repeatingEnd = null;
+
 				}
 				else
 				{
-					repeatingEnd = null;
+                    throw new UnsupportedOperationException("Repeating end time not supported");
+                    //repeatingEnd = timeZoneConverter.toRaplaTime( timeZone, until.);
 				}
 				appointment.getRepeating().setEnd(repeatingEnd);
 

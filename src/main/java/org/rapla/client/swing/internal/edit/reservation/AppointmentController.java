@@ -90,6 +90,7 @@ import java.awt.event.ActionListener;
 import java.awt.event.ItemEvent;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -1274,6 +1275,7 @@ public class AppointmentController extends RaplaGUIComponent implements Disposab
                 interval.setNumber(Integer.valueOf(repeating.getInterval()));
 
                 Date start = appointment.getStart();
+                LocalDate localStartDate = appointment.getStartDateTime().toLocalDate();
                 startDate.setDate(start);
                 startDatePeriod.setDate(start);
                 startTime.setTime(start);
@@ -1346,7 +1348,7 @@ public class AppointmentController extends RaplaGUIComponent implements Disposab
 
                 if (repeating.isMonthly())
                 {
-                    int numb = DateTools.getDayOfWeekInMonth(start);
+                    int numb = DateTools.getDayOfWeekInMonth(localStartDate);
                     weekdayInMonth.setNumber(Integer.valueOf(numb));
                 }
 

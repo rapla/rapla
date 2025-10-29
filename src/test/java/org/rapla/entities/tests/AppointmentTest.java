@@ -26,6 +26,7 @@ import org.rapla.entities.domain.RepeatingType;
 import org.rapla.entities.domain.internal.AppointmentImpl;
 import org.rapla.rest.client.internal.isodate.ISODateTimeFormat;
 
+import java.time.LocalDateTime;
 import java.util.*;
 
 import static org.junit.Assert.*;
@@ -275,34 +276,40 @@ public class AppointmentTest {
         a1.createBlocks( createDate("2006-08-17"), createDate(" 2007-03-30"), blocks);
         assertEquals( 4, blocks.size());
         Collections.sort(blocks);
-        assertEquals( start, new Date(blocks.get( 0).getStart()));
+        AppointmentBlock appointmentBlock = blocks.get(0);
+        assertEquals( start, new Date(appointmentBlock.getStart()));
         Calendar cal = createGMTCalendar();
         cal.setTime( start );
         int weekday = cal.get( Calendar.DAY_OF_WEEK);
         int dayofweekinmonth = cal.get( Calendar.DAY_OF_WEEK_IN_MONTH);
         assertEquals( DateTools.THURSDAY,DateTools.getWeekday( start) );
-        assertEquals( 3, DateTools.getDayOfWeekInMonth(start) );
+        assertEquals( 3, DateTools.getDayOfWeekInMonth(DateTools.toLocalDate( appointmentBlock.getStart())) );
         assertEquals( 8, DateTools.getMonth(start));
         // we expect the second wednesday in april
         cal.add( Calendar.MONTH, 1 );
         cal.set( Calendar.DAY_OF_WEEK , weekday );
         cal.set( Calendar.DAY_OF_WEEK_IN_MONTH, dayofweekinmonth);
         start = cal.getTime();
-        assertEquals( start, new Date(blocks.get( 1).getStart()));
+        appointmentBlock = blocks.get(1);
+        assertEquals( start, new Date(appointmentBlock.getStart()));
         cal.add( Calendar.MONTH, 1 );
         cal.set( Calendar.DAY_OF_WEEK , weekday );
         cal.set( Calendar.DAY_OF_WEEK_IN_MONTH, dayofweekinmonth);
         assertEquals(10, cal.get( Calendar.HOUR_OF_DAY));
         start = cal.getTime();
-        assertEquals( start, new Date(blocks.get( 2).getStart()));
+        appointmentBlock = blocks.get(2);
+        assertEquals( start, new Date(appointmentBlock.getStart()));
         cal.add( Calendar.MONTH, 1 );
         cal.set( Calendar.DAY_OF_WEEK , weekday );
+        cal.set( Calendar.HOUR_OF_DAY, 12);
+        cal.set( Calendar.MINUTE, 0);
         cal.set( Calendar.DAY_OF_WEEK_IN_MONTH, dayofweekinmonth);
-        start = cal.getTime();
-        assertEquals( start, new Date(blocks.get( 3).getStart()));
+        Date end = cal.getTime();
+        appointmentBlock = blocks.get(3);
 
-        assertEquals( start, repeating1.getEnd() );
-        assertEquals( start, a1.getMaxEnd() );
+        assertEquals( new Date(appointmentBlock.getEnd()), repeating1.getEnd() );
+        assertEquals( end, new Date(appointmentBlock.getEnd()));
+        assertEquals( end, a1.getMaxEnd() );
         
         blocks.clear();
         a1.createBlocks( createDate("2006-01-01"), createDate("2007-10-20"), blocks);
@@ -326,7 +333,8 @@ public class AppointmentTest {
         a1.createBlocks( createDate("2006-08-01"), createDate("2008-08-01"), blocks);
         assertEquals( 4, blocks.size());
         Collections.sort( blocks);
-        assertEquals( start, new Date(blocks.get(0).getStart()));
+        AppointmentBlock appointmentBlock = blocks.get(0);
+        assertEquals( start, new Date(appointmentBlock.getStart()));
         Calendar cal = createGMTCalendar();
         cal.setTime( start );
         int weekday = cal.get( Calendar.DAY_OF_WEEK);
@@ -339,7 +347,8 @@ public class AppointmentTest {
         cal.set( Calendar.DAY_OF_WEEK , weekday );
         cal.set( Calendar.DAY_OF_WEEK_IN_MONTH, dayofweekinmonth);
         start = cal.getTime();
-        assertEquals( start, new Date(blocks.get(1).getStart()));
+        appointmentBlock = blocks.get(1);
+        assertEquals( start, new Date(appointmentBlock.getStart()));
         
         cal.add( Calendar.YEAR,1);
         cal.set( Calendar.MONTH, Calendar.MARCH );
@@ -347,16 +356,18 @@ public class AppointmentTest {
         cal.set( Calendar.DAY_OF_WEEK_IN_MONTH, dayofweekinmonth);
         assertEquals(10, cal.get( Calendar.HOUR_OF_DAY));
         start = cal.getTime();
-        
-        assertEquals( start, new Date(blocks.get(2).getStart()));
+
+        appointmentBlock = blocks.get(2);
+        assertEquals( start, new Date(appointmentBlock.getStart()));
         cal.set( Calendar.MONTH, Calendar.MAY );
         cal.set( Calendar.DAY_OF_WEEK , weekday );
         cal.set( Calendar.DAY_OF_WEEK_IN_MONTH, dayofweekinmonth);
         start = cal.getTime();
-        assertEquals( start, new Date(blocks.get(3).getStart()));
+        appointmentBlock = blocks.get(3);
+        assertEquals( start, new Date(appointmentBlock.getStart()));
 
-        assertEquals( start, repeating1.getEnd() );
-        assertEquals( start, a1.getMaxEnd() );
+        assertEquals( appointmentBlock.getEndDateTime(), repeating1.getEndDateTime() );
+        assertEquals( appointmentBlock.getEndDateTime(), a1.getMaxEndDateTime() );
         
         blocks.clear();
         a1.createBlocks( createDate("2006-01-01"), createDate("2007-10-20"), blocks);
@@ -426,7 +437,8 @@ public class AppointmentTest {
         List<AppointmentBlock> blocks = new ArrayList<AppointmentBlock>();
         a1.createBlocks( createDate("2004-01-01"), createDate("2020-01-01"), blocks);
         assertEquals( 4, blocks.size());
-        assertEquals( start, new Date(blocks.get(0).getStart()));
+        AppointmentBlock appointmentBlock = blocks.get(0);
+        assertEquals( start, new Date(appointmentBlock.getStart()));
         Calendar cal = createGMTCalendar();
         cal.setTime( start );
         int weekday = cal.get( Calendar.DAY_OF_WEEK);
@@ -439,22 +451,28 @@ public class AppointmentTest {
         cal.set( Calendar.MONTH, Calendar.FEBRUARY );
         cal.set( Calendar.DAY_OF_MONTH , 29 );
         start = cal.getTime();
-        assertEquals( start, new Date(blocks.get(1).getStart()));
+        appointmentBlock = blocks.get(1);
+        assertEquals( start, new Date(appointmentBlock.getStart()));
         
         cal.add( Calendar.YEAR,4);
         cal.set( Calendar.MONTH, Calendar.FEBRUARY );
         cal.set( Calendar.DAY_OF_MONTH , 29 );
         assertEquals(10, cal.get( Calendar.HOUR_OF_DAY));
         start = cal.getTime();
-        
-        assertEquals( start, new Date(blocks.get(2).getStart()));
+
+        appointmentBlock = blocks.get(2);
+        assertEquals( start, new Date(appointmentBlock.getStart()));
         cal.add( Calendar.YEAR,4);
         cal.set( Calendar.MONTH, Calendar.FEBRUARY );
         cal.set( Calendar.DAY_OF_MONTH , 29 );
         start = cal.getTime();
-        assertEquals( start, new Date(blocks.get(3).getStart()));
+        appointmentBlock = blocks.get(3);
+        assertEquals( start, new Date(appointmentBlock.getStart()));
 
-        assertEquals( start, repeating1.getEnd() );
+        assertEquals( new Date(appointmentBlock.getEnd()), repeating1.getEnd() );
+        cal.set( Calendar.HOUR_OF_DAY , 12 );
+        cal.set( Calendar.MINUTE , 0 );
+        start = cal.getTime();
         assertEquals( start, a1.getMaxEnd() );
         
         blocks.clear();
@@ -482,20 +500,26 @@ public class AppointmentTest {
         List<AppointmentBlock> blocks = new ArrayList<AppointmentBlock>();
         a1.createBlocks( createDate("2006-08-17"), createDate("2010-03-30"), blocks);
         assertEquals( 4, blocks.size());
-        assertEquals( start, new Date(blocks.get(0).getStart()));
+        AppointmentBlock appointmentBlock = blocks.get(0);
+        assertEquals( start, new Date(appointmentBlock.getStart()));
         cal.add( Calendar.YEAR, 1 );
         start = cal.getTime();
-        assertEquals( start, new Date(blocks.get(1).getStart()));
+        appointmentBlock = blocks.get(1);
+        assertEquals( start, new Date(appointmentBlock.getStart()));
         cal.add( Calendar.YEAR, 1 );
         start = cal.getTime();
-        assertEquals( start, new Date(blocks.get(2).getStart()));
+        appointmentBlock = blocks.get(2);
+        assertEquals( start, new Date(appointmentBlock.getStart()));
         cal.add( Calendar.YEAR, 1 );
         start = cal.getTime();
         assertEquals( dayInMonth,cal.get(Calendar.DAY_OF_MONTH));
         assertEquals( month,cal.get(Calendar.MONTH));
-        assertEquals( start, new Date(blocks.get(3).getStart()));
-        assertEquals( start, repeating1.getEnd() );
-        assertEquals( start, a1.getMaxEnd() );
+        appointmentBlock = blocks.get(3);
+        assertEquals( start, new Date(appointmentBlock.getStart()));
+        LocalDateTime endDateTime = repeating1.getEndDateTime();
+        assertEquals( appointmentBlock.getEndDateTime(), endDateTime);
+        LocalDateTime maxEnd = a1.getMaxEndDateTime();
+        assertEquals( appointmentBlock.getEndDateTime(), maxEnd);
     }
 
     private Calendar createGMTCalendar() {

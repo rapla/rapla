@@ -12,10 +12,7 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.components.util;
 
-import java.time.Instant;
-import java.time.LocalDateTime;
-import java.time.ZoneId;
-import java.time.ZoneOffset;
+import java.time.*;
 import java.util.Date;
 import java.util.Locale;
 
@@ -70,8 +67,62 @@ public abstract class DateTools
 	public static int getMinuteOfDay(long date) {
 	     return (int) ((date % MILLISECONDS_PER_DAY)/ MILLISECONDS_PER_MINUTE);
 	}
-	
-	public static String formatDate(Date date)
+
+    public static DayOfWeek mapRaplaToDateAPI(int weekday) {
+        switch (weekday) {
+            case DateTools.SUNDAY: {
+                return DayOfWeek.SUNDAY;
+            }
+            case DateTools.MONDAY: {
+                return DayOfWeek.MONDAY;
+            }
+            case DateTools.TUESDAY: {
+                return DayOfWeek.TUESDAY;
+            }
+            case DateTools.WEDNESDAY: {
+                return DayOfWeek.WEDNESDAY;
+            }
+            case DateTools.THURSDAY: {
+                return  DayOfWeek.THURSDAY;
+            }
+            case DateTools.FRIDAY: {
+                return   DayOfWeek.FRIDAY;
+            }
+            case  DateTools.SATURDAY: {
+                return   DayOfWeek.SATURDAY;
+            }
+        }
+        throw new IllegalArgumentException("Invalid weekday: " + weekday);
+    }
+
+    public static int mapDateAPIToRapla(DayOfWeek dayOfWeek) {
+        switch (dayOfWeek) {
+            case SUNDAY: {
+                return DateTools.SUNDAY;
+            }
+            case MONDAY: {
+                return DateTools.MONDAY;
+            }
+            case TUESDAY: {
+                return DateTools.TUESDAY;
+            }
+            case WEDNESDAY: {
+                return DateTools.WEDNESDAY;
+            }
+            case THURSDAY: {
+                return  DateTools.THURSDAY;
+            }
+            case FRIDAY: {
+                return   DateTools.FRIDAY;
+            }
+            case  SATURDAY: {
+                return   DateTools.SATURDAY;
+            }
+        }
+        throw new IllegalArgumentException("Invalid weekday: " + dayOfWeek);
+    }
+
+    public static String formatDate(Date date)
 	{
 		SerializableDateTimeFormat format = new SerializableDateTimeFormat();
         String string = format.formatDate( date);
@@ -207,8 +258,11 @@ public abstract class DateTools
     }
     
     public static Date addWeeks(Date date, int weeks) {
-    	Date result = new Date(date.getTime() + MILLISECONDS_PER_WEEK * weeks);
-		return result;
+        LocalDateTime localDate = toLocalDateTime(date.getTime());
+        LocalDateTime newDate = localDate.plusWeeks(weeks);
+
+        //Date result = new Date(date.getTime() + MILLISECONDS_PER_WEEK * weeks);
+		return new Date(newDate.toInstant(ZoneOffset.UTC).toEpochMilli());
     }
     
     public static Date addYears(Date date, int yearModifier) {
@@ -327,10 +381,10 @@ public abstract class DateTools
     }
 
     /** calculates how often the weekday of the passed date occured. e.g. if you pass a date thats on monday it returns 1 if its the first monday in the month and 3 if its the third monday*/
-    public static int getDayOfWeekInMonth(Date date) 
+    public static int getDayOfWeekInMonth(LocalDate date)
     {
-    	DateWithoutTimezone date2 = toDate( date.getTime());
-    	int day = date2.day;
+    	//DateWithoutTimezone date2 = toDate( date.getTime());
+    	int day = date.getDayOfMonth();
     	int occurances = (day-1) / 7 + 1;
     	return occurances;
     }
@@ -608,7 +662,13 @@ public abstract class DateTools
        return (int) result;
    }
 
-   
+
+   public static LocalDate toLocalDate(long millis)
+   {
+       DateWithoutTimezone dateWithoutTimezone = toDate(millis);
+       LocalDate result = LocalDate.of( dateWithoutTimezone.year, dateWithoutTimezone.month, dateWithoutTimezone.day);
+       return result;
+   }
    public static DateWithoutTimezone toDate(long millis)
    {
 	   // special case for negative milliseconds as day rounding needs to get the lower day

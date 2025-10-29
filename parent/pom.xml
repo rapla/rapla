@@ -3,27 +3,28 @@
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>org.rapla</groupId>
 	<artifactId>rapla-parent</artifactId>
-	<version>2.0-RC10</version>
+	<version>2.0-RC11</version>
 	<description>rapla - parent</description>
 	<name>rapla - parent</name>
 	<packaging>pom</packaging>
 	<properties>
+        <jackson.version>2.19.0</jackson.version>
 		<disableGwtCompile>false</disableGwtCompile>
-		<slf4j.version>2.0.7</slf4j.version>
-		<logback.version>1.3.12</logback.version>
+		<slf4j.version>2.0.12</slf4j.version>
+		<logback.version>1.3.15</logback.version>
 		<intellijAnnotations.version>12.0</intellijAnnotations.version>
-		<ical4j.version>3.2.14</ical4j.version>
+		<ical4j.version>4.2.0</ical4j.version>
 		<rxjava.version>3.1.5</rxjava.version>
 		<java.version>1.8</java.version>
 		<exchange.webservice.api>2.0</exchange.webservice.api>
-		<jetty.version>9.4.57.v20241219</jetty.version>
+		<jetty.version>9.4.58.v20250814</jetty.version>
 		<mail.version>1.4.7</mail.version>
 		<jackson.version>2.15.1</jackson.version>
 		<maven.install.skip>false</maven.install.skip>
 		<guava.version>21.0</guava.version>
 		<requestfactory.version>2.8.0</requestfactory.version>
-		<commons-codec.version>1.8</commons-codec.version>
-		<commons-lang.version>2.6</commons-lang.version>
+        <commons-io.version>2.14.0</commons-io.version>
+		<commons-codec.version>1.14</commons-codec.version>
 		<commons-collections.version>4.1</commons-collections.version>
 		<gson.version>2.10.1</gson.version>
 		<javax.inject.version>1</javax.inject.version>
@@ -91,16 +92,16 @@
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-compiler-plugin</artifactId>
-				<version>3.10.1</version>
+				<version>3.13.0</version>
 				<configuration>
 					<annotationProcessors>
+						<annotationProcessor>org.rapla.inject.generator.AnnotationInjectionProcessor</annotationProcessor>
 						<annotationProcessor>org.rapla.inject.generator.AnnotationInjectionProcessor</annotationProcessor>
 					</annotationProcessors>
 					<!--
 					<proc>none</proc>
 					-->
 					<useIncrementalCompilation>true</useIncrementalCompilation>
-					<optimize>false</optimize>
 					<verbose>false</verbose>
 					<source>${maven.compiler.source}</source>
 					<target>${maven.compiler.target}</target>
@@ -340,20 +341,16 @@
 			<artifactId>gson</artifactId>
 			<version>${gson.version}</version>
 		</dependency>
-		<dependency>
+        <dependency>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-databind</artifactId>
+            <version>${jackson.version}</version>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
 			<groupId>org.mnode.ical4j</groupId>
 			<artifactId>ical4j</artifactId>
 			<version>${ical4j.version}</version>
-			<exclusions>
-				<exclusion>
-					<artifactId>bndlib</artifactId>
-					<groupId>biz.aQute.bnd</groupId>
-				</exclusion>
-				<exclusion>
-					<artifactId>groovy-all</artifactId>
-					<groupId>org.codehaus.groovy</groupId>
-				</exclusion>
-			</exclusions>
 		</dependency>
 		<dependency>
 			<groupId>commons-codec</groupId>
@@ -361,15 +358,15 @@
 			<version>${commons-codec.version}</version>
 		</dependency>
 		<dependency>
-			<groupId>commons-lang</groupId>
-			<artifactId>commons-lang</artifactId>
-			<version>${commons-lang.version}</version>
-		</dependency>
-		<dependency>
 			<groupId>org.apache.commons</groupId>
 			<artifactId>commons-collections4</artifactId>
 			<version>${commons-collections.version}</version>
 		</dependency>
+        <dependency>
+            <groupId>commons-io</groupId>
+            <artifactId>commons-io</artifactId>
+            <version>${commons-io.version}</version>
+        </dependency>
 		<dependency>
 			<groupId>com.sun.mail</groupId>
 			<artifactId>mailapi</artifactId>

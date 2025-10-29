@@ -14,9 +14,9 @@ module org.rapla {
     requires java.naming;
     requires java.management;
     requires annotations;
-    requires commons.codec;
+//    requires commons.codec;
     requires ews.java.api;
-    requires org.mnode.ical4j.core;
+    requires ical4j.core;
     requires mailapi;
     requires commons.collections4;
     requires httpcore;

@@ -1,6 +1,7 @@
 package org.rapla.plugin.export2ical.server;
 
 import net.fortuna.ical4j.data.CalendarOutputter;
+import net.fortuna.ical4j.data.FoldingWriter;
 import net.fortuna.ical4j.model.Calendar;
 import net.fortuna.ical4j.validate.ValidationException;
 import org.rapla.RaplaResources;
@@ -35,6 +36,8 @@ import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.io.StringWriter;
+import java.io.Writer;
 import java.text.SimpleDateFormat;
 import java.util.*;
 
@@ -121,7 +124,9 @@ public class Export2iCalServlet
 		//this.response = response;
         getLogger().debug("File: "+filename);
         getLogger().debug("User: "+username);
-
+        response.setHeader("Cache-Control", "no-cache, no-store, must-revalidate");
+        response.setHeader("Pragma", "no-cache");
+        response.setDateHeader("Expires", 0);
 		boolean isAllAppointmentsSet = request.getParameter("complete") != null;
 		// if param COMPLETE is given, retrieve all appointments
 		StorageOperator operator = getFacade().getOperator();
@@ -243,9 +248,13 @@ public class Export2iCalServlet
 		}
 		final Calendar iCal = converter.createiCalender(appointments,preferences, user);
 		final CalendarOutputter calOutputter = new CalendarOutputter();
+        calOutputter.setValidating(true);
+        StringWriter stringWriter = new StringWriter();
 		final PrintWriter responseWriter = response.getWriter();
 		try {
-			calOutputter.output(iCal, responseWriter);
+			calOutputter.output(iCal, new FoldingWriter(stringWriter,255));
+            String fixedIcal = sanitizeIcalOutput(stringWriter.toString());
+            responseWriter.write(fixedIcal);
 		} catch (ValidationException e) {
 			getLogger().error("The calendar file is invalid!\n" + e);
 		} finally {
@@ -300,5 +309,14 @@ public class Export2iCalServlet
 
 	}
 
+    private static String sanitizeIcalOutput(String rawIcalText) {
+        return rawIcalText
+                // Zeilenumbruch in MAILTO-Adressen entfernen
+                .replaceAll("(?m)(MAILTO:[^\\r\\n]*)\\r?\\n[ \\t]+([^\\r\\n]*)", "$1$2")
+                // Zeilenumbruch in CN-Parametern entfernen
+                .replaceAll("(?m);CN=([^\\r\\n]*)\\r?\\n[ \\t]+", ";CN=$1")
+                // Doppelte Umbrüche nach :MAILTO entfernen
+                .replaceAll("(?m):MAILTO:\\s*", ":MAILTO:");
+    }
 
 }

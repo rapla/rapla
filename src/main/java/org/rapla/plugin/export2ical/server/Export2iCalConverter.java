@@ -1,18 +1,14 @@
 package org.rapla.plugin.export2ical.server;
 
+import net.fortuna.ical4j.model.*;
 import net.fortuna.ical4j.model.Calendar;
-import net.fortuna.ical4j.model.ComponentList;
-import net.fortuna.ical4j.model.DateTime;
-import net.fortuna.ical4j.model.PropertyList;
-import net.fortuna.ical4j.model.Recur;
-import net.fortuna.ical4j.model.TimeZoneRegistry;
-import net.fortuna.ical4j.model.TimeZoneRegistryFactory;
-import net.fortuna.ical4j.model.WeekDay;
+import net.fortuna.ical4j.model.component.CalendarComponent;
 import net.fortuna.ical4j.model.component.VEvent;
 import net.fortuna.ical4j.model.component.VTimeZone;
 import net.fortuna.ical4j.model.parameter.Cn;
 import net.fortuna.ical4j.model.parameter.PartStat;
 import net.fortuna.ical4j.model.parameter.Role;
+import net.fortuna.ical4j.model.parameter.TzId;
 import net.fortuna.ical4j.model.property.Attendee;
 import net.fortuna.ical4j.model.property.Categories;
 import net.fortuna.ical4j.model.property.Created;
@@ -23,13 +19,14 @@ import net.fortuna.ical4j.model.property.DtStart;
 import net.fortuna.ical4j.model.property.ExDate;
 import net.fortuna.ical4j.model.property.LastModified;
 import net.fortuna.ical4j.model.property.Location;
-import net.fortuna.ical4j.model.property.Method;
 import net.fortuna.ical4j.model.property.Organizer;
 import net.fortuna.ical4j.model.property.ProdId;
 import net.fortuna.ical4j.model.property.RRule;
 import net.fortuna.ical4j.model.property.Summary;
 import net.fortuna.ical4j.model.property.Uid;
-import net.fortuna.ical4j.model.property.Version;
+import net.fortuna.ical4j.model.property.immutable.ImmutableMethod;
+import net.fortuna.ical4j.model.property.immutable.ImmutableVersion;
+import net.fortuna.ical4j.transform.recurrence.Frequency;
 import net.fortuna.ical4j.util.CompatibilityHints;
 import org.rapla.RaplaResources;
 import org.rapla.components.util.DateTools;
@@ -52,21 +49,20 @@ import org.rapla.facade.RaplaFacade;
 import org.rapla.framework.ConfigurationException;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaInitializationException;
-import org.rapla.framework.RaplaLocale;
 import org.rapla.logger.Logger;
 import org.rapla.plugin.export2ical.Export2iCalPlugin;
 import org.rapla.server.TimeZoneConverter;
 
 import javax.inject.Inject;
-import java.io.UnsupportedEncodingException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URLEncoder;
-import java.util.Arrays;
-import java.util.Collection;
+import java.time.Instant;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.ZonedDateTime;
+import java.util.*;
 import java.util.Date;
-import java.util.Iterator;
-import java.util.Locale;
 import java.util.TimeZone;
 
 public class Export2iCalConverter
@@ -78,19 +74,20 @@ public class Export2iCalConverter
     net.fortuna.ical4j.model.TimeZone timeZone;
     private String exportAttendeesAttribute;
     final TimeZoneConverter timezoneConverter;
+    TimeZoneRegistry registry;
     boolean hasLocationType;
-    final RaplaLocale raplaLocale;
+    final Locale locale;
     final Logger logger;
     final RaplaFacade facade;
     final RaplaResources i18n;
 
     @Inject
-    public Export2iCalConverter(TimeZoneConverter timezoneConverter, RaplaLocale raplaLocale, Logger logger, RaplaFacade facade, RaplaResources i18n)
+    public Export2iCalConverter(TimeZoneConverter timezoneConverter, Logger logger, RaplaFacade facade, RaplaResources i18n)
             throws RaplaInitializationException
     {
         this.timezoneConverter = timezoneConverter;
         this.facade = facade;
-        this.raplaLocale = raplaLocale;
+        this.locale = i18n.getLocale();
         this.logger = logger;
         this.i18n = i18n;
         TimeZone zone = timezoneConverter.getImportExportTimeZone();
@@ -133,7 +130,7 @@ public class Export2iCalConverter
 
             try
             {
-                TimeZoneRegistry registry = TimeZoneRegistryFactory.getInstance().createRegistry();
+                registry = TimeZoneRegistryFactory.getInstance().createRegistry();
                 timeZone = registry.getTimeZone(timezoneId);
             }
             catch (Exception rc)
@@ -166,13 +163,12 @@ public class Export2iCalConverter
         doExportAsMeeting = doExportAsMeeting && (exportAttendeesAttribute != null && exportAttendeesAttribute.trim().length() > 0);
 
         Calendar calendar = initiCalendar();
-        addICalMethod(calendar, Method.PUBLISH);
+
         addVTimeZone(calendar);
-        ComponentList components = calendar.getComponents();
         for (Appointment app : appointments)
         {
             VEvent event = createVEvent(app, doExportAsMeeting, exportAttendeesParticipationStatus, user);
-            components.add(event);
+            calendar.add(event);
         }
         return calendar;
     }
@@ -183,7 +179,7 @@ public class Export2iCalConverter
         if (timeZone != null)
         {
             VTimeZone tz = timeZone.getVTimeZone();
-            calendar.getComponents().add(tz);
+            calendar.add(tz);
         }
     }
 
@@ -195,16 +191,14 @@ public class Export2iCalConverter
     public Calendar initiCalendar()
     {
         Calendar calendar = new Calendar();
-        calendar.getProperties().add(new ProdId("-//Rapla//iCal Plugin//EN"));
-        calendar.getProperties().add(Version.VERSION_2_0);
+        calendar.add(new ProdId("-//Rapla//iCal Plugin//EN"));
+        calendar.add(ImmutableVersion.VERSION_2_0);
+        calendar.add(ImmutableMethod.PUBLISH);
         return calendar;
 
     }
 
-    public void addICalMethod(Calendar iCalendar, Method method)
-    {
-        iCalendar.getProperties().add(method);
-    }
+
 
     /**
      * Erstellt anhand des &uuml;bergebenen Appointment-Objekts einen
@@ -215,31 +209,28 @@ public class Export2iCalConverter
      */
     private VEvent createVEvent(Appointment appointment, boolean doExportAsMeeting, String exportAttendeesParticipationStatus, User user)
     {
-
-        PropertyList properties = new PropertyList();
+        VEvent event = new VEvent();
 
         boolean isAllDayEvent = appointment.isWholeDaysSet();
-        addDateStampToEvent(appointment, properties);
-        addCreateDateToEvent(appointment, properties);
-        addStartDateToEvent(appointment, properties, isAllDayEvent);
-        addLastModifiedDateToEvent(appointment, properties);
-        addEndDateToEvent(appointment, properties, isAllDayEvent);
+        addCreateDateToEvent(appointment, event);
+        addStartDateToEvent(appointment, event, isAllDayEvent);
+        addLastModifiedDateToEvent(appointment, event);
+        addEndDateToEvent(appointment, event, isAllDayEvent);
 
         boolean canRead = facade.getPermissionController().canRead(appointment, user);
-        addUidToEvent(appointment, properties);
-        addEventNameToEvent(appointment, properties, canRead);
+        addUidToEvent(appointment, event);
+        addEventNameToEvent(appointment, event, canRead);
         if (canRead)
         {
-            addDescriptionToEvent(appointment, properties);
-            addLocationToEvent(appointment, properties, user);
-            addCategories(appointment, properties);
-            addOrganizer(appointment, properties, doExportAsMeeting);
-            addAttendees(appointment, properties, doExportAsMeeting, exportAttendeesParticipationStatus, user);
+            addDescriptionToEvent(appointment, event);
+            addLocationToEvent(appointment, event, user);
+            addCategories(appointment, event);
+            addOrganizer(appointment, event, doExportAsMeeting);
+            addAttendees(appointment, event, doExportAsMeeting, exportAttendeesParticipationStatus, user);
         }
 
-        addRepeatings(appointment, properties);
+        addRepeatings(appointment, event);
 
-        VEvent event = new VEvent(properties);
 
         return event;
     }
@@ -248,7 +239,7 @@ public class Export2iCalConverter
     {
         if (facade.getPermissionController().canRead(alloc, user))
         {
-            final String name = NameFormatUtil.getExportName(alloc, raplaLocale.getLocale());
+            final String name = NameFormatUtil.getExportName(alloc, locale);
             return name;
         }
         else
@@ -264,7 +255,7 @@ public class Export2iCalConverter
      * @param properties
      */
     private void
-    addOrganizer(Appointment appointment, PropertyList properties, boolean doExportAsMeeting)
+    addOrganizer(Appointment appointment, VEvent properties, boolean doExportAsMeeting)
     {
         // means we do not export attendees so we do not have a meeting
         if (!doExportAsMeeting)
@@ -283,12 +274,18 @@ public class Export2iCalConverter
         try
         {
             Organizer organizer = null;
-            if (owner.getEmail() != null && owner.getEmail().trim().length() > 0)
+            ParameterList params = new ParameterList();
+            if (!"".equals(owner.getName())) {
+                params = new ParameterList(Collections.singletonList(new Cn(owner.getName())));
+            } else {
+                params = new ParameterList();
+            }
+            if (owner.getEmail() != null && !owner.getEmail().trim().isEmpty())
             {
                 try
                 {
                     final URI uri = new URI("MAILTO:" + owner.getEmail().trim());
-                    organizer = new Organizer(uri);
+                    organizer = new Organizer(params,uri);
                 }
                 catch (URISyntaxException e)
                 {
@@ -296,17 +293,11 @@ public class Export2iCalConverter
             }
             if (organizer == null)
             {
-                organizer = new Organizer("MAILTO:" + URLEncoder.encode(owner.getUsername(), "UTF-8"));
+                organizer = new Organizer(params,"MAILTO:" + URLEncoder.encode(owner.getUsername(), "UTF-8"));
             }
-            if (!"".equals(owner.getName()))
-                organizer.getParameters().add(new Cn(owner.getName()));
             properties.add(organizer);
         }
-        catch (URISyntaxException e)
-        {
-            throw new IllegalArgumentException(e);
-        }
-        catch (UnsupportedEncodingException e)
+        catch (Exception e)
         {
             throw new IllegalArgumentException(e);
         }
@@ -318,7 +309,7 @@ public class Export2iCalConverter
      * @param appointment
      * @param properties
      */
-    private void addAttendees(Appointment appointment, PropertyList properties, boolean doExportAsMeeting, String exportAttendeesParticipationStatus, User user)
+    private void addAttendees(Appointment appointment, VEvent properties, boolean doExportAsMeeting, String exportAttendeesParticipationStatus, User user)
     {
         if (!doExportAsMeeting)
             return;
@@ -336,10 +327,8 @@ public class Export2iCalConverter
                     final String resourceName = getResourceName(person, user);
                     if (!isEmpty(resourceName))
                     {
-                        Attendee attendee = new Attendee("MAILTO:" + new URI(email.trim()));
-                        attendee.getParameters().add(Role.REQ_PARTICIPANT);
-                        attendee.getParameters().add(new Cn(resourceName));
-                        attendee.getParameters().add(new PartStat(exportAttendeesParticipationStatus));
+                        ParameterList parameterList = new ParameterList(Arrays.asList(Role.REQ_PARTICIPANT, new Cn(resourceName), new PartStat(exportAttendeesParticipationStatus)));
+                        Attendee attendee = new Attendee(parameterList,"MAILTO:" + new URI(email.trim()));
                         properties.add(attendee);
                     }
                 }
@@ -361,15 +350,7 @@ public class Export2iCalConverter
         return !isEmpty(allocatableName);
     }
 
-    /**
-     * Fuegt dem Termin das Modifizierungsdatum hinzu
-     *
-     */
-    private void addDateStampToEvent(Appointment appointment, PropertyList properties)
-    {
-        Date lastChange = appointment.getReservation().getLastChanged();
-        properties.add(new LastModified(convertRaplaLocaleToUTC(lastChange)));
-    }
+
 
     /**
      * Fuegt dem Termin den DTSTAMP hinzu lt. rfc muss dies dem Erstellungdatum
@@ -377,10 +358,10 @@ public class Export2iCalConverter
      * ist, wird es auf das letzte Modifizierungsdatum geschrieben.
      *
      */
-    private void addLastModifiedDateToEvent(Appointment appointment, PropertyList properties)
+    private void addLastModifiedDateToEvent(Appointment appointment, VEvent properties)
     {
         Date lastChange = appointment.getReservation().getLastChanged();
-        properties.add(new DtStamp(convertRaplaLocaleToUTC(lastChange)));
+        properties.add(new DtStamp(convertRaplaLocaleToUTC(lastChange).toInstant()));
     }
 
     /**
@@ -389,7 +370,7 @@ public class Export2iCalConverter
      *
      * @param appointment Ein Rapla Appointment.
      */
-    private void addRepeatings(Appointment appointment, PropertyList properties)
+    private void addRepeatings(Appointment appointment, VEvent properties)
     {
         Repeating repeating = appointment.getRepeating();
 
@@ -398,8 +379,25 @@ public class Export2iCalConverter
             return;
         }
 
-        // This returns the strings DAYLY, WEEKLY, MONTHLY, YEARLY
-        String type = repeating.getType().toString().toUpperCase();
+        Frequency frequency;
+        switch (repeating.getType())
+        {
+            case DAILY:
+                frequency = Frequency.DAILY;
+                break;
+            case WEEKLY:
+                frequency = Frequency.WEEKLY;
+                break;
+            case MONTHLY:
+                frequency = Frequency.MONTHLY;
+                break;
+            case YEARLY:
+                frequency = Frequency.YEARLY;
+                break;
+            default:
+                getLogger().warn("Invalid data in recurrency rule!");
+                return;
+        }
 
         Recur recur;
 
@@ -407,17 +405,17 @@ public class Export2iCalConverter
         // specified
         if (repeating.getNumber() == -1)
         {
-            recur = new Recur(type, -1);
+            recur = new Recur(frequency, -1);
         }
         else if (repeating.isFixedNumber())
         {
-            recur = new Recur(type, repeating.getNumber());
+            recur = new Recur(frequency, repeating.getNumber());
         }
         else
         {
-            net.fortuna.ical4j.model.Date endDate = new net.fortuna.ical4j.model.Date(repeating.getEnd());
+            LocalDate endDate = repeating.getEndDateTime().toLocalDate();
             // TODO do we need to translate the enddate in utc?
-            recur = new Recur(type, endDate);
+            recur = new Recur(frequency, endDate);
         }
 
         if (repeating.isDaily())
@@ -462,24 +460,24 @@ public class Export2iCalConverter
         // Add exception dates
         //DateList dl = new DateList(Value.DATE);
 
-        ExDate exDate = new ExDate();
-        TimeZoneRegistry registry = TimeZoneRegistryFactory.getInstance().createRegistry();
-        net.fortuna.ical4j.model.TimeZone tz = registry.getTimeZone(timeZone.getID());
+
 
         // rku: use seperate EXDATE for each exception
+        List<ZonedDateTime> exceptionDates = new ArrayList<>();
         for (Iterator<Date> itExceptions = Arrays.asList(repeating.getExceptions()).iterator(); itExceptions.hasNext(); )
         {
-            //DateList dl = new DateList(Value.DATE);
             Date date = itExceptions.next();
-            //dl.add(new net.fortuna.ical4j.model.Date( date));
-            int offset = (int) (tz.getOffset(DateTools.cutDate(date).getTime()) / DateTools.MILLISECONDS_PER_HOUR);
-            Date dateToSave = new Date(DateTools.cutDate(date).getTime() - offset * DateTools.MILLISECONDS_PER_HOUR);
-            net.fortuna.ical4j.model.DateTime dateTime = new net.fortuna.ical4j.model.DateTime();
-            dateTime.setTime(dateToSave.getTime());
-            exDate.getDates().add(dateTime);
+            LocalDateTime startDateTime = appointment.getStartDateTime();
+            LocalDateTime localDateTime = DateTools.toLocalDateTime(date);
+            LocalDateTime exceptionDate = LocalDateTime.of(localDateTime.toLocalDate(),startDateTime.toLocalTime());
+            ZonedDateTime dateTime = exceptionDate.atZone(timeZone.toZoneId());
+            exceptionDates.add( dateTime );
         }
-        exDate.setTimeZone(tz);
 
+        ZonedDateTime[] array = exceptionDates.toArray(new ZonedDateTime[0]);
+        DateList<ZonedDateTime> zonedDateTimeDateList = new DateList<>(registry, array);
+        ExDate<ZonedDateTime> exDate = new ExDate<>(zonedDateTimeDateList);
+        exDate.add(new TzId(timeZone.toZoneId().getId()));
         properties.add(exDate);
         //properties.add(new ExDate(dl));
     }
@@ -497,7 +495,7 @@ public class Export2iCalConverter
             if (!isReserved(raplaPersons[i], appointment))
                 continue;
 
-            attendeeString += raplaPersons[i].getName(raplaLocale.getLocale());
+            attendeeString += raplaPersons[i].getName(locale);
             attendeeString = attendeeString.trim();
 
             if (i != raplaPersons.length - 1)
@@ -518,11 +516,10 @@ public class Export2iCalConverter
      *
      * @param appointment Ein Rapla Appointment.
      */
-    private void addCategories(Appointment appointment, PropertyList properties)
+    private void addCategories(Appointment appointment, VEvent properties)
     {
         Classification cls = appointment.getReservation().getClassification();
-        Categories cat = new Categories();
-        cat.getCategories().add(cls.getType().getName(raplaLocale.getLocale()));
+        Categories cat = new Categories(cls.getType().getName(locale));
         properties.add(cat);
     }
 
@@ -555,7 +552,7 @@ public class Export2iCalConverter
      *
      * @param appointment
      */
-    private void addLocationToEvent(Appointment appointment, PropertyList properties, User user)
+    private void addLocationToEvent(Appointment appointment, VEvent properties, User user)
     {
         final StringBuffer buffer = new StringBuffer();
         appointment
@@ -590,7 +587,7 @@ public class Export2iCalConverter
      *
      * @param appointment
      */
-    private void addUidToEvent(Appointment appointment, PropertyList properties)
+    private void addUidToEvent(Appointment appointment, VEvent properties)
     {
         // multiple vevents can have the same id
         String uid = getId(appointment);// + getId(appointment);
@@ -615,10 +612,10 @@ public class Export2iCalConverter
      *
      * @param appointment
      */
-    private void addEventNameToEvent(Appointment appointment, PropertyList properties, boolean canRead)
+    private void addEventNameToEvent(Appointment appointment, VEvent properties, boolean canRead)
     {
         Reservation reservation = appointment.getReservation();
-        final Locale locale = raplaLocale.getLocale();
+        final Locale locale = this.locale;
         String eventDescription = NameFormatUtil.getExportName(appointment, locale);
 
         if (!canRead)
@@ -638,14 +635,14 @@ public class Export2iCalConverter
         properties.add(new Summary(eventDescription));
     }
 
-    private void addDescriptionToEvent(Appointment appointment, PropertyList properties)
+    private void addDescriptionToEvent(Appointment appointment, VEvent properties)
     {
 
         Reservation reservation = appointment.getReservation();
         String eventDescription;
         if (reservation.getClassification().getType().getAnnotation(DynamicTypeAnnotations.KEY_DESCRIPTION_FORMAT_EXPORT) != null)
         {
-            eventDescription = reservation.formatAppointment(raplaLocale.getLocale(), DynamicTypeAnnotations.KEY_DESCRIPTION_FORMAT_EXPORT, appointment);
+            eventDescription = reservation.formatAppointment(locale, DynamicTypeAnnotations.KEY_DESCRIPTION_FORMAT_EXPORT, appointment);
         }
         else
         {
@@ -663,7 +660,7 @@ public class Export2iCalConverter
      *
      * @param appointment
      */
-    private void addEndDateToEvent(Appointment appointment, PropertyList properties, boolean isAllDayEvent)
+    private void addEndDateToEvent(Appointment appointment, VEvent properties, boolean isAllDayEvent)
     {
 
         Date endDate = appointment.getEnd();
@@ -677,7 +674,6 @@ public class Export2iCalConverter
             if (appointment.getRepeating() == null)
             {
                 DtEnd end = new DtEnd(convertRaplaLocaleToUTC(endDate));
-                end.setUtc(true);
                 properties.add(end);
             }
             else
@@ -691,17 +687,15 @@ public class Export2iCalConverter
     private DtEnd getEndDateProperty(Date endDate)
     {
 
-        DateTime date = convertRaplaLocaleToUTC(endDate);
-        TimeZoneRegistry registry = TimeZoneRegistryFactory.getInstance().createRegistry();
-        net.fortuna.ical4j.model.TimeZone tz = registry.getTimeZone(timeZone.getID());
-        date.setTimeZone(tz);
+        ZonedDateTime date = convertRaplaLocaleToUTC(endDate);
         return new DtEnd(date);
     }
 
     private DtEnd getDtEndFromAllDayEvent(Date endDate)
     {
-        Date date = DateTools.cutDate(endDate);
-        DtEnd end = new DtEnd(new net.fortuna.ical4j.model.Date(date));
+        LocalDateTime date = DateTools.toLocalDateTime(endDate);
+
+        DtEnd end = new DtEnd(date.toLocalDate());
         return end;
     }
 
@@ -711,7 +705,7 @@ public class Export2iCalConverter
      *
      * @param appointment
      */
-    private void addStartDateToEvent(Appointment appointment, PropertyList properties, boolean isAllDayEvent)
+    private void addStartDateToEvent(Appointment appointment, VEvent properties, boolean isAllDayEvent)
     {
 
         Date startDate = appointment.getStart();
@@ -725,8 +719,7 @@ public class Export2iCalConverter
         {
             if (appointment.getRepeating() == null)
             {
-                DtStart start = new DtStart(convertRaplaLocaleToUTC(startDate));
-                start.setUtc(true);
+                DtStart<Instant> start = new DtStart(convertRaplaLocaleToUTC(startDate));
                 properties.add(start);
             }
             else
@@ -740,16 +733,14 @@ public class Export2iCalConverter
     private DtStart getStartDateProperty(Date startDate)
     {
 
-        DateTime date = convertRaplaLocaleToUTC(startDate);
-        TimeZoneRegistry registry = TimeZoneRegistryFactory.getInstance().createRegistry();
-        net.fortuna.ical4j.model.TimeZone tz = registry.getTimeZone(timeZone.getID());
-        date.setTimeZone(tz);
+        ZonedDateTime date = convertRaplaLocaleToUTC(startDate);
         return new DtStart(date);
     }
 
     private DtStart getDtStartFromAllDayEvent(Date startDate)
     {
-        DtStart start = new DtStart(new net.fortuna.ical4j.model.Date(DateTools.cutDate(startDate.getTime())));
+        LocalDateTime localDateTime = DateTools.toLocalDateTime(startDate);
+        DtStart start = new DtStart(localDateTime.atZone(timeZone.toZoneId()).toInstant());
         return start;
     }
 
@@ -759,17 +750,17 @@ public class Export2iCalConverter
      *
      * @param appointment
      */
-    private void addCreateDateToEvent(Appointment appointment, PropertyList properties)
+    private void addCreateDateToEvent(Appointment appointment, VEvent properties)
     {
 
         Date createTime = appointment.getReservation().getCreateDate();
-        properties.add(new Created(convertRaplaLocaleToUTC(createTime)));
+        properties.add(new Created(convertRaplaLocaleToUTC(createTime).toInstant()));
     }
 
-    private DateTime convertRaplaLocaleToUTC(Date date)
+    private ZonedDateTime convertRaplaLocaleToUTC(Date date)
     {
-        Date converted = timezoneConverter.fromRaplaTime(timeZone, date);
-        DateTime result = new DateTime(converted.getTime());
-        return result;
+        LocalDateTime localDateTime = DateTools.toLocalDateTime(date);
+        ZonedDateTime instant = localDateTime.atZone(timeZone.toZoneId());
+        return instant;
     }
 }
