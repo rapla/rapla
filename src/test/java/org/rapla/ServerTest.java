@@ -316,7 +316,10 @@ public class ServerTest
         DynamicType room = getRaplaFacade1().getDynamicType("room");
         DynamicType typeEdit3 = getRaplaFacade1().edit(room);
         typeEdit3.removeAttribute(typeEdit3.getAttribute("belongsto"));
-        Allocatable allocatable = getRaplaFacade1().getAllocatablesWithFilter(room.newClassificationFilter().toArray())[0];
+        ClassificationFilter classificationFilter = room.newClassificationFilter();
+        classificationFilter.setRule(0, room.getAttribute("name"), new Object[][] { { "is", "Room A66" } });
+        Allocatable[] allocatablesWithFilter = getRaplaFacade1().getAllocatablesWithFilter(classificationFilter.toArray());
+        Allocatable allocatable = allocatablesWithFilter[0];
         Assert.assertEquals("Room A66", allocatable.getName(locale));
 
         Allocatable allocatableClone = getRaplaFacade1().edit(allocatable);

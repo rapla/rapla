@@ -27,11 +27,7 @@ import org.rapla.storage.dbfile.FileOperator;
 import org.rapla.storage.dbfile.tests.FileOperatorTest.MyFileIO;
 import org.rapla.test.util.RaplaTestCase;
 
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileReader;
-import java.io.IOException;
-import java.io.StringReader;
+import java.io.*;
 import java.nio.charset.StandardCharsets;
 
 @RunWith(JUnit4.class)
@@ -50,7 +46,8 @@ public class FileOperatorDiffTest
         try
         {
             in1 = new BufferedReader(new StringReader(new String(bytes, StandardCharsets.UTF_8)));
-            in2 = new BufferedReader(new FileReader(file2));
+            Reader r = new InputStreamReader(new FileInputStream(file2), StandardCharsets.UTF_8);
+            in2 = new BufferedReader(r);
             int line = 0;
             while (true)
             {
