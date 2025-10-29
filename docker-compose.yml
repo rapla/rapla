@@ -1,0 +1,14 @@
+version: '3.8'
+
+services:
+  rapla:
+    image: rapla  # Oder verwende 'rapla/rapla:latest' wenn aus Docker Hub
+    container_name: rapla
+    ports:
+      - "8051:8051"
+    volumes:
+      - rapla-data:/opt/rapla/data
+    restart: unless-stopped
+
+volumes:
+  rapla-data:
