@@ -16,10 +16,10 @@ import org.rapla.client.RaplaWidget;
 import org.rapla.client.menu.IdentifiableMenuEntry;
 import org.rapla.client.menu.MenuInterface;
 
-import javax.swing.JMenu;
-import javax.swing.JMenuItem;
-import javax.swing.JPopupMenu;
+import javax.swing.*;
+import javax.swing.event.MenuListener;
 import java.awt.Component;
+import java.util.function.Consumer;
 
 public class RaplaMenu extends JMenu implements IdentifiableMenuEntry, MenuInterface {
     private static final long serialVersionUID = 1L;
@@ -82,6 +82,44 @@ public class RaplaMenu extends JMenu implements IdentifiableMenuEntry, MenuInter
         }
     }
 
+    private boolean initialized = false;
+    private Runnable initializer;
+
+    public void setInitializer(Runnable initializer) {
+        this.initializer = initializer;
+    }
+
+    @Override
+    public JPopupMenu getPopupMenu() {
+        if (!initialized) {
+            initialized = true;
+            if (initializer != null) {
+                initializer.run(); // führt addSubmenus(...) aus
+            }
+        }
+        return super.getPopupMenu();
+    }
+
+    @Override
+    public void addSelectionListener(Consumer<Boolean> selected) {
+        this.addMenuListener(new MenuListener() {
+            @Override
+            public void menuSelected(javax.swing.event.MenuEvent e) {
+                SwingUtilities.invokeLater(() -> selected.accept(true));
+            }
+
+            @Override
+            public void menuDeselected(javax.swing.event.MenuEvent e) {
+                SwingUtilities.invokeLater(() -> selected.accept(false));
+            }
+
+            @Override
+            public void menuCanceled(javax.swing.event.MenuEvent e) {
+                SwingUtilities.invokeLater(() -> selected.accept(false));
+            }
+        });
+    }
+
     @Override
     public void insertBeforeId(RaplaWidget component,String id) {
         int index = getIndexOfEntryWithId( id );
@@ -100,7 +138,7 @@ public class RaplaMenu extends JMenu implements IdentifiableMenuEntry, MenuInter
         //final JMenuItem item = new JMenuItem(new ActionWrapper(menuItem));
         //mapping.put(menuItem, item);
         super.add((Component)item.getComponent());
-        int maxItems = 20;
+        int maxItems = 30;
         if (getMenuComponentCount() == maxItems)
         {
             int millisToScroll = 40;

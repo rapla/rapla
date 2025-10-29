@@ -44,13 +44,7 @@ import org.rapla.scheduler.Promise;
 import org.rapla.scheduler.ResolvedPromise;
 import org.rapla.storage.PermissionController;
 
-import javax.swing.BoxLayout;
-import javax.swing.JComponent;
-import javax.swing.JLayeredPane;
-import javax.swing.JPanel;
-import javax.swing.JScrollPane;
-import javax.swing.JTable;
-import javax.swing.SwingUtilities;
+import javax.swing.*;
 import javax.swing.event.ListSelectionEvent;
 import javax.swing.event.ListSelectionListener;
 import javax.swing.table.TableColumn;
@@ -344,10 +338,11 @@ public class SwingTableView<T> extends RaplaGUIComponent implements SwingCalenda
             if ( listener == null)
             {
                 listener = new Listener();
-                table.getSelectionModel().addListSelectionListener(listener);
-                table.addFocusListener(listener);
             }
-            table.getSelectionModel().addListSelectionListener(listener);
+            ListSelectionModel selectionModel = table.getSelectionModel();
+            selectionModel.removeListSelectionListener(listener);
+            selectionModel.addListSelectionListener(listener);
+            table.removeFocusListener(listener);
             table.addFocusListener(listener);
             swingTableModel.fireTableDataChanged();
             dateChooser.update();});
@@ -356,9 +351,6 @@ public class SwingTableView<T> extends RaplaGUIComponent implements SwingCalenda
         );
         return getFacade().getScheduler().toObservable(result);
     }
-
-
-
 
 
     public JComponent getDateSelection()

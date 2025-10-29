@@ -18,7 +18,11 @@ import org.rapla.client.menu.IdentifiableMenuEntry;
 import org.rapla.client.menu.MenuInterface;
 
 import javax.swing.JPopupMenu;
+import javax.swing.event.MenuListener;
+import javax.swing.event.PopupMenuEvent;
+import javax.swing.event.PopupMenuListener;
 import java.awt.Component;
+import java.util.function.Consumer;
 
 public class RaplaPopupMenu extends JPopupMenu implements MenuInterface {
     private static final long serialVersionUID = 1L;
@@ -94,6 +98,29 @@ public class RaplaPopupMenu extends JPopupMenu implements MenuInterface {
         super.add((Component)item.getComponent());
     }
 
+
+    public void addSelectionListener(Consumer<Boolean> selected) {
+        this.addPopupMenuListener(new PopupMenuListener() {
+
+            @Override
+            public void popupMenuWillBecomeVisible(PopupMenuEvent e) {
+                selected.accept(true);
+            }
+
+            @Override
+            public void popupMenuWillBecomeInvisible(PopupMenuEvent e) {
+                selected.accept(false);
+            }
+
+            @Override
+            public void popupMenuCanceled(PopupMenuEvent e) {
+                selected.accept(false);
+            }
+        });
+    }
+    @Override
+    public void setInitializer(Runnable initializer) {
+    }
 
     @Override
     public String getId() {

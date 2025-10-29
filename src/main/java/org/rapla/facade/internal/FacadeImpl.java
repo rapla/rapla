@@ -133,6 +133,10 @@ public class FacadeImpl implements RaplaFacade {
 
 	public boolean canAllocate(CalendarModel model,User user)
 	{
+        if (user.isAdmin())
+        {
+            return true;
+        }
 		//Date start, Date end,
 		Collection<Allocatable> allocatables = model.getMarkedAllocatables();
 		boolean canAllocate = true;

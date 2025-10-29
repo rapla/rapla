@@ -24,6 +24,7 @@ import org.rapla.client.internal.edit.EditTaskPresenter;
 import org.rapla.client.menu.IdentifiableMenuEntry;
 import org.rapla.client.menu.MenuInterface;
 import org.rapla.client.menu.MenuItemFactory;
+import org.rapla.components.util.treemenubalance.BalancedHierarchicalMenu;
 import org.rapla.entities.User;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.facade.CalendarModel;
@@ -41,6 +42,8 @@ import org.rapla.plugin.tempatewizard.TemplatePlugin;
 import org.rapla.storage.PermissionController;
 
 import javax.inject.Inject;
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Comparator;
@@ -52,6 +55,8 @@ import java.util.Set;
 import java.util.SortedMap;
 import java.util.TreeMap;
 import java.util.TreeSet;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 /** This ReservationWizard displays no wizard and directly opens a ReservationEdit Window
  */
@@ -60,7 +65,7 @@ import java.util.TreeSet;
 {
     final public static TypedComponentRole<Boolean> ENABLED = new TypedComponentRole<>("org.rapla.plugin.templatewizard.enabled");
     boolean templateNamesValid = false;
-    Collection<Allocatable> templateNames;
+    List<Allocatable> templateNames;
     private final CalendarModel model;
     private final PermissionController permissionController;
     private final ApplicationEventBus eventBus;
@@ -117,7 +122,7 @@ import java.util.TreeSet;
         }
     }
 
-    private Collection<Allocatable> updateTemplateNames() throws RaplaException
+    private List<Allocatable> updateTemplateNames() throws RaplaException
     {
         if ( templateNamesValid)
         {
@@ -138,7 +143,7 @@ import java.util.TreeSet;
     {
         //final RaplaFacade clientFacade = getClientFacade();
         User user;
-        Collection<Allocatable> templateNames;
+        List<Allocatable> templateNames;
         try
         {
             user = clientFacade.getUser();
@@ -172,61 +177,53 @@ import java.util.TreeSet;
 
             MenuInterface container = menuItemFactory.createMenu(multipleTemplateName, i18n.getIcon("icon.new"), "new");
             if ( enabled) {
-                @SuppressWarnings("unchecked") Comparator<String> collator = raplaLocale.getCollator();
-                Map<String, Collection<Allocatable>> templateMap = new HashMap<>();
+                container.setInitializer(() -> {
+                    try {
+                        addTemplates(templateNames, container);
 
-                Set<String> templateSet = new TreeSet<>(collator);
-                Locale locale = getLocale();
-                for (Allocatable template : templateNames)
-                {
-                    String name = template.getName(locale);
-                    templateSet.add(name);
-                    Collection<Allocatable> collection = templateMap.get(name);
-                    if (collection == null)
-                    {
-                        collection = new ArrayList<>();
-                        templateMap.put(name, collection);
+                    } catch (Exception ex) {
+                        logger.error("Error initializing menu", ex);
                     }
-                    collection.add(template);
-                }
+                });
 
-                SortedMap<String, Set<String>> keyGroup = new TreeMap<>(collator);
-                if (templateSet.size() > 10)
-                {
-                    for (String string : templateSet)
-                    {
-                        if (string.length() == 0)
-                        {
-                            continue;
-                        }
-                        String firstChar = string.substring(0, 1);
-                        Set<String> group = keyGroup.get(firstChar);
-                        if (group == null)
-                        {
-                            group = new TreeSet<>(collator);
-                            keyGroup.put(firstChar, group);
-                        }
-                        group.add(string);
-                    }
-
-                    SortedMap<String, Set<String>> merged = merge(keyGroup, collator);
-                    for (String subMenuName : merged.keySet())
-                    {
-                        final String id = getId();
-                        MenuInterface subMenu = menuItemFactory.createMenu(subMenuName,null, id);
-                        Set<String> set = merged.get(subMenuName);
-                        addTemplates(subMenu, set, templateMap);
-                        container.addMenuItem(subMenu);
-                    }
-                }
-                else
-                {
-                    addTemplates(container, templateSet, templateMap);
-                }
             }
             element = container.getComponent();
         }
         return element;
+    }
+
+    private void addTemplates(List<Allocatable> templateNames, MenuInterface container) {
+        Locale locale1 = raplaLocale.getLocale();
+        Function<Allocatable,String> namer = t -> t.getName(locale1);
+        BalancedHierarchicalMenu.MenuNode<Allocatable> root = BalancedHierarchicalMenu.build(templateNames, namer,locale1,25);
+        StringWriter out = new StringWriter();
+        PrintWriter writer = new PrintWriter(out);
+        BalancedHierarchicalMenu.print(writer,root);
+        String string1 = out.toString();
+        addTemplates(container,root);
+    }
+
+    private void addTemplates(MenuInterface container, BalancedHierarchicalMenu.MenuNode<Allocatable> root) {
+        if (root.payload != null) {
+            Allocatable template = (Allocatable) root.payload;
+            final String name = template.getName(getLocale());
+            Consumer<PopupContext> action = (popupContext) -> createWithTemplate(template);
+            IdentifiableMenuEntry newItem = menuItemFactory.createMenuItem(name, null, action);
+            container.addMenuItem(newItem);
+        } else {
+            for (BalancedHierarchicalMenu.MenuNode<Allocatable> child : root.children) {
+                final String subMenuName = child.label;
+                final String id = getId();
+                if (child.payload == null ) {
+                    MenuInterface subMenu = menuItemFactory.createMenu(subMenuName, null, id);
+                    addTemplates(subMenu, child);
+                    container.addMenuItem(subMenu);
+                } else {
+                    addTemplates(container, child);
+                }
+
+            }
+        }
     }
 
     protected String getMultipleTemplateName()

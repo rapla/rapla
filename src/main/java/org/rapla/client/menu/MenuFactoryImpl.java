@@ -331,6 +331,10 @@ import java.util.TreeMap;
     protected boolean canAllocateSelected() throws RaplaException
     {
         User user = getUser();
+        if (user.isAdmin())
+        {
+            return true;
+        }
         Date today = raplaFacade.today();
         boolean canAllocate = false;
         Collection<Allocatable> selectedAllocatables = model.getMarkedAllocatables();
@@ -338,8 +342,10 @@ import java.util.TreeMap;
         Date end = getEndDate(model, start);
         for (Allocatable alloc : selectedAllocatables)
         {
-            if (permissionController.canAllocate(alloc, user, start, end, today) || permissionController.isRequestOnly(alloc, user, today))
+            if (permissionController.canAllocate(alloc, user, start, end, today) || permissionController.isRequestOnly(alloc, user, today)) {
                 canAllocate = true;
+                break;
+            }
         }
         boolean canAllocateSelected = canAllocate || (selectedAllocatables.size() == 0 && permissionController.canUserAllocateSomething(user));
         return canAllocateSelected;
