@@ -14,6 +14,7 @@ import org.rapla.scheduler.CommandScheduler;
 import org.rapla.scheduler.CompletablePromise;
 import org.rapla.scheduler.Promise;
 import org.rapla.storage.RaplaInvalidTokenException;
+import org.rapla.storage.RaplaSecurityException;
 
 import javax.inject.Inject;
 import javax.inject.Provider;
@@ -27,6 +28,7 @@ public class MyCustomConnector implements CustomConnector
     private final CommandScheduler commandQueue;
     Provider<RaplaResources> i18n;
     Logger logger;
+    private int wrongLoginCounter=0;
 
     @Inject public MyCustomConnector(RemoteConnectionInfo remoteConnectionInfo, Provider<RaplaResources> i18n,Provider<RemoteAuthentificationService> authentificationService,
             CommandScheduler commandQueue, Logger logger)
@@ -53,11 +55,24 @@ public class MyCustomConnector implements CustomConnector
         {
             return  null;
         }
+        if ( wrongLoginCounter > 1)
+        {
+            throw new RaplaSecurityException("Authentication Failure. Maybe your password has changed. Please close rapla and login again");
+        }
         final ConnectInfo connectInfo = remoteConnectionInfo.connectInfo;
         final String username = connectInfo.getUsername();
         final String password = new String(connectInfo.getPassword());
         final String connectAs = connectInfo.getConnectAs();
-        final LoginTokens loginTokens = remoteAuthentificationService.login(username, password, connectAs);
+        final LoginTokens loginTokens;
+        try {
+            loginTokens = remoteAuthentificationService.login(username, password, connectAs);
+            logger.info("Reauthenticating user " + username + (connectAs != null ? " as " + connectAs : ""));
+        } catch (RaplaSecurityException e) {
+            wrongLoginCounter++;
+            throw e;
+        }
+        wrongLoginCounter = 0;
+
         final String accessToken = loginTokens.getAccessToken();
         remoteConnectionInfo.setAccessToken( accessToken);
         return accessToken;
