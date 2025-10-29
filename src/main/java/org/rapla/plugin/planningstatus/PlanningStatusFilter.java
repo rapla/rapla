@@ -46,7 +46,7 @@ public class PlanningStatusFilter implements Predicate<Appointment> {
             Attribute status = classification.getAttribute("status");
             if (status != null) {
                 Object valueForAttribute = classification.getValueForAttribute(status);
-                return valueForAttribute != null && valueForAttribute.equals(Boolean.TRUE);
+                return valueForAttribute == null || valueForAttribute.equals(Boolean.TRUE);
             }
             // no annotation set, show all
             return true;

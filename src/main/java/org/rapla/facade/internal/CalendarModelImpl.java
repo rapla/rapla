@@ -1336,7 +1336,7 @@ public class CalendarModelImpl implements CalendarSelectionModel
                 String notPlanned = optionMap.get(PlanningStatusPlugin.PUBLISH_NON_PLANNED);
                 if ( notPlanned == null)
                 {
-                    alternativeOptions.put(PlanningStatusPlugin.PUBLISH_NON_PLANNED, "true");
+                    alternativeOptions.put(PlanningStatusPlugin.PUBLISH_NON_PLANNED, "false");
                 }
                 if (isDefault && (optionMap.get(CalendarModel.SAVE_SELECTED_DATE) == null))
                 {

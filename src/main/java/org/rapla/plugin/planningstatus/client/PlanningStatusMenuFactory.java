@@ -93,9 +93,9 @@ import java.util.*;
             Iterator iterator = Collections.singletonList(focusedObject).iterator();
             it = new IteratorChain( it, iterator);
         }
-        List<Reservation> reservationList = new ArrayList<>();
-        List<Reservation> complete = new ArrayList<>();
-        List<Reservation> uncomplete = new ArrayList<>();
+        Collection<Reservation> reservationList = new LinkedHashSet<>();
+        Collection<Reservation> complete = new LinkedHashSet<>();
+        Collection<Reservation> uncomplete = new LinkedHashSet<>();
         while (it.hasNext())
         {
             final Object object = it.next();
@@ -164,7 +164,7 @@ import java.util.*;
         return menuItem;
     }
 
-    private void changeChecked(List<Reservation> events, boolean checked, PopupContext popupContext, String commandoName) throws RaplaException {
+    private void changeChecked(Collection<Reservation> events, boolean checked, PopupContext popupContext, String commandoName) throws RaplaException {
         Collection<Reservation> editable = raplaFacade.editList(events);
         Map<Reservation, Reservation> editMap = new HashMap<>();
         Iterator<Reservation> it = editable.iterator();

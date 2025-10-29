@@ -61,7 +61,7 @@ public class PlanningStatusPluginOption implements PluginOptionPanel
     @Override
     public void show() throws RaplaException
     {
-        final Boolean entry = preferences.getEntryAsBoolean(CSVExportPlugin.ENABLED, false);
+        final Boolean entry = preferences.getEntryAsBoolean(PlanningStatusPlugin.ENABLED, false);
         component = createPanel();
         booleanField.setSelected(entry);
     }

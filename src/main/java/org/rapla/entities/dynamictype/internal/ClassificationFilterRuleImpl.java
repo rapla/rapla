@@ -352,9 +352,10 @@ public final class ClassificationFilterRuleImpl extends ReferenceHandler
             {
                 return (boolean2 == null || boolean2.booleanValue());
             }
+            // Don't match null values
             if (boolean2 == null)
             {
-                return !boolean1.booleanValue();
+                return false;
             }
             return (boolean1.equals(boolean2));
         }

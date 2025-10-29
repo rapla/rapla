@@ -714,16 +714,16 @@ public class RemoteOperator
         final RemoteStorage serv = getRemoteStorage();
         Promise<AppointmentMapping> result = refreshIfIdle().thenCompose((refreshed) -> {String[] allocatableId = getIdList(allocatables);
             String[] ownerIds = getIdList( owners);
+            final long time = System.currentTimeMillis();
             return serv.queryAppointments(new QueryAppointments(ownerIds,allocatableId, start, end, annotationQuery, requestsOnly)).thenApply(list -> {
                 AppointmentMapping filtered;
                 {
-                    long time = System.currentTimeMillis();
                     logger.debug("event server call took  " + (System.currentTimeMillis() - time) + " ms");
                 }
                 {
-                    long time = System.currentTimeMillis();
+                    long time2 = System.currentTimeMillis();
                     filtered = processReservationResult(list, filters);
-                    logger.debug("event post processing took  " + (System.currentTimeMillis() - time) + " ms");
+                    logger.debug("event post processing took  " + (System.currentTimeMillis() - time2) + " ms");
                 }
 
                 return filtered;
@@ -964,8 +964,16 @@ public class RemoteOperator
         final String[] allocatableIds = getIdList(removeUnresolvedAllocatables(allocatables));
         final List<AppointmentImpl> appointmentArray = Arrays.asList(appointments.toArray(new AppointmentImpl[]{}));
         final String[] reservationIds = getIdList(ignoreList);
+        final long time = System.currentTimeMillis();
         final Promise<List<ReservationImpl>> listPromise = serv.getAllAllocatableBindings(new AllocatableBindingsRequest(allocatableIds, appointmentArray, reservationIds));
-        return listPromise.thenApply((serverResult) -> getMap(allocatables, appointments, ignoreList, serverResult));
+        return listPromise.thenApply((serverResult) -> {
+            logger.debug("event server call took  " + (System.currentTimeMillis() - time) + " ms");
+            long time2 = System.currentTimeMillis();
+            Map<ReferenceInfo<Allocatable>, Map<Appointment, Collection<Appointment>>> map = getMap(allocatables, appointments, ignoreList, serverResult);
+            logger.debug("event post processing took  " + (System.currentTimeMillis() - time2) + " ms");
+            return map;
+        }
+        );
     }
 
     private Collection<? extends Entity> removeUnresolvedAllocatables(Collection<Allocatable> allocatables) {

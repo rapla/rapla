@@ -498,7 +498,7 @@ final public class AttributeImpl extends SimpleEntity implements Attribute
         if (type.equals(AttributeType.BOOLEAN))
         {
             if (value == null)
-                return Boolean.FALSE;
+                return null;
             String str = value.toString().trim().toLowerCase();
             if (str.equals(""))
             {
