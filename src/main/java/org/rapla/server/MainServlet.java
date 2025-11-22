@@ -18,6 +18,8 @@ import org.rapla.framework.RaplaException;
 import org.rapla.inject.Injector;
 import org.rapla.logger.Logger;
 import org.rapla.logger.RaplaBootstrapLogger;
+import org.rapla.rest.JsonParserWrapper;
+import org.rapla.rest.jackson.JacksonParserWrapper;
 import org.rapla.server.extensionpoints.ServletRequestPreprocessor;
 import org.rapla.server.internal.ServerContainerContext;
 import org.rapla.server.internal.ServerStarter;
@@ -59,6 +61,7 @@ public class MainServlet extends HttpServlet
 
     public static ServerContainerContext createBackendContext(Logger logger, RaplaJNDIContext jndi) throws ServletException
     {
+        //JsonParserWrapper.setFactory(new JacksonParserWrapper());
         Object env_raplamail;
         String env_rapladatasource = jndi.lookupEnvString("rapladatasource", true);
         ServerContainerContext backendContext = new ServerContainerContext();

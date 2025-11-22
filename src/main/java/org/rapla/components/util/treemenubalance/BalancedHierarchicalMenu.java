@@ -83,6 +83,24 @@ public final class BalancedHierarchicalMenu {
         }
     }
 
+    // Neu
+    private static String ensureFirstLetterVisible(String original, String piece) {
+        if (piece != null && piece.trim().length() > 0) {
+            return piece;
+        }
+        if (original == null || original.isEmpty()) {
+            return "";
+        }
+        int i = 0;
+        while (i < original.length() && Character.isWhitespace(original.charAt(i))) {
+            i++;
+        }
+        if (i >= original.length()) {
+            return original.substring(0, 1);
+        }
+        int cp = original.codePointAt(i);
+        return new String(Character.toChars(cp));
+    }
     // ---------------------- Internals ----------------------
 
     private static <T> MenuNode<T> buildGroup(List<T> items,
@@ -91,6 +109,7 @@ public final class BalancedHierarchicalMenu {
                                               int maxPerNode) {
         final String first = items.isEmpty() ? "" : safe(namer.apply(items.get(0)));
         final String last  = items.isEmpty() ? "" : safe(namer.apply(items.get(items.size() - 1)));
+
         final String rangeLabel = makeRangeLabel(first, last);
 
         if (items.size() <= maxPerNode) {
@@ -141,7 +160,7 @@ public final class BalancedHierarchicalMenu {
     }
 
     // ---------------------- Label helpers ----------------------
-
+/*
     private static String makeRangeLabel(String first, String last) {
         first = safe(first);
         last  = safe(last);
@@ -171,6 +190,38 @@ public final class BalancedHierarchicalMenu {
             return leftPart + " – " + rightPart;
         }
     }
+*/
+
+    private static String makeRangeLabel(String first, String last) {
+                first = safe(stripDots(first));
+                last  = safe(stripDots(last));
+                int lcp = longestCommonPrefixLen(first, last);
+                String anchor    = lcp > 0 ? abbreviateForLabel(first.substring(0, lcp), 20) : "";
+                String leftPart  = distinguishPart(first, lcp);
+                String rightPart = distinguishPart(last,  lcp);
+                // NEU: sicherstellen, dass immer die ersten (hier: zwei) Buchstaben sichtbar sind
+                final int lead = 2; // auf 1 setzen, falls nur der erste Buchstabe gefordert ist
+                final String leftLead  = first.length() >= lead ? first.substring(0, lead) : first;
+                final String rightLead = last.length()  >= lead ? last.substring(0, lead)  : last;
+                leftPart  = ensureLeadingPrefix(leftLead,  leftPart);
+                rightPart = ensureLeadingPrefix(rightLead, rightPart);
+                return anchor.isEmpty()
+                                ? leftPart + " – " + rightPart
+                                : anchor + " … " + leftPart + " – " + rightPart;
+            }
+
+    // NEU: Kleiner Helper, der bei Bedarf den geforderten Anfang an den sichtbaren Teil präfixiert
+        private static String ensureLeadingPrefix(String mustStartWith, String part) {
+                if (part == null || part.isEmpty()) {
+                        return mustStartWith;
+                    }
+                if (part.startsWith(mustStartWith)) {
+                        return part;
+                    }
+               // Dezentes Präfix: füge Ellipse nur hinzu, wenn nicht bereits vorhanden
+                        return mustStartWith + (part.startsWith("…") ? part : "…" + part);
+            }
+
 
     private static int longestCommonPrefixLen(String a, String b) {
         int len = Math.min(a.length(), b.length());
@@ -312,6 +363,7 @@ public final class BalancedHierarchicalMenu {
                 String last  = slice.get(slice.size() - 1).label;
 
                 // Range-Labelling klar und eindeutig, keine "..."-Abkürzungen
+
                 String rangeLabel = first + " – " + last;
 
                 MenuNode<T> wrapper = MenuNode.group(rangeLabel,new ArrayList<>());

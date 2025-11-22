@@ -405,7 +405,7 @@ public class Export2iCalConverter
         // specified
         if (repeating.getNumber() == -1)
         {
-            recur = new Recur(frequency, -1);
+            recur = new Recur(frequency );
         }
         else if (repeating.isFixedNumber())
         {
