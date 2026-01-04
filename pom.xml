@@ -4,7 +4,7 @@
     <parent>
         <groupId>org.rapla</groupId>
         <artifactId>rapla-parent</artifactId>
-        <version>2.0-RC11</version>
+        <version>2.0</version>
         <relativePath>parent/pom.xml</relativePath>
     </parent>
     <url>https://github.com/rapla/rapla</url>
@@ -246,29 +246,6 @@
             <!-- you can configure the properties in a profile in a settings.xml for maven. By default ossrh profile will be used -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-jarsigner-plugin</artifactId>
-                <version>1.4</version>
-                <executions>
-                    <execution>
-                        <phase>prepare-package</phase>
-                        <goals>
-                            <goal>sign</goal>
-                        </goals>
-                    </execution>
-                </executions>
-                <configuration>
-                    <alias>${keystore.alias}</alias>
-                    <keystore>${keystore.file}</keystore>
-                    <keypass>${keystore.keypass}</keypass>
-                    <storepass>${keystore.password}</storepass>
-                    <archiveDirectory>${project.build.directory}/${project.build.finalName}/webclient</archiveDirectory>
-                    <includes>
-                        <include>*.jar</include>
-                    </includes>
-                </configuration>
-            </plugin>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-war-plugin</artifactId>
                 <version>3.3.2</version>
                 <executions>
@@ -385,6 +362,86 @@
                 </plugins>
             </build>
 
+        </profile>
+        <profile>
+            <id>sign-jks</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-jarsigner-plugin</artifactId>
+                        <version>1.4</version>
+                        <executions>
+                            <execution>
+                                <id>sign-webclient-jks</id>
+                                <phase>prepare-package</phase>
+                                <goals>
+                                    <goal>sign</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                        <configuration>
+                            <!-- wie bisher -->
+                            <alias>${keystore.alias}</alias>
+                            <keystore>${keystore.file}</keystore>
+                            <keypass>${keystore.keypass}</keypass>
+                            <storepass>${keystore.password}</storepass>
+                            <archiveDirectory>${project.build.directory}/${project.build.finalName}/webclient</archiveDirectory>
+                            <includes>
+                                <include>*.jar</include>
+                            </includes>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+        <profile>
+            <id>sign-pkcs11</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-jarsigner-plugin</artifactId>
+                        <version>3.1.0</version>
+                        <executions>
+                            <execution>
+                                <id>sign-webclient-pkcs11</id>
+                                <phase>prepare-package</phase>
+                                <goals>
+                                    <goal>sign</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                        <configuration>
+                            <!-- PKCS#11/YubiKey statt JKS -->
+                            <keystore>NONE</keystore>
+                            <storetype>PKCS11</storetype>
+                            <providerClass>sun.security.pkcs11.SunPKCS11</providerClass>
+                            <providerArg>${project.basedir}/pkcs11.cfg</providerArg>
+
+                            <!-- PIN aus ENV, z.B. ${keystore.keypass}-->
+                            <storepass>123456</storepass>
+                            <!-- Alias aus keytool -list -->
+                            <alias>Certificate for PIV Authentication</alias>
+
+                            <!-- Kette aus deiner .p7b → erdkante-chain.pem -->
+                            <certchain>${project.basedir}/certificate-chain.pem</certchain>
+
+                            <!-- Timestamping von SSL.com -->
+                            <!--
+                            <tsa>http://ts.ssl.com</tsa>
+    -->
+                            <!-- Gleiche Jars wie bisher: webclient/*.jar -->
+                            <archiveDirectory>${project.build.directory}/${project.build.finalName}/webclient</archiveDirectory>
+                            <includes>
+                                <include>*.jar</include>
+                            </includes>
+
+                            <verbose>true</verbose>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
         </profile>
     </profiles>
 

@@ -30,3 +30,5 @@ parent/target/
 /.apt_generated/
 /*.pfx
 /*.crt
+/erdkante-chain.pem
+/pkcs11.cfg

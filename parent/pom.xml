@@ -3,7 +3,7 @@
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>org.rapla</groupId>
 	<artifactId>rapla-parent</artifactId>
-	<version>2.0-RC11</version>
+	<version>2.0</version>
 	<description>rapla - parent</description>
 	<name>rapla - parent</name>
 	<packaging>pom</packaging>
@@ -48,7 +48,7 @@
 		<doc.version>${project.version}</doc.version>
 		<doc.buildtime>${maven.build.timestamp} GMT+0 </doc.buildtime>
 		<doc.revision></doc.revision>
-		<doc.year>2000-2024</doc.year>
+		<doc.year>2000-2026</doc.year>
 		<doc.copyright>Rapla Team</doc.copyright>
 		<doc.developer-list-link>http://lists.sourceforge.net/lists/listinfo/rapla-developers</doc.developer-list-link>
 		<doc.developer-list>rapla-developers@lists.sourceforge.net</doc.developer-list>
@@ -682,5 +682,6 @@
 				<disableGwtCompile>true</disableGwtCompile>
 			</properties>
 		</profile>
+
 	</profiles>
 </project>
