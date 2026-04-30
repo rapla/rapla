@@ -3944,7 +3944,8 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
                     }
                 }
             }
-            storeAndRemove(storeObjects, allocatableIds, user);
+            Collection<ReferenceInfo<Allocatable>> allocatableIdsToRemove = allocatables.stream().map(Allocatable::getReference).collect(Collectors.toSet());
+            storeAndRemove(storeObjects, allocatableIdsToRemove, user);
         }
         catch (RaplaException ra)
         {
