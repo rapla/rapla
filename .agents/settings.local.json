@@ -1,0 +1,12 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(ln *)",
+      "Bash(mv /home/chris/git/rapla/.claude/settings.local.json /home/chris/git/rapla/.agents/)",
+      "Bash(rm /home/chris/git/rapla/.claude/.agents)",
+      "Bash(rmdir /home/chris/git/rapla/.claude)",
+      "Bash(git -C /home/chris/git/rapla status)",
+      "Bash(git -C /home/chris/git/rapla diff)"
+    ]
+  }
+}
