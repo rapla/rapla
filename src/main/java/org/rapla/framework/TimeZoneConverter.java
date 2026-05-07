@@ -1,4 +1,4 @@
-package org.rapla.server;
+package org.rapla.framework;
 
 import java.util.Date;
 import java.util.TimeZone;

@@ -8,7 +8,7 @@ import org.rapla.enpoints.RemoteLogger;
 import org.rapla.facade.RaplaFacade;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.scheduler.CommandScheduler;
-import org.rapla.server.TimeZoneConverter;
+import org.rapla.framework.TimeZoneConverter;
 import org.rapla.server.internal.ServerStorageSelector;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.ApplicationContext;

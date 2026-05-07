@@ -10,16 +10,18 @@
  | program with every library, which license fulfills the Open Source       |
  | Definition as published by the Open Source Initiative (OSI).             |
  *--------------------------------------------------------------------------*/
-package org.rapla.client;
+package org.rapla.client.api;
 
 import org.rapla.ConnectInfo;
-import org.rapla.framework.Disposable;
 
-/** This service starts and manages the rapla-gui-client.
- */
-public interface ClientService extends Disposable
+public class RaplaClientListenerAdapter implements RaplaClientListener
 {
-    void start(ConnectInfo connectInfo) throws Exception;
-    void addRaplaClientListener(RaplaClientListener listener);
-
+    public void clientStarted() {
+    }
+    public void clientClosed(ConnectInfo reconnect) {
+    }
+    public void clientAborted()
+    {
+        
+    }
 }

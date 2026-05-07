@@ -1,9 +1,9 @@
-package org.rapla.server.internal;
+package org.rapla.framework.internal;
 
 import org.rapla.components.util.IOUtil;
+import org.rapla.framework.TimeZoneConverter;
 import org.rapla.inject.DefaultImplementation;
 import org.rapla.inject.InjectionContext;
-import org.rapla.server.TimeZoneConverter;
 
 import jakarta.inject.Inject;
 import jakarta.inject.Singleton;

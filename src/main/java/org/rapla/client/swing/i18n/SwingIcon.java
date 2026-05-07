@@ -1,4 +1,4 @@
-package org.rapla.components.i18n.client.swing;
+package org.rapla.client.swing.i18n;
 
 import org.rapla.components.i18n.I18nIcon;
 

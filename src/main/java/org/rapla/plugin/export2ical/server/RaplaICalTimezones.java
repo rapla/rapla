@@ -4,7 +4,7 @@ import net.fortuna.ical4j.model.TimeZone;
 import org.rapla.inject.DefaultImplementation;
 import org.rapla.inject.InjectionContext;
 import org.rapla.plugin.export2ical.ICalTimezones;
-import org.rapla.server.TimeZoneConverter;
+import org.rapla.framework.TimeZoneConverter;
 
 import jakarta.inject.Inject;
 import java.util.ArrayList;

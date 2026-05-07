@@ -21,7 +21,7 @@ import org.rapla.client.swing.gui.tests.GUITestCase;
 import org.rapla.client.swing.internal.edit.AttributeEdit;
 import org.rapla.client.swing.internal.edit.RaplaListEdit.RaplaListEditFactory;
 import org.rapla.components.i18n.BundleManager;
-import org.rapla.components.i18n.client.swing.SwingBundleManager;
+import org.rapla.client.swing.i18n.SwingBundleManager;
 import org.rapla.entities.dynamictype.Attribute;
 import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.facade.RaplaFacade;

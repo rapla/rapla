@@ -85,7 +85,7 @@ import org.rapla.rest.JsonParserWrapper;
 import org.rapla.scheduler.CommandScheduler;
 import org.rapla.scheduler.Promise;
 import org.rapla.scheduler.ResolvedPromise;
-import org.rapla.server.internal.TimeZoneConverterImpl;
+import org.rapla.framework.internal.TimeZoneConverterImpl;
 import org.rapla.storage.CachableStorageOperator;
 import org.rapla.storage.CachableStorageOperatorCommand;
 import org.rapla.storage.IdCreator;

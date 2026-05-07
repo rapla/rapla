@@ -13,6 +13,8 @@
       "Bash(grep *)",
       "Bash(rg *)",
       "Bash(xargs *)",
+      "Bash(awk *)",
+      "Bash(sed *)",
       "Bash(echo *)",
       "Bash(which *)",
       "Bash(java -version)",

@@ -3,7 +3,7 @@ package org.rapla.storage.dbsql;
 import org.rapla.components.util.IOUtil;
 import org.rapla.framework.RaplaException;
 import org.rapla.logger.Logger;
-import org.rapla.server.internal.TimeZoneConverterImpl;
+import org.rapla.framework.internal.TimeZoneConverterImpl;
 
 import java.sql.Clob;
 import java.sql.Connection;

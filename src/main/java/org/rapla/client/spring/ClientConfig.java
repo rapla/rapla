@@ -2,8 +2,8 @@ package org.rapla.client.spring;
 
 import org.rapla.RaplaResources;
 import org.rapla.RaplaSystemInfo;
+import org.rapla.client.swing.i18n.SwingBundleManager;
 import org.rapla.components.i18n.BundleManager;
-import org.rapla.components.i18n.client.swing.SwingBundleManager;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.internal.RaplaLocaleImpl;
 import org.rapla.logger.Logger;

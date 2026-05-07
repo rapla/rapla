@@ -1,8 +1,8 @@
 package org.rapla.server.internal.console;
 
 import org.rapla.ConnectInfo;
-import org.rapla.client.ClientService;
-import org.rapla.client.RaplaClientListenerAdapter;
+import org.rapla.client.api.ClientService;
+import org.rapla.client.api.RaplaClientListenerAdapter;
 import org.rapla.framework.RaplaException;
 import org.rapla.logger.Logger;
 

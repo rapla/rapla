@@ -53,7 +53,7 @@ import org.rapla.logger.Logger;
 import org.rapla.plugin.exchangeconnector.ExchangeConnectorConfig;
 import org.rapla.plugin.exchangeconnector.server.SynchronizationTask;
 import org.rapla.plugin.exchangeconnector.server.SynchronizationTask.SyncStatus;
-import org.rapla.server.TimeZoneConverter;
+import org.rapla.framework.TimeZoneConverter;
 
 import java.text.DateFormat;
 import java.text.ParseException;

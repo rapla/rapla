@@ -20,11 +20,11 @@ import org.rapla.framework.internal.DefaultScheduler;
 import org.rapla.framework.internal.RaplaLocaleImpl;
 import org.rapla.logger.Logger;
 import org.rapla.scheduler.CommandScheduler;
-import org.rapla.server.TimeZoneConverter;
+import org.rapla.framework.TimeZoneConverter;
 import org.rapla.server.internal.RemoteLoggerImpl;
 import org.rapla.server.internal.ServerContainerContext;
 import org.rapla.server.internal.ServerStorageSelector;
-import org.rapla.server.internal.TimeZoneConverterImpl;
+import org.rapla.framework.internal.TimeZoneConverterImpl;
 
 import java.util.Map;
 import java.util.Set;

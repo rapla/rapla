@@ -13,8 +13,8 @@
 
 package org.rapla.client.swing.images;
 
+import org.rapla.client.swing.i18n.SwingIcon;
 import org.rapla.components.i18n.I18nIcon;
-import org.rapla.components.i18n.client.swing.SwingIcon;
 
 import javax.swing.ImageIcon;
 import java.awt.Image;

@@ -11,7 +11,7 @@ import org.rapla.scheduler.CommandScheduler;
 import org.rapla.server.RaplaKeyStorage;
 import org.rapla.server.RemoteSession;
 import org.rapla.server.ServerServiceContainer;
-import org.rapla.server.TimeZoneConverter;
+import org.rapla.framework.TimeZoneConverter;
 import org.rapla.server.AuthenticationStore;
 import org.rapla.server.extensionpoints.ServerExtension;
 import org.rapla.server.extensionpoints.ServletRequestPreprocessor;
@@ -260,7 +260,7 @@ public class ServerServiceConfig
 
     @Bean
     @org.springframework.boot.autoconfigure.condition.ConditionalOnProperty(prefix = "rapla.services", name = "org.rapla.plugin.export2ical", matchIfMissing = true)
-    public org.rapla.plugin.export2ical.server.Export2iCalConverter export2iCalConverter(org.rapla.server.TimeZoneConverter timezoneConverter,
+    public org.rapla.plugin.export2ical.server.Export2iCalConverter export2iCalConverter(org.rapla.framework.TimeZoneConverter timezoneConverter,
                                                                                           Logger logger,
                                                                                           org.rapla.facade.RaplaFacade facade,
                                                                                           org.rapla.RaplaResources i18n)

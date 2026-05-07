@@ -21,7 +21,7 @@ import org.rapla.client.swing.gui.tests.GUITestCase;
 import org.rapla.client.swing.internal.edit.CategoryEditUI;
 import org.rapla.client.swing.internal.edit.fields.MultiLanguageField.MultiLanguageFieldFactory;
 import org.rapla.client.swing.internal.edit.fields.TextField.TextFieldFactory;
-import org.rapla.components.i18n.client.swing.SwingBundleManager;
+import org.rapla.client.swing.i18n.SwingBundleManager;
 import org.rapla.components.i18n.internal.AbstractBundleManager;
 import org.rapla.components.iolayer.DefaultIO;
 import org.rapla.components.iolayer.IOInterface;

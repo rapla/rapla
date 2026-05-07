@@ -10,7 +10,7 @@ import org.rapla.logger.Logger;
 import org.rapla.plugin.eventimport.ParsedTemplateResult;
 import org.rapla.plugin.eventimport.TemplateImport;
 import org.rapla.server.RemoteSession;
-import org.rapla.server.TimeZoneConverter;
+import org.rapla.framework.TimeZoneConverter;
 import org.rapla.storage.dbsql.DBOperator;
 
 import jakarta.inject.Inject;

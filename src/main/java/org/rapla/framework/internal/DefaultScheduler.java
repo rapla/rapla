@@ -11,8 +11,7 @@ import org.rapla.logger.RaplaBootstrapLogger;
 import org.rapla.scheduler.CommandScheduler;
 import org.rapla.scheduler.Observable;
 import org.rapla.scheduler.sync.UtilConcurrentCommandScheduler;
-import org.rapla.server.TimeZoneConverter;
-import org.rapla.server.internal.TimeZoneConverterImpl;
+import org.rapla.framework.TimeZoneConverter;
 import org.reactivestreams.Publisher;
 
 import jakarta.inject.Inject;

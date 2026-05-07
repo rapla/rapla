@@ -27,7 +27,7 @@ import org.rapla.logger.Logger;
 import org.rapla.plugin.ical.ICalImport;
 import org.rapla.scheduler.Promise;
 import org.rapla.server.RemoteSession;
-import org.rapla.server.TimeZoneConverter;
+import org.rapla.framework.TimeZoneConverter;
 import org.rapla.storage.impl.AbstractCachableOperator;
 
 import jakarta.inject.Inject;
