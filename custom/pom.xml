@@ -6,10 +6,10 @@
     <groupId>org.rapla</groupId>
     <artifactId>custom</artifactId>
     <parent>
-        <artifactId>rapla-parent</artifactId>
+        <artifactId>rapla-bom</artifactId>
         <groupId>org.rapla</groupId>
         <version>2.1-SNAPSHOT</version>
-        <relativePath>../parent/pom.xml</relativePath>
+        <relativePath>../rapla-bom/pom.xml</relativePath>
     </parent>
     <packaging>pom</packaging>
     <properties>

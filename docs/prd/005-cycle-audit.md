@@ -5,7 +5,7 @@
 **Performed against:** `target/classes` after Phase B1 + B2 source moves applied (clean `mvn compile`).
 **Total intra-rapla package edges:** 2,017
 **Total bidirectional package pairs (any cycle):** 63 → **61 after Phase B4**
-**Bidirectional pairs that cross proposed module boundaries:** 3 → **2 after Phase B4** (both misclassifications, no real architectural cycles remain)
+**Bidirectional pairs that cross proposed module boundaries:** 3 → **2 after Phase B4** → **0 after the rapla-server → rapla-client edge removal (2026-05-07)**
 **Unidirectional edges that violate the proposed module DAG:** 92 (mostly plugin-classification questions, deferred to Phase D)
 
 ## Module classification used in this audit
@@ -17,6 +17,23 @@ Packages were classified into proposed modules as:
 - **`rapla-core`**: everything else under `org.rapla.*` — `entities.*`, `facade.*`, `framework.*`, `logger.*`, `scheduler.*`, `storage.{dbrm,impl}` (non-server parts), `rest.*`, `components.{util,layout,restproxy,i18n}` (excluding swing), `inject.*`, plus `plugin.<name>.extensionpoints.*` and shared plugin descriptors. Plugin bare-roots and `plugin.<name>.<misc>` packages were inspected for Swing/JDBC imports to refine classification.
 
 ## Real cross-module cycles (3 bidirectional pairs)
+
+### 0. `rapla-server → rapla-client` Maven edge — **RESOLVED 2026-05-07**
+
+`rapla-server/pom.xml` declared a runtime dependency on `rapla-client` for HTML calendar rendering (the `RaplaBlock` / `RaplaBuilder` family plus `components.calendarview.html.*`). The pom comment flagged this as a deferred compromise and noted Swing/AWT was being pulled into every server-only deployment.
+
+The "compromise" turned out to be smaller than feared. Verified with grep: every shared class either (a) had zero Swing/AWT imports already or (b) only imported other classes in the same shared subset. Concretely, 27 source files were moved from `rapla-client` to `rapla-core`:
+
+- `org.rapla.components.calendarview.*` (12 top-level: `AbstractCalendar`, `Block`, `Builder`, `CalendarView`, `WeekdayMapper`, etc.) — **the `swing/` subpackage stays in `rapla-client`.**
+- `org.rapla.components.calendarview.html.*` (5 files: `AbstractHTMLView`, `HTMLBlock`, `HTMLWeekView`, `HTMLMonthView`, `HTMLCompactWeekView`).
+- `org.rapla.plugin.abstractcalendar.{RaplaBlock, RaplaBuilder, HTMLRaplaBlock, HTMLRaplaBuilder, GroupAllocatablesStrategy}` — the toolkit-agnostic + HTML pieces. The Swing pieces (`DateChooserPanel`, `RaplaCalendarViewListener`, `client/swing/*`) stay in `rapla-client`.
+- `org.rapla.client.internal.{HTMLInfo, ClassificationInfoUI, ReservationInfoUI, AppointmentInfoUI, RaplaColors, LinkController}` — six "UI-named-but-actually-HTML-text" helpers. None had Swing/AWT imports despite the package and class names suggesting otherwise.
+
+Then deleted the `rapla-client` dependency block from `rapla-server/pom.xml`.
+
+`mvn compile` BUILD SUCCESS; `mvn test` passes 94 tests (0 failures, 0 errors, 2 skipped). `mvn -pl rapla-server dependency:tree` confirms only `rapla-core` remains. **No more Swing/AWT in the server classpath; dhbwrapla-server-only deployments lose ~5 MB of unused dependencies.**
+
+Test footprint: `WeekdayMapperTest` was originally located in `rapla-app` (where it has access to `rapla-server`'s `ServerBundleManager` for i18n setup); kept there since the test needs the server-side bundle manager.
 
 ### 1. `core/framework.internal` ↔ `server/server.internal` — **RESOLVED in Phase B4 (2026-05-07)**
 

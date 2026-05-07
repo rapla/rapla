@@ -55,7 +55,7 @@ Each phase ends with `SpringRaplaClientTest` extended to assert the new beans re
 - `src/main/java/org/rapla/client/spring/SwingClientConfig.java` (new) — `@Configuration @ComponentScan(basePackages={org.rapla.client.swing, org.rapla.client.menu, org.rapla.client.dialog, org.rapla.client.internal, org.rapla.client.event}, excludeFilters=REGEX(.*\\.server\\..*))`. Currently scans nothing for `@Service` purposes (no Swing classes have `@Service` yet beyond the one below).
 - `SpringRaplaClient` no-arg constructor extended to `new AnnotationConfigApplicationContext(ClientConfig.class, ClientProxyConfig.class, SwingClientConfig.class)`.
 
-### Phase 2 — `@Service` annotations (in progress, 23/32)
+### Phase 2 — `@Service` annotations (in progress, 45/32 — exceeded original count because we wired non-`@DefaultImplementation` leaves, nested factories, action classes, and `@Bean` factories beyond the original 32)
 
 | Class | `@Service` added | Implements |
 |-------|------------------|------------|
@@ -84,6 +84,54 @@ Each phase ends with `SpringRaplaClientTest` extended to assert the new beans re
 | `org.rapla.client.dialog.swing.ObjectSwingListView` | ✅ | `ListView` (needs `TreeCellRenderer` ✓ via `@Primary`, `CommandScheduler` ✓) |
 | `org.rapla.client.internal.check.swing.DefaultCheckViewSwing` | ✅ | `CheckView` (no constructor deps) |
 | `InfoFactoryImpl` (attempted) | ❌ reverted | constructor throws at bean instantiation — `RaplaGUIComponent` super-constructor accesses runtime state not available during eager bean wiring (same pattern as `RaplaSwingClipboard`) |
+| `org.rapla.client.swing.toolkit.RaplaFrame` | ✅ | (`@Inject` leaf no-arg ctor `JFrame` — unblocks `ApplicationViewSwing` and similar containers that take a `RaplaFrame` directly) |
+| `org.rapla.client.swing.toolkit.ErrorDialog` | ✅ | (`@Inject` leaf — needs `Logger`, `RaplaResources`, `DialogUiFactoryInterface` — all wired) |
+| `org.rapla.client.swing.internal.view.LicenseUI` | ✅ | (`@Inject` no-arg leaf, `RaplaWidget` impl) |
+| `org.rapla.client.swing.internal.view.LicenseInfoUI` | ✅ | (`@Inject` leaf — needs `RaplaResources`, `RaplaSystemInfo`, `DialogUiFactoryInterface`, `Provider<LicenseUI>` — all wired now that LicenseUI is a bean. Spring 6's JSR-330 support makes `jakarta.inject.Provider<T>` work natively when the underlying bean exists.) |
+| `org.rapla.facade.CalendarSelectionModel` (via `ClientConfig.calendarSelectionModel` `@Bean`) | ✅ (manual factory) | `CalendarModelImpl(ClientFacade, RaplaLocale)` — the impl lives in `rapla-core` (`org.rapla.facade.internal`) which is outside the SwingClientConfig scan, so a `@Bean` factory is the cleanest registration. Unblocks `MultiCalendarPresenter` (whose remaining dep `MultiCalendarView` still needs wiring) and any `Set<CalendarModel>` injection point. |
+| `org.rapla.client.swing.internal.edit.fields.DateField.DateFieldFactory` | ✅ (nested `@Service`) | inner factory — needs `ClientFacade`, `RaplaResources`, `RaplaLocale`, `Logger`, `DateRenderer` (✓ via `RaplaDateRenderer`), `IOInterface` (✓ via `@Bean`). Spring `@ComponentScan` picks up `@Service` on nested static classes. |
+| `org.rapla.client.swing.internal.edit.fields.BooleanField.BooleanFieldFactory` | ✅ (nested `@Service`) | only `ClientFacade`, `RaplaResources`, `RaplaLocale`, `Logger` |
+| `org.rapla.client.swing.internal.edit.fields.TextField.TextFieldFactory` | ✅ (nested `@Service`) | + `IOInterface` |
+| `org.rapla.client.swing.internal.edit.fields.LongField.LongFieldFactory` | ✅ (nested `@Service`) | + `IOInterface` |
+| `org.rapla.client.swing.internal.FilterEditButton.FilterEditButtonFactory` | ✅ (nested `@Service`) | needs the 4 field factories above + `TreeFactory` (✓), `DialogUiFactoryInterface` (✓) — all dependencies now present, factory wires cleanly. **Major cascade unblocker.** |
+| `org.rapla.client.swing.MultiCalendarViewSwing` | ✅ | `MultiCalendarView` (only dep is `FilterEditButtonFactory`, now wired) |
+| `org.rapla.client.swing.internal.MultiCalendarPresenter` | ✅ + `@Lazy` | `CalendarContainer` — needs `Set<SwingViewFactory>` (Spring auto-injects empty set when no beans of that type exist), `MultiCalendarView` (✓), `CalendarSelectionModel` (✓ via `@Bean`), `DialogUiFactoryInterface` (✓). **`@Lazy` required:** the indirect ctor of `CalendarSelectionModel` (`CalendarModelImpl`) calls `clientFacade.getUser()` which throws "no user logged in" before login. With `@Lazy`, the bean is only instantiated on first dereference — tests pass without a logged-in user. |
+| `org.rapla.client.internal.ConflictSelectionPresenter` | ✅ + `@Lazy` | `Presenter` — depends on `CalendarSelectionModel` (transitively triggers same login issue) so `@Lazy` for the same reason. |
+| `org.rapla.client.internal.RequestSelectionPresenter` | ✅ + `@Lazy` | `ResourceRequestSelectionView.Presenter` — same `CalendarSelectionModel` dependency, same `@Lazy` rationale. |
+| `org.rapla.client.internal.ResourceCalendarTask` | ✅ + `@Lazy` | `@Extension(provides=TaskPresenter)` — needs `Provider<CalendarContainer>` (✓ via `MultiCalendarPresenter`), `DialogUiFactoryInterface` (✓), `RaplaResources` (✓), `CommandScheduler` (✓). `@Lazy` because it eventually dereferences `CalendarContainer` which transitively wants the logged-in user. |
+| `ClientConfig.calendarSelectionModel` `@Bean` (revisited) | ✅ + `@Lazy` | Marked `@Lazy` so the `CalendarModelImpl` ctor (which fails before login with `"no user logged in"`) is deferred until actually needed. |
+| **`SpringRaplaClientTest` re-enabled** | ✅ | The `@Disabled("Bean wiring requires logged-in user")` was the marker left by the PRD 005 split. With the four `@Lazy` annotations above, the test now passes without a logged-in user — bean *definitions* land in the context but `CalendarModelImpl` is never instantiated. |
+| `org.rapla.client.EditController` | ✅ | concrete `@Singleton` class — single dep `ApplicationEventBus` (✓). Pre-requisite for `RaplaMenuBar`, `ResourceSelectionPresenter`, and any class that wants the central edit dispatcher. |
+| `org.rapla.client.swing.internal.common.RaplaSwingClipboard` | ✅ + `@Lazy` | `RaplaClipboard` impl. Earlier attempt was reverted because the parent ctor calls `facade.addModificationListener(this)` which requires `RemoteOperator` available. With `@Lazy`, the bean is constructed only on first dereference (post-login), avoiding the boot-time failure. |
+| `org.rapla.client.swing.internal.view.InfoFactoryImpl` | ✅ + `@Lazy` | `InfoFactory`. Earlier reverted (RaplaGUIComponent super-ctor accesses runtime state). `@Lazy` retrofit defers instantiation. |
+| `org.rapla.client.swing.internal.DeleteDialogSwing` | ✅ + `@Lazy` | `DeleteDialogInterface`. Was blocked by `InfoFactory` — now that `InfoFactoryImpl` is wired, this slots in (also `@Lazy` because it extends `RaplaGUIComponent`). |
+| `org.rapla.client.internal.ReservationControllerImpl` | ✅ + `@Lazy` | `ReservationController` (deps `Provider<Set<EventCheck>>` = empty Set, `RaplaClipboard` ✓, `DeleteDialogInterface` ✓, `AppointmentFormater` ✓). |
+| `org.rapla.client.menu.PasswordChangeAction` | ✅ + `@Scope("prototype")` | Action — created fresh per menu invocation. `Provider<PasswordChangeView>` resolves to the wired `PasswordChangeSwingView` bean. **Uses `@Scope("prototype")`**: each `Provider.get()` returns a fresh instance, matching legacy DI semantics. |
+| `org.rapla.client.menu.UserAction` | ✅ + `@Scope("prototype")` | same pattern; needs `UserClientService` (REST proxy ✓), `EditController` ✓, `Provider<PasswordChangeAction>` ✓ |
+| `org.rapla.client.menu.impl.AppointmentAction` | ✅ + `@Scope("prototype") @Lazy` | extends `RaplaComponent` (boot-time state) so `@Lazy`; needs `ReservationController` ✓, `InfoFactory` ✓ |
+| `org.rapla.client.menu.impl.RaplaObjectActions` | ✅ + `@Scope("prototype")` | needs `EditController` ✓, `InfoFactory` ✓, `DeleteDialogInterface` ✓, `MenuItemFactory` ✓ |
+| `org.rapla.client.menu.MenuFactoryImpl` | ✅ + `@Lazy` | `MenuFactory` — needs all 4 actions (✓ as Provider<>), `RaplaClipboard` ✓, `MenuItemFactory` ✓, `Set<ReservationWizardExtension>`/`Set<ObjectMenuFactory>` (auto-injected as empty sets), `CalendarSelectionModel` ✓ (lazy). |
+| `org.rapla.client.swing.ResourceSelectionViewSwing` | ✅ + `@Lazy` | `ResourceSelectionView` — `MenuFactory`, `InfoFactory`, `FilterEditButtonFactory` all wired now |
+| `org.rapla.client.internal.admin.client.swing.SwingTypeCategoryView` | ✅ + `@Lazy` | `TypeCategoryView` — needs `MenuFactory` ✓, `TreeFactory` ✓, `TreeCellRenderer` ✓ |
+| `org.rapla.client.internal.admin.client.swing.SwingUserGroupsView` | ✅ + `@Lazy` | `AdminUserUserGroupsView` — same deps as above |
+
+### Pattern for prototype-scoped action classes
+
+Action classes like `UserAction`, `AppointmentAction`, `PasswordChangeAction`, `RaplaObjectActions` are typically constructed *fresh per menu invocation* — they hold short-lived state (the selected object, the popup context). The legacy DI used `Provider<UserAction>` to mean "give me a new one each time".
+
+In Spring, the equivalent is `@Service @Scope("prototype")`: each `provider.get()` from `jakarta.inject.Provider<T>` returns a freshly-constructed instance. Without `@Scope("prototype")`, Spring's default is singleton — `Provider.get()` would return the same instance, which would conflate state across invocations.
+
+**Decision rule:** if the legacy code uses `@Inject Provider<T>` to obtain `T`, mark `T` as `@Service @Scope("prototype")`. If the legacy code injects `T` directly, mark `T` as plain `@Service` (default singleton).
+
+### Pattern for boot-time-state classes
+
+Classes whose ctor (or super-ctor) calls `clientFacade.getUser()` / `facade.addModificationListener()` / similar runtime-state methods fail eager Spring instantiation in tests that haven't logged in. Three workable approaches:
+
+1. **`@Lazy`** on the bean: definition registered, instantiation deferred until first dereference. Cleanest fix, no behavior change at runtime once login completes.
+2. **`@Lazy` on the *injection point*** (the field/parameter that takes the problematic dep). More targeted, but requires changes at every consumer.
+3. **`ObjectProvider<T>`/`Provider<T>`** at the consumer side: explicit lazy lookup. Useful when the dep is genuinely optional, but here we want eager wiring once login exists.
+
+Option 1 is the default for this PRD. Option 2 is reserved for cases where one consumer truly is eager but the dep needs to lag.
 
 `SpringRaplaClientTest` extended to assert `ApplicationEventBus` and `CalendarEventBus` resolve. `mvn test` → 35 tests passing across 8 Spring contexts (incl. PRD 001-A `DateToolsLocalDateTimeTest`).
 

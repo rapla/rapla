@@ -1,9 +1,25 @@
 # PRD 005: Multi-Module Split (Implementation)
 
-**Status:** draft — implementation plan, not yet started
+**Status:** in-progress — Phases A, B, C, D, F substantially done 2026-05-07; Phase E partial (iCal4j cleanup done; full BOM dep refactor + per-module dep:analyze + manifest entries + signing-profile relocation deferred); Phase G deferred with custom/.
 **Date:** 2026-05-07
 **Decision input:** [PRD 004](004-multi-module-architecture-analysis.md) (target architecture)
 **Hard prerequisite:** [PRD 001](001-spring-boot-migration.md) Phases 1–8 (server-side Spring Boot migration, GWT removal, war/jetty cleanup) — **already complete on `spring-boot` branch**
+
+## Implementation status (2026-05-07)
+
+Reactor: `master/pom.xml` aggregates 5 modules (`rapla-bom`, `rapla-core`, `rapla-client`, `rapla-server`, `rapla-app`). `mvn -f master/pom.xml clean test` → BUILD SUCCESS, **94 tests pass / 0 failures / 2 skipped** (matches pre-split baseline). `rapla-app` produces a Spring Boot fat JAR at `rapla-app/target/rapla-2.1-SNAPSHOT.jar` (filename preserved per OQ2).
+
+Source distribution after Phase D6:
+- `rapla-core`: 380 .java files (entities, framework, facade, scheduler, storage interfaces, REST DTOs, components/{util,layout,restproxy,i18n}, shared plugin descriptors, `client/api/`)
+- `rapla-client`: 440 .java files (`client/*` incl. `swing`, components/{calendar,calendarview,iolayer,tablesorter,treetable}, all plugin client/swing subpackages)
+- `rapla-server`: 156 .java files (`server/*` minus the @SpringBootApplication entry point, JDBC + dbfile storage, plugin server-sides)
+- `rapla-app`: ~3 .java files (RaplaSpringBootApplication, plus all the resources, distribution, assembly, signing config inherited from the old monolith pom — to be redistributed in Phase E follow-up)
+
+Tests are currently all in `rapla-app/src/test/` (D5 pragmatic placement — rapla-app has all transitive deps). Per-module test redistribution is a Phase E follow-up that needs to weigh splitting vs the simplicity of all-in-app.
+
+Compromise that turned out not to be needed (D3, resolved 2026-05-07): the initial split had `rapla-server` depending on `rapla-client` for HTML calendar rendering (`RaplaBuilder`/`RaplaBlock` family + `components.calendarview.html.*`). A small follow-up refactor — moving 27 toolkit-agnostic files from rapla-client to rapla-core — eliminated the edge entirely. **`rapla-server` now depends only on `rapla-core`.** Detail in `005-cycle-audit.md` §0.
+
+The `rapla-client-api` extraction (further splitting rapla-client into a presenter-API tier and a Swing-impl tier) is **permanently off the table** per PRD 003 direction change 2026-05-07 — dhbwrapla becomes server-only, with its dhbw-specific Swing code living inside `rapla-client`, so no consumer ever needs a Swing-API-without-Swing-impl distribution.
 
 ## Goal
 
@@ -53,7 +69,7 @@ docs/prd/004-...                         → status note: superseded-by-005 for 
 | **Build tool** | Maven (no Gradle migration in this PRD) | PRD 004 §B verdict |
 | **Plugin layout** | Plugins remain as packages inside the three main modules; `plugin/<name>/{client,server,extensionpoints}/` distributes naturally | PRD 004 §Risk 2 (option a) |
 | **`components.*` placement** | Split: `i18n/{,client/}`, `util`, `layout`, `restproxy` → `rapla-core`; `calendar`, `calendarview`, `iolayer`, `tablesorter`, `treetable`, `i18n/client/swing/` → `rapla-client` | PRD 004 §OQ2 recommendation |
-| **`custom/` POM** | Delete; downstream consumers depend on `rapla-server` (and optionally `rapla-client`) directly via the BOM | PRD 003 + PRD 004 §Custom Deployment Fit |
+| **`custom/` POM** | **Defer.** Per user direction 2026-05-07: custom/ is dropped from the reactor (not built, not part of any module list) but the directory and its pom.xml stay on disk for reference. Its WAR-overlay shape is being rethought; a future PRD will replace it. dhbwrapla integration in Phase G needs to handle the absence of `org.rapla:custom` separately. | User direction; supersedes earlier "delete" plan |
 | **`rapla-archetype`** | **Not** created in this PRD (optional per PRD 004; PRD 003 OQ6 leans "documented template, not archetype") | PRD 004 §OQ6 |
 
 ## Cycle audit (verified 2026-05-07, before any code change)
@@ -206,15 +222,15 @@ Once source is in place, deal with the long tail.
 5. Update PRD 003 with a "supersedes notes" entry pointing to this PRD's actual `dhbwrapla` integration shape (depend on `rapla-server` + optionally `rapla-client`, no more WAR overlay).
 6. Update PRD 004 status: `decided — implementation in PRD 005`.
 
-### Phase G — `dhbwrapla` update (separate PR, separate session, 1 day)
+### Phase G — `dhbwrapla` update (separate PR, separate session, 1 day) — **DEFERRED with custom/**
 
-In `/home/chris/git/dhbwrapla/`:
+Originally Phase G was scoped to update dhbwrapla to depend on `rapla-server` directly instead of inheriting from `org.rapla:custom`. Per user direction 2026-05-07, the custom/ rework is deferred to a future PRD; Phase G is therefore also deferred. The dhbwrapla build does NOT need to keep working through PRD 005's lifetime — the user accepts that dhbwrapla will need its own follow-up PRD aligned with whatever replaces custom/.
+
+If/when dhbwrapla needs to compile against a post-PRD-005 rapla:
 1. Replace `<parent>org.rapla:custom</parent>` with direct `rapla-bom` import.
 2. Replace `<dependency>org.rapla:rapla</dependency>` with `<dependency>org.rapla:rapla-server</dependency>` (and add `rapla-client` if dhbwrapla ships Swing customisations — verify by grepping its source for `org.rapla.client.swing`).
 3. Verify `dhbwrapla-container/pom.xml` still resolves `../../rapla` correctly — its module list shrinks to `[parent (now rapla-bom), rapla-app, dhbwrapla]` instead of the current 4-entry list.
 4. Run dhbwrapla's full build + tests.
-
-This phase is **separately mergeable** and waits for PRD 005 (this PRD) to be released as a tag from the `rapla` repo, so `dhbwrapla`'s `<dependency>` resolves against a published or `mvn install`-ed version.
 
 ### Phase H — Maven Central readiness (out of scope for this PRD; tracked here for completeness)
 

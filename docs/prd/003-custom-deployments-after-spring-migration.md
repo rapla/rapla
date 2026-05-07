@@ -1,11 +1,39 @@
 # PRD 003: Custom Deployment Model After Spring Migration
 
-**Status:** draft
+**Status:** in-progress — major direction change 2026-05-07 (see "2026-05-07 Direction Change" below).
 **Date:** 2026-05-06
+
+## 2026-05-07 Direction Change — dhbwrapla becomes server-only
+
+User decision (2026-05-07, while PRD 005 multi-module split landed): **all dhbw-specific Swing/client code moves INTO the rapla repo.** dhbwrapla retains only server-side artefacts (REST controllers, server-side beans, configuration, scheduled jobs, auth integration).
+
+**Consequences — what this PRD's plan changes to:**
+
+1. **Single-signing pass.** Only `rapla-app` signs `webclient/*.jar`. The dhbwrapla build does not produce a client JAR, does not stage a `webclient/` directory, and does not run `maven-jarsigner-plugin`. The entire "Custom deployments (dhbwrapla) continue to do their own signing pass" path in §"JNLP Client and Code Signing" is **deleted** — see "What gets dropped" below.
+2. **No `rapla-client-api` extraction.** PRD 004 / PRD 005 left the door open to splitting `rapla-client` into `rapla-client-api` + `rapla-client-swing` if a customer ever needed a Swing-only Java distribution that pulls less than the full client. With dhbw-specific client code living in rapla, that scenario never arises — the customer's Swing extensions ship inside the canonical `rapla-client` JAR. **The split is now permanently off the table** (was: deferred). PRD 005 §"Known compromise (D3)" and PRD 004 §"Why not split rapla-client into two modules?" both stand as written: a single `rapla-client` is correct for the foreseeable future.
+3. **dhbw-specific Swing code gets a home in rapla-client.** Suggested package: `org.rapla.plugin.dhbw.*` (matching the existing `plugin.<vendor>.*` shape). Existing dhbw plugins that already follow the `plugin.<name>.{client,server,extensionpoints}` triplet move into `rapla-client/src/main/java/org/rapla/plugin/dhbw/{client,swing}/` and `rapla-server/src/main/java/org/rapla/plugin/dhbw/server/`, with shared descriptors/interfaces in `rapla-core/src/main/java/org/rapla/plugin/dhbw/` (mirrors the post-PRD-005 layout for stock plugins).
+4. **dhbw plugins ship by default.** A consequence of (3): the dhbw extensions are now part of every rapla build, not opted-in by a separate JAR. If certain dhbw plugins should remain optional (e.g. only loaded for the dhbw deployment), they need a runtime feature flag — `@ConditionalOnProperty(prefix="rapla.plugins", name="org.rapla.plugin.dhbw.<id>", matchIfMissing=false)` on each `@Component`/`@Configuration`. **Decide per-plugin during the move.**
+5. **dhbwrapla's pom.xml** — depends only on `org.rapla:rapla-server` (and transitively on `rapla-core`). It does NOT depend on `rapla-client`. The dhbwrapla deployable is a Spring Boot fat JAR (its own `@SpringBootApplication`) that re-exports rapla-app's webclient/ resources via Spring Boot's `META-INF/resources` convention — so the rapla-app-signed JNLP set serves correctly from the dhbwrapla deployable too.
+6. **Branding / configuration overrides** — dhbwrapla still owns its `application.yml` overrides, custom auth provider beans, scheduled jobs, custom REST endpoints. These all live in dhbwrapla as before. The shape of "how to wire a server-side custom bean" (§"DI Registration: @Extension → @Component" below) is unchanged.
+
+**What gets dropped from the rest of this PRD:**
+- §"Client-Side Customizations (Swing)" (line 269 below) — the whole pattern of "custom project's JAR is bundled in JNLP webclient/" goes away. Custom Swing code lives in rapla-client and ships in rapla-app's signed webclient/ set with no separate custom JAR.
+- §"JNLP Client and Code Signing" — the dual-signing chain (rapla-core signs, custom re-signs) collapses to single-signing in rapla-app. The PKCS#11/YubiKey config lives in `rapla-app/pom.xml` only. dhbwrapla's pom.xml has zero signing plugin config. The "stripping META-INF/*.SF before re-signing with a different identity" caveat becomes moot.
+- §"Custom Application Main Class" stays — dhbwrapla still has its own `@SpringBootApplication` for branding the boot banner / picking up its own `@ComponentScan` / serving its own REST endpoints.
+
+**What remains from the original PRD 003:**
+- The DI-registration pattern (§"DI Registration: @Extension → @Component") — still the right shape for server-side custom beans.
+- Authentication customization, scheduled jobs, REST endpoints, configuration (JNDI → application.yml) — all unchanged.
+
+The sections below (written 2026-05-06) describe the original "custom-project-with-its-own-client-JAR" plan. **Read with the direction change above in mind** — the Swing/JNLP halves are superseded; the server-side halves remain valid.
+
+---
 
 ## Goal
 
 Define how custom Rapla deployments (e.g., `dhbwrapla`) integrate with the platform after the Spring Boot migration (PRD 001) removes `restinject`, `@Extension`/`@DefaultImplementation` annotations, `ServiceInfLoader`, `SimpleRaplaInjector`, and the WAR-overlay build mechanism. The new model must let downstream projects register custom beans, override defaults, hook into extension points, schedule background jobs, add REST endpoints, and contribute Swing UI — all using standard Spring DI and Spring Boot conventions.
+
+**As of 2026-05-07:** "contribute Swing UI" means *contribute Swing code to rapla-client*, not *bundle a separate signed Swing JAR*. See top-of-PRD direction change.
 
 ## Current Custom Deployment Mechanism (Pre-Migration)
 
