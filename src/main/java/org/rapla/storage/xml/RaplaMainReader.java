@@ -30,7 +30,6 @@ import org.rapla.facade.Conflict;
 import org.rapla.framework.RaplaException;
 
 import java.util.Collection;
-import java.util.Date;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
@@ -94,13 +93,13 @@ public class RaplaMainReader extends RaplaXMLReader
             String end = atts.getValue( "endDate");
             if ( start != null || end != null)
             {
-            	Date startDate = start!= null ? parseDate(start, false) : null;
-            	Date endDate = end!= null ? parseDate(end, true) : null;
-            	if ( startDate != null && startDate.getTime() < DateTools.MILLISECONDS_PER_DAY)
+            	java.time.LocalDateTime startDate = start!= null ? parseLocalDate(start).atStartOfDay() : null;
+            	java.time.LocalDateTime endDate = end!= null ? parseLocalDate(end).atStartOfDay().plusDays(1) : null;
+            	if ( startDate != null && DateTools.toMilli(startDate) < DateTools.MILLISECONDS_PER_DAY)
             	{
             		startDate = null;
             	}
-            	invalidateInterval = new TimeInterval(startDate, endDate);
+            	invalidateInterval = TimeInterval.of(startDate, endDate);
             }
             String resourcesRefresh = atts.getValue( "resourcesRefresh");
             if ( resourcesRefresh != null)

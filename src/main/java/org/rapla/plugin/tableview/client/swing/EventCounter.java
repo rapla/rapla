@@ -4,7 +4,7 @@ import org.rapla.RaplaResources;
 import org.rapla.inject.Extension;
 import org.rapla.plugin.tableview.client.swing.extensionpoints.ReservationSummaryExtension;
 
-import javax.inject.Inject;
+import jakarta.inject.Inject;
 import javax.swing.Box;
 import javax.swing.JLabel;
 import javax.swing.JPanel;

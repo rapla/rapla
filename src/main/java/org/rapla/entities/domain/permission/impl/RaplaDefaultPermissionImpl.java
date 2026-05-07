@@ -15,7 +15,7 @@ import org.rapla.entities.internal.UserImpl;
 import org.rapla.inject.Extension;
 import org.rapla.storage.PermissionController;
 
-import javax.inject.Inject;
+import jakarta.inject.Inject;
 import java.util.Collection;
 import java.util.Date;
 

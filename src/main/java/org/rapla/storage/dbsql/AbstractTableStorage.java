@@ -101,6 +101,12 @@ public class AbstractTableStorage implements TableStorage
 		return connectionTimestamp;
 	}
 
+	/** {@code LocalDateTime} variant. UTC. */
+	public java.time.LocalDateTime getConnectionTimestampAsLocalDateTime()
+	{
+		return connectionTimestamp == null ? null : org.rapla.components.util.DateTools.toLocalDateTime(connectionTimestamp);
+	}
+
 	protected String getDatabaseProductType(String type) {
         if ( type.equals("TEXT"))
         {
@@ -394,6 +400,25 @@ public class AbstractTableStorage implements TableStorage
         }
 	}
 
+	/** {@code LocalDateTime} variants. UTC. Distinct method names avoid `null`-passing ambiguity.
+	 *  Reads/writes go through {@code java.sql.Timestamp} which has nanosecond precision matching {@code LocalDateTime}. */
+	protected void setTimestampLocalDateTime(PreparedStatement stmt, int column, java.time.LocalDateTime time) throws SQLException {
+		setTimestamp(stmt, column, time == null ? null : org.rapla.components.util.DateTools.toDate(time));
+	}
+
+	protected void setDateLocalDateTime(PreparedStatement stmt, int column, java.time.LocalDateTime time) throws SQLException {
+		setDate(stmt, column, time == null ? null : org.rapla.components.util.DateTools.toDate(time));
+	}
+
+	protected java.time.LocalDateTime getTimestampAsLocalDateTime(ResultSet rset, int column, boolean checkCurrent) throws SQLException {
+		Date d = getTimestamp(rset, column, checkCurrent);
+		return d == null ? null : org.rapla.components.util.DateTools.toLocalDateTime(d);
+	}
+
+	protected java.time.LocalDateTime getTimestampOrNowAsLocalDateTime(ResultSet rset, int column) throws SQLException {
+		return org.rapla.components.util.DateTools.toLocalDateTime(getTimestampOrNow(rset, column));
+	}
+
 	public String getIdColumn() {
         for (Map.Entry<String, ColumnDef> entry:columns.entrySet())
         {
@@ -474,6 +499,13 @@ public class AbstractTableStorage implements TableStorage
 		long offset = TimeZoneConverterImpl.getOffset(IOUtil.getTimeZone(), systemTimeZone, time);
 		Date returned = new Date(time + offset);
 		return returned;
+	}
+
+	/** {@code LocalDateTime} variant of {@link #getDate(ResultSet, int)}. UTC. */
+	protected java.time.LocalDateTime getDateAsLocalDateTime(ResultSet rset, int column) throws SQLException
+	{
+		Date d = getDate(rset, column);
+		return d == null ? null : org.rapla.components.util.DateTools.toLocalDateTime(d);
 	}
 
 	public String getTableName() {

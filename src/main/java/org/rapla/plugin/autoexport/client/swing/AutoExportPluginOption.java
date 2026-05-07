@@ -7,7 +7,7 @@ import org.rapla.framework.RaplaException;
 import org.rapla.inject.Extension;
 import org.rapla.plugin.autoexport.AutoExportPlugin;
 
-import javax.inject.Inject;
+import jakarta.inject.Inject;
 import javax.swing.JCheckBox;
 import javax.swing.JComponent;
 import javax.swing.JLabel;

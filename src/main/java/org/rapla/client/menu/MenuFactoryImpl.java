@@ -52,9 +52,9 @@ import org.rapla.inject.InjectionContext;
 import org.rapla.plugin.abstractcalendar.RaplaBlock;
 import org.rapla.storage.PermissionController;
 
-import javax.inject.Inject;
-import javax.inject.Provider;
-import javax.inject.Singleton;
+import jakarta.inject.Inject;
+import jakarta.inject.Provider;
+import jakarta.inject.Singleton;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -67,7 +67,8 @@ import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
 
-@Singleton @DefaultImplementation(of = MenuFactory.class, context = InjectionContext.client) public class MenuFactoryImpl
+@Singleton @DefaultImplementation(of = MenuFactory.class, context = InjectionContext.client)
+public class MenuFactoryImpl
         implements MenuFactory
 {
 

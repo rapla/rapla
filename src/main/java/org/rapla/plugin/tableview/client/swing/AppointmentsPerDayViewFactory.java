@@ -41,8 +41,8 @@ import org.rapla.plugin.tableview.internal.DefaultRaplaTableColumn;
 import org.rapla.plugin.tableview.internal.TableConfig;
 import org.rapla.scheduler.Promise;
 
-import javax.inject.Inject;
-import javax.inject.Singleton;
+import jakarta.inject.Inject;
+import jakarta.inject.Singleton;
 import javax.swing.Icon;
 import javax.swing.table.TableColumn;
 import java.util.*;

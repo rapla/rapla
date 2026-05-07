@@ -26,7 +26,6 @@ import org.rapla.entities.domain.internal.ReservationImpl;
 import org.rapla.entities.storage.ReferenceInfo;
 import org.rapla.framework.RaplaException;
 
-import java.util.Date;
 import java.util.Set;
 import java.util.TreeSet;
 
@@ -76,7 +75,7 @@ public class ReservationReader extends RaplaXMLReader {
         if ( localName.equals( "reservation" ) ) 
         {
             TimestampDates ts = readTimestamps( atts);
-            reservation = new ReservationImpl( ts.createTime, ts.changeTime );
+            reservation = ReservationImpl.ofLocalDateTime( ts.getCreateTimeAsLocalDateTime(), ts.getChangeTimeAsLocalDateTime() );
 			reservation.setResolver( store );
             currentAnnotatable = reservation;
             setId(reservation, atts);
@@ -95,20 +94,20 @@ public class ReservationReader extends RaplaXMLReader {
             String startTime = atts.getValue("start-time");
             String endTime = atts.getValue("end-time");
 
-            Date start;
-            Date end;
-            if (startTime != null && endTime != null) 
+            java.time.LocalDateTime start;
+            java.time.LocalDateTime end;
+            if (startTime != null && endTime != null)
             {
-                start = parseDateTime(startDate,startTime);
-                end = parseDateTime(endDate,endTime);
-            } 
-            else 
+                start = parseLocalDateTime(startDate,startTime);
+                end = parseLocalDateTime(endDate,endTime);
+            }
+            else
             {
-                start = parseDate(startDate,false);
-                end = parseDate(endDate,true);
+                start = parseLocalDate(startDate).atStartOfDay();
+                end = parseLocalDate(endDate).atStartOfDay().plusDays(1);
             }
 
-            appointment= new AppointmentImpl(start,end);
+            appointment= AppointmentImpl.ofLocalDateTime(start,end);
             appointment.setWholeDays(startTime== null && endTime==null);
             if (id!=null)
             {
@@ -134,17 +133,18 @@ public class ReservationReader extends RaplaXMLReader {
             {
                 repeating.setInterval(Integer.valueOf(interval).intValue());
             }
-            if (enddate != null) 
+            if (enddate != null)
             {
-                repeating.setEnd(parseDate(enddate,true));
-            } 
-            else if (number != null) 
+                // parseDate(s, true) → date with fillDate=true (fills missing time as midnight). LocalDate covers this.
+                repeating.setEndLocalDateTime(parseLocalDate(enddate).atStartOfDay());
+            }
+            else if (number != null)
             {
                 repeating.setNumber(Integer.valueOf(number).intValue());
-            } 
-            else 
+            }
+            else
             {
-                repeating.setEnd(null);
+                repeating.setEndLocalDateTime(null);
             }
             if (weekdays != null)
             {
@@ -198,7 +198,7 @@ public class ReservationReader extends RaplaXMLReader {
         if (localName.equals("date")) {
             String dateString =atts.getValue("date");
             if (dateString != null && repeating != null)
-                repeating.addException(parseDate(dateString,false));
+                repeating.addException(parseLocalDate(dateString).atStartOfDay());
         }
     }
 

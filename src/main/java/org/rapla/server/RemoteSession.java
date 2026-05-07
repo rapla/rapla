@@ -16,7 +16,7 @@ import org.rapla.entities.User;
 import org.rapla.logger.Logger;
 import org.rapla.storage.RaplaSecurityException;
 
-import javax.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletRequest;
 
 /** An interface to access the SessionInformation. An implementation of
  * RemoteSession gets passed to the creation RaplaRemoteService.*/

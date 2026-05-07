@@ -6,8 +6,8 @@ import org.rapla.components.i18n.BundleManager;
 import org.rapla.components.i18n.I18nBundle;
 import org.rapla.inject.Extension;
 
-import javax.inject.Inject;
-import javax.inject.Singleton;
+import jakarta.inject.Inject;
+import jakarta.inject.Singleton;
 import java.util.Locale;
 
 @Singleton

@@ -14,10 +14,9 @@ import org.rapla.storage.StorageOperator;
 import org.rapla.storage.dbrm.LoginTokens;
 import org.rapla.storage.dbrm.RemoteStorage;
 
-import javax.inject.Inject;
-import javax.inject.Singleton;
+import jakarta.inject.Inject;
+import jakarta.inject.Singleton;
 import java.util.Collection;
-import java.util.Date;
 
 @Singleton
 public class TokenHandler
@@ -74,7 +73,7 @@ public class TokenHandler
         final String recvText = tokenString.substring(s + 1);
         try
         {
-            Date now = operator.getCurrentTimestamp();
+            java.time.LocalDateTime now = operator.getCurrentTimestampAsLocalDateTime();
             ValidToken checkToken = tokenSigner.checkToken(tokenString, recvText, now);
             if (checkToken == null)
             {
@@ -106,9 +105,9 @@ public class TokenHandler
     public LoginTokens generateAccessToken(User user) throws RaplaException
     {
         String userId = user.getId();
-        Date now = operator.getCurrentTimestamp();
+        java.time.LocalDateTime now = operator.getCurrentTimestampAsLocalDateTime();
         long validityInSeconds = accessTokenValiditySeconds;
-        Date validUntil = new Date(now.getTime() + 1000L * validityInSeconds);
+        java.time.LocalDateTime validUntil = now.plusSeconds(validityInSeconds);
         String signedToken = null;
         try
         {
@@ -119,11 +118,11 @@ public class TokenHandler
             throw new RaplaException(e.getMessage(), e);
         }
 
-        return new LoginTokens(signedToken, validUntil);
+        return LoginTokens.ofLocalDateTime(signedToken, validUntil);
 
     }
 
-    public String getSignedToken(String userId, Date now) throws TokenInvalidException {
+    public String getSignedToken(String userId, java.time.LocalDateTime now) throws TokenInvalidException {
         return accessTokenSigner.newToken(userId, now);
     }
 
@@ -144,7 +143,7 @@ public class TokenHandler
 
     public String regenerateRefreshToken(User user) throws RaplaException
     {
-        Date now = operator.getCurrentTimestamp();
+        java.time.LocalDateTime now = operator.getCurrentTimestampAsLocalDateTime();
         String userId = user.getId();
         String generatedAPIKey;
         try

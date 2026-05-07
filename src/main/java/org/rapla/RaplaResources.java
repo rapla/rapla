@@ -8,8 +8,8 @@ import org.rapla.components.i18n.I18nBundle;
 import org.rapla.components.i18n.I18nIcon;
 import org.rapla.inject.Extension;
 
-import javax.inject.Inject;
-import javax.inject.Singleton;
+import jakarta.inject.Inject;
+import jakarta.inject.Singleton;
 import java.util.Date;
 import java.util.Locale;
 
@@ -57,6 +57,11 @@ public class RaplaResources extends AbstractBundle {
         // old format also works
         result = result.replace("{0,date,w}", "" + week);
         return result;
+    }
+
+    /** {@code LocalDate} variant of {@link #calendarweek(Date)}. */
+    public String calendarweek(java.time.LocalDate startDate) {
+        return calendarweek(startDate == null ? null : DateTools.toDate(startDate));
     }
 
     // custom format method for formating the number of week in a period

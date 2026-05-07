@@ -2,26 +2,22 @@ package org.rapla.storage;
 
 import org.rapla.components.i18n.LocalePackage;
 import org.rapla.scheduler.Promise;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.service.annotation.GetExchange;
+import org.springframework.web.service.annotation.HttpExchange;
+import org.springframework.web.service.annotation.PostExchange;
 
-import javax.ws.rs.GET;
-import javax.ws.rs.POST;
-import javax.ws.rs.Path;
-import javax.ws.rs.PathParam;
-import javax.ws.rs.Produces;
-import javax.ws.rs.QueryParam;
-import javax.ws.rs.core.MediaType;
 import java.util.Map;
 import java.util.Set;
 
-@Path("locale")
+@HttpExchange("/locale")
 public interface RemoteLocaleService
 {
-    @GET
-    @Produces({ MediaType.APPLICATION_JSON })
-    @Path("{id}")
-    Promise<LocalePackage> locale(@PathParam("id") String id, @QueryParam("locale") String locale);
+    @GetExchange("/{id}")
+    Promise<LocalePackage> locale(@PathVariable("id") String id, @RequestParam(value = "locale", required = false) String locale);
 
-    @POST
-    @Produces({ MediaType.APPLICATION_JSON })
-    Promise<Map<String, Set<String>>> countries( Set<String> languages);
+    @PostExchange
+    Promise<Map<String, Set<String>>> countries(@RequestBody Set<String> languages);
 }

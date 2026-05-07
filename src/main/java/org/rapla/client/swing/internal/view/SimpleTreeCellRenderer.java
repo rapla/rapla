@@ -7,7 +7,7 @@ import org.rapla.entities.domain.Allocatable;
 import org.rapla.facade.RaplaComponent;
 import org.rapla.framework.RaplaLocale;
 
-import javax.inject.Inject;
+import jakarta.inject.Inject;
 import javax.swing.*;
 import javax.swing.border.Border;
 import javax.swing.tree.DefaultTreeCellRenderer;

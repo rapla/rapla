@@ -97,6 +97,12 @@ public interface Conflict extends Named, Entity<Conflict>, Timestamp {
 
   Date getStartDate();
 
+  /** {@code LocalDateTime} variant of {@link #getStartDate()}. UTC. */
+  default java.time.LocalDateTime getStartDateAsLocalDateTime() {
+      Date d = getStartDate();
+      return d == null ? null : org.rapla.components.util.DateTools.toLocalDateTime(d);
+  }
+
   boolean isAppointment1Enabled();
 
   boolean isAppointment2Enabled();

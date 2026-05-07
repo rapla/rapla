@@ -12,7 +12,6 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.storage.dbrm;
 
-import org.jboss.resteasy.annotations.GZIP;
 import org.rapla.entities.domain.internal.AllocatableImpl;
 import org.rapla.entities.domain.internal.AppointmentImpl;
 import org.rapla.entities.domain.internal.ReservationImpl;
@@ -21,28 +20,28 @@ import org.rapla.framework.RaplaException;
 import org.rapla.scheduler.Promise;
 import org.rapla.storage.UpdateEvent;
 
-import javax.ws.rs.Consumes;
-import javax.ws.rs.GET;
-import javax.ws.rs.POST;
-import javax.ws.rs.Path;
-import javax.ws.rs.Produces;
-import javax.ws.rs.QueryParam;
-import javax.ws.rs.core.MediaType;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.service.annotation.DeleteExchange;
+import org.springframework.web.service.annotation.GetExchange;
+import org.springframework.web.service.annotation.HttpExchange;
+import org.springframework.web.service.annotation.PatchExchange;
+import org.springframework.web.service.annotation.PostExchange;
+import org.springframework.web.service.annotation.PutExchange;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
 
-@Path("storage")
+@HttpExchange("/storage")
 public interface RemoteStorage
 {
     String USER_WAS_NOT_AUTHENTIFIED = "User was not authentified";
 
-    @GET
-    @Path("change/canchangepassword")
+    @GetExchange("/change/canchangepassword")
     boolean canChangePassword() throws RaplaException;
 
-    @POST
-    @Path("change/password")
+    @PostExchange("/change/password")
     void changePassword(PasswordPost job) throws RaplaException;
 
     class PasswordPost
@@ -79,36 +78,25 @@ public interface RemoteStorage
         }
     }
 
-    @POST
-    @Path("change/name")
-    void changeName(@QueryParam("username") String username, @QueryParam("title") String newTitle, @QueryParam("surename") String newSurename,
+    @PostExchange("/change/name")
+    void changeName(@RequestParam(value = "username", required = false) String username, @RequestParam(value = "title", required = false) String newTitle, @RequestParam(value = "surename", required = false) String newSurename,
             String newLastname) throws RaplaException;
 
-    @POST
-    @Path("change/email")
-    void changeEmail(@QueryParam("username") String username, String newEmail) throws RaplaException;
+    @PostExchange("/change/email")
+    void changeEmail(@RequestParam(value = "username", required = false) String username, String newEmail) throws RaplaException;
 
-    @POST
-    @Path("confirm/email")
-    void confirmEmail(@QueryParam("username") String username, String newEmail) throws RaplaException;
+    @PostExchange("/confirm/email")
+    void confirmEmail(@RequestParam(value = "username", required = false) String username, String newEmail) throws RaplaException;
 
-    @GET
-    @Path("resourcesSync")
-    @Produces({ MediaType.APPLICATION_JSON, MediaType.APPLICATION_XML })
-    @GZIP
+    @GetExchange("/resourcesSync")
     UpdateEvent getResourcesSync() throws RaplaException;
 
-    @GET
-    @Path("resources")
-    @Produces({ MediaType.APPLICATION_JSON, MediaType.APPLICATION_XML })
-    @GZIP
+    @GetExchange("/resources")
     Promise<UpdateEvent> getResources();
 
     /** delegates the corresponding method in the StorageOperator. */
     //    FutureResult<List<ReservationImpl>> getReservations(@WebParam(name="resources")String[] allocatableIds,@WebParam(name="start")Date start,@WebParam(name="end")Date end, @WebParam(name="annotations")Map<String, String> annotationQuery);
-    @POST
-    @Produces({ MediaType.APPLICATION_JSON, MediaType.APPLICATION_XML })
-    @GZIP
+    @PostExchange
     Promise<AppointmentMap> queryAppointments(QueryAppointments job) throws RaplaException;
 
     class QueryAppointments
@@ -169,76 +157,43 @@ public interface RemoteStorage
         }
     }
 
-    @POST
-    @Path("entity/recursiveSync")
-    @Consumes({ MediaType.APPLICATION_JSON, MediaType.APPLICATION_XML })
-    @Produces({ MediaType.APPLICATION_JSON, MediaType.APPLICATION_XML })
-    UpdateEvent getEntityRecursive(@QueryParam("errorIfNotFound")Boolean errorIfNotFound,UpdateEvent.SerializableReferenceInfo... infos) throws RaplaException;
+    @PostExchange("/entity/recursiveSync")
+    UpdateEvent getEntityRecursive(@RequestParam(value = "errorIfNotFound", required = false)Boolean errorIfNotFound,UpdateEvent.SerializableReferenceInfo... infos) throws RaplaException;
 
-    @POST
-    @Path("entity/dependent")
-    @Consumes({ MediaType.APPLICATION_JSON, MediaType.APPLICATION_XML })
-    @Produces({ MediaType.APPLICATION_JSON, MediaType.APPLICATION_XML })
-    Promise<UpdateEvent> getEntityDependencies(@QueryParam("errorIfNotFound")Boolean errorIfNotFound,UpdateEvent.SerializableReferenceInfo... infos);
+    @PostExchange("/entity/dependent")
+    Promise<UpdateEvent> getEntityDependencies(@RequestParam(value = "errorIfNotFound", required = false)Boolean errorIfNotFound,UpdateEvent.SerializableReferenceInfo... infos);
 
-    @POST
-    @Path("refreshSync")
-    @Produces({ MediaType.APPLICATION_JSON, MediaType.APPLICATION_XML })
-    @GZIP
-    UpdateEvent refreshSync(@QueryParam("lastValidated") String lastSyncedTime) throws RaplaException;
+    @PostExchange("/refreshSync")
+    UpdateEvent refreshSync(@RequestParam(value = "lastValidated", required = false) String lastSyncedTime) throws RaplaException;
 
-    @POST
-    @Path("refreshSyncAllEvents")
-    @Produces({ MediaType.APPLICATION_JSON, MediaType.APPLICATION_XML })
-    @GZIP
-    UpdateEvent refreshSyncAllEvents(@QueryParam("lastValidated") String lastSyncedTime) throws RaplaException;
+    @PostExchange("/refreshSyncAllEvents")
+    UpdateEvent refreshSyncAllEvents(@RequestParam(value = "lastValidated", required = false) String lastSyncedTime) throws RaplaException;
 
-    @POST
-    @Path("refresh")
-    @Produces({ MediaType.APPLICATION_JSON, MediaType.APPLICATION_XML })
-    @GZIP
-    Promise<UpdateEvent> refresh(@QueryParam("lastValidated") String lastValidated);
+    @PostExchange("/refresh")
+    Promise<UpdateEvent> refresh(@RequestParam(value = "lastValidated", required = false) String lastValidated);
 
-    @POST
-    @Path("restart")
+    @PostExchange("/restart")
     Promise<Void> restartServer();
 
-    @POST
-    @Path("dispatchSync")
-    @Produces({ MediaType.APPLICATION_JSON, MediaType.APPLICATION_XML })
-    @GZIP
+    @PostExchange("/dispatchSync")
     UpdateEvent store(UpdateEvent event) throws RaplaException;
 
-    @POST
-    @Path("dispatch")
-    @Produces({ MediaType.APPLICATION_JSON, MediaType.APPLICATION_XML })
-    @GZIP
+    @PostExchange("/dispatch")
     Promise<UpdateEvent> dispatch(UpdateEvent event);
 
     //	@ResultType(value=String.class,container=List.class)
     //	FutureResult<List<String>> getTemplateNames();
 
-    @POST
-    @Path("identifierSync")
-    @Produces({ MediaType.APPLICATION_JSON, MediaType.APPLICATION_XML })
-    List<String> createIdentifierSync(@QueryParam("raplaType") String raplaType, @QueryParam("count") int count) throws RaplaException;
+    @PostExchange("/identifierSync")
+    List<String> createIdentifierSync(@RequestParam(value = "raplaType", required = false) String raplaType, @RequestParam(value = "count", required = false) int count) throws RaplaException;
 
-    @POST
-    @Path("identifier")
-    @Produces({ MediaType.APPLICATION_JSON, MediaType.APPLICATION_XML })
-    Promise<List<String>> createIdentifier(@QueryParam("raplaType") String raplaType, @QueryParam("count") int count);
+    @PostExchange("/identifier")
+    Promise<List<String>> createIdentifier(@RequestParam(value = "raplaType", required = false) String raplaType, @RequestParam(value = "count", required = false) int count);
 
-    @GET
-    @Path("conflicts")
-    @Produces({ MediaType.APPLICATION_JSON, MediaType.APPLICATION_XML })
-    @GZIP
+    @GetExchange("/conflicts")
     Promise<List<ConflictImpl>> getConflicts() ;
 
-    @POST
-    @Path("allocatable/bindings/first")
-    @Consumes({ MediaType.APPLICATION_JSON, MediaType.APPLICATION_XML })
-    @Produces({ MediaType.APPLICATION_JSON, MediaType.APPLICATION_XML })
-    @GZIP
+    @PostExchange("/allocatable/bindings/first")
     Promise<BindingMap> getFirstAllocatableBindings(AllocatableBindingsRequest job);
 
     class AllocatableBindingsRequest
@@ -275,17 +230,10 @@ public interface RemoteStorage
         }
     }
 
-    @POST
-    @Path("allocatable/bindings/all")
-    @Consumes({ MediaType.APPLICATION_JSON, MediaType.APPLICATION_XML })
-    @Produces({ MediaType.APPLICATION_JSON, MediaType.APPLICATION_XML })
-    @GZIP
+    @PostExchange("/allocatable/bindings/all")
     Promise<List<ReservationImpl>> getAllAllocatableBindings(AllocatableBindingsRequest job);
 
-    @POST
-    @Path("allocatable/date/next")
-    @Consumes({ MediaType.APPLICATION_JSON })
-    @Produces({ MediaType.APPLICATION_JSON })
+    @PostExchange("/allocatable/date/next")
     Promise<Date> getNextAllocatableDate(NextAllocatableDateRequest job);
 
     class NextAllocatableDateRequest
@@ -352,17 +300,13 @@ public interface RemoteStorage
         }
     }
 
-    @GET
-    @Path("user")
-    @Produces({ MediaType.APPLICATION_JSON })
-    String getUsername(@QueryParam("userId") String userId) throws RaplaException;
+    @GetExchange("/user")
+    String getUsername(@RequestParam(value = "userId", required = false) String userId) throws RaplaException;
 
     //void logEntityNotFound(String logMessage,String... referencedIds) throws RaplaException;
 
-    @POST
-    @Path("merge")
-    @Consumes({ MediaType.APPLICATION_JSON, MediaType.APPLICATION_XML })
-    Promise<UpdateEvent> doMerge(MergeRequest job, @QueryParam("lastSynched") String lastSyncedTime);
+    @PostExchange("/merge")
+    Promise<UpdateEvent> doMerge(MergeRequest job, @RequestParam(value = "lastSynched", required = false) String lastSyncedTime);
 
     class MergeRequest
     {

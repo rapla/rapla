@@ -18,7 +18,6 @@ import org.rapla.entities.domain.*;
 import org.rapla.framework.RaplaException;
 
 import java.io.IOException;
-import java.util.Date;
 import java.util.Set;
 
 
@@ -75,15 +74,15 @@ public class ReservationWriter extends ClassifiableWriter {
         //if (isPrintId()) {
             printId( appointment );
         //} 
-        att("start-date",dateTimeFormat.formatDate( appointment.getStart()));
+        att("start-date",dateTimeFormat.formatDate( appointment.getStartDateTime().toLocalDate() ));
 
         if (appointment.isWholeDaysSet()) {
-            boolean bCut = appointment.getEnd().after(appointment.getStart());
-            att("end-date",dateTimeFormat.formatDate(appointment.getEnd(),bCut));
+            boolean bCut = appointment.getEndDateTime().isAfter(appointment.getStartDateTime());
+            att("end-date",dateTimeFormat.formatDate(appointment.getEndDateTime(),bCut));
         } else {
-            att("start-time",dateTimeFormat.formatTime( appointment.getStart()));
-            att("end-date",dateTimeFormat.formatDate( appointment.getEnd()));
-            att("end-time",dateTimeFormat.formatTime( appointment.getEnd()));
+            att("start-time",dateTimeFormat.formatTime( appointment.getStartDateTime().toLocalTime() ));
+            att("end-date",dateTimeFormat.formatDate( appointment.getEndDateTime().toLocalDate() ));
+            att("end-time",dateTimeFormat.formatTime( appointment.getEndDateTime().toLocalTime() ));
         }
 
         Reservation reservation = appointment.getReservation();
@@ -144,11 +143,11 @@ public class ReservationWriter extends ClassifiableWriter {
         if (r.isFixedNumber()) {
             att("number",String.valueOf(r.getNumber()));
         } else {
-            if (r.getEnd() != null)
+            if (r.getEndDateTime() != null)
                 att("end-date"
-                    ,dateTimeFormat.formatDate(r.getEnd(),true));
+                    ,dateTimeFormat.formatDate(r.getEndDateTime(),true));
         }
-        Date[] exceptions = r.getExceptions();
+        java.time.LocalDateTime[] exceptions = r.getExceptionsAsLocalDateTime();
         if (exceptions.length==0) {
             closeElementTag();
             return;
@@ -157,7 +156,7 @@ public class ReservationWriter extends ClassifiableWriter {
         for (int i=0;i<exceptions.length;i++) {
             openElement("rapla:exception");
             openTag("rapla:date");
-            att("date",dateTimeFormat.formatDate( exceptions[i]));
+            att("date",dateTimeFormat.formatDate( exceptions[i].toLocalDate() ));
             closeElementTag();
             closeElement("rapla:exception");
         }

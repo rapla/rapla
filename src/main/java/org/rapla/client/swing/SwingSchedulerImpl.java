@@ -6,8 +6,8 @@ import org.rapla.logger.Logger;
 import org.rapla.scheduler.CommandScheduler;
 import org.rapla.scheduler.sync.UtilConcurrentCommandScheduler;
 
-import javax.inject.Inject;
-import javax.inject.Singleton;
+import jakarta.inject.Inject;
+import jakarta.inject.Singleton;
 
 @DefaultImplementation(of = CommandScheduler.class, context = InjectionContext.swing)
 @Singleton

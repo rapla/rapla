@@ -4,7 +4,7 @@ import junit.framework.TestCase;
 import org.rapla.framework.RaplaException;
 import org.rapla.plugin.mail.server.MailapiClient;
 
-import javax.inject.Provider;
+import jakarta.inject.Provider;
 
 public class MailTest extends TestCase
 {

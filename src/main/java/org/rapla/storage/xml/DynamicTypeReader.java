@@ -33,7 +33,6 @@ import org.rapla.entities.internal.CategoryImpl;
 import org.rapla.entities.storage.ReferenceInfo;
 import org.rapla.framework.RaplaException;
 
-import java.util.Date;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
@@ -80,7 +79,7 @@ public class DynamicTypeReader extends RaplaXMLReader
                 isDynamictypeActive = true;
                 typeAnnotations.clear();
                 TimestampDates ts = readTimestamps( atts);
-                dynamicType = new DynamicTypeImpl(ts.createTime, ts.changeTime);
+                dynamicType = DynamicTypeImpl.ofLocalDateTime(ts.getCreateTimeAsLocalDateTime(), ts.getChangeTimeAsLocalDateTime());
                 setLastChangedBy(dynamicType, atts);
                 if (atts.getValue( "id" )!=null)
                 {
@@ -361,8 +360,8 @@ public class DynamicTypeReader extends RaplaXMLReader
             {
                 return;
             }
-            Date date = getReadTimestamp();
-            CategoryImpl category = new CategoryImpl(date, date);
+            java.time.LocalDateTime date = getReadLocalDateTime();
+            CategoryImpl category = CategoryImpl.ofLocalDateTime(date, date);
             setNewId( category );
             category.setKey( groupKey );
             category.getName().setName("en", groupKey);

@@ -28,7 +28,7 @@ import org.rapla.logger.Logger;
 import org.rapla.plugin.notification.NotificationPlugin;
 import org.rapla.plugin.notification.NotificationResources;
 
-import javax.inject.Inject;
+import jakarta.inject.Inject;
 import javax.swing.JCheckBox;
 import javax.swing.JComponent;
 import javax.swing.JLabel;

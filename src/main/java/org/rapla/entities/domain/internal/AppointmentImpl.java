@@ -70,6 +70,13 @@ public final class AppointmentImpl extends SimpleEntity implements Appointment
         }
     }
 
+    /** {@code LocalDateTime} variant of {@link #AppointmentImpl(Date, Date)}. UTC. */
+    public static AppointmentImpl ofLocalDateTime(java.time.LocalDateTime start, java.time.LocalDateTime end) {
+        return new AppointmentImpl(
+            start == null ? null : DateTools.toDate(start),
+            end == null ? null : DateTools.toDate(end));
+    }
+
     public AppointmentImpl(Date start,Date end, RepeatingType type, int repeatingDuration) {
         this(start,end);
         this.repeating = new RepeatingImpl(type,this);

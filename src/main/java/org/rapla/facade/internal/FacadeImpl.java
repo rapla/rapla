@@ -61,8 +61,8 @@ import org.rapla.storage.PermissionController;
 import org.rapla.storage.RaplaSecurityException;
 import org.rapla.storage.StorageOperator;
 
-import javax.inject.Inject;
-import javax.inject.Singleton;
+import jakarta.inject.Inject;
+import jakarta.inject.Singleton;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -705,8 +705,8 @@ public class FacadeImpl implements RaplaFacade {
 		{
 			throw new RaplaException("User not allowed to createInfoDialog events");
 		}
-		Date now = operator.getCurrentTimestamp();
-		ReservationImpl reservation = new ReservationImpl(now ,now );
+		java.time.LocalDateTime now = operator.getCurrentTimestampAsLocalDateTime();
+		ReservationImpl reservation = ReservationImpl.ofLocalDateTime(now ,now );
 		reservation.setClassification(classification);
 		PermissionContainer.Util.copyPermissions(classification.getType(), reservation);
 		setNew(Collections.singletonList(reservation),ids, user);
@@ -737,8 +737,8 @@ public class FacadeImpl implements RaplaFacade {
     }
 
 	public Allocatable newAllocatable( Classification classification, User user) throws RaplaException {
-        Date now = operator.getCurrentTimestamp();
-        AllocatableImpl allocatable = new AllocatableImpl(now, now);
+        java.time.LocalDateTime now = operator.getCurrentTimestampAsLocalDateTime();
+        AllocatableImpl allocatable = AllocatableImpl.ofLocalDateTime(now, now);
         allocatable.setClassification(classification);
         PermissionContainer.Util.copyPermissions(classification.getType(), allocatable);
         setNew(allocatable, user);
@@ -781,8 +781,8 @@ public class FacadeImpl implements RaplaFacade {
 
     @Override
 	public Category newCategory() throws RaplaException {
-		Date now = operator.getCurrentTimestamp();
-        CategoryImpl category = new CategoryImpl(now, now);
+		java.time.LocalDateTime now = operator.getCurrentTimestampAsLocalDateTime();
+        CategoryImpl category = CategoryImpl.ofLocalDateTime(now, now);
 		setNew(category);
 		return category;
 	}
@@ -796,8 +796,8 @@ public class FacadeImpl implements RaplaFacade {
 
 	@Override
 	public DynamicType newDynamicType(String classificationType) throws RaplaException {
-		Date now = operator.getCurrentTimestamp();
-		DynamicTypeImpl dynamicType = new DynamicTypeImpl(now,now);
+		java.time.LocalDateTime now = operator.getCurrentTimestampAsLocalDateTime();
+		DynamicTypeImpl dynamicType = DynamicTypeImpl.ofLocalDateTime(now,now);
 		dynamicType.setAnnotation(DynamicTypeAnnotations.KEY_CLASSIFICATION_TYPE, classificationType);
 		dynamicType.setKey(createDynamicTypeKey(classificationType));
 		setNew(dynamicType);
@@ -876,8 +876,8 @@ public class FacadeImpl implements RaplaFacade {
 	}
 
 	public User newUser() throws RaplaException {
-		Date now = operator.getCurrentTimestamp();
-		UserImpl user = new UserImpl( now, now);
+		java.time.LocalDateTime now = operator.getCurrentTimestampAsLocalDateTime();
+		UserImpl user = UserImpl.ofLocalDateTime( now, now);
 		setNew(user);
 		@SuppressWarnings("deprecation")
         String[] defaultGroups = new String[] {Permission.GROUP_CAN_READ_EVENTS_FROM_OTHERS,Permission.GROUP_CAN_CREATE_EVENTS, Permission.GROUP_MODIFY_PREFERENCES_KEY, Permission.GROUP_MODIFY_PREFERENCES_KEY};

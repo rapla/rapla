@@ -56,6 +56,12 @@ public interface Repeating {
     Date getEnd();
 
     LocalDateTime getEndDateTime();
+
+    /** {@code LocalDateTime} variant of {@link #setEnd(Date)}. UTC.
+     * Distinct method name to avoid overload ambiguity with {@code setEnd(null)}. */
+    default void setEndLocalDateTime(LocalDateTime end) {
+        setEnd(end == null ? null : DateTools.toDate(end));
+    }
     /** Set a fixed number of repeating.
      * If this value is set to -1
      * and the repeating end is set to null the appointment will
@@ -73,6 +79,17 @@ public interface Repeating {
     void setType(RepeatingType type);
     /* exceptions for this repeating. */
     Date[] getExceptions();
+
+    /** {@code LocalDateTime} variant of {@link #getExceptions()}. UTC. */
+    default LocalDateTime[] getExceptionsAsLocalDateTime() {
+        Date[] exceptions = getExceptions();
+        if (exceptions == null) return new LocalDateTime[0];
+        LocalDateTime[] result = new LocalDateTime[exceptions.length];
+        for (int i = 0; i < exceptions.length; i++) {
+            result[i] = exceptions[i] == null ? null : DateTools.toLocalDateTime(exceptions[i]);
+        }
+        return result;
+    }
 
     boolean hasExceptions();
 
@@ -92,6 +109,16 @@ public interface Repeating {
     void addException(Date date);
     void removeException(Date date);
     void clearExceptions();
+
+    /** {@code LocalDateTime} variant of {@link #addException(Date)}. */
+    default void addException(LocalDateTime date) {
+        addException(date == null ? null : DateTools.toDate(date));
+    }
+
+    /** {@code LocalDateTime} variant of {@link #removeException(Date)}. */
+    default void removeException(LocalDateTime date) {
+        removeException(date == null ? null : DateTools.toDate(date));
+    }
 
     /** returns the appointment of this repeating.
         @see Appointment

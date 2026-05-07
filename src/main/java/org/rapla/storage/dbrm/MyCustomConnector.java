@@ -16,8 +16,8 @@ import org.rapla.scheduler.Promise;
 import org.rapla.storage.RaplaInvalidTokenException;
 import org.rapla.storage.RaplaSecurityException;
 
-import javax.inject.Inject;
-import javax.inject.Provider;
+import jakarta.inject.Inject;
+import jakarta.inject.Provider;
 
 @DefaultImplementation(of=CustomConnector.class,context = InjectionContext.client)
 public class MyCustomConnector implements CustomConnector

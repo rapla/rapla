@@ -49,9 +49,31 @@ public interface CachableStorageOperator extends StorageOperator {
     UpdateResult getUpdateResult(Date since) throws RaplaException;
     UpdateResult getUpdateResult(Date since,User user) throws RaplaException;
 
+    /** {@code LocalDateTime} variants — distinct names to avoid `null`-passing ambiguity. */
+    default UpdateResult getUpdateResultLocalDateTime(java.time.LocalDateTime since) throws RaplaException {
+        return getUpdateResult(since == null ? null : org.rapla.components.util.DateTools.toDate(since));
+    }
+    default UpdateResult getUpdateResultLocalDateTime(java.time.LocalDateTime since, User user) throws RaplaException {
+        return getUpdateResult(since == null ? null : org.rapla.components.util.DateTools.toDate(since), user);
+    }
+
     Date getLastRefreshed();
     Date getHistoryValidStart();
     Date getConnectStart();
+
+    /** {@code LocalDateTime} read accessors. UTC. */
+    default java.time.LocalDateTime getLastRefreshedAsLocalDateTime() {
+        Date d = getLastRefreshed();
+        return d == null ? null : org.rapla.components.util.DateTools.toLocalDateTime(d);
+    }
+    default java.time.LocalDateTime getHistoryValidStartAsLocalDateTime() {
+        Date d = getHistoryValidStart();
+        return d == null ? null : org.rapla.components.util.DateTools.toLocalDateTime(d);
+    }
+    default java.time.LocalDateTime getConnectStartAsLocalDateTime() {
+        Date d = getConnectStart();
+        return d == null ? null : org.rapla.components.util.DateTools.toLocalDateTime(d);
+    }
 
     Map<String, ExternalSyncEntity> getImportExportEntities(String systemId, int importExportDirection) throws RaplaException;
     
@@ -65,8 +87,6 @@ public interface CachableStorageOperator extends StorageOperator {
      */
     Date requestLock(String id, Long validMilliseconds) throws RaplaException;
     void releaseLock(String id, Date updatedUntil) throws RaplaException;
-
-    <T> T  waitForWithRaplaException(Promise<T> promise, int millis) throws RaplaException;
 
     Set<ReferenceInfo<Allocatable>> filterAllocatablesWithNonTemplateReservations(Set<ReferenceInfo<Allocatable>> allocatables);
 }

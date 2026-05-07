@@ -10,7 +10,7 @@ import org.rapla.framework.StartupEnvironment;
 import org.rapla.inject.Extension;
 import org.rapla.logger.Logger;
 
-import javax.inject.Inject;
+import jakarta.inject.Inject;
 import javax.swing.JCheckBox;
 import javax.swing.JLabel;
 import javax.swing.JPanel;

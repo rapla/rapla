@@ -39,8 +39,8 @@ import org.rapla.scheduler.sync.SynchronizedPromise;
 import org.rapla.storage.dbrm.RaplaConnectException;
 import org.rapla.storage.dbrm.RaplaRestartingException;
 
-import javax.inject.Inject;
-import javax.inject.Singleton;
+import jakarta.inject.Inject;
+import jakarta.inject.Singleton;
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.ActionEvent;
@@ -459,6 +459,7 @@ public class DialogUI extends JDialog
     
     @Singleton
     @DefaultImplementation(context=InjectionContext.swing, of=DialogUiFactoryInterface.class)
+    @org.springframework.stereotype.Service
     public static class DialogUiFactory implements DialogUiFactoryInterface
     {
         private final RaplaResources i18n;

@@ -47,10 +47,10 @@ import org.rapla.storage.dbrm.AppointmentMap;
 import org.rapla.storage.dbrm.RemoteStorage;
 import org.rapla.storage.impl.EntityStore;
 
-import javax.inject.Inject;
-import javax.inject.Provider;
-import javax.servlet.http.HttpServletRequest;
-import javax.ws.rs.core.Context;
+import jakarta.inject.Inject;
+import jakarta.inject.Provider;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.ws.rs.core.Context;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -88,7 +88,6 @@ import java.util.stream.Collectors;
     {
         User user = checkSessionUser();
         getLogger().debug("A RemoteAuthentificationService wants to get all resource-objects.");
-        Date serverTime = operator.getCurrentTimestamp();
         Collection<Entity> visibleEntities = operator.getVisibleEntities(user);
         UpdateEvent evt = new UpdateEvent();
         evt.setUserId(user.getId());
@@ -130,7 +129,6 @@ import java.util.stream.Collectors;
     public UpdateEvent getEntityRecursive(Boolean errorUpdateEvent,UpdateEvent.SerializableReferenceInfo... ids) throws RaplaException
     {
         User sessionUser = checkSessionUser();
-        Date repositoryVersion = operator.getCurrentTimestamp();
 
         ArrayList<Entity> completeList = new ArrayList<>();
         for (UpdateEvent.SerializableReferenceInfo id : ids)
@@ -232,7 +230,10 @@ import java.util.stream.Collectors;
         boolean requestsOnly = job.isRequestsOnly();
         final Promise<AppointmentMapping> mapFutureResult = operator
                 .queryAppointments(user, allocatables,owners, start, end, classificationFilters, annotationQuery, requestsOnly);
-        AppointmentMapping reservations = operator.waitForWithRaplaException(mapFutureResult, 50000);
+        AppointmentMapping reservations;
+        try { reservations = org.rapla.scheduler.sync.SynchronizedCompletablePromise.waitFor(mapFutureResult, 50000, logger); }
+        catch (RaplaException ex) { throw ex; }
+        catch (Exception ex) { throw new RaplaException(ex); }
         AppointmentMap list = new AppointmentMap(reservations);
         getLogger().debug("Get reservations " + start + " " + end + ": " + "," + list);
         return new ResolvedPromise<>(list);
@@ -277,7 +278,6 @@ import java.util.stream.Collectors;
     public UpdateEvent store(UpdateEvent event) throws RaplaException
     {
         User sessionUser = checkSessionUser();
-        Date currentTimestamp = operator.getCurrentTimestamp();
         Date lastRefreshed = operator.getLastRefreshed();
 
         Date lastSynced = event.getLastValidated();

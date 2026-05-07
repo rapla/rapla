@@ -40,6 +40,11 @@ public interface CalendarOptions {
     int getDaysInWeekview();
 	int getFirstDayOfWeek();
     int getFirstDayOfWeek(Date today);
+
+    /** {@code LocalDate} variant — `today` is date-only. */
+    default int getFirstDayOfWeek(java.time.LocalDate today) {
+        return getFirstDayOfWeek(today == null ? null : org.rapla.components.util.DateTools.toDate(today));
+    }
     boolean isExceptionsVisible();
     boolean isCompactColumns();
     boolean isResourceColoring();

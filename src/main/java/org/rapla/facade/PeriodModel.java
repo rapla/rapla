@@ -42,6 +42,14 @@ public interface PeriodModel
 
     /** returns the first matching period or null if no period matches.*/
     Period getPeriodFor(Date date);
+
+    /** {@code LocalDate} variant — date-only. */
+    default Period getPeriodFor(java.time.LocalDate date) {
+        return getPeriodFor(date == null ? null : org.rapla.components.util.DateTools.toDate(date));
+    }
+    default Period getPeriodFor(java.time.LocalDateTime dateTime) {
+        return getPeriodFor(dateTime == null ? null : org.rapla.components.util.DateTools.toDate(dateTime));
+    }
     Period getNearestPeriodForDate(Date date);
     Period getNearestPeriodForStartDate(Date date);
     Period getNearestPeriodForStartDate(TimeInterval interval);

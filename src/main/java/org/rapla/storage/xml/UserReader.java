@@ -23,7 +23,6 @@ import org.rapla.entities.internal.UserImpl;
 import org.rapla.entities.storage.ReferenceInfo;
 import org.rapla.framework.RaplaException;
 
-import java.util.Date;
 
 public class UserReader extends RaplaXMLReader
 {
@@ -49,7 +48,7 @@ public class UserReader extends RaplaXMLReader
         if (localName.equals( "user" ))
         {
             TimestampDates ts = readTimestamps( atts);
-            user = new UserImpl(ts.createTime, ts.changeTime);
+            user = UserImpl.ofLocalDateTime(ts.getCreateTimeAsLocalDateTime(), ts.getChangeTimeAsLocalDateTime());
             setId( user, atts );
             setLastChangedBy(user, atts);
 //            String idString = getString(atts, "person",null);
@@ -127,9 +126,9 @@ public class UserReader extends RaplaXMLReader
             if ( group != null)
             {
                 // add the groups to the user if the groups were not there in a previous version
-                Date createTime = group.getCreateDate();
+                java.time.LocalDateTime createTime = group.getCreateDateAsLocalDateTime();
                 RaplaXMLReader dynamicTypeReader = getChildHandlerForType(DynamicType.class);
-                Date categoryCreateTime = dynamicTypeReader.getReadTimestamp();
+                java.time.LocalDateTime categoryCreateTime = dynamicTypeReader.getReadLocalDateTime();
                 if (categoryCreateTime.equals(createTime))
                 {
                     ((UserImpl)user).addGroupId(groupId);

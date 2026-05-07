@@ -5,8 +5,8 @@ import org.rapla.entities.User;
 import org.rapla.entities.domain.Permission;
 import org.rapla.storage.StorageOperator;
 
-import javax.inject.Inject;
-import javax.inject.Singleton;
+import jakarta.inject.Inject;
+import jakarta.inject.Singleton;
 
 @Singleton
 public class ShowExchangeForUser {

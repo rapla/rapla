@@ -42,8 +42,8 @@ import org.rapla.framework.RaplaException;
 import org.rapla.inject.Extension;
 import org.rapla.scheduler.*;
 
-import javax.inject.Inject;
-import javax.inject.Provider;
+import jakarta.inject.Inject;
+import jakarta.inject.Provider;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;

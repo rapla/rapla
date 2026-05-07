@@ -13,6 +13,7 @@
 
 package org.rapla.entities.domain;
 
+import org.rapla.components.util.DateTools;
 import org.rapla.entities.Annotatable;
 import org.rapla.entities.Named;
 import org.rapla.entities.Ownable;
@@ -20,6 +21,7 @@ import org.rapla.entities.Timestamp;
 import org.rapla.entities.dynamictype.Classifiable;
 import org.rapla.facade.Conflict;
 
+import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.Stream;
 
@@ -101,9 +103,21 @@ public interface Reservation extends EntityPermissionContainer<Reservation>,Clas
 
 	/** returns the first (in time) start of all appointments. Returns null when the reservation has no appointments*/
 	Date getFirstDate();
-	
+
 	/** returns the last (in time) maxEnd of all appointments. Returns null when one appointment has no end*/
 	Date getMaxEnd();
+
+	/** {@code java.time} variant of {@link #getFirstDate()}. UTC. */
+	default LocalDateTime getFirstDateAsLocalDateTime() {
+		Date d = getFirstDate();
+		return d == null ? null : DateTools.toLocalDateTime(d);
+	}
+
+	/** {@code java.time} variant of {@link #getMaxEnd()}. UTC. */
+	default LocalDateTime getMaxEndAsLocalDateTime() {
+		Date d = getMaxEnd();
+		return d == null ? null : DateTools.toLocalDateTime(d);
+	}
 
 	String format(Locale locale, String annotationName);
 

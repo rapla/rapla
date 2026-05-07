@@ -50,7 +50,7 @@ import org.rapla.plugin.timeslot.Timeslot;
 import org.rapla.plugin.timeslot.TimeslotProvider;
 import org.rapla.scheduler.Promise;
 
-import javax.inject.Provider;
+import jakarta.inject.Provider;
 import javax.swing.JComponent;
 import javax.swing.JLabel;
 import java.awt.Font;

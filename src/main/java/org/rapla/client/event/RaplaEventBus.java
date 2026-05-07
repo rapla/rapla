@@ -6,12 +6,14 @@ import org.rapla.inject.InjectionContext;
 import org.rapla.scheduler.CommandScheduler;
 import org.rapla.scheduler.Observable;
 import org.rapla.scheduler.Subject;
+import org.springframework.stereotype.Service;
 
-import javax.inject.Inject;
-import javax.inject.Singleton;
+import jakarta.inject.Inject;
+import jakarta.inject.Singleton;
 
 @DefaultImplementation(of = ApplicationEventBus.class,context = InjectionContext.all)
 @DefaultImplementation(of = CalendarEventBus.class,context = InjectionContext.all)
+@Service
 @Singleton
 public class RaplaEventBus implements ApplicationEventBus, CalendarEventBus
 {

@@ -23,8 +23,8 @@ import org.rapla.framework.RaplaInitializationException;
 import org.rapla.framework.StartupEnvironment;
 import org.rapla.scheduler.Promise;
 
-import javax.inject.Inject;
-import javax.inject.Singleton;
+import jakarta.inject.Inject;
+import jakarta.inject.Singleton;
 import javax.swing.BorderFactory;
 import javax.swing.JLabel;
 import javax.swing.JList;

@@ -6,8 +6,8 @@ import org.rapla.components.i18n.BundleManager;
 import org.rapla.components.i18n.I18nBundle;
 import org.rapla.inject.Extension;
 
-import javax.inject.Inject;
-import javax.inject.Singleton;
+import jakarta.inject.Inject;
+import jakarta.inject.Singleton;
 
 @Singleton
 @Extension(provides = I18nBundle.class, id = AutoExportPlugin.PLUGIN_ID)

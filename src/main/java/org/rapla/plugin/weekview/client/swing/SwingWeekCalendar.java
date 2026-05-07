@@ -42,7 +42,7 @@ import org.rapla.framework.RaplaLocale;
 import org.rapla.logger.Logger;
 import org.rapla.plugin.abstractcalendar.client.swing.AbstractRaplaSwingCalendar;
 
-import javax.inject.Provider;
+import jakarta.inject.Provider;
 import javax.swing.JComponent;
 import javax.swing.JLabel;
 import java.awt.Font;

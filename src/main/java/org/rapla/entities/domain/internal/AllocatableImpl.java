@@ -67,7 +67,14 @@ public final class AllocatableImpl extends SimpleEntity implements Allocatable,D
         if (lastChanged == null)
             this.lastChanged = this.createDate;
     }
-    
+
+    /** {@code LocalDateTime} factory paralleling {@link #AllocatableImpl(Date, Date)}. UTC. */
+    public static AllocatableImpl ofLocalDateTime(java.time.LocalDateTime createDate, java.time.LocalDateTime lastChanged) {
+        return new AllocatableImpl(
+            createDate == null ? null : org.rapla.components.util.DateTools.toDate(createDate),
+            lastChanged == null ? null : org.rapla.components.util.DateTools.toDate(lastChanged));
+    }
+
     public void setResolver( EntityResolver resolver) {
         super.setResolver( resolver);
         if ( classification != null)

@@ -1,18 +1,18 @@
 package org.rapla.plugin.mail.server;
 
-import javax.mail.PasswordAuthentication;
-import javax.mail.Session;
+import jakarta.mail.PasswordAuthentication;
+import jakarta.mail.Session;
 import java.util.Properties;
 
 public class RaplaMailLibs
 {
 	static public Object getSession(Properties props) {
-		javax.mail.Authenticator authenticator = null;
+		jakarta.mail.Authenticator authenticator = null;
 		final String username2 = (String) props.get("username");
 		final String password2 = (String) props.get("password");
 		if ( props.containsKey("username"))
 		{
-			authenticator = new javax.mail.Authenticator() {
+			authenticator = new jakarta.mail.Authenticator() {
 		    	   protected PasswordAuthentication getPasswordAuthentication() {
 						return new PasswordAuthentication(username2,password2);
 					}

@@ -6,7 +6,7 @@ import org.rapla.inject.InjectionContext;
 import org.rapla.plugin.export2ical.ICalTimezones;
 import org.rapla.server.TimeZoneConverter;
 
-import javax.inject.Inject;
+import jakarta.inject.Inject;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;

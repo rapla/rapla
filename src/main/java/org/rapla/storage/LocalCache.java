@@ -36,7 +36,7 @@ import org.rapla.facade.Conflict;
 import org.rapla.facade.internal.ConflictImpl;
 import org.rapla.framework.RaplaException;
 
-import javax.inject.Provider;
+import jakarta.inject.Provider;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 

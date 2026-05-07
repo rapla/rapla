@@ -2,17 +2,15 @@ package org.rapla.plugin.export2ical;
 
 import org.rapla.framework.DefaultConfiguration;
 import org.rapla.framework.RaplaException;
+import org.springframework.web.service.annotation.GetExchange;
+import org.springframework.web.service.annotation.HttpExchange;
 
-import javax.ws.rs.GET;
-import javax.ws.rs.Path;
-
-@Path("ical/config")
+@HttpExchange("/ical/config")
 public interface ICalConfigService
 {
-    @GET
+    @GetExchange
     DefaultConfiguration getConfig() throws RaplaException;
 
-    @GET
-    @Path("default")
+    @GetExchange("/default")
     DefaultConfiguration getUserDefaultConfig() throws RaplaException;
 }

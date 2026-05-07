@@ -26,6 +26,16 @@ public interface Block
     Date getStart();
     Date getEnd();
     String getName();
+
+    /** {@code LocalDateTime} variants. UTC. */
+    default java.time.LocalDateTime getStartAsLocalDateTime() {
+        Date d = getStart();
+        return d == null ? null : org.rapla.components.util.DateTools.toLocalDateTime(d);
+    }
+    default java.time.LocalDateTime getEndAsLocalDateTime() {
+        Date d = getEnd();
+        return d == null ? null : org.rapla.components.util.DateTools.toLocalDateTime(d);
+    }
 }
 
 

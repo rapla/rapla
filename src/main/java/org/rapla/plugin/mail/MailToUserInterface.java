@@ -1,15 +1,17 @@
 package org.rapla.plugin.mail;
 
 import org.rapla.framework.RaplaException;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestHeader;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.service.annotation.HttpExchange;
+import org.springframework.web.service.annotation.PostExchange;
 
-import javax.ws.rs.HeaderParam;
-import javax.ws.rs.POST;
-import javax.ws.rs.Path;
-import javax.ws.rs.QueryParam;
-
-@Path("mail/send")
-public interface MailToUserInterface 
+@HttpExchange("/mail/send")
+public interface MailToUserInterface
 {
-    @POST
-    void sendMail(@QueryParam("username")String username,@HeaderParam("subject")String subject, String body) throws RaplaException;
+    @PostExchange
+    void sendMail(@RequestParam("username") String username,
+                  @RequestHeader("subject") String subject,
+                  @RequestBody String body) throws RaplaException;
 }

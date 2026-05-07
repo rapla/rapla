@@ -1,15 +1,14 @@
 package org.rapla.enpoints;
 
 import org.rapla.framework.RaplaException;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.service.annotation.HttpExchange;
+import org.springframework.web.service.annotation.PutExchange;
 
-import javax.ws.rs.PUT;
-import javax.ws.rs.Path;
-import javax.ws.rs.PathParam;
-
-@Path("logger")
+@HttpExchange("/logger")
 public interface RemoteLogger
 {
-    @PUT
-    @Path("{id}")
-    void info(@PathParam("id") String id, String message)throws RaplaException;
+    @PutExchange("/{id}")
+    void info(@PathVariable("id") String id, @RequestBody String message) throws RaplaException;
 }

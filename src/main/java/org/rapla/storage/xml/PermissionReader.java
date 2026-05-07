@@ -74,13 +74,13 @@ public class PermissionReader extends RaplaXMLReader
             String startDate = getString( atts, "start-date", null );
             if (startDate != null)
             {
-                permission.setStart( parseDate( startDate, false ) );
+                permission.setStartLocalDateTime( parseLocalDate( startDate ).atStartOfDay() );
             }
 
             String endDate = getString( atts, "end-date", null );
             if (endDate != null)
             {
-                permission.setEnd( parseDate( endDate, false ) );
+                permission.setEndLocalDateTime( parseLocalDate( endDate ).atStartOfDay() );
             }
 
             String minAdvance = getString( atts, "min-advance", null );

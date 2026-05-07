@@ -3,7 +3,6 @@ package org.rapla.storage.impl;
 import org.rapla.components.util.DateTools;
 import org.rapla.framework.RaplaException;
 
-import java.util.Date;
 
 public interface RaplaLock
 {
@@ -73,7 +72,7 @@ public interface RaplaLock
         @Override
         public String toString()
         {
-            return Tools.toString(lockType + " [" + DateTools.formatTime(new Date(lockTime)) + "]" + lockClazz + ":" + lockname, stackTrace);
+            return Tools.toString(lockType + " [" + DateTools.formatTime(lockTime) + "]" + lockClazz + ":" + lockname, stackTrace);
         }
 
 

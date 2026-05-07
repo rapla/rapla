@@ -22,8 +22,8 @@ import org.rapla.framework.TypedComponentRole;
 import org.rapla.inject.DefaultImplementation;
 import org.rapla.inject.InjectionContext;
 
-import javax.inject.Inject;
-import javax.inject.Singleton;
+import jakarta.inject.Inject;
+import jakarta.inject.Singleton;
 import java.util.Date;
 import java.util.LinkedHashSet;
 import java.util.Set;

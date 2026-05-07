@@ -25,15 +25,16 @@ import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.inject.DefaultImplementation;
 import org.rapla.inject.InjectionContext;
+import org.springframework.stereotype.Service;
 
-import javax.inject.Inject;
-import javax.inject.Singleton;
+import jakarta.inject.Inject;
+import jakarta.inject.Singleton;
 import java.awt.Color;
-import java.util.Date;
 import java.util.Set;
 
 @Singleton
 @DefaultImplementation(of=DateRenderer.class,context = { InjectionContext.swing,InjectionContext.server})
+@Service
 public class RaplaDateRenderer implements DateRenderer {
     protected WeekendHighlightRenderer renderer = new WeekendHighlightRenderer();
     protected Color periodColor = new Color(0xc5,0xda,0xdd);
@@ -70,7 +71,7 @@ public class RaplaDateRenderer implements DateRenderer {
     
     public RenderingInfo getRenderingInfo(int dayOfWeek,int day,int month, int year)
     {
-        final Date date = raplaLocale.toRaplaDate(year, month, day);
+        final java.time.LocalDate date = raplaLocale.toRaplaLocalDate(year, month, day);
         PeriodModel periodModel = getPeriodModel();
         Period period = periodModel != null ? periodModel.getPeriodFor(date) : null;
         final RenderingInfo renderingInfo = renderer.getRenderingInfo(dayOfWeek, day, month, year);

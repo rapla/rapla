@@ -35,7 +35,6 @@ import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.internal.ConfigTools;
 import org.rapla.logger.Logger;
 import org.rapla.scheduler.CommandScheduler;
-import org.rapla.server.PromiseWait;
 import org.rapla.storage.CachableStorageOperator;
 import org.rapla.storage.IdCreator;
 import org.rapla.storage.ImportExportManager;
@@ -50,8 +49,8 @@ import org.rapla.storage.impl.server.LocalAbstractCachableOperator;
 import org.rapla.storage.xml.IOContext;
 import org.rapla.storage.xml.RaplaDefaultXMLContext;
 
-import javax.inject.Provider;
-import javax.inject.Singleton;
+import jakarta.inject.Provider;
+import jakarta.inject.Singleton;
 import javax.sql.DataSource;
 import java.sql.Connection;
 import java.sql.DatabaseMetaData;
@@ -87,10 +86,10 @@ import java.util.Set;
     private String connectionName;
     Provider<ImportExportManager> importExportManager;
 
-    public DBOperator(Logger logger, PromiseWait promiseWait,RaplaResources i18n, RaplaLocale locale, final CommandScheduler scheduler, Map<String, FunctionFactory> functionFactoryMap,
+    public DBOperator(Logger logger, RaplaResources i18n, RaplaLocale locale, final CommandScheduler scheduler, Map<String, FunctionFactory> functionFactoryMap,
             Provider<ImportExportManager> importExportManager, DataSource dataSource, Set<PermissionExtension> permissionExtensions)
     {
-        super(logger, promiseWait,i18n, locale, scheduler, functionFactoryMap, permissionExtensions);
+        super(logger, i18n, locale, scheduler, functionFactoryMap, permissionExtensions);
         lookup = dataSource;
         this.importExportManager = importExportManager;
         //        String backupFile = config.getChild("backup").getValue("");

@@ -45,7 +45,7 @@ import org.rapla.scheduler.Observable;
 import org.rapla.scheduler.ResolvedPromise;
 import org.rapla.scheduler.Subject;
 
-import javax.inject.Inject;
+import jakarta.inject.Inject;
 import javax.swing.SwingUtilities;
 import java.util.ArrayList;
 import java.util.Collection;

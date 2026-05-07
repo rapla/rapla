@@ -61,6 +61,13 @@ public class PreferencesImpl extends SimpleEntity implements Preferences, Modifi
         this.lastChanged = lastChanged;
     }
 
+    /** {@code LocalDateTime} factory paralleling {@link #PreferencesImpl(Date, Date)}. UTC. */
+    public static PreferencesImpl ofLocalDateTime(java.time.LocalDateTime createDate, java.time.LocalDateTime lastChanged) {
+        return new PreferencesImpl(
+            createDate == null ? null : org.rapla.components.util.DateTools.toDate(createDate),
+            lastChanged == null ? null : org.rapla.components.util.DateTools.toDate(lastChanged));
+    }
+
     public Date getLastChanged()
     {
         return lastChanged;

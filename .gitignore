@@ -32,3 +32,6 @@ parent/target/
 /*.crt
 /erdkante-chain.pem
 /pkcs11.cfg
+application-local.yml
+src/main/resources/application-local.yml
+proxy.conf.local.json

@@ -46,8 +46,9 @@
         <url>http://rapla.org</url>
     </organization>
     <properties>
-        <maven.compiler.source>1.8</maven.compiler.source>
-        <maven.compiler.target>1.8</maven.compiler.target>
+        <maven.compiler.source>17</maven.compiler.source>
+        <maven.compiler.target>17</maven.compiler.target>
+        <maven.compiler.release>17</maven.compiler.release>
     </properties>
 	<build>
         <resources>
@@ -133,17 +134,9 @@
                                 </artifactItem>
                                 -->
                                 <artifactItem>
-                                    <groupId>javax.inject</groupId>
-                                    <artifactId>javax.inject</artifactId>
-                                    <version>${javax.inject.version}</version>
-                                    <type>jar</type>
-                                    <overWrite>true</overWrite>
-                                    <outputDirectory>${project.build.directory}/${project.build.finalName}/webclient</outputDirectory>
-                                </artifactItem>
-                                <artifactItem>
-                                    <groupId>org.rapla</groupId>
-                                    <artifactId>restinject</artifactId>
-                                    <version>${restinject.version}</version>
+                                    <groupId>jakarta.inject</groupId>
+                                    <artifactId>jakarta.inject-api</artifactId>
+                                    <version>${jakarta.inject.version}</version>
                                     <type>jar</type>
                                     <overWrite>true</overWrite>
                                     <outputDirectory>${project.build.directory}/${project.build.finalName}/webclient</outputDirectory>
@@ -242,35 +235,6 @@
                         </goals>
                     </execution>
                 </executions>
-            </plugin>
-            <!-- you can configure the properties in a profile in a settings.xml for maven. By default ossrh profile will be used -->
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-war-plugin</artifactId>
-                <version>3.3.2</version>
-                <executions>
-                    <execution>
-                        <phase>package</phase>
-                        <goals>
-                            <goal>war</goal>
-                        </goals>
-                    </execution>
-                </executions>
-                <configuration>
-                    <archiveClasses>true</archiveClasses>
-                    <!-- this is relative to the pom.xml directory -->
-<!--
-                    <webResources>
-                        <resource>
-                            <directory>../raplajsclient/dist</directory>
-                        </resource>
-                    </webResources>
-                    -->
-                    <classifier>war</classifier>
-                    <packagingExcludes>**/*.java</packagingExcludes>
-                    <warSourceDirectory>${basedir}/src/main/webapp</warSourceDirectory>
-                    <webXml>${basedir}/src/main/webapp/WEB-INF/web.xml</webXml>
-                </configuration>
             </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>

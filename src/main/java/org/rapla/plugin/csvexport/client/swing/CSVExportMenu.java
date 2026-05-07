@@ -40,7 +40,7 @@ import org.rapla.plugin.tableview.internal.TableConfig;
 import org.rapla.scheduler.Promise;
 import org.rapla.scheduler.ResolvedPromise;
 
-import javax.inject.Inject;
+import jakarta.inject.Inject;
 import javax.swing.JMenuItem;
 import javax.swing.SwingUtilities;
 import java.awt.Component;

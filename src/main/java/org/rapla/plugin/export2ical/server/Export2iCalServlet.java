@@ -25,17 +25,16 @@ import org.rapla.plugin.export2ical.Export2iCalPlugin;
 import org.rapla.plugin.planningstatus.PlanningStatusFilter;
 import org.rapla.plugin.planningstatus.PlanningStatusPlugin;
 import org.rapla.scheduler.Promise;
-import org.rapla.server.PromiseWait;
 import org.rapla.storage.StorageOperator;
 
-import javax.inject.Inject;
-import javax.inject.Singleton;
-import javax.servlet.ServletException;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-import javax.ws.rs.*;
-import javax.ws.rs.core.Context;
-import javax.ws.rs.core.MediaType;
+import jakarta.inject.Inject;
+import jakarta.inject.Singleton;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import jakarta.ws.rs.*;
+import jakarta.ws.rs.core.Context;
+import jakarta.ws.rs.core.MediaType;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.StringWriter;
@@ -73,8 +72,6 @@ public class Export2iCalServlet
 	RaplaLocale raplaLocale ;
 	@Inject
 	RaplaResources i18n;
-	@Inject
-	PromiseWait promiseWait;
 
 	@Inject
     public Export2iCalServlet()
@@ -179,7 +176,7 @@ public class Export2iCalServlet
 			}
 
 			Promise<Collection<Appointment>> appointments = calModel.queryAppointments(new TimeInterval(null, null));
-			write(response, promiseWait.waitForWithRaplaException(appointments, 10000), filename,user, null);
+			write(response, org.rapla.scheduler.sync.SynchronizedCompletablePromise.waitFor(appointments, 10000, null), filename,user, null);
 		} catch (Exception e) {
 			response.getWriter().println(("An error occured giving you the Calendarview for user " + username + " named " + filename));
 			response.getWriter().println();
@@ -291,7 +288,14 @@ public class Export2iCalServlet
 		Date endDate = null;
 	Date startDate = facade.today();
 	final Promise<Collection<Reservation>> reservationsPromise = calModel.queryReservations(new TimeInterval(startDate, endDate));
-		final Collection<Reservation> reservations = promiseWait.waitForWithRaplaException(reservationsPromise, 10000);
+		final Collection<Reservation> reservations;
+		try {
+			reservations = org.rapla.scheduler.sync.SynchronizedCompletablePromise.waitFor(reservationsPromise, 10000, null);
+		} catch (RaplaException ex) {
+			throw ex;
+		} catch (Exception ex) {
+			throw new RaplaException(ex);
+		}
 		// set to minvalue
 		Date maxDate = new Date();
 		maxDate.setTime(0);

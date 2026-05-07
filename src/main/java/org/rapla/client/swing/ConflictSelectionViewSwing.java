@@ -37,7 +37,7 @@ import org.rapla.inject.DefaultImplementation;
 import org.rapla.inject.InjectionContext;
 import org.rapla.logger.Logger;
 
-import javax.inject.Inject;
+import jakarta.inject.Inject;
 import javax.swing.BorderFactory;
 import javax.swing.JComponent;
 import javax.swing.JLabel;
@@ -54,6 +54,7 @@ import java.awt.Point;
 import java.util.Collection;
 
 @DefaultImplementation(context = InjectionContext.swing, of = ConflictSelectionView.class)
+@org.springframework.stereotype.Service
 public class ConflictSelectionViewSwing implements ConflictSelectionView<Component>
 {
     private final RaplaTree treeSelection = new RaplaTree();

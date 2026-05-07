@@ -6,7 +6,7 @@ import org.rapla.inject.InjectionContext;
 
 import java.util.Date;
 
-@ExtensionPoint(context = InjectionContext.gwt, id = CalendarPlugin.CALENDAR_PLUGIN_ID)
+@ExtensionPoint(context = InjectionContext.client, id = CalendarPlugin.CALENDAR_PLUGIN_ID)
 public interface CalendarPlugin<W>
 {
 
@@ -23,4 +23,14 @@ public interface CalendarPlugin<W>
     Date calcNext(Date currentDate);
 
     Date calcPrevious(Date currentDate);
+
+    /** {@code LocalDate} variants — distinct names. */
+    default java.time.LocalDate calcNextLocalDate(java.time.LocalDate currentDate) {
+        Date d = calcNext(currentDate == null ? null : org.rapla.components.util.DateTools.toDate(currentDate));
+        return d == null ? null : org.rapla.components.util.DateTools.toLocalDate(d);
+    }
+    default java.time.LocalDate calcPreviousLocalDate(java.time.LocalDate currentDate) {
+        Date d = calcPrevious(currentDate == null ? null : org.rapla.components.util.DateTools.toDate(currentDate));
+        return d == null ? null : org.rapla.components.util.DateTools.toLocalDate(d);
+    }
 }

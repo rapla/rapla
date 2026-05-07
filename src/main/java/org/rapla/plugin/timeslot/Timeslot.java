@@ -1,9 +1,7 @@
 package org.rapla.plugin.timeslot;
 
-import org.rapla.components.util.DateTools;
 import org.rapla.components.util.SerializableDateTimeFormat;
 
-import java.util.Date;
 
 public class Timeslot implements Comparable<Timeslot>
 {
@@ -33,8 +31,7 @@ public class Timeslot implements Comparable<Timeslot>
 	{
 		int hour = minuteOfDay/60;
 		int minute = minuteOfDay % 60;
-		final long l = DateTools.toTime(hour, minute, 0);
-		final String time = SerializableDateTimeFormat.INSTANCE.formatTime(new Date(l));
+		final String time = SerializableDateTimeFormat.INSTANCE.formatTime(java.time.LocalTime.of(hour, minute, 0));
 		return name + " " + time;
 	}
 

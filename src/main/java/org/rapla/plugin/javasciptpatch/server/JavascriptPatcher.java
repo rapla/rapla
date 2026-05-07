@@ -11,7 +11,7 @@ import org.rapla.server.extensionpoints.ServerExtension;
 import org.rapla.server.internal.ServerContainerContext;
 import org.rapla.storage.CachableStorageOperator;
 
-import javax.inject.Inject;
+import jakarta.inject.Inject;
 import javax.script.ScriptEngine;
 import javax.script.ScriptEngineManager;
 import javax.script.ScriptException;

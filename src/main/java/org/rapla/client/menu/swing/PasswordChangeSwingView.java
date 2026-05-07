@@ -16,8 +16,9 @@ import org.rapla.RaplaResources;
 import org.rapla.client.menu.PasswordChangeView;
 import org.rapla.inject.DefaultImplementation;
 import org.rapla.inject.InjectionContext;
+import org.springframework.stereotype.Service;
 
-import javax.inject.Inject;
+import jakarta.inject.Inject;
 import javax.swing.BoxLayout;
 import javax.swing.JCheckBox;
 import javax.swing.JComponent;
@@ -30,6 +31,7 @@ import java.awt.event.ActionListener;
 
 
 @DefaultImplementation(of=PasswordChangeView.class,context = InjectionContext.swing)
+@Service
 public class PasswordChangeSwingView
     implements
     PasswordChangeView

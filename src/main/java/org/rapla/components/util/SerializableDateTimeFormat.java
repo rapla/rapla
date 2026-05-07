@@ -125,6 +125,12 @@ public class SerializableDateTimeFormat
     public Date parseDateTime( String date, String time) throws ParseDateException {
         return parseDate( date, time, false);
     }
+
+    /** {@code LocalDateTime} variant. UTC. */
+    public java.time.LocalDateTime parseLocalDateTime( String date, String time) throws ParseDateException {
+        Date d = parseDateTime(date, time);
+        return d == null ? null : DateTools.toLocalDateTime(d);
+    }
     
     /** 
     The format of the time-string is <strong>18:00:00</strong>.
@@ -235,6 +241,65 @@ public class SerializableDateTimeFormat
     */
     public String formatDate(  Date date ) {
         return formatDate( date, false );
+    }
+
+    // ============================================================
+    // PRD 001-A Phase A1 — java.time overloads.
+    // Wire format unchanged (ISO 8601). These delegate to the existing
+    // Date-based methods via DateTools.toMilli / DateTools.toDate
+    // so byte-identical output is guaranteed for all callers.
+    // ============================================================
+
+    public String formatTimestamp(java.time.LocalDateTime dateTime)
+    {
+        if (dateTime == null) return null;
+        return formatTimestamp(DateTools.toDate(dateTime));
+    }
+
+    public String formatDate(java.time.LocalDate date)
+    {
+        if (date == null) return null;
+        return formatDate(DateTools.toDate(date));
+    }
+
+    /** {@code LocalDateTime} variant of {@link #formatDate(Date, boolean)}. UTC.
+     *  When {@code adaptDay=true}, shifts back 1 day (for whole-day end timestamps stored as next-day-midnight). */
+    public String formatDate(java.time.LocalDateTime dateTime, boolean adaptDay)
+    {
+        if (dateTime == null) return null;
+        return formatDate(DateTools.toDate(dateTime), adaptDay);
+    }
+
+    public String formatTime(java.time.LocalTime time)
+    {
+        if (time == null) return null;
+        // Reuse the Date-based formatter by anchoring to epoch midnight.
+        Date d = new Date(time.getHour() * DateTools.MILLISECONDS_PER_HOUR + time.getMinute() * DateTools.MILLISECONDS_PER_MINUTE + time.getSecond() * 1000L);
+        return formatTime(d);
+    }
+
+    public java.time.LocalDateTime parseLocalDateTime(String timestamp) throws ParseDateException
+    {
+        if (timestamp == null) return null;
+        return DateTools.toLocalDateTime(parseTimestamp(timestamp));
+    }
+
+    public java.time.LocalDate parseLocalDate(String date) throws ParseDateException
+    {
+        if (date == null) return null;
+        Date d = parseDate(date, false);
+        return DateTools.toLocalDateTime(d).toLocalDate();
+    }
+
+    public java.time.LocalTime parseLocalTime(String time) throws ParseDateException
+    {
+        if (time == null) return null;
+        Date d = parseTime(time);
+        long millis = d.getTime();
+        int hour = (int) ((millis / DateTools.MILLISECONDS_PER_HOUR) % 24);
+        int minute = (int) ((millis / DateTools.MILLISECONDS_PER_MINUTE) % 60);
+        int second = (int) ((millis / 1000) % 60);
+        return java.time.LocalTime.of(hour, minute, second);
     }
 
     private void append( StringBuilder buf, int number, int minLength ) {

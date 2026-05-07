@@ -14,8 +14,8 @@ package org.rapla.client.swing.toolkit;
 
 import org.rapla.framework.RaplaException;
 
-import javax.inject.Inject;
-import javax.inject.Singleton;
+import jakarta.inject.Inject;
+import jakarta.inject.Singleton;
 import javax.swing.JFrame;
 import javax.swing.JRootPane;
 import java.awt.AWTEvent;

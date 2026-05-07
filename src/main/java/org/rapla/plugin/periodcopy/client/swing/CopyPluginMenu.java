@@ -37,8 +37,8 @@ import org.rapla.plugin.periodcopy.PeriodCopyResources;
 import org.rapla.scheduler.Promise;
 import org.rapla.scheduler.ResolvedPromise;
 
-import javax.inject.Inject;
-import javax.inject.Provider;
+import jakarta.inject.Inject;
+import jakarta.inject.Provider;
 import javax.swing.JComponent;
 import javax.swing.JMenuItem;
 import java.awt.event.ActionEvent;

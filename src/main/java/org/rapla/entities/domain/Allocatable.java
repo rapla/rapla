@@ -43,6 +43,12 @@ public interface Allocatable extends EntityPermissionContainer<Allocatable>,Name
     /** returns the interval in which the user can allocate the resource. Returns null if the user can't allocate the resource */
     TimeInterval getAllocateInterval( User user, Date today);
 
+    /** {@code LocalDate} variant of {@link #getAllocateInterval(User, Date)}. UTC. */
+    default TimeInterval getAllocateInterval( User user, java.time.LocalDate today) {
+        Date d = today == null ? null : org.rapla.components.util.DateTools.toDate(today);
+        return getAllocateInterval(user, d);
+    }
+
     /** same as  DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_PERSON.equals(allocatable.getType().getAnnotation(DynamicTypeAnnotations.KEY_CLASSIFICATION_TYPE))
      */
     boolean isPerson();

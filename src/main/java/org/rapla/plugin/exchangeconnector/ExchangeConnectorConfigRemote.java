@@ -3,8 +3,8 @@ package org.rapla.plugin.exchangeconnector;
 import org.rapla.framework.DefaultConfiguration;
 import org.rapla.framework.RaplaException;
 
-import javax.ws.rs.GET;
-import javax.ws.rs.Path;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
 import java.util.List;
 
 @Path("exchange/config")

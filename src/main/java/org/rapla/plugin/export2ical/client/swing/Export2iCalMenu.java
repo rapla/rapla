@@ -19,7 +19,7 @@ import org.rapla.plugin.export2ical.Export2iCalResources;
 import org.rapla.plugin.export2ical.ICalExport;
 import org.rapla.scheduler.Promise;
 
-import javax.inject.Inject;
+import jakarta.inject.Inject;
 import javax.swing.JMenuItem;
 import javax.swing.JOptionPane;
 import javax.swing.SwingUtilities;

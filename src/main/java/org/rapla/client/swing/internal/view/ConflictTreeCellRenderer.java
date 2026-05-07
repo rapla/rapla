@@ -11,7 +11,7 @@ import org.rapla.facade.Conflict;
 import org.rapla.facade.RaplaComponent;
 import org.rapla.framework.RaplaLocale;
 
-import javax.inject.Inject;
+import jakarta.inject.Inject;
 import javax.swing.BorderFactory;
 import javax.swing.Icon;
 import javax.swing.JTree;
@@ -26,6 +26,7 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
+@org.springframework.stereotype.Service
 public class ConflictTreeCellRenderer extends DefaultTreeCellRenderer {
     private final RaplaResources i18n;
     private final RaplaLocale raplaLocale;

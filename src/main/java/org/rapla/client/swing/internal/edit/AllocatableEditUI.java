@@ -34,7 +34,7 @@ import org.rapla.inject.Extension;
 import org.rapla.logger.Logger;
 import org.rapla.storage.PermissionController;
 
-import javax.inject.Inject;
+import jakarta.inject.Inject;
 import javax.swing.JComponent;
 import javax.swing.JLabel;
 import javax.swing.JPanel;

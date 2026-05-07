@@ -43,8 +43,8 @@ import org.rapla.inject.DefaultImplementation;
 import org.rapla.inject.InjectionContext;
 import org.rapla.logger.Logger;
 
-import javax.inject.Inject;
-import javax.inject.Singleton;
+import jakarta.inject.Inject;
+import jakarta.inject.Singleton;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -66,6 +66,7 @@ import java.util.stream.Stream;
 
 @Singleton
 @DefaultImplementation(of = TreeFactory.class, context = InjectionContext.client)
+@org.springframework.stereotype.Service
 public class TreeFactoryImpl extends RaplaComponent implements TreeFactory
 {
     final ClientFacade clientFacade;

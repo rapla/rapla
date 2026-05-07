@@ -34,6 +34,13 @@ public interface ReservationView {
 
         void timeChanged(Date startDate, Date endDate);
 
+        /** {@code LocalDateTime} variant — distinct name. */
+        default void timeChangedLocalDateTime(java.time.LocalDateTime startDate, java.time.LocalDateTime endDate) {
+            timeChanged(
+                startDate == null ? null : org.rapla.components.util.DateTools.toDate(startDate),
+                endDate == null ? null : org.rapla.components.util.DateTools.toDate(endDate));
+        }
+
         void allDayEvent(boolean selected);
 
         void repeating(RepeatingType repeating);

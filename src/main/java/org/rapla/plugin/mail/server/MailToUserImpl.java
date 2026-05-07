@@ -7,7 +7,7 @@ import org.rapla.framework.RaplaException;
 import org.rapla.logger.Logger;
 import org.rapla.plugin.mail.MailPlugin;
 
-import javax.inject.Inject;
+import jakarta.inject.Inject;
 
 public class MailToUserImpl
 {

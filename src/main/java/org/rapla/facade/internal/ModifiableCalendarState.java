@@ -15,7 +15,7 @@ import org.rapla.facade.ModificationEvent;
 import org.rapla.facade.client.ClientFacade;
 import org.rapla.framework.RaplaException;
 
-import javax.inject.Provider;
+import jakarta.inject.Provider;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;

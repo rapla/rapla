@@ -16,6 +16,12 @@ public class LoginTokens {
         this.validUntil = validUntil;
     }
 
+    /** {@code LocalDateTime} factory paralleling {@link #LoginTokens(String, Date)}. UTC. */
+    public static LoginTokens ofLocalDateTime(String accessToken, java.time.LocalDateTime validUntil) {
+        return new LoginTokens(accessToken,
+            validUntil == null ? null : org.rapla.components.util.DateTools.toDate(validUntil));
+    }
+
     public String getAccessToken()
     {
         return accessToken;
@@ -24,6 +30,12 @@ public class LoginTokens {
     public Date getValidUntil()
     {
         return validUntil;
+    }
+
+    /** {@code LocalDateTime} variant. UTC. */
+    public java.time.LocalDateTime getValidUntilAsLocalDateTime()
+    {
+        return validUntil == null ? null : org.rapla.components.util.DateTools.toLocalDateTime(validUntil);
     }
     
     public String toString()

@@ -18,8 +18,8 @@ import org.rapla.scheduler.Promise;
 import org.rapla.scheduler.ResolvedPromise;
 import org.rapla.scheduler.Subject;
 
-import javax.inject.Inject;
-import javax.inject.Provider;
+import jakarta.inject.Inject;
+import jakarta.inject.Provider;
 
 @Extension(id = ResourceCalendarTask.ID, provides = TaskPresenter.class)
 public class ResourceCalendarTask implements TaskPresenter {

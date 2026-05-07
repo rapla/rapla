@@ -85,7 +85,6 @@ import org.rapla.rest.JsonParserWrapper;
 import org.rapla.scheduler.CommandScheduler;
 import org.rapla.scheduler.Promise;
 import org.rapla.scheduler.ResolvedPromise;
-import org.rapla.server.PromiseWait;
 import org.rapla.server.internal.TimeZoneConverterImpl;
 import org.rapla.storage.CachableStorageOperator;
 import org.rapla.storage.CachableStorageOperatorCommand;
@@ -151,14 +150,12 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
     private final List< io.reactivex.rxjava3.disposables.Disposable> scheduledTasks = new ArrayList<>();
     private Date connectStart;
     private final DefaultRaplaLock disconnectLock;
-    private final PromiseWait promiseWait;
 
-    public LocalAbstractCachableOperator(Logger logger, PromiseWait promiseWait, RaplaResources i18n, RaplaLocale raplaLocale, CommandScheduler scheduler,
+    public LocalAbstractCachableOperator(Logger logger, RaplaResources i18n, RaplaLocale raplaLocale, CommandScheduler scheduler,
             Map<String, FunctionFactory> functionFactoryMap, Set<PermissionExtension> permissionExtensions)
     {
         super(logger, i18n, raplaLocale, functionFactoryMap, permissionExtensions, new DefaultRaplaLock(logger));
         this.scheduler = scheduler;
-        this.promiseWait = promiseWait;
         disconnectLock = new DefaultRaplaLock(logger);
         //context.lookupDeprecated( CommandScheduler.class);
         this.history = new EntityHistory(this);
@@ -210,12 +207,6 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
         }
     }
 
-
-    @Override
-    public <T> T waitForWithRaplaException(Promise<T> promise, int timeoutInMillis) throws RaplaException
-    {
-        return promiseWait.waitForWithRaplaException(promise, timeoutInMillis);
-    }
 
     @SuppressWarnings("rawtypes")
     @Override
@@ -825,8 +816,8 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
         for (String templateKey : templateMap.keySet())
         {
             Collection<Reservation> templateEvents = templateMap.get(templateKey);
-            Date date = getCurrentTimestamp();
-            AllocatableImpl template = new AllocatableImpl(date, date);
+            java.time.LocalDateTime date = getCurrentTimestampAsLocalDateTime();
+            AllocatableImpl template = AllocatableImpl.ofLocalDateTime(date, date);
             template.setResolver(this);
             String templateId = createId(Allocatable.class);
             Classification newClassification = getDynamicType(RAPLA_TEMPLATE).newClassification();
@@ -3587,9 +3578,9 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 
     protected void createDefaultSystem(EntityStore store) throws RaplaException
     {
-        Date now = getCurrentTimestamp();
+        java.time.LocalDateTime now = getCurrentTimestampAsLocalDateTime();
 
-        PreferencesImpl newPref = new PreferencesImpl(now, now);
+        PreferencesImpl newPref = PreferencesImpl.ofLocalDateTime(now, now);
         newPref.setId(PreferencesImpl.getPreferenceIdFromUser(null).getId());
         newPref.setResolver(store);
         newPref.setReadOnly();
@@ -3598,21 +3589,21 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
         @SuppressWarnings("deprecation")
         String[] userGroups = new String[] { Permission.GROUP_CAN_READ_EVENTS_FROM_OTHERS, Permission.GROUP_CAN_CREATE_EVENTS, ExchangeConnectorPlugin.EXCHANGE_SYNCHRONIZATION_GROUP};
 
-        CategoryImpl groupsCategory = new CategoryImpl(now, now);
+        CategoryImpl groupsCategory = CategoryImpl.ofLocalDateTime(now, now);
         groupsCategory.setKey("user-groups");
         groupsCategory.setResolver(store);
         setName(groupsCategory.getName(), groupsCategory.getKey());
         setNew(groupsCategory);
         store.put(groupsCategory);
 
-        CategoryImpl periodsCategory = new CategoryImpl(now, now);
+        CategoryImpl periodsCategory = CategoryImpl.ofLocalDateTime(now, now);
         periodsCategory.setKey("periods");
         periodsCategory.setResolver(store);
         setName(periodsCategory.getName(), periodsCategory.getKey());
         setNew(periodsCategory);
         store.put(periodsCategory);
 
-        CategoryImpl holidaysCategory = new CategoryImpl(now, now);
+        CategoryImpl holidaysCategory = CategoryImpl.ofLocalDateTime(now, now);
 
         holidaysCategory.setKey("holiday");
         holidaysCategory.setResolver(store);
@@ -3623,7 +3614,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 
         for (String catName : userGroups)
         {
-            CategoryImpl group = new CategoryImpl(now, now);
+            CategoryImpl group = CategoryImpl.ofLocalDateTime(now, now);
             group.setKey(catName);
             setNew(group);
             setName(group.getName(), group.getKey());
@@ -3649,7 +3640,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
         setName(eventType.getName(), "event");
         addDependencies(store, eventType);
 
-        UserImpl admin = new UserImpl(now, now);
+        UserImpl admin = UserImpl.ofLocalDateTime(now, now);
         admin.setUsername("admin");
         admin.setAdmin(true);
         setNew(admin);
@@ -3668,7 +3659,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
         store.putPassword(admin.getReference(), password);
         ((CategoryImpl) superCategory).setReadOnly();
 
-        AllocatableImpl allocatable = new AllocatableImpl(now, now);
+        AllocatableImpl allocatable = AllocatableImpl.ofLocalDateTime(now, now);
         allocatable.setResolver(store);
         Classification classification = resourceType.newClassificationWithoutCheck(true);
 

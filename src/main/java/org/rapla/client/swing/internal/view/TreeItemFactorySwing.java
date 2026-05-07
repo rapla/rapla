@@ -9,12 +9,14 @@ import org.rapla.entities.dynamictype.Classification;
 import org.rapla.entities.dynamictype.DynamicTypeAnnotations;
 import org.rapla.inject.DefaultImplementation;
 import org.rapla.inject.InjectionContext;
+import org.springframework.stereotype.Service;
 
-import javax.inject.Inject;
+import jakarta.inject.Inject;
 import javax.swing.tree.DefaultMutableTreeNode;
 import java.util.Locale;
 
 @DefaultImplementation(of=TreeItemFactory.class,context = InjectionContext.swing)
+@Service
 public class TreeItemFactorySwing implements TreeItemFactory
 {
     private  final RaplaResources i18n;

@@ -9,9 +9,10 @@ import org.rapla.plugin.tableview.RaplaTableColumn;
 import org.rapla.plugin.tableview.internal.RaplaTableColumnFactory;
 import org.rapla.plugin.tableview.internal.TableConfig.TableColumnConfig;
 
-import javax.inject.Inject;
+import jakarta.inject.Inject;
 
 @DefaultImplementation(context = { InjectionContext.swing }, of = RaplaTableColumnFactory.class)
+@org.springframework.stereotype.Service
 public class SwingTableColumnFactory implements RaplaTableColumnFactory
 {
 

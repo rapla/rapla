@@ -3,8 +3,8 @@ package org.rapla.plugin.urlencryption.server;
 import org.jetbrains.annotations.NotNull;
 import org.rapla.plugin.urlencryption.UrlEncryption;
 
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletRequestWrapper;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletRequestWrapper;
 import java.io.UnsupportedEncodingException;
 import java.net.URLDecoder;
 import java.util.*;

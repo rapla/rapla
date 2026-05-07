@@ -19,9 +19,9 @@ import org.rapla.server.RemoteSession;
 import org.rapla.storage.RemoteLocaleService;
 import org.rapla.storage.StorageOperator;
 
-import javax.inject.Inject;
-import javax.servlet.http.HttpServletRequest;
-import javax.ws.rs.core.Context;
+import jakarta.inject.Inject;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.ws.rs.core.Context;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;

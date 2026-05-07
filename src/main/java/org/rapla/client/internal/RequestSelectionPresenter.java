@@ -36,7 +36,7 @@ import org.rapla.framework.RaplaInitializationException;
 import org.rapla.logger.Logger;
 import org.rapla.scheduler.Promise;
 
-import javax.inject.Inject;
+import jakarta.inject.Inject;
 import java.util.*;
 
 public class RequestSelectionPresenter implements ResourceRequestSelectionView.Presenter

@@ -49,8 +49,8 @@ import org.rapla.storage.UpdateResult;
 import org.rapla.storage.UpdateResult.Change;
 import org.rapla.storage.UpdateResult.Remove;
 
-import javax.inject.Inject;
-import javax.inject.Singleton;
+import jakarta.inject.Inject;
+import jakarta.inject.Singleton;
 import java.util.Collection;
 import java.util.Date;
 import java.util.HashSet;
@@ -108,9 +108,9 @@ public class UpdateDataManagerImpl implements  UpdateDataManager
         {
             for ( Appointment app:((ReservationImpl)obj).getAppointmentList())
             {
-                Date start = app.getStart();
-                Date end = app.getMaxEnd();
-                currentInterval = new TimeInterval(start, end).union( currentInterval);
+                java.time.LocalDateTime start = app.getStartDateTime();
+                java.time.LocalDateTime end = app.getMaxEndDateTime();
+                currentInterval = TimeInterval.of(start, end).union( currentInterval);
             }
         }
         return currentInterval;

@@ -73,12 +73,12 @@ class ConflictFinder {
     
     public Conflict findConflict(ReferenceInfo<Conflict> ref)
     {
-        Date dummyLastChanged = new Date();
+        java.time.LocalDateTime dummyLastChanged = java.time.LocalDateTime.now();
         ConflictImpl dummyConflict;
         try {
             //
-            Date date = new Date();
-            dummyConflict = new ConflictImpl(ref.getId(), date, dummyLastChanged);
+            java.time.LocalDateTime date = java.time.LocalDateTime.now();
+            dummyConflict = ConflictImpl.ofLocalDateTime(ref.getId(), date, dummyLastChanged);
         } catch (RaplaException e) {
             logger.error(e.getMessage(), e);
             return null;

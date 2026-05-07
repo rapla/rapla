@@ -135,6 +135,12 @@ public abstract class DateTools
         return string;
 	}
 
+	/** {@code long}-millis variant. UTC. */
+	public static String formatTime(long timeInMillis)
+	{
+        return SerializableDateTimeFormat.INSTANCE.formatTime( new Date(timeInMillis));
+	}
+
     public static LocalDateTime toLocalDateTime(long dateTimeInMillis) {
         LocalDateTime result = LocalDateTime.ofEpochSecond( dateTimeInMillis / 1000, 0, ZoneOffset.UTC);
         return result;
@@ -142,6 +148,105 @@ public abstract class DateTools
 
     public static LocalDateTime toLocalDateTime(Date dateTime) {
         return toLocalDateTime( dateTime.getTime() );
+    }
+
+    /** Inverse of {@link #toLocalDateTime(long)}. UTC. */
+    public static long toMilli(LocalDateTime dateTime) {
+        return dateTime.toEpochSecond(ZoneOffset.UTC) * 1000;
+    }
+
+    /** UTC midnight epoch milliseconds for the given local date. */
+    public static long toMilli(LocalDate date) {
+        return date.atStartOfDay().toEpochSecond(ZoneOffset.UTC) * 1000;
+    }
+
+    /** Returns the date+time as a {@code java.util.Date} (epoch millis interpretation, UTC). */
+    public static Date toDate(LocalDateTime dateTime) {
+        return new Date(toMilli(dateTime));
+    }
+
+    /** Returns the local date as a midnight {@code java.util.Date} (UTC). */
+    public static Date toDate(LocalDate date) {
+        return new Date(toMilli(date));
+    }
+
+    public static int getHourOfDay(LocalDateTime dateTime) {
+        return dateTime.getHour();
+    }
+
+    public static int getHourOfDay(LocalTime time) {
+        return time.getHour();
+    }
+
+    public static int getMinuteOfHour(LocalDateTime dateTime) {
+        return dateTime.getMinute();
+    }
+
+    public static int getMinuteOfHour(LocalTime time) {
+        return time.getMinute();
+    }
+
+    public static int getSecondOfMinute(LocalDateTime dateTime) {
+        return dateTime.getSecond();
+    }
+
+    public static int getMinuteOfDay(LocalDateTime dateTime) {
+        return dateTime.getHour() * 60 + dateTime.getMinute();
+    }
+
+    /** Truncates the time-of-day component (returns midnight of the same day). */
+    public static LocalDateTime cutDate(LocalDateTime dateTime) {
+        return dateTime.toLocalDate().atStartOfDay();
+    }
+
+    /** Same as {@link #cutDate(LocalDateTime)} but for {@code LocalDate}: identity. */
+    public static LocalDate cutDate(LocalDate date) {
+        return date;
+    }
+
+    public static boolean isMidnight(LocalDateTime dateTime) {
+        return dateTime.toLocalTime().equals(LocalTime.MIDNIGHT);
+    }
+
+    /** Adds {@code days} days to the date. */
+    public static LocalDateTime addDays(LocalDateTime dateTime, long days) {
+        return dateTime.plusDays(days);
+    }
+
+    public static LocalDate addDays(LocalDate date, long days) {
+        return date.plusDays(days);
+    }
+
+    public static LocalDateTime addDay(LocalDateTime dateTime) {
+        return dateTime.plusDays(1);
+    }
+
+    public static LocalDate addDay(LocalDate date) {
+        return date.plusDays(1);
+    }
+
+    public static LocalDateTime subDay(LocalDateTime dateTime) {
+        return dateTime.minusDays(1);
+    }
+
+    public static LocalDate subDay(LocalDate date) {
+        return date.minusDays(1);
+    }
+
+    public static LocalDateTime subDays(LocalDateTime dateTime, int days) {
+        return dateTime.minusDays(days);
+    }
+
+    public static LocalDate subDays(LocalDate date, int days) {
+        return date.minusDays(days);
+    }
+
+    public static long countDays(LocalDate from, LocalDate to) {
+        return java.time.temporal.ChronoUnit.DAYS.between(from, to);
+    }
+
+    public static long countDays(LocalDateTime from, LocalDateTime to) {
+        return java.time.temporal.ChronoUnit.DAYS.between(from.toLocalDate(), to.toLocalDate());
     }
 
     public static String formatDateTime(Date date)
@@ -668,6 +773,11 @@ public abstract class DateTools
        DateWithoutTimezone dateWithoutTimezone = toDate(millis);
        LocalDate result = LocalDate.of( dateWithoutTimezone.year, dateWithoutTimezone.month, dateWithoutTimezone.day);
        return result;
+   }
+
+   public static LocalDate toLocalDate(Date date)
+   {
+       return date == null ? null : toLocalDate(date.getTime());
    }
    public static DateWithoutTimezone toDate(long millis)
    {

@@ -29,8 +29,8 @@ import org.rapla.plugin.ical.ICalImport.Import;
 import org.rapla.plugin.ical.ImportFromICalPlugin;
 import org.rapla.plugin.ical.ImportFromICalResources;
 
-import javax.inject.Inject;
-import javax.inject.Provider;
+import jakarta.inject.Inject;
+import jakarta.inject.Provider;
 import javax.swing.BorderFactory;
 import javax.swing.ButtonGroup;
 import javax.swing.ComboBoxModel;

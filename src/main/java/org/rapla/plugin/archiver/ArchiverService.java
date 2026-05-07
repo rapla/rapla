@@ -4,12 +4,12 @@ import org.rapla.entities.configuration.RaplaConfiguration;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.TypedComponentRole;
 import org.rapla.scheduler.Promise;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.service.annotation.GetExchange;
+import org.springframework.web.service.annotation.HttpExchange;
+import org.springframework.web.service.annotation.PostExchange;
 
-import javax.ws.rs.GET;
-import javax.ws.rs.POST;
-import javax.ws.rs.Path;
-
-@Path("archiver")
+@HttpExchange("/archiver")
 public interface ArchiverService
 {
 	String PLUGIN_ID = "org.rapla.plugin.archiver.server";
@@ -17,15 +17,13 @@ public interface ArchiverService
 
 	String REMOVE_OLDER_THAN_ENTRY = "remove-older-than";
 	String EXPORT = "export";
-	
-	@POST
-	Promise<Void> delete(Integer olderThanInDays);
-	@GET
+
+	@PostExchange
+	Promise<Void> delete(@RequestParam(value = "olderThanInDays", required = false) Integer olderThanInDays);
+	@GetExchange
 	boolean isExportEnabled() throws RaplaException;
-	@POST
-	@Path("backup")
+	@PostExchange("/backup")
 	Promise<Void> backupNow();
-	@POST
-	@Path("restore")
+	@PostExchange("/restore")
 	Promise<Void> restore();
 }

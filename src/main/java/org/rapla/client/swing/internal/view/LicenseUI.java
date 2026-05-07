@@ -16,7 +16,7 @@ import org.rapla.client.RaplaWidget;
 import org.rapla.components.util.IOUtil;
 import org.rapla.framework.internal.ConfigTools;
 
-import javax.inject.Inject;
+import jakarta.inject.Inject;
 import javax.swing.JComponent;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;

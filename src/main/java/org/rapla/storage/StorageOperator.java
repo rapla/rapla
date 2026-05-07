@@ -109,6 +109,14 @@ public interface StorageOperator extends EntityResolver {
 
     Promise<AppointmentMapping> queryAppointments(User user, Collection<Allocatable> allocatables, Collection<User> owners, Date start, Date end, ClassificationFilter[] reservationFilters, String templateId);
 
+    /** {@code LocalDateTime} variant. UTC. Distinct method name avoids `null`-passing ambiguity. */
+    default Promise<AppointmentMapping> queryAppointmentsByLocalDateTime(User user, Collection<Allocatable> allocatables, Collection<User> owners, java.time.LocalDateTime start, java.time.LocalDateTime end, ClassificationFilter[] reservationFilters, Map<String, String> annotationQuery, boolean requestsOnly) {
+        return queryAppointments(user, allocatables, owners,
+            start == null ? null : org.rapla.components.util.DateTools.toDate(start),
+            end == null ? null : org.rapla.components.util.DateTools.toDate(end),
+            reservationFilters, annotationQuery, requestsOnly);
+    }
+
 	Collection<Allocatable> getAllocatables(ClassificationFilter[] filters) throws RaplaException;
 
     Category getSuperCategory();
@@ -130,8 +138,18 @@ public interface StorageOperator extends EntityResolver {
     /** returns the beginning of the current day. Uses getCurrentTimstamp. */
     Date today();
 
-    /** returns the date and time in seconds for creation. Server time will be used if in client/server mode. Note that this is always the utc time */ 
+    /** {@code LocalDate} variant of {@link #today()}. UTC. */
+    default java.time.LocalDate todayAsLocalDate() {
+        return org.rapla.components.util.DateTools.toLocalDate(today());
+    }
+
+    /** returns the date and time in seconds for creation. Server time will be used if in client/server mode. Note that this is always the utc time */
     Date getCurrentTimestamp();
+
+    /** {@code LocalDateTime} variant of {@link #getCurrentTimestamp()}. UTC. */
+    default java.time.LocalDateTime getCurrentTimestampAsLocalDateTime() {
+        return org.rapla.components.util.DateTools.toLocalDateTime(getCurrentTimestamp());
+    }
     
     boolean supportsActiveMonitoring();
 

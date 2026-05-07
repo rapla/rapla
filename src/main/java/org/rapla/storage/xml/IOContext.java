@@ -25,7 +25,7 @@ import org.rapla.logger.Logger;
 import org.rapla.storage.IdCreator;
 import org.rapla.storage.impl.EntityStore;
 
-import javax.inject.Provider;
+import jakarta.inject.Provider;
 import java.util.HashMap;
 import java.util.Map;
 

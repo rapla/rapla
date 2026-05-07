@@ -36,7 +36,7 @@ import org.rapla.logger.Logger;
 import org.rapla.plugin.mail.MailConfigService;
 import org.rapla.plugin.mail.MailPlugin;
 
-import javax.inject.Inject;
+import jakarta.inject.Inject;
 import javax.swing.ButtonGroup;
 import javax.swing.JCheckBox;
 import javax.swing.JComponent;

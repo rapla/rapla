@@ -21,7 +21,7 @@ import org.rapla.client.swing.toolkit.RaplaButton;
 import org.rapla.inject.DefaultImplementation;
 import org.rapla.inject.InjectionContext;
 
-import javax.inject.Inject;
+import jakarta.inject.Inject;
 import javax.swing.Icon;
 import javax.swing.JButton;
 import javax.swing.JComponent;
@@ -36,7 +36,9 @@ import java.awt.GridBagLayout;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 
-@DefaultImplementation(of = CalendarPlaceView.class, context = InjectionContext.swing) final public class CalendarPlaceViewSwing
+@DefaultImplementation(of = CalendarPlaceView.class, context = InjectionContext.swing)
+@org.springframework.stereotype.Service
+final public class CalendarPlaceViewSwing
         implements CalendarPlaceView<Component>
 {
     Presenter presenter;

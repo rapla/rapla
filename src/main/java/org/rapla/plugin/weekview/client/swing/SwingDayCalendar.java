@@ -34,7 +34,7 @@ import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.logger.Logger;
 
-import javax.inject.Provider;
+import jakarta.inject.Provider;
 import java.util.Set;
 
 public class SwingDayCalendar extends SwingWeekCalendar

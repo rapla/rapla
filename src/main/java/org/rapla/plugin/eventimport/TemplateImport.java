@@ -2,11 +2,10 @@ package org.rapla.plugin.eventimport;
 
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.TypedComponentRole;
+import org.springframework.web.service.annotation.HttpExchange;
+import org.springframework.web.service.annotation.PostExchange;
 
-import javax.ws.rs.POST;
-import javax.ws.rs.Path;
-
-@Path( "templateimport" )
+@HttpExchange("/templateimport")
 public interface TemplateImport
 {
     TypedComponentRole<Boolean> TEMPLATE_IMPORT_ENABLED = new TypedComponentRole<>("org.rapla.plugin.eventimport.enabled");
@@ -16,7 +15,6 @@ public interface TemplateImport
     String PRIMARY_KEY = "Seminarnummer";
     String TEMPLATE_KEY = "TitelName";
 
-    @POST
-    @Path("importFromServer")
+    @PostExchange("/importFromServer")
     ParsedTemplateResult importFromServer() throws RaplaException;
 }

@@ -35,7 +35,7 @@ import org.rapla.entities.storage.ReferenceInfo;
 import org.rapla.framework.RaplaException;
 import org.rapla.logger.Logger;
 
-import javax.inject.Provider;
+import jakarta.inject.Provider;
 import java.io.IOException;
 import java.util.Date;
 import java.util.Iterator;
@@ -89,8 +89,8 @@ abstract public class RaplaXMLWriter extends XMLWriter
     }
 
     protected void printTimestamp(Timestamp stamp) throws IOException {
-        final Date createTime = stamp.getCreateDate();
-        final Date lastChangeTime = stamp.getLastChanged();
+        final java.time.LocalDateTime createTime = stamp.getCreateDateAsLocalDateTime();
+        final java.time.LocalDateTime lastChangeTime = stamp.getLastChangedAsLocalDateTime();
         if ( createTime != null)
         {
             att("created-at", SerializableDateTimeFormat.INSTANCE.formatTimestamp( createTime));
@@ -150,11 +150,11 @@ abstract public class RaplaXMLWriter extends XMLWriter
         if ( p.getMaxAdvance() != null ) {
             att ( "max-advance", p.getMaxAdvance().toString() );
         }
-        if ( p.getStart() != null ) {
-            att ( "start-date", dateTimeFormat.formatDate(  p.getStart() ) );
+        if ( p.getStartAsLocalDateTime() != null ) {
+            att ( "start-date", dateTimeFormat.formatDate(  p.getStartAsLocalDateTime().toLocalDate() ) );
         }
-        if ( p.getEnd() != null ) {
-            att ( "end-date", dateTimeFormat.formatDate(  p.getEnd() ) );
+        if ( p.getEndAsLocalDateTime() != null ) {
+            att ( "end-date", dateTimeFormat.formatDate(  p.getEndAsLocalDateTime().toLocalDate() ) );
         }
         att("access", accessLevel.name().toLowerCase() );
         closeElementTag();

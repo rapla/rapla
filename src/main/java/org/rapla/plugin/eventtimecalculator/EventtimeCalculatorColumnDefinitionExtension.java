@@ -6,7 +6,7 @@ import org.rapla.inject.Extension;
 import org.rapla.plugin.tableview.extensionpoints.TableColumnDefinitionExtension;
 import org.rapla.plugin.tableview.internal.TableConfig;
 
-import javax.inject.Inject;
+import jakarta.inject.Inject;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Locale;

@@ -16,7 +16,6 @@ import org.rapla.facade.internal.CalendarModelImpl;
 import org.rapla.framework.RaplaException;
 import org.rapla.rest.PATCH;
 import org.rapla.scheduler.Promise;
-import org.rapla.server.PromiseWait;
 import org.rapla.server.RemoteSession;
 import org.rapla.server.internal.SecurityManager;
 import org.rapla.storage.CachableStorageOperator;
@@ -24,22 +23,21 @@ import org.rapla.storage.PermissionController;
 import org.rapla.storage.RaplaSecurityException;
 import org.rapla.storage.StorageOperator;
 
-import javax.inject.Inject;
-import javax.servlet.http.HttpServletRequest;
-import javax.ws.rs.DELETE;
-import javax.ws.rs.GET;
-import javax.ws.rs.POST;
-import javax.ws.rs.PUT;
-import javax.ws.rs.Path;
-import javax.ws.rs.PathParam;
-import javax.ws.rs.Produces;
-import javax.ws.rs.QueryParam;
-import javax.ws.rs.core.Context;
-import javax.ws.rs.core.MediaType;
+import jakarta.inject.Inject;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.ws.rs.DELETE;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.POST;
+import jakarta.ws.rs.PUT;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.PathParam;
+import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.QueryParam;
+import jakarta.ws.rs.core.Context;
+import jakarta.ws.rs.core.MediaType;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.Date;
 import java.util.List;
 import java.util.Map;
 
@@ -50,7 +48,6 @@ import java.util.Map;
     @Inject SecurityManager securityManager;
     private final HttpServletRequest request;
     @Inject CachableStorageOperator operator;
-    @Inject PromiseWait promiseWait;
 
     @Inject public RaplaEventsRestPage(@Context HttpServletRequest request)
     {
@@ -59,8 +56,8 @@ import java.util.Map;
 
     private Collection<String> CLASSIFICATION_TYPES = Arrays.asList(DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RESERVATION);
 
-    @GET @Produces({ MediaType.APPLICATION_JSON, MediaType.APPLICATION_XML }) public List<ReservationImpl> list(@QueryParam("start") Date start,
-            @QueryParam("end") Date end, @QueryParam("resources") List<String> resources,@QueryParam("owners") List<String> ownersId, @QueryParam("eventTypes") Collection<String> eventTypes,
+    @GET @Produces({ MediaType.APPLICATION_JSON, MediaType.APPLICATION_XML }) public List<ReservationImpl> list(@QueryParam("start") java.time.LocalDateTime start,
+            @QueryParam("end") java.time.LocalDateTime end, @QueryParam("resources") List<String> resources,@QueryParam("owners") List<String> ownersId, @QueryParam("eventTypes") Collection<String> eventTypes,
             @QueryParam("attributeFilter") Map<String, String> simpleFilter) throws Exception
     {
         final User user = session.checkAndGetUser(request);
@@ -83,8 +80,8 @@ import java.util.Map;
         final Map<String, String> annotationQuery = null;
         final User owner = null;
         final Promise<AppointmentMapping> promise = operator
-                .queryAppointments(owner, allocatables, owners, start, end, filters, annotationQuery, false);
-        final AppointmentMapping appMap = promiseWait.waitForWithRaplaException(promise, 20000);
+                .queryAppointmentsByLocalDateTime(owner, allocatables, owners, start, end, filters, annotationQuery, false);
+        final AppointmentMapping appMap = org.rapla.scheduler.sync.SynchronizedCompletablePromise.waitFor(promise, 20000, null);
         final List<ReservationImpl> result = new ArrayList<>();
         final Collection<Reservation> reservations = appMap.getAllReservations();
         PermissionController permissionController = facade.getPermissionController();

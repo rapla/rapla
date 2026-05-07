@@ -33,7 +33,7 @@ import org.rapla.scheduler.ResolvedPromise;
 import org.rapla.scheduler.Subject;
 import org.rapla.storage.dbrm.RestartServer;
 
-import javax.inject.Inject;
+import jakarta.inject.Inject;
 import javax.swing.JCheckBox;
 import javax.swing.JLabel;
 import javax.swing.JPanel;

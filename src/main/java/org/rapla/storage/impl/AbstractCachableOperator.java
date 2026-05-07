@@ -525,9 +525,9 @@ public abstract class AbstractCachableOperator implements StorageOperator
 
     private PreferencesImpl newPreferences(final String userId) throws EntityNotFoundException
     {
-        Date now = getCurrentTimestamp();
+        java.time.LocalDateTime now = getCurrentTimestampAsLocalDateTime();
         ReferenceInfo<Preferences> id = PreferencesImpl.getPreferenceIdFromUser(userId);
-        PreferencesImpl newPref = new PreferencesImpl(now, now);
+        PreferencesImpl newPref = PreferencesImpl.ofLocalDateTime(now, now);
         newPref.setResolver(this);
         if (userId != null)
         {

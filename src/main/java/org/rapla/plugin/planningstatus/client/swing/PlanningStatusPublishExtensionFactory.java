@@ -15,7 +15,7 @@ import org.rapla.plugin.export2ical.Export2iCalPlugin;
 import org.rapla.plugin.planningstatus.PlanningStatusPlugin;
 import org.rapla.plugin.planningstatus.PlanningStatusResources;
 
-import javax.inject.Inject;
+import jakarta.inject.Inject;
 import java.beans.PropertyChangeListener;
 
 @Extension(provides=PublishExtensionFactory.class,id="planningstatus")

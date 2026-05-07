@@ -11,8 +11,8 @@ import org.rapla.plugin.notification.server.NotificationService.AllocationMail;
 import org.rapla.rest.JsonParserWrapper;
 import org.rapla.storage.CachableStorageOperator;
 
-import javax.inject.Inject;
-import javax.inject.Singleton;
+import jakarta.inject.Inject;
+import jakarta.inject.Singleton;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.LinkedHashMap;

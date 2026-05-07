@@ -16,7 +16,7 @@ import org.rapla.logger.Logger;
 import org.rapla.plugin.eventtimecalculator.EventTimeCalculatorPlugin;
 import org.rapla.plugin.eventtimecalculator.EventTimeCalculatorResources;
 
-import javax.inject.Inject;
+import jakarta.inject.Inject;
 import javax.swing.JComponent;
 import javax.swing.JPanel;
 import java.util.Locale;

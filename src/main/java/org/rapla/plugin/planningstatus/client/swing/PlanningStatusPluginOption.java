@@ -9,7 +9,7 @@ import org.rapla.inject.Extension;
 import org.rapla.plugin.csvexport.CSVExportPlugin;
 import org.rapla.plugin.planningstatus.PlanningStatusPlugin;
 
-import javax.inject.Inject;
+import jakarta.inject.Inject;
 import javax.swing.*;
 import java.util.Locale;
 

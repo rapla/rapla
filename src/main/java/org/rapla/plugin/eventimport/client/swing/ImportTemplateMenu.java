@@ -43,7 +43,7 @@ import org.rapla.plugin.eventimport.TemplateImport;
 import org.rapla.scheduler.Promise;
 import org.rapla.scheduler.ResolvedPromise;
 
-import javax.inject.Inject;
+import jakarta.inject.Inject;
 import javax.swing.AbstractCellEditor;
 import javax.swing.JComboBox;
 import javax.swing.JComponent;

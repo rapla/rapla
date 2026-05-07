@@ -417,6 +417,26 @@ public class UpdateEvent
         }
     }
 
+    /** {@code LocalDateTime} variant of {@link #getLastValidated()}. UTC. */
+    public java.time.LocalDateTime getLastValidatedAsLocalDateTime()
+    {
+        if (lastValidated == null) return null;
+        try
+        {
+            return SerializableDateTimeFormat.INSTANCE.parseLocalDateTime(lastValidated);
+        }
+        catch (ParseDateException e)
+        {
+            throw new IllegalStateException(e.getMessage());
+        }
+    }
+
+    /** {@code LocalDateTime} variant of {@link #setLastValidated(Date)}. UTC. Distinct method name to avoid `null`-passing ambiguity. */
+    public void setLastValidatedLocalDateTime(java.time.LocalDateTime serverTime)
+    {
+        setLastValidated(serverTime == null ? null : org.rapla.components.util.DateTools.toDate(serverTime));
+    }
+
     public int getTimezoneOffset()
     {
         return timezoneOffset;

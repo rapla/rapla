@@ -23,14 +23,13 @@ import org.rapla.plugin.tableview.RaplaTableColumn;
 import org.rapla.plugin.tableview.RaplaTableModel;
 import org.rapla.plugin.tableview.TableViewPlugin;
 import org.rapla.plugin.tableview.internal.TableConfig;
-import org.rapla.server.PromiseWait;
 import org.rapla.server.extensionpoints.HTMLViewPage;
 
-import javax.inject.Inject;
-import javax.servlet.ServletContext;
-import javax.servlet.ServletException;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
+import jakarta.inject.Inject;
+import jakarta.servlet.ServletContext;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import javax.swing.table.TableColumn;
 import java.io.IOException;
 import java.util.Comparator;
@@ -42,7 +41,7 @@ import java.util.Map;
 {
     private final TableViewPage<AppointmentBlock> tableViewPage;
 
-    @Inject public AppointmentTableViewPage(PromiseWait waiter,RaplaLocale raplaLocale, final TableConfig.TableConfigLoader tableConfigLoader)
+    @Inject public AppointmentTableViewPage(RaplaLocale raplaLocale, final TableConfig.TableConfigLoader tableConfigLoader)
     {
         tableViewPage = new TableViewPage<AppointmentBlock>(raplaLocale) {
 
@@ -53,7 +52,10 @@ import java.util.Map;
                 final String tableViewName = TableConfig.APPOINTMENTS_VIEW;
                 List<RaplaTableColumn<AppointmentBlock>> columnPlugins = tableConfigLoader.loadColumns(tableViewName, user);
                 final TimeInterval timeIntervall = model.getTimeIntervall();
-                final List<AppointmentBlock> blocks = waiter.waitForWithRaplaException(model.queryBlocks(timeIntervall), 10000);
+                final List<AppointmentBlock> blocks;
+                try { blocks = org.rapla.scheduler.sync.SynchronizedCompletablePromise.waitFor(model.queryBlocks(timeIntervall), 10000, null); }
+                catch (RaplaException ex) { throw ex; }
+                catch (Exception ex) { throw new RaplaException(ex); }
                 Map<RaplaTableColumn<AppointmentBlock>, Integer> sortDirections = RaplaTableModel.getSortDirections(model,columnPlugins, tableViewName);
                 return getCalendarBody(columnPlugins, blocks, sortDirections);
             }

@@ -91,6 +91,15 @@ public interface RaplaFacade
     Promise<Collection<Reservation>> getReservations(User user,Date start,Date end,ClassificationFilter[] reservationFilters);
     Promise<Collection<Reservation>> getReservationsAsync(User user, Allocatable[] allocatables, User[] owners, Date start, Date end, ClassificationFilter[] reservationFilters);
 
+    /** {@code LocalDateTime} variant of {@link #getReservations(User, Date, Date, ClassificationFilter[])}. UTC.
+     *  Distinct method name avoids overload ambiguity at {@code null}-passing call sites. */
+    default Promise<Collection<Reservation>> getReservationsByLocalDateTime(User user, java.time.LocalDateTime start, java.time.LocalDateTime end, ClassificationFilter[] reservationFilters) {
+        return getReservations(user,
+            start == null ? null : org.rapla.components.util.DateTools.toDate(start),
+            end == null ? null : org.rapla.components.util.DateTools.toDate(end),
+            reservationFilters);
+    }
+
 
 
 
@@ -107,6 +116,11 @@ public interface RaplaFacade
      server date.
      */
     Date today();
+
+    /** {@code LocalDate} variant of {@link #today()}. UTC. */
+    default java.time.LocalDate todayAsLocalDate() {
+        return org.rapla.components.util.DateTools.toLocalDate(today());
+    }
 
     /** returns all allocatables from the set of passed allocatables, that are already allocated by different parallel reservations at the time-slices, that are described by the appointment */
     Promise<Map<ReferenceInfo<Allocatable>, Collection<Appointment>>> getAllocatableBindings(Collection<Allocatable> allocatables, Collection<Appointment> forAppointment);
@@ -141,6 +155,11 @@ public interface RaplaFacade
     Promise<Collection<Reservation>> getTemplateReservations(Allocatable name);
 
     Promise<Date> getNextAllocatableDate(Collection<Allocatable> asList, Appointment appointment, CalendarOptions options);
+
+    /** {@code LocalDateTime} variant of {@link #getNextAllocatableDate}. UTC. */
+    default Promise<java.time.LocalDateTime> getNextAllocatableLocalDateTime(Collection<Allocatable> asList, Appointment appointment, CalendarOptions options) {
+        return getNextAllocatableDate(asList, appointment, options).thenApply(d -> d == null ? null : org.rapla.components.util.DateTools.toLocalDateTime(d));
+    }
 
     boolean canAllocate(CalendarModel model,User user);
 
@@ -178,6 +197,15 @@ public interface RaplaFacade
     Promise<Appointment> newAppointmentAsync(TimeInterval interval);
     Promise<Collection<Appointment>> newAppointmentsAsync(Collection<TimeInterval> interval);
     Appointment newAppointmentWithUser(Date startDate,Date endDate, User user) throws RaplaException;
+
+    /** {@code LocalDateTime} variant of {@link #newAppointmentWithUser}. UTC.
+     *  Distinct method name avoids ambiguity at {@code null}-passing call sites. */
+    default Appointment newAppointmentWithUserLocalDateTime(java.time.LocalDateTime start, java.time.LocalDateTime end, User user) throws RaplaException {
+        return newAppointmentWithUser(
+            start == null ? null : org.rapla.components.util.DateTools.toDate(start),
+            end == null ? null : org.rapla.components.util.DateTools.toDate(end),
+            user);
+    }
 
     /** Creates a new allocatable from the classifcation object and with the passed user as its owner
      * You can createInfoDialog a new classification from a {@link DynamicType} with newClassification method.

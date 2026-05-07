@@ -19,7 +19,7 @@ import org.rapla.logger.Logger;
 import org.rapla.scheduler.Promise;
 import org.rapla.scheduler.ResolvedPromise;
 
-import javax.inject.Inject;
+import jakarta.inject.Inject;
 
 @DefaultImplementation(of=DeleteDialogInterface.class,context = InjectionContext.swing)
 public class DeleteDialogSwing extends RaplaGUIComponent implements DeleteDialogInterface {

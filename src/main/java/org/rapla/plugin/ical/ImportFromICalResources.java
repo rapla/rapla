@@ -6,7 +6,7 @@ import org.rapla.components.i18n.BundleManager;
 import org.rapla.components.i18n.I18nBundle;
 import org.rapla.inject.Extension;
 
-import javax.inject.Inject;
+import jakarta.inject.Inject;
 
 @Extension(provides = I18nBundle.class, id = ImportFromICalPlugin.PLUGIN_ID)
 public class ImportFromICalResources extends AbstractBundle

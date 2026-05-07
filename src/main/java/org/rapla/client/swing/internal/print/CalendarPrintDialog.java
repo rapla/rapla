@@ -37,8 +37,8 @@ import org.rapla.plugin.abstractcalendar.MultiCalendarPrint;
 import org.rapla.scheduler.CommandScheduler;
 import org.rapla.scheduler.Promise;
 
-import javax.inject.Inject;
-import javax.inject.Provider;
+import jakarta.inject.Inject;
+import jakarta.inject.Provider;
 import javax.swing.AbstractAction;
 import javax.swing.Box;
 import javax.swing.JButton;

@@ -8,7 +8,7 @@ import org.rapla.framework.RaplaException;
 import org.rapla.inject.Extension;
 import org.rapla.plugin.appointmentnote.AppointmentNotePlugin;
 
-import javax.inject.Inject;
+import jakarta.inject.Inject;
 import javax.swing.*;
 import java.util.Locale;
 

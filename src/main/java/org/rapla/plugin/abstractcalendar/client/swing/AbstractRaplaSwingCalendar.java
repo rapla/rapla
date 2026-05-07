@@ -54,7 +54,7 @@ import org.rapla.scheduler.Promise;
 import org.rapla.scheduler.ResolvedPromise;
 import org.rapla.scheduler.sync.SynchronizedCompletablePromise;
 
-import javax.inject.Provider;
+import jakarta.inject.Provider;
 import javax.swing.BorderFactory;
 import javax.swing.JComponent;
 import javax.swing.JLabel;

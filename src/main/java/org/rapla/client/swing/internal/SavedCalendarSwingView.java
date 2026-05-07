@@ -36,7 +36,7 @@ import org.rapla.logger.Logger;
 import org.rapla.plugin.autoexport.AutoExportPlugin;
 import org.rapla.scheduler.Promise;
 
-import javax.inject.Inject;
+import jakarta.inject.Inject;
 import javax.swing.BorderFactory;
 import javax.swing.ComboBoxModel;
 import javax.swing.DefaultComboBoxModel;

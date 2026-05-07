@@ -7,13 +7,15 @@ import org.rapla.client.event.ApplicationEventBus;
 import org.rapla.framework.RaplaException;
 import org.rapla.inject.DefaultImplementation;
 import org.rapla.inject.InjectionContext;
+import org.springframework.stereotype.Service;
 import org.rapla.logger.Logger;
 
-import javax.inject.Inject;
-import javax.inject.Singleton;
+import jakarta.inject.Inject;
+import jakarta.inject.Singleton;
 
 @Singleton
 @DefaultImplementation(context=InjectionContext.swing, of=AbstractActivityController.class)
+@Service
 public class SwingActivityController extends AbstractActivityController
 {
 

@@ -72,6 +72,13 @@ public final class ReservationImpl extends SimpleEntity implements Reservation, 
             this.lastChanged = this.createDate;
     }
 
+    /** {@code LocalDateTime} factory paralleling {@link #ReservationImpl(Date, Date)}. UTC. */
+    public static ReservationImpl ofLocalDateTime(java.time.LocalDateTime createDate, java.time.LocalDateTime lastChanged) {
+        return new ReservationImpl(
+            createDate == null ? null : org.rapla.components.util.DateTools.toDate(createDate),
+            lastChanged == null ? null : org.rapla.components.util.DateTools.toDate(lastChanged));
+    }
+
     public static void checkReservation(RaplaResources i18n,Reservation reservation, EntityResolver resolver) throws RaplaException
     {
         Locale locale = i18n.getLocale();

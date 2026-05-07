@@ -15,8 +15,8 @@ import org.rapla.server.TimeZoneConverter;
 import org.rapla.server.internal.TimeZoneConverterImpl;
 import org.reactivestreams.Publisher;
 
-import javax.inject.Inject;
-import javax.inject.Singleton;
+import jakarta.inject.Inject;
+import jakarta.inject.Singleton;
 import java.time.*;
 import java.time.temporal.ChronoUnit;
 import java.util.Calendar;

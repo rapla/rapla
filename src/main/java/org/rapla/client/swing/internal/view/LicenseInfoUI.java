@@ -23,8 +23,8 @@ import org.rapla.components.i18n.LocaleChangeEvent;
 import org.rapla.components.i18n.LocaleChangeListener;
 import org.rapla.framework.RaplaInitializationException;
 
-import javax.inject.Inject;
-import javax.inject.Provider;
+import jakarta.inject.Inject;
+import jakarta.inject.Provider;
 import javax.swing.JComponent;
 import javax.swing.JScrollPane;
 import javax.swing.event.HyperlinkEvent;

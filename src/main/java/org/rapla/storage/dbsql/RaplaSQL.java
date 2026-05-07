@@ -1149,7 +1149,7 @@ class CategoryStorage extends RaplaTypeStorage<Category>
         setString(stmt, 3, category.getKey());
         setText(stmt, 4, xml);
         setInt(stmt, 5, order);
-        setTimestamp(stmt, 6, category.getLastChanged());
+        setTimestampLocalDateTime(stmt, 6, category.getLastChangedAsLocalDateTime());
         stmt.addBatch();
         return 1;
     }
@@ -1289,8 +1289,8 @@ class AllocatableStorage extends RaplaTypeStorage<Allocatable>
         setString(stmt, 2, typeKey);
         org.rapla.entities.Timestamp timestamp = allocatable;
         setId(stmt, 3, allocatable.getOwnerRef());
-        setTimestamp(stmt, 4, timestamp.getCreateDate());
-        setTimestamp(stmt, 5, timestamp.getLastChanged());
+        setTimestampLocalDateTime(stmt, 4, timestamp.getCreateDateAsLocalDateTime());
+        setTimestampLocalDateTime(stmt, 5, timestamp.getLastChangedAsLocalDateTime());
         setId(stmt, 6, timestamp.getLastChangedBy());
         stmt.addBatch();
         return 1;
@@ -1301,10 +1301,10 @@ class AllocatableStorage extends RaplaTypeStorage<Allocatable>
     {
         ReferenceInfo<Allocatable> id = readId(rset, 1, Allocatable.class);
         String typeKey = getString(rset, 2, null);
-        final Date createDate = getTimestampOrNow(rset, 4);
-        final Date lastChanged = getTimestampOrNow(rset, 5);
+        final java.time.LocalDateTime createDate = getTimestampOrNowAsLocalDateTime(rset, 4);
+        final java.time.LocalDateTime lastChanged = getTimestampOrNowAsLocalDateTime(rset, 5);
 
-        AllocatableImpl allocatable = new AllocatableImpl(createDate, lastChanged);
+        AllocatableImpl allocatable = AllocatableImpl.ofLocalDateTime(createDate, lastChanged);
         allocatable.setLastChangedBy(resolveFromId(rset, 6, User.class, false));
         allocatable.setId(id);
         allocatable.setResolver(entityStore);
@@ -1402,9 +1402,8 @@ class ReservationStorage extends RaplaTypeStorage<Reservation>
         setString(stmt, 2, typeKey);
         setId(stmt, 3, event.getOwnerRef());
         org.rapla.entities.Timestamp timestamp = event;
-        Date createTime = timestamp.getCreateDate();
-        setTimestamp(stmt, 4, createTime);
-        setTimestamp(stmt, 5, timestamp.getLastChanged());
+        setTimestampLocalDateTime(stmt, 4, timestamp.getCreateDateAsLocalDateTime());
+        setTimestampLocalDateTime(stmt, 5, timestamp.getLastChangedAsLocalDateTime());
         setId(stmt, 6, timestamp.getLastChangedBy());
         stmt.addBatch();
         return 1;
@@ -1420,9 +1419,9 @@ class ReservationStorage extends RaplaTypeStorage<Reservation>
     @Override
     protected void load(ResultSet rset) throws SQLException, RaplaException
     {
-        final Date createDate = getTimestampOrNow(rset, 4);
-        final Date lastChanged = getTimestampOrNow(rset, 5);
-        ReservationImpl event = new ReservationImpl(createDate, lastChanged);
+        final java.time.LocalDateTime createDate = getTimestampOrNowAsLocalDateTime(rset, 4);
+        final java.time.LocalDateTime lastChanged = getTimestampOrNowAsLocalDateTime(rset, 5);
+        ReservationImpl event = ReservationImpl.ofLocalDateTime(createDate, lastChanged);
         ReferenceInfo<Reservation> id = readId(rset, 1, Reservation.class);
         event.setId(id);
         event.setResolver(entityStore);
@@ -1646,8 +1645,8 @@ class PermissionStorage<T extends EntityPermissionContainer<T>> extends EntitySt
             setInt(stmt, 4, numericLevel);
             setInt(stmt, 5, s.getMinAdvance());
             setInt(stmt, 6, s.getMaxAdvance());
-            setDate(stmt, 7, s.getStart());
-            setDate(stmt, 8, s.getEnd());
+            setDateLocalDateTime(stmt, 7, s.getStartAsLocalDateTime());
+            setDateLocalDateTime(stmt, 8, s.getEndAsLocalDateTime());
             stmt.addBatch();
             count++;
         }
@@ -1677,8 +1676,8 @@ class PermissionStorage<T extends EntityPermissionContainer<T>> extends EntitySt
         }
         permission.setMinAdvance(getInt(rset, 5));
         permission.setMaxAdvance(getInt(rset, 6));
-        permission.setStart(getDate(rset, 7));
-        permission.setEnd(getDate(rset, 8));
+        permission.setStartLocalDateTime(getDateAsLocalDateTime(rset, 7));
+        permission.setEndLocalDateTime(getDateAsLocalDateTime(rset, 8));
         // We need to add the permission at the end to ensure its unique. Permissions are stored in a set and duplicates are removed during the add method 
         allocatable.addPermission(permission);
     }
@@ -1756,8 +1755,8 @@ class AppointmentStorage extends RaplaTypeStorage<Appointment>
     {
         setId(stmt, 1, appointment);
         setId(stmt, 2, appointment.getReservation());
-        setDate(stmt, 3, appointment.getStart());
-        setDate(stmt, 4, appointment.getEnd());
+        setDateLocalDateTime(stmt, 3, appointment.getStartDateTime());
+        setDateLocalDateTime(stmt, 4, appointment.getEndDateTime());
         Repeating repeating = appointment.getRepeating();
         if (repeating == null)
         {
@@ -1788,7 +1787,7 @@ class AppointmentStorage extends RaplaTypeStorage<Appointment>
             int number = repeating.getNumber();
             final boolean fixedNumber = repeating.isFixedNumber();
             setInt(stmt, 6, fixedNumber ? number : null);
-            setDate(stmt, 7, fixedNumber ? null : repeating.getEnd());
+            setDateLocalDateTime(stmt, 7, fixedNumber ? null : repeating.getEndDateTime());
             setInt(stmt, 8, repeating.getInterval());
         }
         stmt.addBatch();
@@ -1973,10 +1972,10 @@ class AppointmentExceptionStorage extends EntityStorage<Appointment> implements 
         {
             return count;
         }
-        for (Date exception : repeating.getExceptions())
+        for (java.time.LocalDateTime exception : repeating.getExceptionsAsLocalDateTime())
         {
             setId(stmt, 1, entity);
-            setDate(stmt, 2, exception);
+            setDateLocalDateTime(stmt, 2, exception);
             stmt.addBatch();
             count++;
         }
@@ -2032,7 +2031,7 @@ class DynamicTypeStorage extends RaplaTypeStorage<DynamicType>
         setString(stmt, 2, type.getKey());
         RaplaXMLWriter typeWriter = context.lookup(PreferenceWriter.WRITERMAP).get(DynamicType.class);
         setText(stmt, 3, getXML(typeWriter, type));
-        setTimestamp(stmt, 4, type.getLastChanged());
+        setTimestampLocalDateTime(stmt, 4, type.getLastChangedAsLocalDateTime());
         setTimestamp(stmt, 5, null);
         //    	setDate(stmt, 5,timestamp.getLastChanged() );
         //    	setId( stmt,6,timestamp.getLastChangedBy() );
@@ -2346,12 +2345,12 @@ class PreferenceStorage extends RaplaTypeStorage<Preferences>
         //        	entityStore.putServerPreferences(owner,configRole, value);
         //        	return;
         //        }
-        final Date lastUpdateDate = getTimestampOrNow(rset, 5);
+        final java.time.LocalDateTime lastUpdateDate = getTimestampOrNowAsLocalDateTime(rset, 5);
 
         PreferencesImpl preferences = preferenceId != null ? (PreferencesImpl) entityStore.tryResolve(preferenceId) : null;
         if (preferences == null)
         {
-            preferences = new PreferencesImpl(lastUpdateDate, lastUpdateDate);
+            preferences = PreferencesImpl.ofLocalDateTime(lastUpdateDate, lastUpdateDate);
             preferences.setId(preferenceId.getId());
             preferences.setOwner(owner);
             put(preferences);
@@ -2372,11 +2371,11 @@ class PreferenceStorage extends RaplaTypeStorage<Preferences>
                 preferences.putEntryPrivate(configRole, type);
             }
         }
-        final Date lastChanged = preferences.getLastChanged();
+        final java.time.LocalDateTime lastChanged = preferences.getLastChangedAsLocalDateTime();
         // update last changed
-        if (lastChanged.before(lastUpdateDate))
+        if (lastChanged.isBefore(lastUpdateDate))
         {
-            preferences.setLastChanged(lastUpdateDate);
+            preferences.setLastChangedLocalDateTime(lastUpdateDate);
         }
     }
 
@@ -2461,8 +2460,8 @@ class UserStorage extends RaplaTypeStorage<User>
         setString(stmt, 4, user.getName());
         setString(stmt, 5, user.getEmail());
         stmt.setInt(6, user.isAdmin() ? 1 : 0);
-        setTimestamp(stmt, 7, user.getCreateDate());
-        setTimestamp(stmt, 8, user.getLastChanged());
+        setTimestampLocalDateTime(stmt, 7, user.getCreateDateAsLocalDateTime());
+        setTimestampLocalDateTime(stmt, 8, user.getLastChangedAsLocalDateTime());
         stmt.addBatch();
         return 1;
     }
@@ -2481,10 +2480,10 @@ class UserStorage extends RaplaTypeStorage<User>
         String name = getString(rset, 4, "");
         String email = getString(rset, 5, "");
         boolean isAdmin = rset.getInt(6) == 1;
-        Date createDate = getTimestampOrNow(rset, 7);
-        Date lastChanged = getTimestampOrNow(rset, 8);
+        java.time.LocalDateTime createDate = getTimestampOrNowAsLocalDateTime(rset, 7);
+        java.time.LocalDateTime lastChanged = getTimestampOrNowAsLocalDateTime(rset, 8);
 
-        UserImpl user = new UserImpl(createDate, lastChanged);
+        UserImpl user = UserImpl.ofLocalDateTime(createDate, lastChanged);
         //        if ( personId != null)
         //        {
         //            user.putId("person", personId);
@@ -2538,8 +2537,8 @@ class ConflictStorage extends RaplaTypeStorage<Conflict>
             for (ReferenceInfo<Conflict> conflictRef : entities)
             {
                 String id = conflictRef.getId();
-                final Date connectionTimestamp = getConnectionTimestamp();
-                Conflict conflict = new ConflictImpl(id, connectionTimestamp, connectionTimestamp);
+                final java.time.LocalDateTime connectionTimestamp = getConnectionTimestampAsLocalDateTime();
+                Conflict conflict = ConflictImpl.ofLocalDateTime(id, connectionTimestamp, connectionTimestamp);
                 ReferenceInfo<Allocatable> allocatableId = conflict.getAllocatableId();
                 ReferenceInfo<Appointment> appointment1Id = conflict.getAppointment1();
                 ReferenceInfo<Appointment> appointment2Id = conflict.getAppointment2();
@@ -2573,7 +2572,7 @@ class ConflictStorage extends RaplaTypeStorage<Conflict>
         setInt(stmt, 4, appointment1Enabled ? 1 : 0);
         boolean appointment2Enabled = conflict.isAppointment2Enabled();
         setInt(stmt, 5, appointment2Enabled ? 1 : 0);
-        setTimestamp(stmt, 6, conflict.getLastChanged());
+        setTimestampLocalDateTime(stmt, 6, conflict.getLastChangedAsLocalDateTime());
         stmt.addBatch();
         return 1;
     }
@@ -2587,10 +2586,10 @@ class ConflictStorage extends RaplaTypeStorage<Conflict>
 
         boolean appointment1Enabled = rset.getInt(4) == 1;
         boolean appointment2Enabled = rset.getInt(5) == 1;
-        Date timestamp = getTimestamp(rset, 6, true);
-        Date today = getConnectionTimestamp();
+        java.time.LocalDateTime timestamp = getTimestampAsLocalDateTime(rset, 6, true);
+        java.time.LocalDateTime today = getConnectionTimestampAsLocalDateTime();
         String id = ConflictImpl.createId(allocatableId, appointment1Id, appointment2Id);
-        ConflictImpl conflict = new ConflictImpl(id, today, timestamp);
+        ConflictImpl conflict = ConflictImpl.ofLocalDateTime(id, today, timestamp);
         conflict.setAppointment1Enabled(appointment1Enabled);
         conflict.setAppointment2Enabled(appointment2Enabled);
         put(conflict);

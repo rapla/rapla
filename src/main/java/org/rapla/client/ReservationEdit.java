@@ -17,6 +17,13 @@ import java.util.List;
 public interface ReservationEdit<T> extends EditTaskPresenter.EditTaskView<Reservation,T>
 {
     Promise<Void> addAppointment(Date start, Date end);
+
+    /** {@code LocalDateTime} variant — distinct name avoids `null`-passing ambiguity. */
+    default Promise<Void> addAppointmentLocalDateTime(java.time.LocalDateTime start, java.time.LocalDateTime end) {
+        return addAppointment(
+            start == null ? null : org.rapla.components.util.DateTools.toDate(start),
+            end == null ? null : org.rapla.components.util.DateTools.toDate(end));
+    }
 	
     Reservation getReservation();
 

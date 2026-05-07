@@ -19,7 +19,6 @@ import org.rapla.scheduler.ResolvedPromise;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.Date;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -147,20 +146,20 @@ public class SaveUndo<T extends Entity> implements CommandUndo<RaplaException> {
 		}
 		if ( entity instanceof Classifiable)
 		{
-			Date lastChanged = ((Classifiable) entity).getClassification().getType().getLastChanged();
+			java.time.LocalDateTime lastChanged = ((Classifiable) entity).getClassification().getType().getLastChangedAsLocalDateTime();
 			if ( lastChanged != null)
 			{
-				
+
 			}
 		}
-		
+
 	}
-	
+
 	private  void setNewTimestamp( Entity dest, Entity persistent) {
 		 if ( persistent instanceof ModifiableTimestamp)
 		 {
-			 Date version = ((ModifiableTimestamp)persistent).getLastChanged();
-			 ((ModifiableTimestamp)dest).setLastChanged(version);
+			 java.time.LocalDateTime version = ((ModifiableTimestamp)persistent).getLastChangedAsLocalDateTime();
+			 ((ModifiableTimestamp)dest).setLastChangedLocalDateTime(version);
 		 }
 	 }
 

@@ -31,7 +31,6 @@ import org.rapla.storage.LocalCache;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Date;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -253,18 +252,18 @@ public class RaplaMainWriter extends RaplaXMLWriter
         }
         if ( invalidateInterval != null)
         {
-            Date startDate = invalidateInterval.getStart();
-            Date endDate = invalidateInterval.getEnd(); 
+            java.time.LocalDateTime startDate = invalidateInterval.getStartAsLocalDateTime();
+            java.time.LocalDateTime endDate = invalidateInterval.getEndAsLocalDateTime();
 			String start;
 			if ( startDate == null)
 			{
-				startDate = new Date(0);
+				startDate = java.time.LocalDateTime.of(1970, 1, 1, 0, 0);
 			}
-			start = dateTimeFormat.formatDate( startDate);
+			start = dateTimeFormat.formatDate( startDate.toLocalDate());
 			att("startDate", start);
         	if ( endDate != null)
         	{
-        		String end = dateTimeFormat.formatDate( endDate);
+        		String end = dateTimeFormat.formatDate( endDate.toLocalDate());
             	att("endDate", end);
         	}
         }

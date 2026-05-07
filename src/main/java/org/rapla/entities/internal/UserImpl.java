@@ -53,6 +53,13 @@ public class UserImpl extends SimpleEntity implements User, ModifiableTimestamp
         this.createDate = createDate;
         this.lastChanged = lastChanged;
     }
+
+    /** {@code LocalDateTime} factory paralleling {@link #UserImpl(Date, Date)}. UTC. */
+    public static UserImpl ofLocalDateTime(java.time.LocalDateTime createDate, java.time.LocalDateTime lastChanged) {
+        return new UserImpl(
+            createDate == null ? null : org.rapla.components.util.DateTools.toDate(createDate),
+            lastChanged == null ? null : org.rapla.components.util.DateTools.toDate(lastChanged));
+    }
     
     public Date getLastChanged() {
         return lastChanged;

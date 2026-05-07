@@ -23,7 +23,7 @@ import org.rapla.logger.Logger;
 import org.rapla.plugin.weekview.WeekviewPlugin;
 import org.rapla.server.extensionpoints.HTMLViewPage;
 
-import javax.inject.Inject;
+import jakarta.inject.Inject;
 
 @Extension(provides = HTMLViewPage.class,id = WeekviewPlugin.DAY_VIEW)
 public class HTMLDayViewPage extends HTMLWeekViewPage

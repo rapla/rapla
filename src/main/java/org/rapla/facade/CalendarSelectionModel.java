@@ -53,6 +53,14 @@ public interface CalendarSelectionModel extends CalendarModel{
 	/** calls setMarkedIntervals with a single interval from start to end*/
 	void markInterval(Date start, Date end);
 
+	/** {@code LocalDateTime} variant of {@link #markInterval(Date, Date)}. UTC.
+	 *  Distinct method name avoids ambiguity at {@code null}-passing call sites. */
+	default void markIntervalLocalDateTime(java.time.LocalDateTime start, java.time.LocalDateTime end) {
+		markInterval(
+			start == null ? null : org.rapla.components.util.DateTools.toDate(start),
+			end == null ? null : org.rapla.components.util.DateTools.toDate(end));
+	}
+
 	void setMarkedAllocatables(Collection<Allocatable> allocatable);
 
     boolean isMarkedIntervalTimeEnabled();

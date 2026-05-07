@@ -26,9 +26,9 @@ import org.rapla.inject.InjectionContext;
 import org.rapla.plugin.export2ical.ICalExport;
 import org.rapla.server.RemoteSession;
 
-import javax.inject.Inject;
-import javax.servlet.http.HttpServletRequest;
-import javax.ws.rs.core.Context;
+import jakarta.inject.Inject;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.ws.rs.core.Context;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;

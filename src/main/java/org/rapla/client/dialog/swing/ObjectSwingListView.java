@@ -5,11 +5,12 @@ import org.rapla.inject.DefaultImplementation;
 import org.rapla.inject.InjectionContext;
 import org.rapla.scheduler.CommandScheduler;
 
-import javax.inject.Inject;
+import jakarta.inject.Inject;
 import javax.swing.tree.TreeCellRenderer;
 
 // TODO Workaround until Restinject-Generator can handle proper Generics
 @DefaultImplementation(of=ListView.class,context = InjectionContext.swing)
+@org.springframework.stereotype.Service
 public class ObjectSwingListView extends SwingListView<Object>
 {
     @Inject

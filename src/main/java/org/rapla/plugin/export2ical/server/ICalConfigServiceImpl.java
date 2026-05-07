@@ -13,9 +13,9 @@ import org.rapla.plugin.export2ical.ICalConfigService;
 import org.rapla.server.RemoteSession;
 import org.rapla.storage.RaplaSecurityException;
 
-import javax.inject.Inject;
-import javax.servlet.http.HttpServletRequest;
-import javax.ws.rs.core.Context;
+import jakarta.inject.Inject;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.ws.rs.core.Context;
 
 @DefaultImplementation(context=InjectionContext.server, of=ICalConfigService.class)
 public class ICalConfigServiceImpl implements ICalConfigService {

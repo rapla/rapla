@@ -9,8 +9,8 @@ import org.rapla.scheduler.CommandScheduler;
 import org.rapla.server.internal.ServerStorageSelector;
 import org.rapla.storage.ImportExportManager;
 
-import javax.inject.Inject;
-import javax.inject.Provider;
+import jakarta.inject.Inject;
+import jakarta.inject.Provider;
 
 
 @DefaultImplementation(of=ImportExportManagerContainer.class,context = InjectionContext.server,export = true)

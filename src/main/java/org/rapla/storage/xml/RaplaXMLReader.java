@@ -59,11 +59,25 @@ public class RaplaXMLReader extends DelegationHandler implements Namespaces
     {
     	public Date createTime;
     	public Date changeTime;
+
+    	/** {@code LocalDateTime} accessors. UTC. */
+    	public java.time.LocalDateTime getCreateTimeAsLocalDateTime() {
+    	    return createTime == null ? null : org.rapla.components.util.DateTools.toLocalDateTime(createTime);
+    	}
+    	public java.time.LocalDateTime getChangeTimeAsLocalDateTime() {
+    	    return changeTime == null ? null : org.rapla.components.util.DateTools.toLocalDateTime(changeTime);
+    	}
     }
 
     public Date getReadTimestamp()
     {
         return now;
+    }
+
+    /** {@code LocalDateTime} variant. UTC. */
+    public java.time.LocalDateTime getReadLocalDateTime()
+    {
+        return now == null ? null : org.rapla.components.util.DateTools.toLocalDateTime(now);
     }
     
     public boolean isBefore1_2()
@@ -217,6 +231,45 @@ public class RaplaXMLReader extends DelegationHandler implements Namespaces
         try
         {
             return dateTimeFormat.parseTimestamp(timestamp);
+        }
+        catch (ParseDateException ex)
+        {
+            throw createSAXParseException( ex.getMessage() );
+        }
+    }
+
+    /** {@code LocalDateTime} variant of {@link #parseTimestamp(String)}. UTC. */
+    public java.time.LocalDateTime parseLocalDateTime( String timestamp ) throws RaplaSAXParseException
+    {
+        try
+        {
+            return dateTimeFormat.parseLocalDateTime(timestamp);
+        }
+        catch (ParseDateException ex)
+        {
+            throw createSAXParseException( ex.getMessage() );
+        }
+    }
+
+    /** {@code LocalDateTime} variant — combines date + time. UTC. */
+    public java.time.LocalDateTime parseLocalDateTime( String date, String time ) throws RaplaSAXParseException
+    {
+        try
+        {
+            return dateTimeFormat.parseLocalDateTime(date, time);
+        }
+        catch (ParseDateException ex)
+        {
+            throw createSAXParseException( ex.getMessage() );
+        }
+    }
+
+    /** {@code LocalDate} variant of {@link #parseDate(String, boolean)}. UTC. */
+    public java.time.LocalDate parseLocalDate( String date ) throws RaplaSAXParseException
+    {
+        try
+        {
+            return dateTimeFormat.parseLocalDate(date);
         }
         catch (ParseDateException ex)
         {

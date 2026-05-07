@@ -24,14 +24,13 @@ import org.rapla.plugin.tableview.RaplaTableColumn;
 import org.rapla.plugin.tableview.RaplaTableModel;
 import org.rapla.plugin.tableview.TableViewPlugin;
 import org.rapla.plugin.tableview.internal.TableConfig;
-import org.rapla.server.PromiseWait;
 import org.rapla.server.extensionpoints.HTMLViewPage;
 
-import javax.inject.Inject;
-import javax.servlet.ServletContext;
-import javax.servlet.ServletException;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
+import jakarta.inject.Inject;
+import jakarta.servlet.ServletContext;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import javax.swing.table.TableColumn;
 import java.io.IOException;
 import java.util.Collection;
@@ -45,15 +44,17 @@ public class ReservationTableViewPage implements HTMLViewPage
     private final TableViewPage<Reservation> tableViewPage;
 
     @Inject
-    public ReservationTableViewPage(PromiseWait waiter,RaplaLocale raplaLocale, TableConfig.TableConfigLoader tableConfigLoader)
+    public ReservationTableViewPage(RaplaLocale raplaLocale, TableConfig.TableConfigLoader tableConfigLoader)
     {
         tableViewPage = new TableViewPage<Reservation>(raplaLocale)
         {
             final Comparator<Reservation> comparator = new ReservationStartComparator(raplaLocale.getLocale());
             protected String getCalendarBody() throws RaplaException
             {
-                final Collection<Reservation> reservations = waiter.waitForWithRaplaException(model.queryReservations(model.getTimeIntervall()),
-                        10000);
+                final Collection<Reservation> reservations;
+                try { reservations = org.rapla.scheduler.sync.SynchronizedCompletablePromise.waitFor(model.queryReservations(model.getTimeIntervall()), 10000, null); }
+                catch (RaplaException ex) { throw ex; }
+                catch (Exception ex) { throw new RaplaException(ex); }
                 final User user = model.getUser();
                 final String tableName = TableConfig.EVENTS_VIEW;
                 List<RaplaTableColumn<Reservation>> columnPlugins = tableConfigLoader.loadColumns(tableName, user);

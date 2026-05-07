@@ -35,14 +35,13 @@ import org.rapla.plugin.abstractcalendar.MultiCalendarPrint;
 import org.rapla.plugin.abstractcalendar.RaplaBuilder;
 import org.rapla.plugin.planningstatus.PlanningStatusPlugin;
 import org.rapla.scheduler.Promise;
-import org.rapla.server.PromiseWait;
 import org.rapla.server.extensionpoints.HTMLViewPage;
 
-import javax.inject.Inject;
-import javax.servlet.ServletContext;
-import javax.servlet.ServletException;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
+import jakarta.inject.Inject;
+import jakarta.servlet.ServletContext;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.UnsupportedEncodingException;
@@ -63,8 +62,6 @@ public abstract class AbstractHTMLCalendarPage  implements HTMLViewPage
     final protected RaplaFacade facade;
     final protected Logger logger;
     final protected AppointmentFormater appointmentFormater;
-    @Inject
-    protected PromiseWait promiseWait;
 
     public AbstractHTMLCalendarPage(RaplaLocale raplaLocale, RaplaResources raplaResources, RaplaFacade facade, Logger logger, AppointmentFormater appointmentFormater) {
         this.raplaResources = raplaResources;
@@ -97,9 +94,18 @@ public abstract class AbstractHTMLCalendarPage  implements HTMLViewPage
 		Date endDate = view.getEndDate();
         builder.setNonFilteredEventsVisible( false);
         final Promise<RaplaBuilder> initBuilder = builder.initFromModel( model, startDate, endDate  );
-        final RaplaBuilder raplaBuilder = promiseWait.waitForWithRaplaException(initBuilder, 9000);
-
-        return raplaBuilder;
+        try
+        {
+            return org.rapla.scheduler.sync.SynchronizedCompletablePromise.waitFor(initBuilder, 9000, null);
+        }
+        catch (RaplaException ex)
+        {
+            throw ex;
+        }
+        catch (Exception ex)
+        {
+            throw new RaplaException(ex);
+        }
     }
 
     abstract protected AbstractHTMLView createCalendarView() throws RaplaException;

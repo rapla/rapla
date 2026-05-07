@@ -26,14 +26,13 @@ import org.rapla.inject.InjectionContext;
 import org.rapla.logger.Logger;
 import org.rapla.plugin.ical.ICalImport;
 import org.rapla.scheduler.Promise;
-import org.rapla.server.PromiseWait;
 import org.rapla.server.RemoteSession;
 import org.rapla.server.TimeZoneConverter;
 import org.rapla.storage.impl.AbstractCachableOperator;
 
-import javax.inject.Inject;
-import javax.servlet.http.HttpServletRequest;
-import javax.ws.rs.core.Context;
+import jakarta.inject.Inject;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.ws.rs.core.Context;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
@@ -58,8 +57,6 @@ public class RaplaICalImport implements ICalImport {
 	RaplaFacade facade;
 	@Inject
 	Logger logger;
-    @Inject
-    PromiseWait promiseWait;
 
     private final HttpServletRequest request;
 
@@ -92,7 +89,13 @@ public class RaplaICalImport implements ICalImport {
         }
         User user = session.checkAndGetUser(request);
             final Promise<Integer[]> count = importCalendar(content, isURL, allocatables, user, eventTypeKey, eventTypeNameAttributeKey);
-            return promiseWait.waitForWithRaplaException( count, 10000);
+            try {
+                return org.rapla.scheduler.sync.SynchronizedCompletablePromise.waitFor( count, 10000, null);
+            } catch (RaplaException ex) {
+                throw ex;
+            } catch (Exception ex) {
+                throw new RaplaException(ex);
+            }
 
 	}
 	private Allocatable getAllocatable( final String id)  throws EntityNotFoundException

@@ -34,7 +34,7 @@ import org.rapla.plugin.export2ical.ICalTimezones;
 import org.rapla.storage.RemoteLocaleService;
 import org.rapla.storage.dbrm.RestartServer;
 
-import javax.inject.Inject;
+import jakarta.inject.Inject;
 import javax.swing.JComboBox;
 import javax.swing.JComponent;
 import javax.swing.JLabel;

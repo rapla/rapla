@@ -39,6 +39,15 @@ public class PreferencePatch extends RaplaMapImpl {
     public void setLastChanged(Date lastChanged) {
         this.lastChanged = lastChanged;
     }
+
+    /** {@code LocalDateTime} variants. UTC. Distinct names to avoid `null`-passing ambiguity on the setter. */
+    public java.time.LocalDateTime getLastChangedAsLocalDateTime() {
+        return lastChanged == null ? null : org.rapla.components.util.DateTools.toLocalDateTime(lastChanged);
+    }
+
+    public void setLastChangedLocalDateTime(java.time.LocalDateTime lastChanged) {
+        this.lastChanged = lastChanged == null ? null : org.rapla.components.util.DateTools.toDate(lastChanged);
+    }
     
     public Set<String> getRemovedEntries() 
     {

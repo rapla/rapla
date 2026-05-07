@@ -7,7 +7,7 @@ import org.rapla.server.internal.ServerStorageSelector;
 import org.rapla.storage.CachableStorageOperator;
 import org.rapla.storage.ImportExportManager;
 
-import javax.inject.Inject;
+import jakarta.inject.Inject;
 
 @DefaultImplementation(of=ImportExportManager.class,context = InjectionContext.server)
 public class ImportExportManagerDefaultImpl implements ImportExportManager

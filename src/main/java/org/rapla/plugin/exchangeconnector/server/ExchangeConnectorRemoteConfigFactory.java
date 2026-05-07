@@ -13,9 +13,9 @@ import org.rapla.plugin.exchangeconnector.ExchangeConnectorConfigRemote;
 import org.rapla.server.RemoteSession;
 import org.rapla.storage.RaplaSecurityException;
 
-import javax.inject.Inject;
-import javax.servlet.http.HttpServletRequest;
-import javax.ws.rs.core.Context;
+import jakarta.inject.Inject;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.ws.rs.core.Context;
 import java.util.List;
 
 @DefaultImplementation(context=InjectionContext.server, of=ExchangeConnectorConfigRemote.class)

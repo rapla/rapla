@@ -7,9 +7,9 @@ import org.rapla.rest.JsonParserWrapper;
 import org.rapla.storage.RaplaInvalidTokenException;
 import org.rapla.storage.RaplaSecurityException;
 
-import javax.servlet.http.HttpServletRequest;
-import javax.ws.rs.NotFoundException;
-import javax.ws.rs.core.Response;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.ws.rs.NotFoundException;
+import jakarta.ws.rs.core.Response;
 
 public class ExceptionResponseBuilder
 {

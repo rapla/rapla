@@ -23,4 +23,12 @@ public interface ModifiableTimestamp extends Timestamp {
     void setLastChanged(Date date);
     void setCreateDate(Date date);
     void setLastChangedBy( User user);
+
+    /** {@code LocalDateTime} variants. UTC. Distinct names avoid `null`-passing ambiguity. */
+    default void setLastChangedLocalDateTime(java.time.LocalDateTime date) {
+        setLastChanged(date == null ? null : org.rapla.components.util.DateTools.toDate(date));
+    }
+    default void setCreateDateLocalDateTime(java.time.LocalDateTime date) {
+        setCreateDate(date == null ? null : org.rapla.components.util.DateTools.toDate(date));
+    }
 }

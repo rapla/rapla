@@ -19,13 +19,14 @@ import org.rapla.client.swing.toolkit.RaplaMenubar;
 import org.rapla.client.swing.toolkit.RaplaSeparator;
 import org.rapla.framework.RaplaInitializationException;
 
-import javax.inject.Inject;
-import javax.inject.Singleton;
+import jakarta.inject.Inject;
+import jakarta.inject.Singleton;
 import javax.swing.JMenuBar;
 import javax.swing.JMenuItem;
 import javax.swing.JSeparator;
 
 @Singleton
+@org.springframework.stereotype.Service
 public class RaplaMenuBarContainer
 {
     JMenuItem templateEdit;

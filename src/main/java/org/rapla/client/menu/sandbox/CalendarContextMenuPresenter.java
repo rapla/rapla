@@ -29,8 +29,8 @@ import org.rapla.plugin.abstractcalendar.RaplaBlock;
 import org.rapla.scheduler.Promise;
 import org.rapla.storage.PermissionController;
 
-import javax.inject.Inject;
-import javax.inject.Singleton;
+import jakarta.inject.Inject;
+import jakarta.inject.Singleton;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;

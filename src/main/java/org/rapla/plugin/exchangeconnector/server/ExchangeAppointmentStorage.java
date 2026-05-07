@@ -23,12 +23,11 @@ import org.rapla.storage.impl.DefaultRaplaLock;
 import org.rapla.storage.impl.RaplaLock;
 import org.rapla.storage.impl.server.LocalAbstractCachableOperator;
 
-import javax.inject.Inject;
-import javax.inject.Singleton;
+import jakarta.inject.Inject;
+import jakarta.inject.Singleton;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
@@ -309,7 +308,7 @@ public class ExchangeAppointmentStorage
             if (!newHash.equals(hash))
             {
                 Preferences edit = facade.edit(userPreferences);
-                String timestampOfFailure = new SerializableDateTimeFormat().formatTimestamp(operator.getCurrentTimestamp());
+                String timestampOfFailure = new SerializableDateTimeFormat().formatTimestamp(operator.getCurrentTimestampAsLocalDateTime());
                 edit.putEntry(ExchangeConnectorRemote.LAST_SYNC_ERROR_CHANGE, timestampOfFailure);
                 // store hash of errors to check changes in with future errors
                 edit.putEntry(LAST_SYNC_ERROR_CHANGE_HASH, newHash);

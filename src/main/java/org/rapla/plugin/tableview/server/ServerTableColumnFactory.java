@@ -10,7 +10,7 @@ import org.rapla.plugin.tableview.internal.DefaultRaplaTableColumn;
 import org.rapla.plugin.tableview.internal.RaplaTableColumnFactory;
 import org.rapla.plugin.tableview.internal.TableConfig.TableColumnConfig;
 
-import javax.inject.Inject;
+import jakarta.inject.Inject;
 
 @DefaultImplementation(context = { InjectionContext.server}, of = RaplaTableColumnFactory.class)
 public class ServerTableColumnFactory implements RaplaTableColumnFactory

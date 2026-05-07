@@ -12,7 +12,7 @@ import org.rapla.inject.Extension;
 import org.rapla.logger.Logger;
 import org.rapla.plugin.autoexport.AutoExportResources;
 
-import javax.inject.Inject;
+import jakarta.inject.Inject;
 import java.beans.PropertyChangeListener;
 
 @Extension(provides=PublishExtensionFactory.class,id="html")

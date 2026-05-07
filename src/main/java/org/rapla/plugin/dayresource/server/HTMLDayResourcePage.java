@@ -20,7 +20,7 @@ import org.rapla.plugin.dayresource.DayResourcePlugin;
 import org.rapla.plugin.weekview.server.HTMLDayViewPage;
 import org.rapla.server.extensionpoints.HTMLViewPage;
 
-import javax.inject.Inject;
+import jakarta.inject.Inject;
 import java.util.Collection;
 import java.util.Date;
 import java.util.LinkedHashMap;

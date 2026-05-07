@@ -19,7 +19,7 @@ import org.rapla.framework.RaplaLocale;
 import org.rapla.logger.Logger;
 import org.rapla.storage.RemoteLocaleService;
 
-import javax.inject.Inject;
+import jakarta.inject.Inject;
 import javax.swing.Action;
 import javax.swing.DefaultComboBoxModel;
 import javax.swing.DefaultListCellRenderer;

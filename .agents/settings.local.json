@@ -1,12 +1,54 @@
 {
   "permissions": {
     "allow": [
+      "Read",
+      "Grep",
+      "Glob",
+      "Edit",
+      "Write",
+      "Bash(ls *)",
+      "Bash(pwd)",
+      "Bash(cat *)",
+      "Bash(find *)",
+      "Bash(grep *)",
+      "Bash(rg *)",
+      "Bash(xargs *)",
+      "Bash(echo *)",
+      "Bash(which *)",
+      "Bash(java -version)",
+      "Bash(java *)",
+      "Bash(mvn *)",
+      "Bash(python *)",
+      "Bash(python3 *)",
+      "Bash(pip *)",
+      "Bash(pip3 *)",
+      "Bash(pipx *)",
+      "Bash(uv *)",
+      "Bash(pytest *)",
+      "Bash(ng *)",
+      "Bash(npm *)",
+      "Bash(npx *)",
+      "Bash(yarn *)",
+      "Bash(pnpm *)",
+      "Bash(node *)",
+      "Bash(git -C /home/chris/git/rapla *)",
+      "Bash(git stash *)",
+      "Bash(git worktree *)",
       "Bash(ln *)",
       "Bash(mv /home/chris/git/rapla/.claude/settings.local.json /home/chris/git/rapla/.agents/)",
       "Bash(rm /home/chris/git/rapla/.claude/.agents)",
       "Bash(rmdir /home/chris/git/rapla/.claude)",
-      "Bash(git -C /home/chris/git/rapla status)",
-      "Bash(git -C /home/chris/git/rapla diff)"
+      "Bash(find /home/chris/git/dhbwrapla/src/main/resources* -type f)",
+      "Bash(grep -E \"/\\(client|server|swing|gwt|web|shared|common|api\\)$\")"
+    ]
+  },
+  "autoMode": {
+    "environment": [
+      "$defaults",
+      "Project: Rapla — open-source resource scheduling and event planning application (AGPL/Apache2). Java/Maven, with a Swing client, Jetty/RESTEasy server, and Angular frontend. The GitHub remote is github.com/rapla/rapla.",
+      "Worktree layout: canonical checkout at /home/chris/git/rapla; sibling git worktrees at /home/chris/git/rapla-<task-slug> are part of the same project. Reading and editing files under a sibling worktree is in-scope. Destructive operations (rm, git reset --hard, overwriting untracked files) on a worktree the agent did not create this session still require explicit user direction — the worktree-is-same-project trust does NOT override Irreversible Local Destruction.",
+      "Cross-repo read: when the session started in /home/chris/git/rapla (or a rapla-<slug> worktree) or in /home/chris/git/dhbwrapla, read access to /home/chris/git/dhbwrapla is expected — dhbwrapla-container/pom.xml resolves ../../rapla against the canonical checkout. This exception does NOT apply to sessions started elsewhere; for those, dhbwrapla is out-of-scope.",
+      "Per-worktree dev port offsets: backend on 8051+10·N, Angular on 4200+N (see AGENTS.md). The data/data.xml file inside each worktree is project-local test data, not production."
     ]
   }
 }

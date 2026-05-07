@@ -27,7 +27,6 @@ import org.rapla.framework.RaplaLocale;
 import org.rapla.logger.Logger;
 
 import java.util.Collection;
-import java.util.Date;
 import java.util.Iterator;
 
 public abstract class HTMLInfo<T> extends RaplaComponent
@@ -72,8 +71,8 @@ public abstract class HTMLInfo<T> extends RaplaComponent
 
     protected void insertModificationRow(Timestamp timestamp, StringBuffer buf)
     {
-        final Date createTime = timestamp.getCreateDate();
-        final Date lastChangeTime = timestamp.getLastChanged();
+        final java.time.LocalDateTime createTime = timestamp.getCreateDateAsLocalDateTime();
+        final java.time.LocalDateTime lastChangeTime = timestamp.getLastChangedAsLocalDateTime();
         if (lastChangeTime != null)
         {
             buf.append("<div style=\"font-size:7px;margin-bottom:4px;\">");

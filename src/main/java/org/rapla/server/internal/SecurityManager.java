@@ -29,8 +29,8 @@ import org.rapla.storage.PermissionController;
 import org.rapla.storage.PreferencePatch;
 import org.rapla.storage.RaplaSecurityException;
 
-import javax.inject.Inject;
-import javax.inject.Singleton;
+import jakarta.inject.Inject;
+import jakarta.inject.Singleton;
 import java.util.*;
 
 /** checks if the client can store or delete an entity */
@@ -440,20 +440,27 @@ import java.util.*;
                 conflictsAfter = new ArrayList<>();
                 try
                 {
-                    operator.waitForWithRaplaException(operator.getConflicts(original).thenAcceptBoth(operator.getConflicts(r), (beforeConfl, afterConf) ->
+                    org.rapla.scheduler.sync.SynchronizedCompletablePromise.waitFor(operator.getConflicts(original).thenAcceptBoth(operator.getConflicts(r), (beforeConfl, afterConf) ->
                     {
                         conflictsBefore.addAll(beforeConfl);
                         conflictsAfter.addAll(afterConf);
-                    }), 10000);
+                    }), 10000, logger);
                 }
-                catch (RaplaException ex)
+                catch (Exception ex)
                 {
                     throw new RaplaSecurityException(" Can't check permissions due to:" + ex.getMessage(), ex);
                 }
             }
             else
             {
-                conflictsAfter = operator.waitForWithRaplaException(operator.getConflicts(r), 10000);
+                try
+                {
+                    conflictsAfter = org.rapla.scheduler.sync.SynchronizedCompletablePromise.waitFor(operator.getConflicts(r), 10000, logger);
+                }
+                catch (Exception ex)
+                {
+                    throw new RaplaSecurityException(" Can't check permissions due to:" + ex.getMessage(), ex);
+                }
                 conflictsBefore = new ArrayList<>();
             }
         }

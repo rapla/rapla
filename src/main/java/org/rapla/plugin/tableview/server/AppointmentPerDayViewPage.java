@@ -26,14 +26,13 @@ import org.rapla.plugin.tableview.RaplaTableModel;
 import org.rapla.plugin.tableview.TableViewPlugin;
 import org.rapla.plugin.tableview.internal.DefaultRaplaTableColumn;
 import org.rapla.plugin.tableview.internal.TableConfig;
-import org.rapla.server.PromiseWait;
 import org.rapla.server.extensionpoints.HTMLViewPage;
 
-import javax.inject.Inject;
-import javax.servlet.ServletContext;
-import javax.servlet.ServletException;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
+import jakarta.inject.Inject;
+import jakarta.servlet.ServletContext;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import javax.swing.table.TableColumn;
 import java.io.IOException;
 import java.util.*;
@@ -49,7 +48,7 @@ import java.util.*;
         return raplaLocale.formatDayOfWeekLongDateMonth(start);
     }
 
-    @Inject public AppointmentPerDayViewPage(PromiseWait waiter, RaplaLocale raplaLocale, final TableConfig.TableConfigLoader tableConfigLoader)
+    @Inject public AppointmentPerDayViewPage(RaplaLocale raplaLocale, final TableConfig.TableConfigLoader tableConfigLoader)
     {
         this.raplaLocale = raplaLocale;
         tableViewPage = new TableViewPage<AppointmentBlock>(raplaLocale) {
@@ -62,7 +61,10 @@ import java.util.*;
                 List<RaplaTableColumn<AppointmentBlock>> columnPlugins = tableConfigLoader.loadColumns(tableViewName, user);
 
                 final TimeInterval timeIntervall = model.getTimeIntervall();
-                final List<AppointmentBlock> blocks = waiter.waitForWithRaplaException(model.queryBlocks(timeIntervall), 10000);
+                final List<AppointmentBlock> blocks;
+                try { blocks = org.rapla.scheduler.sync.SynchronizedCompletablePromise.waitFor(model.queryBlocks(timeIntervall), 10000, null); }
+                catch (RaplaException ex) { throw ex; }
+                catch (Exception ex) { throw new RaplaException(ex); }
                 final  Map<String,List<AppointmentBlock>> blockSorter = new LinkedHashMap<>();
                 if (isCsv()) {
                     List<RaplaTableColumn<AppointmentBlock>> columnPluginsPlusDate = new ArrayList<>(columnPlugins);

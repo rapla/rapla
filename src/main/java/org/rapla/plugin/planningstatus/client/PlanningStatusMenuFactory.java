@@ -39,8 +39,8 @@ import org.rapla.plugin.planningstatus.PlanningStatusResources;
 import org.rapla.scheduler.Promise;
 import org.rapla.storage.PermissionController;
 
-import javax.inject.Inject;
-import javax.inject.Singleton;
+import jakarta.inject.Inject;
+import jakarta.inject.Singleton;
 import java.util.*;
 
 @Singleton @Extension(provides = ObjectMenuFactory.class, id = "planningstatus") public class PlanningStatusMenuFactory implements ObjectMenuFactory

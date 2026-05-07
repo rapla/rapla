@@ -58,6 +58,18 @@ public class UpdateResult
         return until;
     }
 
+    /** {@code LocalDateTime} variant of {@link #getSince()}. UTC. */
+    public java.time.LocalDateTime getSinceAsLocalDateTime()
+    {
+        return since == null ? null : org.rapla.components.util.DateTools.toLocalDateTime(since);
+    }
+
+    /** {@code LocalDateTime} variant of {@link #getUntil()}. UTC. */
+    public java.time.LocalDateTime getUntilAsLocalDateTime()
+    {
+        return until == null ? null : org.rapla.components.util.DateTools.toLocalDateTime(until);
+    }
+
     @SuppressWarnings("unchecked")
 	public <T extends UpdateOperation> Collection<T> getOperations( final Class<T> operationClass) {
         Iterator<UpdateOperation> operationsIt =  operations.iterator();

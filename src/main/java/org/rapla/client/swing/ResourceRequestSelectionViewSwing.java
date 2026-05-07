@@ -36,7 +36,7 @@ import org.rapla.inject.DefaultImplementation;
 import org.rapla.inject.InjectionContext;
 import org.rapla.logger.Logger;
 
-import javax.inject.Inject;
+import jakarta.inject.Inject;
 import javax.swing.*;
 import javax.swing.event.TreeSelectionEvent;
 import javax.swing.event.TreeSelectionListener;
@@ -46,6 +46,7 @@ import java.awt.*;
 import java.util.Collection;
 
 @DefaultImplementation(context = InjectionContext.swing, of =  ResourceRequestSelectionView.class)
+@org.springframework.stereotype.Service
 public class ResourceRequestSelectionViewSwing implements ResourceRequestSelectionView<Component>
 {
     private final RaplaTree treeSelection = new RaplaTree();

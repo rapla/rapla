@@ -28,8 +28,8 @@ import org.rapla.entities.storage.ReferenceInfo;
 import org.rapla.facade.Conflict;
 import org.rapla.framework.RaplaException;
 
-import javax.inject.Inject;
-import javax.inject.Singleton;
+import jakarta.inject.Inject;
+import jakarta.inject.Singleton;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Date;
@@ -353,6 +353,11 @@ public class PermissionController
         return canRequest(alloc, user, today);
     }
 
+    /** {@code LocalDate} variant — `today` is date-only. */
+    public boolean isRequestOnly(Allocatable alloc, User user, java.time.LocalDate today) {
+        return isRequestOnly(alloc, user, today == null ? null : org.rapla.components.util.DateTools.toDate(today));
+    }
+
     /**
      *  Checks if the user is allowed to make an allocation in the future (starting with date today)
      * @param container
@@ -369,6 +374,12 @@ public class PermissionController
         boolean hasAccess = hasAccess(container, user, Permission.ALLOCATE, null, null, today, true);
         return hasAccess;
 
+    }
+
+    /** {@code LocalDate} variant — `today` is date-only. */
+    public boolean canAllocate(Allocatable container, User user, java.time.LocalDate today)
+    {
+        return canAllocate(container, user, today == null ? null : org.rapla.components.util.DateTools.toDate(today));
     }
 
     public boolean hasPermissionToAllocate(User user, Appointment appointment, Allocatable allocatable, Reservation original, Date today)

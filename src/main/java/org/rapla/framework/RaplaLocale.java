@@ -59,6 +59,11 @@ public interface RaplaLocale
      */
     Date toRaplaDate( int year, int month, int date );
 
+    /** {@code LocalDate} variant. UTC. */
+    default java.time.LocalDate toRaplaLocalDate(int year, int month, int date) {
+        return java.time.LocalDate.of(year, month, date);
+    }
+
     /** sets date to 0:00:00  */
     Date toTime( int hour, int minute, int second );
 
@@ -75,9 +80,31 @@ public interface RaplaLocale
     String formatDateLong( Date date );
 
     String formatTimestamp(Date timestamp);
+
+    /** {@code java.time} variants. UTC. */
+    default String formatDate( java.time.LocalDate date ) {
+        return date == null ? "" : formatDate(org.rapla.components.util.DateTools.toDate(date));
+    }
+    default String formatDate( java.time.LocalDateTime dateTime ) {
+        return dateTime == null ? "" : formatDate(org.rapla.components.util.DateTools.toDate(dateTime));
+    }
+    default String formatTimestamp(java.time.LocalDateTime timestamp) {
+        return timestamp == null ? "" : formatTimestamp(org.rapla.components.util.DateTools.toDate(timestamp));
+    }
+    default String formatDateLong(java.time.LocalDateTime dateTime) {
+        return dateTime == null ? "" : formatDateLong(org.rapla.components.util.DateTools.toDate(dateTime));
+    }
     
     /** Abbreviation of locale weekday name of date. */
     String getWeekday( Date date );
+
+    /** {@code LocalDate}/{@code LocalDateTime} variants. */
+    default String getWeekday( java.time.LocalDate date ) {
+        return date == null ? "" : getWeekday(org.rapla.components.util.DateTools.toDate(date));
+    }
+    default String getWeekday( java.time.LocalDateTime dateTime ) {
+        return dateTime == null ? "" : getWeekday(org.rapla.components.util.DateTools.toDate(dateTime));
+    }
 
      /** Monthname of date. */
     String formatMonth( Date date );
@@ -103,6 +130,15 @@ public interface RaplaLocale
     String getWeekdayName(int weekday);
 
     String formatTime( Date date );
+
+    /** {@code LocalTime}/{@code LocalDateTime} variants. */
+    default String formatTime( java.time.LocalTime time ) {
+        if (time == null) return "";
+        return formatTime(new Date(time.getHour() * 3600_000L + time.getMinute() * 60_000L + time.getSecond() * 1000L));
+    }
+    default String formatTime( java.time.LocalDateTime dateTime ) {
+        return dateTime == null ? "" : formatTime(org.rapla.components.util.DateTools.toDate(dateTime));
+    }
 
     String formatMinuteOfDay( int minuteOfDay );
     

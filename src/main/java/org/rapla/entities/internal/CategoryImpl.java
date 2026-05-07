@@ -53,6 +53,13 @@ final public class CategoryImpl extends SimpleEntity implements Category, Modifi
     	this.lastChanged = lastChanged;
     }
 
+    /** {@code LocalDateTime} factory paralleling {@link #CategoryImpl(Date, Date)}. UTC. */
+    public static CategoryImpl ofLocalDateTime(java.time.LocalDateTime createDate, java.time.LocalDateTime lastChanged) {
+        return new CategoryImpl(
+            createDate == null ? null : org.rapla.components.util.DateTools.toDate(createDate),
+            lastChanged == null ? null : org.rapla.components.util.DateTools.toDate(lastChanged));
+    }
+
     public static Collection<Category> getRecursive(Category cat)
     {
         List<Category> result = new ArrayList<>();

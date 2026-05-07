@@ -13,9 +13,11 @@
 
 package org.rapla.entities.domain;
 
+import org.rapla.components.util.DateTools;
 import org.rapla.entities.Category;
 import org.rapla.entities.User;
 
+import java.time.LocalDateTime;
 import java.util.Date;
 
 /** New feature to restrict the access to allocatables on a per user/group basis.
@@ -184,10 +186,39 @@ public interface Permission
     void setEnd(Date end);
     Date getEnd();
 
+    /** {@code java.time} variant of {@link #getStart()}. Distinct method name to
+     *  avoid overload ambiguity with {@code setStart(null)}. */
+    default LocalDateTime getStartAsLocalDateTime() {
+        Date d = getStart();
+        return d == null ? null : DateTools.toLocalDateTime(d);
+    }
+
+    /** {@code java.time} variant of {@link #getEnd()}. */
+    default LocalDateTime getEndAsLocalDateTime() {
+        Date d = getEnd();
+        return d == null ? null : DateTools.toLocalDateTime(d);
+    }
+
+    /** {@code LocalDateTime} write-side. Distinct name to avoid {@code setStart(null)}/{@code setEnd(null)} ambiguity. */
+    default void setStartLocalDateTime(LocalDateTime start) {
+        setStart(start == null ? null : DateTools.toDate(start));
+    }
+    default void setEndLocalDateTime(LocalDateTime end) {
+        setEnd(end == null ? null : DateTools.toDate(end));
+    }
+
     /** Convenince Method: returns the last date for which the resource can be booked */
     Date getMaxAllowed(Date today);
     /** Convenince Method: returns the first date for which the resource can be booked */
     Date getMinAllowed(Date today);
+
+    /** {@code LocalDate} variants — `today` is a date, no time component. */
+    default Date getMaxAllowed(java.time.LocalDate today) {
+        return getMaxAllowed(today == null ? null : DateTools.toDate(today));
+    }
+    default Date getMinAllowed(java.time.LocalDate today) {
+        return getMinAllowed(today == null ? null : DateTools.toDate(today));
+    }
     
     /** returns true if one of start, end or maxAllowed, MinAllowed is set*/
     boolean hasTimeLimits();

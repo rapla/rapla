@@ -22,7 +22,6 @@ import org.rapla.entities.dynamictype.internal.DynamicTypeImpl;
 import org.rapla.framework.RaplaException;
 import org.rapla.storage.StorageOperator;
 
-import java.util.Date;
 
 public class PeriodReader extends DynAttReader {
     public PeriodReader(RaplaXMLContext context) throws RaplaException {
@@ -35,7 +34,8 @@ public class PeriodReader extends DynAttReader {
         throws RaplaSAXParseException
     {
         if (namespaceURI.equals(RAPLA_NS) && localName.equals("period")) {	 
-        	AllocatableImpl period = new AllocatableImpl(new Date(), new Date());
+        	java.time.LocalDateTime now = getReadLocalDateTime();
+        	AllocatableImpl period = AllocatableImpl.ofLocalDateTime(now, now);
         	Classification classification = ((DynamicTypeImpl)store.getDynamicType(StorageOperator.PERIOD_TYPE)).newClassificationWithoutCheck(true);
             classification.setValue("name", getString(atts,"name"));
             classification.setValue("start",parseDate(getString(atts,"start"),false));

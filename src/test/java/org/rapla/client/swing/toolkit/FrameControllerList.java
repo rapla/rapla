@@ -16,8 +16,8 @@ import org.rapla.components.util.Assert;
 import org.rapla.components.util.Tools;
 import org.rapla.logger.Logger;
 
-import javax.inject.Inject;
-import javax.inject.Singleton;
+import jakarta.inject.Inject;
+import jakarta.inject.Singleton;
 import javax.swing.*;
 import java.awt.Component;
 import java.awt.Container;

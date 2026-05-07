@@ -1,12 +1,11 @@
 package org.rapla.client.internal;
 
 import org.rapla.RaplaResources;
-import org.rapla.components.util.DateTools;
 import org.rapla.entities.domain.RepeatingType;
 import org.rapla.facade.Conflict;
 import org.rapla.framework.RaplaLocale;
 
-import java.util.Date;
+import java.time.LocalDateTime;
 
 public class ConflictText {
 
@@ -14,9 +13,9 @@ public class ConflictText {
 
   public static String getConflictText(Conflict conflict, RaplaLocale raplaLocale, RaplaResources i18n) {
     StringBuilder sb = new StringBuilder();
-    Date startDate = conflict.getStartDate();
+    LocalDateTime startDate = conflict.getStartDateAsLocalDateTime();
     sb.append(raplaLocale.formatDate(startDate));
-    if (!DateTools.cutDate(startDate).equals(startDate)) {
+    if (!startDate.toLocalDate().atStartOfDay().equals(startDate)) {
       sb.append(' ');
       sb.append(raplaLocale.formatTime(startDate));
     }

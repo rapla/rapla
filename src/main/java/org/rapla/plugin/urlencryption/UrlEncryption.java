@@ -1,18 +1,18 @@
 package org.rapla.plugin.urlencryption;
 
 import org.rapla.framework.RaplaException;
-
-import javax.ws.rs.POST;
-import javax.ws.rs.Path;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.service.annotation.HttpExchange;
+import org.springframework.web.service.annotation.PostExchange;
 
 /**
  * This Interface is used to provide the encryption functionality to the RAPLA Clients.
- * 
+ *
  * @author Jonas Kohlbrenner
- * 
+ *
  */
-@Path("urlencryption")
-public interface UrlEncryption 
+@HttpExchange("/urlencryption")
+public interface UrlEncryption
 {
 	
 	/**
@@ -29,7 +29,7 @@ public interface UrlEncryption
 	 * @return String Encrypted parameter string
 	 * @throws RaplaException In case the encryption fails
 	 */
-	@POST
-    String encrypt(String plain) throws RaplaException;
+	@PostExchange
+    String encrypt(@RequestBody String plain) throws RaplaException;
     
 }

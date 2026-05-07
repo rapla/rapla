@@ -45,6 +45,29 @@ public interface CalendarModel extends Cloneable, ClassifiableFilter
 
     TimeInterval getTimeIntervall();
 
+    /** {@code LocalDate} variants — selectedDate/startDate/endDate are date-only. */
+    default java.time.LocalDate getSelectedLocalDate() {
+        Date d = getSelectedDate();
+        return d == null ? null : org.rapla.components.util.DateTools.toLocalDate(d);
+    }
+    default void setSelectedLocalDate(java.time.LocalDate date) {
+        setSelectedDate(date == null ? null : org.rapla.components.util.DateTools.toDate(date));
+    }
+    default java.time.LocalDate getStartLocalDate() {
+        Date d = getStartDate();
+        return d == null ? null : org.rapla.components.util.DateTools.toLocalDate(d);
+    }
+    default void setStartLocalDate(java.time.LocalDate date) {
+        setStartDate(date == null ? null : org.rapla.components.util.DateTools.toDate(date));
+    }
+    default java.time.LocalDate getEndLocalDate() {
+        Date d = getEndDate();
+        return d == null ? null : org.rapla.components.util.DateTools.toLocalDate(d);
+    }
+    default void setEndLocalDate(java.time.LocalDate date) {
+        setEndDate(date == null ? null : org.rapla.components.util.DateTools.toDate(date));
+    }
+
     Collection<RaplaObject> getSelectedObjects();
 
 

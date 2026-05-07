@@ -12,13 +12,14 @@ import org.rapla.facade.Conflict;
 import org.rapla.facade.RaplaComponent;
 import org.rapla.framework.RaplaLocale;
 
-import javax.inject.Inject;
+import jakarta.inject.Inject;
 import javax.swing.*;
 import javax.swing.border.Border;
 import javax.swing.tree.DefaultTreeCellRenderer;
 import java.awt.*;
 import java.util.stream.Stream;
 
+@org.springframework.stereotype.Service
 public class RequestTreeCellRenderer extends DefaultTreeCellRenderer {
     private final RaplaResources i18n;
     private final RaplaLocale raplaLocale;

@@ -75,6 +75,19 @@ public class ConflictImpl extends SimpleEntity implements Conflict, ModifiableTi
     {
         startDate = today;
         this.lastChanged = lastChanged;
+        initFromId(id);
+    }
+
+    /** {@code LocalDateTime} factory. UTC. */
+    public static ConflictImpl ofLocalDateTime(String id, java.time.LocalDateTime today, java.time.LocalDateTime lastChanged) throws RaplaException
+    {
+        return new ConflictImpl(id,
+            today == null ? null : org.rapla.components.util.DateTools.toDate(today),
+            lastChanged == null ? null : org.rapla.components.util.DateTools.toDate(lastChanged));
+    }
+
+    private void initFromId(String id) throws RaplaException
+    {
         reservation1Name = "";
         reservation2Name = "";
         setId(id);

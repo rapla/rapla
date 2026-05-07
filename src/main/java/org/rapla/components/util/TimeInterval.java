@@ -2,6 +2,7 @@ package org.rapla.components.util;
 
 
 import java.io.Serializable;
+import java.time.LocalDateTime;
 import java.util.Date;
 
 public final class TimeInterval implements Serializable
@@ -18,7 +19,14 @@ public final class TimeInterval implements Serializable
 		this.start = start;
 		this.end = end;
 	}
-	
+
+	/** {@code LocalDateTime} factory method. UTC. */
+	public static TimeInterval of(LocalDateTime start, LocalDateTime end) {
+		Date s = start == null ? null : DateTools.toDate(start);
+		Date e = end == null ? null : DateTools.toDate(end);
+		return new TimeInterval(s, e);
+	}
+
 	public Date getStart() {
 		return start;
 	}
@@ -30,6 +38,16 @@ public final class TimeInterval implements Serializable
 	}
 	public void setEnd(Date end) {
 		this.end = end;
+	}
+
+	/** {@code LocalDateTime} variant of {@link #getStart()}. UTC. */
+	public LocalDateTime getStartAsLocalDateTime() {
+		return start == null ? null : DateTools.toLocalDateTime(start);
+	}
+
+	/** {@code LocalDateTime} variant of {@link #getEnd()}. UTC. */
+	public LocalDateTime getEndAsLocalDateTime() {
+		return end == null ? null : DateTools.toLocalDateTime(end);
 	}
 	
 	public String toString()

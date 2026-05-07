@@ -17,11 +17,6 @@
 			<source>${rapla.distribution.directory}/contexts/rapla.xml</source>
 			<outputDirectory>contexts</outputDirectory>
 		</file>
-		<file>
-			<source>${project.build.directory}/rapla-${version}-war.war</source>
-			<destName>rapla.war</destName>
-			<outputDirectory>webapps</outputDirectory>
-		</file>
 		<!-- SH files -->
 		<file>
 			<source>${rapla.distribution.directory}/templates/scripts/rapla_sh</source>

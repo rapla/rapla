@@ -77,8 +77,8 @@ import org.rapla.plugin.jndi.internal.JNDIConf;
 import org.rapla.server.AuthenticationStore;
 import org.rapla.storage.RaplaSecurityException;
 
-import javax.inject.Inject;
-import javax.inject.Singleton;
+import jakarta.inject.Inject;
+import jakarta.inject.Singleton;
 import javax.naming.CommunicationException;
 import javax.naming.Context;
 import javax.naming.Name;

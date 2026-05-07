@@ -14,9 +14,9 @@ import org.rapla.plugin.mail.MailException;
 import org.rapla.plugin.mail.MailPlugin;
 import org.rapla.server.ServerService;
 
-import javax.inject.Inject;
-import javax.inject.Named;
-import javax.inject.Provider;
+import jakarta.inject.Inject;
+import jakarta.inject.Named;
+import jakarta.inject.Provider;
 import java.io.IOException;
 import java.lang.reflect.Array;
 import java.lang.reflect.InvocationTargetException;
@@ -274,13 +274,13 @@ public class MailapiClient implements MailInterface
 			{
 				
 			}
-			Class<?> SessionC = classLoader.loadClass("javax.mail.Session");
-			Class<?> MimeMessageC = classLoader.loadClass("javax.mail.internet.MimeMessage");
-			Class<?> MessageC = classLoader.loadClass("javax.mail.Message");
-			Class<?> AddressC = classLoader.loadClass("javax.mail.Address");
-			Class<?> RecipientTypeC = classLoader.loadClass("javax.mail.Message$RecipientType");
-			Class<?> InternetAddressC = classLoader.loadClass("javax.mail.internet.InternetAddress");
-			Class<?> TransportC = classLoader.loadClass("javax.mail.Transport");
+			Class<?> SessionC = classLoader.loadClass("jakarta.mail.Session");
+			Class<?> MimeMessageC = classLoader.loadClass("jakarta.mail.internet.MimeMessage");
+			Class<?> MessageC = classLoader.loadClass("jakarta.mail.Message");
+			Class<?> AddressC = classLoader.loadClass("jakarta.mail.Address");
+			Class<?> RecipientTypeC = classLoader.loadClass("jakarta.mail.Message$RecipientType");
+			Class<?> InternetAddressC = classLoader.loadClass("jakarta.mail.internet.InternetAddress");
+			Class<?> TransportC = classLoader.loadClass("jakarta.mail.Transport");
 			//Message message = new MimeMessage(session);
 			Object message = MimeMessageC.getConstructor( SessionC).newInstance( session);
 			if ( senderMail != null && senderMail.trim().length() > 0)

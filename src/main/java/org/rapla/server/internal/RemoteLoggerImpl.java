@@ -6,7 +6,7 @@ import org.rapla.inject.InjectionContext;
 import org.rapla.logger.Logger;
 import org.rapla.enpoints.RemoteLogger;
 
-import javax.inject.Inject;
+import jakarta.inject.Inject;
 
 @DefaultImplementation(context = InjectionContext.server, of = RemoteLogger.class)
 public class RemoteLoggerImpl implements RemoteLogger

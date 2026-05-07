@@ -73,6 +73,16 @@ public interface Appointment extends Entity<Appointment>, Comparable {
      */
     void moveTo(Date newStart);
 
+    /** {@code LocalDateTime} variant of {@link #move(Date, Date)}. UTC. */
+    default void move(LocalDateTime start, LocalDateTime end) {
+        move(org.rapla.components.util.DateTools.toDate(start), org.rapla.components.util.DateTools.toDate(end));
+    }
+
+    /** {@code LocalDateTime} variant of {@link #moveTo(Date)}. UTC. */
+    default void moveTo(LocalDateTime newStart) {
+        moveTo(org.rapla.components.util.DateTools.toDate(newStart));
+    }
+
     /** Tests two appointments for overlap.
         Important:  Times like 13:00-14:00 and 14:00-15:00 do not overlap
         The overlap-relation must be symmetric <code>a1.overlaps(a2) == a2.overlaps(a1)</code>
@@ -87,8 +97,13 @@ public interface Appointment extends Entity<Appointment>, Comparable {
       * @return true if the overlaps with the given period.
     */
     boolean overlaps(Date start,Date end);
-    
-    /** Test for overlap with a period. 
+
+    /** {@code LocalDateTime} variant of {@link #overlaps(Date, Date)}. UTC. */
+    default boolean overlaps(LocalDateTime start, LocalDateTime end) {
+        return overlaps(org.rapla.components.util.DateTools.toDate(start), org.rapla.components.util.DateTools.toDate(end));
+    }
+
+    /** Test for overlap with a period.
      *  same as overlaps( start, end, true)
       * @return true if the overlaps with the given period.
     */
@@ -115,14 +130,28 @@ public interface Appointment extends Entity<Appointment>, Comparable {
     void setWholeDays(boolean enable);
 
     /** adds all Appointment-blocks in the given period to the blocks collection.
-        A block is in the period if its starttime&lt;end or its endtime&gt;start. Exceptions are excluded, i.e. there is no block on an exception date. 
+        A block is in the period if its starttime&lt;end or its endtime&gt;start. Exceptions are excluded, i.e. there is no block on an exception date.
      */
     void createBlocks(Date start,Date end,Collection<AppointmentBlock> blocks);
-    
+
     /** adds all Appointment-blocks in the given period to the blocks collection.
     A block is in the period if its starttime&lt;end or its endtime&gt;start. You can specify if exceptions should be excluded. If this is set no blocks are added on an exception date.
     */
     void createBlocks(Date start,Date end,Collection<AppointmentBlock> blocks, boolean excludeExceptions);
+
+    /** {@code LocalDateTime} variants — distinct method name to avoid ambiguity with {@code null} args. */
+    default void createBlocksLocalDateTime(LocalDateTime start, LocalDateTime end, Collection<AppointmentBlock> blocks) {
+        createBlocks(
+            start == null ? null : org.rapla.components.util.DateTools.toDate(start),
+            end == null ? null : org.rapla.components.util.DateTools.toDate(end),
+            blocks);
+    }
+    default void createBlocksLocalDateTime(LocalDateTime start, LocalDateTime end, Collection<AppointmentBlock> blocks, boolean excludeExceptions) {
+        createBlocks(
+            start == null ? null : org.rapla.components.util.DateTools.toDate(start),
+            end == null ? null : org.rapla.components.util.DateTools.toDate(end),
+            blocks, excludeExceptions);
+    }
 
     Appointment[] EMPTY_ARRAY = new Appointment[0];
     

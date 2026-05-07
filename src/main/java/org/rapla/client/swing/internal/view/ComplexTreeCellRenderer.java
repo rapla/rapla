@@ -15,15 +15,16 @@ import org.rapla.inject.DefaultImplementation;
 import org.rapla.inject.InjectionContext;
 import org.rapla.storage.PermissionController;
 
-import javax.inject.Inject;
+import jakarta.inject.Inject;
 import javax.swing.*;
 import javax.swing.border.Border;
 import javax.swing.tree.DefaultTreeCellRenderer;
 import javax.swing.tree.TreeCellRenderer;
 import java.awt.*;
-import java.util.Date;
 
 @DefaultImplementation(of= TreeCellRenderer.class,context = InjectionContext.swing)
+@org.springframework.stereotype.Service
+@org.springframework.context.annotation.Primary
 public class ComplexTreeCellRenderer extends DefaultTreeCellRenderer {
     Icon bigFolderResourcesFiltered;
     Icon bigFolderResourcesUnfiltered;
@@ -73,7 +74,7 @@ public class ComplexTreeCellRenderer extends DefaultTreeCellRenderer {
             Allocatable allocatable = (Allocatable) object;
             try {
                 User user = clientFacade.getUser();
-                Date today = raplaFacade.today();
+                java.time.LocalDate today = raplaFacade.todayAsLocalDate();
                 final PermissionController permissionController = raplaFacade.getPermissionController();
                 if (!permissionController.canAllocate(allocatable, user, today)) {
                     if ( permissionController.isRequestOnly( allocatable, user, today) ) {

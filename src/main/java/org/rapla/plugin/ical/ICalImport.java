@@ -1,18 +1,15 @@
 package org.rapla.plugin.ical;
 
 import org.rapla.framework.RaplaException;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.service.annotation.HttpExchange;
+import org.springframework.web.service.annotation.PostExchange;
 
-import javax.ws.rs.POST;
-import javax.ws.rs.Path;
-import javax.ws.rs.Produces;
-import javax.ws.rs.core.MediaType;
-
-@Path("ical/import")
+@HttpExchange("/ical/import")
 public interface ICalImport
 {
-    @POST
-    @Produces({ MediaType.APPLICATION_JSON, MediaType.APPLICATION_XML })
-    Integer[] importICal(Import job) throws RaplaException;
+    @PostExchange
+    Integer[] importICal(@RequestBody Import job) throws RaplaException;
 
     class Import
     {

@@ -15,7 +15,7 @@ import org.rapla.logger.Logger;
 import org.rapla.plugin.tableview.client.CalendarTableView.Presenter;
 import org.rapla.scheduler.Promise;
 
-import javax.inject.Inject;
+import jakarta.inject.Inject;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;

@@ -19,9 +19,9 @@ import org.rapla.inject.InjectionContext;
 import org.rapla.plugin.mail.MailToUserInterface;
 import org.rapla.server.RemoteSession;
 
-import javax.inject.Inject;
-import javax.servlet.http.HttpServletRequest;
-import javax.ws.rs.core.Context;
+import jakarta.inject.Inject;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.ws.rs.core.Context;
 
 @DefaultImplementation(context=InjectionContext.server, of=MailToUserInterface.class)
 public class RaplaMailToUserOnLocalhost implements MailToUserInterface

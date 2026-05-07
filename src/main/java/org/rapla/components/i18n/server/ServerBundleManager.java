@@ -8,8 +8,8 @@ import org.rapla.components.i18n.I18nIcon;
 import org.rapla.inject.DefaultImplementation;
 import org.rapla.inject.InjectionContext;
 
-import javax.inject.Inject;
-import javax.inject.Singleton;
+import jakarta.inject.Inject;
+import jakarta.inject.Singleton;
 import java.net.URL;
 import java.util.Collections;
 import java.util.LinkedHashMap;

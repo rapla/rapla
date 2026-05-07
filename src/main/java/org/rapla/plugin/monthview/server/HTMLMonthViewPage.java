@@ -29,7 +29,7 @@ import org.rapla.plugin.abstractcalendar.server.AbstractHTMLCalendarPage;
 import org.rapla.plugin.monthview.MonthViewPlugin;
 import org.rapla.server.extensionpoints.HTMLViewPage;
 
-import javax.inject.Inject;
+import jakarta.inject.Inject;
 import java.util.Set;
 
 @Extension(provides = HTMLViewPage.class,id= MonthViewPlugin.MONTH_VIEW)

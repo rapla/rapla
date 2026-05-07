@@ -5,8 +5,8 @@ import org.rapla.inject.Extension;
 import org.rapla.server.extensionpoints.HtmlMainMenu;
 import org.rapla.server.servletpages.DefaultHTMLMenuEntry;
 
-import javax.inject.Inject;
-import javax.inject.Singleton;
+import jakarta.inject.Inject;
+import jakarta.inject.Singleton;
 
 @Extension(provides = HtmlMainMenu.class,id="1_jnlp")
 @Singleton

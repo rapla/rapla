@@ -49,7 +49,7 @@ import org.rapla.plugin.abstractcalendar.RaplaCalendarViewListener;
 import org.rapla.plugin.weekview.client.swing.SwingDayCalendar;
 import org.rapla.scheduler.Promise;
 
-import javax.inject.Provider;
+import jakarta.inject.Provider;
 import javax.swing.JComponent;
 import javax.swing.JLabel;
 import java.awt.Point;

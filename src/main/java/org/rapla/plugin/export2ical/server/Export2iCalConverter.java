@@ -53,7 +53,7 @@ import org.rapla.logger.Logger;
 import org.rapla.plugin.export2ical.Export2iCalPlugin;
 import org.rapla.server.TimeZoneConverter;
 
-import javax.inject.Inject;
+import jakarta.inject.Inject;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URLEncoder;
@@ -62,7 +62,6 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.ZonedDateTime;
 import java.util.*;
-import java.util.Date;
 import java.util.TimeZone;
 
 public class Export2iCalConverter
@@ -360,8 +359,8 @@ public class Export2iCalConverter
      */
     private void addLastModifiedDateToEvent(Appointment appointment, VEvent properties)
     {
-        Date lastChange = appointment.getReservation().getLastChanged();
-        properties.add(new DtStamp(convertRaplaLocaleToUTC(lastChange).toInstant()));
+        LocalDateTime lastChange = appointment.getReservation().getLastChangedAsLocalDateTime();
+        properties.add(new DtStamp(lastChange.atZone(timeZone.toZoneId()).toInstant()));
     }
 
     /**
@@ -464,14 +463,11 @@ public class Export2iCalConverter
 
         // rku: use seperate EXDATE for each exception
         List<ZonedDateTime> exceptionDates = new ArrayList<>();
-        for (Iterator<Date> itExceptions = Arrays.asList(repeating.getExceptions()).iterator(); itExceptions.hasNext(); )
+        LocalDateTime startDateTime = appointment.getStartDateTime();
+        for (LocalDateTime exception : repeating.getExceptionsAsLocalDateTime())
         {
-            Date date = itExceptions.next();
-            LocalDateTime startDateTime = appointment.getStartDateTime();
-            LocalDateTime localDateTime = DateTools.toLocalDateTime(date);
-            LocalDateTime exceptionDate = LocalDateTime.of(localDateTime.toLocalDate(),startDateTime.toLocalTime());
-            ZonedDateTime dateTime = exceptionDate.atZone(timeZone.toZoneId());
-            exceptionDates.add( dateTime );
+            LocalDateTime exceptionDate = LocalDateTime.of(exception.toLocalDate(), startDateTime.toLocalTime());
+            exceptionDates.add(exceptionDate.atZone(timeZone.toZoneId()));
         }
 
         ZonedDateTime[] array = exceptionDates.toArray(new ZonedDateTime[0]);
@@ -662,41 +658,19 @@ public class Export2iCalConverter
      */
     private void addEndDateToEvent(Appointment appointment, VEvent properties, boolean isAllDayEvent)
     {
-
-        Date endDate = appointment.getEnd();
+        LocalDateTime endDateTime = appointment.getEndDateTime();
         if (isAllDayEvent)
         {
-            DtEnd end = getDtEndFromAllDayEvent(endDate);
-            properties.add(end);
+            properties.add(new DtEnd(endDateTime.toLocalDate()));
+        }
+        else if (appointment.getRepeating() == null)
+        {
+            properties.add(new DtEnd<>(endDateTime.atZone(timeZone.toZoneId()).toInstant()));
         }
         else
         {
-            if (appointment.getRepeating() == null)
-            {
-                DtEnd end = new DtEnd(convertRaplaLocaleToUTC(endDate));
-                properties.add(end);
-            }
-            else
-            {
-                DtEnd end = getEndDateProperty(endDate);
-                properties.add(end);
-            }
+            properties.add(new DtEnd(endDateTime.atZone(timeZone.toZoneId())));
         }
-    }
-
-    private DtEnd getEndDateProperty(Date endDate)
-    {
-
-        ZonedDateTime date = convertRaplaLocaleToUTC(endDate);
-        return new DtEnd(date);
-    }
-
-    private DtEnd getDtEndFromAllDayEvent(Date endDate)
-    {
-        LocalDateTime date = DateTools.toLocalDateTime(endDate);
-
-        DtEnd end = new DtEnd(date.toLocalDate());
-        return end;
     }
 
     /**
@@ -707,41 +681,20 @@ public class Export2iCalConverter
      */
     private void addStartDateToEvent(Appointment appointment, VEvent properties, boolean isAllDayEvent)
     {
-
-        Date startDate = appointment.getStart();
+        LocalDateTime startDateTime = appointment.getStartDateTime();
 
         if (isAllDayEvent)
         {
-            DtStart start = getDtStartFromAllDayEvent(startDate);
-            properties.add(start);
+            properties.add(new DtStart(startDateTime.atZone(timeZone.toZoneId()).toInstant()));
+        }
+        else if (appointment.getRepeating() == null)
+        {
+            properties.add(new DtStart<>(startDateTime.atZone(timeZone.toZoneId()).toInstant()));
         }
         else
         {
-            if (appointment.getRepeating() == null)
-            {
-                DtStart<Instant> start = new DtStart(convertRaplaLocaleToUTC(startDate));
-                properties.add(start);
-            }
-            else
-            {
-                DtStart start = getStartDateProperty(startDate);
-                properties.add(start);
-            }
+            properties.add(new DtStart(startDateTime.atZone(timeZone.toZoneId())));
         }
-    }
-
-    private DtStart getStartDateProperty(Date startDate)
-    {
-
-        ZonedDateTime date = convertRaplaLocaleToUTC(startDate);
-        return new DtStart(date);
-    }
-
-    private DtStart getDtStartFromAllDayEvent(Date startDate)
-    {
-        LocalDateTime localDateTime = DateTools.toLocalDateTime(startDate);
-        DtStart start = new DtStart(localDateTime.atZone(timeZone.toZoneId()).toInstant());
-        return start;
     }
 
     /**
@@ -752,15 +705,7 @@ public class Export2iCalConverter
      */
     private void addCreateDateToEvent(Appointment appointment, VEvent properties)
     {
-
-        Date createTime = appointment.getReservation().getCreateDate();
-        properties.add(new Created(convertRaplaLocaleToUTC(createTime).toInstant()));
-    }
-
-    private ZonedDateTime convertRaplaLocaleToUTC(Date date)
-    {
-        LocalDateTime localDateTime = DateTools.toLocalDateTime(date);
-        ZonedDateTime instant = localDateTime.atZone(timeZone.toZoneId());
-        return instant;
+        LocalDateTime createTime = appointment.getReservation().getCreateDateAsLocalDateTime();
+        properties.add(new Created(createTime.atZone(timeZone.toZoneId()).toInstant()));
     }
 }

@@ -112,6 +112,11 @@ public class SignedToken {
    *         after the first ',' in the returned token string.
    * @throws TokenInvalidException the JVM doesn't support the necessary algorithms.
    */
+  /** {@code LocalDateTime} variant — distinct name. */
+  synchronized public String newToken(final String text, java.time.LocalDateTime now) throws TokenInvalidException {
+    return newToken(text, now == null ? null : org.rapla.components.util.DateTools.toDate(now));
+  }
+
   synchronized public String newToken(final String text, Date now) throws TokenInvalidException {
     final int q = rng.nextInt();
     final byte[] buf = new byte[tokenLength];
@@ -134,6 +139,11 @@ public class SignedToken {
    * @throws TokenInvalidException the JVM doesn't support the necessary algorithms to
    *         generate a token. XSRF services are simply not available.
    */
+  /** {@code LocalDateTime} variant — distinct name. */
+  public ValidToken checkToken(final String tokenString, final String text, java.time.LocalDateTime now) throws TokenInvalidException {
+    return checkToken(tokenString, text, now == null ? null : org.rapla.components.util.DateTools.toDate(now));
+  }
+
   public ValidToken checkToken(final String tokenString, final String text,Date now)
       throws TokenInvalidException {
     if (tokenString == null || tokenString.length() == 0) {

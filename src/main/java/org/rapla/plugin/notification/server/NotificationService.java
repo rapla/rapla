@@ -43,8 +43,8 @@ import org.rapla.storage.CachableStorageOperator;
 import org.rapla.storage.StorageOperator;
 import org.rapla.storage.UpdateResult;
 
-import javax.inject.Inject;
-import javax.inject.Provider;
+import jakarta.inject.Inject;
+import jakarta.inject.Provider;
 import java.util.*;
 
 /** Sends Notification Mails on allocation change.*/
@@ -466,7 +466,8 @@ public class NotificationService implements ServerExtension
             catch (Throwable t)
             {
                 // TODO is there a unknown event type needed?
-                ReservationImpl anonymousReservation = new ReservationImpl(new Date(), new Date());
+                java.time.LocalDateTime now = java.time.LocalDateTime.now();
+                ReservationImpl anonymousReservation = ReservationImpl.ofLocalDateTime(now, now);
                 DynamicType anonymousReservationType = operator.getDynamicType(StorageOperator.ANONYMOUSEVENT_TYPE);
                 anonymousReservation.setClassification(anonymousReservationType.newClassification());
                 // print unknown ressource

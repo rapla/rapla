@@ -13,35 +13,29 @@
 package org.rapla.storage.dbrm;
 
 import org.rapla.framework.RaplaException;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.service.annotation.GetExchange;
+import org.springframework.web.service.annotation.HttpExchange;
+import org.springframework.web.service.annotation.PostExchange;
 
-import javax.ws.rs.GET;
-import javax.ws.rs.POST;
-import javax.ws.rs.Path;
-import javax.ws.rs.Produces;
-import javax.ws.rs.QueryParam;
-import javax.ws.rs.core.MediaType;
-
-@Path("authentication")
+@HttpExchange("/authentication")
 public interface RemoteAuthentificationService
 {
-    @POST
-    @Produces({ MediaType.APPLICATION_JSON, MediaType.APPLICATION_XML })
-    LoginTokens login(@QueryParam("username") String username, String password, @QueryParam("connectAs") String connectAs) throws RaplaException;
+    @PostExchange
+    LoginTokens login(@RequestParam("username") String username,
+                      @RequestBody String password,
+                      @RequestParam(value = "connectAs", required = false) String connectAs) throws RaplaException;
 
-    @GET
-    @Path("destroy")
+    @GetExchange("/destroy")
     void logout() throws RaplaException;
 
-    @GET
-    @Path("refreshToken")
+    @GetExchange("/refreshToken")
     String getRefreshToken() throws RaplaException;
 
-    @GET
-    @Path("regenerateRefreshToken")
+    @GetExchange("/regenerateRefreshToken")
     String regenerateRefreshToken() throws RaplaException;
 
-    @GET
-    @Path("loginToken")
-    LoginTokens refresh(@QueryParam("refreshToken") String refreshToken) throws RaplaException;
-
+    @GetExchange("/loginToken")
+    LoginTokens refresh(@RequestParam("refreshToken") String refreshToken) throws RaplaException;
 }

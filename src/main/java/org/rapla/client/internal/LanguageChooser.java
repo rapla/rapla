@@ -17,7 +17,7 @@ import org.rapla.client.RaplaWidget;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.logger.Logger;
 
-import javax.inject.Inject;
+import jakarta.inject.Inject;
 import javax.swing.Action;
 import javax.swing.DefaultListCellRenderer;
 import javax.swing.JComboBox;

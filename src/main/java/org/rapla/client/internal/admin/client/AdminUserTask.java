@@ -15,8 +15,8 @@ import org.rapla.facade.RaplaFacade;
 import org.rapla.inject.Extension;
 import org.rapla.scheduler.*;
 
-import javax.inject.Inject;
-import javax.inject.Provider;
+import jakarta.inject.Inject;
+import jakarta.inject.Provider;
 
 @Extension(id = AdminUserTask.USER_ADMIN_ID, provides = TaskPresenter.class)
 public class AdminUserTask implements TaskPresenter {

@@ -24,7 +24,7 @@ import org.rapla.scheduler.ResolvedPromise;
 import org.rapla.scheduler.UnsynchronizedPromise;
 import org.rapla.scheduler.sync.SynchronizedCompletablePromise;
 
-import javax.inject.Inject;
+import jakarta.inject.Inject;
 import javax.swing.*;
 import java.awt.BorderLayout;
 import java.awt.Component;

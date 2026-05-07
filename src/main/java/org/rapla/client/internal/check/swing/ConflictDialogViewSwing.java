@@ -10,13 +10,14 @@ import org.rapla.framework.RaplaException;
 import org.rapla.inject.DefaultImplementation;
 import org.rapla.inject.InjectionContext;
 
-import javax.inject.Inject;
+import jakarta.inject.Inject;
 import javax.swing.*;
 import javax.swing.tree.TreeModel;
 import java.awt.*;
 import java.util.Collection;
 
 @DefaultImplementation(of=ConflictDialogView.class,context = InjectionContext.swing)
+@org.springframework.stereotype.Service
 public class ConflictDialogViewSwing implements ConflictDialogView {
     private final TreeFactory treeFactory;
 

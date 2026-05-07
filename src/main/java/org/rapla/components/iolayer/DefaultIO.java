@@ -14,8 +14,8 @@ package org.rapla.components.iolayer;
 
 import org.rapla.logger.Logger;
 
-import javax.inject.Inject;
-import javax.inject.Singleton;
+import jakarta.inject.Inject;
+import jakarta.inject.Singleton;
 import javax.print.Doc;
 import javax.print.DocFlavor;
 import javax.print.PrintException;

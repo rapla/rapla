@@ -26,12 +26,14 @@ import org.rapla.components.i18n.I18nIcon;
 import org.rapla.inject.DefaultImplementation;
 import org.rapla.inject.InjectionContext;
 
-import javax.inject.Inject;
-import javax.inject.Singleton;
+import jakarta.inject.Inject;
+import jakarta.inject.Singleton;
 import javax.swing.*;
 import java.awt.*;
 
-@Singleton @DefaultImplementation(of = MenuItemFactory.class, context = InjectionContext.swing) public class MenuItemFactorySwingImpl
+@Singleton @DefaultImplementation(of = MenuItemFactory.class, context = InjectionContext.swing)
+@org.springframework.stereotype.Service
+public class MenuItemFactorySwingImpl
         implements MenuItemFactory
 {
 

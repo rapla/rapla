@@ -22,7 +22,6 @@ import org.rapla.logger.Logger;
 
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Date;
 
 public class PeriodInfoUI extends HTMLInfo<Period> {
     public PeriodInfoUI(RaplaFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger) {
@@ -34,7 +33,7 @@ public class PeriodInfoUI extends HTMLInfo<Period> {
         RaplaLocale loc = getRaplaLocale();
 
         att.add(new Row(getString("name"), strong( encode( getName( period ) ))));
-        final Date periodStart = period.getStart();
+        final java.time.LocalDate periodStart = period.getStartAsLocalDate();
         if ( periodStart != null)
         {
             att.add(new Row(
@@ -45,7 +44,7 @@ public class PeriodInfoUI extends HTMLInfo<Period> {
                             )
                     );
         }
-        final Date periodEnd = period.getEnd();
+        final java.time.LocalDate periodEnd = period.getEndAsLocalDate();
         if ( periodEnd != null)
         {
             att.add(new Row(

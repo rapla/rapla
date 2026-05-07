@@ -20,8 +20,8 @@ import org.rapla.entities.dynamictype.Classification;
 import org.rapla.facade.client.ClientFacade;
 import org.rapla.inject.Extension;
 
-import javax.inject.Inject;
-import javax.inject.Singleton;
+import jakarta.inject.Inject;
+import jakarta.inject.Singleton;
 import java.util.Collection;
 import java.util.HashSet;
 
