@@ -1,0 +1,238 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <parent>
+        <groupId>org.rapla</groupId>
+        <artifactId>rapla-bom</artifactId>
+        <version>2.1-SNAPSHOT</version>
+        <relativePath>../rapla-bom/pom.xml</relativePath>
+    </parent>
+    <artifactId>rapla-app</artifactId>
+    <name>rapla - app</name>
+    <description>Runnable Spring Boot application: @SpringBootApplication entry point, JNLP webclient/ staging, signing profiles, distribution assembly. Depends on rapla-server + rapla-client. Final on-disk JAR is rapla-2.1-SNAPSHOT.jar via &lt;finalName&gt; (PRD 005 OQ2).</description>
+
+    <build>
+        <finalName>rapla-2.1-SNAPSHOT</finalName>
+        <resources>
+            <resource>
+                <directory>${basedir}/src/main/resources-filtered</directory>
+                <filtering>true</filtering>
+            </resource>
+            <resource>
+                <directory>${basedir}/src/main/resources</directory>
+                <filtering>false</filtering>
+            </resource>
+        </resources>
+        <plugins>
+            <!-- PRD 005 cleanup E2: JNLP webclient/ staging for Spring Boot fat JAR.
+                 (1) maven-dependency-plugin copies the client-runtime jars into target/webclient/.
+                 (2) Optional signing profile (sign-jks / sign-pkcs11) signs them in place.
+                 (3) maven-resources-plugin copies the (signed) jars into target/classes/static/webclient/
+                     so spring-boot:repackage bundles them inside the fat JAR. Spring Boot serves
+                     classpath:/static/** automatically, so RaplaJNLPController's <jar href="webclient/X.jar"/>
+                     entries resolve at runtime.
+                 (4) antrun generates clientlibs.properties (the ;-separated list of jars in the
+                     codebase) into target/classes/, where RaplaJNLPPageGenerator.getClientLibs()
+                     reads it. -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-dependency-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>stage-webclient-jars</id>
+                        <phase>process-classes</phase>
+                        <goals>
+                            <goal>copy-dependencies</goal>
+                        </goals>
+                        <configuration>
+                            <outputDirectory>${project.build.directory}/webclient</outputDirectory>
+                            <includeScope>runtime</includeScope>
+                            <!-- Exclude server-only artifacts that the JNLP launcher doesn't need.
+                                 Refine over time as the deployable surface settles. -->
+                            <excludeArtifactIds>spring-boot-starter-web,spring-boot-starter-security,spring-boot-starter-oauth2-resource-server,spring-boot-starter-tomcat,spring-boot-starter-actuator,tomcat-embed-core,tomcat-embed-el,tomcat-embed-websocket,jakarta.servlet-api,spring-security-web,spring-security-config,ews-java-api,hsqldb,mysql-connector-java,mariadb-java-client,jakarta.mail-api,angus-mail,ical4j</excludeArtifactIds>
+                            <overWriteReleases>false</overWriteReleases>
+                            <overWriteSnapshots>true</overWriteSnapshots>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-resources-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>bundle-webclient-into-fatjar</id>
+                        <phase>prepare-package</phase>
+                        <goals>
+                            <goal>copy-resources</goal>
+                        </goals>
+                        <configuration>
+                            <outputDirectory>${project.build.directory}/classes/static/webclient</outputDirectory>
+                            <resources>
+                                <resource>
+                                    <directory>${project.build.directory}/webclient</directory>
+                                    <includes>
+                                        <include>*.jar</include>
+                                    </includes>
+                                </resource>
+                            </resources>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-antrun-plugin</artifactId>
+                <version>3.1.0</version>
+                <executions>
+                    <execution>
+                        <id>generate-clientlibs-properties</id>
+                        <phase>prepare-package</phase>
+                        <goals>
+                            <goal>run</goal>
+                        </goals>
+                        <configuration>
+                            <target>
+                                <mkdir dir="${project.build.directory}/classes" />
+                                <pathconvert pathsep=";" property="webclient.jars">
+                                    <fileset dir="${project.build.directory}/webclient">
+                                        <include name="*.jar" />
+                                    </fileset>
+                                    <mapper type="flatten" />
+                                </pathconvert>
+                                <echo file="${project.build.directory}/classes/clientlibs.properties"
+                                      message="${webclient.jars}"
+                                      encoding="UTF-8" />
+                            </target>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-maven-plugin</artifactId>
+                <configuration>
+                    <mainClass>org.rapla.server.spring.RaplaSpringBootApplication</mainClass>
+                </configuration>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>repackage</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
+
+    <dependencies>
+        <dependency>
+            <groupId>org.rapla</groupId>
+            <artifactId>rapla-server</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.rapla</groupId>
+            <artifactId>rapla-client</artifactId>
+        </dependency>
+        <!-- Direct imports in rapla-app (RaplaSpringBootApplication entry point, etc.).
+             rxjava/reactive-streams omitted intentionally — scheduled for removal in a
+             future PRD. -->
+        <dependency>
+            <groupId>jakarta.inject</groupId>
+            <artifactId>jakarta.inject-api</artifactId>
+        </dependency>
+        <!-- Logback at runtime in the fat JAR (not provided — must ship). -->
+        <dependency>
+            <groupId>ch.qos.logback</groupId>
+            <artifactId>logback-classic</artifactId>
+            <version>${logback.version}</version>
+        </dependency>
+        <!-- Tests are full-stack @SpringBootTest integration tests + bootstrap loaders -->
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter-api</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>junit</groupId>
+            <artifactId>junit</artifactId>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
+
+    <profiles>
+        <!-- PRD 005 cleanup C: signing profiles relocated from the deleted root pom.xml
+             into rapla-app, where the runnable fat JAR + JNLP webclient/ staging lives.
+             archiveDirectory still points at ${project.build.directory}/${project.build.finalName}/webclient
+             — that path was the old WAR target and remains valid for the staging dir
+             populated by the JNLP/webclient build steps (yet to be reconfigured for the
+             Spring Boot fat-JAR shape per PRD 003 §JNLP/Code Signing). -->
+        <profile>
+            <id>sign-jks</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-jarsigner-plugin</artifactId>
+                        <version>1.4</version>
+                        <executions>
+                            <execution>
+                                <id>sign-webclient-jks</id>
+                                <phase>prepare-package</phase>
+                                <goals>
+                                    <goal>sign</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                        <configuration>
+                            <alias>${keystore.alias}</alias>
+                            <keystore>${keystore.file}</keystore>
+                            <keypass>${keystore.keypass}</keypass>
+                            <storepass>${keystore.password}</storepass>
+                            <archiveDirectory>${project.build.directory}/webclient</archiveDirectory>
+                            <includes>
+                                <include>*.jar</include>
+                            </includes>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+        <profile>
+            <id>sign-pkcs11</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-jarsigner-plugin</artifactId>
+                        <version>3.1.0</version>
+                        <executions>
+                            <execution>
+                                <id>sign-webclient-pkcs11</id>
+                                <phase>prepare-package</phase>
+                                <goals>
+                                    <goal>sign</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                        <configuration>
+                            <!-- PKCS#11/YubiKey instead of JKS -->
+                            <keystore>NONE</keystore>
+                            <storetype>PKCS11</storetype>
+                            <providerClass>sun.security.pkcs11.SunPKCS11</providerClass>
+                            <providerArg>${project.basedir}/pkcs11.cfg</providerArg>
+                            <storepass>123456</storepass>
+                            <alias>Certificate for PIV Authentication</alias>
+                            <certchain>${project.basedir}/certificate-chain.pem</certchain>
+                            <archiveDirectory>${project.build.directory}/webclient</archiveDirectory>
+                            <includes>
+                                <include>*.jar</include>
+                            </includes>
+                            <verbose>true</verbose>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+    </profiles>
+</project>

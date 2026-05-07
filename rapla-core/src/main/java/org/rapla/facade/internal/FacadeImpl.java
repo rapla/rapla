@@ -12,7 +12,6 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.facade.internal;
 
-import io.reactivex.rxjava3.functions.Consumer;
 import org.jetbrains.annotations.NotNull;
 import org.rapla.RaplaResources;
 import org.rapla.components.util.DateTools;
@@ -77,6 +76,8 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.CompletionException;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -650,8 +651,10 @@ public class FacadeImpl implements RaplaFacade {
 	public Promise<Appointment> newAppointmentAsync(TimeInterval interval)
 	{
 		AppointmentImpl appointment = new AppointmentImpl(interval.getStart(), interval.getEnd());
-		return operator.createIdentifierAsync(Appointment.class,1).thenApply(ids->
-						setNew(Collections.singletonList( appointment),  ids.iterator(),getUser()).get(0));
+		return operator.createIdentifierAsync(Appointment.class,1).thenApply(ids -> {
+			try { return setNew(Collections.singletonList(appointment), ids.iterator(), getUser()).get(0); }
+			catch (RaplaException e) { throw new CompletionException(e); }
+		});
 	}
 
     @Override
@@ -659,7 +662,10 @@ public class FacadeImpl implements RaplaFacade {
     {
         final int size = intervals.size();
         List<Appointment> appointments = intervals.stream().map( interval-> new AppointmentImpl(interval.getStart(), interval.getEnd())).collect(Collectors.toList());
-        return operator.createIdentifierAsync(Appointment.class, size).thenApply(ids->setNew(appointments,  ids.iterator(),getUser()));
+        return operator.createIdentifierAsync(Appointment.class, size).thenApply(ids -> {
+            try { return setNew(appointments, ids.iterator(), getUser()); }
+            catch (RaplaException e) { throw new CompletionException(e); }
+        });
     }
 
 
@@ -696,7 +702,10 @@ public class FacadeImpl implements RaplaFacade {
 	@Override
 	public Promise<Reservation> newReservationAsync(final Classification classification)
 	{
-		return operator.createIdentifierAsync(Reservation.class, 1).thenApply(ids->newReservation( classification, getUser(),ids.iterator() ));
+		return operator.createIdentifierAsync(Reservation.class, 1).thenApply(ids -> {
+			try { return newReservation(classification, getUser(), ids.iterator()); }
+			catch (RaplaException e) { throw new CompletionException(e); }
+		});
 	}
 	@NotNull
 	private Reservation newReservation(Classification classification, User user, Iterator<ReferenceInfo<Reservation>> ids) throws RaplaException
@@ -1059,16 +1068,26 @@ public class FacadeImpl implements RaplaFacade {
 	@Override
 	public <T extends Entity> Promise<Void> update(T obj, Consumer<T> updateFunction)
 	{
-		Promise<Void> updatePromise = editAsync( obj).thenApply((editableObject)-> {updateFunction.accept(editableObject);return editableObject;}
-		).thenAccept((editableObject)->dispatch(Collections.singleton( editableObject), Collections.emptyList()));
+		Promise<Void> updatePromise = editAsync(obj).thenApply((editableObject) -> {
+			updateFunction.accept(editableObject);
+			return editableObject;
+		}).thenAccept((editableObject) -> {
+			try { dispatch(Collections.singleton(editableObject), Collections.emptyList()); }
+			catch (Throwable e) { throw new CompletionException(e); }
+		});
 		return updatePromise;
 	}
 
 	@Override
 	public <T extends Entity> Promise<Void> updateList(Collection<T> list, Consumer<Collection<T>> updateFunction)
 	{
-		Promise<Void> updatePromise = getScheduler().supply(()-> editList( list)).thenApply((editableObject)->{updateFunction.accept(editableObject); return editableObject;}
-		).thenAccept((editableObject)->dispatch(editableObject, Collections.emptyList()));
+		Promise<Void> updatePromise = getScheduler().supply(() -> editList(list)).thenApply((editableObject) -> {
+			updateFunction.accept(editableObject);
+			return editableObject;
+		}).thenAccept((editableObject) -> {
+			try { dispatch(editableObject, Collections.emptyList()); }
+			catch (Throwable e) { throw new CompletionException(e); }
+		});
 		return updatePromise;
 	}
 

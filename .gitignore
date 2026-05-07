@@ -14,6 +14,9 @@
 /jetty.home_IS_UNDEFINED
 /certificate/
 /target/
+# PRD 005: ignore target/ and data/ in every module / subdir of the reactor
+**/target/
+**/data/
 /parent/rapla-parent.iml
 /.settings/
 /.idea/
@@ -25,8 +28,6 @@ bin/
 src/main/gwt-jre/gwt-jre.iml
 src/main/main.iml
 src/test/test.iml
-custom/target/
-parent/target/
 /.apt_generated/
 /*.pfx
 /*.crt

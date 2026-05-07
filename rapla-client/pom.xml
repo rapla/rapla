@@ -1,0 +1,53 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <parent>
+        <groupId>org.rapla</groupId>
+        <artifactId>rapla-bom</artifactId>
+        <version>2.1-SNAPSHOT</version>
+        <relativePath>../rapla-bom/pom.xml</relativePath>
+    </parent>
+    <artifactId>rapla-client</artifactId>
+    <name>rapla - client</name>
+    <description>Swing client module: presenters, view interfaces, Swing renderers, plugin client extensions. Depends only on rapla-core. Uses spring-context (NOT spring-boot-starter-*) — explicit AnnotationConfigApplicationContext, not autoconfig.</description>
+    <dependencies>
+        <dependency>
+            <groupId>org.rapla</groupId>
+            <artifactId>rapla-core</artifactId>
+        </dependency>
+        <!-- jakarta.inject is used directly in client code; rxjava/reactive-streams are
+             intentionally NOT declared here — those are scheduled for removal in a future PRD,
+             so dep:analyze will keep flagging them as "used undeclared" until they go. -->
+        <dependency>
+            <groupId>jakarta.inject</groupId>
+            <artifactId>jakarta.inject-api</artifactId>
+        </dependency>
+        <!-- Spring DI for the Swing client (NOT spring-boot-starter-* — see PRD 005 OQ6) -->
+        <dependency>
+            <groupId>org.springframework</groupId>
+            <artifactId>spring-context</artifactId>
+        </dependency>
+        <!-- Spring Web for client-side @HttpExchange REST proxies -->
+        <dependency>
+            <groupId>org.springframework</groupId>
+            <artifactId>spring-web</artifactId>
+        </dependency>
+        <!-- @NotNull / @Nullable annotations (org.jetbrains.annotations) -->
+        <dependency>
+            <groupId>com.intellij</groupId>
+            <artifactId>annotations</artifactId>
+            <scope>provided</scope>
+        </dependency>
+        <!-- Tests inherit slf4j/logback/junit-vintage from rapla-bom -->
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter-api</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>junit</groupId>
+            <artifactId>junit</artifactId>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
+</project>
