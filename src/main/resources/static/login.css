@@ -1,0 +1,28 @@
+h1 {
+	font-size: 2em;
+	font-weight: bold;
+	color: #777777;
+	margin: 40px 0px 70px;
+	text-align: center;
+}
+
+.loginOuterPanel {
+	width: 420px;
+	margin: 0 auto;
+}
+
+.loginInputPanel>input {
+	margin: 0 10px;
+}
+
+.loginCommandPanel {
+	padding-top: 20px;
+	margin: 0 auto;
+	width: 50px;
+}
+
+.gwt-PasswordTextBox,
+.gwt-TextBox {
+	width: 178px;
+	height: 27px;
+}

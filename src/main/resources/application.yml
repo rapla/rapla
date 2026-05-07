@@ -1,0 +1,20 @@
+server:
+  port: 8051
+  compression:
+    enabled: true
+    mime-types: application/json,application/xml,text/html,text/css,text/javascript,application/javascript
+  servlet:
+    context-path: /rapla
+
+spring:
+  application:
+    name: rapla
+
+rapla:
+  file-datasources:
+    raplafile: data/data.xml
+
+logging:
+  level:
+    root: INFO
+    org.rapla: INFO
