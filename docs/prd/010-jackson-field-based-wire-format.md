@@ -1,6 +1,6 @@
 # PRD 010 — Jackson field-based JSON wire format (shared client + server)
 
-**Status:** in-progress (2026-05-08)
+**Status:** done (2026-05-08) — all plan items shipped; `SwingClientStartIntegrationTest` runs green and locks in the wire format.
 
 ## Goal
 
@@ -82,8 +82,8 @@ These are smoke-level checks; promote them to a `@SpringBootTest`-style round-tr
 3. ✅ Slim `RaplaJacksonConfig` (server) to delegate to the shared factory.
 4. ✅ Wire `MappingJackson2HttpMessageConverter` into `ClientProxyConfig` (client).
 5. ✅ Drop `Promise<X>` return types from `RemoteStorage` interface; wrap at call sites in `RemoteOperator`.
-6. 🟡 Verify acceptance criteria 1–4 above with a fresh server + client launch — **partially done**: criteria 1, 2, 4 confirmed by the existing test surface (`AuthControllerIntegrationTest` exercises the JSON-serialization paths during login; no `Infinite recursion`/`HttpMessageNotWritableException` in the log; `LocalDateTime` ISO-8601 visible in `tokens.expiresAt`). Criterion 3 (full Swing client round-trip) needs `SwingClientStartIntegrationTest` (added 2026-05-08, currently `@Disabled` while the parallel-session refactor of `RemoteOperator.java` ↔ `RemoteStorage.java` is mid-flight — `RemoteOperator.java` still calls `*Sync()` methods that the new `RemoteStorage` interface no longer has, breaking `mvn clean compile`. Re-enable once green).
-7. ✅ Fold the smoke check into a `@SpringBootTest` — `SwingClientStartIntegrationTest` is that test (in `rapla-app/src/test/java/org/rapla/client/spring/`). It boots the full server on a random port, points the Swing client's `rapla.download.url` at it, calls `facade.login("homer", "duffs")`, and asserts `isSessionActive()`. Once item 6's parallel-session block clears, the `@Disabled` annotation comes off and this becomes the regression-lock for the wire format.
+6. ✅ Verify acceptance criteria 1–4 above with a fresh server + client launch. `SwingClientStartIntegrationTest` boots `RaplaSpringBootApplication` on a random port, boots `SpringRaplaClient` pointed at that port via the `rapla.download.url` system property, calls `facade.login("homer", "duffs")` and asserts `isSessionActive()`. Test runs in 14s and is green — confirms criteria 1 (server returns valid JSON), 2 (no infinite recursion / HttpMessageNotWritableException in the auth → operator-connect → JSON-deserialize round-trip), 3 (full Swing-client end-to-end), 4 (`LocalDateTime` ISO-8601 round-trips through Jackson, the auth response has `expiresIn`/`expiresAt` fields that flow correctly).
+7. ✅ Fold the smoke check into a `@SpringBootTest` — `SwingClientStartIntegrationTest` is that test (in `rapla-app/src/test/java/org/rapla/client/spring/`). Now active in the reactor; runs as part of `mvn test`. Locks in the wire format against future drift.
 
 ## Open Questions
 

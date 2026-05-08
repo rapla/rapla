@@ -21,8 +21,6 @@ import org.rapla.entities.dynamictype.Classification;
 import org.rapla.entities.storage.ReferenceInfo;
 import org.rapla.facade.RaplaFacade;
 import org.rapla.framework.RaplaException;
-import org.rapla.inject.DefaultImplementation;
-import org.rapla.inject.InjectionContext;
 import org.rapla.logger.Logger;
 import org.rapla.plugin.ical.ICalImport;
 import org.rapla.scheduler.Promise;
@@ -30,7 +28,7 @@ import org.rapla.server.RemoteSession;
 import org.rapla.framework.TimeZoneConverter;
 import org.rapla.storage.impl.AbstractCachableOperator;
 
-import jakarta.inject.Inject;
+import org.springframework.beans.factory.annotation.Autowired;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.ws.rs.core.Context;
 import java.io.FileNotFoundException;
@@ -47,23 +45,22 @@ import java.util.*;
 import java.util.Date;
 import java.util.TimeZone;
 
-@DefaultImplementation(context=InjectionContext.server, of=ICalImport.class)
 public class RaplaICalImport implements ICalImport {
-	@Inject
+	@Autowired
 	TimeZoneConverter timeZoneConverter;
-	@Inject
+	@Autowired
 	RemoteSession session;
-	@Inject
+	@Autowired
 	RaplaFacade facade;
-	@Inject
+	@Autowired
 	org.rapla.storage.SyncStorageOperator syncOperator;
-	@Inject
+	@Autowired
 	Logger logger;
 
     private final HttpServletRequest request;
 
 
-    @Inject
+    @Autowired
 	public RaplaICalImport(@Context HttpServletRequest request ) {
         this.request = request;
 	}

@@ -4,18 +4,17 @@ import org.jetbrains.annotations.PropertyKey;
 import org.rapla.components.i18n.AbstractBundle;
 import org.rapla.components.i18n.BundleManager;
 import org.rapla.components.i18n.I18nBundle;
-import org.rapla.inject.Extension;
 
-import jakarta.inject.Inject;
+import org.springframework.beans.factory.annotation.Autowired;
 import jakarta.inject.Singleton;
 import java.util.Locale;
 
-@Extension(provides = I18nBundle.class, id = RaplaSystemInfo.BUNDLENAME)
+
 @Singleton
 public class RaplaSystemInfo extends AbstractBundle
 {
     public static final String BUNDLENAME = "org.rapla.RaplaSystemInfo";
-    @Inject
+    @Autowired
     public RaplaSystemInfo(BundleManager bundleManager)
     {
         super(BUNDLENAME, bundleManager);

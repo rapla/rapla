@@ -4,8 +4,6 @@ import org.rapla.components.util.SerializableDateTimeFormat;
 import org.rapla.facade.RaplaFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
-import org.rapla.inject.DefaultImplementation;
-import org.rapla.inject.InjectionContext;
 import org.rapla.logger.Logger;
 import org.rapla.plugin.eventimport.ParsedTemplateResult;
 import org.rapla.plugin.eventimport.TemplateImport;
@@ -13,7 +11,7 @@ import org.rapla.server.RemoteSession;
 import org.rapla.framework.TimeZoneConverter;
 import org.rapla.storage.dbsql.DBOperator;
 
-import jakarta.inject.Inject;
+import org.springframework.beans.factory.annotation.Autowired;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -25,21 +23,18 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 
 
-@DefaultImplementation(
-    of = TemplateImport.class,
-    context = InjectionContext.server )
 public class RaplaTemplateImport implements TemplateImport
 {
-    @Inject
+    @Autowired
     TimeZoneConverter timeZoneConverter;
-    @Inject
+    @Autowired
     RaplaFacade facade;
-    @Inject
+    @Autowired
     Logger logger;
-    @Inject
+    @Autowired
     RaplaLocale raplaLocale;
 
-    @Inject
+    @Autowired
     public RaplaTemplateImport(  )
     {
     }

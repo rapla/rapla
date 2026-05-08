@@ -33,11 +33,10 @@ import org.rapla.facade.client.ClientFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaInitializationException;
 import org.rapla.framework.RaplaLocale;
-import org.rapla.inject.Extension;
 import org.rapla.logger.Logger;
 import org.rapla.plugin.dayresource.DayResourcePlugin;
 
-import jakarta.inject.Inject;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.context.annotation.Lazy;
 import jakarta.inject.Provider;
@@ -48,7 +47,7 @@ import java.util.Set;
 @Service
 @Lazy
 @Singleton
-@Extension(provides = SwingViewFactory.class,id = DayResourceViewFactory.DAY_RESOURCE_VIEW)
+
 public class DayResourceViewFactory implements SwingViewFactory
 {
     private final ClientFacade facade;
@@ -69,7 +68,7 @@ public class DayResourceViewFactory implements SwingViewFactory
     private final RaplaConfiguration config;
     private final EditController editController;
     
-    @Inject
+    @Autowired
     public DayResourceViewFactory(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, Set<ObjectMenuFactory> objectMenuFactories, MenuFactory menuFactory, Provider<DateRenderer> dateRendererProvider, CalendarSelectionModel calendarSelectionModel, RaplaClipboard clipboard, ReservationController reservationController, InfoFactory infoFactory, DateRenderer dateRenderer, DialogUiFactoryInterface dialogUiFactory, IOInterface ioInterface, AppointmentFormater appointmentFormater, EditController editController )
     {
         this.facade = facade;

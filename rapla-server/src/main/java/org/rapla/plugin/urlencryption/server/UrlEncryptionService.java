@@ -2,11 +2,9 @@ package org.rapla.plugin.urlencryption.server;
 
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaInitializationException;
-import org.rapla.inject.DefaultImplementation;
-import org.rapla.inject.InjectionContext;
 import org.rapla.plugin.urlencryption.UrlEncryption;
 
-import jakarta.inject.Inject;
+import org.springframework.beans.factory.annotation.Autowired;
 import jakarta.inject.Singleton;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.ws.rs.core.Context;
@@ -18,11 +16,10 @@ import jakarta.ws.rs.core.Context;
  *
  * @author Jonas Kohlbrenner
 */
-@DefaultImplementation(of = UrlEncryption.class, context = InjectionContext.server)
 @Singleton
 public class UrlEncryptionService implements UrlEncryption
 {
-    @Inject
+    @Autowired
     UrlEncryptor urlEncryptor;
     
     private final HttpServletRequest request;
@@ -34,7 +31,7 @@ public class UrlEncryptionService implements UrlEncryption
      *
      * @throws RaplaException
      */
-    @Inject
+    @Autowired
     public UrlEncryptionService(@Context HttpServletRequest request) throws RaplaInitializationException
     {
         this.request = request;//, InvalidKeyException {

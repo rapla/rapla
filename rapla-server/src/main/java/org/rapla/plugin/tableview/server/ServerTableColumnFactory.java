@@ -3,21 +3,18 @@ package org.rapla.plugin.tableview.server;
 import org.rapla.entities.User;
 import org.rapla.facade.RaplaFacade;
 import org.rapla.framework.RaplaLocale;
-import org.rapla.inject.DefaultImplementation;
-import org.rapla.inject.InjectionContext;
 import org.rapla.plugin.tableview.RaplaTableColumn;
 import org.rapla.plugin.tableview.internal.DefaultRaplaTableColumn;
 import org.rapla.plugin.tableview.internal.RaplaTableColumnFactory;
 import org.rapla.plugin.tableview.internal.TableConfig.TableColumnConfig;
 
-import jakarta.inject.Inject;
+import org.springframework.beans.factory.annotation.Autowired;
 
-@DefaultImplementation(context = { InjectionContext.server}, of = RaplaTableColumnFactory.class)
 public class ServerTableColumnFactory implements RaplaTableColumnFactory
 {
 
     final RaplaFacade facade;
-    @Inject
+    @Autowired
     public ServerTableColumnFactory(RaplaFacade facade)
     {
         super();

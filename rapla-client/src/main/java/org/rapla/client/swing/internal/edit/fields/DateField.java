@@ -23,7 +23,7 @@ import org.rapla.facade.client.ClientFacade;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.logger.Logger;
 
-import jakarta.inject.Inject;
+import org.springframework.beans.factory.annotation.Autowired;
 import jakarta.inject.Singleton;
 import javax.swing.JComponent;
 import javax.swing.JLabel;
@@ -146,7 +146,7 @@ public class DateField extends AbstractEditField implements DateChangeListener, 
         private final Logger logger;
         private final DateRenderer dateRenderer;
         private final IOInterface ioInterface;
-	    @Inject
+	    @Autowired
         public DateFieldFactory(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger,
                 DateRenderer dateRenderer, IOInterface ioInterface)
         {

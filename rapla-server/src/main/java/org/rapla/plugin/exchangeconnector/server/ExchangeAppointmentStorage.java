@@ -23,7 +23,7 @@ import org.rapla.storage.impl.DefaultRaplaLock;
 import org.rapla.storage.impl.RaplaLock;
 import org.rapla.storage.impl.server.LocalAbstractCachableOperator;
 
-import jakarta.inject.Inject;
+import org.springframework.beans.factory.annotation.Autowired;
 import jakarta.inject.Singleton;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -68,7 +68,7 @@ public class ExchangeAppointmentStorage
      * public constructor of the class to read a particular file
 
      */
-    @Inject
+    @Autowired
     public ExchangeAppointmentStorage(RaplaFacade facade, Logger logger,CachableStorageOperator operator, ShowExchangeForUser showExchangeForUser)
     {
         this.facade = facade;

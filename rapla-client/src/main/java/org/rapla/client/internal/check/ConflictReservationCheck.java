@@ -12,21 +12,20 @@ import org.rapla.facade.RaplaFacade;
 import org.rapla.facade.client.ClientFacade;
 import org.rapla.facade.internal.CalendarOptionsImpl;
 import org.rapla.framework.RaplaLocale;
-import org.rapla.inject.Extension;
 import org.rapla.logger.Logger;
 import org.springframework.stereotype.Service;
 import org.rapla.scheduler.Promise;
 import org.rapla.scheduler.ResolvedPromise;
 import org.rapla.storage.PermissionController;
 
-import jakarta.inject.Inject;
+import org.springframework.beans.factory.annotation.Autowired;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.stream.Stream;
 
 @Service
-@Extension(provides = EventCheck.class, id = "conflictcheck")
+
 public class ConflictReservationCheck implements EventCheck
 {
 
@@ -37,7 +36,7 @@ public class ConflictReservationCheck implements EventCheck
     final RaplaFacade raplaFacade;
     final RaplaResources i18n;
 
-    @Inject
+    @Autowired
     public ConflictReservationCheck(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, DialogUiFactoryInterface dialogUiFactory,
             ConflictDialogView conflictDialogView)
     {

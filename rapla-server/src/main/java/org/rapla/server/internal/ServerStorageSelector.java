@@ -13,7 +13,7 @@ import org.rapla.storage.dbfile.FileOperator;
 import org.rapla.storage.dbsql.DBOperator;
 import org.rapla.storage.impl.server.ImportExportManagerImpl;
 
-import jakarta.inject.Inject;
+import org.springframework.beans.factory.annotation.Autowired;
 import jakarta.inject.Provider;
 import jakarta.inject.Singleton;
 import javax.sql.DataSource;
@@ -36,7 +36,7 @@ public class ServerStorageSelector implements Provider<CachableStorageOperator>
     final Set<PermissionExtension> permissionExtensions;
     ImportExportManager manager;
 
-    @Inject public ServerStorageSelector(ServerContainerContext containerContext, Logger logger, RaplaResources i18n, RaplaLocale raplaLocale, CommandScheduler scheduler, Map<String, FunctionFactory> functionFactoryMap,
+    @Autowired public ServerStorageSelector(ServerContainerContext containerContext, Logger logger, RaplaResources i18n, RaplaLocale raplaLocale, CommandScheduler scheduler, Map<String, FunctionFactory> functionFactoryMap,
             Set<PermissionExtension> permissionExtensions)
     {
 

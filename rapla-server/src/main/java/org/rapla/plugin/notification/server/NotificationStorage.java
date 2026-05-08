@@ -11,7 +11,7 @@ import org.rapla.plugin.notification.server.NotificationService.AllocationMail;
 import org.rapla.rest.JsonParserWrapper;
 import org.rapla.storage.CachableStorageOperator;
 
-import jakarta.inject.Inject;
+import org.springframework.beans.factory.annotation.Autowired;
 import jakarta.inject.Singleton;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -35,7 +35,7 @@ public class NotificationStorage
         private long insertTimestamp;
     }
 
-    @Inject
+    @Autowired
     public NotificationStorage(RaplaFacade facade)
     {
         this.facade = facade;

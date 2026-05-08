@@ -71,7 +71,7 @@ import org.rapla.scheduler.Promise;
 import org.rapla.storage.PermissionController;
 import org.rapla.storage.dbrm.RestartServer;
 
-import jakarta.inject.Inject;
+import org.springframework.beans.factory.annotation.Autowired;
 import jakarta.inject.Provider;
 import jakarta.inject.Singleton;
 import javax.swing.AbstractAction;
@@ -117,7 +117,7 @@ public class RaplaMenuBar extends RaplaGUIComponent
     private final Provider<UserAction> userActionProvider;
 
 
-    @Inject public RaplaMenuBar(RaplaMenuBarContainer menuBarContainer, ClientFacade clientFacade, RaplaSystemInfo systemInfo, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger,
+    @Autowired public RaplaMenuBar(RaplaMenuBarContainer menuBarContainer, ClientFacade clientFacade, RaplaSystemInfo systemInfo, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger,
             PrintAction printAction, Set<AdminMenuExtension> adminMenuExt, Set<EditMenuExtension> editMenuExt, Set<ViewMenuExtension> viewMenuExt, Set<HelpMenuExtension> helpMenuExt, Set<ImportMenuExtension> importMenuExt,
             Set<ExportMenuExtension> exportMenuExt, EditController editController, CalendarSelectionModel model, UserClientService clientService, RestartServer restartServerService,
             DialogUiFactoryInterface dialogUiFactory, Provider<TemplateEdit> templateEditFactory, Provider<LicenseInfoUI> licenseInfoUIProvider, CalendarEventBus eventBus, ApplicationEventBus appEventBus, MenuItemFactory menuItemFactory,

@@ -5,16 +5,13 @@ import org.rapla.client.event.AbstractActivityController;
 import org.rapla.client.event.ApplicationEvent;
 import org.rapla.client.event.ApplicationEventBus;
 import org.rapla.framework.RaplaException;
-import org.rapla.inject.DefaultImplementation;
-import org.rapla.inject.InjectionContext;
 import org.springframework.stereotype.Service;
 import org.rapla.logger.Logger;
 
-import jakarta.inject.Inject;
+import org.springframework.beans.factory.annotation.Autowired;
 import jakarta.inject.Singleton;
 
 @Singleton
-@DefaultImplementation(context=InjectionContext.swing, of=AbstractActivityController.class)
 @Service
 public class SwingActivityController extends AbstractActivityController
 {
@@ -27,7 +24,7 @@ public class SwingActivityController extends AbstractActivityController
 //    private final CalendarSelectionModel model;
 //    private final MergeController mergeController;
 
-    @Inject
+    @Autowired
     public SwingActivityController(ApplicationEventBus eventBus, Logger logger)
     {
         super(eventBus, logger);

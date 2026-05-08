@@ -17,13 +17,12 @@ import org.rapla.facade.ModificationEvent;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaInitializationException;
 import org.rapla.framework.RaplaLocale;
-import org.rapla.inject.DefaultImplementation;
 import org.rapla.inject.InjectionContext;
 import org.rapla.logger.Logger;
 import org.rapla.scheduler.CommandScheduler;
 import org.rapla.scheduler.Observable;
 
-import jakarta.inject.Inject;
+import org.springframework.beans.factory.annotation.Autowired;
 import jakarta.inject.Singleton;
 import javax.swing.Box;
 import javax.swing.JComponent;
@@ -51,7 +50,6 @@ import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 
-@DefaultImplementation(of = ApplicationView.class, context = InjectionContext.swing)
 @Singleton
 @org.springframework.stereotype.Service
 @org.springframework.context.annotation.Lazy
@@ -70,7 +68,7 @@ public class ApplicationViewSwing implements ApplicationView<JComponent>
     private final DialogUiFactoryInterface dialogUiFactory;
     CommandScheduler scheduler;
 
-    @Inject
+    @Autowired
     public ApplicationViewSwing(RaplaMenuBarContainer menuBarContainer, RaplaResources i18n, RaplaFrame frame, RaplaLocale raplaLocale, Logger logger,
             RaplaMenuBar raplaMenuBar, CommandScheduler scheduler,
             DialogUiFactoryInterface dialogUiFactory) throws RaplaInitializationException

@@ -30,11 +30,10 @@ import org.rapla.facade.client.ClientFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaInitializationException;
 import org.rapla.framework.RaplaLocale;
-import org.rapla.inject.Extension;
 import org.rapla.logger.Logger;
 import org.rapla.storage.PermissionController;
 
-import jakarta.inject.Inject;
+import org.springframework.beans.factory.annotation.Autowired;
 import javax.swing.JComponent;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
@@ -49,7 +48,7 @@ import java.util.Set;
  * This is the controller-class for the Resource-Edit-Panel     *
  ****************************************************************/
 
-@Extension(provides = EditComponent.class, id="org.rapla.entities.domain.Allocatable")
+
 @org.springframework.stereotype.Service("org.rapla.entities.domain.Allocatable")
 @org.springframework.context.annotation.Scope("prototype")
 @org.springframework.context.annotation.Lazy
@@ -61,7 +60,7 @@ public class AllocatableEditUI  extends AbstractEditUI<Allocatable>  {
     private final PermissionController permissionController;
 
     @SuppressWarnings("unchecked")
-    @Inject
+    @Autowired
     public AllocatableEditUI(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, ClassificationFieldFactory classificationFieldFactory, PermissionListFieldFactory permissionListFieldFactory, BooleanFieldFactory booleanFieldFactory) throws RaplaInitializationException {
         super(facade, i18n, raplaLocale, logger);
         this.permissionController = facade.getRaplaFacade().getPermissionController();

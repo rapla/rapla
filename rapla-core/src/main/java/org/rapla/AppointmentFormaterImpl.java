@@ -20,7 +20,7 @@ import org.rapla.entities.domain.Period;
 import org.rapla.entities.domain.Repeating;
 import org.rapla.framework.RaplaLocale;
 
-import jakarta.inject.Inject;
+import org.springframework.beans.factory.annotation.Autowired;
 import jakarta.inject.Singleton;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -38,7 +38,7 @@ public class AppointmentFormaterImpl
     RaplaResources i18n;
     RaplaLocale loc;
 
-    @Inject
+    @Autowired
     public AppointmentFormaterImpl(RaplaResources i18n,RaplaLocale loc)
     {
         this.i18n = i18n;

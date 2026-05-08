@@ -17,7 +17,7 @@ import org.rapla.facade.client.ClientFacade;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.logger.Logger;
 
-import jakarta.inject.Inject;
+import org.springframework.beans.factory.annotation.Autowired;
 import jakarta.inject.Singleton;
 import javax.swing.BoxLayout;
 import javax.swing.ButtonGroup;
@@ -181,7 +181,7 @@ public class BooleanField extends AbstractEditField implements ActionListener, F
         private final RaplaLocale raplaLocale;
         private final Logger logger;
 
-        @Inject
+        @Autowired
         public BooleanFieldFactory(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger)
         {
             this.facade = facade;

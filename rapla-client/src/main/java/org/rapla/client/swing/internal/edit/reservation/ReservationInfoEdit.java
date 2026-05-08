@@ -55,7 +55,7 @@ import org.rapla.scheduler.Promise;
 import org.rapla.scheduler.ResolvedPromise;
 import org.rapla.storage.PermissionController;
 
-import jakarta.inject.Inject;
+import org.springframework.beans.factory.annotation.Autowired;
 import jakarta.inject.Singleton;
 import javax.swing.BorderFactory;
 import javax.swing.JComponent;
@@ -770,7 +770,7 @@ public class ReservationInfoEdit extends RaplaGUIComponent
         private final TextFieldFactory textFieldFactory;
         private final LongFieldFactory longFieldFactory;
 
-        @Inject
+        @Autowired
         public ReservationInfoEditFactory(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, TreeFactory treeFactory,
                  DateFieldFactory dateFieldFactory, DialogUiFactoryInterface dialogUiFactory,
                 PermissionListFieldFactory permissionListFieldFactory, BooleanFieldFactory booleanFieldFactory, TextFieldFactory textFieldFactory,

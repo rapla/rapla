@@ -28,30 +28,31 @@ rather than arbitrary dates. Rapla provides support for this periods.
 */
 public interface Period extends RaplaObject<Period>,Comparable<Period>,Named {
 
-    Date getStart();
-    Date getEnd();
+    /** {@code java.time} primary: returns the period start as a {@code LocalDate} (UTC midnight). */
+    LocalDate getStartAsLocalDate();
+    /** {@code java.time} primary: returns the period end as a {@code LocalDate} (UTC midnight). */
+    LocalDate getEndAsLocalDate();
     TimeInterval getInterval();
     int getWeeks();
     String getName();
     Set<Category> getCategories();
 
-    boolean contains(Date date);
-
-    /** {@code java.time} variant of {@link #getStart()} (UTC midnight as LocalDate). */
-    default LocalDate getStartAsLocalDate() {
-        Date d = getStart();
-        return d == null ? null : DateTools.toLocalDateTime(d).toLocalDate();
-    }
-
-    /** {@code java.time} variant of {@link #getEnd()} (UTC midnight as LocalDate). */
-    default LocalDate getEndAsLocalDate() {
-        Date d = getEnd();
-        return d == null ? null : DateTools.toLocalDateTime(d).toLocalDate();
-    }
-
     /** {@code LocalDateTime} variant of {@link #contains(Date)}. UTC. */
-    default boolean contains(LocalDateTime dateTime) {
-        return dateTime != null && contains(DateTools.toDate(dateTime));
+    boolean contains(LocalDateTime dateTime);
+
+    /** Legacy {@code Date} accessor — delegates to {@link #getStartAsLocalDate()}. */
+    default Date getStart() {
+        LocalDate d = getStartAsLocalDate();
+        return d == null ? null : DateTools.toDate(d);
+    }
+    /** Legacy {@code Date} accessor — delegates to {@link #getEndAsLocalDate()}. */
+    default Date getEnd() {
+        LocalDate d = getEndAsLocalDate();
+        return d == null ? null : DateTools.toDate(d);
+    }
+    /** Legacy {@code Date} accessor — delegates to {@link #contains(LocalDateTime)}. */
+    default boolean contains(Date date) {
+        return date != null && contains(DateTools.toLocalDateTime(date));
     }
 
     String toString();

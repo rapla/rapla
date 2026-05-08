@@ -45,11 +45,9 @@ import org.rapla.facade.RaplaFacade;
 import org.rapla.facade.client.ClientFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
-import org.rapla.inject.DefaultImplementation;
-import org.rapla.inject.InjectionContext;
 import org.rapla.logger.Logger;
 
-import jakarta.inject.Inject;
+import org.springframework.beans.factory.annotation.Autowired;
 import jakarta.inject.Singleton;
 import java.awt.Component;
 import java.awt.datatransfer.DataFlavor;
@@ -61,7 +59,6 @@ import java.util.Map;
 the entities of rapla.
 @see ViewTable*/
 @Singleton
-@DefaultImplementation(of=InfoFactory.class, context = InjectionContext.swing)
 @org.springframework.stereotype.Service
 @org.springframework.context.annotation.Lazy
 public class InfoFactoryImpl extends RaplaGUIComponent implements InfoFactory
@@ -71,7 +68,7 @@ public class InfoFactoryImpl extends RaplaGUIComponent implements InfoFactory
     private final IOInterface ioInterface;
     private final DialogUiFactoryInterface dialogUiFactory;
 
-    @Inject
+    @Autowired
     public InfoFactoryImpl(ClientFacade clientFacade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, AppointmentFormater appointmentFormater, IOInterface ioInterface,  DialogUiFactoryInterface dialogUiFactory) {
         super(clientFacade, i18n, raplaLocale, logger);
         RaplaFacade facade = clientFacade.getRaplaFacade();

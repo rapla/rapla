@@ -22,12 +22,11 @@ import org.rapla.facade.client.ClientFacade;
 import org.rapla.facade.internal.CalendarOptionsImpl;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
-import org.rapla.inject.Extension;
 import org.rapla.logger.Logger;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Service;
 
-import jakarta.inject.Inject;
+import org.springframework.beans.factory.annotation.Autowired;
 import javax.swing.JCheckBox;
 import javax.swing.JComponent;
 import javax.swing.JLabel;
@@ -36,7 +35,7 @@ import java.util.Locale;
 
 @Service
 @Scope("prototype")
-@Extension(provides = UserOptionPanel.class,id="warningOption")
+
 public class WarningsOption extends RaplaGUIComponent implements UserOptionPanel
 {
     JPanel panel = new JPanel();
@@ -50,7 +49,7 @@ public class WarningsOption extends RaplaGUIComponent implements UserOptionPanel
     JCheckBox showHolidayWarningsSingleAppointment = new JCheckBox();
 
     final boolean isHolidayEnabled;
-    @Inject
+    @Autowired
     public WarningsOption(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger) {
         super(facade, i18n, raplaLocale, logger);
         showConflictWarningsField.setText("");        

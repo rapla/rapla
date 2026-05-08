@@ -13,19 +13,18 @@ import org.rapla.entities.dynamictype.DynamicTypeAnnotations;
 import org.rapla.facade.client.ClientFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
-import org.rapla.inject.Extension;
 import org.rapla.logger.Logger;
 import org.rapla.plugin.eventtimecalculator.EventTimeCalculatorPlugin;
 import org.rapla.plugin.eventtimecalculator.EventTimeCalculatorResources;
 
-import jakarta.inject.Inject;
+import org.springframework.beans.factory.annotation.Autowired;
 import java.util.Collection;
 import java.util.Collections;
 
 
 @org.springframework.stereotype.Service
 @org.springframework.context.annotation.Lazy
-@Extension(provides= AnnotationEditTypeExtension.class, id=EventTimeCalculatorPlugin.EVENTIME_CONDITION_ANNOTATION_NAME)
+
 public class EventTimeConditionAnnotationEdit extends RaplaGUIComponent implements AnnotationEditTypeExtension
 {
     protected String annotationName = EventTimeCalculatorPlugin.EVENTIME_CONDITION_ANNOTATION_NAME;
@@ -34,7 +33,7 @@ public class EventTimeConditionAnnotationEdit extends RaplaGUIComponent implemen
     private final TextFieldFactory textFieldFactory;
     EventTimeCalculatorResources eventTimei18n;
 
-    @Inject
+    @Autowired
     public EventTimeConditionAnnotationEdit(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, IOInterface service, TextFieldFactory textFieldFactory, EventTimeCalculatorResources eventTimei18n) {
         super(facade, i18n, raplaLocale, logger);
         this.service = service;

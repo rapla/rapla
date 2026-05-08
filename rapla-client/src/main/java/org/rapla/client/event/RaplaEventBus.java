@@ -1,25 +1,21 @@
 package org.rapla.client.event;
 
 
-import org.rapla.inject.DefaultImplementation;
-import org.rapla.inject.InjectionContext;
 import org.rapla.scheduler.CommandScheduler;
 import org.rapla.scheduler.Observable;
 import org.rapla.scheduler.Subject;
 import org.springframework.stereotype.Service;
 
-import jakarta.inject.Inject;
+import org.springframework.beans.factory.annotation.Autowired;
 import jakarta.inject.Singleton;
 
-@DefaultImplementation(of = ApplicationEventBus.class,context = InjectionContext.all)
-@DefaultImplementation(of = CalendarEventBus.class,context = InjectionContext.all)
 @Service
 @Singleton
 public class RaplaEventBus implements ApplicationEventBus, CalendarEventBus
 {
     final Subject<ApplicationEvent> applicationEventPublishSubject;
     final Subject<CalendarRefreshEvent> calendarRefreshEventPublishSubject;
-    @Inject
+    @Autowired
     public RaplaEventBus(CommandScheduler scheduler)
     {
         applicationEventPublishSubject = org.rapla.scheduler.Observables.createPublisher(scheduler.getExecutor());

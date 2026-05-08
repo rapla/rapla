@@ -34,7 +34,6 @@ import org.rapla.framework.DefaultConfiguration;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.TypedComponentRole;
-import org.rapla.inject.Extension;
 import org.rapla.logger.Logger;
 import org.rapla.plugin.jndi.JNDIPlugin;
 import org.rapla.plugin.jndi.internal.JNDIConf;
@@ -43,7 +42,7 @@ import org.rapla.plugin.jndi.internal.JNDIConfig.MailTestRequest;
 import org.rapla.scheduler.Promise;
 import org.rapla.scheduler.ResolvedPromise;
 
-import jakarta.inject.Inject;
+import org.springframework.beans.factory.annotation.Autowired;
 import jakarta.inject.Provider;
 import javax.swing.JButton;
 import javax.swing.JCheckBox;
@@ -67,7 +66,7 @@ import java.util.Set;
 @org.springframework.stereotype.Service(JNDIPlugin.PLUGIN_ID)
 @org.springframework.context.annotation.Scope("prototype")
 @org.springframework.context.annotation.Lazy
-@Extension(provides = PluginOptionPanel.class,id= JNDIPlugin.PLUGIN_ID)
+
 public class JNDIOption implements JNDIConf, PluginOptionPanel
 {
 	TableLayout tableLayout;
@@ -100,7 +99,7 @@ public class JNDIOption implements JNDIConf, PluginOptionPanel
     RaplaFacade facade;
     ClientFacade clientFacade;
 
-    @Inject
+    @Autowired
     public JNDIOption(ClientFacade clientFacade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, RaplaResources raplaResources, JNDIConfig config, DialogUiFactoryInterface dialogUiFactory, Provider<GroupListField>groupListFieldProvider, IOInterface ioInterface) {
         this.i18n = i18n;
         this.raplaLocale = raplaLocale;

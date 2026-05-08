@@ -38,7 +38,7 @@ import org.rapla.scheduler.ResolvedPromise;
 import org.rapla.storage.PermissionController;
 import org.rapla.storage.StorageOperator;
 
-import jakarta.inject.Inject;
+import org.springframework.beans.factory.annotation.Autowired;
 import javax.swing.DefaultListCellRenderer;
 import javax.swing.DefaultListModel;
 import javax.swing.JComponent;
@@ -82,7 +82,7 @@ public class TemplateEdit extends RaplaGUIComponent
     // text field for filter
     JTextField filterTextField;// text field for filter
 
-    @Inject
+    @Autowired
     public TemplateEdit(final ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, CalendarSelectionModel calendarSelectionModel,
             final DialogUiFactoryInterface dialogUiFactory, ClassificationFieldFactory classificationFieldFactory,
             PermissionListFieldFactory permissionListFieldFactory, RaplaListEditFactory raplaListEditFactory, BooleanFieldFactory booleanFieldFactory,

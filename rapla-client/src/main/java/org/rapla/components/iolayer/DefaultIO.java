@@ -14,7 +14,7 @@ package org.rapla.components.iolayer;
 
 import org.rapla.logger.Logger;
 
-import jakarta.inject.Inject;
+import org.springframework.beans.factory.annotation.Autowired;
 import jakarta.inject.Singleton;
 import javax.print.Doc;
 import javax.print.DocFlavor;
@@ -59,7 +59,7 @@ public class DefaultIO  implements IOInterface{
     public PrinterJob job;
     Logger logger;
 
-    @Inject
+    @Autowired
     public DefaultIO(Logger logger) {
         this.logger =  logger;
     }

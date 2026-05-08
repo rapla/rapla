@@ -48,11 +48,10 @@ import org.rapla.facade.client.ClientFacade;
 import org.rapla.facade.internal.CalendarModelImpl;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaInitializationException;
-import org.rapla.inject.DefaultImplementation;
 import org.rapla.inject.InjectionContext;
 import org.rapla.logger.Logger;
 
-import jakarta.inject.Inject;
+import org.springframework.beans.factory.annotation.Autowired;
 import javax.swing.BorderFactory;
 import javax.swing.JComponent;
 import javax.swing.JPanel;
@@ -70,7 +69,6 @@ import java.awt.event.FocusEvent;
 import java.awt.event.FocusListener;
 import java.util.*;
 
-@DefaultImplementation(context=InjectionContext.swing, of=ResourceSelectionView.class)
 @org.springframework.stereotype.Service
 @org.springframework.context.annotation.Lazy
 public class ResourceSelectionViewSwing implements ResourceSelectionView
@@ -95,7 +93,7 @@ public class ResourceSelectionViewSwing implements ResourceSelectionView
     private final MenuFactory menuFactory;
     ComplexTreeCellRenderer treeCellRenderer;
 
-    @Inject
+    @Autowired
     public ResourceSelectionViewSwing(RaplaMenuBarContainer menuBar, RaplaResources i18n, Logger logger,
                                       TreeFactory treeFactory, MenuFactory menuFactory, InfoFactory infoFactory,
                                       DialogUiFactoryInterface dialogUiFactory, FilterEditButtonFactory filterEditButtonFactory,

@@ -32,13 +32,12 @@ import org.rapla.facade.client.ClientFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.TypedComponentRole;
-import org.rapla.inject.Extension;
 import org.rapla.logger.Logger;
 import org.rapla.storage.PermissionController;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 
-import jakarta.inject.Inject;
+import org.springframework.beans.factory.annotation.Autowired;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -46,7 +45,7 @@ import java.util.List;
  */
 @Service
 @Lazy
-@Extension(provides = ReservationWizardExtension.class, id = "defaultWizard") public class DefaultWizard
+ public class DefaultWizard
         implements ReservationWizardExtension
 {
     final public static TypedComponentRole<Boolean> ENABLED = new TypedComponentRole<>("org.rapla.plugin.defaultwizard.enabled");
@@ -58,7 +57,7 @@ import java.util.List;
     RaplaFacade raplaFacade;
     private final ClientFacade clientFacade;
 
-    @Inject public DefaultWizard(ClientFacade clientFacade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, CalendarModel model,
+    @Autowired public DefaultWizard(ClientFacade clientFacade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, CalendarModel model,
                                   ApplicationEventBus eventBus, MenuItemFactory menuFactory)
     {
         this.clientFacade = clientFacade;

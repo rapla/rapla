@@ -31,7 +31,6 @@ import org.rapla.facade.RaplaFacade;
 import org.rapla.facade.internal.AllocationChangeFinder;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.internal.AbstractRaplaLocale;
-import org.rapla.inject.Extension;
 import org.rapla.logger.Logger;
 import org.rapla.plugin.mail.server.MailToUserImpl;
 import org.rapla.plugin.notification.NotificationPlugin;
@@ -43,13 +42,13 @@ import org.rapla.storage.CachableStorageOperator;
 import org.rapla.storage.StorageOperator;
 import org.rapla.storage.UpdateResult;
 
-import jakarta.inject.Inject;
+import org.springframework.beans.factory.annotation.Autowired;
 import jakarta.inject.Provider;
 import java.util.*;
 
 /** Sends Notification Mails on allocation change.*/
 
-@Extension(provides = ServerExtension.class, id = NotificationPlugin.PLUGIN_ID)
+
 public class NotificationService implements ServerExtension
 {
     static final String NOTIFICATION_LOCK_ID = "NOTIFICATION";
@@ -66,7 +65,7 @@ public class NotificationService implements ServerExtension
     private final Logger logger;
     private final List<Cancellation> scheduleList = new ArrayList<>();
 
-    @Inject
+    @Autowired
     public NotificationService(RaplaFacade facade, RaplaResources i18nBundle, NotificationResources notificationI18n, AppointmentFormater appointmentFormater,
                                Provider<MailToUserImpl> mailToUserInterface, CommandScheduler scheduler, Logger logger/*, NotificationStorage notificationStorage */) throws RaplaException {
         this.notificationI18n = notificationI18n;

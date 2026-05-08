@@ -20,7 +20,7 @@ import org.rapla.facade.client.ClientFacade;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.logger.Logger;
 
-import jakarta.inject.Inject;
+import org.springframework.beans.factory.annotation.Autowired;
 import jakarta.inject.Singleton;
 import javax.swing.JComponent;
 import javax.swing.JLabel;
@@ -170,7 +170,7 @@ public class LongField extends AbstractEditField implements ChangeListener, Focu
         private final Logger logger;
         private final IOInterface ioInterface;
 
-        @Inject
+        @Autowired
         public LongFieldFactory(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, IOInterface ioInterface)
         {
             this.facade = facade;

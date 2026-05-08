@@ -27,11 +27,10 @@ import org.rapla.facade.client.ClientFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaInitializationException;
 import org.rapla.framework.RaplaLocale;
-import org.rapla.inject.Extension;
 import org.rapla.logger.Logger;
 import org.rapla.storage.PermissionController;
 
-import jakarta.inject.Inject;
+import org.springframework.beans.factory.annotation.Autowired;
 import javax.swing.JComponent;
 import java.awt.BorderLayout;
 import java.awt.Dimension;
@@ -41,7 +40,7 @@ import java.util.Collections;
 /****************************************************************
  * This is the controller-class for the Resource-Edit-Panel     *
  ****************************************************************/
-@Extension(provides = EditComponent.class, id="org.rapla.entities.domain.Reservation")
+
 @org.springframework.stereotype.Service("org.rapla.entities.domain.Reservation")
 @org.springframework.context.annotation.Scope("prototype")
 @org.springframework.context.annotation.Lazy
@@ -51,7 +50,7 @@ public class ReservationEditUI  extends AbstractEditUI<Reservation>  {
     AllocatableSelection allocatableSelection;
     private final PermissionController permissionController;
 
-    @Inject
+    @Autowired
     public ReservationEditUI(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger,  ClassificationFieldFactory classificationFieldFactory, PermissionListFieldFactory permissionListFieldFactory,
              AllocatableSelection.AllocatableSelectionFactory allocatableSelectionFactory) throws RaplaInitializationException
     {

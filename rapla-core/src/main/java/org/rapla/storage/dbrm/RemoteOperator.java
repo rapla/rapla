@@ -43,7 +43,6 @@ import org.rapla.facade.internal.ModificationEventImpl;
 import org.rapla.framework.Disposable;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
-import org.rapla.inject.DefaultImplementation;
 import org.rapla.inject.InjectionContext;
 import org.rapla.logger.Logger;
 import org.rapla.scheduler.CommandScheduler;
@@ -65,7 +64,7 @@ import org.rapla.storage.impl.AbstractCachableOperator;
 import org.rapla.storage.impl.EntityStore;
 import org.rapla.storage.impl.RaplaLock;
 
-import jakarta.inject.Inject;
+import org.springframework.beans.factory.annotation.Autowired;
 import jakarta.inject.Singleton;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -91,8 +90,6 @@ import java.util.stream.Collectors;
  * network.  It needs an server-process providing the StorageService
  * (usually this is the default rapla-server).
  */
-@DefaultImplementation(of = StorageOperator.class, context = InjectionContext.client)
-@DefaultImplementation(of = RestartServer.class, context = InjectionContext.client)
 @Singleton
 public class RemoteOperator
         extends AbstractCachableOperator implements RestartServer, Disposable {
@@ -109,7 +106,7 @@ public class RemoteOperator
     int timezoneOffset;
     RemoteConnectionInfo connectionInfo;
 
-    @Inject
+    @Autowired
     public RemoteOperator(Logger logger, RaplaResources i18n, RaplaLocale locale, CommandScheduler scheduler,
                           Map<String, FunctionFactory> functionFactoryMap, RemoteAuthentificationService remoteAuthentificationService, RemoteStorage remoteStorage,
                           RemoteConnectionInfo connectionInfo, Set<PermissionExtension> permissionExtensions, RaplaLock lockManager) {
@@ -258,7 +255,7 @@ public class RemoteOperator
         String clientRepoVersion = getLastValidatedTimeServer();
         RemoteStorage serv = getRemoteStorage();
         try {
-            UpdateEvent evt = serv.refreshSync(clientRepoVersion);
+            UpdateEvent evt = serv.refresh(clientRepoVersion);
             refresh(evt);
         } catch (EntityNotFoundException ex) {
             getLogger().error("Refreshing all resources due to " + ex.getMessage(), ex);
@@ -302,7 +299,7 @@ public class RemoteOperator
     }
 
     public UpdateEvent refreshEventsSync(String lastSyncedTime) throws RaplaException {
-        UpdateEvent updateEvent = remoteStorage.refreshSyncAllEvents(lastSyncedTime);
+        UpdateEvent updateEvent = remoteStorage.refreshAllEvents(lastSyncedTime);
         Collection<Entity> storeObjects = updateEvent.getStoreObjects();
         setResolver( storeObjects);
         return updateEvent;
@@ -396,7 +393,7 @@ public class RemoteOperator
         RemoteStorage serv = getRemoteStorage();
         try {
             getLogger().debug("Loading Data from server");
-            UpdateEvent evt = serv.getResourcesSync();
+            UpdateEvent evt = serv.getResources();
             getLogger().debug("Data loaded");
             return loadData(evt);
         } catch (RaplaException ex) {
@@ -494,7 +491,7 @@ public class RemoteOperator
         RemoteStorage serv = getRemoteStorage();
         evt.setLastValidated(lastValidatedTimeServer);
         try {
-            UpdateEvent serverClosure = serv.store(evt);
+            UpdateEvent serverClosure = serv.dispatch(evt);
             refresh(serverClosure);
         } catch (RaplaException ex) {
             throw ex;
@@ -523,7 +520,7 @@ public class RemoteOperator
     public <T extends Entity> List<ReferenceInfo<T>> createIdentifier(final Class<T> raplaType, int count) throws RaplaException {
         try {
             String localname = RaplaType.getLocalName(raplaType);
-            List<String> ids = getRemoteStorage().createIdentifierSync(localname, count);
+            List<String> ids = getRemoteStorage().createIdentifier(localname, count);
             return createReferenceInfos(raplaType, ids);
         } catch (RaplaException ex) {
             throw ex;
@@ -837,7 +834,7 @@ public class RemoteOperator
         UpdateEvent evt;
         try {
             getLogger().info("Reloading all Data from Server triggered");
-            evt = serv.getResourcesSync();
+            evt = serv.getResources();
             getLogger().debug("Data loaded");
         } catch (RaplaException ex)
         {

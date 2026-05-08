@@ -3,21 +3,18 @@ package org.rapla.plugin.tableview.client.swing;
 import org.rapla.entities.User;
 import org.rapla.facade.client.ClientFacade;
 import org.rapla.framework.RaplaLocale;
-import org.rapla.inject.DefaultImplementation;
-import org.rapla.inject.InjectionContext;
 import org.rapla.plugin.tableview.RaplaTableColumn;
 import org.rapla.plugin.tableview.internal.RaplaTableColumnFactory;
 import org.rapla.plugin.tableview.internal.TableConfig.TableColumnConfig;
 
-import jakarta.inject.Inject;
+import org.springframework.beans.factory.annotation.Autowired;
 
-@DefaultImplementation(context = { InjectionContext.swing }, of = RaplaTableColumnFactory.class)
 @org.springframework.stereotype.Service
 public class SwingTableColumnFactory implements RaplaTableColumnFactory
 {
 
     final ClientFacade facade;
-    @Inject
+    @Autowired
     public SwingTableColumnFactory(ClientFacade facade)
     {
         super();

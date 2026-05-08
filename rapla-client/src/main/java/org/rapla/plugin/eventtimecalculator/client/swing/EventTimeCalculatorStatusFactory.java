@@ -7,17 +7,16 @@ import org.rapla.client.extensionpoints.AppointmentStatusFactory;
 import org.rapla.facade.client.ClientFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
-import org.rapla.inject.Extension;
 import org.rapla.logger.Logger;
 import org.rapla.plugin.eventtimecalculator.EventTimeCalculatorFactory;
 import org.rapla.plugin.eventtimecalculator.EventTimeCalculatorResources;
 import org.springframework.stereotype.Service;
 
-import jakarta.inject.Inject;
+import org.springframework.beans.factory.annotation.Autowired;
 import jakarta.inject.Singleton;
 
 @Service
-@Extension(provides = AppointmentStatusFactory.class, id="eventtimecalculator")
+
 @Singleton
 public class EventTimeCalculatorStatusFactory implements AppointmentStatusFactory {
     private final EventTimeCalculatorFactory factory;
@@ -27,7 +26,7 @@ public class EventTimeCalculatorStatusFactory implements AppointmentStatusFactor
     private final RaplaLocale raplaLocale;
     private final Logger logger;
 
-    @Inject
+    @Autowired
     public EventTimeCalculatorStatusFactory(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, EventTimeCalculatorFactory factory, EventTimeCalculatorResources resources)
     {
         this.facade = facade;

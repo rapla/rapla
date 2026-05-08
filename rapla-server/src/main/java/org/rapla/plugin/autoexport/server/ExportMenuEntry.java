@@ -3,20 +3,19 @@ package org.rapla.plugin.autoexport.server;
 import org.rapla.entities.configuration.Preferences;
 import org.rapla.facade.RaplaFacade;
 import org.rapla.framework.RaplaException;
-import org.rapla.inject.Extension;
 import org.rapla.plugin.autoexport.AutoExportPlugin;
 import org.rapla.plugin.autoexport.AutoExportResources;
 import org.rapla.server.extensionpoints.HtmlMainMenu;
 import org.rapla.server.servletpages.DefaultHTMLMenuEntry;
 
-import jakarta.inject.Inject;
+import org.springframework.beans.factory.annotation.Autowired;
 
-@Extension(provides = HtmlMainMenu.class,id="exportedcalendars")
+
 public class ExportMenuEntry extends DefaultHTMLMenuEntry implements  HtmlMainMenu
 {
 	RaplaFacade facade;
 
-	@Inject
+	@Autowired
 	public ExportMenuEntry(AutoExportResources i18n,RaplaFacade facade) {
 		super(i18n.getString( "calendar_list"),"calendar");
 		this.facade = facade;

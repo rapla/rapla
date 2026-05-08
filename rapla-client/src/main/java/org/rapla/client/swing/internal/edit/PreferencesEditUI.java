@@ -33,10 +33,9 @@ import org.rapla.entities.configuration.Preferences;
 import org.rapla.facade.client.ClientFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
-import org.rapla.inject.Extension;
 import org.rapla.logger.Logger;
 
-import jakarta.inject.Inject;
+import org.springframework.beans.factory.annotation.Autowired;
 import jakarta.inject.Provider;
 import javax.swing.BorderFactory;
 import javax.swing.JComponent;
@@ -62,7 +61,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-@Extension(provides = EditComponent.class, id="org.rapla.entities.configuration.Preferences")
+
 @org.springframework.stereotype.Service("org.rapla.entities.configuration.Preferences")
 @org.springframework.context.annotation.Scope("prototype")
 @org.springframework.context.annotation.Lazy
@@ -89,7 +88,7 @@ public class PreferencesEditUI extends RaplaGUIComponent
 
     /** called during initialization to createInfoDialog the info component
      */
-    @Inject
+    @Autowired
     public PreferencesEditUI(TreeFactory treeFactory, Provider<Set<UserOptionPanel>> userOptionPanel,
                              Provider<Set<SystemOptionPanel>> systemOptionPanel, Map<String, Provider<PluginOptionPanel>> pluginOptionPanel, ClientFacade facade,
                              RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, DialogUiFactoryInterface dialogUiFactory, InfoFactory infoFactory,

@@ -48,8 +48,6 @@ import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaInitializationException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.internal.AbstractRaplaLocale;
-import org.rapla.inject.DefaultImplementation;
-import org.rapla.inject.InjectionContext;
 import org.rapla.logger.Logger;
 import org.rapla.plugin.planningstatus.PlanningStatusPlugin;
 import org.rapla.scheduler.Promise;
@@ -57,7 +55,7 @@ import org.rapla.scheduler.ResolvedPromise;
 import org.rapla.storage.PermissionController;
 import org.rapla.storage.StorageOperator;
 
-import jakarta.inject.Inject;
+import org.springframework.beans.factory.annotation.Autowired;
 import jakarta.inject.Singleton;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -81,8 +79,6 @@ import java.util.stream.Stream;
 import static org.rapla.entities.configuration.CalendarModelConfiguration.EXPORT_ENTRY;
 
 @Singleton
-@DefaultImplementation(of = CalendarSelectionModel.class, context = InjectionContext.client)
-@DefaultImplementation(of = CalendarModel.class, context = InjectionContext.client)
 public class CalendarModelImpl implements CalendarSelectionModel, org.rapla.facade.SyncCalendarModel
 {
     private static final String DEFAULT_VIEW = "week";//WeekViewFactory.WEEK_VIEW;
@@ -112,7 +108,7 @@ public class CalendarModelImpl implements CalendarSelectionModel, org.rapla.faca
 
     Predicate<Appointment> appointmentFilter;
 
-    @Inject public CalendarModelImpl(ClientFacade clientFacade, RaplaLocale locale) throws RaplaInitializationException
+    @Autowired public CalendarModelImpl(ClientFacade clientFacade, RaplaLocale locale) throws RaplaInitializationException
     {
         this(locale.getLocale(), getUser(clientFacade), ((ClientFacadeImpl)clientFacade).getOperator(), ((ClientFacadeImpl) clientFacade).getLogger());
         try

@@ -8,7 +8,7 @@ import org.rapla.entities.Entity;
 import org.rapla.entities.domain.AppointmentBlock;
 import org.rapla.entities.domain.Reservation;
 
-import jakarta.inject.Inject;
+import org.springframework.beans.factory.annotation.Autowired;
 import jakarta.inject.Singleton;
 import java.util.Collections;
 import java.util.List;
@@ -18,7 +18,7 @@ import java.util.List;
 public class EditController
 {
     private final ApplicationEventBus eventBus;
-    @Inject
+    @Autowired
     public EditController(ApplicationEventBus eventBus)
     {
         this.eventBus = eventBus;

@@ -14,7 +14,7 @@ package org.rapla.client.swing.toolkit;
 
 import org.rapla.framework.RaplaException;
 
-import jakarta.inject.Inject;
+import org.springframework.beans.factory.annotation.Autowired;
 import jakarta.inject.Singleton;
 import javax.swing.JFrame;
 import javax.swing.JRootPane;
@@ -39,7 +39,7 @@ public class RaplaFrame extends JFrame
        a veto if necessary.
      * @throws RaplaException
     */
-    @Inject
+    @Autowired
     public RaplaFrame() {
         enableEvents(AWTEvent.WINDOW_EVENT_MASK);
         /*

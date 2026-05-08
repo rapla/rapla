@@ -354,11 +354,11 @@ public class ServerServiceConfig
     }
 
     @Bean
-    public org.rapla.server.servletpages.RaplaIndexPageGenerator raplaIndexPageGenerator(AutowireCapableBeanFactory beanFactory)
+    public org.rapla.server.servletpages.RaplaIndexPageGenerator raplaIndexPageGenerator(
+            java.util.Map<String, org.rapla.server.extensionpoints.HtmlMainMenu> entries,
+            RaplaResources i18n, RaplaFacade facade, ServerContainerContext serverContainerContext)
     {
-        org.rapla.server.servletpages.RaplaIndexPageGenerator impl = new org.rapla.server.servletpages.RaplaIndexPageGenerator();
-        beanFactory.autowireBean(impl);
-        return impl;
+        return new org.rapla.server.servletpages.RaplaIndexPageGenerator(entries, i18n, facade, serverContainerContext);
     }
 
     @Bean

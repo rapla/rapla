@@ -37,7 +37,7 @@ import org.rapla.plugin.urlencryption.UrlEncryptionPlugin;
 import org.rapla.server.extensionpoints.HTMLViewPage;
 import org.rapla.storage.StorageOperator;
 
-import jakarta.inject.Inject;
+import org.springframework.beans.factory.annotation.Autowired;
 import jakarta.inject.Provider;
 import jakarta.inject.Singleton;
 import jakarta.servlet.ServletException;
@@ -81,20 +81,20 @@ import java.util.TreeSet;
 @Singleton
 public class CalendarPageGenerator
 {
-    @Inject 
+    @Autowired 
     Map<String, Provider<HTMLViewPage>> factoryMap;
-    @Inject 
+    @Autowired 
     public RaplaFacade facade;
-    @Inject 
+    @Autowired 
     Logger logger;
-    @Inject 
+    @Autowired 
     RaplaLocale raplaLocale;
-    @Inject 
+    @Autowired 
     RaplaResources i18n;
-    @Inject 
+    @Autowired 
     AutoExportResources autoexportI18n;
 
-    @Inject 
+    @Autowired 
     public CalendarPageGenerator()
     {
     }

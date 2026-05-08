@@ -31,8 +31,6 @@ import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.internal.AbstractRaplaLocale;
 import org.rapla.framework.internal.DefaultScheduler;
 import org.rapla.framework.internal.RaplaLocaleImpl;
-import org.rapla.inject.DefaultImplementation;
-import org.rapla.inject.InjectionContext;
 import org.rapla.logger.Logger;
 import org.rapla.plugin.export2ical.Export2iCalPlugin;
 import org.rapla.scheduler.CommandScheduler;
@@ -45,7 +43,7 @@ import org.rapla.storage.CachableStorageOperator;
 import org.rapla.storage.StorageOperator;
 import org.rapla.storage.impl.server.LocalAbstractCachableOperator;
 
-import jakarta.inject.Inject;
+import org.springframework.beans.factory.annotation.Autowired;
 import jakarta.inject.Provider;
 import java.util.Collection;
 import java.util.Locale;
@@ -54,7 +52,6 @@ import java.util.Set;
 import java.util.TimeZone;
 import java.util.TreeSet;
 
-@DefaultImplementation(of = ServerServiceContainer.class, context = InjectionContext.server, export = true)
 public class ServerServiceImpl implements ServerServiceContainer
 {
     final protected CachableStorageOperator operator;
@@ -71,7 +68,7 @@ public class ServerServiceImpl implements ServerServiceContainer
         return requestPreProcessors;
     }
 
-    @Inject public ServerServiceImpl(CachableStorageOperator operator, RaplaFacade facade, RaplaLocale raplaLocale, TimeZoneConverter importExportLocale,
+    @Autowired public ServerServiceImpl(CachableStorageOperator operator, RaplaFacade facade, RaplaLocale raplaLocale, TimeZoneConverter importExportLocale,
             Logger logger, final Provider<Map<String, ServerExtension>> serverExtensions, final Provider<Set<ServletRequestPreprocessor>> requestPreProcessors,
             CommandScheduler scheduler, ServerContainerContext serverContainerContext,RaplaResources i18n, RaplaSystemInfo systemInfo, ServerBundleManager bundleManager) throws RaplaInitializationException
     {

@@ -37,13 +37,12 @@ import org.rapla.facade.client.ClientFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaInitializationException;
 import org.rapla.framework.RaplaLocale;
-import org.rapla.inject.Extension;
 import org.rapla.plugin.eventimport.ParsedTemplateResult;
 import org.rapla.plugin.eventimport.TemplateImport;
 import org.rapla.scheduler.Promise;
 import org.rapla.scheduler.ResolvedPromise;
 
-import jakarta.inject.Inject;
+import org.springframework.beans.factory.annotation.Autowired;
 import javax.swing.AbstractCellEditor;
 import javax.swing.JComboBox;
 import javax.swing.JComponent;
@@ -76,9 +75,6 @@ import java.util.Vector;
 
 @org.springframework.stereotype.Service
 @org.springframework.context.annotation.Lazy
-@Extension(
-    provides = ImportMenuExtension.class,
-    id = "org.rapla.plugin.templateimport" )
 public class ImportTemplateMenu implements ImportMenuExtension, ActionListener
 {
     String id = "events into templates";
@@ -92,7 +88,7 @@ public class ImportTemplateMenu implements ImportMenuExtension, ActionListener
     private final IOInterface ioInterface;
     boolean enabled;
 
-    @Inject
+    @Autowired
     public ImportTemplateMenu(
         final RaplaResources i18n,
         final TemplateImport importService,

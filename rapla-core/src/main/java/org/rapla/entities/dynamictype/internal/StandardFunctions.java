@@ -16,21 +16,20 @@ import org.rapla.entities.extensionpoints.FunctionFactory;
 import org.rapla.facade.CalendarModel;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
-import org.rapla.inject.Extension;
 
-import jakarta.inject.Inject;
+import org.springframework.beans.factory.annotation.Autowired;
 import java.util.*;
 import java.util.stream.Collectors;
 
 
-@Extension(provides = FunctionFactory.class, id=StandardFunctions.NAMESPACE)
+
 public class StandardFunctions implements FunctionFactory
 {
     public static final String NAMESPACE = "org.rapla";
 
     private final RaplaLocale raplaLocale;
 
-    @Inject
+    @Autowired
     public StandardFunctions(RaplaLocale raplaLocale)
     {
         this.raplaLocale = raplaLocale;

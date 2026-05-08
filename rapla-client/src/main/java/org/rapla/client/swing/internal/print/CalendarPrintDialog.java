@@ -39,7 +39,7 @@ import org.rapla.scheduler.Promise;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Service;
 
-import jakarta.inject.Inject;
+import org.springframework.beans.factory.annotation.Autowired;
 import jakarta.inject.Provider;
 import javax.swing.AbstractAction;
 import javax.swing.Box;
@@ -173,7 +173,7 @@ public class CalendarPrintDialog extends DialogUI
 
     private final Logger logger;
 
-    @Inject
+    @Autowired
     public CalendarPrintDialog(RaplaFrame owner, RaplaLocale raplaLocale,CommandScheduler scheduler, Logger logger, IOInterface printInterface, RaplaResources i18n, BundleManager bundleManager, DialogUiFactoryInterface dialogUiFactory, ExportServiceList exportServiceList, Provider<ErrorDialog> errorDialogProvider) throws
             RaplaInitializationException {
         super(i18n,  bundleManager, scheduler, owner);

@@ -23,7 +23,7 @@ import org.rapla.components.i18n.LocaleChangeEvent;
 import org.rapla.components.i18n.LocaleChangeListener;
 import org.rapla.framework.RaplaInitializationException;
 
-import jakarta.inject.Inject;
+import org.springframework.beans.factory.annotation.Autowired;
 import jakarta.inject.Provider;
 import javax.swing.JComponent;
 import javax.swing.JScrollPane;
@@ -46,7 +46,7 @@ final public class LicenseInfoUI
     private final RaplaSystemInfo systemInfoI18n;
     private final RaplaResources i18n;
 
-    @Inject
+    @Autowired
     public LicenseInfoUI(RaplaResources i18n,RaplaSystemInfo systemInfoI18n,  DialogUiFactoryInterface dialogUiFactory, Provider<LicenseUI> licenseUiProvider) throws RaplaInitializationException{
         this.dialogUiFactory = dialogUiFactory;
         this.licenseUiProvider = licenseUiProvider;

@@ -13,11 +13,10 @@ import org.rapla.entities.dynamictype.DynamicTypeAnnotations;
 import org.rapla.facade.client.ClientFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
-import org.rapla.inject.Extension;
 import org.rapla.logger.Logger;
 import org.springframework.stereotype.Service;
 
-import jakarta.inject.Inject;
+import org.springframework.beans.factory.annotation.Autowired;
 import javax.swing.DefaultListCellRenderer;
 import javax.swing.JList;
 import java.awt.Component;
@@ -26,14 +25,14 @@ import java.util.Collection;
 import java.util.Collections;
 
 @Service
-@Extension(provides= AnnotationEditAttributeExtension.class, id=AttributeAnnotations.KEY_SORTING)
+
 public class SortingAnnotationEdit extends RaplaGUIComponent implements AnnotationEditAttributeExtension
 {
 
     private final String annotationName = AttributeAnnotations.KEY_SORTING;
     String NOTHING_SELECTED = "nothing_selected";
     
-    @Inject
+    @Autowired
     public SortingAnnotationEdit(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger) {
         super(facade, i18n, raplaLocale, logger);
     }

@@ -43,12 +43,11 @@ import org.rapla.facade.client.ClientFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaInitializationException;
 import org.rapla.framework.RaplaLocale;
-import org.rapla.inject.Extension;
 import org.rapla.logger.Logger;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Service;
 
-import jakarta.inject.Inject;
+import org.springframework.beans.factory.annotation.Autowired;
 import javax.swing.JComboBox;
 import javax.swing.JComponent;
 import javax.swing.JLabel;
@@ -69,7 +68,7 @@ import java.util.Set;
  ****************************************************************/
 @Service("org.rapla.entities.dynamictype.DynamicType")
 @Scope("prototype")
-@Extension(provides=EditComponent.class,id= "org.rapla.entities.dynamictype.DynamicType")
+
 public class DynamicTypeEditUI extends RaplaGUIComponent
     implements
      EditComponent<DynamicType,JComponent>
@@ -106,7 +105,7 @@ public class DynamicTypeEditUI extends RaplaGUIComponent
     PermissionListField permissionListField;
     private final DialogUiFactoryInterface dialogUiFactory;
 
-    @Inject
+    @Autowired
     public DynamicTypeEditUI(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, final AttributeEdit attributeEdit, Set<AnnotationEditTypeExtension> annotationExtensions, final DialogUiFactoryInterface dialogUiFactory, final PermissionListFieldFactory permissionListFieldFactory, MultiLanguageFieldFactory multiLanguageFieldFactory, TextFieldFactory textFieldFactory, IOInterface ioInterface) throws RaplaInitializationException {
         super(facade, i18n, raplaLocale, logger);
         this.dialogUiFactory = dialogUiFactory;

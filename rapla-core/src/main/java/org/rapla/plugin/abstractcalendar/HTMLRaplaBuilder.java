@@ -25,7 +25,7 @@ import org.rapla.framework.RaplaLocale;
 import org.rapla.logger.Logger;
 import org.rapla.scheduler.Promise;
 
-import jakarta.inject.Inject;
+import org.springframework.beans.factory.annotation.Autowired;
 import java.util.Date;
 
 
@@ -38,7 +38,7 @@ public class HTMLRaplaBuilder extends RaplaBuilder {
     int index = 0;
     protected boolean onlyAllocationInfo;
     
-    @Inject
+    @Autowired
     public HTMLRaplaBuilder(RaplaLocale raplaLocale, RaplaFacade raplaFacade, RaplaResources i18n, Logger logger, AppointmentFormater appointmentFormater) {
         super(raplaLocale, raplaFacade, i18n, logger, appointmentFormater);
         this.setBlockCreator(( blockContext, start, end)->createBlock(blockContext,start,end));

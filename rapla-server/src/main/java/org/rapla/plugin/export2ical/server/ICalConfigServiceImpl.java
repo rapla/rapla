@@ -6,26 +6,23 @@ import org.rapla.entities.configuration.internal.PreferencesImpl;
 import org.rapla.facade.RaplaFacade;
 import org.rapla.framework.DefaultConfiguration;
 import org.rapla.framework.RaplaException;
-import org.rapla.inject.DefaultImplementation;
-import org.rapla.inject.InjectionContext;
 import org.rapla.plugin.export2ical.Export2iCalPlugin;
 import org.rapla.plugin.export2ical.ICalConfigService;
 import org.rapla.server.RemoteSession;
 import org.rapla.storage.RaplaSecurityException;
 
-import jakarta.inject.Inject;
+import org.springframework.beans.factory.annotation.Autowired;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.ws.rs.core.Context;
 
-@DefaultImplementation(context=InjectionContext.server, of=ICalConfigService.class)
 public class ICalConfigServiceImpl implements ICalConfigService {
-    @Inject
+    @Autowired
     RaplaFacade facade;
-    @Inject
+    @Autowired
     RemoteSession remoteSession;
     private final HttpServletRequest request;
 
-    @Inject
+    @Autowired
     public ICalConfigServiceImpl(@Context HttpServletRequest request)
     {
         this.request = request;

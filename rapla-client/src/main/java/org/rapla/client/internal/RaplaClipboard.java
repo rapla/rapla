@@ -22,7 +22,7 @@ import org.rapla.facade.client.ClientFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.logger.Logger;
 
-import jakarta.inject.Inject;
+import org.springframework.beans.factory.annotation.Autowired;
 import jakarta.inject.Singleton;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -47,7 +47,7 @@ public class RaplaClipboard implements ModificationListener
 
 	CopyType copyType;
 	
-	@Inject
+	@Autowired
     public RaplaClipboard( ClientFacade facade, Logger logger )
     {
         facade.addModificationListener( this );

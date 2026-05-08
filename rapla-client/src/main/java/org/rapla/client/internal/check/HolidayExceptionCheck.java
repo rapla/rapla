@@ -21,12 +21,11 @@ import org.rapla.facade.RaplaFacade;
 import org.rapla.facade.client.ClientFacade;
 import org.rapla.facade.internal.CalendarOptionsImpl;
 import org.rapla.framework.RaplaException;
-import org.rapla.inject.Extension;
 import org.rapla.scheduler.Promise;
 import org.springframework.stereotype.Service;
 import org.rapla.scheduler.ResolvedPromise;
 
-import jakarta.inject.Inject;
+import org.springframework.beans.factory.annotation.Autowired;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -39,7 +38,7 @@ import java.util.TreeSet;
 import java.util.stream.Collectors;
 
 @Service
-@Extension(provides = EventCheck.class, id = "holidayexception")
+
 public class HolidayExceptionCheck implements EventCheck
 {
     final ClientFacade clientFacade;
@@ -49,7 +48,7 @@ public class HolidayExceptionCheck implements EventCheck
     final private HolidayCheckDialogView checkDialogView;
     final private DialogUiFactoryInterface dialogUiFactory;
 
-    @Inject
+    @Autowired
     public HolidayExceptionCheck(ClientFacade clientFacade, RaplaFacade raplaFacade, RaplaResources i18n, TreeFactory treeFactory,
             HolidayCheckDialogView checkDialogView, DialogUiFactoryInterface dialogUiFactory)
     {

@@ -28,7 +28,7 @@ import org.rapla.framework.RaplaLocale;
 import org.rapla.logger.Logger;
 import org.springframework.stereotype.Service;
 
-import jakarta.inject.Inject;
+import org.springframework.beans.factory.annotation.Autowired;
 import jakarta.inject.Singleton;
 import javax.swing.BorderFactory;
 import javax.swing.DefaultComboBoxModel;
@@ -416,7 +416,7 @@ public class PermissionField extends AbstractEditField implements  ChangeListene
         private final DateFieldFactory dateFieldFactory;
         private final LongFieldFactory longFieldFactory;
 
-        @Inject
+        @Autowired
         public PermissionFieldFactory(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, TreeFactory treeFactory,
                   DialogUiFactoryInterface dialogUiFactory, DateFieldFactory dateFieldFactory, LongFieldFactory longFieldFactory)
         {

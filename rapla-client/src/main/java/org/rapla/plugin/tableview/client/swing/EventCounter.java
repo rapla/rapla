@@ -1,11 +1,10 @@
 package org.rapla.plugin.tableview.client.swing;
 
 import org.rapla.RaplaResources;
-import org.rapla.inject.Extension;
 import org.rapla.plugin.tableview.client.swing.extensionpoints.ReservationSummaryExtension;
 import org.springframework.stereotype.Service;
 
-import jakarta.inject.Inject;
+import org.springframework.beans.factory.annotation.Autowired;
 import javax.swing.Box;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
@@ -14,12 +13,12 @@ import javax.swing.event.ListSelectionEvent;
 import javax.swing.event.ListSelectionListener;
 
 @Service
-@Extension(provides = ReservationSummaryExtension.class,id = "_eventcounter")
+
 public final class EventCounter implements ReservationSummaryExtension
 {
 	private final RaplaResources i18n;
 
-    @Inject
+    @Autowired
 	public EventCounter(RaplaResources i18n) 
 	{
         this.i18n = i18n;

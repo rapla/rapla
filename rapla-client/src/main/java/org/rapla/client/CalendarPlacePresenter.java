@@ -22,20 +22,19 @@ import org.rapla.facade.client.ClientFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaInitializationException;
 import org.rapla.framework.TypedComponentRole;
-import org.rapla.inject.Extension;
 import org.rapla.logger.Logger;
 import org.rapla.scheduler.CommandScheduler;
 import org.rapla.scheduler.Promise;
 import org.rapla.scheduler.ResolvedPromise;
 import org.rapla.scheduler.Subject;
 
-import jakarta.inject.Inject;
+import org.springframework.beans.factory.annotation.Autowired;
 import jakarta.inject.Singleton;
 import java.util.Collection;
 import java.util.Date;
 
 @Singleton
-@Extension(provides = TaskPresenter.class, id = CalendarPlacePresenter.PLACE_ID)
+
 @org.springframework.stereotype.Service(CalendarPlacePresenter.PLACE_ID)
 @org.springframework.context.annotation.Lazy
 public class CalendarPlacePresenter implements Presenter, TaskPresenter
@@ -62,7 +61,7 @@ public class CalendarPlacePresenter implements Presenter, TaskPresenter
     final private CalendarContainer calendarContainer;
     final ClientFacade clientFacade;
 
-    @SuppressWarnings({ "rawtypes", "unchecked" }) @Inject public CalendarPlacePresenter(final CalendarPlaceView view, final ClientFacade clientFacade,
+    @SuppressWarnings({ "rawtypes", "unchecked" }) @Autowired public CalendarPlacePresenter(final CalendarPlaceView view, final ClientFacade clientFacade,
             final RaplaResources i18n, final CalendarSelectionModel model, final Logger logger, final CalendarEventBus eventBus,/*, Map<String, CalendarPlugin> views*/
             ResourceSelectionPresenter resourceSelectionPresenter, SavedCalendarInterface savedViews, ConflictSelectionPresenter conflictsSelectionPresenter,
                                                                                          RequestSelectionPresenter requestSelectionPresenter,

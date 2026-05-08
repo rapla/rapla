@@ -13,13 +13,12 @@ import org.rapla.framework.DefaultConfiguration;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.TypedComponentRole;
-import org.rapla.inject.Extension;
 import org.rapla.logger.Logger;
 import org.rapla.plugin.tableview.TableViewPlugin;
 import org.rapla.plugin.tableview.internal.TableConfig.TableColumnConfig;
 import org.rapla.plugin.tableview.internal.TableConfig.ViewDefinition;
 
-import jakarta.inject.Inject;
+import org.springframework.beans.factory.annotation.Autowired;
 import javax.swing.BoxLayout;
 import javax.swing.DefaultListModel;
 import javax.swing.JButton;
@@ -49,7 +48,7 @@ import java.util.Set;
 @org.springframework.stereotype.Service(TableViewPlugin.PLUGIN_ID)
 @org.springframework.context.annotation.Scope("prototype")
 @org.springframework.context.annotation.Lazy
-@Extension(provides = PluginOptionPanel.class, id = TableViewPlugin.PLUGIN_ID) public class TableviewOption implements PluginOptionPanel, ChangeListener
+ public class TableviewOption implements PluginOptionPanel, ChangeListener
 {
     private final JPanel list = new JPanel();
     private final List<TableColumnConfig> tablerows = new ArrayList<>();
@@ -66,7 +65,7 @@ import java.util.Set;
     private final TableConfig.TableConfigLoader tableConfigLoader;
     private final MultiLanguageFieldFactory multiLanguageFieldFactory;
 
-    @Inject
+    @Autowired
     public TableviewOption(RaplaFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, TableConfig.TableConfigLoader tableConfigLoader,
             MultiLanguageFieldFactory multiLanguageFieldFactory)
     {

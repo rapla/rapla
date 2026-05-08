@@ -26,7 +26,7 @@ import org.rapla.facade.client.ClientFacade;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.logger.Logger;
 
-import jakarta.inject.Inject;
+import org.springframework.beans.factory.annotation.Autowired;
 import jakarta.inject.Singleton;
 import javax.swing.AbstractCellEditor;
 import javax.swing.JComponent;
@@ -250,7 +250,7 @@ public class MultiLanguageField extends AbstractEditField implements ChangeListe
         private final TextFieldFactory textFieldFactory;
         private final IOInterface ioInterface;
 
-        @Inject
+        @Autowired
         public MultiLanguageFieldFactory(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger,
                 DialogUiFactoryInterface dialogUiFactory, TextFieldFactory textFieldFactory, IOInterface ioInterface)
         {

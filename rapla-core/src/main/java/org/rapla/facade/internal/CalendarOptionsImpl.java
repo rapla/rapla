@@ -19,17 +19,14 @@ import org.rapla.framework.Configuration;
 import org.rapla.framework.DefaultConfiguration;
 import org.rapla.framework.RaplaInitializationException;
 import org.rapla.framework.TypedComponentRole;
-import org.rapla.inject.DefaultImplementation;
-import org.rapla.inject.InjectionContext;
 
-import jakarta.inject.Inject;
+import org.springframework.beans.factory.annotation.Autowired;
 import jakarta.inject.Singleton;
 import java.util.Date;
 import java.util.LinkedHashSet;
 import java.util.Set;
 
 /** <strong>WARNING!!</strong> This class should not be public to the outside. Please use the interface */
-@DefaultImplementation(of = CalendarOptions.class, context = InjectionContext.all)
 @Singleton
 public class CalendarOptionsImpl implements CalendarOptions {
     public final static TypedComponentRole<RaplaConfiguration> CALENDAR_OPTIONS= new TypedComponentRole<>("org.rapla.calendarview");
@@ -83,7 +80,7 @@ public class CalendarOptionsImpl implements CalendarOptions {
 	final int firstDayOfWeek;
 	final private int minBlockWidth;
 
-    @Inject
+    @Autowired
 	public CalendarOptionsImpl() throws RaplaInitializationException {
 	    this(new DefaultConfiguration());
 	}

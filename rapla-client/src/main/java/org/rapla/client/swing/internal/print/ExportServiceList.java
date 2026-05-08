@@ -24,7 +24,7 @@ import org.rapla.framework.StartupEnvironment;
 import org.rapla.scheduler.Promise;
 import org.springframework.stereotype.Service;
 
-import jakarta.inject.Inject;
+import org.springframework.beans.factory.annotation.Autowired;
 import jakarta.inject.Singleton;
 import javax.swing.BorderFactory;
 import javax.swing.JLabel;
@@ -47,7 +47,7 @@ public class ExportServiceList   {
     private final DialogUiFactoryInterface dialogUiFactory;
     private final RaplaResources i18n;
 
-    @Inject
+    @Autowired
     public ExportServiceList(StartupEnvironment startupEnvironment, RaplaResources i18n, IOInterface printInterface, DialogUiFactoryInterface dialogUiFactory) throws
             RaplaInitializationException {
         this.i18n = i18n;

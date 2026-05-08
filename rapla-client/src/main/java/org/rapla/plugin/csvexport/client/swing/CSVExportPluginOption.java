@@ -5,19 +5,18 @@ import org.rapla.client.extensionpoints.PluginOptionPanel;
 import org.rapla.components.layout.TableLayout;
 import org.rapla.entities.configuration.Preferences;
 import org.rapla.framework.RaplaException;
-import org.rapla.inject.Extension;
 import org.rapla.plugin.autoexport.AutoExportPlugin;
 import org.rapla.plugin.csvexport.CSVExportPlugin;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Service;
 
-import jakarta.inject.Inject;
+import org.springframework.beans.factory.annotation.Autowired;
 import javax.swing.*;
 import java.util.Locale;
 
 @Service(CSVExportPlugin.PLUGIN_ID)
 @Scope("prototype")
-@Extension(provides = PluginOptionPanel.class, id = CSVExportPlugin.PLUGIN_ID)
+
 public class CSVExportPluginOption implements PluginOptionPanel
 {
     JCheckBox booleanField = new JCheckBox();
@@ -25,7 +24,7 @@ public class CSVExportPluginOption implements PluginOptionPanel
     Preferences preferences;
     final RaplaResources raplaResources;
 
-    @Inject
+    @Autowired
     public CSVExportPluginOption(RaplaResources raplaResources)
     {
         this.raplaResources = raplaResources;

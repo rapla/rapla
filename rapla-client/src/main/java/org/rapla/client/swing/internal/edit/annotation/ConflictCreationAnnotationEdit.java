@@ -11,11 +11,10 @@ import org.rapla.entities.dynamictype.DynamicTypeAnnotations;
 import org.rapla.facade.client.ClientFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
-import org.rapla.inject.Extension;
 import org.rapla.logger.Logger;
 import org.springframework.stereotype.Service;
 
-import jakarta.inject.Inject;
+import org.springframework.beans.factory.annotation.Autowired;
 import javax.swing.DefaultListCellRenderer;
 import javax.swing.JList;
 import java.awt.Component;
@@ -24,13 +23,13 @@ import java.util.Collection;
 import java.util.Collections;
 
 @Service
-@Extension(provides= AnnotationEditTypeExtension.class, id=DynamicTypeAnnotations.KEY_CONFLICTS)
+
 public class ConflictCreationAnnotationEdit extends RaplaGUIComponent implements AnnotationEditTypeExtension
 {
 
     private final String annotationName = DynamicTypeAnnotations.KEY_CONFLICTS;
 
-    @Inject
+    @Autowired
     public ConflictCreationAnnotationEdit(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger) {
         super(facade, i18n, raplaLocale, logger);
     }

@@ -32,7 +32,7 @@ import org.rapla.scheduler.CommandScheduler;
 import org.rapla.scheduler.Observable;
 import org.rapla.scheduler.Promise;
 
-import jakarta.inject.Inject;
+import org.springframework.beans.factory.annotation.Autowired;
 import jakarta.inject.Provider;
 import jakarta.inject.Singleton;
 import java.util.HashMap;
@@ -63,7 +63,7 @@ public class Application implements ApplicationView.Presenter, ModificationListe
     final private DialogUiFactoryInterface dialogUiFactory;
     private final Map<ApplicationEvent, TaskPresenter> openDialogsPresenter = new HashMap<>();
 
-    @Inject
+    @Autowired
     public Application(final Provider<ApplicationView> mainViewProvider, ApplicationEventBus eventBus, Logger logger, BundleManager bundleManager, ClientFacade clientFacade,
                        AbstractActivityController abstractActivityController, RaplaResources i18n, Map<String, Provider<TaskPresenter>> activityPresenters,
                        Provider<Set<ClientExtension>> clientExtensions, Provider<CalendarSelectionModel> calendarModel, CommandScheduler scheduler,

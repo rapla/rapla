@@ -35,7 +35,7 @@ import org.rapla.logger.Logger;
 import org.rapla.scheduler.Promise;
 import org.rapla.storage.PermissionController;
 
-import jakarta.inject.Inject;
+import org.springframework.beans.factory.annotation.Autowired;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
@@ -78,7 +78,7 @@ public class AppointmentAction extends RaplaComponent  {
     I18nIcon icon;
     private Allocatable allocatable;
 
-    @Inject
+    @Autowired
     public AppointmentAction(ClientFacade clientFacade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger,
             CalendarSelectionModel calendarSelectionModel, ReservationController reservationController, EditController editController, InfoFactory infoFactory,
             DialogUiFactoryInterface dialogUiFactory)

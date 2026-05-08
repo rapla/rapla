@@ -19,18 +19,17 @@ import org.rapla.entities.domain.Allocatable;
 import org.rapla.facade.client.ClientFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaInitializationException;
-import org.rapla.inject.Extension;
 import org.rapla.storage.PermissionController;
 import org.springframework.stereotype.Service;
 
-import jakarta.inject.Inject;
+import org.springframework.beans.factory.annotation.Autowired;
 import jakarta.inject.Singleton;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
 
 @Service
-@Singleton @Extension(provides = ObjectMenuFactory.class, id = "merge") public class MergeMenuFactory implements ObjectMenuFactory
+@Singleton  public class MergeMenuFactory implements ObjectMenuFactory
 {
     private final RaplaResources i18n;
     private final MenuItemFactory menuItemFactory;
@@ -38,7 +37,7 @@ import java.util.Iterator;
     private final PermissionController permissionController;
     private final User user;
 
-    @Inject public MergeMenuFactory(RaplaResources i18n, MenuItemFactory menuItemFactory, ClientFacade facade,
+    @Autowired public MergeMenuFactory(RaplaResources i18n, MenuItemFactory menuItemFactory, ClientFacade facade,
                                     ApplicationEventBus eventBus) throws RaplaInitializationException
     {
         this.i18n = i18n;

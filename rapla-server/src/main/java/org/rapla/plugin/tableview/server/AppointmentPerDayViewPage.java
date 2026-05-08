@@ -20,7 +20,6 @@ import org.rapla.entities.domain.AppointmentBlock;
 import org.rapla.facade.CalendarModel;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
-import org.rapla.inject.Extension;
 import org.rapla.plugin.tableview.RaplaTableColumn;
 import org.rapla.plugin.tableview.RaplaTableModel;
 import org.rapla.plugin.tableview.TableViewPlugin;
@@ -28,7 +27,7 @@ import org.rapla.plugin.tableview.internal.DefaultRaplaTableColumn;
 import org.rapla.plugin.tableview.internal.TableConfig;
 import org.rapla.server.extensionpoints.HTMLViewPage;
 
-import jakarta.inject.Inject;
+import org.springframework.beans.factory.annotation.Autowired;
 import jakarta.servlet.ServletContext;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -37,7 +36,7 @@ import javax.swing.table.TableColumn;
 import java.io.IOException;
 import java.util.*;
 
-@Extension(provides = HTMLViewPage.class, id = TableViewPlugin.TABLE_APPOINTMENTS_PER_DAY_VIEW) public class AppointmentPerDayViewPage
+ public class AppointmentPerDayViewPage
         implements HTMLViewPage
 {
     private final TableViewPage<AppointmentBlock> tableViewPage;
@@ -48,7 +47,7 @@ import java.util.*;
         return raplaLocale.formatDayOfWeekLongDateMonth(start);
     }
 
-    @Inject public AppointmentPerDayViewPage(RaplaLocale raplaLocale, final TableConfig.TableConfigLoader tableConfigLoader)
+    @Autowired public AppointmentPerDayViewPage(RaplaLocale raplaLocale, final TableConfig.TableConfigLoader tableConfigLoader)
     {
         this.raplaLocale = raplaLocale;
         tableViewPage = new TableViewPage<AppointmentBlock>(raplaLocale) {

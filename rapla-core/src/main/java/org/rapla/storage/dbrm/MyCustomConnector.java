@@ -3,8 +3,6 @@ package org.rapla.storage.dbrm;
 import org.rapla.ConnectInfo;
 import org.rapla.RaplaResources;
 import org.rapla.framework.RaplaException;
-import org.rapla.inject.DefaultImplementation;
-import org.rapla.inject.InjectionContext;
 import org.rapla.logger.Logger;
 import org.rapla.rest.SerializableExceptionInformation;
 import org.rapla.rest.client.AuthenticationException;
@@ -16,10 +14,9 @@ import org.rapla.scheduler.Promise;
 import org.rapla.storage.RaplaInvalidTokenException;
 import org.rapla.storage.RaplaSecurityException;
 
-import jakarta.inject.Inject;
+import org.springframework.beans.factory.annotation.Autowired;
 import jakarta.inject.Provider;
 
-@DefaultImplementation(of=CustomConnector.class,context = InjectionContext.client)
 public class MyCustomConnector implements CustomConnector
 {
     private final RemoteConnectionInfo remoteConnectionInfo;
@@ -30,7 +27,7 @@ public class MyCustomConnector implements CustomConnector
     Logger logger;
     private int wrongLoginCounter=0;
 
-    @Inject public MyCustomConnector(RemoteConnectionInfo remoteConnectionInfo, Provider<RaplaResources> i18n,Provider<RemoteAuthentificationService> authentificationService,
+    @Autowired public MyCustomConnector(RemoteConnectionInfo remoteConnectionInfo, Provider<RaplaResources> i18n,Provider<RemoteAuthentificationService> authentificationService,
             CommandScheduler commandQueue, Logger logger)
     {
         this.remoteConnectionInfo = remoteConnectionInfo;

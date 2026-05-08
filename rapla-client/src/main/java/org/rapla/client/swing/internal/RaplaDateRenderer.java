@@ -23,17 +23,14 @@ import org.rapla.facade.PeriodModel;
 import org.rapla.facade.RaplaFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
-import org.rapla.inject.DefaultImplementation;
-import org.rapla.inject.InjectionContext;
 import org.springframework.stereotype.Service;
 
-import jakarta.inject.Inject;
+import org.springframework.beans.factory.annotation.Autowired;
 import jakarta.inject.Singleton;
 import java.awt.Color;
 import java.util.Set;
 
 @Singleton
-@DefaultImplementation(of=DateRenderer.class,context = { InjectionContext.swing,InjectionContext.server})
 @Service
 public class RaplaDateRenderer implements DateRenderer {
     protected WeekendHighlightRenderer renderer = new WeekendHighlightRenderer();
@@ -43,7 +40,7 @@ public class RaplaDateRenderer implements DateRenderer {
     private final RaplaLocale raplaLocale;
     private final RaplaFacade facade;
 
-    @Inject
+    @Autowired
     public RaplaDateRenderer(RaplaFacade facade, RaplaLocale raplaLocale) {
         this.facade = facade;
         this.raplaLocale = raplaLocale;

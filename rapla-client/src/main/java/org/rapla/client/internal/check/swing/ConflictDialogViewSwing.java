@@ -7,23 +7,21 @@ import org.rapla.client.swing.internal.view.RaplaSwingTreeModel;
 import org.rapla.client.swing.toolkit.RaplaTree;
 import org.rapla.facade.Conflict;
 import org.rapla.framework.RaplaException;
-import org.rapla.inject.DefaultImplementation;
 import org.rapla.inject.InjectionContext;
 
-import jakarta.inject.Inject;
+import org.springframework.beans.factory.annotation.Autowired;
 import javax.swing.*;
 import javax.swing.tree.TreeModel;
 import java.awt.*;
 import java.util.Collection;
 
-@DefaultImplementation(of=ConflictDialogView.class,context = InjectionContext.swing)
 @org.springframework.stereotype.Service
 public class ConflictDialogViewSwing implements ConflictDialogView {
     private final TreeFactory treeFactory;
 
     private final ConflictTreeCellRenderer conflictTreeCellRenderer;
 
-    @Inject
+    @Autowired
     public ConflictDialogViewSwing(TreeFactory treeFactory, ConflictTreeCellRenderer conflictTreeCellRenderer) {
         this.treeFactory = treeFactory;
         this.conflictTreeCellRenderer = conflictTreeCellRenderer;

@@ -3,7 +3,7 @@ package org.rapla.server.internal;
 import org.rapla.components.i18n.BundleManager;
 import org.rapla.components.i18n.I18nBundle;
 
-import jakarta.inject.Inject;
+import org.springframework.beans.factory.annotation.Autowired;
 import jakarta.inject.Singleton;
 import java.util.Collection;
 import java.util.LinkedHashMap;
@@ -17,7 +17,7 @@ import java.util.Set;
     private final Set<String> bundleIds;
     private final BundleManager bundleManager;
 
-    @Inject public ResourceBundleList(Set<I18nBundle> i18nBundles, BundleManager bundleManager)
+    @Autowired public ResourceBundleList(Set<I18nBundle> i18nBundles, BundleManager bundleManager)
     {
         this.bundleManager = bundleManager;
         Set<String> i18nBundleIds = new LinkedHashSet<>();

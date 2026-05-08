@@ -7,8 +7,6 @@ import org.rapla.entities.domain.Reservation;
 import org.rapla.facade.RaplaComponent;
 import org.rapla.facade.RaplaFacade;
 import org.rapla.framework.RaplaException;
-import org.rapla.inject.DefaultImplementation;
-import org.rapla.inject.InjectionContext;
 import org.rapla.logger.Logger;
 import org.rapla.plugin.archiver.ArchiverService;
 import org.rapla.scheduler.CommandScheduler;
@@ -20,7 +18,7 @@ import org.rapla.storage.RaplaSecurityException;
 import org.rapla.storage.StorageOperator;
 import org.rapla.storage.dbsql.DBOperator;
 
-import jakarta.inject.Inject;
+import org.springframework.beans.factory.annotation.Autowired;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.ws.rs.core.Context;
 import java.util.ArrayList;
@@ -28,24 +26,23 @@ import java.util.Collection;
 import java.util.Date;
 import java.util.List;
 
-@DefaultImplementation(context=InjectionContext.server, of=ArchiverService.class)
 public class ArchiverServiceImpl  implements ArchiverService
 {
-    @Inject
+    @Autowired
     RemoteSession session;
-    @Inject
+    @Autowired
     CommandScheduler scheduler;
-    @Inject
+    @Autowired
     RaplaFacade raplaFacade;
-    @Inject
+    @Autowired
     org.rapla.storage.SyncStorageOperator syncOperator;
-    @Inject
+    @Autowired
     ImportExportManager importExportManager;
-    @Inject
+    @Autowired
     Logger logger;
     private final HttpServletRequest request;
 
-    @Inject
+    @Autowired
     public ArchiverServiceImpl(@Context HttpServletRequest request)
     {
         this.request = request;

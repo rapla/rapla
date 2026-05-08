@@ -16,7 +16,7 @@ import org.rapla.components.util.Assert;
 import org.rapla.components.util.Tools;
 import org.rapla.logger.Logger;
 
-import jakarta.inject.Inject;
+import org.springframework.beans.factory.annotation.Autowired;
 import jakarta.inject.Singleton;
 import javax.swing.*;
 import java.awt.Component;
@@ -40,7 +40,7 @@ final public class FrameControllerList {
     Logger logger = null;
     ArrayList<FrameControllerListener> listenerList = new ArrayList<FrameControllerListener>();
 
-    @Inject
+    @Autowired
     public FrameControllerList(Logger logger) 
     {
         this.logger = logger;

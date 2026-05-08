@@ -42,10 +42,9 @@ import org.rapla.facade.client.ClientFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaInitializationException;
 import org.rapla.framework.RaplaLocale;
-import org.rapla.inject.Extension;
 import org.rapla.logger.Logger;
 
-import jakarta.inject.Inject;
+import org.springframework.beans.factory.annotation.Autowired;
 import javax.swing.JButton;
 import javax.swing.JComponent;
 import javax.swing.JPanel;
@@ -77,7 +76,7 @@ import java.util.List;
   4. isadmin,boolean
 */
 
-@Extension(provides = EditComponent.class, id="org.rapla.entities.User")
+
 @org.springframework.stereotype.Service("org.rapla.entities.User")
 @org.springframework.context.annotation.Scope("prototype")
 @org.springframework.context.annotation.Lazy
@@ -94,7 +93,7 @@ public class UserEditUI  extends AbstractEditUI<User> {
     /**
      * @throws RaplaException
      */
-    @Inject
+    @Autowired
     public UserEditUI(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, TreeFactory treeFactory, DialogUiFactoryInterface dialogUiFactory, GroupListField groupField, TextFieldFactory textFieldFactory, TreeCellRenderer treeCellRenderer) throws
             RaplaInitializationException {
         super(facade, i18n, raplaLocale, logger);

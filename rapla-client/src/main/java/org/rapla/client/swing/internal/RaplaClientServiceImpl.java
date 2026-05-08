@@ -41,7 +41,6 @@ import org.rapla.framework.RaplaInitializationException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.StartupEnvironment;
 import org.rapla.framework.internal.AbstractRaplaLocale;
-import org.rapla.inject.DefaultImplementation;
 import org.rapla.inject.InjectionContext;
 import org.rapla.logger.Logger;
 import org.rapla.scheduler.CommandScheduler;
@@ -52,7 +51,7 @@ import org.rapla.storage.dbrm.RemoteAuthentificationService;
 import org.rapla.storage.dbrm.RemoteConnectionInfo;
 import org.rapla.storage.dbrm.RemoteOperator;
 
-import jakarta.inject.Inject;
+import org.springframework.beans.factory.annotation.Autowired;
 import jakarta.inject.Provider;
 import jakarta.inject.Singleton;
 import javax.swing.AbstractAction;
@@ -71,7 +70,6 @@ import java.util.concurrent.Semaphore;
 /** Implementation of the UserClientService.
 */
 @Singleton
-@DefaultImplementation(of = ClientService.class, context = InjectionContext.swing, export = true)
 @org.springframework.stereotype.Service
 @org.springframework.context.annotation.Lazy
 public class RaplaClientServiceImpl implements ClientService, UpdateErrorListener, Disposable, UserClientService
@@ -99,7 +97,7 @@ public class RaplaClientServiceImpl implements ClientService, UpdateErrorListene
     RemoteAuthentificationService authentificationService;
     RemoteConnectionInfo connectionInfo;
 
-    @Inject
+    @Autowired
     public RaplaClientServiceImpl(StartupEnvironment env, Logger logger, DialogUiFactoryInterface dialogUiFactory, ClientFacade facade, RaplaResources i18n, RaplaSystemInfo systemInfo,
                                   RaplaLocale raplaLocale, BundleManager bundleManager, CommandScheduler commandScheduler, final RemoteOperator storageOperator,
                                   Provider<Application> applicationProvider, RemoteConnectionInfo connectionInfo, RemoteAuthentificationService authentificationService)

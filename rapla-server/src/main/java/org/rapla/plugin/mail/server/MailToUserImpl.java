@@ -7,7 +7,7 @@ import org.rapla.framework.RaplaException;
 import org.rapla.logger.Logger;
 import org.rapla.plugin.mail.MailPlugin;
 
-import jakarta.inject.Inject;
+import org.springframework.beans.factory.annotation.Autowired;
 
 public class MailToUserImpl
 {
@@ -16,7 +16,7 @@ public class MailToUserImpl
     final RaplaFacade facade;
     final Logger logger;
 
-    @Inject
+    @Autowired
     public MailToUserImpl(final MailInterface mail, final RaplaFacade facade, final Logger logger)
     {
         this.mail = mail;

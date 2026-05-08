@@ -12,18 +12,17 @@ import org.rapla.entities.dynamictype.Attribute;
 import org.rapla.entities.dynamictype.Classification;
 import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.entities.internal.UserImpl;
-import org.rapla.inject.Extension;
 import org.rapla.storage.PermissionController;
 
-import jakarta.inject.Inject;
+import org.springframework.beans.factory.annotation.Autowired;
 import java.util.Collection;
 import java.util.Date;
 
-@Extension(id = "org.rapla.entities.domain.permission.RaplaDefault", provides = PermissionExtension.class)
+
 public class RaplaDefaultPermissionImpl implements PermissionExtension
 {
 
-    @Inject
+    @Autowired
     public RaplaDefaultPermissionImpl()
     {
     }

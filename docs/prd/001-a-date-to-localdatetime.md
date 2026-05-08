@@ -17,6 +17,18 @@ The earlier additive-overload approach (add `LocalDateTime` defaults next to `Da
 
 **What this enables**: once the `Date` API is `default`-only (with conversion via `DateTools.toDate`), the next sweep removes the conversions where callers no longer need `Date` — leaving cleaner `LocalDateTime`-native call paths. The **end state** is a codebase where `java.util.Date` appears only at well-known boundaries (JDBC binding, Swing renderers, iCal4j input legacy paths), not in entity / facade / storage / wire APIs.
 
+### Phase A8 — Polarity flip (started 2026-05-08)
+
+| Interface | Old primary | New primary | Status |
+|-----------|-------------|-------------|--------|
+| `Timestamp` | `Date getCreateDate()` | `LocalDateTime getCreateDateAsLocalDateTime()` | ✅ flipped 2026-05-08 |
+| `LastChangedTimestamp` | `Date getLastChanged()` | `LocalDateTime getLastChangedAsLocalDateTime()` | ✅ flipped 2026-05-08 |
+| `Period` | `Date getStart()`, `Date getEnd()`, `boolean contains(Date)` | `LocalDate getStartAsLocalDate()`, `LocalDate getEndAsLocalDate()`, `boolean contains(LocalDateTime)` | ✅ flipped 2026-05-08. `PeriodImpl` overrides all three primaries; `Date` getter/`contains(Date)` are `default` delegates. |
+
+After each flip, the legacy `Date` getter remains as a `default` delegate that calls the new primary and converts via `DateTools.toDate(LocalDateTime)`. Existing entity impls (`CategoryImpl`, `UserImpl`, `PreferencesImpl`, `DynamicTypeImpl`, `AllocatableImpl`, `ReservationImpl`, `PermissionImpl`, `AppointmentImpl`, `RepeatingImpl`, `ConflictImpl`) all already implement `getCreateDateAsLocalDateTime()` / `getLastChangedAsLocalDateTime()` from Phase A7 work — so the flip is zero-cascade.
+
+Subsequent flips planned: `Permission.getStart/getEnd/setStart/setEnd(Date)`, `Period.getStart()/getEnd()`, `Reservation.getFirstDate()/getMaxEnd()`, `Conflict.getStartDate()`, `RaplaFacade.today()/getCurrentTimestamp()`, `StorageOperator.getCurrentTimestamp()/today()`, `CachableStorageOperator.getLastRefreshed()/getHistoryValidStart()/getConnectStart()`, `RaplaLocale.formatDate(Date)/formatTime(Date)/formatTimestamp(Date)`. Each is a separate small change.
+
 ## Implementation Status
 
 ### Phase A1 — Foundation (completed 2026-05-06)

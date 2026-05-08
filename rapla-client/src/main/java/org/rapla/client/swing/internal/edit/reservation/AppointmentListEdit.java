@@ -43,7 +43,7 @@ import org.rapla.logger.Logger;
 import org.rapla.scheduler.Promise;
 import org.rapla.scheduler.ResolvedPromise;
 
-import jakarta.inject.Inject;
+import org.springframework.beans.factory.annotation.Autowired;
 import jakarta.inject.Singleton;
 import javax.swing.BoxLayout;
 import javax.swing.DefaultListModel;
@@ -600,7 +600,7 @@ class AppointmentListEdit extends AbstractAppointmentEditor
         private final IOInterface ioInterface;
 		private final Set<AppointmentEditExtensionFactory> appointmentEditFactories;
 
-        @Inject
+        @Autowired
         public AppointmentListEditFactory(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger,
                 AppointmentFormater appointmentFormater, DateRenderer dateRenderer,
                 DialogUiFactoryInterface dialogUiFactory, IOInterface ioInterface,Set<AppointmentEditExtensionFactory> appointmentEditFactories)

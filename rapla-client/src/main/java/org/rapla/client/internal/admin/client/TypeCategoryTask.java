@@ -12,13 +12,12 @@ import org.rapla.entities.Category;
 import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.facade.ModificationEvent;
 import org.rapla.facade.RaplaFacade;
-import org.rapla.inject.Extension;
 import org.rapla.scheduler.*;
 
-import jakarta.inject.Inject;
+import org.springframework.beans.factory.annotation.Autowired;
 import jakarta.inject.Provider;
 
-@Extension(id = TypeCategoryTask.ID, provides = TaskPresenter.class)
+
 @org.springframework.stereotype.Service(TypeCategoryTask.ID)
 @org.springframework.context.annotation.Lazy
 public class TypeCategoryTask implements TaskPresenter {
@@ -35,7 +34,7 @@ public class TypeCategoryTask implements TaskPresenter {
     final private ApplicationEventBus eventBus;
 
 
-    @Inject
+    @Autowired
     public TypeCategoryTask(CommandScheduler scheduler, Provider<TypeCategoryView> viewProvider, RaplaFacade raplaFacade, DialogUiFactoryInterface dialogUIFactory, RaplaResources i18n, ApplicationEventBus eventBus)
     {
         this.viewProvider = viewProvider;

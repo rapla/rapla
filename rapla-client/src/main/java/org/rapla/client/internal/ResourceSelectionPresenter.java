@@ -36,7 +36,7 @@ import org.rapla.logger.Logger;
 import org.rapla.scheduler.CommandScheduler;
 import org.rapla.storage.PermissionController;
 
-import jakarta.inject.Inject;
+import org.springframework.beans.factory.annotation.Autowired;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
@@ -56,7 +56,7 @@ public class ResourceSelectionPresenter implements Presenter
     private PresenterChangeCallback callback;
     private final CommandScheduler scheduler;
 
-    @Inject
+    @Autowired
     public ResourceSelectionPresenter(ClientFacade facade, Logger logger, CalendarSelectionModel model, EditController editController,
             DialogUiFactoryInterface dialogUiFactory, CalendarEventBus eventBus, ResourceSelectionView view, CommandScheduler scheduler)
             throws RaplaInitializationException

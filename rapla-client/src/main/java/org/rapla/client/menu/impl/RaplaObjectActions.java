@@ -41,7 +41,7 @@ import org.rapla.scheduler.Promise;
 import org.rapla.scheduler.ResolvedPromise;
 import org.rapla.storage.PermissionController;
 
-import jakarta.inject.Inject;
+import org.springframework.beans.factory.annotation.Autowired;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -84,7 +84,7 @@ public class RaplaObjectActions {
     private I18nIcon icon;
     private final MenuItemFactory menuItemFactory;
 
-    @Inject
+    @Autowired
     public RaplaObjectActions(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, EditController editController, InfoFactory infoFactory, DialogUiFactoryInterface dialogUiFactory, DeleteDialogInterface deleteDialogInterface,
             MenuItemFactory menuItemFactory)  {
         this.raplaFacade = facade.getRaplaFacade();

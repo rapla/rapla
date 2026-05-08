@@ -8,16 +8,15 @@ import org.rapla.facade.CalendarSelectionModel;
 import org.rapla.facade.client.ClientFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
-import org.rapla.inject.Extension;
 import org.rapla.logger.Logger;
 import org.rapla.plugin.autoexport.AutoExportResources;
 import org.springframework.stereotype.Service;
 
-import jakarta.inject.Inject;
+import org.springframework.beans.factory.annotation.Autowired;
 import java.beans.PropertyChangeListener;
 
 @Service
-@Extension(provides=PublishExtensionFactory.class,id="html")
+
 public class HTMLPublicExtensionFactory implements PublishExtensionFactory
 {
     private final ClientFacade facade;
@@ -27,7 +26,7 @@ public class HTMLPublicExtensionFactory implements PublishExtensionFactory
     private final AutoExportResources autoExportI18n;
     private final IOInterface ioInterface;
 
-    @Inject
+    @Autowired
 	public HTMLPublicExtensionFactory(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, AutoExportResources autoExportI18n, IOInterface ioInterface) {
 		this.facade = facade;
         this.i18n = i18n;

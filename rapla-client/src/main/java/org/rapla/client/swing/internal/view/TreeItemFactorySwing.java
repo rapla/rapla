@@ -7,21 +7,18 @@ import org.rapla.entities.Named;
 import org.rapla.entities.dynamictype.Classifiable;
 import org.rapla.entities.dynamictype.Classification;
 import org.rapla.entities.dynamictype.DynamicTypeAnnotations;
-import org.rapla.inject.DefaultImplementation;
-import org.rapla.inject.InjectionContext;
 import org.springframework.stereotype.Service;
 
-import jakarta.inject.Inject;
+import org.springframework.beans.factory.annotation.Autowired;
 import javax.swing.tree.DefaultMutableTreeNode;
 import java.util.Locale;
 
-@DefaultImplementation(of=TreeItemFactory.class,context = InjectionContext.swing)
 @Service
 public class TreeItemFactorySwing implements TreeItemFactory
 {
     private  final RaplaResources i18n;
 
-    @Inject
+    @Autowired
     public TreeItemFactorySwing(RaplaResources i18n)
     {
         this.i18n = i18n;

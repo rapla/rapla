@@ -14,11 +14,9 @@ package org.rapla.client.menu.swing;
 
 import org.rapla.RaplaResources;
 import org.rapla.client.menu.PasswordChangeView;
-import org.rapla.inject.DefaultImplementation;
-import org.rapla.inject.InjectionContext;
 import org.springframework.stereotype.Service;
 
-import jakarta.inject.Inject;
+import org.springframework.beans.factory.annotation.Autowired;
 import javax.swing.BoxLayout;
 import javax.swing.JCheckBox;
 import javax.swing.JComponent;
@@ -30,7 +28,6 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 
 
-@DefaultImplementation(of=PasswordChangeView.class,context = InjectionContext.swing)
 @Service
 public class PasswordChangeSwingView
     implements
@@ -50,7 +47,7 @@ public class PasswordChangeSwingView
     JPasswordField tf2 = new JPasswordField(10);
     JPasswordField tf3 = new JPasswordField(10);
 
-    @Inject
+    @Autowired
     public PasswordChangeSwingView( RaplaResources i18n) {
         superPanel.setLayout(new BoxLayout(superPanel, BoxLayout.Y_AXIS));
         panel2.add(new JLabel(i18n.getString("password_change_info")));

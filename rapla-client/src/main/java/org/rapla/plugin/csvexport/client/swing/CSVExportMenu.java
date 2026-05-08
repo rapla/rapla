@@ -28,7 +28,6 @@ import org.rapla.facade.CalendarSelectionModel;
 import org.rapla.facade.client.ClientFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
-import org.rapla.inject.Extension;
 import org.rapla.logger.Logger;
 import org.rapla.plugin.csvexport.CSVExportPlugin;
 import org.rapla.plugin.tableview.RaplaTableColumn;
@@ -40,7 +39,7 @@ import org.rapla.plugin.tableview.internal.TableConfig;
 import org.rapla.scheduler.Promise;
 import org.rapla.scheduler.ResolvedPromise;
 
-import jakarta.inject.Inject;
+import org.springframework.beans.factory.annotation.Autowired;
 import javax.swing.JMenuItem;
 import javax.swing.SwingUtilities;
 import java.awt.Component;
@@ -52,7 +51,7 @@ import java.util.*;
 
 @org.springframework.stereotype.Service
 @org.springframework.context.annotation.Lazy
-@Extension(provides = ExportMenuExtension.class, id = CSVExportPlugin.PLUGIN_ID)
+
 public class CSVExportMenu extends RaplaGUIComponent implements ExportMenuExtension, ActionListener {
     JMenuItem exportEntry;
     private final TableConfig.TableConfigLoader tableConfigLoader;
@@ -60,7 +59,7 @@ public class CSVExportMenu extends RaplaGUIComponent implements ExportMenuExtens
     private final IOInterface io;
     private final DialogUiFactoryInterface dialogUiFactory;
 
-    @Inject
+    @Autowired
     public CSVExportMenu(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, TableConfig.TableConfigLoader tableConfigLoader, CalendarSelectionModel model, IOInterface io, DialogUiFactoryInterface dialogUiFactory) {
         super(facade, i18n, raplaLocale, logger);
         this.tableConfigLoader = tableConfigLoader;

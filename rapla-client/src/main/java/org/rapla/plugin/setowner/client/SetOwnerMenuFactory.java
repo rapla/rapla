@@ -26,14 +26,13 @@ import org.rapla.facade.PeriodModel;
 import org.rapla.facade.RaplaFacade;
 import org.rapla.facade.client.ClientFacade;
 import org.rapla.framework.RaplaException;
-import org.rapla.inject.Extension;
 import org.rapla.plugin.setowner.SetOwnerResources;
 import org.rapla.scheduler.Promise;
 import org.rapla.scheduler.ResolvedPromise;
 import org.rapla.storage.StorageOperator;
 import org.springframework.stereotype.Service;
 
-import jakarta.inject.Inject;
+import org.springframework.beans.factory.annotation.Autowired;
 import jakarta.inject.Provider;
 import jakarta.inject.Singleton;
 import java.util.Arrays;
@@ -46,7 +45,7 @@ import java.util.stream.Collectors;
 
 @Service
 @Singleton
-@Extension(provides = ObjectMenuFactory.class, id="setowner")
+
 public class SetOwnerMenuFactory implements ObjectMenuFactory
 {
     private final DialogUiFactoryInterface dialogUiFactory;
@@ -56,7 +55,7 @@ public class SetOwnerMenuFactory implements ObjectMenuFactory
     ClientFacade clientFacade;
     private final MenuItemFactory menuItemFactory;
     private final Provider<ListView> listViewProvider;
-    @Inject
+    @Autowired
     public SetOwnerMenuFactory(ClientFacade clientFacade, RaplaResources i18n, SetOwnerResources setOwnerI18n, DialogUiFactoryInterface dialogUiFactory, MenuItemFactory menuItemFactory, Provider<ListView> listViewProvider)
     {
         this.setOwnerI18n = setOwnerI18n;

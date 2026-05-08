@@ -32,11 +32,10 @@ import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.facade.Conflict;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaInitializationException;
-import org.rapla.inject.DefaultImplementation;
 import org.rapla.inject.InjectionContext;
 import org.rapla.logger.Logger;
 
-import jakarta.inject.Inject;
+import org.springframework.beans.factory.annotation.Autowired;
 import javax.swing.*;
 import javax.swing.event.TreeSelectionEvent;
 import javax.swing.event.TreeSelectionListener;
@@ -45,7 +44,6 @@ import javax.swing.tree.TreePath;
 import java.awt.*;
 import java.util.Collection;
 
-@DefaultImplementation(context = InjectionContext.swing, of =  ResourceRequestSelectionView.class)
 @org.springframework.stereotype.Service
 public class ResourceRequestSelectionViewSwing implements ResourceRequestSelectionView<Component>
 {
@@ -59,7 +57,7 @@ public class ResourceRequestSelectionViewSwing implements ResourceRequestSelecti
     private final RaplaResources i18n;
     private Presenter presenter;
 
-    @Inject
+    @Autowired
     public ResourceRequestSelectionViewSwing(RaplaResources i18n, Logger logger, TreeFactory treeFactory,
                                              DialogUiFactoryInterface dialogUiFactory, RequestTreeCellRenderer treeCellRenderer) throws RaplaInitializationException
     {

@@ -16,7 +16,7 @@ import org.rapla.client.RaplaWidget;
 import org.rapla.components.util.IOUtil;
 import org.rapla.framework.internal.ConfigTools;
 
-import jakarta.inject.Inject;
+import org.springframework.beans.factory.annotation.Autowired;
 import javax.swing.JComponent;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
@@ -45,7 +45,7 @@ public class LicenseUI
     JScrollPane jScrollPane = new JScrollPane(JScrollPane.VERTICAL_SCROLLBAR_ALWAYS,
                                               JScrollPane.HORIZONTAL_SCROLLBAR_AS_NEEDED);
 
-    @Inject
+    @Autowired
     public LicenseUI() {
         panel.setOpaque(true);
         panel.setLayout(borderLayout1);

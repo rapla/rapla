@@ -2,21 +2,19 @@ package org.rapla.client.internal.check.swing;
 
 import org.rapla.client.RaplaWidget;
 import org.rapla.client.internal.check.CheckView;
-import org.rapla.inject.DefaultImplementation;
 import org.rapla.inject.InjectionContext;
 
-import jakarta.inject.Inject;
+import org.springframework.beans.factory.annotation.Autowired;
 import javax.swing.BoxLayout;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 
-@DefaultImplementation(of=CheckView.class,context = InjectionContext.swing)
 @org.springframework.stereotype.Service
 public class DefaultCheckViewSwing implements CheckView, RaplaWidget
 {
     JPanel warningPanel = new JPanel();
 
-    @Inject
+    @Autowired
     public DefaultCheckViewSwing()
     {
         warningPanel.setLayout( new BoxLayout( warningPanel, BoxLayout.Y_AXIS));

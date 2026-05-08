@@ -18,14 +18,13 @@ import org.rapla.entities.domain.AppointmentBlock;
 import org.rapla.facade.CalendarModel;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
-import org.rapla.inject.Extension;
 import org.rapla.plugin.tableview.RaplaTableColumn;
 import org.rapla.plugin.tableview.RaplaTableModel;
 import org.rapla.plugin.tableview.TableViewPlugin;
 import org.rapla.plugin.tableview.internal.TableConfig;
 import org.rapla.server.extensionpoints.HTMLViewPage;
 
-import jakarta.inject.Inject;
+import org.springframework.beans.factory.annotation.Autowired;
 import jakarta.servlet.ServletContext;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -36,12 +35,12 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 
-@Extension(provides = HTMLViewPage.class, id = TableViewPlugin.TABLE_APPOINTMENTS_VIEW) public class AppointmentTableViewPage
+ public class AppointmentTableViewPage
         implements HTMLViewPage
 {
     private final TableViewPage<AppointmentBlock> tableViewPage;
 
-    @Inject public AppointmentTableViewPage(RaplaLocale raplaLocale, final TableConfig.TableConfigLoader tableConfigLoader)
+    @Autowired public AppointmentTableViewPage(RaplaLocale raplaLocale, final TableConfig.TableConfigLoader tableConfigLoader)
     {
         tableViewPage = new TableViewPage<AppointmentBlock>(raplaLocale) {
 

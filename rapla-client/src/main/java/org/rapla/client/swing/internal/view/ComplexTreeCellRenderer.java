@@ -11,18 +11,16 @@ import org.rapla.facade.RaplaFacade;
 import org.rapla.facade.client.ClientFacade;
 import org.rapla.facade.internal.CalendarModelImpl;
 import org.rapla.framework.RaplaException;
-import org.rapla.inject.DefaultImplementation;
 import org.rapla.inject.InjectionContext;
 import org.rapla.storage.PermissionController;
 
-import jakarta.inject.Inject;
+import org.springframework.beans.factory.annotation.Autowired;
 import javax.swing.*;
 import javax.swing.border.Border;
 import javax.swing.tree.DefaultTreeCellRenderer;
 import javax.swing.tree.TreeCellRenderer;
 import java.awt.*;
 
-@DefaultImplementation(of= TreeCellRenderer.class,context = InjectionContext.swing)
 @org.springframework.stereotype.Service
 @org.springframework.context.annotation.Primary
 public class ComplexTreeCellRenderer extends DefaultTreeCellRenderer {
@@ -48,7 +46,7 @@ public class ComplexTreeCellRenderer extends DefaultTreeCellRenderer {
     Border conflictBorder = BorderFactory.createEmptyBorder(2, 0, 2, 0);
     RaplaResources i18n;
 
-    @Inject
+    @Autowired
     public ComplexTreeCellRenderer(RaplaResources i18n, RaplaFacade raplaFacade, ClientFacade clientFacade) {
         this.raplaFacade = raplaFacade;
         this.i18n = i18n;

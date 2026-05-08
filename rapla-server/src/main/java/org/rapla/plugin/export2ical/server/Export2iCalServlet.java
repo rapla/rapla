@@ -26,7 +26,7 @@ import org.rapla.plugin.planningstatus.PlanningStatusFilter;
 import org.rapla.plugin.planningstatus.PlanningStatusPlugin;
 import org.rapla.storage.StorageOperator;
 
-import jakarta.inject.Inject;
+import org.springframework.beans.factory.annotation.Autowired;
 import jakarta.inject.Singleton;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -63,16 +63,16 @@ public class Export2iCalServlet
 	private final Date firstPluginStartDate = new Date(0);
 	//private TimeZone pluginTimeZone;
 	private int lastModifiedIntervall;
-	@Inject
+	@Autowired
 	Export2iCalConverter converter;
 	public RaplaFacade facade;
 	Logger logger;
-	@Inject
+	@Autowired
 	RaplaLocale raplaLocale ;
-	@Inject
+	@Autowired
 	RaplaResources i18n;
 
-	@Inject
+	@Autowired
     public Export2iCalServlet()
     {
     }
@@ -81,7 +81,7 @@ public class Export2iCalServlet
 		return facade;
 	}
 
-	@Inject
+	@Autowired
     void setFacade(RaplaFacade facade)
     {
         this.facade = facade;
@@ -105,7 +105,7 @@ public class Export2iCalServlet
         lastModifiedIntervall = config.getChild(Export2iCalPlugin.LAST_MODIFIED_INTERVALL).getValueAsInteger(10);
     }
 
-    @Inject
+    @Autowired
     void setLogger(Logger logger)
     {
         this.logger = logger.getChildLogger("ical");

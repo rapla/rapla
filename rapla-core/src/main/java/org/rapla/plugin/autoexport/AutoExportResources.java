@@ -4,17 +4,16 @@ import org.jetbrains.annotations.PropertyKey;
 import org.rapla.components.i18n.AbstractBundle;
 import org.rapla.components.i18n.BundleManager;
 import org.rapla.components.i18n.I18nBundle;
-import org.rapla.inject.Extension;
 
-import jakarta.inject.Inject;
+import org.springframework.beans.factory.annotation.Autowired;
 import jakarta.inject.Singleton;
 
 @Singleton
-@Extension(provides = I18nBundle.class, id = AutoExportPlugin.PLUGIN_ID)
+
 public class AutoExportResources extends AbstractBundle
 {
     private static final String BUNDLENAME = AutoExportPlugin.PLUGIN_ID +  ".AutoExportResources";
-        @Inject
+        @Autowired
         public AutoExportResources(BundleManager loader)
         {
             super(BUNDLENAME, loader);

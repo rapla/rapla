@@ -10,7 +10,6 @@ import org.rapla.facade.client.ClientFacade;
 import org.rapla.framework.Configuration;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
-import org.rapla.inject.Extension;
 import org.rapla.logger.Logger;
 import org.rapla.plugin.export2ical.Export2iCalPlugin;
 import org.rapla.plugin.export2ical.Export2iCalResources;
@@ -18,7 +17,7 @@ import org.rapla.plugin.export2ical.ICalConfigService;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Service;
 
-import jakarta.inject.Inject;
+import org.springframework.beans.factory.annotation.Autowired;
 import javax.swing.JCheckBox;
 import javax.swing.JComboBox;
 import javax.swing.JComponent;
@@ -37,7 +36,7 @@ import java.util.Locale;
  */
 @Service
 @Scope("prototype")
-@Extension(provides = UserOptionPanel.class, id= Export2iCalPlugin.PLUGIN_ID)
+
 public class Export2iCalUserOption extends RaplaGUIComponent implements UserOptionPanel, ActionListener {
 	
 	private Preferences preferences;
@@ -65,7 +64,7 @@ public class Export2iCalUserOption extends RaplaGUIComponent implements UserOpti
     ICalConfigService configService;
 	final Export2iCalResources i18nIcal;
 
-	@Inject
+	@Autowired
     public Export2iCalUserOption(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger,ICalConfigService configService, Export2iCalResources i18nIcal)
 	{
 		super(facade, i18n, raplaLocale, logger);

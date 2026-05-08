@@ -15,7 +15,7 @@ import org.rapla.storage.RaplaSecurityException;
 import org.rapla.storage.dbrm.LoginCredentials;
 import org.rapla.storage.dbrm.LoginTokens;
 
-import jakarta.inject.Inject;
+import org.springframework.beans.factory.annotation.Autowired;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.ws.rs.FormParam;
@@ -35,18 +35,18 @@ public class RaplaAuthRestPage
 {
 
     public static final String LOGIN_COOKIE = "raplaLoginToken";
-    @Inject
+    @Autowired
     RaplaAuthentificationService authentificationService;
-    @Inject
+    @Autowired
     RaplaResources i18n;
-    @Inject
+    @Autowired
     RaplaFacade facade;
-    @Inject
+    @Autowired
     Logger logger;
-    @Inject
+    @Autowired
     TokenHandler tokenHandler;
 
-    @Inject
+    @Autowired
     public RaplaAuthRestPage()
     {
     }

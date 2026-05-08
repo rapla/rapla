@@ -10,7 +10,7 @@ import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaInitializationException;
 import org.rapla.framework.RaplaLocale;
 
-import jakarta.inject.Inject;
+import org.springframework.beans.factory.annotation.Autowired;
 import jakarta.inject.Singleton;
 import java.util.ArrayList;
 import java.util.Date;
@@ -22,7 +22,7 @@ public class TimeslotProvider {
 	private ArrayList<Timeslot> timeslots;
     private final RaplaLocale raplaLocale;
 
-	@Inject
+	@Autowired
 	public TimeslotProvider(RaplaLocale raplaLocale, RaplaFacade facade) throws RaplaInitializationException // ParseDateException
 	{
 		this.raplaLocale = raplaLocale;

@@ -11,7 +11,6 @@ import org.rapla.entities.domain.AppointmentFormater;
 import org.rapla.facade.RaplaFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
-import org.rapla.inject.Extension;
 import org.rapla.logger.Logger;
 import org.rapla.plugin.abstractcalendar.GroupAllocatablesStrategy;
 import org.rapla.plugin.abstractcalendar.RaplaBlock;
@@ -20,17 +19,17 @@ import org.rapla.plugin.dayresource.DayResourcePlugin;
 import org.rapla.plugin.weekview.server.HTMLDayViewPage;
 import org.rapla.server.extensionpoints.HTMLViewPage;
 
-import jakarta.inject.Inject;
+import org.springframework.beans.factory.annotation.Autowired;
 import java.util.Collection;
 import java.util.Date;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
-@Extension(provides = HTMLViewPage.class,id= DayResourcePlugin.DAY_RESOURCE_VIEW)
+
 public class HTMLDayResourcePage extends HTMLDayViewPage
 {
-    @Inject
+    @Autowired
 	public HTMLDayResourcePage(RaplaLocale raplaLocale, RaplaResources raplaResources, RaplaFacade facade, Logger logger,
 			AppointmentFormater appointmentFormater)
 	{

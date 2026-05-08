@@ -6,16 +6,15 @@ import org.rapla.entities.configuration.RaplaConfiguration;
 import org.rapla.facade.RaplaFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaInitializationException;
-import org.rapla.inject.Extension;
 import org.rapla.logger.Logger;
 import org.rapla.plugin.archiver.ArchiverService;
 import org.rapla.scheduler.CommandScheduler;
 import org.rapla.server.extensionpoints.ServerExtension;
 import org.rapla.storage.ImportExportManager;
 
-import jakarta.inject.Inject;
+import org.springframework.beans.factory.annotation.Autowired;
 
-@Extension(provides = ServerExtension.class,id="org.rapla.plugin.archiver.server")
+
 public class ArchiverServiceTask  implements ServerExtension
 {
     final CommandScheduler timer;
@@ -24,7 +23,7 @@ public class ArchiverServiceTask  implements ServerExtension
     final org.rapla.storage.SyncStorageOperator syncOperator;
     final ImportExportManager importExportManager;
     Cancellation schedule;
-    @Inject
+    @Autowired
 	public ArchiverServiceTask(  CommandScheduler timer, final Logger logger, final RaplaFacade facade, final org.rapla.storage.SyncStorageOperator syncOperator, final ImportExportManager importExportManager)
             throws RaplaInitializationException
     {

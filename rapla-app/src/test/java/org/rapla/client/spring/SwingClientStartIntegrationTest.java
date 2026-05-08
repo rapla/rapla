@@ -2,7 +2,6 @@ package org.rapla.client.spring;
 
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.rapla.facade.client.ClientFacade;
@@ -47,9 +46,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
         classes = RaplaSpringBootApplication.class,
         webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT
 )
-@Disabled("Blocked on parallel-session PRD 010 RemoteStorage refactor: RemoteOperator.java" +
-        " calls serv.getResourcesSync() which the new RemoteStorage interface no longer has." +
-        " Re-enable once `mvn clean compile` is green again.")
 class SwingClientStartIntegrationTest
 {
     @TempDir

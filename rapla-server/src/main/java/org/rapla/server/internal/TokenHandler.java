@@ -14,7 +14,7 @@ import org.rapla.storage.StorageOperator;
 import org.rapla.storage.dbrm.LoginTokens;
 import org.rapla.storage.dbrm.RemoteStorage;
 
-import jakarta.inject.Inject;
+import org.springframework.beans.factory.annotation.Autowired;
 import jakarta.inject.Singleton;
 import java.util.Collection;
 
@@ -29,7 +29,7 @@ public class TokenHandler
     // 1 Hour until the token expires
     int accessTokenValiditySeconds = 60 * 60;
 
-    @Inject public TokenHandler(RaplaKeyStorage keyStorage, StorageOperator operator) throws RaplaInitializationException
+    @Autowired public TokenHandler(RaplaKeyStorage keyStorage, StorageOperator operator) throws RaplaInitializationException
     {
         this.keyStore = keyStorage;
         this.operator = operator;

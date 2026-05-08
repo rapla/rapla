@@ -18,7 +18,7 @@ import org.rapla.facade.client.ClientFacade;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.logger.Logger;
 
-import jakarta.inject.Inject;
+import org.springframework.beans.factory.annotation.Autowired;
 import jakarta.inject.Singleton;
 import javax.swing.*;
 import javax.swing.event.ChangeListener;
@@ -127,7 +127,7 @@ public class FilterEditButton extends RaplaGUIComponent
         private final TextFieldFactory textFieldFactory;
         private final LongFieldFactory longFieldFactory;
 
-        @Inject
+        @Autowired
         public FilterEditButtonFactory(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, TreeFactory treeFactory,
                   DateFieldFactory dateFieldFactory,
                 BooleanFieldFactory booleanFieldFactory, DialogUiFactoryInterface dialogUiFactory, TextFieldFactory textFieldFactory,

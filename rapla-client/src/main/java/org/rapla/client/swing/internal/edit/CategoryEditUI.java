@@ -30,10 +30,9 @@ import org.rapla.entities.dynamictype.internal.DynamicTypeImpl;
 import org.rapla.facade.client.ClientFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
-import org.rapla.inject.Extension;
 import org.rapla.logger.Logger;
 
-import jakarta.inject.Inject;
+import org.springframework.beans.factory.annotation.Autowired;
 import javax.swing.DefaultListCellRenderer;
 import javax.swing.JComponent;
 import javax.swing.JLabel;
@@ -49,7 +48,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-@Extension(provides = EditComponent.class, id = "org.rapla.entities.Category")
+
 @org.springframework.stereotype.Service("org.rapla.entities.Category")
 @org.springframework.context.annotation.Scope("prototype")
 @org.springframework.context.annotation.Lazy
@@ -61,7 +60,7 @@ public class CategoryEditUI extends RaplaGUIComponent implements EditComponent<C
     CategoryDetail detailPanel;
     boolean editKeys = true;
 
-    @Inject
+    @Autowired
     public CategoryEditUI(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger,
             DialogUiFactoryInterface dialogUiFactory, MultiLanguageFieldFactory multiLanguageFieldFactory, TextFieldFactory textFieldFactory)
     {

@@ -5,10 +5,8 @@ import org.rapla.components.i18n.BundleManager;
 import org.rapla.components.i18n.I18nIconURL;
 import org.rapla.components.i18n.internal.AbstractBundleManager;
 import org.rapla.components.i18n.I18nIcon;
-import org.rapla.inject.DefaultImplementation;
-import org.rapla.inject.InjectionContext;
 
-import jakarta.inject.Inject;
+import org.springframework.beans.factory.annotation.Autowired;
 import jakarta.inject.Singleton;
 import java.net.URL;
 import java.util.Collections;
@@ -18,11 +16,10 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 
-@DefaultImplementation(of=BundleManager.class,context = { InjectionContext.server})
 @Singleton
 public class ServerBundleManager extends AbstractBundleManager {
     final Map<String, Set<String>> countriesForLanguage;
-    @Inject
+    @Autowired
     public ServerBundleManager()
     {
         this.countriesForLanguage = loadAvailableCountries();

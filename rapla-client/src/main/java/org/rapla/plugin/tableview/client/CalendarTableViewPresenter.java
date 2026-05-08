@@ -10,17 +10,16 @@ import org.rapla.client.event.ApplicationEventBus;
 import org.rapla.components.util.DateTools;
 import org.rapla.entities.domain.Reservation;
 import org.rapla.facade.CalendarSelectionModel;
-import org.rapla.inject.Extension;
 import org.rapla.logger.Logger;
 import org.rapla.plugin.tableview.client.CalendarTableView.Presenter;
 import org.rapla.scheduler.Promise;
 
-import jakarta.inject.Inject;
+import org.springframework.beans.factory.annotation.Autowired;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
 
-@Extension(provides = CalendarPlugin.class, id = CalendarTableViewPresenter.TABLE_VIEW)
+
 public class CalendarTableViewPresenter implements Presenter, CalendarPlugin
 {
 
@@ -31,7 +30,7 @@ public class CalendarTableViewPresenter implements Presenter, CalendarPlugin
     private final CalendarSelectionModel model;
     
     @SuppressWarnings("unchecked")
-    @Inject
+    @Autowired
     public CalendarTableViewPresenter(CalendarTableView view, Logger logger, ApplicationEventBus eventBus, CalendarSelectionModel model)
     {
         this.view = view;

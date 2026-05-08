@@ -13,7 +13,7 @@ import org.rapla.framework.TypedComponentRole;
 import org.rapla.framework.internal.AbstractRaplaLocale;
 import org.rapla.server.ServerServiceContainer;
 
-import jakarta.inject.Inject;
+import org.springframework.beans.factory.annotation.Autowired;
 import jakarta.inject.Singleton;
 import jakarta.servlet.ServletContext;
 import jakarta.servlet.http.HttpServletRequest;
@@ -41,7 +41,7 @@ public class RaplaJNLPPageGenerator
     private final RaplaFacade facade;
     private final RaplaResources i18n;
 
-    @Inject
+    @Autowired
     public RaplaJNLPPageGenerator(RaplaFacade facade, RaplaResources i18n)
     {
         this.facade = facade;

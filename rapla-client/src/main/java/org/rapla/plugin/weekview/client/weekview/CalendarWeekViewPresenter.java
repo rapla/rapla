@@ -21,7 +21,6 @@ import org.rapla.facade.RaplaComponent;
 import org.rapla.facade.client.ClientFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
-import org.rapla.inject.Extension;
 import org.rapla.logger.Logger;
 import org.rapla.plugin.abstractcalendar.GroupAllocatablesStrategy;
 import org.rapla.plugin.abstractcalendar.HTMLRaplaBlock;
@@ -29,13 +28,13 @@ import org.rapla.plugin.abstractcalendar.HTMLRaplaBuilder;
 import org.rapla.plugin.weekview.client.weekview.CalendarWeekView.Presenter;
 import org.rapla.scheduler.Promise;
 
-import jakarta.inject.Inject;
+import org.springframework.beans.factory.annotation.Autowired;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashSet;
 import java.util.Set;
 
-@Extension(provides = CalendarPlugin.class, id = CalendarWeekViewPresenter.WEEK_VIEW)
+
 public class CalendarWeekViewPresenter implements Presenter, CalendarPlugin
 {
     public static final String WEEK_VIEW = "week";
@@ -54,7 +53,7 @@ public class CalendarWeekViewPresenter implements Presenter, CalendarPlugin
     private final DialogUiFactoryInterface dialogUiFactory;
 
     @SuppressWarnings("unchecked")
-    @Inject
+    @Autowired
     public CalendarWeekViewPresenter(CalendarWeekView view, ReservationController reservationController, Logger logger, ApplicationEventBus eventBus,
                                      CalendarSelectionModel model, ClientFacade facade, HTMLRaplaBuilder builder, RaplaLocale raplaLocale, RaplaResources i18n, CalendarContextMenuPresenter presenter, DialogUiFactoryInterface dialogUiFactory)
     {

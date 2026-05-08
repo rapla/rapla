@@ -6,10 +6,9 @@ import org.rapla.client.internal.check.ConflictDialogView;
 import org.rapla.client.internal.check.HolidayCheckDialogView;
 import org.rapla.client.swing.internal.view.RaplaSwingTreeModel;
 import org.rapla.client.swing.toolkit.RaplaTree;
-import org.rapla.inject.DefaultImplementation;
 import org.rapla.inject.InjectionContext;
 
-import jakarta.inject.Inject;
+import org.springframework.beans.factory.annotation.Autowired;
 import javax.swing.JCheckBox;
 import javax.swing.JComponent;
 import javax.swing.JPanel;
@@ -22,12 +21,11 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 
-@DefaultImplementation(of= HolidayCheckDialogView.class,context = InjectionContext.swing)
 @org.springframework.stereotype.Service
 public class HolidayCheckDialogViewSwing implements HolidayCheckDialogView
 {
     RaplaResources i18n;
-    @Inject
+    @Autowired
     public HolidayCheckDialogViewSwing(RaplaResources i18n) {
         this.i18n = i18n;
     }

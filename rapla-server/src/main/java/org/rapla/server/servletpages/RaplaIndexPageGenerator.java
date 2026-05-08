@@ -12,7 +12,7 @@ import org.rapla.plugin.abstractcalendar.server.AbstractHTMLCalendarPage;
 import org.rapla.server.extensionpoints.HtmlMainMenu;
 import org.rapla.server.internal.ServerContainerContext;
 
-import jakarta.inject.Inject;
+import org.springframework.beans.factory.annotation.Autowired;
 import jakarta.inject.Singleton;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -31,20 +31,19 @@ import java.util.TreeMap;
 @Singleton
 public class RaplaIndexPageGenerator
 {
-    @Inject
-    Map<String, HtmlMainMenu> entries;
-    @Inject
-    RaplaResources i18n;
+    private final Map<String, HtmlMainMenu> entries;
+    private final RaplaResources i18n;
+    private final RaplaFacade facade;
+    private final ServerContainerContext serverContainerContext;
 
-    @Inject
-    RaplaFacade facade;
-
-    @Inject
-    ServerContainerContext serverContainerContext;
-
-    @Inject
-    public RaplaIndexPageGenerator()
+    @Autowired
+    public RaplaIndexPageGenerator(Map<String, HtmlMainMenu> entries, RaplaResources i18n,
+                                   RaplaFacade facade, ServerContainerContext serverContainerContext)
     {
+        this.entries = entries;
+        this.i18n = i18n;
+        this.facade = facade;
+        this.serverContainerContext = serverContainerContext;
     }
 
     @GET

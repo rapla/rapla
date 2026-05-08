@@ -11,17 +11,16 @@ import org.rapla.client.event.TaskPresenter;
 import org.rapla.facade.CalendarSelectionModel;
 import org.rapla.facade.ModificationEvent;
 import org.rapla.framework.RaplaException;
-import org.rapla.inject.Extension;
 import org.rapla.scheduler.CommandScheduler;
 import org.rapla.scheduler.Observable;
 import org.rapla.scheduler.Promise;
 import org.rapla.scheduler.ResolvedPromise;
 import org.rapla.scheduler.Subject;
 
-import jakarta.inject.Inject;
+import org.springframework.beans.factory.annotation.Autowired;
 import jakarta.inject.Provider;
 
-@Extension(id = ResourceCalendarTask.ID, provides = TaskPresenter.class)
+
 @org.springframework.stereotype.Service(ResourceCalendarTask.ID)
 @org.springframework.context.annotation.Lazy
 public class ResourceCalendarTask implements TaskPresenter {
@@ -37,7 +36,7 @@ public class ResourceCalendarTask implements TaskPresenter {
     final RaplaResources i18n;
 
 
-    @Inject
+    @Autowired
     public ResourceCalendarTask(CommandScheduler scheduler, Provider<CalendarContainer> viewProvider,  DialogUiFactoryInterface dialogUIFactory, RaplaResources i18n)
     {
         this.viewProvider = viewProvider;

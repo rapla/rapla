@@ -30,7 +30,6 @@ import org.rapla.components.i18n.LocaleChangeEvent;
 import org.rapla.components.i18n.LocaleChangeListener;
 import org.rapla.entities.DependencyException;
 import org.rapla.framework.RaplaInitializationException;
-import org.rapla.inject.DefaultImplementation;
 import org.rapla.inject.InjectionContext;
 import org.rapla.logger.Logger;
 import org.rapla.scheduler.*;
@@ -39,7 +38,7 @@ import org.rapla.scheduler.sync.SynchronizedPromise;
 import org.rapla.storage.dbrm.RaplaConnectException;
 import org.rapla.storage.dbrm.RaplaRestartingException;
 
-import jakarta.inject.Inject;
+import org.springframework.beans.factory.annotation.Autowired;
 import jakarta.inject.Singleton;
 import javax.swing.*;
 import java.awt.*;
@@ -458,7 +457,6 @@ public class DialogUI extends JDialog
     }
     
     @Singleton
-    @DefaultImplementation(context=InjectionContext.swing, of=DialogUiFactoryInterface.class)
     @org.springframework.stereotype.Service
     public static class DialogUiFactory implements DialogUiFactoryInterface
     {
@@ -467,7 +465,7 @@ public class DialogUI extends JDialog
         private final Logger logger;
         private final CommandScheduler scheduler;
 
-        @Inject
+        @Autowired
         public DialogUiFactory(RaplaResources i18n, CommandScheduler scheduler,BundleManager bundleManager, Logger logger)
         {
             this.i18n = i18n;

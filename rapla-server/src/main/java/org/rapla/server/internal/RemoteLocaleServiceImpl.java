@@ -10,8 +10,6 @@ import org.rapla.entities.User;
 import org.rapla.entities.configuration.Preferences;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
-import org.rapla.inject.DefaultImplementation;
-import org.rapla.inject.InjectionContext;
 import org.rapla.logger.Logger;
 import org.rapla.scheduler.Promise;
 import org.rapla.scheduler.ResolvedPromise;
@@ -19,31 +17,30 @@ import org.rapla.server.RemoteSession;
 import org.rapla.storage.RemoteLocaleService;
 import org.rapla.storage.StorageOperator;
 
-import jakarta.inject.Inject;
+import org.springframework.beans.factory.annotation.Autowired;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.ws.rs.core.Context;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 
-@DefaultImplementation(context = InjectionContext.server, of = RemoteLocaleService.class)
 public class RemoteLocaleServiceImpl implements RemoteLocaleService
 {
-    @Inject
+    @Autowired
     ServerBundleManager bundleManager;
-    @Inject
+    @Autowired
     RaplaLocale raplaLocale;
-    @Inject
+    @Autowired
     RemoteSession session;
-    @Inject
+    @Autowired
     Logger logger;
-    @Inject
+    @Autowired
     StorageOperator operator;
-    @Inject
+    @Autowired
     ResourceBundleList resourceBundleList;
     private final HttpServletRequest request;
 
-    @Inject
+    @Autowired
     public RemoteLocaleServiceImpl(@Context HttpServletRequest request)
     {
         this.request = request;

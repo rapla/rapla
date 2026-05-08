@@ -34,12 +34,11 @@ import org.rapla.entities.dynamictype.DynamicType;
 import org.rapla.facade.client.ClientFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
-import org.rapla.inject.Extension;
 import org.rapla.logger.Logger;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Service;
 
-import jakarta.inject.Inject;
+import org.springframework.beans.factory.annotation.Autowired;
 import jakarta.inject.Provider;
 import javax.swing.AbstractAction;
 import javax.swing.JComponent;
@@ -57,7 +56,7 @@ import java.util.Map;
 
 @Service
 @Scope("prototype")
-@Extension(provides = UserOptionPanel.class, id = "userOption")
+
 public class UserOption extends RaplaGUIComponent implements UserOptionPanel
 {
     JPanel superPanel = new JPanel();
@@ -76,7 +75,7 @@ public class UserOption extends RaplaGUIComponent implements UserOptionPanel
     private final IOInterface ioInterface;
     private final Provider<PasswordChangeAction> passwordChangeAction;
 
-    @Inject
+    @Autowired
     public UserOption(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger,
             DialogUiFactoryInterface dialogUiFactory, IOInterface ioInterface,Provider<PasswordChangeAction> passwordChangeAction)
     {

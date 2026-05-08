@@ -5,14 +5,14 @@ import org.rapla.entities.User;
 import org.rapla.entities.domain.Permission;
 import org.rapla.storage.StorageOperator;
 
-import jakarta.inject.Inject;
+import org.springframework.beans.factory.annotation.Autowired;
 import jakarta.inject.Singleton;
 
 @Singleton
 public class ShowExchangeForUser {
 
     StorageOperator operator;
-    @Inject
+    @Autowired
     public ShowExchangeForUser(StorageOperator operator) {
         this.operator = operator;
     }

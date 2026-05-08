@@ -27,7 +27,7 @@ import org.rapla.logger.Logger;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Service;
 
-import jakarta.inject.Inject;
+import org.springframework.beans.factory.annotation.Autowired;
 import javax.swing.Box;
 import javax.swing.BoxLayout;
 import javax.swing.JComponent;
@@ -51,7 +51,7 @@ public class AllocatableMergeEditUI extends AllocatableEditUI
     List<Allocatable> allAllocatables;
     final ListField<Allocatable> allocatableSelectField;
     @SuppressWarnings("unchecked")
-    @Inject
+    @Autowired
     public AllocatableMergeEditUI(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger,
             ClassificationFieldFactory classificationFieldFactory, PermissionListFieldFactory permissionListFieldFactory,
             BooleanFieldFactory booleanFieldFactory, final DialogUiFactory dialogUiFactory) throws RaplaInitializationException

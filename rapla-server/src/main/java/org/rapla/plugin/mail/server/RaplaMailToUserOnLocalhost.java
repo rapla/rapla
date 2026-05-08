@@ -14,24 +14,21 @@ package org.rapla.plugin.mail.server;
 
 import org.rapla.entities.User;
 import org.rapla.framework.RaplaException;
-import org.rapla.inject.DefaultImplementation;
-import org.rapla.inject.InjectionContext;
 import org.rapla.plugin.mail.MailToUserInterface;
 import org.rapla.server.RemoteSession;
 
-import jakarta.inject.Inject;
+import org.springframework.beans.factory.annotation.Autowired;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.ws.rs.core.Context;
 
-@DefaultImplementation(context=InjectionContext.server, of=MailToUserInterface.class)
 public class RaplaMailToUserOnLocalhost implements MailToUserInterface
 {
-    @Inject
+    @Autowired
     MailToUserImpl mail;
-    @Inject
+    @Autowired
     RemoteSession session;
     private final HttpServletRequest request;
-    @Inject public RaplaMailToUserOnLocalhost(@Context HttpServletRequest request)
+    @Autowired public RaplaMailToUserOnLocalhost(@Context HttpServletRequest request)
     {
         this.request = request;
     }

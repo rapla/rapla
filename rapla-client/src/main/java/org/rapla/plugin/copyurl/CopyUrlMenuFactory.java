@@ -18,17 +18,16 @@ import org.rapla.entities.dynamictype.AttributeType;
 import org.rapla.entities.dynamictype.Classifiable;
 import org.rapla.entities.dynamictype.Classification;
 import org.rapla.facade.client.ClientFacade;
-import org.rapla.inject.Extension;
 import org.springframework.stereotype.Service;
 
-import jakarta.inject.Inject;
+import org.springframework.beans.factory.annotation.Autowired;
 import jakarta.inject.Singleton;
 import java.util.Collection;
 import java.util.HashSet;
 
 @Service
 @Singleton
-@Extension(provides = ObjectMenuFactory.class, id="copyurl")
+
 public class CopyUrlMenuFactory implements ObjectMenuFactory
 {
 
@@ -36,7 +35,7 @@ public class CopyUrlMenuFactory implements ObjectMenuFactory
     private final ClientFacade clientFacade;
     private final URLCopyService copyService;
 
-    @Inject
+    @Autowired
     public CopyUrlMenuFactory(ClientFacade clientFacade, MenuItemFactory menuItemFactory, URLCopyService copyService)
     {
         this.clientFacade = clientFacade;

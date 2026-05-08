@@ -44,13 +44,12 @@ import org.rapla.facade.client.ClientFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaInitializationException;
 import org.rapla.framework.RaplaLocale;
-import org.rapla.inject.DefaultImplementation;
 import org.rapla.inject.InjectionContext;
 import org.rapla.logger.Logger;
 import org.rapla.scheduler.Promise;
 import org.rapla.storage.PermissionController;
 
-import jakarta.inject.Inject;
+import org.springframework.beans.factory.annotation.Autowired;
 import javax.swing.AbstractAction;
 import javax.swing.Action;
 import javax.swing.ActionMap;
@@ -82,7 +81,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-@DefaultImplementation(context = InjectionContext.swing, of = ReservationEdit.class)
 @org.springframework.stereotype.Service
 @org.springframework.context.annotation.Scope("prototype")
 @org.springframework.context.annotation.Lazy
@@ -152,7 +150,7 @@ public final class ReservationEditImpl extends AbstractAppointmentEditor impleme
     Runnable closeCmd;
     Runnable deleteCmd;
 
-    @Inject
+    @Autowired
     public ReservationEditImpl(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger,
             Set<AppointmentStatusFactory> appointmentStatusFactories,
             DialogUiFactoryInterface dialogUiFactory, ReservationInfoEditFactory reservationInfoEditFactory,

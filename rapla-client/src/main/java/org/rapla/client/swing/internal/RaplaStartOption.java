@@ -28,7 +28,6 @@ import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaInitializationException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.internal.AbstractRaplaLocale;
-import org.rapla.inject.Extension;
 import org.rapla.logger.Logger;
 import org.rapla.plugin.export2ical.ICalTimezones;
 import org.rapla.storage.RemoteLocaleService;
@@ -36,7 +35,7 @@ import org.rapla.storage.dbrm.RestartServer;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Service;
 
-import jakarta.inject.Inject;
+import org.springframework.beans.factory.annotation.Autowired;
 import javax.swing.JComboBox;
 import javax.swing.JComponent;
 import javax.swing.JLabel;
@@ -48,7 +47,7 @@ import java.util.Stack;
 
 @Service
 @Scope("prototype")
-@Extension(provides = SystemOptionPanel.class, id="startOption")
+
 public class RaplaStartOption extends RaplaGUIComponent implements SystemOptionPanel {
     JPanel panel = new JPanel();
     JTextField calendarName;
@@ -70,7 +69,7 @@ public class RaplaStartOption extends RaplaGUIComponent implements SystemOptionP
     }
 
 
-    @Inject
+    @Autowired
     public RaplaStartOption(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, ICalTimezones timezoneService, RemoteLocaleService localeService, IOInterface ioInterface, RestartServer restartServer) throws
             RaplaInitializationException {
         super(facade, i18n, raplaLocale, logger);

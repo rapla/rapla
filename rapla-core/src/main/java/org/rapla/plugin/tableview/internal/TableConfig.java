@@ -20,7 +20,7 @@ import org.rapla.plugin.tableview.RaplaTableColumn;
 import org.rapla.plugin.tableview.TableViewPlugin;
 import org.rapla.plugin.tableview.extensionpoints.TableColumnDefinitionExtension;
 
-import jakarta.inject.Inject;
+import org.springframework.beans.factory.annotation.Autowired;
 import jakarta.inject.Singleton;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -583,7 +583,7 @@ public class TableConfig
         private final Set<TableColumnDefinitionExtension> extensions;
         private final RaplaTableColumnFactory tableColumnCreator;
 
-        @Inject public TableConfigLoader(RaplaFacade raplaFacade, RaplaResources i18n, RaplaLocale raplaLocale,
+        @Autowired public TableConfigLoader(RaplaFacade raplaFacade, RaplaResources i18n, RaplaLocale raplaLocale,
                 Set<TableColumnDefinitionExtension> extensions, RaplaTableColumnFactory tableColumnCreator)
         {
             this.raplaFacade = raplaFacade;

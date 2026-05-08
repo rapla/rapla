@@ -7,11 +7,10 @@ import org.rapla.facade.CalendarSelectionModel;
 import org.rapla.facade.client.ClientFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.StartupEnvironment;
-import org.rapla.inject.Extension;
 import org.rapla.logger.Logger;
 import org.springframework.stereotype.Service;
 
-import jakarta.inject.Inject;
+import org.springframework.beans.factory.annotation.Autowired;
 import javax.swing.JCheckBox;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
@@ -26,7 +25,7 @@ import java.net.URL;
 import java.net.URLEncoder;
 
 @Service
-@Extension(provides = PublishExtensionFactory.class, id = "urlencryption")
+
 public class URLEncyrptionPublicExtensionFactory implements PublishExtensionFactory
 {
 
@@ -36,7 +35,7 @@ public class URLEncyrptionPublicExtensionFactory implements PublishExtensionFact
     private final Logger logger;
     private final ClientFacade facade;
 
-    @Inject
+    @Autowired
     public URLEncyrptionPublicExtensionFactory(UrlEncryption webservice, StartupEnvironment env, UrlEncryptionResources i18n, Logger logger,
             ClientFacade facade)
     {

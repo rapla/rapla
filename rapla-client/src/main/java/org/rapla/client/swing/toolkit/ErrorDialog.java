@@ -24,7 +24,7 @@ import org.rapla.scheduler.ResolvedPromise;
 import org.rapla.scheduler.UnsynchronizedPromise;
 import org.rapla.scheduler.sync.SynchronizedCompletablePromise;
 
-import jakarta.inject.Inject;
+import org.springframework.beans.factory.annotation.Autowired;
 import javax.swing.*;
 import java.awt.BorderLayout;
 import java.awt.Component;
@@ -37,7 +37,7 @@ final public class ErrorDialog {
     private final RaplaResources i18n;
     private final Logger logger;
 
-    @Inject
+    @Autowired
     public ErrorDialog(Logger logger, RaplaResources i18n, DialogUiFactoryInterface dialogUiFactory)  {
         this.logger = logger;
         this.i18n = i18n;

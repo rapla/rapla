@@ -24,7 +24,7 @@ import org.rapla.facade.client.ClientFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.storage.PermissionController;
 
-import jakarta.inject.Inject;
+import org.springframework.beans.factory.annotation.Autowired;
 import jakarta.inject.Provider;
 
 @org.springframework.stereotype.Service
@@ -43,7 +43,7 @@ public class PasswordChangeAction {
     I18nIcon icon;
     private final Provider<PasswordChangeView> view;
 
-    @Inject
+    @Autowired
     public PasswordChangeAction( RaplaResources i18n,DialogUiFactoryInterface dialogUiFactory, MenuItemFactory menuItemFactory, ClientFacade clientFacade, Provider<PasswordChangeView> view) {
         this.i18n = i18n;
         this.dialogUiFactory = dialogUiFactory;

@@ -1,21 +1,18 @@
 package org.rapla.storage.impl.server;
 
 import org.rapla.framework.RaplaException;
-import org.rapla.inject.DefaultImplementation;
-import org.rapla.inject.InjectionContext;
 import org.rapla.server.internal.ServerStorageSelector;
 import org.rapla.storage.CachableStorageOperator;
 import org.rapla.storage.ImportExportManager;
 
-import jakarta.inject.Inject;
+import org.springframework.beans.factory.annotation.Autowired;
 
-@DefaultImplementation(of=ImportExportManager.class,context = InjectionContext.server)
 public class ImportExportManagerDefaultImpl implements ImportExportManager
 {
 
     private final ImportExportManager importExportManager;
 
-    @Inject
+    @Autowired
     public ImportExportManagerDefaultImpl(ServerStorageSelector selector)
     {
         importExportManager = selector.getImportExportManager().get();

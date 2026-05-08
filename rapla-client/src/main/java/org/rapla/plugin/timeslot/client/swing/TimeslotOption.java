@@ -32,7 +32,6 @@ import org.rapla.framework.Configuration;
 import org.rapla.framework.DefaultConfiguration;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
-import org.rapla.inject.Extension;
 import org.rapla.logger.Logger;
 import org.rapla.plugin.timeslot.Timeslot;
 import org.rapla.plugin.timeslot.TimeslotPlugin;
@@ -40,7 +39,7 @@ import org.rapla.plugin.timeslot.TimeslotProvider;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Service;
 
-import jakarta.inject.Inject;
+import org.springframework.beans.factory.annotation.Autowired;
 import javax.swing.JButton;
 import javax.swing.JComponent;
 import javax.swing.JLabel;
@@ -58,7 +57,7 @@ import java.util.Locale;
 
 @Service(TimeslotPlugin.PLUGIN_ID)
 @Scope("prototype")
-@Extension(provides = PluginOptionPanel.class,id = TimeslotPlugin.PLUGIN_ID)
+
 public class TimeslotOption extends RaplaGUIComponent implements PluginOptionPanel
 {
 	protected JComponent container;
@@ -94,7 +93,7 @@ public class TimeslotOption extends RaplaGUIComponent implements PluginOptionPan
     	
     }
 
-	@Inject
+	@Autowired
     public TimeslotOption(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, TimeslotProvider timeslotProvider,  IOInterface ioInterface)
     {
         super(facade, i18n, raplaLocale, logger);

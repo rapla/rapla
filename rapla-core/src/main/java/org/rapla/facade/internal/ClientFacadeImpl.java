@@ -15,7 +15,6 @@ import org.rapla.facade.RaplaFacade;
 import org.rapla.facade.UpdateErrorListener;
 import org.rapla.facade.client.ClientFacade;
 import org.rapla.framework.RaplaException;
-import org.rapla.inject.DefaultImplementation;
 import org.rapla.inject.InjectionContext;
 import org.rapla.logger.Logger;
 import org.rapla.scheduler.CommandScheduler;
@@ -25,7 +24,7 @@ import org.rapla.storage.StorageOperator;
 import org.rapla.storage.StorageUpdateListener;
 import org.rapla.storage.dbrm.RemoteOperator;
 
-import jakarta.inject.Inject;
+import org.springframework.beans.factory.annotation.Autowired;
 import jakarta.inject.Singleton;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -34,7 +33,6 @@ import java.util.Iterator;
 import java.util.Vector;
 
 @Singleton
-@DefaultImplementation(of = ClientFacade.class, context = InjectionContext.client)
 public class ClientFacadeImpl implements ClientFacade, StorageUpdateListener {
     final private RaplaResources i18n;
     protected CommandScheduler notifyQueue;
@@ -49,7 +47,7 @@ public class ClientFacadeImpl implements ClientFacade, StorageUpdateListener {
     public CommandHistory commandHistory = new CommandHistory();
     Logger logger;
 
-    @Inject
+    @Autowired
     public ClientFacadeImpl(RaplaFacade raplaFacade, Logger logger,RaplaResources i18n)
     {
         this.raplaFacade = raplaFacade;

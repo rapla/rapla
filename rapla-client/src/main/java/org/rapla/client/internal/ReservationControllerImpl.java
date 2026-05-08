@@ -37,14 +37,13 @@ import org.rapla.facade.RaplaFacade;
 import org.rapla.facade.client.ClientFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
-import org.rapla.inject.DefaultImplementation;
 import org.rapla.inject.InjectionContext;
 import org.rapla.logger.Logger;
 import org.rapla.scheduler.Promise;
 import org.rapla.scheduler.ResolvedPromise;
 import org.rapla.storage.PermissionController;
 
-import jakarta.inject.Inject;
+import org.springframework.beans.factory.annotation.Autowired;
 import jakarta.inject.Provider;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -60,7 +59,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-@DefaultImplementation(of= ReservationController.class,context = InjectionContext.client)
 @org.springframework.stereotype.Service
 @org.springframework.context.annotation.Lazy
 public class ReservationControllerImpl implements ReservationController {
@@ -81,7 +79,7 @@ public class ReservationControllerImpl implements ReservationController {
     private final PermissionController permissionController;
     private final Provider<Set<EventCheck>> eventCheckers;
 
-    @Inject
+    @Autowired
     public ReservationControllerImpl(ClientFacade facade, RaplaLocale raplaLocale, Logger logger, RaplaResources i18n, AppointmentFormater appointmentFormater,
                                      CalendarSelectionModel calendarModel, RaplaClipboard clipboard, DialogUiFactoryInterface dialogUI, DeleteDialogInterface deleteDialog, Provider<Set<EventCheck>> eventCheckers) {
         this.facade = facade;

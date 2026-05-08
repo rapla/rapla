@@ -52,6 +52,18 @@ public class PeriodImpl implements Period
     }
 
     @Override
+    public java.time.LocalDate getStartAsLocalDate() {
+        Date d = interval.getStart();
+        return d == null ? null : DateTools.toLocalDateTime(d).toLocalDate();
+    }
+
+    @Override
+    public java.time.LocalDate getEndAsLocalDate() {
+        Date d = interval.getEnd();
+        return d == null ? null : DateTools.toLocalDateTime(d).toLocalDate();
+    }
+
+    @Override
     public TimeInterval getInterval()
     {
         return interval;
@@ -92,6 +104,11 @@ public class PeriodImpl implements Period
         final Date end = getEnd();
         final boolean result = (end == null || date.before(end)) && (start == null || !date.before(start));
         return result;
+    }
+
+    @Override
+    public boolean contains(java.time.LocalDateTime dateTime) {
+        return dateTime != null && contains(DateTools.toDate(dateTime));
     }
 
     public String toString() {

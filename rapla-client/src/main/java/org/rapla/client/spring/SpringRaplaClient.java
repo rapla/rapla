@@ -42,7 +42,7 @@ public class SpringRaplaClient implements AutoCloseable
 
     /**
      * Marks every bean definition as lazy-init before context refresh. The
-     * legacy DI created {@code @Inject}-annotated classes on first use, and
+     * legacy DI created {@code @Autowired}-annotated classes on first use, and
      * several Swing constructors (e.g. {@code ConflictReservationCheck},
      * {@code CountryChooser}) touch facade/operator state that isn't ready
      * during {@code preInstantiateSingletons()}. Global lazy-init defers each

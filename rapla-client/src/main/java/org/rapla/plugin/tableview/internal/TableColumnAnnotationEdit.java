@@ -14,13 +14,12 @@ import org.rapla.entities.dynamictype.DynamicTypeAnnotations;
 import org.rapla.facade.client.ClientFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
-import org.rapla.inject.Extension;
 import org.rapla.logger.Logger;
 import org.rapla.plugin.tableview.TableViewPlugin;
 import org.rapla.plugin.tableview.internal.TableConfig;
 import org.rapla.plugin.tableview.internal.TableConfig.TableColumnConfig;
 
-import jakarta.inject.Inject;
+import org.springframework.beans.factory.annotation.Autowired;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -31,14 +30,14 @@ import java.util.Map;
 
 @org.springframework.stereotype.Service
 @org.springframework.context.annotation.Lazy
-@Extension(provides= AnnotationEditTypeExtension.class, id="tableColumn")
+
 public class TableColumnAnnotationEdit extends RaplaGUIComponent implements AnnotationEditTypeExtension {
 
 
     private final TableConfig.TableConfigLoader tableConfigLoader;
     private final TextFieldFactory textFieldFactory;
     private final Map<TextField, TableColumnConfig> textFieldsToColumnConfig = new HashMap<>();
-    @Inject
+    @Autowired
     public TableColumnAnnotationEdit(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, TableConfig.TableConfigLoader tableConfigLoader, TextFieldFactory textFieldFactory) {
         super(facade, i18n, raplaLocale, logger);
         this.tableConfigLoader = tableConfigLoader;

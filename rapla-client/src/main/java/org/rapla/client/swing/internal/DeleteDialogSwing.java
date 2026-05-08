@@ -13,15 +13,13 @@ import org.rapla.components.iolayer.IOInterface;
 import org.rapla.facade.client.ClientFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
-import org.rapla.inject.DefaultImplementation;
 import org.rapla.inject.InjectionContext;
 import org.rapla.logger.Logger;
 import org.rapla.scheduler.Promise;
 import org.rapla.scheduler.ResolvedPromise;
 
-import jakarta.inject.Inject;
+import org.springframework.beans.factory.annotation.Autowired;
 
-@DefaultImplementation(of=DeleteDialogInterface.class,context = InjectionContext.swing)
 @org.springframework.stereotype.Service
 @org.springframework.context.annotation.Lazy
 public class DeleteDialogSwing extends RaplaGUIComponent implements DeleteDialogInterface {
@@ -30,7 +28,7 @@ public class DeleteDialogSwing extends RaplaGUIComponent implements DeleteDialog
     final private IOInterface ioInterface;
     final private InfoFactory infoFactory;
 
-    @Inject
+    @Autowired
     public DeleteDialogSwing(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, DialogUiFactoryInterface dialogUiFactory, IOInterface ioInterface, InfoFactory infoFactory) {
         super(facade, i18n, raplaLocale, logger);
         this.dialogUiFactory = dialogUiFactory;

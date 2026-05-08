@@ -3,23 +3,20 @@ package org.rapla.server.internal.console;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaInitializationException;
 import org.rapla.framework.internal.DefaultScheduler;
-import org.rapla.inject.DefaultImplementation;
-import org.rapla.inject.InjectionContext;
 import org.rapla.scheduler.CommandScheduler;
 import org.rapla.server.internal.ServerStorageSelector;
 import org.rapla.storage.ImportExportManager;
 
-import jakarta.inject.Inject;
+import org.springframework.beans.factory.annotation.Autowired;
 import jakarta.inject.Provider;
 
 
-@DefaultImplementation(of=ImportExportManagerContainer.class,context = InjectionContext.server,export = true)
 public class ImportExportManagerContainerImpl implements ImportExportManagerContainer
 {
 
     CommandScheduler scheduler;
     Provider<ImportExportManager> importExportManagerProvider;
-    @Inject
+    @Autowired
     public ImportExportManagerContainerImpl(CommandScheduler scheduler,ServerStorageSelector backendContext) throws RaplaInitializationException
     {
         this.scheduler = scheduler;

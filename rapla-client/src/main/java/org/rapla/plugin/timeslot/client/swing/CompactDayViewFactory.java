@@ -33,14 +33,13 @@ import org.rapla.facade.client.ClientFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaInitializationException;
 import org.rapla.framework.RaplaLocale;
-import org.rapla.inject.Extension;
 import org.rapla.logger.Logger;
 import org.rapla.plugin.timeslot.TimeslotPlugin;
 import org.rapla.plugin.timeslot.TimeslotProvider;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 
-import jakarta.inject.Inject;
+import org.springframework.beans.factory.annotation.Autowired;
 import jakarta.inject.Singleton;
 import javax.swing.Icon;
 import java.util.Set;
@@ -48,7 +47,7 @@ import java.util.Set;
 @Service
 @Lazy
 @Singleton
-@Extension(provides = SwingViewFactory.class, id = TimeslotPlugin.DAY_TIMESLOT)
+
 public class CompactDayViewFactory implements SwingViewFactory
 {
     private final Set<ObjectMenuFactory> objectMenuFactories;
@@ -69,7 +68,7 @@ public class CompactDayViewFactory implements SwingViewFactory
     private final RaplaConfiguration config;
     private final EditController editController;
 
-    @Inject
+    @Autowired
     public CompactDayViewFactory(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, Set<ObjectMenuFactory> objectMenuFactories,
             MenuFactory menuFactory, CalendarSelectionModel calendarSelectionModel, RaplaClipboard clipboard, TimeslotProvider timeslotProvider,
             ReservationController reservationController, InfoFactory infoFactory, DateRenderer dateRenderer,

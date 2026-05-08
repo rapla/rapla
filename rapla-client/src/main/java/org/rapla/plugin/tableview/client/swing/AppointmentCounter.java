@@ -2,23 +2,22 @@ package org.rapla.plugin.tableview.client.swing;
 
 import org.jetbrains.annotations.NotNull;
 import org.rapla.RaplaResources;
-import org.rapla.inject.Extension;
 import org.rapla.plugin.tableview.client.swing.extensionpoints.AppointmentSummaryExtension;
 import org.springframework.stereotype.Service;
 
-import jakarta.inject.Inject;
+import org.springframework.beans.factory.annotation.Autowired;
 import javax.swing.Box;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JTable;
 
 @Service
-@Extension(provides = AppointmentSummaryExtension.class,id = "appointmentcounter")
+
 public final class AppointmentCounter implements AppointmentSummaryExtension
 {
 	private final RaplaResources i18n;
 
-    @Inject
+    @Autowired
 	public AppointmentCounter(RaplaResources i18n) 
 	{
         this.i18n = i18n;

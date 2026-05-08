@@ -24,7 +24,6 @@ import org.rapla.entities.domain.Appointment;
 import org.rapla.facade.client.ClientFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
-import org.rapla.inject.Extension;
 import org.rapla.logger.Logger;
 import org.rapla.plugin.appointmentnote.AppointmentNotePlugin;
 import org.rapla.plugin.appointmentnote.AppointmentNoteFunctions;
@@ -32,7 +31,7 @@ import org.rapla.scheduler.Promise;
 import org.rapla.scheduler.ResolvedPromise;
 import org.springframework.stereotype.Service;
 
-import jakarta.inject.Inject;
+import org.springframework.beans.factory.annotation.Autowired;
 import jakarta.inject.Singleton;
 import javax.swing.*;
 import java.awt.event.FocusEvent;
@@ -40,7 +39,6 @@ import java.awt.event.FocusListener;
 import java.util.function.Consumer;
 
 @Service
-@Extension (provides = AppointmentEditExtensionFactory.class, id = AppointmentNotePlugin.PLUGIN_ID)
 @Singleton
 public class AppointmentNoteEditFactory implements AppointmentEditExtensionFactory {
     private final ClientFacade facade;
@@ -49,7 +47,7 @@ public class AppointmentNoteEditFactory implements AppointmentEditExtensionFacto
     private final Logger logger;
     private final TextField.TextFieldFactory textFieldFactory;
 
-    @Inject
+    @Autowired
     public AppointmentNoteEditFactory(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, TextField.TextFieldFactory textFieldFactory)
     {
         super();

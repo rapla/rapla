@@ -12,7 +12,7 @@ import org.rapla.facade.Conflict;
 import org.rapla.facade.RaplaComponent;
 import org.rapla.framework.RaplaLocale;
 
-import jakarta.inject.Inject;
+import org.springframework.beans.factory.annotation.Autowired;
 import javax.swing.*;
 import javax.swing.border.Border;
 import javax.swing.tree.DefaultTreeCellRenderer;
@@ -35,7 +35,7 @@ public class RequestTreeCellRenderer extends DefaultTreeCellRenderer {
     Border conflictBorder = BorderFactory.createEmptyBorder(2, 0, 2, 0);
 
 
-    @Inject
+    @Autowired
     public RequestTreeCellRenderer(RaplaResources i18n, RaplaLocale raplaLocale) {
         this.i18n = i18n;
         this.raplaLocale = raplaLocale;

@@ -2,8 +2,6 @@ package org.rapla.plugin.exchangeconnector.server;
 
 import org.rapla.entities.User;
 import org.rapla.framework.RaplaException;
-import org.rapla.inject.DefaultImplementation;
-import org.rapla.inject.InjectionContext;
 import org.rapla.logger.Logger;
 import org.rapla.plugin.exchangeconnector.ExchangeConnectorRemote;
 import org.rapla.plugin.exchangeconnector.SynchronizationStatus;
@@ -11,24 +9,23 @@ import org.rapla.server.RaplaKeyStorage;
 import org.rapla.server.RaplaKeyStorage.LoginInfo;
 import org.rapla.server.RemoteSession;
 
-import jakarta.inject.Inject;
+import org.springframework.beans.factory.annotation.Autowired;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.ws.rs.core.Context;
 import java.util.Collection;
 
-@DefaultImplementation(context=InjectionContext.server, of=ExchangeConnectorRemote.class)
 public class ExchangeConnectorRemoteObjectFactory implements ExchangeConnectorRemote
 {
 	
-    @Inject
+    @Autowired
     SynchronisationManager manager;
-    @Inject
+    @Autowired
     Logger logger;
-	@Inject
+	@Autowired
 	RemoteSession session;
     private final HttpServletRequest request;	
 	
-	@Inject
+	@Autowired
 	public ExchangeConnectorRemoteObjectFactory(@Context HttpServletRequest request) {
         this.request = request;
 	}

@@ -41,7 +41,7 @@ import org.rapla.logger.Logger;
 import org.rapla.plugin.periodcopy.PeriodCopyResources;
 import org.rapla.scheduler.Promise;
 
-import jakarta.inject.Inject;
+import org.springframework.beans.factory.annotation.Autowired;
 import javax.swing.BorderFactory;
 import javax.swing.DefaultComboBoxModel;
 import javax.swing.DefaultListModel;
@@ -91,7 +91,7 @@ public class CopyDialog extends RaplaGUIComponent implements RaplaWidget
     private final CalendarModel model;
     
     @SuppressWarnings("unchecked")
-    @Inject
+    @Autowired
 	public CopyDialog(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, PeriodCopyResources periodCopyI18n, CalendarModel model, DateRenderer dateRenderer, BooleanFieldFactory booleanFieldFactory, final DialogUiFactoryInterface dialogUiFactory, IOInterface ioInterface) throws RaplaInitializationException {
         super(facade, i18n, raplaLocale, logger);
         this.periodCopyI18n = periodCopyI18n;

@@ -12,14 +12,13 @@ import org.rapla.framework.Configuration;
 import org.rapla.framework.DefaultConfiguration;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
-import org.rapla.inject.Extension;
 import org.rapla.logger.Logger;
 import org.rapla.plugin.export2ical.Export2iCalPlugin;
 import org.rapla.plugin.export2ical.ICalConfigService;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Service;
 
-import jakarta.inject.Inject;
+import org.springframework.beans.factory.annotation.Autowired;
 import javax.swing.ButtonGroup;
 import javax.swing.JCheckBox;
 import javax.swing.JComboBox;
@@ -41,7 +40,7 @@ import java.util.Locale;
  */
 @Service(Export2iCalPlugin.PLUGIN_ID)
 @Scope("prototype")
-@Extension(provides = PluginOptionPanel.class,id= Export2iCalPlugin.PLUGIN_ID)
+
 public class Export2iCalAdminOption extends RaplaGUIComponent implements PluginOptionPanel,ActionListener {
 
 	private JSpinner spiDaysBefore;
@@ -60,7 +59,7 @@ public class Export2iCalAdminOption extends RaplaGUIComponent implements PluginO
     private final IOInterface ioInterface;
 	protected Preferences preferences;
 
-	@Inject
+	@Autowired
     public Export2iCalAdminOption(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, ICalConfigService configService, IOInterface ioInterface){
 		super(facade, i18n, raplaLocale, logger);
 		this.configService = configService;

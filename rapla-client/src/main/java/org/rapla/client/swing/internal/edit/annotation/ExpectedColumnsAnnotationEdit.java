@@ -8,18 +8,17 @@ import org.rapla.components.iolayer.IOInterface;
 import org.rapla.entities.dynamictype.AttributeAnnotations;
 import org.rapla.facade.client.ClientFacade;
 import org.rapla.framework.RaplaLocale;
-import org.rapla.inject.Extension;
 import org.rapla.logger.Logger;
 import org.springframework.stereotype.Service;
 
-import jakarta.inject.Inject;
+import org.springframework.beans.factory.annotation.Autowired;
 
 @Service
-@Extension(provides= AnnotationEditAttributeExtension.class, id="expectedcolums")
+
 public class ExpectedColumnsAnnotationEdit extends ExpectedRowsAnnotationEdit implements AnnotationEditAttributeExtension
 {
     
-    @Inject
+    @Autowired
     public ExpectedColumnsAnnotationEdit(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, IOInterface ioInterface, LongFieldFactory longFieldFactory) {
         super(facade, i18n, raplaLocale, logger, ioInterface, longFieldFactory);
         annotationName = AttributeAnnotations.KEY_EXPECTED_COLUMNS;

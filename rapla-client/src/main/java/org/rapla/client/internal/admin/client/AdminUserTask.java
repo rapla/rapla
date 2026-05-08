@@ -12,13 +12,12 @@ import org.rapla.entities.Category;
 import org.rapla.entities.User;
 import org.rapla.facade.ModificationEvent;
 import org.rapla.facade.RaplaFacade;
-import org.rapla.inject.Extension;
 import org.rapla.scheduler.*;
 
-import jakarta.inject.Inject;
+import org.springframework.beans.factory.annotation.Autowired;
 import jakarta.inject.Provider;
 
-@Extension(id = AdminUserTask.USER_ADMIN_ID, provides = TaskPresenter.class)
+
 @org.springframework.stereotype.Service(AdminUserTask.USER_ADMIN_ID)
 @org.springframework.context.annotation.Lazy
 public class AdminUserTask implements TaskPresenter {
@@ -35,7 +34,7 @@ public class AdminUserTask implements TaskPresenter {
     final private ApplicationEventBus eventBus;
 
 
-    @Inject
+    @Autowired
     public AdminUserTask(CommandScheduler scheduler, Provider<AdminUserUserGroupsView> rightsReportProvider, RaplaFacade raplaFacade, DialogUiFactoryInterface dialogUIFactory, RaplaResources i18n, ApplicationEventBus eventBus)
     {
         this.rightsReportProvider = rightsReportProvider;

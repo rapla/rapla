@@ -33,11 +33,10 @@ import org.rapla.facade.Conflict;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaInitializationException;
 import org.rapla.framework.RaplaLocale;
-import org.rapla.inject.DefaultImplementation;
 import org.rapla.inject.InjectionContext;
 import org.rapla.logger.Logger;
 
-import jakarta.inject.Inject;
+import org.springframework.beans.factory.annotation.Autowired;
 import javax.swing.BorderFactory;
 import javax.swing.JComponent;
 import javax.swing.JLabel;
@@ -53,7 +52,6 @@ import java.awt.Component;
 import java.awt.Point;
 import java.util.Collection;
 
-@DefaultImplementation(context = InjectionContext.swing, of = ConflictSelectionView.class)
 @org.springframework.stereotype.Service
 public class ConflictSelectionViewSwing implements ConflictSelectionView<Component>
 {
@@ -67,7 +65,7 @@ public class ConflictSelectionViewSwing implements ConflictSelectionView<Compone
     private Presenter presenter;
     private boolean selectionFromProgram = false;
 
-    @Inject
+    @Autowired
     public ConflictSelectionViewSwing(RaplaResources i18n,  Logger logger, TreeFactory treeFactory,
                                       DialogUiFactoryInterface dialogUiFactory, ConflictTreeCellRenderer treeCellRenderer) throws RaplaInitializationException
     {

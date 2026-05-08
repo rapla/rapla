@@ -12,7 +12,6 @@ import org.rapla.framework.Configuration;
 import org.rapla.framework.DefaultConfiguration;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.TypedComponentRole;
-import org.rapla.inject.Extension;
 import org.rapla.logger.Logger;
 import org.rapla.plugin.exchangeconnector.ExchangeConnectorConfig;
 import org.rapla.plugin.exchangeconnector.ExchangeConnectorConfig.ConfigReader;
@@ -20,7 +19,7 @@ import org.rapla.plugin.exchangeconnector.ExchangeConnectorConfigRemote;
 import org.rapla.plugin.exchangeconnector.ExchangeConnectorPlugin;
 import org.rapla.plugin.exchangeconnector.ExchangeConnectorResources;
 
-import jakarta.inject.Inject;
+import org.springframework.beans.factory.annotation.Autowired;
 import javax.swing.DefaultComboBoxModel;
 import javax.swing.JCheckBox;
 import javax.swing.JComboBox;
@@ -36,7 +35,7 @@ import java.util.Locale;
 @org.springframework.stereotype.Service(ExchangeConnectorPlugin.PLUGIN_ID)
 @org.springframework.context.annotation.Scope("prototype")
 @org.springframework.context.annotation.Lazy
-@Extension(id=ExchangeConnectorPlugin.PLUGIN_ID, provides=PluginOptionPanel.class)
+
 public class ExchangeConnectorAdminOptions implements PluginOptionPanel{
 
     //private JCheckBox enableSynchronisationBox;// = new JCheckBox();
@@ -74,7 +73,7 @@ public class ExchangeConnectorAdminOptions implements PluginOptionPanel{
     Logger logger;
     RaplaResources i18n;
 
-    @Inject
+    @Autowired
     public ExchangeConnectorAdminOptions(RaplaResources i18n,Logger logger,ExchangeConnectorConfigRemote configService, ExchangeConnectorResources exchangeConnectorResources, DialogUiFactoryInterface dialogUiFactory) {
         this.configService = configService;
         this.i18n = i18n;

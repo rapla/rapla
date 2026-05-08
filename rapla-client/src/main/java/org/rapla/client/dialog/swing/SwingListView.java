@@ -6,7 +6,7 @@ import org.rapla.scheduler.CommandScheduler;
 import org.rapla.scheduler.Observable;
 import org.rapla.scheduler.Subject;
 
-import jakarta.inject.Inject;
+import org.springframework.beans.factory.annotation.Autowired;
 import javax.swing.*;
 import javax.swing.tree.*;
 import java.awt.event.MouseAdapter;
@@ -20,7 +20,7 @@ public class SwingListView<T> implements ListView<T> {
     final Subject<Collection<T>> publisherSelectionChanged;
     final RaplaTree treeSelection;
 
-    @Inject
+    @Autowired
     public SwingListView(TreeCellRenderer treeCellRenderer, CommandScheduler scheduler)
     {
         publisherDoubleClick = org.rapla.scheduler.Observables.createPublisher(scheduler.getExecutor());

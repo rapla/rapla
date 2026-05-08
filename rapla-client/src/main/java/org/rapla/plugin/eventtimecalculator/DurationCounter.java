@@ -6,14 +6,13 @@ import org.rapla.entities.domain.AppointmentBlock;
 import org.rapla.entities.domain.Reservation;
 import org.rapla.facade.client.ClientFacade;
 import org.rapla.framework.RaplaException;
-import org.rapla.inject.Extension;
 import org.rapla.plugin.tableview.RaplaTableModel;
 import org.rapla.plugin.tableview.client.swing.RaplaSwingTableModel;
 import org.rapla.plugin.tableview.client.swing.extensionpoints.AppointmentSummaryExtension;
 import org.rapla.plugin.tableview.client.swing.extensionpoints.ReservationSummaryExtension;
 import org.springframework.stereotype.Service;
 
-import jakarta.inject.Inject;
+import org.springframework.beans.factory.annotation.Autowired;
 import javax.swing.Box;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
@@ -22,15 +21,15 @@ import javax.swing.table.TableModel;
 
 
 @Service
-@Extension(provides = ReservationSummaryExtension.class, id = EventTimeCalculatorPlugin.PLUGIN_ID)
-@Extension(provides = AppointmentSummaryExtension.class, id = EventTimeCalculatorPlugin.PLUGIN_ID)
+
+
 public final class DurationCounter  implements ReservationSummaryExtension, AppointmentSummaryExtension
 {
     EventTimeCalculatorFactory factory;
     protected final EventTimeCalculatorResources i18n;
     ClientFacade clientFacade;
 
-    @Inject
+    @Autowired
     public DurationCounter(EventTimeCalculatorFactory factory,EventTimeCalculatorResources i18n,ClientFacade clientFacade)  {
         this.i18n = i18n;
         this.factory = factory;

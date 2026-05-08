@@ -25,7 +25,7 @@ import org.rapla.framework.RaplaException;
 import org.rapla.logger.Logger;
 import org.rapla.storage.PermissionController;
 
-import jakarta.inject.Inject;
+import org.springframework.beans.factory.annotation.Autowired;
 import jakarta.inject.Provider;
 
 @org.springframework.stereotype.Service
@@ -48,7 +48,7 @@ public class UserAction  {
     ClientFacade clientFacade;
     Logger logger;
 
-    @Inject
+    @Autowired
     public UserAction(ClientFacade facade, RaplaResources i18n, Logger logger, UserClientService service, EditController editController,
             DialogUiFactoryInterface dialogUiFactory, MenuItemFactory menuItemFactory, Provider<PasswordChangeAction> passwordChangeAction) {
         this.clientFacade = facade;

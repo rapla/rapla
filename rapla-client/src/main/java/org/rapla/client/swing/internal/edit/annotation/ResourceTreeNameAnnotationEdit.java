@@ -13,16 +13,15 @@ import org.rapla.entities.dynamictype.DynamicTypeAnnotations;
 import org.rapla.facade.client.ClientFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
-import org.rapla.inject.Extension;
 import org.rapla.logger.Logger;
 import org.springframework.stereotype.Service;
 
-import jakarta.inject.Inject;
+import org.springframework.beans.factory.annotation.Autowired;
 import java.util.Collection;
 import java.util.Collections;
 
 @Service
-@Extension(provides= AnnotationEditTypeExtension.class, id="resourcetree")
+
 public class ResourceTreeNameAnnotationEdit extends RaplaGUIComponent implements AnnotationEditTypeExtension
 {
     protected String annotationName = DynamicTypeAnnotations.KEY_NAME_FORMAT_PLANNING;
@@ -30,7 +29,7 @@ public class ResourceTreeNameAnnotationEdit extends RaplaGUIComponent implements
     private final IOInterface ioInterface;
     private final TextFieldFactory textFieldFactory;
     
-    @Inject
+    @Autowired
     public ResourceTreeNameAnnotationEdit(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, IOInterface ioInterface, TextFieldFactory textFieldFactory) {
         super(facade, i18n, raplaLocale, logger);
         this.ioInterface = ioInterface;

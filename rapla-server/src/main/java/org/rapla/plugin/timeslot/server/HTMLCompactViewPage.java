@@ -25,7 +25,6 @@ import org.rapla.facade.CalendarOptions;
 import org.rapla.facade.RaplaFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
-import org.rapla.inject.Extension;
 import org.rapla.logger.Logger;
 import org.rapla.plugin.abstractcalendar.RaplaBuilder;
 import org.rapla.plugin.abstractcalendar.server.AbstractHTMLCalendarPage;
@@ -34,16 +33,16 @@ import org.rapla.plugin.timeslot.TimeslotPlugin;
 import org.rapla.plugin.timeslot.TimeslotProvider;
 import org.rapla.server.extensionpoints.HTMLViewPage;
 
-import jakarta.inject.Inject;
+import org.springframework.beans.factory.annotation.Autowired;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 
-@Extension(provides = HTMLViewPage.class, id = TimeslotPlugin.WEEK_TIMESLOT)
+
 public class HTMLCompactViewPage extends AbstractHTMLCalendarPage implements HTMLViewPage
 {
     private final TimeslotProvider timeslotProvider;
-    @Inject
+    @Autowired
     public HTMLCompactViewPage(RaplaLocale raplaLocale, RaplaResources raplaResources, RaplaFacade facade, Logger logger,
             AppointmentFormater appointmentFormater , final TimeslotProvider timeslotProvider)
     {

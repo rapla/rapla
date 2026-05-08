@@ -22,20 +22,19 @@ import org.rapla.facade.CalendarOptions;
 import org.rapla.facade.RaplaFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
-import org.rapla.inject.Extension;
 import org.rapla.logger.Logger;
 import org.rapla.plugin.abstractcalendar.RaplaBuilder;
 import org.rapla.plugin.abstractcalendar.server.AbstractHTMLCalendarPage;
 import org.rapla.plugin.monthview.MonthViewPlugin;
 import org.rapla.server.extensionpoints.HTMLViewPage;
 
-import jakarta.inject.Inject;
+import org.springframework.beans.factory.annotation.Autowired;
 import java.util.Set;
 
-@Extension(provides = HTMLViewPage.class,id= MonthViewPlugin.MONTH_VIEW)
+
 public class HTMLMonthViewPage extends AbstractHTMLCalendarPage
 {
-    @Inject
+    @Autowired
     public HTMLMonthViewPage(RaplaLocale raplaLocale, RaplaResources raplaResources, RaplaFacade facade, Logger logger,
             AppointmentFormater appointmentFormater)
     {

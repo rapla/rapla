@@ -32,14 +32,13 @@ import org.rapla.facade.client.ClientFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaInitializationException;
 import org.rapla.framework.RaplaLocale;
-import org.rapla.inject.DefaultImplementation;
 import org.rapla.inject.InjectionContext;
 import org.rapla.logger.Logger;
 import org.rapla.scheduler.Promise;
 import org.rapla.scheduler.ResolvedPromise;
 import org.rapla.storage.StorageOperator;
 
-import jakarta.inject.Inject;
+import org.springframework.beans.factory.annotation.Autowired;
 import javax.swing.*;
 import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
@@ -51,7 +50,6 @@ import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
 import java.util.stream.Stream;
 
-@DefaultImplementation(of=TypeCategoryView.class,context = InjectionContext.swing)
 @org.springframework.stereotype.Service
 @org.springframework.context.annotation.Lazy
 public class SwingTypeCategoryView extends RaplaGUIComponent implements
@@ -81,7 +79,7 @@ public class SwingTypeCategoryView extends RaplaGUIComponent implements
     private final RaplaFacade raplaFacade;
 
 
-	@Inject
+	@Autowired
 	public SwingTypeCategoryView(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, MenuFactory menuFactory, TreeFactory treeFactory, DialogUiFactoryInterface dialogUiFactory, TreeCellRenderer treeCellRenderer) throws
 			RaplaInitializationException {
 		super(facade, i18n, raplaLocale, logger);

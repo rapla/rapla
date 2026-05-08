@@ -26,7 +26,7 @@ import java.util.Set;
  * legacy {@code @Extension} ids so {@code Application.activityPresenters}
  * (a {@code Map<String, Provider<TaskPresenter>>} keyed by id) can dispatch to it.
  *
- * <p>The legacy DI used {@code @Extension(id="X", provides=TaskPresenter.class)}
+ * <p>The legacy DI used {@code }
  * five times on one class. Spring's {@code @Service} can only set a single bean
  * name, so we use 5 prototype-scoped {@code @Bean} factory methods, each named
  * after one of the legacy ids and each returning a freshly-constructed

@@ -29,7 +29,7 @@ import org.rapla.plugin.abstractcalendar.RaplaBlock;
 import org.rapla.scheduler.Promise;
 import org.rapla.storage.PermissionController;
 
-import jakarta.inject.Inject;
+import org.springframework.beans.factory.annotation.Autowired;
 import jakarta.inject.Singleton;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -56,7 +56,7 @@ public class CalendarContextMenuPresenter extends RaplaComponent implements Menu
 
     //private final MenuFactory menuFactory;
 
-    @Inject
+    @Autowired
     public CalendarContextMenuPresenter(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, CalendarSelectionModel model,
             ReservationController reservationController,  @SuppressWarnings("rawtypes") MenuView view, EditController editController)
     {

@@ -12,23 +12,22 @@ import org.rapla.entities.dynamictype.DynamicTypeAnnotations;
 import org.rapla.facade.client.ClientFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
-import org.rapla.inject.Extension;
 import org.rapla.logger.Logger;
 import org.springframework.stereotype.Service;
 
-import jakarta.inject.Inject;
+import org.springframework.beans.factory.annotation.Autowired;
 import java.util.Collection;
 import java.util.Collections;
 
 @Service
-@Extension(provides= AnnotationEditTypeExtension.class, id=DynamicTypeAnnotations.KEY_LOCATION)
+
 public class LocationAnnotationEdit extends RaplaGUIComponent implements AnnotationEditTypeExtension
 {
 
     private final String annotationName = DynamicTypeAnnotations.KEY_LOCATION;
     private final BooleanFieldFactory booleanFieldFactory;
 
-    @Inject
+    @Autowired
     public LocationAnnotationEdit(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, BooleanFieldFactory booleanFieldFactory) {
         super(facade, i18n, raplaLocale, logger);
         this.booleanFieldFactory = booleanFieldFactory;

@@ -18,8 +18,6 @@ import org.rapla.entities.configuration.internal.PreferencesImpl;
 import org.rapla.facade.RaplaFacade;
 import org.rapla.framework.DefaultConfiguration;
 import org.rapla.framework.RaplaException;
-import org.rapla.inject.DefaultImplementation;
-import org.rapla.inject.InjectionContext;
 import org.rapla.logger.Logger;
 import org.rapla.plugin.jndi.JNDIPlugin;
 import org.rapla.plugin.jndi.internal.JNDIConfig;
@@ -28,21 +26,20 @@ import org.rapla.scheduler.ResolvedPromise;
 import org.rapla.server.RemoteSession;
 import org.rapla.storage.RaplaSecurityException;
 
-import jakarta.inject.Inject;
+import org.springframework.beans.factory.annotation.Autowired;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.ws.rs.core.Context;
 
-@DefaultImplementation(context=InjectionContext.server, of=JNDIConfig.class)
 public class RaplaJNDITestOnLocalhost implements JNDIConfig
 {
-    @Inject
+    @Autowired
     RaplaFacade facade;
-    @Inject
+    @Autowired
     Logger logger;
-    @Inject
+    @Autowired
     RemoteSession remoteSession;
     private final HttpServletRequest request;
-    @Inject
+    @Autowired
     public RaplaJNDITestOnLocalhost(@Context HttpServletRequest request)
     {
         this.request = request;

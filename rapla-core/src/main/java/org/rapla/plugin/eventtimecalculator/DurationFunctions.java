@@ -10,19 +10,18 @@ import org.rapla.entities.dynamictype.Classification;
 import org.rapla.entities.dynamictype.internal.EvalContext;
 import org.rapla.entities.extensionpoints.Function;
 import org.rapla.entities.extensionpoints.FunctionFactory;
-import org.rapla.inject.Extension;
 
-import jakarta.inject.Inject;
+import org.springframework.beans.factory.annotation.Autowired;
 import java.util.Collection;
 import java.util.List;
 
-@Extension(provides = FunctionFactory.class, id=DurationFunctions.NAMESPACE)
+
 public class DurationFunctions implements FunctionFactory
 {
     static final public String NAMESPACE = "org.rapla.eventtimecalculator";
 
     EventTimeCalculatorFactory factory;
-    public @Inject DurationFunctions( EventTimeCalculatorFactory factory)
+    public @Autowired DurationFunctions( EventTimeCalculatorFactory factory)
     {
         this.factory = factory;
     }

@@ -18,8 +18,6 @@ import org.rapla.entities.configuration.internal.PreferencesImpl;
 import org.rapla.facade.RaplaFacade;
 import org.rapla.framework.DefaultConfiguration;
 import org.rapla.framework.RaplaException;
-import org.rapla.inject.DefaultImplementation;
-import org.rapla.inject.InjectionContext;
 import org.rapla.plugin.mail.MailConfigService;
 import org.rapla.plugin.mail.MailPlugin;
 import org.rapla.server.RaplaKeyStorage;
@@ -27,30 +25,29 @@ import org.rapla.server.RemoteSession;
 import org.rapla.server.ServerService;
 import org.rapla.storage.RaplaSecurityException;
 
-import jakarta.inject.Inject;
+import org.springframework.beans.factory.annotation.Autowired;
 import jakarta.inject.Named;
 import jakarta.inject.Provider;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.ws.rs.core.Context;
 
-@DefaultImplementation(context = InjectionContext.server, of = MailConfigService.class)
 public class RaplaConfigServiceImpl implements MailConfigService
 {
-    @Inject
+    @Autowired
     RaplaKeyStorage keyStore;
-    @Inject
+    @Autowired
     RemoteSession remoteSession;
-    @Inject
+    @Autowired
     @Named(ServerService.ENV_RAPLAMAIL_ID)
     Provider<Object> externalMailSession;
 
-    @Inject
+    @Autowired
     RaplaFacade facade;
-    @Inject
+    @Autowired
     MailInterface mailInterface;
     private final HttpServletRequest request;
 
-    @Inject
+    @Autowired
     public RaplaConfigServiceImpl(@Context HttpServletRequest request)
     {
         this.request = request;

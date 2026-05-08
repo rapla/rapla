@@ -14,11 +14,10 @@ import org.rapla.entities.domain.Reservation;
 import org.rapla.facade.client.ClientFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
-import org.rapla.inject.Extension;
 import org.rapla.logger.Logger;
 import org.springframework.stereotype.Service;
 
-import jakarta.inject.Inject;
+import org.springframework.beans.factory.annotation.Autowired;
 import jakarta.inject.Singleton;
 import javax.swing.JComponent;
 import javax.swing.JLabel;
@@ -28,7 +27,7 @@ import java.util.Collection;
 import java.util.List;
 
 @Service
-@Extension(provides = AppointmentStatusFactory.class, id="appointmentcounter")
+
 @Singleton
 public class AppointmentCounterFactory implements AppointmentStatusFactory
 {
@@ -37,7 +36,7 @@ public class AppointmentCounterFactory implements AppointmentStatusFactory
     private final RaplaLocale raplaLocale;
     private final Logger logger;
 
-	@Inject
+	@Autowired
 	public AppointmentCounterFactory(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger)
 	{
 	    super();

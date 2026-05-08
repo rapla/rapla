@@ -16,18 +16,17 @@ import org.rapla.facade.RaplaFacade;
 import org.rapla.facade.client.ClientFacade;
 import org.rapla.facade.internal.CalendarOptionsImpl;
 import org.rapla.framework.RaplaException;
-import org.rapla.inject.Extension;
 import org.rapla.scheduler.Promise;
 import org.springframework.stereotype.Service;
 import org.rapla.scheduler.ResolvedPromise;
 
-import jakarta.inject.Inject;
+import org.springframework.beans.factory.annotation.Autowired;
 import java.util.Collection;
 import java.util.Locale;
 
 
 @Service
-@Extension(provides = EventCheck.class, id = "defaultcheck")
+
 public class DefaultReservationCheck implements EventCheck
 {
     private final DialogUiFactoryInterface dialogUiFactory;
@@ -36,7 +35,7 @@ public class DefaultReservationCheck implements EventCheck
     private final AppointmentFormater appointmentFormater;
     RaplaResources i18n;
     final CheckView view;
-    @Inject
+    @Autowired
     public DefaultReservationCheck(ClientFacade facade, RaplaResources i18n, AppointmentFormater appointmentFormater, CalendarModel model, DialogUiFactoryInterface dialogUiFactory, CheckView view) {
         this.i18n = i18n;
         this.clientFacade = facade;

@@ -4,11 +4,9 @@ import org.rapla.components.i18n.BundleManager;
 import org.rapla.components.i18n.internal.AbstractBundleManager;
 import org.rapla.components.util.IOUtil;
 import org.rapla.components.i18n.internal.PropertyResourceBundleWrapper;
-import org.rapla.inject.DefaultImplementation;
-import org.rapla.inject.InjectionContext;
 import org.rapla.logger.Logger;
 
-import jakarta.inject.Inject;
+import org.springframework.beans.factory.annotation.Autowired;
 import jakarta.inject.Singleton;
 import javax.swing.*;
 import java.io.IOException;
@@ -16,7 +14,6 @@ import java.net.URL;
 import java.util.*;
 
 
-@DefaultImplementation(of=BundleManager.class,context = { InjectionContext.swing})
 @Singleton
 @org.springframework.stereotype.Service
 @org.springframework.context.annotation.Primary
@@ -24,7 +21,7 @@ public class SwingBundleManager extends AbstractBundleManager
 {
     Map<String, Icon> iconCache = Collections.synchronizedMap(new TreeMap<String, Icon>());
     final Logger logger;
-    @Inject
+    @Autowired
     public SwingBundleManager(Logger logger)
     {
         this.logger = logger;

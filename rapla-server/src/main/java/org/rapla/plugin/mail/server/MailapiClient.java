@@ -1,20 +1,18 @@
 package org.rapla.plugin.mail.server;
 
-import com.google.gson.JsonArray;
-import com.google.gson.JsonObject;
-import com.google.gson.JsonPrimitive;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.rapla.entities.configuration.Preferences;
 import org.rapla.entities.configuration.RaplaConfiguration;
 import org.rapla.facade.RaplaFacade;
 import org.rapla.framework.Configuration;
 import org.rapla.framework.RaplaException;
-import org.rapla.inject.DefaultImplementation;
-import org.rapla.inject.InjectionContext;
 import org.rapla.plugin.mail.MailException;
 import org.rapla.plugin.mail.MailPlugin;
 import org.rapla.server.ServerService;
 
-import jakarta.inject.Inject;
+import org.springframework.beans.factory.annotation.Autowired;
 import jakarta.inject.Named;
 import jakarta.inject.Provider;
 import java.io.IOException;
@@ -25,7 +23,6 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.Properties;
 
-@DefaultImplementation(of=MailInterface.class,context= InjectionContext.server)
 public class MailapiClient implements MailInterface
 {
     String mailhost = "localhost";
@@ -43,7 +40,7 @@ public class MailapiClient implements MailInterface
     RaplaFacade facade;
     Provider<Object> externalMailSessionProvider;
 
-    @Inject
+    @Autowired
     public MailapiClient( RaplaFacade facade, @Named(ServerService.ENV_RAPLAMAIL_ID) Provider<Object> externalMailSessionProvider)  {
     	this.facade = facade;
     	this.externalMailSessionProvider = externalMailSessionProvider;
@@ -202,20 +199,21 @@ public class MailapiClient implements MailInterface
             {
                 throw new  MailException(e.getMessage());
             }
-            JsonObject object = new JsonObject();
-            object.add("FromEmail", new JsonPrimitive(senderMail));
-            object.add("FromName", new JsonPrimitive("Rapla Admin"));
-            object.add("Subject", new JsonPrimitive(subject));
-            object.add("Text-part", new JsonPrimitive(mailBody));
-            JsonArray recipients = new JsonArray();
-            JsonObject recipientObj = new JsonObject();
-            recipientObj.add("Email", new JsonPrimitive(recipient));
+            ObjectMapper mapper = new ObjectMapper();
+            ObjectNode object = mapper.createObjectNode();
+            object.put("FromEmail", senderMail);
+            object.put("FromName", "Rapla Admin");
+            object.put("Subject", subject);
+            object.put("Text-part", mailBody);
+            ArrayNode recipients = mapper.createArrayNode();
+            ObjectNode recipientObj = mapper.createObjectNode();
+            recipientObj.put("Email", recipient);
             recipients.add( recipientObj);
-            object.add("Recipients", recipients);
+            object.set("Recipients", recipients);
             String token =username + ":"+ password;
             try
             {
-                final JsonObject object1 = connector.sendPost(url, object, token);
+                final ObjectNode object1 = connector.sendPost(url, object, token);
                 System.out.println( object1);
             }
             catch (IOException e)

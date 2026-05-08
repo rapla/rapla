@@ -15,7 +15,7 @@ import org.rapla.framework.RaplaInitializationException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.logger.Logger;
 
-import jakarta.inject.Inject;
+import org.springframework.beans.factory.annotation.Autowired;
 import javax.swing.DefaultListCellRenderer;
 import javax.swing.DefaultListModel;
 import javax.swing.JButton;
@@ -57,7 +57,7 @@ public class GroupListField extends AbstractEditField implements ChangeListener,
 
     private final DialogUiFactoryInterface dialogUiFactory;
 
-    @Inject
+    @Autowired
     public GroupListField(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, TreeFactory treeFactory,  DialogUiFactoryInterface dialogUiFactory) throws
             RaplaInitializationException {
         super(facade, i18n, raplaLocale, logger);

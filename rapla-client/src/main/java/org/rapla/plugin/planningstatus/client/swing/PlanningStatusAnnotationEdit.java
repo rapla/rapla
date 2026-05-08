@@ -13,17 +13,16 @@ import org.rapla.entities.dynamictype.DynamicTypeAnnotations;
 import org.rapla.facade.client.ClientFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
-import org.rapla.inject.Extension;
 import org.rapla.logger.Logger;
 import org.rapla.plugin.planningstatus.PlanningStatusPlugin;
 import org.rapla.plugin.planningstatus.PlanningStatusResources;
 
-import jakarta.inject.Inject;
+import org.springframework.beans.factory.annotation.Autowired;
 import java.util.Collection;
 import java.util.Collections;
 
 
-//@Extension(provides= AnnotationEditTypeExtension.class, id=PlanningStatusPlugin.PLANNINGSTATUS_CONDITION_ANNOTATION_NAME)
+//
 public class PlanningStatusAnnotationEdit extends RaplaGUIComponent implements AnnotationEditTypeExtension
 {
     protected String annotationName = PlanningStatusPlugin.PLANNINGSTATUS_CONDITION_ANNOTATION_NAME;
@@ -32,7 +31,7 @@ public class PlanningStatusAnnotationEdit extends RaplaGUIComponent implements A
     private final TextFieldFactory textFieldFactory;
     PlanningStatusResources planningStatusi18n;
 
-    @Inject
+    @Autowired
     public PlanningStatusAnnotationEdit(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, IOInterface service, TextFieldFactory textFieldFactory, PlanningStatusResources planningStatusi18n) {
         super(facade, i18n, raplaLocale, logger);
         this.service = service;

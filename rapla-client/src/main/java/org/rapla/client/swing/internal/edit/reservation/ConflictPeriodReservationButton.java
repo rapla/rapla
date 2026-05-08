@@ -30,11 +30,10 @@ import org.rapla.entities.domain.Reservation;
 import org.rapla.facade.client.ClientFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
-import org.rapla.inject.Extension;
 import org.rapla.logger.Logger;
 import org.springframework.stereotype.Service;
 
-import jakarta.inject.Inject;
+import org.springframework.beans.factory.annotation.Autowired;
 import java.awt.Component;
 import java.util.Collection;
 import java.util.Collections;
@@ -42,7 +41,7 @@ import java.util.Map;
 import java.util.Set;
 
 @Service
-@Extension(provides = ReservationToolbarExtension.class, id = "holidayexception")
+
 public class ConflictPeriodReservationButton extends RaplaGUIComponent implements ReservationToolbarExtension
 {
     private final DialogUiFactoryInterface dialogUiFactory;
@@ -50,7 +49,7 @@ public class ConflictPeriodReservationButton extends RaplaGUIComponent implement
     private RaplaButton button;
     private final HolidayExceptionCheck check;
 
-    @Inject
+    @Autowired
     public ConflictPeriodReservationButton(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger,
             DialogUiFactoryInterface dialogUiFactory, HolidayExceptionCheck check)
     {

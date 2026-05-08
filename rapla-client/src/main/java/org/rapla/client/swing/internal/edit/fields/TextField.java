@@ -20,7 +20,7 @@ import org.rapla.facade.client.ClientFacade;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.logger.Logger;
 
-import jakarta.inject.Inject;
+import org.springframework.beans.factory.annotation.Autowired;
 import jakarta.inject.Singleton;
 import javax.swing.BorderFactory;
 import javax.swing.JButton;
@@ -281,7 +281,7 @@ public class TextField extends AbstractEditField implements ActionListener, Focu
         private final Logger logger;
         private final IOInterface ioInterface;
 
-        @Inject
+        @Autowired
         public TextFieldFactory(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, IOInterface ioInterface)
         {
             super();

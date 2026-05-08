@@ -1,19 +1,18 @@
 package org.rapla.server.internal;
 
 import org.rapla.RaplaResources;
-import org.rapla.inject.Extension;
 import org.rapla.server.extensionpoints.HtmlMainMenu;
 import org.rapla.server.servletpages.DefaultHTMLMenuEntry;
 
-import jakarta.inject.Inject;
+import org.springframework.beans.factory.annotation.Autowired;
 import jakarta.inject.Singleton;
 
-@Extension(provides = HtmlMainMenu.class,id=RaplaStatusEntry.ID)
+
 @Singleton
 public class RaplaStatusEntry extends DefaultHTMLMenuEntry implements HtmlMainMenu
 {
     public final static String ID = "3_status";
-    @Inject
+    @Autowired
     public RaplaStatusEntry(RaplaResources i18n)
     {
         super(i18n.getString("server_status"), "server");

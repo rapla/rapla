@@ -31,14 +31,13 @@ import org.rapla.framework.DefaultConfiguration;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.TypedComponentRole;
-import org.rapla.inject.Extension;
 import org.rapla.logger.Logger;
 import org.rapla.plugin.mail.MailConfigService;
 import org.rapla.plugin.mail.MailPlugin;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Service;
 
-import jakarta.inject.Inject;
+import org.springframework.beans.factory.annotation.Autowired;
 import javax.swing.ButtonGroup;
 import javax.swing.JCheckBox;
 import javax.swing.JComponent;
@@ -56,7 +55,7 @@ import java.util.Locale;
 
 @Service(MailPlugin.PLUGIN_ID)
 @Scope("prototype")
-@Extension(provides = PluginOptionPanel.class,id= MailPlugin.PLUGIN_ID)
+
 public class MailOption extends RaplaGUIComponent implements PluginOptionPanel {
 
 	private static final int NO_AUTH_DEFAULT_PORT = 25;
@@ -83,7 +82,7 @@ public class MailOption extends RaplaGUIComponent implements PluginOptionPanel {
     private final DialogUiFactoryInterface dialogUiFactory;
     private final TextFieldFactory textFieldFactory;
     private final IOInterface ioInterface;
-	@Inject
+	@Autowired
     public MailOption(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger,MailConfigService mailConfigService, DialogUiFactoryInterface dialogUiFactory, TextFieldFactory textFieldFactory, IOInterface ioInterface)
     {
         super(facade, i18n, raplaLocale, logger);

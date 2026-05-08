@@ -26,8 +26,6 @@ import org.rapla.entities.storage.ReferenceInfo;
 import org.rapla.facade.internal.ConflictImpl;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.internal.AbstractRaplaLocale;
-import org.rapla.inject.DefaultImplementation;
-import org.rapla.inject.InjectionContext;
 import org.rapla.logger.Logger;
 import org.rapla.plugin.mail.MailPlugin;
 import org.rapla.plugin.mail.server.MailInterface;
@@ -45,7 +43,7 @@ import org.rapla.storage.dbrm.AppointmentMap;
 import org.rapla.storage.dbrm.RemoteStorage;
 import org.rapla.storage.impl.EntityStore;
 
-import jakarta.inject.Inject;
+import org.springframework.beans.factory.annotation.Autowired;
 import jakarta.inject.Provider;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.ws.rs.core.Context;
@@ -61,23 +59,23 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-@DefaultImplementation(context = InjectionContext.server, of = RemoteStorage.class) public class RemoteStorageImpl implements RemoteStorage
+public class RemoteStorageImpl implements RemoteStorage
 {
-    @Inject RemoteSession session;
-    @Inject CachableStorageOperator operator;
-    @Inject org.rapla.storage.SyncStorageOperator syncOperator;
-    @Inject SecurityManager security;
-    @Inject ShutdownService shutdownService;
-    @Inject Set<PrePostDispatchProcessor> prePostDispatchProcessors;
-    @Inject Logger logger;
-    @Inject Set<AuthenticationStore> authenticationStore;
+    @Autowired RemoteSession session;
+    @Autowired CachableStorageOperator operator;
+    @Autowired org.rapla.storage.SyncStorageOperator syncOperator;
+    @Autowired SecurityManager security;
+    @Autowired ShutdownService shutdownService;
+    @Autowired Set<PrePostDispatchProcessor> prePostDispatchProcessors;
+    @Autowired Logger logger;
+    @Autowired Set<AuthenticationStore> authenticationStore;
 
-    @Inject RaplaResources i18n;
-    @Inject Provider<MailInterface> mailInterface;
-    @Inject UpdateDataManager updateDataManager;
+    @Autowired RaplaResources i18n;
+    @Autowired Provider<MailInterface> mailInterface;
+    @Autowired UpdateDataManager updateDataManager;
     private final HttpServletRequest request;
 
-    @Inject public RemoteStorageImpl(@Context HttpServletRequest request)
+    @Autowired public RemoteStorageImpl(@Context HttpServletRequest request)
     {
         this.request = request;
     }

@@ -25,10 +25,9 @@ import org.rapla.components.layout.TableLayout;
 import org.rapla.entities.dynamictype.ClassificationFilter;
 import org.rapla.facade.ClassifiableFilter;
 import org.rapla.framework.RaplaInitializationException;
-import org.rapla.inject.DefaultImplementation;
 import org.rapla.inject.InjectionContext;
 
-import jakarta.inject.Inject;
+import org.springframework.beans.factory.annotation.Autowired;
 import javax.swing.*;
 import javax.swing.event.ChangeListener;
 import java.awt.BorderLayout;
@@ -40,7 +39,6 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
-@DefaultImplementation(context = InjectionContext.swing, of = MultiCalendarView.class)
 @org.springframework.stereotype.Service
 public class MultiCalendarViewSwing implements MultiCalendarView
 {
@@ -56,7 +54,7 @@ public class MultiCalendarViewSwing implements MultiCalendarView
     private final FilterEditButtonFactory filterEditButtonFactory;
     private boolean viewSelectionFromPromgramm = false;
     
-    @Inject
+    @Autowired
     public MultiCalendarViewSwing(FilterEditButtonFactory filterEditButtonFactory) throws RaplaInitializationException
     {
         this.filterEditButtonFactory = filterEditButtonFactory;

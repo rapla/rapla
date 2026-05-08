@@ -34,11 +34,10 @@ import org.rapla.framework.Configuration;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaInitializationException;
 import org.rapla.framework.RaplaLocale;
-import org.rapla.inject.Extension;
 import org.rapla.logger.Logger;
 import org.rapla.plugin.compactweekview.CompactWeekviewPlugin;
 
-import jakarta.inject.Inject;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.context.annotation.Lazy;
 import jakarta.inject.Provider;
@@ -49,7 +48,7 @@ import java.util.Set;
 @Service
 @Lazy
 @Singleton
-@Extension(provides = SwingViewFactory.class, id = CompactWeekviewPlugin.COMPACT_WEEK_VIEW)
+
 public class CompactWeekViewFactory implements SwingViewFactory
 {
 
@@ -71,7 +70,7 @@ public class CompactWeekViewFactory implements SwingViewFactory
     private final Configuration config;
     private final EditController editController;
 
-    @Inject
+    @Autowired
     public CompactWeekViewFactory(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, Set<ObjectMenuFactory> objectMenuFactories,
             MenuFactory menuFactory, Provider<DateRenderer> dateRendererProvider, CalendarSelectionModel calendarSelectionModel, RaplaClipboard clipboard,
             ReservationController reservationController, InfoFactory infoFactory, DateRenderer dateRenderer,

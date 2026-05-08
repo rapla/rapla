@@ -2,22 +2,19 @@ package org.rapla.framework.internal;
 
 import org.rapla.components.util.IOUtil;
 import org.rapla.framework.TimeZoneConverter;
-import org.rapla.inject.DefaultImplementation;
-import org.rapla.inject.InjectionContext;
 
-import jakarta.inject.Inject;
+import org.springframework.beans.factory.annotation.Autowired;
 import jakarta.inject.Singleton;
 import java.util.Date;
 import java.util.TimeZone;
 
-@DefaultImplementation(of=TimeZoneConverter.class,context = InjectionContext.server)
 @Singleton
 public class TimeZoneConverterImpl implements TimeZoneConverter
 {
     TimeZone zone;
     TimeZone importExportTimeZone;
 
-    @Inject
+    @Autowired
     public TimeZoneConverterImpl()  
     {
         zone = IOUtil.getTimeZone();

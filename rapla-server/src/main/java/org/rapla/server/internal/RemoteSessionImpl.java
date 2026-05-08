@@ -3,19 +3,16 @@ package org.rapla.server.internal;
 import org.rapla.entities.EntityNotFoundException;
 import org.rapla.entities.User;
 import org.rapla.framework.RaplaException;
-import org.rapla.inject.DefaultImplementation;
-import org.rapla.inject.InjectionContext;
 import org.rapla.logger.Logger;
 import org.rapla.endpoints.server.RaplaAuthRestPage;
 import org.rapla.server.RemoteSession;
 import org.rapla.storage.RaplaSecurityException;
 import org.rapla.storage.dbrm.LoginTokens;
 
-import jakarta.inject.Inject;
+import org.springframework.beans.factory.annotation.Autowired;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 
-@DefaultImplementation(of = RemoteSession.class, context = InjectionContext.server)
 public class RemoteSessionImpl implements RemoteSession
 {
     private User user;
@@ -29,7 +26,7 @@ public class RemoteSessionImpl implements RemoteSession
         this.user = user;
     }
 
-    @Inject
+    @Autowired
     public RemoteSessionImpl(Logger logger, TokenHandler tokenHandler, RaplaAuthentificationService service)
     {
         this.logger = logger;

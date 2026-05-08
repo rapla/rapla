@@ -36,7 +36,7 @@ import org.rapla.framework.RaplaInitializationException;
 import org.rapla.logger.Logger;
 import org.rapla.scheduler.Promise;
 
-import jakarta.inject.Inject;
+import org.springframework.beans.factory.annotation.Autowired;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -63,7 +63,7 @@ public class ConflictSelectionPresenter implements Presenter
     private final ConflictSelectionView<?> view;
     private PresenterChangeCallback callback;
 
-    @Inject
+    @Autowired
     public ConflictSelectionPresenter(ClientFacade facade, Logger logger, final CalendarSelectionModel model, CalendarEventBus eventBus,
             DialogUiFactoryInterface dialogUiFactory, ConflictSelectionView view) throws RaplaInitializationException
     {

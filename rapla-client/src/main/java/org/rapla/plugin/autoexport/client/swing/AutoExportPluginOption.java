@@ -4,12 +4,11 @@ import org.rapla.client.extensionpoints.PluginOptionPanel;
 import org.rapla.components.layout.TableLayout;
 import org.rapla.entities.configuration.Preferences;
 import org.rapla.framework.RaplaException;
-import org.rapla.inject.Extension;
 import org.rapla.plugin.autoexport.AutoExportPlugin;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Service;
 
-import jakarta.inject.Inject;
+import org.springframework.beans.factory.annotation.Autowired;
 import javax.swing.JCheckBox;
 import javax.swing.JComponent;
 import javax.swing.JLabel;
@@ -18,7 +17,7 @@ import java.util.Locale;
 
 @Service(AutoExportPlugin.PLUGIN_ID)
 @Scope("prototype")
-@Extension(provides = PluginOptionPanel.class, id = AutoExportPlugin.PLUGIN_ID)
+
 public class AutoExportPluginOption implements PluginOptionPanel
 {
     JCheckBox showListExported = new JCheckBox();
@@ -26,7 +25,7 @@ public class AutoExportPluginOption implements PluginOptionPanel
     JComponent component;
     Preferences preferences;
 
-    @Inject
+    @Autowired
     public AutoExportPluginOption()
     {
     }

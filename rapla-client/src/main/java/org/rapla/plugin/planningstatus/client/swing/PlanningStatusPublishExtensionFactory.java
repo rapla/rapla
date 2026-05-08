@@ -9,18 +9,17 @@ import org.rapla.facade.CalendarSelectionModel;
 import org.rapla.facade.client.ClientFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
-import org.rapla.inject.Extension;
 import org.rapla.logger.Logger;
 import org.rapla.plugin.export2ical.Export2iCalPlugin;
 import org.rapla.plugin.planningstatus.PlanningStatusPlugin;
 import org.rapla.plugin.planningstatus.PlanningStatusResources;
 import org.springframework.stereotype.Service;
 
-import jakarta.inject.Inject;
+import org.springframework.beans.factory.annotation.Autowired;
 import java.beans.PropertyChangeListener;
 
 @Service
-@Extension(provides=PublishExtensionFactory.class,id="planningstatus")
+
 public class PlanningStatusPublishExtensionFactory implements PublishExtensionFactory
 {
     private final ClientFacade facade;
@@ -29,7 +28,7 @@ public class PlanningStatusPublishExtensionFactory implements PublishExtensionFa
     private final RaplaLocale raplaLocale;
     private final Logger logger;
 
-    @Inject
+    @Autowired
 	public PlanningStatusPublishExtensionFactory(ClientFacade facade, RaplaResources i18n, PlanningStatusResources i18nPlanninsgStatus,RaplaLocale raplaLocale, Logger logger)
 	{
         this.facade = facade;

@@ -39,11 +39,10 @@ import org.rapla.facade.client.ClientFacade;
 import org.rapla.facade.internal.CalendarModelImpl;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
-import org.rapla.inject.DefaultImplementation;
 import org.rapla.inject.InjectionContext;
 import org.rapla.logger.Logger;
 
-import jakarta.inject.Inject;
+import org.springframework.beans.factory.annotation.Autowired;
 import jakarta.inject.Singleton;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -65,13 +64,12 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 @Singleton
-@DefaultImplementation(of = TreeFactory.class, context = InjectionContext.client)
 @org.springframework.stereotype.Service
 public class TreeFactoryImpl extends RaplaComponent implements TreeFactory
 {
     final ClientFacade clientFacade;
     final TreeItemFactory treeItemFactory;
-    @Inject
+    @Autowired
     public TreeFactoryImpl(ClientFacade clientFacade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, TreeItemFactory treeItemFactory)
     {
         super(clientFacade.getRaplaFacade(), i18n, raplaLocale, logger);

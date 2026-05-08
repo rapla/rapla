@@ -23,14 +23,13 @@ import org.rapla.entities.domain.Allocatable;
 import org.rapla.facade.client.ClientFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
-import org.rapla.inject.Extension;
 import org.rapla.logger.Logger;
 import org.rapla.plugin.notification.NotificationPlugin;
 import org.rapla.plugin.notification.NotificationResources;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Service;
 
-import jakarta.inject.Inject;
+import org.springframework.beans.factory.annotation.Autowired;
 import javax.swing.JCheckBox;
 import javax.swing.JComponent;
 import javax.swing.JLabel;
@@ -40,7 +39,7 @@ import java.util.Locale;
 
 @Service
 @Scope("prototype")
-@Extension(provides = UserOptionPanel.class, id= NotificationPlugin.PLUGIN_ID)
+
 public class NotificationOption extends RaplaGUIComponent implements UserOptionPanel {
     JPanel content= new JPanel();
     JCheckBox notifyIfOwnerCheckBox;
@@ -48,7 +47,7 @@ public class NotificationOption extends RaplaGUIComponent implements UserOptionP
     Preferences preferences;
     NotificationResources notificationI18n;
 
-    @Inject
+    @Autowired
     public NotificationOption(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, NotificationResources notificationI18n, TreeAllocatableSelection selection) {
         super(facade, i18n, raplaLocale, logger);
         this.notificationI18n = notificationI18n;

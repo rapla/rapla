@@ -14,23 +14,22 @@ import org.rapla.entities.dynamictype.DynamicTypeAnnotations;
 import org.rapla.facade.client.ClientFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
-import org.rapla.inject.Extension;
 import org.rapla.logger.Logger;
 import org.springframework.stereotype.Service;
 
-import jakarta.inject.Inject;
+import org.springframework.beans.factory.annotation.Autowired;
 import java.util.Collection;
 import java.util.Collections;
 
 @Service
-@Extension(provides = AnnotationEditAttributeExtension.class, id = AttributeAnnotations.KEY_CATEGORIZATION)
+
 public class CategorizationAnnotationEdit extends RaplaGUIComponent implements AnnotationEditAttributeExtension
 {
 
     final String annotationName = AttributeAnnotations.KEY_CATEGORIZATION;
     private final BooleanFieldFactory booleanFieldFactory;
 
-    @Inject
+    @Autowired
     public CategorizationAnnotationEdit(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, BooleanFieldFactory booleanFieldFactory)
     {
         super(facade, i18n, raplaLocale, logger);

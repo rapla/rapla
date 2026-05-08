@@ -7,12 +7,10 @@ import org.rapla.facade.RaplaFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaInitializationException;
 import org.rapla.framework.TypedComponentRole;
-import org.rapla.inject.DefaultImplementation;
-import org.rapla.inject.InjectionContext;
 import org.rapla.logger.Logger;
 import org.rapla.server.RaplaKeyStorage;
 
-import jakarta.inject.Inject;
+import org.springframework.beans.factory.annotation.Autowired;
 import jakarta.inject.Singleton;
 import java.security.KeyPair;
 import java.security.KeyPairGenerator;
@@ -22,7 +20,6 @@ import java.security.PublicKey;
 import java.util.Collection;
 import java.util.Collections;
 
-@DefaultImplementation(of=RaplaKeyStorage.class,context = InjectionContext.server)
 @Singleton
 public class RaplaKeyStorageImpl implements RaplaKeyStorage
 {
@@ -55,7 +52,7 @@ public class RaplaKeyStorageImpl implements RaplaKeyStorage
      *
      * @throws RaplaInitializationException
      */
-    @Inject
+    @Autowired
     public RaplaKeyStorageImpl(RaplaFacade facade, Logger logger) throws RaplaInitializationException {
         this.facade = facade;
         this.logger = logger;

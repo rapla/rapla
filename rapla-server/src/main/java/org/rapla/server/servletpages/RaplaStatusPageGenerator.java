@@ -7,7 +7,7 @@ import org.rapla.RaplaSystemInfo;
 import org.rapla.server.internal.RaplaStatusEntry;
 import org.rapla.server.internal.ServerContainerContext;
 
-import jakarta.inject.Inject;
+import org.springframework.beans.factory.annotation.Autowired;
 import jakarta.inject.Singleton;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -24,7 +24,7 @@ public class RaplaStatusPageGenerator  {
     private final RaplaSystemInfo m_i18n;
     private final ServerContainerContext serverContainerContext;
 
-    @Inject
+    @Autowired
     public RaplaStatusPageGenerator(RaplaSystemInfo m_i18n, ServerContainerContext serverContainerContext)
     {
         this.m_i18n = m_i18n;

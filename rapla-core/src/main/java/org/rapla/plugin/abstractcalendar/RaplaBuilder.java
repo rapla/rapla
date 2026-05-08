@@ -58,7 +58,7 @@ import org.rapla.plugin.autoexport.AutoExportPlugin;
 import org.rapla.scheduler.Promise;
 import org.rapla.storage.PermissionController;
 
-import jakarta.inject.Inject;
+import org.springframework.beans.factory.annotation.Autowired;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -114,7 +114,7 @@ public class RaplaBuilder
 	final private Logger logger;
 	final private AppointmentFormater appointmentFormater;
     Predicate<Appointment> appointmentFilter= null;
-	@Inject
+	@Autowired
 	public RaplaBuilder(RaplaLocale raplaLocale, RaplaFacade raplaFacade, RaplaResources i18n, Logger logger, AppointmentFormater appointmentFormater) {
         Locale locale = raplaLocale.getLocale();
         buildStrategy = new GroupAllocatablesStrategy( locale );

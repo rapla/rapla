@@ -53,7 +53,7 @@ import org.rapla.logger.Logger;
 import org.rapla.plugin.export2ical.Export2iCalPlugin;
 import org.rapla.framework.TimeZoneConverter;
 
-import jakarta.inject.Inject;
+import org.springframework.beans.factory.annotation.Autowired;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URLEncoder;
@@ -80,7 +80,7 @@ public class Export2iCalConverter
     final RaplaFacade facade;
     final RaplaResources i18n;
 
-    @Inject
+    @Autowired
     public Export2iCalConverter(TimeZoneConverter timezoneConverter, Logger logger, RaplaFacade facade, RaplaResources i18n)
             throws RaplaInitializationException
     {

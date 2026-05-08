@@ -30,7 +30,7 @@ import org.rapla.framework.RaplaLocale;
 import org.rapla.logger.Logger;
 import org.springframework.stereotype.Service;
 
-import jakarta.inject.Inject;
+import org.springframework.beans.factory.annotation.Autowired;
 import javax.swing.BorderFactory;
 import javax.swing.DefaultListModel;
 import javax.swing.JComponent;
@@ -56,7 +56,7 @@ public class AttributeEdit extends RaplaGUIComponent
     DefaultListModel model = new DefaultListModel();
     private final DialogUiFactoryInterface dialogUiFactory;
 
-    @Inject
+    @Autowired
     public AttributeEdit(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, AttributeDefaultConstraints constraintPanel, RaplaListEditFactory raplaListEditFactory, DialogUiFactoryInterface dialogUiFactory) throws
             RaplaInitializationException {
         super(facade, i18n, raplaLocale, logger);

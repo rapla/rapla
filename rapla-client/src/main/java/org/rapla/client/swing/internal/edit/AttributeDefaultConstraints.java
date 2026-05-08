@@ -43,7 +43,7 @@ import org.rapla.logger.Logger;
 import org.rapla.storage.PermissionController;
 import org.springframework.stereotype.Service;
 
-import jakarta.inject.Inject;
+import org.springframework.beans.factory.annotation.Autowired;
 import javax.swing.DefaultComboBoxModel;
 import javax.swing.JComboBox;
 import javax.swing.JComponent;
@@ -105,7 +105,7 @@ public class AttributeDefaultConstraints extends AbstractEditField implements Ac
     private final DialogUiFactoryInterface dialogUiFactory;
     private final PermissionController permissionController;
 
-    @Inject public AttributeDefaultConstraints(ClientFacade clientFacade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, TreeFactory treeFactory,
+    @Autowired public AttributeDefaultConstraints(ClientFacade clientFacade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, TreeFactory treeFactory,
             Set<AnnotationEditAttributeExtension> attributeExtensionSet,  DateRenderer dateRenderer,
             final DialogUiFactoryInterface dialogUiFactory, BooleanFieldFactory booleanFieldFactory, TextFieldFactory textFieldFactory,
             MultiLanguageFieldFactory multiLanguageFieldFactory, IOInterface ioInterface) throws RaplaInitializationException

@@ -19,7 +19,7 @@ import org.rapla.client.swing.toolkit.RaplaMenubar;
 import org.rapla.client.swing.toolkit.RaplaSeparator;
 import org.rapla.framework.RaplaInitializationException;
 
-import jakarta.inject.Inject;
+import org.springframework.beans.factory.annotation.Autowired;
 import jakarta.inject.Singleton;
 import javax.swing.JMenuBar;
 import javax.swing.JMenuItem;
@@ -41,7 +41,7 @@ public class RaplaMenuBarContainer
     private final RaplaMenu adminMenu;
     private final RaplaMenu importMenu;
     private final RaplaMenu exportMenu;
-    @Inject public RaplaMenuBarContainer(RaplaResources i18n)
+    @Autowired public RaplaMenuBarContainer(RaplaResources i18n)
             throws RaplaInitializationException
     {
         menubar = new RaplaMenubar();

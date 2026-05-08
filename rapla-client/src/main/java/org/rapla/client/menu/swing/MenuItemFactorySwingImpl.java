@@ -23,15 +23,13 @@ import org.rapla.client.menu.MenuItemFactory;
 import org.rapla.client.swing.images.RaplaImages;
 import org.rapla.client.swing.toolkit.*;
 import org.rapla.components.i18n.I18nIcon;
-import org.rapla.inject.DefaultImplementation;
-import org.rapla.inject.InjectionContext;
 
-import jakarta.inject.Inject;
+import org.springframework.beans.factory.annotation.Autowired;
 import jakarta.inject.Singleton;
 import javax.swing.*;
 import java.awt.*;
 
-@Singleton @DefaultImplementation(of = MenuItemFactory.class, context = InjectionContext.swing)
+@Singleton
 @org.springframework.stereotype.Service
 public class MenuItemFactorySwingImpl
         implements MenuItemFactory
@@ -39,7 +37,7 @@ public class MenuItemFactorySwingImpl
 
     private final DialogUiFactoryInterface dialogUiFactory;
 
-    @Inject public MenuItemFactorySwingImpl(DialogUiFactoryInterface dialogUiFactory)
+    @Autowired public MenuItemFactorySwingImpl(DialogUiFactoryInterface dialogUiFactory)
     {
         this.dialogUiFactory = dialogUiFactory;
     }

@@ -5,18 +5,17 @@ import org.rapla.client.extensionpoints.PluginOptionPanel;
 import org.rapla.components.layout.TableLayout;
 import org.rapla.entities.configuration.Preferences;
 import org.rapla.framework.RaplaException;
-import org.rapla.inject.Extension;
 import org.rapla.plugin.appointmentnote.AppointmentNotePlugin;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Service;
 
-import jakarta.inject.Inject;
+import org.springframework.beans.factory.annotation.Autowired;
 import javax.swing.*;
 import java.util.Locale;
 
 @Service(AppointmentNotePlugin.PLUGIN_ID)
 @Scope("prototype")
-@Extension(provides = PluginOptionPanel.class, id = AppointmentNotePlugin.PLUGIN_ID)
+
 public class AppointmentNotePluginOption implements PluginOptionPanel
 {
     JCheckBox booleanField = new JCheckBox();
@@ -25,7 +24,7 @@ public class AppointmentNotePluginOption implements PluginOptionPanel
     final RaplaResources raplaResources;
 
 
-    @Inject
+    @Autowired
     public AppointmentNotePluginOption(RaplaResources raplaResources)
     {
         this.raplaResources = raplaResources;

@@ -37,7 +37,6 @@ import org.rapla.facade.client.ClientFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaInitializationException;
 import org.rapla.framework.RaplaLocale;
-import org.rapla.inject.DefaultImplementation;
 import org.rapla.inject.InjectionContext;
 import org.rapla.logger.Logger;
 import org.rapla.scheduler.CommandScheduler;
@@ -45,7 +44,7 @@ import org.rapla.scheduler.Observable;
 import org.rapla.scheduler.ResolvedPromise;
 import org.rapla.scheduler.Subject;
 
-import jakarta.inject.Inject;
+import org.springframework.beans.factory.annotation.Autowired;
 import javax.swing.SwingUtilities;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -59,7 +58,6 @@ import java.util.Map;
 import java.util.Set;
 
 
-@DefaultImplementation(of=CalendarContainer.class,context = InjectionContext.swing)
 @org.springframework.stereotype.Service
 @org.springframework.context.annotation.Lazy
 public class MultiCalendarPresenter implements CalendarContainer,Presenter
@@ -87,7 +85,7 @@ public class MultiCalendarPresenter implements CalendarContainer,Presenter
     final RaplaResources i18n;
 
 
-    @Inject
+    @Autowired
     public MultiCalendarPresenter(ClientFacade facade, RaplaResources i18n,  Logger logger, CalendarSelectionModel model,
             DialogUiFactoryInterface dialogUiFactory, final Set<SwingViewFactory> factoryList,
             MultiCalendarView view) throws RaplaInitializationException

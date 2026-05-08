@@ -32,12 +32,11 @@ import org.rapla.facade.internal.CalendarOptionsImpl;
 import org.rapla.framework.DefaultConfiguration;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
-import org.rapla.inject.Extension;
 import org.rapla.logger.Logger;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Service;
 
-import jakarta.inject.Inject;
+import org.springframework.beans.factory.annotation.Autowired;
 import javax.swing.BoxLayout;
 import javax.swing.DefaultListCellRenderer;
 import javax.swing.JCheckBox;
@@ -54,8 +53,8 @@ import java.util.Locale;
 
 @Service
 @Scope("prototype")
-@Extension(provides = UserOptionPanel.class,id="calendarOption")
-@Extension(provides = SystemOptionPanel.class,id="calendarOption")
+
+
 public class CalendarOption extends RaplaGUIComponent implements UserOptionPanel,SystemOptionPanel, DateChangeListener
 {
     JPanel panel = new JPanel();
@@ -91,7 +90,7 @@ public class CalendarOption extends RaplaGUIComponent implements UserOptionPanel
     JComboBox firstDayOfWeek;
     RaplaNumber daysInWeekview;
 
-    @Inject
+    @Autowired
     public CalendarOption(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, IOInterface ioInterface) {
         super(facade, i18n, raplaLocale, logger);
         daysInWeekview = new RaplaNumber(7, 3, 35, false);

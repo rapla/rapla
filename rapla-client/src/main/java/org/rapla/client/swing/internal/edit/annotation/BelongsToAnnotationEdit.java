@@ -1,7 +1,7 @@
 package org.rapla.client.swing.internal.edit.annotation;
 
 /*
-@Extension(provides= AnnotationEditAttributeExtension.class, id=AttributeAnnotations.KEY_BELONGSTO)
+
 public class BelongsToAnnotationEdit extends RaplaGUIComponent implements AnnotationEditAttributeExtension
 {
 
@@ -9,7 +9,7 @@ public class BelongsToAnnotationEdit extends RaplaGUIComponent implements Annota
     private final BooleanField.BooleanFieldFactory booleanFieldFactory;
     String NOTHING_SELECTED = "nothing_selected";
 
-    @Inject
+    @Autowired
     public BelongsToAnnotationEdit(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, BooleanField.BooleanFieldFactory booleanFieldFactory)
     {
         super(facade, i18n, raplaLocale, logger);

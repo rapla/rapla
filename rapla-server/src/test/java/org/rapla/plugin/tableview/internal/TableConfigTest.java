@@ -1,7 +1,8 @@
 package org.rapla.plugin.tableview.internal;
 
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
 import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -19,7 +20,7 @@ import org.rapla.plugin.tableview.internal.TableConfig.ViewDefinition;
 public class TableConfigTest
 {
     @Test
-    public void serializationDesirialization() throws ConfigurationException
+    public void serializationDesirialization() throws ConfigurationException, JsonProcessingException
     {
         TableConfig config = new TableConfig();
         final TableConfig.TableColumnConfig nameColumn;
@@ -57,12 +58,12 @@ public class TableConfigTest
         final ViewDefinition appointmentView = config.getOrCreateView("appointments");
         appointmentView.addColumn(nameColumn);
         appointmentView.addColumn(startColumn);
-        GsonBuilder builder = new GsonBuilder();
-        final Gson gson = builder.setPrettyPrinting().create();
-        final String json = gson.toJson(config);
+        ObjectMapper mapper = new ObjectMapper();
+        mapper.enable(SerializationFeature.INDENT_OUTPUT);
+        final String json = mapper.writeValueAsString(config);
         final RaplaConfiguration raplaConfig = TableConfig.print(config);
         final TableConfig test = TableConfig.read(raplaConfig, new RaplaLocaleImpl(new ServerBundleManager()));
-        final String json2 = gson.toJson(test);
+        final String json2 = mapper.writeValueAsString(test);
         Assert.assertEquals(json, json2);
     }
 }

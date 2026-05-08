@@ -24,14 +24,13 @@ import org.rapla.entities.dynamictype.internal.EvalContext;
 import org.rapla.entities.extensionpoints.Function;
 import org.rapla.entities.extensionpoints.FunctionFactory;
 import org.rapla.facade.RaplaFacade;
-import org.rapla.inject.Extension;
 
-import jakarta.inject.Inject;
+import org.springframework.beans.factory.annotation.Autowired;
 import jakarta.inject.Provider;;
 import java.util.List;
 
 
-@Extension(provides = FunctionFactory.class, id= AppointmentNoteFunctions.NAMESPACE)
+
 public class AppointmentNoteFunctions implements FunctionFactory {
 
 
@@ -41,7 +40,7 @@ public class AppointmentNoteFunctions implements FunctionFactory {
     Provider<RaplaFacade> facadeProvider;
 
 
-    public @Inject AppointmentNoteFunctions(Provider<RaplaFacade> facadeProvider)
+    public @Autowired AppointmentNoteFunctions(Provider<RaplaFacade> facadeProvider)
     {
         this.facadeProvider = facadeProvider;
     }

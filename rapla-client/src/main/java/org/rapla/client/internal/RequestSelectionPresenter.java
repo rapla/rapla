@@ -36,7 +36,7 @@ import org.rapla.framework.RaplaInitializationException;
 import org.rapla.logger.Logger;
 import org.rapla.scheduler.Promise;
 
-import jakarta.inject.Inject;
+import org.springframework.beans.factory.annotation.Autowired;
 import java.util.*;
 
 @org.springframework.stereotype.Service
@@ -53,7 +53,7 @@ public class RequestSelectionPresenter implements ResourceRequestSelectionView.P
     private final ResourceRequestSelectionView<?> view;
     private PresenterChangeCallback callback;
 
-    @Inject
+    @Autowired
     public RequestSelectionPresenter(ClientFacade facade, Logger logger, final CalendarSelectionModel model, CalendarEventBus eventBus,
                                      DialogUiFactoryInterface dialogUiFactory, ResourceRequestSelectionView view) throws RaplaInitializationException
     {

@@ -11,7 +11,7 @@ import org.rapla.components.layout.TableLayout;
 
 import org.springframework.stereotype.Service;
 
-import jakarta.inject.Inject;
+import org.springframework.beans.factory.annotation.Autowired;
 import jakarta.inject.Singleton;
 import javax.swing.BorderFactory;
 import javax.swing.Box;
@@ -518,7 +518,7 @@ final public class RaplaListEdit<T> implements
 
         private final RaplaResources i18n;
 
-        @Inject
+        @Autowired
         public RaplaListEditFactory(RaplaResources i18n)
         {
             super();

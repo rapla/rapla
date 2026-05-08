@@ -22,14 +22,13 @@ import org.rapla.facade.RaplaComponent;
 import org.rapla.facade.RaplaFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
-import org.rapla.inject.Extension;
 import org.rapla.logger.Logger;
 import org.rapla.plugin.ical.ICalImport;
 import org.rapla.plugin.ical.ICalImport.Import;
 import org.rapla.plugin.ical.ImportFromICalPlugin;
 import org.rapla.plugin.ical.ImportFromICalResources;
 
-import jakarta.inject.Inject;
+import org.springframework.beans.factory.annotation.Autowired;
 import jakarta.inject.Provider;
 import javax.swing.BorderFactory;
 import javax.swing.ButtonGroup;
@@ -70,7 +69,7 @@ import java.util.List;
  */
 @org.springframework.stereotype.Service
 @org.springframework.context.annotation.Lazy
-@Extension(provides=ImportMenuExtension.class, id= ImportFromICalPlugin.PLUGIN_ID)
+
 public class ImportFromICalMenu extends RaplaComponent implements ImportMenuExtension {
 
 	IdentifiableMenuEntry item;
@@ -82,7 +81,7 @@ public class ImportFromICalMenu extends RaplaComponent implements ImportMenuExte
     private final DialogUiFactoryInterface dialogUiFactory;
 	private boolean enabled;
 
-	@Inject
+	@Autowired
 	public ImportFromICalMenu(RaplaFacade facade, RaplaResources i18n, ImportFromICalResources iCalResources, RaplaLocale raplaLocale, Logger logger, ICalImport importService, ImportFromICalResources icalImportResources, Provider<TreeAllocatableSelection> treeAllocatableSelectionProvider, IOInterface io, MenuItemFactory menuItemFactory, DialogUiFactoryInterface dialogUiFactory)
 	{
 		super( facade,i18n, raplaLocale, logger);

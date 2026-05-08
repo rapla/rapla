@@ -2,18 +2,15 @@ package org.rapla.storage.impl;
 
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaSynchronizationException;
-import org.rapla.inject.DefaultImplementation;
-import org.rapla.inject.InjectionContext;
 import org.rapla.logger.Logger;
 
-import jakarta.inject.Inject;
+import org.springframework.beans.factory.annotation.Autowired;
 import java.util.Stack;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
-@DefaultImplementation(of = RaplaLock.class, context = { InjectionContext.server, InjectionContext.swing })
 public class DefaultRaplaLock implements RaplaLock
 {
     public static final int DEFAULT_READLOCK_TIMEOUT_SECONDS = 20;
@@ -23,7 +20,7 @@ public class DefaultRaplaLock implements RaplaLock
     Stack<ReadLock> readLocks = new Stack<>();
     Logger logger;
 
-    @Inject
+    @Autowired
     public DefaultRaplaLock(Logger raplaLogger)
     {
         this.logger = raplaLogger;

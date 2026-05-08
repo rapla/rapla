@@ -31,13 +31,12 @@ import org.rapla.facade.RaplaFacade;
 import org.rapla.facade.client.ClientFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
-import org.rapla.inject.Extension;
 import org.rapla.logger.Logger;
 import org.rapla.plugin.periodcopy.PeriodCopyResources;
 import org.rapla.scheduler.Promise;
 import org.rapla.scheduler.ResolvedPromise;
 
-import jakarta.inject.Inject;
+import org.springframework.beans.factory.annotation.Autowired;
 import jakarta.inject.Provider;
 import javax.swing.JComponent;
 import javax.swing.JMenuItem;
@@ -53,7 +52,7 @@ import java.util.Map;
 
 @org.springframework.stereotype.Service
 @org.springframework.context.annotation.Lazy
-@Extension(provides = EditMenuExtension.class,id="org.rapla.plugin.periodcopy")
+
 public class CopyPluginMenu  extends RaplaGUIComponent implements EditMenuExtension, ActionListener
 {
 	RaplaMenuItem item;
@@ -64,7 +63,7 @@ public class CopyPluginMenu  extends RaplaGUIComponent implements EditMenuExtens
     private final PeriodCopyResources periodCopyI18n;
     private final Provider<CopyDialog> copyDialogProvider;
     private final DialogUiFactoryInterface dialogUiFactory;
-	@Inject
+	@Autowired
     public CopyPluginMenu(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, PeriodCopyResources periodCopyI18n, Provider<CopyDialog> copyDialogProvider,  DialogUiFactoryInterface dialogUiFactory)  {
         super(facade, i18n, raplaLocale, logger);
         //menu.insert( new RaplaSeparator("info_end"));

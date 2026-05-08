@@ -14,16 +14,15 @@ import org.rapla.entities.dynamictype.AttributeType;
 import org.rapla.facade.client.ClientFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
-import org.rapla.inject.Extension;
 import org.rapla.logger.Logger;
 import org.springframework.stereotype.Service;
 
-import jakarta.inject.Inject;
+import org.springframework.beans.factory.annotation.Autowired;
 import java.util.Collection;
 import java.util.Collections;
 
 @Service
-@Extension(provides= AnnotationEditAttributeExtension.class, id="expectedrows")
+
 public class ExpectedRowsAnnotationEdit extends RaplaGUIComponent implements AnnotationEditAttributeExtension
 {
     protected String annotationName = AttributeAnnotations.KEY_EXPECTED_ROWS;
@@ -31,7 +30,7 @@ public class ExpectedRowsAnnotationEdit extends RaplaGUIComponent implements Ann
     private final IOInterface service;
     private final LongFieldFactory longFieldFactory;
     
-    @Inject
+    @Autowired
     public ExpectedRowsAnnotationEdit(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, IOInterface service, LongFieldFactory longFieldFactory) {
         super(facade, i18n, raplaLocale, logger);
         this.service = service;

@@ -30,7 +30,6 @@ import org.rapla.facade.CalendarModel;
 import org.rapla.facade.client.ClientFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
-import org.rapla.inject.Extension;
 import org.rapla.logger.Logger;
 import org.rapla.plugin.abstractcalendar.client.swing.IntervalChooserPanel;
 import org.rapla.plugin.tableview.RaplaTableColumn;
@@ -39,7 +38,7 @@ import org.rapla.plugin.tableview.client.swing.extensionpoints.ReservationSummar
 import org.rapla.plugin.tableview.internal.TableConfig;
 import org.rapla.scheduler.Promise;
 
-import jakarta.inject.Inject;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.context.annotation.Lazy;
 import jakarta.inject.Singleton;
@@ -53,7 +52,7 @@ import java.util.function.Supplier;
 @Service
 @Lazy
 @Singleton
-@Extension(provides = SwingViewFactory.class, id = TableViewPlugin.TABLE_EVENT_VIEW)
+
 public class ReservationTableViewFactory implements SwingViewFactory
 {
     private final Set<ReservationSummaryExtension> reservationSummaryExtensions;
@@ -71,7 +70,7 @@ public class ReservationTableViewFactory implements SwingViewFactory
     private final RaplaMenuBarContainer menuBar;
     private final EditController editController;
 
-    @Inject
+    @Autowired
     public ReservationTableViewFactory(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger,
                                        Set<ReservationSummaryExtension> reservationSummaryExtensions, TableConfig.TableConfigLoader tableConfigLoader, MenuFactory menuFactory,
                                        ReservationController reservationController, InfoFactory infoFactory, IntervalChooserPanel dateChooser,

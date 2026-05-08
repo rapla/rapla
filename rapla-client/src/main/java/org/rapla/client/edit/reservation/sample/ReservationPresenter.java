@@ -21,7 +21,7 @@ import org.rapla.framework.RaplaLocale;
 import org.rapla.logger.Logger;
 import org.rapla.storage.PermissionController;
 
-import jakarta.inject.Inject;
+import org.springframework.beans.factory.annotation.Autowired;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -43,7 +43,7 @@ public class ReservationPresenter implements Presenter
     private final PermissionController permissionController;
     ClientFacade clientFacade;
 
-    @Inject
+    @Autowired
     protected ReservationPresenter(RaplaFacade facade, ClientFacade clientFacade,Logger logger, RaplaLocale raplaLocale, ApplicationEventBus eventBus, ReservationView view)
     {
         this.facade = facade;

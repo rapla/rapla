@@ -2,7 +2,7 @@ package org.rapla.storage.dbrm;
 
 import org.rapla.ConnectInfo;
 
-import jakarta.inject.Inject;
+import org.springframework.beans.factory.annotation.Autowired;
 import jakarta.inject.Singleton;
 
 @Singleton
@@ -13,7 +13,7 @@ public class RemoteConnectionInfo
     transient StatusUpdater statusUpdater;
     ConnectInfo connectInfo;
 
-    @Inject
+    @Autowired
     public RemoteConnectionInfo()
     {}
 

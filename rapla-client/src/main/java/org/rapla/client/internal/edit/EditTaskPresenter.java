@@ -39,10 +39,9 @@ import org.rapla.facade.RaplaFacade;
 import org.rapla.facade.client.ClientFacade;
 import org.rapla.facade.internal.CalendarOptionsImpl;
 import org.rapla.framework.RaplaException;
-import org.rapla.inject.Extension;
 import org.rapla.scheduler.*;
 
-import jakarta.inject.Inject;
+import org.springframework.beans.factory.annotation.Autowired;
 import jakarta.inject.Provider;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -54,11 +53,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-@Extension(id = EditTaskPresenter.EDIT_EVENTS_ID, provides = TaskPresenter.class)
-@Extension(id = EditTaskPresenter.EDIT_RESOURCES_ID, provides = TaskPresenter.class)
-@Extension(id = EditTaskPresenter.CREATE_RESERVATION_FOR_DYNAMIC_TYPE, provides = TaskPresenter.class)
-@Extension(id = EditTaskPresenter.CREATE_RESERVATION_FROM_TEMPLATE, provides = TaskPresenter.class)
-@Extension(id = EditTaskPresenter.MERGE_RESOURCES_ID, provides = TaskPresenter.class)
+
+
+
+
+
 public class EditTaskPresenter implements TaskPresenter
 {
     public static final String CREATE_RESERVATION_FROM_TEMPLATE = "reservationFromTemplate";
@@ -90,7 +89,7 @@ public class EditTaskPresenter implements TaskPresenter
         boolean hasChanged();
     }
 
-    @Inject
+    @Autowired
     public EditTaskPresenter(ClientFacade clientFacade, EditTaskViewFactory editTaskViewFactory, DialogUiFactoryInterface dialogUiFactory, RaplaResources i18n, ApplicationEventBus eventBus, CalendarSelectionModel model, Provider<ReservationEdit> reservationEditProvider,
                              ReservationController reservationController, Set<MergeCheckExtension> mergeCheckers, CommandScheduler scheduler)
     {

@@ -5,13 +5,12 @@ import org.rapla.facade.CalendarNotFoundExeption;
 import org.rapla.facade.CalendarSelectionModel;
 import org.rapla.facade.RaplaFacade;
 import org.rapla.framework.RaplaException;
-import org.rapla.inject.Extension;
 import org.rapla.logger.Logger;
 import org.rapla.plugin.urlencryption.UrlEncryption;
 import org.rapla.plugin.urlencryption.UrlEncryptionPlugin;
 import org.rapla.server.extensionpoints.ServletRequestPreprocessor;
 
-import jakarta.inject.Inject;
+import org.springframework.beans.factory.annotation.Autowired;
 import jakarta.servlet.ServletContext;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -26,12 +25,12 @@ import java.util.TreeMap;
  * Date: 15.08.12
  * Time: 19:39
  */
-@Extension(provides = ServletRequestPreprocessor.class,id= UrlEncryptionPlugin.PLUGIN_ID)
+
 public class UrlEncryptionServletRequestResponsePreprocessor  implements ServletRequestPreprocessor {
     private final UrlEncryptor urlEncryptor;
     private final RaplaFacade facade;
     private final Logger logger;
-    @Inject
+    @Autowired
     public UrlEncryptionServletRequestResponsePreprocessor(UrlEncryptor urlEncryptor, RaplaFacade facade, Logger logger)
     {
     	this.urlEncryptor =  urlEncryptor;

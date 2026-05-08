@@ -31,7 +31,6 @@ import org.rapla.facade.RaplaFacade;
 import org.rapla.facade.client.ClientFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaInitializationException;
-import org.rapla.inject.Extension;
 import org.rapla.plugin.planningstatus.PlanningStatusFilter;
 import org.rapla.plugin.planningstatus.PlanningStatusPlugin;
 import org.rapla.plugin.planningstatus.PlanningStatusResources;
@@ -39,12 +38,12 @@ import org.rapla.scheduler.Promise;
 import org.rapla.storage.PermissionController;
 import org.springframework.stereotype.Service;
 
-import jakarta.inject.Inject;
+import org.springframework.beans.factory.annotation.Autowired;
 import jakarta.inject.Singleton;
 import java.util.*;
 
 @Service
-@Singleton @Extension(provides = ObjectMenuFactory.class, id = "planningstatus") public class PlanningStatusMenuFactory implements ObjectMenuFactory
+@Singleton  public class PlanningStatusMenuFactory implements ObjectMenuFactory
 {
     private final RaplaResources i18n;
     private final PlanningStatusResources planningStatusResources;
@@ -56,7 +55,7 @@ import java.util.*;
     private final boolean enabled;
     private final DialogUiFactoryInterface dialogUiFactory;
 
-    @Inject public PlanningStatusMenuFactory(RaplaResources i18n, MenuItemFactory menuItemFactory, ClientFacade facade, PlanningStatusResources planningStatusResources,DialogUiFactoryInterface dialogUiFactory) throws RaplaInitializationException
+    @Autowired public PlanningStatusMenuFactory(RaplaResources i18n, MenuItemFactory menuItemFactory, ClientFacade facade, PlanningStatusResources planningStatusResources,DialogUiFactoryInterface dialogUiFactory) throws RaplaInitializationException
     {
         this.i18n = i18n;
         this.dialogUiFactory = dialogUiFactory;

@@ -47,12 +47,10 @@ import org.rapla.facade.client.ClientFacade;
 import org.rapla.facade.internal.CalendarModelImpl;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
-import org.rapla.inject.DefaultImplementation;
-import org.rapla.inject.InjectionContext;
 import org.rapla.plugin.abstractcalendar.RaplaBlock;
 import org.rapla.storage.PermissionController;
 
-import jakarta.inject.Inject;
+import org.springframework.beans.factory.annotation.Autowired;
 import jakarta.inject.Provider;
 import jakarta.inject.Singleton;
 import java.util.ArrayList;
@@ -67,7 +65,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
 
-@Singleton @DefaultImplementation(of = MenuFactory.class, context = InjectionContext.client)
+@Singleton
 @org.springframework.stereotype.Service
 @org.springframework.context.annotation.Lazy
 public class MenuFactoryImpl
@@ -90,7 +88,7 @@ public class MenuFactoryImpl
     private final RaplaClipboard clipboard;
     private final ApplicationEventBus eventBus;
 
-    @Inject public MenuFactoryImpl(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, MenuItemFactory menuItemFactory, Set<ReservationWizardExtension> reservationWizards, Set<ObjectMenuFactory> objectMenuFactories,
+    @Autowired public MenuFactoryImpl(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, MenuItemFactory menuItemFactory, Set<ReservationWizardExtension> reservationWizards, Set<ObjectMenuFactory> objectMenuFactories,
             CalendarSelectionModel model, Provider<RaplaObjectActions> actions, Provider<AppointmentAction> appointmentActions, Provider<UserAction> userActions,
             Provider<PasswordChangeAction> passwordChangeAction, RaplaClipboard raplaClipboard, ApplicationEventBus eventBus)
     {

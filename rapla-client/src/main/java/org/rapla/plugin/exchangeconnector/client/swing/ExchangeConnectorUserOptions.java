@@ -13,11 +13,10 @@ import org.rapla.entities.configuration.Preferences;
 import org.rapla.facade.client.ClientFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
-import org.rapla.inject.Extension;
 import org.rapla.logger.Logger;
 import org.rapla.plugin.exchangeconnector.*;
 
-import jakarta.inject.Inject;
+import org.springframework.beans.factory.annotation.Autowired;
 import javax.swing.*;
 import java.util.Collection;
 import java.util.Date;
@@ -26,7 +25,7 @@ import java.util.Locale;
 @org.springframework.stereotype.Service
 @org.springframework.context.annotation.Scope("prototype")
 @org.springframework.context.annotation.Lazy
-@Extension(id = ExchangeConnectorPlugin.PLUGIN_ID, provides = UserOptionPanel.class)
+
 public class ExchangeConnectorUserOptions implements UserOptionPanel
 {
 
@@ -67,7 +66,7 @@ public class ExchangeConnectorUserOptions implements UserOptionPanel
 
     private final ShowExchangeForUser showExchangeForUser;
 
-    @Inject
+    @Autowired
     public ExchangeConnectorUserOptions(ClientFacade clientFacade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, ExchangeConnectorRemote service,
             ExchangeConnectorResources exchangeConnectorResources, DialogUiFactoryInterface dialogUiFactory, ShowExchangeForUser showExchangeForUser)
     {

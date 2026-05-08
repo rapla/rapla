@@ -1,18 +1,19 @@
 package org.rapla.rest.client;
 
-import com.google.gson.JsonArray;
-import com.google.gson.JsonElement;
-import com.google.gson.JsonObject;
-import com.google.gson.JsonPrimitive;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.rapla.endpoints.client.HTTPJsonConnector;
 
 import java.net.URL;
 import java.net.URLEncoder;
 import java.util.LinkedHashMap;
 import java.util.Map;
-import java.util.Map.Entry;
 
 public class RestAPIExample {
+
+    private static final ObjectMapper MAPPER = new ObjectMapper();
 
     protected void assertTrue( boolean condition)
     {
@@ -34,254 +35,228 @@ public class RestAPIExample {
     {
         HTTPJsonConnector connector = new HTTPJsonConnector();
 
-        // first we login using the auth method
         String authenticationToken = null;
         {
             URL methodURL =new URL(baseUrl,"login");
-            JsonObject callObj = new JsonObject();
-            callObj.addProperty("username", username);
-            callObj.addProperty("password", password);
+            ObjectNode callObj = MAPPER.createObjectNode();
+            callObj.put("username", username);
+            callObj.put("password", password);
             String emptyAuthenticationToken = null;
-            JsonObject resultBody = connector.sendPost(methodURL, callObj, emptyAuthenticationToken);
+            ObjectNode resultBody = connector.sendPost(methodURL, callObj, emptyAuthenticationToken);
             assertNoError(resultBody);
-            JsonObject resultObject = resultBody.get("result").getAsJsonObject();
-            authenticationToken = resultObject.get("accessToken").getAsString();
-            String validity = resultObject.get("validUntil").getAsString();
+            JsonNode resultObject = resultBody.get("result");
+            authenticationToken = resultObject.get("accessToken").asText();
+            String validity = resultObject.get("validUntil").asText();
             System.out.println("token valid until " + validity);
         }
-        //  we get all the different resource,person and event types
         String resourceType = null;
         @SuppressWarnings("unused")
         String personType =null;
         String eventType =null;
         {
             URL methodURL =new URL(baseUrl,"dynamictypes?classificationType=resource");
-            JsonObject resultBody = connector.sendGet( methodURL,  authenticationToken);
+            ObjectNode resultBody = connector.sendGet( methodURL,  authenticationToken);
             assertNoError(resultBody);
-            JsonArray resultList = resultBody.get("result").getAsJsonArray();
+            JsonNode resultList = resultBody.get("result");
             assertTrue( resultList.size() > 0);
-            for (JsonElement obj:resultList)
+            for (JsonNode obj : resultList)
             {
-                JsonObject casted = (JsonObject) obj;
-                resourceType =casted.get("key").getAsString();
+                resourceType = obj.get("key").asText();
                 break;
             }
         }
         {
             URL methodURL =new URL(baseUrl,"dynamictypes?classificationType=person");
-            JsonObject resultBody = connector.sendGet( methodURL,  authenticationToken);
+            ObjectNode resultBody = connector.sendGet( methodURL,  authenticationToken);
             assertNoError(resultBody);
-            JsonArray resultList = resultBody.get("result").getAsJsonArray();
+            JsonNode resultList = resultBody.get("result");
             assertTrue( resultList.size() > 0);
-            for (JsonElement obj:resultList)
+            for (JsonNode obj : resultList)
             {
-                JsonObject casted = (JsonObject) obj;
-                personType =casted.get("key").getAsString();
+                personType = obj.get("key").asText();
             }
         }
         {
             URL methodURL =new URL(baseUrl,"dynamictypes?classificationType=reservation");
-            JsonObject resultBody = connector.sendGet( methodURL,  authenticationToken);
+            ObjectNode resultBody = connector.sendGet( methodURL,  authenticationToken);
             assertNoError(resultBody);
-            JsonArray resultList = resultBody.get("result").getAsJsonArray();
+            JsonNode resultList = resultBody.get("result");
             assertTrue( resultList.size() > 0);
-            for (JsonElement obj:resultList)
+            for (JsonNode obj : resultList)
             {
-                JsonObject casted = (JsonObject) obj;
-                eventType =casted.get("key").getAsString();
+                eventType = obj.get("key").asText();
             }
         }
-        //  we createInfoDialog a new resource
         String resourceId = null;
         String resourceName;
         {
             resourceName = "Test Room";
             String objectName = resourceName;
             String dynamicType = resourceType;
-            JsonObject eventObject = new JsonObject();
-            Map<String,String> keyValue = new LinkedHashMap<String,String>();
+            ObjectNode eventObject = MAPPER.createObjectNode();
+            Map<String,String> keyValue = new LinkedHashMap<>();
             keyValue.put( "name", objectName);
-            JsonObject classificationObj = new JsonObject();
-            classificationObj.add("type", new JsonPrimitive(dynamicType));
+            ObjectNode classificationObj = MAPPER.createObjectNode();
+            classificationObj.put("type", dynamicType);
             patchClassification(keyValue, classificationObj);
-            eventObject.add("classification", classificationObj);
+            eventObject.set("classification", classificationObj);
             {
                 URL methodURL =new URL(baseUrl,"resources");
-                JsonObject resultBody = connector.sendPost( methodURL, eventObject, authenticationToken);
-                // we test if the new resource has the name and extract the id for later testing
+                ObjectNode resultBody = connector.sendPost( methodURL, eventObject, authenticationToken);
                 printAttributesAndAssertName(resultBody,  objectName);
-                resourceId = resultBody.get("result").getAsJsonObject().get("id").getAsString();
+                resourceId = resultBody.get("result").get("id").asText();
             }
-            // now we test again if the new resource is created  by using the get method
             {
                 URL methodURL =new URL(baseUrl,"resources/"+resourceId);
-                JsonObject resultBody = connector.sendGet( methodURL, authenticationToken);
+                ObjectNode resultBody = connector.sendGet( methodURL, authenticationToken);
                 printAttributesAndAssertName(resultBody,  objectName);
             }
         }
-        // we use a get list on the resources
         {
             String attributeFilter = URLEncoder.encode("{'name' :'"+ resourceName +"'}","UTF-8");
             String resourceTypes =URLEncoder.encode("['"+ resourceType +"']","UTF-8");
             URL methodURL =new URL(baseUrl,"resources?resourceTypes="+ resourceTypes+  "&attributeFilter="+attributeFilter) ;
-            JsonObject resultBody = connector.sendGet( methodURL,  authenticationToken);
+            ObjectNode resultBody = connector.sendGet( methodURL,  authenticationToken);
             assertNoError(resultBody);
-            JsonArray resultList = resultBody.get("result").getAsJsonArray();
+            JsonNode resultList = resultBody.get("result");
             System.out.println( resultList );
             assertTrue( resultList.size() > 0);
-            for (JsonElement obj:resultList)
+            for (JsonNode obj : resultList)
             {
-                JsonObject casted = (JsonObject) obj;
-                String id = casted.get("id").getAsString();
-                JsonObject classification = casted.get("classification").getAsJsonObject().get("data").getAsJsonObject();
-                String name = classification.get("name").getAsJsonArray().get(0).getAsString();
+                String id = obj.get("id").asText();
+                JsonNode classification = obj.get("classification").get("data");
+                String name = classification.get("name").get(0).asText();
                 System.out.println("[" +id + "]" + name);
             }
         }
 
-        // we createInfoDialog a new event for the resource
         String eventId = null;
         String eventName = null;
         {
             eventName ="event name";
             String objectName = eventName;
             String dynamicType =eventType;
-            JsonObject eventObject = new JsonObject();
-            Map<String,String> keyValue = new LinkedHashMap<String,String>();
+            ObjectNode eventObject = MAPPER.createObjectNode();
+            Map<String,String> keyValue = new LinkedHashMap<>();
             keyValue.put( "name", objectName);
-            JsonObject classificationObj = new JsonObject();
-            classificationObj.add("type", new JsonPrimitive(dynamicType));
+            ObjectNode classificationObj = MAPPER.createObjectNode();
+            classificationObj.put("type", dynamicType);
             patchClassification(keyValue, classificationObj);
-            eventObject.add("classification", classificationObj);
-            // add appointments
+            eventObject.set("classification", classificationObj);
             {
-                // IS0 8061 format is required. Always add the dates in UTC Timezone
-                // Rapla doesn't support multiple timezone. All internal dates are stored in UTC
-                // So store 10:00 local time as 10:00Z
-                JsonObject appointmentObj = createAppointment("2015-01-01T10:00Z","2015-01-01T12:00Z");
-                JsonArray appoinmentArray = new JsonArray();
+                ObjectNode appointmentObj = createAppointment("2015-01-01T10:00Z","2015-01-01T12:00Z");
+                ArrayNode appoinmentArray = MAPPER.createArrayNode();
                 appoinmentArray.add( appointmentObj);
-                eventObject.add("appointments", appoinmentArray);
+                eventObject.set("appointments", appoinmentArray);
             }
-            // add resources
             {
-                JsonArray resourceArray = new JsonArray();
-                resourceArray.add( new JsonPrimitive(resourceId));
-                JsonObject linkMap = new JsonObject();
-                linkMap.add("resources", resourceArray);
-                eventObject.add("links", linkMap);
+                ArrayNode resourceArray = MAPPER.createArrayNode();
+                resourceArray.add( resourceId);
+                ObjectNode linkMap = MAPPER.createObjectNode();
+                linkMap.set("resources", resourceArray);
+                eventObject.set("links", linkMap);
             }
             {
                 URL methodURL =new URL(baseUrl,"events");
                 System.out.println( eventObject );
-                JsonObject resultBody = connector.sendPost( methodURL, eventObject, authenticationToken);
+                ObjectNode resultBody = connector.sendPost( methodURL, eventObject, authenticationToken);
                 System.out.println( resultBody );
-                // we test if the new event has the name and extract the id for later testing
                 printAttributesAndAssertName(resultBody,  objectName);
-                eventId = resultBody.get("result").getAsJsonObject().get("id").getAsString();
+                eventId = resultBody.get("result").get("id").asText();
             }
-            // now we test again if the new event is created  by using the get method
             {
                 URL methodURL =new URL(baseUrl,"events/"+eventId);
-                JsonObject resultBody = connector.sendGet( methodURL, authenticationToken);
+                ObjectNode resultBody = connector.sendGet( methodURL, authenticationToken);
                 System.out.println( resultBody );
                 printAttributesAndAssertName(resultBody,  objectName);
             }
         }
-        // now we query a list of events
         {
-            // we can use startDate without time
             String start= URLEncoder.encode("2000-01-01","UTF-8");
-            // or with time information.
             String end= URLEncoder.encode("2020-01-01T10:00Z","UTF-8");
             String resources = URLEncoder.encode("['"+ resourceId +"']","UTF-8");
             String eventTypes = URLEncoder.encode("['"+ eventType +"']","UTF-8");
             String attributeFilter = URLEncoder.encode("{'name' :'"+ eventName +"'}","UTF-8");
             URL methodURL =new URL(baseUrl,"events?start="+start + "&end="+end + "&resources="+resources +"&eventTypes=" + eventTypes +"&attributeFilter="+attributeFilter) ;
-            JsonObject resultBody = connector.sendGet( methodURL,  authenticationToken);
+            ObjectNode resultBody = connector.sendGet( methodURL,  authenticationToken);
 
             assertNoError(resultBody);
-            JsonArray resultList = resultBody.get("result").getAsJsonArray();
+            JsonNode resultList = resultBody.get("result");
             System.out.println( resultList );
             assertTrue( resultList.size() > 0);
-            for (JsonElement obj:resultList)
+            for (JsonNode obj : resultList)
             {
-                JsonObject casted = (JsonObject) obj;
-                String id = casted.get("id").getAsString();
-                JsonObject classification = casted.get("classification").getAsJsonObject().get("data").getAsJsonObject();
-                String name = classification.get("name").getAsJsonArray().get(0).getAsString();
+                String id = obj.get("id").asText();
+                JsonNode classification = obj.get("classification").get("data");
+                String name = classification.get("name").get(0).asText();
                 System.out.println("[" +id + "]" + name);
             }
         }
 
-        // we test a patch
         {
             String newReservationName ="changed event name";
-            Map<String,String> keyValue = new LinkedHashMap<String,String>();
+            Map<String,String> keyValue = new LinkedHashMap<>();
             keyValue.put( "name", newReservationName);
-            JsonObject patchObject = new JsonObject();
-            JsonObject classificationObj = new JsonObject();
+            ObjectNode patchObject = MAPPER.createObjectNode();
+            ObjectNode classificationObj = MAPPER.createObjectNode();
             patchClassification(keyValue, classificationObj);
-            patchObject.add("classification", classificationObj);
+            patchObject.set("classification", classificationObj);
 
-            // you can also use the string syntax and parse to get the patch object
-            //String patchString ="{'classification': { 'data':   {'"+ key + "' : ['"+value+"'] } } }";
-            //JsonObject callObj = new JsonParser().parse(patchString).getAsJsonObject();
             URL methodURL =new URL(baseUrl, "events/"+eventId);
             {
-                JsonObject resultBody = connector.sendPatch( methodURL, patchObject, authenticationToken);
+                ObjectNode resultBody = connector.sendPatch( methodURL, patchObject, authenticationToken);
                 System.out.println( resultBody );
-                // we test if the new event is in the patched result
                 printAttributesAndAssertName(resultBody,  newReservationName);
             }
-            // now we test again if the new event has the new name by using the get method
             {
-                JsonObject resultBody = connector.sendGet( methodURL, authenticationToken);
+                ObjectNode resultBody = connector.sendGet( methodURL, authenticationToken);
                 printAttributesAndAssertName(resultBody,  newReservationName);
             }
         }
 
     }
 
-    private JsonObject createAppointment(String start, String end)
+    private ObjectNode createAppointment(String start, String end)
     {
-        JsonObject app = new JsonObject();
-        app.add("start", new JsonPrimitive(start));
-        app.add("end", new JsonPrimitive(end));
+        ObjectNode app = MAPPER.createObjectNode();
+        app.put("start", start);
+        app.put("end", end);
         return app;
     }
 
 
-    public void patchClassification(Map<String, String> keyValue,  JsonObject classificationObj) {
-        JsonObject data = new JsonObject();
-        classificationObj.add("data", data);
+    public void patchClassification(Map<String, String> keyValue,  ObjectNode classificationObj) {
+        ObjectNode data = MAPPER.createObjectNode();
+        classificationObj.set("data", data);
         for (Map.Entry<String, String> entry:keyValue.entrySet())
         {
-            JsonArray jsonArray = new JsonArray();
-            jsonArray.add( new JsonPrimitive(entry.getValue()));
-            data.add(entry.getKey(), jsonArray);
+            ArrayNode jsonArray = MAPPER.createArrayNode();
+            jsonArray.add( entry.getValue());
+            data.set(entry.getKey(), jsonArray);
         }
     }
 
-    private void printAttributesAndAssertName(JsonObject resultBody, String objectName) {
+    private void printAttributesAndAssertName(ObjectNode resultBody, String objectName) {
         assertNoError(resultBody);
-        JsonObject event = resultBody.get("result").getAsJsonObject();
-        JsonObject classification = event.get("classification").getAsJsonObject().get("data").getAsJsonObject();
+        JsonNode event = resultBody.get("result");
+        JsonNode classification = event.get("classification").get("data");
         System.out.println("Attributes for object id");
-        for (Entry<String, JsonElement> entry:classification.entrySet())
+        java.util.Iterator<Map.Entry<String, JsonNode>> it = classification.fields();
+        while (it.hasNext())
         {
-            String key =entry.getKey();
-            JsonArray value= entry.getValue().getAsJsonArray();
+            Map.Entry<String, JsonNode> entry = it.next();
+            String key = entry.getKey();
+            JsonNode value = entry.getValue();
             System.out.println("  "  + key + "=" + value.toString());
             if ( key.equals("name"))
             {
-                assertEquals(objectName, value.get(0).getAsString());
+                assertEquals(objectName, value.get(0).asText());
             }
         }
     }
 
-    public void assertNoError(JsonObject resultBody) {
-        JsonElement error = resultBody.get("error");
+    public void assertNoError(ObjectNode resultBody) {
+        JsonNode error = resultBody.get("error");
         if (error!= null)
         {
             System.err.println(error);
@@ -291,10 +266,6 @@ public class RestAPIExample {
 
     public static void main(String[] args) {
         try {
-            // The base url points to the rapla servlet not the webcontext.
-            // If your rapla context is not running under root webappcontext you need to add the context path.
-            // Example if you deploy the rapla.war in tomcat the default would be
-            // http://host:8051/rapla/rapla/
             URL baseUrl = new URL("http://localhost:8051/rapla/");
             String username = "admin";
             String password = "";
@@ -302,8 +273,5 @@ public class RestAPIExample {
         } catch (Exception e) {
             e.printStackTrace();
         }
-
     }
-
-
 }

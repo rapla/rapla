@@ -181,7 +181,7 @@ public class ServerCoreConfig
     }
 
     // --- HTMLViewPage extensions: prototype-scoped, named by their legacy @Extension id ---
-    // The bean name is the map key in the @Inject Map<String, Provider<HTMLViewPage>> consumer
+    // The bean name is the map key in the @Autowired Map<String, Provider<HTMLViewPage>> consumer
     // (CalendarPageGenerator.factoryMap). Prototype scope matches legacy Provider<T> semantics
     // (each provider.get() returns a fresh instance) — important because AbstractHTMLCalendarPage
     // holds mutable CalendarModel state during page rendering.

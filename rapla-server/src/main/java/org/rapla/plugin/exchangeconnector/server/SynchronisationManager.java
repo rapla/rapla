@@ -26,7 +26,6 @@ import org.rapla.facade.RaplaFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaInitializationException;
 import org.rapla.framework.TypedComponentRole;
-import org.rapla.inject.Extension;
 import org.rapla.logger.Logger;
 import org.rapla.plugin.exchangeconnector.*;
 import org.rapla.plugin.exchangeconnector.ExchangeConnectorConfig.ConfigReader;
@@ -47,7 +46,7 @@ import org.rapla.storage.CachableStorageOperator;
 import org.rapla.storage.UpdateOperation;
 import org.rapla.storage.UpdateResult;
 
-import jakarta.inject.Inject;
+import org.springframework.beans.factory.annotation.Autowired;
 import jakarta.inject.Singleton;
 import javax.net.ssl.HttpsURLConnection;
 import javax.net.ssl.SSLContext;
@@ -64,7 +63,7 @@ import java.util.stream.Stream;
 
 import static org.rapla.entities.configuration.CalendarModelConfiguration.EXPORT_ENTRY;
 
-@Extension(id = ExchangeConnectorPlugin.PLUGIN_ID, provides = ServerExtension.class)
+
 @Singleton
 public class SynchronisationManager implements ServerExtension
 {
@@ -102,7 +101,7 @@ public class SynchronisationManager implements ServerExtension
 
     Map<ReferenceInfo<User>, EWSConnector.UserConnect> connectMap = new ConcurrentHashMap<>();
     Map<ReferenceInfo<Allocatable>, SynchronizationBox> synchronizationBoxMap = new ConcurrentHashMap<>();
-    @Inject
+    @Autowired
     public SynchronisationManager(RaplaFacade facade, RaplaResources i18nRapla, ExchangeConnectorResources i18nExchange, Logger logger,
                                   TimeZoneConverter converter, AppointmentFormater appointmentFormater, RaplaKeyStorage keyStorage, ExchangeAppointmentStorage appointmentStorage,
                                   CommandScheduler scheduler, ConfigReader config, Set<ExchangeConfigExtensionPoint> configExtensions, MailToUserImpl mailToUserInterface, ShowExchangeForUser showExchangeForUser) throws

@@ -36,7 +36,6 @@ import org.rapla.plugin.abstractcalendar.RaplaBuilder;
 import org.rapla.plugin.planningstatus.PlanningStatusPlugin;
 import org.rapla.server.extensionpoints.HTMLViewPage;
 
-import jakarta.inject.Inject;
 import jakarta.servlet.ServletContext;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;

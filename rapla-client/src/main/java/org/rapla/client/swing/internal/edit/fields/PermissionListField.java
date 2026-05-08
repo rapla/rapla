@@ -28,7 +28,7 @@ import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.logger.Logger;
 
-import jakarta.inject.Inject;
+import org.springframework.beans.factory.annotation.Autowired;
 import jakarta.inject.Singleton;
 import javax.swing.BorderFactory;
 import javax.swing.DefaultListCellRenderer;
@@ -403,7 +403,7 @@ public class PermissionListField extends AbstractEditField implements EditFieldW
         private final RaplaListEditFactory raplaListEditFactory;
         private final PermissionFieldFactory permissionFieldFactory;
 
-        @Inject
+        @Autowired
         public PermissionListFieldFactory(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger,
                 RaplaListEditFactory raplaListEditFactory, PermissionFieldFactory permissionFieldFactory)
         {

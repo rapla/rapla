@@ -618,6 +618,11 @@ public class ParsedText implements Serializable
             return parent.getLastChanged();
         }
 
+        public java.time.LocalDateTime getLastChangedAsLocalDateTime()
+        {
+            return parent.getLastChangedAsLocalDateTime();
+        }
+
         public String getName(Locale locale)
         {
             return parent.getName(locale);
@@ -631,6 +636,11 @@ public class ParsedText implements Serializable
         public Date getCreateDate()
         {
             return parent.getCreateDate();
+        }
+
+        public java.time.LocalDateTime getCreateDateAsLocalDateTime()
+        {
+            return parent.getCreateDateAsLocalDateTime();
         }
 
         @Override public Class<Category> getTypeClass()

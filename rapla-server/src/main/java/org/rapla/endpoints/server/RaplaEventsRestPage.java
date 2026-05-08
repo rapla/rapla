@@ -23,7 +23,7 @@ import org.rapla.storage.PermissionController;
 import org.rapla.storage.RaplaSecurityException;
 import org.rapla.storage.StorageOperator;
 
-import jakarta.inject.Inject;
+import org.springframework.beans.factory.annotation.Autowired;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.ws.rs.DELETE;
 import jakarta.ws.rs.GET;
@@ -43,14 +43,14 @@ import java.util.Map;
 
 @Path("events") public class RaplaEventsRestPage
 {
-    @Inject RaplaFacade facade;
-    @Inject RemoteSession session;
-    @Inject SecurityManager securityManager;
+    @Autowired RaplaFacade facade;
+    @Autowired RemoteSession session;
+    @Autowired SecurityManager securityManager;
     private final HttpServletRequest request;
-    @Inject CachableStorageOperator operator;
-    @Inject org.rapla.storage.SyncStorageOperator syncOperator;
+    @Autowired CachableStorageOperator operator;
+    @Autowired org.rapla.storage.SyncStorageOperator syncOperator;
 
-    @Inject public RaplaEventsRestPage(@Context HttpServletRequest request)
+    @Autowired public RaplaEventsRestPage(@Context HttpServletRequest request)
     {
         this.request = request;
     }

@@ -9,7 +9,7 @@ import org.rapla.framework.RaplaInitializationException;
 import org.rapla.framework.TypedComponentRole;
 import org.rapla.storage.StorageOperator;
 
-import jakarta.inject.Inject;
+import org.springframework.beans.factory.annotation.Autowired;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -80,7 +80,7 @@ public interface ExchangeConnectorConfig
 		    Map<TypedComponentRole<?>,Object> map = new HashMap<>();
 		    
                 
-		    @Inject
+		    @Autowired
 	    	public ConfigReader(StorageOperator operator) throws RaplaInitializationException
 	    	{
 		        this(getSystemPreferences(operator).getEntry(ExchangeConnectorConfig.EXCHANGESERVER_CONFIG,new RaplaConfiguration()), getSystemPreferences(operator)

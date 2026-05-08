@@ -50,8 +50,6 @@ import org.rapla.facade.RaplaComponent;
 import org.rapla.facade.RaplaFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaInitializationException;
-import org.rapla.inject.DefaultImplementation;
-import org.rapla.inject.InjectionContext;
 import org.rapla.logger.Logger;
 import org.rapla.scheduler.CommandScheduler;
 import org.rapla.scheduler.Promise;
@@ -60,7 +58,7 @@ import org.rapla.storage.PermissionController;
 import org.rapla.storage.RaplaSecurityException;
 import org.rapla.storage.StorageOperator;
 
-import jakarta.inject.Inject;
+import org.springframework.beans.factory.annotation.Autowired;
 import jakarta.inject.Singleton;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -89,7 +87,6 @@ import org.rapla.scheduler.Consumer;
  * </p>
  */
 @Singleton
-@DefaultImplementation(of = RaplaFacade.class, context = InjectionContext.all)
 public class FacadeImpl implements RaplaFacade {
 	private StorageOperator operator;
 	private final RaplaResources i18n;
@@ -104,7 +101,7 @@ public class FacadeImpl implements RaplaFacade {
 	String workingUserId;
 
 
-	@Inject
+	@Autowired
 	public FacadeImpl(RaplaResources i18n, CommandScheduler notifyQueue, Logger logger) {
 	    
 		this.logger = logger;

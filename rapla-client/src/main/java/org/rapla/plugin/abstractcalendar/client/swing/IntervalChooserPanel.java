@@ -34,7 +34,7 @@ import org.rapla.framework.RaplaInitializationException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.logger.Logger;
 
-import jakarta.inject.Inject;
+import org.springframework.beans.factory.annotation.Autowired;
 import javax.swing.BorderFactory;
 import javax.swing.JButton;
 import javax.swing.JComponent;
@@ -85,7 +85,7 @@ public class IntervalChooserPanel extends RaplaGUIComponent implements RaplaWidg
     Listener listener = new Listener();
     JPanel periodPanel;
 
-    @Inject
+    @Autowired
     public IntervalChooserPanel(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, CalendarModel model, DateRenderer dateRenderer, IOInterface ioInterface) throws
             RaplaInitializationException
     {

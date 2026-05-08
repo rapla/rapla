@@ -29,7 +29,7 @@ import org.rapla.storage.PermissionController;
 import org.rapla.storage.PreferencePatch;
 import org.rapla.storage.RaplaSecurityException;
 
-import jakarta.inject.Inject;
+import org.springframework.beans.factory.annotation.Autowired;
 import jakarta.inject.Singleton;
 import java.util.*;
 
@@ -45,7 +45,7 @@ import java.util.*;
     final Logger logger;
     private final PermissionController permissionController;
 
-    @Inject public SecurityManager(Logger logger, RaplaResources i18n, AppointmentFormater appointmentFormater, CachableStorageOperator operator, org.rapla.storage.SyncStorageOperator syncOperator)
+    @Autowired public SecurityManager(Logger logger, RaplaResources i18n, AppointmentFormater appointmentFormater, CachableStorageOperator operator, org.rapla.storage.SyncStorageOperator syncOperator)
     {
         this.logger = logger;
         this.i18n = i18n;

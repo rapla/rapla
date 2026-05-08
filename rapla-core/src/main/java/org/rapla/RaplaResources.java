@@ -6,19 +6,18 @@ import org.rapla.components.i18n.BundleManager;
 import org.rapla.components.util.DateTools;
 import org.rapla.components.i18n.I18nBundle;
 import org.rapla.components.i18n.I18nIcon;
-import org.rapla.inject.Extension;
 
-import jakarta.inject.Inject;
+import org.springframework.beans.factory.annotation.Autowired;
 import jakarta.inject.Singleton;
 import java.util.Date;
 import java.util.Locale;
 
-@Extension(provides = I18nBundle.class, id = RaplaResources.BUNDLENAME)
+
 @Singleton
 public class RaplaResources extends AbstractBundle {
     public static final String BUNDLENAME = "org.rapla.RaplaResources";
 
-    @Inject
+    @Autowired
     public RaplaResources(BundleManager bundleManager)
     {
       super(BUNDLENAME, bundleManager);

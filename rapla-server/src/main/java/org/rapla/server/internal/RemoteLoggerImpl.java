@@ -1,20 +1,17 @@
 package org.rapla.server.internal;
 
 import org.rapla.framework.RaplaException;
-import org.rapla.inject.DefaultImplementation;
-import org.rapla.inject.InjectionContext;
 import org.rapla.logger.Logger;
 import org.rapla.endpoints.RemoteLogger;
 
-import jakarta.inject.Inject;
+import org.springframework.beans.factory.annotation.Autowired;
 
-@DefaultImplementation(context = InjectionContext.server, of = RemoteLogger.class)
 public class RemoteLoggerImpl implements RemoteLogger
 {
-    @Inject
+    @Autowired
     Logger logger;
 
-    @Inject
+    @Autowired
     public RemoteLoggerImpl()
     {
     }

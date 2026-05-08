@@ -4,19 +4,18 @@ import org.jetbrains.annotations.PropertyKey;
 import org.rapla.components.i18n.AbstractBundle;
 import org.rapla.components.i18n.BundleManager;
 import org.rapla.components.i18n.I18nBundle;
-import org.rapla.inject.Extension;
 
-import jakarta.inject.Inject;
+import org.springframework.beans.factory.annotation.Autowired;
 import jakarta.inject.Singleton;
 
 @Singleton
-@Extension(provides = I18nBundle.class, id = SetOwnerResources.ID)
+
 public class SetOwnerResources extends AbstractBundle
 {
     public static final String ID = "org.rapla.plugin.setowner";
     public static final String BUNDLENAME = ID + ".SetOwnerResources";
 
-    @Inject
+    @Autowired
     public SetOwnerResources(BundleManager bundleManager)
     {
         super(BUNDLENAME, bundleManager);

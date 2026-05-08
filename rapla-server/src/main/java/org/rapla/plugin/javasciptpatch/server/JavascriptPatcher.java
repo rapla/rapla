@@ -5,13 +5,12 @@ import org.rapla.entities.storage.ImportExportDirections;
 import org.rapla.entities.storage.ExternalSyncEntity;
 import org.rapla.entities.storage.ReferenceInfo;
 import org.rapla.facade.RaplaFacade;
-import org.rapla.inject.Extension;
 import org.rapla.logger.Logger;
 import org.rapla.server.extensionpoints.ServerExtension;
 import org.rapla.server.internal.ServerContainerContext;
 import org.rapla.storage.CachableStorageOperator;
 
-import jakarta.inject.Inject;
+import org.springframework.beans.factory.annotation.Autowired;
 import javax.script.ScriptEngine;
 import javax.script.ScriptEngineManager;
 import javax.script.ScriptException;
@@ -24,7 +23,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
-@Extension(provides = ServerExtension.class,id="org.rapla.plugin.javascriptpatch.server")
+
 public class JavascriptPatcher  implements ServerExtension
 {
     final RaplaFacade facade;
@@ -32,7 +31,7 @@ public class JavascriptPatcher  implements ServerExtension
     final ServerContainerContext serverContainerContext;
     final CachableStorageOperator cachableStorageOperator;
 
-    @Inject
+    @Autowired
     public JavascriptPatcher(RaplaFacade facade, Logger logger, ServerContainerContext serverContainerContext,
                              CachableStorageOperator cachableStorageOperator)
     {

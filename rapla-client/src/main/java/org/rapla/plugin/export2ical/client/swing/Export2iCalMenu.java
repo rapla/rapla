@@ -12,14 +12,13 @@ import org.rapla.facade.CalendarModel;
 import org.rapla.facade.client.ClientFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
-import org.rapla.inject.Extension;
 import org.rapla.logger.Logger;
 import org.rapla.plugin.export2ical.Export2iCalPlugin;
 import org.rapla.plugin.export2ical.Export2iCalResources;
 import org.rapla.plugin.export2ical.ICalExport;
 import org.rapla.scheduler.Promise;
 
-import jakarta.inject.Inject;
+import org.springframework.beans.factory.annotation.Autowired;
 import javax.swing.JMenuItem;
 import javax.swing.JOptionPane;
 import javax.swing.SwingUtilities;
@@ -33,7 +32,7 @@ import java.util.Set;
 
 @org.springframework.stereotype.Service
 @org.springframework.context.annotation.Lazy
-@Extension(provides = ExportMenuExtension.class, id = Export2iCalPlugin.PLUGIN_ID)
+
 public class Export2iCalMenu extends RaplaGUIComponent implements ExportMenuExtension, ActionListener{
 
 	String id = "export_file_text";
@@ -46,7 +45,7 @@ public class Export2iCalMenu extends RaplaGUIComponent implements ExportMenuExte
 
 	private boolean enabled = false;
 
-	@Inject
+	@Autowired
 	public Export2iCalMenu(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger,ICalExport exportService, Export2iCalResources i18nIcal, CalendarModel calendarModel, IOInterface ioInterface,  DialogUiFactoryInterface dialogUiFactory){
 		super(facade, i18n, raplaLocale, logger);
 		this.exportService = exportService;

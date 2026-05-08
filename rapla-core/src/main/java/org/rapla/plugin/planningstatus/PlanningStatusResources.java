@@ -4,19 +4,18 @@ import org.jetbrains.annotations.PropertyKey;
 import org.rapla.components.i18n.AbstractBundle;
 import org.rapla.components.i18n.BundleManager;
 import org.rapla.components.i18n.I18nBundle;
-import org.rapla.inject.Extension;
 import org.rapla.plugin.eventtimecalculator.EventTimeCalculatorPlugin;
 
-import jakarta.inject.Inject;
+import org.springframework.beans.factory.annotation.Autowired;
 import jakarta.inject.Singleton;
 import java.util.Locale;
 
 @Singleton
-@Extension(provides = I18nBundle.class, id = PlanningStatusResources.BUNDLENAME) public class PlanningStatusResources extends AbstractBundle
+ public class PlanningStatusResources extends AbstractBundle
 {
     public static final String BUNDLENAME = PlanningStatusPlugin.PLUGIN_ID + ".PlanningStatusResources";
 
-    @Inject public PlanningStatusResources(BundleManager loader)
+    @Autowired public PlanningStatusResources(BundleManager loader)
     {
         super(BUNDLENAME, loader);
     }

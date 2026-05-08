@@ -3,17 +3,15 @@ package org.rapla.client.swing.internal.common;
 import org.rapla.client.internal.RaplaClipboard;
 import org.rapla.components.iolayer.IOInterface;
 import org.rapla.facade.client.ClientFacade;
-import org.rapla.inject.DefaultImplementation;
 import org.rapla.inject.InjectionContext;
 import org.rapla.logger.Logger;
 
-import jakarta.inject.Inject;
+import org.springframework.beans.factory.annotation.Autowired;
 import jakarta.inject.Provider;
 import jakarta.inject.Singleton;
 import java.awt.datatransfer.StringSelection;
 import java.security.AccessControlException;
 
-@DefaultImplementation(of=RaplaClipboard.class,context = InjectionContext.swing)
 @Singleton
 @org.springframework.stereotype.Service
 @org.springframework.context.annotation.Lazy
@@ -21,7 +19,7 @@ public class RaplaSwingClipboard extends RaplaClipboard
 {
 
     Provider<IOInterface> serviceProvider;
-    @Inject
+    @Autowired
     public RaplaSwingClipboard(ClientFacade facade, Provider<IOInterface> serviceProvider, Logger logger)
     {
         super(facade, logger);

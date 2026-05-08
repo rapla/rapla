@@ -8,7 +8,7 @@ import org.rapla.framework.RaplaException;
 import org.rapla.server.RemoteSession;
 import org.rapla.storage.PermissionController;
 
-import jakarta.inject.Inject;
+import org.springframework.beans.factory.annotation.Autowired;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.Path;
@@ -20,12 +20,12 @@ import java.util.List;
 @Path("dynamictypes")
 public class RaplaDynamicTypesRestPage
 {
-    @Inject
+    @Autowired
     RemoteSession session;
-    @Inject
+    @Autowired
     RaplaFacade facade;
     private final HttpServletRequest request;
-    @Inject
+    @Autowired
     public RaplaDynamicTypesRestPage(@Context HttpServletRequest request)
     {
         this.request = request;

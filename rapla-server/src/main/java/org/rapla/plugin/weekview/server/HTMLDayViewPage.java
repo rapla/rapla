@@ -18,17 +18,16 @@ import org.rapla.entities.domain.AppointmentFormater;
 import org.rapla.facade.CalendarOptions;
 import org.rapla.facade.RaplaFacade;
 import org.rapla.framework.RaplaLocale;
-import org.rapla.inject.Extension;
 import org.rapla.logger.Logger;
 import org.rapla.plugin.weekview.WeekviewPlugin;
 import org.rapla.server.extensionpoints.HTMLViewPage;
 
-import jakarta.inject.Inject;
+import org.springframework.beans.factory.annotation.Autowired;
 
-@Extension(provides = HTMLViewPage.class,id = WeekviewPlugin.DAY_VIEW)
+
 public class HTMLDayViewPage extends HTMLWeekViewPage
 {
-    @Inject
+    @Autowired
     public HTMLDayViewPage(RaplaLocale raplaLocale, RaplaResources raplaResources, RaplaFacade facade, Logger logger, AppointmentFormater appointmentFormater)
     {
         super(raplaLocale, raplaResources, facade, logger, appointmentFormater);

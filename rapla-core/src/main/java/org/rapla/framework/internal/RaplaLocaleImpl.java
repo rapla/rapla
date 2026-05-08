@@ -15,10 +15,8 @@ package org.rapla.framework.internal;
 import org.rapla.components.i18n.BundleManager;
 import org.rapla.components.util.IOUtil;
 import org.rapla.framework.RaplaLocale;
-import org.rapla.inject.DefaultImplementation;
-import org.rapla.inject.InjectionContext;
 
-import jakarta.inject.Inject;
+import org.springframework.beans.factory.annotation.Autowired;
 import jakarta.inject.Singleton;
 import java.text.Collator;
 import java.text.NumberFormat;
@@ -27,14 +25,13 @@ import java.util.Date;
 import java.util.Locale;
 import java.util.TimeZone;
 
-@DefaultImplementation(of= RaplaLocale.class, context = {InjectionContext.swing,InjectionContext.server} )
 @Singleton
 public class RaplaLocaleImpl extends AbstractRaplaLocale  {
 
     String charsetForHtml = AbstractRaplaLocale.HTML_CHARSET_DEFAULT;
     String charsetForCsv  = AbstractRaplaLocale.CSV_CHARSET_DEFAULT;
     private TimeZone importExportTimeZone;
-    @Inject
+    @Autowired
     public RaplaLocaleImpl(BundleManager bundleManager)
     {
         super(bundleManager);

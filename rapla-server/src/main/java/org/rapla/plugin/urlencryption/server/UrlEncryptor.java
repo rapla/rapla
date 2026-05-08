@@ -17,7 +17,7 @@ import javax.crypto.Cipher;
 import javax.crypto.IllegalBlockSizeException;
 import javax.crypto.NoSuchPaddingException;
 import javax.crypto.spec.SecretKeySpec;
-import jakarta.inject.Inject;
+import org.springframework.beans.factory.annotation.Autowired;
 import jakarta.inject.Singleton;
 import jakarta.servlet.http.HttpServletRequest;
 import java.security.InvalidKeyException;
@@ -42,7 +42,7 @@ public class UrlEncryptor
     private final RaplaKeyStorage keyStore;
     private final RemoteSession session;
 
-    @Inject
+    @Autowired
     public UrlEncryptor(RaplaFacade facade, Logger logger, RaplaKeyStorage keyStore, RemoteSession session)
     {
         super();

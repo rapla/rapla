@@ -25,7 +25,6 @@ import org.rapla.facade.CalendarOptions;
 import org.rapla.facade.RaplaFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
-import org.rapla.inject.Extension;
 import org.rapla.logger.Logger;
 import org.rapla.plugin.abstractcalendar.GroupAllocatablesStrategy;
 import org.rapla.plugin.abstractcalendar.RaplaBuilder;
@@ -33,17 +32,17 @@ import org.rapla.plugin.abstractcalendar.server.AbstractHTMLCalendarPage;
 import org.rapla.plugin.compactweekview.CompactWeekviewPlugin;
 import org.rapla.server.extensionpoints.HTMLViewPage;
 
-import jakarta.inject.Inject;
+import org.springframework.beans.factory.annotation.Autowired;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 
-@Extension(provides = HTMLViewPage.class,id= CompactWeekviewPlugin.COMPACT_WEEK_VIEW)
+
 public class HTMLCompactWeekViewPage extends AbstractHTMLCalendarPage implements  HTMLViewPage
 {
-    @Inject
+    @Autowired
     public HTMLCompactWeekViewPage(RaplaLocale raplaLocale, RaplaResources raplaResources, RaplaFacade facade, Logger logger,
             AppointmentFormater appointmentFormater)
     {

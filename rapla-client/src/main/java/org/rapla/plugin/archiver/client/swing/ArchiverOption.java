@@ -24,7 +24,6 @@ import org.rapla.entities.configuration.RaplaConfiguration;
 import org.rapla.framework.Configuration;
 import org.rapla.framework.DefaultConfiguration;
 import org.rapla.framework.RaplaException;
-import org.rapla.inject.Extension;
 import org.rapla.logger.Logger;
 import org.rapla.plugin.archiver.ArchiverService;
 import org.rapla.scheduler.CommandScheduler;
@@ -35,7 +34,7 @@ import org.rapla.storage.dbrm.RestartServer;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Service;
 
-import jakarta.inject.Inject;
+import org.springframework.beans.factory.annotation.Autowired;
 import javax.swing.JCheckBox;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
@@ -46,7 +45,7 @@ import java.util.Locale;
 
 @Service(ArchiverService.PLUGIN_ID)
 @Scope("prototype")
-@Extension(provides = PluginOptionPanel.class,id=ArchiverService.PLUGIN_ID)
+
 public class ArchiverOption  implements PluginOptionPanel,ActionListener  {
 
     JPanel content;
@@ -63,7 +62,7 @@ public class ArchiverOption  implements PluginOptionPanel,ActionListener  {
     Subject<String> busyIdleObservable;
     private final DialogUiFactoryInterface dialogUiFactory;
 
-    @Inject
+    @Autowired
     public ArchiverOption( Logger logger,ArchiverService archiver, RestartServer restartServer, DialogUiFactoryInterface dialogUiFactory, CommandScheduler scheduler){
         this.archiver = archiver;
         this.logger = logger;

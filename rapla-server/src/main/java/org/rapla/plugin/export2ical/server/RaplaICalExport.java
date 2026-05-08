@@ -21,12 +21,10 @@ import org.rapla.entities.domain.Appointment;
 import org.rapla.entities.storage.EntityResolver;
 import org.rapla.facade.RaplaFacade;
 import org.rapla.framework.RaplaException;
-import org.rapla.inject.DefaultImplementation;
-import org.rapla.inject.InjectionContext;
 import org.rapla.plugin.export2ical.ICalExport;
 import org.rapla.server.RemoteSession;
 
-import jakarta.inject.Inject;
+import org.springframework.beans.factory.annotation.Autowired;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.ws.rs.core.Context;
 import java.io.ByteArrayOutputStream;
@@ -36,19 +34,18 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Set;
 
-@DefaultImplementation(context=InjectionContext.server, of=ICalExport.class)
 public class RaplaICalExport implements ICalExport
 {
     
-    @Inject
+    @Autowired
     RaplaFacade facade;
-    @Inject
+    @Autowired
     RemoteSession session;
-    @Inject
+    @Autowired
     Export2iCalConverter iCalConverter;
     private final HttpServletRequest request;
 
-    @Inject
+    @Autowired
     public RaplaICalExport( @Context HttpServletRequest request)
     {
         this.request = request;

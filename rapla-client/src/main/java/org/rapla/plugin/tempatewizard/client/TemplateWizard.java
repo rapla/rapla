@@ -36,14 +36,13 @@ import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaInitializationException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.TypedComponentRole;
-import org.rapla.inject.Extension;
 import org.rapla.logger.Logger;
 import org.rapla.plugin.tempatewizard.TemplatePlugin;
 import org.rapla.storage.PermissionController;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 
-import jakarta.inject.Inject;
+import org.springframework.beans.factory.annotation.Autowired;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.util.ArrayList;
@@ -64,7 +63,7 @@ import java.util.stream.Collectors;
  */
 @Service
 @Lazy
-@Extension(provides = ReservationWizardExtension.class, id = TemplatePlugin.PLUGIN_ID) public class TemplateWizard
+ public class TemplateWizard
         implements ReservationWizardExtension, ModificationListener
 {
     final public static TypedComponentRole<Boolean> ENABLED = new TypedComponentRole<>("org.rapla.plugin.templatewizard.enabled");
@@ -81,7 +80,7 @@ import java.util.stream.Collectors;
     protected final DialogUiFactoryInterface dialogUiFactory;
     protected final MenuItemFactory menuItemFactory;
 
-    @Inject public TemplateWizard(ClientFacade clientFacade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, CalendarModel model,
+    @Autowired public TemplateWizard(ClientFacade clientFacade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, CalendarModel model,
                                   ApplicationEventBus eventBus, DialogUiFactoryInterface dialogUiFactory, MenuItemFactory menuItemFactory) throws RaplaInitializationException
     {
         this.logger = logger;

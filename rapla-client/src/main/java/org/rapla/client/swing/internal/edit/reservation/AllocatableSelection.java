@@ -66,7 +66,7 @@ import org.rapla.scheduler.Promise;
 import org.rapla.scheduler.ResolvedPromise;
 import org.rapla.storage.PermissionController;
 
-import jakarta.inject.Inject;
+import org.springframework.beans.factory.annotation.Autowired;
 import jakarta.inject.Singleton;
 import javax.swing.AbstractAction;
 import javax.swing.DefaultCellEditor;
@@ -2437,7 +2437,7 @@ public class AllocatableSelection extends RaplaGUIComponent implements Appointme
         private final DialogUiFactoryInterface dialogUiFactory;
         private final FilterEditButtonFactory filterEditButtonFactory;
 
-        @Inject
+        @Autowired
         public AllocatableSelectionFactory(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger,
                 AppointmentFormater appointmentFormater, TreeFactory treeFactory, CalendarSelectionModel model,
                 MenuFactory menuFactory, InfoFactory infoFactory,  DialogUiFactoryInterface dialogUiFactory,

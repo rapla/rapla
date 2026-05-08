@@ -18,7 +18,7 @@ import org.rapla.storage.PermissionController;
 import org.rapla.storage.RaplaSecurityException;
 import org.rapla.storage.StorageOperator;
 
-import jakarta.inject.Inject;
+import org.springframework.beans.factory.annotation.Autowired;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.ws.rs.DELETE;
 import jakarta.ws.rs.GET;
@@ -41,18 +41,18 @@ public class RaplaResourcesRestPage  {
 	private final Collection<String> CLASSIFICATION_TYPES = Arrays.asList(DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RESOURCE,
 			DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_PERSON);
 
-	@Inject
+	@Autowired
 	RaplaFacade facade;
-	@Inject
+	@Autowired
 	StorageOperator operator;
-	@Inject
+	@Autowired
 	RemoteSession session;
-	@Inject
+	@Autowired
 	SecurityManager securityManager;
 
     private final HttpServletRequest request;
 
-	@Inject
+	@Autowired
 	public RaplaResourcesRestPage(@Context HttpServletRequest request) {
         this.request = request;
 	}

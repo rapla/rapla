@@ -13,10 +13,9 @@ import org.rapla.client.swing.toolkit.RaplaButton;
 import org.rapla.entities.Entity;
 import org.rapla.entities.IllegalAnnotationException;
 import org.rapla.framework.RaplaException;
-import org.rapla.inject.DefaultImplementation;
 import org.rapla.inject.InjectionContext;
 
-import jakarta.inject.Inject;
+import org.springframework.beans.factory.annotation.Autowired;
 import jakarta.inject.Provider;
 import javax.swing.JComponent;
 import javax.swing.JPanel;
@@ -27,7 +26,6 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 
-@DefaultImplementation(of = EditTaskViewFactory.class, context = InjectionContext.swing)
 @org.springframework.stereotype.Service
 @org.springframework.context.annotation.Lazy
 public class EditTaskViewSwing implements EditTaskViewFactory<Component>
@@ -37,7 +35,7 @@ public class EditTaskViewSwing implements EditTaskViewFactory<Component>
     private final RaplaResources i18n;
     final Provider<AllocatableMergeEditUI> mergeUiProvider;
 
-    @Inject
+    @Autowired
     public EditTaskViewSwing(Map<String, Provider<EditComponent>> editUiProvider, DialogUiFactoryInterface dialogUiFactory, RaplaResources i18n,
             Provider<AllocatableMergeEditUI> mergeUiProvider)
     {

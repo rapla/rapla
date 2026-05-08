@@ -28,7 +28,7 @@ import org.rapla.entities.storage.ReferenceInfo;
 import org.rapla.facade.Conflict;
 import org.rapla.framework.RaplaException;
 
-import jakarta.inject.Inject;
+import org.springframework.beans.factory.annotation.Autowired;
 import jakarta.inject.Singleton;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -42,7 +42,7 @@ public class PermissionController
     private final Set<PermissionExtension> permissionExtensions;
     StorageOperator operator;
 
-    @Inject
+    @Autowired
     public PermissionController(Set<PermissionExtension> permissionExtensions, StorageOperator operator)
     {
         super();

@@ -30,13 +30,12 @@ import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaInitializationException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.StartupEnvironment;
-import org.rapla.inject.DefaultImplementation;
 import org.rapla.inject.InjectionContext;
 import org.rapla.logger.Logger;
 import org.rapla.plugin.autoexport.AutoExportPlugin;
 import org.rapla.scheduler.Promise;
 
-import jakarta.inject.Inject;
+import org.springframework.beans.factory.annotation.Autowired;
 import javax.swing.BorderFactory;
 import javax.swing.ComboBoxModel;
 import javax.swing.DefaultComboBoxModel;
@@ -63,7 +62,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
 
-@DefaultImplementation(of=SavedCalendarInterface.class,context = InjectionContext.swing)
 @org.springframework.stereotype.Service
 @org.springframework.context.annotation.Lazy
 public class SavedCalendarSwingView extends RaplaGUIComponent implements SavedCalendarInterface,ActionListener
@@ -205,7 +203,7 @@ public class SavedCalendarSwingView extends RaplaGUIComponent implements SavedCa
 
     }
 
-    @Inject
+    @Autowired
     public SavedCalendarSwingView(RaplaMenuBarContainer bar, ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, ApplicationEventBus eventBus, final CalendarSelectionModel model, Set<PublishExtensionFactory> extensionFactories, StartupEnvironment environment,
                                   DeleteDialogInterface deleteDialogInterface,  DialogUiFactoryInterface dialogUiFactory, IOInterface ioInterface) throws RaplaInitializationException {
         super(facade, i18n, raplaLocale, logger);
