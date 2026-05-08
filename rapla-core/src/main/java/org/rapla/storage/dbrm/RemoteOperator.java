@@ -151,7 +151,7 @@ public class RemoteOperator
                 String password = new String(connectInfo.getPassword());
                 String username = connectInfo.getUsername();
                 RemoteAuthentificationService serv1 = getRemoteAuthentificationService();
-                LoginTokens loginToken = serv1.login(username, password, connectAs);
+                LoginTokens loginToken = serv1.login(new LoginCredentials(username, password, connectAs));
                 String accessToken = loginToken.getAccessToken();
                 if (accessToken != null) {
                     connectionInfo.setAccessToken(accessToken);
@@ -346,16 +346,8 @@ public class RemoteOperator
             throw new RaplaException("Could not disconnect", e);
         }
         if (wasConnected) {
-            RemoteAuthentificationService serv1 = getRemoteAuthentificationService();
-            try {
-                serv1.logout();
-            } catch (RaplaConnectException ex) {
-                getLogger().warn(ex.getMessage());
-            } catch (RaplaException ex) {
-                throw ex;
-            } catch (Exception ex) {
-                throw new RaplaException(ex);
-            }
+            // JWT auth is stateless — server-side has no /auth/logout. Just drop client-side tokens.
+            connectionInfo.setAccessToken(null);
             fireStorageDisconnected(message);
         }
     }

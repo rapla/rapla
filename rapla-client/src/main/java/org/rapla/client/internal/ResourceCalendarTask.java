@@ -43,7 +43,7 @@ public class ResourceCalendarTask implements TaskPresenter {
         this.viewProvider = viewProvider;
         this.dialogUIFactory = dialogUIFactory;
         this.i18n = i18n;
-        this.busyIdleObservable = scheduler.createPublisher();
+        this.busyIdleObservable = org.rapla.scheduler.Observables.createPublisher(scheduler.getExecutor());
     }
     @Override
     public <T> Promise<RaplaWidget> startActivity(ApplicationEvent applicationEvent) {

@@ -8,11 +8,15 @@ import org.rapla.framework.RaplaException;
 import org.rapla.inject.Extension;
 import org.rapla.plugin.autoexport.AutoExportPlugin;
 import org.rapla.plugin.csvexport.CSVExportPlugin;
+import org.springframework.context.annotation.Scope;
+import org.springframework.stereotype.Service;
 
 import jakarta.inject.Inject;
 import javax.swing.*;
 import java.util.Locale;
 
+@Service(CSVExportPlugin.PLUGIN_ID)
+@Scope("prototype")
 @Extension(provides = PluginOptionPanel.class, id = CSVExportPlugin.PLUGIN_ID)
 public class CSVExportPluginOption implements PluginOptionPanel
 {

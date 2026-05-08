@@ -1,7 +1,7 @@
 package org.rapla.plugin.exchangeconnector.server;
 
-import  io.reactivex.rxjava3.disposables.Disposable;
-import io.reactivex.rxjava3.functions.Action;
+import org.rapla.scheduler.Cancellation;
+import org.rapla.scheduler.Action;
 import microsoft.exchange.webservices.data.core.exception.http.HttpErrorException;
 import microsoft.exchange.webservices.data.core.exception.service.remote.ServiceResponseException;
 import microsoft.exchange.webservices.data.core.service.folder.CalendarFolder;
@@ -95,8 +95,8 @@ public class SynchronisationManager implements ServerExtension
     CommandScheduler scheduler;
     private final Set<ExchangeConfigExtensionPoint> configExtensions;
     private final MailToUserImpl mailToUserInterface;
-    Disposable schedule;
-    Disposable scheduleMailboxes;
+    Cancellation schedule;
+    Cancellation scheduleMailboxes;
     boolean enabled;
     ShowExchangeForUser showExchangeForUser;
 
@@ -267,10 +267,10 @@ public class SynchronisationManager implements ServerExtension
     @Override
     public void stop() {
         if ( scheduleMailboxes != null) {
-            scheduleMailboxes.dispose();
+            scheduleMailboxes.cancel();
         }
         if ( schedule != null) {
-            schedule.dispose();
+            schedule.cancel();
         }
     }
 
@@ -966,10 +966,9 @@ public class SynchronisationManager implements ServerExtension
         return result;
     }
 
-    private AppointmentMapping queryAppointments(Set<Allocatable> allocatables) throws Exception {
-        Promise<AppointmentMapping> appointmentMappingPromise = cachableStorageOperator.queryAppointments(null, allocatables, Collections.emptyList(), null, null, null, Collections.emptyMap(), false);
-        AppointmentMapping appointmentMapping = SynchronizedCompletablePromise.waitFor(appointmentMappingPromise, 5000, logger);
-        return appointmentMapping;
+    private AppointmentMapping queryAppointments(Set<Allocatable> allocatables) throws RaplaException {
+        org.rapla.storage.SyncStorageOperator sync = (org.rapla.storage.SyncStorageOperator) cachableStorageOperator;
+        return sync.queryAppointmentsSync(null, allocatables, Collections.emptyList(), null, null, null, Collections.emptyMap(), false);
     }
 
     @NotNull

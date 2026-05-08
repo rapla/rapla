@@ -3,7 +3,7 @@ package org.rapla.server.spring.web;
 import org.rapla.framework.DefaultConfiguration;
 import org.rapla.framework.RaplaException;
 import org.rapla.plugin.jndi.internal.JNDIConfig;
-import org.rapla.scheduler.sync.SynchronizedCompletablePromise;
+import org.rapla.plugin.jndi.server.RaplaJNDITestOnLocalhost;
 import org.rapla.server.RemoteSession;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -17,17 +17,17 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/jndi")
 public class JNDIConfigController
 {
-    private final JNDIConfig service;
+    private final RaplaJNDITestOnLocalhost service;
 
-    public JNDIConfigController(JNDIConfig service)
+    public JNDIConfigController(RaplaJNDITestOnLocalhost service)
     {
         this.service = service;
     }
 
     @PostMapping
-    public boolean test(@RequestBody JNDIConfig.MailTestRequest job) throws Exception
+    public boolean test(@RequestBody JNDIConfig.MailTestRequest job) throws RaplaException
     {
-        return SynchronizedCompletablePromise.waitFor(service.test(job), 30000, null);
+        return service.testSync(job);
     }
 
     @GetMapping

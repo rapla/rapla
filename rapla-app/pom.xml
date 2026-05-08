@@ -40,7 +40,10 @@
                 <executions>
                     <execution>
                         <id>stage-webclient-jars</id>
-                        <phase>process-classes</phase>
+                        <!-- prepare-package (not process-classes): the goal needs sibling modules
+                             packaged as JARs, which only happens during `mvn package`. Binding to
+                             process-classes broke `mvn spring-boot:run` per MDEP-187. -->
+                        <phase>prepare-package</phase>
                         <goals>
                             <goal>copy-dependencies</goal>
                         </goals>
@@ -111,8 +114,11 @@
             <plugin>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
+                <!-- version inherited from rapla-bom <pluginManagement>;
+                     skip=false overrides the BOM default so spring-boot:run actually fires here. -->
                 <configuration>
                     <mainClass>org.rapla.server.spring.RaplaSpringBootApplication</mainClass>
+                    <skip>false</skip>
                 </configuration>
                 <executions>
                     <execution>

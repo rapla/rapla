@@ -67,6 +67,7 @@ import java.util.stream.Collectors;
 {
     @Inject RemoteSession session;
     @Inject CachableStorageOperator operator;
+    @Inject org.rapla.storage.SyncStorageOperator syncOperator;
     @Inject SecurityManager security;
     @Inject ShutdownService shutdownService;
     @Inject Set<PrePostDispatchProcessor> prePostDispatchProcessors;
@@ -187,17 +188,21 @@ import java.util.stream.Collectors;
 
     @Override
     public Promise<UpdateEvent> getEntityDependencies(Boolean errorIfNotFound,UpdateEvent.SerializableReferenceInfo... ids)  {
+        try { return new ResolvedPromise<>(getEntityDependenciesSync(errorIfNotFound, ids)); }
+        catch (RaplaException ex) { return new ResolvedPromise<>(ex); }
+    }
 
-        try {
-            return new ResolvedPromise<>(getEntityRecursive( errorIfNotFound,ids));
-        }
-        catch (RaplaException ex)
-        {
-            return new ResolvedPromise<>(ex);
-        }
+    public UpdateEvent getEntityDependenciesSync(Boolean errorIfNotFound, UpdateEvent.SerializableReferenceInfo... ids) throws RaplaException
+    {
+        return getEntityRecursive(errorIfNotFound, ids);
     }
 
     @Override public Promise<AppointmentMap> queryAppointments(QueryAppointments job) throws RaplaException
+    {
+        return new ResolvedPromise<>(queryAppointmentsSync(job));
+    }
+
+    public AppointmentMap queryAppointmentsSync(QueryAppointments job) throws RaplaException
     {
         User sessionUser = checkSessionUser();
         String[] allocatableIds = job.getResources();
@@ -228,15 +233,10 @@ import java.util.stream.Collectors;
         }
         ClassificationFilter[] classificationFilters = null;
         boolean requestsOnly = job.isRequestsOnly();
-        final Promise<AppointmentMapping> mapFutureResult = operator
-                .queryAppointments(user, allocatables,owners, start, end, classificationFilters, annotationQuery, requestsOnly);
-        AppointmentMapping reservations;
-        try { reservations = org.rapla.scheduler.sync.SynchronizedCompletablePromise.waitFor(mapFutureResult, 50000, logger); }
-        catch (RaplaException ex) { throw ex; }
-        catch (Exception ex) { throw new RaplaException(ex); }
+        AppointmentMapping reservations = syncOperator.queryAppointmentsSync(user, allocatables, owners, start, end, classificationFilters, annotationQuery, requestsOnly);
         AppointmentMap list = new AppointmentMap(reservations);
         getLogger().debug("Get reservations " + start + " " + end + ": " + "," + list);
-        return new ResolvedPromise<>(list);
+        return list;
     }
 
     private ReservationImpl checkAndMakeReservationsAnonymous(User sessionUser, Entity entity)
@@ -262,17 +262,16 @@ import java.util.stream.Collectors;
 
     public Promise<Void> restartServer()
     {
-        try
-        {
-            final User user = checkSessionUser();
-            if (!user.isAdmin())
-                throw new RaplaSecurityException("Only admins can restart the server");
+        try { restartServerSync(); return ResolvedPromise.VOID_PROMISE; }
+        catch (RaplaException ex) { return new ResolvedPromise(ex); }
+    }
 
-            shutdownService.shutdown(true);
-            return ResolvedPromise.VOID_PROMISE;
-        } catch (RaplaException ex) {
-            return new ResolvedPromise(ex);
-        }
+    public void restartServerSync() throws RaplaException
+    {
+        final User user = checkSessionUser();
+        if (!user.isAdmin())
+            throw new RaplaSecurityException("Only admins can restart the server");
+        shutdownService.shutdown(true);
     }
 
     public UpdateEvent store(UpdateEvent event) throws RaplaException
@@ -310,12 +309,13 @@ import java.util.stream.Collectors;
 
     public Promise<UpdateEvent> dispatch(UpdateEvent event)
     {
-        try {
-            final UpdateEvent result = store(event);
-            return new ResolvedPromise<>(result);
-        } catch (RaplaException ex) {
-            return new ResolvedPromise<>(ex);
-        }
+        try { return new ResolvedPromise<>(dispatchSync(event)); }
+        catch (RaplaException ex) { return new ResolvedPromise<>(ex); }
+    }
+
+    public UpdateEvent dispatchSync(UpdateEvent event) throws RaplaException
+    {
+        return store(event);
     }
 
     public boolean canChangePassword() throws RaplaException
@@ -572,16 +572,23 @@ import java.util.stream.Collectors;
 
     public Promise<List<ConflictImpl>> getConflicts()
     {
-        User sessionUser;
-        try {
-            sessionUser = checkSessionUser();
-        } catch (RaplaException e) {
-            return new ResolvedPromise<>(e);
-        }
-        return operator.getConflicts(sessionUser).thenApply((conflicts) -> conflicts.stream().map(conflict -> (ConflictImpl) conflict).collect(Collectors.toList()));
+        try { return new ResolvedPromise<>(getConflictsSync()); }
+        catch (RaplaException ex) { return new ResolvedPromise<>(ex); }
+    }
+
+    public List<ConflictImpl> getConflictsSync() throws RaplaException
+    {
+        User sessionUser = checkSessionUser();
+        return syncOperator.getConflictsSync(sessionUser).stream().map(conflict -> (ConflictImpl) conflict).collect(Collectors.toList());
     }
 
     @Override public Promise<Date> getNextAllocatableDate(NextAllocatableDateRequest job)
+    {
+        try { return new ResolvedPromise<>(getNextAllocatableDateSync(job)); }
+        catch (RaplaException ex) { return new ResolvedPromise<>(ex); }
+    }
+
+    public Date getNextAllocatableDateSync(NextAllocatableDateRequest job) throws RaplaException
     {
         String[] allocatableIds = job.getAllocatableIds();
         AppointmentImpl appointment = job.getAppointment();
@@ -590,66 +597,50 @@ import java.util.stream.Collectors;
         Integer worktimeendMinutes = job.getWorktimeEndMinutes();
         Integer[] excludedDays = job.getExcludedDays();
         Integer rowsPerHour = job.getRowsPerHour();
-        List<Allocatable> allocatables;
-        try
-        {
-            checkSessionUser();
-            allocatables = resolveAllocatables(allocatableIds);
-        }
-        catch ( RaplaException ex)
-        {
-            return new ResolvedPromise<>(ex);
-        }
+        checkSessionUser();
+        List<Allocatable> allocatables = resolveAllocatables(allocatableIds);
         Collection<Reservation> ignoreList = resolveReservations(reservationIds);
-        final Promise<Date> nextAllocatableDate = operator
-                .getNextAllocatableDate(allocatables, appointment, ignoreList, worktimestartMinutes, worktimeendMinutes, excludedDays, rowsPerHour);
-        return nextAllocatableDate;
-
+        return syncOperator.getNextAllocatableDateSync(allocatables, appointment, ignoreList, worktimestartMinutes, worktimeendMinutes, excludedDays, rowsPerHour);
     }
 
     @Override public Promise<BindingMap> getFirstAllocatableBindings(AllocatableBindingsRequest job)
     {
+        try { return new ResolvedPromise<>(getFirstAllocatableBindingsSync(job)); }
+        catch (RaplaException ex) { return new ResolvedPromise<>(ex); }
+    }
+
+    public BindingMap getFirstAllocatableBindingsSync(AllocatableBindingsRequest job) throws RaplaException
+    {
         String[] allocatableIds = job.getAllocatableIds();
         List<AppointmentImpl> appointments = job.getAppointments();
         String[] reservationIds = job.getReservationIds();
-        List<Allocatable> allocatables;
-        try
-        {
-            checkSessionUser();
-            //Integer[][] result = new Integer[allocatableIds.length][];
-           allocatables = resolveAllocatables(allocatableIds);
-        } catch ( RaplaException ex)
-        {
-            return new ResolvedPromise<>(ex);
-        }
+        checkSessionUser();
+        List<Allocatable> allocatables = resolveAllocatables(allocatableIds);
         Collection<Reservation> ignoreList = resolveReservations(reservationIds);
         List<Appointment> asList = cast(appointments);
-        Promise<BindingMap> promise = operator.getFirstAllocatableBindings(allocatables, asList, ignoreList).thenApply((bindings) ->
+        Map<ReferenceInfo<Allocatable>, Collection<Appointment>> bindings = syncOperator.getFirstAllocatableBindingsSync(allocatables, asList, ignoreList);
+        Map<String, List<String>> result = new LinkedHashMap<>();
+        for (ReferenceInfo<Allocatable> allocRef : bindings.keySet())
         {
-            Map<String, List<String>> result = new LinkedHashMap<>();
-            for (ReferenceInfo<Allocatable> allocRef : bindings.keySet())
+            Collection<Appointment> apps = bindings.get(allocRef);
+            if (apps == null)
             {
-                Collection<Appointment> apps = bindings.get(allocRef);
-                if (apps == null)
+                apps = Collections.emptyList();
+            }
+            ArrayList<String> indexArray = new ArrayList<>(apps.size());
+            for (Appointment app : apps)
+            {
+                for (Appointment app2 : appointments)
                 {
-                    apps = Collections.emptyList();
-                }
-                ArrayList<String> indexArray = new ArrayList<>(apps.size());
-                for (Appointment app : apps)
-                {
-                    for (Appointment app2 : appointments)
+                    if (app2.equals(app))
                     {
-                        if (app2.equals(app))
-                        {
-                            indexArray.add(app.getId());
-                        }
+                        indexArray.add(app.getId());
                     }
                 }
-                result.put(allocRef.getId(), indexArray);
             }
-            return new BindingMap(result);
-        });
-        return promise;
+            result.put(allocRef.getId(), indexArray);
+        }
+        return new BindingMap(result);
     }
 
     private List<Appointment> cast(List<AppointmentImpl> appointments)
@@ -665,47 +656,41 @@ import java.util.stream.Collectors;
     @Override
     public Promise<List<ReservationImpl>> getAllAllocatableBindings(AllocatableBindingsRequest job)
     {
+        try { return new ResolvedPromise<>(getAllAllocatableBindingsSync(job)); }
+        catch (RaplaException ex) { return new ResolvedPromise<>(ex); }
+    }
+
+    public List<ReservationImpl> getAllAllocatableBindingsSync(AllocatableBindingsRequest job) throws RaplaException
+    {
         String[] allocatableIds = job.getAllocatableIds();
         List<AppointmentImpl> appointments = job.getAppointments();
         String[] reservationIds = job.getReservationIds();
-        List<Allocatable> allocatables;
-        try
-        {
-            User user = checkSessionUser();
-            //Integer[][] result = new Integer[allocatableIds.length][];
-            allocatables = resolveAllocatables(allocatableIds);
-        } catch ( RaplaException ex)
-        {
-            return new ResolvedPromise<>(ex);
-        }
+        checkSessionUser();
+        List<Allocatable> allocatables = resolveAllocatables(allocatableIds);
         Collection<Reservation> ignoreList = resolveReservations(reservationIds);
         List<Appointment> asList = cast(appointments);
-
-        Promise<List<ReservationImpl>> promise = operator.getAllAllocatableBindings(allocatables, asList, ignoreList).thenApply((bindings) ->
+        Map<ReferenceInfo<Allocatable>, Map<Appointment, Collection<Appointment>>> bindings = syncOperator.getAllAllocatableBindingsSync(allocatables, asList, ignoreList);
+        Set<ReservationImpl> result = new HashSet<>();
+        for (ReferenceInfo<Allocatable> allocRef : bindings.keySet())
         {
-            Set<ReservationImpl> result = new HashSet<>();
-            for (ReferenceInfo<Allocatable> allocRef : bindings.keySet())
+            Map<Appointment, Collection<Appointment>> appointmentBindings = bindings.get(allocRef);
+            for (Appointment app : appointmentBindings.keySet())
             {
-                Map<Appointment, Collection<Appointment>> appointmentBindings = bindings.get(allocRef);
-                for (Appointment app : appointmentBindings.keySet())
+                Collection<Appointment> bound = appointmentBindings.get(app);
+                if (bound != null)
                 {
-                    Collection<Appointment> bound = appointmentBindings.get(app);
-                    if (bound != null)
+                    for (Appointment appointment : bound)
                     {
-                        for (Appointment appointment : bound)
+                        ReservationImpl reservation = (ReservationImpl) appointment.getReservation();
+                        if (reservation != null)
                         {
-                            ReservationImpl reservation = (ReservationImpl) appointment.getReservation();
-                            if (reservation != null)
-                            {
-                                result.add(reservation);
-                            }
+                            result.add(reservation);
                         }
                     }
                 }
             }
-            return new ArrayList<>(result);
-        });
-        return promise;
+        }
+        return new ArrayList<>(result);
     }
 
     private List<Allocatable> resolveAllocatables(String[] allocatableIds) throws RaplaException {
@@ -742,23 +727,22 @@ import java.util.stream.Collectors;
 
     @Override public Promise<UpdateEvent> doMerge(MergeRequest job, String lastSyncedTime )
     {
+        try { return new ResolvedPromise<>(doMergeSync(job, lastSyncedTime)); }
+        catch (RaplaException e) { return new ResolvedPromise<>(e); }
+    }
+
+    public UpdateEvent doMergeSync(MergeRequest job, String lastSyncedTime) throws RaplaException
+    {
         AllocatableImpl allocatable = job.getAllocatable();
         String[] allocatableIds = job.getAllocatableIds();
         final Set<ReferenceInfo<Allocatable>> allocReferences = new LinkedHashSet<>();
-        final User sessionUser;
-        try {
-            sessionUser = checkSessionUser();
-            security.checkWritePermissions(sessionUser, allocatable);
-            for (final String allocId : allocatableIds) {
-                final ReferenceInfo<Allocatable> refInfo = new ReferenceInfo<>(allocId, Allocatable.class);
-                allocReferences.add(refInfo);
-                // TODO check write permissions
-            }
-        } catch (RaplaException e) {
-            return new ResolvedPromise<>(e);
+        final User sessionUser = checkSessionUser();
+        security.checkWritePermissions(sessionUser, allocatable);
+        for (final String allocId : allocatableIds) {
+            allocReferences.add(new ReferenceInfo<>(allocId, Allocatable.class));
         }
-        final Promise<Allocatable> promise = operator.doMerge(allocatable, allocReferences, sessionUser);
-        return promise.thenCompose( ( allocatable1)->refresh( lastSyncedTime));
+        syncOperator.doMergeSync(allocatable, allocReferences, sessionUser);
+        return refreshSync(lastSyncedTime);
     }
 
     //			public void logEntityNotFound(String logMessage,String... referencedIds)

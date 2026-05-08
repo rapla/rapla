@@ -1,6 +1,6 @@
 package org.rapla.plugin.copyurl;
 
-import io.reactivex.rxjava3.functions.Consumer;
+import org.rapla.scheduler.Consumer;
 import org.rapla.client.PopupContext;
 import org.rapla.client.extensionpoints.ObjectMenuFactory;
 import org.rapla.client.menu.IdentifiableMenuEntry;
@@ -19,12 +19,14 @@ import org.rapla.entities.dynamictype.Classifiable;
 import org.rapla.entities.dynamictype.Classification;
 import org.rapla.facade.client.ClientFacade;
 import org.rapla.inject.Extension;
+import org.springframework.stereotype.Service;
 
 import jakarta.inject.Inject;
 import jakarta.inject.Singleton;
 import java.util.Collection;
 import java.util.HashSet;
 
+@Service
 @Singleton
 @Extension(provides = ObjectMenuFactory.class, id="copyurl")
 public class CopyUrlMenuFactory implements ObjectMenuFactory

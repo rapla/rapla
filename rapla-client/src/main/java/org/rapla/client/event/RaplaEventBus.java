@@ -22,8 +22,8 @@ public class RaplaEventBus implements ApplicationEventBus, CalendarEventBus
     @Inject
     public RaplaEventBus(CommandScheduler scheduler)
     {
-        applicationEventPublishSubject = scheduler.createPublisher();
-        calendarRefreshEventPublishSubject = scheduler.createPublisher();
+        applicationEventPublishSubject = org.rapla.scheduler.Observables.createPublisher(scheduler.getExecutor());
+        calendarRefreshEventPublishSubject = org.rapla.scheduler.Observables.createPublisher(scheduler.getExecutor());
     }
 
     @Override

@@ -16,6 +16,7 @@ import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.inject.Extension;
 import org.rapla.logger.Logger;
+import org.springframework.stereotype.Service;
 
 import jakarta.inject.Inject;
 import jakarta.inject.Singleton;
@@ -26,9 +27,10 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
+@Service
 @Extension(provides = AppointmentStatusFactory.class, id="appointmentcounter")
 @Singleton
-public class AppointmentCounterFactory implements AppointmentStatusFactory 
+public class AppointmentCounterFactory implements AppointmentStatusFactory
 {
     private final ClientFacade facade;
     private final RaplaResources i18n;

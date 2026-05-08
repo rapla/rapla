@@ -64,6 +64,9 @@ import java.util.Locale;
 import java.util.Set;
 
 
+@org.springframework.stereotype.Service(JNDIPlugin.PLUGIN_ID)
+@org.springframework.context.annotation.Scope("prototype")
+@org.springframework.context.annotation.Lazy
 @Extension(provides = PluginOptionPanel.class,id= JNDIPlugin.PLUGIN_ID)
 public class JNDIOption implements JNDIConf, PluginOptionPanel
 {

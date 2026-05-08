@@ -155,6 +155,23 @@
 		</plugins>
 		<pluginManagement>
 			<plugins>
+				<!-- PRD 005 cleanup: register spring-boot-maven-plugin at BOM level so
+				     `mvn -pl rapla-app -am spring-boot:run` from the repo root resolves the
+				     plugin prefix without needing the explicit GAV.
+				     Children only inherit the version pin; rapla-app's own <build><plugins>
+				     entry adds the executions + mainClass config. -->
+				<plugin>
+					<groupId>org.springframework.boot</groupId>
+					<artifactId>spring-boot-maven-plugin</artifactId>
+					<version>${spring-boot.version}</version>
+					<!-- Default to skipped so `mvn -pl rapla-app -am spring-boot:run` from
+					     repo root only actually runs on rapla-app (which overrides skip=false
+					     in its own <build><plugins> entry). Without this, the run goal fires
+					     on rapla-bom first and fails with "Unable to find a suitable main class". -->
+					<configuration>
+						<skip>true</skip>
+					</configuration>
+				</plugin>
 				<plugin>
 					<groupId>org.eclipse.m2e</groupId>
 					<artifactId>lifecycle-mapping</artifactId>

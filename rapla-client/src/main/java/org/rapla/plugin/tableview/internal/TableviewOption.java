@@ -46,6 +46,9 @@ import java.util.Set;
 /**
  *
  */
+@org.springframework.stereotype.Service(TableViewPlugin.PLUGIN_ID)
+@org.springframework.context.annotation.Scope("prototype")
+@org.springframework.context.annotation.Lazy
 @Extension(provides = PluginOptionPanel.class, id = TableViewPlugin.PLUGIN_ID) public class TableviewOption implements PluginOptionPanel, ChangeListener
 {
     private final JPanel list = new JPanel();

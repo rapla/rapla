@@ -45,8 +45,13 @@ public class ClientProxyConfig
     @Bean
     public HttpServiceProxyFactory httpServiceProxyFactory(RestClient.Builder builder, RemoteConnectionInfo info)
     {
+        // The server URL is set by RaplaClientServiceImpl after context refresh,
+        // so we cannot freeze a baseUrl at @Bean factory time. Use a custom
+        // UriBuilderFactory that reads info.getServerURL() lazily on each request.
+        org.springframework.web.util.UriBuilderFactory dynamicFactory =
+                new DynamicBaseUriBuilderFactory(info, "http://localhost:8051");
         RestClient restClient = builder
-                .baseUrl(info.getServerURL() == null ? "http://localhost" : info.getServerURL())
+                .uriBuilderFactory(dynamicFactory)
                 .requestInitializer(request -> {
                     String token = info.getAccessToken();
                     if (token != null && !token.isEmpty())
@@ -58,6 +63,49 @@ public class ClientProxyConfig
         return HttpServiceProxyFactory
                 .builderFor(RestClientAdapter.create(restClient))
                 .build();
+    }
+
+    /**
+     * UriBuilderFactory that reads the base URL from {@link RemoteConnectionInfo}
+     * at each request, not at @Bean factory time. This lets {@link org.rapla.client.swing.internal.RaplaClientServiceImpl}
+     * set {@code serverURL} after context refresh and have all REST proxies
+     * pick up the correct base URL on the next call.
+     */
+    static class DynamicBaseUriBuilderFactory extends org.springframework.web.util.DefaultUriBuilderFactory
+    {
+        private final RemoteConnectionInfo info;
+        private final String fallbackBaseUrl;
+
+        DynamicBaseUriBuilderFactory(RemoteConnectionInfo info, String fallbackBaseUrl)
+        {
+            this.info = info;
+            this.fallbackBaseUrl = fallbackBaseUrl;
+        }
+
+        private String currentBase()
+        {
+            String url = info.getServerURL();
+            if (url == null || url.isEmpty()) return fallbackBaseUrl;
+            return url.endsWith("/") ? url.substring(0, url.length() - 1) : url;
+        }
+
+        @Override
+        public org.springframework.web.util.UriBuilder uriString(String uriTemplate)
+        {
+            // The URI template from @HttpExchange is something like "/authentication".
+            // Prepend the current base URL.
+            if (uriTemplate.startsWith("/"))
+            {
+                uriTemplate = currentBase() + uriTemplate;
+            }
+            return super.uriString(uriTemplate);
+        }
+
+        @Override
+        public org.springframework.web.util.UriBuilder builder()
+        {
+            return super.uriString(currentBase());
+        }
     }
 
     @Bean
@@ -136,5 +184,11 @@ public class ClientProxyConfig
     public org.rapla.storage.dbrm.RemoteStorage remoteStorageProxy(HttpServiceProxyFactory factory)
     {
         return factory.createClient(org.rapla.storage.dbrm.RemoteStorage.class);
+    }
+
+    @Bean
+    public org.rapla.storage.dbrm.RestartServer restartServerProxy(HttpServiceProxyFactory factory)
+    {
+        return factory.createClient(org.rapla.storage.dbrm.RestartServer.class);
     }
 }

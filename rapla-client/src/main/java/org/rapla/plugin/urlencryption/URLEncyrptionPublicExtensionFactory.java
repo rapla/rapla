@@ -9,6 +9,7 @@ import org.rapla.framework.RaplaException;
 import org.rapla.framework.StartupEnvironment;
 import org.rapla.inject.Extension;
 import org.rapla.logger.Logger;
+import org.springframework.stereotype.Service;
 
 import jakarta.inject.Inject;
 import javax.swing.JCheckBox;
@@ -24,6 +25,7 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLEncoder;
 
+@Service
 @Extension(provides = PublishExtensionFactory.class, id = "urlencryption")
 public class URLEncyrptionPublicExtensionFactory implements PublishExtensionFactory
 {
@@ -140,7 +142,7 @@ public class URLEncyrptionPublicExtensionFactory implements PublishExtensionFact
                 {
                     urlExtension = pageParameters;
                 }
-                return new URL(codeBase, "rapla/" + generator + "?" + urlExtension).toExternalForm();
+                return new URL(codeBase, generator + "?" + urlExtension).toExternalForm();
             }
             catch (RaplaException ex)
             {

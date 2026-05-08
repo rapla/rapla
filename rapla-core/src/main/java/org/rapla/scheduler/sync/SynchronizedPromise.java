@@ -1,15 +1,16 @@
 package org.rapla.scheduler.sync;
 
+import org.rapla.scheduler.Action;
+import org.rapla.scheduler.BiConsumer;
+import org.rapla.scheduler.BiFunction;
+import org.rapla.scheduler.Consumer;
+import org.rapla.scheduler.Function;
 import org.rapla.scheduler.Promise;
 
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.Executor;
-import java.util.function.BiConsumer;
-import java.util.function.BiFunction;
-import java.util.function.Consumer;
-import java.util.function.Function;
 
 public class SynchronizedPromise<T> implements Promise<T>
 {
@@ -52,49 +53,89 @@ public class SynchronizedPromise<T> implements Promise<T>
     @Override
     public <U> Promise<U> thenApply(Function<? super T, ? extends U> fn)
     {
-        return w(f.thenApplyAsync(fn, promiseExecutor));
+        final java.util.function.Function<? super T, ? extends U> fun = (t) ->
+        {
+            try { return fn.apply(t); }
+            catch (CompletionException e) { throw e; }
+            catch (Throwable e) { throw new CompletionException(e); }
+        };
+        return w(f.thenApplyAsync(fun, promiseExecutor));
     }
 
     @Override
     public Promise<Void> thenAccept(Consumer<? super T> fn)
     {
-        return w(f.thenAcceptAsync(fn, promiseExecutor));
+        final java.util.function.Consumer<T> consumer = (t) ->
+        {
+            try { fn.accept(t); }
+            catch (CompletionException e) { throw e; }
+            catch (Throwable e) { throw new CompletionException(e); }
+        };
+        return w(f.thenAcceptAsync(consumer, promiseExecutor));
     }
 
     @Override
-    public Promise<Void> thenRun(Runnable command)
+    public Promise<Void> thenRun(Action command)
     {
-        return w(f.thenRunAsync(command, promiseExecutor));
+        final Runnable runnable = () ->
+        {
+            try { command.run(); }
+            catch (CompletionException e) { throw e; }
+            catch (Throwable e) { throw new CompletionException(e); }
+        };
+        return w(f.thenRunAsync(runnable, promiseExecutor));
     }
 
     @Override
     public <U, V> Promise<V> thenCombine(Promise<? extends U> other, BiFunction<? super T, ? super U, ? extends V> fn)
     {
+        final java.util.function.BiFunction<? super T, ? super U, ? extends V> bifn = (t, u) ->
+        {
+            try { return fn.apply(t, u); }
+            catch (CompletionException e) { throw e; }
+            catch (Throwable e) { throw new CompletionException(e); }
+        };
         final CompletionStage<? extends U> v = v(other);
-        return w(f.thenCombineAsync(v, fn, promiseExecutor));
+        return w(f.thenCombineAsync(v, bifn, promiseExecutor));
     }
 
     @Override
     public <U> Promise<Void> thenAcceptBoth(Promise<? extends U> other, BiConsumer<? super T, ? super U> fn)
     {
+        final java.util.function.BiConsumer<? super T, ? super U> biConsumer = (t, u) ->
+        {
+            try { fn.accept(t, u); }
+            catch (CompletionException e) { throw e; }
+            catch (Throwable e) { throw new CompletionException(e); }
+        };
         final CompletionStage<? extends U> v = v(other);
-        return w(f.thenAcceptBothAsync(v, fn, promiseExecutor));
+        return w(f.thenAcceptBothAsync(v, biConsumer, promiseExecutor));
     }
 
     @Override
     public <U> Promise<U> thenCompose(Function<? super T, ? extends Promise<U>> fn)
     {
-        final Function<? super T, ? extends CompletionStage<U>> fun = (t) -> v(fn.apply(t));
+        final java.util.function.Function<? super T, ? extends CompletionStage<U>> fun = (t) ->
+        {
+            try { return v(fn.apply(t)); }
+            catch (CompletionException e) { throw e; }
+            catch (Throwable e) { throw new CompletionException(e); }
+        };
         return w(f.thenComposeAsync(fun, promiseExecutor));
     }
 
     @Override
     public Promise<Void> exceptionally(Consumer<Throwable> fn)
     {
-        final Function<Throwable, ? extends T> fun = (t) ->
+        final java.util.function.Function<Throwable, ? extends T> fun = (t) ->
         {
-            fn.accept(getCause(t));
-            return null;
+            try
+            {
+                fn.accept(getCause(t));
+                return null;
+            }
+            catch (CompletionException e) { throw e; }
+            catch (Throwable e) { throw new CompletionException(e); }
         };
         return w(f.exceptionally(fun).thenApply((dummy) -> null));
     }
@@ -114,14 +155,24 @@ public class SynchronizedPromise<T> implements Promise<T>
     {
         // CompletionStage.handleAsync needs ? extends T on the output; Promise.handle declares ? super T.
         // The caller is documented as recovering to T (or compatible), so cast at the boundary.
-        final BiFunction<? super T, Throwable, T> bifn = (t, u) -> (T) fn.apply(t, getCause(u));
+        final java.util.function.BiFunction<? super T, Throwable, T> bifn = (t, u) ->
+        {
+            try { return (T) fn.apply(t, getCause(u)); }
+            catch (CompletionException e) { throw e; }
+            catch (Throwable e) { throw new CompletionException(e); }
+        };
         return w(f.handleAsync(bifn, promiseExecutor));
     }
 
     @Override
-    public Promise<Void> finally_(Runnable fn)
+    public Promise<Void> finally_(Action fn)
     {
-        final BiConsumer<? super T, ? super Throwable> bifn = (t, u) -> fn.run();
+        final java.util.function.BiConsumer<? super T, ? super Throwable> bifn = (t, u) ->
+        {
+            try { fn.run(); }
+            catch (CompletionException e) { throw e; }
+            catch (Throwable e) { throw new CompletionException(e); }
+        };
         return w(f.whenCompleteAsync(bifn, promiseExecutor));
     }
 

@@ -16,6 +16,8 @@ import org.rapla.inject.Extension;
 import org.rapla.logger.Logger;
 import org.rapla.plugin.export2ical.Export2iCalPlugin;
 import org.rapla.plugin.export2ical.ICalConfigService;
+import org.springframework.context.annotation.Scope;
+import org.springframework.stereotype.Service;
 
 import jakarta.inject.Inject;
 import javax.swing.ButtonGroup;
@@ -37,6 +39,8 @@ import java.util.Locale;
  * This is the admin-option panel
  *
  */
+@Service(Export2iCalPlugin.PLUGIN_ID)
+@Scope("prototype")
 @Extension(provides = PluginOptionPanel.class,id= Export2iCalPlugin.PLUGIN_ID)
 public class Export2iCalAdminOption extends RaplaGUIComponent implements PluginOptionPanel,ActionListener {
 

@@ -51,10 +51,7 @@ public class ReservationTableViewPage implements HTMLViewPage
             final Comparator<Reservation> comparator = new ReservationStartComparator(raplaLocale.getLocale());
             protected String getCalendarBody() throws RaplaException
             {
-                final Collection<Reservation> reservations;
-                try { reservations = org.rapla.scheduler.sync.SynchronizedCompletablePromise.waitFor(model.queryReservations(model.getTimeIntervall()), 10000, null); }
-                catch (RaplaException ex) { throw ex; }
-                catch (Exception ex) { throw new RaplaException(ex); }
+                final Collection<Reservation> reservations = ((org.rapla.facade.SyncCalendarModel) model).queryReservationsSync(model.getTimeIntervall());
                 final User user = model.getUser();
                 final String tableName = TableConfig.EVENTS_VIEW;
                 List<RaplaTableColumn<Reservation>> columnPlugins = tableConfigLoader.loadColumns(tableName, user);

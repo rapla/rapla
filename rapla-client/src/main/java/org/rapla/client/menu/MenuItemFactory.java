@@ -1,6 +1,6 @@
 package org.rapla.client.menu;
 
-import io.reactivex.rxjava3.functions.Consumer;
+import org.rapla.scheduler.Consumer;
 import org.rapla.client.PopupContext;
 import org.rapla.client.RaplaWidget;
 import org.rapla.components.i18n.I18nIcon;

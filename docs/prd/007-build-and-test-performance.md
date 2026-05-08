@@ -100,6 +100,51 @@ Apply each change *individually*, re-measure against the Phase 1 baseline, commi
 10. Maven build cache (the `maven-build-cache-extension`). Worth ~30–50 % on a multi-module reactor with stable inputs, but adds a config surface that's another thing to maintain. Re-evaluate after a quarter on Phase 2.
 11. Upgrade `maven-compiler-plugin` to 3.14+ and use the new `<incrementalCompilation>` parameter (which deprecates `useIncrementalCompilation`). Pure cleanup once the rest is stable.
 
+## Dev-loop monitoring patterns (Phase 3 — added 2026-05-07)
+
+Documented as part of PRD 007 because they directly cut the wait time inside the inner dev loop, even when the build itself doesn't get faster.
+
+### Wait-for-condition pattern (replaces `sleep N` heuristics)
+
+When an AI agent (or developer) starts a long-running process and needs to know when it's "ready", the naive pattern is `sleep 15` followed by a status check. This is bad in two directions: too long (still waits the full 15 s when ready in 8 s) and too short (15 s isn't enough when startup is degraded). The replacement is a `timeout` + `until grep` loop with a 0.3 s poll interval:
+
+```bash
+timeout 60 sh -c 'until grep -q "Started.*in [0-9.]\+ seconds" logs/rapla.log; do sleep 0.3; done' \
+  && echo "READY" || echo "TIMEOUT"
+```
+
+Properties:
+- **Returns within `~startup_time + 0.15 s`** (median half-poll-interval) once the line appears. For a 10 s Spring Boot startup that's ~10.15 s, vs `sleep 15` blocking the full 15 s every time.
+- **Hard upper bound** at the `timeout` value (60 s here). Distinguishes "startup hung" from "startup completed" with a clear TIMEOUT signal — `sleep 15 && curl` returns "not ready" with no diagnostic and the agent has to retry-loop manually.
+- **Foreground Bash call** — short enough to not stall the agent (the timeout caps it), no `run_in_background` needed.
+- **Polling load** is negligible — 0.3 s sleeps with a single `grep -q` call (returns immediately on first match).
+
+Measured on rapla startup (10.255 s warm-JVM Spring Boot context):
+
+| Pattern | Detection latency over the 10.255 s startup |
+|---|---|
+| `sleep 15` | always 15 s — never less, never more |
+| `timeout 60 sh -c 'until grep -q ... ; do sleep 0.3; done'` | ~10.4 s on the first run, **15 ms when re-checked after server is already up** |
+
+### Stream-events pattern for long-lived watching
+
+When the agent needs to react to multiple log events over the server's lifetime (not just startup), use `tail -F` (capital F — survives log rotation) in `run_in_background=true`:
+
+```bash
+# Bash tool with run_in_background=true — returns a shell ID immediately:
+tail -F logs/rapla.log
+```
+
+Then attach `Monitor` against that shell ID. Each new log line becomes a stream event the agent reacts to without polling. Use case: wait for a 2nd event ("Reservation X saved") after seeing the 1st ("Login by user Y"), or react to ERRORs as they happen during a load test.
+
+### Why not `tail -f | grep …` in foreground
+
+Open-ended: the agent's Bash tool blocks until the pipe closes, which only happens when `tail` is killed. The two patterns above (timeout + until / Monitor) both have explicit termination conditions and are agent-safe.
+
+### Documented in AGENTS.md §8
+
+The full server lifecycle (start, stop, status, log-inspect) using these patterns is in **AGENTS.md §8**. PRD 007 is the architectural rationale; AGENTS.md is the operational recipe.
+
 ## Tests
 
 This PRD changes build/test infrastructure, so "tests" here means **test-suite invariants** that prove the changes work, not new feature tests.

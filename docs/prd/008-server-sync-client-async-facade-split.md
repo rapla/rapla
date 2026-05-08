@@ -1,212 +1,189 @@
-# PRD 008: Sync server facade, async client facade, rxjava only in rapla-client
+# PRD 008: Confine rxjava to rapla-client
 
-**Status:** draft
+**Status:** done (2026-05-07) — Phases 0–4 shipped.
 **Date:** 2026-05-07
+
+## Outcome (verified end state)
+
+- `mvn -pl rapla-core dependency:tree | grep rxjava` → empty ✓
+- `mvn -pl rapla-server dependency:tree | grep rxjava` → empty ✓
+- `mvn -pl rapla-client dependency:tree | grep rxjava` → `io.reactivex.rxjava3:rxjava:3.1.5` ✓
+- `grep -rE "import io\.reactivex" rapla-core/src/main rapla-server/src/main` → empty ✓
+- `grep -rE "Throwables\.uncheck|new CompletionException\(" rapla-core/src/main` → empty (only inside `SynchronizedPromise.java` impl-internal bridging, which is the contained pattern the PRD allows) ✓
+- `mvn clean compile` BUILD SUCCESS, `mvn test` 23 test classes / all green ✓
+
+### What landed by phase
+
+| Phase | Status | Outcome |
+|---|---|---|
+| **0** Cleanup of in-flight pollution | ✅ done | Defined custom function-type interfaces (`Function`, `Consumer`, `Action`, `BiFunction`, `BiConsumer`) + `Cancellation` in `org.rapla.scheduler`. Updated `Promise.java` and impls to use them. Deleted `Throwables.java`. Removed every `Throwables.uncheck(...)` and inline `try/catch + CompletionException` block from user-code lambdas in `FacadeImpl`, `RemoteOperator`, `AbstractCachableOperator`. Reverted `RaplaFacade`'s `Consumer` import to use the custom one. |
+| **1** De-rxjava-ify `CommandScheduler` | ✅ done | Removed rxjava `Disposable`/`Action` imports from `CommandScheduler`. Replaced `Disposable` returns with the new `Cancellation` interface. Rewrote `delay(...)` and `schedule(...)` to use `ScheduledExecutorService` directly (no rxjava `just(t).delay(ms)` chains). `UtilConcurrentCommandScheduler` is now rxjava-free. Bulk-swapped 32 files' rxjava `functions.*` imports to `org.rapla.scheduler.*` equivalents. Replaced `Disposable` field types in `RaplaClientServiceImpl`, `LocalAbstractCachableOperator`, `NotificationService`, `SynchronisationManager`, `ArchiverServiceTask` with `Cancellation`; replaced `.dispose()` calls with `.cancel()`. |
+| **2** Move `Observable`/`Subject` to client | ✅ done | Removed `just(T)`, `toObservable(Promise<T>)`, `createPublisher()` from `CommandScheduler` interface (and from `UtilConcurrentCommandScheduler` impl). Added `Executor getExecutor()` to `CommandScheduler` so client callers can attach Observable streams to the scheduler's executor. `git mv`d `Observable.java`, `Subject.java`, `JavaObservable.java`, `JavaSubject.java` from `rapla-core` to `rapla-client`. Created `org.rapla.scheduler.Observables` in client with static `createPublisher(Executor)`, `toObservable(Promise, Executor)`, `just(T, Executor)` methods. Migrated 11 client callers (and 2 plugin callers) from `scheduler.createPublisher()` etc. to `Observables.createPublisher(scheduler.getExecutor())` etc. Moved `ObservableTest` from core/test to client/test. Stripped Observable references from `DefaultScheduler` (deleted unused `scheduleAtGivenTime` methods). |
+| **3** Add `SyncStorageOperator` | ✅ done | New `org.rapla.storage.SyncStorageOperator` interface in core declaring `getConflictsSync(User)` and `getConflictsSync(Reservation)`. `LocalAbstractCachableOperator` implements it via direct sync work — `getConflictsSync(User)` runs the conflict-finder logic inline; `getConflictsSync(Reservation)` does the allocatable-bindings + conflict-check logic inline (no call into the async path). Async siblings now delegate the other way: `getConflicts(...) = scheduler.supply(() -> getConflictsSync(...))`. `SecurityManager` constructor takes a `SyncStorageOperator` parameter (Spring auto-wires `LocalAbstractCachableOperator`); the two `SynchronizedCompletablePromise.waitFor(operator.getConflicts(...), ...)` blocking sites in `SecurityManager.checkPermissions` are gone — replaced with direct `syncOperator.getConflictsSync(...)` calls. `ServerServiceConfig.securityManager` bean updated. |
+| **4** Move rxjava Maven dep to client only | ✅ done | Removed `rxjava` and `reactive-streams` `<dependency>` blocks from `rapla-core/pom.xml`. Added explicit `rxjava` dep block to `rapla-client/pom.xml` (reactive-streams comes transitively). Version pin in `rapla-bom`'s `<dependencyManagement>` is unchanged. |
+| **5** Replace remaining server-side async storage calls with `SyncStorageOperator` | ✅ done | Extended `SyncStorageOperator` with `queryAppointmentsSync`, `queryAppointmentsByLocalDateTimeSync` (default), `getFirstAllocatableBindingsSync`, `getAllAllocatableBindingsSync` (in addition to the Phase-3 `getConflictsSync(User\|Reservation)`). Refactored `LocalAbstractCachableOperator` to make the **sync methods the source of truth** — async siblings are thin `scheduler.supply(() -> syncMethod(...))` wrappers, never the other way around. Refactored `RemoteStorageImpl` to inject `SyncStorageOperator` and call sync versions directly: 4 call sites that previously chained `operator.queryAppointments(...).waitFor`, `operator.getConflicts(...).thenApply`, `operator.getFirstAllocatableBindings(...).thenApply`, `operator.getAllAllocatableBindings(...).thenApply` are now plain sync calls wrapped only in `ResolvedPromise.of(...)` for the public method's `Promise<>` return shape. Migrated `RaplaEventsRestPage` similarly via `queryAppointmentsByLocalDateTimeSync`. |
+| **6** Sync siblings on server-internal services | ✅ done | Same "sync is source of truth, async wraps sync" pattern applied to three server-internal services where Promise was pure ceremony: `RemoteLocaleServiceImpl` (added `localeSync`, `countriesSync`); `ArchiverServiceImpl` (added `backupNowSync`, `restoreSync`, `deleteSync`); `RaplaJNDITestOnLocalhost` (added `testSync`). Migrated the matching REST controllers — `RemoteLocaleController`, `ArchiverController`, `JNDIConfigController` — to inject the impl class directly and call sync versions, removing 7 `.waitFor` sites. Service interfaces (`RemoteLocaleService`, `ArchiverService`, `JNDIConfig`) keep their Promise shape because they're shared with the Swing client over `@HttpExchange`. |
+| **7** Plugin-internal storage waits | ✅ done | Added `doMergeSync` to `SyncStorageOperator` + impl on `LocalAbstractCachableOperator`. Two sites migrated: `RemoteStorageImpl.doMerge` (was `operator.doMerge(...).thenCompose(_ -> refresh(time))`, now direct `syncOperator.doMergeSync(...)` + `refreshSync(time)` calls); `SynchronisationManager.queryAppointments` (was `cachableStorageOperator.queryAppointments(...).waitFor`, now cast to `SyncStorageOperator` and call `queryAppointmentsSync` directly — same instance implements both). |
+| **8** RaplaFacade-async + RemoteStorageController | ✅ done | Added `getReservationsSync(...)` default method on `SyncStorageOperator` that mirrors `RaplaFacade.getReservationsAsync` and translates `AppointmentMapping → Collection<Reservation>` internally — gives any server caller a single sync entry point without changing `RaplaFacade`. Migrated 3 active facade-async sites: `ArchiverServiceImpl.delete(...)` (static helper now takes `SyncStorageOperator` parameter; `ArchiverServiceTask` updated), `RaplaICalImport.importCalendar` (returned `Promise<Integer[]>` → `Integer[]`; the `getImportedReservations` chain flattened to imperative; `importICal` `waitFor` removed). The `RaplaJNLPPageGenerator` site that grep had flagged turned out to be inside a `/* … */` comment block (dead code, no migration needed). Added `getNextAllocatableDateSync` to `SyncStorageOperator`. Added 7 sync methods to `RemoteStorageImpl` (`getEntityDependenciesSync`, `queryAppointmentsSync`, `dispatchSync`, `getConflictsSync`, `getFirstAllocatableBindingsSync`, `getAllAllocatableBindingsSync`, `getNextAllocatableDateSync`, `doMergeSync`, `restartServerSync`). Rewrote `RemoteStorageController` to inject `RemoteStorageImpl` directly and call sync methods straight through — **deleted the `await()` Promise-blocking helper entirely**; 12 `.waitFor`-equivalent sites collapsed to direct sync calls. |
+| **9** `SyncCalendarModel` sibling | ✅ done | New `org.rapla.facade.SyncCalendarModel` interface in core declaring `queryReservationsSync`, `queryAppointmentsSync`, `queryAppointmentBindingsSync`, `queryBlocksSync` — sync siblings of the four `CalendarModel` query methods. `CalendarModelImpl` now `implements CalendarSelectionModel, SyncCalendarModel`; the four async query methods became thin `scheduler.supply(() -> querySync(...))` wrappers, with the sync paths doing the real work via a `requireSyncOperator()` cast. The cast throws `UnsupportedOperationException` if the underlying operator isn't an in-process `SyncStorageOperator` (i.e. on the client where `RemoteOperator` is in use), so client callers transparently keep using the async path. Extended `SyncStorageOperator` with `getFromIdSync` and a `templateId` variant of `queryAppointmentsSync`; impls on `LocalAbstractCachableOperator`. Refactored helpers `getAppointments(conflicts)` and `getAppointmentsForRequests(requests)` (and the private `queryAppointmentBindings(allocatables, owners, …)`) into sync siblings. Migrated 5 server `.waitFor` call sites: `Export2iCalServlet` (2 sites), `AppointmentTableViewPage`, `AppointmentPerDayViewPage`, `ReservationTableViewPage` — each cast `model` to `SyncCalendarModel` and call the new sync method directly. Added `RaplaBuilder.initFromModelSync(...)` (factored the lambda body of `initFromModel` into a private `applyBindings` helper shared by both async and sync paths) and migrated `AbstractHTMLCalendarPage.createBuilder` to call it. After Phase 9, server `.waitFor` sites are **zero** outside of REST parser infrastructure (`JacksonParserWrapper`, `GsonParserWrapper`). |
+
+### Server-side async-facade audit (final state)
+
+Phase 9 cleared the `CalendarModel`-driven sites. After Phase 9 the only `SynchronizedCompletablePromise.waitFor` references in `rapla-core` + `rapla-server` are **REST parser infrastructure** (`JacksonParserWrapper`, `GsonParserWrapper`) — these are intentional sync entry points at the I/O boundary and are not part of any "remove async ceremony" effort. The `ArchiverServiceImpl` and `RaplaICalImport` chains were already migrated in Phase 8 (the only remaining facade-async chain in earlier audit notes was the commented-out `RaplaJNLPPageGenerator:236`, which is dead code).
+
+## Out of scope (deferred to a future PRD)
+
+- **Sync `RaplaFacade` sibling.** The 10-15 server `.waitFor` sites that wait on facade-level methods (`raplaFacade.getReservationsAsync(...)`, `model.queryReservations(...)`, etc.) — distinct from storage-side waits — were not migrated. They keep using `.waitFor`. A future PRD can introduce a `RaplaServerFacade` sync sibling for the specific facade methods these callers need.
+- **More `SyncStorageOperator` methods.** Only `getConflictsSync(User|Reservation)` is exposed today (the methods needed to remove `SecurityManager`'s waits). Add more sync methods to the interface as new sync call sites need them.
+- **Promise → CompletionStage rename.** `Promise<T>` stays. Removing it would create a separate exception-cascade decision (custom checked-allowing function types vs JDK function types vs make `RaplaException` unchecked); none of those are needed to confine rxjava.
 
 ## Goal
 
-Two coupled changes that simplify the async story across the codebase:
+**Primary:** rxjava only lives in `rapla-client`. `rapla-core` and `rapla-server` have no rxjava on the classpath.
 
-1. **`rapla-server` becomes synchronous.** Storage and facade impls return raw values (`Collection<Reservation>`, `User`, etc.) instead of `Promise<T>`. Server callers stop chaining `.thenApply` and stop blocking with `SynchronizedCompletablePromise.waitFor(...)`. Spring's `TaskScheduler` / `@Scheduled` / `TaskExecutor` replace `CommandScheduler` for the server's actual scheduling needs (one periodic archiver task, a few worker-thread submissions, plain `synchronized` blocks).
-2. **`rxjava` is confined to `rapla-client`.** The `rxjava` Maven dep moves from `rapla-bom`'s default `<dependencies>` to `rapla-client/pom.xml`. `rapla-core` becomes rxjava-free; the custom `Promise<T>` interface (a thin wrapper around `CompletionStage`) is deleted in favour of `CompletionStage<T>` in core's interface signatures. The rxjava-shaped abstractions that genuinely use rx operators (`Observable`, `Subject`, `CommandScheduler`) move to `rapla-client` along with their impls.
+**Secondary (smaller, scoped via `SyncStorageOperator`):** server stops blocking on `SynchronizedCompletablePromise.waitFor(...)` for storage calls. The 5–8 `.waitFor` sites in REST controllers / servlets / pages become direct synchronous calls.
 
 ### Verifiable end state
 
 ```
-$ mvn -pl rapla-core dependency:tree | grep rxjava       # empty
-$ mvn -pl rapla-server dependency:tree | grep rxjava     # empty
-$ mvn -pl rapla-client dependency:tree | grep rxjava     # io.reactivex.rxjava3:rxjava:3.1.5
+$ mvn -pl rapla-core   dependency:tree | grep rxjava   # empty
+$ mvn -pl rapla-server dependency:tree | grep rxjava   # empty
+$ mvn -pl rapla-client dependency:tree | grep rxjava   # io.reactivex.rxjava3:rxjava:3.1.5
 
-$ grep -rE "^import io\.reactivex" rapla-core/src/main rapla-server/src/main   # empty
-$ grep -rE "^import io\.reactivex" rapla-client/src/main | wc -l               # >0
-
-$ grep -rE "\.thenApply|\.thenCompose|\.thenAccept" rapla-server/src/main      # empty
-$ grep -rE "Promise<|ResolvedPromise|SynchronizedCompletablePromise" rapla-server/src/main rapla-core/src/main  # empty
-
-$ ls rapla-core/src/main/java/org/rapla/scheduler/                              # directory does not exist
+$ grep -rE "import io\.reactivex" rapla-core/src/main rapla-server/src/main   # empty
+$ grep -rE "Throwables\.uncheck|new CompletionException\(" rapla-core/src/main # empty (cleanup, see Phase 0)
+$ grep -rE "SynchronizedCompletablePromise\.waitFor" rapla-server/src/main    # only in non-storage callers
 ```
 
-## Why
+`Promise<T>` stays. `RaplaFacade` (async) stays in core. `RemoteOperator` stays in core. The server-as-client option (a Rapla server using `RemoteOperator` to call another Rapla server) is preserved.
 
-### Why drop `Promise<T>` in favour of `CompletionStage<T>`
+## Scope and end-state placement
 
-`Promise<T>`'s own javadoc says *"same as `java.util.concurrent.CompletionStage` but usable in gwt"*. GWT was removed years ago. The production impl (`SynchronizedPromise`) is a literal `CompletionStage` wrapper:
+| Module | Async-shaped types | rxjava |
+|---|---|---|
+| `rapla-core` | `Promise<T>` + impls (using custom function types — see Phase 1), `RaplaFacade` (async), `StorageOperator` (async) + new `SyncStorageOperator` sibling, `CommandScheduler` (rewritten on `ScheduledExecutorService`), `RemoteOperator`, `FacadeImpl`, `ClientFacadeImpl` | **none** |
+| `rapla-server` | impls `SyncStorageOperator` (only `LocalAbstractCachableOperator`) for in-process storage; can still call `RaplaFacade` async if it wants | **none** |
+| `rapla-client` | `Observable<T>`, `Subject<T>` and rxjava-using impls (`JavaObservable`, `JavaSubject`), plus existing client-side rxjava use | yes |
+| `rapla-app` | wires it all | (transitive only) |
 
-```java
-public class SynchronizedPromise<T> implements Promise<T> {
-    final Executor promiseExecutor;
-    final CompletionStage f;          // ← it just holds one
-    ...
-}
-```
-
-Every Promise method delegates to `CompletionStage`. The rxjava imports it carries (`Action`, `Consumer`, `Function`, `BiFunction`, `BiConsumer`) are function-type aliases, used because GWT couldn't compile JDK `java.util.function.*`. With GWT gone, the wrapper is dead weight.
-
-The only thing `Promise` has that `CompletionStage` doesn't is `execOn(Executor)` — a *sticky executor* used by Swing presenters to keep subsequent `thenApply` continuations on the EDT. That capability is preserved as a tiny ~50-line client-side wrapper around `CompletionStage` (see Phase 1 #4).
-
-### Why the server should be synchronous
-
-Server methods return `Promise<T>` regardless of who calls them. But:
-
-- A server request runs on a thread already dedicated to it. There is no UI thread to protect.
-- Server code allocates a `Promise`, chains `.thenApply`, then `.get()`s back into a value — every method async-shaped despite no actual async work.
-- The 9 `.thenApply` / `.thenCompose` chains in `rapla-server/src/main` are pure ceremony.
-- The 5 `SynchronizedCompletablePromise.waitFor(promise, timeout, ...)` blocking calls in REST controllers / servlets disappear *for free* once the underlying methods return raw values.
-
-PRD 005 split the modules and removed the `rapla-server → rapla-client` Maven edge. This PRD finishes the matching API shape: with separate modules in place, the *interfaces* should also be honest about who blocks and who doesn't.
-
-### Why Spring covers the server's `CommandScheduler` use
-
-The server's actual `CommandScheduler` needs are tiny:
-
-| Use | Spring replacement |
-|---|---|
-| `ArchiverServiceTask` periodic timer (every hour) | `@Scheduled(fixedRate = 3600000)` on a `@Component` method |
-| `scheduler.delay(task, ms)` (one-shot) | `TaskScheduler.schedule(task, Instant.now().plusMillis(ms))` |
-| `scheduler.run(task)` (submit to worker pool) | `TaskExecutor.execute(task)` or `CompletableFuture.runAsync(task, executor)` |
-| `scheduler.scheduleSynchronized(lock, task)` | plain `synchronized(lock) { task.run(); }` (after sync migration) |
-
-Spring Boot autoconfigures a `TaskScheduler` and `TaskExecutor` once `@EnableScheduling` is on the `@SpringBootApplication`. No new framework, no new abstraction.
-
-## Scope
-
-### What ends up where
-
-| Module | Contents (after refactor) |
-|---|---|
-| `rapla-core` | All entity / domain / framework / i18n / REST-contract code, **plus** four interfaces: `RaplaFacade` (async, returns `CompletionStage<T>`), `RaplaServerFacade` (sync, **new**), `StorageOperator` (async, returns `CompletionStage<T>`), `SyncStorageOperator` (sync, **new**). **No `org.rapla.scheduler.*` package.** Zero rxjava. |
-| `rapla-server` | Sync impls: `ServerFacadeImpl implements RaplaServerFacade`, `LocalAbstractCachableOperator implements SyncStorageOperator`. Zero `Promise`/`CompletionStage` returns from production logic. Spring `TaskScheduler` / `@Scheduled` for periodic work. Zero rxjava. |
-| `rapla-client` | Async wrapper around the server interfaces (used in tests / Swing) + the rxjava-shaped abstractions: `Observable`, `Subject`, `CommandScheduler` interfaces and their impls (`JavaObservable`, `JavaSubject`, `UtilConcurrentCommandScheduler`, `DefaultScheduler`). Plus the new ~50-line `Promise<T>` sticky-executor wrapper. **Only module with rxjava on the classpath.** |
-| `rapla-app` | Unchanged. Spring Boot `@SpringBootApplication` entry, distribution assembly. |
-
-### Files affected
-
-| File | Change |
-|---|---|
-| `rapla-core/src/main/java/org/rapla/scheduler/Promise.java` | **delete** (replaced by `CompletionStage<T>` at call sites) |
-| `rapla-core/.../scheduler/CompletablePromise.java` | **delete** (replaced by `CompletableFuture<T>`) |
-| `rapla-core/.../scheduler/ResolvedPromise.java` | **delete** (replaced by `CompletableFuture.completedFuture(x)`) |
-| `rapla-core/.../scheduler/UnsynchronizedPromise.java` | **delete** |
-| `rapla-core/.../scheduler/sync/SynchronizedPromise.java` | **delete** (it was already a `CompletionStage` wrapper) |
-| `rapla-core/.../scheduler/sync/SynchronizedCompletablePromise.java` | **delete**; `.waitFor(stage, ms, log)` either becomes `stage.toCompletableFuture().get(ms, MS)` inline or a tiny core utility `Stages.waitFor(...)` if call sites benefit from compactness |
-| `rapla-core/.../scheduler/Observable.java`, `Subject.java`, `CommandScheduler.java` | **move to `rapla-client/.../scheduler/`** (rxjava-shaped, only client uses operators like `delay`/`flatMap`) |
-| `rapla-core/.../scheduler/sync/JavaObservable.java`, `JavaSubject.java`, `UtilConcurrentCommandScheduler.java` | **move to `rapla-client`** |
-| `rapla-core/.../framework/internal/DefaultScheduler.java` | **move to `rapla-client`** (uses `CommandScheduler`/`Observable` operators) |
-| `rapla-core/.../facade/RaplaFacade.java` | Stays. 28 method signatures change `Promise<T>` → `CompletionStage<T>`. Mechanical. |
-| `rapla-core/.../facade/server/RaplaServerFacade.java` | Becomes a **sibling** (not subtype) of `RaplaFacade`. Same method names, sync return types, may `throws RaplaException`. Today extends `RaplaFacade` and adds one sync `getpersistent` method. |
-| `rapla-core/.../facade/internal/FacadeImpl.java` | Today implements `RaplaFacade` and wraps sync work in `Promise`. **Move sync work to `rapla-server` (new `ServerFacadeImpl`); replace this file with a thin async wrapper that lives in `rapla-client`** (delegates to the server interface, schedules onto a worker executor). |
-| `rapla-core/.../storage/StorageOperator.java` | Stays async. 15 `Promise<T>` returns become `CompletionStage<T>`. |
-| (new) `rapla-core/.../storage/SyncStorageOperator.java` | New sync sibling. Same 15 method names, raw return types. |
-| `rapla-server/.../storage/impl/server/LocalAbstractCachableOperator.java` | Switch from implementing `StorageOperator` to `SyncStorageOperator`. Drop every `return new ResolvedPromise<>(x);` → `return x;`. |
-| `rapla-server/.../plugin/notification/server/NotificationService.java` | Drop `.thenApply` / `Observable` orchestration; convert to imperative loops. If genuine periodic scheduling is needed, use `@Scheduled` (it currently has none — appears to use `Observable`/`CommandScheduler` only as a fancier way to write sequential code). |
-| `rapla-server/.../plugin/exchangeconnector/server/SynchronisationManager.java` | Same audit. The Exchange-API I/O is genuinely network-bound; that work runs in `CompletableFuture.runAsync(..., taskExecutor)` if needed. The reactive orchestration around it goes. |
-| `rapla-server/.../plugin/archiver/server/ArchiverServiceTask.java` | `timer.schedule(...)` → `@Scheduled(fixedRate = MILLISECONDS_PER_HOUR)` on the method. |
-| `rapla-server/src/main/java/.../*Servlet.java`, `*Controller.java`, `*Page.java` (the 5 `SynchronizedCompletablePromise.waitFor` sites) | Just call the sync method directly. Delete the `.waitFor` import + line. |
-| `rapla-server/.../server/spring/ServerCoreConfig.java` | Drop `@Bean CommandScheduler` (Spring autowires `TaskScheduler` / `TaskExecutor`). Wire `ServerFacadeImpl`. |
-| `rapla-server/pom.xml` | (Already has its own dep block.) Inherits no rxjava once it's pulled out of `rapla-bom`. |
-| `rapla-client/pom.xml` | Add explicit `<dependency>` on `io.reactivex.rxjava3:rxjava` (since it's no longer in the `rapla-bom` default). |
-| `rapla-bom/pom.xml` | Move `rxjava` and the `rxjava` `:sources:provided` deps from default `<dependencies>` to `<dependencyManagement>` only (so the version is still pinned for whoever opts in). |
-| (new) `rapla-client/.../scheduler/Promise.java` | ~50-line wrapper around `CompletionStage<T>` carrying a sticky `Executor`. Delegates `thenApply` etc. to `stage.thenApplyAsync(fn, executor)`. Used by Swing presenters that today chain `.execOn(edt).thenApply(...)`. |
-
-### Out of scope
-
-- Replacing rxjava `Observable`/`Subject` with JDK `Flow.Publisher`. The rx operators (`delay`, `flatMap`, `map`, `Schedulers.io()`) used by `UtilConcurrentCommandScheduler` and client presenters have no JDK equivalent worth recreating. rxjava stays in the client.
-- Removing `Promise` from the *client*. The 50-line wrapper preserves `execOn(executor)` sticky-executor ergonomics for Swing EDT chaining.
-- Touching the REST wire format. Server-side controllers can return raw values (Spring serializes synchronously) or `CompletableFuture<T>` (Spring auto-async); either is fine. No change to clients consuming the API.
+Out of scope:
+- Sync `RaplaFacade` sibling (`RaplaServerFacade` returning raw types) — dropped. Server keeps using `RaplaFacade` async if it wants.
+- Promise → `CompletionStage` rename. Promise stays.
+- Migration of `FacadeImpl` to client. Stays in core.
 
 ## Plan
 
-Five phases. Each compiles and `mvn test` passes on its own. Server-side work goes file-by-file.
+### Phase 0 — Clean up the in-flight pollution (must land first)
 
-### Phase 1 — Promise → CompletionStage in rapla-core (~1.5 days)
+The current working tree has an in-progress mix from an earlier exploration:
+- `Promise<T>` interface signatures use JDK `java.util.function.*` types (committed in `8dd5692a multimodule shift`).
+- `FacadeImpl`, `RemoteOperator`, `AbstractCachableOperator` have `Throwables.uncheck(...)` wrappers and inline `try { ... } catch (RaplaException e) { throw new CompletionException(e); }` blocks.
+- A `Throwables.uncheck` helper exists in `rapla-core/.../framework/`.
+- `RaplaFacade.java` uses `java.util.function.Consumer` instead of rxjava `Consumer`.
 
-1. Replace `Promise<T>` return types in `RaplaFacade.java` (28 methods) and `StorageOperator.java` (15 methods) with `CompletionStage<T>`. The rxjava `Function`/`Consumer`/`Action` aliases inside method bodies that callers pass become JDK `java.util.function.Function`/`Consumer` and `Runnable`. **Real risk:** rxjava `Function.apply` declares `throws Throwable`; JDK doesn't. Grep for catch-rethrow patterns and adjust.
-2. Replace `ResolvedPromise.of(x)` call sites with `CompletableFuture.completedFuture(x)`. Replace `new UnsynchronizedPromise<>()` constructions similarly.
-3. Delete `Promise.java`, `CompletablePromise.java`, `ResolvedPromise.java`, `UnsynchronizedPromise.java`, `sync/SynchronizedPromise.java`, `sync/SynchronizedCompletablePromise.java`.
-4. Add `rapla-client/.../scheduler/Promise.java` — the ~50-line sticky-executor wrapper around `CompletionStage<T>` (or rename to `EdtPromise` / `ChainedStage` to avoid ambiguity with the deleted core type).
-5. Migrate Swing client call sites that today use `.execOn(edt).thenApply(...)` to the new wrapper. Most are in `rapla-client/.../client/swing/**`.
-6. **Verify:** `mvn install` BUILD SUCCESS, `mvn test` 94/94 pass. `grep -rE "import org\.rapla\.scheduler\.Promise" rapla-core` returns empty.
+This pollutes the codebase and is exactly what the rest of the PRD is designed to avoid. It happened because the JDK function types in `Promise<T>` reject checked exceptions, and the cascade was patched at every call site rather than fixed at the source.
 
-### Phase 2 — Sync sibling interfaces in rapla-core (~0.5 day)
+**Fix at the source:** replace JDK function types in `Promise<T>` (and impls + `RaplaFacade`) with custom checked-allowing function types defined in `org.rapla.scheduler`. Same shape as rxjava's, but our own. Lambdas throw checked freely. No wrapping anywhere.
 
-7. Make `RaplaServerFacade` a **sibling** (not subtype) of `RaplaFacade`. Mirror the 28 methods, sync signatures, may `throws RaplaException`. Keep the existing `getpersistent`.
-8. Create `SyncStorageOperator` as sibling of `StorageOperator`. Mirror the 15 methods, sync signatures.
-9. Add an `archunit` test that asserts every method *name* in `RaplaFacade` has a matching name in `RaplaServerFacade`, modulo return-type wrapping. ~30 LOC. Catches future drift.
-10. **Verify:** Both interfaces compile, no implementations yet. `mvn install` BUILD SUCCESS.
+Steps:
 
-### Phase 3 — Implement sync server facade in rapla-server, async wrapper in rapla-client (~1.5 days)
+1. **Add custom function-type interfaces** in `rapla-core/.../scheduler/`:
+   ```java
+   @FunctionalInterface public interface Function<T, R> { R apply(T t) throws Exception; }
+   @FunctionalInterface public interface Consumer<T>    { void accept(T t) throws Exception; }
+   @FunctionalInterface public interface Action         { void run() throws Exception; }
+   @FunctionalInterface public interface BiFunction<T, U, R> { R apply(T t, U u) throws Exception; }
+   @FunctionalInterface public interface BiConsumer<T, U>    { void accept(T t, U u) throws Exception; }
+   ```
+2. **Update `Promise.java`** to import `org.rapla.scheduler.{Function,Consumer,Action,BiFunction,BiConsumer}` instead of `java.util.function.*`.
+3. **Update `UnsynchronizedPromise`, `SynchronizedPromise`, `SynchronizedCompletablePromise`** to use the custom types in their method signatures. Internal bridging to `CompletionStage` (which uses JDK types) is local and self-contained — wrap the user's checked-throwing lambda once at the impl boundary.
+4. **Update `RaplaFacade.java`** — change `import java.util.function.Consumer;` to `import org.rapla.scheduler.Consumer;`.
+5. **Revert `FacadeImpl.java`**:
+   - Remove `import java.util.concurrent.CompletionException;` and `import java.util.function.Consumer;` (replace with `import org.rapla.scheduler.Consumer;` if needed).
+   - Remove the 10 inline `try { ... } catch (RaplaException e) { throw new CompletionException(e); }` blocks. Lambdas go back to bare bodies that propagate checked exceptions naturally — the custom function types allow it.
+6. **Revert `RemoteOperator.java`** — remove `Throwables.uncheck`/`uncheckC` static imports and unwrap every `uncheck(...)` / `uncheckC(...)` wrapping.
+7. **Revert `AbstractCachableOperator.java`** — same cleanup.
+8. **Delete `Throwables.java`** — no longer needed.
+9. **Verify**: `mvn compile` BUILD SUCCESS. `grep -rE "Throwables\.uncheck|new CompletionException\(" rapla-core/src/main` returns empty.
 
-11. Copy `FacadeImpl` to `rapla-server/.../facade/server/ServerFacadeImpl.java`. Strip every `CompletableFuture.completedFuture(x)` and `*Async` wrapping — this impl is now plain sync. Implements `RaplaServerFacade`.
-12. Same for `LocalAbstractCachableOperator`: implements `SyncStorageOperator`, no more `CompletableFuture` wrappers.
-13. Move `FacadeImpl` from `rapla-core` to `rapla-client`. It now holds a `RaplaServerFacade` (server-supplied via Spring on the server side; via REST proxy on the client) and wraps each call in `CompletableFuture.supplyAsync(() -> serverFacade.x(...), workerExecutor)`. **Critical:** the wrapper *must* dispatch onto a worker executor — running the supplier inline on the calling thread silently regresses EDT-blocking. Add a test that verifies the calling thread isn't the same as the completion thread.
-14. Update `ServerCoreConfig` to wire `ServerFacadeImpl` for `RaplaServerFacade`. The async `RaplaFacade` impl is wired only on the client side.
-15. **Verify:** `mvn install` BUILD SUCCESS, `mvn test` 94/94 pass.
+After Phase 0, the working tree is clean and the rest of the plan starts from a pristine state. **No phase below introduces new try/catch noise.**
 
-### Phase 4 — Migrate server callers off async (~2-3 days)
+### Phase 1 — De-rxjava-ify `CommandScheduler`
 
-One PR. Internally organised as the batches below — useful as commit boundaries within the PR for bisecting if something regresses, but not as separate review units. The migrations are mechanically similar enough that splitting them across reviews adds review overhead without adding signal.
+10. **Rewrite the interface**: drop `just(T)` and `toObservable(Promise<T>)` (only used by rxjava-flavored default methods). Replace `Disposable` returns with `AutoCloseable` (or a 1-method `Cancellation` type if `AutoCloseable.close() throws Exception` is awkward).
+11. **Rewrite the default methods** (`delay`, `schedule`) to use `ScheduledExecutorService` directly instead of `just(t).delay(ms)` chains.
+12. **Rewrite `UtilConcurrentCommandScheduler`** to use `ScheduledExecutorService` internally. Drop rxjava processors.
+13. **Update `DefaultScheduler`** which extends UtilConcurrentCommandScheduler.
 
-16. **Batch a:** `rapla-server/.../server/spring/web/*Controller.java` and `rapla-server/.../*Servlet.java` and `rapla-server/.../endpoints/server/*Page.java`. Switch from `RaplaFacade` to `RaplaServerFacade`. Delete every `SynchronizedCompletablePromise.waitFor(promise, ...)` call — the underlying call is sync now.
-17. **Batch b:** `rapla-server/.../plugin/exchangeconnector/server/*.java`. Replace `.thenApply` chains with imperative code. The Exchange-API I/O genuinely is network-bound — wrap *only the I/O calls* in `CompletableFuture.runAsync(...)` if true async is needed for parallelism, otherwise sync.
-18. **Batch c:** `rapla-server/.../plugin/notification/server/*.java`. Convert to imperative loops over the now-sync facade.
-19. **Batch d:** `rapla-server/.../plugin/archiver/server/ArchiverServiceTask.java`. Replace `timer.schedule(() -> doArchive(...), 0, MS_PER_HOUR)` with `@Scheduled(fixedRate = 3600000)` on a `@Component` method. Add `@EnableScheduling` to the `@SpringBootApplication` if not already there.
-20. **Batch e:** Remaining `rapla-server/.../server/internal/*` and storage callers. Drop `CommandScheduler` injection — replace with `TaskExecutor` injection where async submit is needed, plain sync where not.
-21. After all batches: `grep -rE "thenApply|thenCompose|thenAccept|SynchronizedCompletablePromise" rapla-server/src/main` returns 0 lines. `grep -rE "import io\.reactivex" rapla-server/src/main` returns 0 lines. `grep -rE "import org\.rapla\.scheduler" rapla-server/src/main` returns 0 lines.
+### Phase 2 — Move `Observable<T>` / `Subject<T>` to `rapla-client`
 
-### Phase 5 — Move rxjava abstractions to rapla-client; relocate Maven dep (~0.5 day)
+14. **Audit server use**: `NotificationService` and `SynchronisationManager` use `Observable` for periodic orchestration. Rewrite them to use `@Scheduled(fixedRate = ...)` + plain imperative code. The single periodic task in `ArchiverServiceTask` (`timer.schedule(...)`) becomes `@Scheduled` too.
+15. **`git mv`** `Observable.java`, `Subject.java`, `JavaObservable.java`, `JavaSubject.java` from `rapla-core` to `rapla-client/.../scheduler/`.
+16. **Verify**: `grep -rE "import io\.reactivex|import org\.rapla\.scheduler\.Observable|import org\.rapla\.scheduler\.Subject" rapla-core/src/main rapla-server/src/main` returns empty.
 
-22. `git mv` the rxjava-shaped files from `rapla-core/.../scheduler/` and `rapla-core/.../framework/internal/DefaultScheduler.java` to corresponding paths in `rapla-client`. Delete the now-empty `rapla-core/.../scheduler/` directory.
-23. Move `<dependency>io.reactivex.rxjava3:rxjava</dependency>` (and the `:sources:provided` declaration) from `rapla-bom`'s default `<dependencies>` block into `<dependencyManagement>` only. Add an explicit `<dependency>` block for it in `rapla-client/pom.xml`.
-24. **Verify:**
+### Phase 3 — Add `SyncStorageOperator` (the secondary goal)
+
+17. **Define `SyncStorageOperator`** in `rapla-core/.../storage/` as a sibling of `StorageOperator` (NOT a subtype). Same method names, sync return types, may `throws RaplaException`.
+18. **Make `LocalAbstractCachableOperator` implement `SyncStorageOperator`** in addition to `StorageOperator`. The sync methods unwrap the existing async impl: e.g., `getReservations(...) throws RaplaException` calls the async path internally and unwraps. Cleaner: add direct sync methods that don't go through the async wrappers at all.
+19. **Migrate the 5–8 `.waitFor` sites in server controllers/servlets/pages**:
+    - `Export2iCalServlet`, `RaplaEventsRestPage`, `AppointmentTableViewPage`, `ReservationTableViewPage`, `AppointmentPerDayViewPage`, `AbstractHTMLCalendarPage`, `RaplaICalImport`, `RemoteLocaleController`, `JNDIConfigController`, `ArchiverController`, `SecurityManager`
+    - Each replaces `SynchronizedCompletablePromise.waitFor(facadeOrOperator.someAsync(), 10000, null)` with `syncOperator.someSync(...)` directly.
+    - For sites that wait on `RaplaFacade.someAsync(...)` (not `StorageOperator.someAsync(...)`), they keep the `.waitFor` for now (out of scope; deferred).
+
+### Phase 4 — Move the rxjava Maven dep
+
+20. Move `<dependency>io.reactivex.rxjava3:rxjava</dependency>` (and the `:sources:provided` declaration) from `rapla-bom`'s default `<dependencies>` block into `<dependencyManagement>` only. Add an explicit `<dependency>` block for it in `rapla-client/pom.xml`.
+21. **Verify**:
     - `mvn -pl rapla-core dependency:tree | grep rxjava` empty
     - `mvn -pl rapla-server dependency:tree | grep rxjava` empty
     - `mvn -pl rapla-client dependency:tree | grep rxjava` shows `io.reactivex.rxjava3:rxjava:3.1.5`
-    - `mvn install` BUILD SUCCESS, `mvn test` 94/94 pass
-25. Update PRD 005's "remaining one-way edges" table — the `rapla-core → rxjava` and `rapla-server → rxjava` edges are now both gone.
+    - `mvn install` BUILD SUCCESS, `mvn test` 94/94 pass.
+
+## Server-side async-facade audit
+
+Beyond the storage-side `.waitFor` sites that Phase 3 fixes, **`RaplaFacade` (async) is also called from server code in nontrivial ways**. Those are out of this PRD's scope but listed here so they're not lost:
+
+| Site | Call | Disposition |
+|---|---|---|
+| `ArchiverServiceImpl:132` | `raplaFacade.getReservationsAsync(...).thenAccept((events) -> raplaFacade.removeObjects(events))` | Background archiver. Phase 1 makes the periodic schedule Spring-native (`@Scheduled`); the lambda body could remain async or be rewritten as imperative. Defer. |
+| `RaplaJNLPPageGenerator:236` | `reservations.thenAccept((events) -> ...)` for JNLP page rendering | Servlet request handler that needs the result before responding. Today blocks via implicit Promise resolution. Could go sync; deferred. |
+| `RaplaResourcesRestPage`, `RaplaEventsRestPage`, `RemoteStorageImpl` | Various `.thenApply` / `.thenAccept` chains on async results before responding to REST | Same story — request handlers that ultimately need to block before responding. The cleanest fix is the dropped `RaplaServerFacade` sync sibling. Without it, callers continue to use `.waitFor`. |
+| `SecurityManager:443,458` | `.waitFor(operator.getConflicts(...))` chained with `.thenAcceptBoth` | Storage-side; **fixed by Phase 3** (`SyncStorageOperator.getConflicts(...)`). |
+| `NotificationStorage`, `JNDIServerPlugin`, `ExchangeAppointmentStorage`, `RaplaICalImport` | `.thenApply` chains on storage and facade calls | Mix of storage (fixed by Phase 3) and facade (deferred). |
+
+**Total deferred async-facade sites on server:** ~10–15. Suggested follow-up PRD when/if the server-sync goal is revived: introduce a `RaplaServerFacade` sync sibling for the specific facade methods these callers need (a subset, not all 28). The decision is "is the server's facade-async ceremony worth a dedicated cleanup PRD?" — answer probably yes eventually, but not bundled with the rxjava goal.
 
 ## Tests
 
-This is a refactor, not a feature. Existing tests are the verification. Three places where new tests are appropriate:
+Existing 94 tests are the verification. No new tests required.
 
-| Phase | New test |
+| Phase | Verification |
 |---|---|
-| 1 | None — Promise/CompletionStage substitution is mechanical, existing tests cover it. |
-| 2 | `archunit` test asserting method-name parity between `RaplaFacade` and `RaplaServerFacade`. ~30 LOC. Catches future drift. |
-| 3 | Test that the async `FacadeImpl` wrapper schedules onto a worker executor, not the calling thread. Captures the "supplier runs inline" bug at compile time. |
-| 4 | None per batch — each batch is verified by passing the existing 94 tests. |
-| 5 | Add a CI-level grep assertion (`grep -rE "import io\.reactivex" rapla-core/src/main rapla-server/src/main` must be empty) to prevent regression. |
+| 0 | `mvn compile` BUILD SUCCESS. `grep -rE "Throwables\.uncheck\|new CompletionException\(" rapla-core/src/main` empty. `Throwables.java` deleted. |
+| 1 | `mvn install` BUILD SUCCESS, all tests pass. `CommandScheduler` no longer imports rxjava. |
+| 2 | All tests pass. `Observable`/`Subject` imports in `rapla-core`/`rapla-server` empty. |
+| 3 | All tests pass. `SynchronizedCompletablePromise.waitFor` in server only appears in deferred facade sites (not storage sites). |
+| 4 | All tests pass. The three `dependency:tree` checks confirm rxjava placement. |
 
 ## Risks
 
-1. **rxjava `Function`/`Consumer`/`Action` allow checked exceptions; JDK equivalents don't.** Some callers throw checked exceptions inside `.thenApply` lambdas relying on rxjava's `throws Throwable`. **Mitigation:** Phase 1 grep for `throws RaplaException` inside lambda bodies. Wrap as `RaplaUncheckedException` (existing) at the boundary, unwrap inside `.exceptionally`. Worst case: a few mechanical rewrites.
-
-2. **The async wrapper in Phase 3 must run on a worker executor.** A naive `CompletableFuture.completedFuture(serverFacade.foo())` evaluates `foo()` on the calling thread — exactly the EDT-blocking bug we're trying to avoid. **Mitigation:** the wrapper uses `CompletableFuture.supplyAsync(() -> serverFacade.foo(), workerExecutor)`. Test in Phase 3 asserts thread identity differs.
-
-3. **`Observable`/`Subject` move to client breaks any server caller that uses them.** Today `NotificationService` and `SynchronisationManager` use them. **Mitigation:** Phase 4 batches b and c rewrite those call sites *before* Phase 5 moves the interfaces. If a residual server caller is missed, Phase 5's `mvn compile` catches it loudly.
-
-4. **`RaplaFacade` is part of the plugin ABI.** Any custom plugin (dhbwrapla, others) that today injects `RaplaFacade` and calls `.thenApply` will see method signatures change `Promise<T>` → `CompletionStage<T>`. **Mitigation:** `CompletionStage<T>` is a strictly richer JDK interface; existing `.thenApply` call sites compile unchanged. No migration needed downstream beyond what their own code chooses to do.
-
-5. **The Exchange / notification reactive code might be doing real async work.** If `SynchronisationManager`'s rxjava use is for parallel I/O fan-out, "make it sync" regresses throughput. **Mitigation:** Phase 4 batch b audits each rxjava use case; for genuinely parallel I/O, use `CompletableFuture.runAsync(..., taskExecutor)` with a server-side worker pool. Don't blindly serialize.
-
-6. **`Promise.exceptionally(Consumer<Throwable>)` and `CompletionStage.exceptionally(Function<Throwable,T>)` differ in shape.** Promise's "log and forget" callers need to return a recovery value (or `null`) under `CompletionStage`. **Mitigation:** mechanical: every `promise.exceptionally(t -> log.error(t))` becomes `stage.exceptionally(t -> { log.error(t); return null; })`. Phase 1 enumerates all sites.
-
-7. **Two parallel facade interfaces drift over time.** Adding a method to `RaplaFacade` and forgetting to add it to `RaplaServerFacade` silently halves the API. **Mitigation:** the archunit test in Phase 2 #9 asserts parity at every build.
-
-8. **Spring `@EnableScheduling` may not be on the existing `@SpringBootApplication`.** The archiver replacement assumes it is. **Mitigation:** Phase 4 batch d adds it if missing.
+1. **Custom function types collide with imports.** Files that import both `java.util.function.Function` and our `org.rapla.scheduler.Function` need fully-qualified references or alias imports. Mitigation: prefer the custom one for Promise-related code, JDK one for stream/util code; resolve case-by-case as Phase 0 progresses.
+2. **`AutoCloseable.close()` declares `throws Exception`.** If callers want a no-throw cancellation, we may need our own `Cancellation` interface. Decide in Phase 1.
+3. **`NotificationService` / `SynchronisationManager` rewrite may surface real periodic-orchestration bugs.** Today they orchestrate via rxjava Observable in ways that *might* depend on rx semantics (backpressure, scheduling). Rewriting as `@Scheduled` + imperative needs careful audit. Mitigation: rewrite each one in its own commit, run targeted tests after each.
+4. **`SyncStorageOperator` impl path.** Two options: (a) `LocalAbstractCachableOperator` adds direct sync methods alongside the existing async ones; (b) the sync methods just call the async ones and `.waitFor` internally. (a) is cleaner; (b) is faster to write but defeats the goal. **Use (a).**
 
 ## Open Questions
 
-1. **Should `Promise<T>` (the new ~50-line client-side wrapper) keep the same name?** Pro: minimal call-site churn for Swing presenters. Con: confusable with the deleted core type. **Recommendation:** rename to `EdtPromise` or `ChainedStage` to make the intent obvious.
-2. **`SynchronizedCompletablePromise.waitFor(stage, timeoutMs, logger)` is used in 5 server controllers. Inline as `stage.toCompletableFuture().get(timeoutMs, MS)` or keep as a tiny `Stages.waitFor(...)` utility?** The tiny utility logs on timeout, which the inline form loses. **Recommendation:** inline. After Phase 4 the server callers are sync — there's no `stage` to wait on at all. The .waitFor sites disappear, not migrate.
-3. **Should the async wrapper in Phase 3 dispatch every `CompletionStage<T>`-returning call to a single worker executor, or use Spring's `TaskExecutor`?** Single executor is simpler; Spring's auto-tunes the pool. **Recommendation:** Spring's. The wrapper takes `TaskExecutor` via constructor injection.
-4. **What's the migration path for downstream consumers (dhbwrapla)?** They depend on `org.rapla:rapla-core` and `:rapla-server`. Method signatures change `Promise<T>` → `CompletionStage<T>`. Their existing `.thenApply` call sites compile unchanged (CompletionStage has the same method names). `Promise.execOn(...)` callers — if any — break and need to migrate to either explicit `*Async(fn, executor)` or the client-side `Promise` wrapper. **Recommendation:** flag in the PR description; offer the wrapper as an importable class if downstream wants to keep their code shape.
-5. **`Subject<T>` event streams in the client — do any of them survive the refactor?** They're used by Swing presenters for view event streams. Out of scope. They keep using rxjava in `rapla-client`.
+1. **`AutoCloseable` vs custom `Cancellation` for `CommandScheduler.delay()` / `.schedule()` returns?** AutoCloseable is JDK-standard but `close() throws Exception` is awkward for "cancel a scheduled task." Recommendation: define a tiny `org.rapla.scheduler.Cancellation` (1 method, no throws).
+2. **Phase 3 — direct sync methods vs unwrap-the-async?** Recommendation: direct sync methods (option (a) in Risk #4).
+3. **Should the `Subject<T> extends Observable<T>, Subscriber<T>` declaration drop the `Subscriber` parent when moving to client?** `org.reactivestreams.Subscriber` is a transitive of rxjava. It's fine to keep — rxjava is in client now. No change needed.
+4. **What about `NotificationService` / `SynchronisationManager`'s rxjava use that's *internal* (not via Observable)?** If they use `Schedulers.io()` or rxjava-specific APIs beyond Observable, those need rewriting too. Survey in Phase 2 step 14.
 
 ## Dependencies on other PRDs
 
 | PRD | Relationship |
 |---|---|
 | **004: Multi-Module Architecture Analysis** | Frames why client/server separation matters. No direct dep. |
-| **005: Multi-Module Split** | Hard prerequisite. The interface split this PRD proposes only makes sense once modules are split — done. |
-| **007: Build & Test Performance** | Independent. The Phase 1.2 `mvn test && mvn test` non-idempotence in PRD 007 is unrelated. |
-| **(future) Angular client** | Independent. Angular consumes REST, not Java. The new sync `RaplaServerFacade` is exactly the shape REST controllers want. |
+| **005: Multi-Module Split** | Hard prerequisite. Done. |
+| **007: Build & Test Performance** | Independent. |
+| **(future) Server-side facade-sync** | This PRD's "Server-side async-facade audit" section enumerates the ~10–15 deferred sites. A future PRD introduces a `RaplaServerFacade` sync sibling for them. Independent of rxjava confinement. |

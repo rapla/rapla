@@ -41,6 +41,8 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
 
+@org.springframework.stereotype.Service
+@org.springframework.context.annotation.Lazy
 public class ResourceSelectionPresenter implements Presenter
 {
     protected final CalendarSelectionModel model;

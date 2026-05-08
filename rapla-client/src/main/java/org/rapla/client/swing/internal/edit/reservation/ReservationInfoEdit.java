@@ -754,6 +754,8 @@ public class ReservationInfoEdit extends RaplaGUIComponent
     }
 
     @Singleton
+    @org.springframework.stereotype.Service
+    @org.springframework.context.annotation.Lazy
     public static class ReservationInfoEditFactory
     {
         private final ClientFacade facade;

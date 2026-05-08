@@ -44,25 +44,4 @@ public class Export2iCalPlugin  {
     public static final TypedComponentRole<String> EXPORT_ATTENDEES_PARTICIPATION_STATUS_PREFERENCE = new TypedComponentRole<>("export_attendees_participation_status");
 	public static final String PLUGIN_ID = "org.rapla.plugin.export2ical";
 
-	//FIXME maybe this is no longer needed with signed applets
-    boolean isApplet;
-//    public Export2iCalPlugin(StartupEnvironment env)
-//    {
-//        isApplet = env.getStartupMode() == StartupEnvironment.APPLET;
-//    }
-    
-	//public void provideServices(ClientServiceContainer container, Configuration config) throws RaplaXMLContextException {
-//		container.addContainerProvidedComponent(RaplaClientExtensionPoints.PLUGIN_OPTION_PANEL_EXTENSION, Export2iCalAdminOption.class);
-//		if (!config.getAttributeAsBoolean("enabled", ENABLE_BY_DEFAULT))
-//			return;
-//
-//		container.addResourceFile(RESOURCE_FILE);
-//	    container.addContainerProvidedComponent( RaplaClientExtensionPoints.PUBLISH_EXTENSION_OPTION, IcalPublicExtensionFactory.class);
-//	    if ( !isApplet)
-//        {
-//        	container.addContainerProvidedComponent(RaplaClientExtensionPoints.EXPORT_MENU_EXTENSION_POINT, Export2iCalMenu.class);
-//        }
-//	    container.addContainerProvidedComponent(RaplaClientExtensionPoints.USER_OPTION_PANEL_EXTENSION, Export2iCalUserOption.class);
-//	}
-
 }

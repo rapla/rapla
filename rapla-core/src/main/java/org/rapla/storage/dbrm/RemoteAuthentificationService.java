@@ -14,28 +14,41 @@ package org.rapla.storage.dbrm;
 
 import org.rapla.framework.RaplaException;
 import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.service.annotation.GetExchange;
 import org.springframework.web.service.annotation.HttpExchange;
 import org.springframework.web.service.annotation.PostExchange;
 
-@HttpExchange("/authentication")
+/**
+ * Client-side proxy for the server's {@code AuthController} (Spring Boot REST).
+ * Aligned with the post-PRD-001-Phase-3 server API ({@code POST /auth/login} +
+ * {@code POST /auth/refresh}, JSON body, {@code TokenResponse} return shape).
+ *
+ * <p>Pre-Spring-Boot wire format (`/authentication` path, query-param username,
+ * raw-body password, GET-style logout/refresh) was retired with this change.
+ * Logout is no longer a server round-trip — JWT access tokens are stateless,
+ * so client-side disconnect just drops the token reference.</p>
+ */
+@HttpExchange("/auth")
 public interface RemoteAuthentificationService
 {
-    @PostExchange
-    LoginTokens login(@RequestParam("username") String username,
-                      @RequestBody String password,
-                      @RequestParam(value = "connectAs", required = false) String connectAs) throws RaplaException;
+    @PostExchange("/login")
+    LoginTokens login(@RequestBody LoginCredentials credentials) throws RaplaException;
 
-    @GetExchange("/destroy")
-    void logout() throws RaplaException;
+    @PostExchange("/refresh")
+    LoginTokens refresh(@RequestBody RefreshRequest body) throws RaplaException;
 
-    @GetExchange("/refreshToken")
-    String getRefreshToken() throws RaplaException;
+    /**
+     * Refresh-token request body for {@link #refresh}.
+     * Server (`AuthController.RefreshRequest`) expects {@code {"refreshToken": "..."}}.
+     */
+    final class RefreshRequest
+    {
+        public String refreshToken;
 
-    @GetExchange("/regenerateRefreshToken")
-    String regenerateRefreshToken() throws RaplaException;
+        public RefreshRequest() {}
 
-    @GetExchange("/loginToken")
-    LoginTokens refresh(@RequestParam("refreshToken") String refreshToken) throws RaplaException;
+        public RefreshRequest(String refreshToken)
+        {
+            this.refreshToken = refreshToken;
+        }
+    }
 }

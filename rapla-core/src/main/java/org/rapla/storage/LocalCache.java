@@ -37,6 +37,7 @@ import org.rapla.facade.internal.ConflictImpl;
 import org.rapla.framework.RaplaException;
 
 import jakarta.inject.Provider;
+import java.time.LocalDateTime;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -48,7 +49,7 @@ public class LocalCache implements EntityResolver
     //Map<String,ConflictImpl> disabledConflicts = new HashMap<String,ConflictImpl>();
     Map<String,ReferenceInfo<Appointment>> disabledConflictApp1 = Collections.synchronizedMap(new HashMap<>());
     Map<String,ReferenceInfo<Appointment>> disabledConflictApp2 = Collections.synchronizedMap(new HashMap<>());
-    Map<String, Date> conflictLastChanged = Collections.synchronizedMap(new HashMap<>());
+    Map<String, LocalDateTime> conflictLastChanged = Collections.synchronizedMap(new HashMap<>());
 
     Map<String, DynamicTypeImpl> dynamicTypes;
     Map<String, UserImpl> users;
@@ -221,7 +222,7 @@ public class LocalCache implements EntityResolver
             {
                 disabledConflictApp2.put(entityId, conflict.getAppointment2());
             }
-            final Date lastChanged = conflict.getLastChanged();
+            final LocalDateTime lastChanged = conflict.getLastChangedAsLocalDateTime();
             conflictLastChanged.put(entityId, lastChanged);
             if (conflict.isAppointment1Enabled() && conflict.isAppointment2Enabled())
             {
@@ -418,19 +419,19 @@ public class LocalCache implements EntityResolver
         String id = conflict.getId();
         conflict.setAppointment1Enabled(!disabledConflictApp1.containsKey(id));
         conflict.setAppointment2Enabled(!disabledConflictApp2.containsKey(id));
-        Date lastChangedInCache = conflictLastChanged.get(id);
-        Date origLastChanged = conflict.getLastChanged();
+        LocalDateTime lastChangedInCache = conflictLastChanged.get(id);
+        LocalDateTime origLastChanged = conflict.getLastChangedAsLocalDateTime();
 
-        Date lastChanged = origLastChanged;
-        if (lastChanged == null || (lastChangedInCache != null && lastChangedInCache.after(lastChanged)))
+        LocalDateTime lastChanged = origLastChanged;
+        if (lastChanged == null || (lastChangedInCache != null && lastChangedInCache.isAfter(lastChanged)))
         {
             lastChanged = lastChangedInCache;
         }
         if (lastChanged == null)
         {
-            lastChanged = new Date();
+            lastChanged = LocalDateTime.now();
         }
-        conflict.setLastChanged(lastChanged);
+        conflict.setLastChangedLocalDateTime(lastChanged);
         if (user != null)
         {
             final ReferenceInfo<Reservation> reservation1Id = conflict.getReservation1();
@@ -472,15 +473,15 @@ public class LocalCache implements EntityResolver
         List<Conflict> disabled = new ArrayList<>();
         for (String conflictId : getDisabledConflictIds())
         {
-            Date lastChanged = conflictLastChanged.get(conflictId);
+            LocalDateTime lastChanged = conflictLastChanged.get(conflictId);
             if (lastChanged == null)
             {
-                lastChanged = new Date();
+                lastChanged = LocalDateTime.now();
             }
             Conflict conflict;
             try
             {
-                conflict = new ConflictImpl(conflictId, lastChanged, lastChanged);
+                conflict = ConflictImpl.ofLocalDateTime(conflictId, lastChanged, lastChanged);
             }
             catch (RaplaException ex)
             {

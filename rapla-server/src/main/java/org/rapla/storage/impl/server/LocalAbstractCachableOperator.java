@@ -13,7 +13,7 @@
 
 package org.rapla.storage.impl.server;
 
-import io.reactivex.rxjava3.functions.Action;
+import org.rapla.scheduler.Action;
 import org.apache.commons.collections4.BidiMap;
 import org.apache.commons.collections4.SortedBidiMap;
 import org.apache.commons.collections4.bidimap.DualHashBidiMap;
@@ -113,7 +113,7 @@ import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-public abstract class LocalAbstractCachableOperator extends AbstractCachableOperator implements Disposable, CachableStorageOperator, IdCreator
+public abstract class LocalAbstractCachableOperator extends AbstractCachableOperator implements Disposable, CachableStorageOperator, IdCreator, org.rapla.storage.SyncStorageOperator
 {
 
     InitStatus connectStatus = InitStatus.Disconnected;
@@ -147,7 +147,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 
     private TimeZone systemTimeZone = TimeZone.getDefault();
     private final CommandScheduler scheduler;
-    private final List< io.reactivex.rxjava3.disposables.Disposable> scheduledTasks = new ArrayList<>();
+    private final List<org.rapla.scheduler.Cancellation> scheduledTasks = new ArrayList<>();
     private Date connectStart;
     private final DefaultRaplaLock disconnectLock;
 
@@ -452,8 +452,13 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
     public Promise<AppointmentMapping> queryAppointments(final User user, final Collection<Allocatable> allocatables, final Collection<User> owners, final Date start,
                                                          final Date end, final ClassificationFilter[] filters, final Map<String, String> annotationQuery, boolean requestsOnly)
     {
+        return scheduler.supply(() -> queryAppointmentsSync(user, allocatables, owners, start, end, filters, annotationQuery, requestsOnly));
+    }
 
-        final Promise<AppointmentMapping> promise = scheduler.supply(() ->
+    @Override
+    public AppointmentMapping queryAppointmentsSync(final User user, final Collection<Allocatable> allocatables, final Collection<User> owners, final Date start,
+                                                    final Date end, final ClassificationFilter[] filters, final Map<String, String> annotationQuery, boolean requestsOnly) throws RaplaException
+    {
         {
             boolean excludeExceptions = false;
             boolean isResourceTemplate = containsResourceTemplate(allocatables);
@@ -531,8 +536,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 
             AppointmentMapping result = new AppointmentMapping(allocatableMap);
             return result;
-        });
-        return promise;
+        }
     }
 
 
@@ -894,17 +898,62 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
      */
     public Promise<Collection<Conflict>> getConflicts(User user)
     {
-        return scheduler.supply(()-> {
-            checkConnected();
-            Collection<Conflict> conflictList = new HashSet<>();
-            final Collection<Conflict> conflicts = conflictFinder.getConflicts(user);
-            for (Conflict conflict : conflicts) {
-                // conflict is filled with disable/enable status from cache
-                Conflict conflictClone = cache.fillConflictDisableInformation(user, conflict);
-                conflictList.add(conflictClone);
+        return scheduler.supply(() -> getConflictsSync(user));
+    }
+
+    @Override
+    public Promise<Collection<Conflict>> getConflicts(org.rapla.entities.domain.Reservation reservation)
+    {
+        return scheduler.supply(() -> getConflictsSync(reservation));
+    }
+
+    @Override
+    public Collection<Conflict> getConflictsSync(User user) throws RaplaException
+    {
+        checkConnected();
+        Collection<Conflict> conflictList = new HashSet<>();
+        final Collection<Conflict> conflicts = conflictFinder.getConflicts(user);
+        for (Conflict conflict : conflicts) {
+            // conflict is filled with disable/enable status from cache
+            Conflict conflictClone = cache.fillConflictDisableInformation(user, conflict);
+            conflictList.add(conflictClone);
+        }
+        return conflictList;
+    }
+
+    @Override
+    public Collection<Conflict> getConflictsSync(org.rapla.entities.domain.Reservation reservation) throws RaplaException
+    {
+        if (org.rapla.facade.RaplaComponent.isTemplate(reservation))
+        {
+            return java.util.Collections.emptyList();
+        }
+        final Collection<Allocatable> allocatables = java.util.Arrays.asList(reservation.getAllocatables());
+        final Collection<org.rapla.entities.domain.Appointment> appointments = java.util.Arrays.asList(reservation.getAppointments());
+        final Collection<org.rapla.entities.domain.Reservation> ignoreList = java.util.Collections.singleton(reservation);
+        final Map<org.rapla.entities.storage.ReferenceInfo<Allocatable>, Map<org.rapla.entities.domain.Appointment, Collection<org.rapla.entities.domain.Appointment>>> map =
+                getAllocatableBindings(allocatables, appointments, ignoreList, false);
+        final Date today = today();
+        final ArrayList<Conflict> conflictList = new ArrayList<>();
+        for (Map.Entry<org.rapla.entities.storage.ReferenceInfo<Allocatable>, Map<org.rapla.entities.domain.Appointment, Collection<org.rapla.entities.domain.Appointment>>> entry : map.entrySet())
+        {
+            Allocatable allocatable = tryResolve(entry.getKey());
+            if (allocatable == null) continue;
+            String annotation = allocatable.getAnnotation(org.rapla.entities.domain.ResourceAnnotations.KEY_CONFLICT_CREATION);
+            if (annotation != null && annotation.equals(org.rapla.entities.domain.ResourceAnnotations.VALUE_CONFLICT_CREATION_IGNORE)) continue;
+            for (Map.Entry<org.rapla.entities.domain.Appointment, Collection<org.rapla.entities.domain.Appointment>> aEntry : entry.getValue().entrySet())
+            {
+                org.rapla.entities.domain.Appointment appointment = aEntry.getKey();
+                if (!reservation.hasAllocatedOn(allocatable, appointment)) continue;
+                Collection<org.rapla.entities.domain.Appointment> conflictingAppointments = aEntry.getValue();
+                if (conflictingAppointments == null) continue;
+                for (org.rapla.entities.domain.Appointment conflicting : conflictingAppointments)
+                {
+                    org.rapla.facade.internal.ConflictImpl.checkAndAddConflicts(conflictList, allocatable, appointment, conflicting, today);
+                }
             }
-            return conflictList;
-        });
+        }
+        return conflictList;
     }
 
     boolean disposing;
@@ -950,7 +999,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
                 disconnectLock.unlock(lock);
             }
         };
-        io.reactivex.rxjava3.disposables.Disposable schedule = scheduler.schedule(task, delay,period);
+        org.rapla.scheduler.Cancellation schedule = scheduler.schedule(task, delay,period);
         scheduledTasks.add(schedule);
     }
 
@@ -1176,9 +1225,9 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 
         try
         {
-            for ( io.reactivex.rxjava3.disposables.Disposable task : scheduledTasks)
+            for (org.rapla.scheduler.Cancellation task : scheduledTasks)
             {
-                task.dispose();
+                task.cancel();
             }
         }
         finally
@@ -3394,9 +3443,15 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
     public Promise<Map<ReferenceInfo<Allocatable>, Collection<Appointment>>> getFirstAllocatableBindings(Collection<Allocatable> allocatables,
             Collection<Appointment> appointments, Collection<Reservation> ignoreList)
     {
-        final Promise<Map<ReferenceInfo<Allocatable>, Collection<Appointment>>> prom = scheduler
-                .supply(() -> getFirstAllocatableBindingsMap(allocatables, appointments, ignoreList));
-        return prom;
+        return scheduler.supply(() -> getFirstAllocatableBindingsSync(allocatables, appointments, ignoreList));
+    }
+
+    @Override
+    public Map<ReferenceInfo<Allocatable>, Collection<Appointment>> getFirstAllocatableBindingsSync(
+            Collection<Allocatable> allocatables, Collection<Appointment> appointments,
+            Collection<Reservation> ignoreList) throws RaplaException
+    {
+        return getFirstAllocatableBindingsMap(allocatables, appointments, ignoreList);
     }
 
     private Map<ReferenceInfo<Allocatable>, Collection<Appointment>> getFirstAllocatableBindingsMap(Collection<Allocatable> allocatables, Collection<Appointment> appointments,
@@ -3417,12 +3472,15 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
     public Promise<Map<ReferenceInfo<Allocatable>, Map<Appointment, Collection<Appointment>>>> getAllAllocatableBindings(Collection<Allocatable> allocatables,
             Collection<Appointment> appointments, Collection<Reservation> ignoreList)
     {
-        return scheduler.supply(() ->
-        {
-            Map<ReferenceInfo<Allocatable>, Map<Appointment, Collection<Appointment>>> allocatableBindings = getAllocatableBindings(allocatables, appointments, ignoreList,
-                    false);
-            return allocatableBindings;
-        });
+        return scheduler.supply(() -> getAllAllocatableBindingsSync(allocatables, appointments, ignoreList));
+    }
+
+    @Override
+    public Map<ReferenceInfo<Allocatable>, Map<Appointment, Collection<Appointment>>> getAllAllocatableBindingsSync(
+            Collection<Allocatable> allocatables, Collection<Appointment> appointments,
+            Collection<Reservation> ignoreList) throws RaplaException
+    {
+        return getAllocatableBindings(allocatables, appointments, ignoreList, false);
     }
 
     public Map<ReferenceInfo<Allocatable>, Map<Appointment, Collection<Appointment>>> getAllocatableBindings(Collection<Allocatable> allocatables,
@@ -3470,37 +3528,47 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
             final Collection<Reservation> ignoreList, final Integer worktimeStartMinutes, final Integer worktimeEndMinutes, final Integer[] excludedDays,
             final Integer rowsPerHour)
     {
-        Promise<Date> promise = scheduler.supply(() ->
+        return scheduler.supply(() -> getNextAllocatableDateSync(allocatables, appointment, ignoreList, worktimeStartMinutes, worktimeEndMinutes, excludedDays, rowsPerHour));
+    }
+
+    @Override
+    public Date getNextAllocatableDateSync(final Collection<Allocatable> allocatables, final Appointment appointment,
+            final Collection<Reservation> ignoreList, final Integer worktimeStartMinutes, final Integer worktimeEndMinutes, final Integer[] excludedDays,
+            final Integer rowsPerHour) throws RaplaException
+    {
+        try {
+        Appointment newState = appointment;
+        Date firstStart = appointment.getStart();
+        boolean startDateExcluded = isExcluded(excludedDays, firstStart);
+        boolean wholeDay = appointment.isWholeDaysSet();
+        boolean inWorktime = inWorktime(appointment, worktimeStartMinutes, worktimeEndMinutes);
+        final int rowsPerHourInt = (rowsPerHour == null || rowsPerHour <= 1) ? 1 : rowsPerHour;
+        for (int i = 0; i < 366 * 24 * rowsPerHourInt; i++)
         {
-            Appointment newState = appointment;
-            Date firstStart = appointment.getStart();
-            boolean startDateExcluded = isExcluded(excludedDays, firstStart);
-            boolean wholeDay = appointment.isWholeDaysSet();
-            boolean inWorktime = inWorktime(appointment, worktimeStartMinutes, worktimeEndMinutes);
-            final int rowsPerHourInt = (rowsPerHour == null || rowsPerHour <= 1) ? 1 : rowsPerHour;
-            for (int i = 0; i < 366 * 24 * rowsPerHourInt; i++)
+            newState = ((AppointmentImpl) newState).clone();
+            Date start = newState.getStart();
+            long millisToAdd = wholeDay ? DateTools.MILLISECONDS_PER_DAY : (DateTools.MILLISECONDS_PER_HOUR / rowsPerHourInt);
+            Date newStart = new Date(start.getTime() + millisToAdd);
+            if (!startDateExcluded && isExcluded(excludedDays, newStart))
             {
-                newState = ((AppointmentImpl) newState).clone();
-                Date start = newState.getStart();
-                long millisToAdd = wholeDay ? DateTools.MILLISECONDS_PER_DAY : (DateTools.MILLISECONDS_PER_HOUR / rowsPerHourInt);
-                Date newStart = new Date(start.getTime() + millisToAdd);
-                if (!startDateExcluded && isExcluded(excludedDays, newStart))
-                {
-                    continue;
-                }
-                newState.moveTo(newStart);
-                if (!wholeDay && inWorktime && !inWorktime(newState, worktimeStartMinutes, worktimeEndMinutes))
-                {
-                    continue;
-                }
-                if (!isAllocated(allocatables, newState, ignoreList))
-                {
-                    return newStart;
-                }
+                continue;
             }
-            return null;
-        });
-        return promise;
+            newState.moveTo(newStart);
+            if (!wholeDay && inWorktime && !inWorktime(newState, worktimeStartMinutes, worktimeEndMinutes))
+            {
+                continue;
+            }
+            if (!isAllocated(allocatables, newState, ignoreList))
+            {
+                return newStart;
+            }
+        }
+        return null;
+        } catch (Exception ex) {
+            if (ex instanceof RaplaException) throw (RaplaException) ex;
+            if (ex instanceof RuntimeException) throw (RuntimeException) ex;
+            throw new RaplaException(ex);
+        }
     }
 
     private boolean inWorktime(Appointment appointment, Integer worktimeStartMinutes, Integer worktimeEndMinutes)
@@ -3955,11 +4023,51 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
     }
     @Override
     public Promise<Allocatable> doMerge(Allocatable selectedObject, Set<ReferenceInfo<Allocatable>> allocatableIds, User user) {
-        try {
-            merge(selectedObject,allocatableIds,user);
-            return new ResolvedPromise<>(resolve( selectedObject.getReference()));
-        } catch (RaplaException e) {
-            return new ResolvedPromise<>(e);
+        try { return new ResolvedPromise<>(doMergeSync(selectedObject, allocatableIds, user)); }
+        catch (RaplaException e) { return new ResolvedPromise<>(e); }
+    }
+
+    @Override
+    public Allocatable doMergeSync(Allocatable selectedObject, Set<ReferenceInfo<Allocatable>> allocatableIds, User user) throws RaplaException
+    {
+        merge(selectedObject, allocatableIds, user);
+        return resolve(selectedObject.getReference());
+    }
+
+    @Override
+    public <T extends org.rapla.entities.Entity> Map<ReferenceInfo<T>, T> getFromIdSync(java.util.Collection<ReferenceInfo<T>> idSet, boolean throwEntityNotFound) throws RaplaException
+    {
+        return getFromId(idSet, throwEntityNotFound);
+    }
+
+    @Override
+    public AppointmentMapping queryAppointmentsSync(User user, Collection<Allocatable> allocatables, Collection<User> owners,
+                                                    Date start, Date end, ClassificationFilter[] filters, String templateId) throws RaplaException
+    {
+        Collection<Allocatable> allocList;
+        if (allocatables != null)
+        {
+            if (allocatables.isEmpty() && templateId == null && (owners == null || owners.isEmpty()))
+            {
+                return new AppointmentMapping();
+            }
+            allocList = allocatables;
         }
+        else
+        {
+            allocList = Collections.emptyList();
+        }
+        if (templateId != null)
+        {
+            final Allocatable template = tryResolve(templateId, Allocatable.class);
+            if (template == null)
+            {
+                throw new RaplaException("Can't load template with id " + templateId);
+            }
+            allocList = new ArrayList<>(allocList);
+            allocList.add(template);
+        }
+        final User callUser = templateId != null ? null : user;
+        return queryAppointmentsSync(callUser, allocList, owners, start, end, filters, (Map<String, String>) null, false);
     }
 }

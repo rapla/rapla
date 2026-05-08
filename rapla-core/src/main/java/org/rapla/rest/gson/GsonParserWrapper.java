@@ -13,6 +13,9 @@ import org.rapla.scheduler.sync.SynchronizedCompletablePromise;
 import jakarta.inject.Provider;
 import java.io.Reader;
 import java.lang.reflect.Type;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.*;
 
 public class GsonParserWrapper implements Provider<JsonParserWrapper.JsonParser> {
@@ -87,8 +90,74 @@ public class GsonParserWrapper implements Provider<JsonParserWrapper.JsonParser>
 //        gb.registerTypeAdapterFactory(new MapTypeAdapterFactory(constructorConstructor, false));
         //gb.registerTypeAdapterFactory(new MyAdaptorFactory(reflectiveTypeAdapterFactory));
         gb.registerTypeAdapter(Date.class, new GmtDateTypeAdapter());
+        gb.registerTypeAdapter(LocalDateTime.class, new LocalDateTimeTypeAdapter());
+        gb.registerTypeAdapter(LocalDate.class, new LocalDateTypeAdapter());
+        gb.registerTypeAdapter(LocalTime.class, new LocalTimeTypeAdapter());
         GsonBuilder configured = gb.disableHtmlEscaping();
         return configured;
+    }
+
+    private static class LocalDateTimeTypeAdapter implements JsonSerializer<LocalDateTime>, JsonDeserializer<LocalDateTime>
+    {
+        @Override
+        public synchronized JsonElement serialize(LocalDateTime value, Type type, JsonSerializationContext ctx)
+        {
+            if (value == null) return JsonNull.INSTANCE;
+            String timestamp = ISODateTimeFormat.INSTANCE.formatTimestamp(new Date(value.toInstant(java.time.ZoneOffset.UTC).toEpochMilli()));
+            return new JsonPrimitive(timestamp);
+        }
+
+        @Override
+        public synchronized LocalDateTime deserialize(JsonElement jsonElement, Type type, JsonDeserializationContext ctx)
+        {
+            if (jsonElement == null || jsonElement.isJsonNull()) return null;
+            String s = jsonElement.getAsString();
+            try
+            {
+                Date d = ISODateTimeFormat.INSTANCE.parseTimestamp(s);
+                return LocalDateTime.ofInstant(d.toInstant(), java.time.ZoneOffset.UTC);
+            }
+            catch (Exception e)
+            {
+                throw new JsonSyntaxException(s, e);
+            }
+        }
+    }
+
+    private static class LocalDateTypeAdapter implements JsonSerializer<LocalDate>, JsonDeserializer<LocalDate>
+    {
+        @Override
+        public synchronized JsonElement serialize(LocalDate value, Type type, JsonSerializationContext ctx)
+        {
+            if (value == null) return JsonNull.INSTANCE;
+            return new JsonPrimitive(value.toString());
+        }
+
+        @Override
+        public synchronized LocalDate deserialize(JsonElement jsonElement, Type type, JsonDeserializationContext ctx)
+        {
+            if (jsonElement == null || jsonElement.isJsonNull()) return null;
+            try { return LocalDate.parse(jsonElement.getAsString()); }
+            catch (Exception e) { throw new JsonSyntaxException(jsonElement.getAsString(), e); }
+        }
+    }
+
+    private static class LocalTimeTypeAdapter implements JsonSerializer<LocalTime>, JsonDeserializer<LocalTime>
+    {
+        @Override
+        public synchronized JsonElement serialize(LocalTime value, Type type, JsonSerializationContext ctx)
+        {
+            if (value == null) return JsonNull.INSTANCE;
+            return new JsonPrimitive(value.toString());
+        }
+
+        @Override
+        public synchronized LocalTime deserialize(JsonElement jsonElement, Type type, JsonDeserializationContext ctx)
+        {
+            if (jsonElement == null || jsonElement.isJsonNull()) return null;
+            try { return LocalTime.parse(jsonElement.getAsString()); }
+            catch (Exception e) { throw new JsonSyntaxException(jsonElement.getAsString(), e); }
+        }
     }
 
 

@@ -2420,6 +2420,8 @@ public class AllocatableSelection extends RaplaGUIComponent implements Appointme
     }
 
     @Singleton
+    @org.springframework.stereotype.Service
+    @org.springframework.context.annotation.Lazy
     public static class AllocatableSelectionFactory
     {
 

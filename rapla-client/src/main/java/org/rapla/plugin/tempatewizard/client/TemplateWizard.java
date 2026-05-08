@@ -12,7 +12,7 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.plugin.tempatewizard.client;
 
-import io.reactivex.rxjava3.functions.Consumer;
+import org.rapla.scheduler.Consumer;
 import org.rapla.RaplaResources;
 import org.rapla.client.PopupContext;
 import org.rapla.client.dialog.DialogUiFactoryInterface;
@@ -40,6 +40,8 @@ import org.rapla.inject.Extension;
 import org.rapla.logger.Logger;
 import org.rapla.plugin.tempatewizard.TemplatePlugin;
 import org.rapla.storage.PermissionController;
+import org.springframework.context.annotation.Lazy;
+import org.springframework.stereotype.Service;
 
 import jakarta.inject.Inject;
 import java.io.PrintWriter;
@@ -60,6 +62,8 @@ import java.util.stream.Collectors;
 
 /** This ReservationWizard displays no wizard and directly opens a ReservationEdit Window
  */
+@Service
+@Lazy
 @Extension(provides = ReservationWizardExtension.class, id = TemplatePlugin.PLUGIN_ID) public class TemplateWizard
         implements ReservationWizardExtension, ModificationListener
 {

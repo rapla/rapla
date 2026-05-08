@@ -8,11 +8,10 @@ public interface StartupEnvironment
 {
     int CONSOLE = 1;
     int WEBSTART = 2;
-    int APPLET = 3;
 
     URL getDownloadURL() throws RaplaException;
-    
-    /** either EMBEDDED, CONSOLE, WEBSTART, APPLET,SERVLET or CLIENT */
+
+    /** Either CONSOLE or WEBSTART. (Java applets unsupported since Java 11; APPLET removed.) */
     int getStartupMode();
 
     Logger getBootstrapLogger();

@@ -61,10 +61,7 @@ import java.util.*;
                 List<RaplaTableColumn<AppointmentBlock>> columnPlugins = tableConfigLoader.loadColumns(tableViewName, user);
 
                 final TimeInterval timeIntervall = model.getTimeIntervall();
-                final List<AppointmentBlock> blocks;
-                try { blocks = org.rapla.scheduler.sync.SynchronizedCompletablePromise.waitFor(model.queryBlocks(timeIntervall), 10000, null); }
-                catch (RaplaException ex) { throw ex; }
-                catch (Exception ex) { throw new RaplaException(ex); }
+                final List<AppointmentBlock> blocks = ((org.rapla.facade.SyncCalendarModel) model).queryBlocksSync(timeIntervall);
                 final  Map<String,List<AppointmentBlock>> blockSorter = new LinkedHashMap<>();
                 if (isCsv()) {
                     List<RaplaTableColumn<AppointmentBlock>> columnPluginsPlusDate = new ArrayList<>(columnPlugins);

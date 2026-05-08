@@ -257,7 +257,7 @@ public class CalendarPageGenerator
 
     @NotNull
     protected String getBasePath() {
-        return "rapla/calendar";
+        return "calendar";
     }
 
     @GET

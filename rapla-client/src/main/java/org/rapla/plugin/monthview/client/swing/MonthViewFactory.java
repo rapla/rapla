@@ -38,11 +38,15 @@ import org.rapla.logger.Logger;
 import org.rapla.plugin.monthview.MonthViewPlugin;
 
 import jakarta.inject.Inject;
+import org.springframework.stereotype.Service;
+import org.springframework.context.annotation.Lazy;
 import jakarta.inject.Provider;
 import jakarta.inject.Singleton;
 import javax.swing.Icon;
 import java.util.Set;
 
+@Service
+@Lazy
 @Singleton
 @Extension(provides = SwingViewFactory.class, id = MonthViewPlugin.MONTH_VIEW)
 public class MonthViewFactory implements SwingViewFactory

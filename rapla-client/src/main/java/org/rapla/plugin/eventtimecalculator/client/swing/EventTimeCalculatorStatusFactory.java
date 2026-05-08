@@ -11,10 +11,12 @@ import org.rapla.inject.Extension;
 import org.rapla.logger.Logger;
 import org.rapla.plugin.eventtimecalculator.EventTimeCalculatorFactory;
 import org.rapla.plugin.eventtimecalculator.EventTimeCalculatorResources;
+import org.springframework.stereotype.Service;
 
 import jakarta.inject.Inject;
 import jakarta.inject.Singleton;
 
+@Service
 @Extension(provides = AppointmentStatusFactory.class, id="eventtimecalculator")
 @Singleton
 public class EventTimeCalculatorStatusFactory implements AppointmentStatusFactory {

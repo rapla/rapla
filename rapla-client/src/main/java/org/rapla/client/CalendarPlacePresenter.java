@@ -79,7 +79,7 @@ public class CalendarPlacePresenter implements Presenter, TaskPresenter
         this.conflictsPresenter = conflictsSelectionPresenter;
         this.calendarContainer = calendarContainer;
         this.resourceRequestPresenter = requestSelectionPresenter;
-        this.busyIdleObservable = scheduler.createPublisher();
+        this.busyIdleObservable = org.rapla.scheduler.Observables.createPublisher(scheduler.getExecutor());
         resourceSelectionPresenter.setCallback(() ->
         {
             resourceSelectionChanged();

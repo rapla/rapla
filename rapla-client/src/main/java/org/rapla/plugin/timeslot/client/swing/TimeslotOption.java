@@ -37,6 +37,8 @@ import org.rapla.logger.Logger;
 import org.rapla.plugin.timeslot.Timeslot;
 import org.rapla.plugin.timeslot.TimeslotPlugin;
 import org.rapla.plugin.timeslot.TimeslotProvider;
+import org.springframework.context.annotation.Scope;
+import org.springframework.stereotype.Service;
 
 import jakarta.inject.Inject;
 import javax.swing.JButton;
@@ -54,6 +56,8 @@ import java.util.Date;
 import java.util.List;
 import java.util.Locale;
 
+@Service(TimeslotPlugin.PLUGIN_ID)
+@Scope("prototype")
 @Extension(provides = PluginOptionPanel.class,id = TimeslotPlugin.PLUGIN_ID)
 public class TimeslotOption extends RaplaGUIComponent implements PluginOptionPanel
 {

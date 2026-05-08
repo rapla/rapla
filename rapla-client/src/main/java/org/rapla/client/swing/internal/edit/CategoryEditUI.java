@@ -50,6 +50,9 @@ import java.util.Collections;
 import java.util.List;
 
 @Extension(provides = EditComponent.class, id = "org.rapla.entities.Category")
+@org.springframework.stereotype.Service("org.rapla.entities.Category")
+@org.springframework.context.annotation.Scope("prototype")
+@org.springframework.context.annotation.Lazy
 public class CategoryEditUI extends RaplaGUIComponent implements EditComponent<Category, JComponent>
 {
     JPanel panel = new JPanel();

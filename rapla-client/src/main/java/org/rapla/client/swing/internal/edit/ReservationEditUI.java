@@ -42,6 +42,9 @@ import java.util.Collections;
  * This is the controller-class for the Resource-Edit-Panel     *
  ****************************************************************/
 @Extension(provides = EditComponent.class, id="org.rapla.entities.domain.Reservation")
+@org.springframework.stereotype.Service("org.rapla.entities.domain.Reservation")
+@org.springframework.context.annotation.Scope("prototype")
+@org.springframework.context.annotation.Lazy
 public class ReservationEditUI  extends AbstractEditUI<Reservation>  {
     ClassificationField<Reservation> classificationField;
     PermissionListField permissionListField;

@@ -50,6 +50,9 @@ import java.util.Set;
  ****************************************************************/
 
 @Extension(provides = EditComponent.class, id="org.rapla.entities.domain.Allocatable")
+@org.springframework.stereotype.Service("org.rapla.entities.domain.Allocatable")
+@org.springframework.context.annotation.Scope("prototype")
+@org.springframework.context.annotation.Lazy
 public class AllocatableEditUI  extends AbstractEditUI<Allocatable>  {
     protected ClassificationField<Allocatable> classificationField;
     PermissionListField permissionListField;

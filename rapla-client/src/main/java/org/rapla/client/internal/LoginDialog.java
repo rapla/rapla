@@ -215,7 +215,7 @@ public final class LoginDialog extends JFrame implements LocaleChangeListener
 		username.requestFocus();
 
         int startupEnv = env.getStartupMode();
-        if( startupEnv != StartupEnvironment.WEBSTART  && startupEnv != StartupEnvironment.APPLET) {
+        if( startupEnv != StartupEnvironment.WEBSTART) {
         	try
         	{
                 String userName = System.getProperty("user.name");

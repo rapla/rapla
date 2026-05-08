@@ -15,6 +15,8 @@ import org.rapla.inject.Extension;
 import org.rapla.logger.Logger;
 import org.rapla.plugin.eventtimecalculator.EventTimeCalculatorPlugin;
 import org.rapla.plugin.eventtimecalculator.EventTimeCalculatorResources;
+import org.springframework.context.annotation.Scope;
+import org.springframework.stereotype.Service;
 
 import jakarta.inject.Inject;
 import javax.swing.JComponent;
@@ -27,6 +29,8 @@ import java.util.Locale;
  *
  * @author Tobias Bertram
  */
+@Service
+@Scope("prototype")
 @Extension(provides = UserOptionPanel.class, id=EventTimeCalculatorPlugin.PLUGIN_ID)
 public class EventTimeCalculatorUserOption extends RaplaGUIComponent implements UserOptionPanel
 {

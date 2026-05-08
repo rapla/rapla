@@ -50,6 +50,8 @@ import java.awt.event.ActionListener;
 import java.io.IOException;
 import java.util.*;
 
+@org.springframework.stereotype.Service
+@org.springframework.context.annotation.Lazy
 @Extension(provides = ExportMenuExtension.class, id = CSVExportPlugin.PLUGIN_ID)
 public class CSVExportMenu extends RaplaGUIComponent implements ExportMenuExtension, ActionListener {
     JMenuItem exportEntry;

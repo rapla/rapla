@@ -39,11 +39,15 @@ import org.rapla.plugin.timeslot.TimeslotPlugin;
 import org.rapla.plugin.timeslot.TimeslotProvider;
 
 import jakarta.inject.Inject;
+import org.springframework.stereotype.Service;
+import org.springframework.context.annotation.Lazy;
 import jakarta.inject.Provider;
 import jakarta.inject.Singleton;
 import javax.swing.Icon;
 import java.util.Set;
 
+@Service
+@Lazy
 @Singleton
 @Extension(provides = SwingViewFactory.class, id = TimeslotPlugin.WEEK_TIMESLOT)
 public class CompactViewFactory implements SwingViewFactory

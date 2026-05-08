@@ -4,10 +4,6 @@ package org.rapla.scheduler;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.Executor;
-import java.util.function.BiConsumer;
-import java.util.function.BiFunction;
-import java.util.function.Consumer;
-import java.util.function.Function;
 
 public class UnsynchronizedPromise<T> implements CompletablePromise<T>
 {
@@ -50,7 +46,7 @@ public class UnsynchronizedPromise<T> implements CompletablePromise<T>
         });
     }
 
-    private UnsynchronizedPromise(UnsynchronizedPromise parent, Runnable fn)
+    private UnsynchronizedPromise(UnsynchronizedPromise parent, Action fn)
     {
         this(parent, (act) -> {
             fn.run();
@@ -152,7 +148,7 @@ public class UnsynchronizedPromise<T> implements CompletablePromise<T>
         return new UnsynchronizedPromise(this, action);
     }
 
-    @Override public Promise<Void> thenRun(Runnable action)
+    @Override public Promise<Void> thenRun(Action action)
     {
         return new UnsynchronizedPromise(this, action);
     }
@@ -168,7 +164,7 @@ public class UnsynchronizedPromise<T> implements CompletablePromise<T>
     }
 
     @Override
-    public Promise<Void> finally_(Runnable action) {
+    public Promise<Void> finally_(Action action) {
         return handle( ( ex, t)-> {action.run(); return null;}).thenApply( (t)->null);
     }
 

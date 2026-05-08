@@ -18,6 +18,8 @@ import java.util.*;
 
 @DefaultImplementation(of=BundleManager.class,context = { InjectionContext.swing})
 @Singleton
+@org.springframework.stereotype.Service
+@org.springframework.context.annotation.Primary
 public class SwingBundleManager extends AbstractBundleManager
 {
     Map<String, Icon> iconCache = Collections.synchronizedMap(new TreeMap<String, Icon>());

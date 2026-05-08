@@ -72,6 +72,8 @@ import java.util.concurrent.Semaphore;
 */
 @Singleton
 @DefaultImplementation(of = ClientService.class, context = InjectionContext.swing, export = true)
+@org.springframework.stereotype.Service
+@org.springframework.context.annotation.Lazy
 public class RaplaClientServiceImpl implements ClientService, UpdateErrorListener, Disposable, UserClientService
 {
 
@@ -90,7 +92,7 @@ public class RaplaClientServiceImpl implements ClientService, UpdateErrorListene
     final RaplaLocale raplaLocale;
     final BundleManager bundleManager;
     final CommandScheduler commandScheduler;
-     io.reactivex.rxjava3.disposables.Disposable schedule;
+    org.rapla.scheduler.Cancellation schedule;
 
     Application application;
     final private Provider<Application> applicationProvider;
@@ -150,7 +152,7 @@ public class RaplaClientServiceImpl implements ClientService, UpdateErrorListene
         advanceLoading(false);
         int startupMode = env.getStartupMode();
         final Logger logger = getLogger();
-        if (startupMode != StartupEnvironment.APPLET && startupMode != StartupEnvironment.WEBSTART)
+        if (startupMode != StartupEnvironment.WEBSTART)
         {
             try
             {
@@ -582,7 +584,7 @@ public class RaplaClientServiceImpl implements ClientService, UpdateErrorListene
     public void disconnected(final String message)
     {
         if (schedule != null) {
-            schedule.dispose();
+            schedule.cancel();
         }
         this.schedule = null;
         if (started)
@@ -632,7 +634,7 @@ public class RaplaClientServiceImpl implements ClientService, UpdateErrorListene
         String username = connectInfo.getUsername();
         return commandScheduler.supply(()->
         {
-            LoginTokens loginToken = authentificationService.login(username, password, connectAs);
+            LoginTokens loginToken = authentificationService.login(new org.rapla.storage.dbrm.LoginCredentials(username, password, connectAs));
             String accessToken = loginToken.getAccessToken();
             if (accessToken != null) {
                 this.connectionInfo.setAccessToken(accessToken);

@@ -237,6 +237,8 @@ public class MultiLanguageField extends AbstractEditField implements ChangeListe
     }
 
     @Singleton
+    @org.springframework.stereotype.Service
+    @org.springframework.context.annotation.Lazy
     public static class MultiLanguageFieldFactory
     {
 

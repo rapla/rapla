@@ -1,6 +1,6 @@
 package org.rapla.client;
 
-import io.reactivex.rxjava3.functions.Action;
+import org.rapla.scheduler.Action;
 import org.rapla.RaplaResources;
 import org.rapla.client.dialog.DialogInterface;
 import org.rapla.client.dialog.DialogUiFactoryInterface;
@@ -42,6 +42,8 @@ import java.util.Set;
 import java.util.function.Function;
 
 @Singleton
+@org.springframework.stereotype.Service
+@org.springframework.context.annotation.Lazy
 public class Application implements ApplicationView.Presenter, ModificationListener {
     public static final String CLOSE_ACTIVITY_ID = "close";
     private final Logger logger;

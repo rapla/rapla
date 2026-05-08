@@ -12,7 +12,7 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.plugin.defaultwizard.client;
 
-import io.reactivex.rxjava3.functions.Consumer;
+import org.rapla.scheduler.Consumer;
 import org.rapla.RaplaResources;
 import org.rapla.client.PopupContext;
 import org.rapla.client.event.ApplicationEvent;
@@ -35,6 +35,8 @@ import org.rapla.framework.TypedComponentRole;
 import org.rapla.inject.Extension;
 import org.rapla.logger.Logger;
 import org.rapla.storage.PermissionController;
+import org.springframework.context.annotation.Lazy;
+import org.springframework.stereotype.Service;
 
 import jakarta.inject.Inject;
 import java.util.ArrayList;
@@ -42,6 +44,8 @@ import java.util.List;
 
 /** This ReservationWizard displays no wizard and directly opens a ReservationEdit Window
  */
+@Service
+@Lazy
 @Extension(provides = ReservationWizardExtension.class, id = "defaultWizard") public class DefaultWizard
         implements ReservationWizardExtension
 {

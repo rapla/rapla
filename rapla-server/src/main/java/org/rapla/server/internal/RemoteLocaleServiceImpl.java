@@ -52,23 +52,24 @@ public class RemoteLocaleServiceImpl implements RemoteLocaleService
     @Override
     public Promise<LocalePackage> locale(String id, String localeString)
     {
+        try { return new ResolvedPromise<>(localeSync(id, localeString)); }
+        catch (RaplaException ex) { return new ResolvedPromise<>(ex); }
+    }
+
+    /** Sync sibling for server-internal callers (REST controllers etc.) — same work as
+     *  {@link #locale}, raw return + checked exception. */
+    public LocalePackage localeSync(String id, String localeString) throws RaplaException
+    {
         if (localeString == null)
         {
             if (session.isAuthentified(request))
             {
-                try
+                final User validUser = session.checkAndGetUser(request);
+                final Preferences preferences = operator.getPreferences(validUser, true);
+                final String entry = preferences.getEntryAsString(RaplaLocale.LANGUAGE_ENTRY, null);
+                if (entry != null)
                 {
-                    final User validUser = session.checkAndGetUser(request);
-                    final Preferences preferences = operator.getPreferences(validUser, true);
-                    final String entry = preferences.getEntryAsString(RaplaLocale.LANGUAGE_ENTRY, null);
-                    if (entry != null)
-                    {
-                        localeString = new Locale(entry).toString();
-                    }
-                }
-                catch (RaplaException ex)
-                {
-                    return new ResolvedPromise<>(ex);
+                    localeString = new Locale(entry).toString();
                 }
             }
             if (localeString == null)
@@ -82,15 +83,17 @@ public class RemoteLocaleServiceImpl implements RemoteLocaleService
         String language = locale.getLanguage();
         String country = locale.getCountry();
         Set<String> availableLanguages = bundleManager.getAvailableLanguages();
-        final LocalePackage localePackage = new LocalePackage(formats, language, country, bundles, availableLanguages);
-
-        return new ResolvedPromise<>(localePackage);
+        return new LocalePackage(formats, language, country, bundles, availableLanguages);
     }
 
     @Override
     public Promise<Map<String, Set<String>>> countries(Set<String> languages)
     {
-        Map<String, Set<String>> result = bundleManager.getCountriesForLanguage(languages);
-        return new ResolvedPromise<>(result);
+        return new ResolvedPromise<>(countriesSync(languages));
+    }
+
+    public Map<String, Set<String>> countriesSync(Set<String> languages)
+    {
+        return bundleManager.getCountriesForLanguage(languages);
     }
 }

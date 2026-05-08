@@ -98,6 +98,8 @@ import java.util.Set;
 import java.util.stream.Stream;
 
 @Singleton
+@org.springframework.stereotype.Service
+@org.springframework.context.annotation.Lazy
 public class RaplaMenuBar extends RaplaGUIComponent
 {
     final JMenuItem exit;

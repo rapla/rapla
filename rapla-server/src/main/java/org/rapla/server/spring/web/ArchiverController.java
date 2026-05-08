@@ -2,7 +2,7 @@ package org.rapla.server.spring.web;
 
 import org.rapla.framework.RaplaException;
 import org.rapla.plugin.archiver.ArchiverService;
-import org.rapla.scheduler.sync.SynchronizedCompletablePromise;
+import org.rapla.plugin.archiver.server.ArchiverServiceImpl;
 import org.rapla.server.RemoteSession;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -16,17 +16,17 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/archiver")
 public class ArchiverController
 {
-    private final ArchiverService service;
+    private final ArchiverServiceImpl service;
 
-    public ArchiverController(ArchiverService service)
+    public ArchiverController(ArchiverServiceImpl service)
     {
         this.service = service;
     }
 
     @PostMapping
-    public void delete(@RequestParam(value = "olderThanInDays", required = false) Integer olderThanInDays) throws Exception
+    public void delete(@RequestParam(value = "olderThanInDays", required = false) Integer olderThanInDays) throws RaplaException
     {
-        SynchronizedCompletablePromise.waitFor(service.delete(olderThanInDays), 60000, null);
+        service.deleteSync(olderThanInDays);
     }
 
     @GetMapping
@@ -36,14 +36,14 @@ public class ArchiverController
     }
 
     @PostMapping("/backup")
-    public void backupNow() throws Exception
+    public void backupNow() throws RaplaException
     {
-        SynchronizedCompletablePromise.waitFor(service.backupNow(), 60000, null);
+        service.backupNowSync();
     }
 
     @PostMapping("/restore")
-    public void restore() throws Exception
+    public void restore() throws RaplaException
     {
-        SynchronizedCompletablePromise.waitFor(service.restore(), 60000, null);
+        service.restoreSync();
     }
 }

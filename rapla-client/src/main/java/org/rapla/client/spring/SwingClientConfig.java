@@ -20,7 +20,8 @@ import org.springframework.context.annotation.FilterType;
                 "org.rapla.client.menu",
                 "org.rapla.client.dialog",
                 "org.rapla.client.internal",
-                "org.rapla.client.event"
+                "org.rapla.client.event",
+                "org.rapla.plugin"
         },
         excludeFilters = @ComponentScan.Filter(
                 type = FilterType.REGEX,

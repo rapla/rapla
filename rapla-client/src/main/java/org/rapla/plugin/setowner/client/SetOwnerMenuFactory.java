@@ -1,6 +1,6 @@
 package org.rapla.plugin.setowner.client;
 
-import io.reactivex.rxjava3.functions.Consumer;
+import org.rapla.scheduler.Consumer;
 import org.rapla.RaplaResources;
 import org.rapla.client.PopupContext;
 import org.rapla.client.dialog.DialogInterface;
@@ -31,6 +31,7 @@ import org.rapla.plugin.setowner.SetOwnerResources;
 import org.rapla.scheduler.Promise;
 import org.rapla.scheduler.ResolvedPromise;
 import org.rapla.storage.StorageOperator;
+import org.springframework.stereotype.Service;
 
 import jakarta.inject.Inject;
 import jakarta.inject.Provider;
@@ -43,6 +44,7 @@ import java.util.Optional;
 import java.util.TreeSet;
 import java.util.stream.Collectors;
 
+@Service
 @Singleton
 @Extension(provides = ObjectMenuFactory.class, id="setowner")
 public class SetOwnerMenuFactory implements ObjectMenuFactory

@@ -53,6 +53,8 @@ import java.util.function.Function;
 
 @DefaultImplementation(of = ApplicationView.class, context = InjectionContext.swing)
 @Singleton
+@org.springframework.stereotype.Service
+@org.springframework.context.annotation.Lazy
 public class ApplicationViewSwing implements ApplicationView<JComponent>
 {
     private static final String MENU_ACTION = "RAPLA_MENU_ACTION";

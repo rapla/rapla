@@ -78,6 +78,9 @@ import java.util.List;
 */
 
 @Extension(provides = EditComponent.class, id="org.rapla.entities.User")
+@org.springframework.stereotype.Service("org.rapla.entities.User")
+@org.springframework.context.annotation.Scope("prototype")
+@org.springframework.context.annotation.Lazy
 public class UserEditUI  extends AbstractEditUI<User> {
     TextField usernameField;
     PersonSelectField personSelect;

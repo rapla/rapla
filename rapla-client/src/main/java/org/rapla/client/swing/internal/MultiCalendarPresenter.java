@@ -94,7 +94,7 @@ public class MultiCalendarPresenter implements CalendarContainer,Presenter
     {
         scheduler = facade.getRaplaFacade().getScheduler();
         this.i18n = i18n;
-        filterChanged = scheduler.createPublisher();
+        filterChanged = org.rapla.scheduler.Observables.createPublisher(scheduler.getExecutor());
         this.logger = logger;
         this.dialogUiFactory = dialogUiFactory;
         this.factoryList = factoryList;
@@ -308,7 +308,7 @@ public class MultiCalendarPresenter implements CalendarContainer,Presenter
         }
         else
         {
-            return scheduler.toObservable(ResolvedPromise.VOID_PROMISE);
+            return org.rapla.scheduler.Observables.toObservable(ResolvedPromise.VOID_PROMISE, scheduler.getExecutor());
         }
     }
 

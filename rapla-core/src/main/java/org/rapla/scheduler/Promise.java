@@ -2,14 +2,12 @@ package org.rapla.scheduler;
 
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.Executor;
-import java.util.function.BiConsumer;
-import java.util.function.BiFunction;
-import java.util.function.Consumer;
-import java.util.function.Function;
 
 /** Stage-of-computation contract; equivalent to {@link CompletionStage}.
- *  Historically wrapped {@link CompletionStage} so the codebase could share async chains with GWT;
- *  GWT is gone, the wrapper survives only because it carries a sticky {@link #execOn} executor. */
+ *  Method parameters use checked-exception-allowing function types from this package
+ *  ({@link Function}, {@link Consumer}, etc.) so callers can throw checked exceptions
+ *  from inside lambda bodies without wrapping. The impls bridge to {@link CompletionStage}
+ *  internally. */
 public interface Promise<T>
 {
     Void VOID = null;
@@ -18,7 +16,7 @@ public interface Promise<T>
 
     Promise<Void> thenAccept(Consumer<? super T> fn);
 
-    Promise<Void> thenRun(Runnable fn);
+    Promise<Void> thenRun(Action fn);
 
     <U, V> Promise<V> thenCombine(Promise<? extends U> other, BiFunction<? super T, ? super U, ? extends V> fn);
 
@@ -28,7 +26,7 @@ public interface Promise<T>
 
     Promise<Void> exceptionally(Consumer<Throwable> fn);
 
-    Promise<Void> finally_(Runnable run);
+    Promise<Void> finally_(Action run);
 
     Promise<T> handle(BiFunction<? super T, Throwable, ? super T> fn);
 

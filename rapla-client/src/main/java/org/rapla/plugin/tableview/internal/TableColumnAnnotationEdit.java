@@ -29,6 +29,8 @@ import java.util.LinkedHashMap;
 import java.util.Locale;
 import java.util.Map;
 
+@org.springframework.stereotype.Service
+@org.springframework.context.annotation.Lazy
 @Extension(provides= AnnotationEditTypeExtension.class, id="tableColumn")
 public class TableColumnAnnotationEdit extends RaplaGUIComponent implements AnnotationEditTypeExtension {
 

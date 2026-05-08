@@ -37,12 +37,16 @@ import org.rapla.inject.Extension;
 import org.rapla.logger.Logger;
 import org.rapla.plugin.timeslot.TimeslotPlugin;
 import org.rapla.plugin.timeslot.TimeslotProvider;
+import org.springframework.context.annotation.Lazy;
+import org.springframework.stereotype.Service;
 
 import jakarta.inject.Inject;
 import jakarta.inject.Singleton;
 import javax.swing.Icon;
 import java.util.Set;
 
+@Service
+@Lazy
 @Singleton
 @Extension(provides = SwingViewFactory.class, id = TimeslotPlugin.DAY_TIMESLOT)
 public class CompactDayViewFactory implements SwingViewFactory

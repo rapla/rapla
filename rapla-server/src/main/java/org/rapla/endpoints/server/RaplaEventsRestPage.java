@@ -48,6 +48,7 @@ import java.util.Map;
     @Inject SecurityManager securityManager;
     private final HttpServletRequest request;
     @Inject CachableStorageOperator operator;
+    @Inject org.rapla.storage.SyncStorageOperator syncOperator;
 
     @Inject public RaplaEventsRestPage(@Context HttpServletRequest request)
     {
@@ -79,9 +80,7 @@ import java.util.Map;
         final ClassificationFilter[] filters = RaplaResourcesRestPage.getClassificationFilter(facade, simpleFilter, CLASSIFICATION_TYPES, eventTypes);
         final Map<String, String> annotationQuery = null;
         final User owner = null;
-        final Promise<AppointmentMapping> promise = operator
-                .queryAppointmentsByLocalDateTime(owner, allocatables, owners, start, end, filters, annotationQuery, false);
-        final AppointmentMapping appMap = org.rapla.scheduler.sync.SynchronizedCompletablePromise.waitFor(promise, 20000, null);
+        final AppointmentMapping appMap = syncOperator.queryAppointmentsByLocalDateTimeSync(owner, allocatables, owners, start, end, filters, annotationQuery, false);
         final List<ReservationImpl> result = new ArrayList<>();
         final Collection<Reservation> reservations = appMap.getAllReservations();
         PermissionController permissionController = facade.getPermissionController();

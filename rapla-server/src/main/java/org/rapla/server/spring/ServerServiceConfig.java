@@ -94,6 +94,14 @@ public class ServerServiceConfig
         return Collections.emptySet();
     }
 
+    /** PRD 009: empty default so {@code RemoteStorageImpl}'s field injection succeeds.
+     *  Plugins can override by registering their own {@code @Bean Set<PrePostDispatchProcessor>}. */
+    @Bean
+    public Set<org.rapla.server.PrePostDispatchProcessor> prePostDispatchProcessors()
+    {
+        return Collections.emptySet();
+    }
+
     @Bean
     public RemoteSession remoteSession(Logger logger,
                                         TokenHandler tokenHandler,
@@ -106,7 +114,7 @@ public class ServerServiceConfig
 
     @Bean
     @org.springframework.web.context.annotation.RequestScope
-    public org.rapla.storage.RemoteLocaleService remoteLocaleService(jakarta.servlet.http.HttpServletRequest request,
+    public org.rapla.server.internal.RemoteLocaleServiceImpl remoteLocaleService(jakarta.servlet.http.HttpServletRequest request,
                                                                       AutowireCapableBeanFactory beanFactory)
     {
         org.rapla.server.internal.RemoteLocaleServiceImpl impl = new org.rapla.server.internal.RemoteLocaleServiceImpl(request);
@@ -118,9 +126,10 @@ public class ServerServiceConfig
     public org.rapla.server.internal.SecurityManager securityManager(Logger logger,
                                                                       org.rapla.RaplaResources i18n,
                                                                       org.rapla.entities.domain.AppointmentFormater appointmentFormater,
-                                                                      org.rapla.storage.CachableStorageOperator operator)
+                                                                      org.rapla.storage.CachableStorageOperator operator,
+                                                                      org.rapla.storage.SyncStorageOperator syncOperator)
     {
-        return new org.rapla.server.internal.SecurityManager(logger, i18n, appointmentFormater, operator);
+        return new org.rapla.server.internal.SecurityManager(logger, i18n, appointmentFormater, operator, syncOperator);
     }
 
     @Bean
@@ -169,7 +178,7 @@ public class ServerServiceConfig
 
     @Bean
     @org.springframework.web.context.annotation.RequestScope
-    public org.rapla.storage.dbrm.RemoteStorage remoteStorage(jakarta.servlet.http.HttpServletRequest request,
+    public org.rapla.server.internal.RemoteStorageImpl remoteStorage(jakarta.servlet.http.HttpServletRequest request,
                                                                AutowireCapableBeanFactory beanFactory)
     {
         org.rapla.server.internal.RemoteStorageImpl impl = new org.rapla.server.internal.RemoteStorageImpl(request);
@@ -180,7 +189,7 @@ public class ServerServiceConfig
     @Bean
     @org.springframework.web.context.annotation.RequestScope
     @org.springframework.boot.autoconfigure.condition.ConditionalOnProperty(prefix = "rapla.services", name = "org.rapla.plugin.jndi", matchIfMissing = true)
-    public org.rapla.plugin.jndi.internal.JNDIConfig jndiConfig(jakarta.servlet.http.HttpServletRequest request,
+    public org.rapla.plugin.jndi.server.RaplaJNDITestOnLocalhost jndiConfig(jakarta.servlet.http.HttpServletRequest request,
                                                                  AutowireCapableBeanFactory beanFactory)
     {
         org.rapla.plugin.jndi.server.RaplaJNDITestOnLocalhost impl = new org.rapla.plugin.jndi.server.RaplaJNDITestOnLocalhost(request);
@@ -228,7 +237,7 @@ public class ServerServiceConfig
     @Bean
     @org.springframework.web.context.annotation.RequestScope
     @org.springframework.boot.autoconfigure.condition.ConditionalOnProperty(prefix = "rapla.services", name = "org.rapla.plugin.archiver", matchIfMissing = true)
-    public org.rapla.plugin.archiver.ArchiverService archiverService(jakarta.servlet.http.HttpServletRequest request,
+    public org.rapla.plugin.archiver.server.ArchiverServiceImpl archiverService(jakarta.servlet.http.HttpServletRequest request,
                                                                       AutowireCapableBeanFactory beanFactory)
     {
         org.rapla.plugin.archiver.server.ArchiverServiceImpl impl = new org.rapla.plugin.archiver.server.ArchiverServiceImpl(request);

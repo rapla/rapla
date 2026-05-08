@@ -51,6 +51,8 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
+@org.springframework.stereotype.Service
+@org.springframework.context.annotation.Lazy
 @Extension(provides = EditMenuExtension.class,id="org.rapla.plugin.periodcopy")
 public class CopyPluginMenu  extends RaplaGUIComponent implements EditMenuExtension, ActionListener
 {

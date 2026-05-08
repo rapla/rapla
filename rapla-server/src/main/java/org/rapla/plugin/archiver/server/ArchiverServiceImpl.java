@@ -38,6 +38,8 @@ public class ArchiverServiceImpl  implements ArchiverService
     @Inject
     RaplaFacade raplaFacade;
     @Inject
+    org.rapla.storage.SyncStorageOperator syncOperator;
+    @Inject
     ImportExportManager importExportManager;
     @Inject
     Logger logger;
@@ -73,87 +75,70 @@ public class ArchiverServiceImpl  implements ArchiverService
     }
 
     public Promise<Void> backupNow() {
-        try
+        try { backupNowSync(); return new ResolvedPromise<>(null); }
+        catch (RaplaException e) { return new ResolvedPromise<>(e); }
+	}
+
+	public void backupNowSync() throws RaplaException {
+        checkAccess();
+        if (!isExportEnabled())
         {
-            checkAccess();
+            throw new RaplaException("Export not enabled");
         }
-        catch (RaplaException e)
-        {
-            return new ResolvedPromise<>(e);
-        }
-        return scheduler.run(() ->{
-            if (!isExportEnabled())
-            {
-                throw new RaplaException("Export not enabled");
-            }
-            importExportManager.doExport();
-        });
+        importExportManager.doExport();
 	}
 
 	public Promise<Void> restore() {
-        try
-        {
-            checkAccess();
-        }
-        catch (RaplaException e)
-        {
-            return new ResolvedPromise<>(e);
-        }
-        return scheduler.run( ()-> {
-            if (!isExportEnabled())
-            {
-                throw new RaplaException("Export not enabled");
-            }
-            // We only do an import here
-            importExportManager.doImport();
-        });
+        try { restoreSync(); return new ResolvedPromise<>(null); }
+        catch (RaplaException e) { return new ResolvedPromise<>(e); }
 	}
 
-	public Promise<Void> delete(Integer removeOlderInDays)  {
-        try
+	public void restoreSync() throws RaplaException {
+        checkAccess();
+        if (!isExportEnabled())
         {
-            checkAccess();
+            throw new RaplaException("Export not enabled");
         }
-        catch (RaplaException e)
-        {
-            return new ResolvedPromise<>(e);
-        }
-        return scheduler.run( ()-> {
-            final RaplaFacade raplaFacade = this.raplaFacade;
-            final Logger logger = this.logger;
-            delete(removeOlderInDays, raplaFacade, logger);
-        });
+        // We only do an import here
+        importExportManager.doImport();
 	}
 
-    static public void delete(Integer removeOlderInDays, RaplaFacade raplaFacade, Logger logger) throws RaplaException
+	public Promise<Void> delete(Integer removeOlderInDays) {
+        try { deleteSync(removeOlderInDays); return new ResolvedPromise<>(null); }
+        catch (RaplaException e) { return new ResolvedPromise<>(e); }
+	}
+
+	public void deleteSync(Integer removeOlderInDays) throws RaplaException {
+        checkAccess();
+        delete(removeOlderInDays, this.raplaFacade, this.syncOperator, this.logger);
+	}
+
+    static public void delete(Integer removeOlderInDays, RaplaFacade raplaFacade, org.rapla.storage.SyncStorageOperator syncOperator, Logger logger) throws RaplaException
     {
         Date endDate = new Date(raplaFacade.today().getTime() - removeOlderInDays * DateTools.MILLISECONDS_PER_DAY);
         User[] owners = raplaFacade.getUsers();
-        Promise<Collection<Reservation>> eventsPromise = raplaFacade.getReservationsAsync(null, null,owners,null, endDate, null);
-        eventsPromise.thenAccept((events) ->
+        Collection<Reservation> events = syncOperator.getReservationsSync(null, null, owners, null, endDate, null);
+        List<Reservation> toRemove = new ArrayList<>();
+        for (Reservation event : events)
         {
-            List<Reservation> toRemove = new ArrayList<>();
-            for (Reservation event : events)
+            if (!RaplaComponent.isTemplate(event) && isOlderThan(event, endDate))
             {
-                if (!RaplaComponent.isTemplate(event) && isOlderThan(event, endDate))
-                {
-                    toRemove.add(event);
-                }
+                toRemove.add(event);
             }
-            if (toRemove.size() > 0)
+        }
+        if (toRemove.size() > 0)
+        {
+            logger.info("Removing " + toRemove.size() + " old events.");
+            Reservation[] eventsToRemove = toRemove.toArray(Reservation.RESERVATION_ARRAY);
+            int STEP_SIZE = 100;
+            for (int i = 0; i < eventsToRemove.length; i += STEP_SIZE)
             {
-                logger.info("Removing " + toRemove.size() + " old events.");
-                Reservation[] eventsToRemove = toRemove.toArray(Reservation.RESERVATION_ARRAY);
-                int STEP_SIZE = 100;
-                for (int i = 0; i < eventsToRemove.length; i += STEP_SIZE)
-                {
-                    int blockSize = Math.min(eventsToRemove.length - i, STEP_SIZE);
-                    Reservation[] eventBlock = new Reservation[blockSize];
-                    System.arraycopy(eventsToRemove, i, eventBlock, 0, blockSize);
-                    raplaFacade.removeObjects(eventBlock);
-                }
+                int blockSize = Math.min(eventsToRemove.length - i, STEP_SIZE);
+                Reservation[] eventBlock = new Reservation[blockSize];
+                System.arraycopy(eventsToRemove, i, eventBlock, 0, blockSize);
+                raplaFacade.removeObjects(eventBlock);
             }
-        });
+        }
     }
 
     static private boolean isOlderThan( Reservation event, Date maxAllowedDate )

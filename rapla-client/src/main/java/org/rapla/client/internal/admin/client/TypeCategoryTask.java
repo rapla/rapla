@@ -1,6 +1,6 @@
 package org.rapla.client.internal.admin.client;
 
-import io.reactivex.rxjava3.functions.BiFunction;
+import org.rapla.scheduler.BiFunction;
 import org.rapla.RaplaResources;
 import org.rapla.client.PopupContext;
 import org.rapla.client.RaplaWidget;
@@ -42,7 +42,7 @@ public class TypeCategoryTask implements TaskPresenter {
         this.raplaFacade = raplaFacade;
         this.dialogUIFactory = dialogUIFactory;
         this.i18n = i18n;
-        this.busyIdleObservable = scheduler.createPublisher();
+        this.busyIdleObservable = org.rapla.scheduler.Observables.createPublisher(scheduler.getExecutor());
         this.eventBus = eventBus;
     }
     @Override

@@ -1,6 +1,6 @@
 package org.rapla.client.swing.internal;
 
-import io.reactivex.rxjava3.functions.Action;
+import org.rapla.scheduler.Action;
 import org.rapla.RaplaResources;
 import org.rapla.client.CalendarPlacePresenter;
 import org.rapla.client.PopupContext;
@@ -64,6 +64,8 @@ import java.util.Set;
 import java.util.TreeMap;
 
 @DefaultImplementation(of=SavedCalendarInterface.class,context = InjectionContext.swing)
+@org.springframework.stereotype.Service
+@org.springframework.context.annotation.Lazy
 public class SavedCalendarSwingView extends RaplaGUIComponent implements SavedCalendarInterface,ActionListener
 {
 

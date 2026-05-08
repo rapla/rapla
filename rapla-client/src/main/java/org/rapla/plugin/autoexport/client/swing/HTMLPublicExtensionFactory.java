@@ -11,10 +11,12 @@ import org.rapla.framework.RaplaLocale;
 import org.rapla.inject.Extension;
 import org.rapla.logger.Logger;
 import org.rapla.plugin.autoexport.AutoExportResources;
+import org.springframework.stereotype.Service;
 
 import jakarta.inject.Inject;
 import java.beans.PropertyChangeListener;
 
+@Service
 @Extension(provides=PublishExtensionFactory.class,id="html")
 public class HTMLPublicExtensionFactory implements PublishExtensionFactory
 {

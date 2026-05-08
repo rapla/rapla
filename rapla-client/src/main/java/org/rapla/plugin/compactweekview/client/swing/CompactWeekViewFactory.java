@@ -39,11 +39,15 @@ import org.rapla.logger.Logger;
 import org.rapla.plugin.compactweekview.CompactWeekviewPlugin;
 
 import jakarta.inject.Inject;
+import org.springframework.stereotype.Service;
+import org.springframework.context.annotation.Lazy;
 import jakarta.inject.Provider;
 import jakarta.inject.Singleton;
 import javax.swing.Icon;
 import java.util.Set;
 
+@Service
+@Lazy
 @Singleton
 @Extension(provides = SwingViewFactory.class, id = CompactWeekviewPlugin.COMPACT_WEEK_VIEW)
 public class CompactWeekViewFactory implements SwingViewFactory

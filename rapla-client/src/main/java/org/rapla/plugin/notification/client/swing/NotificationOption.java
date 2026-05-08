@@ -27,6 +27,8 @@ import org.rapla.inject.Extension;
 import org.rapla.logger.Logger;
 import org.rapla.plugin.notification.NotificationPlugin;
 import org.rapla.plugin.notification.NotificationResources;
+import org.springframework.context.annotation.Scope;
+import org.springframework.stereotype.Service;
 
 import jakarta.inject.Inject;
 import javax.swing.JCheckBox;
@@ -36,6 +38,8 @@ import javax.swing.JPanel;
 import java.util.Collection;
 import java.util.Locale;
 
+@Service
+@Scope("prototype")
 @Extension(provides = UserOptionPanel.class, id= NotificationPlugin.PLUGIN_ID)
 public class NotificationOption extends RaplaGUIComponent implements UserOptionPanel {
     JPanel content= new JPanel();

@@ -15,6 +15,8 @@ import org.rapla.logger.Logger;
 import org.rapla.plugin.export2ical.Export2iCalPlugin;
 import org.rapla.plugin.export2ical.Export2iCalResources;
 import org.rapla.plugin.export2ical.ICalConfigService;
+import org.springframework.context.annotation.Scope;
+import org.springframework.stereotype.Service;
 
 import jakarta.inject.Inject;
 import javax.swing.JCheckBox;
@@ -33,6 +35,8 @@ import java.util.Locale;
  * @author Twardon
  *
  */
+@Service
+@Scope("prototype")
 @Extension(provides = UserOptionPanel.class, id= Export2iCalPlugin.PLUGIN_ID)
 public class Export2iCalUserOption extends RaplaGUIComponent implements UserOptionPanel, ActionListener {
 	

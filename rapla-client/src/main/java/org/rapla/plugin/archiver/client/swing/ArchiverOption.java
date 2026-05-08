@@ -32,6 +32,8 @@ import org.rapla.scheduler.Promise;
 import org.rapla.scheduler.ResolvedPromise;
 import org.rapla.scheduler.Subject;
 import org.rapla.storage.dbrm.RestartServer;
+import org.springframework.context.annotation.Scope;
+import org.springframework.stereotype.Service;
 
 import jakarta.inject.Inject;
 import javax.swing.JCheckBox;
@@ -42,6 +44,8 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.util.Locale;
 
+@Service(ArchiverService.PLUGIN_ID)
+@Scope("prototype")
 @Extension(provides = PluginOptionPanel.class,id=ArchiverService.PLUGIN_ID)
 public class ArchiverOption  implements PluginOptionPanel,ActionListener  {
 
@@ -65,7 +69,7 @@ public class ArchiverOption  implements PluginOptionPanel,ActionListener  {
         this.logger = logger;
         this.restartServer = restartServer;
         this.dialogUiFactory = dialogUiFactory;
-        this.busyIdleObservable = scheduler.createPublisher();
+        this.busyIdleObservable = org.rapla.scheduler.Observables.createPublisher(scheduler.getExecutor());
     }
 
 

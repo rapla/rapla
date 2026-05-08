@@ -4,6 +4,7 @@ import org.jetbrains.annotations.NotNull;
 import org.rapla.RaplaResources;
 import org.rapla.inject.Extension;
 import org.rapla.plugin.tableview.client.swing.extensionpoints.AppointmentSummaryExtension;
+import org.springframework.stereotype.Service;
 
 import jakarta.inject.Inject;
 import javax.swing.Box;
@@ -11,6 +12,7 @@ import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JTable;
 
+@Service
 @Extension(provides = AppointmentSummaryExtension.class,id = "appointmentcounter")
 public final class AppointmentCounter implements AppointmentSummaryExtension
 {

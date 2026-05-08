@@ -12,7 +12,7 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.client.swing.toolkit;
 
-import io.reactivex.rxjava3.functions.BiFunction;
+import org.rapla.scheduler.BiFunction;
 import org.rapla.components.util.Tools;
 import org.rapla.entities.Category;
 import org.rapla.scheduler.Promise;

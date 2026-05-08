@@ -1,6 +1,6 @@
 package org.rapla.client.internal.edit.swing;
 
-import io.reactivex.rxjava3.functions.Consumer;
+import org.rapla.scheduler.Consumer;
 import org.rapla.RaplaResources;
 import org.rapla.client.PopupContext;
 import org.rapla.client.RaplaWidget;
@@ -28,6 +28,8 @@ import java.util.List;
 import java.util.Map;
 
 @DefaultImplementation(of = EditTaskViewFactory.class, context = InjectionContext.swing)
+@org.springframework.stereotype.Service
+@org.springframework.context.annotation.Lazy
 public class EditTaskViewSwing implements EditTaskViewFactory<Component>
 {
     protected final Map<String, Provider<EditComponent>> editUiProvider;

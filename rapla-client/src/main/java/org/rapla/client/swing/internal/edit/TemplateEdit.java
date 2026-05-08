@@ -62,6 +62,9 @@ import java.util.*;
 import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
 
+@org.springframework.stereotype.Service
+@org.springframework.context.annotation.Scope("prototype")
+@org.springframework.context.annotation.Lazy
 public class TemplateEdit extends RaplaGUIComponent
 {
     RaplaListEdit<Allocatable> templateList;

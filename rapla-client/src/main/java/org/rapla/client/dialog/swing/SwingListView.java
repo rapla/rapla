@@ -23,8 +23,8 @@ public class SwingListView<T> implements ListView<T> {
     @Inject
     public SwingListView(TreeCellRenderer treeCellRenderer, CommandScheduler scheduler)
     {
-        publisherDoubleClick = scheduler.createPublisher();
-        publisherSelectionChanged = scheduler.createPublisher();
+        publisherDoubleClick = org.rapla.scheduler.Observables.createPublisher(scheduler.getExecutor());
+        publisherSelectionChanged = org.rapla.scheduler.Observables.createPublisher(scheduler.getExecutor());
         treeSelection = new RaplaTree();
         treeSelection.setMultiSelect(false);
         treeSelection.getTree().setCellRenderer(treeCellRenderer);

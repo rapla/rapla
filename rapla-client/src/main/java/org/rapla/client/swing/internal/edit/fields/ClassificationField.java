@@ -358,6 +358,8 @@ public  class  ClassificationField<T extends Classifiable> extends AbstractEditF
 	}
 	
 	@Singleton
+	@org.springframework.stereotype.Service
+	@org.springframework.context.annotation.Lazy
 	public static class ClassificationFieldFactory{
 	    
 	    private final TreeFactory treeFactory;

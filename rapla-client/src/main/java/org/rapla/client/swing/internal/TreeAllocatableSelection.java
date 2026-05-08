@@ -55,6 +55,8 @@ import java.util.List;
 import java.util.Set;
 import java.util.TreeSet;
 
+@org.springframework.stereotype.Service
+@org.springframework.context.annotation.Scope("prototype")
 public class TreeAllocatableSelection extends RaplaGUIComponent implements ChangeListener {
     JPanel content= new JPanel();
     RaplaTree treeSelection;

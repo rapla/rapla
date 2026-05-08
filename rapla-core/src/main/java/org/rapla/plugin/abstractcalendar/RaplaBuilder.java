@@ -148,13 +148,31 @@ public class RaplaBuilder
         return logger;
     }
     
+    /** Sync sibling of {@link #initFromModel}. Requires the underlying operator to implement
+     *  {@link org.rapla.storage.SyncStorageOperator} (server-side only). The async version
+     *  delegates to this when the model has a sync operator; otherwise it falls back to
+     *  the async query path. */
+    public RaplaBuilder initFromModelSync(CalendarModel model, Date startDate, Date endDate) throws RaplaException
+    {
+        final TimeInterval interval = new TimeInterval( startDate, endDate);
+        appointmentFilter = model.getAppointmentFilter();
+        final AppointmentMapping appointmentBindings = ((org.rapla.facade.SyncCalendarModel) model).queryAppointmentBindingsSync(interval);
+        return applyBindings(model, appointmentBindings);
+    }
+
     public Promise<RaplaBuilder> initFromModel(CalendarModel model, Date startDate, Date endDate)
     {
         final RaplaBuilder builder = this;
         final TimeInterval interval = new TimeInterval( startDate, endDate);
         final Promise<AppointmentMapping> appointmentBindungsPromise = model.queryAppointmentBindings(interval);
         appointmentFilter = model.getAppointmentFilter();
-        final Promise<RaplaBuilder> builderPromise = appointmentBindungsPromise.thenApply((appointmentBindings) -> {
+        final Promise<RaplaBuilder> builderPromise = appointmentBindungsPromise.thenApply((appointmentBindings) -> applyBindings(model, appointmentBindings));
+        return builderPromise;
+    }
+
+    private RaplaBuilder applyBindings(CalendarModel model, AppointmentMapping appointmentBindings) throws RaplaException {
+        final RaplaBuilder builder = this;
+        {
             Collection<Conflict> conflictsSelected = new ArrayList<>();
             conflictsSelected.addAll( ((CalendarModelImpl)model).getSelectedConflicts());
 
@@ -233,8 +251,7 @@ public class RaplaBuilder
             }
             createColorMap();
             return builder;
-        });
-        return builderPromise;
+        }
     }
 
     public boolean isNonFilteredEventsVisible() {

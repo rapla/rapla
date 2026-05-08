@@ -34,8 +34,8 @@ public class UserImpl extends SimpleEntity implements User, ModifiableTimestamp
     private String name = "";
     private boolean admin = false;
     
-    private Date lastChanged;
-    private Date createDate;
+    private java.time.LocalDateTime lastChanged;
+    private java.time.LocalDateTime createDate;
 
 
 
@@ -45,10 +45,16 @@ public class UserImpl extends SimpleEntity implements User, ModifiableTimestamp
     }
 
     UserImpl() {
-    	this(null,null);
+    	this((java.time.LocalDateTime) null, (java.time.LocalDateTime) null);
 	}
-    
+
     public UserImpl(Date createDate,Date lastChanged)
+    {
+        this.createDate = createDate == null ? null : org.rapla.components.util.DateTools.toLocalDateTime(createDate);
+        this.lastChanged = lastChanged == null ? null : org.rapla.components.util.DateTools.toLocalDateTime(lastChanged);
+    }
+
+    public UserImpl(java.time.LocalDateTime createDate, java.time.LocalDateTime lastChanged)
     {
         this.createDate = createDate;
         this.lastChanged = lastChanged;
@@ -56,31 +62,47 @@ public class UserImpl extends SimpleEntity implements User, ModifiableTimestamp
 
     /** {@code LocalDateTime} factory paralleling {@link #UserImpl(Date, Date)}. UTC. */
     public static UserImpl ofLocalDateTime(java.time.LocalDateTime createDate, java.time.LocalDateTime lastChanged) {
-        return new UserImpl(
-            createDate == null ? null : org.rapla.components.util.DateTools.toDate(createDate),
-            lastChanged == null ? null : org.rapla.components.util.DateTools.toDate(lastChanged));
+        return new UserImpl(createDate, lastChanged);
     }
-    
+
     public Date getLastChanged() {
-        return lastChanged;
+        return lastChanged == null ? null : org.rapla.components.util.DateTools.toDate(lastChanged);
     }
-    
+
     @Deprecated
     public Date getLastChangeTime() {
-        return lastChanged;
+        return getLastChanged();
     }
 
     public Date getCreateDate() {
-        return createDate;
+        return createDate == null ? null : org.rapla.components.util.DateTools.toDate(createDate);
     }
+
+    @Override
+    public java.time.LocalDateTime getLastChangedAsLocalDateTime() { return lastChanged; }
+
+    @Override
+    public java.time.LocalDateTime getCreateDateAsLocalDateTime() { return createDate; }
 
     @Override public void setCreateDate(Date date)
     {
+        checkWritable();
+        this.createDate = date == null ? null : org.rapla.components.util.DateTools.toLocalDateTime(date);
+    }
+
+    @Override
+    public void setCreateDateLocalDateTime(java.time.LocalDateTime date) {
         checkWritable();
         this.createDate = date;
     }
 
     public void setLastChanged(Date date) {
+        checkWritable();
+        lastChanged = date == null ? null : org.rapla.components.util.DateTools.toLocalDateTime(date);
+    }
+
+    @Override
+    public void setLastChangedLocalDateTime(java.time.LocalDateTime date) {
         checkWritable();
         lastChanged = date;
     }

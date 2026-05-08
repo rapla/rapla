@@ -65,7 +65,7 @@ public class MyCustomConnector implements CustomConnector
         final String connectAs = connectInfo.getConnectAs();
         final LoginTokens loginTokens;
         try {
-            loginTokens = remoteAuthentificationService.login(username, password, connectAs);
+            loginTokens = remoteAuthentificationService.login(new org.rapla.storage.dbrm.LoginCredentials(username, password, connectAs));
             logger.info("Reauthenticating user " + username + (connectAs != null ? " as " + connectAs : ""));
         } catch (RaplaSecurityException e) {
             wrongLoginCounter++;

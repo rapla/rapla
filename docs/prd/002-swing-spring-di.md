@@ -1,7 +1,7 @@
 # PRD 002: Swing UI Spring DI Migration
 
-**Status:** in-progress
-**Date:** 2026-05-06
+**Status:** in-progress — Phases 1, 2, 3, 4 (qualifier maps), 5, 6 substantially complete. Client boots end-to-end; ~50 core beans + ~39 plugin extensions wired (singletons, prototypes, lazy where boot-state is involved). Remaining: ~6 plugin extensions blocked on un-wired REST proxies (`ExchangeConnectorRemote`, `ICalExport`) or un-wired view interfaces (`CalendarTableView`, `CalendarWeekView`).
+**Date:** 2026-05-06 (last update: 2026-05-08)
 **Depends on:** PRD 001 (Spring Boot Migration) — Phase 4 step 5 (`ClientConfig` + `RemoteOperator` wired)
 
 ## Goal
@@ -35,6 +35,21 @@ Each Swing component pulls in collaborators. Spring will fail at startup if any 
 ### Phase 4 — Extension maps + sets
 
 `Map<String, TaskPresenter>`, `Set<ClientExtension>`, etc. need `@Component`/`@Bean` registration with `@Named("id")` qualifiers. Each `@Extension(provides=X.class, id="Y")` becomes `@Component @Named("Y")` on the impl, and Spring's `Map<String, X>` injection populates the right map.
+
+**Implementation note (2026-05-07):** Spring's auto-injection of `Map<String, T>` uses the **bean name** as the map key. Setting `@Service("id")` (or equivalently `@Component("id")` / `@Named("id")`) names the bean directly, so `@Inject Map<String, Provider<TaskPresenter>>` populates with `id → bean` automatically. No additional `@Configuration` plumbing needed for the simple "one class, one id" case. The complex case (one class providing multiple ids — e.g. `EditTaskPresenter` provides 5) requires either multiple `@Bean` factory methods returning the same instance under different names, or `addAlias()` calls.
+
+#### Phase 4 — TaskPresenter Map (in progress, 4/6 single-id classes wired)
+
+| Class | id | Status |
+|-------|-----|--------|
+| `CalendarPlacePresenter` | `cal` | ✅ `@Service("cal") @Lazy` |
+| `ResourceCalendarTask` | `resource_calendar` | ✅ `@Service(ResourceCalendarTask.ID) @Lazy` |
+| `AdminUserTask` | `admin_user` | ✅ `@Service(USER_ADMIN_ID) @Lazy` |
+| `TypeCategoryTask` | `admin_types` | ✅ `@Service(TypeCategoryTask.ID) @Lazy` |
+| `EditTaskPresenter` (5 ids: `EDIT_EVENTS`, `EDIT_RESOURCES`, `CREATE_RESERVATION_FOR_DYNAMIC_TYPE`, `CREATE_RESERVATION_FROM_TEMPLATE`, `MERGE_RESOURCES`) | 5 | ✅ wired via `EditTaskPresenterConfig` (`@Configuration` with 5 prototype-scoped `@Bean` factory methods, each named after one of the legacy ids and each constructing a fresh `EditTaskPresenter`). Registered in `SpringRaplaClient` ctor alongside `ClientConfig`/`ClientProxyConfig`/`SwingClientConfig`. |
+| (other `TaskPresenter` extensions in plugins) | various | not yet enumerated |
+
+`SpringRaplaClientTest` still passes after the 4 named beans land. Once `EditTaskPresenter` is wired, `Application.activityPresenters` map will populate correctly and `Application` itself becomes wirable (currently blocked by this map).
 
 ### Phase 5 — Field → constructor injection migration
 
@@ -114,6 +129,214 @@ Each phase ends with `SpringRaplaClientTest` extended to assert the new beans re
 | `org.rapla.client.swing.ResourceSelectionViewSwing` | ✅ + `@Lazy` | `ResourceSelectionView` — `MenuFactory`, `InfoFactory`, `FilterEditButtonFactory` all wired now |
 | `org.rapla.client.internal.admin.client.swing.SwingTypeCategoryView` | ✅ + `@Lazy` | `TypeCategoryView` — needs `MenuFactory` ✓, `TreeFactory` ✓, `TreeCellRenderer` ✓ |
 | `org.rapla.client.internal.admin.client.swing.SwingUserGroupsView` | ✅ + `@Lazy` | `AdminUserUserGroupsView` — same deps as above |
+| `org.rapla.client.swing.internal.SavedCalendarSwingView` | ✅ + `@Lazy` | `SavedCalendarInterface` — was blocked by `Set<PublishExtensionFactory>`; Spring auto-injects empty Set, so it wires now |
+| `org.rapla.client.swing.internal.RaplaClientServiceImpl` | ✅ + `@Lazy` | `ClientService` impl. The 13 ctor deps include `Provider<Application>` (which works lazily as long as `Application` is a registered bean) and `RemoteAuthentificationService` / `RemoteConnectionInfo` (✓ via REST proxy `@Bean` factories). |
+| `org.rapla.client.Application` | ✅ + `@Lazy` | `ApplicationView.Presenter` impl. Uses `Map<String, Provider<TaskPresenter>>` (currently 4 ids populated; missing 5 from `EditTaskPresenter`), `Provider<Set<ClientExtension>>` (no impls in codebase, empty Set OK), `Provider<ApplicationView>` (✓ via `ApplicationViewSwing`), `Provider<CalendarSelectionModel>` (✓ via `@Bean`). |
+| `org.rapla.client.swing.internal.ApplicationViewSwing` | ✅ + `@Lazy` | `ApplicationView` — needs `RaplaMenuBar` which is **still not wired** (blocked by 6 `Set<*MenuExtension>` types and `PrintAction`). At lazy resolution time, dereferencing `Provider<ApplicationView>` will fail until `RaplaMenuBar` is wired. |
+| **`SpringRaplaClient.main(String[] args)` entry point** | ✅ added | Boots context, gets `ClientService` bean, calls `start(connectInfo)`. Accepts optional `username [password]` CLI args for auto-login; otherwise puts up the interactive login dialog. |
+
+### Phase 6 status — `RaplaClientServiceImpl` lifecycle wiring
+
+`RaplaClientServiceImpl` is now `@Service @Lazy`. The bean **definition** is registered. **First dereference** (i.e. `context.getBean(ClientService.class)`) will trigger the lazy chain:
+
+1. `RaplaClientServiceImpl` ctor runs — needs 13 deps, all already wired.
+2. The injected `Provider<Application>` is a deferred lookup, so `Application` is not instantiated yet.
+3. When `clientService.start(connectInfo)` is called, the login dialog opens (or auto-login runs).
+4. After successful login, the call eventually reaches `applicationProvider.get()` → triggers `Application` instantiation.
+5. `Application` ctor needs `Map<String, Provider<TaskPresenter>>` (✓ 4 entries: `cal`, `resource_calendar`, `admin_user`, `admin_types` — missing `EditTaskPresenter`'s 5 ids), `Provider<ApplicationView>` (✓), `Provider<Set<ClientExtension>>` (✓ empty), `AbstractActivityController` (✓), `BundleManager` (✓), `DialogUiFactoryInterface` (✓), `Provider<CalendarSelectionModel>` (✓), all OK.
+6. `Application.startApplication()` triggers `applicationView.show()` → triggers `ApplicationViewSwing` instantiation → **needs `RaplaMenuBar` (NOT WIRED)**.
+
+### Critical blockers for actual UI launch
+
+| Blocker | What's needed |
+|---------|---------------|
+| **`RaplaMenuBar`** | Set<AdminMenuExtension>, Set<EditMenuExtension>, Set<ViewMenuExtension>, Set<HelpMenuExtension>, Set<ImportMenuExtension>, Set<ExportMenuExtension> + `PrintAction` (which needs `Map<String, SwingViewFactory>`) |
+| **`PrintAction`** | `Map<String, SwingViewFactory>` (extension map) + `Provider<CalendarPrintDialog>` |
+| **`EditTaskPresenter`** | `EditTaskViewFactory` (impl `EditTaskViewSwing`, needs `Map<String, Provider<EditComponent>>`) + `Provider<ReservationEdit>` (impl `ReservationEditImpl`, needs more cascading deps) |
+| **6 `Set<*MenuExtension>` empty beans** | Spring should auto-inject empty Set<>; needs verification at runtime — if it complains, declare empty `@Bean` factories returning `Collections.emptySet()` |
+
+**Decision point**: do we wire all menu extensions and edit pipeline (multi-iteration cascade work, 30+ more `@Service` annotations), or do we trim the launch to a minimal subset (e.g. read-only calendar viewer with no edit/print/menus) by stubbing out the missing deps with empty `@Bean`s? The latter is faster to a runnable demo; the former is necessary for production parity.
+
+### 🎉 First successful client launch (2026-05-07)
+
+After wiring `RaplaClientServiceImpl`, `Application`, `ApplicationViewSwing`, `RaplaMenuBar`, `PrintAction`, `TemplateEdit`, plus the `RestartServer` REST proxy and a non-null `getDownloadURL()` in `StartupEnvironment`, the client now boots successfully.
+
+**Launch command:**
+
+```bash
+# Easiest: use the exec-maven-plugin (configured in rapla-client/pom.xml).
+mvn -pl rapla-client exec:java
+mvn -pl rapla-client exec:java -Dexec.args="username password"   # auto-login
+
+# Why not spring-boot:run? rapla-client is NOT a @SpringBootApplication
+# (uses plain AnnotationConfigApplicationContext, see PRD 005 OQ6).
+# spring-boot:run requires that annotation; exec:java is the natural analog.
+
+# rapla-client/pom.xml now declares:
+#   - slf4j-api + logback-classic at runtime scope (rapla-bom has them as
+#     provided/test, since the dev server's spring-boot starter pulls them
+#     transitively, but the standalone client launch needs them explicit).
+#   - exec-maven-plugin pre-configured with mainClass=SpringRaplaClient and
+#     classpathScope=runtime, so `mvn exec:java` Just Works.
+```
+
+**Output (truncated):**
+```
+[main] INFO rapla -- Logging via SLF4J API.
+[main] INFO rapla -- Rapla.Version=2.1-SNAPSHOT
+[main] INFO rapla -- Java.Version=21.0.11
+[main] INFO rapla -- Starting gui
+[raplascheduler-0] ERROR rapla -- I/O error on POST request for "http://localhost/authentication"
+```
+
+**What this proves:** the entire bean graph resolves end-to-end — Spring context → `ClientService` → login flow → REST authentication call. The actual `POST` fails because no Rapla server is running on `http://localhost`, but that's an integration-time concern, not a wiring concern. **Phase 6 (lifecycle wiring) is functionally complete.**
+
+### Remaining for production parity
+
+- Login dialog UI: present (Swing dialog opens), but the legacy `UserLoginDialog` class probably needs `@Service`/wiring polish.
+- `EditTaskPresenter` (5-id `TaskPresenter`): not yet registered — calendar/admin tasks work, edit-related tasks won't dispatch.
+- All plugin extensions (`Set<EditMenuExtension>`, `Set<ImportMenuExtension>`, etc.): currently empty (Spring auto-injects empty Sets when no beans exist). Plugins that need to appear in menus require their own `@Service` + matching `@Named("id")` for `Map<String, T>` slots.
+- `ResourceSelectionPresenter`: not yet `@Service`-annotated (would need `EditController` ✓ and `ResourceSelectionView` ✓ — both wired now). Adding makes the resource sidebar work.
+- `getDownloadURL()` in `StartupEnvironment` is hardcoded to `http://localhost:8051/`. Production launches need this from `application.yml` / system property / CLI arg.
+- ~~The `RemoteConnectionInfo.serverURL` is set to `http://localhost:8051/rapla` in the ctor of `RaplaClientServiceImpl` but the actual `POST` URL above shows `http://localhost/authentication` — there's a separate URL-stripping somewhere in the REST proxy chain. Investigate.~~ **Fixed 2026-05-07** — `RestClient.Builder.baseUrl()` was freezing the URL at `@Bean` factory time when `info.getServerURL()` was still null. Replaced with a custom `DynamicBaseUriBuilderFactory` (extends `DefaultUriBuilderFactory`) that reads `info.getServerURL()` per request. Verified: launch now sends `POST http://localhost:8051/rapla/authentication` (the connection fails because no server is up, but the URL composition is correct).
+- `org.rapla.client.internal.ResourceSelectionPresenter` `@Service @Lazy` — the resource sidebar presenter. All deps wired (`ResourceSelectionView` ✓, `EditController` ✓, `CalendarSelectionModel` ✓ lazy).
+- `org.rapla.client.swing.SwingSchedulerImpl` `@Service @Primary` — the EDT-aware `CommandScheduler` impl. Coexists with the existing `ClientConfig.commandScheduler` `@Bean` (which returns `DefaultScheduler`) thanks to `@Primary` — when the Swing context is active and both are scanned, the `@Primary`-marked Swing impl wins for `CommandScheduler` injection points. Tests still pass with the duplicate bean definitions because `@Primary` disambiguates. The `@Bean` in `ClientConfig` could be removed in a follow-up since Swing-specific clients always want the Swing impl, but the `@Primary` approach keeps the option open for non-Swing client variants.
+- `org.rapla.client.swing.i18n.SwingBundleManager` `@Service @Primary` — same `@Primary` pattern as `SwingSchedulerImpl`: coexists with `ClientConfig.bundleManager @Bean`, the Swing-aware impl wins.
+- `org.rapla.client.internal.edit.swing.EditTaskViewSwing` `@Service @Lazy` — `EditTaskViewFactory` impl. Its `Map<String, Provider<EditComponent>>` ctor param injects as empty Map until `EditComponent` impls (`ReservationEditUI`, `PreferencesEditUI`, `AllocatableEditUI`, `CategoryEditUI`, `UserEditUI`) are also `@Service`-annotated. With empty Map, the factory works for non-edit flows; edit flows fail at `editUiProvider.get(entityType)` lookup.
+- **EditComponent qualifier-map wiring (Phase 4)** — 4 of 5 `EditComponent` impls now `@Service("<entity-fqn>") @Scope("prototype") @Lazy`:
+  - `CategoryEditUI` `@Service("org.rapla.entities.Category")`
+  - `AllocatableEditUI` `@Service("org.rapla.entities.domain.Allocatable")`
+  - `UserEditUI` `@Service("org.rapla.entities.User")`
+  - `ReservationEditUI` `@Service("org.rapla.entities.domain.Reservation")`
+  - `PreferencesEditUI` `@Service("org.rapla.entities.configuration.Preferences") @Scope("prototype") @Lazy` — done. Uses `Provider<Set<UserOptionPanel>>`, `Provider<Set<SystemOptionPanel>>`, `Map<String, Provider<PluginOptionPanel>>` — Spring auto-injects empty Sets/Map when no impls are registered, so the bean wires fine. Plugin-supplied option panels would need their own `@Service(...)` to populate.
+  - `Scope("prototype")` matches the legacy `Provider<EditComponent>` semantics: each `provider.get()` returns a fresh instance.
+- **Field factories — `ClassificationFieldFactory`, `PermissionListFieldFactory`, `MultiLanguageFieldFactory` `@Service @Lazy`** (nested within `ClassificationField`, `PermissionListField`, `MultiLanguageField` respectively). Together with the previously-wired `DateFieldFactory`, `BooleanFieldFactory`, `TextFieldFactory`, `LongFieldFactory`, all 7 field factories are now `@Service`-annotated.
+- `org.rapla.client.swing.internal.edit.fields.GroupListField` `@Service @Scope("prototype") @Lazy` — `UserEditUI`'s field dep.
+- `org.rapla.client.swing.internal.edit.reservation.AllocatableSelection.AllocatableSelectionFactory` `@Service @Lazy` (nested) — `ReservationEditUI` dep. Pulls in `MenuFactory` ✓ and `InfoFactory` ✓ (both wired earlier).
+- `org.rapla.client.swing.internal.edit.reservation.AppointmentListEdit.AppointmentListEditFactory` `@Service @Lazy` (nested).
+- `org.rapla.client.swing.internal.edit.reservation.ReservationInfoEdit.ReservationInfoEditFactory` `@Service @Lazy` (nested).
+- **`org.rapla.client.swing.internal.edit.reservation.ReservationEditImpl` `@Service @Scope("prototype") @Lazy`** — final `@DefaultImplementation` swing class wired. All ctor deps now resolvable. **All 32 original `@DefaultImplementation` swing classes are now `@Service`-annotated** (some with `@Primary` for duplicates, 2 SwingScheduler/SwingBundleManager use `@Primary` to disambiguate from the existing `@Bean` factories).
+- **`EditTaskPresenterConfig`** — new `@Configuration` registering `EditTaskPresenter` under each of its 5 legacy `@Extension` ids via 5 prototype-scoped `@Bean` factory methods. Registered in `SpringRaplaClient` ctor. With this, `Application.activityPresenters` (a `Map<String, Provider<TaskPresenter>>`) populates with **9 ids**: `cal`, `resource_calendar`, `admin_user`, `admin_types` + the 5 edit ids.
+
+### Phase 4 status — extension `Map`/`Set` qualifier wiring
+
+**Done:**
+- `Map<String, Provider<TaskPresenter>>` — 9 ids registered (4 single-id `@Service("id")` + 5 via `EditTaskPresenterConfig`).
+- `Map<String, Provider<EditComponent>>` — 5 ids registered via `@Service("<entity-fqn>") @Scope("prototype")` on `ReservationEditUI`, `AllocatableEditUI`, `CategoryEditUI`, `UserEditUI`, `PreferencesEditUI`.
+
+**Auto-injected as empty (no extension impls in core; plugin-supplied):**
+- `Set<AdminMenuExtension>`, `Set<EditMenuExtension>`, `Set<HelpMenuExtension>`, `Set<ImportMenuExtension>`, `Set<ExportMenuExtension>`, `Set<ViewMenuExtension>` (consumed by `RaplaMenuBar`)
+- `Set<AppointmentStatusFactory>`, `Set<ReservationToolbarExtension>` (consumed by `ReservationEditImpl`)
+- `Set<EventCheck>`, `Set<CheckView>` (consumed by `ReservationControllerImpl`)
+- `Set<SwingViewFactory>`, `Set<ObjectMenuFactory>`, `Set<ReservationWizardExtension>`
+- `Set<PublishExtensionFactory>`
+- `Set<UserOptionPanel>`, `Set<SystemOptionPanel>`, `Map<String, Provider<PluginOptionPanel>>` (consumed by `PreferencesEditUI`)
+- `Set<MergeCheckExtension>` (consumed by `EditTaskPresenter`)
+
+When plugins are reactivated, each plugin extension class needs `@Service` (or `@Service("id")` for `Map`-injected types) added — that's a separate per-plugin sweep.
+
+### 2026-05-07 — Plugin extension scan + first batch of plugin `@Service` annotations
+
+`SwingClientConfig` `@ComponentScan` extended with `org.rapla.plugin` (still excluding `*\\.server\\..*`). Five plugin extensions wired with bare `@Service`:
+
+| Class | Provides | Notes |
+|-------|----------|-------|
+| `EventCounter` | `ReservationSummaryExtension` (id=`_eventcounter`) | Singleton; only dep is `RaplaResources` |
+| `AppointmentCounter` | `AppointmentSummaryExtension` (id=`appointmentcounter`) | Singleton; only dep is `RaplaResources` |
+| `AppointmentCounterFactory` | `AppointmentStatusFactory` (id=`appointmentcounter`) | Singleton; deps: `ClientFacade`, `RaplaResources`, `RaplaLocale`, `Logger` |
+| `AutoExportPluginOption` | `PluginOptionPanel` (id=`org.rapla.plugin.autoexport`) | Prototype; no-arg ctor |
+| `CSVExportPluginOption` | `PluginOptionPanel` (id=`org.rapla.plugin.cssexport`) | Prototype; only dep is `RaplaResources` |
+
+**Bean naming pitfall avoided:** Spring's `@Service("id")` sets the bean *name* globally. Two different `@Service("appointmentcounter")` (one for `AppointmentSummaryExtension`, one for `AppointmentStatusFactory`) collide with `ConflictingBeanDefinitionException` — Spring's bean name uniqueness is global, not per-extension-type. Solution: use bare `@Service` (default class-name bean name) when the consumer is `Set<T>`, only use `@Service("id")` when the consumer is `Map<String, T>` and the id needs to be the map key.
+
+**Remaining plugin extensions:** still ~30 classes with `@Extension` not yet `@Service`-annotated. Each needs its dep cone validated (most need their plugin `*Resources` I18nBundle which is still `@Inject`-only and not Spring-managed). A future sweep can wire them in batches grouped by plugin.
+
+### 2026-05-08 — `PluginResourcesConfig` and second batch of plugin `@Service` annotations
+
+`PluginResourcesConfig` (new) — `@Configuration` registering all 10 plugin `*Resources` I18nBundle classes as `@Bean`s plus the `EventTimeCalculatorFactory`. The bundles live in `rapla-core` (which has no `spring-context` dep) so adding `@Service` directly there isn't allowed; instead, the consumer-side rapla-client config defines a `@Bean` per bundle that delegates to the bundle's `@Inject public XResources(BundleManager)` constructor. Wired into `SpringRaplaClient`'s ctor alongside `ClientConfig`/`ClientProxyConfig`/`SwingClientConfig`/`EditTaskPresenterConfig`.
+
+This unblocks plugin extensions that depend on plugin-specific I18n resources — they can now be `@Service`-annotated without cascading bean failures.
+
+**Plugin extensions wired this iteration** (all bare `@Service` for `Set<T>` consumers, `@Service("id")` only for `Map`-keyed consumers):
+
+| Class | Provides | Notes |
+|-------|----------|-------|
+| `EventtimeCalculatorColumnDefinitionExtension` | `TableColumnDefinitionExtension` | Singleton; uses `EventTimeCalculatorResources` (now bean-wired) |
+| `EventTimeCalculatorStatusFactory` | `AppointmentStatusFactory` (id=`eventtimecalculator`) | Uses `EventTimeCalculatorFactory` + `EventTimeCalculatorResources` |
+| `DurationCounter` | `ReservationSummaryExtension` + `AppointmentSummaryExtension` | Multi-extension class; bare `@Service` since both consumers are `Set<T>` |
+| `EventTimeCalculatorUserOption` | `UserOptionPanel` (id=`org.rapla.plugin.eventtimecalculator`) | Prototype |
+| `EventTimeCalculatorAdminOption` | `PluginOptionPanel` (id=`...eventtimecalculator`) | Prototype; map-keyed |
+| `Export2iCalAdminOption` | `PluginOptionPanel` (id=`org.rapla.plugin.export2ical`) | Prototype; map-keyed |
+| `Export2iCalUserOption` | `UserOptionPanel` (id=`...export2ical`) | Prototype |
+| `IcalPublishExtensionFactory` | `PublishExtensionFactory` (id=`ical`) | Singleton |
+| `HTMLPublicExtensionFactory` | `PublishExtensionFactory` (id=`html`) | Singleton |
+| `URLEncyrptionPublicExtensionFactory` | `PublishExtensionFactory` (id=`urlencryption`) | Singleton |
+| `NotificationOption` | `UserOptionPanel` (id=`org.rapla.plugin.notification`) | Prototype; needed `TreeAllocatableSelection` to be made `@Service @Scope("prototype")` |
+| `TreeAllocatableSelection` | (Swing helper used by `NotificationOption`) | Prototype |
+| `AppointmentNotePluginOption` | `PluginOptionPanel` (id=`...appointmentnote`) | Prototype; map-keyed |
+| `MailOption` | `PluginOptionPanel` (id=`org.rapla.plugin.mail`) | Prototype; map-keyed |
+| `ArchiverOption` | `PluginOptionPanel` (id=`org.rapla.plugin.archiver`) | Prototype; map-keyed |
+| `CopyUrlMenuFactory` | `ObjectMenuFactory` (id=`copyurl`) | Singleton; depends on already-`@Service`-wired `SwingURLCopyService` |
+| `SetOwnerMenuFactory` | `ObjectMenuFactory` (id=`setowner`) | Singleton; depends on already-`@Service`-wired `ObjectSwingListView` (`ListView`) |
+| `DefaultWizard` | `ReservationWizardExtension` (id=`defaultWizard`) | `@Lazy` — depends on `CalendarModel` which calls `clientFacade.getUser()` at boot before login |
+| `TemplateWizard` | `ReservationWizardExtension` (id=`org.rapla.plugin.tempatewizard`) | `@Lazy` — same boot-time-state reason |
+
+**Pattern reinforced:** plugin extensions whose ctor reaches `clientFacade.getUser()` (via `CalendarModel`, `ModificationListener`, etc.) need `@Lazy` to defer instantiation until after login. Eager `@Service` triggers `RaplaInitializationException: no user loged in` during context refresh.
+
+19 plugin extensions wired total (5 from prior batch + 14 from this batch). All resolved without cascading missing-bean errors. `SpringRaplaClientTest` and full reactor (23 tests) green.
+
+### 2026-05-08 (continued) — Calendar view factories + table-view wiring
+
+`PluginResourcesConfig` extended with two more `@Bean` factories:
+- `TimeslotProvider(RaplaLocale, RaplaFacade)` — `@Lazy` because ctor reads `facade.getSystemPreferences()` which requires a live operator
+- `TableConfig.TableConfigLoader(RaplaFacade, RaplaResources, RaplaLocale, Set<TableColumnDefinitionExtension>, RaplaTableColumnFactory)` — `@Lazy`. The `Set<TableColumnDefinitionExtension>` slot is now populated by `EventtimeCalculatorColumnDefinitionExtension` (wired earlier this session) plus auto-injected as empty for any other plugins.
+
+**Calendar `SwingViewFactory` extensions wired** (all `@Service @Lazy @Singleton` — `@Lazy` because ctor often reaches `clientFacade.getUser()` indirectly):
+
+| Class | id | Notes |
+|-------|----|----|
+| `WeekViewFactory` | `WeekviewPlugin.WEEK_VIEW` | |
+| `DayViewFactory` | `WeekviewPlugin.DAY_VIEW` | |
+| `MonthViewFactory` | `MonthViewPlugin.MONTH_VIEW` | |
+| `CompactDayViewFactory` | `TimeslotPlugin.DAY_TIMESLOT` | uses `TimeslotProvider` |
+| `CompactViewFactory` | `TimeslotPlugin.WEEK_TIMESLOT` | uses `TimeslotProvider` |
+| `CompactWeekViewFactory` | `CompactWeekviewPlugin.COMPACT_WEEK_VIEW` | |
+| `DayResourceViewFactory` | `DayResourceViewFactory.DAY_RESOURCE_VIEW` | |
+| `AppointmentTableViewFactory` | `TableViewPlugin.TABLE_APPOINTMENTS_VIEW` | uses `TableConfigLoader` |
+| `AppointmentsPerDayViewFactory` | `TableViewPlugin.TABLE_APPOINTMENTS_PER_DAY_VIEW` | uses `TableConfigLoader` |
+| `ReservationTableViewFactory` | `TableViewPlugin.TABLE_EVENT_VIEW` | uses `TableConfigLoader` |
+| `TimeslotOption` | `TimeslotPlugin.PLUGIN_ID` (PluginOptionPanel) | prototype |
+| `PlanningStatusPublishExtensionFactory` | `planningstatus` (PublishExtensionFactory) | |
+
+**Plugin extensions wired total: 30 across two iterations.** `SwingClientConfig`'s `Set<SwingViewFactory>` injection point is now populated with 10 calendar view factories. The remaining unwired plugin extensions either depend on un-wired REST proxies (`ExchangeConnectorRemote`, `ExchangeConnectorConfigRemote`) or un-wired view interfaces (`CalendarTableView`, `CalendarWeekView`) — those need their interface impls registered first before the consumer extensions can be wired. Pre-existing legacy bug: `PlanningStatusPluginOption` claims `id = CSVExportPlugin.PLUGIN_ID` (typo, should be `PlanningStatusPlugin.PLUGIN_ID`); collides with `CSVExportPluginOption`'s id, only one wins. Skipped — out of scope for DI migration.
+
+### 2026-05-08 (third batch) — Menus, annotation editors, function factories
+
+**Wired with `@Service @Lazy`** (deps validated lazily so prototype-scoped or boot-state callsites don't fail eager init):
+- `ImportTemplateMenu` (`ImportMenuExtension` id=`org.rapla.plugin.templateimport`)
+- `CSVExportMenu` (`ExportMenuExtension` id=`...cssexport`) — uses `TableConfigLoader`
+- `CopyPluginMenu` (`EditMenuExtension` id=`org.rapla.plugin.periodcopy`) — uses `Provider<CopyDialog>` (`CopyDialog` made `@Service @Scope("prototype") @Lazy`)
+- `ImportFromICalMenu` (`ImportMenuExtension`) — uses `Provider<TreeAllocatableSelection>` (already wired earlier)
+- `TableviewOption` (`PluginOptionPanel` id=`...tableview`) — `@Scope("prototype")`
+- `TableColumnAnnotationEdit` (`AnnotationEditTypeExtension` id=`tableColumn`)
+- `EventTimeConditionAnnotationEdit` (`AnnotationEditTypeExtension`)
+- `JNDIOption` (`PluginOptionPanel` id=`...jndi`) — `@Scope("prototype")`
+
+**`PluginResourcesConfig` extended with three `FunctionFactory` `@Bean`s**: `StandardFunctions` (`org.rapla` namespace, eager — no risky deps), `AppointmentNoteFunctions` (`appointment` namespace, `@Lazy` — needs `Provider<RaplaFacade>`), `DurationFunctions` (`org.rapla.eventtimecalculator` namespace, `@Lazy` — needs `EventTimeCalculatorFactory`). These are `@Bean(name = NAMESPACE)` so consumers that want a `Map<String, FunctionFactory>` keyed by namespace get correct keys.
+
+**Plugin extensions wired total: 39.** Remaining unwired:
+- `CalendarTableViewPresenter`, `CalendarWeekViewPresenter` — depend on `CalendarTableView`/`CalendarWeekView` interfaces with no impl registered
+- `ExchangeConnectorAdminOptions`, `ExchangeConnectorUserOptions` — depend on `ExchangeConnectorConfigRemote`/`ExchangeConnectorRemote` REST proxies not yet wired in `ClientProxyConfig`
+- `Export2iCalMenu` — depends on `ICalExport` REST proxy not yet wired
+- `PlanningStatusPluginOption` — pre-existing legacy id-collision bug (claims CSV export's id)
+
+### 2026-05-07 — `@Bean` factory return-type cleanup in `ServerServiceConfig`
+
+The parallel session's controllers (`ArchiverController`, `RemoteLocaleController`, `JNDIConfigController`) were rewritten to inject the impl directly (e.g. `ArchiverServiceImpl`) instead of the interface. The `@Bean` factories in `ServerServiceConfig` were still typed with the interface return type, so Spring couldn't satisfy the dep. Fixed by changing the factory return types to the impl: `archiverService` → `ArchiverServiceImpl`, `remoteLocaleService` → `RemoteLocaleServiceImpl`, `jndiConfig` → `RaplaJNDITestOnLocalhost`. The interface beans aren't needed (no other consumer asks for the interface type — controllers always wanted the impl).
+
+### Phase 2 — DONE
+
+All 32 original `@DefaultImplementation` swing classes are now `@Service`-annotated. The session has wired ~50 beans total counting nested factories, action classes, `@Bean` config methods, and Phase 4 prototype-scoped multi-id beans.
 
 ### Pattern for prototype-scoped action classes
 

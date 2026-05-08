@@ -12,7 +12,7 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.client.swing.internal.edit.reservation;
 
-import io.reactivex.rxjava3.functions.Consumer;
+import org.rapla.scheduler.Consumer;
 import org.rapla.RaplaResources;
 import org.rapla.client.AppointmentListener;
 import org.rapla.client.RaplaWidget;
@@ -83,6 +83,9 @@ import java.util.Map;
 import java.util.Set;
 
 @DefaultImplementation(context = InjectionContext.swing, of = ReservationEdit.class)
+@org.springframework.stereotype.Service
+@org.springframework.context.annotation.Scope("prototype")
+@org.springframework.context.annotation.Lazy
 public final class ReservationEditImpl extends AbstractAppointmentEditor implements ReservationEdit<Component>
 {
     protected Reservation mutableReservation;

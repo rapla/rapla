@@ -128,6 +128,12 @@ public abstract class DateTools
         String string = format.formatDate( date);
         return string;
 	}
+
+	/** {@code long}-millis variant. UTC. */
+	public static String formatDate(long millis)
+	{
+        return formatDate(new Date(millis));
+	}
 	
 	public static String formatTime(Date date)
 	{
@@ -253,13 +259,18 @@ public abstract class DateTools
 	{
         return formatDateTime(date, null);
 	}
-	
+
+	public static String formatDateTime(long millis)
+	{
+        return formatDateTime(new Date(millis), null);
+	}
+
 	public static String formatDateTime(Date date, Locale locale)
 	{
 		SerializableDateTimeFormat format = SerializableDateTimeFormat.INSTANCE;
 		String dateString = format.formatDate( date);
 		String timeString = format.formatTime( date);
-        String string = dateString + " " + timeString; 
+        String string = dateString + " " + timeString;
         return string;
 	}
 
@@ -343,6 +354,12 @@ public abstract class DateTools
 
     public static Date fillDate(Date date) {
         return new Date(fillDate(date.getTime()));
+    }
+
+    /** {@code LocalDateTime} variant of {@link #fillDate(Date)}: rounds up to next-day midnight. UTC. */
+    public static LocalDateTime fillDate(LocalDateTime dateTime) {
+        if (dateTime == null) return null;
+        return toLocalDateTime(fillDate(toMilli(dateTime)));
     }
 
     /** Monday 24:00 = tuesday 0:00.
@@ -447,6 +464,18 @@ public abstract class DateTools
     public static int getWeekday(Date date) {
     	long days = countDays(0,date.getTime());
     	return getWeekday( days);
+    }
+
+    /** {@code LocalDateTime} variant of {@link #getWeekday(Date)}. */
+    public static int getWeekday(LocalDateTime dateTime) {
+        long days = countDays(0, toMilli(dateTime));
+        return getWeekday( days);
+    }
+
+    /** {@code LocalDate} variant of {@link #getWeekday(Date)}. */
+    public static int getWeekday(LocalDate date) {
+        long days = countDays(0, toMilli(date));
+        return getWeekday( days);
     }
     
     public static int getWeekday(DateWithoutTimezone date) {
@@ -708,6 +737,30 @@ public abstract class DateTools
             case MONTH:return addMonths( date, incrementAmount);
             case WEEK_OF_YEAR:return addWeeks( date, incrementAmount);
             default:throw new IllegalArgumentException("unssuported incrementsize");
+        }
+    }
+
+    public static LocalDateTime add(LocalDateTime dateTime, DateTools.IncrementSize incrementSize, int incrementAmount)
+    {
+        if (dateTime == null) return null;
+        switch ( incrementSize)
+        {
+            case DAY_OF_YEAR: return dateTime.plusDays(incrementAmount);
+            case MONTH: return dateTime.plusMonths(incrementAmount);
+            case WEEK_OF_YEAR: return dateTime.plusWeeks(incrementAmount);
+            default: throw new IllegalArgumentException("unsupported incrementsize");
+        }
+    }
+
+    public static LocalDate add(LocalDate date, DateTools.IncrementSize incrementSize, int incrementAmount)
+    {
+        if (date == null) return null;
+        switch ( incrementSize)
+        {
+            case DAY_OF_YEAR: return date.plusDays(incrementAmount);
+            case MONTH: return date.plusMonths(incrementAmount);
+            case WEEK_OF_YEAR: return date.plusWeeks(incrementAmount);
+            default: throw new IllegalArgumentException("unsupported incrementsize");
         }
     }
 

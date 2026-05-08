@@ -5,6 +5,7 @@ import org.rapla.framework.RaplaLocale;
 import org.rapla.inject.Extension;
 import org.rapla.plugin.tableview.extensionpoints.TableColumnDefinitionExtension;
 import org.rapla.plugin.tableview.internal.TableConfig;
+import org.springframework.stereotype.Service;
 
 import jakarta.inject.Inject;
 import java.util.Collection;
@@ -12,6 +13,7 @@ import java.util.Collections;
 import java.util.Locale;
 import java.util.Set;
 
+@Service
 @Extension(provides = TableColumnDefinitionExtension.class,id=EventTimeCalculatorPlugin.PLUGIN_ID)
 public class EventtimeCalculatorColumnDefinitionExtension implements TableColumnDefinitionExtension
 {

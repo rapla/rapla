@@ -40,8 +40,8 @@ import java.util.TreeSet;
 
 public final class AppointmentImpl extends SimpleEntity implements Appointment
 {
-	private Date start;
-    private Date end;
+	private LocalDateTime start;
+    private LocalDateTime end;
     private RepeatingImpl repeating;
     private boolean isWholeDaysSet = false;
     /** set DE (DebugDisabled) to false for debuging output. You must change in code
@@ -62,6 +62,11 @@ public final class AppointmentImpl extends SimpleEntity implements Appointment
     }
 
     public AppointmentImpl(Date start,Date end) {
+        this(start == null ? null : DateTools.toLocalDateTime(start),
+             end == null ? null : DateTools.toLocalDateTime(end));
+    }
+
+    public AppointmentImpl(LocalDateTime start, LocalDateTime end) {
         this.start = start;
         this.end = end;
         if ( start != null && end!= null && DateTools.cutDate( start ).equals( start) && DateTools.cutDate( end).equals(end))
@@ -71,10 +76,8 @@ public final class AppointmentImpl extends SimpleEntity implements Appointment
     }
 
     /** {@code LocalDateTime} variant of {@link #AppointmentImpl(Date, Date)}. UTC. */
-    public static AppointmentImpl ofLocalDateTime(java.time.LocalDateTime start, java.time.LocalDateTime end) {
-        return new AppointmentImpl(
-            start == null ? null : DateTools.toDate(start),
-            end == null ? null : DateTools.toDate(end));
+    public static AppointmentImpl ofLocalDateTime(LocalDateTime start, LocalDateTime end) {
+        return new AppointmentImpl(start, end);
     }
 
     public AppointmentImpl(Date start,Date end, RepeatingType type, int repeatingDuration) {
@@ -98,15 +101,15 @@ public final class AppointmentImpl extends SimpleEntity implements Appointment
     	this.parent = null;
     }
 
-    public Date getStart() { return start;}
-    public Date getEnd() { return end;}
+    public Date getStart() { return start == null ? null : DateTools.toDate(start);}
+    public Date getEnd() { return end == null ? null : DateTools.toDate(end);}
 
     public LocalDateTime getStartDateTime() {
-        return DateTools.toLocalDateTime(start);
+        return start;
     }
 
     public LocalDateTime getEndDateTime() {
-        return DateTools.toLocalDateTime(end);
+        return end;
     }
 
     public void setReadOnly() {
@@ -116,13 +119,18 @@ public final class AppointmentImpl extends SimpleEntity implements Appointment
     }
 
     public void moveTo(Date newStart) {
-        long diff = this.end.getTime() - this.start.getTime();
+        long diff = DateTools.toMilli(this.end) - DateTools.toMilli(this.start);
         move(newStart, new Date(newStart.getTime() + diff));
     }
 
     public void move(Date start,Date end) {
+        move(start == null ? null : DateTools.toLocalDateTime(start),
+             end == null ? null : DateTools.toLocalDateTime(end));
+    }
+
+    public void move(LocalDateTime start, LocalDateTime end) {
         checkWritable();
-        Date oldStart = this.start;
+        LocalDateTime oldStart = this.start;
         this.start = start;
         this.end = end;
         if ( repeating != null && repeating.isWeekly() ) {
@@ -141,7 +149,9 @@ public final class AppointmentImpl extends SimpleEntity implements Appointment
         }
         if ( isWholeDaysSet)
         {
-            if (start.getTime() != DateTools.cutDate(start.getTime()) || end.getTime() != DateTools.cutDate(end.getTime()))
+            long startMs = DateTools.toMilli(start);
+            long endMs = DateTools.toMilli(end);
+            if (startMs != DateTools.cutDate(startMs) || endMs != DateTools.cutDate(endMs))
             {
                 isWholeDaysSet = false;
             }
@@ -150,7 +160,7 @@ public final class AppointmentImpl extends SimpleEntity implements Appointment
 
     public String toString() {
         if (start != null && end != null)
-            return f(start.getTime(),end.getTime()) +
+            return f(DateTools.toMilli(start), DateTools.toMilli(end)) +
                 ((repeating != null) ? (" [" + repeating) + "]": "");
         else
             return start + "-" + end;
@@ -173,17 +183,19 @@ public final class AppointmentImpl extends SimpleEntity implements Appointment
     public void setWholeDays(boolean enable) {
         checkWritable();
         if (enable) {
-        	long cutStartTime = DateTools.cutDate(start.getTime());
-            if (start.getTime() != cutStartTime)
-            {	
-                this.start = new Date(cutStartTime);
+            long startMs = DateTools.toMilli(start);
+            long endMs = DateTools.toMilli(end);
+        	long cutStartTime = DateTools.cutDate(startMs);
+            if (startMs != cutStartTime)
+            {
+                this.start = DateTools.toLocalDateTime(cutStartTime);
             }
-            long cutEndTime = DateTools.cutDate(end.getTime());
-			if (end.getTime() != cutEndTime)
+            long cutEndTime = DateTools.cutDate(endMs);
+			if (endMs != cutEndTime)
 			{
                 this.end = DateTools.fillDate(this.end);
 			}
-            if ( end.getTime() <= start.getTime())
+            if ( DateTools.toMilli(end) <= DateTools.toMilli(start))
             {
                 this.end = DateTools.fillDate(this.start);
             }
@@ -196,15 +208,15 @@ public final class AppointmentImpl extends SimpleEntity implements Appointment
     }
 
     public int compareTo(Appointment a2) {
-        Date start2 = a2.getStart();
-        Date end2 = a2.getEnd();
-        if (start.before( start2))
+        LocalDateTime start2 = a2.getStartDateTime();
+        LocalDateTime end2 = a2.getEndDateTime();
+        if (start.isBefore( start2))
             return -1;
-        if (start.after( start2))
+        if (start.isAfter( start2))
             return 1;
-        if (getEnd().before( end2))
+        if (end.isBefore( end2))
             return -1;
-        if (getEnd().after( end2))
+        if (end.isAfter( end2))
             return 1;
         if ( a2 == this)
         {
@@ -228,7 +240,7 @@ public final class AppointmentImpl extends SimpleEntity implements Appointment
         and null if the appointments repeats forever.
     */
     public Date getMaxEnd() {
-        long end = (this.end!= null) ? this.end.getTime():0;
+        long end = (this.end!= null) ? DateTools.toMilli(this.end):0;
         Repeating repeating = getRepeating();
         if  (repeating != null)
             if (repeating.getEnd() != null)
@@ -282,7 +294,7 @@ public final class AppointmentImpl extends SimpleEntity implements Appointment
 
     public Date getFirstDifference( Appointment a2, Date maxDate ) {
         List<AppointmentBlock> blocks1 = new ArrayList<>();
-        createBlocks( start, maxDate, blocks1);
+        createBlocks( getStart(), maxDate, blocks1);
         List<AppointmentBlock> blocks2 = new ArrayList<>();
         a2.createBlocks(a2.getStart(), maxDate, blocks2);
         //        System.out.println("block sizes " + blocks1.size() + ", " + blocks2.size() );
@@ -312,7 +324,7 @@ public final class AppointmentImpl extends SimpleEntity implements Appointment
 
     public Date getLastDifference( Appointment a2, Date maxDate ) {
         List<AppointmentBlock> blocks1 = new ArrayList<>();
-        createBlocks( start, maxDate, blocks1);
+        createBlocks( getStart(), maxDate, blocks1);
         List<AppointmentBlock> blocks2 = new ArrayList<>();
         a2.createBlocks(a2.getStart(), maxDate, blocks2);
         if ( blocks2.size() > blocks1.size() ) {
@@ -403,8 +415,8 @@ public final class AppointmentImpl extends SimpleEntity implements Appointment
     private boolean processBlocks(long start,long end,Collection<AppointmentBlock> blocks, boolean excludeExceptions) {
         long c1 = start;
         long c2 = end;
-        long s = this.start.getTime();
-        long e = this.end.getTime();
+        long s = DateTools.toMilli(this.start);
+        long e = DateTools.toMilli(this.end);
         RepeatingImpl repeating = getRepeating();
         // if there is no repeating
         if (repeating==null) {
@@ -511,7 +523,7 @@ public final class AppointmentImpl extends SimpleEntity implements Appointment
         if (start2 == null && end2 == null)
             return true;
         if (start2 == null)
-            start2 = this.start;
+            start2 = getStart();
         if (end2 == null)
         {
             // there must be an overlapp because there can't be infinity exceptions
@@ -523,18 +535,18 @@ public final class AppointmentImpl extends SimpleEntity implements Appointment
         if (getMaxEnd() != null && !start2.before(getMaxEnd()))
             return false;
 
-        if (!this.start.before(end2))
+        if (DateTools.toMilli(this.start) >= end2.getTime())
             return false;
 
         boolean overlaps  = processBlocks( start2.getTime(), end2.getTime(), null,  excludeExceptions );
         return overlaps;
     }
-    
+
     public boolean overlaps(long start,long end, boolean excludeExceptions) {
         if (getMaxEnd() != null && getMaxEnd().getTime()<start)
             return false;
 
-        if (this.start.getTime() > end)
+        if (DateTools.toMilli(this.start) > end)
             return false;
 
         boolean overlaps  = processBlocks( start, end, null,  excludeExceptions );
@@ -556,9 +568,9 @@ public final class AppointmentImpl extends SimpleEntity implements Appointment
             return true;
         Date start2 =a2.getStart(); 
         Date end2 =a2.getEnd(); 
-        long s1 = this.start.getTime();
+        long s1 = DateTools.toMilli(this.start);
         long s2 = start2.getTime();
-        long e1 = this.end.getTime();
+        long e1 = DateTools.toMilli(this.end);
         long e2 = a2.getEnd().getTime();
         RepeatingImpl r1 = getRepeating();
         RepeatingImpl r2 = (RepeatingImpl)a2.getRepeating();
@@ -786,12 +798,12 @@ public final class AppointmentImpl extends SimpleEntity implements Appointment
 
     /* Formats milliseconds as date. Usefull for debugging output.*/
     static String f(long n) {
-        return DateTools.formatDateTime(new Date(n));
+        return DateTools.formatDateTime(n);
     }
 
     /* Formats milliseconds as date without time. Usefull for debugging output.*/
     static String fe(long n) {
-        return DateTools.formatDate(new Date(n));
+        return DateTools.formatDate(n);
     }
 
     /* Formats 2 dates in milliseconds as appointment. Usefull for debugging output.*/

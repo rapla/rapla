@@ -14,10 +14,12 @@ import org.rapla.logger.Logger;
 import org.rapla.plugin.export2ical.Export2iCalPlugin;
 import org.rapla.plugin.planningstatus.PlanningStatusPlugin;
 import org.rapla.plugin.planningstatus.PlanningStatusResources;
+import org.springframework.stereotype.Service;
 
 import jakarta.inject.Inject;
 import java.beans.PropertyChangeListener;
 
+@Service
 @Extension(provides=PublishExtensionFactory.class,id="planningstatus")
 public class PlanningStatusPublishExtensionFactory implements PublishExtensionFactory
 {

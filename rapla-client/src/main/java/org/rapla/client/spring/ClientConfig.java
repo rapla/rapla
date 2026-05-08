@@ -113,7 +113,14 @@ public class ClientConfig
             @Override
             public java.net.URL getDownloadURL() throws org.rapla.framework.RaplaException
             {
-                return null;
+                try
+                {
+                    return new java.net.URL("http://localhost:8051/");
+                }
+                catch (java.net.MalformedURLException e)
+                {
+                    throw new org.rapla.framework.RaplaException(e);
+                }
             }
 
             @Override

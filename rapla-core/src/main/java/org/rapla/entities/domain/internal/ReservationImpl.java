@@ -53,20 +53,25 @@ public final class ReservationImpl extends SimpleEntity implements Reservation, 
     private final List<PermissionImpl> permissions = new ArrayList<>(1);
     private Map<String,List<String>> restrictions;
     private Map<String,String> annotations;
-    private Date lastChanged;
-    private Date createDate;
+    private java.time.LocalDateTime lastChanged;
+    private java.time.LocalDateTime createDate;
     private Map<String, RequestStatus> requestStatus;
 
     transient HashMap<String,AppointmentImpl> appointmentIndex;
-        
+
     ReservationImpl() {
-        this (null, null);
+        this ((java.time.LocalDateTime) null, (java.time.LocalDateTime) null);
     }
 
     public ReservationImpl( Date createDate, Date lastChanged ) {
+        this(createDate == null ? null : org.rapla.components.util.DateTools.toLocalDateTime(createDate),
+             lastChanged == null ? null : org.rapla.components.util.DateTools.toLocalDateTime(lastChanged));
+    }
+
+    public ReservationImpl( java.time.LocalDateTime createDate, java.time.LocalDateTime lastChanged ) {
         this.createDate = createDate;
         if (createDate == null)
-            this.createDate = new Date();
+            this.createDate = java.time.LocalDateTime.now();
         this.lastChanged = lastChanged;
         if (lastChanged == null)
             this.lastChanged = this.createDate;
@@ -74,9 +79,7 @@ public final class ReservationImpl extends SimpleEntity implements Reservation, 
 
     /** {@code LocalDateTime} factory paralleling {@link #ReservationImpl(Date, Date)}. UTC. */
     public static ReservationImpl ofLocalDateTime(java.time.LocalDateTime createDate, java.time.LocalDateTime lastChanged) {
-        return new ReservationImpl(
-            createDate == null ? null : org.rapla.components.util.DateTools.toDate(createDate),
-            lastChanged == null ? null : org.rapla.components.util.DateTools.toDate(lastChanged));
+        return new ReservationImpl(createDate, lastChanged);
     }
 
     public static void checkReservation(RaplaResources i18n,Reservation reservation, EntityResolver resolver) throws RaplaException
@@ -264,19 +267,38 @@ public final class ReservationImpl extends SimpleEntity implements Reservation, 
     }
     
     public Date getLastChanged() {
-        return lastChanged;
+        return lastChanged == null ? null : org.rapla.components.util.DateTools.toDate(lastChanged);
     }
-    
+
     public Date getCreateDate() {
-        return createDate;
+        return createDate == null ? null : org.rapla.components.util.DateTools.toDate(createDate);
     }
+
+    @Override
+    public java.time.LocalDateTime getLastChangedAsLocalDateTime() { return lastChanged; }
+
+    @Override
+    public java.time.LocalDateTime getCreateDateAsLocalDateTime() { return createDate; }
 
     public void setLastChanged(Date date) {
     	checkWritable();
-    	lastChanged = date;
+        lastChanged = date == null ? null : org.rapla.components.util.DateTools.toLocalDateTime(date);
     }
-    
+
+    @Override
+    public void setLastChangedLocalDateTime(java.time.LocalDateTime date) {
+        checkWritable();
+        lastChanged = date;
+    }
+
     @Override public void setCreateDate(Date date)
+    {
+        checkWritable();
+        this.createDate = date == null ? null : org.rapla.components.util.DateTools.toLocalDateTime(date);
+    }
+
+    @Override
+    public void setCreateDateLocalDateTime(java.time.LocalDateTime date)
     {
         checkWritable();
         this.createDate = date;

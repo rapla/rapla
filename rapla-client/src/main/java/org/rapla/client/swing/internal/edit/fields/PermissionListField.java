@@ -392,6 +392,8 @@ public class PermissionListField extends AbstractEditField implements EditFieldW
     }
 
     @Singleton
+    @org.springframework.stereotype.Service
+    @org.springframework.context.annotation.Lazy
     public static class PermissionListFieldFactory
     {
         private final ClientFacade facade;

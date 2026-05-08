@@ -32,7 +32,6 @@ public class RemoteAuthentificationServiceImpl extends RaplaAuthentificationServ
         return session.getLogger();
     }
 
-    @Override
     public void logout() throws RaplaException
     {
         if (session != null)
@@ -50,40 +49,28 @@ public class RemoteAuthentificationServiceImpl extends RaplaAuthentificationServ
     }
 
     @Override
-    public LoginTokens login(String username, String password, String connectAs) throws RaplaException
-    {
-        LoginCredentials loginCredentials = new LoginCredentials(username, password, connectAs);
-        return auth(loginCredentials);
-    }
-
-    private LoginTokens auth(LoginCredentials credentials) throws RaplaException
+    public LoginTokens login(LoginCredentials credentials) throws RaplaException
     {
         User user = getUserFromCredentials(credentials);
-        LoginTokens generateAccessToken = tokenHandler.generateAccessToken(user);
-        return generateAccessToken;
+        return tokenHandler.generateAccessToken(user);
     }
 
-    @Override
     public String getRefreshToken() throws RaplaException
     {
         User user = getValidUser(session, request);
-        String refreshToken = tokenHandler.getRefreshToken(user);
-        return refreshToken;
+        return tokenHandler.getRefreshToken(user);
     }
 
-    @Override
     public String regenerateRefreshToken() throws RaplaException
     {
         User user = getValidUser(session, request);
-        String refreshToken = tokenHandler.regenerateRefreshToken(user);
-        return refreshToken;
+        return tokenHandler.regenerateRefreshToken(user);
     }
 
     @Override
-    public LoginTokens refresh(String refreshToken) throws RaplaException
+    public LoginTokens refresh(RemoteAuthentificationService.RefreshRequest body) throws RaplaException
     {
-        LoginTokens refresh = tokenHandler.refresh(refreshToken);
-        return refresh;
+        return tokenHandler.refresh(body.refreshToken);
     }
 
 }

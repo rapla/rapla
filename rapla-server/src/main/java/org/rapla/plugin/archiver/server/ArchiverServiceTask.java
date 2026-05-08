@@ -1,6 +1,6 @@
 package org.rapla.plugin.archiver.server;
 
-import  io.reactivex.rxjava3.disposables.Disposable;
+import org.rapla.scheduler.Cancellation;
 import org.rapla.components.util.DateTools;
 import org.rapla.entities.configuration.RaplaConfiguration;
 import org.rapla.facade.RaplaFacade;
@@ -21,16 +21,18 @@ public class ArchiverServiceTask  implements ServerExtension
     final CommandScheduler timer;
     final Logger logger;
     final RaplaFacade facade;
+    final org.rapla.storage.SyncStorageOperator syncOperator;
     final ImportExportManager importExportManager;
-    Disposable schedule;
+    Cancellation schedule;
     @Inject
-	public ArchiverServiceTask(  CommandScheduler timer, final Logger logger, final RaplaFacade facade, final ImportExportManager importExportManager)
+	public ArchiverServiceTask(  CommandScheduler timer, final Logger logger, final RaplaFacade facade, final org.rapla.storage.SyncStorageOperator syncOperator, final ImportExportManager importExportManager)
             throws RaplaInitializationException
     {
 
         this.timer = timer;
         this.logger = logger;
         this.facade = facade;
+        this.syncOperator = syncOperator;
         this.importExportManager =importExportManager;
     }
 
@@ -59,7 +61,7 @@ public class ArchiverServiceTask  implements ServerExtension
     {
         if ( schedule != null)
         {
-            schedule.dispose();
+            schedule.cancel();
         }
     }
 
@@ -73,7 +75,7 @@ public class ArchiverServiceTask  implements ServerExtension
             }
             if ( days != -20 )
             {
-                ArchiverServiceImpl.delete(days,facade,logger);
+                ArchiverServiceImpl.delete(days, facade, syncOperator, logger);
             }
         }
         catch (Exception e) {

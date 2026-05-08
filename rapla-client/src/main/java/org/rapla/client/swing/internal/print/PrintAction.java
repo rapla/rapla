@@ -31,6 +31,8 @@ import java.awt.print.PageFormat;
 import java.util.Map;
 
 
+@org.springframework.stereotype.Service
+@org.springframework.context.annotation.Lazy
 public class PrintAction extends RaplaAction {
     CalendarSelectionModel model;
     PageFormat m_pageFormat;

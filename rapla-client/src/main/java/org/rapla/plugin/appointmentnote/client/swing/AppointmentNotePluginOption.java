@@ -7,11 +7,15 @@ import org.rapla.entities.configuration.Preferences;
 import org.rapla.framework.RaplaException;
 import org.rapla.inject.Extension;
 import org.rapla.plugin.appointmentnote.AppointmentNotePlugin;
+import org.springframework.context.annotation.Scope;
+import org.springframework.stereotype.Service;
 
 import jakarta.inject.Inject;
 import javax.swing.*;
 import java.util.Locale;
 
+@Service(AppointmentNotePlugin.PLUGIN_ID)
+@Scope("prototype")
 @Extension(provides = PluginOptionPanel.class, id = AppointmentNotePlugin.PLUGIN_ID)
 public class AppointmentNotePluginOption implements PluginOptionPanel
 {

@@ -63,6 +63,9 @@ import java.util.Map;
 import java.util.Set;
 
 @Extension(provides = EditComponent.class, id="org.rapla.entities.configuration.Preferences")
+@org.springframework.stereotype.Service("org.rapla.entities.configuration.Preferences")
+@org.springframework.context.annotation.Scope("prototype")
+@org.springframework.context.annotation.Lazy
 public class PreferencesEditUI extends RaplaGUIComponent
     implements
         EditComponent<Preferences,JComponent>

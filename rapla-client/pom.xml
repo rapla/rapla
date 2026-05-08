@@ -15,9 +15,13 @@
             <groupId>org.rapla</groupId>
             <artifactId>rapla-core</artifactId>
         </dependency>
-        <!-- jakarta.inject is used directly in client code; rxjava/reactive-streams are
-             intentionally NOT declared here — those are scheduled for removal in a future PRD,
-             so dep:analyze will keep flagging them as "used undeclared" until they go. -->
+        <!-- rxjava lives only in rapla-client (PRD 008): Observable/Subject + impls and the
+             ObservableTest. Server has no rxjava on the classpath; core has no rxjava on the
+             classpath; only this module pulls it in. -->
+        <dependency>
+            <groupId>io.reactivex.rxjava3</groupId>
+            <artifactId>rxjava</artifactId>
+        </dependency>
         <dependency>
             <groupId>jakarta.inject</groupId>
             <artifactId>jakarta.inject-api</artifactId>
@@ -49,5 +53,28 @@
             <artifactId>junit</artifactId>
             <scope>test</scope>
         </dependency>
+        <!-- Runtime SLF4J + Logback so `mvn -pl rapla-client -am spring-boot:run` (Swing client launch) has a logger. -->
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-api</artifactId>
+            <scope>runtime</scope>
+        </dependency>
+        <dependency>
+            <groupId>ch.qos.logback</groupId>
+            <artifactId>logback-classic</artifactId>
+            <scope>runtime</scope>
+        </dependency>
     </dependencies>
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>exec-maven-plugin</artifactId>
+                <configuration>
+                    <mainClass>org.rapla.client.spring.SpringRaplaClient</mainClass>
+                    <classpathScope>runtime</classpathScope>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
 </project>

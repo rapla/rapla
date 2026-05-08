@@ -24,7 +24,6 @@ import org.rapla.logger.Logger;
 import org.rapla.plugin.export2ical.Export2iCalPlugin;
 import org.rapla.plugin.planningstatus.PlanningStatusFilter;
 import org.rapla.plugin.planningstatus.PlanningStatusPlugin;
-import org.rapla.scheduler.Promise;
 import org.rapla.storage.StorageOperator;
 
 import jakarta.inject.Inject;
@@ -175,8 +174,8 @@ public class Export2iCalServlet
 				return;
 			}
 
-			Promise<Collection<Appointment>> appointments = calModel.queryAppointments(new TimeInterval(null, null));
-			write(response, org.rapla.scheduler.sync.SynchronizedCompletablePromise.waitFor(appointments, 10000, null), filename,user, null);
+			Collection<Appointment> appointments = ((org.rapla.facade.SyncCalendarModel) calModel).queryAppointmentsSync(new TimeInterval(null, null));
+			write(response, appointments, filename,user, null);
 		} catch (Exception e) {
 			response.getWriter().println(("An error occured giving you the Calendarview for user " + username + " named " + filename));
 			response.getWriter().println();
@@ -208,16 +207,10 @@ public class Export2iCalServlet
 			int daysBefore = global_interval ? global_daysBefore : preferences.getEntryAsInteger(Export2iCalPlugin.PREF_BEFORE_DAYS, global_daysBefore);
 			int daysAfter = global_interval ? global_daysAfter : preferences.getEntryAsInteger(Export2iCalPlugin.PREF_AFTER_DAYS, global_daysAfter);
 
-			final Date now = new Date();
+			final java.time.LocalDate today = facade.todayAsLocalDate();
 
-			//calModel.getReservations(startDate, endDate)
-
-
-			// set start Date
-			calModel.setStartDate(DateTools.add(now, DateTools.IncrementSize.DAY_OF_YEAR,-daysBefore));
-
-			// set end Date
-			calModel.setEndDate(DateTools.add(now, DateTools.IncrementSize.DAY_OF_YEAR,daysAfter));
+			calModel.setStartLocalDate(DateTools.add(today, DateTools.IncrementSize.DAY_OF_YEAR, -daysBefore));
+			calModel.setEndLocalDate(DateTools.add(today, DateTools.IncrementSize.DAY_OF_YEAR, daysAfter));
 
 			//debug sysout
 			//System.out.println("startdate - before  "+ calModel.getStartDate() + " - " + daysBefore);
@@ -287,15 +280,7 @@ public class Export2iCalServlet
 
 		Date endDate = null;
 	Date startDate = facade.today();
-	final Promise<Collection<Reservation>> reservationsPromise = calModel.queryReservations(new TimeInterval(startDate, endDate));
-		final Collection<Reservation> reservations;
-		try {
-			reservations = org.rapla.scheduler.sync.SynchronizedCompletablePromise.waitFor(reservationsPromise, 10000, null);
-		} catch (RaplaException ex) {
-			throw ex;
-		} catch (Exception ex) {
-			throw new RaplaException(ex);
-		}
+		final Collection<Reservation> reservations = ((org.rapla.facade.SyncCalendarModel) calModel).queryReservationsSync(new TimeInterval(startDate, endDate));
 		// set to minvalue
 		Date maxDate = new Date();
 		maxDate.setTime(0);

@@ -44,6 +44,8 @@ import org.rapla.plugin.tableview.internal.TableConfig;
 import org.rapla.scheduler.Promise;
 
 import jakarta.inject.Inject;
+import org.springframework.stereotype.Service;
+import org.springframework.context.annotation.Lazy;
 import jakarta.inject.Singleton;
 import javax.swing.Icon;
 import javax.swing.table.TableColumn;
@@ -52,6 +54,8 @@ import java.util.List;
 import java.util.Set;
 import java.util.function.Supplier;
 
+@Service
+@Lazy
 @Singleton
 @Extension(provides = SwingViewFactory.class, id = TableViewPlugin.TABLE_APPOINTMENTS_VIEW)
 public class AppointmentTableViewFactory implements SwingViewFactory

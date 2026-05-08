@@ -1,6 +1,6 @@
 package org.rapla.client.internal.edit;
 
-import io.reactivex.rxjava3.functions.Consumer;
+import org.rapla.scheduler.Consumer;
 import org.jetbrains.annotations.Nullable;
 import org.rapla.RaplaResources;
 import org.rapla.client.EditApplicationEventContext;
@@ -104,7 +104,7 @@ public class EditTaskPresenter implements TaskPresenter
         this.raplaFacade = clientFacade.getRaplaFacade();
         this.reservationController = reservationController;
         this.mergeCheckers = mergeCheckers;
-        this.busyIdleObservable = scheduler.createPublisher();
+        this.busyIdleObservable = org.rapla.scheduler.Observables.createPublisher(scheduler.getExecutor());
     }
 
     @Override

@@ -43,9 +43,9 @@ final class RepeatingImpl implements Repeating,java.io.Serializable {
     private int interval = 1;
     private boolean isFixedNumber;
     private int number = -1;
-    private Date end;
+    private LocalDateTime end;
     private RepeatingType repeatingType;
-    private Set<Date> exceptions;
+    private Set<LocalDateTime> exceptions;
     private Set<Integer> weekdays;
     transient private Date[] exceptionArray;
     transient private boolean arrayUpToDate = false;
@@ -216,6 +216,11 @@ final class RepeatingImpl implements Repeating,java.io.Serializable {
     }
 
     public void setEnd(Date end) {
+        setEndLocalDateTime(end == null ? null : DateTools.toLocalDateTime(end));
+    }
+
+    @Override
+    public void setEndLocalDateTime(LocalDateTime end) {
         checkWritable();
         isFixedNumber = false;
         number = -1;
@@ -235,7 +240,7 @@ final class RepeatingImpl implements Repeating,java.io.Serializable {
     @Override
     public LocalDateTime getEndDateTime() {
         if (!isFixedNumber) {
-            return end!= null ? DateTools.toLocalDateTime(end) : null;
+            return end;
         }
         if ( this.appointment == null)
         {
@@ -324,7 +329,7 @@ final class RepeatingImpl implements Repeating,java.io.Serializable {
 
         if ( isFixedIntervalLength() )
         {
-            long duration = end.getTime()
+            long duration = DateTools.toMilli(end)
             - DateTools.fillDate(appointment.getStart().getTime());
             if (duration<0)
                 return 0;
@@ -336,7 +341,7 @@ final class RepeatingImpl implements Repeating,java.io.Serializable {
             LocalDateTime appointmentStart = appointment.getStartDateTime();
             int number = 0;
             LocalDateTime newDate = appointmentStart;
-            LocalDateTime localEnd   = DateTools.toLocalDateTime( end);
+            LocalDateTime localEnd   = end;
             do 
             {
                 number ++;
@@ -348,6 +353,12 @@ final class RepeatingImpl implements Repeating,java.io.Serializable {
     }
 
     public void addException(Date date) {
+        if (date == null) return;
+        addException(DateTools.toLocalDateTime(date));
+    }
+
+    @Override
+    public void addException(LocalDateTime date) {
         checkWritable();
         if ( date == null)
         {
@@ -369,12 +380,18 @@ final class RepeatingImpl implements Repeating,java.io.Serializable {
         for (AppointmentBlock appointmentBlock:blocks)
         {
             final long l = DateTools.cutDate(appointmentBlock.getStart());
-            exceptions.add(new Date(l));
+            exceptions.add(DateTools.toLocalDateTime(l));
         }
         arrayUpToDate = false;
     }
 
     public void removeException(Date date) {
+        if (date == null) return;
+        removeException(DateTools.toLocalDateTime(date));
+    }
+
+    @Override
+    public void removeException(LocalDateTime date) {
         checkWritable();
         if (exceptions == null)
             return;
@@ -408,14 +425,14 @@ final class RepeatingImpl implements Repeating,java.io.Serializable {
         } else {
             if (end != null) {
                 buf.append(" end-date=");
-                buf.append(AppointmentImpl.fe(end.getTime()));
+                buf.append(AppointmentImpl.fe(DateTools.toMilli(end)));
             }
         }
         if ( exceptions != null && exceptions.size()>0)
         {
         	buf.append(" exceptions=");
         	boolean first = true;
-            for (Date exception:exceptions)
+            for (LocalDateTime exception:exceptions)
         	{
             	if (!first)
             	{
@@ -485,14 +502,29 @@ final class RepeatingImpl implements Repeating,java.io.Serializable {
     public Date[] getExceptions() {
         if (!arrayUpToDate) {
             if (exceptions != null) {
-                exceptionArray = exceptions.toArray(DATE_ARRAY);
-                Arrays.sort(exceptionArray);
+                Date[] arr = new Date[exceptions.size()];
+                int i = 0;
+                for (LocalDateTime e : exceptions) {
+                    arr[i++] = DateTools.toDate(e);
+                }
+                Arrays.sort(arr);
+                exceptionArray = arr;
             }
             else
                 exceptionArray = DATE_ARRAY;
             arrayUpToDate = true;
         }
         return exceptionArray;
+    }
+
+    @Override
+    public LocalDateTime[] getExceptionsAsLocalDateTime() {
+        if (exceptions == null) {
+            return new LocalDateTime[0];
+        }
+        LocalDateTime[] arr = exceptions.toArray(new LocalDateTime[0]);
+        Arrays.sort(arr);
+        return arr;
     }
     public boolean hasExceptions() {
         return exceptions != null && exceptions.size()>0;

@@ -112,6 +112,20 @@ public class ConflictImpl extends SimpleEntity implements Conflict, ModifiableTi
         this(allocatable, app1, app2, today, createId(allocatable.getReference(), app1.getReference(), app2.getReference()));
     }
 
+    /** {@code LocalDateTime} factory paralleling {@link #ConflictImpl(Allocatable, Appointment, Appointment, Date)}. UTC. */
+    public static ConflictImpl ofLocalDateTime(Allocatable allocatable, Appointment app1, Appointment app2, java.time.LocalDateTime today)
+    {
+        return new ConflictImpl(allocatable, app1, app2,
+            today == null ? null : org.rapla.components.util.DateTools.toDate(today));
+    }
+
+    /** {@code LocalDateTime} factory paralleling {@link #ConflictImpl(Allocatable, Appointment, Appointment, Date, String)}. UTC. */
+    public static ConflictImpl ofLocalDateTime(Allocatable allocatable, Appointment app1, Appointment app2, java.time.LocalDateTime today, String id)
+    {
+        return new ConflictImpl(allocatable, app1, app2,
+            today == null ? null : org.rapla.components.util.DateTools.toDate(today), id);
+    }
+
     /** Note that app1 does not necessarily go to appointment1 field.
      * The appointment with the lowest id goes to appointment1 and the other to appointment2*/
     public ConflictImpl(Allocatable allocatable, Appointment app1, Appointment app2, Date today, String id)

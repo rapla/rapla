@@ -2,7 +2,7 @@ package org.rapla.rest.server;
 
 //import io.jsonwebtoken.*;
 //import io.jsonwebtoken.impl.crypto.MacProvider;
-import io.reactivex.rxjava3.functions.Function;
+import org.rapla.scheduler.Function;
 import org.apache.commons.codec.binary.Base64;
 import org.junit.Assert;
 import org.junit.Before;

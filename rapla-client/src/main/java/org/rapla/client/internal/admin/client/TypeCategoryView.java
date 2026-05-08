@@ -1,6 +1,6 @@
 package org.rapla.client.internal.admin.client;
 
-import io.reactivex.rxjava3.functions.BiFunction;
+import org.rapla.scheduler.BiFunction;
 import org.rapla.client.RaplaWidget;
 import org.rapla.scheduler.Promise;
 

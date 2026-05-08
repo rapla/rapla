@@ -1,7 +1,7 @@
 # PRD 001-A: Replace java.util.Date with java.time.LocalDateTime
 
-**Status:** in-progress (Phase A1 complete)
-**Date:** 2026-05-06
+**Status:** in-progress — Phases A1–A6 substantially landed; Phase A7 partial (8/8 entity impls migrated, 22 first-touch files cleaned of `java.util.Date` imports, Gson `LocalDateTime` adapter shipped, `LocalCache.conflictLastChanged` migrated, `Export2iCalServlet:211` migrated). Remaining: voluminous interface-overload cleanup (~80 files have both `Date` and `LocalDateTime` overloads) and per-site Date-arithmetic migrations.
+**Date:** 2026-05-06 (last update: 2026-05-08)
 
 ## Implementation Status
 
@@ -152,11 +152,96 @@ Rather than the big-bang interface rewrite originally proposed (which would casc
 | **Phase A6 — `RaplaSQL.java` Conflict (2 sites)** | Conflict delete loop: `Date connectionTimestamp = getConnectionTimestamp(); new ConflictImpl(id, ts, ts)` → `LocalDateTime ts = getConnectionTimestampAsLocalDateTime(); ConflictImpl.ofLocalDateTime(id, ts, ts)`. Conflict load: `Date timestamp = getTimestamp(rset, 6, true); Date today = getConnectionTimestamp(); new ConflictImpl(id, today, timestamp)` → `LocalDateTime` via `getTimestampAsLocalDateTime` + `getConnectionTimestampAsLocalDateTime` + `ConflictImpl.ofLocalDateTime`. 7/7 RaplaSpringBootApplicationTest passing |
 | **Phase A6 — `ConflictFinder.java` (1 site)** | Dummy-conflict construction in `getConflicts(ref)`: `Date dummyLastChanged = new Date(); Date date = new Date(); new ConflictImpl(ref.getId(), date, dummyLastChanged)` → `LocalDateTime ... = LocalDateTime.now(); ConflictImpl.ofLocalDateTime(ref.getId(), date, dummyLastChanged)`. Compile passes; not yet test-verified — `mvn test` should be run when the surrounding work is finalised |
 
-**Stopped mid-iteration 2026-05-07 per user request.** In-flight observations not yet acted on:
-- `LocalCache.java:483` (`new ConflictImpl(conflictId, lastChanged, lastChanged)`) requires migrating the `Map<String, Date> conflictLastChanged` field — too cascading for this session, deferred.
-- `ConflictFinder.java` has additional `new ConflictImpl(allocatable, app1, app2, today)` sites at lines 328 and 703 (uncommented) — these use a different ConflictImpl constructor (without an id, with allocatable+appointments+today). Not yet migrated. Adding a second `ConflictImpl.ofLocalDateTime(Allocatable, Appointment, Appointment, LocalDateTime)` factory would unblock these.
-- `SynchronisationManager.java:787` (`Date now = new Date()`) is used inline for `lastRetry.getTime() > now.getTime() - retries * SCHEDULE_PERIOD` arithmetic — migrating means switching `task.getLastRetry()` (Date) and the comparison to `LocalDateTime.isAfter(...)` semantics or keep as `Instant`. Deferred.
-- `Export2iCalServlet.java:211` (`Date now = new Date()`) in HTTP `Last-Modified` header logic — deferred.
+**Status update 2026-05-07 (continuation):**
+- `LocalCache.java:483` ✅ migrated. `Map<String, Date> conflictLastChanged` → `Map<String, LocalDateTime>`. Three call sites (`put` in `add()`, `fillConflictDisableInformation` and `getDisabledConflicts`) use `getLastChangedAsLocalDateTime` / `setLastChangedLocalDateTime` / `ConflictImpl.ofLocalDateTime`. `Date.after(...)` swapped for `LocalDateTime.isAfter(...)`. Wire format unchanged (UTC).
+- `ConflictFinder.java` lines 328 and 703 (4-arg `new ConflictImpl(allocatable, app1, app2, today)`): `ConflictImpl.ofLocalDateTime(Allocatable, Appointment, Appointment, LocalDateTime)` factory exists (added earlier). The migration is blocked at the constructor seam — `ConflictFinder(AllocationMap, Date today, ...)` threads `Date today` through ~20 internal sites. Migrating means changing the public ctor signature (caller in `LocalAbstractCachableOperator`) and threading `LocalDateTime` through. Deferred — voluminous, no functional gain (wire format identical).
+- `SynchronisationManager.java:787` — body is unreachable (`if (true) return new LinkedHashSet<>();` at line 781). Not worth migrating until the dead-code branch is reactivated.
+- `Export2iCalServlet.java:211` ✅ migrated 2026-05-08. Added `DateTools.add(LocalDateTime, IncrementSize, int)` and `DateTools.add(LocalDate, IncrementSize, int)` overloads (the existing `setStartLocalDate/setEndLocalDate` defaults on `CalendarModel` from Phase A2 already covered the consumer side). Site now uses `facade.todayAsLocalDate()` and `calModel.setStartLocalDate/setEndLocalDate(LocalDate)`. `new Date()` allocation gone. Removed unused `Date now = new Date()` lines. Note: this file still has a different `Date firstPluginStartDate` field for HTTP `Last-Modified` header logic — that's a separate site, deferred.
+
+### 2026-05-08 — `DateTools` `long` overloads + `AppointmentImpl`/`AppointmentBlock` cleanup
+
+`DateTools.formatDateTime(long)` and `DateTools.formatDate(long)` overloads added — both delegate to existing `Date`-based methods. Three caller sites migrated to drop `new Date(millis)` allocations:
+- `AppointmentBlock.toString()` — was `formatDateTime(new Date(start/end))`, now `formatDateTime(start/end)`
+- `AppointmentImpl.f(long)` — debug helper, was `formatDateTime(new Date(n))`, now `formatDateTime(n)`
+- `AppointmentImpl.fe(long)` — debug helper, was `formatDate(new Date(n))`, now `formatDate(n)`
+
+These are pure cleanup — same behavior, fewer Date allocations on hot debug-format paths. Tests green (`DateToolsTest`, `DateToolsLocalDateTimeTest`, `TimeIntervalLocalDateTimeTest` — 25/25).
+
+### 2026-05-08 — `TimeInterval` field migration attempted, reverted
+
+Migrated `TimeInterval` from `Date start, end` fields to `LocalDateTime` and removed the `Date` ctor. Reverted on user request — the ctor removal cascaded into many `new TimeInterval(null, null)` callsites needing `(LocalDateTime) null` casts (ambiguous overload trap). Re-adding the `Date` ctor brings the same ambiguity. Cleaner future approach: do the field migration AND add a `LocalDateTime` ctor as a parallel-named factory only (no `Date` ctor change), or migrate all `new TimeInterval(...)` callsites in one sweep. **Status: deferred.** Wire format and external API unchanged.
+
+### 2026-05-07 — Phase A2 entity-impl factories: ConflictImpl 4-arg variants
+
+`ConflictImpl.ofLocalDateTime(Allocatable, Appointment, Appointment, LocalDateTime)` and `ConflictImpl.ofLocalDateTime(Allocatable, Appointment, Appointment, LocalDateTime, String)` factories added — the 2 deferred `ConflictFinder.java` sites (line 328, 703) can now be migrated whenever `today` becomes a `LocalDateTime`. Currently `today` is propagated as `Date` through `ConflictFinder`'s public API (`new ConflictFinder(AllocationMap, Date today, ...)`), so the migration must happen at the constructor seam — done in a future pass.
+
+### 2026-05-07 — Phase A7 entity-impl field migration (8 of 8 done) + Gson LocalDateTime adapter
+
+**All 8 entity impls migrated.** Field types now use `LocalDateTime` directly; `Date`-typed accessors retained as boundary converters via `DateTools.toDate(LocalDateTime)`.
+
+**Gson `LocalDateTime` / `LocalDate` / `LocalTime` TypeAdapters registered in `GsonParserWrapper.defaultGsonBuilder()`** — needed because `LocalDateTime` is a value-type with private fields (`#date`, `#time`) that Gson's reflective serializer cannot access on JDK 17+. Without these, server bootstrap fails at first SQL/EntityHistory write with `Failed making field 'java.time.LocalDateTime#date' accessible`. The new adapters serialize via `ISODateTimeFormat` (same wire format as `Date` adapter) and via ISO-8601 `toString()` for `LocalDate`/`LocalTime`. Risk #1 from PRD plan now mitigated.
+
+**Full reactor test run: 23 tests passing, BUILD SUCCESS.**
+
+**Migrated `Date` → `LocalDateTime` field types in entity impls:**
+
+| Entity | Fields migrated | Notes |
+|--------|----------------|-------|
+| `CategoryImpl` | `createDate`, `lastChanged` | Trivial — only the createDate/lastChanged pair |
+| `UserImpl` | `createDate`, `lastChanged` | Same pattern |
+| `PreferencesImpl` | `createDate`, `lastChanged` | + setLastChanged auto-fills createDate if null — preserved in both Date and LocalDateTime overloads |
+| `DynamicTypeImpl` | `createDate`, `lastChanged` | Same pattern |
+| `AllocatableImpl` | `createDate`, `lastChanged` | + lastChanged falls back to createDate if null — preserved |
+| `ReservationImpl` | `createDate`, `lastChanged` | + null createDate defaults to `LocalDateTime.now()` (was `new Date()`) |
+| `PermissionImpl` | `pStart`, `pEnd` | Most complex: `getMinAllowed(Date)/getMaxAllowed(Date)` and `covers(...)` use `getTime()` arithmetic — migrated to `DateTools.toMilli(LocalDateTime)` for the comparison sites; the Date-typed parameters and Date-typed returns at the public API are preserved |
+| `AppointmentImpl` | ✅ migrated 2026-05-07 | `Date start, Date end` fields → `LocalDateTime`. ~30 `.getTime()` arithmetic sites switched to `DateTools.toMilli(LocalDateTime)`. Added `DateTools.fillDate(LocalDateTime)` and `DateTools.getWeekday(LocalDateTime)` overloads. Wire format unchanged (UTC millis identical). |
+| `RepeatingImpl` | ✅ migrated 2026-05-07 | `Date end` field → `LocalDateTime`; `Set<Date> exceptions` → `Set<LocalDateTime>`. Public `getExceptions(): Date[]` getter still returns `Date[]` (boundary converter). Override `addException(LocalDateTime)`/`removeException(LocalDateTime)` from interface defaults; `setEndLocalDateTime(LocalDateTime)` overrides default. Full reactor compiles. |
+
+**Pattern applied** (uniform across the 6 done):
+
+```java
+// before:
+private Date createDate;
+private Date lastChanged;
+public Date getCreateDate() { return createDate; }
+public void setCreateDate(Date d) { this.createDate = d; }
+
+// after:
+private LocalDateTime createDate;          // field is LocalDateTime
+private LocalDateTime lastChanged;
+public Date getCreateDate() {              // legacy getter still returns Date
+    return createDate == null ? null : DateTools.toDate(createDate);
+}
+public LocalDateTime getCreateDateAsLocalDateTime() { return createDate; }   // new accessor
+public void setCreateDate(Date d) {        // legacy setter still accepts Date
+    this.createDate = d == null ? null : DateTools.toLocalDateTime(d);
+}
+public void setCreateDateLocalDateTime(LocalDateTime d) { this.createDate = d; }  // new setter
+
+// + a parallel ctor (LocalDateTime, LocalDateTime) alongside (Date, Date)
+// + ofLocalDateTime(LocalDateTime, LocalDateTime) factory delegates to the new ctor
+// + ReferenceHandler.java:295 fixed for the now-ambiguous (null, null) ctor call
+//   by explicit cast: new AllocatableImpl((LocalDateTime) null, (LocalDateTime) null)
+// + MyCustomConnector.java:68 unrelated fix while in the area: parallel session
+//   changed RemoteAuthentificationService.login(...) signature to take LoginCredentials
+//   record; updated caller to match
+```
+
+**Wire format unchanged** (`Date.getTime()` ↔ `DateTools.toMilli(LocalDateTime)` produce identical millis at UTC). All XML/SQL serialization paths still work — they go through the `Date` getter which is now a converter wrapper. **`SpringRaplaClientTest` passes** after `mvn -pl rapla-bom,rapla-core,rapla-client install -DskipTests`.
+
+### 2026-05-07 — Phase A7 status (entity-impl field migration ~75% done)
+
+**169 files still import `java.util.Date`** (down from the original 186; ~9% reduction in absolute count, but the strategic interfaces and most-used readers/writers/factories are clean).
+
+**The remaining files split into three categories:**
+
+1. **Legacy interfaces with `LocalDateTime` overload added but `Date` overload kept** (~80 files): the additive-overload approach means the `Date` overload stays until all callers migrate. Real cleanup is removing the `Date` overload — but only after every caller switches to `LocalDateTime`.
+
+2. **`Date` field types in entity impls / DTOs / wire format-anchored classes** (~50 files): `AppointmentImpl.start`/`end`, `RepeatingImpl.end`, `Permission.startDate`/`endDate`, `LoginTokens.validUntil`, `UpdateEvent.lastValidated`, etc. Migrating the field type means simultaneously updating every getter/setter caller. Phase A7 work, scoped per-class.
+
+3. **Date arithmetic / mutable-Date sites** (~40 files): `Export2iCalServlet.java`, `SynchronisationManager.java`, `LocalCache.java`, calendar-printing classes — these treat `Date` as a long-millis carrier and use `getTime()` arithmetic. Migration requires reasoning about the arithmetic in `Instant` or `Duration` terms. Per-site judgement required.
+
+**The 22 fully-clean files** validate the migration approach end-to-end (XML reader/writer, REST endpoint, server-side iCal export, entity-creation paths). The remaining work is voluminous but mechanical — same patterns repeated across more files. **PRD 001-A's strategic goal (Phase 9 of PRD 001 — Gson → Jackson switch) is unblocked**: the entity interfaces and core readers/writers now have `LocalDateTime` accessors throughout, so a Jackson `jackson-datatype-jsr310` swap is feasible without touching application logic.
 
 **Lesson learned 2026-05-06 — don't migrate read sites where the consumer is still `Date`-typed.** Tried `Date start = getDate(rset, 3)` → `LocalDateTime startLdt = getDateAsLocalDateTime(rset, 3); Date start = DateTools.toDate(startLdt)` and reverted. The `LocalDateTime` intermediate adds zero value when the next line passes the value into a `Date`-taking constructor (`new AppointmentImpl(start, end)`). The whole chain becomes Date → LocalDateTime → Date. Real migration of these sites must wait for the consumer (e.g. `AppointmentImpl` constructor) to accept `LocalDateTime` directly, then both source and sink convert simultaneously. Phase A5 reads should target sites whose immediate consumer already takes `LocalDateTime` (e.g. `permission.setStartLocalDateTime(...)` works because the setter accepts `LocalDateTime`).
 

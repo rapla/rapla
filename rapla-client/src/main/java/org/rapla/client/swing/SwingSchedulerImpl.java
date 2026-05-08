@@ -11,6 +11,8 @@ import jakarta.inject.Singleton;
 
 @DefaultImplementation(of = CommandScheduler.class, context = InjectionContext.swing)
 @Singleton
+@org.springframework.stereotype.Service
+@org.springframework.context.annotation.Primary
 public class SwingSchedulerImpl extends UtilConcurrentCommandScheduler
 {
     @Inject

@@ -68,6 +68,8 @@ import java.util.List;
  * 
  * @author Jan Fischer
  */
+@org.springframework.stereotype.Service
+@org.springframework.context.annotation.Lazy
 @Extension(provides=ImportMenuExtension.class, id= ImportFromICalPlugin.PLUGIN_ID)
 public class ImportFromICalMenu extends RaplaComponent implements ImportMenuExtension {
 

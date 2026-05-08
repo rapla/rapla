@@ -6,9 +6,9 @@ import io.reactivex.rxjava3.core.Observer;
 import io.reactivex.rxjava3.core.SingleSource;
 import io.reactivex.rxjava3.annotations.NonNull;
 import io.reactivex.rxjava3.disposables.Disposable;
-import io.reactivex.rxjava3.functions.Action;
-import io.reactivex.rxjava3.functions.Consumer;
-import io.reactivex.rxjava3.functions.Function;
+import org.rapla.scheduler.Action;
+import org.rapla.scheduler.Consumer;
+import org.rapla.scheduler.Function;
 import org.reactivestreams.Publisher;
 
 import java.util.concurrent.TimeUnit;

@@ -40,6 +40,9 @@ import java.util.List;
 import java.util.Set;
 
 
+@org.springframework.stereotype.Service
+@org.springframework.context.annotation.Scope("prototype")
+@org.springframework.context.annotation.Lazy
 public class GroupListField extends AbstractEditField implements ChangeListener, ActionListener, EditFieldWithLayout {
     DefaultListModel model = new DefaultListModel();
 

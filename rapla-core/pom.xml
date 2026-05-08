@@ -59,15 +59,6 @@
             <artifactId>jackson-annotations</artifactId>
             <scope>provided</scope>
         </dependency>
-        <!-- Async / scheduler -->
-        <dependency>
-            <groupId>io.reactivex.rxjava3</groupId>
-            <artifactId>rxjava</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.reactivestreams</groupId>
-            <artifactId>reactive-streams</artifactId>
-        </dependency>
         <!-- Utility -->
         <dependency>
             <groupId>com.intellij</groupId>

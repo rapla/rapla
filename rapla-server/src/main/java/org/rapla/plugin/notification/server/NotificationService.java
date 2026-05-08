@@ -12,8 +12,8 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.plugin.notification.server;
 
-import  io.reactivex.rxjava3.disposables.Disposable;
-import io.reactivex.rxjava3.functions.Action;
+import org.rapla.scheduler.Cancellation;
+import org.rapla.scheduler.Action;
 import org.jetbrains.annotations.NotNull;
 import org.rapla.RaplaResources;
 import org.rapla.components.util.DateTools;
@@ -64,7 +64,7 @@ public class NotificationService implements ServerExtension
     private final CachableStorageOperator operator;
 
     private final Logger logger;
-    private final List<Disposable> scheduleList = new ArrayList<>();
+    private final List<Cancellation> scheduleList = new ArrayList<>();
 
     @Inject
     public NotificationService(RaplaFacade facade, RaplaResources i18nBundle, NotificationResources notificationI18n, AppointmentFormater appointmentFormater,
@@ -140,7 +140,7 @@ public class NotificationService implements ServerExtension
 
     public void stop()
     {
-        scheduleList.forEach(Disposable::dispose);
+        scheduleList.forEach(Cancellation::cancel);
     }
 
     protected Logger getLogger()

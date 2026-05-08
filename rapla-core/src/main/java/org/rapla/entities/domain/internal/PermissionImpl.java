@@ -32,8 +32,8 @@ import java.util.Locale;
 public final class PermissionImpl extends ReferenceHandler implements Permission,EntityReferencer
 {
     transient boolean readOnly = false;
-    Date pEnd = null;
-    Date pStart = null;
+    java.time.LocalDateTime pEnd = null;
+    java.time.LocalDateTime pStart = null;
     Integer maxAdvance = null;
     Integer minAdvance = null;
     AccessLevel accessLevel = AccessLevel.ALLOCATE_CONFLICTS;
@@ -51,12 +51,25 @@ public final class PermissionImpl extends ReferenceHandler implements Permission
 
     public void setEnd(Date end) {
         checkWritable();
+        this.pEnd = end == null ? null : org.rapla.components.util.DateTools.toLocalDateTime(end);
+        if ( end != null )
+            this.maxAdvance = null;
+    }
+
+    @Override
+    public void setEndLocalDateTime(java.time.LocalDateTime end) {
+        checkWritable();
         this.pEnd = end;
         if ( end != null )
             this.maxAdvance = null;
     }
 
     public Date getEnd() {
+        return pEnd == null ? null : org.rapla.components.util.DateTools.toDate(pEnd);
+    }
+
+    @Override
+    public java.time.LocalDateTime getEndAsLocalDateTime() {
         return pEnd;
     }
     
@@ -76,12 +89,25 @@ public final class PermissionImpl extends ReferenceHandler implements Permission
 
     public void setStart(Date start) {
         checkWritable();
+        this.pStart = start == null ? null : org.rapla.components.util.DateTools.toLocalDateTime(start);
+        if ( start != null )
+            this.minAdvance = null;
+    }
+
+    @Override
+    public void setStartLocalDateTime(java.time.LocalDateTime start) {
+        checkWritable();
         this.pStart = start;
         if ( start != null )
             this.minAdvance = null;
     }
 
     public Date getStart() {
+        return pStart == null ? null : org.rapla.components.util.DateTools.toDate(pStart);
+    }
+
+    @Override
+    public java.time.LocalDateTime getStartAsLocalDateTime() {
         return pStart;
     }
 
@@ -168,7 +194,7 @@ public final class PermissionImpl extends ReferenceHandler implements Permission
 
     public Date getMinAllowed(Date today) {
         if ( pStart != null )
-            return pStart;
+            return org.rapla.components.util.DateTools.toDate(pStart);
         if ( minAdvance != null)
             return new Date( today.getTime()
                              + DateTools.MILLISECONDS_PER_DAY * minAdvance.longValue() );
@@ -177,21 +203,22 @@ public final class PermissionImpl extends ReferenceHandler implements Permission
 
     public Date getMaxAllowed(Date today) {
         if ( pEnd != null )
-            return pEnd;
+            return org.rapla.components.util.DateTools.toDate(pEnd);
         if ( maxAdvance != null)
             return new Date( today.getTime()
                              + DateTools.MILLISECONDS_PER_DAY * (maxAdvance.longValue() + 1) );
         return null;
     }
-    
+
     public boolean hasTimeLimits()
     {
     	return pStart != null || pEnd != null || minAdvance != null || maxAdvance != null;
     }
-    
+
     /** only checks if the user is allowed to make a reservation in the future */
     public boolean validInTheFuture( Date today ) {
-        if ( pEnd != null && ( today == null || pEnd.getTime() + DateTools.MILLISECONDS_PER_DAY<=( today.getTime() ) ) ) {
+        long pEndMillis = pEnd == null ? 0 : org.rapla.components.util.DateTools.toMilli(pEnd);
+        if ( pEnd != null && ( today == null || pEndMillis + DateTools.MILLISECONDS_PER_DAY<=( today.getTime() ) ) ) {
             return false;
         }
         if ( maxAdvance != null && today != null) {
@@ -202,13 +229,15 @@ public final class PermissionImpl extends ReferenceHandler implements Permission
         }
         return true;
     }
-    
+
     public boolean covers( Date start, Date end, Date today ) {
-        if ( pStart != null && (start == null || start.before ( pStart ) ) ) {
+        long pStartMillis = pStart == null ? 0 : org.rapla.components.util.DateTools.toMilli(pStart);
+        long pEndMillis = pEnd == null ? 0 : org.rapla.components.util.DateTools.toMilli(pEnd);
+        if ( pStart != null && (start == null || start.getTime() < pStartMillis ) ) {
             //System.out.println( " start before permission ");
             return false;
         }
-        if ( pEnd != null && ( end == null || pEnd.getTime() + DateTools.MILLISECONDS_PER_DAY<=end.getTime() ) ) {
+        if ( pEnd != null && ( end == null || pEndMillis + DateTools.MILLISECONDS_PER_DAY<=end.getTime() ) ) {
             //System.out.println( " end before permission ");
             return false;
         }

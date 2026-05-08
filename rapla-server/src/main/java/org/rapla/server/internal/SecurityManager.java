@@ -41,15 +41,17 @@ import java.util.*;
     final RaplaResources i18n;
     final AppointmentFormater appointmentFormater;
     final CachableStorageOperator operator;
+    final org.rapla.storage.SyncStorageOperator syncOperator;
     final Logger logger;
     private final PermissionController permissionController;
 
-    @Inject public SecurityManager(Logger logger, RaplaResources i18n, AppointmentFormater appointmentFormater, CachableStorageOperator operator)
+    @Inject public SecurityManager(Logger logger, RaplaResources i18n, AppointmentFormater appointmentFormater, CachableStorageOperator operator, org.rapla.storage.SyncStorageOperator syncOperator)
     {
         this.logger = logger;
         this.i18n = i18n;
         this.appointmentFormater = appointmentFormater;
         this.operator = operator;
+        this.syncOperator = syncOperator;
         permissionController = operator.getPermissionController();
     }
 
@@ -436,31 +438,12 @@ import java.util.*;
         {
             if (original != null)
             {
-                conflictsBefore = new ArrayList<>();
-                conflictsAfter = new ArrayList<>();
-                try
-                {
-                    org.rapla.scheduler.sync.SynchronizedCompletablePromise.waitFor(operator.getConflicts(original).thenAcceptBoth(operator.getConflicts(r), (beforeConfl, afterConf) ->
-                    {
-                        conflictsBefore.addAll(beforeConfl);
-                        conflictsAfter.addAll(afterConf);
-                    }), 10000, logger);
-                }
-                catch (Exception ex)
-                {
-                    throw new RaplaSecurityException(" Can't check permissions due to:" + ex.getMessage(), ex);
-                }
+                conflictsBefore = new ArrayList<>(syncOperator.getConflictsSync(original));
+                conflictsAfter = new ArrayList<>(syncOperator.getConflictsSync(r));
             }
             else
             {
-                try
-                {
-                    conflictsAfter = org.rapla.scheduler.sync.SynchronizedCompletablePromise.waitFor(operator.getConflicts(r), 10000, logger);
-                }
-                catch (Exception ex)
-                {
-                    throw new RaplaSecurityException(" Can't check permissions due to:" + ex.getMessage(), ex);
-                }
+                conflictsAfter = syncOperator.getConflictsSync(r);
                 conflictsBefore = new ArrayList<>();
             }
         }

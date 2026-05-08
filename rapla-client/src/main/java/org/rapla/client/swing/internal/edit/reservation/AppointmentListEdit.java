@@ -586,6 +586,8 @@ class AppointmentListEdit extends AbstractAppointmentEditor
 	}
 
     @Singleton
+    @org.springframework.stereotype.Service
+    @org.springframework.context.annotation.Lazy
     public static class AppointmentListEditFactory
     {
         private final ClientFacade facade;

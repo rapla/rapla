@@ -292,7 +292,7 @@ abstract public class ReferenceHandler /*extends HashMap<String,List<String>>*/ 
             if (unresolvedType == null) {
                 throw new IllegalStateException("Unresolved Type not set at this point");
             }
-            AllocatableImpl unresolved = new AllocatableImpl(null, null);
+            AllocatableImpl unresolved = new AllocatableImpl((java.time.LocalDateTime) null, (java.time.LocalDateTime) null);
             unresolved.setId(id);
             Classification newClassification = unresolvedType.newClassification();
             unresolved.setClassification(newClassification);

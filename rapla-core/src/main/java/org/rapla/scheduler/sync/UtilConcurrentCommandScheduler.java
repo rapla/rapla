@@ -1,20 +1,12 @@
 package org.rapla.scheduler.sync;
 
-import io.reactivex.rxjava3.disposables.Disposable;
-import io.reactivex.rxjava3.functions.Action;
-import io.reactivex.rxjava3.processors.PublishProcessor;
-import io.reactivex.rxjava3.schedulers.Schedulers;
-import io.reactivex.rxjava3.subjects.PublishSubject;
 import org.rapla.logger.Logger;
+import org.rapla.scheduler.Action;
+import org.rapla.scheduler.Cancellation;
 import org.rapla.scheduler.CommandScheduler;
 import org.rapla.scheduler.CompletablePromise;
-import org.rapla.scheduler.Observable;
 import org.rapla.scheduler.Promise;
 
-import java.time.Clock;
-import java.time.LocalTime;
-import java.time.temporal.ChronoField;
-import java.time.temporal.TemporalField;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
@@ -24,8 +16,6 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
-
-import static java.time.temporal.ChronoUnit.HOURS;
 
 public class UtilConcurrentCommandScheduler implements CommandScheduler, Executor
 {
@@ -67,6 +57,12 @@ public class UtilConcurrentCommandScheduler implements CommandScheduler, Executo
     public void execute(Runnable task)
     {
         scheduledExecutor.execute(task);
+    }
+
+    @Override
+    public Executor getExecutor()
+    {
+        return promiseExecuter;
     }
 
     protected void schedule(Runnable task)
@@ -301,12 +297,6 @@ public class UtilConcurrentCommandScheduler implements CommandScheduler, Executo
         return promise;
     }
 
-    @Override
-    public <T> Observable<T> just(T t) {
-        final io.reactivex.rxjava3.core.Flowable<T> just = io.reactivex.rxjava3.core.Flowable.just(t);
-        return new JavaObservable<T>(just, promiseExecuter);
-    }
-
     private <T> Promise<T> supply(final Callable<T> supplier, Executor executor)
     {
         if (supplier == null)
@@ -373,54 +363,23 @@ public class UtilConcurrentCommandScheduler implements CommandScheduler, Executo
     }
 
     @Override
-    public <T> Observable<T> toObservable(Promise<T> promise)
+    public Cancellation delay(Action task, long milliseconds)
     {
-        JavaObservable<T> javaObservable;
-        if ( promise instanceof SynchronizedPromise)
-        {
-            SynchronizedPromise synchronizedPromise = (SynchronizedPromise) promise;
-            javaObservable = new JavaObservable(synchronizedPromise, promiseExecuter);
-        }
-        else
-        {
-            final PublishProcessor<T> publishSubject = PublishProcessor.create();
-            promise.handle((arg, throwable) ->
-            {
-                if (throwable != null)
-                {
-                    try
-                    {
-                        publishSubject.onError(throwable);
-                    }
-                    finally
-                    {
-                        publishSubject.onComplete();
-                    }
-                }
-                else
-                {
-                    if ( arg != null) {
-                        try {
-                            publishSubject.onNext(arg);
-                        } finally {
-                            publishSubject.onComplete();
-                        }
-                    } else {
-                        publishSubject.onComplete();
-                    }
-                }
-                return arg;
-            });
-            javaObservable = new JavaObservable<T>(publishSubject, promiseExecuter);
-        }
-        return javaObservable;
+        final ScheduledFuture<?> future = scheduledExecutor.schedule(() -> runQuietly(task), milliseconds, TimeUnit.MILLISECONDS);
+        return () -> future.cancel(false);
     }
 
     @Override
-    public <T> org.rapla.scheduler.Subject<T> createPublisher()
+    public Cancellation schedule(Action task, long initialDelayMs, long periodMs)
     {
-        PublishProcessor<T> subject = PublishProcessor.create();
-        return new JavaSubject<>(subject, promiseExecuter);
+        final ScheduledFuture<?> future = scheduledExecutor.scheduleAtFixedRate(() -> runQuietly(task), initialDelayMs, periodMs, TimeUnit.MILLISECONDS);
+        return () -> future.cancel(false);
+    }
+
+    private void runQuietly(Action task)
+    {
+        try { task.run(); }
+        catch (Throwable ex) { error("scheduled task failed: " + ex.getMessage(), ex instanceof Exception ? (Exception) ex : new Exception(ex)); }
     }
 
 

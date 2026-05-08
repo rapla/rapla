@@ -1,7 +1,6 @@
 package org.rapla.plugin.planningstatus.client;
 
-import io.reactivex.rxjava3.functions.Consumer;
-import org.apache.commons.io.file.Counters;
+import org.rapla.scheduler.Consumer;
 import org.rapla.RaplaResources;
 import org.rapla.client.EditApplicationEventContext;
 import org.rapla.client.PopupContext;

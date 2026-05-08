@@ -1,6 +1,6 @@
 package org.rapla.plugin.tableview.client.swing;
 
-import io.reactivex.rxjava3.functions.Consumer;
+import org.rapla.scheduler.Consumer;
 import org.jetbrains.annotations.NotNull;
 import org.rapla.RaplaResources;
 import org.rapla.client.EditController;
@@ -349,7 +349,7 @@ public class SwingTableView<T> extends RaplaGUIComponent implements SwingCalenda
         result.finally_(()->
                 glassPane.deactivate()
         );
-        return getFacade().getScheduler().toObservable(result);
+        return org.rapla.scheduler.Observables.toObservable(result, getFacade().getScheduler().getExecutor());
     }
 
 

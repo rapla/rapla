@@ -63,6 +63,9 @@ import java.util.List;
 
 /** sample UseCase that only displays the text of the configuration and
  all reservations of the user.*/
+@org.springframework.stereotype.Service
+@org.springframework.context.annotation.Scope("prototype")
+@org.springframework.context.annotation.Lazy
 public class CopyDialog extends RaplaGUIComponent implements RaplaWidget
 {
     @SuppressWarnings("unchecked")

@@ -12,7 +12,7 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.client.menu.swing;
 
-import io.reactivex.rxjava3.functions.Consumer;
+import org.rapla.scheduler.Consumer;
 import org.jetbrains.annotations.NotNull;
 import org.rapla.client.PopupContext;
 import org.rapla.client.RaplaWidget;

@@ -74,6 +74,8 @@ import java.util.Map;
 import java.util.TreeSet;
 import java.util.Vector;
 
+@org.springframework.stereotype.Service
+@org.springframework.context.annotation.Lazy
 @Extension(
     provides = ImportMenuExtension.class,
     id = "org.rapla.plugin.templateimport" )

@@ -18,7 +18,7 @@ public class ExportMenuEntry extends DefaultHTMLMenuEntry implements  HtmlMainMe
 
 	@Inject
 	public ExportMenuEntry(AutoExportResources i18n,RaplaFacade facade) {
-		super(i18n.getString( "calendar_list"),"rapla/calendar");
+		super(i18n.getString( "calendar_list"),"calendar");
 		this.facade = facade;
 	}
 

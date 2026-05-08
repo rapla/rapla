@@ -3,6 +3,7 @@ package org.rapla.plugin.tableview.client.swing;
 import org.rapla.RaplaResources;
 import org.rapla.inject.Extension;
 import org.rapla.plugin.tableview.client.swing.extensionpoints.ReservationSummaryExtension;
+import org.springframework.stereotype.Service;
 
 import jakarta.inject.Inject;
 import javax.swing.Box;
@@ -12,6 +13,7 @@ import javax.swing.JTable;
 import javax.swing.event.ListSelectionEvent;
 import javax.swing.event.ListSelectionListener;
 
+@Service
 @Extension(provides = ReservationSummaryExtension.class,id = "_eventcounter")
 public final class EventCounter implements ReservationSummaryExtension
 {

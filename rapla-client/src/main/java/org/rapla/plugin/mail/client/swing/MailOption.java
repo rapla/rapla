@@ -35,6 +35,8 @@ import org.rapla.inject.Extension;
 import org.rapla.logger.Logger;
 import org.rapla.plugin.mail.MailConfigService;
 import org.rapla.plugin.mail.MailPlugin;
+import org.springframework.context.annotation.Scope;
+import org.springframework.stereotype.Service;
 
 import jakarta.inject.Inject;
 import javax.swing.ButtonGroup;
@@ -52,6 +54,8 @@ import java.awt.event.ActionListener;
 import java.util.Locale;
 
 
+@Service(MailPlugin.PLUGIN_ID)
+@Scope("prototype")
 @Extension(provides = PluginOptionPanel.class,id= MailPlugin.PLUGIN_ID)
 public class MailOption extends RaplaGUIComponent implements PluginOptionPanel {
 

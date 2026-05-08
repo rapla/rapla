@@ -83,7 +83,7 @@ import static org.rapla.entities.configuration.CalendarModelConfiguration.EXPORT
 @Singleton
 @DefaultImplementation(of = CalendarSelectionModel.class, context = InjectionContext.client)
 @DefaultImplementation(of = CalendarModel.class, context = InjectionContext.client)
-public class CalendarModelImpl implements CalendarSelectionModel
+public class CalendarModelImpl implements CalendarSelectionModel, org.rapla.facade.SyncCalendarModel
 {
     private static final String DEFAULT_VIEW = "week";//WeekViewFactory.WEEK_VIEW;
     private static final String ICAL_EXPORT_ENABLED = "org.rapla.plugin.export2ical" + ".selected";
@@ -957,64 +957,66 @@ public class CalendarModelImpl implements CalendarSelectionModel
 
     @Override public Promise<AppointmentMapping> queryAppointmentBindings(TimeInterval interval)
     {
+        try { return new ResolvedPromise<>(queryAppointmentBindingsSync(interval)); }
+        catch (RaplaException e) { return new ResolvedPromise<>(e); }
+    }
+
+    @Override public AppointmentMapping queryAppointmentBindingsSync(TimeInterval interval) throws RaplaException
+    {
         final boolean debugEnabled = logger.isDebugEnabled();
         final long start = debugEnabled ? System.currentTimeMillis() : 0;
         Collection<Allocatable> allocatables = new LinkedHashSet<>();
         Collection<User> owners = new LinkedHashSet<>();
-        try
-        {
-            Collection<RaplaObject> selectedRaplaObjects = getSelectedRaplaObjects(true);
-            for ( RaplaObject raplaObject :selectedRaplaObjects) {
-                if (raplaObject instanceof Allocatable) {
-                    allocatables.add( (Allocatable) raplaObject);
-                }
-                if (raplaObject instanceof User) {
-                    owners.add( (User) raplaObject);
-                }
+        Collection<RaplaObject> selectedRaplaObjects = getSelectedRaplaObjects(true);
+        for (RaplaObject raplaObject : selectedRaplaObjects) {
+            if (raplaObject instanceof Allocatable) {
+                allocatables.add((Allocatable) raplaObject);
+            }
+            if (raplaObject instanceof User) {
+                owners.add((User) raplaObject);
             }
         }
-        catch (RaplaException e)
-        {
-            return new ResolvedPromise<>(e);
-        }
 
-        final long selectedAllocatableTimes =  (debugEnabled) ?  System.currentTimeMillis() - start: 0;
+        final long selectedAllocatableTimes = (debugEnabled) ? System.currentTimeMillis() - start : 0;
         Date startDate = interval != null ? interval.getStart() : null;
         Date endDate = interval != null ? interval.getEnd() : null;
 
         boolean useFilter = getSelectedConflicts().isEmpty() && getSelectedResourceRequests().isEmpty();
-        final Promise<AppointmentMapping> reservations = queryAppointmentBindings(allocatables, owners, startDate, endDate, useFilter);
-        reservations.thenAccept( (res) -> {
-            if (debugEnabled)
-            {
-                logger.debug("queryAppointments for " + allocatables.size() + " resources took " + (System.currentTimeMillis() - start) + " ms (selected allocatables "
-                        + selectedAllocatableTimes + " ms). Found appointments for  " + res.size() + " resources.");
-            }
-        });
-        return reservations;
+        AppointmentMapping result = queryAppointmentBindingsSync(allocatables, owners, startDate, endDate, useFilter);
+        if (debugEnabled)
+        {
+            logger.debug("queryAppointments for " + allocatables.size() + " resources took " + (System.currentTimeMillis() - start) + " ms (selected allocatables "
+                    + selectedAllocatableTimes + " ms). Found appointments for  " + result.size() + " resources.");
+        }
+        return result;
     }
 
 
     @Override public Promise<Collection<Reservation>> queryReservations(TimeInterval interval)
     {
-        Promise<Collection<Appointment>> appointments;
+        try { return new ResolvedPromise<>(queryReservationsSync(interval)); }
+        catch (RaplaException e) { return new ResolvedPromise<>(e); }
+    }
+
+    @Override public Collection<Reservation> queryReservationsSync(TimeInterval interval) throws RaplaException
+    {
+        Collection<Appointment> appointments;
         Collection<Conflict> conflicts = getSelectedConflicts();
         Collection<Reservation> requests = getSelectedResourceRequests();
         if (conflicts.size() > 0)
         {
-            appointments = getAppointments(conflicts);
+            appointments = getAppointmentsSync(conflicts);
         }
         else if (requests.size() > 0)
         {
-            appointments = getAppointmentsForRequests(requests);
+            appointments = getAppointmentsForRequestsSync(requests);
         }
         else
         {
-            final Promise<AppointmentMapping> appointments1 = queryAppointmentBindings(interval);
-            appointments = appointments1.thenApply((apps) ->apps.getAllAppointments());
+            AppointmentMapping bindings = queryAppointmentBindingsSync(interval);
+            appointments = bindings.getAllAppointments();
         }
-        Promise<Collection<Reservation>> asList = appointments.thenApply((apps)->getAllReservations(apps));
-        return asList;
+        return getAllReservations(appointments);
     }
 
     public static Collection<Reservation> getAllReservations(Collection<Appointment> appointments)
@@ -1028,37 +1030,37 @@ public class CalendarModelImpl implements CalendarSelectionModel
     private AppointmentMapping cachedReservations;
     private boolean cachingEnabled = false;
 
-    private Promise<AppointmentMapping> queryAppointmentBindings(Collection<Allocatable> allocatables,final Collection<User> owners, Date start, Date end, boolean useFilter)
+    private AppointmentMapping queryAppointmentBindingsSync(Collection<Allocatable> allocatables, final Collection<User> owners, Date start, Date end, boolean useFilter) throws RaplaException
     {
         final String cacheKey = createCacheKey(allocatables, start, end);
         if (cachingEnabled)
         {
             if (cacheValidString != null && cacheValidString.equals(cacheKey) && cachedReservations != null)
             {
-                return new ResolvedPromise<>(cachedReservations);
+                return cachedReservations;
             }
         }
 
-        ClassificationFilter[] reservationFilters;
-		try {
-			reservationFilters = isDefaultEventTypes() || !useFilter ? null : getReservationFilter();
-		} catch (RaplaException ex) {
-			return new ResolvedPromise<>( ex);
-		}
+        ClassificationFilter[] reservationFilters = isDefaultEventTypes() || !useFilter ? null : getReservationFilter();
 
-		// FIXME Evalute if its only the owner
-		User user = null;
-        final Promise<AppointmentMapping> reservationsAsync = operator
-                .queryAppointments(user, allocatables, owners, start, end, reservationFilters, templateId);
+        // FIXME Evalute if its only the owner
+        User user = null;
+        AppointmentMapping map = requireSyncOperator().queryAppointmentsSync(user, allocatables, owners, start, end, reservationFilters, templateId);
+        if (cachingEnabled)
+        {
+            cachedReservations = map;
+            cacheValidString = cacheKey;
+        }
+        return map;
+    }
 
-        return reservationsAsync.thenApply((map) -> {
-            if (cachingEnabled)
-            {
-                cachedReservations = map;
-                cacheValidString = cacheKey;
-            }
-            return map;
-        });
+    private org.rapla.storage.SyncStorageOperator requireSyncOperator()
+    {
+        if (!(operator instanceof org.rapla.storage.SyncStorageOperator))
+        {
+            throw new UnsupportedOperationException("Sync CalendarModel methods require an in-process StorageOperator (server-side); the current operator is " + operator.getClass().getName());
+        }
+        return (org.rapla.storage.SyncStorageOperator) operator;
     }
 
     public void invalidateCache()
@@ -1413,7 +1415,7 @@ public class CalendarModelImpl implements CalendarSelectionModel
     //      }
     //  }
 
-    private Promise<Collection<Appointment>> getAppointments(Collection<Conflict> conflicts)
+    private Collection<Appointment> getAppointmentsSync(Collection<Conflict> conflicts) throws RaplaException
     {
         Collection<ReferenceInfo<Reservation>> ids = new HashSet<>();
         Collection<ReferenceInfo<Appointment>> appointmentIds = new HashSet<>();
@@ -1424,82 +1426,82 @@ public class CalendarModelImpl implements CalendarSelectionModel
             appointmentIds.add(conflict.getAppointment1());
             appointmentIds.add(conflict.getAppointment2());
         }
-        return operator.getFromIdAsync(ids, true).thenApply(values->
-                {
-                    Stream<Appointment> appointments = values.values().stream().flatMap(Reservation::getAppointmentStream).filter( (app)->appointmentIds.contains(app.getReference()));
-                    return  appointments.collect(Collectors.toList());
-                }
-        );
+        Map<ReferenceInfo<Reservation>, Reservation> values = requireSyncOperator().getFromIdSync(ids, true);
+        return values.values().stream()
+                .flatMap(Reservation::getAppointmentStream)
+                .filter((app) -> appointmentIds.contains(app.getReference()))
+                .collect(Collectors.toList());
     }
 
-    private Promise<Collection<Appointment>> getAppointmentsForRequests(Collection<Reservation> requests)
+    private Collection<Appointment> getAppointmentsForRequestsSync(Collection<Reservation> requests) throws RaplaException
     {
         Collection<Appointment> selectedAppointments = ReservationImpl.getRequestedAppointments(requests);
         Collection<ReferenceInfo<Reservation>> ids = new HashSet<>();
         for (Reservation request : requests) {
             ids.add(request.getReference());
         }
-
-        return operator.getFromIdAsync(ids, true).thenApply(values->
-            {
-                Stream<Appointment> appointments = values.values().stream().flatMap(Reservation::getAppointmentStream).filter( (app)->selectedAppointments.contains(app));
-                return  appointments.collect(Collectors.toList());
-            }
-        );
+        Map<ReferenceInfo<Reservation>, Reservation> values = requireSyncOperator().getFromIdSync(ids, true);
+        return values.values().stream()
+                .flatMap(Reservation::getAppointmentStream)
+                .filter((app) -> selectedAppointments.contains(app))
+                .collect(Collectors.toList());
     }
 
 
 
     @Override public Promise<List<AppointmentBlock>> queryBlocks(final TimeInterval timeInterval)
     {
+        try { return new ResolvedPromise<>(queryBlocksSync(timeInterval)); }
+        catch (RaplaException e) { return new ResolvedPromise<>(e); }
+    }
+
+    @Override public List<AppointmentBlock> queryBlocksSync(final TimeInterval timeInterval) throws RaplaException
+    {
         List<AppointmentBlock> appointments = new ArrayList<>();
         Collection<Conflict> selectedConflicts = getSelectedConflicts();
         Collection<Reservation> requests = getSelectedResourceRequests();
-        Promise<Collection<Appointment>> reservations;
-        if ( !selectedConflicts.isEmpty()) {
-            reservations = getAppointments(selectedConflicts);
+        Collection<Appointment> conflictAppointments;
+        if (!selectedConflicts.isEmpty()) {
+            conflictAppointments = getAppointmentsSync(selectedConflicts);
         } else {
-            reservations = getAppointmentsForRequests(requests);
+            conflictAppointments = getAppointmentsForRequestsSync(requests);
         }
-        final Promise<Collection<Appointment>> appointmentPromise = queryAppointments(timeInterval);
-        return appointmentPromise.thenCombine(reservations, ( allAppointments, conflictAppointments) -> {
-
-            Map<Appointment, Set<Appointment>> conflictingAppointments = ConflictImpl.getMap(selectedConflicts, conflictAppointments);
-            for (Appointment app : allAppointments)
+        Collection<Appointment> allAppointments = queryAppointmentsSync(timeInterval);
+        Map<Appointment, Set<Appointment>> conflictingAppointments = ConflictImpl.getMap(selectedConflicts, conflictAppointments);
+        for (Appointment app : allAppointments)
+        {
+            Collection<Appointment> conflictList = conflictingAppointments.get(app);
+            if (conflictList == null || conflictList.isEmpty())
             {
-                Collection<Appointment> conflictList = conflictingAppointments.get(app);
-                if (conflictList == null || conflictList.isEmpty())
+                app.createBlocks(getStartDate(), getEndDate(), appointments);
+            }
+            else
+            {
+                List<AppointmentBlock> blocks = new ArrayList<>();
+                app.createBlocks(getStartDate(), getEndDate(), blocks);
+                Iterator<AppointmentBlock> it = blocks.iterator();
+                while (it.hasNext())
                 {
-                    app.createBlocks(getStartDate(), getEndDate(), appointments);
-                }
-                else
-                {
-                    List<AppointmentBlock> blocks = new ArrayList<>();
-                    app.createBlocks(getStartDate(), getEndDate(), blocks);
-                    Iterator<AppointmentBlock> it = blocks.iterator();
-                    while (it.hasNext())
+                    AppointmentBlock block = it.next();
+                    boolean found = false;
+                    for (Appointment conflictingApp : conflictList)
                     {
-                        AppointmentBlock block = it.next();
-                        boolean found = false;
-                        for (Appointment conflictingApp : conflictList)
+                        if (conflictingApp.overlapsBlock(block))
                         {
-                            if (conflictingApp.overlapsBlock(block))
-                            {
-                                found = true;
-                                break;
-                            }
-                        }
-                        if (!found)
-                        {
-                            it.remove();
+                            found = true;
+                            break;
                         }
                     }
-                    appointments.addAll(blocks);
+                    if (!found)
+                    {
+                        it.remove();
+                    }
                 }
+                appointments.addAll(blocks);
             }
-            Collections.sort(appointments);
-            return appointments;
-        });
+        }
+        Collections.sort(appointments);
+        return appointments;
     }
 
     private DynamicType[] getDynamicTypes(String elementKey) throws RaplaException
@@ -1586,8 +1588,14 @@ public class CalendarModelImpl implements CalendarSelectionModel
 
     public Promise<Collection<Appointment>> queryAppointments(TimeInterval interval)
     {
-        Promise<AppointmentMapping> bindings = queryAppointmentBindings(interval);
-        return bindings.thenApply( (binding) -> binding.getAllAppointments(appointmentFilter));
+        try { return new ResolvedPromise<>(queryAppointmentsSync(interval)); }
+        catch (RaplaException e) { return new ResolvedPromise<>(e); }
+    }
+
+    @Override public Collection<Appointment> queryAppointmentsSync(TimeInterval interval) throws RaplaException
+    {
+        AppointmentMapping bindings = queryAppointmentBindingsSync(interval);
+        return bindings.getAllAppointments(appointmentFilter);
     }
 
     public static String getStartEndDate(RaplaLocale raplaLocale, CalendarSelectionModel model) {

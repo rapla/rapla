@@ -47,15 +47,20 @@ public final class AllocatableImpl extends SimpleEntity implements Allocatable,D
     
     private ClassificationImpl classification;
     private final List<PermissionImpl> permissions = new ArrayList<>();
-    private Date lastChanged;
-    private Date createDate;
+    private java.time.LocalDateTime lastChanged;
+    private java.time.LocalDateTime createDate;
     private Map<String,String> annotations;
-    
+
     AllocatableImpl() {
-        this (null, null);
+        this ((java.time.LocalDateTime) null, (java.time.LocalDateTime) null);
     }
-    
+
     public AllocatableImpl(Date createDate, Date lastChanged ) {
+        this(createDate == null ? null : org.rapla.components.util.DateTools.toLocalDateTime(createDate),
+             lastChanged == null ? null : org.rapla.components.util.DateTools.toLocalDateTime(lastChanged));
+    }
+
+    public AllocatableImpl(java.time.LocalDateTime createDate, java.time.LocalDateTime lastChanged ) {
 // No createInfoDialog date should be possible and time should always be set through storage operators as they now the timezone settings
 //        if (createDate == null) {
 //        	Calendar calendar = Calendar.inject();
@@ -70,9 +75,7 @@ public final class AllocatableImpl extends SimpleEntity implements Allocatable,D
 
     /** {@code LocalDateTime} factory paralleling {@link #AllocatableImpl(Date, Date)}. UTC. */
     public static AllocatableImpl ofLocalDateTime(java.time.LocalDateTime createDate, java.time.LocalDateTime lastChanged) {
-        return new AllocatableImpl(
-            createDate == null ? null : org.rapla.components.util.DateTools.toDate(createDate),
-            lastChanged == null ? null : org.rapla.components.util.DateTools.toDate(lastChanged));
+        return new AllocatableImpl(createDate, lastChanged);
     }
 
     public void setResolver( EntityResolver resolver) {
@@ -97,20 +100,38 @@ public final class AllocatableImpl extends SimpleEntity implements Allocatable,D
     }
 
     public Date getLastChanged() {
-        return lastChanged;
+        return lastChanged == null ? null : org.rapla.components.util.DateTools.toDate(lastChanged);
     }
-    
+
     public Date getCreateDate() {
-        return createDate;
+        return createDate == null ? null : org.rapla.components.util.DateTools.toDate(createDate);
     }
+
+    @Override
+    public java.time.LocalDateTime getLastChangedAsLocalDateTime() { return lastChanged; }
+
+    @Override
+    public java.time.LocalDateTime getCreateDateAsLocalDateTime() { return createDate; }
 
     @Override public void setCreateDate(Date date)
     {
+        checkWritable();
+        this.createDate = date == null ? null : org.rapla.components.util.DateTools.toLocalDateTime(date);
+    }
+
+    @Override
+    public void setCreateDateLocalDateTime(java.time.LocalDateTime date) {
         checkWritable();
         this.createDate = date;
     }
 
     public void setLastChanged(Date date) {
+        checkWritable();
+        lastChanged = date == null ? null : org.rapla.components.util.DateTools.toLocalDateTime(date);
+    }
+
+    @Override
+    public void setLastChangedLocalDateTime(java.time.LocalDateTime date) {
         checkWritable();
         lastChanged = date;
     }

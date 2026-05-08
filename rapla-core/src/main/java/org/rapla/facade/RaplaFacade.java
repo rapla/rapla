@@ -12,7 +12,6 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.facade;
 
-import io.reactivex.rxjava3.functions.Consumer;
 import org.rapla.components.util.TimeInterval;
 import org.rapla.entities.Category;
 import org.rapla.entities.Entity;
@@ -35,6 +34,8 @@ import org.rapla.scheduler.CommandScheduler;
 import org.rapla.scheduler.Promise;
 import org.rapla.storage.PermissionController;
 import org.rapla.storage.StorageOperator;
+
+import org.rapla.scheduler.Consumer;
 
 import java.util.Collection;
 import java.util.Date;

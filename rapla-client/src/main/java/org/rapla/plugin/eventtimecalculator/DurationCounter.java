@@ -11,6 +11,7 @@ import org.rapla.plugin.tableview.RaplaTableModel;
 import org.rapla.plugin.tableview.client.swing.RaplaSwingTableModel;
 import org.rapla.plugin.tableview.client.swing.extensionpoints.AppointmentSummaryExtension;
 import org.rapla.plugin.tableview.client.swing.extensionpoints.ReservationSummaryExtension;
+import org.springframework.stereotype.Service;
 
 import jakarta.inject.Inject;
 import javax.swing.Box;
@@ -20,6 +21,7 @@ import javax.swing.JTable;
 import javax.swing.table.TableModel;
 
 
+@Service
 @Extension(provides = ReservationSummaryExtension.class, id = EventTimeCalculatorPlugin.PLUGIN_ID)
 @Extension(provides = AppointmentSummaryExtension.class, id = EventTimeCalculatorPlugin.PLUGIN_ID)
 public final class DurationCounter  implements ReservationSummaryExtension, AppointmentSummaryExtension

@@ -52,10 +52,7 @@ import java.util.Map;
                 final String tableViewName = TableConfig.APPOINTMENTS_VIEW;
                 List<RaplaTableColumn<AppointmentBlock>> columnPlugins = tableConfigLoader.loadColumns(tableViewName, user);
                 final TimeInterval timeIntervall = model.getTimeIntervall();
-                final List<AppointmentBlock> blocks;
-                try { blocks = org.rapla.scheduler.sync.SynchronizedCompletablePromise.waitFor(model.queryBlocks(timeIntervall), 10000, null); }
-                catch (RaplaException ex) { throw ex; }
-                catch (Exception ex) { throw new RaplaException(ex); }
+                final List<AppointmentBlock> blocks = ((org.rapla.facade.SyncCalendarModel) model).queryBlocksSync(timeIntervall);
                 Map<RaplaTableColumn<AppointmentBlock>, Integer> sortDirections = RaplaTableModel.getSortDirections(model,columnPlugins, tableViewName);
                 return getCalendarBody(columnPlugins, blocks, sortDirections);
             }

@@ -23,6 +23,8 @@ import java.util.Collection;
 import java.util.Collections;
 
 
+@org.springframework.stereotype.Service
+@org.springframework.context.annotation.Lazy
 @Extension(provides= AnnotationEditTypeExtension.class, id=EventTimeCalculatorPlugin.EVENTIME_CONDITION_ANNOTATION_NAME)
 public class EventTimeConditionAnnotationEdit extends RaplaGUIComponent implements AnnotationEditTypeExtension
 {

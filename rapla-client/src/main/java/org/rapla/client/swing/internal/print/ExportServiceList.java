@@ -50,8 +50,7 @@ public class ExportServiceList   {
             RaplaInitializationException {
         this.i18n = i18n;
         this.dialogUiFactory = dialogUiFactory;
-        boolean applet =startupEnvironment.getStartupMode() == StartupEnvironment.APPLET;
-        if (printInterface.supportsPostscriptExport() && !applet) {
+        if (printInterface.supportsPostscriptExport()) {
             PSExportService exportService = new PSExportService( printInterface, i18n);
             addService("psexport",exportService);
         }

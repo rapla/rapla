@@ -190,7 +190,7 @@ public abstract class AbstractRaplaSwingCalendar extends RaplaGUIComponent
                 .execOn(SwingUtilities::invokeLater)
                 .thenAccept(this::update)
                 .exceptionally(this::handleException);
-        return getFacade().getScheduler().toObservable( result);
+        return org.rapla.scheduler.Observables.toObservable( result, getFacade().getScheduler().getExecutor());
     }
 
     public void handleException(Throwable ex)

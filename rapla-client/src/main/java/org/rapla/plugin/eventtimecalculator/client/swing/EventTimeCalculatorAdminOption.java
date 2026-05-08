@@ -11,9 +11,13 @@ import org.rapla.inject.Extension;
 import org.rapla.logger.Logger;
 import org.rapla.plugin.eventtimecalculator.EventTimeCalculatorPlugin;
 import org.rapla.plugin.eventtimecalculator.EventTimeCalculatorResources;
+import org.springframework.context.annotation.Scope;
+import org.springframework.stereotype.Service;
 
 import jakarta.inject.Inject;
 
+@Service(EventTimeCalculatorPlugin.PLUGIN_ID)
+@Scope("prototype")
 @Extension(provides = PluginOptionPanel.class,id= EventTimeCalculatorPlugin.PLUGIN_ID)
 public class EventTimeCalculatorAdminOption extends EventTimeCalculatorUserOption implements  PluginOptionPanel
 {

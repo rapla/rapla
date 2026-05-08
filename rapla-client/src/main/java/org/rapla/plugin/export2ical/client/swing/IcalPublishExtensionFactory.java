@@ -12,10 +12,12 @@ import org.rapla.framework.RaplaLocale;
 import org.rapla.inject.Extension;
 import org.rapla.logger.Logger;
 import org.rapla.plugin.export2ical.Export2iCalPlugin;
+import org.springframework.stereotype.Service;
 
 import jakarta.inject.Inject;
 import java.beans.PropertyChangeListener;
 
+@Service
 @Extension(provides=PublishExtensionFactory.class,id="ical")
 public class IcalPublishExtensionFactory implements PublishExtensionFactory
 {
