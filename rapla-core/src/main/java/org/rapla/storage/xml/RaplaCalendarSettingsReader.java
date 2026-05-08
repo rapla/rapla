@@ -37,9 +37,9 @@ public class RaplaCalendarSettingsReader extends RaplaXMLReader  {
     CalendarModelConfiguration settings;
     String title;
     String view;
-    Date selectedDate;
-    Date startDate;
-    Date endDate;
+    java.time.LocalDateTime selectedDate;
+    java.time.LocalDateTime startDate;
+    java.time.LocalDateTime endDate;
     boolean resourceRootSelected;
     ClassificationFilter[] filter;
     RaplaMapReader optionMapReader;
@@ -135,11 +135,12 @@ public class RaplaCalendarSettingsReader extends RaplaXMLReader  {
         }
     }
 
-    private Date getDate(RaplaSAXAttributes atts, String key ) throws RaplaSAXParseException {
+    private java.time.LocalDateTime getDate(RaplaSAXAttributes atts, String key ) throws RaplaSAXParseException {
         String dateString = getString( atts,key, null);
 
         if ( dateString != null) {
-            return parseDate( dateString, false );
+            Date d = parseDate( dateString, false );
+            return d == null ? null : org.rapla.components.util.DateTools.toLocalDateTime(d);
         } else {
             return null;
         }

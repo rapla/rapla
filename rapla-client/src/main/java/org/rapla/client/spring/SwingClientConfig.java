@@ -1,8 +1,15 @@
 package org.rapla.client.spring;
 
+import org.rapla.client.event.TaskPresenter;
+import org.springframework.beans.factory.ListableBeanFactory;
+import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.FilterType;
+
+import jakarta.inject.Provider;
+import java.util.LinkedHashMap;
+import java.util.Map;
 
 /**
  * Phase 1 of PRD 002 (Swing UI DI migration).
@@ -16,11 +23,7 @@ import org.springframework.context.annotation.FilterType;
 @Configuration
 @ComponentScan(
         basePackages = {
-                "org.rapla.client.swing",
-                "org.rapla.client.menu",
-                "org.rapla.client.dialog",
-                "org.rapla.client.internal",
-                "org.rapla.client.event",
+                "org.rapla.client",
                 "org.rapla.plugin"
         },
         excludeFilters = @ComponentScan.Filter(
@@ -30,4 +33,22 @@ import org.springframework.context.annotation.FilterType;
 )
 public class SwingClientConfig
 {
+    /**
+     * Spring's auto-injection of {@code Map<String, T>} populates from beans of type {@code T},
+     * but does NOT auto-wrap the values into {@code Provider<T>} when {@code T} itself is
+     * {@code Provider<X>} — that wrapping is only applied at top-level injection points,
+     * not inside nested generics. {@link org.rapla.client.Application#activityPresenters}
+     * declares {@code Map<String, Provider<TaskPresenter>>}, so without this bean it stays
+     * empty and {@code startAction("cal", true)} silently returns false.
+     */
+    @Bean
+    public Map<String, Provider<TaskPresenter>> activityPresenters(ListableBeanFactory beanFactory)
+    {
+        Map<String, Provider<TaskPresenter>> map = new LinkedHashMap<>();
+        for (String name : beanFactory.getBeanNamesForType(TaskPresenter.class))
+        {
+            map.put(name, () -> beanFactory.getBean(name, TaskPresenter.class));
+        }
+        return map;
+    }
 }

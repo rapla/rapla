@@ -19,13 +19,27 @@ public interface CalendarView extends BlockContainer
     Date getStartDate();
     /** returns the last Date that will be displayed in the calendar */
     Date getEndDate();
-    
+
     /** sets the calendarview to the selected date*/
     void setToDate(Date weekDate);
 
-    /** This method removes all existing blocks first. 
+    /** {@code LocalDate} variants. */
+    default java.time.LocalDate getStartLocalDate() {
+        Date d = getStartDate();
+        return d == null ? null : org.rapla.components.util.DateTools.toLocalDate(d);
+    }
+    default java.time.LocalDate getEndLocalDate() {
+        Date d = getEndDate();
+        return d == null ? null : org.rapla.components.util.DateTools.toLocalDate(d);
+    }
+    /** Distinct method name to avoid {@code setToDate(null)} ambiguity. */
+    default void setToLocalDate(java.time.LocalDate weekDate) {
+        setToDate(weekDate == null ? null : org.rapla.components.util.DateTools.toDate(weekDate));
+    }
+
+    /** This method removes all existing blocks first.
      * Then it calls the build method of all added builders, so that they can add blocks into the CalendarView again.
-     * After all blocks are added the Calendarthat repaints the screen. 
+     * After all blocks are added the Calendarthat repaints the screen.
      */
     void rebuild(Builder builder);
 

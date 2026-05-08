@@ -1,7 +1,11 @@
 # PRD 007: Build & Test Performance
 
-**Status:** in-progress (Phase 0 + most of Phase 1 landed)
-**Date:** 2026-05-07
+**Status:** in-progress (Phase 0 + Phase 1 landed)
+**Date:** 2026-05-07 (last update: 2026-05-08)
+
+### 2026-05-08 — `RaplaSpringBootApplicationTest` isolated
+
+`RaplaSpringBootApplicationTest` now uses `@TempDir` + `@DynamicPropertySource` (matching the pattern in `UrlPreservationTest`/`AuthControllerIntegrationTest`) so it doesn't write to the shared `data/data.xml`. The test idempotency issue described in Phase 1 (second `mvn test` run failing with `UnsatisfiedDependencyException` because of corrupted shared state) is now resolved — the test reads from `testdefault.xml` copied into the per-test `@TempDir`. 23/23 spring tests still green.
 
 ## Goal
 

@@ -1,9 +1,11 @@
 package org.rapla.client.spring;
 
 import org.rapla.plugin.export2ical.ICalTimezones;
+import org.rapla.rest.JacksonObjectMapperFactory;
 import org.rapla.storage.dbrm.RemoteConnectionInfo;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.converter.json.MappingJackson2HttpMessageConverter;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.client.support.RestClientAdapter;
 import org.springframework.web.service.invoker.HttpServiceProxyFactory;
@@ -50,8 +52,17 @@ public class ClientProxyConfig
         // UriBuilderFactory that reads info.getServerURL() lazily on each request.
         org.springframework.web.util.UriBuilderFactory dynamicFactory =
                 new DynamicBaseUriBuilderFactory(info, "http://localhost:8051");
+        // Force Jackson with the shared Rapla config (field-based, JavaTimeModule, transient-aware).
+        // Without this, RestClient picks up Gson (transitively from rapla-core) which can't reflect
+        // java.time.LocalDateTime under the JDK module system.
+        MappingJackson2HttpMessageConverter jacksonConverter =
+                new MappingJackson2HttpMessageConverter(JacksonObjectMapperFactory.create());
         RestClient restClient = builder
                 .uriBuilderFactory(dynamicFactory)
+                .messageConverters(converters -> {
+                    converters.removeIf(c -> c.getClass().getSimpleName().contains("Gson"));
+                    converters.add(0, jacksonConverter);
+                })
                 .requestInitializer(request -> {
                     String token = info.getAccessToken();
                     if (token != null && !token.isEmpty())
@@ -151,6 +162,24 @@ public class ClientProxyConfig
     }
 
     @Bean
+    public org.rapla.plugin.export2ical.ICalExport iCalExportProxy(HttpServiceProxyFactory factory)
+    {
+        return factory.createClient(org.rapla.plugin.export2ical.ICalExport.class);
+    }
+
+    @Bean
+    public org.rapla.plugin.exchangeconnector.ExchangeConnectorRemote exchangeConnectorRemoteProxy(HttpServiceProxyFactory factory)
+    {
+        return factory.createClient(org.rapla.plugin.exchangeconnector.ExchangeConnectorRemote.class);
+    }
+
+    @Bean
+    public org.rapla.plugin.exchangeconnector.ExchangeConnectorConfigRemote exchangeConnectorConfigRemoteProxy(HttpServiceProxyFactory factory)
+    {
+        return factory.createClient(org.rapla.plugin.exchangeconnector.ExchangeConnectorConfigRemote.class);
+    }
+
+    @Bean
     public org.rapla.plugin.jndi.internal.JNDIConfig jndiConfigProxy(HttpServiceProxyFactory factory)
     {
         return factory.createClient(org.rapla.plugin.jndi.internal.JNDIConfig.class);
@@ -186,9 +215,8 @@ public class ClientProxyConfig
         return factory.createClient(org.rapla.storage.dbrm.RemoteStorage.class);
     }
 
-    @Bean
-    public org.rapla.storage.dbrm.RestartServer restartServerProxy(HttpServiceProxyFactory factory)
-    {
-        return factory.createClient(org.rapla.storage.dbrm.RestartServer.class);
-    }
+    // RestartServer has no @Bean here — RemoteOperator implements RestartServer directly
+    // (legacy @DefaultImplementation annotation; honored by ClientConfig.remoteOperator() bean).
+    // Adding a separate HTTP proxy here would create a NoUniqueBeanDefinitionException since
+    // both beans match the same interface type.
 }

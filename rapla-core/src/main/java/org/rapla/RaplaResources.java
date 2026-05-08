@@ -61,7 +61,11 @@ public class RaplaResources extends AbstractBundle {
 
     /** {@code LocalDate} variant of {@link #calendarweek(Date)}. */
     public String calendarweek(java.time.LocalDate startDate) {
-        return calendarweek(startDate == null ? null : DateTools.toDate(startDate));
+        String format = getString("calendarweek.abbreviation");
+        int week = DateTools.getWeekInYear(startDate, getLocale());
+        String result = format.replace("{0}", "" + week);
+        result = result.replace("{0,date,w}", "" + week);
+        return result;
     }
 
     // custom format method for formating the number of week in a period

@@ -2,20 +2,18 @@ package org.rapla.plugin.exchangeconnector;
 
 import org.rapla.framework.DefaultConfiguration;
 import org.rapla.framework.RaplaException;
+import org.springframework.web.service.annotation.GetExchange;
+import org.springframework.web.service.annotation.HttpExchange;
 
-import jakarta.ws.rs.GET;
-import jakarta.ws.rs.Path;
 import java.util.List;
 
-@Path("exchange/config")
+@HttpExchange("/exchange/config")
 public interface ExchangeConnectorConfigRemote
 {
-    @GET
-    @Path("default")
+    @GetExchange("/default")
     DefaultConfiguration getConfig() throws RaplaException;
 
-    @GET
-    @Path("timezones")
+    @GetExchange("/timezones")
     List<String> getTimezones() throws RaplaException;
 
 }

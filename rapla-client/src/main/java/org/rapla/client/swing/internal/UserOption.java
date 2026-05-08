@@ -36,6 +36,8 @@ import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.inject.Extension;
 import org.rapla.logger.Logger;
+import org.springframework.context.annotation.Scope;
+import org.springframework.stereotype.Service;
 
 import jakarta.inject.Inject;
 import jakarta.inject.Provider;
@@ -53,6 +55,8 @@ import java.util.LinkedHashMap;
 import java.util.Locale;
 import java.util.Map;
 
+@Service
+@Scope("prototype")
 @Extension(provides = UserOptionPanel.class, id = "userOption")
 public class UserOption extends RaplaGUIComponent implements UserOptionPanel
 {

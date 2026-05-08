@@ -18,6 +18,7 @@ import org.rapla.facade.internal.CalendarOptionsImpl;
 import org.rapla.framework.RaplaException;
 import org.rapla.inject.Extension;
 import org.rapla.scheduler.Promise;
+import org.springframework.stereotype.Service;
 import org.rapla.scheduler.ResolvedPromise;
 
 import jakarta.inject.Inject;
@@ -25,6 +26,7 @@ import java.util.Collection;
 import java.util.Locale;
 
 
+@Service
 @Extension(provides = EventCheck.class, id = "defaultcheck")
 public class DefaultReservationCheck implements EventCheck
 {

@@ -1,6 +1,6 @@
 # PRD 001: Spring Boot Migration
 
-**Status:** in-progress — **Phase 1, 2, 3, 5, 6, 7, 8 complete**; **Phase 9 partial** (server-side Jackson default); Phase 4 partial (skeleton + `SpringRaplaClient` + `StartupEnvironment` bean; full Swing UI graph still field-injected dead code, no longer reachable from any entry point).
+**Status:** in-progress — **Phase 1, 2, 3, 4, 5, 6, 7, 8 complete; Phase 9 substantially complete** (server-side Jackson default + `JsonParserWrapper` swapped to `JacksonParserWrapper` + `JavaTimeModule` registered + `jackson-datatype-jsr310` dep added; `GsonParserWrapper` no longer the default factory but kept for any explicit users; remaining: drop `gson` dep from BOM after `HTTPWithJsonMailConnector` + `HTTPWithJsonConnector` migrate to Jackson — voluminous + risky for active mail flow). Phase 4 substantially complete via PRD 002 (~50 core beans + 43 plugin extensions wired; `SpringRaplaClient` boots client end-to-end with global lazy-init).
 **Date:** 2026-05-06
 
 ## Implementation Status
@@ -486,7 +486,16 @@ The `spring.http.converters.preferred-json-mapper=gson` line in `application.yml
 - Number/string handling is mostly identical.
 - The Spring-managed REST proxies (`@HttpExchange` interfaces) now also use Jackson — so the client-server format aligns.
 
-**Phase 9 step 2 (deferred — gated by PRD 001-A):** to fully drop Gson from the classpath would require:
+**Phase 9 step 2 — Gson → Jackson default swap landed 2026-05-08.** Three landed sub-changes:
+1. `rapla-core/pom.xml` declares `com.fasterxml.jackson.datatype:jackson-datatype-jsr310` (provided scope, Spring Boot BOM-managed).
+2. `JacksonParserWrapper.defaultObjectMapper()` registers `new JavaTimeModule()` and disables `WRITE_DATES_AS_TIMESTAMPS` — `LocalDateTime` serialized as ISO-8601 (matches the Gson adapter's wire format).
+3. `JsonParserWrapper.factory` now defaults to `new JacksonParserWrapper()` (was `GsonParserWrapper`). All consumers (`RaplaSQL` history serializer, `EntityHistory`, `NotificationStorage`, `ExchangeAppointmentStorage`, `JavaJsonSerializer` REST client) now go through Jackson.
+
+**Test result:** full reactor `mvn test` BUILD SUCCESS — 23 spring tests + all 18 rapla-server tests (incl. `TestEntityHistory`, `ConcurrentTests` which exercise SQL serialization) + all rapla-core tests green. The SQL history JSON-encoded entity blobs round-trip identically through Jackson — same byte layout as Gson for the entity classes (field-by-field with ISO-8601 dates).
+
+Gson is still on the classpath (via the `com.google.code.gson:gson` dep) for two remaining direct consumers: `JsonMergePatch` (legacy JSON merge patch) and `HTTPWithJsonConnector` (legacy REST client). Both use raw Gson API and would need rewriting to drop the dep entirely. The `JsonParserWrapper` no longer imports `GsonParserWrapper` — the wrapper class is leaf-only now.
+
+**Phase 9 step 2 (remaining — gated by PRD 001-A):** to fully drop Gson from the classpath would require:
 - Migrating `RaplaSQL` history serialization from `GsonParserWrapper` to `JacksonParserWrapper` (the wrapper interface already exists in the inlined `org.rapla.rest.*` package).
 - Migrating `MailapiClient` and `HTTPWithJsonMailConnector` away from Gson — these are plugin-internal serializers, not REST API.
 - Final removal of `gson` dependency from `parent/pom.xml`.
@@ -620,6 +629,13 @@ These join the cumulative deletion list. Cumulative deletions: **~65 source file
 
 **Deferred to later step:** `DurationFunctions` requires `EventTimeCalculatorFactory` which has its own deps (`Provider<RaplaFacade>`, `Logger`, `EventTimeCalculatorResources`); skipped pending plugin auto-config refactor.
 
+**Update 2026-05-08 — `DurationFunctions` wired.** Three new `@Bean`s in `ServerCoreConfig`:
+- `EventTimeCalculatorResources(BundleManager)` — plugin I18nBundle
+- `EventTimeCalculatorFactory(Provider<RaplaFacade>, Logger, EventTimeCalculatorResources)` — uses the same `ObjectProvider::getObject` lambda pattern as `appointmentNoteFunctions`
+- `DurationFunctions(EventTimeCalculatorFactory)` — `@Bean(name = DurationFunctions.NAMESPACE)` keys it as `org.rapla.eventtimecalculator` in the `Map<String, FunctionFactory>` consumer.
+
+`Map<String, FunctionFactory>` injection point now populated with all 3 namespaces (`org.rapla` from `StandardFunctions`, `appointment` from `AppointmentNoteFunctions`, `org.rapla.eventtimecalculator` from `DurationFunctions`). 8/8 targeted tests green.
+
 #### Step 2 — Plugin service tier wired (completed)
 
 | # | Item | File(s) | Detail |
@@ -733,6 +749,14 @@ All `matchIfMissing=true` — plugins enabled by default, can be turned off via 
 
 **Status of Phase 4:** the foundation for replacing `ClientCreator` + `SimpleRaplaInjector` is in place. Adding the rest of the client beans (Swing UI components, `ReservationControllerImpl`, `RemoteOperator`, etc.) is mechanical — each is a `@Bean` factory in `ClientConfig` (or its own `@Configuration` per Swing module). The biggest remaining task is replacing `MyCustomConnector` + generated `_JavaJsonProxy` classes with `HttpServiceProxyFactory` proxies (Phase 5).
 
+**Update 2026-05-08 — Phase 4 substantially complete via PRD 002.** PRD 002 (Swing UI Spring DI Migration) is the implementation track for Phase 4's "rest of the client beans" item. As of 2026-05-08:
+- `SpringRaplaClient` boots end-to-end against `AnnotationConfigApplicationContext(ClientConfig, ClientProxyConfig, SwingClientConfig, EditTaskPresenterConfig, PluginResourcesConfig)`.
+- ~50 core Swing beans wired (`@Service` + `@Lazy` for boot-state classes, `@Scope("prototype")` for action/dialog classes).
+- 43 plugin extensions wired (calendar view factories, plugin option panels, menu factories, function factories, publish extension factories, summary extensions, annotation editors). All `Set<T>` injection points populated; `Map<String, T>` qualifier-keyed maps populated for `TaskPresenter`, `EditComponent`, `PluginOptionPanel`, `FunctionFactory`.
+- `RaplaClientServiceImpl` (`ClientService` impl) is `@Service @Lazy` and resolves end-to-end on first dereference.
+- Phase 5 (REST proxies) substantially complete: 16 `@HttpExchange` REST proxies wired in `ClientProxyConfig` (was 11, added `ICalExport`, `ExchangeConnectorRemote`, `ExchangeConnectorConfigRemote` after JAX-RS → `@HttpExchange` interface conversion 2026-05-08).
+- 2 unwired plugin extensions (`CalendarTableViewPresenter`, `CalendarWeekViewPresenter`) remain — both depend on `CalendarTableView`/`CalendarWeekView` interfaces with no implementation registered in the codebase; dead code unless someone implements those views.
+
 ### Phase 5 — partial (REST client proxies via `HttpServiceProxyFactory`)
 
 #### Step 1 — `ClientProxyConfig` stub (completed)
@@ -745,6 +769,30 @@ All `matchIfMissing=true` — plugins enabled by default, can be turned off via 
 `mvn test` → 14 tests passing (the proxy bean is registered but not yet invoked end-to-end against a running server; an end-to-end client-server round-trip test would spin up `@SpringBootTest(webEnvironment=RANDOM_PORT)` and have the proxy hit the real port — TODO).
 
 **Status of Phase 5:** pattern established. Each remote service interface (`RemoteStorage`, `RemoteLocaleService`, `RemoteAuthentificationService`, plugin endpoints) follows the same recipe. The interfaces currently use JAX-RS `@Path`/`@GET` annotations; they need to be either (a) replaced with Spring's `@HttpExchange`/`@GetExchange`, or (b) mapped via Spring's `JaxrsHttpExchangeAdapter` (Spring 6.1+). Server side already implements the right routes (Phase 1.6 `@RestController`s), so the client just needs the interface annotations to align.
+
+**Update 2026-05-08 — Phase 5 substantially complete.** Approach (a) chosen — JAX-RS `@Path` interfaces converted to `@HttpExchange` per-interface. 16 REST proxies now wired in `ClientProxyConfig`:
+
+| Interface | URL path | Status |
+|-----------|----------|--------|
+| `ICalTimezones` | `/ical/timezones` | ✓ |
+| `RemoteLocaleService` | `/locale` | ✓ |
+| `ICalConfigService` | `/ical/config` | ✓ |
+| `MailToUserInterface` | `/mail/send` | ✓ |
+| `MailConfigService` | `/mail/config` | ✓ |
+| `ArchiverService` | `/archiver` | ✓ |
+| `UrlEncryption` | `/urlencryption` | ✓ |
+| `JNDIConfig` | `/jndi/config` | ✓ |
+| `ICalImport` | `/ical/import` | ✓ |
+| `TemplateImport` | `/templateimport` | ✓ |
+| `RemoteLogger` | `/logger` | ✓ |
+| `RemoteAuthentificationService` | `/authentication` | ✓ |
+| `RemoteStorage` | `/storage` | ✓ |
+| `RestartServer` | `/restart` | ✓ |
+| `ICalExport` | `/ical/export` | ✓ (2026-05-08, JAX-RS → `@HttpExchange` conversion) |
+| `ExchangeConnectorRemote` | `/exchange/connect` | ✓ (2026-05-08) |
+| `ExchangeConnectorConfigRemote` | `/exchange/config` | ✓ (2026-05-08) |
+
+All major remote service interfaces are now Spring-proxy-wired. The corresponding `@RestController` server-side counterparts exist for the original 14 (Phase 1.6 work); the 3 newly-converted interfaces (`ICalExport`, `ExchangeConnectorRemote`, `ExchangeConnectorConfigRemote`) had no Spring `@RestController` (the prior JAX-RS annotations were vestigial — no `JerseyServlet` was registered) — server-side `@RestController`s for those are deferred work; the client proxies are wired for when the server side lands.
 
 ### Phase 1.6 — in-progress (REST endpoints to Spring MVC)
 

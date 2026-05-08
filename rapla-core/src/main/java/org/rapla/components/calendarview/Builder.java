@@ -26,6 +26,13 @@ public interface Builder {
     * @param end
     */
     PreperationResult prepareBuild(Date start, Date end);
+
+   /** {@code LocalDateTime} variant. */
+    default PreperationResult prepareBuild(java.time.LocalDateTime start, java.time.LocalDateTime end) {
+        return prepareBuild(
+            start == null ? null : org.rapla.components.util.DateTools.toDate(start),
+            end == null ? null : org.rapla.components.util.DateTools.toDate(end));
+    }
    
 
         class PreperationResult
@@ -64,7 +71,11 @@ public interface Builder {
      * It is called by the CalendarView during the build process.
      * @see #prepareBuild */
     void build(BlockContainer blockContainer,Date startDate,Collection<AppointmentBlock> blocks);
-    
+
+    /** {@code LocalDate} variant — distinct method name avoids `null`-passing ambiguity. */
+    default void buildLocalDate(BlockContainer blockContainer, java.time.LocalDate startDate, Collection<AppointmentBlock> blocks) {
+        build(blockContainer, startDate == null ? null : org.rapla.components.util.DateTools.toDate(startDate), blocks);
+    }
 }
 
 

@@ -29,12 +29,19 @@ public class UpdateResult
 {
     private final List<UpdateOperation> operations = new ArrayList<>();
 	//Set<RaplaType> modified = new HashSet<RaplaType>();
-	private final Date since;
-	private final Date until;
+	private final java.time.LocalDateTime since;
+	private final java.time.LocalDateTime until;
     private final Map<ReferenceInfo, Entity> oldEntities;
     private final Map<ReferenceInfo, Entity> updatedEntities;
 
     public UpdateResult(Date since, Date until, Map<ReferenceInfo, Entity> oldEntities,Map<ReferenceInfo, Entity> updatedEntities)
+    {
+        this(since == null ? null : org.rapla.components.util.DateTools.toLocalDateTime(since),
+             until == null ? null : org.rapla.components.util.DateTools.toLocalDateTime(until),
+             oldEntities, updatedEntities);
+    }
+
+    public UpdateResult(java.time.LocalDateTime since, java.time.LocalDateTime until, Map<ReferenceInfo, Entity> oldEntities, Map<ReferenceInfo, Entity> updatedEntities)
     {
         this.since = since;
         this.until = until;
@@ -50,24 +57,24 @@ public class UpdateResult
 
     public Date getSince()
     {
-        return since;
+        return since == null ? null : org.rapla.components.util.DateTools.toDate(since);
     }
 
     public Date getUntil()
     {
-        return until;
+        return until == null ? null : org.rapla.components.util.DateTools.toDate(until);
     }
 
     /** {@code LocalDateTime} variant of {@link #getSince()}. UTC. */
     public java.time.LocalDateTime getSinceAsLocalDateTime()
     {
-        return since == null ? null : org.rapla.components.util.DateTools.toLocalDateTime(since);
+        return since;
     }
 
     /** {@code LocalDateTime} variant of {@link #getUntil()}. UTC. */
     public java.time.LocalDateTime getUntilAsLocalDateTime()
     {
-        return until == null ? null : org.rapla.components.util.DateTools.toLocalDateTime(until);
+        return until;
     }
 
     @SuppressWarnings("unchecked")
@@ -192,7 +199,7 @@ public class UpdateResult
     {
         //EntityReferencer.ReferenceInfo info;
         Entity unresolvedEntity;
-        Date timestamp;
+        java.time.LocalDateTime timestamp;
 
         public Entity getUnresolvedEntity()
         {
@@ -200,6 +207,11 @@ public class UpdateResult
         }
 
         public Date getTimestamp()
+        {
+            return timestamp == null ? null : org.rapla.components.util.DateTools.toDate(timestamp);
+        }
+
+        public java.time.LocalDateTime getTimestampAsLocalDateTime()
         {
             return timestamp;
         }

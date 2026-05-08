@@ -32,6 +32,18 @@ public class ClientConfig
         return RaplaBootstrapLogger.createRaplaLogger();
     }
 
+    /** Empty default so {@code Application}'s {@code Provider<Set<ClientExtension>>} resolves
+     *  when no plugin contributes a ClientExtension. Plugins with extensions just register their
+     *  own {@code @Bean Set<ClientExtension>} or individual {@code @Component ClientExtension}s. */
+    @Bean
+    public java.util.Set<org.rapla.client.extensionpoints.ClientExtension> clientExtensions()
+    {
+        return java.util.Collections.emptySet();
+    }
+
+    /** Default {@link BundleManager} for standalone (non-Swing) usage of this config.
+     *  When {@code SwingClientConfig} is also loaded, its {@code @Service @Primary}
+     *  {@link SwingBundleManager} wins for {@code BundleManager} injection points. */
     @Bean
     public BundleManager swingBundleManager(Logger logger)
     {
@@ -56,6 +68,9 @@ public class ClientConfig
         return new RaplaLocaleImpl(bundleManager);
     }
 
+    /** Default {@link org.rapla.scheduler.CommandScheduler} for standalone (non-Swing) usage.
+     *  When {@code SwingClientConfig} is loaded, its {@code @Service @Primary}
+     *  {@code SwingSchedulerImpl} wins. */
     @Bean
     public org.rapla.scheduler.CommandScheduler commandScheduler(Logger logger)
     {
@@ -113,9 +128,10 @@ public class ClientConfig
             @Override
             public java.net.URL getDownloadURL() throws org.rapla.framework.RaplaException
             {
+                String url = System.getProperty("rapla.download.url", "http://localhost:8051/");
                 try
                 {
-                    return new java.net.URL("http://localhost:8051/");
+                    return new java.net.URL(url);
                 }
                 catch (java.net.MalformedURLException e)
                 {

@@ -9,6 +9,8 @@ import org.rapla.components.calendar.NavButton;
 import org.rapla.components.calendar.RaplaArrowButton;
 import org.rapla.components.layout.TableLayout;
 
+import org.springframework.stereotype.Service;
+
 import jakarta.inject.Inject;
 import jakarta.inject.Singleton;
 import javax.swing.BorderFactory;
@@ -509,6 +511,7 @@ final public class RaplaListEdit<T> implements
 		return (T) list.getSelectedValue();
 	}
 
+    @Service
     @Singleton
     public static class RaplaListEditFactory
     {

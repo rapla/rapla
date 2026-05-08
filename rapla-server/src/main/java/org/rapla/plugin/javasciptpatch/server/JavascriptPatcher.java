@@ -28,20 +28,18 @@ import java.util.Map;
 public class JavascriptPatcher  implements ServerExtension
 {
     final RaplaFacade facade;
+    final Logger logger;
+    final ServerContainerContext serverContainerContext;
+    final CachableStorageOperator cachableStorageOperator;
 
     @Inject
-    Logger logger;
-
-    @Inject
-    ServerContainerContext serverContainerContext;
-
-    @Inject
-    CachableStorageOperator cachableStorageOperator;
-
-    @Inject
-    public JavascriptPatcher(RaplaFacade facade)
+    public JavascriptPatcher(RaplaFacade facade, Logger logger, ServerContainerContext serverContainerContext,
+                             CachableStorageOperator cachableStorageOperator)
     {
         this.facade = facade;
+        this.logger = logger;
+        this.serverContainerContext = serverContainerContext;
+        this.cachableStorageOperator = cachableStorageOperator;
     }
 
     @Override

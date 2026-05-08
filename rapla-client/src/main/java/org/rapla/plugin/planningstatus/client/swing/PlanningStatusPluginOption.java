@@ -13,6 +13,8 @@ import jakarta.inject.Inject;
 import javax.swing.*;
 import java.util.Locale;
 
+@org.springframework.stereotype.Service
+@org.springframework.context.annotation.Scope("prototype")
 @Extension(provides = PluginOptionPanel.class, id = CSVExportPlugin.PLUGIN_ID)
 public class PlanningStatusPluginOption implements PluginOptionPanel
 {

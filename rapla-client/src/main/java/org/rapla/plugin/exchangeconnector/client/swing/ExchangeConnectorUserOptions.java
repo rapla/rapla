@@ -23,6 +23,9 @@ import java.util.Collection;
 import java.util.Date;
 import java.util.Locale;
 
+@org.springframework.stereotype.Service
+@org.springframework.context.annotation.Scope("prototype")
+@org.springframework.context.annotation.Lazy
 @Extension(id = ExchangeConnectorPlugin.PLUGIN_ID, provides = UserOptionPanel.class)
 public class ExchangeConnectorUserOptions implements UserOptionPanel
 {

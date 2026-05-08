@@ -36,6 +36,8 @@ import org.rapla.logger.Logger;
 import org.rapla.plugin.abstractcalendar.MultiCalendarPrint;
 import org.rapla.scheduler.CommandScheduler;
 import org.rapla.scheduler.Promise;
+import org.springframework.context.annotation.Scope;
+import org.springframework.stereotype.Service;
 
 import jakarta.inject.Inject;
 import jakarta.inject.Provider;
@@ -63,6 +65,8 @@ import java.awt.print.Printable;
 import java.awt.print.PrinterException;
 import java.util.Map;
 
+@Service
+@Scope("prototype")
 public class CalendarPrintDialog extends DialogUI
 {
     private static final long serialVersionUID = 1L;

@@ -24,6 +24,8 @@ import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaInitializationException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.logger.Logger;
+import org.springframework.context.annotation.Scope;
+import org.springframework.stereotype.Service;
 
 import jakarta.inject.Inject;
 import javax.swing.Box;
@@ -42,6 +44,8 @@ import java.util.List;
 /****************************************************************
  * This is the controller-class for the Resource-Edit-Panel     *
  ****************************************************************/
+@Service
+@Scope("prototype")
 public class AllocatableMergeEditUI extends AllocatableEditUI
 {
     List<Allocatable> allAllocatables;

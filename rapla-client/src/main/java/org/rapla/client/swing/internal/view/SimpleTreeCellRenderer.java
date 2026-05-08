@@ -7,7 +7,6 @@ import org.rapla.entities.domain.Allocatable;
 import org.rapla.facade.RaplaComponent;
 import org.rapla.framework.RaplaLocale;
 
-import jakarta.inject.Inject;
 import javax.swing.*;
 import javax.swing.border.Border;
 import javax.swing.tree.DefaultTreeCellRenderer;
@@ -26,7 +25,6 @@ public class SimpleTreeCellRenderer extends DefaultTreeCellRenderer
     private static final long serialVersionUID = 1L;
     Border conflictBorder = BorderFactory.createEmptyBorder(2, 0, 2, 0);
 
-    @Inject
     public SimpleTreeCellRenderer(RaplaResources i18n, RaplaLocale raplaLocale)
     {
         this.i18n = i18n;

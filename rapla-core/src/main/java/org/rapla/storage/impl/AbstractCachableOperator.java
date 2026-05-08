@@ -87,7 +87,7 @@ public abstract class AbstractCachableOperator implements StorageOperator
     final protected RaplaResources i18n;
     final protected Logger logger;
     final protected Map<String, FunctionFactory> functionFactoryMap;
-    private volatile Date lastRefreshed;
+    private volatile java.time.LocalDateTime lastRefreshed;
     final protected PermissionController permissionController;
     private PeriodModelImpl periodModel;
 
@@ -135,10 +135,20 @@ public abstract class AbstractCachableOperator implements StorageOperator
 
     public Date getLastRefreshed()
     {
+        return lastRefreshed == null ? null : org.rapla.components.util.DateTools.toDate(lastRefreshed);
+    }
+
+    public java.time.LocalDateTime getLastRefreshedAsLocalDateTime()
+    {
         return lastRefreshed;
     }
 
     protected void setLastRefreshed(Date lastRefreshed)
+    {
+        this.lastRefreshed = lastRefreshed == null ? null : org.rapla.components.util.DateTools.toLocalDateTime(lastRefreshed);
+    }
+
+    protected void setLastRefreshedLocalDateTime(java.time.LocalDateTime lastRefreshed)
     {
         this.lastRefreshed = lastRefreshed;
     }

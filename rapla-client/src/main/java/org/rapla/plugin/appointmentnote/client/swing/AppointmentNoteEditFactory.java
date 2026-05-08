@@ -30,6 +30,7 @@ import org.rapla.plugin.appointmentnote.AppointmentNotePlugin;
 import org.rapla.plugin.appointmentnote.AppointmentNoteFunctions;
 import org.rapla.scheduler.Promise;
 import org.rapla.scheduler.ResolvedPromise;
+import org.springframework.stereotype.Service;
 
 import jakarta.inject.Inject;
 import jakarta.inject.Singleton;
@@ -38,6 +39,7 @@ import java.awt.event.FocusEvent;
 import java.awt.event.FocusListener;
 import java.util.function.Consumer;
 
+@Service
 @Extension (provides = AppointmentEditExtensionFactory.class, id = AppointmentNotePlugin.PLUGIN_ID)
 @Singleton
 public class AppointmentNoteEditFactory implements AppointmentEditExtensionFactory {

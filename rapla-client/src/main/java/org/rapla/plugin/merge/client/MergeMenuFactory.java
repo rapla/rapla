@@ -21,6 +21,7 @@ import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaInitializationException;
 import org.rapla.inject.Extension;
 import org.rapla.storage.PermissionController;
+import org.springframework.stereotype.Service;
 
 import jakarta.inject.Inject;
 import jakarta.inject.Singleton;
@@ -28,6 +29,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
 
+@Service
 @Singleton @Extension(provides = ObjectMenuFactory.class, id = "merge") public class MergeMenuFactory implements ObjectMenuFactory
 {
     private final RaplaResources i18n;

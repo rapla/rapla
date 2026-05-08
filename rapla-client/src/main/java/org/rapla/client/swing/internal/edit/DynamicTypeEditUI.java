@@ -45,6 +45,8 @@ import org.rapla.framework.RaplaInitializationException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.inject.Extension;
 import org.rapla.logger.Logger;
+import org.springframework.context.annotation.Scope;
+import org.springframework.stereotype.Service;
 
 import jakarta.inject.Inject;
 import javax.swing.JComboBox;
@@ -65,6 +67,8 @@ import java.util.Set;
 /****************************************************************
  * This is the controller-class for the DynamicType-Edit-Panel   *
  ****************************************************************/
+@Service("org.rapla.entities.dynamictype.DynamicType")
+@Scope("prototype")
 @Extension(provides=EditComponent.class,id= "org.rapla.entities.dynamictype.DynamicType")
 public class DynamicTypeEditUI extends RaplaGUIComponent
     implements

@@ -210,8 +210,7 @@ public class TimeslotOption extends RaplaGUIComponent implements PluginOptionPan
     		conf.setAttribute("name", slot.getName());
     		int minuteOfDay = slot.getMinuteOfDay();
     		SerializableDateTimeFormat format = getRaplaLocale().getSerializableFormat();
-			final long l = DateTools.toTime(minuteOfDay / 60, minuteOfDay % 60, 0);
-			String time = format.formatTime(new Date(l));
+			String time = format.formatTime(java.time.LocalTime.of(minuteOfDay / 60, minuteOfDay % 60));
 			conf.setAttribute("time", time);
     		newConfig.addChild( conf);
     	}

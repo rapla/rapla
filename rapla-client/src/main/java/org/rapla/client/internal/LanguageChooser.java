@@ -17,7 +17,6 @@ import org.rapla.client.RaplaWidget;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.logger.Logger;
 
-import jakarta.inject.Inject;
 import javax.swing.Action;
 import javax.swing.DefaultListCellRenderer;
 import javax.swing.JComboBox;
@@ -33,7 +32,6 @@ final public class LanguageChooser implements RaplaWidget
     String country;
     Logger logger;
 
-    @Inject
     public LanguageChooser(Logger logger, final RaplaResources i18n, final RaplaLocale raplaLocale)  {
         this.logger = logger;
         country = raplaLocale.getLocale().getCountry();

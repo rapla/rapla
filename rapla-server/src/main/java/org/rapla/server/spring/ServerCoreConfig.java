@@ -91,6 +91,29 @@ public class ServerCoreConfig
         return new AppointmentNoteFunctions(provider);
     }
 
+    @Bean
+    public org.rapla.plugin.eventtimecalculator.EventTimeCalculatorResources eventTimeCalculatorResources(
+            org.rapla.components.i18n.BundleManager bundleManager)
+    {
+        return new org.rapla.plugin.eventtimecalculator.EventTimeCalculatorResources(bundleManager);
+    }
+
+    @Bean
+    public org.rapla.plugin.eventtimecalculator.EventTimeCalculatorFactory eventTimeCalculatorFactory(
+            org.springframework.beans.factory.ObjectProvider<org.rapla.facade.RaplaFacade> facadeProvider,
+            org.rapla.logger.Logger logger,
+            org.rapla.plugin.eventtimecalculator.EventTimeCalculatorResources i18n)
+    {
+        jakarta.inject.Provider<org.rapla.facade.RaplaFacade> provider = facadeProvider::getObject;
+        return new org.rapla.plugin.eventtimecalculator.EventTimeCalculatorFactory(provider, logger, i18n);
+    }
+
+    @Bean(name = org.rapla.plugin.eventtimecalculator.DurationFunctions.NAMESPACE)
+    public FunctionFactory durationFunctions(org.rapla.plugin.eventtimecalculator.EventTimeCalculatorFactory factory)
+    {
+        return new org.rapla.plugin.eventtimecalculator.DurationFunctions(factory);
+    }
+
     @Bean(name = org.rapla.server.ServerService.ENV_RAPLAMAIL_ID)
     public jakarta.inject.Provider<Object> mailSessionProvider(org.rapla.server.internal.ServerContainerContext containerContext)
     {
@@ -126,10 +149,158 @@ public class ServerCoreConfig
         return new org.rapla.AppointmentFormaterImpl(i18n, raplaLocale);
     }
 
+    /** Server-side {@code RaplaTableColumnFactory}. Required by {@link #tableConfigLoader}. */
     @Bean
-    public java.util.Map<String, jakarta.inject.Provider<org.rapla.server.extensionpoints.HTMLViewPage>> htmlViewPageMap()
+    public org.rapla.plugin.tableview.internal.RaplaTableColumnFactory raplaTableColumnFactory(RaplaFacade facade)
     {
-        return new java.util.LinkedHashMap<>();
+        return new org.rapla.plugin.tableview.server.ServerTableColumnFactory(facade);
+    }
+
+    /** {@link org.rapla.plugin.tableview.internal.TableConfig.TableConfigLoader} — needed by the
+     *  three table-style HTMLViewPages ({@link #appointmentTableViewPage}, {@link #appointmentPerDayViewPage},
+     *  {@link #reservationTableViewPage}). The {@code Set<TableColumnDefinitionExtension>} is auto-injected;
+     *  empty if no plugin contributes one. */
+    @Bean
+    public org.rapla.plugin.tableview.internal.TableConfig.TableConfigLoader tableConfigLoader(
+            RaplaFacade facade,
+            RaplaResources i18n,
+            RaplaLocale raplaLocale,
+            Set<org.rapla.plugin.tableview.extensionpoints.TableColumnDefinitionExtension> extensions,
+            org.rapla.plugin.tableview.internal.RaplaTableColumnFactory tableColumnCreator)
+    {
+        return new org.rapla.plugin.tableview.internal.TableConfig.TableConfigLoader(
+                facade, i18n, raplaLocale, extensions, tableColumnCreator);
+    }
+
+    /** {@link org.rapla.plugin.timeslot.TimeslotProvider} — needed by the timeslot-style HTMLViewPages. */
+    @Bean
+    public org.rapla.plugin.timeslot.TimeslotProvider timeslotProvider(RaplaLocale raplaLocale, RaplaFacade facade)
+            throws org.rapla.framework.RaplaInitializationException
+    {
+        return new org.rapla.plugin.timeslot.TimeslotProvider(raplaLocale, facade);
+    }
+
+    // --- HTMLViewPage extensions: prototype-scoped, named by their legacy @Extension id ---
+    // The bean name is the map key in the @Inject Map<String, Provider<HTMLViewPage>> consumer
+    // (CalendarPageGenerator.factoryMap). Prototype scope matches legacy Provider<T> semantics
+    // (each provider.get() returns a fresh instance) — important because AbstractHTMLCalendarPage
+    // holds mutable CalendarModel state during page rendering.
+
+    @Bean(name = org.rapla.plugin.weekview.WeekviewPlugin.DAY_VIEW)
+    @org.springframework.context.annotation.Scope("prototype")
+    public org.rapla.server.extensionpoints.HTMLViewPage htmlDayViewPage(
+            RaplaLocale raplaLocale, RaplaResources i18n, RaplaFacade facade, Logger logger,
+            org.rapla.entities.domain.AppointmentFormater appointmentFormater)
+    {
+        return new org.rapla.plugin.weekview.server.HTMLDayViewPage(
+                raplaLocale, i18n, facade, logger, appointmentFormater);
+    }
+
+    @Bean(name = org.rapla.plugin.weekview.WeekviewPlugin.WEEK_VIEW)
+    @org.springframework.context.annotation.Scope("prototype")
+    public org.rapla.server.extensionpoints.HTMLViewPage htmlWeekViewPage(
+            RaplaLocale raplaLocale, RaplaResources i18n, RaplaFacade facade, Logger logger,
+            org.rapla.entities.domain.AppointmentFormater appointmentFormater)
+    {
+        return new org.rapla.plugin.weekview.server.HTMLWeekViewPage(
+                raplaLocale, i18n, facade, logger, appointmentFormater);
+    }
+
+    @Bean(name = org.rapla.plugin.monthview.MonthViewPlugin.MONTH_VIEW)
+    @org.springframework.context.annotation.Scope("prototype")
+    public org.rapla.server.extensionpoints.HTMLViewPage htmlMonthViewPage(
+            RaplaLocale raplaLocale, RaplaResources i18n, RaplaFacade facade, Logger logger,
+            org.rapla.entities.domain.AppointmentFormater appointmentFormater)
+    {
+        return new org.rapla.plugin.monthview.server.HTMLMonthViewPage(
+                raplaLocale, i18n, facade, logger, appointmentFormater);
+    }
+
+    @Bean(name = org.rapla.plugin.compactweekview.CompactWeekviewPlugin.COMPACT_WEEK_VIEW)
+    @org.springframework.context.annotation.Scope("prototype")
+    public org.rapla.server.extensionpoints.HTMLViewPage htmlCompactWeekViewPage(
+            RaplaLocale raplaLocale, RaplaResources i18n, RaplaFacade facade, Logger logger,
+            org.rapla.entities.domain.AppointmentFormater appointmentFormater)
+    {
+        return new org.rapla.plugin.compactweekview.server.HTMLCompactWeekViewPage(
+                raplaLocale, i18n, facade, logger, appointmentFormater);
+    }
+
+    @Bean(name = org.rapla.plugin.timeslot.TimeslotPlugin.DAY_TIMESLOT)
+    @org.springframework.context.annotation.Scope("prototype")
+    public org.rapla.server.extensionpoints.HTMLViewPage htmlCompactDayViewPage(
+            RaplaLocale raplaLocale, RaplaResources i18n, RaplaFacade facade, Logger logger,
+            org.rapla.entities.domain.AppointmentFormater appointmentFormater,
+            org.rapla.plugin.timeslot.TimeslotProvider timeslotProvider)
+    {
+        return new org.rapla.plugin.timeslot.server.HTMLCompactDayViewPage(
+                raplaLocale, i18n, facade, logger, appointmentFormater, timeslotProvider);
+    }
+
+    @Bean(name = org.rapla.plugin.timeslot.TimeslotPlugin.WEEK_TIMESLOT)
+    @org.springframework.context.annotation.Scope("prototype")
+    public org.rapla.server.extensionpoints.HTMLViewPage htmlCompactViewPage(
+            RaplaLocale raplaLocale, RaplaResources i18n, RaplaFacade facade, Logger logger,
+            org.rapla.entities.domain.AppointmentFormater appointmentFormater,
+            org.rapla.plugin.timeslot.TimeslotProvider timeslotProvider)
+    {
+        return new org.rapla.plugin.timeslot.server.HTMLCompactViewPage(
+                raplaLocale, i18n, facade, logger, appointmentFormater, timeslotProvider);
+    }
+
+    @Bean(name = org.rapla.plugin.dayresource.DayResourcePlugin.DAY_RESOURCE_VIEW)
+    @org.springframework.context.annotation.Scope("prototype")
+    public org.rapla.server.extensionpoints.HTMLViewPage htmlDayResourcePage(
+            RaplaLocale raplaLocale, RaplaResources i18n, RaplaFacade facade, Logger logger,
+            org.rapla.entities.domain.AppointmentFormater appointmentFormater)
+    {
+        return new org.rapla.plugin.dayresource.server.HTMLDayResourcePage(
+                raplaLocale, i18n, facade, logger, appointmentFormater);
+    }
+
+    @Bean(name = org.rapla.plugin.tableview.TableViewPlugin.TABLE_APPOINTMENTS_VIEW)
+    @org.springframework.context.annotation.Scope("prototype")
+    public org.rapla.server.extensionpoints.HTMLViewPage appointmentTableViewPage(
+            RaplaLocale raplaLocale,
+            org.rapla.plugin.tableview.internal.TableConfig.TableConfigLoader tableConfigLoader)
+    {
+        return new org.rapla.plugin.tableview.server.AppointmentTableViewPage(raplaLocale, tableConfigLoader);
+    }
+
+    @Bean(name = org.rapla.plugin.tableview.TableViewPlugin.TABLE_APPOINTMENTS_PER_DAY_VIEW)
+    @org.springframework.context.annotation.Scope("prototype")
+    public org.rapla.server.extensionpoints.HTMLViewPage appointmentPerDayViewPage(
+            RaplaLocale raplaLocale,
+            org.rapla.plugin.tableview.internal.TableConfig.TableConfigLoader tableConfigLoader)
+    {
+        return new org.rapla.plugin.tableview.server.AppointmentPerDayViewPage(raplaLocale, tableConfigLoader);
+    }
+
+    @Bean(name = org.rapla.plugin.tableview.TableViewPlugin.TABLE_EVENT_VIEW)
+    @org.springframework.context.annotation.Scope("prototype")
+    public org.rapla.server.extensionpoints.HTMLViewPage reservationTableViewPage(
+            RaplaLocale raplaLocale,
+            org.rapla.plugin.tableview.internal.TableConfig.TableConfigLoader tableConfigLoader)
+    {
+        return new org.rapla.plugin.tableview.server.ReservationTableViewPage(raplaLocale, tableConfigLoader);
+    }
+
+    /** Builds the {@code Map<String, Provider<HTMLViewPage>>} consumed by
+     *  {@link org.rapla.plugin.autoexport.server.CalendarPageGenerator#factoryMap}. The values
+     *  are {@link jakarta.inject.Provider}s that re-fetch from the bean factory each call so
+     *  prototype-scoped HTMLViewPages get a fresh instance per page render. */
+    @Bean
+    public java.util.Map<String, jakarta.inject.Provider<org.rapla.server.extensionpoints.HTMLViewPage>> htmlViewPageMap(
+            org.springframework.beans.factory.BeanFactory beanFactory,
+            java.util.Map<String, org.rapla.server.extensionpoints.HTMLViewPage> namedPages)
+    {
+        java.util.Map<String, jakarta.inject.Provider<org.rapla.server.extensionpoints.HTMLViewPage>> result =
+                new java.util.LinkedHashMap<>();
+        for (String name : namedPages.keySet())
+        {
+            result.put(name, () -> beanFactory.getBean(name, org.rapla.server.extensionpoints.HTMLViewPage.class));
+        }
+        return result;
     }
 
     @Bean

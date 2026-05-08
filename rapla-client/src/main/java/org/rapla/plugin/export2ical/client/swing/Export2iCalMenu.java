@@ -31,6 +31,8 @@ import java.util.Collection;
 import java.util.LinkedHashSet;
 import java.util.Set;
 
+@org.springframework.stereotype.Service
+@org.springframework.context.annotation.Lazy
 @Extension(provides = ExportMenuExtension.class, id = Export2iCalPlugin.PLUGIN_ID)
 public class Export2iCalMenu extends RaplaGUIComponent implements ExportMenuExtension, ActionListener{
 

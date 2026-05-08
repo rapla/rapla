@@ -10,9 +10,11 @@ import org.rapla.facade.client.ClientFacade;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.inject.Extension;
 import org.rapla.logger.Logger;
+import org.springframework.stereotype.Service;
 
 import jakarta.inject.Inject;
 
+@Service
 @Extension(provides= AnnotationEditAttributeExtension.class, id="expectedcolums")
 public class ExpectedColumnsAnnotationEdit extends ExpectedRowsAnnotationEdit implements AnnotationEditAttributeExtension
 {

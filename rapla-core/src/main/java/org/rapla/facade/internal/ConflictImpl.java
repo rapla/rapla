@@ -56,8 +56,8 @@ import java.util.Set;
 
 public class ConflictImpl extends SimpleEntity implements Conflict, ModifiableTimestamp
 {
-    private Date startDate;
-    private Date lastChanged;
+    private java.time.LocalDateTime startDate;
+    private java.time.LocalDateTime lastChanged;
     private String reservation1Name;
     private String reservation2Name;
     private RepeatingType repeatingType1;
@@ -73,7 +73,14 @@ public class ConflictImpl extends SimpleEntity implements Conflict, ModifiableTi
 
     public ConflictImpl(String id, Date today, Date lastChanged) throws RaplaException
     {
-        startDate = today;
+        this(id,
+            today == null ? null : org.rapla.components.util.DateTools.toLocalDateTime(today),
+            lastChanged == null ? null : org.rapla.components.util.DateTools.toLocalDateTime(lastChanged));
+    }
+
+    public ConflictImpl(String id, java.time.LocalDateTime today, java.time.LocalDateTime lastChanged) throws RaplaException
+    {
+        this.startDate = today;
         this.lastChanged = lastChanged;
         initFromId(id);
     }
@@ -81,9 +88,7 @@ public class ConflictImpl extends SimpleEntity implements Conflict, ModifiableTi
     /** {@code LocalDateTime} factory. UTC. */
     public static ConflictImpl ofLocalDateTime(String id, java.time.LocalDateTime today, java.time.LocalDateTime lastChanged) throws RaplaException
     {
-        return new ConflictImpl(id,
-            today == null ? null : org.rapla.components.util.DateTools.toDate(today),
-            lastChanged == null ? null : org.rapla.components.util.DateTools.toDate(lastChanged));
+        return new ConflictImpl(id, today, lastChanged);
     }
 
     private void initFromId(String id) throws RaplaException
@@ -130,9 +135,11 @@ public class ConflictImpl extends SimpleEntity implements Conflict, ModifiableTi
      * The appointment with the lowest id goes to appointment1 and the other to appointment2*/
     public ConflictImpl(Allocatable allocatable, Appointment app1, Appointment app2, Date today, String id)
     {
-        lastChanged = getLastChanged(allocatable, app1, app2);
+        Date lc = getLastChanged(allocatable, app1, app2);
+        lastChanged = lc == null ? null : org.rapla.components.util.DateTools.toLocalDateTime(lc);
         putEntity("allocatable", allocatable);
-        startDate = getStartDate_(today, app1, app2);
+        Date sd = getStartDate_(today, app1, app2);
+        startDate = sd == null ? null : org.rapla.components.util.DateTools.toLocalDateTime(sd);
         if (app1.getId().compareTo(app2.getId()) >= 0)
         {
             Appointment temp = app1;
@@ -213,10 +220,20 @@ public class ConflictImpl extends SimpleEntity implements Conflict, ModifiableTi
 
     public Date getLastChanged()
     {
-        return lastChanged;
+        return lastChanged == null ? null : org.rapla.components.util.DateTools.toDate(lastChanged);
     }
 
     public Date getCreateDate()
+    {
+        return lastChanged == null ? null : org.rapla.components.util.DateTools.toDate(lastChanged);
+    }
+
+    public java.time.LocalDateTime getLastChangedAsLocalDateTime()
+    {
+        return lastChanged;
+    }
+
+    public java.time.LocalDateTime getCreateDateAsLocalDateTime()
     {
         return lastChanged;
     }
@@ -224,11 +241,23 @@ public class ConflictImpl extends SimpleEntity implements Conflict, ModifiableTi
     public void setLastChanged(Date date)
     {
         checkWritable();
-        lastChanged = date;
+        lastChanged = date == null ? null : org.rapla.components.util.DateTools.toLocalDateTime(date);
     }
 
     @Override
     public void setCreateDate(Date date)
+    {
+        checkWritable();
+        this.lastChanged = date == null ? null : org.rapla.components.util.DateTools.toLocalDateTime(date);
+    }
+
+    public void setLastChangedLocalDateTime(java.time.LocalDateTime date)
+    {
+        checkWritable();
+        this.lastChanged = date;
+    }
+
+    public void setCreateDateLocalDateTime(java.time.LocalDateTime date)
     {
         checkWritable();
         this.lastChanged = date;
@@ -260,6 +289,11 @@ public class ConflictImpl extends SimpleEntity implements Conflict, ModifiableTi
 
     @Override
     public Date getStartDate()
+    {
+        return startDate == null ? null : org.rapla.components.util.DateTools.toDate(startDate);
+    }
+
+    public java.time.LocalDateTime getStartDateAsLocalDateTime()
     {
         return startDate;
     }

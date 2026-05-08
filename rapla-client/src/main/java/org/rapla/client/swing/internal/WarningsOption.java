@@ -24,6 +24,8 @@ import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.inject.Extension;
 import org.rapla.logger.Logger;
+import org.springframework.context.annotation.Scope;
+import org.springframework.stereotype.Service;
 
 import jakarta.inject.Inject;
 import javax.swing.JCheckBox;
@@ -32,6 +34,8 @@ import javax.swing.JLabel;
 import javax.swing.JPanel;
 import java.util.Locale;
 
+@Service
+@Scope("prototype")
 @Extension(provides = UserOptionPanel.class,id="warningOption")
 public class WarningsOption extends RaplaGUIComponent implements UserOptionPanel
 {

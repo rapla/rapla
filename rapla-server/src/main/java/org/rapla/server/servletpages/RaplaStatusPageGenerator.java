@@ -21,11 +21,14 @@ import java.io.IOException;
 @Singleton
 @Path("server")
 public class RaplaStatusPageGenerator  {
-    @Inject RaplaSystemInfo m_i18n;
-    @Inject ServerContainerContext serverContainerContext;
+    private final RaplaSystemInfo m_i18n;
+    private final ServerContainerContext serverContainerContext;
+
     @Inject
-    public RaplaStatusPageGenerator()
+    public RaplaStatusPageGenerator(RaplaSystemInfo m_i18n, ServerContainerContext serverContainerContext)
     {
+        this.m_i18n = m_i18n;
+        this.serverContainerContext = serverContainerContext;
     }
 
     @GET

@@ -34,6 +34,8 @@ import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.inject.Extension;
 import org.rapla.logger.Logger;
+import org.springframework.context.annotation.Scope;
+import org.springframework.stereotype.Service;
 
 import jakarta.inject.Inject;
 import javax.swing.BoxLayout;
@@ -50,6 +52,8 @@ import java.util.Arrays;
 import java.util.Date;
 import java.util.Locale;
 
+@Service
+@Scope("prototype")
 @Extension(provides = UserOptionPanel.class,id="calendarOption")
 @Extension(provides = SystemOptionPanel.class,id="calendarOption")
 public class CalendarOption extends RaplaGUIComponent implements UserOptionPanel,SystemOptionPanel, DateChangeListener

@@ -37,11 +37,13 @@ import org.rapla.plugin.planningstatus.PlanningStatusPlugin;
 import org.rapla.plugin.planningstatus.PlanningStatusResources;
 import org.rapla.scheduler.Promise;
 import org.rapla.storage.PermissionController;
+import org.springframework.stereotype.Service;
 
 import jakarta.inject.Inject;
 import jakarta.inject.Singleton;
 import java.util.*;
 
+@Service
 @Singleton @Extension(provides = ObjectMenuFactory.class, id = "planningstatus") public class PlanningStatusMenuFactory implements ObjectMenuFactory
 {
     private final RaplaResources i18n;

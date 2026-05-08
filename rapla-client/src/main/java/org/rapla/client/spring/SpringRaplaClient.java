@@ -3,6 +3,9 @@ package org.rapla.client.spring;
 import org.rapla.ConnectInfo;
 import org.rapla.client.api.ClientService;
 import org.rapla.facade.client.ClientFacade;
+import org.springframework.beans.factory.config.BeanDefinition;
+import org.springframework.beans.factory.config.BeanFactoryPostProcessor;
+import org.springframework.beans.factory.config.ConfigurableListableBeanFactory;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
 
 /**
@@ -30,8 +33,35 @@ public class SpringRaplaClient implements AutoCloseable
 
     public SpringRaplaClient(Class<?>... configClasses)
     {
-        this.context = new AnnotationConfigApplicationContext(configClasses);
+        this.context = new AnnotationConfigApplicationContext();
+        context.addBeanFactoryPostProcessor(globalLazyInitPostProcessor());
+        context.register(configClasses);
+        context.refresh();
         this.facade = context.getBean(ClientFacade.class);
+    }
+
+    /**
+     * Marks every bean definition as lazy-init before context refresh. The
+     * legacy DI created {@code @Inject}-annotated classes on first use, and
+     * several Swing constructors (e.g. {@code ConflictReservationCheck},
+     * {@code CountryChooser}) touch facade/operator state that isn't ready
+     * during {@code preInstantiateSingletons()}. Global lazy-init defers each
+     * bean's construction to its first dereference, by which point the full
+     * graph (including the remote operator) is in place. Beans that genuinely
+     * need eager init can opt back in with {@code @Lazy(false)}.
+     */
+    private static BeanFactoryPostProcessor globalLazyInitPostProcessor()
+    {
+        return (ConfigurableListableBeanFactory bf) -> {
+            for (String name : bf.getBeanDefinitionNames())
+            {
+                BeanDefinition def = bf.getBeanDefinition(name);
+                if (!def.isLazyInit())
+                {
+                    def.setLazyInit(true);
+                }
+            }
+        };
     }
 
     public ClientFacade getFacade()

@@ -178,7 +178,7 @@ public class RemoteOperator
 
     public Promise<User> connectAsync() {
         RemoteStorage serv = getRemoteStorage();
-        Promise<User> userPromise = serv.getResources().thenApply((evt) -> {
+        Promise<User> userPromise = commandQueue.supply(serv::getResources).thenApply((evt) -> {
             RaplaLock.WriteLock writeLock = lockManager.writeLock(getClass() ,"connectAsync", 10);
             try {
                 user = loadData(evt);
@@ -289,7 +289,7 @@ public class RemoteOperator
         String clientRepoVersion = getLastValidatedTimeServer();
         RemoteStorage serv = getRemoteStorage();
         refreshInProgress = true;
-        final Promise<UpdateEvent> updateEventPromise = serv.refresh(clientRepoVersion);
+        final Promise<UpdateEvent> updateEventPromise = commandQueue.supply(() -> serv.refresh(clientRepoVersion));
         final Promise<Void> returnPromise = updateEventPromise.thenAccept((evt) -> {
             try {
                 refresh(evt);
@@ -323,7 +323,8 @@ public class RemoteOperator
     synchronized public Promise<Void> restartServer()  {
         getLogger().info("Restart in progress ...");
         String message = i18n.getString("restart_server");
-        return getRemoteStorage().restartServer().thenRun(()->fireStorageDisconnected(message));
+        return commandQueue.supply(() -> { getRemoteStorage().restartServer(); return null; })
+                .thenRun(() -> fireStorageDisconnected(message));
     }
 
     @Override
@@ -483,7 +484,7 @@ public class RemoteOperator
         evt.setLastValidated(lastValidatedTimeServer);
 
         RemoteStorage serv = getRemoteStorage();
-        return serv.dispatch(evt).thenAccept((serverEvent)->refresh(serverEvent));
+        return commandQueue.supply(() -> serv.dispatch(evt)).thenAccept((serverEvent) -> refresh(serverEvent));
     }
 
     @Override
@@ -535,7 +536,8 @@ public class RemoteOperator
     public <T extends Entity> Promise<List<ReferenceInfo<T>>> createIdentifierAsync(Class<T> raplaType, int count)
     {
         String localname = RaplaType.getLocalName(raplaType);
-        return getRemoteStorage().createIdentifier(localname, count).thenApply( (ids)->createReferenceInfos(raplaType, ids));
+        return commandQueue.supply(() -> getRemoteStorage().createIdentifier(localname, count))
+                .thenApply((ids) -> createReferenceInfos(raplaType, ids));
     }
 
     public RemoteStorage getRemoteStorage() {
@@ -644,7 +646,8 @@ public class RemoteOperator
             return new ResolvedPromise<>(Collections.emptyMap());
         }
         UpdateEvent.SerializableReferenceInfo[] array = createReferenceInfos(idSet);
-        return getRemoteStorage().getEntityDependencies(throwEntityNotFound,array).thenApply(entityList -> resolveLocal(entityList, idSet));
+        return commandQueue.supply(() -> getRemoteStorage().getEntityDependencies(throwEntityNotFound, array))
+                .thenApply(entityList -> resolveLocal(entityList, idSet));
     }
 
     @Override
@@ -707,7 +710,7 @@ public class RemoteOperator
         Promise<AppointmentMapping> result = refreshIfIdle().thenCompose((refreshed) -> {String[] allocatableId = getIdList(allocatables);
             String[] ownerIds = getIdList( owners);
             final long time = System.currentTimeMillis();
-            return serv.queryAppointments(new QueryAppointments(ownerIds,allocatableId, start, end, annotationQuery, requestsOnly)).thenApply(list -> {
+            return commandQueue.supply(() -> serv.queryAppointments(new QueryAppointments(ownerIds, allocatableId, start, end, annotationQuery, requestsOnly))).thenApply(list -> {
                 AppointmentMapping filtered;
                 {
                     logger.debug("event server call took  " + (System.currentTimeMillis() - time) + " ms");
@@ -926,7 +929,7 @@ public class RemoteOperator
             appointmentList.add((AppointmentImpl) app);
             appointmentMap.put(app.getId(), app);
         }
-        final Promise<BindingMap> bindingMapPromise = serv.getFirstAllocatableBindings(new AllocatableBindingsRequest(allocatableIds, appointmentList, reservationIds));
+        final Promise<BindingMap> bindingMapPromise = commandQueue.supply(() -> serv.getFirstAllocatableBindings(new AllocatableBindingsRequest(allocatableIds, appointmentList, reservationIds)));
 
         Promise<Map<ReferenceInfo<Allocatable>, Collection<Appointment>>> resultPromise = bindingMapPromise.thenApply((bindingMap) -> {
             Map<String, List<String>> resultMap = bindingMap.get();
@@ -957,7 +960,7 @@ public class RemoteOperator
         final List<AppointmentImpl> appointmentArray = Arrays.asList(appointments.toArray(new AppointmentImpl[]{}));
         final String[] reservationIds = getIdList(ignoreList);
         final long time = System.currentTimeMillis();
-        final Promise<List<ReservationImpl>> listPromise = serv.getAllAllocatableBindings(new AllocatableBindingsRequest(allocatableIds, appointmentArray, reservationIds));
+        final Promise<List<ReservationImpl>> listPromise = commandQueue.supply(() -> serv.getAllAllocatableBindings(new AllocatableBindingsRequest(allocatableIds, appointmentArray, reservationIds)));
         return listPromise.thenApply((serverResult) -> {
             logger.debug("event server call took  " + (System.currentTimeMillis() - time) + " ms");
             long time2 = System.currentTimeMillis();
@@ -1014,10 +1017,9 @@ public class RemoteOperator
         RemoteStorage serv = getRemoteStorage();
         String[] allocatableIds = getIdList(removeUnresolvedAllocatables(allocatables));
         String[] reservationIds = getIdList(ignoreList);
-        Promise<Date> nextAllocatableDate = serv.getNextAllocatableDate(
+        return commandQueue.supply(() -> serv.getNextAllocatableDate(
                 new NextAllocatableDateRequest(allocatableIds, (AppointmentImpl) appointment, reservationIds, worktimeStartMinutes, worktimeEndMinutes,
-                        excludedDays, rowsPerHour));
-        return nextAllocatableDate;
+                        excludedDays, rowsPerHour)));
     }
 
     static private SortedSet<Appointment> getAppointments(ReferenceInfo<Allocatable> allocRef, SortedSet<Appointment> allAppointments) {
@@ -1034,7 +1036,7 @@ public class RemoteOperator
     @Override
     public Promise<Collection<Conflict>> getConflicts(User user) {
         RemoteStorage serv = getRemoteStorage();
-        return serv.getConflicts().thenApply( list->
+        return commandQueue.supply(serv::getConflicts).thenApply( list->
         {
             testResolve(list);
             setResolver(list);
@@ -1060,7 +1062,7 @@ public class RemoteOperator
         }
         RemoteStorage serv = getRemoteStorage();
         final MergeRequest job = new MergeRequest((AllocatableImpl) selectedObject, allocIds.toArray(new String[allocatableIds.size()]));
-        return serv.doMerge(job, lastSyncedTime).thenApply( (updateEvent)->
+        return commandQueue.supply(() -> serv.doMerge(job, lastSyncedTime)).thenApply( (updateEvent)->
                 {
                     refresh(updateEvent);
                     return resolve(selectedObject.getReference());

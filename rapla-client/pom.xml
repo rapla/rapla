@@ -36,6 +36,17 @@
             <groupId>org.springframework</groupId>
             <artifactId>spring-web</artifactId>
         </dependency>
+        <!-- Jackson — JSON wire format. Without this, Spring's RestClient picks up
+             Gson (transitively from rapla-core/legacy) and Gson can't reflect
+             java.time.LocalDateTime under the JDK module system. -->
+        <dependency>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-databind</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.fasterxml.jackson.datatype</groupId>
+            <artifactId>jackson-datatype-jsr310</artifactId>
+        </dependency>
         <!-- @NotNull / @Nullable annotations (org.jetbrains.annotations) -->
         <dependency>
             <groupId>com.intellij</groupId>

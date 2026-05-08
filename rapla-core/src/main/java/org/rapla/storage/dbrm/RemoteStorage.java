@@ -17,7 +17,6 @@ import org.rapla.entities.domain.internal.AppointmentImpl;
 import org.rapla.entities.domain.internal.ReservationImpl;
 import org.rapla.facade.internal.ConflictImpl;
 import org.rapla.framework.RaplaException;
-import org.rapla.scheduler.Promise;
 import org.rapla.storage.UpdateEvent;
 
 import org.springframework.web.bind.annotation.PathVariable;
@@ -42,7 +41,7 @@ public interface RemoteStorage
     boolean canChangePassword() throws RaplaException;
 
     @PostExchange("/change/password")
-    void changePassword(PasswordPost job) throws RaplaException;
+    void changePassword(@RequestBody PasswordPost job) throws RaplaException;
 
     class PasswordPost
     {
@@ -88,16 +87,12 @@ public interface RemoteStorage
     @PostExchange("/confirm/email")
     void confirmEmail(@RequestParam(value = "username", required = false) String username, String newEmail) throws RaplaException;
 
-    @GetExchange("/resourcesSync")
-    UpdateEvent getResourcesSync() throws RaplaException;
-
     @GetExchange("/resources")
-    Promise<UpdateEvent> getResources();
+    UpdateEvent getResources() throws RaplaException;
 
     /** delegates the corresponding method in the StorageOperator. */
-    //    FutureResult<List<ReservationImpl>> getReservations(@WebParam(name="resources")String[] allocatableIds,@WebParam(name="start")Date start,@WebParam(name="end")Date end, @WebParam(name="annotations")Map<String, String> annotationQuery);
-    @PostExchange
-    Promise<AppointmentMap> queryAppointments(QueryAppointments job) throws RaplaException;
+    @PostExchange("/queryAppointments")
+    AppointmentMap queryAppointments(@RequestBody QueryAppointments job) throws RaplaException;
 
     class QueryAppointments
     {
@@ -158,43 +153,31 @@ public interface RemoteStorage
     }
 
     @PostExchange("/entity/recursiveSync")
-    UpdateEvent getEntityRecursive(@RequestParam(value = "errorIfNotFound", required = false)Boolean errorIfNotFound,UpdateEvent.SerializableReferenceInfo... infos) throws RaplaException;
+    UpdateEvent getEntityRecursive(@RequestParam(value = "errorIfNotFound", required = false)Boolean errorIfNotFound, @RequestBody UpdateEvent.SerializableReferenceInfo[] infos) throws RaplaException;
 
     @PostExchange("/entity/dependent")
-    Promise<UpdateEvent> getEntityDependencies(@RequestParam(value = "errorIfNotFound", required = false)Boolean errorIfNotFound,UpdateEvent.SerializableReferenceInfo... infos);
+    UpdateEvent getEntityDependencies(@RequestParam(value = "errorIfNotFound", required = false)Boolean errorIfNotFound, @RequestBody UpdateEvent.SerializableReferenceInfo[] infos) throws RaplaException;
 
-    @PostExchange("/refreshSync")
-    UpdateEvent refreshSync(@RequestParam(value = "lastValidated", required = false) String lastSyncedTime) throws RaplaException;
-
-    @PostExchange("/refreshSyncAllEvents")
-    UpdateEvent refreshSyncAllEvents(@RequestParam(value = "lastValidated", required = false) String lastSyncedTime) throws RaplaException;
+    @PostExchange("/refreshAllEvents")
+    UpdateEvent refreshAllEvents(@RequestParam(value = "lastValidated", required = false) String lastSyncedTime) throws RaplaException;
 
     @PostExchange("/refresh")
-    Promise<UpdateEvent> refresh(@RequestParam(value = "lastValidated", required = false) String lastValidated);
+    UpdateEvent refresh(@RequestParam(value = "lastValidated", required = false) String lastValidated) throws RaplaException;
 
     @PostExchange("/restart")
-    Promise<Void> restartServer();
-
-    @PostExchange("/dispatchSync")
-    UpdateEvent store(UpdateEvent event) throws RaplaException;
+    void restartServer() throws RaplaException;
 
     @PostExchange("/dispatch")
-    Promise<UpdateEvent> dispatch(UpdateEvent event);
-
-    //	@ResultType(value=String.class,container=List.class)
-    //	FutureResult<List<String>> getTemplateNames();
-
-    @PostExchange("/identifierSync")
-    List<String> createIdentifierSync(@RequestParam(value = "raplaType", required = false) String raplaType, @RequestParam(value = "count", required = false) int count) throws RaplaException;
+    UpdateEvent dispatch(@RequestBody UpdateEvent event) throws RaplaException;
 
     @PostExchange("/identifier")
-    Promise<List<String>> createIdentifier(@RequestParam(value = "raplaType", required = false) String raplaType, @RequestParam(value = "count", required = false) int count);
+    List<String> createIdentifier(@RequestParam(value = "raplaType", required = false) String raplaType, @RequestParam(value = "count", required = false) int count) throws RaplaException;
 
     @GetExchange("/conflicts")
-    Promise<List<ConflictImpl>> getConflicts() ;
+    List<ConflictImpl> getConflicts() throws RaplaException;
 
     @PostExchange("/allocatable/bindings/first")
-    Promise<BindingMap> getFirstAllocatableBindings(AllocatableBindingsRequest job);
+    BindingMap getFirstAllocatableBindings(@RequestBody AllocatableBindingsRequest job) throws RaplaException;
 
     class AllocatableBindingsRequest
     {
@@ -231,10 +214,10 @@ public interface RemoteStorage
     }
 
     @PostExchange("/allocatable/bindings/all")
-    Promise<List<ReservationImpl>> getAllAllocatableBindings(AllocatableBindingsRequest job);
+    List<ReservationImpl> getAllAllocatableBindings(@RequestBody AllocatableBindingsRequest job) throws RaplaException;
 
     @PostExchange("/allocatable/date/next")
-    Promise<Date> getNextAllocatableDate(NextAllocatableDateRequest job);
+    Date getNextAllocatableDate(@RequestBody NextAllocatableDateRequest job) throws RaplaException;
 
     class NextAllocatableDateRequest
     {
@@ -306,7 +289,7 @@ public interface RemoteStorage
     //void logEntityNotFound(String logMessage,String... referencedIds) throws RaplaException;
 
     @PostExchange("/merge")
-    Promise<UpdateEvent> doMerge(MergeRequest job, @RequestParam(value = "lastSynched", required = false) String lastSyncedTime);
+    UpdateEvent doMerge(@RequestBody MergeRequest job, @RequestParam(value = "lastSynched", required = false) String lastSyncedTime) throws RaplaException;
 
     class MergeRequest
     {

@@ -2,26 +2,24 @@ package org.rapla.plugin.exchangeconnector;
 
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.TypedComponentRole;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.service.annotation.GetExchange;
+import org.springframework.web.service.annotation.HttpExchange;
+import org.springframework.web.service.annotation.PostExchange;
 
-import jakarta.ws.rs.GET;
-import jakarta.ws.rs.POST;
-import jakarta.ws.rs.Path;
-import jakarta.ws.rs.Produces;
-import jakarta.ws.rs.QueryParam;
-import jakarta.ws.rs.core.MediaType;
 import java.util.Collection;
 
-@Path("exchange/connect")
-public interface ExchangeConnectorRemote 
+@HttpExchange("/exchange/connect")
+public interface ExchangeConnectorRemote
 {
     TypedComponentRole<String> LAST_SYNC_ERROR_CHANGE = new TypedComponentRole<>("org.rapla.plugin.exchangconnector.last_sync_error_change");
-    @GET
-    @Produces(MediaType.APPLICATION_JSON)
+
+    @GetExchange
     SynchronizationStatus getSynchronizationStatus() throws RaplaException;
 
-    @POST
-    @Path("synchronize")
-    void synchronize(String mailbox) throws RaplaException;
+    @PostExchange("/synchronize")
+    void synchronize(@RequestBody String mailbox) throws RaplaException;
 
 	/**
 	 * Add an Exchange user to the user list (register a user to the Exchange Server)
@@ -31,42 +29,13 @@ public interface ExchangeConnectorRemote
 	 * @param exchangePassword
 	 * @throws RaplaException
 	 */
-	@POST
-	Collection<String> changeUser(@QueryParam("user")String exchangeUsername, String exchangePassword/*, Boolean downloadFromExchange*/) throws RaplaException;
+	@PostExchange
+	Collection<String> changeUser(@RequestParam("user")String exchangeUsername, @RequestBody String exchangePassword/*, Boolean downloadFromExchange*/) throws RaplaException;
 
-	@POST
-	@Path("remove")
+	@PostExchange("/remove")
 	void removeUser() throws RaplaException;
-	
-	@POST
-	@Path("refreshMailboxes")
+
+	@PostExchange("/refreshMailboxes")
 	Collection<String> refreshMailboxes() throws RaplaException;
-	
-	/**
-	 * Remove an existing user from the user list (unregister a user from the Exchange Server)
-	 * (The User and the password will no longer be saved)
-	 * 
-	 * @param raplaUsername : {@link String} name of the Rapla {@link User} which should be removed from the user list
-	 * @return {@link ClientMessage}
-	 * @throws RaplaException
-	 */
-	//public String removeExchangeUser() throws RaplaException;
-
-	/**
-	 * This method initialises a so called "complete reconciliation" - meaning a re-sync of all existing appointments on both systems.
-	 * @return {@link ClientMessage}
-	 * @throws RaplaException
-	 */
-	//public String completeReconciliation() throws RaplaException;
-
-
-    /**
-     * enables/disable pull
-     * @param raplaUsername
-     * @param downloadFromExchange
-     * @throws RaplaException
-     */
-    //public void setDownloadFromExchange( boolean downloadFromExchange) throws RaplaException;
-
 
 }

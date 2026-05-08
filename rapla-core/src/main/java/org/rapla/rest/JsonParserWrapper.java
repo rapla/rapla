@@ -1,6 +1,5 @@
 package org.rapla.rest;
 
-import org.rapla.rest.gson.GsonParserWrapper;
 import org.rapla.rest.jackson.JacksonParserWrapper;
 
 import jakarta.inject.Provider;
@@ -9,7 +8,7 @@ import java.lang.reflect.Type;
 
 public class JsonParserWrapper
 {
-    static Provider<JsonParser> factory = new GsonParserWrapper();
+    static Provider<JsonParser> factory = new JacksonParserWrapper();
     public interface JsonParser
     {
         String toJson(Object object);

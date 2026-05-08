@@ -19,8 +19,6 @@ import org.rapla.entities.domain.AppointmentFormater;
 import org.rapla.entities.domain.Period;
 import org.rapla.entities.domain.Repeating;
 import org.rapla.framework.RaplaLocale;
-import org.rapla.inject.DefaultImplementation;
-import org.rapla.inject.InjectionContext;
 
 import jakarta.inject.Inject;
 import jakarta.inject.Singleton;
@@ -32,7 +30,6 @@ import java.util.List;
 import java.util.Set;
 
 /** default implementation of appointment formater */
-@DefaultImplementation(of = AppointmentFormater.class, context = InjectionContext.all)
 @Singleton
 public class AppointmentFormaterImpl
     implements

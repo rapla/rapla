@@ -23,6 +23,7 @@ import org.rapla.facade.internal.CalendarOptionsImpl;
 import org.rapla.framework.RaplaException;
 import org.rapla.inject.Extension;
 import org.rapla.scheduler.Promise;
+import org.springframework.stereotype.Service;
 import org.rapla.scheduler.ResolvedPromise;
 
 import jakarta.inject.Inject;
@@ -37,6 +38,7 @@ import java.util.Set;
 import java.util.TreeSet;
 import java.util.stream.Collectors;
 
+@Service
 @Extension(provides = EventCheck.class, id = "holidayexception")
 public class HolidayExceptionCheck implements EventCheck
 {

@@ -957,8 +957,42 @@ public class CalendarModelImpl implements CalendarSelectionModel, org.rapla.faca
 
     @Override public Promise<AppointmentMapping> queryAppointmentBindings(TimeInterval interval)
     {
-        try { return new ResolvedPromise<>(queryAppointmentBindingsSync(interval)); }
+        if (operator instanceof org.rapla.storage.SyncStorageOperator)
+        {
+            try { return new ResolvedPromise<>(queryAppointmentBindingsSync(interval)); }
+            catch (RaplaException e) { return new ResolvedPromise<>(e); }
+        }
+        final Collection<Allocatable> allocatables = new LinkedHashSet<>();
+        final Collection<User> owners = new LinkedHashSet<>();
+        final Collection<RaplaObject> selectedRaplaObjects;
+        try { selectedRaplaObjects = getSelectedRaplaObjects(true); }
         catch (RaplaException e) { return new ResolvedPromise<>(e); }
+        for (RaplaObject obj : selectedRaplaObjects)
+        {
+            if (obj instanceof Allocatable) allocatables.add((Allocatable) obj);
+            if (obj instanceof User) owners.add((User) obj);
+        }
+        final Date startDate = interval != null ? interval.getStart() : null;
+        final Date endDate = interval != null ? interval.getEnd() : null;
+        final boolean useFilter = getSelectedConflicts().isEmpty() && getSelectedResourceRequests().isEmpty();
+        final String cacheKey = createCacheKey(allocatables, startDate, endDate);
+        if (cachingEnabled && cacheValidString != null && cacheValidString.equals(cacheKey) && cachedReservations != null)
+        {
+            return new ResolvedPromise<>(cachedReservations);
+        }
+        final ClassificationFilter[] reservationFilters;
+        try { reservationFilters = isDefaultEventTypes() || !useFilter ? null : getReservationFilter(); }
+        catch (RaplaException e) { return new ResolvedPromise<>(e); }
+        return operator.queryAppointments(null, allocatables, owners, startDate, endDate, reservationFilters, templateId)
+                .thenApply(map ->
+                {
+                    if (cachingEnabled)
+                    {
+                        cachedReservations = map;
+                        cacheValidString = cacheKey;
+                    }
+                    return map;
+                });
     }
 
     @Override public AppointmentMapping queryAppointmentBindingsSync(TimeInterval interval) throws RaplaException

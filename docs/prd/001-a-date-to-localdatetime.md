@@ -1,7 +1,21 @@
 # PRD 001-A: Replace java.util.Date with java.time.LocalDateTime
 
-**Status:** in-progress — Phases A1–A6 substantially landed; Phase A7 partial (8/8 entity impls migrated, 22 first-touch files cleaned of `java.util.Date` imports, Gson `LocalDateTime` adapter shipped, `LocalCache.conflictLastChanged` migrated, `Export2iCalServlet:211` migrated). Remaining: voluminous interface-overload cleanup (~80 files have both `Date` and `LocalDateTime` overloads) and per-site Date-arithmetic migrations.
+**Status:** in-progress — Phases A1–A6 substantially landed; Phase A7 partial (8/8 entity impls migrated, 22 first-touch files cleaned of `java.util.Date` imports, Gson `LocalDateTime` adapter shipped, `LocalCache.conflictLastChanged` migrated, `Export2iCalServlet:211` migrated). Phase A8 just-started — flip the polarity: remove `Date` from the public API (interfaces, factories, ctors) and let `Date` overloads stay only as `default` delegates that convert via `DateTools.toDate(LocalDateTime)`.
 **Date:** 2026-05-06 (last update: 2026-05-08)
+
+## Goal — strategy update 2026-05-08
+
+The earlier additive-overload approach (add `LocalDateTime` defaults next to `Date` abstract methods) is now producing dead weight: many entity interfaces and DTOs carry **both** `Date` and `LocalDateTime` getters/setters, with the `LocalDateTime` ones implemented by converting through `DateTools.toLocalDateTime(date)`. As of 2026-05-08, ~80 files in the codebase carry these dual overloads, and ~169 files still import `java.util.Date`.
+
+**Phase A8 — flip the polarity, drop the conversion overloads.** New target: remove `Date`-typed methods from interfaces / public ctors / public factories where every reachable caller can be migrated to the `LocalDateTime` variant in the same change. Where `Date` *must* stay (legacy public API used by integrators outside the codebase, JDBC ResultSet binders, Swing widget APIs), demote the `Date` method to a `default` delegate around the `LocalDateTime` primary so the conversion is colocated and obvious.
+
+**Concrete cleanup targets** (each is its own small PR-style change; no big-bang):
+- Entity interfaces: `Timestamp.getCreateDate()`, `LastChangedTimestamp.getLastChanged()/setLastChanged(Date)`, `Permission.getStart/getEnd/setStart/setEnd(Date)`, `Repeating.setEnd(Date)/getExceptions(): Date[]`, `Period.getStart()/getEnd()`, `Allocatable.getAllocateInterval(User, Date)`, `Reservation.getFirstDate()/getMaxEnd()`, `Conflict.getStartDate()`, `RaplaFacade.today()`/`getCurrentTimestamp()`. Each: pick a primary `LocalDateTime` method, demote the `Date` method to `default`-delegate.
+- DTOs / wire-format classes: `RemoteStorage.QueryAppointments.start/end`, `UpdateResult` (already migrated, retain `Date` getter as deprecated), `LoginTokens.validUntil` (already migrated).
+- Storage operator interfaces: `StorageOperator.getCurrentTimestamp()/today()`, `CachableStorageOperator.getLastRefreshed()/getHistoryValidStart()/getConnectStart()`. Already have `*AsLocalDateTime` accessors; flip primary.
+- `RaplaLocale` formatters: `formatDate(Date)`, `formatTime(Date)`, `formatTimestamp(Date)`. Demote to `default` delegating to existing `LocalDate`/`LocalTime`/`LocalDateTime` overloads.
+
+**What this enables**: once the `Date` API is `default`-only (with conversion via `DateTools.toDate`), the next sweep removes the conversions where callers no longer need `Date` — leaving cleaner `LocalDateTime`-native call paths. The **end state** is a codebase where `java.util.Date` appears only at well-known boundaries (JDBC binding, Swing renderers, iCal4j input legacy paths), not in entity / facade / storage / wire APIs.
 
 ## Implementation Status
 
@@ -157,6 +171,44 @@ Rather than the big-bang interface rewrite originally proposed (which would casc
 - `ConflictFinder.java` lines 328 and 703 (4-arg `new ConflictImpl(allocatable, app1, app2, today)`): `ConflictImpl.ofLocalDateTime(Allocatable, Appointment, Appointment, LocalDateTime)` factory exists (added earlier). The migration is blocked at the constructor seam — `ConflictFinder(AllocationMap, Date today, ...)` threads `Date today` through ~20 internal sites. Migrating means changing the public ctor signature (caller in `LocalAbstractCachableOperator`) and threading `LocalDateTime` through. Deferred — voluminous, no functional gain (wire format identical).
 - `SynchronisationManager.java:787` — body is unreachable (`if (true) return new LinkedHashSet<>();` at line 781). Not worth migrating until the dead-code branch is reactivated.
 - `Export2iCalServlet.java:211` ✅ migrated 2026-05-08. Added `DateTools.add(LocalDateTime, IncrementSize, int)` and `DateTools.add(LocalDate, IncrementSize, int)` overloads (the existing `setStartLocalDate/setEndLocalDate` defaults on `CalendarModel` from Phase A2 already covered the consumer side). Site now uses `facade.todayAsLocalDate()` and `calModel.setStartLocalDate/setEndLocalDate(LocalDate)`. `new Date()` allocation gone. Removed unused `Date now = new Date()` lines. Note: this file still has a different `Date firstPluginStartDate` field for HTTP `Last-Modified` header logic — that's a separate site, deferred.
+
+### 2026-05-08 (continued) — Additional `LocalDateTime` overloads on framework interfaces
+
+- `DateTools.getWeekInYear(LocalDate, Locale)` and `getWeekInYear(LocalDateTime, Locale)` — overloads delegating to existing `Date` variant. Used by `RaplaResources.calendarweek(LocalDate)` which now no longer round-trips through `Date`.
+- `TimeZoneConverter.fromRaplaTime(TimeZone, LocalDateTime)` and `toRaplaTime(TimeZone, LocalDateTime)` — `default` methods on the interface, delegate to existing `long`-millis variants. Adds a `LocalDateTime`-native path for callers without forcing the `Date` boundary.
+
+### 2026-05-08 (continued) — `ConflictImpl` and `CalendarModelConfigurationImpl` field migration
+
+`ConflictImpl.startDate` + `lastChanged` migrated from `Date` to `LocalDateTime`. New `LocalDateTime` ctor added; `Date` ctor delegates. New `LocalDateTime` accessors (`getStartDateAsLocalDateTime`, `getLastChangedAsLocalDateTime`, `getCreateDateAsLocalDateTime`, `setLastChangedLocalDateTime`, `setCreateDateLocalDateTime`). All `Date` getters/setters preserved as boundary converters. The `Allocatable.getLastChanged().after(...)` arithmetic in `getLastChanged(allocatable, app1, app2)` stays in `Date` for now since it operates on entity getters that still return `Date`.
+
+`CalendarModelConfigurationImpl.startDate`/`endDate`/`selectedDate` migrated from `Date` to `LocalDateTime`. New `LocalDateTime` ctor added (parallel to `Date` ctor). New `LocalDateTime` accessors. `Date` getters retained as boundary converters.
+
+`RaplaCalendarSettingsReader.startDate`/`endDate`/`selectedDate` migrated to `LocalDateTime` fields. The XML reader now passes `LocalDateTime` directly to the new `CalendarModelConfigurationImpl` ctor. Wire format unchanged (XML ISO-8601 strings parse to identical millis).
+
+### 2026-05-08 (continued) — Phase A7 cleanups: `PreferencePatch`, `UpdateResult`, `LoginTokens` field migration
+
+Three more entity / DTO classes migrated from `Date` field types to `LocalDateTime`:
+
+| Class | Field(s) | Notes |
+|-------|----------|-------|
+| `PreferencePatch` | `lastChanged` | Was `Date`. Now `LocalDateTime`; `getLastChanged()`/`setLastChanged(Date)` retained as boundary converters. |
+| `UpdateResult` | `since`, `until` (and `HistoryEntry.timestamp`) | Constructor now accepts `Date` (legacy) and `LocalDateTime`. Internal storage `LocalDateTime`. `getSince()`/`getUntil()` still return `Date`. |
+| `LoginTokens` | `validUntil` | Was `Date`. `LocalDateTime` field; new `LocalDateTime` ctor; `Date` ctor + `Date getValidUntil()` retained. `expiresIn` recomputation uses `DateTools.toMilli(LocalDateTime)`. |
+
+Pattern: keep `Date` boundary API to avoid breaking callers; migrate field type + arithmetic; provide `LocalDateTime` accessors with distinct names. Wire format unchanged (UTC millis identical).
+
+### 2026-05-08 (continued) — Gson dead-code removal: `GsonParserWrapper`, `JsonMergePatch`, plus `HTTPWithJsonConnector` migrated to Jackson
+
+Three Gson cleanups in this iteration:
+1. **Deleted** `org.rapla.rest.gson.GsonParserWrapper` and `org.rapla.rest.gson.JsonMergePatch` — both became unreachable after `JsonParserWrapper.factory` swapped to Jackson default; only self-referenced before deletion.
+2. **Migrated** `HTTPWithJsonConnector` (deprecated, but on classpath) and chain (`HTTPJsonConnector` extends it) from raw Gson API (`Gson`, `GsonBuilder`, `JsonObject`, `JsonElement`, `JsonParser`) to Jackson (`ObjectMapper`, `JsonNode`, `ObjectNode`). Public method signatures shifted from `JsonObject`/`JsonElement` to `ObjectNode`/`JsonNode` — `@Deprecated` class so consumers migrating with it.
+3. **Migrated** `JsonReaderTest` from Gson to Jackson. Required enabling `JsonReadFeature.ALLOW_SINGLE_QUOTES` because the test JSON uses single-quoted keys (Gson default; Jackson strict).
+
+Remaining Gson on the client classpath: `RestAPIExample.java` (test/example main, not a real test) still uses Gson API directly. Production code on the client side now has zero direct Gson API calls.
+
+### 2026-05-08 — Jackson `JavaTimeModule` registered (PRD 001 Phase 9 unblocking)
+
+`rapla-core/pom.xml` now depends on `jackson-datatype-jsr310` (provided scope, Spring Boot BOM-managed). `JacksonParserWrapper` registers `new JavaTimeModule()` and disables `WRITE_DATES_AS_TIMESTAMPS`. Wire format for `LocalDateTime` is now ISO-8601 strings, matching the Gson adapter from earlier this session. Both serializers can now round-trip `LocalDateTime`/`LocalDate`/`LocalTime` entity fields, which means PRD 001 Phase 9 (Gson → Jackson swap for SQL history) is no longer blocked by serialization concerns.
 
 ### 2026-05-08 — `DateTools` `long` overloads + `AppointmentImpl`/`AppointmentBlock` cleanup
 

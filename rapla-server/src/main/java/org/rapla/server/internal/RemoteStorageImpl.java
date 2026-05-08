@@ -31,8 +31,6 @@ import org.rapla.inject.InjectionContext;
 import org.rapla.logger.Logger;
 import org.rapla.plugin.mail.MailPlugin;
 import org.rapla.plugin.mail.server.MailInterface;
-import org.rapla.scheduler.Promise;
-import org.rapla.scheduler.ResolvedPromise;
 import org.rapla.server.AuthenticationStore;
 import org.rapla.server.PrePostDispatchProcessor;
 import org.rapla.server.RemoteSession;
@@ -85,7 +83,7 @@ import java.util.stream.Collectors;
     }
 
     @Override
-    public UpdateEvent getResourcesSync() throws RaplaException
+    public UpdateEvent getResources() throws RaplaException
     {
         User user = checkSessionUser();
         getLogger().debug("A RemoteAuthentificationService wants to get all resource-objects.");
@@ -112,19 +110,6 @@ import java.util.stream.Collectors;
         return evt;
     }
 
-    @Override
-    public Promise<UpdateEvent> getResources()
-    {
-        try
-        {
-            final UpdateEvent resources = getResourcesSync();
-            return new ResolvedPromise<>(resources);
-        }
-        catch (Exception ex)
-        {
-            return new ResolvedPromise<>(ex);
-        }
-    }
 
     @Override
     public UpdateEvent getEntityRecursive(Boolean errorUpdateEvent,UpdateEvent.SerializableReferenceInfo... ids) throws RaplaException
@@ -187,22 +172,13 @@ import java.util.stream.Collectors;
     }
 
     @Override
-    public Promise<UpdateEvent> getEntityDependencies(Boolean errorIfNotFound,UpdateEvent.SerializableReferenceInfo... ids)  {
-        try { return new ResolvedPromise<>(getEntityDependenciesSync(errorIfNotFound, ids)); }
-        catch (RaplaException ex) { return new ResolvedPromise<>(ex); }
-    }
 
-    public UpdateEvent getEntityDependenciesSync(Boolean errorIfNotFound, UpdateEvent.SerializableReferenceInfo... ids) throws RaplaException
+    public UpdateEvent getEntityDependencies(Boolean errorIfNotFound, UpdateEvent.SerializableReferenceInfo... ids) throws RaplaException
     {
         return getEntityRecursive(errorIfNotFound, ids);
     }
 
-    @Override public Promise<AppointmentMap> queryAppointments(QueryAppointments job) throws RaplaException
-    {
-        return new ResolvedPromise<>(queryAppointmentsSync(job));
-    }
-
-    public AppointmentMap queryAppointmentsSync(QueryAppointments job) throws RaplaException
+    @Override public AppointmentMap queryAppointments(QueryAppointments job) throws RaplaException
     {
         User sessionUser = checkSessionUser();
         String[] allocatableIds = job.getResources();
@@ -260,13 +236,7 @@ import java.util.stream.Collectors;
         }
     }
 
-    public Promise<Void> restartServer()
-    {
-        try { restartServerSync(); return ResolvedPromise.VOID_PROMISE; }
-        catch (RaplaException ex) { return new ResolvedPromise(ex); }
-    }
-
-    public void restartServerSync() throws RaplaException
+    public void restartServer() throws RaplaException
     {
         final User user = checkSessionUser();
         if (!user.isAdmin())
@@ -307,13 +277,7 @@ import java.util.stream.Collectors;
         return result;
     }
 
-    public Promise<UpdateEvent> dispatch(UpdateEvent event)
-    {
-        try { return new ResolvedPromise<>(dispatchSync(event)); }
-        catch (RaplaException ex) { return new ResolvedPromise<>(ex); }
-    }
-
-    public UpdateEvent dispatchSync(UpdateEvent event) throws RaplaException
+    public UpdateEvent dispatch(UpdateEvent event) throws RaplaException
     {
         return store(event);
     }
@@ -412,7 +376,7 @@ import java.util.stream.Collectors;
         return i18n;
     }
 
-    public List<String> createIdentifierSync(String type, int count) throws RaplaException
+    public List<String> createIdentifier(String type, int count) throws RaplaException
     {
         checkSessionUser();
         Class<? extends Entity> typeClass = RaplaType.find(type);
@@ -422,19 +386,8 @@ import java.util.stream.Collectors;
         return result;
     }
 
-    public Promise<List<String>> createIdentifier(String type, int count)
-    {
-        try
-        {
-            return new ResolvedPromise<>(createIdentifierSync(type, count));
-        }
-        catch (RaplaException e)
-        {
-            return new ResolvedPromise<>(e);
-        }
-    }
 
-    public UpdateEvent refreshSync(String lastSyncedTime) throws RaplaException
+    public UpdateEvent refresh(String lastSyncedTime) throws RaplaException
     {
         final User user = checkSessionUser();
         try
@@ -449,7 +402,7 @@ import java.util.stream.Collectors;
         }
     }
 
-    public UpdateEvent refreshSyncAllEvents(String lastSyncedTime) throws RaplaException
+    public UpdateEvent refreshAllEvents(String lastSyncedTime) throws RaplaException
     {
         final User user = checkSessionUser();
         try
@@ -464,17 +417,6 @@ import java.util.stream.Collectors;
         }
     }
 
-    public Promise<UpdateEvent> refresh(String lastValidated)
-    {
-        try
-        {
-            return new ResolvedPromise<>(refreshSync(lastValidated));
-        }
-        catch (RaplaException e)
-        {
-            return new ResolvedPromise<>(e);
-        }
-    }
 
     public Logger getLogger()
     {
@@ -570,25 +512,15 @@ import java.util.stream.Collectors;
         }
     }
 
-    public Promise<List<ConflictImpl>> getConflicts()
-    {
-        try { return new ResolvedPromise<>(getConflictsSync()); }
-        catch (RaplaException ex) { return new ResolvedPromise<>(ex); }
-    }
 
-    public List<ConflictImpl> getConflictsSync() throws RaplaException
+    public List<ConflictImpl> getConflicts() throws RaplaException
     {
         User sessionUser = checkSessionUser();
         return syncOperator.getConflictsSync(sessionUser).stream().map(conflict -> (ConflictImpl) conflict).collect(Collectors.toList());
     }
 
-    @Override public Promise<Date> getNextAllocatableDate(NextAllocatableDateRequest job)
-    {
-        try { return new ResolvedPromise<>(getNextAllocatableDateSync(job)); }
-        catch (RaplaException ex) { return new ResolvedPromise<>(ex); }
-    }
 
-    public Date getNextAllocatableDateSync(NextAllocatableDateRequest job) throws RaplaException
+    public Date getNextAllocatableDate(NextAllocatableDateRequest job) throws RaplaException
     {
         String[] allocatableIds = job.getAllocatableIds();
         AppointmentImpl appointment = job.getAppointment();
@@ -603,13 +535,8 @@ import java.util.stream.Collectors;
         return syncOperator.getNextAllocatableDateSync(allocatables, appointment, ignoreList, worktimestartMinutes, worktimeendMinutes, excludedDays, rowsPerHour);
     }
 
-    @Override public Promise<BindingMap> getFirstAllocatableBindings(AllocatableBindingsRequest job)
-    {
-        try { return new ResolvedPromise<>(getFirstAllocatableBindingsSync(job)); }
-        catch (RaplaException ex) { return new ResolvedPromise<>(ex); }
-    }
 
-    public BindingMap getFirstAllocatableBindingsSync(AllocatableBindingsRequest job) throws RaplaException
+    public BindingMap getFirstAllocatableBindings(AllocatableBindingsRequest job) throws RaplaException
     {
         String[] allocatableIds = job.getAllocatableIds();
         List<AppointmentImpl> appointments = job.getAppointments();
@@ -653,14 +580,8 @@ import java.util.stream.Collectors;
         return result;
     }
 
-    @Override
-    public Promise<List<ReservationImpl>> getAllAllocatableBindings(AllocatableBindingsRequest job)
-    {
-        try { return new ResolvedPromise<>(getAllAllocatableBindingsSync(job)); }
-        catch (RaplaException ex) { return new ResolvedPromise<>(ex); }
-    }
 
-    public List<ReservationImpl> getAllAllocatableBindingsSync(AllocatableBindingsRequest job) throws RaplaException
+    public List<ReservationImpl> getAllAllocatableBindings(AllocatableBindingsRequest job) throws RaplaException
     {
         String[] allocatableIds = job.getAllocatableIds();
         List<AppointmentImpl> appointments = job.getAppointments();
@@ -725,13 +646,8 @@ import java.util.stream.Collectors;
         return ignoreConflictsWith;
     }
 
-    @Override public Promise<UpdateEvent> doMerge(MergeRequest job, String lastSyncedTime )
-    {
-        try { return new ResolvedPromise<>(doMergeSync(job, lastSyncedTime)); }
-        catch (RaplaException e) { return new ResolvedPromise<>(e); }
-    }
 
-    public UpdateEvent doMergeSync(MergeRequest job, String lastSyncedTime) throws RaplaException
+    public UpdateEvent doMerge(MergeRequest job, String lastSyncedTime) throws RaplaException
     {
         AllocatableImpl allocatable = job.getAllocatable();
         String[] allocatableIds = job.getAllocatableIds();
@@ -742,7 +658,7 @@ import java.util.stream.Collectors;
             allocReferences.add(new ReferenceInfo<>(allocId, Allocatable.class));
         }
         syncOperator.doMergeSync(allocatable, allocReferences, sessionUser);
-        return refreshSync(lastSyncedTime);
+        return refresh(lastSyncedTime);
     }
 
     //			public void logEntityNotFound(String logMessage,String... referencedIds)

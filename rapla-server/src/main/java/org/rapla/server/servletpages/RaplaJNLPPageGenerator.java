@@ -38,15 +38,14 @@ public class RaplaJNLPPageGenerator
 
     private static final TypedComponentRole<Boolean> CREATE_SHORTCUT = new TypedComponentRole<>("org.rapla.jnlp.createshortcut");
     private static final TypedComponentRole<Integer> CLIENT_VM_MIN_SIZE = new TypedComponentRole<>("org.rapla.jnlp.xms");
-    @Inject
-    RaplaFacade facade;
-    @Inject
-    RaplaResources i18n;
-
+    private final RaplaFacade facade;
+    private final RaplaResources i18n;
 
     @Inject
-    public RaplaJNLPPageGenerator()
+    public RaplaJNLPPageGenerator(RaplaFacade facade, RaplaResources i18n)
     {
+        this.facade = facade;
+        this.i18n = i18n;
     }
 
     private String getCodebase(HttpServletRequest request)

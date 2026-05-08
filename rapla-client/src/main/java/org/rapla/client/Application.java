@@ -117,10 +117,12 @@ public class Application implements ApplicationView.Presenter, ModificationListe
 
         final Provider<TaskPresenter> taskPresenterProvider = activityPresenters.get(activityId);
         if (taskPresenterProvider == null) {
+            logger.warn("startAction: no TaskPresenter for id='" + activityId + "', map keys=" + activityPresenters.keySet());
             return false;
         }
         final TaskPresenter taskPresenter = taskPresenterProvider.get();
         if (taskPresenter == null) {
+            logger.warn("startAction: provider.get() returned null for id='" + activityId + "'");
             return false;
         }
 
@@ -297,6 +299,8 @@ public class Application implements ApplicationView.Presenter, ModificationListe
     }
 
     public void stop() {
-        mainView.close();
+        if (mainView != null) {
+            mainView.close();
+        }
     }
 }

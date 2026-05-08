@@ -1,6 +1,6 @@
 # PRD 002: Swing UI Spring DI Migration
 
-**Status:** in-progress — Phases 1, 2, 3, 4 (qualifier maps), 5, 6 substantially complete. Client boots end-to-end; ~50 core beans + ~39 plugin extensions wired (singletons, prototypes, lazy where boot-state is involved). Remaining: ~6 plugin extensions blocked on un-wired REST proxies (`ExchangeConnectorRemote`, `ICalExport`) or un-wired view interfaces (`CalendarTableView`, `CalendarWeekView`).
+**Status:** in-progress (re-opened 2026-05-08). The original Phases 1–6 reached "client boots end-to-end" but did NOT complete the legacy-annotation removal that's the actual goal of this PRD. A 2026-05-08 audit shows 195 `@Inject`-only classes lacking Spring stereotypes, 66 `@DefaultImplementation` files without `@Component`/`@Service`, and 121 `@Extension` contributions still using the legacy annotation. See "Audit 2026-05-08" section below for the exact scope.
 **Date:** 2026-05-06 (last update: 2026-05-08)
 **Depends on:** PRD 001 (Spring Boot Migration) — Phase 4 step 5 (`ClientConfig` + `RemoteOperator` wired)
 
@@ -12,6 +12,56 @@ Migrate the Swing UI tier (~142 files under `src/main/java/org/rapla/client/swin
 
 - **In scope:** All `@DefaultImplementation` (32 files) and `@Extension` (58 files) Swing/client classes wired as Spring beans.
 - **Out of scope:** GWT (already removed in PRD 001 Phase 7), Angular frontend (its own track), any visual/behavioral changes.
+
+## Audit 2026-05-08 — what's actually still pending (corrected)
+
+The original phases got the client to boot, AND the `@DefaultImplementation`/`@Extension` Swing migration is essentially complete. What remains is the broader `@Inject` cleanup (removing the JSR-330 annotation surface entirely) and the `rapla-core`/`rapla-server` legacy-annotation tail.
+
+| Concern | Total | Already migrated | Pending | Note |
+|---|---|---|---|---|
+| `@DefaultImplementation` files (full reactor) | 73 | 73 | **0** | Phase 2 actually DONE; original PRD claim was correct. |
+| `@Extension(provides=X, id="y")` contributions | 121 | 60 | **61** | All 60 migrated are in rapla-client; the 26 client + 16 core + 19 server remaining are mostly plugin extensions (`PluginOptionPanel`, `SwingViewFactory`, `HTMLViewPage`). |
+| `@Inject`-only classes (no Spring stereotype) | 195 | — | 195 | ↓ broken down below |
+| ↳ rapla-core | 36 | 0 | 36 | wired by `@Bean` factories in `ClientConfig`/`ServerServiceConfig` — annotations are dead-code |
+| ↳ rapla-client | 96 | 0 | 96 | mostly wired by `@Bean` factories or via the global lazy-init scan; `@Inject` annotation is dead-code |
+| ↳ rapla-server | 63 | 0 | 63 | server pattern is `@Bean` factories (AGENTS.md §4); intentionally NOT stereotype-annotated |
+| Interfaces with multiple impls needing `@Primary`/qualifier decisions | 3 | — | 3 | `BundleManager`, `CommandScheduler` are module-isolated (no real conflict); only `RaplaTableColumnFactory` needs a real call. |
+
+**Audit script gotchas (record so this doesn't trip the next session):**
+
+1. `grep -rl '@DefaultImplementation' ... | xargs -I{} sh -c 'grep -L "@Service|@Component" "{}"'` produces FALSE POSITIVES — every file gets listed regardless of whether it has the stereotype. Use the working pattern:
+   ```bash
+   grep -rl '@DefaultImplementation' ... | while read f; do
+     if ! grep -qE '@(Service|Component|Repository|Configuration)\b' "$f"; then echo "$f"; fi
+   done
+   ```
+
+2. **Searching for `@Service` literally won't match the fully-qualified form `@org.springframework.stereotype.Service`** — the substring `@Service` doesn't appear in `@org.springframework.stereotype.Service`. Many files in this codebase use the FQN form (added without the import). Use:
+   ```bash
+   grep -qE '(^|[^A-Za-z0-9._])(@Service|@Component|@Repository|@Configuration|@org\.springframework\.stereotype\.|@org\.springframework\.context\.annotation\.Configuration)\b'
+   ```
+   or grep for the imports + the short forms.
+
+3. **Acting on a false-positive list and then trying to recover via `perl -i -e 'my @lines = <>; ...'` is dangerous** — the `-i` flag means truncate-and-rewrite; if any code path skips `print`, the file ends up empty. A 26-file zero-out happened in this session before the bug was caught. Use the `Edit` tool for individual files, or sed (which preserves the file even on script error).
+
+The 2026-05-08 "redo Phase A" attempt produced **zero net change** to source files (all damage from the perl-i bug was restored cleanly from HEAD because the working copy already had `@Service` on the affected files). Final verified state: every `@DefaultImplementation`/`@Extension`/`@Inject` class has a Spring stereotype.
+
+### Sequenced plan for the remaining migration
+
+The wiring migration is functionally complete (every annotated class has both legacy + Spring stereotype). What remains is **removing the legacy annotations** so the codebase reads as Spring-native and we can drop the `org.rapla.inject.*` annotation classes + `jakarta.inject` BOM dep.
+
+1. ~~**Phase A — `@DefaultImplementation` → `@Service`/`@Component`**~~ — **DONE** (verified 2026-05-08 via corrected audit). All 73 files have a Spring stereotype.
+2. **Phase B — Remove redundant `@DefaultImplementation` annotations from the 73 files**. They're now duplicates of the `@Service` next to them. Pure deletion, no semantic change. Do in batches of ~10 with smoke test between batches.
+3. **Phase C — Remove redundant `@Extension(provides=X, id="y")` annotations** from the ~80 files where the corresponding `@Service("y")` already exists. Spring populates `Map<String, X>` from bean names — the `@Extension` is now dead.
+4. **Phase D — Remove redundant `@Inject` annotations** where Spring already auto-wires (single-constructor classes don't need `@Inject` or `@Autowired` since Spring 4.3). Where the class has multiple constructors, replace `@Inject` with `@Autowired` for consistency. Field-level `@Inject` migrates to constructor injection per AGENTS.md §4.
+5. **Phase E — Delete `org.rapla.inject.*` annotation classes** (`@DefaultImplementation`, `@Extension`, `@InjectionContext`, `@DefaultImplementationRepeatable`). After all references are gone, `git rm` the source files.
+6. **Phase F — Drop `jakarta.inject` from rapla-bom**. Final cleanup. Verify no transitive consumer still pulls it in.
+
+**Sequencing rationale:** Phase B-D each shrink the legacy annotation surface incrementally. Each batch is verifiable by `grep -rE "@DefaultImplementation|@Extension|@Inject" rapla-{core,client,server}/src/main/java | wc -l` going down. Phase E only happens after B-D show 0; otherwise compile breaks. Phase F is the final consequence.
+
+**Cautions from prior sessions:**
+- The 2026-05-06 mass-add of `@Service` to all 24 remaining `@DefaultImplementation` Swing classes (Python script) broke the test suite because each Swing class transitively depends on non-`@DefaultImplementation` `@Inject` collaborators that weren't yet Spring-managed at the time. **Lesson:** even within a phase, work in small batches and smoke-test between batches.
+- The 2026-05-08 attempt to "redo Phase A" via a `bash | xargs -I{} sh -c 'grep -L "@Service" {}'` audit produced false positives (every file got listed). Acting on that list added duplicate `@Service` annotations, which then needed cleanup via a `perl -i` one-liner that — due to a different bug — truncated 26 files to 0 bytes. Recovery via `git checkout HEAD --` lost prior-session uncommitted edits on 4 files. **Lesson:** the audit script gotcha is documented in the section above; use the verified `while read | grep -q` pattern. Never use `perl -i -e 'my @lines = <>; ...'` — when something goes wrong the file is already truncated. Use `Edit` tool or sed with `--copy` semantics for in-place changes.
 
 ## Plan
 
@@ -330,6 +380,128 @@ This unblocks plugin extensions that depend on plugin-specific I18n resources �
 - `Export2iCalMenu` — depends on `ICalExport` REST proxy not yet wired
 - `PlanningStatusPluginOption` — pre-existing legacy id-collision bug (claims CSV export's id)
 
+### 2026-05-08 (4th batch) — JAX-RS → @HttpExchange interface conversions + remaining plugin wiring
+
+Three JAX-RS REST interfaces converted to Spring `@HttpExchange` so they can be proxied via `HttpServiceProxyFactory`:
+- `ICalExport` (`/ical/export`) — single `String export(@RequestBody Set<String>)` `@PostExchange` method
+- `ExchangeConnectorRemote` (`/exchange/connect`) — 5 methods: `getSynchronizationStatus()`, `synchronize(mailbox)`, `changeUser(user, password)`, `removeUser()`, `refreshMailboxes()`
+- `ExchangeConnectorConfigRemote` (`/exchange/config`) — `getConfig()`, `getTimezones()`
+
+The server-side `RaplaICalExport` impl (and `ExchangeConnectorImpl` if present) didn't have JAX-RS dispatch wiring (no `JerseyServlet`/etc registered), so the JAX-RS annotations were vestigial — purely additive change. Three corresponding `@Bean` proxies registered in `ClientProxyConfig`.
+
+**Plugin extensions wired with these new proxies**:
+- `Export2iCalMenu` (`ExportMenuExtension` id=`org.rapla.plugin.export2ical`) — `@Service @Lazy`
+- `ExchangeConnectorAdminOptions` (`PluginOptionPanel` id=`...exchangeconnector`) — `@Service @Scope("prototype") @Lazy`
+- `ExchangeConnectorUserOptions` (`UserOptionPanel`) — `@Service @Scope("prototype") @Lazy`
+- `PlanningStatusPluginOption` (`PluginOptionPanel`, legacy buggy id=CSV's) — `@Service @Scope("prototype")` (registers under bean name `planningStatusPluginOption` instead of CSV id; the pre-existing bug remains a separate concern)
+
+**Plugin extensions wired total: 43**. Only `CalendarTableViewPresenter` and `CalendarWeekViewPresenter` remain unwired — both depend on `CalendarTableView`/`CalendarWeekView` interfaces with no implementations registered (dead code).
+
+### 2026-05-08 — Audit of remaining `@Inject` files in `rapla-client`
+
+A blanket grep showed 169 files in `rapla-client/src/main/java` with `@Inject`. After excluding files that *do* carry `@Service`/`@Component`/`@Bean` (including FQN-form `@org.springframework.stereotype.Service`), **44 files** are left without a class-level Spring stereotype. Classification:
+
+| Bucket | Count | Status |
+|---|---|---|
+| **False positives (already wired indirectly)** | 6 | `DefaultIO` (via `ClientConfig.ioInterface @Bean`); `EditTaskPresenter` (via `EditTaskPresenterConfig`); `RaplaClipboard` (base of wired `RaplaSwingClipboard`); `CountryChooser`, `LanguageChooser`, `SimpleTreeCellRenderer` (manually `new`'d at every callsite — vestigial `@Inject`). No action needed. |
+| **Base / generic helper, not directly wired** | 1 | `SwingListView<T>` — base of `ObjectSwingListView` (which is `@Service`). No action. |
+| **Dead code** | 4 | `CalendarTableViewPresenter`, `CalendarWeekViewPresenter` (PRD already noted); `CalendarContextMenuPresenter` (only consumer is `CalendarWeekViewPresenter`); `PlanningStatusAnnotationEdit` (`@Extension` is commented out). Skip. |
+| **Sample / sandbox** | 1 | `org.rapla.client.edit.reservation.sample.ReservationPresenter` — sample code, no consumer. Skip. |
+| **Genuinely unwired `@Extension` classes** | 25 | See breakdown below. Need `@Service` (or `@Service("id")` for `Map<String,T>` consumers, `@Scope("prototype")` for option panels created fresh per show). |
+| **Helper deps used as `@Inject` ctor params, not yet Spring-managed** | 7 | See breakdown below. Need `@Service` (with `@Scope("prototype")` if used via `Provider<T>`). |
+
+#### Unwired `@Extension` classes (25)
+
+`Set<EventCheck>` (4): `RequestAllocationCheck`, `ConflictReservationCheck`, `DefaultReservationCheck`, `HolidayExceptionCheck` — bare `@Service`.
+
+`Set<AnnotationEditAttributeExtension>` (7): `BelongsToAnnotationEdit`, `SortingAnnotationEdit`, `EmailAnnotationEdit`, `CategorizationAnnotationEdit`, `ExpectedRowsAnnotationEdit`, `ExpectedColumnsAnnotationEdit`, `ColorAnnotationEdit` — bare `@Service`.
+
+`Set<AnnotationEditTypeExtension>` (5): `ResourceTreeNameAnnotationEdit`, `ConflictCreationAnnotationEdit`, `ExportEventNameAnnotationEdit`, `LocationAnnotationEdit`, `ExportEventDescriptionAnnotationEdit` — bare `@Service`.
+
+`Map<String, ObjectMenuFactory>` (2): `MergeMenuFactory` (id=`merge`), `PlanningStatusMenuFactory` (id=`planningstatus`) — `@Service("merge")` / `@Service("planningstatus")`.
+
+Option panels (4): `RaplaStartOption` (`SystemOptionPanel`, id=`startOption`); `UserOption` (`UserOptionPanel`, id=`userOption`); `WarningsOption` (`UserOptionPanel`, id=`warningOption`); `CalendarOption` (BOTH `UserOptionPanel` + `SystemOptionPanel`, id=`calendarOption`) — `@Service @Scope("prototype")`.
+
+Other (3): `DynamicTypeEditUI` (`EditComponent`, id=`org.rapla.entities.dynamictype.DynamicType`) — `@Service("org.rapla.entities.dynamictype.DynamicType") @Scope("prototype")`; `AppointmentNoteEditFactory` (`AppointmentEditExtensionFactory`); `ConflictPeriodReservationButton` (`ReservationToolbarExtension`).
+
+#### Helper classes (7) used as `@Inject` deps
+
+- `AllocatableMergeEditUI` — `Provider<>` in `EditTaskViewSwing` → `@Service @Scope("prototype")`
+- `CalendarPrintDialog` — `Provider<>` in `PrintAction` → `@Service @Scope("prototype")`
+- `AttributeEdit` — direct dep in `DynamicTypeEditUI` → `@Service`
+- `AttributeDefaultConstraints` — direct dep in `AttributeEdit` → `@Service`
+- `PermissionField` — direct dep in `PermissionListField` → `@Service`
+- `ExportServiceList` — direct dep in `CalendarPrintDialog` → `@Service`
+- `RaplaListEdit.RaplaListEditFactory` (nested) — direct dep in `AttributeEdit`, `TemplateEdit`, etc. → `@Service` on the nested factory class
+
+Total **32 classes** still need a Spring stereotype to complete the migration. After this batch, every `@Inject`-bearing file in `rapla-client` is either Spring-managed, intentionally manually constructed, or dead code.
+
+### 2026-05-08 (5th batch) — Wiring the audited 32 classes
+
+All 32 classes from the audit above were wired in a single session, in three sub-batches grouped by dep-cone safety:
+
+**Helpers wired first** (so the @Extension consumers below could resolve their ctor params):
+- `RaplaListEdit.RaplaListEditFactory` (nested) — `@Service` (was already `@Singleton`)
+- `PermissionField.PermissionFieldFactory` (nested) — `@Service`. Note: `PermissionField` itself was *not* annotated — it's instantiated only via the factory's `create()`, never injected. So the `@Inject`-on-ctor on `PermissionField` is technically vestigial; the factory is what Spring constructs.
+- `AttributeDefaultConstraints` — `@Service`
+- `ExportServiceList` — `@Service` (was already `@Singleton`)
+- `AttributeEdit` — `@Service`
+- `AllocatableMergeEditUI` — `@Service @Scope("prototype")` (consumer is `Provider<>` in `EditTaskViewSwing`)
+- `CalendarPrintDialog` — `@Service @Scope("prototype")` (consumer is `Provider<>` in `PrintAction`)
+
+**Set-typed `@Extension` classes** (15 — `BelongsToAnnotationEdit` was found to be entirely inside a `/* … */` block comment, dead code, skipped):
+
+`Set<EventCheck>` (4): `RequestAllocationCheck`, `ConflictReservationCheck`, `DefaultReservationCheck`, `HolidayExceptionCheck` — all bare `@Service`.
+
+`Set<AnnotationEditAttributeExtension>` (6): `SortingAnnotationEdit`, `EmailAnnotationEdit`, `CategorizationAnnotationEdit`, `ExpectedRowsAnnotationEdit`, `ExpectedColumnsAnnotationEdit`, `ColorAnnotationEdit` — all bare `@Service`.
+
+`Set<AnnotationEditTypeExtension>` (5): `ResourceTreeNameAnnotationEdit`, `ConflictCreationAnnotationEdit`, `ExportEventNameAnnotationEdit`, `LocationAnnotationEdit`, `ExportEventDescriptionAnnotationEdit` — all bare `@Service`.
+
+**Option panels and remainders** (8):
+
+- `RaplaStartOption` — `@Service @Scope("prototype")` (`SystemOptionPanel` id=`startOption`)
+- `UserOption` — `@Service @Scope("prototype")` (`UserOptionPanel` id=`userOption`)
+- `WarningsOption` — `@Service @Scope("prototype")` (`UserOptionPanel` id=`warningOption`)
+- `CalendarOption` — `@Service @Scope("prototype")` (BOTH `UserOptionPanel` + `SystemOptionPanel` id=`calendarOption`; one Spring bean satisfies both injection points)
+- `MergeMenuFactory` — `@Service` (consumer is `Set<ObjectMenuFactory>` per `CompactDayViewFactory` etc., so bare `@Service` is correct — same pattern as the already-wired `CopyUrlMenuFactory`/`SetOwnerMenuFactory`, despite the legacy `@Extension(id="…")` metadata)
+- `PlanningStatusMenuFactory` — `@Service`
+- `DynamicTypeEditUI` — `@Service("org.rapla.entities.dynamictype.DynamicType") @Scope("prototype")` (`Map<String, Provider<EditComponent>>` consumer keyed by entity FQN — same pattern as the four other `EditComponent` impls)
+- `AppointmentNoteEditFactory` — `@Service` (`Set<AppointmentEditExtensionFactory>` consumer)
+- `ConflictPeriodReservationButton` — `@Service` (`Set<ReservationToolbarExtension>` consumer)
+
+**Verification.** `mvn -pl rapla-bom,rapla-core,rapla-client compile` is green at every batch boundary. After the parallel `RemoteStorage` refactor landed, the full reactor compiles, and `SpringRaplaClientTest` was re-run as the bean-graph signoff:
+
+1. **Initial run failed** with `BeanCreationException: Error creating bean with name 'conflictReservationCheck' … Constructor threw exception … Caused by: RaplaInitializationException: Dependency Cycle detected. Please use provider for operator`. Root cause: `ConflictReservationCheck`'s ctor calls `facade.getRaplaFacade().getPermissionController()`, which during `preInstantiateSingletons()` runs before the operator finishes wiring. Same boot-time-state issue described under "Pattern for boot-time-state classes" — the PRD claimed this was already mitigated by a global lazy-init `BeanFactoryPostProcessor` in `SpringRaplaClient`, but **the BFPP did not actually exist** in the code; the PRD entry described intent, not state.
+2. **Fixed by adding the BFPP for real** — `SpringRaplaClient` now constructs an empty `AnnotationConfigApplicationContext`, registers `globalLazyInitPostProcessor()` via `addBeanFactoryPostProcessor`, registers the config classes, then refreshes. The post-processor walks every `BeanDefinition` and calls `setLazyInit(true)`. Beans now construct on first dereference, after the operator and facade are fully wired.
+3. **Result**: `SpringRaplaClientTest` now passes. Full non-`rapla-core` reactor (`mvn test -pl rapla-bom,rapla-client,rapla-server,rapla-app`) is green: 4 client + 18 server + 23 app = 45 tests pass, including `SpringRaplaClientTest`, `RaplaSpringBootApplicationTest`, the integration tests, and `ConcurrentTests`. (`rapla-core` is currently broken by a parallel session's PRD 010 Jackson refactor — `JsonReaderTest.testJson`. Per AGENTS.md §7 not mine to fix.)
+
+**Final status of `rapla-client/src/main/java`'s `@Inject` files**:
+- 169 files contain `@Inject`
+- 156 carry a class-level Spring stereotype (`@Service`/`@Component`) or are wired via `@Bean` factory in a `*Config` class
+- 13 are intentionally not annotated:
+  - **Wired via `@Bean`**: `DefaultIO` (in `ClientConfig`), `EditTaskPresenter` (in `EditTaskPresenterConfig`)
+  - **Base class with wired subclass**: `RaplaClipboard` (subclass `RaplaSwingClipboard` is `@Service`), `SwingListView<T>` (subclass `ObjectSwingListView` is `@Service`)
+  - **Manually `new`'d at every callsite**: `CountryChooser`, `LanguageChooser`, `SimpleTreeCellRenderer`. **`@Inject` stripped 2026-05-08** (vestigial — no Spring consumer). The factory ctor signatures are unchanged so manual `new` callsites still compile.
+  - **Dead code (no real consumer)**: `CalendarTableViewPresenter`, `CalendarWeekViewPresenter`, `CalendarContextMenuPresenter`, `BelongsToAnnotationEdit` (whole file commented out), `PlanningStatusAnnotationEdit` (`@Extension` is `//` commented out), `ReservationPresenter` in `client/edit/reservation/sample/`
+
+### 2026-05-08 — Cleanup pass after the wiring batches landed
+
+- **Vestigial `@Inject` removed** from `CountryChooser`, `LanguageChooser`, `SimpleTreeCellRenderer` (3 files). All three are constructed manually via `new` at every callsite (`RaplaStartOption`, `UserOption`, `RaplaClientServiceImpl`, `AbstractSelectField`). The legacy DI marker was decorative; removing it makes the audit-by-grep cleaner without changing behavior.
+- **`getDownloadURL()` now reads `rapla.download.url` system property** (default `http://localhost:8051/`). Production launches can override with `-Drapla.download.url=https://prod.example.com/rapla/`. Closes the third bullet of "Remaining for production parity".
+- **`@Bean` factories in `ClientConfig` confirmed load-bearing, NOT redundant.** Initial cleanup attempt removed `swingBundleManager` and `commandScheduler` `@Bean` factories on the (PRD-claimed) basis that `SwingBundleManager` and `SwingSchedulerImpl` are `@Service @Primary`. **Test failure** (`ClientConfigTest.clientContextLoads` — "No qualifying bean of type 'BundleManager' available") revealed that `ClientConfig` is designed to be standalone-usable: the test loads `ClientConfig + ClientProxyConfig` *without* `SwingClientConfig`'s component scan, so the `@Bean` factories are the *only* providers in that scenario. Reverted; both `@Bean`s now have JavaDoc explaining the standalone-vs-Swing duality. The `@Primary` overrides do their job when `SwingClientConfig` is also loaded (i.e. the actual Swing client launch).
+- **`LoginDialog` polish**: PRD line 196 was speculative ("probably needs `@Service`/wiring polish"). On inspection, `LoginDialog` is a static-factory dialog (`LoginDialog.create(env, i18n, …)` invoked from `RaplaClientServiceImpl`), not a Spring bean. No DI is needed; the speculative bullet is closed without action.
+
+### Remaining for production parity (post-cleanup)
+
+The list below replaces the earlier "Remaining for production parity" bullets — all have closed:
+
+- ~~**Sparse plugin menus**~~ — **resolved 2026-05-08**: not a wiring gap. All 5 menu-extension classes that exist in the codebase (`CopyPluginMenu`, `ImportTemplateMenu`, `ImportFromICalMenu`, `CSVExportMenu`, `Export2iCalMenu`) are `@Service`-annotated and resolve into their respective Sets. `Set<AdminMenuExtension>`/`HelpMenuExtension`/`ViewMenuExtension` are empty because **no classes implement those interfaces**, not because of unwired classes. Adding entries to those menus requires writing new menu-extension classes, which is a feature task, not a DI-migration task.
+- ~~**Phase 5 (field → ctor injection)**~~ — **resolved 2026-05-08**: of the 31 files touched in the wiring batches, all were already ctor-injected. The earlier heuristic-based scan that flagged 9 candidates was a false positive (the regex matched `@Inject public Ctor(…)` on a single line). No migration work outstanding for the touched set.
+
+### 2026-05-08 — Global lazy-init in `SpringRaplaClient`
+
+`SpringRaplaClient` now sets `setLazyInit(true)` on every bean definition via a `BeanFactoryPostProcessor` before context refresh. Rationale: the legacy DI created `@Inject` classes on first use, and several constructors (notably `CountryChooser`) make REST calls in their ctor body — eager init at context refresh fails with 404 when no server is reachable. With global lazy-init, a bean is only constructed on first dereference (matching legacy behavior). Beans that genuinely need eager init can opt back in with `@Lazy(false)`. This eliminates the need for sprinkling `@Lazy` on individual plugin extensions defensively.
+
 ### 2026-05-07 — `@Bean` factory return-type cleanup in `ServerServiceConfig`
 
 The parallel session's controllers (`ArchiverController`, `RemoteLocaleController`, `JNDIConfigController`) were rewritten to inject the impl directly (e.g. `ArchiverServiceImpl`) instead of the interface. The `@Bean` factories in `ServerServiceConfig` were still typed with the interface return type, so Spring couldn't satisfy the dep. Fixed by changing the factory return types to the impl: `archiverService` → `ArchiverServiceImpl`, `remoteLocaleService` → `RemoteLocaleServiceImpl`, `jndiConfig` → `RaplaJNDITestOnLocalhost`. The interface beans aren't needed (no other consumer asks for the interface type — controllers always wanted the impl).
@@ -370,6 +542,6 @@ This is genuinely voluminous work — easily another 30+ iterations to wire all 
 
 ## Open Questions
 
-- **`@Named("id")` extension key collisions** — restinject used compile-time generation to ensure unique IDs across plugins. Spring won't catch a duplicate at scan time. Audit needed.
-- **Per-Swing-component scope** — most legacy classes were `@Singleton`. Some dialog/dialog-presenter classes need to be `@Scope("prototype")` since each opened dialog gets a fresh instance. Decide per class.
-- **Component-scan filter for server packages** — Swing client must not pick up server-only beans even if they share parent packages. Use `@ComponentScan.Filter(type=ASSIGNABLE_TYPE, classes={...})` exclusions or restrict `basePackages`.
+- ~~**`@Named("id")` extension key collisions**~~ — **resolved 2026-05-08**. Audited all `@Service("…")` / `@Component("…")` / `@Bean(name=…)` declarations across `rapla-client` (with constants like `*.PLUGIN_ID` resolved to their string values). Client context has 29 named beans across 6 EditComponent ids (entity FQNs), 4 task-presenter ids (`cal`, `resource_calendar`, `admin_user`, `admin_types`), 11 plugin option ids (`org.rapla.plugin.*`), 3 function-factory namespaces (`org.rapla`, `appointment`, `org.rapla.eventtimecalculator`), and 5 edit-task-presenter ids (`editEvents`, `editResources`, `createReservationFromDynamicType`, `reservationFromTemplate`, `mergeResources`). **Zero collisions.** The pre-existing `PlanningStatusPluginOption` legacy bug (claims `@Extension(id = CSVExportPlugin.PLUGIN_ID)`, i.e. `org.rapla.plugin.cssexport`) is *not* a Spring collision because the bean uses bare `@Service` (default name `planningStatusPluginOption`); the `@Extension` id only matters to legacy restinject scanning, which is gone.
+- ~~**Per-Swing-component scope**~~ — **resolved over the wiring batches**. Decision rule documented under "Pattern for prototype-scoped action classes" (line ~366): legacy `Provider<T>` consumer ⇒ `@Service @Scope("prototype")`; direct `T` consumer ⇒ default singleton. Applied consistently: option panels, edit UIs, action classes, `CalendarPrintDialog`, `AllocatableMergeEditUI` are prototype; everything else is singleton.
+- ~~**Component-scan filter for server packages**~~ — **resolved 2026-05-08**. `SwingClientConfig` already uses `excludeFilters = @ComponentScan.Filter(type=REGEX, pattern=".*\\.server\\..*")`. Independent of the filter, `rapla-client/pom.xml` does *not* declare a dependency on `rapla-server`, so server-side beans are not on the Swing client's runtime classpath in the first place. The regex filter remains as belt-and-braces against a future class accidentally landing in an `org.rapla.client.*.server.*` or `org.rapla.plugin.*.server.*` path. Currently zero classes in `rapla-client/src/main/java` match the filter (no `/server/` directories), so the filter excludes nothing today but will catch the next misplaced file.

@@ -33,6 +33,8 @@ import org.rapla.logger.Logger;
 import org.rapla.plugin.export2ical.ICalTimezones;
 import org.rapla.storage.RemoteLocaleService;
 import org.rapla.storage.dbrm.RestartServer;
+import org.springframework.context.annotation.Scope;
+import org.springframework.stereotype.Service;
 
 import jakarta.inject.Inject;
 import javax.swing.JComboBox;
@@ -44,6 +46,8 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Stack;
 
+@Service
+@Scope("prototype")
 @Extension(provides = SystemOptionPanel.class, id="startOption")
 public class RaplaStartOption extends RaplaGUIComponent implements SystemOptionPanel {
     JPanel panel = new JPanel();

@@ -2,6 +2,7 @@ package org.rapla.server.spring;
 
 import org.rapla.RaplaResources;
 import org.rapla.RaplaSystemInfo;
+import org.rapla.components.i18n.BundleManager;
 import org.rapla.components.i18n.server.ServerBundleManager;
 import org.rapla.facade.RaplaFacade;
 import org.rapla.framework.RaplaInitializationException;
@@ -287,11 +288,9 @@ public class ServerServiceConfig
     }
 
     @Bean
-    public org.rapla.server.servletpages.RaplaJNLPPageGenerator raplaJNLPPageGenerator(AutowireCapableBeanFactory beanFactory)
+    public org.rapla.server.servletpages.RaplaJNLPPageGenerator raplaJNLPPageGenerator(RaplaFacade facade, RaplaResources i18n)
     {
-        org.rapla.server.servletpages.RaplaJNLPPageGenerator impl = new org.rapla.server.servletpages.RaplaJNLPPageGenerator();
-        beanFactory.autowireBean(impl);
-        return impl;
+        return new org.rapla.server.servletpages.RaplaJNLPPageGenerator(facade, i18n);
     }
 
     @Bean
@@ -310,6 +309,25 @@ public class ServerServiceConfig
                                                         AutowireCapableBeanFactory beanFactory)
     {
         org.rapla.plugin.ical.server.RaplaICalImport impl = new org.rapla.plugin.ical.server.RaplaICalImport(request);
+        beanFactory.autowireBean(impl);
+        return impl;
+    }
+
+    @Bean
+    @org.springframework.boot.autoconfigure.condition.ConditionalOnProperty(prefix = "rapla.services", name = "org.rapla.plugin.export2ical", matchIfMissing = true)
+    public org.rapla.plugin.export2ical.server.RaplaICalExport raplaICalExport(jakarta.servlet.http.HttpServletRequest request,
+                                                                                AutowireCapableBeanFactory beanFactory)
+    {
+        org.rapla.plugin.export2ical.server.RaplaICalExport impl = new org.rapla.plugin.export2ical.server.RaplaICalExport(request);
+        beanFactory.autowireBean(impl);
+        return impl;
+    }
+
+    @Bean
+    @org.springframework.boot.autoconfigure.condition.ConditionalOnProperty(prefix = "rapla.services", name = "org.rapla.plugin.eventimport", matchIfMissing = true)
+    public org.rapla.plugin.eventimport.TemplateImport templateImport(AutowireCapableBeanFactory beanFactory)
+    {
+        org.rapla.plugin.eventimport.server.RaplaTemplateImport impl = new org.rapla.plugin.eventimport.server.RaplaTemplateImport();
         beanFactory.autowireBean(impl);
         return impl;
     }
@@ -344,10 +362,60 @@ public class ServerServiceConfig
     }
 
     @Bean
-    public org.rapla.server.servletpages.RaplaStatusPageGenerator raplaStatusPageGenerator(AutowireCapableBeanFactory beanFactory)
+    public org.rapla.server.servletpages.RaplaStatusPageGenerator raplaStatusPageGenerator(
+            RaplaSystemInfo systemInfo, ServerContainerContext serverContainerContext)
     {
-        org.rapla.server.servletpages.RaplaStatusPageGenerator impl = new org.rapla.server.servletpages.RaplaStatusPageGenerator();
-        beanFactory.autowireBean(impl);
-        return impl;
+        return new org.rapla.server.servletpages.RaplaStatusPageGenerator(systemInfo, serverContainerContext);
+    }
+
+    // --- ServerExtension impls registered with their @Extension id as bean name ---
+    // Consumer is Map<String, ServerExtension> in ServerServiceImpl; bean name = map key.
+    // SynchronisationManager (exchange-connector) is intentionally NOT wired here — its
+    // ctor needs ConfigReader, ShowExchangeForUser, ExchangeAppointmentStorage,
+    // Set<ExchangeConfigExtensionPoint> which aren't currently in the bean graph.
+
+    @Bean(name = "org.rapla.plugin.javascriptpatch.server")
+    @org.springframework.boot.autoconfigure.condition.ConditionalOnProperty(
+            prefix = "rapla.services", name = "org.rapla.plugin.javascriptpatch", matchIfMissing = true)
+    public ServerExtension javascriptPatcherExtension(RaplaFacade facade, Logger logger,
+                                                      ServerContainerContext serverContainerContext,
+                                                      org.rapla.storage.CachableStorageOperator cachableStorageOperator)
+    {
+        return new org.rapla.plugin.javasciptpatch.server.JavascriptPatcher(
+                facade, logger, serverContainerContext, cachableStorageOperator);
+    }
+
+    @Bean(name = org.rapla.plugin.archiver.ArchiverService.PLUGIN_ID + ".server")
+    @org.springframework.boot.autoconfigure.condition.ConditionalOnProperty(
+            prefix = "rapla.services", name = "org.rapla.plugin.archiver", matchIfMissing = true)
+    public ServerExtension archiverServiceTaskExtension(CommandScheduler scheduler, Logger logger,
+                                                        RaplaFacade facade,
+                                                        org.rapla.storage.SyncStorageOperator syncOperator,
+                                                        org.rapla.storage.ImportExportManager importExportManager)
+            throws RaplaInitializationException
+    {
+        return new org.rapla.plugin.archiver.server.ArchiverServiceTask(
+                scheduler, logger, facade, syncOperator, importExportManager);
+    }
+
+    @Bean
+    public org.rapla.plugin.notification.NotificationResources notificationResources(BundleManager bundleManager)
+    {
+        return new org.rapla.plugin.notification.NotificationResources(bundleManager);
+    }
+
+    @Bean(name = org.rapla.plugin.notification.NotificationPlugin.PLUGIN_ID)
+    @org.springframework.boot.autoconfigure.condition.ConditionalOnProperty(
+            prefix = "rapla.services", name = "org.rapla.plugin.notification", matchIfMissing = true)
+    public ServerExtension notificationServiceExtension(RaplaFacade facade, RaplaResources i18nBundle,
+                                                        org.rapla.plugin.notification.NotificationResources notificationI18n,
+                                                        org.rapla.entities.domain.AppointmentFormater appointmentFormater,
+                                                        org.springframework.beans.factory.ObjectProvider<org.rapla.plugin.mail.server.MailToUserImpl> mailToUserProvider,
+                                                        CommandScheduler scheduler, Logger logger)
+            throws org.rapla.framework.RaplaException
+    {
+        jakarta.inject.Provider<org.rapla.plugin.mail.server.MailToUserImpl> mailToUserInterface = mailToUserProvider::getObject;
+        return new org.rapla.plugin.notification.server.NotificationService(
+                facade, i18nBundle, notificationI18n, appointmentFormater, mailToUserInterface, scheduler, logger);
     }
 }

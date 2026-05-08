@@ -13,6 +13,7 @@ import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.inject.Extension;
 import org.rapla.logger.Logger;
+import org.springframework.stereotype.Service;
 
 import jakarta.inject.Inject;
 import javax.swing.DefaultListCellRenderer;
@@ -22,6 +23,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 
+@Service
 @Extension(provides= AnnotationEditTypeExtension.class, id=DynamicTypeAnnotations.KEY_CONFLICTS)
 public class ConflictCreationAnnotationEdit extends RaplaGUIComponent implements AnnotationEditTypeExtension
 {

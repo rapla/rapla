@@ -626,6 +626,20 @@ public abstract class DateTools
         return getWeekInYearIso(date);
     }
 
+    /** {@code LocalDate} variant. */
+    public static int getWeekInYear(java.time.LocalDate date, Locale locale)
+    {
+        if (date == null) return 0;
+        return getWeekInYear(toDate(date), locale);
+    }
+
+    /** {@code LocalDateTime} variant. */
+    public static int getWeekInYear(java.time.LocalDateTime dateTime, Locale locale)
+    {
+        if (dateTime == null) return 0;
+        return getWeekInYear(toDate(dateTime), locale);
+    }
+
     private static boolean isUsStyle(String country)
     {
         for (String countryCode : US_WEEKDAY_COUNTRY_CODES)

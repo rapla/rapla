@@ -80,19 +80,13 @@ public class RemoteStorageController
     @GetMapping("/resources")
     public UpdateEvent getResources() throws RaplaException
     {
-        return delegate.getResourcesSync();
+        return delegate.getResources();
     }
 
-    @GetMapping("/resourcesSync")
-    public UpdateEvent getResourcesSync() throws RaplaException
-    {
-        return delegate.getResourcesSync();
-    }
-
-    @PostMapping
+    @PostMapping("/queryAppointments")
     public AppointmentMap queryAppointments(@RequestBody RemoteStorage.QueryAppointments job) throws RaplaException
     {
-        return delegate.queryAppointmentsSync(job);
+        return delegate.queryAppointments(job);
     }
 
     @PostMapping("/entity/recursiveSync")
@@ -108,57 +102,37 @@ public class RemoteStorageController
             @RequestParam(value = "errorIfNotFound", required = false) Boolean errorIfNotFound,
             @RequestBody UpdateEvent.SerializableReferenceInfo[] infos) throws RaplaException
     {
-        return delegate.getEntityDependenciesSync(errorIfNotFound, infos);
+        return delegate.getEntityDependencies(errorIfNotFound, infos);
     }
 
-    @PostMapping("/refreshSync")
-    public UpdateEvent refreshSync(@RequestParam(value = "lastValidated", required = false) String lastSyncedTime) throws RaplaException
+    @PostMapping("/refreshAllEvents")
+    public UpdateEvent refreshAllEvents(@RequestParam(value = "lastValidated") String lastSyncedTime) throws RaplaException
     {
-        return delegate.refreshSync(lastSyncedTime);
-    }
-
-    @PostMapping("/refreshSyncAllEvents")
-    public UpdateEvent refreshSyncAllEvents(@RequestParam(value = "lastValidated", required = false) String lastSyncedTime) throws RaplaException
-    {
-        return delegate.refreshSyncAllEvents(lastSyncedTime);
+        return delegate.refreshAllEvents(lastSyncedTime);
     }
 
     @PostMapping("/refresh")
-    public UpdateEvent refresh(@RequestParam(value = "lastValidated", required = false) String lastValidated) throws RaplaException
+    public UpdateEvent refresh(@RequestParam(value = "lastValidated") String lastValidated) throws RaplaException
     {
-        return delegate.refreshSync(lastValidated);
+        return delegate.refresh(lastValidated);
     }
 
     // ---- writes ------------------------------------------------------------
 
-    @PostMapping("/dispatchSync")
-    public UpdateEvent store(@RequestBody UpdateEvent event) throws RaplaException
-    {
-        return delegate.store(event);
-    }
-
     @PostMapping("/dispatch")
     public UpdateEvent dispatch(@RequestBody UpdateEvent event) throws RaplaException
     {
-        return delegate.dispatchSync(event);
+        return delegate.dispatch(event);
     }
 
     // ---- ID allocation -----------------------------------------------------
-
-    @PostMapping("/identifierSync")
-    public List<String> createIdentifierSync(
-            @RequestParam(value = "raplaType", required = false) String raplaType,
-            @RequestParam(value = "count",     required = false) int count) throws RaplaException
-    {
-        return delegate.createIdentifierSync(raplaType, count);
-    }
 
     @PostMapping("/identifier")
     public List<String> createIdentifier(
             @RequestParam(value = "raplaType", required = false) String raplaType,
             @RequestParam(value = "count",     required = false) int count) throws RaplaException
     {
-        return delegate.createIdentifierSync(raplaType, count);
+        return delegate.createIdentifier(raplaType, count);
     }
 
     // ---- conflicts / bindings ---------------------------------------------
@@ -166,31 +140,31 @@ public class RemoteStorageController
     @GetMapping("/conflicts")
     public List<ConflictImpl> getConflicts() throws RaplaException
     {
-        return delegate.getConflictsSync();
+        return delegate.getConflicts();
     }
 
     @PostMapping("/allocatable/bindings/first")
     public RemoteStorage.BindingMap getFirstAllocatableBindings(@RequestBody RemoteStorage.AllocatableBindingsRequest job) throws RaplaException
     {
-        return delegate.getFirstAllocatableBindingsSync(job);
+        return delegate.getFirstAllocatableBindings(job);
     }
 
     @PostMapping("/allocatable/bindings/all")
     public List<ReservationImpl> getAllAllocatableBindings(@RequestBody RemoteStorage.AllocatableBindingsRequest job) throws RaplaException
     {
-        return delegate.getAllAllocatableBindingsSync(job);
+        return delegate.getAllAllocatableBindings(job);
     }
 
     @PostMapping("/allocatable/date/next")
     public Date getNextAllocatableDate(@RequestBody RemoteStorage.NextAllocatableDateRequest job) throws RaplaException
     {
-        return delegate.getNextAllocatableDateSync(job);
+        return delegate.getNextAllocatableDate(job);
     }
 
     // ---- user --------------------------------------------------------------
 
     @GetMapping("/user")
-    public String getUsername(@RequestParam(value = "userId", required = false) String userId) throws RaplaException
+    public String getUsername(@RequestParam(value = "userId") String userId) throws RaplaException
     {
         return delegate.getUsername(userId);
     }
@@ -201,12 +175,12 @@ public class RemoteStorageController
     public UpdateEvent doMerge(@RequestBody RemoteStorage.MergeRequest job,
                                 @RequestParam(value = "lastSynched", required = false) String lastSyncedTime) throws RaplaException
     {
-        return delegate.doMergeSync(job, lastSyncedTime);
+        return delegate.doMerge(job, lastSyncedTime);
     }
 
     @PostMapping("/restart")
     public void restartServer() throws RaplaException
     {
-        delegate.restartServerSync();
+        delegate.restartServer();
     }
 }

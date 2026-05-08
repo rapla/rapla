@@ -20,14 +20,13 @@ import java.time.LocalDateTime;
 import java.util.Date;
 
 public interface Timestamp extends LastChangedTimestamp {
-    /** returns the creation date of the object. */
-    Date getCreateDate();
+    /** returns the creation date of the object. UTC. */
+    LocalDateTime getCreateDateAsLocalDateTime();
     ReferenceInfo<User> getLastChangedBy();
 
-    /** {@code java.time} variant of {@link #getCreateDate()}. UTC.
-     *  Default impl converts via {@link DateTools#toLocalDateTime(Date)}. */
-    default LocalDateTime getCreateDateAsLocalDateTime() {
-        Date d = getCreateDate();
-        return d == null ? null : DateTools.toLocalDateTime(d);
+    /** Legacy {@code Date} accessor — delegates to {@link #getCreateDateAsLocalDateTime()}. */
+    default Date getCreateDate() {
+        LocalDateTime ldt = getCreateDateAsLocalDateTime();
+        return ldt == null ? null : DateTools.toDate(ldt);
     }
 }

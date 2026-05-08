@@ -32,6 +32,7 @@ import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.inject.Extension;
 import org.rapla.logger.Logger;
+import org.springframework.stereotype.Service;
 
 import jakarta.inject.Inject;
 import java.awt.Component;
@@ -40,6 +41,7 @@ import java.util.Collections;
 import java.util.Map;
 import java.util.Set;
 
+@Service
 @Extension(provides = ReservationToolbarExtension.class, id = "holidayexception")
 public class ConflictPeriodReservationButton extends RaplaGUIComponent implements ReservationToolbarExtension
 {

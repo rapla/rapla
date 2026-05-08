@@ -41,6 +41,7 @@ import org.rapla.framework.RaplaInitializationException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.logger.Logger;
 import org.rapla.storage.PermissionController;
+import org.springframework.stereotype.Service;
 
 import jakarta.inject.Inject;
 import javax.swing.DefaultComboBoxModel;
@@ -59,6 +60,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Set;
 
+@Service
 public class AttributeDefaultConstraints extends AbstractEditField implements ActionListener, ChangeListener
 {
     JPanel panel = new JPanel();

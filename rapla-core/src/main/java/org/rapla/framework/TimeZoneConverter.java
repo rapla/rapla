@@ -32,6 +32,19 @@ public interface TimeZoneConverter
 	 * @param time
 	 *            the Date object in the passed timezone 
 	 */
-	Date toRaplaTime(TimeZone timeZone,Date time);	
+	Date toRaplaTime(TimeZone timeZone,Date time);
 
+	/** {@code LocalDateTime} variant of {@link #fromRaplaTime(TimeZone, Date)}. UTC. */
+	default java.time.LocalDateTime fromRaplaTime(TimeZone timeZone, java.time.LocalDateTime raplaTime) {
+		if (raplaTime == null) return null;
+		long millis = fromRaplaTime(timeZone, org.rapla.components.util.DateTools.toMilli(raplaTime));
+		return org.rapla.components.util.DateTools.toLocalDateTime(millis);
+	}
+
+	/** {@code LocalDateTime} variant of {@link #toRaplaTime(TimeZone, Date)}. UTC. */
+	default java.time.LocalDateTime toRaplaTime(TimeZone timeZone, java.time.LocalDateTime time) {
+		if (time == null) return null;
+		long millis = toRaplaTime(timeZone, org.rapla.components.util.DateTools.toMilli(time));
+		return org.rapla.components.util.DateTools.toLocalDateTime(millis);
+	}
 }

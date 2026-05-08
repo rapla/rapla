@@ -1,6 +1,6 @@
 # PRD 009: Server-side bulk-storage REST API (port `RemoteStorage` to Spring controllers)
 
-**Status:** draft
+**Status:** in-progress (Phases 0–4 implemented; Phase 5 error-handling cleanup pending — see endpoint sweep findings below)
 **Date:** 2026-05-08
 **Decision input:** PRD 001 §"What's still alive but dead at runtime" — Phase 4 partial means the server has CRUD endpoints (`/resources`, `/events`, `/dynamictypes`) but never got the bulk-storage operations.
 **Triggering symptom:** `404 /rapla/storage/resources` from the Swing client during initial sync (2026-05-08). After PRD 001 Phase 4 alignment of `/auth/login` (commit pending), this is the next gap blocking a working Swing session.
@@ -146,9 +146,33 @@ Phase 4 acceptance: admin operations (merge, restart) work from Swing.
 
 ### Phase 5 — error handling + DTO cleanup (1 day)
 
-17. Centralize `RaplaException → @ResponseStatus` mapping in a `@ControllerAdvice` so each method doesn't need its own try/catch. Map `RaplaSecurityException → 403`, `EntityNotFoundException → 404`, `RaplaInvalidTokenException → 401`, generic `RaplaException → 500` with the message in the body.
-18. Rename inner classes inside `RemoteStorage.java` if any feel awkward (e.g., `PasswordPost` → `ChangePasswordRequest`).
-19. Drop `@RequestParam` on legacy multi-param methods in favour of explicit DTOs.
+17. Centralize exception → HTTP status mapping in a `@RestControllerAdvice`. Standard mapping (validated against the curl sweep on 2026-05-08, see "Endpoint sweep findings" below):
+
+    | Java exception / condition | HTTP status | Use when |
+    |---|---|---|
+    | `RaplaSecurityException` | **403 Forbidden** | authenticated user lacks permission |
+    | `RaplaInvalidTokenException` / unauthenticated | **401 Unauthorized** | no token, expired token, bad token |
+    | `EntityNotFoundException` | **404 Not Found** | well-formed request, but the entity at that ID doesn't exist (e.g. `GET /resources/ghost`, `GET /storage/user?userId=ghost`) |
+    | Missing required `@RequestParam`, body that fails to deserialize, `AssertionError` from a `null`-arg `Assert.notNull` deep in the call chain | **400 Bad Request** | request itself is malformed (e.g. `GET /storage/user` with no userId, `POST /storage/refreshSync` with no `lastValidated`) |
+    | Generic `RaplaException` | **500 Internal Server Error** | server-side fault, surface the message in the body |
+
+    Don't conflate 400 and 404 — the curl sweep showed both currently return 500, and the right answer is *not* "use 404 for both" but "missing-arg → 400, missing-resource → 404". 422 Unprocessable Entity is allowed for semantically wrong but well-shaped requests; rarely needed here.
+
+18. Audit every `@RequestParam(required = false) String foo` in `RemoteStorageController`: if a `null foo` causes the underlying impl to throw (typical: `Assert.notNull` deep in a `ReferenceInfo<>` constructor), either flip to `required = true` (Spring auto-400s on absence) or add an explicit null-check that throws a typed exception the advice in #17 handles.
+19. Rename inner classes inside `RemoteStorage.java` if any feel awkward (e.g., `PasswordPost` → `ChangePasswordRequest`).
+20. Drop `@RequestParam` on legacy multi-param methods in favour of explicit DTOs.
+
+**Endpoint sweep findings (2026-05-08):** ran `/tmp/sweep.sh` against a live dev server with admin token. 33 of 38 endpoints green; 5 issues land in this phase:
+
+| Endpoint | Symptom | Target |
+|---|---|---|
+| `GET /storage/user` (no userId) | 500 NPE / `Assert.notNull` | 400 |
+| `POST /storage/refreshSync` (no `lastValidated`) | 500 NPE | 400 |
+| `GET /resources/{id}` with nonexistent id | 500 (raw `EntityNotFoundException`) | 404 |
+| `GET /events/{id}` with nonexistent id | 500 (raw `EntityNotFoundException`) | 404 |
+| `POST /auth/refresh` with stub body | 401 | re-verify with a real refresh token from `/auth/login` response; if still 401, debug separately — likely `AuthController.refresh` not yet wired |
+
+`GET /calendar` / `/calendar.csv` returning 404 is *expected* — those endpoints need query params (resource/event IDs and date range); the sweep called them without args. Document the required params in `CalendarPageController`'s Javadoc once we touch it.
 
 ## Tests
 

@@ -22,6 +22,7 @@ import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaInitializationException;
 import org.rapla.framework.StartupEnvironment;
 import org.rapla.scheduler.Promise;
+import org.springframework.stereotype.Service;
 
 import jakarta.inject.Inject;
 import jakarta.inject.Singleton;
@@ -38,6 +39,7 @@ import java.util.Collection;
 import java.util.HashMap;
 
 
+@Service
 @Singleton
 public class ExportServiceList   {
 

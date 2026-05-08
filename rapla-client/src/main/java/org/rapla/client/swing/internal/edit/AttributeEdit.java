@@ -28,6 +28,7 @@ import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaInitializationException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.logger.Logger;
+import org.springframework.stereotype.Service;
 
 import jakarta.inject.Inject;
 import javax.swing.BorderFactory;
@@ -41,6 +42,7 @@ import java.awt.event.ActionListener;
 import java.util.ArrayList;
 import java.util.List;
 
+@Service
 public class AttributeEdit extends RaplaGUIComponent
     implements
     RaplaWidget

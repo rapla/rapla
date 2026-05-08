@@ -42,9 +42,9 @@ public class CalendarModelConfigurationImpl extends AbstractClassifiableFilter i
    List<String> selected;
    List<String> typeList;
    String title;
-   Date startDate;
-   Date endDate;
-   Date selectedDate;
+   java.time.LocalDateTime startDate;
+   java.time.LocalDateTime endDate;
+   java.time.LocalDateTime selectedDate;
    String view;
    Map<String,String> optionMap;
    boolean defaultEventTypes;
@@ -52,6 +52,14 @@ public class CalendarModelConfigurationImpl extends AbstractClassifiableFilter i
    boolean resourceRootSelected;
     
    public CalendarModelConfigurationImpl( Collection<String> selected,Collection<Class<? extends Entity>> idTypeList,boolean resourceRootSelected, ClassificationFilter[] filter, boolean defaultResourceTypes, boolean defaultEventTypes,String title, Date startDate, Date endDate, Date selectedDate,String view,Map<String,String> extensionMap) {
+       this(selected, idTypeList, resourceRootSelected, filter, defaultResourceTypes, defaultEventTypes, title,
+           startDate == null ? null : org.rapla.components.util.DateTools.toLocalDateTime(startDate),
+           endDate == null ? null : org.rapla.components.util.DateTools.toLocalDateTime(endDate),
+           selectedDate == null ? null : org.rapla.components.util.DateTools.toLocalDateTime(selectedDate),
+           view, extensionMap);
+   }
+
+   public CalendarModelConfigurationImpl( Collection<String> selected,Collection<Class<? extends Entity>> idTypeList,boolean resourceRootSelected, ClassificationFilter[] filter, boolean defaultResourceTypes, boolean defaultEventTypes,String title, java.time.LocalDateTime startDate, java.time.LocalDateTime endDate, java.time.LocalDateTime selectedDate,String view,Map<String,String> extensionMap) {
 	   if (selected != null)
 	   {
 	       this.selected = Collections.unmodifiableList(new ArrayList<>(selected));
@@ -67,7 +75,7 @@ public class CalendarModelConfigurationImpl extends AbstractClassifiableFilter i
 	       this.selected = Collections.emptyList();
 	       typeList = Collections.emptyList();
 	   }
-	   
+
        this.view = view;
        this.resourceRootSelected = resourceRootSelected;
        this.defaultEventTypes = defaultEventTypes;
@@ -113,16 +121,20 @@ public class CalendarModelConfigurationImpl extends AbstractClassifiableFilter i
    }
 
     public Date getStartDate() {
-        return startDate;
+        return startDate == null ? null : org.rapla.components.util.DateTools.toDate(startDate);
     }
 
     public Date getEndDate() {
-        return endDate;
+        return endDate == null ? null : org.rapla.components.util.DateTools.toDate(endDate);
     }
 
     public Date getSelectedDate() {
-        return selectedDate;
+        return selectedDate == null ? null : org.rapla.components.util.DateTools.toDate(selectedDate);
     }
+
+    public java.time.LocalDateTime getStartDateAsLocalDateTime() { return startDate; }
+    public java.time.LocalDateTime getEndDateAsLocalDateTime() { return endDate; }
+    public java.time.LocalDateTime getSelectedDateAsLocalDateTime() { return selectedDate; }
 
     public String getTitle() {
         return title;

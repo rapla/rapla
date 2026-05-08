@@ -19,7 +19,6 @@ import org.rapla.framework.RaplaLocale;
 import org.rapla.logger.Logger;
 import org.rapla.storage.RemoteLocaleService;
 
-import jakarta.inject.Inject;
 import javax.swing.Action;
 import javax.swing.DefaultComboBoxModel;
 import javax.swing.DefaultListCellRenderer;
@@ -41,7 +40,6 @@ final public class CountryChooser implements RaplaWidget
     Logger logger;
     Map<String,Set<String>> countries;
     
-    @Inject
     public CountryChooser(Logger logger,final RaplaResources i18n, final RaplaLocale raplaLocale, RemoteLocaleService remoteLocaleService) throws RaplaInitializationException {
         this.logger = logger;
         final String localeCountry = raplaLocale.getLocale().getCountry();

@@ -26,6 +26,7 @@ import org.rapla.facade.client.ClientFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.logger.Logger;
+import org.springframework.stereotype.Service;
 
 import jakarta.inject.Inject;
 import jakarta.inject.Singleton;
@@ -402,6 +403,7 @@ public class PermissionField extends AbstractEditField implements  ChangeListene
         this.eventType = eventType;
     }
     
+    @Service
     @Singleton
     public static class PermissionFieldFactory
     {

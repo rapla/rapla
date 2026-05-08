@@ -48,6 +48,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Date;
 
+@org.springframework.stereotype.Component
 public class IntervalChooserPanel extends RaplaGUIComponent implements RaplaWidget
 {
     Collection<DateChangeListener> listenerList = new ArrayList<>();

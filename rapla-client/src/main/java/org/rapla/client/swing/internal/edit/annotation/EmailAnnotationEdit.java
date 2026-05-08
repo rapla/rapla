@@ -15,11 +15,13 @@ import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.inject.Extension;
 import org.rapla.logger.Logger;
+import org.springframework.stereotype.Service;
 
 import jakarta.inject.Inject;
 import java.util.Collection;
 import java.util.Collections;
 
+@Service
 @Extension(provides= AnnotationEditAttributeExtension.class, id=AttributeAnnotations.KEY_EMAIL)
 public class EmailAnnotationEdit extends RaplaGUIComponent implements AnnotationEditAttributeExtension
 {

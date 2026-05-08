@@ -18,6 +18,7 @@ import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.inject.Extension;
 import org.rapla.logger.Logger;
+import org.springframework.stereotype.Service;
 import org.rapla.scheduler.Promise;
 import org.rapla.scheduler.ResolvedPromise;
 import org.rapla.storage.PermissionController;
@@ -29,6 +30,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.stream.Stream;
 
+@Service
 @Extension(provides = EventCheck.class, id = "requestallocationcheck")
 public class RequestAllocationCheck implements EventCheck
 {

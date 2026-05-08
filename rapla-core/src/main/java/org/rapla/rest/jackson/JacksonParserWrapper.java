@@ -9,12 +9,12 @@ import com.fasterxml.jackson.databind.*;
 import com.fasterxml.jackson.databind.module.SimpleModule;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import org.rapla.logger.ConsoleLogger;
 import org.rapla.logger.NullLogger;
 import org.rapla.rest.JsonParserWrapper;
 import org.rapla.rest.client.RemoteConnectException;
 import org.rapla.rest.client.internal.isodate.ISODateTimeFormat;
-import org.rapla.rest.gson.JsonMergePatch;
 import org.rapla.scheduler.Promise;
 import org.rapla.scheduler.sync.SynchronizedCompletablePromise;
 
@@ -113,6 +113,8 @@ public class JacksonParserWrapper  implements Provider<JsonParserWrapper.JsonPar
             }
         });
         objectMapper.registerModule( module);
+        objectMapper.registerModule( new JavaTimeModule());
+        objectMapper.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
         return objectMapper;
     }
 

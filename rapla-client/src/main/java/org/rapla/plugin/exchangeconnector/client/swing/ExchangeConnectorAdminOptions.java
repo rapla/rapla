@@ -33,6 +33,9 @@ import java.util.List;
 import java.util.Locale;
 
 
+@org.springframework.stereotype.Service(ExchangeConnectorPlugin.PLUGIN_ID)
+@org.springframework.context.annotation.Scope("prototype")
+@org.springframework.context.annotation.Lazy
 @Extension(id=ExchangeConnectorPlugin.PLUGIN_ID, provides=PluginOptionPanel.class)
 public class ExchangeConnectorAdminOptions implements PluginOptionPanel{
 

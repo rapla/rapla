@@ -14,10 +14,10 @@ public class LoginTokens {
     String accessToken;
     String refreshToken;
     long expiresIn;
-    Date validUntil;
+    java.time.LocalDateTime validUntil;
 
     public LoginTokens() {
-        this("", null, 0);
+        this("", (java.time.LocalDateTime) null);
     }
 
     /** Modern constructor matching the server's TokenResponse shape. */
@@ -26,22 +26,26 @@ public class LoginTokens {
         this.refreshToken = refreshToken;
         this.expiresIn = expiresInSeconds;
         this.validUntil = expiresInSeconds > 0
-                ? new Date(System.currentTimeMillis() + expiresInSeconds * 1000L)
+                ? java.time.LocalDateTime.now(java.time.ZoneOffset.UTC).plusSeconds(expiresInSeconds)
                 : null;
     }
 
     /** Legacy constructor — kept for callers that compute validUntil themselves. */
     public LoginTokens(String accessToken, Date validUntil) {
+        this(accessToken, validUntil == null ? null : org.rapla.components.util.DateTools.toLocalDateTime(validUntil));
+    }
+
+    /** {@code LocalDateTime} ctor. UTC. */
+    public LoginTokens(String accessToken, java.time.LocalDateTime validUntil) {
         this.accessToken = accessToken;
         this.validUntil = validUntil;
         this.expiresIn = validUntil == null ? 0
-                : Math.max(0L, (validUntil.getTime() - System.currentTimeMillis()) / 1000L);
+                : Math.max(0L, (org.rapla.components.util.DateTools.toMilli(validUntil) - System.currentTimeMillis()) / 1000L);
     }
 
     /** {@code LocalDateTime} factory paralleling {@link #LoginTokens(String, Date)}. UTC. */
     public static LoginTokens ofLocalDateTime(String accessToken, java.time.LocalDateTime validUntil) {
-        return new LoginTokens(accessToken,
-            validUntil == null ? null : org.rapla.components.util.DateTools.toDate(validUntil));
+        return new LoginTokens(accessToken, validUntil);
     }
 
     /**
@@ -51,7 +55,7 @@ public class LoginTokens {
     public void setExpiresIn(long expiresInSeconds) {
         this.expiresIn = expiresInSeconds;
         this.validUntil = expiresInSeconds > 0
-                ? new Date(System.currentTimeMillis() + expiresInSeconds * 1000L)
+                ? java.time.LocalDateTime.now(java.time.ZoneOffset.UTC).plusSeconds(expiresInSeconds)
                 : null;
     }
 
@@ -74,18 +78,18 @@ public class LoginTokens {
 
     public Date getValidUntil()
     {
-        return validUntil;
+        return validUntil == null ? null : org.rapla.components.util.DateTools.toDate(validUntil);
     }
 
     /** {@code LocalDateTime} variant. UTC. */
     public java.time.LocalDateTime getValidUntilAsLocalDateTime()
     {
-        return validUntil == null ? null : org.rapla.components.util.DateTools.toLocalDateTime(validUntil);
+        return validUntil;
     }
 
     public String toString()
     {
-        return accessToken + "#" + (validUntil == null ? "0" : validUntil.getTime());
+        return accessToken + "#" + (validUntil == null ? "0" : org.rapla.components.util.DateTools.toMilli(validUntil));
     }
 
     public static LoginTokens fromString(String s){
@@ -94,12 +98,12 @@ public class LoginTokens {
         String[] split = s.split("#");
         String accessToken2 = split[0];
         long parseLong = Long.parseLong(split[1]);
-        Date validUntil2 = new Date(parseLong);
+        java.time.LocalDateTime validUntil2 = org.rapla.components.util.DateTools.toLocalDateTime(parseLong);
         return       new LoginTokens(accessToken2, validUntil2);
     }
 
     public boolean isValid() {
         if (validUntil == null) return false;
-        return System.currentTimeMillis() < validUntil.getTime();
+        return System.currentTimeMillis() < org.rapla.components.util.DateTools.toMilli(validUntil);
     }
 }
