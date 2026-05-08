@@ -1,9 +1,10 @@
 package org.rapla.rest.client;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ArrayNode;
-import com.fasterxml.jackson.databind.node.ObjectNode;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.json.JsonMapper;
+import tools.jackson.databind.node.ArrayNode;
+import tools.jackson.databind.node.ObjectNode;
 import org.rapla.endpoints.client.HTTPJsonConnector;
 
 import java.net.URL;
@@ -13,7 +14,7 @@ import java.util.Map;
 
 public class RestAPIExample {
 
-    private static final ObjectMapper MAPPER = new ObjectMapper();
+    private static final ObjectMapper MAPPER = JsonMapper.builder().build();
 
     protected void assertTrue( boolean condition)
     {
@@ -241,10 +242,8 @@ public class RestAPIExample {
         JsonNode event = resultBody.get("result");
         JsonNode classification = event.get("classification").get("data");
         System.out.println("Attributes for object id");
-        java.util.Iterator<Map.Entry<String, JsonNode>> it = classification.fields();
-        while (it.hasNext())
+        for (Map.Entry<String, JsonNode> entry : ((ObjectNode) classification).properties())
         {
-            Map.Entry<String, JsonNode> entry = it.next();
             String key = entry.getKey();
             JsonNode value = entry.getValue();
             System.out.println("  "  + key + "=" + value.toString());

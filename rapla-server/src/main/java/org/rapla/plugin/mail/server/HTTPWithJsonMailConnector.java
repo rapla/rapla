@@ -1,10 +1,9 @@
 package org.rapla.plugin.mail.server;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.json.JsonMapper;
-import com.fasterxml.jackson.databind.node.ObjectNode;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.json.JsonMapper;
+import tools.jackson.databind.node.ObjectNode;
 
 import java.io.IOException;
 import java.net.URL;
@@ -14,7 +13,7 @@ import java.util.Map;
 public class HTTPWithJsonMailConnector extends HTTPMailConnector
 {
     private static final ObjectMapper MAPPER = JsonMapper.builder()
-            .disable(com.fasterxml.jackson.core.json.JsonWriteFeature.ESCAPE_NON_ASCII)
+            .disable(tools.jackson.core.json.JsonWriteFeature.ESCAPE_NON_ASCII)
             .build();
 
     public HTTPWithJsonMailConnector() {
@@ -95,23 +94,7 @@ public class HTTPWithJsonMailConnector extends HTTPMailConnector
 
     public String parseJson(JsonNode jsonObject)
     {
-        final String body;
-        if(jsonObject != null)
-        {
-            try
-            {
-                body = MAPPER.writeValueAsString(jsonObject);
-            }
-            catch (JsonProcessingException e)
-            {
-                throw new RuntimeException(e);
-            }
-        }
-        else
-        {
-            body = "";
-        }
-        return body;
+        return jsonObject != null ? MAPPER.writeValueAsString(jsonObject) : "";
     }
 
 }

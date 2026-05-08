@@ -143,10 +143,6 @@
         <!-- Direct imports in rapla-app (RaplaSpringBootApplication entry point, etc.).
              rxjava/reactive-streams omitted intentionally — scheduled for removal in a
              future PRD. -->
-        <dependency>
-            <groupId>jakarta.inject</groupId>
-            <artifactId>jakarta.inject-api</artifactId>
-        </dependency>
         <!-- Logback at runtime in the fat JAR (not provided — must ship). -->
         <dependency>
             <groupId>ch.qos.logback</groupId>

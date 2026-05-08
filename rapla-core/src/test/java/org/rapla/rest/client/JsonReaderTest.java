@@ -1,7 +1,7 @@
 package org.rapla.rest.client;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
 import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -18,8 +18,8 @@ public class JsonReaderTest
     {
         InputStream stream = getClass().getClassLoader().getResourceAsStream("json.txt");
         final String string = IOUtil.readString(stream,"UTF-8");
-        ObjectMapper mapper = com.fasterxml.jackson.databind.json.JsonMapper.builder()
-                .enable(com.fasterxml.jackson.core.json.JsonReadFeature.ALLOW_SINGLE_QUOTES)
+        ObjectMapper mapper = tools.jackson.databind.json.JsonMapper.builder()
+                .enable(tools.jackson.core.json.JsonReadFeature.ALLOW_SINGLE_QUOTES)
                 .build();
         final JsonNode parse = mapper.readTree(string);
         final JsonNode element = parse.get("attribute");

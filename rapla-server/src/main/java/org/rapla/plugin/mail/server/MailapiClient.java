@@ -1,8 +1,9 @@
 package org.rapla.plugin.mail.server;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ArrayNode;
-import com.fasterxml.jackson.databind.node.ObjectNode;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.json.JsonMapper;
+import tools.jackson.databind.node.ArrayNode;
+import tools.jackson.databind.node.ObjectNode;
 import org.rapla.entities.configuration.Preferences;
 import org.rapla.entities.configuration.RaplaConfiguration;
 import org.rapla.facade.RaplaFacade;
@@ -199,7 +200,7 @@ public class MailapiClient implements MailInterface
             {
                 throw new  MailException(e.getMessage());
             }
-            ObjectMapper mapper = new ObjectMapper();
+            ObjectMapper mapper = JsonMapper.builder().build();
             ObjectNode object = mapper.createObjectNode();
             object.put("FromEmail", senderMail);
             object.put("FromName", "Rapla Admin");

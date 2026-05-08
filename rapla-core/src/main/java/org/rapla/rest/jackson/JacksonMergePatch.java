@@ -84,7 +84,7 @@ public abstract class JacksonMergePatch
         @Override
         public JsonNode apply(final JsonNode input)
         {
-            if (!input.isContainerNode())
+            if (!(input.isObject() || input.isArray()))
                 return mapToNode(fields);
 
 
@@ -138,11 +138,9 @@ public abstract class JacksonMergePatch
 
         private Map<String, JsonNode> asMap(ObjectNode input) {
             Map<String,JsonNode> result = new LinkedHashMap<String,JsonNode>();
-            
-            Iterator<Map.Entry<String, JsonNode>> fields1 = input.fields();
-            while ( fields1.hasNext())
+
+            for (Map.Entry<String, JsonNode> entry : input.properties())
             {
-                Map.Entry<String, JsonNode> entry = fields1.next();
                 JsonNode value = entry.getValue();
                 String key = entry.getKey();
                 result.put( key,value);
@@ -202,11 +200,6 @@ public abstract class JacksonMergePatch
     private static ObjectNode clearNullsFromObject(final ObjectNode node)
     {
         final ObjectNode ret = mapper.createObjectNode();
-        final Iterator<Map.Entry<String, JsonNode>> iterator
-                = node.fields();
-
-        Map.Entry<String, JsonNode> entry;
-        JsonNode value;
 
 	    /*
 	* When faces with an object, cycle through this object's entries.
@@ -215,9 +208,8 @@ public abstract class JacksonMergePatch
 	* result. If not, include a "cleaned up" value for this key instead of
 	* the original element.
 	*/
-        while (iterator.hasNext()) {
-            entry = iterator.next();
-            value = entry.getValue();
+        for (Map.Entry<String, JsonNode> entry : node.properties()) {
+            JsonNode value = entry.getValue();
             if (value != null) {
                 String key = entry.getKey();
                 JsonNode clearNulls = clearNulls(value);

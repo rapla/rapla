@@ -5,7 +5,7 @@ import org.rapla.rest.JacksonObjectMapperFactory;
 import org.rapla.storage.dbrm.RemoteConnectionInfo;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.http.converter.json.MappingJackson2HttpMessageConverter;
+import org.springframework.http.converter.json.JacksonJsonHttpMessageConverter;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.client.support.RestClientAdapter;
 import org.springframework.web.service.invoker.HttpServiceProxyFactory;
@@ -52,17 +52,15 @@ public class ClientProxyConfig
         // UriBuilderFactory that reads info.getServerURL() lazily on each request.
         org.springframework.web.util.UriBuilderFactory dynamicFactory =
                 new DynamicBaseUriBuilderFactory(info, "http://localhost:8051");
-        // Force Jackson with the shared Rapla config (field-based, JavaTimeModule, transient-aware).
-        // Without this, RestClient picks up Gson (transitively from rapla-core) which can't reflect
-        // java.time.LocalDateTime under the JDK module system.
-        MappingJackson2HttpMessageConverter jacksonConverter =
-                new MappingJackson2HttpMessageConverter(JacksonObjectMapperFactory.create());
+        // Force Jackson with the shared Rapla config (field-based, transient-aware).
+        // Without this, RestClient picks up the default Jackson 3 mapper which calls all
+        // getters and re-enters the resolver → cycle / StackOverflowError.
+        // (java.time.* support is built into Jackson 3 — no JavaTimeModule registration needed.)
+        JacksonJsonHttpMessageConverter jacksonConverter =
+                new JacksonJsonHttpMessageConverter(JacksonObjectMapperFactory.create());
         RestClient restClient = builder
                 .uriBuilderFactory(dynamicFactory)
-                .messageConverters(converters -> {
-                    converters.removeIf(c -> c.getClass().getSimpleName().contains("Gson"));
-                    converters.add(0, jacksonConverter);
-                })
+                .messageConverters(converters -> converters.add(0, jacksonConverter))
                 .requestInitializer(request -> {
                     String token = info.getAccessToken();
                     if (token != null && !token.isEmpty())

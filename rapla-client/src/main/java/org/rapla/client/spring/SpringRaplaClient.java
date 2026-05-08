@@ -9,17 +9,12 @@ import org.springframework.beans.factory.config.ConfigurableListableBeanFactory;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
 
 /**
- * Spring-based replacement for the legacy {@code RaplaClient} bootstrap (Phase 4).
+ * Spring-based bootstrap for the Swing client.
  *
- * <p>This boots a Swing-side Spring {@link AnnotationConfigApplicationContext}
- * with {@link ClientConfig} and {@link ClientProxyConfig} and exposes the
- * client facade. It does not yet wire the full Swing UI graph (that's Phase 4
- * step 3) — its purpose is to demonstrate that the client-side Spring DI can
- * produce a working {@code ClientFacade} entirely without {@code restinject}.
- *
- * <p>The legacy {@code RaplaClient} class is still present for backwards
- * compatibility but is broken at runtime since the Phase 1.2 jakarta migration.
- * New client code should use this class instead.
+ * <p>Boots a Swing-side Spring {@link AnnotationConfigApplicationContext} with
+ * {@link ClientConfig} and {@link ClientProxyConfig}, wires the full Swing UI
+ * graph via component scan (see {@link SwingClientConfig}), and exposes the
+ * client facade.
  */
 public class SpringRaplaClient implements AutoCloseable
 {

@@ -1,8 +1,8 @@
 package org.rapla.plugin.tableview.internal;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.SerializationFeature;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.SerializationFeature;
+import tools.jackson.databind.json.JsonMapper;
 import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -20,7 +20,7 @@ import org.rapla.plugin.tableview.internal.TableConfig.ViewDefinition;
 public class TableConfigTest
 {
     @Test
-    public void serializationDesirialization() throws ConfigurationException, JsonProcessingException
+    public void serializationDesirialization() throws ConfigurationException
     {
         TableConfig config = new TableConfig();
         final TableConfig.TableColumnConfig nameColumn;
@@ -58,8 +58,9 @@ public class TableConfigTest
         final ViewDefinition appointmentView = config.getOrCreateView("appointments");
         appointmentView.addColumn(nameColumn);
         appointmentView.addColumn(startColumn);
-        ObjectMapper mapper = new ObjectMapper();
-        mapper.enable(SerializationFeature.INDENT_OUTPUT);
+        ObjectMapper mapper = JsonMapper.builder()
+                .enable(SerializationFeature.INDENT_OUTPUT)
+                .build();
         final String json = mapper.writeValueAsString(config);
         final RaplaConfiguration raplaConfig = TableConfig.print(config);
         final TableConfig test = TableConfig.read(raplaConfig, new RaplaLocaleImpl(new ServerBundleManager()));

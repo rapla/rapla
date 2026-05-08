@@ -1,6 +1,6 @@
 package org.rapla.server.spring.web;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.json.JsonMapper;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -71,7 +71,7 @@ class RemoteStorageErrorMappingIntegrationTest
                         .content("{\"username\":\"homer\",\"password\":\"duffs\"}"))
                 .andExpect(status().isOk())
                 .andReturn();
-        return new ObjectMapper().readTree(login.getResponse().getContentAsString()).get("accessToken").asText();
+        return JsonMapper.builder().build().readTree(login.getResponse().getContentAsString()).get("accessToken").asText();
     }
 
     @Test

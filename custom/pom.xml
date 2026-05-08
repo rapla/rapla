@@ -168,14 +168,9 @@
                                             <overWrite>true</overWrite>
                                             <outputDirectory>${project.build.directory}/${project.build.finalName}/webclient</outputDirectory>
                                         </artifactItem>
-                                        <artifactItem>
-                                            <groupId>org.rapla</groupId>
-                                            <artifactId>restinject</artifactId>
-                                            <version>${restinject.version}</version>
-                                            <type>jar</type>
-                                            <overWrite>true</overWrite>
-                                            <outputDirectory>${project.build.directory}/${project.build.finalName}/webclient</outputDirectory>
-                                        </artifactItem>
+                                        <!-- restinject artifact removed (PRD 002 done 2026-05-08).
+                                             custom/ is out of the reactor; the whole webclient
+                                             assembly path will be rethought in a future PRD. -->
                                     </artifactItems>
                                     <outputDirectory>${project.build.directory}/wars</outputDirectory>
                                     <overWriteReleases>false</overWriteReleases>

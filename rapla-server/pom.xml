@@ -60,10 +60,6 @@
             <groupId>org.springframework.security</groupId>
             <artifactId>spring-security-oauth2-resource-server</artifactId>
         </dependency>
-        <dependency>
-            <groupId>jakarta.inject</groupId>
-            <artifactId>jakarta.inject-api</artifactId>
-        </dependency>
         <!-- Servlet API -->
         <dependency>
             <groupId>jakarta.servlet</groupId>

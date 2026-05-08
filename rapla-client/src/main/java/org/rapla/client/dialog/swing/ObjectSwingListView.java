@@ -6,7 +6,6 @@ import org.rapla.scheduler.CommandScheduler;
 import org.springframework.beans.factory.annotation.Autowired;
 import javax.swing.tree.TreeCellRenderer;
 
-// TODO Workaround until Restinject-Generator can handle proper Generics
 @org.springframework.stereotype.Service
 public class ObjectSwingListView extends SwingListView<Object>
 {

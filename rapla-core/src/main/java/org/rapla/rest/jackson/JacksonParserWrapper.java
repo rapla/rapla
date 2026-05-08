@@ -1,25 +1,25 @@
 package org.rapla.rest.jackson;
 
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
-import com.fasterxml.jackson.annotation.PropertyAccessor;
-import com.fasterxml.jackson.core.JsonGenerator;
-import com.fasterxml.jackson.core.JsonParser;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.*;
-import com.fasterxml.jackson.databind.module.SimpleModule;
-import com.fasterxml.jackson.databind.node.ArrayNode;
-import com.fasterxml.jackson.databind.node.ObjectNode;
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import tools.jackson.core.JsonGenerator;
+import tools.jackson.core.json.JsonReadFeature;
+import tools.jackson.databind.JavaType;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.SerializationContext;
+import tools.jackson.databind.ValueSerializer;
+import tools.jackson.databind.cfg.DateTimeFeature;
+import tools.jackson.databind.json.JsonMapper;
+import tools.jackson.databind.module.SimpleModule;
+import tools.jackson.databind.node.ArrayNode;
+import tools.jackson.databind.node.ObjectNode;
 import org.rapla.logger.ConsoleLogger;
-import org.rapla.logger.NullLogger;
 import org.rapla.rest.JsonParserWrapper;
 import org.rapla.rest.client.RemoteConnectException;
-import org.rapla.rest.client.internal.isodate.ISODateTimeFormat;
 import org.rapla.scheduler.Promise;
 import org.rapla.scheduler.sync.SynchronizedCompletablePromise;
 
 import java.util.function.Supplier;
-import java.io.IOException;
 import java.io.Reader;
 import java.lang.reflect.Type;
 import java.text.DateFormat;
@@ -35,50 +35,29 @@ public class JacksonParserWrapper  implements Supplier<JsonParserWrapper.JsonPar
 
             @Override
             public String toJson(Object object) {
-                try {
-                    return mapper.writeValueAsString(object);
-                } catch (JsonProcessingException e) {
-                    throw new RuntimeException(e);
-                }
+                return mapper.writeValueAsString(object);
             }
 
             @Override
             public <T> T fromJson(String json, Class clazz, Class container)  {
-                try {
-                    return (T) deserializeResultWithJackson(json, clazz, container);
-                } catch (IOException e) {
-                    throw new RuntimeException(e);
-                }
+                return (T) deserializeResultWithJackson(json, clazz, container);
             }
 
             @Override
             public Object fromJson(String json, Type type) {
-                try
-                {
-                    final JavaType javaType = mapper.getTypeFactory().constructType(type);
-                    return mapper.readValue(json, javaType);
-                } catch (IOException e) {
-                    throw new RuntimeException(e);
-                }
+                final JavaType javaType = mapper.getTypeFactory().constructType(type);
+                return mapper.readValue(json, javaType);
             }
 
             @Override
             public <T> T fromJson(Reader json, Type type) {
-                try {
-                    final JavaType javaType = mapper.getTypeFactory().constructType(type);
-                    return mapper.readValue(json, javaType);
-                } catch (IOException e) {
-                    throw new RuntimeException(e);
-                }
+                final JavaType javaType = mapper.getTypeFactory().constructType(type);
+                return mapper.readValue(json, javaType);
             }
 
             @Override
             public String patch(Object unpatchedObject, Reader json) {
-                try {
-                    return applyJsonMergePatch(unpatchedObject, json);
-                } catch (IOException e) {
-                    throw new RuntimeException(e);
-                }
+                return applyJsonMergePatch(unpatchedObject, json);
             }
         };
     }
@@ -86,41 +65,43 @@ public class JacksonParserWrapper  implements Supplier<JsonParserWrapper.JsonPar
     /** Create a default {@link ObjectMapper} with some extra types defined. */
     private static ObjectMapper defaultObjectMapper()
     {
-        ObjectMapper objectMapper = new ObjectMapper();
         DateFormat df = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSX");
-        objectMapper.setTimeZone( TimeZone.getTimeZone("UTC"));
-        objectMapper.setDateFormat(df);
-        objectMapper.configure(JsonParser.Feature.ALLOW_SINGLE_QUOTES, true);
-        objectMapper.setVisibility(PropertyAccessor.ALL, JsonAutoDetect.Visibility.NONE);
-        objectMapper.setVisibility(PropertyAccessor.FIELD, JsonAutoDetect.Visibility.ANY);
         SimpleModule module = new SimpleModule();
-        module.addSerializer(Promise.class, new JsonSerializer<Promise>()
+        module.addSerializer(Promise.class, new ValueSerializer<Promise>()
         {
             @Override
-            public void serialize(Promise promise, JsonGenerator jsonGenerator, SerializerProvider serializerProvider) throws IOException
+            public void serialize(Promise promise, JsonGenerator jsonGenerator, SerializationContext ctx)
             {
                 try
                 {
                     final Object result = SynchronizedCompletablePromise.waitFor(promise, 1000, logger);
-                    JsonSerializer<Object> serializer = serializerProvider.getUnknownTypeSerializer(result.getClass());
-                    serializer.serialize(result,jsonGenerator,serializerProvider);
-                    //serializerProvider.ser
+                    ValueSerializer<Object> serializer = ctx.findValueSerializer(result.getClass());
+                    serializer.serialize(result, jsonGenerator, ctx);
                 }
                 catch (Exception e)
                 {
-                    throw new IOException( e);
+                    throw new RuntimeException(e);
                 }
             }
         });
-        objectMapper.registerModule( module);
-        objectMapper.registerModule( new JavaTimeModule());
-        objectMapper.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
-        return objectMapper;
+        return JsonMapper.builder()
+                .defaultTimeZone(TimeZone.getTimeZone("UTC"))
+                .defaultDateFormat(df)
+                .enable(JsonReadFeature.ALLOW_SINGLE_QUOTES)
+                .changeDefaultVisibility(vc -> vc
+                        .withFieldVisibility(JsonAutoDetect.Visibility.ANY)
+                        .withGetterVisibility(JsonAutoDetect.Visibility.NONE)
+                        .withIsGetterVisibility(JsonAutoDetect.Visibility.NONE)
+                        .withSetterVisibility(JsonAutoDetect.Visibility.NONE)
+                        .withCreatorVisibility(JsonAutoDetect.Visibility.NONE))
+                .addModule(module)
+                .disable(DateTimeFeature.WRITE_DATES_AS_TIMESTAMPS)
+                .build();
     }
 
 
 
-    private static String applyJsonMergePatch(Object unpatchedObject, Reader json) throws IOException {
+    private static String applyJsonMergePatch(Object unpatchedObject, Reader json) {
         final ObjectMapper mapper = defaultObjectMapper();
         JsonNode unpatchedObjectJson = mapper.valueToTree(unpatchedObject);
         JsonNode patchElement = mapper.readTree(json);
@@ -130,7 +111,7 @@ public class JacksonParserWrapper  implements Supplier<JsonParserWrapper.JsonPar
     }
 
 
-    private static Object deserializeResultWithJackson(String unparsedResult, Class resultType, Class container) throws IOException {
+    private static Object deserializeResultWithJackson(String unparsedResult, Class resultType, Class container) {
         if (resultType.equals(void.class))
         {
             return null;
@@ -148,10 +129,9 @@ public class JacksonParserWrapper  implements Supplier<JsonParserWrapper.JsonPar
                 }
                 Collection<Object> result = Set.class.equals(container) ? new LinkedHashSet<>(): new ArrayList<>();
                 ArrayNode list = (ArrayNode)resultElement;
-                for (Iterator<JsonNode> it = list.elements();it.hasNext();)
+                for (JsonNode element : list)
                 {
-                    JsonNode element = it.next();
-                    Object obj = mapper.reader().forType( resultType).readValue( element);
+                    Object obj = mapper.reader().forType(resultType).readValue(element);
                     result.add(obj);
                 }
                 resultObject = result;
@@ -163,13 +143,12 @@ public class JacksonParserWrapper  implements Supplier<JsonParserWrapper.JsonPar
                     throw new RemoteConnectException("JsonObject expected as json result");
                 }
                 final ObjectNode map = ((ObjectNode)resultElement);
-                Map<String, Object> result = new LinkedHashMap<String, Object>();
-                for (Iterator<Map.Entry<String, JsonNode>> it = map.fields();it.hasNext();)
+                Map<String, Object> result = new LinkedHashMap<>();
+                for (Map.Entry<String, JsonNode> entry : map.properties())
                 {
-                    Map.Entry<String, JsonNode> entry = it.next();
                     String key = entry.getKey();
                     JsonNode element = entry.getValue();
-                    Object obj = mapper.reader().forType(resultType).readValue( element);
+                    Object obj = mapper.reader().forType(resultType).readValue(element);
                     result.put(key, obj);
                 }
                 resultObject = result;

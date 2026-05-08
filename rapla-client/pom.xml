@@ -22,10 +22,6 @@
             <groupId>io.reactivex.rxjava3</groupId>
             <artifactId>rxjava</artifactId>
         </dependency>
-        <dependency>
-            <groupId>jakarta.inject</groupId>
-            <artifactId>jakarta.inject-api</artifactId>
-        </dependency>
         <!-- Spring DI for the Swing client (NOT spring-boot-starter-* — see PRD 005 OQ6) -->
         <dependency>
             <groupId>org.springframework</groupId>

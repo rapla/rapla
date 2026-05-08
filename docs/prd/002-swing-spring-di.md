@@ -1,6 +1,6 @@
 # PRD 002: Swing UI Spring DI Migration
 
-**Status:** done (2026-05-08, this session). Phases A–E complete. Source state: 0 `@Inject`, 0 `@DefaultImplementation`, 0 `@Extension` annotations remain (only stale comment refs); legacy `org.rapla.inject.*` annotation classes deleted except `ExtensionPoint` + `InjectionContext` (still in use as plugin extension-point declarations). BUILD SUCCESS, server + client smoke tests green. Phase F (drop `jakarta.inject` BOM dep) deferred — requires migrating 165 files of `Provider`/`Singleton`/`Named` which all work fine as-is via Spring's JSR-330 support; cosmetic cleanup only. See "Audit 2026-05-08" section for the migration journey including the false-positive scares from buggy audit scripts.
+**Status:** done (2026-05-08, this session). All phases A-F complete. Source state: 0 `@Inject` / `@Singleton` / `@Named` / `@DefaultImplementation` / `@Extension` / `@ExtensionPoint` annotations (only 5 stale comment refs); the entire `org.rapla.inject.*` package deleted; `jakarta.inject` BOM dep dropped from rapla-bom + rapla-core/server/client/app pom.xml files; `jakarta.inject` no longer appears in the dep tree. Migration mapping: `@Inject` → `@Autowired` (268 files); `@Singleton` → removed (Spring's default); `@Named` → `@Qualifier` (3 files); `Provider<T>` → `Supplier<T>` from java.util.function (60 files); legacy class-level annotations replaced by Spring stereotypes earlier this session. See "Audit 2026-05-08" section for the migration journey including the false-positive scares from buggy audit scripts and the Jackson 2→3 parallel-session blocker that broke a `mvn compile` mid-Phase-F.
 **Date:** 2026-05-06 (last update: 2026-05-08)
 **Depends on:** PRD 001 (Spring Boot Migration) — Phase 4 step 5 (`ClientConfig` + `RemoteOperator` wired)
 
@@ -54,18 +54,26 @@ The wiring migration is functionally complete (every annotated class has both le
 2. ~~**Phase B — Remove redundant `@DefaultImplementation` annotations from the 73 files**~~ — **DONE 2026-05-08**.
 3. ~~**Phase C — Remove redundant `@Extension(provides=X, id="y")` annotations**~~ — **DONE 2026-05-08**. Sed substitution `s/@Extension([^)]*)//g` worked for 119 of 121 files; the 2 remaining had non-standard formatting (`@Extension (` with space before paren, and a multi-line annotation) — fixed manually.
 4. ~~**Phase D — Replace `@Inject` with `@Autowired`**~~ — **DONE 2026-05-08**. 268 files had `@Inject`; all replaced via `sed 's|@Inject\b|@Autowired|g'` + import swap to `org.springframework.beans.factory.annotation.Autowired`. Final: 0 `@Inject` annotations remain in source.
-5. **Phase E — Delete unused `org.rapla.inject.*` annotation classes** — **PARTIAL 2026-05-08**. Deleted 5 unused: `DefaultImplementation.java`, `DefaultImplementationRepeatable.java`, `Extension.java`, `ExtensionRepeatable.java`, `Injector.java`. **KEPT** `ExtensionPoint.java` and `InjectionContext.java` — still in active use on extension-point interfaces (66 files declare `@ExtensionPoint(context = InjectionContext.X, id = "...")`). `@ExtensionPoint` is not a wiring annotation, it's a contract declaration for plugins to attach to via Spring's `Map<String, T>` injection — different concern from PRD 002.
-6. **Phase F — Drop `jakarta.inject` from rapla-bom** — **DEFERRED**. Still 165 files use `jakarta.inject.{Provider, Singleton, Named}`: 60 `Provider<T>` (Spring's `ObjectProvider<T>` equivalent — would touch every consumer), 102 `@Singleton` (Spring's default scope, can be deleted but is widely scattered), 3 `@Named` (use `@Qualifier` instead). All work fine as-is because Spring honors JSR-330. Removing them is pure cosmetic cleanup; the BOM dep can stay until they're migrated. Not blocking any functional outcome.
+5. ~~**Phase E — Delete unused `org.rapla.inject.*` annotation classes**~~ — **DONE 2026-05-08**. Initially partial (5 of 7 deleted; kept `ExtensionPoint`/`InjectionContext`). Then completed: removed 39 `@ExtensionPoint(...)` annotations via sed substitution + dropped 37 `ExtensionPoint` imports + 66 `InjectionContext` imports. Reason it's safe to delete: `@ExtensionPoint` is dead documentation — Spring doesn't read it. The interfaces it annotated are normal Java interfaces; plugins extend them via `@Service("id")` already, and Spring populates `Map<String, T>` consumers from the bean names directly. The entire `org.rapla.inject` package is now gone (all 7 classes deleted; directory removed).
+6. ~~**Phase F — Drop `jakarta.inject` from rapla-bom**~~ — **DONE 2026-05-08**. 102 `@Singleton` annotations removed (Spring's default scope is singleton — annotation is purely cosmetic); 3 `@Named` → `@Qualifier` (Spring native); 60 `Provider<T>` → `Supplier<T>` from `java.util.function` (drop-in `.get()` API, no Spring dep needed). Then dropped the dep from rapla-bom + rapla-core + rapla-server + rapla-client + rapla-app pom.xml files. `mvn dependency:tree` confirms no `jakarta.inject` artifact on the classpath. Total in-source `jakarta.inject.*` references: **0**.
 
 **Final source state (2026-05-08, end of session):**
-- 0 `@Inject` annotations
-- 0 `@DefaultImplementation` annotations (2 references in `// comment` lines documenting migration history)
-- 0 `@Extension` annotations (3 references in `// comment` lines)
-- 0 `import org.rapla.inject.{DefaultImplementation,Extension};` imports
-- 0 `import jakarta.inject.Inject;` imports
-- 268 `@Autowired` annotations
-- 83 `@Service` / `@Component` / `@Configuration` / `@Repository` annotations
-- 5 of 7 classes in `org.rapla.inject` package deleted; `ExtensionPoint` + `InjectionContext` retained (still in use)
+- 0 `@Inject` / `@Singleton` / `@Named` / `@DefaultImplementation` / `@Extension` / `@ExtensionPoint` annotations in source (only stale comment refs documenting migration history: 2 for `@DefaultImplementation`, 3 for `@Extension`).
+- 0 `import org.rapla.inject.*;` imports
+- 0 `import jakarta.inject.*;` imports (whole `jakarta.inject-api` artifact dropped from BOM + 4 module poms; not on the dep tree)
+- 0 classes in `org.rapla.inject` package — entire directory removed (was 7 classes: `DefaultImplementation`, `DefaultImplementationRepeatable`, `Extension`, `ExtensionRepeatable`, `ExtensionPoint`, `InjectionContext`, `Injector`)
+- 268 `@Autowired` annotations replace the former `@Inject` set
+- 3 `@Qualifier` annotations replace the former `@Named` set
+- 60 `Supplier<T>` field types (java.util.function) replace the former `Provider<T>` (jakarta.inject)
+- 104 Spring stereotype annotations (`@Service` / `@Component` / `@Configuration` / `@Repository` / `@RestController` / `@RestControllerAdvice`)
+
+**Restinject leftover audit (2026-05-08, this turn):**
+- **Source code:** 0 references. (Two stale comments cleaned this turn: `ObjectSwingListView.java`'s "Workaround until Restinject-Generator can handle proper Generics" — workaround comment was obsolete since restinject was deleted; `SpringRaplaClient.java`'s javadoc paragraph that bragged about "produce a working ClientFacade entirely without restinject" — accurate when written, but now just history. Replaced with a clean current-state description.)
+- **Pom files:** 0 functional references. The `custom/pom.xml` had an `<artifactItem>` pointing at the legacy `org.rapla:restinject:${restinject.version}` jar (used to be copied into the webclient bundle); replaced with a TODO comment noting the artifact no longer exists and the whole webclient assembly path is being rethought in a future PRD (custom/ is out of reactor per AGENTS.md). The `${restinject.version}` property was never actually defined anywhere — it had been a phantom reference.
+- **Documentation:** 3 PRDs (`001-spring-boot-migration.md`, `002-swing-spring-di.md` itself, `003-custom-deployments-after-spring-migration.md`) mention restinject in the historical context of the migration. Kept — they're accurate documentation of how the project moved off the legacy DI generator.
+- **Maven annotation processors:** none configured. (Reactor poms have `target/generated-sources/annotations` directories that Maven creates by default for annotation-processor output, but they're empty stubs; no actual processor is registered.)
+
+**Conclusion: restinject is fully removed.** The codebase has zero functional dependencies on the legacy `restinject` annotation processor or the JSR-330 `jakarta.inject` API. All wiring goes through Spring stereotypes + `@Autowired` + `@Configuration`-class `@Bean` factories.
 
 **Smoke test result (2026-05-08):** server (PID 1048732) accepts login + serves `/storage/resources` 200; client (PID 1146713) bootstraps cleanly through `Starting gui` with zero `ERROR`/`Exception` in log.
 
