@@ -25,11 +25,6 @@
     </build>
 
     <dependencies>
-        <!-- DI annotations -->
-        <dependency>
-            <groupId>jakarta.inject</groupId>
-            <artifactId>jakarta.inject-api</artifactId>
-        </dependency>
         <!-- REST endpoint interfaces (Spring @HttpExchange + @RequestMapping family) -->
         <dependency>
             <groupId>jakarta.ws.rs</groupId>
@@ -39,25 +34,15 @@
             <groupId>org.springframework</groupId>
             <artifactId>spring-web</artifactId>
         </dependency>
-        <!-- JSON wire format (entities, REST DTOs) -->
+        <!-- Jackson 3 (tools.jackson) — entities, REST DTOs, JSON wire format. -->
         <dependency>
-            <groupId>com.fasterxml.jackson.core</groupId>
+            <groupId>tools.jackson.core</groupId>
             <artifactId>jackson-databind</artifactId>
             <scope>provided</scope>
         </dependency>
         <dependency>
-            <groupId>com.fasterxml.jackson.core</groupId>
+            <groupId>tools.jackson.core</groupId>
             <artifactId>jackson-core</artifactId>
-            <scope>provided</scope>
-        </dependency>
-        <dependency>
-            <groupId>com.fasterxml.jackson.core</groupId>
-            <artifactId>jackson-annotations</artifactId>
-            <scope>provided</scope>
-        </dependency>
-        <dependency>
-            <groupId>com.fasterxml.jackson.datatype</groupId>
-            <artifactId>jackson-datatype-jsr310</artifactId>
             <scope>provided</scope>
         </dependency>
         <!-- Utility -->

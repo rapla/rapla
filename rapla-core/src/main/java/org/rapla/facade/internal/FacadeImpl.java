@@ -59,7 +59,6 @@ import org.rapla.storage.RaplaSecurityException;
 import org.rapla.storage.StorageOperator;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import jakarta.inject.Singleton;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -86,7 +85,6 @@ import org.rapla.scheduler.Consumer;
  * are all components that implement the {@link StorageOperator} interface.
  * </p>
  */
-@Singleton
 public class FacadeImpl implements RaplaFacade {
 	private StorageOperator operator;
 	private final RaplaResources i18n;

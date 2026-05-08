@@ -42,7 +42,7 @@ import org.rapla.framework.RaplaLocale;
 import org.rapla.logger.Logger;
 import org.rapla.plugin.abstractcalendar.client.swing.AbstractRaplaSwingCalendar;
 
-import jakarta.inject.Provider;
+import java.util.function.Supplier;
 import javax.swing.JComponent;
 import javax.swing.JLabel;
 import java.awt.Font;
@@ -55,7 +55,7 @@ public class SwingWeekCalendar extends AbstractRaplaSwingCalendar
 {
     
     public SwingWeekCalendar(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, CalendarModel model, boolean editable,
-            boolean printing, Set<ObjectMenuFactory> objectMenuFactories, MenuFactory menuFactory, final Provider<DateRenderer> dateRendererProvider,
+            boolean printing, Set<ObjectMenuFactory> objectMenuFactories, MenuFactory menuFactory, final Supplier<DateRenderer> dateRendererProvider,
             CalendarSelectionModel calendarSelectionModel, RaplaClipboard clipboard, ReservationController reservationController, InfoFactory infoFactory,
             DateRenderer dateRenderer, DialogUiFactoryInterface dialogUiFactory,
             IOInterface ioInterface, AppointmentFormater appointmentFormater, EditController editController) throws RaplaException

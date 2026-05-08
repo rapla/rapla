@@ -11,7 +11,6 @@ import org.rapla.logger.Logger;
 import org.rapla.server.RaplaKeyStorage;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import jakarta.inject.Singleton;
 import java.security.KeyPair;
 import java.security.KeyPairGenerator;
 import java.security.NoSuchAlgorithmException;
@@ -20,7 +19,6 @@ import java.security.PublicKey;
 import java.util.Collection;
 import java.util.Collections;
 
-@Singleton
 public class RaplaKeyStorageImpl implements RaplaKeyStorage
 {
 	//private static final String USER_KEYSTORE = "keystore";

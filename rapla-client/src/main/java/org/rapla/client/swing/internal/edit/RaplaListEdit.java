@@ -12,7 +12,6 @@ import org.rapla.components.layout.TableLayout;
 import org.springframework.stereotype.Service;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import jakarta.inject.Singleton;
 import javax.swing.BorderFactory;
 import javax.swing.Box;
 import javax.swing.BoxLayout;
@@ -512,7 +511,6 @@ final public class RaplaListEdit<T> implements
 	}
 
     @Service
-    @Singleton
     public static class RaplaListEditFactory
     {
 

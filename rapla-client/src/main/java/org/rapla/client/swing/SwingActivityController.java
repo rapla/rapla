@@ -9,9 +9,7 @@ import org.springframework.stereotype.Service;
 import org.rapla.logger.Logger;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import jakarta.inject.Singleton;
 
-@Singleton
 @Service
 public class SwingActivityController extends AbstractActivityController
 {

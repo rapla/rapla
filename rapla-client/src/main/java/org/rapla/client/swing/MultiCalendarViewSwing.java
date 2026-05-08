@@ -25,7 +25,6 @@ import org.rapla.components.layout.TableLayout;
 import org.rapla.entities.dynamictype.ClassificationFilter;
 import org.rapla.facade.ClassifiableFilter;
 import org.rapla.framework.RaplaInitializationException;
-import org.rapla.inject.InjectionContext;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import javax.swing.*;

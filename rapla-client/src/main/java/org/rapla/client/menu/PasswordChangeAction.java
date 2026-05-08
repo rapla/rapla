@@ -25,7 +25,7 @@ import org.rapla.framework.RaplaException;
 import org.rapla.storage.PermissionController;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import jakarta.inject.Provider;
+import java.util.function.Supplier;
 
 @org.springframework.stereotype.Service
 @org.springframework.context.annotation.Scope("prototype")
@@ -41,10 +41,10 @@ public class PasswordChangeAction {
 
     boolean enabled;
     I18nIcon icon;
-    private final Provider<PasswordChangeView> view;
+    private final Supplier<PasswordChangeView> view;
 
     @Autowired
-    public PasswordChangeAction( RaplaResources i18n,DialogUiFactoryInterface dialogUiFactory, MenuItemFactory menuItemFactory, ClientFacade clientFacade, Provider<PasswordChangeView> view) {
+    public PasswordChangeAction( RaplaResources i18n,DialogUiFactoryInterface dialogUiFactory, MenuItemFactory menuItemFactory, ClientFacade clientFacade, Supplier<PasswordChangeView> view) {
         this.i18n = i18n;
         this.dialogUiFactory = dialogUiFactory;
         name = i18n.format("change.format",i18n.getString("password"));

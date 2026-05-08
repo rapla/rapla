@@ -23,13 +23,11 @@ import org.rapla.framework.RaplaException;
 import org.rapla.logger.Logger;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import jakarta.inject.Singleton;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 
-@Singleton
 public class RaplaClipboard implements ModificationListener
 {
     private Appointment appointment;

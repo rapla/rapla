@@ -15,7 +15,7 @@ import org.rapla.facade.ModificationEvent;
 import org.rapla.facade.client.ClientFacade;
 import org.rapla.framework.RaplaException;
 
-import jakarta.inject.Provider;
+import java.util.function.Supplier;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -27,7 +27,7 @@ public class ModifiableCalendarState
 
     private final ClientFacade facade;
 
-    final private Provider<CalendarSelectionModel> calendarModel;
+    final private Supplier<CalendarSelectionModel> calendarModel;
 
     public CalendarSelectionModel getModel()
     {
@@ -43,7 +43,7 @@ public class ModifiableCalendarState
         };
     }
 
-    public ModifiableCalendarState(ClientFacade facade,Provider<CalendarSelectionModel> calendarModel)
+    public ModifiableCalendarState(ClientFacade facade,Supplier<CalendarSelectionModel> calendarModel)
     {
         this.facade = facade;
         this.calendarModel = calendarModel;

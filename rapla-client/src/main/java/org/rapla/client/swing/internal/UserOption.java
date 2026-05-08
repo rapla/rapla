@@ -39,7 +39,7 @@ import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Service;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import jakarta.inject.Provider;
+import java.util.function.Supplier;
 import javax.swing.AbstractAction;
 import javax.swing.JComponent;
 import javax.swing.JLabel;
@@ -73,11 +73,11 @@ public class UserOption extends RaplaGUIComponent implements UserOptionPanel
     private final DialogUiFactoryInterface dialogUiFactory;
 
     private final IOInterface ioInterface;
-    private final Provider<PasswordChangeAction> passwordChangeAction;
+    private final Supplier<PasswordChangeAction> passwordChangeAction;
 
     @Autowired
     public UserOption(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger,
-            DialogUiFactoryInterface dialogUiFactory, IOInterface ioInterface,Provider<PasswordChangeAction> passwordChangeAction)
+            DialogUiFactoryInterface dialogUiFactory, IOInterface ioInterface,Supplier<PasswordChangeAction> passwordChangeAction)
     {
         super(facade, i18n, raplaLocale, logger);
         this.passwordChangeAction = passwordChangeAction;

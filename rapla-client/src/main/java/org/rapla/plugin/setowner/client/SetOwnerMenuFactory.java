@@ -33,8 +33,7 @@ import org.rapla.storage.StorageOperator;
 import org.springframework.stereotype.Service;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import jakarta.inject.Provider;
-import jakarta.inject.Singleton;
+import java.util.function.Supplier;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
@@ -44,7 +43,6 @@ import java.util.TreeSet;
 import java.util.stream.Collectors;
 
 @Service
-@Singleton
 
 public class SetOwnerMenuFactory implements ObjectMenuFactory
 {
@@ -54,9 +52,9 @@ public class SetOwnerMenuFactory implements ObjectMenuFactory
     RaplaFacade facade;
     ClientFacade clientFacade;
     private final MenuItemFactory menuItemFactory;
-    private final Provider<ListView> listViewProvider;
+    private final Supplier<ListView> listViewProvider;
     @Autowired
-    public SetOwnerMenuFactory(ClientFacade clientFacade, RaplaResources i18n, SetOwnerResources setOwnerI18n, DialogUiFactoryInterface dialogUiFactory, MenuItemFactory menuItemFactory, Provider<ListView> listViewProvider)
+    public SetOwnerMenuFactory(ClientFacade clientFacade, RaplaResources i18n, SetOwnerResources setOwnerI18n, DialogUiFactoryInterface dialogUiFactory, MenuItemFactory menuItemFactory, Supplier<ListView> listViewProvider)
     {
         this.setOwnerI18n = setOwnerI18n;
         this.clientFacade = clientFacade;

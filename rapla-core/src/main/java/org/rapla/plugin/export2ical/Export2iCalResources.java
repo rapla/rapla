@@ -6,10 +6,8 @@ import org.rapla.components.i18n.BundleManager;
 import org.rapla.components.i18n.I18nBundle;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import jakarta.inject.Singleton;
 
  
-@Singleton
 public class Export2iCalResources extends AbstractBundle
 {
     public static final String BUNDLENAME = Export2iCalPlugin.PLUGIN_ID + ".Export2iCalResources";

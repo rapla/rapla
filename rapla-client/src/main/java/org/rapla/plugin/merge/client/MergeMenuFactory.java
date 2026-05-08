@@ -23,13 +23,12 @@ import org.rapla.storage.PermissionController;
 import org.springframework.stereotype.Service;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import jakarta.inject.Singleton;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
 
 @Service
-@Singleton  public class MergeMenuFactory implements ObjectMenuFactory
+  public class MergeMenuFactory implements ObjectMenuFactory
 {
     private final RaplaResources i18n;
     private final MenuItemFactory menuItemFactory;

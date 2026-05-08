@@ -18,19 +18,19 @@ import org.springframework.context.annotation.Lazy;
 import org.springframework.context.annotation.Scope;
 import org.springframework.context.annotation.ScopedProxyMode;
 
-import jakarta.inject.Provider;
+import java.util.function.Supplier;
 import java.util.Set;
 
 /**
  * Phase 4 of PRD 002 — registers {@link EditTaskPresenter} under each of its 5
  * legacy {@code @Extension} ids so {@code Application.activityPresenters}
- * (a {@code Map<String, Provider<TaskPresenter>>} keyed by id) can dispatch to it.
+ * (a {@code Map<String, Supplier<TaskPresenter>>} keyed by id) can dispatch to it.
  *
  * <p>The legacy DI used {@code }
  * five times on one class. Spring's {@code @Service} can only set a single bean
  * name, so we use 5 prototype-scoped {@code @Bean} factory methods, each named
  * after one of the legacy ids and each returning a freshly-constructed
- * {@code EditTaskPresenter}. {@code Provider<TaskPresenter>} from
+ * {@code EditTaskPresenter}. {@code Supplier<TaskPresenter>} from
  * {@code activityPresenters.get("editEvents").get()} resolves to a fresh instance
  * via Spring's prototype scope, matching the legacy semantics.
  */
@@ -43,7 +43,7 @@ public class EditTaskPresenterConfig
     public EditTaskPresenter editEventsTaskPresenter(ClientFacade clientFacade, EditTaskViewFactory editTaskViewFactory,
                                                      DialogUiFactoryInterface dialogUiFactory, RaplaResources i18n,
                                                      ApplicationEventBus eventBus, CalendarSelectionModel model,
-                                                     Provider<ReservationEdit> reservationEditProvider,
+                                                     Supplier<ReservationEdit> reservationEditProvider,
                                                      ReservationController reservationController, Set<MergeCheckExtension> mergeCheckers,
                                                      CommandScheduler scheduler)
     {
@@ -57,7 +57,7 @@ public class EditTaskPresenterConfig
     public EditTaskPresenter editResourcesTaskPresenter(ClientFacade clientFacade, EditTaskViewFactory editTaskViewFactory,
                                                         DialogUiFactoryInterface dialogUiFactory, RaplaResources i18n,
                                                         ApplicationEventBus eventBus, CalendarSelectionModel model,
-                                                        Provider<ReservationEdit> reservationEditProvider,
+                                                        Supplier<ReservationEdit> reservationEditProvider,
                                                         ReservationController reservationController, Set<MergeCheckExtension> mergeCheckers,
                                                         CommandScheduler scheduler)
     {
@@ -71,7 +71,7 @@ public class EditTaskPresenterConfig
     public EditTaskPresenter createReservationForDynamicTypeTaskPresenter(ClientFacade clientFacade, EditTaskViewFactory editTaskViewFactory,
                                                                           DialogUiFactoryInterface dialogUiFactory, RaplaResources i18n,
                                                                           ApplicationEventBus eventBus, CalendarSelectionModel model,
-                                                                          Provider<ReservationEdit> reservationEditProvider,
+                                                                          Supplier<ReservationEdit> reservationEditProvider,
                                                                           ReservationController reservationController, Set<MergeCheckExtension> mergeCheckers,
                                                                           CommandScheduler scheduler)
     {
@@ -85,7 +85,7 @@ public class EditTaskPresenterConfig
     public EditTaskPresenter createReservationFromTemplateTaskPresenter(ClientFacade clientFacade, EditTaskViewFactory editTaskViewFactory,
                                                                         DialogUiFactoryInterface dialogUiFactory, RaplaResources i18n,
                                                                         ApplicationEventBus eventBus, CalendarSelectionModel model,
-                                                                        Provider<ReservationEdit> reservationEditProvider,
+                                                                        Supplier<ReservationEdit> reservationEditProvider,
                                                                         ReservationController reservationController, Set<MergeCheckExtension> mergeCheckers,
                                                                         CommandScheduler scheduler)
     {
@@ -99,7 +99,7 @@ public class EditTaskPresenterConfig
     public EditTaskPresenter mergeResourcesTaskPresenter(ClientFacade clientFacade, EditTaskViewFactory editTaskViewFactory,
                                                          DialogUiFactoryInterface dialogUiFactory, RaplaResources i18n,
                                                          ApplicationEventBus eventBus, CalendarSelectionModel model,
-                                                         Provider<ReservationEdit> reservationEditProvider,
+                                                         Supplier<ReservationEdit> reservationEditProvider,
                                                          ReservationController reservationController, Set<MergeCheckExtension> mergeCheckers,
                                                          CommandScheduler scheduler)
     {

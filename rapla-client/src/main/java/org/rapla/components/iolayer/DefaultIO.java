@@ -15,7 +15,6 @@ package org.rapla.components.iolayer;
 import org.rapla.logger.Logger;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import jakarta.inject.Singleton;
 import javax.print.Doc;
 import javax.print.DocFlavor;
 import javax.print.PrintException;
@@ -49,7 +48,6 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.net.URL;
 
-@Singleton
 public class DefaultIO  implements IOInterface{
     static DocFlavor flavor = DocFlavor.SERVICE_FORMATTED.PRINTABLE;
     /**

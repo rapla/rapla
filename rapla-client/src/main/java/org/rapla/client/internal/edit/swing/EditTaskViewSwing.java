@@ -13,10 +13,9 @@ import org.rapla.client.swing.toolkit.RaplaButton;
 import org.rapla.entities.Entity;
 import org.rapla.entities.IllegalAnnotationException;
 import org.rapla.framework.RaplaException;
-import org.rapla.inject.InjectionContext;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import jakarta.inject.Provider;
+import java.util.function.Supplier;
 import javax.swing.JComponent;
 import javax.swing.JPanel;
 import java.awt.BorderLayout;
@@ -30,14 +29,14 @@ import java.util.Map;
 @org.springframework.context.annotation.Lazy
 public class EditTaskViewSwing implements EditTaskViewFactory<Component>
 {
-    protected final Map<String, Provider<EditComponent>> editUiProvider;
+    protected final Map<String, Supplier<EditComponent>> editUiProvider;
     private final DialogUiFactoryInterface dialogUiFactory;
     private final RaplaResources i18n;
-    final Provider<AllocatableMergeEditUI> mergeUiProvider;
+    final Supplier<AllocatableMergeEditUI> mergeUiProvider;
 
     @Autowired
-    public EditTaskViewSwing(Map<String, Provider<EditComponent>> editUiProvider, DialogUiFactoryInterface dialogUiFactory, RaplaResources i18n,
-            Provider<AllocatableMergeEditUI> mergeUiProvider)
+    public EditTaskViewSwing(Map<String, Supplier<EditComponent>> editUiProvider, DialogUiFactoryInterface dialogUiFactory, RaplaResources i18n,
+            Supplier<AllocatableMergeEditUI> mergeUiProvider)
     {
         this.editUiProvider = editUiProvider;
         this.dialogUiFactory = dialogUiFactory;
@@ -59,7 +58,7 @@ public class EditTaskViewSwing implements EditTaskViewFactory<Component>
             }
             else
             {
-                final Provider<EditComponent> editComponentProvider = editUiProvider.get(id);
+                final Supplier<EditComponent> editComponentProvider = editUiProvider.get(id);
                 if (editComponentProvider != null)
                 {
                     ui = (EditComponent<T, JComponent>) editComponentProvider.get();

@@ -33,7 +33,6 @@ import org.rapla.facade.Conflict;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaInitializationException;
 import org.rapla.framework.RaplaLocale;
-import org.rapla.inject.InjectionContext;
 import org.rapla.logger.Logger;
 
 import org.springframework.beans.factory.annotation.Autowired;

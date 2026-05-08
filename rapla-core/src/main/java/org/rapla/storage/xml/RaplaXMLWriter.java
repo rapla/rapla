@@ -35,7 +35,7 @@ import org.rapla.entities.storage.ReferenceInfo;
 import org.rapla.framework.RaplaException;
 import org.rapla.logger.Logger;
 
-import jakarta.inject.Provider;
+import java.util.function.Supplier;
 import java.io.IOException;
 import java.util.Date;
 import java.util.Iterator;
@@ -55,7 +55,7 @@ abstract public class RaplaXMLWriter extends XMLWriter
     Map<Class<? extends RaplaObject>,RaplaXMLWriter> writerMap;
     protected RaplaXMLContext context;
     protected SerializableDateTimeFormat dateTimeFormat = SerializableDateTimeFormat.INSTANCE;
-    Provider<Category> superCategory;
+    Supplier<Category> superCategory;
     
     public RaplaXMLWriter( RaplaXMLContext context) throws RaplaException {
         this.context = context;

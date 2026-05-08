@@ -17,11 +17,11 @@ import org.slf4j.ILoggerFactory;
 import org.slf4j.LoggerFactory;
 import org.slf4j.spi.LocationAwareLogger;
 
-import jakarta.inject.Provider;
+import java.util.function.Supplier;
 
 @SuppressWarnings("restriction")
 
-public class Slf4jAdapter implements Provider<Logger>
+public class Slf4jAdapter implements Supplier<Logger>
 {
     static final public int TRACE_INT = 00;
     static final public int DEBUG_INT = 10;

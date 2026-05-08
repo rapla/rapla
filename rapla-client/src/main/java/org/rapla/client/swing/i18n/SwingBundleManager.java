@@ -7,14 +7,12 @@ import org.rapla.components.i18n.internal.PropertyResourceBundleWrapper;
 import org.rapla.logger.Logger;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import jakarta.inject.Singleton;
 import javax.swing.*;
 import java.io.IOException;
 import java.net.URL;
 import java.util.*;
 
 
-@Singleton
 @org.springframework.stereotype.Service
 @org.springframework.context.annotation.Primary
 public class SwingBundleManager extends AbstractBundleManager

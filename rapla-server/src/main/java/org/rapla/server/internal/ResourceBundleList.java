@@ -4,7 +4,6 @@ import org.rapla.components.i18n.BundleManager;
 import org.rapla.components.i18n.I18nBundle;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import jakarta.inject.Singleton;
 import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
@@ -12,7 +11,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 
-@Singleton public class ResourceBundleList
+ public class ResourceBundleList
 {
     private final Set<String> bundleIds;
     private final BundleManager bundleManager;

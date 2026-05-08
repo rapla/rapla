@@ -21,13 +21,11 @@ import org.rapla.framework.RaplaInitializationException;
 import org.rapla.framework.TypedComponentRole;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import jakarta.inject.Singleton;
 import java.util.Date;
 import java.util.LinkedHashSet;
 import java.util.Set;
 
 /** <strong>WARNING!!</strong> This class should not be public to the outside. Please use the interface */
-@Singleton
 public class CalendarOptionsImpl implements CalendarOptions {
     public final static TypedComponentRole<RaplaConfiguration> CALENDAR_OPTIONS= new TypedComponentRole<>("org.rapla.calendarview");
     public final static TypedComponentRole<Boolean> SHOW_CONFLICT_WARNING = new TypedComponentRole<>("org.rapla.conflict.showWarning");

@@ -17,7 +17,6 @@ import org.rapla.components.util.Tools;
 import org.rapla.logger.Logger;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import jakarta.inject.Singleton;
 import javax.swing.*;
 import java.awt.Component;
 import java.awt.Container;
@@ -33,7 +32,6 @@ import java.util.Stack;
    The FrameControllerList is responsible for positioning the windows
    and closing all open windows on exit.
 */
-@Singleton
 final public class FrameControllerList {
     private final Stack<FrameController> openFrameController = new Stack<FrameController>();
     Point center;

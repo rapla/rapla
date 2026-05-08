@@ -2638,7 +2638,7 @@ class UserGroupStorage extends EntityStorage<User> implements SubStorage<User>
 class HistoryStorage<T extends Entity<T>> extends RaplaTypeStorage<T>
 {
 
-    private final JsonParserWrapper.JsonParser gson;
+    private final JsonParserWrapper.JsonParser jsonParser;
     private final Date supportTimestamp;
     private final String loadAllUpdatesSql;
 
@@ -2649,7 +2649,7 @@ class HistoryStorage<T extends Entity<T>> extends RaplaTypeStorage<T>
                         "ISDELETE INTEGER NOT NULL" });
         loadAllUpdatesSql = "SELECT ID, TYPE, ENTITY_CLASS, XML_VALUE, CHANGED_AT, ISDELETE FROM CHANGES WHERE CHANGED_AT >= ? ORDER BY CHANGED_AT ASC";
         Class[] additionalClasses = new Class[] { RaplaMapImpl.class };
-        gson = JsonParserWrapper.defaultJson().get();
+        jsonParser = JsonParserWrapper.defaultJson().get();
         if (context.has(Date.class))
         {
             supportTimestamp = context.lookup(Date.class);
@@ -2915,7 +2915,7 @@ class HistoryStorage<T extends Entity<T>> extends RaplaTypeStorage<T>
         stmt.setString(1, entity.getId());
         stmt.setString(2, RaplaType.getLocalName(entity));
         stmt.setString(3, entity.getClass().getCanonicalName());
-        final String xml = gson.toJson(entity);
+        final String xml = jsonParser.toJson(entity);
         setText(stmt, 4, xml);
         stmt.setTimestamp(5, new java.sql.Timestamp(timestamp.getTime()));
         setInt(stmt, 6, asDeletion ? 1 : 0);

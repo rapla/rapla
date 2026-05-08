@@ -37,7 +37,7 @@ import org.rapla.scheduler.Promise;
 import org.rapla.scheduler.ResolvedPromise;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import jakarta.inject.Provider;
+import java.util.function.Supplier;
 import javax.swing.JComponent;
 import javax.swing.JMenuItem;
 import java.awt.event.ActionEvent;
@@ -61,10 +61,10 @@ public class CopyPluginMenu  extends RaplaGUIComponent implements EditMenuExtens
 
 	private boolean enabled = true;
     private final PeriodCopyResources periodCopyI18n;
-    private final Provider<CopyDialog> copyDialogProvider;
+    private final Supplier<CopyDialog> copyDialogProvider;
     private final DialogUiFactoryInterface dialogUiFactory;
 	@Autowired
-    public CopyPluginMenu(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, PeriodCopyResources periodCopyI18n, Provider<CopyDialog> copyDialogProvider,  DialogUiFactoryInterface dialogUiFactory)  {
+    public CopyPluginMenu(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, PeriodCopyResources periodCopyI18n, Supplier<CopyDialog> copyDialogProvider,  DialogUiFactoryInterface dialogUiFactory)  {
         super(facade, i18n, raplaLocale, logger);
         //menu.insert( new RaplaSeparator("info_end"));
         this.periodCopyI18n = periodCopyI18n;

@@ -14,15 +14,13 @@ import org.rapla.storage.dbsql.DBOperator;
 import org.rapla.storage.impl.server.ImportExportManagerImpl;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import jakarta.inject.Provider;
-import jakarta.inject.Singleton;
+import java.util.function.Supplier;
 import javax.sql.DataSource;
 import java.util.Map;
 import java.util.Set;
 
 
-@Singleton
-public class ServerStorageSelector implements Provider<CachableStorageOperator>
+public class ServerStorageSelector implements Supplier<CachableStorageOperator>
 {
     final ServerContainerContext containerContext;
     FileOperator file;
@@ -65,14 +63,14 @@ public class ServerStorageSelector implements Provider<CachableStorageOperator>
         return manager;
     }
 
-    public Provider<ImportExportManager> getImportExportManager()
+    public Supplier<ImportExportManager> getImportExportManager()
     {
         return () -> getImportExport();
     }
 
     @NotNull private DBOperator createDbOperator()
     {
-        Provider<ImportExportManager> importExportMananger = getImportExportManager();
+        Supplier<ImportExportManager> importExportMananger = getImportExportManager();
         final DataSource dbDatasource = containerContext.getMainDbDatasource();
         return new DBOperator(logger, i18n, raplaLocale, scheduler, functionFactoryMap, importExportMananger, dbDatasource, permissionExtensions);
     }

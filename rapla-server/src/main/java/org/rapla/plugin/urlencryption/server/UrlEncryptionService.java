@@ -5,7 +5,6 @@ import org.rapla.framework.RaplaInitializationException;
 import org.rapla.plugin.urlencryption.UrlEncryption;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import jakarta.inject.Singleton;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.ws.rs.core.Context;
 
@@ -16,7 +15,6 @@ import jakarta.ws.rs.core.Context;
  *
  * @author Jonas Kohlbrenner
 */
-@Singleton
 public class UrlEncryptionService implements UrlEncryption
 {
     @Autowired

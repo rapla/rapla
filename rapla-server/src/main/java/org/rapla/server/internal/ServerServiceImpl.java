@@ -44,7 +44,7 @@ import org.rapla.storage.StorageOperator;
 import org.rapla.storage.impl.server.LocalAbstractCachableOperator;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import jakarta.inject.Provider;
+import java.util.function.Supplier;
 import java.util.Collection;
 import java.util.Locale;
 import java.util.Map;
@@ -69,7 +69,7 @@ public class ServerServiceImpl implements ServerServiceContainer
     }
 
     @Autowired public ServerServiceImpl(CachableStorageOperator operator, RaplaFacade facade, RaplaLocale raplaLocale, TimeZoneConverter importExportLocale,
-            Logger logger, final Provider<Map<String, ServerExtension>> serverExtensions, final Provider<Set<ServletRequestPreprocessor>> requestPreProcessors,
+            Logger logger, final Supplier<Map<String, ServerExtension>> serverExtensions, final Supplier<Set<ServletRequestPreprocessor>> requestPreProcessors,
             CommandScheduler scheduler, ServerContainerContext serverContainerContext,RaplaResources i18n, RaplaSystemInfo systemInfo, ServerBundleManager bundleManager) throws RaplaInitializationException
     {
         String version = systemInfo.getString("rapla.version");

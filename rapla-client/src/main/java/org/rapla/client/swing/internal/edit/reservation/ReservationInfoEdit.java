@@ -56,7 +56,6 @@ import org.rapla.scheduler.ResolvedPromise;
 import org.rapla.storage.PermissionController;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import jakarta.inject.Singleton;
 import javax.swing.BorderFactory;
 import javax.swing.JComponent;
 import javax.swing.JLabel;
@@ -753,7 +752,6 @@ public class ReservationInfoEdit extends RaplaGUIComponent
     
     }
 
-    @Singleton
     @org.springframework.stereotype.Service
     @org.springframework.context.annotation.Lazy
     public static class ReservationInfoEditFactory

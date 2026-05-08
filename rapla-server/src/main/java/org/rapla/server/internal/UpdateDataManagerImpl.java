@@ -49,7 +49,6 @@ import org.rapla.storage.UpdateResult.Change;
 import org.rapla.storage.UpdateResult.Remove;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import jakarta.inject.Singleton;
 import java.util.Collection;
 import java.util.Date;
 import java.util.HashSet;
@@ -59,7 +58,6 @@ import java.util.TimeZone;
 /** Provides an adapter for each client-session to their shared storage operator
  * Handles security and synchronizing aspects.
  */
-@Singleton
 public class UpdateDataManagerImpl implements  UpdateDataManager
 {
     private final CachableStorageOperator operator;

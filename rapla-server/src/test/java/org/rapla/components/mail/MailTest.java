@@ -4,14 +4,14 @@ import junit.framework.TestCase;
 import org.rapla.framework.RaplaException;
 import org.rapla.plugin.mail.server.MailapiClient;
 
-import jakarta.inject.Provider;
+import java.util.function.Supplier;
 
 public class MailTest extends TestCase
 {
     
     public void testMailSend() throws RaplaException
     {
-        Provider<Object> provider =new Provider<Object>()
+        Supplier<Object> provider =new Supplier<Object>()
         {
             @Override
             public Object get()

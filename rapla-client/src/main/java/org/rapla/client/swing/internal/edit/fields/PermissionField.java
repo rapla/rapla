@@ -29,7 +29,6 @@ import org.rapla.logger.Logger;
 import org.springframework.stereotype.Service;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import jakarta.inject.Singleton;
 import javax.swing.BorderFactory;
 import javax.swing.DefaultComboBoxModel;
 import javax.swing.DefaultListCellRenderer;
@@ -404,7 +403,6 @@ public class PermissionField extends AbstractEditField implements  ChangeListene
     }
     
     @Service
-    @Singleton
     public static class PermissionFieldFactory
     {
         private final ClientFacade facade;

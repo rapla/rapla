@@ -23,7 +23,7 @@ import org.rapla.framework.RaplaLocale;
 import org.rapla.logger.Logger;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import jakarta.inject.Provider;
+import java.util.function.Supplier;
 import javax.swing.SwingUtilities;
 import java.awt.Component;
 import java.awt.Dimension;
@@ -37,10 +37,10 @@ public class PrintAction extends RaplaAction {
     CalendarSelectionModel model;
     PageFormat m_pageFormat;
     final Map<String,SwingViewFactory> factoryMap;
-    private final Provider<CalendarPrintDialog> calendarPringDialogProvider;
+    private final Supplier<CalendarPrintDialog> calendarPringDialogProvider;
     private final DialogUiFactoryInterface dialogUiFactory;
     @Autowired
-    public PrintAction(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, Map<String, SwingViewFactory> factoryMap,Provider<CalendarPrintDialog> calendarPringDialogProvider, DialogUiFactoryInterface dialogUiFactory) {
+    public PrintAction(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, Map<String, SwingViewFactory> factoryMap,Supplier<CalendarPrintDialog> calendarPringDialogProvider, DialogUiFactoryInterface dialogUiFactory) {
         super(facade, i18n, raplaLocale, logger);
         this.factoryMap = factoryMap;
         this.calendarPringDialogProvider = calendarPringDialogProvider;

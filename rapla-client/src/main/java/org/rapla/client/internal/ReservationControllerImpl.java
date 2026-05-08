@@ -37,14 +37,13 @@ import org.rapla.facade.RaplaFacade;
 import org.rapla.facade.client.ClientFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
-import org.rapla.inject.InjectionContext;
 import org.rapla.logger.Logger;
 import org.rapla.scheduler.Promise;
 import org.rapla.scheduler.ResolvedPromise;
 import org.rapla.storage.PermissionController;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import jakarta.inject.Provider;
+import java.util.function.Supplier;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -77,11 +76,11 @@ public class ReservationControllerImpl implements ReservationController {
     private final DialogUiFactoryInterface dialogUI;
     private final DeleteDialogInterface deleteDialog;
     private final PermissionController permissionController;
-    private final Provider<Set<EventCheck>> eventCheckers;
+    private final Supplier<Set<EventCheck>> eventCheckers;
 
     @Autowired
     public ReservationControllerImpl(ClientFacade facade, RaplaLocale raplaLocale, Logger logger, RaplaResources i18n, AppointmentFormater appointmentFormater,
-                                     CalendarSelectionModel calendarModel, RaplaClipboard clipboard, DialogUiFactoryInterface dialogUI, DeleteDialogInterface deleteDialog, Provider<Set<EventCheck>> eventCheckers) {
+                                     CalendarSelectionModel calendarModel, RaplaClipboard clipboard, DialogUiFactoryInterface dialogUI, DeleteDialogInterface deleteDialog, Supplier<Set<EventCheck>> eventCheckers) {
         this.facade = facade;
         this.raplaLocale = raplaLocale;
         this.logger = logger;
@@ -1285,7 +1284,7 @@ public class ReservationControllerImpl implements ReservationController {
         return checkEvents(eventCheckers, entities, sourceComponent);
     }
 
-    private Promise<Boolean> checkEvents(Provider<Set<EventCheck>> checkers, Collection<? extends Entity> entities, PopupContext sourceComponent) {
+    private Promise<Boolean> checkEvents(Supplier<Set<EventCheck>> checkers, Collection<? extends Entity> entities, PopupContext sourceComponent) {
         List<Reservation> reservations = new ArrayList<>();
         for (Entity entity : entities) {
             if (entity.getTypeClass() == Reservation.class) {

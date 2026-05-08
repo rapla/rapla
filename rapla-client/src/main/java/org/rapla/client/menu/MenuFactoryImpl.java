@@ -51,8 +51,7 @@ import org.rapla.plugin.abstractcalendar.RaplaBlock;
 import org.rapla.storage.PermissionController;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import jakarta.inject.Provider;
-import jakarta.inject.Singleton;
+import java.util.function.Supplier;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -65,7 +64,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
 
-@Singleton
 @org.springframework.stereotype.Service
 @org.springframework.context.annotation.Lazy
 public class MenuFactoryImpl
@@ -81,16 +79,16 @@ public class MenuFactoryImpl
     private final RaplaFacade raplaFacade;
     private final RaplaResources i18n;
     private final RaplaLocale raplaLocale;
-    private final Provider<RaplaObjectActions> actions;
-    private final Provider<AppointmentAction> appointmentActions;
-    private final Provider<UserAction> userActions;
-    private final Provider<PasswordChangeAction> passwordChangeAction;
+    private final Supplier<RaplaObjectActions> actions;
+    private final Supplier<AppointmentAction> appointmentActions;
+    private final Supplier<UserAction> userActions;
+    private final Supplier<PasswordChangeAction> passwordChangeAction;
     private final RaplaClipboard clipboard;
     private final ApplicationEventBus eventBus;
 
     @Autowired public MenuFactoryImpl(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, MenuItemFactory menuItemFactory, Set<ReservationWizardExtension> reservationWizards, Set<ObjectMenuFactory> objectMenuFactories,
-            CalendarSelectionModel model, Provider<RaplaObjectActions> actions, Provider<AppointmentAction> appointmentActions, Provider<UserAction> userActions,
-            Provider<PasswordChangeAction> passwordChangeAction, RaplaClipboard raplaClipboard, ApplicationEventBus eventBus)
+            CalendarSelectionModel model, Supplier<RaplaObjectActions> actions, Supplier<AppointmentAction> appointmentActions, Supplier<UserAction> userActions,
+            Supplier<PasswordChangeAction> passwordChangeAction, RaplaClipboard raplaClipboard, ApplicationEventBus eventBus)
     {
         this.raplaLocale = raplaLocale;
         this.i18n = i18n;

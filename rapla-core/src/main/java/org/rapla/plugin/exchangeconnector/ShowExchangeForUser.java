@@ -6,9 +6,7 @@ import org.rapla.entities.domain.Permission;
 import org.rapla.storage.StorageOperator;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import jakarta.inject.Singleton;
 
-@Singleton
 public class ShowExchangeForUser {
 
     StorageOperator operator;

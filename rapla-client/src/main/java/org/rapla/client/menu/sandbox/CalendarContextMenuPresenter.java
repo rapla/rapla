@@ -30,7 +30,6 @@ import org.rapla.scheduler.Promise;
 import org.rapla.storage.PermissionController;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import jakarta.inject.Singleton;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -39,7 +38,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-@Singleton
 public class CalendarContextMenuPresenter extends RaplaComponent implements MenuView.Presenter
 {
     protected boolean keepTime = false;

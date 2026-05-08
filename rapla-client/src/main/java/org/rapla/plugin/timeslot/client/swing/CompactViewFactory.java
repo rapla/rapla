@@ -40,14 +40,12 @@ import org.rapla.plugin.timeslot.TimeslotProvider;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.context.annotation.Lazy;
-import jakarta.inject.Provider;
-import jakarta.inject.Singleton;
+import java.util.function.Supplier;
 import javax.swing.Icon;
 import java.util.Set;
 
 @Service
 @Lazy
-@Singleton
 
 public class CompactViewFactory implements SwingViewFactory
 {
@@ -55,7 +53,7 @@ public class CompactViewFactory implements SwingViewFactory
     final private Set<ObjectMenuFactory> objectMenuFactories;
     private final MenuFactory menuFactory;
     private final TimeslotProvider timeslotProvider;
-    private final Provider<DateRenderer> dateRendererProvider;
+    private final Supplier<DateRenderer> dateRendererProvider;
     private final CalendarSelectionModel calendarSelectionModel;
     private final RaplaClipboard clipboard;
     private final ReservationController reservationController;
@@ -73,7 +71,7 @@ public class CompactViewFactory implements SwingViewFactory
 
     @Autowired
     public CompactViewFactory(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, Set<ObjectMenuFactory> objectMenuFactories,
-            MenuFactory menuFactory, TimeslotProvider timeslotProvider, Provider<DateRenderer> dateRendererProvider,
+            MenuFactory menuFactory, TimeslotProvider timeslotProvider, Supplier<DateRenderer> dateRendererProvider,
             CalendarSelectionModel calendarSelectionModel, RaplaClipboard clipboard, ReservationController reservationController, InfoFactory infoFactory,
             DateRenderer dateRenderer, DialogUiFactoryInterface dialogUiFactory,
             IOInterface ioInterface, AppointmentFormater appointmentFormater, EditController editController) throws RaplaInitializationException

@@ -26,11 +26,9 @@ import org.rapla.framework.RaplaLocale;
 import org.springframework.stereotype.Service;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import jakarta.inject.Singleton;
 import java.awt.Color;
 import java.util.Set;
 
-@Singleton
 @Service
 public class RaplaDateRenderer implements DateRenderer {
     protected WeekendHighlightRenderer renderer = new WeekendHighlightRenderer();

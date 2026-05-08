@@ -39,14 +39,12 @@ import org.rapla.plugin.dayresource.DayResourcePlugin;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.context.annotation.Lazy;
-import jakarta.inject.Provider;
-import jakarta.inject.Singleton;
+import java.util.function.Supplier;
 import javax.swing.Icon;
 import java.util.Set;
 
 @Service
 @Lazy
-@Singleton
 
 public class DayResourceViewFactory implements SwingViewFactory
 {
@@ -56,7 +54,7 @@ public class DayResourceViewFactory implements SwingViewFactory
     private final RaplaResources i18n;
     private final Set<ObjectMenuFactory> objectMenuFactories;
     private final MenuFactory menuFactory;
-    private final Provider<DateRenderer> dateRendererProvider;
+    private final Supplier<DateRenderer> dateRendererProvider;
     private final CalendarSelectionModel calendarSelectionModel;
     private final RaplaClipboard clipboard;
     private final ReservationController reservationController;
@@ -69,7 +67,7 @@ public class DayResourceViewFactory implements SwingViewFactory
     private final EditController editController;
     
     @Autowired
-    public DayResourceViewFactory(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, Set<ObjectMenuFactory> objectMenuFactories, MenuFactory menuFactory, Provider<DateRenderer> dateRendererProvider, CalendarSelectionModel calendarSelectionModel, RaplaClipboard clipboard, ReservationController reservationController, InfoFactory infoFactory, DateRenderer dateRenderer, DialogUiFactoryInterface dialogUiFactory, IOInterface ioInterface, AppointmentFormater appointmentFormater, EditController editController )
+    public DayResourceViewFactory(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, Set<ObjectMenuFactory> objectMenuFactories, MenuFactory menuFactory, Supplier<DateRenderer> dateRendererProvider, CalendarSelectionModel calendarSelectionModel, RaplaClipboard clipboard, ReservationController reservationController, InfoFactory infoFactory, DateRenderer dateRenderer, DialogUiFactoryInterface dialogUiFactory, IOInterface ioInterface, AppointmentFormater appointmentFormater, EditController editController )
     {
         this.facade = facade;
         this.i18n = i18n;

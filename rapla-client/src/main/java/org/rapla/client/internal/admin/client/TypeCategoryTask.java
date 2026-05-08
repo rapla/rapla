@@ -15,7 +15,7 @@ import org.rapla.facade.RaplaFacade;
 import org.rapla.scheduler.*;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import jakarta.inject.Provider;
+import java.util.function.Supplier;
 
 
 @org.springframework.stereotype.Service(TypeCategoryTask.ID)
@@ -23,7 +23,7 @@ import jakarta.inject.Provider;
 public class TypeCategoryTask implements TaskPresenter {
 
     public final static String ID = "admin_types";
-    final Provider<TypeCategoryView> viewProvider;
+    final Supplier<TypeCategoryView> viewProvider;
     private final Subject<String> busyIdleObservable;
     private final RaplaFacade raplaFacade;
     private final DialogUiFactoryInterface dialogUIFactory;
@@ -35,7 +35,7 @@ public class TypeCategoryTask implements TaskPresenter {
 
 
     @Autowired
-    public TypeCategoryTask(CommandScheduler scheduler, Provider<TypeCategoryView> viewProvider, RaplaFacade raplaFacade, DialogUiFactoryInterface dialogUIFactory, RaplaResources i18n, ApplicationEventBus eventBus)
+    public TypeCategoryTask(CommandScheduler scheduler, Supplier<TypeCategoryView> viewProvider, RaplaFacade raplaFacade, DialogUiFactoryInterface dialogUIFactory, RaplaResources i18n, ApplicationEventBus eventBus)
     {
         this.viewProvider = viewProvider;
         this.raplaFacade = raplaFacade;

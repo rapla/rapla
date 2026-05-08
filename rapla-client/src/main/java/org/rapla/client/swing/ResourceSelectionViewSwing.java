@@ -48,7 +48,6 @@ import org.rapla.facade.client.ClientFacade;
 import org.rapla.facade.internal.CalendarModelImpl;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaInitializationException;
-import org.rapla.inject.InjectionContext;
 import org.rapla.logger.Logger;
 
 import org.springframework.beans.factory.annotation.Autowired;

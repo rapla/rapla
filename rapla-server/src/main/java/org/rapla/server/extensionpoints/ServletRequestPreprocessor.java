@@ -1,8 +1,6 @@
 package org.rapla.server.extensionpoints;
 
 import org.rapla.framework.RaplaException;
-import org.rapla.inject.ExtensionPoint;
-import org.rapla.inject.InjectionContext;
 
 import jakarta.servlet.ServletContext;
 import jakarta.servlet.http.HttpServletRequest;
@@ -11,7 +9,7 @@ import jakarta.servlet.http.HttpServletResponse;
 /** you can add servlet pre processer to manipulate request and response before standard processing is
  * done by rapla
  */
-@ExtensionPoint(context = InjectionContext.server,id="servletprocessor")
+
 public interface ServletRequestPreprocessor {
     
     /**

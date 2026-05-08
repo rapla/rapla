@@ -8,12 +8,10 @@ import org.rapla.components.i18n.I18nBundle;
 import org.rapla.components.i18n.I18nIcon;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import jakarta.inject.Singleton;
 import java.util.Date;
 import java.util.Locale;
 
 
-@Singleton
 public class RaplaResources extends AbstractBundle {
     public static final String BUNDLENAME = "org.rapla.RaplaResources";
 

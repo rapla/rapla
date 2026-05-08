@@ -4,11 +4,9 @@ import org.rapla.components.util.IOUtil;
 import org.rapla.framework.TimeZoneConverter;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import jakarta.inject.Singleton;
 import java.util.Date;
 import java.util.TimeZone;
 
-@Singleton
 public class TimeZoneConverterImpl implements TimeZoneConverter
 {
     TimeZone zone;

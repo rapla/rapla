@@ -21,7 +21,6 @@ import org.rapla.framework.RaplaLocale;
 import org.rapla.logger.Logger;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import jakarta.inject.Singleton;
 import javax.swing.JComponent;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
@@ -159,7 +158,6 @@ public class LongField extends AbstractEditField implements ChangeListener, Focu
 		multipleValuesLabel.setFont(multipleValuesLabel.getFont().deriveFont(Font.ITALIC));
 	}
 	
-    @Singleton
     @org.springframework.stereotype.Service
     public static final class LongFieldFactory
     {

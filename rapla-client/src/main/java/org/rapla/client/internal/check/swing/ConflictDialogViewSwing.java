@@ -7,7 +7,6 @@ import org.rapla.client.swing.internal.view.RaplaSwingTreeModel;
 import org.rapla.client.swing.toolkit.RaplaTree;
 import org.rapla.facade.Conflict;
 import org.rapla.framework.RaplaException;
-import org.rapla.inject.InjectionContext;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import javax.swing.*;

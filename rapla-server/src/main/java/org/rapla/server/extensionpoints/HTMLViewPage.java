@@ -15,8 +15,6 @@
 package org.rapla.server.extensionpoints;
 
 import org.rapla.facade.CalendarModel;
-import org.rapla.inject.ExtensionPoint;
-import org.rapla.inject.InjectionContext;
 
 import jakarta.servlet.ServletContext;
 import jakarta.servlet.ServletException;
@@ -24,7 +22,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 
-@ExtensionPoint(context = InjectionContext.server,id ="htmlexport")
+
 public interface HTMLViewPage
 {
     void generatePage( ServletContext context, HttpServletRequest request, HttpServletResponse response, CalendarModel model ) throws IOException, ServletException;

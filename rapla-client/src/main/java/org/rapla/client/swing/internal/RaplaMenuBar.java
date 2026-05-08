@@ -72,8 +72,7 @@ import org.rapla.storage.PermissionController;
 import org.rapla.storage.dbrm.RestartServer;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import jakarta.inject.Provider;
-import jakarta.inject.Singleton;
+import java.util.function.Supplier;
 import javax.swing.AbstractAction;
 import javax.swing.Action;
 import javax.swing.BorderFactory;
@@ -97,7 +96,6 @@ import java.util.Enumeration;
 import java.util.Set;
 import java.util.stream.Stream;
 
-@Singleton
 @org.springframework.stereotype.Service
 @org.springframework.context.annotation.Lazy
 public class RaplaMenuBar extends RaplaGUIComponent
@@ -108,20 +106,20 @@ public class RaplaMenuBar extends RaplaGUIComponent
     JMenuItem templateEdit;
     private final EditController editController;
     private final DialogUiFactoryInterface dialogUiFactory;
-    private final Provider<TemplateEdit> templateEditFactory;
+    private final Supplier<TemplateEdit> templateEditFactory;
     private final CalendarSelectionModel model;
-    Provider<LicenseInfoUI> licenseInfoUIProvider;
+    Supplier<LicenseInfoUI> licenseInfoUIProvider;
     final private ApplicationEventBus appEventBus;
     private final RaplaSystemInfo systemInfo;
     private final MenuItemFactory menuItemFactory;
-    private final Provider<UserAction> userActionProvider;
+    private final Supplier<UserAction> userActionProvider;
 
 
     @Autowired public RaplaMenuBar(RaplaMenuBarContainer menuBarContainer, ClientFacade clientFacade, RaplaSystemInfo systemInfo, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger,
             PrintAction printAction, Set<AdminMenuExtension> adminMenuExt, Set<EditMenuExtension> editMenuExt, Set<ViewMenuExtension> viewMenuExt, Set<HelpMenuExtension> helpMenuExt, Set<ImportMenuExtension> importMenuExt,
             Set<ExportMenuExtension> exportMenuExt, EditController editController, CalendarSelectionModel model, UserClientService clientService, RestartServer restartServerService,
-            DialogUiFactoryInterface dialogUiFactory, Provider<TemplateEdit> templateEditFactory, Provider<LicenseInfoUI> licenseInfoUIProvider, CalendarEventBus eventBus, ApplicationEventBus appEventBus, MenuItemFactory menuItemFactory,
-            Provider<UserAction> userActionProvider)            throws RaplaInitializationException
+            DialogUiFactoryInterface dialogUiFactory, Supplier<TemplateEdit> templateEditFactory, Supplier<LicenseInfoUI> licenseInfoUIProvider, CalendarEventBus eventBus, ApplicationEventBus appEventBus, MenuItemFactory menuItemFactory,
+            Supplier<UserAction> userActionProvider)            throws RaplaInitializationException
     {
         super(clientFacade, i18n, raplaLocale, logger);
         this.systemInfo = systemInfo;

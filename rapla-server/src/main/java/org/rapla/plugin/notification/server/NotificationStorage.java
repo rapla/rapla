@@ -12,7 +12,6 @@ import org.rapla.rest.JsonParserWrapper;
 import org.rapla.storage.CachableStorageOperator;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import jakarta.inject.Singleton;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.LinkedHashMap;
@@ -20,12 +19,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
-@Singleton
 public class NotificationStorage
 {
     private final CachableStorageOperator operator;
     private final RaplaFacade facade;
-    private final JsonParserWrapper.JsonParser gson = JsonParserWrapper.defaultJson().get();
+    private final JsonParserWrapper.JsonParser jsonParser = JsonParserWrapper.defaultJson().get();
     private  Map<String, ExternalSyncEntity> exportMails = new LinkedHashMap<>();
     private final Map<AllocationMail, String> mailToRaplaId = new LinkedHashMap<>();
 
@@ -52,10 +50,10 @@ public class NotificationStorage
         final long currentTimeMillis = System.currentTimeMillis();
         for (ExternalSyncEntity exportMailDb : exportMails.values())
         {
-            final AllocationMail mail = gson.fromJson(exportMailDb.getData(), AllocationMail.class);
+            final AllocationMail mail = jsonParser.fromJson(exportMailDb.getData(), AllocationMail.class);
             final String id = exportMailDb.getId();
             mailToRaplaId.put(mail, id);
-            final NotificationContext context = gson.fromJson(exportMailDb.getContext(), NotificationContext.class);
+            final NotificationContext context = jsonParser.fromJson(exportMailDb.getContext(), NotificationContext.class);
             final long nextTime = context.insertTimestamp + (context.retryCount + 1) * DateTools.MILLISECONDS_PER_MINUTE * 10;
             if (nextTime < currentTimeMillis)
             {
@@ -77,11 +75,11 @@ public class NotificationStorage
             importExportEntityImpl.setExternalSystem(NotificationService.NOTIFICATION_LOCK_ID);
             final String raplaId = new String(charArray);
             importExportEntityImpl.setId(raplaId);
-            importExportEntityImpl.setData(gson.toJson(allocationMail));
+            importExportEntityImpl.setData(jsonParser.toJson(allocationMail));
             final NotificationContext context = new NotificationContext();
             // TODO think about getting timestamp from somewhere else
             context.insertTimestamp = System.currentTimeMillis();
-            importExportEntityImpl.setContext(gson.toJson(context));
+            importExportEntityImpl.setContext(jsonParser.toJson(context));
             toStore.add(importExportEntityImpl);
             exportMails.put(raplaId, importExportEntityImpl);
             mailToRaplaId.put(allocationMail, raplaId);
@@ -99,10 +97,10 @@ public class NotificationStorage
                 final ExternalSyncEntity externalSyncEntity = exportMails.get(exportId);
                 if (externalSyncEntity != null)
                 {
-                    final NotificationContext context = gson.fromJson(externalSyncEntity.getContext(), NotificationContext.class);
+                    final NotificationContext context = jsonParser.fromJson(externalSyncEntity.getContext(), NotificationContext.class);
                     context.retryCount++;
                     final ExternalSyncEntityImpl edit = (ExternalSyncEntityImpl) facade.edit(externalSyncEntity);
-                    edit.setContext(gson.toJson(context));
+                    edit.setContext(jsonParser.toJson(context));
                     facade.store(externalSyncEntity);
                 }
             }

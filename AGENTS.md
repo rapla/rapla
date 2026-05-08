@@ -223,9 +223,13 @@ If `mtime` is the same across two calls a second apart, the server is silent (id
 
 ### 9. Swing client lifecycle — start, stop, restart, inspect
 
-The Swing client is a plain-Spring (NOT Spring Boot) main class — `org.rapla.client.spring.SpringRaplaClient` — launched via `mvn -pl rapla-client exec:java` (PRD 002). The `exec-maven-plugin` is preconfigured in `rapla-client/pom.xml` with `mainClass=SpringRaplaClient` and `classpathScope=runtime`. The client uses plain `AnnotationConfigApplicationContext` (no `@SpringBootApplication`), so `spring-boot:run` is **not** the right launcher — it silently no-ops because there's no Boot main class to detect. PID/log file paths below assume the canonical checkout — substitute `logs/rapla-client-N.{pid,log}` in worktrees.
+The Swing client is a plain-Spring (NOT Spring Boot) main class — `org.rapla.client.spring.SpringRaplaClient` — launched via `mvn -pl rapla-client -am compile exec:java` (PRD 002). The `exec-maven-plugin` is preconfigured in `rapla-client/pom.xml` with `mainClass=SpringRaplaClient` and `classpathScope=runtime`, plus a BOM-level `skip=true` placeholder so `-am exec:java` only fires on rapla-client. The client uses plain `AnnotationConfigApplicationContext` (no `@SpringBootApplication`), so `spring-boot:run` is **not** the right launcher — it silently no-ops because there's no Boot main class to detect. PID/log file paths below assume the canonical checkout — substitute `logs/rapla-client-N.{pid,log}` in worktrees.
 
-**Stale m2-jar trap.** `exec:java` resolves rapla-core via `~/.m2/repository/.../rapla-core-2.1-SNAPSHOT.jar`. When a parallel session is editing rapla-core, that jar lags and you get cryptic `NoSuchMethodError` / "cannot find symbol method ..." failures at runtime — the rapla-client `target/classes` was compiled against the *new* rapla-core source but the runtime classloader pulls the *old* jar from m2. **Solution:** before launching, run `mvn -pl rapla-bom,rapla-core install -DskipTests` to refresh the m2 jar. This is the only safe way today — the alternatives (`-am exec:java`, `spring-boot:run`) either fail with parameter errors or no-op silently. Document the install step inline whenever you write a launch sequence.
+**Hard rule — NEVER `mvn install`.** Same prohibition as §8: installing into `~/.m2/repository` shadows in-reactor `target/classes` for sibling modules and silently runs *stale* code. The Swing client launch must use in-reactor classes only.
+
+**Why this needs special handling.** `mvn -pl rapla-client exec:java` (single-module) cannot resolve rapla-core unless it's in m2 — that's why `install` was historically required. The fix lives in `rapla-bom/pom.xml`: exec-maven-plugin is bound at BOM level with `<skip>true</skip>` and a placeholder `<mainClass>java.lang.Object</mainClass>` (the plugin validates `mainClass` before honouring `skip`, so the placeholder is required). rapla-client's `<plugins>` overrides `skip=false` + the real mainClass. Net effect: `-am exec:java` walks the reactor, skips the goal on rapla-bom/rapla-core, and runs only on rapla-client — which sees the freshly-compiled `target/classes` of every sibling.
+
+**Canonical launch:** `mvn -pl rapla-client -am compile exec:java` (chain `compile` so upstream modules' `target/classes` are fresh; `exec:java` then runs only on rapla-client).
 
 **The client connects to a server on the URL set by `RemoteConnectionInfo.serverURL`** (defaulted by `StartupEnvironment.getDownloadURL()`, currently hardcoded to `http://localhost:8051/`). Make sure §8's server is running and answering 8051 before launching the client, or the login dialog will sit at "401 Unauthorized" (server up but credentials wrong) or "Connection refused" (server down).
 
@@ -233,18 +237,16 @@ The Swing client is a plain-Spring (NOT Spring Boot) main class — `org.rapla.c
 
 ```bash
 mkdir -p logs
-# 1. Refresh m2 jar of rapla-core (so exec:java picks up latest source).
-mvn -pl rapla-bom,rapla-core install -DskipTests -q
-# 2. Compile rapla-client against the freshly-installed rapla-core jar.
-mvn -pl rapla-client compile -q
-# 3. Launch.
-mvn -pl rapla-client exec:java > logs/rapla-client.log 2>&1 &
+# `-am compile` builds rapla-bom + rapla-core + rapla-client target/classes from source;
+# `exec:java` then runs only on rapla-client (skipped on parents via BOM-level skip=true).
+# NEVER `mvn install` — see hard rule above.
+mvn -pl rapla-client -am compile exec:java > logs/rapla-client.log 2>&1 &
 CLIENT_PID=$!
 echo $CLIENT_PID > logs/rapla-client.pid
 echo "Started client, PID=$CLIENT_PID"
 ```
 
-For auto-login: `mvn -pl rapla-client exec:java -Dexec.args="username password"`. Without args, the Swing login dialog opens.
+For auto-login: append `-Dexec.args="username password"`. Without args, the Swing login dialog opens.
 
 Use `run_in_background=true` on the Bash tool call (same reason as §8 — avoids the agent stalling on a long-lived process). `exec-maven-plugin` runs the `main()` *inside the Maven JVM* (no fork by default), so `$!` is the actual app PID. SIGTERM to that PID terminates the Swing app and Spring context shutdown hook fires cleanly.
 

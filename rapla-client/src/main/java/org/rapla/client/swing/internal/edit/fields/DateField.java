@@ -24,7 +24,6 @@ import org.rapla.framework.RaplaLocale;
 import org.rapla.logger.Logger;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import jakarta.inject.Singleton;
 import javax.swing.JComponent;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
@@ -136,7 +135,6 @@ public class DateField extends AbstractEditField implements DateChangeListener, 
 
 	}
 	
-	@Singleton
 	@org.springframework.stereotype.Service
 	public static class DateFieldFactory
 	{

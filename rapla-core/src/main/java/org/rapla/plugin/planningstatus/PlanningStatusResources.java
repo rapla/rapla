@@ -7,10 +7,8 @@ import org.rapla.components.i18n.I18nBundle;
 import org.rapla.plugin.eventtimecalculator.EventTimeCalculatorPlugin;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import jakarta.inject.Singleton;
 import java.util.Locale;
 
-@Singleton
  public class PlanningStatusResources extends AbstractBundle
 {
     public static final String BUNDLENAME = PlanningStatusPlugin.PLUGIN_ID + ".PlanningStatusResources";

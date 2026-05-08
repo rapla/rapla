@@ -47,7 +47,6 @@ import org.rapla.storage.UpdateOperation;
 import org.rapla.storage.UpdateResult;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import jakarta.inject.Singleton;
 import javax.net.ssl.HttpsURLConnection;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.TrustManager;
@@ -64,7 +63,6 @@ import java.util.stream.Stream;
 import static org.rapla.entities.configuration.CalendarModelConfiguration.EXPORT_ENTRY;
 
 
-@Singleton
 public class SynchronisationManager implements ServerExtension
 {
     private static final long SCHEDULE_PERIOD = DateTools.MILLISECONDS_PER_MINUTE / 10;

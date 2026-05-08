@@ -67,7 +67,7 @@ import org.xml.sax.SAXException;
 import org.xml.sax.SAXParseException;
 import org.xml.sax.XMLReader;
 
-import jakarta.inject.Named;
+import org.springframework.beans.factory.annotation.Qualifier;
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileInputStream;
@@ -149,7 +149,7 @@ final public class FileOperator extends LocalAbstractCachableOperator
     private final Map<ImportExportMapKey, Map<String, ExternalSyncEntity>> externalSyncEntities = new LinkedHashMap<>();
 
     public FileOperator(Logger logger, RaplaResources i18n, RaplaLocale raplaLocale, CommandScheduler scheduler,
-            Map<String, FunctionFactory> functionFactoryMap, @Named(ServerService.ENV_RAPLAFILE_ID) String resolvedPath,
+            Map<String, FunctionFactory> functionFactoryMap, @Qualifier(ServerService.ENV_RAPLAFILE_ID) String resolvedPath,
             Set<PermissionExtension> permissionExtensions) throws RaplaInitializationException
     {
         super(logger, i18n, raplaLocale, scheduler, functionFactoryMap, permissionExtensions);

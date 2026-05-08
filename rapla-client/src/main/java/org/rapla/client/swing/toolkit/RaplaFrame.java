@@ -15,7 +15,6 @@ package org.rapla.client.swing.toolkit;
 import org.rapla.framework.RaplaException;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import jakarta.inject.Singleton;
 import javax.swing.JFrame;
 import javax.swing.JRootPane;
 import java.awt.AWTEvent;
@@ -25,7 +24,6 @@ import java.beans.PropertyVetoException;
 import java.beans.VetoableChangeListener;
 import java.util.ArrayList;
 
-@Singleton
 @org.springframework.stereotype.Service
 public class RaplaFrame extends JFrame
 {

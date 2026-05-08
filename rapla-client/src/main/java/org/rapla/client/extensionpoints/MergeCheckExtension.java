@@ -3,12 +3,10 @@ package org.rapla.client.extensionpoints;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.storage.ReferenceInfo;
 import org.rapla.framework.RaplaException;
-import org.rapla.inject.ExtensionPoint;
-import org.rapla.inject.InjectionContext;
 
 import java.util.Collection;
 
-@ExtensionPoint(context=InjectionContext.client, id=MergeCheckExtension.ID)
+
 public interface MergeCheckExtension
 {
     String ID = "org.rapla.extension.merge.check";

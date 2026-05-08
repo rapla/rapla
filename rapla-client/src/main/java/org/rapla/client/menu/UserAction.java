@@ -26,7 +26,7 @@ import org.rapla.logger.Logger;
 import org.rapla.storage.PermissionController;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import jakarta.inject.Provider;
+import java.util.function.Supplier;
 
 @org.springframework.stereotype.Service
 @org.springframework.context.annotation.Scope("prototype")
@@ -41,7 +41,7 @@ public class UserAction  {
     RaplaResources i18n;
     private final DialogUiFactoryInterface dialogUiFactory;
     private final MenuItemFactory menuItemFactory;
-    private final Provider<PasswordChangeAction> passwordChangeAction;
+    private final Supplier<PasswordChangeAction> passwordChangeAction;
     private String name;
     private I18nIcon icon;
     private boolean enabled;
@@ -50,7 +50,7 @@ public class UserAction  {
 
     @Autowired
     public UserAction(ClientFacade facade, RaplaResources i18n, Logger logger, UserClientService service, EditController editController,
-            DialogUiFactoryInterface dialogUiFactory, MenuItemFactory menuItemFactory, Provider<PasswordChangeAction> passwordChangeAction) {
+            DialogUiFactoryInterface dialogUiFactory, MenuItemFactory menuItemFactory, Supplier<PasswordChangeAction> passwordChangeAction) {
         this.clientFacade = facade;
         this.i18n = i18n;
         this.logger = logger;

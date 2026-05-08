@@ -21,12 +21,10 @@ import org.rapla.facade.client.ClientFacade;
 import org.springframework.stereotype.Service;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import jakarta.inject.Singleton;
 import java.util.Collection;
 import java.util.HashSet;
 
 @Service
-@Singleton
 
 public class CopyUrlMenuFactory implements ObjectMenuFactory
 {

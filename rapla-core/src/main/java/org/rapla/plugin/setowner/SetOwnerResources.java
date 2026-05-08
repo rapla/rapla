@@ -6,9 +6,7 @@ import org.rapla.components.i18n.BundleManager;
 import org.rapla.components.i18n.I18nBundle;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import jakarta.inject.Singleton;
 
-@Singleton
 
 public class SetOwnerResources extends AbstractBundle
 {

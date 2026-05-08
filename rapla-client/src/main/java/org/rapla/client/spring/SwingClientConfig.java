@@ -7,7 +7,7 @@ import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.FilterType;
 
-import jakarta.inject.Provider;
+import java.util.function.Supplier;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
@@ -35,16 +35,16 @@ public class SwingClientConfig
 {
     /**
      * Spring's auto-injection of {@code Map<String, T>} populates from beans of type {@code T},
-     * but does NOT auto-wrap the values into {@code Provider<T>} when {@code T} itself is
-     * {@code Provider<X>} — that wrapping is only applied at top-level injection points,
+     * but does NOT auto-wrap the values into {@code Supplier<T>} when {@code T} itself is
+     * {@code Supplier<X>} — that wrapping is only applied at top-level injection points,
      * not inside nested generics. {@link org.rapla.client.Application#activityPresenters}
-     * declares {@code Map<String, Provider<TaskPresenter>>}, so without this bean it stays
+     * declares {@code Map<String, Supplier<TaskPresenter>>}, so without this bean it stays
      * empty and {@code startAction("cal", true)} silently returns false.
      */
     @Bean
-    public Map<String, Provider<TaskPresenter>> activityPresenters(ListableBeanFactory beanFactory)
+    public Map<String, Supplier<TaskPresenter>> activityPresenters(ListableBeanFactory beanFactory)
     {
-        Map<String, Provider<TaskPresenter>> map = new LinkedHashMap<>();
+        Map<String, Supplier<TaskPresenter>> map = new LinkedHashMap<>();
         for (String name : beanFactory.getBeanNamesForType(TaskPresenter.class))
         {
             map.put(name, () -> beanFactory.getBean(name, TaskPresenter.class));

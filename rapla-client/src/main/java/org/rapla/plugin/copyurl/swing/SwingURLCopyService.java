@@ -1,16 +1,13 @@
 package org.rapla.plugin.copyurl.swing;
 
 import org.rapla.components.iolayer.IOInterface;
-import org.rapla.inject.InjectionContext;
 import org.rapla.plugin.copyurl.URLCopyService;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import jakarta.inject.Singleton;
 import java.awt.datatransfer.StringSelection;
 import java.awt.datatransfer.Transferable;
 import java.security.AccessControlException;
 
-@Singleton
 @org.springframework.stereotype.Service
 public class SwingURLCopyService implements URLCopyService
 {

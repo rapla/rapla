@@ -8,14 +8,14 @@ import org.rapla.server.internal.ServerStorageSelector;
 import org.rapla.storage.ImportExportManager;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import jakarta.inject.Provider;
+import java.util.function.Supplier;
 
 
 public class ImportExportManagerContainerImpl implements ImportExportManagerContainer
 {
 
     CommandScheduler scheduler;
-    Provider<ImportExportManager> importExportManagerProvider;
+    Supplier<ImportExportManager> importExportManagerProvider;
     @Autowired
     public ImportExportManagerContainerImpl(CommandScheduler scheduler,ServerStorageSelector backendContext) throws RaplaInitializationException
     {

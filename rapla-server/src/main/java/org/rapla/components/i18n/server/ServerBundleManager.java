@@ -7,7 +7,6 @@ import org.rapla.components.i18n.internal.AbstractBundleManager;
 import org.rapla.components.i18n.I18nIcon;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import jakarta.inject.Singleton;
 import java.net.URL;
 import java.util.Collections;
 import java.util.LinkedHashMap;
@@ -16,7 +15,6 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 
-@Singleton
 public class ServerBundleManager extends AbstractBundleManager {
     final Map<String, Set<String>> countriesForLanguage;
     @Autowired

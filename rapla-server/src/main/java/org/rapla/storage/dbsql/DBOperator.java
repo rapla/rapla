@@ -49,8 +49,7 @@ import org.rapla.storage.impl.server.LocalAbstractCachableOperator;
 import org.rapla.storage.xml.IOContext;
 import org.rapla.storage.xml.RaplaDefaultXMLContext;
 
-import jakarta.inject.Provider;
-import jakarta.inject.Singleton;
+import java.util.function.Supplier;
 import javax.sql.DataSource;
 import java.sql.Connection;
 import java.sql.DatabaseMetaData;
@@ -72,7 +71,7 @@ import java.util.Properties;
 import java.util.Set;
 
 /** This Operator is used to store the data in a SQL-DBMS.*/
-@Singleton public class DBOperator extends LocalAbstractCachableOperator
+ public class DBOperator extends LocalAbstractCachableOperator
 {
     //protected String datasourceName;
     boolean bSupportsTransactions = false;
@@ -84,10 +83,10 @@ import java.util.Set;
     DataSource lookup;
 
     private String connectionName;
-    Provider<ImportExportManager> importExportManager;
+    Supplier<ImportExportManager> importExportManager;
 
     public DBOperator(Logger logger, RaplaResources i18n, RaplaLocale locale, final CommandScheduler scheduler, Map<String, FunctionFactory> functionFactoryMap,
-            Provider<ImportExportManager> importExportManager, DataSource dataSource, Set<PermissionExtension> permissionExtensions)
+            Supplier<ImportExportManager> importExportManager, DataSource dataSource, Set<PermissionExtension> permissionExtensions)
     {
         super(logger, i18n, locale, scheduler, functionFactoryMap, permissionExtensions);
         lookup = dataSource;

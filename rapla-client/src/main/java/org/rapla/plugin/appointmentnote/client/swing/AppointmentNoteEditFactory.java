@@ -32,14 +32,12 @@ import org.rapla.scheduler.ResolvedPromise;
 import org.springframework.stereotype.Service;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import jakarta.inject.Singleton;
 import javax.swing.*;
 import java.awt.event.FocusEvent;
 import java.awt.event.FocusListener;
 import java.util.function.Consumer;
 
 @Service
-@Singleton
 public class AppointmentNoteEditFactory implements AppointmentEditExtensionFactory {
     private final ClientFacade facade;
     private final RaplaResources i18n;

@@ -14,7 +14,6 @@ import org.rapla.framework.internal.AbstractRaplaLocale;
 import org.rapla.server.ServerServiceContainer;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import jakarta.inject.Singleton;
 import jakarta.servlet.ServletContext;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -32,7 +31,6 @@ import java.util.Iterator;
 import java.util.List;
 
 @Path("raplaclient{ending:(.jnlp)?}")
-@Singleton
 public class RaplaJNLPPageGenerator
 {
 

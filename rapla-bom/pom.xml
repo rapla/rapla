@@ -25,7 +25,6 @@
         <commons-io.version>2.14.0</commons-io.version>
 		<commons-codec.version>1.14</commons-codec.version>
 		<commons-collections.version>4.1</commons-collections.version>
-		<jakarta.inject.version>2.0.1</jakarta.inject.version>
 		<jakarta.ws.rs.version>3.1.0</jakarta.ws.rs.version>
 		<hsqldb.version>2.7.1</hsqldb.version>
 		<postgresql.version>9.1-901-1.jdbc4</postgresql.version>
@@ -150,6 +149,23 @@
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-jdeps-plugin</artifactId>
 				<version>3.1.2</version>
+			</plugin>
+			<!-- exec-maven-plugin bound at BOM level with skip=true so that
+			     `mvn -pl rapla-client -am exec:java` walks the reactor (rapla-bom →
+			     rapla-core → rapla-client) without trying to invoke the goal on
+			     rapla-bom or rapla-core. rapla-client's plugins block overrides
+			     skip=false + mainClass. Net effect: launching the Swing client uses
+			     in-reactor target/classes (no `mvn install` needed). -->
+			<plugin>
+				<groupId>org.codehaus.mojo</groupId>
+				<artifactId>exec-maven-plugin</artifactId>
+				<version>3.6.3</version>
+				<configuration>
+					<skip>true</skip>
+					<!-- exec-maven-plugin validates mainClass before honoring skip; supply a no-op
+					     placeholder so validation passes and the skip flag actually kicks in. -->
+					<mainClass>java.lang.Object</mainClass>
+				</configuration>
 			</plugin>
 		</plugins>
 		<pluginManagement>
@@ -285,11 +301,6 @@
 				<groupId>commons-io</groupId>
 				<artifactId>commons-io</artifactId>
 				<version>${commons-io.version}</version>
-			</dependency>
-			<dependency>
-				<groupId>jakarta.inject</groupId>
-				<artifactId>jakarta.inject-api</artifactId>
-				<version>${jakarta.inject.version}</version>
 			</dependency>
 			<dependency>
 				<groupId>jakarta.servlet</groupId>

@@ -24,7 +24,7 @@ import org.rapla.components.i18n.LocaleChangeListener;
 import org.rapla.framework.RaplaInitializationException;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import jakarta.inject.Provider;
+import java.util.function.Supplier;
 import javax.swing.JComponent;
 import javax.swing.JScrollPane;
 import javax.swing.event.HyperlinkEvent;
@@ -42,12 +42,12 @@ final public class LicenseInfoUI
     JScrollPane scrollPane;
     HTMLView license;
     private final DialogUiFactoryInterface dialogUiFactory;
-    private final Provider<LicenseUI> licenseUiProvider;
+    private final Supplier<LicenseUI> licenseUiProvider;
     private final RaplaSystemInfo systemInfoI18n;
     private final RaplaResources i18n;
 
     @Autowired
-    public LicenseInfoUI(RaplaResources i18n,RaplaSystemInfo systemInfoI18n,  DialogUiFactoryInterface dialogUiFactory, Provider<LicenseUI> licenseUiProvider) throws RaplaInitializationException{
+    public LicenseInfoUI(RaplaResources i18n,RaplaSystemInfo systemInfoI18n,  DialogUiFactoryInterface dialogUiFactory, Supplier<LicenseUI> licenseUiProvider) throws RaplaInitializationException{
         this.dialogUiFactory = dialogUiFactory;
         this.licenseUiProvider = licenseUiProvider;
         this.systemInfoI18n = systemInfoI18n;

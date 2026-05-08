@@ -24,7 +24,6 @@ import org.rapla.storage.impl.RaplaLock;
 import org.rapla.storage.impl.server.LocalAbstractCachableOperator;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import jakarta.inject.Singleton;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -48,7 +47,6 @@ import java.util.concurrent.ConcurrentHashMap;
  * @see {@link SynchronisationManager}
  * @see {@link ExchangeConnectorPlugin}
  */
-@Singleton
 public class ExchangeAppointmentStorage
 {
     private static final String EXCHANGE_ID = "exchange";

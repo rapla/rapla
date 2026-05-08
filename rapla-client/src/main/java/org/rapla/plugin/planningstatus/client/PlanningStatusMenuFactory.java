@@ -39,11 +39,10 @@ import org.rapla.storage.PermissionController;
 import org.springframework.stereotype.Service;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import jakarta.inject.Singleton;
 import java.util.*;
 
 @Service
-@Singleton  public class PlanningStatusMenuFactory implements ObjectMenuFactory
+  public class PlanningStatusMenuFactory implements ObjectMenuFactory
 {
     private final RaplaResources i18n;
     private final PlanningStatusResources planningStatusResources;

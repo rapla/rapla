@@ -15,7 +15,7 @@ import org.rapla.facade.RaplaFacade;
 import org.rapla.scheduler.*;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import jakarta.inject.Provider;
+import java.util.function.Supplier;
 
 
 @org.springframework.stereotype.Service(AdminUserTask.USER_ADMIN_ID)
@@ -23,7 +23,7 @@ import jakarta.inject.Provider;
 public class AdminUserTask implements TaskPresenter {
 
     public final static String USER_ADMIN_ID = "admin_user";
-    final Provider<AdminUserUserGroupsView> rightsReportProvider;
+    final Supplier<AdminUserUserGroupsView> rightsReportProvider;
     private final Subject<String> busyIdleObservable;
     private final RaplaFacade raplaFacade;
     private final DialogUiFactoryInterface dialogUIFactory;
@@ -35,7 +35,7 @@ public class AdminUserTask implements TaskPresenter {
 
 
     @Autowired
-    public AdminUserTask(CommandScheduler scheduler, Provider<AdminUserUserGroupsView> rightsReportProvider, RaplaFacade raplaFacade, DialogUiFactoryInterface dialogUIFactory, RaplaResources i18n, ApplicationEventBus eventBus)
+    public AdminUserTask(CommandScheduler scheduler, Supplier<AdminUserUserGroupsView> rightsReportProvider, RaplaFacade raplaFacade, DialogUiFactoryInterface dialogUIFactory, RaplaResources i18n, ApplicationEventBus eventBus)
     {
         this.rightsReportProvider = rightsReportProvider;
         this.raplaFacade = raplaFacade;

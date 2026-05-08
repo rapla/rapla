@@ -2,10 +2,11 @@ package org.rapla.rest.jackson;
 
 
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ArrayNode;
-import com.fasterxml.jackson.databind.node.ObjectNode;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.json.JsonMapper;
+import tools.jackson.databind.node.ArrayNode;
+import tools.jackson.databind.node.ObjectNode;
 
 import java.util.*;
 
@@ -29,7 +30,7 @@ import java.util.*;
 
 public abstract class JacksonMergePatch
 {
-    static ObjectMapper mapper = new ObjectMapper();
+    static ObjectMapper mapper = JsonMapper.builder().build();
     protected final JsonNode origPatch;
 
     protected JacksonMergePatch(final JsonNode node)

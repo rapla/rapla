@@ -29,7 +29,6 @@ import org.rapla.framework.RaplaLocale;
 import org.rapla.logger.Logger;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import jakarta.inject.Singleton;
 import javax.swing.BorderFactory;
 import javax.swing.DefaultListCellRenderer;
 import javax.swing.DefaultListModel;
@@ -391,7 +390,6 @@ public class PermissionListField extends AbstractEditField implements EditFieldW
         return defaultAccessLevel;
     }
 
-    @Singleton
     @org.springframework.stereotype.Service
     @org.springframework.context.annotation.Lazy
     public static class PermissionListFieldFactory

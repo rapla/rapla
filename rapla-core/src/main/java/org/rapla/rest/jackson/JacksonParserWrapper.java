@@ -18,7 +18,7 @@ import org.rapla.rest.client.internal.isodate.ISODateTimeFormat;
 import org.rapla.scheduler.Promise;
 import org.rapla.scheduler.sync.SynchronizedCompletablePromise;
 
-import jakarta.inject.Provider;
+import java.util.function.Supplier;
 import java.io.IOException;
 import java.io.Reader;
 import java.lang.reflect.Type;
@@ -26,17 +26,17 @@ import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.*;
 
-public class JacksonParserWrapper  implements Provider<JsonParserWrapper.JsonParser> {
+public class JacksonParserWrapper  implements Supplier<JsonParserWrapper.JsonParser> {
     static ConsoleLogger logger = new ConsoleLogger();
     @Override
     public JsonParserWrapper.JsonParser get() {
         return new JsonParserWrapper.JsonParser() {
-            ObjectMapper gson = defaultObjectMapper();
+            ObjectMapper mapper = defaultObjectMapper();
 
             @Override
             public String toJson(Object object) {
                 try {
-                    return gson.writeValueAsString(object);
+                    return mapper.writeValueAsString(object);
                 } catch (JsonProcessingException e) {
                     throw new RuntimeException(e);
                 }
@@ -55,8 +55,8 @@ public class JacksonParserWrapper  implements Provider<JsonParserWrapper.JsonPar
             public Object fromJson(String json, Type type) {
                 try
                 {
-                    final JavaType javaType = gson.getTypeFactory().constructType(type);
-                    return gson.readValue(json, javaType);
+                    final JavaType javaType = mapper.getTypeFactory().constructType(type);
+                    return mapper.readValue(json, javaType);
                 } catch (IOException e) {
                     throw new RuntimeException(e);
                 }
@@ -65,8 +65,8 @@ public class JacksonParserWrapper  implements Provider<JsonParserWrapper.JsonPar
             @Override
             public <T> T fromJson(Reader json, Type type) {
                 try {
-                    final JavaType javaType = gson.getTypeFactory().constructType(type);
-                    return gson.readValue(json, javaType);
+                    final JavaType javaType = mapper.getTypeFactory().constructType(type);
+                    return mapper.readValue(json, javaType);
                 } catch (IOException e) {
                     throw new RuntimeException(e);
                 }
@@ -75,7 +75,7 @@ public class JacksonParserWrapper  implements Provider<JsonParserWrapper.JsonPar
             @Override
             public String patch(Object unpatchedObject, Reader json) {
                 try {
-                    return patchGson(unpatchedObject, json);
+                    return applyJsonMergePatch(unpatchedObject, json);
                 } catch (IOException e) {
                     throw new RuntimeException(e);
                 }
@@ -83,7 +83,7 @@ public class JacksonParserWrapper  implements Provider<JsonParserWrapper.JsonPar
         };
     }
 
-    /** Create a default GsonBuilder with some extra types defined. */
+    /** Create a default {@link ObjectMapper} with some extra types defined. */
     private static ObjectMapper defaultObjectMapper()
     {
         ObjectMapper objectMapper = new ObjectMapper();
@@ -120,7 +120,7 @@ public class JacksonParserWrapper  implements Provider<JsonParserWrapper.JsonPar
 
 
 
-    private static String patchGson(Object unpatchedObject, Reader json) throws IOException {
+    private static String applyJsonMergePatch(Object unpatchedObject, Reader json) throws IOException {
         final ObjectMapper mapper = defaultObjectMapper();
         JsonNode unpatchedObjectJson = mapper.valueToTree(unpatchedObject);
         JsonNode patchElement = mapper.readTree(json);
@@ -138,7 +138,6 @@ public class JacksonParserWrapper  implements Provider<JsonParserWrapper.JsonPar
         ObjectMapper mapper = defaultObjectMapper();
         final JsonNode resultElement = mapper.readTree(unparsedResult);
         Object resultObject;
-        //Gson  gson = defaultObjectMapper().create();
         if (container != null && !Object.class.equals(container))
         {
             if (List.class.equals(container) || Collection.class.equals(container) || Set.class.equals(container))

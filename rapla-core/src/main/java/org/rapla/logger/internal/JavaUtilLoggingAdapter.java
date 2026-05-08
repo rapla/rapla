@@ -13,11 +13,11 @@
 package org.rapla.logger.internal;
 
 
-import jakarta.inject.Provider;
+import java.util.function.Supplier;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-public class JavaUtilLoggingAdapter implements Provider<org.rapla.logger.Logger>
+public class JavaUtilLoggingAdapter implements Supplier<org.rapla.logger.Logger>
 {
     private static final String WRAPPER_NAME = JavaUtilLoggingAdapter.class.getName();
     private static final String ABSTRACTLOGGER_NAME = AbstractJavaUtilLogger.class.getName();

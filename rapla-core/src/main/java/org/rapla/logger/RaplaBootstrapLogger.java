@@ -2,10 +2,9 @@ package org.rapla.logger;
 
 import org.rapla.logger.internal.JavaUtilLoggingAdapter;
 
-import jakarta.inject.Provider;
-import jakarta.inject.Singleton;
+import java.util.function.Supplier;
 
-@Singleton public class RaplaBootstrapLogger implements Provider<Logger>
+ public class RaplaBootstrapLogger implements Supplier<Logger>
 {
 
     public static Logger createRaplaLogger()
@@ -40,7 +39,7 @@ import jakarta.inject.Singleton;
         ClassLoader classLoader = JavaUtilLoggingAdapter.class.getClassLoader();
         classLoader.loadClass("org.slf4j.Logger");
         final Class<?> aClass = classLoader.loadClass("org.rapla.logger.internal.Slf4jAdapter");
-        @SuppressWarnings("unchecked") Provider<Logger> logManager = (Provider<Logger>) aClass.newInstance();
+        @SuppressWarnings("unchecked") Supplier<Logger> logManager = (Supplier<Logger>) aClass.newInstance();
         logger = logManager.get();
         logger.info("Logging via SLF4J API.");
         return logger;
@@ -52,7 +51,7 @@ import jakarta.inject.Singleton;
         ClassLoader classLoader = JavaUtilLoggingAdapter.class.getClassLoader();
         classLoader.loadClass("org.apache.logging.log4j.Logger");
         final Class<?> aClass = classLoader.loadClass("org.rapla.logger.internal.Log4jAdapter");
-        @SuppressWarnings("unchecked") Provider<Logger> logManager = (Provider<Logger>) aClass.newInstance();
+        @SuppressWarnings("unchecked") Supplier<Logger> logManager = (Supplier<Logger>) aClass.newInstance();
         logger = logManager.get();
         logger.info("Logging via Log4j API.");
         return logger;
@@ -60,7 +59,7 @@ import jakarta.inject.Singleton;
 
     private  Logger logViaJavaUtilLogging()
     {
-        Logger logger;Provider<Logger> logManager = new JavaUtilLoggingAdapter();
+        Logger logger;Supplier<Logger> logManager = new JavaUtilLoggingAdapter();
         logger = logManager.get();
         logger.info("Logging via java.util.logging API. " );
         return logger;

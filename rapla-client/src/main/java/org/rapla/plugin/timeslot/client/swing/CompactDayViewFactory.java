@@ -40,13 +40,11 @@ import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import jakarta.inject.Singleton;
 import javax.swing.Icon;
 import java.util.Set;
 
 @Service
 @Lazy
-@Singleton
 
 public class CompactDayViewFactory implements SwingViewFactory
 {

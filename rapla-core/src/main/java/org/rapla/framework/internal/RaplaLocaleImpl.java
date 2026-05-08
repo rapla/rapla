@@ -17,7 +17,6 @@ import org.rapla.components.util.IOUtil;
 import org.rapla.framework.RaplaLocale;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import jakarta.inject.Singleton;
 import java.text.Collator;
 import java.text.NumberFormat;
 import java.util.Comparator;
@@ -25,7 +24,6 @@ import java.util.Date;
 import java.util.Locale;
 import java.util.TimeZone;
 
-@Singleton
 public class RaplaLocaleImpl extends AbstractRaplaLocale  {
 
     String charsetForHtml = AbstractRaplaLocale.HTML_CHARSET_DEFAULT;

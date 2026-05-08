@@ -48,7 +48,6 @@ import org.rapla.framework.RaplaLocale;
 import org.rapla.logger.Logger;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import jakarta.inject.Singleton;
 import java.awt.Component;
 import java.awt.datatransfer.DataFlavor;
 import java.awt.datatransfer.StringSelection;
@@ -58,7 +57,6 @@ import java.util.Map;
 /** The factory can creatres an information-panel or dialog for
 the entities of rapla.
 @see ViewTable*/
-@Singleton
 @org.springframework.stereotype.Service
 @org.springframework.context.annotation.Lazy
 public class InfoFactoryImpl extends RaplaGUIComponent implements InfoFactory

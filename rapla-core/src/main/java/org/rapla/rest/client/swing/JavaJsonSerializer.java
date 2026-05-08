@@ -19,7 +19,7 @@ public class JavaJsonSerializer
         this.container = container;
     }
 
-    private synchronized JsonParserWrapper.JsonParser createGson()
+    private synchronized JsonParserWrapper.JsonParser getParser()
     {
         if ( parser == null) {
             parser = JsonParserWrapper.defaultJson().get();
@@ -32,8 +32,8 @@ public class JavaJsonSerializer
         final String result;
         if (arg != null)
         {
-            JsonParserWrapper.JsonParser gson = createGson();
-            result = gson.toJson(arg);
+            JsonParserWrapper.JsonParser p = getParser();
+            result = p.toJson(arg);
         }
         else
         {
@@ -63,13 +63,13 @@ public class JavaJsonSerializer
 
     public Object deserializeResult(String unparsedResult) throws RemoteConnectException
     {
-        final JsonParserWrapper.JsonParser jsonMapper = createGson();
+        final JsonParserWrapper.JsonParser jsonMapper = getParser();
         return jsonMapper.fromJson( unparsedResult, resultType, container);
     }
 
     public SerializableExceptionInformation deserializeException(String unparsedErrorString)
     {
-        final JsonParserWrapper.JsonParser jsonMapper = createGson();
+        final JsonParserWrapper.JsonParser jsonMapper = getParser();
         return jsonMapper.fromJson(unparsedErrorString, SerializableExceptionInformation.class);
     }
 }

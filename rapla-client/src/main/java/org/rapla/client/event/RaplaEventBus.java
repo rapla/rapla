@@ -7,10 +7,8 @@ import org.rapla.scheduler.Subject;
 import org.springframework.stereotype.Service;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import jakarta.inject.Singleton;
 
 @Service
-@Singleton
 public class RaplaEventBus implements ApplicationEventBus, CalendarEventBus
 {
     final Subject<ApplicationEvent> applicationEventPublishSubject;

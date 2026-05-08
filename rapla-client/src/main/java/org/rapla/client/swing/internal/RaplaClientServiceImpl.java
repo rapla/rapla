@@ -41,7 +41,6 @@ import org.rapla.framework.RaplaInitializationException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.StartupEnvironment;
 import org.rapla.framework.internal.AbstractRaplaLocale;
-import org.rapla.inject.InjectionContext;
 import org.rapla.logger.Logger;
 import org.rapla.scheduler.CommandScheduler;
 import org.rapla.scheduler.Promise;
@@ -52,8 +51,7 @@ import org.rapla.storage.dbrm.RemoteConnectionInfo;
 import org.rapla.storage.dbrm.RemoteOperator;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import jakarta.inject.Provider;
-import jakarta.inject.Singleton;
+import java.util.function.Supplier;
 import javax.swing.AbstractAction;
 import javax.swing.Action;
 import javax.swing.SwingUtilities;
@@ -69,7 +67,6 @@ import java.util.concurrent.Semaphore;
 
 /** Implementation of the UserClientService.
 */
-@Singleton
 @org.springframework.stereotype.Service
 @org.springframework.context.annotation.Lazy
 public class RaplaClientServiceImpl implements ClientService, UpdateErrorListener, Disposable, UserClientService
@@ -93,14 +90,14 @@ public class RaplaClientServiceImpl implements ClientService, UpdateErrorListene
     org.rapla.scheduler.Cancellation schedule;
 
     Application application;
-    final private Provider<Application> applicationProvider;
+    final private Supplier<Application> applicationProvider;
     RemoteAuthentificationService authentificationService;
     RemoteConnectionInfo connectionInfo;
 
     @Autowired
     public RaplaClientServiceImpl(StartupEnvironment env, Logger logger, DialogUiFactoryInterface dialogUiFactory, ClientFacade facade, RaplaResources i18n, RaplaSystemInfo systemInfo,
                                   RaplaLocale raplaLocale, BundleManager bundleManager, CommandScheduler commandScheduler, final RemoteOperator storageOperator,
-                                  Provider<Application> applicationProvider, RemoteConnectionInfo connectionInfo, RemoteAuthentificationService authentificationService)
+                                  Supplier<Application> applicationProvider, RemoteConnectionInfo connectionInfo, RemoteAuthentificationService authentificationService)
     {
         this.env = env;
         this.authentificationService = authentificationService;

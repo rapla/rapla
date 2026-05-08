@@ -38,8 +38,7 @@ import org.rapla.server.extensionpoints.HTMLViewPage;
 import org.rapla.storage.StorageOperator;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import jakarta.inject.Provider;
-import jakarta.inject.Singleton;
+import java.util.function.Supplier;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -78,11 +77,10 @@ import java.util.TreeSet;
  * &today:  will set the view to the current day. Ignores day, month and year
  */
 @Path("{path:calendar|calendar.csv|internal_calendar|internal_calendar.csv}")
-@Singleton
 public class CalendarPageGenerator
 {
     @Autowired 
-    Map<String, Provider<HTMLViewPage>> factoryMap;
+    Map<String, Supplier<HTMLViewPage>> factoryMap;
     @Autowired 
     public RaplaFacade facade;
     @Autowired 
@@ -363,7 +361,7 @@ public class CalendarPageGenerator
 
 
             final String viewId = model.getViewId();
-            final Provider<HTMLViewPage> htmlViewPageProvider = factoryMap.get(viewId);
+            final Supplier<HTMLViewPage> htmlViewPageProvider = factoryMap.get(viewId);
 
             if (htmlViewPageProvider != null)
             {

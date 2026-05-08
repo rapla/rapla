@@ -2,13 +2,13 @@ package org.rapla.rest;
 
 import org.rapla.rest.jackson.JacksonParserWrapper;
 
-import jakarta.inject.Provider;
+import java.util.function.Supplier;
 import java.io.Reader;
 import java.lang.reflect.Type;
 
 public class JsonParserWrapper
 {
-    static Provider<JsonParser> factory = new JacksonParserWrapper();
+    static Supplier<JsonParser> factory = new JacksonParserWrapper();
     public interface JsonParser
     {
         String toJson(Object object);
@@ -22,11 +22,11 @@ public class JsonParserWrapper
         String patch(Object unpatchedObject, Reader json);
     }
 
-    public static Provider<JsonParser> defaultJson() {
+    public static Supplier<JsonParser> defaultJson() {
         return factory;
     }
 
-    static public void setFactory( Provider<JsonParser> factory )
+    static public void setFactory( Supplier<JsonParser> factory )
     {
         JsonParserWrapper.factory = factory;
     }

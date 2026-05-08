@@ -25,7 +25,6 @@ import org.rapla.scheduler.Promise;
 import org.springframework.stereotype.Service;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import jakarta.inject.Singleton;
 import javax.swing.BorderFactory;
 import javax.swing.JLabel;
 import javax.swing.JList;
@@ -40,7 +39,6 @@ import java.util.HashMap;
 
 
 @Service
-@Singleton
 public class ExportServiceList   {
 
     HashMap<Object,ExportService> exporters = new HashMap<>();

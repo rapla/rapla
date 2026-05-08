@@ -18,7 +18,6 @@ import org.rapla.logger.Logger;
 import org.springframework.stereotype.Service;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import jakarta.inject.Singleton;
 import javax.swing.JComponent;
 import javax.swing.JLabel;
 import java.awt.Font;
@@ -28,7 +27,6 @@ import java.util.List;
 
 @Service
 
-@Singleton
 public class AppointmentCounterFactory implements AppointmentStatusFactory
 {
     private final ClientFacade facade;

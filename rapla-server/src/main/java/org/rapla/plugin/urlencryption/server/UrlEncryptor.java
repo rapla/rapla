@@ -18,14 +18,12 @@ import javax.crypto.IllegalBlockSizeException;
 import javax.crypto.NoSuchPaddingException;
 import javax.crypto.spec.SecretKeySpec;
 import org.springframework.beans.factory.annotation.Autowired;
-import jakarta.inject.Singleton;
 import jakarta.servlet.http.HttpServletRequest;
 import java.security.InvalidKeyException;
 import java.security.Key;
 import java.security.KeyException;
 import java.security.NoSuchAlgorithmException;
 
-@Singleton
 public class UrlEncryptor
 {
 

@@ -36,7 +36,7 @@ import org.rapla.facade.Conflict;
 import org.rapla.facade.internal.ConflictImpl;
 import org.rapla.framework.RaplaException;
 
-import jakarta.inject.Provider;
+import java.util.function.Supplier;
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
@@ -403,7 +403,7 @@ public class LocalCache implements EntityResolver
         }
     }
 
-    public Provider<Category> getSuperCategoryProvider()
+    public Supplier<Category> getSuperCategoryProvider()
     {
         return () -> getSuperCategory();
     }

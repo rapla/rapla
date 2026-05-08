@@ -21,7 +21,6 @@ import org.rapla.plugin.tableview.TableViewPlugin;
 import org.rapla.plugin.tableview.extensionpoints.TableColumnDefinitionExtension;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import jakarta.inject.Singleton;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -575,7 +574,7 @@ public class TableConfig
         column.remove(columnConfig);
     }
 
-    @Singleton public static class TableConfigLoader
+ public static class TableConfigLoader
     {
         private final RaplaFacade raplaFacade;
         private final RaplaResources i18n;

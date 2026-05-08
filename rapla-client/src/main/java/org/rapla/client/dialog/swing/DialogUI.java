@@ -30,7 +30,6 @@ import org.rapla.components.i18n.LocaleChangeEvent;
 import org.rapla.components.i18n.LocaleChangeListener;
 import org.rapla.entities.DependencyException;
 import org.rapla.framework.RaplaInitializationException;
-import org.rapla.inject.InjectionContext;
 import org.rapla.logger.Logger;
 import org.rapla.scheduler.*;
 import org.rapla.scheduler.sync.SynchronizedCompletablePromise;
@@ -39,7 +38,6 @@ import org.rapla.storage.dbrm.RaplaConnectException;
 import org.rapla.storage.dbrm.RaplaRestartingException;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import jakarta.inject.Singleton;
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.ActionEvent;
@@ -456,7 +454,6 @@ public class DialogUI extends JDialog
         panel.add(textView);
     }
     
-    @Singleton
     @org.springframework.stereotype.Service
     public static class DialogUiFactory implements DialogUiFactoryInterface
     {

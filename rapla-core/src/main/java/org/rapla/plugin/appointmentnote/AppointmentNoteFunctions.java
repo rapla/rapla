@@ -26,7 +26,7 @@ import org.rapla.entities.extensionpoints.FunctionFactory;
 import org.rapla.facade.RaplaFacade;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import jakarta.inject.Provider;;
+import java.util.function.Supplier;;
 import java.util.List;
 
 
@@ -37,10 +37,10 @@ public class AppointmentNoteFunctions implements FunctionFactory {
 
     static final public String NAMESPACE = "appointment";
 
-    Provider<RaplaFacade> facadeProvider;
+    Supplier<RaplaFacade> facadeProvider;
 
 
-    public @Autowired AppointmentNoteFunctions(Provider<RaplaFacade> facadeProvider)
+    public @Autowired AppointmentNoteFunctions(Supplier<RaplaFacade> facadeProvider)
     {
         this.facadeProvider = facadeProvider;
     }

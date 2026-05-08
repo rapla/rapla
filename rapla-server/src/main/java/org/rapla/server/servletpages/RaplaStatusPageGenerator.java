@@ -8,7 +8,6 @@ import org.rapla.server.internal.RaplaStatusEntry;
 import org.rapla.server.internal.ServerContainerContext;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import jakarta.inject.Singleton;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.ws.rs.GET;
@@ -18,7 +17,6 @@ import jakarta.ws.rs.core.Context;
 import jakarta.ws.rs.core.MediaType;
 import java.io.IOException;
 
-@Singleton
 @Path("server")
 public class RaplaStatusPageGenerator  {
     private final RaplaSystemInfo m_i18n;

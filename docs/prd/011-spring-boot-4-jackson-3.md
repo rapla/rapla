@@ -71,33 +71,88 @@ End of phase: `mvn -pl rapla-app -am compile` and `mvn -pl rapla-app,rapla-serve
 
 Run `mvn test` reactor-wide. Investigate every regression. The expected count is ~23 tests passing (current state) plus whatever PRD 009 added. **No Jackson 3 work in this phase** — we're verifying SB 4 alone is solid.
 
-### Phase 3 — Jackson 3 opt-in (1 day)
+### Phase 3 — Jackson 3 cutover (no opt-in, no parallel classpath)
 
-Spring Boot 4 supports Jackson 3 via a property:
-```yaml
-spring.jackson.use-jackson3: true   # name TBD — verify against SB 4 docs
-```
-The auto-config switches the message converters but the user code that builds custom `ObjectMapper`s (i.e., `JacksonObjectMapperFactory`) stays on Jackson 2 unless we migrate it.
+**Surprise discovery during analysis (2026-05-08):** Spring Boot 4 ships **Jackson 3 by default**. There is no `spring.jackson.use-jackson3` property; bumping `<spring-boot.version>` to 4.0.6 already brings Jackson 3 onto the classpath and *removes* Jackson 2 from `spring-boot-dependencies`'s managed set. So:
 
-1. Add the property and verify default endpoints still serialize correctly.
-2. Add the Jackson 3 BOM as `<dependencyManagement>` import alongside (or in place of) the Spring Boot–pinned 2.x version. Goal: only one Jackson API on the classpath at a time.
-3. Inevitable conflict: `JacksonObjectMapperFactory` configures the *Jackson 2* `ObjectMapper`. Spring Boot 4's auto-config produces a Jackson 3 mapper. They don't talk. **Two options:**
-   - **A.** Migrate the factory to Jackson 3 (`tools.jackson.databind.ObjectMapper`, etc.) and re-pin the same field-introspection + JavaTime config from PRD 010 against the new API.
-   - **B.** Stay on Jackson 2 for the shared factory; configure SB 4 to use a Jackson 2 mapper. Possible but defeats the purpose of upgrading.
-   
-   **Recommendation: A.** That's the whole point.
+- The first `mvn compile` after the BOM bump fails on every `import com.fasterxml.jackson.*` line that isn't covered by the annotations module (which keeps the legacy package — see migration map below).
+- There is no "Jackson 2 still works for now" intermediate state in this codebase. The migration is a single atomic source rewrite.
+- Carrying both Jackson APIs side-by-side is technically possible (Jackson 3 deliberately changed group IDs to allow it) but pointless once we're starting fresh — it doubles the classpath and creates duplicate `ObjectMapper` instances Spring won't auto-wire.
 
-### Phase 4 — Jackson 3 source migration (2 days)
+### Phase 4 — Jackson 3 source migration (1–2 days now that Phase 3 collapsed)
 
-Mechanical rename + small API deltas:
+#### Migration map (canonical recipes — confirmed against jackson-databind master, 2026-05-08)
+
+| Concern | Jackson 2 | Jackson 3 |
+|---|---|---|
+| **Group ID / package** | `com.fasterxml.jackson.{core,databind,datatype}` | `tools.jackson.{core,databind,datatype}` |
+| **Annotations** (`@JsonIgnore`, `@JsonProperty`, `@JsonAutoDetect.Visibility`, etc.) | `com.fasterxml.jackson.annotation.*` | **stays at `com.fasterxml.jackson.annotation.*`** — annotations module deliberately not renamed so existing `@Json…` import lines need no edit |
+| **Construction** | `new ObjectMapper()` (mutable, configure-after) | `JsonMapper.builder().…build()` (immutable, configure-during) — generic mutable `ObjectMapper` is removed; format-specific `JsonMapper` is the standard JSON entry point |
+| **`JavaTimeModule`** | `mapper.registerModule(new JavaTimeModule())` from `jackson-datatype-jsr310` | **No-op — built into `jackson-databind`.** `java.time` types serialize correctly out of the box. Drop the import + the `registerModule` call. |
+| **`WRITE_DATES_AS_TIMESTAMPS`** | `disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS)` | **Default is now `false` (ISO-8601).** Calling `disable(...)` is redundant but harmless. |
+| **`PROPAGATE_TRANSIENT_MARKER`** | `enable(MapperFeature.PROPAGATE_TRANSIENT_MARKER)` | **Same name and semantics** at `tools.jackson.databind.MapperFeature.PROPAGATE_TRANSIENT_MARKER`. Confirmed present in `jackson-databind` master. |
+| **Visibility config** (PRD 010 cornerstone) | `mapper.setVisibility(mapper.getSerializationConfig().getDefaultVisibilityChecker().withFieldVisibility(Visibility.ANY).withGetterVisibility(Visibility.NONE)…)` | `JsonMapper.builder().changeDefaultVisibility(vc -> vc.withFieldVisibility(Visibility.ANY).withGetterVisibility(Visibility.NONE).withIsGetterVisibility(Visibility.NONE).withSetterVisibility(Visibility.NONE).withCreatorVisibility(Visibility.ANY)).build();` — lambda transforms the immutable visibility checker; `Visibility` enum stays at `com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility`. |
+| **Tree model nodes** (`JsonNode`, `ObjectNode`, `ArrayNode`) | `com.fasterxml.jackson.databind.{JsonNode,node.ObjectNode,node.ArrayNode}` | `tools.jackson.databind.{JsonNode,node.ObjectNode,node.ArrayNode}` — straight rename |
+| **Spring HTTP message converter** | `org.springframework.http.converter.json.MappingJackson2HttpMessageConverter` | `org.springframework.http.converter.json.JacksonJsonHttpMessageConverter` — Spring Framework 7 deprecates the Jackson-2-specific converter; the new one implements `SmartHttpMessageConverter` and obsoletes `MappingJacksonValue` for serialization hints |
+| **Spring Boot mapper customizer** | `Jackson2ObjectMapperBuilderCustomizer` | `JsonMapperBuilderCustomizer` (`builder.changeDefaultPropertyInclusion(...)` etc.) |
+| **`application.yml` keys** | `spring.jackson.read.*` / `spring.jackson.write.*` | `spring.jackson.json.read.*` / `spring.jackson.json.write.*` (only matters if any are set; ours doesn't) |
+
+#### Files to rewrite
 
 | File | Rewrite |
 |---|---|
-| `JacksonObjectMapperFactory` | `com.fasterxml.jackson.*` → `tools.jackson.*`. `ObjectMapper` builder API may differ. The PRD 010 config (field-based introspection, `JavaTimeModule`, `transient`-honoring) needs equivalent calls. |
-| `JacksonParserWrapper` | Same package renames. The wrapper interface in `org.rapla.rest.*` must keep its public API (used by `RaplaSQL` history serialization). |
-| `JacksonMergePatch` | Same. The custom merge-patch implementation reads `JsonNode` — Jackson 3's tree model is at `tools.jackson.databind.node.*`. |
-| `HTTPWithJsonConnector` | This is the legacy Swing client HTTP path. If PRD 010's "out of scope" decision still holds, leave Gson here — but its Jackson imports (`JsonNode` etc.) need renaming too if it stays. Alternative: delete it once `RemoteOperator` fully replaces it (PRD 005 follow-up). |
-| Test files (`JsonReaderTest`, `RestAPIExample`) | Same renames. |
+| `rapla-core/.../rest/JacksonObjectMapperFactory` | Switch to `JsonMapper.builder()`. Drop `JavaTimeModule.registerModule(...)`. Replace `setVisibility(checker.with…)` with `changeDefaultVisibility(vc -> vc.with…)`. Keep `PROPAGATE_TRANSIENT_MARKER` exactly as-is. The `configure(builder)` overload now takes a `JsonMapper.Builder`, not a built mapper, because the only Spring Boot 4 hook is `JsonMapperBuilderCustomizer` which gives you the builder pre-build. |
+| `rapla-core/.../rest/jackson/JacksonParserWrapper` | Group rename only. **Coordinate with parallel session — they have unstaged changes here.** |
+| `rapla-core/.../rest/jackson/JacksonMergePatch` | Group rename only. `JsonNode` / `ObjectNode` / `ArrayNode` move from `com.fasterxml.jackson.databind.node.*` to `tools.jackson.databind.node.*`. |
+| `rapla-server/.../spring/RaplaJacksonConfig` | Replace `Jackson2ObjectMapperBuilderCustomizer` with `JsonMapperBuilderCustomizer`. The body becomes `return builder -> JacksonObjectMapperFactory.configure(builder);` once the factory's `configure(...)` signature is `JsonMapper.Builder → JsonMapper.Builder`. |
+| `rapla-client/.../spring/ClientProxyConfig` | Replace `MappingJackson2HttpMessageConverter(JacksonObjectMapperFactory.create())` with `new JacksonJsonHttpMessageConverter(JacksonObjectMapperFactory.create())`. |
+| Legacy non-Spring HTTP paths (`HTTPWithJsonConnector` in rapla-core/swing, `HTTPWithJsonMailConnector` + `MailapiClient` in rapla-server/plugin/mail) | **Owned by parallel "Gson removal" session** as of 2026-05-08; they're mid-conversion of these from Gson → Jackson 2. After they commit, a follow-up rename pass migrates these from Jackson 2 → Jackson 3. Don't touch in this PRD. |
+| Test files (`JsonReaderTest`, `RestAPIExample`) | Group rename. `JsonMapper.builder().enable(JsonReadFeature.ALLOW_SINGLE_QUOTES).build()` — `JsonReadFeature` stays at `tools.jackson.core.json.JsonReadFeature`. |
+
+#### Reference patch — `JacksonObjectMapperFactory` before/after
+
+```java
+// BEFORE
+import com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility;
+import com.fasterxml.jackson.databind.MapperFeature;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+
+public static ObjectMapper configure(ObjectMapper mapper) {
+    mapper.registerModule(new JavaTimeModule());
+    mapper.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
+    mapper.enable(MapperFeature.PROPAGATE_TRANSIENT_MARKER);
+    mapper.setVisibility(mapper.getSerializationConfig().getDefaultVisibilityChecker()
+            .withFieldVisibility(Visibility.ANY)
+            .withGetterVisibility(Visibility.NONE)
+            .withIsGetterVisibility(Visibility.NONE)
+            .withSetterVisibility(Visibility.NONE)
+            .withCreatorVisibility(Visibility.ANY));
+    return mapper;
+}
+
+// AFTER
+import com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility;          // annotations stay at com.fasterxml.*
+import tools.jackson.databind.MapperFeature;
+import tools.jackson.databind.json.JsonMapper;
+
+public static JsonMapper.Builder configure(JsonMapper.Builder builder) {
+    return builder
+        .enable(MapperFeature.PROPAGATE_TRANSIENT_MARKER)
+        .changeDefaultVisibility(vc -> vc
+            .withFieldVisibility(Visibility.ANY)
+            .withGetterVisibility(Visibility.NONE)
+            .withIsGetterVisibility(Visibility.NONE)
+            .withSetterVisibility(Visibility.NONE)
+            .withCreatorVisibility(Visibility.ANY));
+    // JavaTimeModule: built-in. WRITE_DATES_AS_TIMESTAMPS: default false. Both removed.
+}
+
+public static JsonMapper create() {
+    return configure(JsonMapper.builder()).build();
+}
+```
 
 ### Phase 5 — verification + cleanup
 

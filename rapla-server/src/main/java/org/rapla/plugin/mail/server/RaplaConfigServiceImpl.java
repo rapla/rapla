@@ -26,8 +26,8 @@ import org.rapla.server.ServerService;
 import org.rapla.storage.RaplaSecurityException;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import jakarta.inject.Named;
-import jakarta.inject.Provider;
+import org.springframework.beans.factory.annotation.Qualifier;
+import java.util.function.Supplier;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.ws.rs.core.Context;
 
@@ -38,8 +38,8 @@ public class RaplaConfigServiceImpl implements MailConfigService
     @Autowired
     RemoteSession remoteSession;
     @Autowired
-    @Named(ServerService.ENV_RAPLAMAIL_ID)
-    Provider<Object> externalMailSession;
+    @Qualifier(ServerService.ENV_RAPLAMAIL_ID)
+    Supplier<Object> externalMailSession;
 
     @Autowired
     RaplaFacade facade;

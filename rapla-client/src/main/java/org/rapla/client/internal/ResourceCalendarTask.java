@@ -18,7 +18,7 @@ import org.rapla.scheduler.ResolvedPromise;
 import org.rapla.scheduler.Subject;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import jakarta.inject.Provider;
+import java.util.function.Supplier;
 
 
 @org.springframework.stereotype.Service(ResourceCalendarTask.ID)
@@ -27,7 +27,7 @@ public class ResourceCalendarTask implements TaskPresenter {
 
     public final static String ID = "resource_calendar";
 
-    final Provider<CalendarContainer> viewProvider;
+    final Supplier<CalendarContainer> viewProvider;
     private final Subject<String> busyIdleObservable;
     private final DialogUiFactoryInterface dialogUIFactory;
 
@@ -37,7 +37,7 @@ public class ResourceCalendarTask implements TaskPresenter {
 
 
     @Autowired
-    public ResourceCalendarTask(CommandScheduler scheduler, Provider<CalendarContainer> viewProvider,  DialogUiFactoryInterface dialogUIFactory, RaplaResources i18n)
+    public ResourceCalendarTask(CommandScheduler scheduler, Supplier<CalendarContainer> viewProvider,  DialogUiFactoryInterface dialogUIFactory, RaplaResources i18n)
     {
         this.viewProvider = viewProvider;
         this.dialogUIFactory = dialogUIFactory;

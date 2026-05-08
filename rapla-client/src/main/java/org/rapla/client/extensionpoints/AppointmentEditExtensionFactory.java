@@ -4,8 +4,6 @@ import org.rapla.client.RaplaWidget;
 import org.rapla.components.util.undo.CommandHistory;
 import org.rapla.entities.domain.Appointment;
 import org.rapla.framework.RaplaException;
-import org.rapla.inject.ExtensionPoint;
-import org.rapla.inject.InjectionContext;
 
 import java.util.function.Consumer;
 
@@ -13,7 +11,7 @@ import java.util.function.Consumer;
  * provide an AppointmentStatusFactory to add your own footer to the appointment edit
  @see AppointmentEditExtensionFactory
   * */
-@ExtensionPoint(context = InjectionContext.swing,id = AppointmentEditExtensionFactory.ID)
+
 public interface AppointmentEditExtensionFactory {
 	String ID = "appointmentedit";
 	RaplaWidget createField(AppointmentEditExtensionEvents events) throws RaplaException;

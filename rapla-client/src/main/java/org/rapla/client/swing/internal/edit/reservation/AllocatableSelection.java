@@ -67,7 +67,6 @@ import org.rapla.scheduler.ResolvedPromise;
 import org.rapla.storage.PermissionController;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import jakarta.inject.Singleton;
 import javax.swing.AbstractAction;
 import javax.swing.DefaultCellEditor;
 import javax.swing.Icon;
@@ -2419,7 +2418,6 @@ public class AllocatableSelection extends RaplaGUIComponent implements Appointme
         return restrictionVisible;
     }
 
-    @Singleton
     @org.springframework.stereotype.Service
     @org.springframework.context.annotation.Lazy
     public static class AllocatableSelectionFactory

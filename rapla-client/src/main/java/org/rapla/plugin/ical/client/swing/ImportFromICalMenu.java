@@ -29,7 +29,7 @@ import org.rapla.plugin.ical.ImportFromICalPlugin;
 import org.rapla.plugin.ical.ImportFromICalResources;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import jakarta.inject.Provider;
+import java.util.function.Supplier;
 import javax.swing.BorderFactory;
 import javax.swing.ButtonGroup;
 import javax.swing.ComboBoxModel;
@@ -76,13 +76,13 @@ public class ImportFromICalMenu extends RaplaComponent implements ImportMenuExte
 	String id = "ical";
 	ICalImport importService;
 	ImportFromICalResources icalI18n;
-    private final Provider<TreeAllocatableSelection> treeAllocatableSelectionProvider;
+    private final Supplier<TreeAllocatableSelection> treeAllocatableSelectionProvider;
     private final IOInterface io;
     private final DialogUiFactoryInterface dialogUiFactory;
 	private boolean enabled;
 
 	@Autowired
-	public ImportFromICalMenu(RaplaFacade facade, RaplaResources i18n, ImportFromICalResources iCalResources, RaplaLocale raplaLocale, Logger logger, ICalImport importService, ImportFromICalResources icalImportResources, Provider<TreeAllocatableSelection> treeAllocatableSelectionProvider, IOInterface io, MenuItemFactory menuItemFactory, DialogUiFactoryInterface dialogUiFactory)
+	public ImportFromICalMenu(RaplaFacade facade, RaplaResources i18n, ImportFromICalResources iCalResources, RaplaLocale raplaLocale, Logger logger, ICalImport importService, ImportFromICalResources icalImportResources, Supplier<TreeAllocatableSelection> treeAllocatableSelectionProvider, IOInterface io, MenuItemFactory menuItemFactory, DialogUiFactoryInterface dialogUiFactory)
 	{
 		super( facade,i18n, raplaLocale, logger);
 		this.importService = importService;

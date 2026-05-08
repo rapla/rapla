@@ -42,7 +42,7 @@ import org.rapla.framework.RaplaException;
 import org.rapla.scheduler.*;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import jakarta.inject.Provider;
+import java.util.function.Supplier;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -72,7 +72,7 @@ public class EditTaskPresenter implements TaskPresenter
     final static public String EDIT_EVENTS_ID = "editEvents";
     final static public String MERGE_RESOURCES_ID = "mergeResources";
     final static public String EDIT_RESOURCES_ID = "editResources";
-    private final Provider<ReservationEdit> reservationEditProvider;
+    private final Supplier<ReservationEdit> reservationEditProvider;
     private final EditTaskViewFactory editTaskViewFactory;
     AppointmentBlock appointmentBlock= null;
     final ReservationController reservationController;
@@ -90,7 +90,7 @@ public class EditTaskPresenter implements TaskPresenter
     }
 
     @Autowired
-    public EditTaskPresenter(ClientFacade clientFacade, EditTaskViewFactory editTaskViewFactory, DialogUiFactoryInterface dialogUiFactory, RaplaResources i18n, ApplicationEventBus eventBus, CalendarSelectionModel model, Provider<ReservationEdit> reservationEditProvider,
+    public EditTaskPresenter(ClientFacade clientFacade, EditTaskViewFactory editTaskViewFactory, DialogUiFactoryInterface dialogUiFactory, RaplaResources i18n, ApplicationEventBus eventBus, CalendarSelectionModel model, Supplier<ReservationEdit> reservationEditProvider,
                              ReservationController reservationController, Set<MergeCheckExtension> mergeCheckers, CommandScheduler scheduler)
     {
         this.editTaskViewFactory = editTaskViewFactory;

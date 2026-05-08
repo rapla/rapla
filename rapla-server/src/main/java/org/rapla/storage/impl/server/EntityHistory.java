@@ -87,11 +87,11 @@ public class EntityHistory
     }
 
     private final Map<ReferenceInfo, List<EntityHistory.HistoryEntry>> map = new ConcurrentHashMap<>();
-    private final JsonParserWrapper.JsonParser gson;
+    private final JsonParserWrapper.JsonParser jsonParser;
     private EntityResolver resolver;
     public EntityHistory(EntityResolver resolver)
     {
-        gson = JsonParserWrapper.defaultJson().get();
+        jsonParser = JsonParserWrapper.defaultJson().get();
         this.resolver = resolver;
     }
 
@@ -191,7 +191,7 @@ public class EntityHistory
         String json = entry.json;
         final Class typeClass = entry.getId().getType();
         final Class<? extends Entity> implementingClass = typeImpl.get(typeClass);
-        final Entity entity = gson.fromJson(json, implementingClass);
+        final Entity entity = jsonParser.fromJson(json, implementingClass);
 
         if (entity instanceof EntityReferencer && resolver != null)
         {
@@ -258,7 +258,7 @@ public class EntityHistory
     public EntityHistory.HistoryEntry addHistoryEntry(Entity entity, Date timestamp, boolean isDelete)
     {
         final ReferenceInfo id = entity.getReference();
-        final String json = gson.toJson(entity);
+        final String json = jsonParser.toJson(entity);
         return addHistoryEntry(id, json, timestamp, isDelete);
     }
 

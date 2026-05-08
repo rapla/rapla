@@ -29,11 +29,9 @@ import org.rapla.scheduler.ResolvedPromise;
 import org.rapla.scheduler.Subject;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import jakarta.inject.Singleton;
 import java.util.Collection;
 import java.util.Date;
 
-@Singleton
 
 @org.springframework.stereotype.Service(CalendarPlacePresenter.PLACE_ID)
 @org.springframework.context.annotation.Lazy

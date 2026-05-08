@@ -20,12 +20,10 @@ import org.rapla.client.swing.toolkit.RaplaSeparator;
 import org.rapla.framework.RaplaInitializationException;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import jakarta.inject.Singleton;
 import javax.swing.JMenuBar;
 import javax.swing.JMenuItem;
 import javax.swing.JSeparator;
 
-@Singleton
 @org.springframework.stereotype.Service
 public class RaplaMenuBarContainer
 {

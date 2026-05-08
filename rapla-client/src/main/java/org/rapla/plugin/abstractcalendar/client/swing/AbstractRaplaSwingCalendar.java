@@ -54,7 +54,7 @@ import org.rapla.scheduler.Promise;
 import org.rapla.scheduler.ResolvedPromise;
 import org.rapla.scheduler.sync.SynchronizedCompletablePromise;
 
-import jakarta.inject.Provider;
+import java.util.function.Supplier;
 import javax.swing.BorderFactory;
 import javax.swing.JComponent;
 import javax.swing.JLabel;
@@ -88,7 +88,7 @@ public abstract class AbstractRaplaSwingCalendar extends RaplaGUIComponent
     int units = 1;
     protected final Set<ObjectMenuFactory> objectMenuFactories;
     protected final MenuFactory menuFactory;
-    protected final Provider<DateRenderer> dateRendererProvider;
+    protected final Supplier<DateRenderer> dateRendererProvider;
     protected final CalendarSelectionModel calendarSelectionModel;
     protected final RaplaClipboard clipboard;
     protected final ReservationController reservationController;
@@ -99,7 +99,7 @@ public abstract class AbstractRaplaSwingCalendar extends RaplaGUIComponent
     private final boolean printing;
 
     public AbstractRaplaSwingCalendar(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, CalendarModel model, boolean editable,
-            boolean printing, final Set<ObjectMenuFactory> objectMenuFactories, MenuFactory menuFactory, Provider<DateRenderer> dateRendererProvider,
+            boolean printing, final Set<ObjectMenuFactory> objectMenuFactories, MenuFactory menuFactory, Supplier<DateRenderer> dateRendererProvider,
             CalendarSelectionModel calendarSelectionModel, RaplaClipboard clipboard, ReservationController reservationController, InfoFactory infoFactory,
             DateRenderer dateRenderer, DialogUiFactoryInterface dialogUiFactory, IOInterface ioInterface,
             AppointmentFormater appointmentFormater, EditController editController) throws RaplaException

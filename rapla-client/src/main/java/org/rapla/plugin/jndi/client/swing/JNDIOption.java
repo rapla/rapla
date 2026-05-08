@@ -43,7 +43,7 @@ import org.rapla.scheduler.Promise;
 import org.rapla.scheduler.ResolvedPromise;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import jakarta.inject.Provider;
+import java.util.function.Supplier;
 import javax.swing.JButton;
 import javax.swing.JCheckBox;
 import javax.swing.JComponent;
@@ -87,7 +87,7 @@ public class JNDIOption implements JNDIConf, PluginOptionPanel
 	GroupListField groupField;
 	JNDIConfig configService;
     private final DialogUiFactoryInterface dialogUiFactory;
-    private final Provider<GroupListField> groupListFieldProvider;
+    private final Supplier<GroupListField> groupListFieldProvider;
     private final RaplaResources raplaResources;
     private final IOInterface ioInterface;
     JComponent container;
@@ -100,7 +100,7 @@ public class JNDIOption implements JNDIConf, PluginOptionPanel
     ClientFacade clientFacade;
 
     @Autowired
-    public JNDIOption(ClientFacade clientFacade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, RaplaResources raplaResources, JNDIConfig config, DialogUiFactoryInterface dialogUiFactory, Provider<GroupListField>groupListFieldProvider, IOInterface ioInterface) {
+    public JNDIOption(ClientFacade clientFacade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, RaplaResources raplaResources, JNDIConfig config, DialogUiFactoryInterface dialogUiFactory, Supplier<GroupListField>groupListFieldProvider, IOInterface ioInterface) {
         this.i18n = i18n;
         this.raplaLocale = raplaLocale;
         this.facade = clientFacade.getRaplaFacade();

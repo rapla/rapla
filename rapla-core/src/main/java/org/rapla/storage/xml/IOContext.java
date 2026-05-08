@@ -25,7 +25,7 @@ import org.rapla.logger.Logger;
 import org.rapla.storage.IdCreator;
 import org.rapla.storage.impl.EntityStore;
 
-import jakarta.inject.Provider;
+import java.util.function.Supplier;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -102,9 +102,9 @@ public class IOContext
         return ioContext;
      }
     public static TypedComponentRole<Boolean> PRINTID = new TypedComponentRole<>(IOContext.class.getName() + ".idonly");
-    public static TypedComponentRole<Provider<Category>> SUPERCATEGORY = new TypedComponentRole<>(IOContext.class.getName() + ".supercategory");
+    public static TypedComponentRole<Supplier<Category>> SUPERCATEGORY = new TypedComponentRole<>(IOContext.class.getName() + ".supercategory");
     
-    public RaplaDefaultXMLContext createOutputContext(Logger logger,RaplaLocale locale,RaplaResources i18n, Provider<Category> superCategory,boolean includeIds) throws RaplaException {
+    public RaplaDefaultXMLContext createOutputContext(Logger logger,RaplaLocale locale,RaplaResources i18n, Supplier<Category> superCategory,boolean includeIds) throws RaplaException {
         
         RaplaDefaultXMLContext ioContext = new RaplaDefaultXMLContext( );
         ioContext.put(RaplaResources.class, i18n);

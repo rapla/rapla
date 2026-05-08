@@ -8,18 +8,16 @@ import org.rapla.framework.RaplaException;
 import org.rapla.logger.Logger;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import jakarta.inject.Provider;
-import jakarta.inject.Singleton;
+import java.util.function.Supplier;
 
-@Singleton
 public class EventTimeCalculatorFactory
 {
 
-	private final Provider<RaplaFacade> facadeProvider;
+	private final Supplier<RaplaFacade> facadeProvider;
 	private final Logger logger;
     private final EventTimeCalculatorResources eventTimeI18n;
 	@Autowired
-    public EventTimeCalculatorFactory(Provider<RaplaFacade> facade,Logger logger, final EventTimeCalculatorResources eventTimeI18n)
+    public EventTimeCalculatorFactory(Supplier<RaplaFacade> facade,Logger logger, final EventTimeCalculatorResources eventTimeI18n)
 	{
 		this.facadeProvider = facade;
 		this.logger = logger;

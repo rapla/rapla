@@ -25,11 +25,9 @@ import org.rapla.client.swing.toolkit.*;
 import org.rapla.components.i18n.I18nIcon;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import jakarta.inject.Singleton;
 import javax.swing.*;
 import java.awt.*;
 
-@Singleton
 @org.springframework.stereotype.Service
 public class MenuItemFactorySwingImpl
         implements MenuItemFactory

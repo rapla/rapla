@@ -18,7 +18,6 @@ import org.rapla.client.CalendarPlaceView;
 import org.rapla.client.RaplaWidget;
 import org.rapla.client.swing.images.RaplaImages;
 import org.rapla.client.swing.toolkit.RaplaButton;
-import org.rapla.inject.InjectionContext;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import javax.swing.Icon;

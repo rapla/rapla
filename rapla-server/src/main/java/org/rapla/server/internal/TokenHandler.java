@@ -15,10 +15,8 @@ import org.rapla.storage.dbrm.LoginTokens;
 import org.rapla.storage.dbrm.RemoteStorage;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import jakarta.inject.Singleton;
 import java.util.Collection;
 
-@Singleton
 public class TokenHandler
 {
     SignedToken accessTokenSigner;

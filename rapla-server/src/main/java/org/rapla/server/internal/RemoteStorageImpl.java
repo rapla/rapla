@@ -44,7 +44,7 @@ import org.rapla.storage.dbrm.RemoteStorage;
 import org.rapla.storage.impl.EntityStore;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import jakarta.inject.Provider;
+import java.util.function.Supplier;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.ws.rs.core.Context;
 import java.util.ArrayList;
@@ -71,7 +71,7 @@ public class RemoteStorageImpl implements RemoteStorage
     @Autowired Set<AuthenticationStore> authenticationStore;
 
     @Autowired RaplaResources i18n;
-    @Autowired Provider<MailInterface> mailInterface;
+    @Autowired Supplier<MailInterface> mailInterface;
     @Autowired UpdateDataManager updateDataManager;
     private final HttpServletRequest request;
 

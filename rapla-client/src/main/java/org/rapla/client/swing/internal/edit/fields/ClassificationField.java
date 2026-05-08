@@ -44,7 +44,6 @@ import org.rapla.logger.Logger;
 import org.rapla.storage.PermissionController;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import jakarta.inject.Singleton;
 import javax.swing.BorderFactory;
 import javax.swing.Box;
 import javax.swing.BoxLayout;
@@ -357,7 +356,6 @@ public  class  ClassificationField<T extends Classifiable> extends AbstractEditF
 		return content;
 	}
 	
-	@Singleton
 	@org.springframework.stereotype.Service
 	@org.springframework.context.annotation.Lazy
 	public static class ClassificationFieldFactory{

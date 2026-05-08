@@ -77,7 +77,6 @@ import org.rapla.server.AuthenticationStore;
 import org.rapla.storage.RaplaSecurityException;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import jakarta.inject.Singleton;
 import javax.naming.CommunicationException;
 import javax.naming.Context;
 import javax.naming.Name;
@@ -138,7 +137,6 @@ import java.util.TreeMap;
 
 
 
-@Singleton
 public class JNDIAuthenticationStore implements AuthenticationStore,Disposable,JNDIConf {
     // ----------------------------------------------------- Instance Variables
 

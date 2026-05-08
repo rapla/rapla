@@ -33,15 +33,13 @@ import org.rapla.scheduler.Observable;
 import org.rapla.scheduler.Promise;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import jakarta.inject.Provider;
-import jakarta.inject.Singleton;
+import java.util.function.Supplier;
 import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
 
-@Singleton
 @org.springframework.stereotype.Service
 @org.springframework.context.annotation.Lazy
 public class Application implements ApplicationView.Presenter, ModificationListener {
@@ -51,22 +49,22 @@ public class Application implements ApplicationView.Presenter, ModificationListe
     private final ClientFacade clientFacade;
     private final AbstractActivityController abstractActivityController;
     private ApplicationView mainView;
-    private final Provider<ApplicationView> mainViewProvider;
+    private final Supplier<ApplicationView> mainViewProvider;
     private final RaplaResources i18n;
 
     private final ApplicationEventBus eventBus;
-    private final Map<String, Provider<TaskPresenter>> activityPresenters;
-    final private Provider<Set<ClientExtension>> clientExtensions;
-    final Provider<CalendarSelectionModel> calendarModelProvider;
+    private final Map<String, Supplier<TaskPresenter>> activityPresenters;
+    final private Supplier<Set<ClientExtension>> clientExtensions;
+    final Supplier<CalendarSelectionModel> calendarModelProvider;
     private final CommandScheduler scheduler;
     private TaskPresenter placeTaskPresenter;
     final private DialogUiFactoryInterface dialogUiFactory;
     private final Map<ApplicationEvent, TaskPresenter> openDialogsPresenter = new HashMap<>();
 
     @Autowired
-    public Application(final Provider<ApplicationView> mainViewProvider, ApplicationEventBus eventBus, Logger logger, BundleManager bundleManager, ClientFacade clientFacade,
-                       AbstractActivityController abstractActivityController, RaplaResources i18n, Map<String, Provider<TaskPresenter>> activityPresenters,
-                       Provider<Set<ClientExtension>> clientExtensions, Provider<CalendarSelectionModel> calendarModel, CommandScheduler scheduler,
+    public Application(final Supplier<ApplicationView> mainViewProvider, ApplicationEventBus eventBus, Logger logger, BundleManager bundleManager, ClientFacade clientFacade,
+                       AbstractActivityController abstractActivityController, RaplaResources i18n, Map<String, Supplier<TaskPresenter>> activityPresenters,
+                       Supplier<Set<ClientExtension>> clientExtensions, Supplier<CalendarSelectionModel> calendarModel, CommandScheduler scheduler,
                        DialogUiFactoryInterface dialogUiFactory) {
         this.abstractActivityController = abstractActivityController;
         this.mainViewProvider = mainViewProvider;
@@ -115,7 +113,7 @@ public class Application implements ApplicationView.Presenter, ModificationListe
 
         final PopupContext popupContext = mainView.createPopupContext();//activity.getPopupContext();
 
-        final Provider<TaskPresenter> taskPresenterProvider = activityPresenters.get(activityId);
+        final Supplier<TaskPresenter> taskPresenterProvider = activityPresenters.get(activityId);
         if (taskPresenterProvider == null) {
             logger.warn("startAction: no TaskPresenter for id='" + activityId + "', map keys=" + activityPresenters.keySet());
             return false;

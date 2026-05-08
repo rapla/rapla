@@ -13,8 +13,8 @@ import org.rapla.plugin.mail.MailPlugin;
 import org.rapla.server.ServerService;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import jakarta.inject.Named;
-import jakarta.inject.Provider;
+import org.springframework.beans.factory.annotation.Qualifier;
+import java.util.function.Supplier;
 import java.io.IOException;
 import java.lang.reflect.Array;
 import java.lang.reflect.InvocationTargetException;
@@ -38,10 +38,10 @@ public class MailapiClient implements MailInterface
     String username;
     String password;
     RaplaFacade facade;
-    Provider<Object> externalMailSessionProvider;
+    Supplier<Object> externalMailSessionProvider;
 
     @Autowired
-    public MailapiClient( RaplaFacade facade, @Named(ServerService.ENV_RAPLAMAIL_ID) Provider<Object> externalMailSessionProvider)  {
+    public MailapiClient( RaplaFacade facade, @Qualifier(ServerService.ENV_RAPLAMAIL_ID) Supplier<Object> externalMailSessionProvider)  {
     	this.facade = facade;
     	this.externalMailSessionProvider = externalMailSessionProvider;
     }

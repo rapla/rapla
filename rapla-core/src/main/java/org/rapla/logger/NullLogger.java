@@ -1,8 +1,6 @@
 package org.rapla.logger;
 
-import jakarta.inject.Singleton;
 
-@Singleton
 public class NullLogger extends AbstractLogger
 {
     public NullLogger() {

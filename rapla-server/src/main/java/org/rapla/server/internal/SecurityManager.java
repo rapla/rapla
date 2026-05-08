@@ -30,11 +30,10 @@ import org.rapla.storage.PreferencePatch;
 import org.rapla.storage.RaplaSecurityException;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import jakarta.inject.Singleton;
 import java.util.*;
 
 /** checks if the client can store or delete an entity */
-@Singleton public class SecurityManager
+ public class SecurityManager
 {
     // Can be enababled to check if user has the right to remove an allocation
     private static final boolean CHECK_IF_REMOVE_ALLOCATION_ALLOWED = false;

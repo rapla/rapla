@@ -7,9 +7,7 @@ import org.rapla.scheduler.sync.UtilConcurrentCommandScheduler;
 import org.rapla.framework.TimeZoneConverter;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import jakarta.inject.Singleton;
 
-@Singleton
 public class DefaultScheduler extends UtilConcurrentCommandScheduler implements Disposable
 {
 	final private TimeZoneConverter converter;

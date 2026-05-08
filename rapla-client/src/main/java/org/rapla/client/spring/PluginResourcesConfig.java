@@ -17,7 +17,7 @@ import org.rapla.plugin.urlencryption.UrlEncryptionResources;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
-import jakarta.inject.Provider;
+import java.util.function.Supplier;
 
 @Configuration
 public class PluginResourcesConfig
@@ -34,7 +34,7 @@ public class PluginResourcesConfig
     @Bean public PlanningStatusResources planningStatusResources(BundleManager bm) { return new PlanningStatusResources(bm); }
 
     @Bean
-    public EventTimeCalculatorFactory eventTimeCalculatorFactory(Provider<RaplaFacade> facade, Logger logger, EventTimeCalculatorResources i18n)
+    public EventTimeCalculatorFactory eventTimeCalculatorFactory(Supplier<RaplaFacade> facade, Logger logger, EventTimeCalculatorResources i18n)
     {
         return new EventTimeCalculatorFactory(facade, logger, i18n);
     }
@@ -64,7 +64,7 @@ public class PluginResourcesConfig
 
     @Bean(name = org.rapla.plugin.appointmentnote.AppointmentNoteFunctions.NAMESPACE)
     @org.springframework.context.annotation.Lazy
-    public org.rapla.plugin.appointmentnote.AppointmentNoteFunctions appointmentNoteFunctions(Provider<RaplaFacade> facadeProvider)
+    public org.rapla.plugin.appointmentnote.AppointmentNoteFunctions appointmentNoteFunctions(Supplier<RaplaFacade> facadeProvider)
     {
         return new org.rapla.plugin.appointmentnote.AppointmentNoteFunctions(facadeProvider);
     }

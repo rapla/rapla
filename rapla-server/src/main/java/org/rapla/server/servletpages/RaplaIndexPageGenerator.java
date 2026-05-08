@@ -13,7 +13,6 @@ import org.rapla.server.extensionpoints.HtmlMainMenu;
 import org.rapla.server.internal.ServerContainerContext;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import jakarta.inject.Singleton;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -28,7 +27,6 @@ import java.util.Map;
 import java.util.TreeMap;
 
 @Path("index")
-@Singleton
 public class RaplaIndexPageGenerator
 {
     private final Map<String, HtmlMainMenu> entries;

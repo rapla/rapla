@@ -44,7 +44,6 @@ import org.rapla.scheduler.Promise;
 import org.rapla.scheduler.ResolvedPromise;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import jakarta.inject.Singleton;
 import javax.swing.BoxLayout;
 import javax.swing.DefaultListModel;
 import javax.swing.JComponent;
@@ -585,7 +584,6 @@ class AppointmentListEdit extends AbstractAppointmentEditor
 		}
 	}
 
-    @Singleton
     @org.springframework.stereotype.Service
     @org.springframework.context.annotation.Lazy
     public static class AppointmentListEditFactory

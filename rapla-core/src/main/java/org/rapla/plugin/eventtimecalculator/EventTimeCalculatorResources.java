@@ -6,10 +6,8 @@ import org.rapla.components.i18n.BundleManager;
 import org.rapla.components.i18n.I18nBundle;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import jakarta.inject.Singleton;
 import java.util.Locale;
 
-@Singleton
  public class EventTimeCalculatorResources extends AbstractBundle
 {
     public static final String BUNDLENAME = EventTimeCalculatorPlugin.PLUGIN_ID + ".EventTimeCalculatorResources";

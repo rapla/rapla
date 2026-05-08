@@ -43,7 +43,7 @@ import org.rapla.storage.StorageOperator;
 import org.rapla.storage.UpdateResult;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import jakarta.inject.Provider;
+import java.util.function.Supplier;
 import java.util.*;
 
 /** Sends Notification Mails on allocation change.*/
@@ -54,7 +54,7 @@ public class NotificationService implements ServerExtension
     static final String NOTIFICATION_LOCK_ID = "NOTIFICATION";
     private static final long VALID_LOCK = DateTools.MILLISECONDS_PER_MINUTE * 5;
     private final RaplaFacade raplaFacade;
-    private final Provider<MailToUserImpl> mailToUserInterface;
+    private final Supplier<MailToUserImpl> mailToUserInterface;
     private final boolean planningStatusEnabled;
     protected CommandScheduler scheduler;
     private final AppointmentFormater appointmentFormater;
@@ -67,7 +67,7 @@ public class NotificationService implements ServerExtension
 
     @Autowired
     public NotificationService(RaplaFacade facade, RaplaResources i18nBundle, NotificationResources notificationI18n, AppointmentFormater appointmentFormater,
-                               Provider<MailToUserImpl> mailToUserInterface, CommandScheduler scheduler, Logger logger/*, NotificationStorage notificationStorage */) throws RaplaException {
+                               Supplier<MailToUserImpl> mailToUserInterface, CommandScheduler scheduler, Logger logger/*, NotificationStorage notificationStorage */) throws RaplaException {
         this.notificationI18n = notificationI18n;
         this.raplaFacade = facade;
         this.raplaI18n = i18nBundle;

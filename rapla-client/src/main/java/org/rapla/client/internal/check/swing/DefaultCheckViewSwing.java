@@ -2,7 +2,6 @@ package org.rapla.client.internal.check.swing;
 
 import org.rapla.client.RaplaWidget;
 import org.rapla.client.internal.check.CheckView;
-import org.rapla.inject.InjectionContext;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import javax.swing.BoxLayout;

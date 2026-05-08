@@ -56,7 +56,6 @@ import org.rapla.storage.PermissionController;
 import org.rapla.storage.StorageOperator;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import jakarta.inject.Singleton;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -78,7 +77,6 @@ import java.util.stream.Stream;
 
 import static org.rapla.entities.configuration.CalendarModelConfiguration.EXPORT_ENTRY;
 
-@Singleton
 public class CalendarModelImpl implements CalendarSelectionModel, org.rapla.facade.SyncCalendarModel
 {
     private static final String DEFAULT_VIEW = "week";//WeekViewFactory.WEEK_VIEW;

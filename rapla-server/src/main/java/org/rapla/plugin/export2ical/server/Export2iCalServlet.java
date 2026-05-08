@@ -27,7 +27,6 @@ import org.rapla.plugin.planningstatus.PlanningStatusPlugin;
 import org.rapla.storage.StorageOperator;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import jakarta.inject.Singleton;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -42,7 +41,6 @@ import java.text.SimpleDateFormat;
 import java.util.*;
 
 @Path("{path:ical|internal_ical}")
-@Singleton
 public class Export2iCalServlet
 {
 	private int global_daysBefore;

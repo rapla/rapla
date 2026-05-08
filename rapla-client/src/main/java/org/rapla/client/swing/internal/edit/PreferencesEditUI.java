@@ -36,7 +36,7 @@ import org.rapla.framework.RaplaLocale;
 import org.rapla.logger.Logger;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import jakarta.inject.Provider;
+import java.util.function.Supplier;
 import javax.swing.BorderFactory;
 import javax.swing.JComponent;
 import javax.swing.JLabel;
@@ -80,17 +80,17 @@ public class PreferencesEditUI extends RaplaGUIComponent
     OptionPanel lastOptionPanel;
     Preferences preferences;
 
-    private final Provider<Set<UserOptionPanel>> userOptionPanel;
-    private final Provider<Set<SystemOptionPanel>> systemOptionPanel;
-    private final Map<String,Provider<PluginOptionPanel>> pluginOptionPanel;
+    private final Supplier<Set<UserOptionPanel>> userOptionPanel;
+    private final Supplier<Set<SystemOptionPanel>> systemOptionPanel;
+    private final Map<String,Supplier<PluginOptionPanel>> pluginOptionPanel;
     private final TreeFactory treeFactory;
     private final DialogUiFactoryInterface dialogUiFactory;
 
     /** called during initialization to createInfoDialog the info component
      */
     @Autowired
-    public PreferencesEditUI(TreeFactory treeFactory, Provider<Set<UserOptionPanel>> userOptionPanel,
-                             Provider<Set<SystemOptionPanel>> systemOptionPanel, Map<String, Provider<PluginOptionPanel>> pluginOptionPanel, ClientFacade facade,
+    public PreferencesEditUI(TreeFactory treeFactory, Supplier<Set<UserOptionPanel>> userOptionPanel,
+                             Supplier<Set<SystemOptionPanel>> systemOptionPanel, Map<String, Supplier<PluginOptionPanel>> pluginOptionPanel, ClientFacade facade,
                              RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, DialogUiFactoryInterface dialogUiFactory, InfoFactory infoFactory,
                              TreeCellRenderer renderer
     )
@@ -141,7 +141,7 @@ public class PreferencesEditUI extends RaplaGUIComponent
 
 	protected Collection<OptionPanel> getPluginOptions() throws RaplaException {
         List<OptionPanel> optionList = new ArrayList<>();
-        for ( Provider<PluginOptionPanel> panel: pluginOptionPanel.values())
+        for ( Supplier<PluginOptionPanel> panel: pluginOptionPanel.values())
         {
             final PluginOptionPanel e = panel.get();
             optionList.add(e);

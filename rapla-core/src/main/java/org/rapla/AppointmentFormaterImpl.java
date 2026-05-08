@@ -21,7 +21,6 @@ import org.rapla.entities.domain.Repeating;
 import org.rapla.framework.RaplaLocale;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import jakarta.inject.Singleton;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.Date;
@@ -30,7 +29,6 @@ import java.util.List;
 import java.util.Set;
 
 /** default implementation of appointment formater */
-@Singleton
 public class AppointmentFormaterImpl
     implements
     AppointmentFormater

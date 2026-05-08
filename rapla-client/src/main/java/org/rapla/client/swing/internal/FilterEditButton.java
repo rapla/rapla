@@ -19,7 +19,6 @@ import org.rapla.framework.RaplaLocale;
 import org.rapla.logger.Logger;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import jakarta.inject.Singleton;
 import javax.swing.*;
 import javax.swing.event.ChangeListener;
 import java.awt.*;
@@ -111,7 +110,6 @@ public class FilterEditButton extends RaplaGUIComponent
         filterButton.refreshChar();
     }
 
-    @Singleton
     @org.springframework.stereotype.Service
     public static class FilterEditButtonFactory
     {

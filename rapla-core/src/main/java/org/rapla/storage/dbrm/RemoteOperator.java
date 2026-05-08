@@ -43,7 +43,6 @@ import org.rapla.facade.internal.ModificationEventImpl;
 import org.rapla.framework.Disposable;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
-import org.rapla.inject.InjectionContext;
 import org.rapla.logger.Logger;
 import org.rapla.scheduler.CommandScheduler;
 import org.rapla.scheduler.Promise;
@@ -65,7 +64,6 @@ import org.rapla.storage.impl.EntityStore;
 import org.rapla.storage.impl.RaplaLock;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import jakarta.inject.Singleton;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -90,7 +88,6 @@ import java.util.stream.Collectors;
  * network.  It needs an server-process providing the StorageService
  * (usually this is the default rapla-server).
  */
-@Singleton
 public class RemoteOperator
         extends AbstractCachableOperator implements RestartServer, Disposable {
     final List<StorageUpdateListener> storageUpdateListeners = new Vector<>();

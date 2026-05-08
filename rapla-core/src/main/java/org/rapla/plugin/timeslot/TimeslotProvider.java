@@ -11,12 +11,10 @@ import org.rapla.framework.RaplaInitializationException;
 import org.rapla.framework.RaplaLocale;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import jakarta.inject.Singleton;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
-@Singleton
 public class TimeslotProvider {
 	
 	private ArrayList<Timeslot> timeslots;

@@ -14,12 +14,10 @@ package org.rapla.client.swing;
 
 import org.rapla.client.RaplaWidget;
 import org.rapla.framework.RaplaException;
-import org.rapla.inject.ExtensionPoint;
-import org.rapla.inject.InjectionContext;
 
 import java.util.List;
 
-@ExtensionPoint(context = InjectionContext.swing, id = "editDialogFor")
+
 public interface EditComponent<T,W> extends RaplaWidget<W>
 {
     /** maps all fields back to the current object.*/

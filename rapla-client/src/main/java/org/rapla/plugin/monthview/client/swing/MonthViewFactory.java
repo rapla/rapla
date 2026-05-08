@@ -39,20 +39,18 @@ import org.rapla.plugin.monthview.MonthViewPlugin;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.context.annotation.Lazy;
-import jakarta.inject.Provider;
-import jakarta.inject.Singleton;
+import java.util.function.Supplier;
 import javax.swing.Icon;
 import java.util.Set;
 
 @Service
 @Lazy
-@Singleton
 
 public class MonthViewFactory implements SwingViewFactory
 {
     private final Set<ObjectMenuFactory> objectMenuFactories;
     private final MenuFactory menuFactory;
-    private final Provider<DateRenderer> dateRendererProvider;
+    private final Supplier<DateRenderer> dateRendererProvider;
     private final CalendarSelectionModel calendarSelectionModel;
     private final RaplaClipboard clipboard;
     private final ReservationController reservationController;
@@ -70,7 +68,7 @@ public class MonthViewFactory implements SwingViewFactory
 
     @Autowired
     public MonthViewFactory(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, Set<ObjectMenuFactory> objectMenuFactories,
-            MenuFactory menuFactory, Provider<DateRenderer> dateRendererProvider, CalendarSelectionModel calendarSelectionModel, RaplaClipboard clipboard,
+            MenuFactory menuFactory, Supplier<DateRenderer> dateRendererProvider, CalendarSelectionModel calendarSelectionModel, RaplaClipboard clipboard,
             ReservationController reservationController, InfoFactory infoFactory, DateRenderer dateRenderer,
             DialogUiFactoryInterface dialogUiFactory, IOInterface ioInterface, AppointmentFormater appointmentFormater, EditController editController) throws RaplaInitializationException
     {

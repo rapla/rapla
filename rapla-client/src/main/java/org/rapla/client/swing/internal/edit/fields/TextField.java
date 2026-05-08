@@ -21,7 +21,6 @@ import org.rapla.framework.RaplaLocale;
 import org.rapla.logger.Logger;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import jakarta.inject.Singleton;
 import javax.swing.BorderFactory;
 import javax.swing.JButton;
 import javax.swing.JColorChooser;
@@ -270,7 +269,6 @@ public class TextField extends AbstractEditField implements ActionListener, Focu
         return "<multiple Values>";
     }
 
-    @Singleton
     @org.springframework.stereotype.Service
     public static class TextFieldFactory
     {

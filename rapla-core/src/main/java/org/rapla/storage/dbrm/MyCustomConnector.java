@@ -15,19 +15,19 @@ import org.rapla.storage.RaplaInvalidTokenException;
 import org.rapla.storage.RaplaSecurityException;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import jakarta.inject.Provider;
+import java.util.function.Supplier;
 
 public class MyCustomConnector implements CustomConnector
 {
     private final RemoteConnectionInfo remoteConnectionInfo;
-    private final Provider<RemoteAuthentificationService> authentificationService;
+    private final Supplier<RemoteAuthentificationService> authentificationService;
     //private final String errorString;
     private final CommandScheduler commandQueue;
-    Provider<RaplaResources> i18n;
+    Supplier<RaplaResources> i18n;
     Logger logger;
     private int wrongLoginCounter=0;
 
-    @Autowired public MyCustomConnector(RemoteConnectionInfo remoteConnectionInfo, Provider<RaplaResources> i18n,Provider<RemoteAuthentificationService> authentificationService,
+    @Autowired public MyCustomConnector(RemoteConnectionInfo remoteConnectionInfo, Supplier<RaplaResources> i18n,Supplier<RemoteAuthentificationService> authentificationService,
             CommandScheduler commandQueue, Logger logger)
     {
         this.remoteConnectionInfo = remoteConnectionInfo;

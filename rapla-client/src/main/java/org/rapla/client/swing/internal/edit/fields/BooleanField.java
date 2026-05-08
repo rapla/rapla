@@ -18,7 +18,6 @@ import org.rapla.framework.RaplaLocale;
 import org.rapla.logger.Logger;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import jakarta.inject.Singleton;
 import javax.swing.BoxLayout;
 import javax.swing.ButtonGroup;
 import javax.swing.JComponent;
@@ -171,7 +170,6 @@ public class BooleanField extends AbstractEditField implements ActionListener, F
 		return multipleValues;
 	}
 	
-    @Singleton
     @org.springframework.stereotype.Service
     public static class BooleanFieldFactory
     {

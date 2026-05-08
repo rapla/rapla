@@ -12,8 +12,6 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.components.i18n;
 
-import org.rapla.inject.ExtensionPoint;
-import org.rapla.inject.InjectionContext;
 
 import java.util.Locale;
 import java.util.MissingResourceException;
@@ -22,7 +20,7 @@ import java.util.MissingResourceException;
    can be defined in XML or as an java-object.
 */
 
-@ExtensionPoint(id="i18n",context = InjectionContext.all)
+
 public interface I18nBundle {
     /** same as
         <code>

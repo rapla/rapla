@@ -45,7 +45,6 @@ import org.rapla.scheduler.Promise;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.context.annotation.Lazy;
-import jakarta.inject.Singleton;
 import javax.swing.Icon;
 import javax.swing.table.TableColumn;
 import java.util.ArrayList;
@@ -55,7 +54,6 @@ import java.util.function.Supplier;
 
 @Service
 @Lazy
-@Singleton
 
 public class AppointmentTableViewFactory implements SwingViewFactory
 {

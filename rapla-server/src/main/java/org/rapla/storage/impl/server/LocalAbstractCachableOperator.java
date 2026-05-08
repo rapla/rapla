@@ -3181,8 +3181,8 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 
         if (!reservations.isEmpty())
         {
-            JsonParserWrapper.JsonParser gson = JsonParserWrapper.defaultJson().get();
-            getLogger().error("The following events will be removed because they have no appointments: \n" + gson.toJson(reservations));
+            JsonParserWrapper.JsonParser jsonParser = JsonParserWrapper.defaultJson().get();
+            getLogger().error("The following events will be removed because they have no appointments: \n" + jsonParser.toJson(reservations));
         }
         return reservationRefs;
     }

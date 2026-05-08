@@ -1,12 +1,10 @@
 package org.rapla.client.base;
 
 import org.rapla.framework.RaplaException;
-import org.rapla.inject.ExtensionPoint;
-import org.rapla.inject.InjectionContext;
 
 import java.util.Date;
 
-@ExtensionPoint(context = InjectionContext.client, id = CalendarPlugin.CALENDAR_PLUGIN_ID)
+
 public interface CalendarPlugin<W>
 {
 

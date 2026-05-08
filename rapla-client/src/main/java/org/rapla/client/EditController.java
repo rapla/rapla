@@ -9,11 +9,9 @@ import org.rapla.entities.domain.AppointmentBlock;
 import org.rapla.entities.domain.Reservation;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import jakarta.inject.Singleton;
 import java.util.Collections;
 import java.util.List;
 
-@Singleton
 @org.springframework.stereotype.Service
 public class EditController
 {
