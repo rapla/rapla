@@ -352,13 +352,11 @@
 		<dependency>
 			<groupId>org.slf4j</groupId>
 			<artifactId>slf4j-api</artifactId>
-			<version>${slf4j.version}</version>
 			<scope>provided</scope>
 		</dependency>
 		<dependency>
 			<groupId>ch.qos.logback</groupId>
 			<artifactId>logback-classic</artifactId>
-			<version>${logback.version}</version>
 			<scope>test</scope>
 		</dependency>
 		<dependency>
@@ -369,6 +367,15 @@
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-test</artifactId>
+			<scope>test</scope>
+		</dependency>
+		<!-- Spring Boot 4 split MockMvc / WebMvcTest out of spring-boot-test-autoconfigure
+		     into a dedicated module under package org.springframework.boot.webmvc.test.autoconfigure.
+		     Needed so @AutoConfigureMockMvc and the MockMvc-bean autoconfiguration are on the
+		     test classpath of any module that runs full-stack web tests. -->
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-webmvc-test</artifactId>
 			<scope>test</scope>
 		</dependency>
 	</dependencies>

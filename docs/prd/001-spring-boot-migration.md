@@ -495,12 +495,13 @@ The `spring.http.converters.preferred-json-mapper=gson` line in `application.yml
 
 Gson is still on the classpath (via the `com.google.code.gson:gson` dep) for two remaining direct consumers: `JsonMergePatch` (legacy JSON merge patch) and `HTTPWithJsonConnector` (legacy REST client). Both use raw Gson API and would need rewriting to drop the dep entirely. The `JsonParserWrapper` no longer imports `GsonParserWrapper` — the wrapper class is leaf-only now.
 
-**Phase 9 step 2 (remaining — gated by PRD 001-A):** to fully drop Gson from the classpath would require:
-- Migrating `RaplaSQL` history serialization from `GsonParserWrapper` to `JacksonParserWrapper` (the wrapper interface already exists in the inlined `org.rapla.rest.*` package).
-- Migrating `MailapiClient` and `HTTPWithJsonMailConnector` away from Gson — these are plugin-internal serializers, not REST API.
-- Final removal of `gson` dependency from `parent/pom.xml`.
+**Phase 9 step 2 — Gson removal completed 2026-05-08** (alongside the Jackson 2 → Jackson 3 cutover under PRD 011):
+- `gson` dependency dropped from `rapla-bom/pom.xml` (both `<properties>` and `<dependencyManagement>`).
+- `HTTPWithJsonConnector`, `HTTPWithJsonMailConnector`, `MailapiClient`, `JacksonMergePatch` (renamed from `JsonMergePatch`), and `RestAPIExample` now exclusively use the Jackson API; no `com.google.gson.*` imports remain anywhere in the reactor.
+- Stale `gson`-named local variables and fields renamed to accurate names (`mapper`, `jsonParser`, `parser`, `p`) across `JacksonParserWrapper`, `JavaJsonSerializer`, `EntityHistory`, `NotificationStorage`, `RaplaSQL`, `LocalAbstractCachableOperator`. `ExchangeAppointmentStorage` was left with the legacy `gson` field name pending coordination with the parallel Exchange-connector session.
+- Reactor `mvn compile test-compile` green on Spring Boot 4.0.6 + Jackson 3.1.2.
 
-The current `Date` semantics in Rapla rely on `java.util.Date` (mutable) and are spread across hundreds of model classes. Migrating to `java.time.LocalDateTime` (PRD 001-A) is a prerequisite for full Jackson adoption, since Jackson's date module (`jackson-datatype-jsr310`) targets `java.time.*`. Until that PRD lands, Gson stays for the legacy code paths above.
+PRD 001-A (Date → LocalDateTime) work continues independently; the Gson removal no longer blocks on it because Jackson 3 has built-in `java.time.*` support (no separate `jackson-datatype-jsr310` module).
 
 `mvn test` → 23 tests still passing.
 
@@ -565,7 +566,7 @@ Wiring the full Swing UI graph is mechanical but voluminous. Concrete numbers:
 - **Map/Set/Provider extension-point injections** (`Map<String, TaskPresenter>`, `Set<ClientExtension>`, etc.) need `@Component`/`@Bean` registration with `@Named("id")` qualifiers — Spring's auto-discovery via `@ComponentScan` would have to be configured per package.
 - Each Swing UI class also has its own `@Inject` field/constructor injection; converting them to constructor-only injection per the AGENTS.md rule is a touched-class change, multiplying review burden.
 
-**Recommendation (executed 2026-05-06):** **PRD 002 (`docs/prd/002-swing-spring-di.md`) created and started.** Phase 1 (`SwingClientConfig` skeleton with `@ComponentScan`) and Phase 2 step 1 (`RaplaEventBus` as `@Service`) completed. Three sub-phases remaining:
+**Recommendation (executed 2026-05-06):** **PRD 002 (`docs/prd/done/002-swing-spring-di.md`) created and started; completed 2026-05-08.** Phase 1 (`SwingClientConfig` skeleton with `@ComponentScan`) and Phase 2 step 1 (`RaplaEventBus` as `@Service`) completed. Three sub-phases remaining:
 1. ~~Add `@ComponentScan(basePackages={"org.rapla.client", "org.rapla.client.swing"})` to a new `SwingClientConfig`~~ **DONE 2026-05-06.**
 2. Add `@Service` (alongside existing `@DefaultImplementation`) to the remaining 31 default-impl classes — **1/32 done.**
 3. Resolve cascading missing-bean errors one by one; migrate field-injected fields to constructor parameters per AGENTS.md rule as each class is touched.

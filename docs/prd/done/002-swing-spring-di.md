@@ -6,12 +6,76 @@
 
 ## Goal
 
-Migrate the Swing UI tier (~142 files under `src/main/java/org/rapla/client/swing/`, 281 files total under `src/main/java/org/rapla/client/`) from the now-removed `restinject` annotation processor to Spring DI. After this PRD, the legacy `@Inject` field-injected Swing classes are reachable from `SpringRaplaClient`.
+**Replace the legacy `restinject` annotation-processor DI with native Spring DI across the entire reactor**, so the codebase has zero dependency on `org.rapla.inject.*` annotations and zero dependency on `jakarta.inject` (JSR-330). Original 2026-05-06 framing was narrower (just "make the Swing tier reachable from `SpringRaplaClient`") — see Implementation History for how the scope grew once the wiring problem was understood.
+
+After this PRD: every wired class uses Spring stereotypes (`@Service` / `@Component` / `@Configuration`) + `@Autowired` + `@Bean` factories; the `org.rapla.inject` package is deleted; `jakarta.inject-api` is off the dep tree.
 
 ## Scope
 
-- **In scope:** All `@DefaultImplementation` (32 files) and `@Extension` (58 files) Swing/client classes wired as Spring beans.
-- **Out of scope:** GWT (already removed in PRD 001 Phase 7), Angular frontend (its own track), any visual/behavioral changes.
+**In scope (final, as-built):**
+- 73 `@DefaultImplementation` classes (initial estimate was 32 — undercounted)
+- 121 `@Extension(provides=X, id="y")` contributions (initial estimate was 58)
+- 39 `@ExtensionPoint(...)` interface declarations (not in original scope; added when whole-package removal became possible)
+- 268 `@Inject` annotations (Phase D)
+- 102 `@Singleton` annotations (Phase F)
+- 60 `Provider<T>` field types (Phase F)
+- 3 `@Named` annotations (Phase F)
+- All 7 classes in `org.rapla.inject.*` package (deleted)
+
+**Out of scope:**
+- GWT (already removed in PRD 001 Phase 7)
+- Angular frontend (its own track)
+- Any visual/behavioral changes
+- Server-side `@Bean`-factory wiring restructure (per AGENTS.md §4 the server intentionally uses `@Bean` factories instead of `@ComponentScan`; Phase D normalized `@Inject` → `@Autowired` on server classes but did NOT add `@Service` annotations there)
+- `custom/` module (out of reactor; AGENTS.md note about future PRD)
+
+## Cross-references
+
+- **PRD 001** (Spring Boot migration) — Phase 7 deleted the restinject annotation processor; PRD 002 cleans up the orphaned `@Inject` / `@DefaultImplementation` / `@Extension` annotations the processor used to consume.
+- **PRD 003** (custom-deployments) — references the now-removed `restinject` jar via `custom/pom.xml`. Patched with a TODO comment in this PRD; full rework deferred to PRD 003.
+- **PRD 010** (Jackson field-based wire format) — happened concurrently in this session and broke `mvn compile` mid-Phase-F (Jackson 2→3 API change in `JacksonMergePatch.java`). Per AGENTS.md §7 not addressed here; PRD 010 owns it.
+- **AGENTS.md §4** — sets the policy this PRD enforces: server uses `@Bean` factories, client uses `@ComponentScan`. Phase D respects the asymmetry.
+
+## Verification (run any time to confirm migration hasn't regressed)
+
+One-liner that should print **0** if the migration is intact:
+```bash
+grep -rE "@(Inject|Singleton|Named|DefaultImplementation|Extension|ExtensionPoint)\b" \
+     rapla-{core,client,server}/src/main/java | grep -vE "//|/\*| \*" | wc -l
+```
+
+Other regression probes:
+```bash
+# No legacy annotation classes
+[ ! -d rapla-core/src/main/java/org/rapla/inject ] && echo "OK: org.rapla.inject deleted"
+
+# No jakarta.inject in any pom
+grep -rln "jakarta\.inject" rapla-bom rapla-core rapla-client rapla-server rapla-app --include='pom.xml' | wc -l   # expect 0
+
+# No jakarta.inject in dep tree
+mvn -pl rapla-app dependency:tree 2>&1 | grep -c "jakarta\.inject"   # expect 0
+
+# Spring stereotypes are doing the wiring
+grep -rln "@Autowired\b" rapla-core rapla-client rapla-server | wc -l   # expect ~268
+```
+
+## Architectural decisions (and the rationale behind each)
+
+**`@Inject` → `@Autowired` (not just removed).** Spring 4.3+ auto-wires single-constructor classes without any annotation, so the strictly-correct migration on most files would be "delete `@Inject` and don't add anything." Chose `@Autowired` instead because it (a) is one mechanical sed, (b) makes the wiring intent visible at the constructor without requiring readers to know Spring's auto-detection rules, (c) keeps multi-constructor classes safe (Spring would have ambiguity errors otherwise). Cleanup pass to delete redundant `@Autowired` from single-ctor classes is left as low-priority follow-up (cosmetic, no behavior change).
+
+**`Provider<T>` → `Supplier<T>` (java.util.function), not `ObjectProvider<T>` (Spring).** Both Spring's `ObjectProvider<T>` and Java's `Supplier<T>` have a `.get()` method that satisfies the legacy `Provider<T>.get()` call sites. Picked `Supplier` because:
+- It's a JDK-standard type; consumers don't need to know about Spring just to lazily fetch a bean.
+- Drop-in replacement at every call site (the only API used was `.get()`).
+- Lets the migration be a pure mechanical text substitution — `s/Provider</Supplier</g` + import swap.
+- The `@Bean Map<String, Supplier<TaskPresenter>>` factory in `SwingClientConfig` builds the Supplier wrappers explicitly via lambda, so no Spring-magic is needed for the Map-of-Provider pattern.
+
+If a future need arises for `.getIfAvailable()` / `.orderedStream()` etc. that `ObjectProvider` exposes, the affected consumer can switch its single field type. No global rework needed.
+
+**Field-injection left alone (for now).** AGENTS.md §4 says "Existing field-injected code may be left alone until it's touched, but any class you edit should be migrated to constructor injection in the same change." Phase D respected this — `@Inject` on a field became `@Autowired` on the same field; the constructor-injection migration is a separate per-class refactor. The classes touched outside Phase D (e.g. `RemoteStorageImpl` got hand-edited) did get migrated to ctor-injection where possible.
+
+**`@ExtensionPoint` deleted (it's dead documentation, Spring doesn't read it).** Initial Phase E plan kept `@ExtensionPoint` because it "still in use on extension-point interfaces." The follow-up audit clarified that Spring doesn't consult `@ExtensionPoint` at all — the interfaces it annotates are normal Java interfaces, plugins extend them with `@Service("id")`, and Spring populates `Map<String, T>` consumers from bean names directly. The annotation was just documenting the intent; deleting it is safe.
+
+**`@Singleton` removal is purely cosmetic.** Spring's default scope IS singleton, so `@Singleton` is a no-op annotation. Removing it doesn't change runtime behavior; the value is dropping the `jakarta.inject` BOM dep.
 
 ## Audit 2026-05-08 — what's actually still pending (corrected)
 
@@ -90,7 +154,9 @@ Other gotcha: **awk's `\b` word boundary doesn't work in POSIX awk** (gawk-only)
 - The 2026-05-06 mass-add of `@Service` to all 24 remaining `@DefaultImplementation` Swing classes (Python script) broke the test suite because each Swing class transitively depends on non-`@DefaultImplementation` `@Inject` collaborators that weren't yet Spring-managed at the time. **Lesson:** even within a phase, work in small batches and smoke-test between batches.
 - The 2026-05-08 attempt to "redo Phase A" via a `bash | xargs -I{} sh -c 'grep -L "@Service" {}'` audit produced false positives (every file got listed). Acting on that list added duplicate `@Service` annotations, which then needed cleanup via a `perl -i` one-liner that — due to a different bug — truncated 26 files to 0 bytes. Recovery via `git checkout HEAD --` lost prior-session uncommitted edits on 4 files. **Lesson:** the audit script gotcha is documented in the section above; use the verified `while read | grep -q` pattern. Never use `perl -i -e 'my @lines = <>; ...'` — when something goes wrong the file is already truncated. Use `Edit` tool or sed with `--copy` semantics for in-place changes.
 
-## Plan
+## Plan (historical — original 6-phase outline)
+
+> **Note:** This was the 2026-05-06 plan. The actual work split into 8 phases (1–6 plus A–F = re-numbered as A–F in the executive summary). The original phases 1–6 below are kept for historical context — see "Sequenced plan for the remaining migration" above for the as-built phase list, and "Implementation Status" below for the chronological progress log.
 
 ### Phase 1 — `SwingClientConfig` skeleton
 
@@ -138,7 +204,24 @@ Final `@Bean RaplaClientServiceImpl` factory method that takes all 13 deps. Then
 
 ## Tests
 
-Each phase ends with `SpringRaplaClientTest` extended to assert the new beans resolve. After Phase 6, the test should be able to instantiate `RaplaClientServiceImpl` from a Spring context — proving the Swing tier boots end-to-end without the deleted `ClientCreator`.
+**Final test status (2026-05-08, end of session):**
+- `SpringRaplaClientTest` ✅ passes (instantiates the full Swing client Spring context, asserts core beans resolve including `ClientService`, `Application`, `RaplaClientServiceImpl`, the 9-id `Map<String, Supplier<TaskPresenter>>`, and the 5-id `Map<String, Supplier<EditComponent>>`).
+- `ClientConfigTest.clientContextLoads` ✅ passes (verifies `ClientConfig` + `ClientProxyConfig` standalone — without `SwingClientConfig` — still resolves; this is the test that caught the early `swingBundleManager`/`commandScheduler` `@Bean` factory removal attempt).
+- `RaplaSpringBootApplicationTest` ✅ passes.
+- Server-side integration tests (REST + JDBC) ✅ pass.
+- **`mvn test` for `rapla-bom,rapla-client,rapla-server,rapla-app` modules: 45 tests pass.**
+- **`rapla-core` tests: 1 failure (`JsonReaderTest.testJson`)** — pre-existing parallel-session work on PRD 010 (Jackson 2→3 migration); not addressed here per AGENTS.md §7.
+
+**Smoke test (live server + client):**
+- Server (PID at session end: 1048732): `POST /auth/login` → 200; `GET /storage/resources` → 200.
+- Client (PID at session end: 1146713): `mvn -pl rapla-client exec:java` boots through `Starting gui` with zero `ERROR`/`Exception` lines.
+
+**Regression-protection one-liner** (run any time; expect 0):
+```bash
+grep -rE "@(Inject|Singleton|Named|DefaultImplementation|Extension|ExtensionPoint)\b" \
+     rapla-{core,client,server}/src/main/java | grep -vE "//|/\*| \*" | wc -l
+```
+Plus the other probes documented in the **Verification** section above.
 
 ## Implementation Status
 
@@ -147,7 +230,7 @@ Each phase ends with `SpringRaplaClientTest` extended to assert the new beans re
 - `src/main/java/org/rapla/client/spring/SwingClientConfig.java` (new) — `@Configuration @ComponentScan(basePackages={org.rapla.client.swing, org.rapla.client.menu, org.rapla.client.dialog, org.rapla.client.internal, org.rapla.client.event}, excludeFilters=REGEX(.*\\.server\\..*))`. Currently scans nothing for `@Service` purposes (no Swing classes have `@Service` yet beyond the one below).
 - `SpringRaplaClient` no-arg constructor extended to `new AnnotationConfigApplicationContext(ClientConfig.class, ClientProxyConfig.class, SwingClientConfig.class)`.
 
-### Phase 2 — `@Service` annotations (in progress, 45/32 — exceeded original count because we wired non-`@DefaultImplementation` leaves, nested factories, action classes, and `@Bean` factories beyond the original 32)
+### Phase 2 — `@Service` annotations (✅ DONE 2026-05-08 — all 73 `@DefaultImplementation` files have a Spring stereotype; mid-session table below shows the 45/32 work-in-progress snapshot from 2026-05-07)
 
 | Class | `@Service` added | Implements |
 |-------|------------------|------------|
@@ -212,7 +295,7 @@ Each phase ends with `SpringRaplaClientTest` extended to assert the new beans re
 | `org.rapla.client.swing.internal.ApplicationViewSwing` | ✅ + `@Lazy` | `ApplicationView` — needs `RaplaMenuBar` which is **still not wired** (blocked by 6 `Set<*MenuExtension>` types and `PrintAction`). At lazy resolution time, dereferencing `Provider<ApplicationView>` will fail until `RaplaMenuBar` is wired. |
 | **`SpringRaplaClient.main(String[] args)` entry point** | ✅ added | Boots context, gets `ClientService` bean, calls `start(connectInfo)`. Accepts optional `username [password]` CLI args for auto-login; otherwise puts up the interactive login dialog. |
 
-### Phase 6 status — `RaplaClientServiceImpl` lifecycle wiring
+### Phase 6 status — `RaplaClientServiceImpl` lifecycle wiring (✅ DONE 2026-05-07 — `RaplaClientServiceImpl` is `@Service @Lazy`; client launches end-to-end via `mvn -pl rapla-client exec:java`)
 
 `RaplaClientServiceImpl` is now `@Service @Lazy`. The bean **definition** is registered. **First dereference** (i.e. `context.getBean(ClientService.class)`) will trigger the lazy chain:
 
@@ -223,7 +306,7 @@ Each phase ends with `SpringRaplaClientTest` extended to assert the new beans re
 5. `Application` ctor needs `Map<String, Provider<TaskPresenter>>` (✓ 4 entries: `cal`, `resource_calendar`, `admin_user`, `admin_types` — missing `EditTaskPresenter`'s 5 ids), `Provider<ApplicationView>` (✓), `Provider<Set<ClientExtension>>` (✓ empty), `AbstractActivityController` (✓), `BundleManager` (✓), `DialogUiFactoryInterface` (✓), `Provider<CalendarSelectionModel>` (✓), all OK.
 6. `Application.startApplication()` triggers `applicationView.show()` → triggers `ApplicationViewSwing` instantiation → **needs `RaplaMenuBar` (NOT WIRED)**.
 
-### Critical blockers for actual UI launch
+### Critical blockers for actual UI launch (✅ ALL RESOLVED 2026-05-07 — superseded by "First successful client launch" entry below)
 
 | Blocker | What's needed |
 |---------|---------------|
@@ -268,7 +351,7 @@ mvn -pl rapla-client exec:java -Dexec.args="username password"   # auto-login
 
 **What this proves:** the entire bean graph resolves end-to-end — Spring context → `ClientService` → login flow → REST authentication call. The actual `POST` fails because no Rapla server is running on `http://localhost`, but that's an integration-time concern, not a wiring concern. **Phase 6 (lifecycle wiring) is functionally complete.**
 
-### Remaining for production parity
+### Remaining for production parity (✅ ALL ITEMS RESOLVED — see "Remaining for production parity (post-cleanup)" section below for the close-out notes)
 
 - Login dialog UI: present (Swing dialog opens), but the legacy `UserLoginDialog` class probably needs `@Service`/wiring polish.
 - `EditTaskPresenter` (5-id `TaskPresenter`): not yet registered — calendar/admin tasks work, edit-related tasks won't dispatch.
@@ -541,9 +624,9 @@ All 32 original `@DefaultImplementation` swing classes are now `@Service`-annota
 
 Action classes like `UserAction`, `AppointmentAction`, `PasswordChangeAction`, `RaplaObjectActions` are typically constructed *fresh per menu invocation* — they hold short-lived state (the selected object, the popup context). The legacy DI used `Provider<UserAction>` to mean "give me a new one each time".
 
-In Spring, the equivalent is `@Service @Scope("prototype")`: each `provider.get()` from `jakarta.inject.Provider<T>` returns a freshly-constructed instance. Without `@Scope("prototype")`, Spring's default is singleton — `Provider.get()` would return the same instance, which would conflate state across invocations.
+In Spring, the equivalent is `@Service @Scope("prototype")`: each `.get()` from the injected `Supplier<T>` returns a freshly-constructed instance. Without `@Scope("prototype")`, Spring's default is singleton — `.get()` would return the same instance, which would conflate state across invocations.
 
-**Decision rule:** if the legacy code uses `@Inject Provider<T>` to obtain `T`, mark `T` as `@Service @Scope("prototype")`. If the legacy code injects `T` directly, mark `T` as plain `@Service` (default singleton).
+**Decision rule:** if the consumer takes `Supplier<T>` (post-Phase-F; was `Provider<T>` pre-Phase-F), mark `T` as `@Service @Scope("prototype")`. If the consumer injects `T` directly, mark `T` as plain `@Service` (default singleton).
 
 ### Pattern for boot-time-state classes
 
@@ -551,9 +634,9 @@ Classes whose ctor (or super-ctor) calls `clientFacade.getUser()` / `facade.addM
 
 1. **`@Lazy`** on the bean: definition registered, instantiation deferred until first dereference. Cleanest fix, no behavior change at runtime once login completes.
 2. **`@Lazy` on the *injection point*** (the field/parameter that takes the problematic dep). More targeted, but requires changes at every consumer.
-3. **`ObjectProvider<T>`/`Provider<T>`** at the consumer side: explicit lazy lookup. Useful when the dep is genuinely optional, but here we want eager wiring once login exists.
+3. **`Supplier<T>`** at the consumer side (post-Phase-F; was `Provider<T>` pre-Phase-F): explicit lazy lookup via the supplier's `.get()`. Useful when the dep is genuinely optional, but here we want eager wiring once login exists.
 
-Option 1 is the default for this PRD. Option 2 is reserved for cases where one consumer truly is eager but the dep needs to lag.
+Option 1 is the default for this PRD. Option 2 is reserved for cases where one consumer truly is eager but the dep needs to lag. **Note (Phase F):** the global `setLazyInit(true)` `BeanFactoryPostProcessor` in `SpringRaplaClient` now defers ALL bean instantiation to first-dereference, so most boot-time-state issues are mitigated by default — explicit `@Lazy` is now usually redundant but harmless.
 
 `SpringRaplaClientTest` extended to assert `ApplicationEventBus` and `CalendarEventBus` resolve. `mvn test` → 35 tests passing across 8 Spring contexts (incl. PRD 001-A `DateToolsLocalDateTimeTest`).
 
@@ -565,7 +648,7 @@ Option 1 is the default for this PRD. Option 2 is reserved for cases where one c
 3. Run `SpringRaplaClientTest` to verify.
 4. If new beans are needed (`@Inject`-decorated leaf classes that are *not* `@DefaultImplementation`), add `@Service` to those first.
 
-This is genuinely voluminous work — easily another 30+ iterations to wire all 25 remaining `@DefaultImplementation` classes plus their `@Inject`-only collaborators. PRD-defined sub-phases (3 = resolve cascades, 4 = `@Named` extension maps, 5 = constructor injection migration, 6 = `RaplaClientServiceImpl` wiring) all progress in parallel as new beans land.
+~~This is genuinely voluminous work — easily another 30+ iterations to wire all 25 remaining `@DefaultImplementation` classes plus their `@Inject`-only collaborators. PRD-defined sub-phases (3 = resolve cascades, 4 = `@Named` extension maps, 5 = constructor injection migration, 6 = `RaplaClientServiceImpl` wiring) all progress in parallel as new beans land.~~ — **the 30+ iterations were done across the 2026-05-07 + 2026-05-08 sessions; all phases A-F closed.**
 
 ## Open Questions
 

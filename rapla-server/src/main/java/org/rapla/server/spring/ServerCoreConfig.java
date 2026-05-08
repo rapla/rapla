@@ -87,8 +87,7 @@ public class ServerCoreConfig
     @Bean(name = AppointmentNoteFunctions.NAMESPACE)
     public FunctionFactory appointmentNoteFunctions(org.springframework.beans.factory.ObjectProvider<org.rapla.facade.RaplaFacade> facadeProvider)
     {
-        jakarta.inject.Provider<org.rapla.facade.RaplaFacade> provider = facadeProvider::getObject;
-        return new AppointmentNoteFunctions(provider);
+        return new AppointmentNoteFunctions(facadeProvider::getObject);
     }
 
     @Bean
@@ -104,8 +103,7 @@ public class ServerCoreConfig
             org.rapla.logger.Logger logger,
             org.rapla.plugin.eventtimecalculator.EventTimeCalculatorResources i18n)
     {
-        jakarta.inject.Provider<org.rapla.facade.RaplaFacade> provider = facadeProvider::getObject;
-        return new org.rapla.plugin.eventtimecalculator.EventTimeCalculatorFactory(provider, logger, i18n);
+        return new org.rapla.plugin.eventtimecalculator.EventTimeCalculatorFactory(facadeProvider::getObject, logger, i18n);
     }
 
     @Bean(name = org.rapla.plugin.eventtimecalculator.DurationFunctions.NAMESPACE)
@@ -115,15 +113,15 @@ public class ServerCoreConfig
     }
 
     @Bean(name = org.rapla.server.ServerService.ENV_RAPLAMAIL_ID)
-    public jakarta.inject.Provider<Object> mailSessionProvider(org.rapla.server.internal.ServerContainerContext containerContext)
+    public java.util.function.Supplier<Object> mailSessionProvider(org.rapla.server.internal.ServerContainerContext containerContext)
     {
-        return () -> containerContext.getMailSession();
+        return containerContext::getMailSession;
     }
 
     @Bean
     public org.rapla.plugin.mail.server.MailInterface mailInterface(org.rapla.facade.RaplaFacade facade,
-                                                                     @jakarta.inject.Named(org.rapla.server.ServerService.ENV_RAPLAMAIL_ID)
-                                                                     jakarta.inject.Provider<Object> mailSessionProvider)
+                                                                     @org.springframework.beans.factory.annotation.Qualifier(org.rapla.server.ServerService.ENV_RAPLAMAIL_ID)
+                                                                     java.util.function.Supplier<Object> mailSessionProvider)
     {
         return new org.rapla.plugin.mail.server.MailapiClient(facade, mailSessionProvider);
     }
@@ -285,16 +283,16 @@ public class ServerCoreConfig
         return new org.rapla.plugin.tableview.server.ReservationTableViewPage(raplaLocale, tableConfigLoader);
     }
 
-    /** Builds the {@code Map<String, Provider<HTMLViewPage>>} consumed by
+    /** Builds the {@code Map<String, Supplier<HTMLViewPage>>} consumed by
      *  {@link org.rapla.plugin.autoexport.server.CalendarPageGenerator#factoryMap}. The values
-     *  are {@link jakarta.inject.Provider}s that re-fetch from the bean factory each call so
+     *  are {@link java.util.function.Supplier}s that re-fetch from the bean factory each call so
      *  prototype-scoped HTMLViewPages get a fresh instance per page render. */
     @Bean
-    public java.util.Map<String, jakarta.inject.Provider<org.rapla.server.extensionpoints.HTMLViewPage>> htmlViewPageMap(
+    public java.util.Map<String, java.util.function.Supplier<org.rapla.server.extensionpoints.HTMLViewPage>> htmlViewPageMap(
             org.springframework.beans.factory.BeanFactory beanFactory,
             java.util.Map<String, org.rapla.server.extensionpoints.HTMLViewPage> namedPages)
     {
-        java.util.Map<String, jakarta.inject.Provider<org.rapla.server.extensionpoints.HTMLViewPage>> result =
+        java.util.Map<String, java.util.function.Supplier<org.rapla.server.extensionpoints.HTMLViewPage>> result =
                 new java.util.LinkedHashMap<>();
         for (String name : namedPages.keySet())
         {

@@ -1,6 +1,6 @@
 # PRD 004: Multi-Module Architecture Analysis
 
-**Status:** decided — implementation in [PRD 005](005-multi-module-split.md), reactor live on `spring-boot` branch since 2026-05-07. **Decision document, kept for future reference.**
+**Status:** decided — implementation in [PRD 005](../005-multi-module-split.md), reactor live on `spring-boot` branch since 2026-05-07. **Decision document, kept for future reference.**
 **Date:** 2026-05-06
 
 ## Goal

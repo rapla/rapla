@@ -100,6 +100,14 @@
             <artifactId>annotations</artifactId>
             <scope>provided</scope>
         </dependency>
+        <!-- Spring Boot 4 split DataSource autoconfig out of spring-boot-autoconfigure into
+             spring-boot-jdbc; needed for RaplaServerProperties' Map<String, DataSourceProperties>
+             config-property binding. The class moved package: org.springframework.boot.autoconfigure.jdbc
+             → org.springframework.boot.jdbc.autoconfigure. -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-jdbc</artifactId>
+        </dependency>
         <!-- JDBC drivers -->
         <dependency>
             <groupId>org.hsqldb</groupId>

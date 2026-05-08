@@ -143,11 +143,11 @@
         <!-- Direct imports in rapla-app (RaplaSpringBootApplication entry point, etc.).
              rxjava/reactive-streams omitted intentionally — scheduled for removal in a
              future PRD. -->
-        <!-- Logback at runtime in the fat JAR (not provided — must ship). -->
+        <!-- Logback at runtime in the fat JAR (not provided — must ship).
+             Version managed by spring-boot-dependencies BOM. -->
         <dependency>
             <groupId>ch.qos.logback</groupId>
             <artifactId>logback-classic</artifactId>
-            <version>${logback.version}</version>
         </dependency>
         <!-- Tests are full-stack @SpringBootTest integration tests + bootstrap loaders -->
         <dependency>

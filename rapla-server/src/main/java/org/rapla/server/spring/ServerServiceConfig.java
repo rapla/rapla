@@ -60,9 +60,9 @@ public class ServerServiceConfig
             RaplaSystemInfo systemInfo,
             ServerBundleManager bundleManager) throws RaplaInitializationException
     {
-        jakarta.inject.Provider<Map<String, ServerExtension>> mapProvider =
+        java.util.function.Supplier<Map<String, ServerExtension>> mapProvider =
                 () -> serverExtensionsProvider.getIfAvailable(Collections::emptyMap);
-        jakarta.inject.Provider<Set<ServletRequestPreprocessor>> setProvider =
+        java.util.function.Supplier<Set<ServletRequestPreprocessor>> setProvider =
                 () -> requestPreProcessorsProvider.getIfAvailable(Collections::emptySet);
         return new ServerServiceImpl(operator, facade, raplaLocale, timeZoneConverter, logger,
                 mapProvider, setProvider, scheduler, containerContext, i18n, systemInfo, bundleManager);
@@ -414,8 +414,7 @@ public class ServerServiceConfig
                                                         CommandScheduler scheduler, Logger logger)
             throws org.rapla.framework.RaplaException
     {
-        jakarta.inject.Provider<org.rapla.plugin.mail.server.MailToUserImpl> mailToUserInterface = mailToUserProvider::getObject;
         return new org.rapla.plugin.notification.server.NotificationService(
-                facade, i18nBundle, notificationI18n, appointmentFormater, mailToUserInterface, scheduler, logger);
+                facade, i18nBundle, notificationI18n, appointmentFormater, mailToUserProvider::getObject, scheduler, logger);
     }
 }

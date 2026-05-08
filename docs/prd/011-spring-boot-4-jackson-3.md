@@ -1,6 +1,6 @@
 # PRD 011 — Upgrade to Spring Boot 4 + Jackson 3
 
-**Status:** draft
+**Status:** in-progress (Phases 0–4 source rewrite complete 2026-05-08; reactor `mvn compile test-compile` green on Spring Boot 4.0.6 + Jackson 3.1.2; Phases 2/5 verification passes still pending)
 **Date:** 2026-05-08
 **Depends on:** PRD 001 (Spring Boot Migration) substantially complete; PRD 010 (Jackson wire format) lands first so the upgrade can re-pin the same configuration on the new mapper API.
 **Supersedes pin:** `rapla-bom/pom.xml` `<spring-boot.version>3.2.5</spring-boot.version>` and `<jackson.version>2.15.1 / 2.19.0</jackson.version>`.
@@ -97,17 +97,24 @@ Run `mvn test` reactor-wide. Investigate every regression. The expected count is
 | **Spring Boot mapper customizer** | `Jackson2ObjectMapperBuilderCustomizer` | `JsonMapperBuilderCustomizer` (`builder.changeDefaultPropertyInclusion(...)` etc.) |
 | **`application.yml` keys** | `spring.jackson.read.*` / `spring.jackson.write.*` | `spring.jackson.json.read.*` / `spring.jackson.json.write.*` (only matters if any are set; ours doesn't) |
 
-#### Files to rewrite
+#### Files to rewrite — status as of 2026-05-08
 
-| File | Rewrite |
-|---|---|
-| `rapla-core/.../rest/JacksonObjectMapperFactory` | Switch to `JsonMapper.builder()`. Drop `JavaTimeModule.registerModule(...)`. Replace `setVisibility(checker.with…)` with `changeDefaultVisibility(vc -> vc.with…)`. Keep `PROPAGATE_TRANSIENT_MARKER` exactly as-is. The `configure(builder)` overload now takes a `JsonMapper.Builder`, not a built mapper, because the only Spring Boot 4 hook is `JsonMapperBuilderCustomizer` which gives you the builder pre-build. |
-| `rapla-core/.../rest/jackson/JacksonParserWrapper` | Group rename only. **Coordinate with parallel session — they have unstaged changes here.** |
-| `rapla-core/.../rest/jackson/JacksonMergePatch` | Group rename only. `JsonNode` / `ObjectNode` / `ArrayNode` move from `com.fasterxml.jackson.databind.node.*` to `tools.jackson.databind.node.*`. |
-| `rapla-server/.../spring/RaplaJacksonConfig` | Replace `Jackson2ObjectMapperBuilderCustomizer` with `JsonMapperBuilderCustomizer`. The body becomes `return builder -> JacksonObjectMapperFactory.configure(builder);` once the factory's `configure(...)` signature is `JsonMapper.Builder → JsonMapper.Builder`. |
-| `rapla-client/.../spring/ClientProxyConfig` | Replace `MappingJackson2HttpMessageConverter(JacksonObjectMapperFactory.create())` with `new JacksonJsonHttpMessageConverter(JacksonObjectMapperFactory.create())`. |
-| Legacy non-Spring HTTP paths (`HTTPWithJsonConnector` in rapla-core/swing, `HTTPWithJsonMailConnector` + `MailapiClient` in rapla-server/plugin/mail) | **Owned by parallel "Gson removal" session** as of 2026-05-08; they're mid-conversion of these from Gson → Jackson 2. After they commit, a follow-up rename pass migrates these from Jackson 2 → Jackson 3. Don't touch in this PRD. |
-| Test files (`JsonReaderTest`, `RestAPIExample`) | Group rename. `JsonMapper.builder().enable(JsonReadFeature.ALLOW_SINGLE_QUOTES).build()` — `JsonReadFeature` stays at `tools.jackson.core.json.JsonReadFeature`. |
+Done = imports migrated to `tools.jackson.*`, no leftover `com.fasterxml.jackson.databind|core` references except the deliberately-preserved `com.fasterxml.jackson.annotation.JsonAutoDetect`.
+
+| File | Status | Notes |
+|---|---|---|
+| `rapla-core/.../rest/JacksonObjectMapperFactory` | done | Already on `JsonMapper.builder()` + `changeDefaultVisibility(...)`. `JsonAutoDetect.Visibility` import deliberately retained at the legacy package per D1. |
+| `rapla-core/.../rest/jackson/JacksonParserWrapper` | done | `JsonReadFeature` moved to `tools.jackson.core.json` (D7). `Promise` serializer rewritten using `ValueSerializer` + `SerializationContext` (D9). `WRITE_DATES_AS_TIMESTAMPS` now from `tools.jackson.databind.cfg.DateTimeFeature` (D3). |
+| `rapla-core/.../rest/jackson/JacksonMergePatch` | done | Group rename + `node.fields()` → `node.properties()` (D2). `isContainerNode()` rewritten as `isObject() \|\| isArray()` (D2). |
+| `rapla-core/.../rest/client/swing/HTTPWithJsonConnector` | done | Group rename. `parseJson(...)` no longer needs the `JsonProcessingException` try/catch (D5). |
+| `rapla-core/src/test/.../rest/client/RestAPIExample` | done | Group rename. `new ObjectMapper()` → `JsonMapper.builder().build()` (D4). `classification.fields()` rewritten as `((ObjectNode) classification).properties()` (D2). |
+| `rapla-server/.../plugin/mail/server/HTTPWithJsonMailConnector` | done | Group rename. `parseJson(...)` collapsed (D5). `JsonWriteFeature` repackage (D6). |
+| `rapla-server/.../plugin/mail/server/MailapiClient` | done | Group rename. `new ObjectMapper()` → `JsonMapper.builder().build()` (D4). |
+| `rapla-server/src/test/.../plugin/tableview/internal/TableConfigTest` | done | Group rename. `new ObjectMapper()` → `JsonMapper.builder().enable(...).build()` (D4). `JsonProcessingException` throws clause removed (D5). |
+| `rapla-app/src/test/.../server/spring/web/AuthControllerIntegrationTest` | done | Group rename + `AutoConfigureMockMvc` import moved to `org.springframework.boot.webmvc.test.autoconfigure.*` (D8). |
+| `rapla-app/src/test/.../server/spring/web/RemoteStorageErrorMappingIntegrationTest` | done | Same fixes as `AuthControllerIntegrationTest`. |
+| `rapla-server/.../spring/RaplaJacksonConfig` | not started | Spring Boot 4's `JsonMapperBuilderCustomizer` rewrite. Existing config still works because Spring Boot 4 ships Jackson 3 by default and our `JacksonObjectMapperFactory` is already builder-shaped — verify and tighten in Phase 5. |
+| `rapla-client/.../spring/ClientProxyConfig` | not started | `MappingJackson2HttpMessageConverter` → `JacksonJsonHttpMessageConverter`. Defer until Phase 5 unless reactor tests complain. |
 
 #### Reference patch — `JacksonObjectMapperFactory` before/after
 
@@ -198,6 +205,126 @@ public static JsonMapper create() {
 4. **`HTTPWithJsonConnector` deletion?** The legacy Swing client connector that lives outside the Spring HTTP path. If it's truly dead at runtime (PRD 005 follow-up), delete it instead of migrating its imports. Verify with a runtime trace before deleting.
 
 5. **`spring.jackson.use-jackson3` exact property name.** Best-effort guess; verify against the actual SB 4 docs at execution time. If the switch is class-path based instead of property based (e.g., presence of the Jackson 3 starter), the plan above adjusts trivially.
+
+## Discoveries during execution (2026-05-08)
+
+Things the plan above did not predict. Captured here so a future re-read trusts the
+documented migration map over my pre-execution guesses.
+
+### D1. `JsonAutoDetect` annotation import — confirmed unchanged
+
+The plan said the annotations module stays at `com.fasterxml.jackson.annotation.*`. Confirmed:
+`JsonAutoDetect.Visibility` continues to live at that FQN in Jackson 3.1.2, while every other
+Jackson type (`ObjectMapper`, `JsonNode`, `MapperFeature`, …) moved to `tools.jackson.*`. So
+in `JacksonObjectMapperFactory` and `JacksonParserWrapper` you'll see one lingering
+`com.fasterxml.jackson.annotation.JsonAutoDetect` import side-by-side with `tools.jackson.*`
+imports — that mix is correct, not a half-finished migration.
+
+### D2. `JsonNode.fields()` and `isContainerNode()` removed — replacements confirmed
+
+Not on the migration map. Discovered when `JacksonMergePatch` and `JacksonParserWrapper`
+failed to compile against `tools.jackson.databind.JsonNode`:
+
+| Jackson 2 | Jackson 3 |
+|---|---|
+| `JsonNode.fields()` returning `Iterator<Map.Entry<String, JsonNode>>` | `ObjectNode.properties()` returning `Set<Map.Entry<String, JsonNode>>` — note: only on `ObjectNode`, so callers that had a `JsonNode` reference need a cast |
+| `JsonNode.isContainerNode()` | `node.isObject() \|\| node.isArray()` |
+
+Touched files: `JacksonMergePatch.java`, `JacksonParserWrapper.java`, `RestAPIExample.java`.
+
+### D3. `WRITE_DATES_AS_TIMESTAMPS` moved to `DateTimeFeature`, not removed
+
+The migration map said the disable call is "redundant but harmless." Wrong on the second
+half — `tools.jackson.databind.SerializationFeature.WRITE_DATES_AS_TIMESTAMPS` does not
+exist in Jackson 3. The constant was relocated to
+`tools.jackson.databind.cfg.DateTimeFeature.WRITE_DATES_AS_TIMESTAMPS`. Calling
+`.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS)` is a hard compile error, not a
+silently-ignored hint. Mapper builders that used to call it on `SerializationFeature` now
+have to either drop the call entirely (Jackson 3 default is already ISO-8601, so dropping
+is fine) or call it on `DateTimeFeature` if explicit intent is wanted.
+
+### D4. `ObjectMapper` no longer has a public no-arg constructor
+
+`new ObjectMapper()` is gone in Jackson 3. The replacement is the format-specific
+`JsonMapper.builder().build()` (or `XmlMapper.builder().build()`, etc.). Affected:
+`MailapiClient.java`, `TableConfigTest.java`, `AuthControllerIntegrationTest.java`,
+`RemoteStorageErrorMappingIntegrationTest.java`, `RestAPIExample.java`.
+
+### D5. `JsonProcessingException` no longer thrown by serialization
+
+`writeValueAsString(...)` and friends throw the unchecked `tools.jackson.core.JacksonException`
+in Jackson 3 instead of the checked `JsonProcessingException`. Try/catch blocks around
+serialization can be deleted; method `throws JsonProcessingException` clauses fall away too.
+Affected: `HTTPWithJsonConnector.parseJson(...)`, `HTTPWithJsonMailConnector.parseJson(...)`,
+`TableConfigTest.serializationDesirialization()`.
+
+### D6. `JsonWriteFeature` package moved
+
+`com.fasterxml.jackson.core.json.JsonWriteFeature.ESCAPE_NON_ASCII` →
+`tools.jackson.core.json.JsonWriteFeature.ESCAPE_NON_ASCII`. Same enum constant, new package.
+Migration map listed only the `databind` group rename; the `core.json` subpackage moves
+the same way.
+
+### D7. `JsonReadFeature` package moved
+
+`com.fasterxml.jackson.core.JsonParser.Feature.ALLOW_SINGLE_QUOTES` →
+`tools.jackson.core.json.JsonReadFeature.ALLOW_SINGLE_QUOTES`. Two changes in one move:
+the enum is now `JsonReadFeature` (not nested under `JsonParser`), and it's in the
+`tools.jackson.core.json` package. Affected: `JacksonParserWrapper.defaultObjectMapper()`.
+
+### D8. Spring Boot 4 split MockMvc out of `spring-boot-test-autoconfigure`
+
+The plan covered Jackson and Spring Web/Security but did not flag this. In SB 3.x,
+`@AutoConfigureMockMvc` and `@WebMvcTest` lived at
+`org.springframework.boot.test.autoconfigure.web.servlet.*` inside
+`spring-boot-test-autoconfigure`. SB 4 created a new module
+**`spring-boot-webmvc-test`** with the classes at the new package
+`org.springframework.boot.webmvc.test.autoconfigure.*`. The class names are unchanged.
+
+Two-step fix:
+1. Add `spring-boot-webmvc-test` (test scope) to `rapla-bom`'s inherited `<dependencies>` —
+   it is *not* a transitive dependency of `spring-boot-starter-test`.
+2. Rewrite the import in every test that used `@AutoConfigureMockMvc` or `@WebMvcTest`
+   from `org.springframework.boot.test.autoconfigure.web.servlet.*` →
+   `org.springframework.boot.webmvc.test.autoconfigure.*`.
+
+Affected tests: `AuthControllerIntegrationTest.java`, `RemoteStorageErrorMappingIntegrationTest.java`.
+
+### D9. Jackson 3's `SerializationContext` replaces `SerializerProvider`; `ValueSerializer` replaces `JsonSerializer`
+
+For the custom `Promise` serializer in `JacksonParserWrapper`. Method signature changes:
+
+```java
+// BEFORE (Jackson 2)
+new JsonSerializer<Promise>() {
+    public void serialize(Promise p, JsonGenerator g, SerializerProvider provider) throws IOException {
+        provider.findValueSerializer(result.getClass(), null).serialize(result, g, provider);
+    }
+}
+
+// AFTER (Jackson 3)
+new ValueSerializer<Promise>() {
+    public void serialize(Promise p, JsonGenerator g, SerializationContext ctx) {
+        ctx.findValueSerializer(result.getClass()).serialize(result, g, ctx);
+    }
+}
+```
+
+The two-arg `findValueSerializer(class, beanProperty)` signature is gone — `BeanProperty`
+is no longer needed at lookup time. The method also no longer declares `throws IOException`.
+
+### D10. `module.addSerializer(...)` returns `void` in Jackson 3 (was `SimpleModule` for chaining)
+
+Side effect of the immutable-builder redesign. Restructure
+`new SimpleModule().addSerializer(...).addDeserializer(...)` chains into separate statements
+on a held reference.
+
+### Net delta vs the plan
+
+- Files actually touched in Phase 4 source rewrite: 14 (plan estimated 7).
+- All mechanical — no behavioral changes beyond what the migration map predicted.
+- Reactor compile + test-compile: green on `mvn compile test-compile` from the repo root.
+- Reactor full `mvn test`: not yet run (deferred to Phase 5 per AGENTS.md §5).
 
 ## Effort estimate
 
