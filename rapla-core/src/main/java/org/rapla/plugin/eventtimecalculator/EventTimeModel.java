@@ -8,8 +8,7 @@ import org.rapla.framework.Configuration;
 
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Date;
-
+import java.time.LocalDateTime;
 /**
  * Created with IntelliJ IDEA.
  * User: kuestermann
@@ -97,21 +96,20 @@ public class EventTimeModel {
         return  hours * timeUnit;
     }
 
-    public long calcDuration(Reservation reservation) {
-        return calcDuration(reservation.getAppointments());
+    public long calcDuration(AppointmentBlock block) {
+        return calcDuration(DateTools.countMinutes(block.getStart(), block.getEnd()));
     }
 
-    public long calcDuration(AppointmentBlock block) {
-        long duration = DateTools.countMinutes(block.getStart(), block.getEnd());
-        return calcDuration(duration);
+    public long calcDuration(org.rapla.entities.domain.Reservation reservation) {
+        return calcDuration(reservation.getAppointments());
     }
 
     public long calcDuration(Appointment[] appointments){
         final Collection<AppointmentBlock> blocks = new ArrayList<>();
         long totalDuration = 0;
         for (Appointment app : appointments) {
-            Date start = app.getStart();
-            Date end = app.getMaxEnd();
+            LocalDateTime start = app.getStart();
+            LocalDateTime end = app.getMaxEnd();
             if (end == null) {
                 totalDuration = -1;
                 break;
