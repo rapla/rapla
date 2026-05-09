@@ -3,10 +3,11 @@ package org.rapla.components.util;
 import org.jetbrains.annotations.NotNull;
 import org.rapla.components.util.DateTools.TimeWithoutTimezone;
 
-import java.util.Date;
 import java.util.NoSuchElementException;
 
 
+import java.time.LocalDateTime;
+import org.rapla.components.util.DateTools;
 /**
 Provides methods for parsing and formating dates
 and times in the following format: <br>
@@ -22,7 +23,7 @@ public class SerializableDateTimeFormat
 	//private final static char DATE_TIME_SEPERATOR = ' ';
 
 	
-    private Date parseDate( String date, String time, boolean fillDate ) throws ParseDateException {
+    private LocalDateTime parseDate( String date, String time, boolean fillDate ) throws ParseDateException {
     	if( date == null || date.length()==0  )
     	    throwParseDateException("empty" );
        
@@ -32,7 +33,7 @@ public class SerializableDateTimeFormat
         	millis+= timeMillis;
         }
         //    logger.log( "parsed to " + calendar.getTime() );
-        return new Date( millis);
+        return LocalDateTime.ofInstant(java.time.Instant.ofEpochMilli(millis), java.time.ZoneOffset.UTC);
     }
 
 	private long  parseTime_(String time) throws ParseDateException {
@@ -95,7 +96,7 @@ public class SerializableDateTimeFormat
 		{
 			day+=1;
 		}
-		return DateTools.toDate( year, month, day);
+		return DateTools.toDate(year, month, day);
 	}
 
 	private int indexOfSeperator(String date) {
@@ -122,26 +123,20 @@ public class SerializableDateTimeFormat
     @return The parsed date
     @throws ParseDateException when the date cannot be parsed.
     */
-    public Date parseDateTime( String date, String time) throws ParseDateException {
+    public LocalDateTime parseDateTime( String date, String time) throws ParseDateException {
         return parseDate( date, time, false);
     }
 
-    /** {@code LocalDateTime} variant. UTC. */
-    public java.time.LocalDateTime parseLocalDateTime( String date, String time) throws ParseDateException {
-        Date d = parseDateTime(date, time);
-        return d == null ? null : DateTools.toLocalDateTime(d);
-    }
-    
     /** 
     The format of the time-string is <strong>18:00:00</strong>.
     @return The parsed time
     @throws ParseDateException when the date cannot be parsed.
     */
-    public Date parseTime(  String time) throws ParseDateException {
+    public LocalDateTime parseTime(  String time) throws ParseDateException {
     	if( time == null || time.length()==0  )
     	    throwParseDateException("empty");
     	long millis = parseTime_(  time);
-    	Date result = new Date( millis);
+    	LocalDateTime result = LocalDateTime.ofInstant(java.time.Instant.ofEpochMilli(millis), java.time.ZoneOffset.UTC);
     	return result;
     }
 
@@ -151,11 +146,30 @@ public class SerializableDateTimeFormat
     @return The parsed date
     @throws ParseDateException when the date cannot be parsed.
     */
-    public Date parseDate( String date, boolean fillDate ) throws ParseDateException {
-        return parseDate( date, null, fillDate);
-    }
     
-    public Date parseTimestamp(String timestamp) throws ParseDateException
+    /** Parse a date string {@code "2001-10-21"}. If {@code fillDate} is true, time is 24:00 instead of 0:00. */
+    public LocalDateTime parseDate(String date, boolean fillDate) throws ParseDateException
+    {
+        long millis = parseDate_(date.trim(), fillDate);
+        return DateTools.toLocalDateTime(millis);
+    }
+
+    /** Alias for {@link #parseTimestamp(String)} — kept for callers that use the explicit name. */
+    public LocalDateTime parseLocalDateTime(String timestamp) throws ParseDateException {
+        return parseTimestamp(timestamp);
+    }
+
+    /** Alias for {@link #parseDateTime(String, String)} — kept for callers that use the explicit name. */
+    public LocalDateTime parseLocalDateTime(String date, String time) throws ParseDateException {
+        return parseDateTime(date, time);
+    }
+
+    /** Parse a date string {@code "2001-10-21"} to a {@code LocalDate}. */
+    public java.time.LocalDate parseLocalDate(String date) throws ParseDateException {
+        return parseDate(date, false).toLocalDate();
+    }
+
+    public LocalDateTime parseTimestamp(String timestamp) throws ParseDateException
     {
         boolean fillDate = false;
         timestamp = timestamp.trim();
@@ -170,23 +184,20 @@ public class SerializableDateTimeFormat
                 millisDate+= time;
             }
         }
-		Date result = new Date( millisDate);
+		LocalDateTime result = LocalDateTime.ofInstant(java.time.Instant.ofEpochMilli(millisDate), java.time.ZoneOffset.UTC);
         return result;
     }
 
 
    /** returns the time object in the following format:  <strong>13:00:00</strong>. <br> */
-    public String formatTime( Date date ) {
-        return formatTime(date, false);
-    }
 
-    private String formatTime(Date date, boolean includeMilliseconds) {
+    private String formatTime(LocalDateTime date, boolean includeMilliseconds) {
 		StringBuilder buf = new StringBuilder();
 		if ( date == null)
 		{
-		    date = new Date();
+		    date = LocalDateTime.now();
 		}
-		TimeWithoutTimezone time = DateTools.toTime( date.getTime());
+		TimeWithoutTimezone time = DateTools.toTime( DateTools.toMilli(date));
 		append( buf, time.hour, 2 );
 		buf.append( ':' );
 		append( buf, time.minute, 2 );
@@ -206,16 +217,12 @@ public class SerializableDateTimeFormat
     This is usefull for end-dates: 2001-10-21 00:00 is then interpreted as
     2001-10-20 24:00.
     */
-    public String formatDate( Date date, boolean adaptDay ) {
-        final char splitChar = '-';
-        return formatDate(date, adaptDay, splitChar);
-    }
 
     @NotNull
-    public String formatDate(Date date, boolean adaptDay, Character splitChar) {
+    public String formatDate(LocalDateTime date, boolean adaptDay, Character splitChar) {
         StringBuilder buf = new StringBuilder();
         DateTools.DateWithoutTimezone splitDate;
-        splitDate = DateTools.toDate( date.getTime()  - (adaptDay ?  DateTools.MILLISECONDS_PER_DAY : 0));
+        splitDate = DateTools.toDate(DateTools.toMilli(date)  - (adaptDay ?  DateTools.MILLISECONDS_PER_DAY : 0));
         append( buf, splitDate.year, 4 );
         if (splitChar != null) {
             buf.append(splitChar);
@@ -228,7 +235,7 @@ public class SerializableDateTimeFormat
         return buf.toString();
     }
 
-    public String formatTimestamp( Date date ) {
+    public String formatTimestamp( LocalDateTime date ) {
         String timestamp = formatDate(date, false) +
                 DATE_TIME_SEPERATOR +
                 formatTime(date, true) +
@@ -236,66 +243,36 @@ public class SerializableDateTimeFormat
         return timestamp;
     }
 
-    /** same as formatDate(date, false).
-    @see #formatDate(Date,boolean)
-    */
-    public String formatDate(  Date date ) {
-        return formatDate( date, false );
+    /** same as formatDate(date, false). */
+    public String formatDate(LocalDateTime date) {
+        return formatDate(date, false, '-');
     }
 
-    // ============================================================
-    // PRD 001-A Phase A1 — java.time overloads.
-    // Wire format unchanged (ISO 8601). These delegate to the existing
-    // Date-based methods via DateTools.toMilli / DateTools.toDate
-    // so byte-identical output is guaranteed for all callers.
-    // ============================================================
-
-    public String formatTimestamp(java.time.LocalDateTime dateTime)
-    {
-        if (dateTime == null) return null;
-        return formatTimestamp(DateTools.toDate(dateTime));
+    /** same as formatDate(date, adaptDay, '-'). */
+    public String formatDate(LocalDateTime date, boolean adaptDay) {
+        return formatDate(date, adaptDay, '-');
     }
 
-    public String formatDate(java.time.LocalDate date)
-    {
-        if (date == null) return null;
-        return formatDate(DateTools.toDate(date));
+    /** same as formatTime(date, false). */
+    public String formatTime(LocalDateTime date) {
+        return formatTime(date, false);
     }
 
-    /** {@code LocalDateTime} variant of {@link #formatDate(Date, boolean)}. UTC.
-     *  When {@code adaptDay=true}, shifts back 1 day (for whole-day end timestamps stored as next-day-midnight). */
-    public String formatDate(java.time.LocalDateTime dateTime, boolean adaptDay)
-    {
-        if (dateTime == null) return null;
-        return formatDate(DateTools.toDate(dateTime), adaptDay);
+    /** {@code LocalDate} variant — formats just the date portion. */
+    public String formatDate(java.time.LocalDate date) {
+        return formatDate(date.atStartOfDay());
     }
 
-    public String formatTime(java.time.LocalTime time)
-    {
-        if (time == null) return null;
-        // Reuse the Date-based formatter by anchoring to epoch midnight.
-        Date d = new Date(time.getHour() * DateTools.MILLISECONDS_PER_HOUR + time.getMinute() * DateTools.MILLISECONDS_PER_MINUTE + time.getSecond() * 1000L);
-        return formatTime(d);
-    }
-
-    public java.time.LocalDateTime parseLocalDateTime(String timestamp) throws ParseDateException
-    {
-        if (timestamp == null) return null;
-        return DateTools.toLocalDateTime(parseTimestamp(timestamp));
-    }
-
-    public java.time.LocalDate parseLocalDate(String date) throws ParseDateException
-    {
-        if (date == null) return null;
-        Date d = parseDate(date, false);
-        return DateTools.toLocalDateTime(d).toLocalDate();
+    /** {@code LocalTime} variant — formats just the time portion. */
+    public String formatTime(java.time.LocalTime time) {
+        return formatTime(java.time.LocalDate.EPOCH.atTime(time));
     }
 
     public java.time.LocalTime parseLocalTime(String time) throws ParseDateException
     {
         if (time == null) return null;
-        Date d = parseTime(time);
-        long millis = d.getTime();
+        LocalDateTime d = parseTime(time);
+        long millis = DateTools.toMilli(d);
         int hour = (int) ((millis / DateTools.MILLISECONDS_PER_HOUR) % 24);
         int minute = (int) ((millis / DateTools.MILLISECONDS_PER_MINUTE) % 60);
         int second = (int) ((millis / 1000) % 60);
