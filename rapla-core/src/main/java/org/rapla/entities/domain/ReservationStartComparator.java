@@ -15,9 +15,9 @@ package org.rapla.entities.domain;
 import org.rapla.entities.NamedComparator;
 
 import java.util.Comparator;
-import java.util.Date;
 import java.util.Locale;
 
+import java.time.LocalDateTime;
 public class ReservationStartComparator implements Comparator<Reservation> {
     NamedComparator<Reservation> namedComp;
     public ReservationStartComparator(Locale locale) {
@@ -28,39 +28,39 @@ public class ReservationStartComparator implements Comparator<Reservation> {
         if ( o1.equals(o2)) return 0;
         Reservation r1 =  o1;
         Reservation r2 =  o2;
-        if (getStart(r1).before(getStart(r2)))
+        if (getStart(r1).isBefore(getStart(r2)))
             return -1;
-        if (getStart(r1).after(getStart(r2)))
+        if (getStart(r1).isAfter(getStart(r2)))
             return 1;
 
         return namedComp.compare(o1,o2);
     }
 
-    public static Date getStart(Reservation r) {
-        Date maxDate = null;
+    public static LocalDateTime getStart(Reservation r) {
+        LocalDateTime maxDate = null;
         Appointment[] apps =r.getAppointments();
         for ( int i=0;i< apps.length;i++) {
             Appointment app = apps[i];
-            if (maxDate == null || app.getStart().before( maxDate)) {
+            if (maxDate == null || app.getStart().isBefore( maxDate)) {
                 maxDate = app.getStart() ;
             }
         }
         if ( maxDate == null) {
-            maxDate = new Date();
+            maxDate = LocalDateTime.now();
         }
         return maxDate;
     }
 
-    public int compare(Date d1,Object o2) {
-        if (o2 instanceof Date)
-            return d1.compareTo((Date) o2);
+    public int compare(LocalDateTime d1,Object o2) {
+        if (o2 instanceof LocalDateTime)
+            return d1.compareTo((LocalDateTime) o2);
 
         Reservation r2 = (Reservation) o2;
-        if (d1.before(getStart(r2))) {
+        if (d1.isBefore(getStart(r2))) {
             //System.out.println(a2 + ">" + d1);
             return -1;
         }
-        if (d1.after(getStart(r2))) {
+        if (d1.isAfter(getStart(r2))) {
             //                System.out.println(a2 + "<" + d1);
             return 1;
         }

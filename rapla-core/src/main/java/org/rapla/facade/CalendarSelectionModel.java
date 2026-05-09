@@ -1,5 +1,7 @@
 package org.rapla.facade;
 
+import java.time.LocalDateTime;
+
 import org.rapla.components.util.TimeInterval;
 import org.rapla.entities.configuration.Preferences;
 import org.rapla.entities.domain.Allocatable;
@@ -11,7 +13,6 @@ import org.rapla.plugin.planningstatus.PlanningStatusPlugin;
 import org.rapla.scheduler.Promise;
 
 import java.util.Collection;
-import java.util.Date;
 import java.util.function.Predicate;
 
 public interface CalendarSelectionModel extends CalendarModel{
@@ -51,14 +52,14 @@ public interface CalendarSelectionModel extends CalendarModel{
 	
 	void setMarkedIntervals(Collection<TimeInterval> timeIntervals,  boolean timeEnabled);
 	/** calls setMarkedIntervals with a single interval from start to end*/
-	void markInterval(Date start, Date end);
+	void markInterval(LocalDateTime start, LocalDateTime end);
 
 	/** {@code LocalDateTime} variant of {@link #markInterval(Date, Date)}. UTC.
 	 *  Distinct method name avoids ambiguity at {@code null}-passing call sites. */
 	default void markIntervalLocalDateTime(java.time.LocalDateTime start, java.time.LocalDateTime end) {
 		markInterval(
-			start == null ? null : org.rapla.components.util.DateTools.toDate(start),
-			end == null ? null : org.rapla.components.util.DateTools.toDate(end));
+			start,
+			end);
 	}
 
 	void setMarkedAllocatables(Collection<Allocatable> allocatable);

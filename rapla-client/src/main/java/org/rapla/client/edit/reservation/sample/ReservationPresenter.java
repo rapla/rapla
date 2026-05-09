@@ -25,8 +25,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.Date;
-
+import java.time.LocalDateTime;
 public class ReservationPresenter implements Presenter
 {
     public static final String EDIT_ACTIVITY_ID = "editevent";
@@ -178,8 +177,8 @@ public class ReservationPresenter implements Presenter
 
     @Override public void newDateClicked()
     {
-        Date startDate = new Date();
-        Date endDate = new Date();
+        LocalDateTime startDate = LocalDateTime.now();
+        LocalDateTime endDate = LocalDateTime.now();
         try
         {
             Appointment newAppointment = facade.newAppointmentDeprecated(startDate, endDate);
@@ -208,7 +207,7 @@ public class ReservationPresenter implements Presenter
         view.updateAppointments(newSelectedAppointment);
     }
 
-    @Override public void timeChanged(Date startDate, Date endDate)
+    @Override public void timeChanged(LocalDateTime startDate, LocalDateTime endDate)
     {
         if (selectedAppointment != null)
         {

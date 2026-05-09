@@ -28,13 +28,13 @@ import org.rapla.entities.internal.UserImpl;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.Date;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 
 
+import java.time.LocalDateTime;
 public interface PermissionContainer extends Ownable 
 {
     // adds a permission. Permissions are stored in a hashset so the same permission can't be added twice
@@ -117,7 +117,7 @@ public interface PermissionContainer extends Ownable
         }
 
         // TODO check if union is correct
-        static public TimeInterval getInterval(Iterable<? extends Permission> permissionList,User user,Date today,  Permission.AccessLevel requestedAccessLevel ) {
+        static public TimeInterval getInterval(Iterable<? extends Permission> permissionList,User user,LocalDateTime today,  Permission.AccessLevel requestedAccessLevel ) {
             if ( user == null || user.isAdmin() )
                 return new TimeInterval( null, null);
           
@@ -130,13 +130,14 @@ public interface PermissionContainer extends Ownable
                 Permission.AccessLevel accessLevel = p.getAccessLevel();
                 if ( effectLevel >= maxEffectLevel && effectLevel > PermissionImpl.NO_PERMISSION && accessLevel.includes( requestedAccessLevel))
                 {
-                    Date start;
-                    Date end;
+                    LocalDateTime start;
+                    LocalDateTime end;
                     if (accessLevel!= Permission.ADMIN  )
                     {
-                        start = p.getMinAllowed( today);
-                        end = p.getMaxAllowed(today);
-                        if ( end != null && end.before( today))
+                        java.time.LocalDate todayDate = today == null ? null : today.toLocalDate();
+                        start = p.getMinAllowed( todayDate);
+                        end = p.getMaxAllowed(todayDate);
+                        if ( end != null && end.isBefore( today))
                         {
                             continue;
                         }

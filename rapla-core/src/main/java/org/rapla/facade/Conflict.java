@@ -23,7 +23,6 @@ import org.rapla.entities.domain.Reservation;
 import org.rapla.entities.storage.ReferenceInfo;
 
 import java.util.Collection;
-import java.util.Date;
 import java.util.LinkedHashSet;
 
 /**
@@ -70,10 +69,7 @@ public interface Conflict extends Named, Entity<Conflict>, Timestamp {
   String getReservation2Name();
 
   ///** Find the first occurance of a conflict in the specified interval or null when not in intervall*/
-  //public Date getFirstConflictDate(final Date  fromDate, final Date toDate);
-
   //public boolean canModify(User user);
-
   boolean isOwner(User user);
 
   Conflict[] CONFLICT_ARRAY = new Conflict[] {};
@@ -93,15 +89,7 @@ public interface Conflict extends Named, Entity<Conflict>, Timestamp {
 
   boolean hasAppointment(Appointment appointment);
 
-  //boolean endsBefore(Date date);
-
-  Date getStartDate();
-
-  /** {@code LocalDateTime} variant of {@link #getStartDate()}. UTC. */
-  default java.time.LocalDateTime getStartDateAsLocalDateTime() {
-      Date d = getStartDate();
-      return d == null ? null : org.rapla.components.util.DateTools.toLocalDateTime(d);
-  }
+  java.time.LocalDateTime getStartDate();
 
   boolean isAppointment1Enabled();
 

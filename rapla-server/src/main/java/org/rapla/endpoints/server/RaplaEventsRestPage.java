@@ -80,7 +80,7 @@ import java.util.Map;
         final ClassificationFilter[] filters = RaplaResourcesRestPage.getClassificationFilter(facade, simpleFilter, CLASSIFICATION_TYPES, eventTypes);
         final Map<String, String> annotationQuery = null;
         final User owner = null;
-        final AppointmentMapping appMap = syncOperator.queryAppointmentsByLocalDateTimeSync(owner, allocatables, owners, start, end, filters, annotationQuery, false);
+        final AppointmentMapping appMap = syncOperator.queryAppointmentsSync(owner, allocatables, owners, start, end, filters, annotationQuery, false);
         final List<ReservationImpl> result = new ArrayList<>();
         final Collection<Reservation> reservations = appMap.getAllReservations();
         PermissionController permissionController = facade.getPermissionController();

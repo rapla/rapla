@@ -62,6 +62,7 @@ import java.util.*;
 import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
 
+import java.time.LocalDateTime;
 @org.springframework.stereotype.Service
 @org.springframework.context.annotation.Scope("prototype")
 @org.springframework.context.annotation.Lazy
@@ -472,7 +473,7 @@ public class TemplateEdit extends RaplaGUIComponent
                     {
                         Allocatable selectedTemplate = templateList.getSelectedValue();
 
-                        Date start = null;
+                        LocalDateTime start = null;
                         if (selectedTemplate != null)
                         {
                             final Boolean annotation = (Boolean)selectedTemplate.getClassification().getValue(ResourceAnnotations.FIXEDTIMEANDDURATION);
@@ -510,8 +511,8 @@ public class TemplateEdit extends RaplaGUIComponent
                             {
                                 for (Reservation r : reservations)
                                 {
-                                    Date firstDate = r.getFirstDate();
-                                    if (start == null || firstDate.before(start))
+                                    LocalDateTime firstDate = r.getFirstDate();
+                                    if (start == null || firstDate.isBefore(start))
                                     {
                                         start = firstDate;
                                     }

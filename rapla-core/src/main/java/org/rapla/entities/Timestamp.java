@@ -13,20 +13,12 @@
 
 package org.rapla.entities;
 
-import org.rapla.components.util.DateTools;
 import org.rapla.entities.storage.ReferenceInfo;
 
 import java.time.LocalDateTime;
-import java.util.Date;
 
 public interface Timestamp extends LastChangedTimestamp {
     /** returns the creation date of the object. UTC. */
-    LocalDateTime getCreateDateAsLocalDateTime();
+    LocalDateTime getCreateDate();
     ReferenceInfo<User> getLastChangedBy();
-
-    /** Legacy {@code Date} accessor — delegates to {@link #getCreateDateAsLocalDateTime()}. */
-    default Date getCreateDate() {
-        LocalDateTime ldt = getCreateDateAsLocalDateTime();
-        return ldt == null ? null : DateTools.toDate(ldt);
-    }
 }

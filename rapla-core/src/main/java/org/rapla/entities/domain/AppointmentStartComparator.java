@@ -19,9 +19,9 @@ public class AppointmentStartComparator implements Comparator<Appointment> {
 
     public int compare(Appointment a1,Appointment a2) {
         if ( a1.equals(a2)) return 0;
-        if (a1.getStart().before(a2.getStart()))
+        if (a1.getStart().isBefore(a2.getStart()))
             return -1;
-        if (a1.getStart().after(a2.getStart()))
+        if (a1.getStart().isAfter(a2.getStart()))
             return 1;
 
         Reservation r1 = a1.getReservation();

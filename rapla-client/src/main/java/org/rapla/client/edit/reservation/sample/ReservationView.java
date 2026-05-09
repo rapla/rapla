@@ -7,8 +7,7 @@ import org.rapla.entities.dynamictype.Attribute;
 import org.rapla.entities.dynamictype.DynamicType;
 
 import java.util.Collection;
-import java.util.Date;
-
+import java.time.LocalDateTime;
 public interface ReservationView {
 
 	interface Presenter {
@@ -32,14 +31,7 @@ public interface ReservationView {
 
         void selectAppointment(Appointment selectedAppointment);
 
-        void timeChanged(Date startDate, Date endDate);
-
-        /** {@code LocalDateTime} variant — distinct name. */
-        default void timeChangedLocalDateTime(java.time.LocalDateTime startDate, java.time.LocalDateTime endDate) {
-            timeChanged(
-                startDate == null ? null : org.rapla.components.util.DateTools.toDate(startDate),
-                endDate == null ? null : org.rapla.components.util.DateTools.toDate(endDate));
-        }
+        void timeChanged(LocalDateTime startDate, LocalDateTime endDate);
 
         void allDayEvent(boolean selected);
 

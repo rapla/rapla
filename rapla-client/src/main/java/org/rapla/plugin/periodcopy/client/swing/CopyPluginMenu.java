@@ -45,11 +45,11 @@ import java.awt.event.ActionListener;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.Date;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
+import java.time.LocalDateTime;
 @org.springframework.stereotype.Service
 @org.springframework.context.annotation.Lazy
 
@@ -134,11 +134,11 @@ public class CopyPluginMenu  extends RaplaGUIComponent implements EditMenuExtens
 			}).exceptionally( ex ->dialogUiFactory.showException( ex, popupContext ));
     }
     
-    public void copy(  Collection<Reservation> reservations , Date destStart, Date destEnd,boolean includeSingleAppointmentsAndExceptions) throws RaplaException {
+    public void copy(  Collection<Reservation> reservations , LocalDateTime destStart, LocalDateTime destEnd,boolean includeSingleAppointmentsAndExceptions) throws RaplaException {
         Map<Reservation,Reservation> newReservations = new LinkedHashMap<>();
         List<Reservation> sortedReservations = new ArrayList<>(reservations);
         Collections.sort( sortedReservations, new ReservationStartComparator(getLocale()));
-        Date firstStart = null;
+        LocalDateTime firstStart = null;
         for (Reservation reservation: sortedReservations) {
             if ( firstStart == null )
             {
@@ -155,9 +155,9 @@ public class CopyPluginMenu  extends RaplaGUIComponent implements EditMenuExtens
         getClientFacade().getCommandHistory().storeAndExecute( cmd);
     }
 
-	public Reservation copy(Reservation reservation, Date destStart,
-			Date destEnd, boolean includeSingleAppointmentsAndExceptions,
-			Date firstStart) throws RaplaException {
+	public Reservation copy(Reservation reservation, LocalDateTime destStart,
+			LocalDateTime destEnd, boolean includeSingleAppointmentsAndExceptions,
+			LocalDateTime firstStart) throws RaplaException {
 		final RaplaFacade raplaFacade = getFacade();
 		User user = getUser();
 		Reservation r = raplaFacade.clone(reservation, user);
@@ -175,11 +175,11 @@ public class CopyPluginMenu  extends RaplaGUIComponent implements EditMenuExtens
 		        continue;
 		    }
 		    
-		    Date oldStart = app.getStart();
+		    LocalDateTime oldStart = app.getStart();
 		    // we need to calculate an offset so that the reservations will place themself relativ to the first reservation in the list
 		    long offset = DateTools.countDays( firstStart, oldStart) * DateTools.MILLISECONDS_PER_DAY;
-		    Date newStart ;
-		    Date destWithOffset = new Date(destStart.getTime() + offset );
+		    LocalDateTime newStart ;
+		    LocalDateTime destWithOffset = LocalDateTime.ofInstant(java.time.Instant.ofEpochMilli(DateTools.toMilli(destStart) + offset), java.time.ZoneOffset.UTC);
 		    if ( repeating != null && repeating.getType().equals ( Repeating.DAILY) ) 
 		    {
 				newStart = getRaplaLocale().toDate(  destWithOffset  , oldStart );
@@ -191,21 +191,21 @@ public class CopyPluginMenu  extends RaplaGUIComponent implements EditMenuExtens
 		    app.moveTo( newStart) ;
 		    if (repeating != null)
 		    {
-		    	Date[] exceptions = repeating.getExceptions();
+		    	LocalDateTime[] exceptions = repeating.getExceptions();
 		    	if ( includeSingleAppointmentsAndExceptions )
 		    	{
 		    		repeating.clearExceptions();
-		       		for (Date exc: exceptions)
+		       		for (LocalDateTime exc: exceptions)
 		    		{
 		    		 	long days = DateTools.countDays(oldStart, exc);
-		        		Date newDate = DateTools.addDays(newStart, days);
+		        		LocalDateTime newDate = DateTools.addDays(newStart, days);
 		        		repeating.addException( newDate);
 		    		}
 		    	}
 		    	
 		    	if ( !repeating.isFixedNumber())
 		    	{
-		        	Date oldEnd = repeating.getEnd();
+		        	LocalDateTime oldEnd = repeating.getEnd();
 		        	if ( oldEnd != null)
 		        	{
 		            	if (destEnd != null)
@@ -216,7 +216,7 @@ public class CopyPluginMenu  extends RaplaGUIComponent implements EditMenuExtens
 		            	{
 		            		// If we don't have and endig destination, just make the repeating to the original length
 		                	long days = DateTools.countDays(oldStart, oldEnd);
-		            		Date end = DateTools.addDays(newStart, days);
+		            		LocalDateTime end = DateTools.addDays(newStart, days);
 		            		repeating.setEnd( end);
 		            	}
 		        	}
@@ -238,15 +238,15 @@ public class CopyPluginMenu  extends RaplaGUIComponent implements EditMenuExtens
 		this.enabled = enabled;
 	}
 
-	private Date getNewStartWeekly(Date oldStart, Date destStart) {
-		Date newStart;
+	private LocalDateTime getNewStartWeekly(LocalDateTime oldStart, LocalDateTime destStart) {
+		LocalDateTime newStart;
 		int weekday = DateTools.getWeekday( oldStart);
-		Date date = DateTools.setWeekday(destStart, weekday);
-		if ( date.before( destStart))
+		LocalDateTime date = DateTools.setWeekday(destStart, weekday);
+		if ( date.isBefore( destStart))
 		{
 			date = DateTools.addWeeks( date, 1);
 		}
-		Date firstOccOfWeekday  = date;
+		LocalDateTime firstOccOfWeekday  = date;
 		newStart = getRaplaLocale().toDate(  firstOccOfWeekday, oldStart );
 		return newStart;
 	}

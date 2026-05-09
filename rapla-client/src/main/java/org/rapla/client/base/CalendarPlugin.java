@@ -2,9 +2,7 @@ package org.rapla.client.base;
 
 import org.rapla.framework.RaplaException;
 
-import java.util.Date;
-
-
+import java.time.LocalDateTime;
 public interface CalendarPlugin<W>
 {
 
@@ -18,17 +16,8 @@ public interface CalendarPlugin<W>
 
     boolean isEnabled();
 
-    Date calcNext(Date currentDate);
+    LocalDateTime calcNext(LocalDateTime currentDate);
 
-    Date calcPrevious(Date currentDate);
+    LocalDateTime calcPrevious(LocalDateTime currentDate);
 
-    /** {@code LocalDate} variants — distinct names. */
-    default java.time.LocalDate calcNextLocalDate(java.time.LocalDate currentDate) {
-        Date d = calcNext(currentDate == null ? null : org.rapla.components.util.DateTools.toDate(currentDate));
-        return d == null ? null : org.rapla.components.util.DateTools.toLocalDate(d);
-    }
-    default java.time.LocalDate calcPreviousLocalDate(java.time.LocalDate currentDate) {
-        Date d = calcPrevious(currentDate == null ? null : org.rapla.components.util.DateTools.toDate(currentDate));
-        return d == null ? null : org.rapla.components.util.DateTools.toLocalDate(d);
-    }
 }

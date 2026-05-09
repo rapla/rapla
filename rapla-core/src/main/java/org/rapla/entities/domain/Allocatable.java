@@ -17,9 +17,11 @@ import org.rapla.entities.*;
 import org.rapla.entities.dynamictype.Classifiable;
 
 import java.util.Collection;
-import java.util.Date;
 import java.util.List;
 
+import java.time.LocalDateTime;
+import java.time.LocalDate;
+import org.rapla.components.util.DateTools;
 /** Objects that implement allocatable can be allocated by reservations.
     @see Reservation
  */
@@ -41,11 +43,11 @@ public interface Allocatable extends EntityPermissionContainer<Allocatable>,Name
     Permission[] getPermissions();
     
     /** returns the interval in which the user can allocate the resource. Returns null if the user can't allocate the resource */
-    TimeInterval getAllocateInterval( User user, Date today);
+    TimeInterval getAllocateInterval( User user, LocalDateTime today);
 
-    /** {@code LocalDate} variant of {@link #getAllocateInterval(User, Date)}. UTC. */
+    /** {@code LocalDate} variant of {@link #getAllocateInterval(User, LocalDateTime)}. UTC. */
     default TimeInterval getAllocateInterval( User user, java.time.LocalDate today) {
-        Date d = today == null ? null : org.rapla.components.util.DateTools.toDate(today);
+        LocalDateTime d = today == null ? null : today.atStartOfDay();
         return getAllocateInterval(user, d);
     }
 

@@ -21,7 +21,6 @@ import org.rapla.client.swing.internal.edit.fields.TextField;
 import org.rapla.client.swing.internal.edit.fields.TextField.TextFieldFactory;
 import org.rapla.client.swing.toolkit.RaplaButton;
 import org.rapla.components.calendar.DateRenderer;
-import java.util.Date;
 import org.rapla.components.calendar.RaplaCalendar;
 import org.rapla.components.calendar.RaplaNumber;
 import org.rapla.components.iolayer.IOInterface;
@@ -60,6 +59,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Set;
 
+import java.time.LocalDateTime;
 @Service
 public class AttributeDefaultConstraints extends AbstractEditField implements ActionListener, ChangeListener
 {
@@ -310,12 +310,11 @@ public class AttributeDefaultConstraints extends AbstractEditField implements Ac
             }
             else if (attributeType.equals(AttributeType.DATE))
             {
-                defaultSelectDate.setDate((Date) attribute.defaultValue());
+                defaultSelectDate.setDate((LocalDateTime) attribute.defaultValue());
             }
 
             {
                 final Object selectedItem = multiSelect.getSelectedItem();
-                setMultiSelectModel();
                 if (selectedItem != null)
                 {
                     multiSelect.setSelectedItem(selectedItem);

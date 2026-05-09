@@ -36,9 +36,7 @@ import java.awt.Rectangle;
 import java.awt.event.ComponentEvent;
 import java.awt.event.ComponentListener;
 import java.util.ArrayList;
-import java.util.Date;
-
-
+import java.time.LocalDateTime;
 public abstract class AbstractSwingCalendar extends AbstractCalendar implements CalendarView {
   
     static Border SLOTHEADER_BORDER = new EtchedBorder();
@@ -128,7 +126,7 @@ public abstract class AbstractSwingCalendar extends AbstractCalendar implements 
     }
 
     void checkBlock( Block bl ) {
-        if ( !bl.getStart().before(this.getEndDate())) {
+        if ( !bl.getStart().isBefore(this.getEndDate())) {
             throw new IllegalStateException("Start-date " +bl.getStart() + " must be before calendar end at " +this.getEndDate());
         }
     }
@@ -225,7 +223,7 @@ public abstract class AbstractSwingCalendar extends AbstractCalendar implements 
         return listenerList.toArray(new ViewListener[]{});
     }
 
-    final void fireSelectionChanged(Date start, Date end) {
+    final void fireSelectionChanged(LocalDateTime start, LocalDateTime end) {
         // Fire the popup event
         ViewListener[] listeners = getWeekViewListeners();
         for (int i=0;i<listeners.length;i++) {
@@ -233,7 +231,7 @@ public abstract class AbstractSwingCalendar extends AbstractCalendar implements 
         }
     }
 
-    final void fireSelectionPopup(Component slot, Point p, Date start, Date end, int slotNr) {
+    final void fireSelectionPopup(Component slot, Point p, LocalDateTime start, LocalDateTime end, int slotNr) {
         // Fire the popup event
         ViewListener[] listeners = getWeekViewListeners();
         for (int i=0;i<listeners.length;i++) {
@@ -241,7 +239,7 @@ public abstract class AbstractSwingCalendar extends AbstractCalendar implements 
         }
     }
 
-    final void fireMoved(SwingBlock block, Point p, Date newTime, int slotNr) {
+    final void fireMoved(SwingBlock block, Point p, LocalDateTime newTime, int slotNr) {
         // Fire the popup event
         ViewListener[] listeners = getWeekViewListeners();
         for (int i=0;i<listeners.length;i++) {
@@ -249,7 +247,7 @@ public abstract class AbstractSwingCalendar extends AbstractCalendar implements 
         }
     }
 
-    final void fireResized(SwingBlock block, Point p, Date newStart, Date newEnd, int slotNr) {
+    final void fireResized(SwingBlock block, Point p, LocalDateTime newStart, LocalDateTime newEnd, int slotNr) {
         // Fire the popup event
         ViewListener[] listeners = getWeekViewListeners();
         for (int i=0;i<listeners.length;i++) {
@@ -257,7 +255,7 @@ public abstract class AbstractSwingCalendar extends AbstractCalendar implements 
         }
     }
 
-    void fireResized(SwingBlock block, Point p, Date newTime, int slotNr) {
+    void fireResized(SwingBlock block, Point p, LocalDateTime newTime, int slotNr) {
         // Fire the popup event
         ViewListener[] listeners = getWeekViewListeners();
         for (int i=0;i<listeners.length;i++) {
@@ -287,7 +285,7 @@ public abstract class AbstractSwingCalendar extends AbstractCalendar implements 
     abstract int calcSlotNr( int x, int y);
     abstract int getSlotNr( DaySlot slot);
     abstract int getRowsPerDay();
-    abstract Date createDate( DaySlot slot, int row, boolean startOfRow);
+    abstract LocalDateTime createDate( DaySlot slot, int row, boolean startOfRow);
 
 	public TimeInterval normalizeBlockIntervall(SwingBlock block) {
 		return new TimeInterval(block.getStart(), block.getEnd());

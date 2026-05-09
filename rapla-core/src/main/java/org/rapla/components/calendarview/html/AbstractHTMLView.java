@@ -21,8 +21,7 @@ import org.rapla.components.calendarview.CalendarView;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.Date;
-
+import java.time.LocalDateTime;
 public abstract class AbstractHTMLView extends AbstractCalendar implements CalendarView {
     public static String COLOR_NO_RESOURCE = "#BBEEBB";
    
@@ -31,8 +30,8 @@ public abstract class AbstractHTMLView extends AbstractCalendar implements Calen
     abstract public Collection<Block> getBlocks();
 
     protected void checkBlock( Block bl ) {
-        Date endDate = getEndDate();
-		if ( !bl.getStart().before(endDate)) {
+        LocalDateTime endDate = getEndDate();
+		if ( !bl.getStart().isBefore(endDate)) {
             throw new IllegalStateException("Start-date " +bl.getStart() + " must be before calendar end at " +endDate);
         }
     }
@@ -47,7 +46,7 @@ public abstract class AbstractHTMLView extends AbstractCalendar implements Calen
         private static final long serialVersionUID = 1L;
 
         private final String date;
-        private Date startTime;
+        private LocalDateTime startTime;
         public HTMLSmallDaySlot(String date) {
             super(2);
             this.date = date;
@@ -75,12 +74,12 @@ public abstract class AbstractHTMLView extends AbstractCalendar implements Calen
             }
         }
         
-        public void setStart(Date date) 
+        public void setStart(LocalDateTime date) 
         {
         	startTime = date;
     	}
         
-        public Date getStart() 
+        public LocalDateTime getStart() 
         {
         	return startTime;
     	}

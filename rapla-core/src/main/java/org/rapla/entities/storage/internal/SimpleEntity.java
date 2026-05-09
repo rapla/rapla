@@ -28,11 +28,12 @@ import org.rapla.entities.storage.ReferenceInfo;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.Date;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
+import java.time.LocalDateTime;
+import org.rapla.components.util.DateTools;
 /** Base-class for all Rapla Entity-Implementations. Provides services
  * for deep cloning and serialization of references. {@link ReferenceHandler}
 */
@@ -333,8 +334,8 @@ public abstract class SimpleEntity extends ReferenceHandler implements RefEntity
         // first try to compare the entities with their createInfoDialog time
         if ( o1 instanceof Timestamp && o2 instanceof Timestamp)
         {
-        	Date c1 = ((Timestamp)o1).getCreateDate();
-           	Date c2 = ((Timestamp)o2).getCreateDate();
+        	java.time.LocalDateTime c1 = ((Timestamp)o1).getCreateDate();
+           	java.time.LocalDateTime c2 = ((Timestamp)o2).getCreateDate();
            	if ( c1 != null && c2 != null)
            	{
            		int result = c1.compareTo( c2);
@@ -369,8 +370,8 @@ public abstract class SimpleEntity extends ReferenceHandler implements RefEntity
         {
             return 0;
         }
-        Date d1 = t1.getCreateDate();
-        Date d2 = t2.getCreateDate();
+        LocalDateTime d1 = t1.getCreateDate();
+        LocalDateTime d2 = t2.getCreateDate();
         if ( d1 == null && d2 == null)
         {
             return 0;
@@ -383,11 +384,11 @@ public abstract class SimpleEntity extends ReferenceHandler implements RefEntity
         {
             return -1;
         }
-        if ( d1.before( d2))
+        if ( d1.isBefore( d2))
         {
             return -1;
         }
-        if ( d1.after( d2))
+        if ( d1.isAfter( d2))
         {
             return 1;
         }
