@@ -58,9 +58,9 @@ import java.awt.event.ActionListener;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.Date;
 import java.util.List;
 
+import java.time.LocalDateTime;
 /** sample UseCase that only displays the text of the configuration and
  all reservations of the user.*/
 @org.springframework.stereotype.Service
@@ -121,12 +121,12 @@ public class CopyDialog extends RaplaGUIComponent implements RaplaWidget
         });
        
 		DefaultComboBoxModel sourceModel = new DefaultComboBoxModel(  periods );
-		Date today = getQuery().today();
-        final PeriodImpl customSource = new PeriodImpl(periodCopyI18n.getString("custom_period"), today, today,CustomPeriodId,Collections.emptySet());
+		java.time.LocalDate today = getQuery().today();
+        final PeriodImpl customSource = new PeriodImpl(periodCopyI18n.getString("custom_period"), today.atStartOfDay(), today.atStartOfDay(),CustomPeriodId,Collections.emptySet());
         sourceModel.insertElementAt(customSource, 0);
         
 		DefaultComboBoxModel destModel = new DefaultComboBoxModel(  periods );
-        final PeriodImpl customDest = new PeriodImpl(periodCopyI18n.getString("custom_period"),today, null,CustomPeriodId,Collections.emptySet());
+        final PeriodImpl customDest = new PeriodImpl(periodCopyI18n.getString("custom_period"),today.atStartOfDay(), null,CustomPeriodId,Collections.emptySet());
         {
 	        destModel.insertElementAt(customDest, 0);
         }
@@ -220,22 +220,22 @@ public class CopyDialog extends RaplaGUIComponent implements RaplaWidget
         return RaplaGUIComponent.createRaplaCalendar(dateRenderer,ioInterface,getI18n(), getRaplaLocale(), getLogger());
     }
 
-    public Date getSourceStart()
+    public LocalDateTime getSourceStart()
     {
     	return sourceBegin.getDate();
     }
    
-    public Date getSourceEnd()
+    public LocalDateTime getSourceEnd()
     {
       	return sourceEnd.getDate();
     }
     
-    public Date getDestStart()
+    public LocalDateTime getDestStart()
     {	return destBegin.getDate();
     	
     }
     
-    public Date getDestEnd()
+    public LocalDateTime getDestEnd()
     {
     	if ( destPeriodChooser.getSelectedIndex() > 0)
 		{

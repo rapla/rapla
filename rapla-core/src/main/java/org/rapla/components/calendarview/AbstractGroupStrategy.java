@@ -18,12 +18,12 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
-import java.util.Date;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
+import java.time.LocalDateTime;
 /** Arranges blocks into groups, and tries to place one group into one slot.
     The subclass must overide the group method to perform the grouping on a given
     list of blocks.
@@ -52,7 +52,7 @@ public abstract class AbstractGroupStrategy implements BuildStrategy {
         
     
 
-    public void build(BlockContainer wv, List<Block> blocks, Date startDate)
+    public void build(BlockContainer wv, List<Block> blocks, LocalDateTime startDate)
     {
         LinkedHashMap<Integer,List<Block>> days = new LinkedHashMap<>();
         Map<Block, Integer> blockMap = getBlockMap(wv, blocks, startDate);
@@ -89,12 +89,12 @@ public abstract class AbstractGroupStrategy implements BuildStrategy {
         return offsetMinutes;
     }
 
-    protected Map<Block,Integer> getBlockMap(BlockContainer blockContainer, List<Block> blocks, Date startDate) {
+    protected Map<Block,Integer> getBlockMap(BlockContainer blockContainer, List<Block> blocks, LocalDateTime startDate) {
     	Map<Block,Integer> map = new LinkedHashMap<>();
     	for  (Block block:blocks) {
-            final Date start = block.getStart();
+            final LocalDateTime start = block.getStart();
             int intoDay = (int)DateTools.countDays(startDate, start);
-            final int minuteOfDay = DateTools.getMinuteOfDay(start.getTime());
+            final int minuteOfDay = DateTools.getMinuteOfDay(start);
             if ( minuteOfDay <offsetMinutes)
             {
                 intoDay --;
@@ -153,12 +153,12 @@ public abstract class AbstractGroupStrategy implements BuildStrategy {
     }
 
     protected boolean isCollision(Block b1, Block b2) {
-        final long start1 = b1.getStart().getTime();
+        final long start1 = DateTools.toMilli(b1.getStart());
         long minimumLength = DateTools.MILLISECONDS_PER_MINUTE * 5;
-        final long end1 = Math.max(start1+ minimumLength,b1.getEnd().getTime());
+        final long end1 = Math.max(start1+ minimumLength, DateTools.toMilli(b1.getEnd()));
 
-        final long start2 = b2.getStart().getTime();
-        final long end2 = Math.max(start2 + minimumLength,b2.getEnd().getTime());
+        final long start2 = DateTools.toMilli(b2.getStart());
+        final long end2 = Math.max(start2 + minimumLength, DateTools.toMilli(b2.getEnd()));
         
         boolean result = start1 < end2 && start2 <end1 ;
         return result;
@@ -201,7 +201,7 @@ public abstract class AbstractGroupStrategy implements BuildStrategy {
             Block b2 = slot2.get(j);
             if (isCollision( b1, b2))
                 return false;
-            if ( b1.getStart().before( b2.getStart() ))
+            if ( b1.getStart().isBefore( b2.getStart() ))
                 i ++;
             else
                 j ++;

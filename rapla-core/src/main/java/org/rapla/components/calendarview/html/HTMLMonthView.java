@@ -21,8 +21,7 @@ import org.rapla.components.util.DateTools;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.Date;
-
+import java.time.LocalDateTime;
 public class HTMLMonthView extends AbstractHTMLView {
     public final static int ROWS = 6; //without the header row
     public final static int COLUMNS = 7;
@@ -58,18 +57,18 @@ public class HTMLMonthView extends AbstractHTMLView {
         //Calendar counter = (Calendar) blockCalendar.clone(); 
         
         // calculate the blocks
-        final Date startDate = getStartDate();
-        Date counter = startDate;
+        final LocalDateTime startDate = getStartDate();
+        LocalDateTime counter = startDate;
         int firstDayOfWeek = getFirstWeekday();
         if ( DateTools.getWeekday(counter) != firstDayOfWeek)
         {
             counter = DateTools.getFirstWeekday(counter, firstDayOfWeek);
-            if ( counter.after( startDate))
+            if ( counter.isAfter( startDate))
             {
                 counter = DateTools.addDays( counter,  -7);
             }
         }
-        Date time = counter;
+        LocalDateTime time = counter;
         offset = (int) DateTools.countDays(counter,startDate);
         slots = new HTMLSmallDaySlot[ daysInMonth ];
         for (int i=0;i<slots.length;i++) {
@@ -157,7 +156,7 @@ public class HTMLMonthView extends AbstractHTMLView {
 
     public void addBlock(Block block,int col,int slot) {
         checkBlock( block );
-        int day = DateTools.getDayOfMonth(block.getStart());
+        int day = block.getStart().getDayOfMonth();
         slots[day-1].putBlock( block );
     }
    

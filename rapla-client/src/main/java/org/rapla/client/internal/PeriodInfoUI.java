@@ -33,7 +33,7 @@ public class PeriodInfoUI extends HTMLInfo<Period> {
         RaplaLocale loc = getRaplaLocale();
 
         att.add(new Row(getString("name"), strong( encode( getName( period ) ))));
-        final java.time.LocalDate periodStart = period.getStartAsLocalDate();
+        final java.time.LocalDate periodStart = period.getStart() != null ? period.getStart().toLocalDate() : null;
         if ( periodStart != null)
         {
             att.add(new Row(
@@ -44,7 +44,7 @@ public class PeriodInfoUI extends HTMLInfo<Period> {
                             )
                     );
         }
-        final java.time.LocalDate periodEnd = period.getEndAsLocalDate();
+        final java.time.LocalDate periodEnd = period.getEnd() != null ? period.getEnd().toLocalDate() : null;
         if ( periodEnd != null)
         {
             att.add(new Row(

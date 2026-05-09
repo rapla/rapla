@@ -14,7 +14,7 @@
 package org.rapla.components.calendarview;
 
 
-import java.util.Date;
+import java.time.LocalDateTime;
 /**
 implementierung von block koennen in ein slot eingefuegt werden.
 Sie dienen als modell fuer beliebige grafische komponenten.
@@ -23,19 +23,10 @@ mit getStart() und getEnd() wird anfangs- und endzeit des blocks definiert
 */
 public interface Block
 {
-    Date getStart();
-    Date getEnd();
+    LocalDateTime getStart();
+    LocalDateTime getEnd();
     String getName();
 
-    /** {@code LocalDateTime} variants. UTC. */
-    default java.time.LocalDateTime getStartAsLocalDateTime() {
-        Date d = getStart();
-        return d == null ? null : org.rapla.components.util.DateTools.toLocalDateTime(d);
-    }
-    default java.time.LocalDateTime getEndAsLocalDateTime() {
-        Date d = getEnd();
-        return d == null ? null : org.rapla.components.util.DateTools.toLocalDateTime(d);
-    }
 }
 
 

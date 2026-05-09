@@ -46,7 +46,6 @@ import java.util.function.Supplier;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.Date;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -58,6 +57,7 @@ import java.util.Set;
 
 
 
+import java.time.LocalDateTime;
 public class EditTaskPresenter implements TaskPresenter
 {
     public static final String CREATE_RESERVATION_FROM_TEMPLATE = "reservationFromTemplate";
@@ -197,21 +197,21 @@ public class EditTaskPresenter implements TaskPresenter
                     Collection<TimeInterval> markedIntervals = model.getMarkedIntervals();
                     boolean markedIntervalTimeEnabled = model.isMarkedIntervalTimeEnabled();
                     boolean keepTime = !markedIntervalTimeEnabled || (keepOrig == null || keepOrig);
-                    Date beginn = RaplaComponent.getStartDate(model, raplaFacade, user);
+                    LocalDateTime beginn = RaplaComponent.getStartDate(model, raplaFacade, user);
                     return raplaFacade.copyReservations(reservations, beginn, keepTime, user).thenCompose((newReservations)-> {
                         if (markedIntervals.size() > 0 && reservations.size() == 1 && reservations.iterator().next().getAppointments().length == 1
                                 && keepOrig == Boolean.FALSE)
                         {
                             Appointment app = newReservations.iterator().next().getAppointments()[0];
                             TimeInterval first = markedIntervals.iterator().next();
-                            Date end = first.getEnd();
+                            LocalDateTime end = first.getEnd();
                             if (!markedIntervalTimeEnabled)
                             {
                                 end = DateTools.toDateTime(end, app.getEnd());
                             }
-                            if (!beginn.before(end))
+                            if (!beginn.isBefore(end))
                             {
-                                end = new Date(app.getStart().getTime() + DateTools.MILLISECONDS_PER_HOUR);
+                                end = LocalDateTime.ofInstant(java.time.Instant.ofEpochMilli(DateTools.toMilli(app.getStart()) + DateTools.MILLISECONDS_PER_HOUR), java.time.ZoneOffset.UTC);
                             }
                             app.move(app.getStart(), end);
                         }
@@ -529,7 +529,7 @@ public class EditTaskPresenter implements TaskPresenter
                 c.updateView(event);
                 TimeInterval invalidateInterval = event.getInvalidateInterval();
                 Reservation original = c.getOriginal();
-                if (invalidateInterval != null && original != null && invalidateInterval.overlaps( new TimeInterval( original.getFirstDate(), original.getMaxEnd())))
+                if (invalidateInterval != null && original != null && invalidateInterval.overlaps( TimeInterval.of( original.getFirstDate(), original.getMaxEnd())))
                 {
 
                     handleException(raplaFacade.getUpdateState( original ).thenAccept(state-> {

@@ -12,6 +12,7 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.entities.dynamictype.internal;
 
+import org.rapla.components.util.DateTools;
 import org.rapla.components.util.ParseDateException;
 import org.rapla.components.util.SerializableDateTimeFormat;
 import org.rapla.entities.Category;
@@ -26,8 +27,7 @@ import org.rapla.entities.storage.internal.ReferenceHandler;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Date;
-
+import java.time.LocalDateTime;
 public final class ClassificationFilterRuleImpl extends ReferenceHandler
     implements
         ClassificationFilterRule
@@ -250,9 +250,9 @@ public final class ClassificationFilterRuleImpl extends ReferenceHandler
             putId(key, ((ReferenceInfo) ruleValue).getId());
             newValue = null;
         }
-    	else if ( ruleValue instanceof Date)
+    	else if ( ruleValue instanceof java.time.LocalDateTime)
     	{
-    		Date date = (Date) ruleValue;
+    		java.time.LocalDateTime date = (java.time.LocalDateTime) ruleValue;
     		newValue= SerializableDateTimeFormat.INSTANCE.formatTimestamp(date);
     	}
     	else
@@ -373,8 +373,8 @@ public final class ClassificationFilterRuleImpl extends ReferenceHandler
             if(value == null) 
                 return false;
             
-            long long1 = type == AttributeType.INT ? ((Long) value).longValue()     : ((Date) value).getTime();
-            long long2 = type == AttributeType.INT ? ((Long) ruleValue).longValue() : ((Date) ruleValue).getTime();
+            long long1 = type == AttributeType.INT ? ((Long) value).longValue()     : DateTools.toMilli(((LocalDateTime) value));
+            long long2 = type == AttributeType.INT ? ((Long) ruleValue).longValue() : DateTools.toMilli(((LocalDateTime) ruleValue));
 
             if (operator.equals("<")) 
             {

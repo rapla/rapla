@@ -5,8 +5,7 @@ import org.rapla.rest.SerializableExceptionInformation;
 import org.rapla.rest.client.RemoteConnectException;
 import org.rapla.rest.client.internal.isodate.ISODateTimeFormat;
 
-import java.util.Date;
-
+import java.time.LocalDateTime;
 public class JavaJsonSerializer
 {
     JsonParserWrapper.JsonParser parser;
@@ -42,7 +41,7 @@ public class JavaJsonSerializer
         return result;
     }
 
-    public String serializeDate(Date date)
+    public String serializeDate(LocalDateTime date)
     {
         if ( date != null)
         {
@@ -52,13 +51,6 @@ public class JavaJsonSerializer
         {
             return "";
         }
-    }
-
-    /** {@code LocalDateTime} variant. UTC. */
-    public String serializeDate(java.time.LocalDateTime dateTime)
-    {
-        if ( dateTime == null) return "";
-        return serializeDate(new Date(dateTime.toEpochSecond(java.time.ZoneOffset.UTC) * 1000L));
     }
 
     public Object deserializeResult(String unparsedResult) throws RemoteConnectException

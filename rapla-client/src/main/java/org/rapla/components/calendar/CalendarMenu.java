@@ -42,8 +42,8 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Collection;
-import java.util.Date;
 import java.util.TimeZone;
+import java.time.LocalDateTime;
 /** The graphical date-selection field with month and year incerement/decrement buttons.
  *  @author Christopher Kohlhaas
  */
@@ -153,7 +153,7 @@ public class CalendarMenu extends JPanel implements MenuElement {
         // Implementation of DateChangeListener
         public void dateChanged(DateChangeEvent evt) {
             if (evt.getSource() == m_model) {
-                m_focusModel.setDate(evt.getDate());
+                m_focusModel.setDate(evt.getDate().toLocalDate());
             } else {
                 updateFields();
             }
@@ -162,7 +162,7 @@ public class CalendarMenu extends JPanel implements MenuElement {
         public void mousePressed(MouseEvent me) {
             if (me.getSource() == labelCurrentDay) {
                 // Set the current day as sellected day
-                m_model.setDate(new Date());
+                m_model.setDate(java.time.LocalDate.now());
             } else {
                 if (m_focusable && !focusButton.hasFocus())
                     focusButton.requestFocus();

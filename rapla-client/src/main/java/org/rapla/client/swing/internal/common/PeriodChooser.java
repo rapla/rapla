@@ -27,14 +27,14 @@ import javax.swing.DefaultListCellRenderer;
 import javax.swing.JComboBox;
 import javax.swing.JList;
 import java.awt.Component;
-import java.util.Date;
 import java.util.Locale;
 
+import java.time.LocalDateTime;
 public class PeriodChooser extends JComboBox implements Disposable
  {
     private static final long serialVersionUID = 1L;
     
-    Date selectedDate = null;
+    LocalDateTime selectedDate = null;
     Period selectedPeriod = null;
 
     public static int START_ONLY = 1;
@@ -106,14 +106,14 @@ public class PeriodChooser extends JComboBox implements Disposable
         }
     }
     
-    public int weekOf(Period period, Date date) {
-    	Date start = period.getStart();
+    public int weekOf(Period period, LocalDateTime date) {
+    	LocalDateTime start = period.getStart();
         if (!period.contains(date) || start == null)
             return -1;
-        long duration = date.getTime() - start.getTime();
+        long duration = DateTools.toMilli(date) - DateTools.toMilli(start);
         long weeks = duration / (DateTools.MILLISECONDS_PER_WEEK);
         // setTimeInMillis has protected access in JDK 1.3.1
-        final Date date1 = new Date(date.getTime() - weeks * DateTools.MILLISECONDS_PER_WEEK);
+        final LocalDateTime date1 = LocalDateTime.ofInstant(java.time.Instant.ofEpochMilli(DateTools.toMilli(date) - weeks * DateTools.MILLISECONDS_PER_WEEK), java.time.ZoneOffset.UTC);
         Locale locale = i18n.getLocale();
         int week_of_year = DateTools.getWeekInYear( date1, locale);
         int week_of_year_start = DateTools.getWeekInYear( start, locale);
@@ -138,7 +138,7 @@ public class PeriodChooser extends JComboBox implements Disposable
         }
     }
 
-     public void setDate(Date date, Date endDate) {
+     public void setDate(LocalDateTime date, LocalDateTime endDate) {
         try {
             listenersEnabled = false;
             
@@ -164,7 +164,7 @@ public class PeriodChooser extends JComboBox implements Disposable
         }
     }
 
-     public void setDate(Date date) {
+     public void setDate(LocalDateTime date) {
 	 setDate(date, null);
     }
 
@@ -194,7 +194,7 @@ public class PeriodChooser extends JComboBox implements Disposable
         return selectedPeriod; // getPeriod(selectedDate);
     }
 
-    private Period getPeriod(Date date, Date endDate) {
+    private Period getPeriod(LocalDateTime date, LocalDateTime endDate) {
     	if (periodModel == null )
     		return null;
         if ( visiblePeriods == END_ONLY) {
@@ -204,7 +204,7 @@ public class PeriodChooser extends JComboBox implements Disposable
         }
     }
 
-    public Date getDate() {
+    public LocalDateTime getDate() {
         return selectedDate;
     }
 

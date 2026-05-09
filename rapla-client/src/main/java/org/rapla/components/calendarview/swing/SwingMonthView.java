@@ -31,8 +31,7 @@ import java.awt.Point;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.Date;
-
+import java.time.LocalDateTime;
 /** Graphical component for displaying a calendar like monthview.
  *
 */
@@ -103,13 +102,13 @@ public class SwingMonthView extends AbstractSwingCalendar
 
     public void rebuild(Builder b) {
         // we need to clone the calendar, because we modify the calendar object in the getExclude() method 
-        Date startDate = getStartDate();
-        final Date endDate = getEndDate();
+        LocalDateTime startDate = getStartDate();
+        final LocalDateTime endDate = getEndDate();
 
         
         // createInfoDialog fields
         slots = new SmallDaySlot[daysInMonth];
-        Date counter =startDate;
+        LocalDateTime counter =startDate;
         int year = DateTools.getYear(counter);
         String monthname = getRaplaLocale().formatMonth(counter);
         // calculate the blocks
@@ -134,7 +133,7 @@ public class SwingMonthView extends AbstractSwingCalendar
 		if ( DateTools.getWeekday(counter) != firstDayOfWeek)
         {
 		    counter = DateTools.getFirstWeekday( counter, getFirstWeekday());
-			if ( counter.after( startDate))
+			if ( counter.isAfter( startDate))
 			{
 	            counter = DateTools.addDays( counter, -7);
 			}
@@ -186,11 +185,11 @@ public class SwingMonthView extends AbstractSwingCalendar
         component.repaint();
     }
 
-    private void createField(int pos, Date date)  {
+    private void createField(int pos, LocalDateTime date)  {
         slots[pos]= createSmallslot(pos, date);
     }
 
-    protected SmallDaySlot createSmallslot(int pos, Date date)  {
+    protected SmallDaySlot createSmallslot(int pos, LocalDateTime date)  {
         String headerText = "" + (pos + 1);
 		Color headerColor = getNumberColor( date);
 		Color headerBackground = null;
@@ -218,7 +217,7 @@ public class SwingMonthView extends AbstractSwingCalendar
     /**
      * @param date  
      */
-    protected Color getNumberColor( Date date)
+    protected Color getNumberColor( LocalDateTime date)
     {
         return DATE_NUMBER_COLOR;
     }
@@ -303,10 +302,10 @@ public class SwingMonthView extends AbstractSwingCalendar
         }
     }
     
-    Date createDate(DaySlot slot, int row, boolean startOfRow) {
-        DateWithoutTimezone date = DateTools.toDate( getStartDate().getTime());
+    LocalDateTime createDate(DaySlot slot, int row, boolean startOfRow) {
+        DateWithoutTimezone date =  DateTools.toDate(DateTools.toMilli(getStartDate()));
         int dayOfMonth = getSlotNr( slot ) +1;
-        Date result = new Date(DateTools.toDate(date.year ,date.month, dayOfMonth));
+        LocalDateTime result = LocalDateTime.of(date.year ,date.month, dayOfMonth, 0, 0);
         if ( !startOfRow ) {
             result= DateTools.addDays(result,1 );
         }

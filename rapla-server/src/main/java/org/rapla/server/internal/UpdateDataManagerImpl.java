@@ -19,6 +19,7 @@ import org.rapla.entities.Category;
 import org.rapla.entities.Entity;
 import org.rapla.entities.Ownable;
 import org.rapla.entities.RaplaObject;
+import org.rapla.components.util.DateTools;
 import org.rapla.entities.User;
 import org.rapla.entities.configuration.Preferences;
 import org.rapla.entities.configuration.internal.PreferencesImpl;
@@ -50,11 +51,11 @@ import org.rapla.storage.UpdateResult.Remove;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import java.util.Collection;
-import java.util.Date;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.TimeZone;
 
+import java.time.LocalDateTime;
 /** Provides an adapter for each client-session to their shared storage operator
  * Handles security and synchronizing aspects.
  */
@@ -112,29 +113,29 @@ public class UpdateDataManagerImpl implements  UpdateDataManager
         return currentInterval;
     }
 
-    public UpdateEvent createUpdateEvent(User user, Date lastSynced) throws RaplaException
+    public UpdateEvent createUpdateEvent(User user, LocalDateTime lastSynced) throws RaplaException
     {
         return createUpdateEventInternal(user, lastSynced, false);
     }
 
-    public UpdateEvent createUpdateEventInternal(User user, Date lastSynced, boolean addReservations) throws RaplaException
+    public UpdateEvent createUpdateEventInternal(User user, LocalDateTime lastSynced, boolean addReservations) throws RaplaException
     {
-        Date currentTimestamp = operator.getCurrentTimestamp();
-        Date historyValidStart = operator.getHistoryValidStart();
-        Date conflictValidStart = operator.getConnectStart();
-        Date lastRefreshed = operator.getLastRefreshed();
+        LocalDateTime currentTimestamp = operator.getCurrentTimestamp();
+        LocalDateTime historyValidStart = operator.getHistoryValidStart();
+        LocalDateTime conflictValidStart = operator.getConnectStart();
+        LocalDateTime lastRefreshed = operator.getLastRefreshed();
         if ( lastSynced == null) {
             getLogger().warn("Timestamp of client for user " + user  + " not set ");
         }
-        else if (lastSynced.after(lastRefreshed))
+        else if (lastSynced.isAfter(lastRefreshed))
         {
-            long diff = lastSynced.getTime() - lastRefreshed.getTime();
+            long diff = DateTools.toMilli(lastSynced) - DateTools.toMilli(lastRefreshed);
             getLogger().warn("Timestamp of client " + diff + " ms  after server ");
             lastSynced = currentTimestamp;
         }
         final UpdateEvent safeResultEvent = new UpdateEvent();
         TimeZone systemTimeZone = operator.getTimeZone();
-        int timezoneOffset = TimeZoneConverterImpl.getOffset(IOUtil.getTimeZone(), systemTimeZone, currentTimestamp.getTime());
+        int timezoneOffset = TimeZoneConverterImpl.getOffset(IOUtil.getTimeZone(), systemTimeZone, DateTools.toMilli(currentTimestamp));
         safeResultEvent.setTimezoneOffset(timezoneOffset);
         TimeInterval timeInterval= null;
         final UpdateResult updateResult = operator.getUpdateResult(lastSynced, user);
@@ -145,8 +146,8 @@ public class UpdateDataManagerImpl implements  UpdateDataManager
             safeResultEvent.setNeedResourcesRefresh(true);
             return safeResultEvent;
         }
-        boolean resourceRefresh = lastSynced.before( historyValidStart);
-        boolean conflictRefresh = lastSynced.before( conflictValidStart);
+        boolean resourceRefresh = lastSynced.isBefore( historyValidStart);
+        boolean conflictRefresh = lastSynced.isBefore( conflictValidStart);
         for (Remove op : updateResult.getOperations(Remove.class))
         {
             if ( op.getType() == DynamicType.class)
@@ -384,7 +385,7 @@ public class UpdateDataManagerImpl implements  UpdateDataManager
         return safeResultEvent;
     }
 
-    public UpdateEvent createUpdateEventReservations(User user, Date lastSynced) throws RaplaException
+    public UpdateEvent createUpdateEventReservations(User user, LocalDateTime lastSynced) throws RaplaException
     {
         return createUpdateEventInternal(user, lastSynced, true);
     }

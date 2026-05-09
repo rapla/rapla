@@ -26,20 +26,20 @@ import org.rapla.entities.domain.Reservation;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.plugin.abstractcalendar.RaplaBuilder.BuildContext;
 
-import java.util.Date;
 import java.util.LinkedHashSet;
 import java.util.List;
 
 
+import java.time.LocalDateTime;
 public class RaplaBlock implements Block
 {
     RaplaBuilder.RaplaBlockContext m_context;
-    Date m_start;
-    Date m_end;
+    LocalDateTime m_start;
+    LocalDateTime m_end;
     RaplaLocale m_raplaLocale;
     protected String timeStringSeperator = " -";
 
-    public RaplaBlock(RaplaBuilder.RaplaBlockContext context, Date start, Date end) {
+    public RaplaBlock(RaplaBuilder.RaplaBlockContext context, LocalDateTime start, LocalDateTime end) {
         m_start = start;
         m_end = end;
         m_context = context;
@@ -62,11 +62,11 @@ public class RaplaBlock implements Block
         return name;
     }
 
-    public Date getStart()  {
+    public LocalDateTime getStart()  {
         return m_start;
     }
 
-    public Date getEnd() {
+    public LocalDateTime getEnd() {
         return m_end;
     }
     
@@ -74,11 +74,11 @@ public class RaplaBlock implements Block
         return getBuildContext().getI18n();
     }
 
-    public void setStart(Date start) {
+    public void setStart(LocalDateTime start) {
         m_start = start;
     }
 
-    public void setEnd(Date end) {
+    public void setEnd(LocalDateTime end) {
         m_end = end;
     }
 
@@ -119,8 +119,8 @@ public class RaplaBlock implements Block
 
     public boolean startsAndEndsOnSameDay() {
         return DateTools.isSameDay(
-                getAppointment().getStart().getTime()
-                ,getAppointment().getEnd().getTime() -1
+                DateTools.toMilli(getAppointment().getStart())
+                ,DateTools.toMilli(getAppointment().getEnd()) -1
         )
         ;
     }

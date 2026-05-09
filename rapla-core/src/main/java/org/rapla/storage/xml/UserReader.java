@@ -48,7 +48,7 @@ public class UserReader extends RaplaXMLReader
         if (localName.equals( "user" ))
         {
             TimestampDates ts = readTimestamps( atts);
-            user = UserImpl.ofLocalDateTime(ts.getCreateTimeAsLocalDateTime(), ts.getChangeTimeAsLocalDateTime());
+            user = new UserImpl(ts.createTime, ts.changeTime);
             setId( user, atts );
             setLastChangedBy(user, atts);
 //            String idString = getString(atts, "person",null);
@@ -126,9 +126,9 @@ public class UserReader extends RaplaXMLReader
             if ( group != null)
             {
                 // add the groups to the user if the groups were not there in a previous version
-                java.time.LocalDateTime createTime = group.getCreateDateAsLocalDateTime();
+                java.time.LocalDateTime createTime = group.getCreateDate();
                 RaplaXMLReader dynamicTypeReader = getChildHandlerForType(DynamicType.class);
-                java.time.LocalDateTime categoryCreateTime = dynamicTypeReader.getReadLocalDateTime();
+                java.time.LocalDateTime categoryCreateTime = dynamicTypeReader.getReadTimestamp();
                 if (categoryCreateTime.equals(createTime))
                 {
                     ((UserImpl)user).addGroupId(groupId);

@@ -20,10 +20,11 @@ import org.springframework.beans.factory.annotation.Autowired;
 import java.text.Collator;
 import java.text.NumberFormat;
 import java.util.Comparator;
-import java.util.Date;
 import java.util.Locale;
 import java.util.TimeZone;
 
+import java.time.LocalDateTime;
+import org.rapla.components.util.DateTools;
 public class RaplaLocaleImpl extends AbstractRaplaLocale  {
 
     String charsetForHtml = AbstractRaplaLocale.HTML_CHARSET_DEFAULT;
@@ -36,12 +37,12 @@ public class RaplaLocaleImpl extends AbstractRaplaLocale  {
         importExportTimeZone = TimeZone.getDefault();
     }
 
-	public Date fromUTCTimestamp(Date date)
+	public LocalDateTime fromUTCTimestamp(LocalDateTime date)
 	{
-        long time = date.getTime();
+        long time = DateTools.toMilli(date);
         long offset =  importExportTimeZone.getOffset(time);
         long raplaTime = time + offset;
-		return new Date(raplaTime);
+		return DateTools.toLocalDateTime(raplaTime);
 	}
 	
 	public void setImportExportTimeZone(TimeZone importExportTimeZone) {

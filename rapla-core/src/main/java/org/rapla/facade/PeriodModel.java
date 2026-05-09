@@ -17,9 +17,10 @@ import org.rapla.entities.Category;
 import org.rapla.entities.domain.Period;
 import org.rapla.framework.RaplaException;
 
-import java.util.Date;
 import java.util.List;
 
+import java.time.LocalDateTime;
+import java.time.LocalDate;
 /** ListModel that contains all periods. Updates the list automatically if a period is added, changed or deleted.
  * */
 public interface PeriodModel
@@ -41,22 +42,19 @@ public interface PeriodModel
     }
 
     /** returns the first matching period or null if no period matches.*/
-    Period getPeriodFor(Date date);
+    Period getPeriodFor(LocalDateTime date);
 
     /** {@code LocalDate} variant — date-only. */
     default Period getPeriodFor(java.time.LocalDate date) {
-        return getPeriodFor(date == null ? null : org.rapla.components.util.DateTools.toDate(date));
+        return getPeriodFor(date == null ? null : date);
     }
-    default Period getPeriodFor(java.time.LocalDateTime dateTime) {
-        return getPeriodFor(dateTime == null ? null : org.rapla.components.util.DateTools.toDate(dateTime));
-    }
-    Period getNearestPeriodForDate(Date date);
-    Period getNearestPeriodForStartDate(Date date);
+    Period getNearestPeriodForDate(LocalDateTime date);
+    Period getNearestPeriodForStartDate(LocalDateTime date);
     Period getNearestPeriodForStartDate(TimeInterval interval);
-    Period getNearestPeriodForEndDate(Date date);
+    Period getNearestPeriodForEndDate(LocalDateTime date);
 
     /** return all matching periods.*/
-    List<Period> getPeriodsFor(Date date);
+    List<Period> getPeriodsFor(LocalDateTime date);
     List<Period> getPeriodsFor(TimeInterval interval);
 
     int getSize();

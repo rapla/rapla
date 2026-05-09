@@ -12,9 +12,9 @@ import org.rapla.framework.RaplaLocale;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.List;
 
+import java.time.LocalDateTime;
 public class TimeslotProvider {
 	
 	private ArrayList<Timeslot> timeslots;
@@ -82,8 +82,8 @@ public class TimeslotProvider {
 					{
 						time =  i + ":00:00";
 					}
-					final Date date = format.parseTime(time);
-					final DateTools.TimeWithoutTimezone timeWithoutTimezone = DateTools.toTime(date.getTime());
+					final LocalDateTime date = format.parseTime(time);
+					final DateTools.TimeWithoutTimezone timeWithoutTimezone = DateTools.toTime(DateTools.toMilli(date));
 					int hour = timeWithoutTimezone.hour;
 					if ( i != 0)
 					{
@@ -108,10 +108,10 @@ public class TimeslotProvider {
 
 	public static ArrayList<Timeslot> getDefaultTimeslots(RaplaLocale raplaLocale) {
 		ArrayList<Timeslot> timeslots = new ArrayList<>();
-		final Date date = DateTools.cutDate(new Date());
+		final LocalDateTime date = DateTools.cutDate(LocalDateTime.now());
 		for (int i = 0; i <=23; i++ ) {
     		 int minuteOfDay = i * 60;
-			 Date toFormat = new Date( date.getTime() + minuteOfDay * DateTools.MILLISECONDS_PER_MINUTE);
+			 LocalDateTime toFormat = date.plusMinutes(minuteOfDay);
     		 String name =raplaLocale.formatTime( toFormat);
     		 //String name = minuteOfDay / 60 + ":" + minuteOfDay%60;
     		 Timeslot slot = new Timeslot(name, minuteOfDay);

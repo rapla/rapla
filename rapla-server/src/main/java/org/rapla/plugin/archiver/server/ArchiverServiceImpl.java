@@ -23,9 +23,9 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.ws.rs.core.Context;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Date;
 import java.util.List;
 
+import java.time.LocalDateTime;
 public class ArchiverServiceImpl  implements ArchiverService
 {
     @Autowired
@@ -112,7 +112,7 @@ public class ArchiverServiceImpl  implements ArchiverService
 
     static public void delete(Integer removeOlderInDays, RaplaFacade raplaFacade, org.rapla.storage.SyncStorageOperator syncOperator, Logger logger) throws RaplaException
     {
-        Date endDate = new Date(raplaFacade.today().getTime() - removeOlderInDays * DateTools.MILLISECONDS_PER_DAY);
+        LocalDateTime endDate = raplaFacade.today().atStartOfDay().minusDays(removeOlderInDays);
         User[] owners = raplaFacade.getUsers();
         Collection<Reservation> events = syncOperator.getReservationsSync(null, null, owners, null, endDate, null);
         List<Reservation> toRemove = new ArrayList<>();
@@ -138,23 +138,23 @@ public class ArchiverServiceImpl  implements ArchiverService
         }
     }
 
-    static private boolean isOlderThan( Reservation event, Date maxAllowedDate )
+    static private boolean isOlderThan( Reservation event, LocalDateTime maxAllowedDate )
 	{
         Appointment[] appointments = event.getAppointments();
         for ( int i=0;i<appointments.length;i++)
         {
             Appointment appointment = appointments[i];
-            Date start = appointment.getStart();
-            Date end = appointment.getMaxEnd();
+            LocalDateTime start = appointment.getStart();
+            LocalDateTime end = appointment.getMaxEnd();
             if ( start == null || end == null )
             {
                 return false;
             }
-            if ( end.after( maxAllowedDate))
+            if ( end.isAfter( maxAllowedDate))
             {
                 return false;
             }
-            if ( start.after( maxAllowedDate))
+            if ( start.isAfter( maxAllowedDate))
             {
                 return false;
             }

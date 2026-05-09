@@ -102,22 +102,11 @@ public interface Reservation extends EntityPermissionContainer<Reservation>,Clas
     Reservation[] RESERVATION_ARRAY = new Reservation[0];
 
 	/** returns the first (in time) start of all appointments. Returns null when the reservation has no appointments*/
-	Date getFirstDate();
+	LocalDateTime getFirstDate();
 
 	/** returns the last (in time) maxEnd of all appointments. Returns null when one appointment has no end*/
-	Date getMaxEnd();
-
 	/** {@code java.time} variant of {@link #getFirstDate()}. UTC. */
-	default LocalDateTime getFirstDateAsLocalDateTime() {
-		Date d = getFirstDate();
-		return d == null ? null : DateTools.toLocalDateTime(d);
-	}
-
-	/** {@code java.time} variant of {@link #getMaxEnd()}. UTC. */
-	default LocalDateTime getMaxEndAsLocalDateTime() {
-		Date d = getMaxEnd();
-		return d == null ? null : DateTools.toLocalDateTime(d);
-	}
+	LocalDateTime getMaxEnd();
 
 	String format(Locale locale, String annotationName);
 

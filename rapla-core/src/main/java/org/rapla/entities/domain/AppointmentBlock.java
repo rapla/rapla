@@ -16,10 +16,6 @@ import org.rapla.components.util.DateTools;
 import org.rapla.components.util.TimeInterval;
 
 import java.time.LocalDateTime;
-import java.util.Date;
-
-
-
 /**
  * This class represents a time block of an appointment.
  * @since Rapla 1.4
@@ -48,7 +44,7 @@ public class AppointmentBlock implements Comparable<AppointmentBlock>
 	
 	protected AppointmentBlock(Appointment appointment)
 	{
-	    this(appointment.getStart().getTime(),appointment.getEnd().getTime(), appointment, false);
+	    this(DateTools.toMilli(appointment.getStart()), DateTools.toMilli(appointment.getEnd()), appointment, false);
 	}
 	
 	public boolean includes(AppointmentBlock a2)
@@ -65,7 +61,7 @@ public class AppointmentBlock implements Comparable<AppointmentBlock>
 	/**
 	 * Returns the start date of this block
 	 * 
-	 * @return Date
+	 * @return LocalDateTime
 	 */
 	public long getStart()
 	{
@@ -75,7 +71,7 @@ public class AppointmentBlock implements Comparable<AppointmentBlock>
 	/**
 	 * Returns the end date of this block
 	 * 
-	 * @return Date
+	 * @return LocalDateTime
 	 */
 	public long getEnd()
 	{
@@ -155,7 +151,7 @@ public class AppointmentBlock implements Comparable<AppointmentBlock>
 
 	public TimeInterval toInterval()
 	{
-		return new TimeInterval(new Date(getStart()), new Date(getEnd()));
+		return new TimeInterval(LocalDateTime.ofInstant(java.time.Instant.ofEpochMilli(getStart()), java.time.ZoneOffset.UTC), LocalDateTime.ofInstant(java.time.Instant.ofEpochMilli(getEnd()), java.time.ZoneOffset.UTC));
 	}
 
     

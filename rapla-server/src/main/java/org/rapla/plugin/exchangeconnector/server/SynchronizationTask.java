@@ -6,9 +6,9 @@ import org.rapla.entities.domain.Appointment;
 import org.rapla.entities.storage.ReferenceInfo;
 
 import java.io.Serializable;
-import java.util.Date;
 import java.util.Objects;
 
+import java.time.LocalDateTime;
 public class SynchronizationTask implements Serializable
 {
 	public enum SyncStatus implements Serializable
@@ -34,7 +34,7 @@ public class SynchronizationTask implements Serializable
 	String appointmentId;
 
 	String resourceId;
-	Date lastRetry;
+	LocalDateTime lastRetry;
 	private int retries = -1;
 	String lastError;
 	
@@ -42,7 +42,7 @@ public class SynchronizationTask implements Serializable
 	SyncStatus status;
 	private String persistantId;
 	
-	public SynchronizationTask(String mailboxName, ReferenceInfo<Appointment> appointmentId, ReferenceInfo<User> userId, ReferenceInfo<Allocatable> resourceId, int retries, Date lastRetry, String lastError) {
+	public SynchronizationTask(String mailboxName, ReferenceInfo<Appointment> appointmentId, ReferenceInfo<User> userId, ReferenceInfo<Allocatable> resourceId, int retries, LocalDateTime lastRetry, String lastError) {
 		this.userId = userId.getId();
 		this.appointmentId = appointmentId.getId();
 		this.mailboxName = mailboxName;
@@ -61,7 +61,7 @@ public class SynchronizationTask implements Serializable
 	{
         this.lastError = lastError;
         retries++;
-		this.lastRetry = new Date();
+		this.lastRetry = LocalDateTime.now();
 	}
 	
     public String getLastError() 
@@ -203,12 +203,12 @@ public class SynchronizationTask implements Serializable
 		return b;
 	}
 
-    public Date getLastRetry() 
+    public LocalDateTime getLastRetry() 
     {
         return lastRetry;
     }
     
-    public void setLastRetry(Date lastRetry) 
+    public void setLastRetry(LocalDateTime lastRetry) 
     {
         this.lastRetry = lastRetry;
     }
