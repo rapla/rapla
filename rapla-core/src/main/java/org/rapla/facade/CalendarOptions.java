@@ -11,10 +11,11 @@
  | Definition as published by the Open Source Initiative (OSI).             |
  *--------------------------------------------------------------------------*/
 package org.rapla.facade;
-import java.util.Date;
 import java.util.Set;
 
 
+import java.time.LocalDateTime;
+import java.time.LocalDate;
 /** This class contains the configuration options for the calendar views
 like Worktimes and dates configuration is done in the calendar option menu.
 Hours belonging to the worktime get a different color in the
@@ -39,11 +40,11 @@ public interface CalendarOptions {
     
     int getDaysInWeekview();
 	int getFirstDayOfWeek();
-    int getFirstDayOfWeek(Date today);
+    int getFirstDayOfWeek(LocalDateTime today);
 
     /** {@code LocalDate} variant — `today` is date-only. */
     default int getFirstDayOfWeek(java.time.LocalDate today) {
-        return getFirstDayOfWeek(today == null ? null : org.rapla.components.util.DateTools.toDate(today));
+        return getFirstDayOfWeek(today == null ? null : today.atStartOfDay());
     }
     boolean isExceptionsVisible();
     boolean isCompactColumns();

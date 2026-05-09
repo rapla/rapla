@@ -1,14 +1,17 @@
 package org.rapla.framework;
 
 import org.rapla.components.i18n.I18nLocaleFormats;
+import org.rapla.components.util.DateTools;
 import org.rapla.components.util.SerializableDateTimeFormat;
 
 import java.util.Collection;
 import java.util.Comparator;
-import java.util.Date;
 import java.util.Locale;
 
 
+import java.time.LocalDateTime;
+import java.time.LocalDate;
+import java.time.LocalTime;
 /** This class contains all locale specific information for Rapla. Like
 <ul>
   <li>Selected language.</li>
@@ -43,71 +46,54 @@ public interface RaplaLocale
     
     Collection<String> getAvailableLanguages();
 
-    Date fromUTCTimestamp(Date timestamp);
+    LocalDateTime fromUTCTimestamp(LocalDateTime timestamp);
 
     I18nLocaleFormats getFormats();
 
     /** sets time to 0:00:00 or 24:00:00 */
-    Date toDate( Date date, boolean fillDate );
+    LocalDateTime toDate( LocalDateTime date, boolean fillDate );
 
     /** Uses the first date parameter for year, month, date information and
      the second for hour, minutes, second, millisecond information.*/
-    Date toDate( Date date, Date time );
+    LocalDateTime toDate( LocalDateTime date, LocalDateTime time );
 
     /**
      * month is 1-12 January is 1 
      */
-    Date toRaplaDate( int year, int month, int date );
-
-    /** {@code LocalDate} variant. UTC. */
-    default java.time.LocalDate toRaplaLocalDate(int year, int month, int date) {
-        return java.time.LocalDate.of(year, month, date);
-    }
+    LocalDateTime toRaplaDate( int year, int month, int date );
 
     /** sets date to 0:00:00  */
-    Date toTime( int hour, int minute, int second );
+    LocalDateTime toTime( int hour, int minute, int second );
 
     /** format long with the local NumberFormat */
     String formatNumber( Long number );
 
     /** format without year */
-    String formatDateShort( Date date );
+    String formatDateShort( LocalDateTime date );
 
     /** format with locale DateFormat.SHORT */
-    String formatDate( Date date );
+    String formatDate( LocalDateTime date );
 
     /** format with locale DateFormat.MEDIUM */
-    String formatDateLong( Date date );
+    String formatDateLong( LocalDateTime date );
 
-    String formatTimestamp(Date timestamp);
+    String formatTimestamp(LocalDateTime timestamp);
 
     /** {@code java.time} variants. UTC. */
     default String formatDate( java.time.LocalDate date ) {
-        return date == null ? "" : formatDate(org.rapla.components.util.DateTools.toDate(date));
+        return date == null ? "" : formatDate(date.atStartOfDay());
     }
-    default String formatDate( java.time.LocalDateTime dateTime ) {
-        return dateTime == null ? "" : formatDate(org.rapla.components.util.DateTools.toDate(dateTime));
-    }
-    default String formatTimestamp(java.time.LocalDateTime timestamp) {
-        return timestamp == null ? "" : formatTimestamp(org.rapla.components.util.DateTools.toDate(timestamp));
-    }
-    default String formatDateLong(java.time.LocalDateTime dateTime) {
-        return dateTime == null ? "" : formatDateLong(org.rapla.components.util.DateTools.toDate(dateTime));
-    }
-    
+
     /** Abbreviation of locale weekday name of date. */
-    String getWeekday( Date date );
+    String getWeekday( LocalDateTime date );
 
     /** {@code LocalDate}/{@code LocalDateTime} variants. */
     default String getWeekday( java.time.LocalDate date ) {
-        return date == null ? "" : getWeekday(org.rapla.components.util.DateTools.toDate(date));
-    }
-    default String getWeekday( java.time.LocalDateTime dateTime ) {
-        return dateTime == null ? "" : getWeekday(org.rapla.components.util.DateTools.toDate(dateTime));
+        return date == null ? "" : getWeekday(date.atStartOfDay());
     }
 
      /** Monthname of date. */
-    String formatMonth( Date date );
+    String formatMonth( LocalDateTime date );
 
     String getCharsetForHtml();
 
@@ -117,11 +103,11 @@ public interface RaplaLocale
 
 	SerializableDateTimeFormat getSerializableFormat();
 
-    String formatDayOfWeekDateMonth(Date date);
+    String formatDayOfWeekDateMonth(LocalDateTime date);
 
-    String formatDayOfWeekLongDateMonth(Date date);
+    String formatDayOfWeekLongDateMonth(LocalDateTime date);
 
-    int getWeekInYear(Date date);
+    int getWeekInYear(LocalDateTime date);
 
     boolean isAmPmFormat();
 
@@ -129,20 +115,17 @@ public interface RaplaLocale
 
     String getWeekdayName(int weekday);
 
-    String formatTime( Date date );
+    String formatTime( LocalDateTime date );
 
     /** {@code LocalTime}/{@code LocalDateTime} variants. */
     default String formatTime( java.time.LocalTime time ) {
         if (time == null) return "";
-        return formatTime(new Date(time.getHour() * 3600_000L + time.getMinute() * 60_000L + time.getSecond() * 1000L));
-    }
-    default String formatTime( java.time.LocalDateTime dateTime ) {
-        return dateTime == null ? "" : formatTime(org.rapla.components.util.DateTools.toDate(dateTime));
+        return formatTime(DateTools.toLocalDateTime(time.getHour() * 3600_000L + time.getMinute() * 60_000L + time.getSecond() * 1000L));
     }
 
     String formatMinuteOfDay( int minuteOfDay );
     
-    String formatMonthYear(Date startDate);
+    String formatMonthYear(LocalDateTime startDate);
 
     String formatHour(int i);
 
