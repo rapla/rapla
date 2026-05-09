@@ -9,7 +9,6 @@ import com.ibm.icu.util.ULocale;
 import java.io.File;
 import java.io.PrintWriter;
 import java.util.Arrays;
-import java.util.Date;
 
 public class LanguagePropertyFilesGenerator
 {
@@ -70,7 +69,7 @@ public class LanguagePropertyFilesGenerator
     private static boolean isAmPm(ULocale locale, DateFormatSymbols dateFormatSymbols)
     {
         final DateFormat dateTimeInstance = DateFormat.getTimeInstance(DateFormat.LONG, locale);
-        final String format = dateTimeInstance.format(new Date());
+        final String format = dateTimeInstance.format(new java.util.Date());
         final String[] amPmStrings = dateFormatSymbols.getAmPmStrings();
         for (String string : amPmStrings)
         {

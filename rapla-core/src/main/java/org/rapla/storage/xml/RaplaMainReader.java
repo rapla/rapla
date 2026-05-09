@@ -93,8 +93,8 @@ public class RaplaMainReader extends RaplaXMLReader
             String end = atts.getValue( "endDate");
             if ( start != null || end != null)
             {
-            	java.time.LocalDateTime startDate = start!= null ? parseLocalDate(start).atStartOfDay() : null;
-            	java.time.LocalDateTime endDate = end!= null ? parseLocalDate(end).atStartOfDay().plusDays(1) : null;
+            	java.time.LocalDateTime startDate = start!= null ? parseDate(start, false) : null;
+            	java.time.LocalDateTime endDate = end!= null ? parseDate(end, true) : null;
             	if ( startDate != null && DateTools.toMilli(startDate) < DateTools.MILLISECONDS_PER_DAY)
             	{
             		startDate = null;
