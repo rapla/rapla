@@ -105,8 +105,8 @@ public class UpdateDataManagerImpl implements  UpdateDataManager
         {
             for ( Appointment app:((ReservationImpl)obj).getAppointmentList())
             {
-                java.time.LocalDateTime start = app.getStartDateTime();
-                java.time.LocalDateTime end = app.getMaxEndDateTime();
+                java.time.LocalDateTime start = app.getStart();
+                java.time.LocalDateTime end = app.getMaxEnd();
                 currentInterval = TimeInterval.of(start, end).union( currentInterval);
             }
         }

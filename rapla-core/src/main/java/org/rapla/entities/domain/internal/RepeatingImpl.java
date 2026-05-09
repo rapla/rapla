@@ -30,7 +30,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.Date;
 import java.util.Set;
 import java.util.TreeSet;
 
@@ -47,7 +46,7 @@ final class RepeatingImpl implements Repeating,java.io.Serializable {
     private RepeatingType repeatingType;
     private Set<LocalDateTime> exceptions;
     private Set<Integer> weekdays;
-    transient private Date[] exceptionArray;
+    transient private LocalDateTime[] exceptionArray;
     transient private boolean arrayUpToDate = false;
     transient private Appointment appointment;
     private int frequency;
@@ -215,12 +214,8 @@ final class RepeatingImpl implements Repeating,java.io.Serializable {
         }
     }
 
-    public void setEnd(Date end) {
-        setEndLocalDateTime(end == null ? null : DateTools.toLocalDateTime(end));
-    }
-
     @Override
-    public void setEndLocalDateTime(LocalDateTime end) {
+    public void setEnd(LocalDateTime end) {
         checkWritable();
         isFixedNumber = false;
         number = -1;
@@ -228,17 +223,7 @@ final class RepeatingImpl implements Repeating,java.io.Serializable {
     }
 
     transient LocalDateTime endTime;
-    public Date getEnd() {
-        LocalDateTime endDateTime = getEndDateTime();
-        if ( endDateTime == null)
-        {
-            return null;
-        }
-        return new Date(endDateTime.toInstant(ZoneOffset.UTC).toEpochMilli());
-    }
-
-    @Override
-    public LocalDateTime getEndDateTime() {
+    public LocalDateTime getEnd() {
         if (!isFixedNumber) {
             return end;
         }
@@ -252,12 +237,12 @@ final class RepeatingImpl implements Repeating,java.io.Serializable {
         {
             return null;
         }
-        final LocalDateTime appointmentStart = appointment.getStartDateTime();
+        final LocalDateTime appointmentStart = appointment.getStart();
         if ( number == 0 )
         {
             return appointmentStart;
         }
-        long appointmentLength = appointment.getEnd().getTime() - appointment.getStart().getTime();
+        java.time.Duration appointmentLength = java.time.Duration.between(appointment.getStart(), appointment.getEnd());
 
         if ( !isFixedIntervalLength())
         {
@@ -267,15 +252,12 @@ final class RepeatingImpl implements Repeating,java.io.Serializable {
             {
                 newDate = gotoNextStep( newDate);
             }
-            LocalDateTime end = newDate.plusSeconds(appointmentLength / 1000);
-            return end;
+            return newDate.plus(appointmentLength);
         }
         else
         {
-            long intervalLength = getFixedIntervalLength()/1000;
-            LocalDateTime newTime = appointmentStart.plusSeconds((this.number - 1) * intervalLength);
-            LocalDateTime end = newTime.plusSeconds(appointmentLength / 1000);
-            return end;
+            long intervalDays = (long) frequency * interval * (this.number - 1);
+            return appointmentStart.plusDays(intervalDays).plus(appointmentLength);
         }
     }
 
@@ -304,16 +286,14 @@ final class RepeatingImpl implements Repeating,java.io.Serializable {
         if (!hasExceptions())
             return false;
 
-        Date[] exceptions = getExceptions();
+        LocalDateTime[] exceptions = getExceptions();
         if (exceptions.length == 0) {
             //          System.out.println("no exceptions");
             return false;
         }
         for (int i=0;i<exceptions.length;i++) {
-            //System.out.println("Comparing exception " + exceptions[i] + " with " + new Date(time));
-            if (exceptions[i].getTime()<=time
-                && time<exceptions[i].getTime() + DateTools.MILLISECONDS_PER_DAY) {
-                //System.out.println("Exception matched " + exceptions[i]);
+            long exMillis = DateTools.toMilli(exceptions[i]);
+            if (exMillis<=time && time<exMillis + DateTools.MILLISECONDS_PER_DAY) {
                 return true;
             }
         }
@@ -329,16 +309,15 @@ final class RepeatingImpl implements Repeating,java.io.Serializable {
 
         if ( isFixedIntervalLength() )
         {
-            long duration = DateTools.toMilli(end)
-            - DateTools.fillDate(appointment.getStart().getTime());
-            if (duration<0)
+            java.time.Duration duration = java.time.Duration.between(DateTools.fillDate(appointment.getStart()), end);
+            if (duration.isNegative())
                 return 0;
             long intervalLength = getFixedIntervalLength();
-            return (int) ((duration/ intervalLength) + 1);
+            return (int) ((duration.toMillis() / intervalLength) + 1);
         }
         else
         {
-            LocalDateTime appointmentStart = appointment.getStartDateTime();
+            LocalDateTime appointmentStart = appointment.getStart();
             int number = 0;
             LocalDateTime newDate = appointmentStart;
             LocalDateTime localEnd   = end;
@@ -350,11 +329,6 @@ final class RepeatingImpl implements Repeating,java.io.Serializable {
             while ( newDate.isBefore( localEnd));
             return number;
         }            
-    }
-
-    public void addException(Date date) {
-        if (date == null) return;
-        addException(DateTools.toLocalDateTime(date));
     }
 
     @Override
@@ -379,15 +353,9 @@ final class RepeatingImpl implements Repeating,java.io.Serializable {
         appointment.createBlocks(interval.getStart(),interval.getEnd(), blocks);
         for (AppointmentBlock appointmentBlock:blocks)
         {
-            final long l = DateTools.cutDate(appointmentBlock.getStart());
-            exceptions.add(DateTools.toLocalDateTime(l));
+            exceptions.add(DateTools.cutDate(appointmentBlock.getStartDateTime()));
         }
         arrayUpToDate = false;
-    }
-
-    public void removeException(Date date) {
-        if (date == null) return;
-        removeException(DateTools.toLocalDateTime(date));
     }
 
     @Override
@@ -498,14 +466,14 @@ final class RepeatingImpl implements Repeating,java.io.Serializable {
 		copy( source, dest);
     }
 
-    private static final Date[] DATE_ARRAY = new Date[0];
-    public Date[] getExceptions() {
+    private static final LocalDateTime[] DATE_ARRAY = new LocalDateTime[0];
+    public LocalDateTime[] getExceptions() {
         if (!arrayUpToDate) {
             if (exceptions != null) {
-                Date[] arr = new Date[exceptions.size()];
+                LocalDateTime[] arr = new LocalDateTime[exceptions.size()];
                 int i = 0;
                 for (LocalDateTime e : exceptions) {
-                    arr[i++] = DateTools.toDate(e);
+                    arr[i++] = e;
                 }
                 Arrays.sort(arr);
                 exceptionArray = arr;
@@ -517,15 +485,6 @@ final class RepeatingImpl implements Repeating,java.io.Serializable {
         return exceptionArray;
     }
 
-    @Override
-    public LocalDateTime[] getExceptionsAsLocalDateTime() {
-        if (exceptions == null) {
-            return new LocalDateTime[0];
-        }
-        LocalDateTime[] arr = exceptions.toArray(new LocalDateTime[0]);
-        Arrays.sort(arr);
-        return arr;
-    }
     public boolean hasExceptions() {
         return exceptions != null && exceptions.size()>0;
     }
@@ -536,9 +495,9 @@ final class RepeatingImpl implements Repeating,java.io.Serializable {
         {
             return getFixedIntervalLength();
         }
-        LocalDateTime appointmentStart = DateTools.toLocalDateTime( new Date(s));
+        LocalDateTime appointmentStart = DateTools.toLocalDateTime(s);
         LocalDateTime localDateTime = gotoNextStep( appointmentStart);
-        long newTime = localDateTime.toInstant(ZoneOffset.UTC).toEpochMilli();
+        long newTime = DateTools.toMilli(localDateTime);
         Assert.isTrue( newTime > s );
         return  newTime- s;
         // yearly

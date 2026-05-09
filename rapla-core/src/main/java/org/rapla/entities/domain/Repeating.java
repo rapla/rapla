@@ -15,7 +15,6 @@ import org.rapla.components.util.DateTools;
 import org.rapla.components.util.TimeInterval;
 
 import java.time.LocalDateTime;
-import java.util.Date;
 import java.util.Set;
 
 /** Encapsulates the repeating rule for an appointment.
@@ -51,17 +50,10 @@ public interface Repeating {
      *  @param end If not null isFixedNumber will return true.
      *  @see #setNumber
      */
-    void setEnd(Date end);
+    void setEnd(LocalDateTime end);
     /* @return end of repeating or null if unlimited */
-    Date getEnd();
+    LocalDateTime getEnd();
 
-    LocalDateTime getEndDateTime();
-
-    /** {@code LocalDateTime} variant of {@link #setEnd(Date)}. UTC.
-     * Distinct method name to avoid overload ambiguity with {@code setEnd(null)}. */
-    default void setEndLocalDateTime(LocalDateTime end) {
-        setEnd(end == null ? null : DateTools.toDate(end));
-    }
     /** Set a fixed number of repeating.
      * If this value is set to -1
      * and the repeating end is set to null the appointment will
@@ -78,18 +70,7 @@ public interface Repeating {
     /* daily,weekly, monthly */
     void setType(RepeatingType type);
     /* exceptions for this repeating. */
-    Date[] getExceptions();
-
-    /** {@code LocalDateTime} variant of {@link #getExceptions()}. UTC. */
-    default LocalDateTime[] getExceptionsAsLocalDateTime() {
-        Date[] exceptions = getExceptions();
-        if (exceptions == null) return new LocalDateTime[0];
-        LocalDateTime[] result = new LocalDateTime[exceptions.length];
-        for (int i = 0; i < exceptions.length; i++) {
-            result[i] = exceptions[i] == null ? null : DateTools.toLocalDateTime(exceptions[i]);
-        }
-        return result;
-    }
+    LocalDateTime[] getExceptions();
 
     boolean hasExceptions();
 
@@ -106,19 +87,9 @@ public interface Repeating {
 
     void setWeekdays(Set<Integer> weekdays);
 
-    void addException(Date date);
-    void removeException(Date date);
+    void addException(LocalDateTime date);
+    void removeException(LocalDateTime date);
     void clearExceptions();
-
-    /** {@code LocalDateTime} variant of {@link #addException(Date)}. */
-    default void addException(LocalDateTime date) {
-        addException(date == null ? null : DateTools.toDate(date));
-    }
-
-    /** {@code LocalDateTime} variant of {@link #removeException(Date)}. */
-    default void removeException(LocalDateTime date) {
-        removeException(date == null ? null : DateTools.toDate(date));
-    }
 
     /** returns the appointment of this repeating.
         @see Appointment

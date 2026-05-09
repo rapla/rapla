@@ -74,15 +74,15 @@ public class ReservationWriter extends ClassifiableWriter {
         //if (isPrintId()) {
             printId( appointment );
         //} 
-        att("start-date",dateTimeFormat.formatDate( appointment.getStartDateTime().toLocalDate() ));
+        att("start-date",dateTimeFormat.formatDate( appointment.getStart().toLocalDate() ));
 
         if (appointment.isWholeDaysSet()) {
-            boolean bCut = appointment.getEndDateTime().isAfter(appointment.getStartDateTime());
-            att("end-date",dateTimeFormat.formatDate(appointment.getEndDateTime(),bCut));
+            boolean bCut = appointment.getEnd().isAfter(appointment.getStart());
+            att("end-date",dateTimeFormat.formatDate(appointment.getEnd(),bCut));
         } else {
-            att("start-time",dateTimeFormat.formatTime( appointment.getStartDateTime().toLocalTime() ));
-            att("end-date",dateTimeFormat.formatDate( appointment.getEndDateTime().toLocalDate() ));
-            att("end-time",dateTimeFormat.formatTime( appointment.getEndDateTime().toLocalTime() ));
+            att("start-time",dateTimeFormat.formatTime( appointment.getStart().toLocalTime() ));
+            att("end-date",dateTimeFormat.formatDate( appointment.getEnd().toLocalDate() ));
+            att("end-time",dateTimeFormat.formatTime( appointment.getEnd().toLocalTime() ));
         }
 
         Reservation reservation = appointment.getReservation();
@@ -143,9 +143,9 @@ public class ReservationWriter extends ClassifiableWriter {
         if (r.isFixedNumber()) {
             att("number",String.valueOf(r.getNumber()));
         } else {
-            if (r.getEndDateTime() != null)
+            if (r.getEnd() != null)
                 att("end-date"
-                    ,dateTimeFormat.formatDate(r.getEndDateTime(),true));
+                    ,dateTimeFormat.formatDate(r.getEnd(),true));
         }
         java.time.LocalDateTime[] exceptions = r.getExceptions();
         if (exceptions.length==0) {

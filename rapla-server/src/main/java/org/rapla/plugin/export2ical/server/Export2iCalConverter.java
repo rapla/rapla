@@ -412,7 +412,7 @@ public class Export2iCalConverter
         }
         else
         {
-            LocalDate endDate = repeating.getEndDateTime().toLocalDate();
+            LocalDate endDate = repeating.getEnd().toLocalDate();
             // TODO do we need to translate the enddate in utc?
             recur = new Recur(frequency, endDate);
         }
@@ -463,7 +463,7 @@ public class Export2iCalConverter
 
         // rku: use seperate EXDATE for each exception
         List<ZonedDateTime> exceptionDates = new ArrayList<>();
-        LocalDateTime startDateTime = appointment.getStartDateTime();
+        LocalDateTime startDateTime = appointment.getStart();
         for (LocalDateTime exception : repeating.getExceptions())
         {
             LocalDateTime exceptionDate = LocalDateTime.of(exception.toLocalDate(), startDateTime.toLocalTime());
@@ -658,7 +658,7 @@ public class Export2iCalConverter
      */
     private void addEndDateToEvent(Appointment appointment, VEvent properties, boolean isAllDayEvent)
     {
-        LocalDateTime endDateTime = appointment.getEndDateTime();
+        LocalDateTime endDateTime = appointment.getEnd();
         if (isAllDayEvent)
         {
             properties.add(new DtEnd(endDateTime.toLocalDate()));
@@ -681,7 +681,7 @@ public class Export2iCalConverter
      */
     private void addStartDateToEvent(Appointment appointment, VEvent properties, boolean isAllDayEvent)
     {
-        LocalDateTime startDateTime = appointment.getStartDateTime();
+        LocalDateTime startDateTime = appointment.getStart();
 
         if (isAllDayEvent)
         {

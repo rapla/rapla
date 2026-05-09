@@ -23,7 +23,6 @@ import org.rapla.framework.RaplaLocale;
 import org.springframework.beans.factory.annotation.Autowired;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.util.Date;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
@@ -73,7 +72,7 @@ public class AppointmentFormaterImpl
             if (repeating.isMonthly())
             {
                 String weekday = loc.getWeekday(appointment.getStart());
-                return getWeekdayOfMonth(appointment.getStartDateTime().toLocalDate()) + weekday + timeString;
+                return getWeekdayOfMonth(appointment.getStart().toLocalDate()) + weekday + timeString;
             }
             if (repeating.isYearly())
             {
@@ -171,9 +170,9 @@ public class AppointmentFormaterImpl
         StringBuffer buf = new StringBuffer();
         Repeating repeating = a.getRepeating();
         final boolean wholeDaysSet = a.isWholeDaysSet();
-        Date start = a.getStart();
-        LocalDate startDate = a.getStartDateTime().toLocalDate();
-		Date end = a.getEnd();
+        LocalDateTime start = a.getStart();
+        LocalDate startDate = a.getStart().toLocalDate();
+		LocalDateTime end = a.getEnd();
 		if ( repeating == null )
         {
             buf.append( loc.getWeekday( start ) );
@@ -198,7 +197,7 @@ public class AppointmentFormaterImpl
                 }
                 buf.append( loc.formatTime( end ) );
             }
-            else if ( end.getTime() - start.getTime() > DateTools.MILLISECONDS_PER_DAY)
+            else if ( java.time.Duration.between(start, end).toDays() > 0)
             {
                 buf.append( " - " );
                 buf.append( loc.getWeekday( DateTools.addDays(end,-1 )) );
@@ -224,9 +223,10 @@ public class AppointmentFormaterImpl
             }
             if (wholeDaysSet)
             {
-                if ( end.getTime() - start.getTime() > DateTools.MILLISECONDS_PER_DAY)
+                long durationDays = java.time.Duration.between(start, end).toDays();
+                if ( durationDays > 0)
                 {
-                    if ( end.getTime() - start.getTime() <= DateTools.MILLISECONDS_PER_DAY * 6 )
+                    if ( durationDays < 6 )
                     {
                         buf.append( " - " );
                         buf.append( loc.getWeekday( end ) );
@@ -251,7 +251,7 @@ public class AppointmentFormaterImpl
                     buf.append( '-' );
                     buf.append( loc.formatTime( end ) );
                 }
-                else if ( end.getTime() - start.getTime() <= DateTools.MILLISECONDS_PER_DAY * 6 )
+                else if ( java.time.Duration.between(start, end).toDays() <= 6 )
                 {
                     buf.append( loc.formatTime( start ) );
                     buf.append( " - " );
@@ -291,7 +291,7 @@ public class AppointmentFormaterImpl
         else if ( repeating.isDaily() )
         {
            
-            long days =(end.getTime() - start.getTime()) / (DateTools.MILLISECONDS_PER_HOUR * 24 );
+            long days = java.time.Duration.between(start, end).toDays();
             if ( !a.isWholeDaysSet())
             {
                 buf.append( loc.formatTime( start ) );
@@ -317,7 +317,7 @@ public class AppointmentFormaterImpl
         return b.toString();
     }
 
-    private String getDayOfMonth( Date date )
+    private String getDayOfMonth( LocalDateTime date )
     {
         StringBuffer b = new StringBuffer();
         int numb = DateTools.getDayOfMonth( date );
@@ -327,7 +327,7 @@ public class AppointmentFormaterImpl
         return b.toString();
     }
 
-    private boolean isSameDay( Date d1, Date d2 ) {
+    private boolean isSameDay( LocalDateTime d1, LocalDateTime d2 ) {
     	return DateTools.isSameDay(d1, d2);
     }
 
@@ -335,7 +335,7 @@ public class AppointmentFormaterImpl
         StringBuffer buf = new StringBuffer();
         buf.append(getString("appointment.exceptions"));
         buf.append(": ");
-        Date[] exc = r.getExceptions();
+        LocalDateTime[] exc = r.getExceptions();
         for ( int i=0;i<exc.length;i++) {
             if (i>0)
                 buf.append(", ");
@@ -363,8 +363,8 @@ public class AppointmentFormaterImpl
 
     private boolean isPeriodicaly(Period period, Repeating r) {
         Appointment a = r.getAppointment();
-        final Date periodEnd = period.getEnd();
-        final Date periodStart = period.getStart();
+        final LocalDateTime periodEnd = period.getEnd();
+        final LocalDateTime periodStart = period.getStart();
         if ( periodStart == null)
         {
             return false;
@@ -373,17 +373,12 @@ public class AppointmentFormaterImpl
         {
             return r.getEnd() == null;
         }
-        if (r.getEnd().after( periodEnd ) )
+        if (r.getEnd().isAfter( periodEnd ) )
             return false;
         if ( r.isWeekly() )
         {
-            return
-                    ( DateTools.cutDate(a.getStart().getTime()) - periodStart.getTime() )
-                            <= DateTools.MILLISECONDS_PER_DAY * 6
-                            &&
-                            ( DateTools.cutDate(periodEnd.getTime()) - r.getEnd().getTime() )
-                                    <= DateTools.MILLISECONDS_PER_DAY * 6
-                    ;
+            return java.time.Duration.between(periodStart, DateTools.cutDate(a.getStart())).toDays() <= 6
+                    && java.time.Duration.between(r.getEnd(), DateTools.cutDate(periodEnd)).toDays() <= 6;
         }
         else if ( r.isDaily() )
         {

@@ -30,7 +30,6 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.Date;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
@@ -61,11 +60,6 @@ public final class AppointmentImpl extends SimpleEntity implements Appointment
     public AppointmentImpl() {
     }
 
-    public AppointmentImpl(Date start,Date end) {
-        this(start == null ? null : DateTools.toLocalDateTime(start),
-             end == null ? null : DateTools.toLocalDateTime(end));
-    }
-
     public AppointmentImpl(LocalDateTime start, LocalDateTime end) {
         this.start = start;
         this.end = end;
@@ -75,12 +69,7 @@ public final class AppointmentImpl extends SimpleEntity implements Appointment
         }
     }
 
-    /** {@code LocalDateTime} variant of {@link #AppointmentImpl(Date, Date)}. UTC. */
-    public static AppointmentImpl ofLocalDateTime(LocalDateTime start, LocalDateTime end) {
-        return new AppointmentImpl(start, end);
-    }
-
-    public AppointmentImpl(Date start,Date end, RepeatingType type, int repeatingDuration) {
+    public AppointmentImpl(LocalDateTime start, LocalDateTime end, RepeatingType type, int repeatingDuration) {
         this(start,end);
         this.repeating = new RepeatingImpl(type,this);
         repeating.setAppointment( this );
@@ -101,16 +90,8 @@ public final class AppointmentImpl extends SimpleEntity implements Appointment
     	this.parent = null;
     }
 
-    public Date getStart() { return start == null ? null : DateTools.toDate(start);}
-    public Date getEnd() { return end == null ? null : DateTools.toDate(end);}
-
-    public LocalDateTime getStartDateTime() {
-        return start;
-    }
-
-    public LocalDateTime getEndDateTime() {
-        return end;
-    }
+    public LocalDateTime getStart() { return start; }
+    public LocalDateTime getEnd() { return end; }
 
     public void setReadOnly() {
         super.setReadOnly( );
@@ -118,14 +99,9 @@ public final class AppointmentImpl extends SimpleEntity implements Appointment
             repeating.setReadOnly(  );
     }
 
-    public void moveTo(Date newStart) {
-        long diff = DateTools.toMilli(this.end) - DateTools.toMilli(this.start);
-        move(newStart, new Date(newStart.getTime() + diff));
-    }
-
-    public void move(Date start,Date end) {
-        move(start == null ? null : DateTools.toLocalDateTime(start),
-             end == null ? null : DateTools.toLocalDateTime(end));
+    public void moveTo(LocalDateTime newStart) {
+        java.time.Duration diff = java.time.Duration.between(this.start, this.end);
+        move(newStart, newStart.plus(diff));
     }
 
     public void move(LocalDateTime start, LocalDateTime end) {
@@ -149,9 +125,7 @@ public final class AppointmentImpl extends SimpleEntity implements Appointment
         }
         if ( isWholeDaysSet)
         {
-            long startMs = DateTools.toMilli(start);
-            long endMs = DateTools.toMilli(end);
-            if (startMs != DateTools.cutDate(startMs) || endMs != DateTools.cutDate(endMs))
+            if (!start.equals(DateTools.cutDate(start)) || !end.equals(DateTools.cutDate(end)))
             {
                 isWholeDaysSet = false;
             }
@@ -183,19 +157,17 @@ public final class AppointmentImpl extends SimpleEntity implements Appointment
     public void setWholeDays(boolean enable) {
         checkWritable();
         if (enable) {
-            long startMs = DateTools.toMilli(start);
-            long endMs = DateTools.toMilli(end);
-        	long cutStartTime = DateTools.cutDate(startMs);
-            if (startMs != cutStartTime)
+            LocalDateTime cutStart = DateTools.cutDate(start);
+            if (!start.equals(cutStart))
             {
-                this.start = DateTools.toLocalDateTime(cutStartTime);
+                this.start = cutStart;
             }
-            long cutEndTime = DateTools.cutDate(endMs);
-			if (endMs != cutEndTime)
-			{
+            LocalDateTime cutEnd = DateTools.cutDate(end);
+            if (!end.equals(cutEnd))
+            {
                 this.end = DateTools.fillDate(this.end);
-			}
-            if ( DateTools.toMilli(end) <= DateTools.toMilli(start))
+            }
+            if ( !end.isAfter(start) )
             {
                 this.end = DateTools.fillDate(this.start);
             }
@@ -208,8 +180,8 @@ public final class AppointmentImpl extends SimpleEntity implements Appointment
     }
 
     public int compareTo(Appointment a2) {
-        LocalDateTime start2 = a2.getStartDateTime();
-        LocalDateTime end2 = a2.getEndDateTime();
+        LocalDateTime start2 = a2.getStart();
+        LocalDateTime end2 = a2.getEnd();
         if (start.isBefore( start2))
             return -1;
         if (start.isAfter( start2))
@@ -234,36 +206,22 @@ public final class AppointmentImpl extends SimpleEntity implements Appointment
 		return compareTo;
     }
 
-    transient Date maxDate;
-
     /** returns the largest date that covers the appointment
         and null if the appointments repeats forever.
     */
-    public Date getMaxEnd() {
-        long end = (this.end!= null) ? DateTools.toMilli(this.end):0;
+    public LocalDateTime getMaxEnd() {
+        LocalDateTime end = this.end;
         Repeating repeating = getRepeating();
-        if  (repeating != null)
-            if (repeating.getEnd() != null)
-                end = Math.max(end
-                               ,repeating.getEnd().getTime());
-            else
-                end = 0;
-        if (end == 0)
-            return null;
-
-        // cache max date object
-        if (maxDate == null || maxDate.getTime() != end)
-            maxDate = new Date(end);
-        return maxDate;
-    }
-
-    public LocalDateTime getMaxEndDateTime() {
-        Date maxEnd = getMaxEnd();
-        if ( maxEnd == null)
-        {
-            return null;
+        if (repeating != null) {
+            LocalDateTime rEnd = repeating.getEnd();
+            if (rEnd == null) {
+                return null;
+            }
+            if (end == null || rEnd.isAfter(end)) {
+                end = rEnd;
+            }
         }
-        return DateTools.toLocalDateTime(maxEnd);
+        return end;
     }
 
     public RepeatingImpl getRepeating() {
@@ -292,46 +250,43 @@ public final class AppointmentImpl extends SimpleEntity implements Appointment
         return repeating != null;
     }
 
-    public Date getFirstDifference( Appointment a2, Date maxDate ) {
+    public LocalDateTime getFirstDifference( Appointment a2, LocalDateTime maxDate ) {
         List<AppointmentBlock> blocks1 = new ArrayList<>();
         createBlocks( getStart(), maxDate, blocks1);
         List<AppointmentBlock> blocks2 = new ArrayList<>();
         a2.createBlocks(a2.getStart(), maxDate, blocks2);
-        //        System.out.println("block sizes " + blocks1.size() + ", " + blocks2.size() );
         int i=0;
         for ( AppointmentBlock block:blocks1) {
             long a1Start = block.getStart();
             long a1End = block.getEnd();
             if ( i >= blocks2.size() ) {
-                return new Date( a1Start );
+                return DateTools.toLocalDateTime( a1Start );
             }
             long a2Start = blocks2.get( i ).getStart();
             long a2End = blocks2.get( i ).getEnd();
-            //System.out.println("a1Start " + a1Start + " a1End " + a1End);
-            //System.out.println("a2Start " + a2Start + " a2End " + a2End);
             if ( a1Start != a2Start )
-                return new Date( Math.min ( a1Start, a2Start ) );
+                return DateTools.toLocalDateTime( Math.min ( a1Start, a2Start ) );
 
             if ( a1End != a2End )
-                return new Date( Math.min ( a1End, a2End ) );
+                return DateTools.toLocalDateTime( Math.min ( a1End, a2End ) );
             i++;
         }
         if ( blocks2.size() > blocks1.size() ) {
-            return new Date( blocks2.get( blocks1.size() ).getStart() );
+            return DateTools.toLocalDateTime( blocks2.get( blocks1.size() ).getStart() );
         }
         return null;
     }
 
-    public Date getLastDifference( Appointment a2, Date maxDate ) {
+    public LocalDateTime getLastDifference( Appointment a2, LocalDateTime maxDate ) {
         List<AppointmentBlock> blocks1 = new ArrayList<>();
         createBlocks( getStart(), maxDate, blocks1);
         List<AppointmentBlock> blocks2 = new ArrayList<>();
         a2.createBlocks(a2.getStart(), maxDate, blocks2);
         if ( blocks2.size() > blocks1.size() ) {
-            return new Date( blocks2.get( blocks1.size() ).getEnd() );
+            return DateTools.toLocalDateTime( blocks2.get( blocks1.size() ).getEnd() );
         }
         if ( blocks1.size() > blocks2.size() ) {
-            return new Date( blocks1.get( blocks2.size() ).getEnd() );
+            return DateTools.toLocalDateTime( blocks1.get( blocks2.size() ).getEnd() );
         }
         for ( int i = blocks1.size() - 1 ; i >= 0; i-- ) {
             long a1Start = blocks1.get( i ).getStart();
@@ -339,10 +294,10 @@ public final class AppointmentImpl extends SimpleEntity implements Appointment
             long a2Start = blocks2.get( i ).getStart();
             long a2End = blocks2.get( i ).getEnd();
             if ( a1End != a2End )
-                return new Date( Math.max ( a1End, a2End ) );
+                return DateTools.toLocalDateTime( Math.max ( a1End, a2End ) );
 
             if ( a1Start != a2Start )
-                return new Date( Math.max ( a1Start, a2Start ) );
+                return DateTools.toLocalDateTime( Math.max ( a1Start, a2Start ) );
         }
         return null;
     }
@@ -375,8 +330,8 @@ public final class AppointmentImpl extends SimpleEntity implements Appointment
             return false;
 
         // The repeatings match regulary, so we must test the exceptions
-        Date[] e1 = r1.getExceptions();
-        Date[] e2 = r2.getExceptions();
+        LocalDateTime[] e1 = r1.getExceptions();
+        LocalDateTime[] e2 = r2.getExceptions();
         if (e1.length != e2.length) {
             //System.out.println("Exception-length don't match");
             return false;
@@ -392,21 +347,20 @@ public final class AppointmentImpl extends SimpleEntity implements Appointment
         return true;
     }
 
+
+
+
+
     @Override
-    public void createBlocks(Date start,Date end,Collection<AppointmentBlock> blocks) {
-        boolean excludeExceptions = true;
-        createBlocks(start,end, blocks, excludeExceptions);
+    public void createBlocks(LocalDateTime start,LocalDateTime end,Collection<AppointmentBlock> blocks) {
+        createBlocks(start, end, blocks, true);
     }
 
-
-
-
-    @Override
-    public void createBlocks(Date start,Date end,Collection<AppointmentBlock> blocks, boolean excludeExceptions) {
+    public void createBlocks(LocalDateTime start,LocalDateTime end,Collection<AppointmentBlock> blocks, boolean excludeExceptions) {
         Assert.notNull(blocks);
         Assert.notNull(start,"You must set a startDate");
         Assert.notNull(end, "You must set an endDate");
-        processBlocks(start.getTime(), end.getTime(), blocks, excludeExceptions);
+        processBlocks(DateTools.toMilli(start), DateTools.toMilli(end), blocks, excludeExceptions);
     }
     
 
@@ -462,8 +416,8 @@ public final class AppointmentImpl extends SimpleEntity implements Appointment
         long maxEnding = Long.MAX_VALUE;
         if ( maxNumber >= 0)
         {
-            Date end2 = repeating.getEnd();
-            maxEnding = end2.getTime();
+            LocalDateTime end2 = repeating.getEnd();
+            maxEnding = DateTools.toMilli(end2);
         }
         
         DD=DE?BUG: print("l = repeatingInterval (in minutes), x = stepcount");
@@ -494,10 +448,6 @@ public final class AppointmentImpl extends SimpleEntity implements Appointment
         return false;
     }
     
-    public boolean overlaps(Date start,Date end) {
-        return overlaps( start, end , true );
-    }
-    
     public boolean overlapsBlock(AppointmentBlock block)
     {
     	long end = block.getEnd();
@@ -519,7 +469,11 @@ public final class AppointmentImpl extends SimpleEntity implements Appointment
      * if excludeExceptions is set an overlap will return false if all dates are excluded by exceptions in the specfied start-end intervall
      @return true if the overlaps with the given period.
      */
-    public boolean overlaps(Date start2,Date end2, boolean excludeExceptions) {
+    public boolean overlaps(LocalDateTime start, LocalDateTime end) {
+        return overlaps(start, end, true);
+    }
+
+    public boolean overlaps(LocalDateTime start2,LocalDateTime end2, boolean excludeExceptions) {
         if (start2 == null && end2 == null)
             return true;
         if (start2 == null)
@@ -532,18 +486,18 @@ public final class AppointmentImpl extends SimpleEntity implements Appointment
             end2 = getMaxEnd();
         }
 
-        if (getMaxEnd() != null && !start2.before(getMaxEnd()))
+        if (getMaxEnd() != null && !start2.isBefore(getMaxEnd()))
             return false;
 
-        if (DateTools.toMilli(this.start) >= end2.getTime())
+        if (DateTools.toMilli(this.start) >= DateTools.toMilli(end2))
             return false;
 
-        boolean overlaps  = processBlocks( start2.getTime(), end2.getTime(), null,  excludeExceptions );
+        boolean overlaps  = processBlocks( DateTools.toMilli(start2), DateTools.toMilli(end2), null,  excludeExceptions );
         return overlaps;
     }
 
     public boolean overlaps(long start,long end, boolean excludeExceptions) {
-        if (getMaxEnd() != null && getMaxEnd().getTime()<start)
+        if (getMaxEnd() != null && DateTools.toMilli(getMaxEnd())<start)
             return false;
 
         if (DateTools.toMilli(this.start) > end)
@@ -553,12 +507,12 @@ public final class AppointmentImpl extends SimpleEntity implements Appointment
         return overlaps;
     }
 
-    private static Date getOverlappingEnd(Repeating r1,Repeating r2) {
-        Date maxEnd = null;
+    private static LocalDateTime getOverlappingEnd(Repeating r1,Repeating r2) {
+        LocalDateTime maxEnd = null;
         if (r1.getEnd() != null)
             maxEnd = r1.getEnd();
         if (r2.getEnd() != null)
-            if (maxEnd != null && r2.getEnd().before(maxEnd))
+            if (maxEnd != null && r2.getEnd().isBefore(maxEnd))
                 maxEnd = r2.getEnd();
         return maxEnd;
     }
@@ -566,12 +520,12 @@ public final class AppointmentImpl extends SimpleEntity implements Appointment
     public boolean overlapsAppointment(Appointment a2) {
         if ( a2 == this)
             return true;
-        Date start2 =a2.getStart(); 
-        Date end2 =a2.getEnd(); 
+        LocalDateTime start2 =a2.getStart(); 
+        LocalDateTime end2 =a2.getEnd(); 
         long s1 = DateTools.toMilli(this.start);
-        long s2 = start2.getTime();
+        long s2 = DateTools.toMilli(start2);
         long e1 = DateTools.toMilli(this.end);
-        long e2 = a2.getEnd().getTime();
+        long e2 = DateTools.toMilli(a2.getEnd());
         RepeatingImpl r1 = getRepeating();
         RepeatingImpl r2 = (RepeatingImpl)a2.getRepeating();
         DD=DE?BUG: print("Testing overlap of");
@@ -591,17 +545,17 @@ public final class AppointmentImpl extends SimpleEntity implements Appointment
         // So both appointments have a repeating
 
         // If r2 has no exceptions we can check if a1 overlaps the first appointment of a2
-        if (overlaps(start2,end2) && !r2.isException(start2.getTime())) {
+        if (overlaps(start2,end2) && !r2.isException(DateTools.toMilli(start2))) {
             DD=DE?BUG: print("Primitive overlap for " + getReservation() + " with " + a2.getReservation());
             return true;
         }
 
         // Check if appointments could overlap because of the end-dates of an repeating
-        Date end = getOverlappingEnd(r1,r2);
-        if (end != null && (end.getTime()<=s1 || end.getTime()<=s2))
+        LocalDateTime end = getOverlappingEnd(r1,r2);
+        if (end != null && (DateTools.toMilli(end)<=s1 || DateTools.toMilli(end)<=s2))
             return false;
         end = getOverlappingEnd(r2,r1);
-        if (end != null && (end.getTime()<=s1 || end.getTime()<=s2))
+        if (end != null && (DateTools.toMilli(end)<=s1 || DateTools.toMilli(end)<=s2))
             return false;
         // We can only compare fixed interval length repeatings here
         if ( !r1.isFixedIntervalLength() )
@@ -624,11 +578,11 @@ public final class AppointmentImpl extends SimpleEntity implements Appointment
 
         DD=DE?BUG: print("l? = intervalsize for A?, x? = stepcount for A? ");
         long max_x1 = l2/gcd + startx1;
-        if (end!= null && (end.getTime()-s1)/l1 + startx1 < max_x1)
-            max_x1 = (end.getTime()-s1)/l1 + startx1;
+        if (end!= null && (DateTools.toMilli(end)-s1)/l1 + startx1 < max_x1)
+            max_x1 = (DateTools.toMilli(end)-s1)/l1 + startx1;
         long max_x2 = l1/gcd + startx2;
-        if (end!= null && (end.getTime()-s2)/l2 + startx2 < max_x2)
-            max_x2 = (end.getTime()-s2)/l2 + startx2;
+        if (end!= null && (DateTools.toMilli(end)-s2)/l2 + startx2 < max_x2)
+            max_x2 = (DateTools.toMilli(end)-s2)/l2 + startx2;
         long x1 =startx1;
         long x2 =startx2;
 
@@ -676,12 +630,12 @@ public final class AppointmentImpl extends SimpleEntity implements Appointment
     {
         Repeating r2 = a2.getRepeating();
         Collection<AppointmentBlock> array = new ArrayList<>();
-        Date maxEnd =r2.getEnd();
+        LocalDateTime maxEnd =r2.getEnd();
         // overlaps will be checked two  250 weeks (5 years) from now on
         long maxCheck = System.currentTimeMillis() + DateTools.MILLISECONDS_PER_WEEK * 250;
-        if ( maxEnd == null || maxEnd.getTime() > maxCheck)
+        if ( maxEnd == null || DateTools.toMilli(maxEnd) > maxCheck)
         {
-        	maxEnd = new Date(maxCheck); 
+        	maxEnd = DateTools.toLocalDateTime(maxCheck); 
         }
         createBlocks( getStart(), maxEnd, array);
         for ( AppointmentBlock block:array)
@@ -707,7 +661,7 @@ public final class AppointmentImpl extends SimpleEntity implements Appointment
     */
     private boolean hasExceptionForEveryPossibleCollisionInInterval(long s1,long s2,RepeatingImpl r2) {
         RepeatingImpl r1 = getRepeating();
-        Date end= getOverlappingEnd(r1,r2);
+        LocalDateTime end= getOverlappingEnd(r1,r2);
         if (end == null)
             return false;
 
@@ -717,20 +671,20 @@ public final class AppointmentImpl extends SimpleEntity implements Appointment
         long l1 = r1.getFixedIntervalLength();
         long l2 = r2.getFixedIntervalLength();
         long gap = (l1 * l2) / gcd(l1,l2);
-        Date[] exceptions1 = r1.getExceptions();
-        Date[] exceptions2 = r2.getExceptions();
+        LocalDateTime[] exceptions1 = r1.getExceptions();
+        LocalDateTime[] exceptions2 = r2.getExceptions();
         DD=DE?BUG: print(" Testing Exceptions for overlapp " + f(s1) + " with " + f(s2) + " gap " + n(gap));
         int i1 = 0;
         int i2 = 0;
         long x = 0;
         if (exceptions1.length>i1)
-            DD=DE?BUG: print("Exception a1: " + fe(exceptions1[i1].getTime()));
+            DD=DE?BUG: print("Exception a1: " + fe(DateTools.toMilli(exceptions1[i1])));
         if (exceptions2.length>i2)
-            DD=DE?BUG: print("Exception a2: " + fe(exceptions2[i2].getTime()));
+            DD=DE?BUG: print("Exception a2: " + fe(DateTools.toMilli(exceptions2[i2])));
         long exceptionTime1 = 0;
         long exceptionTime2 = 0;
   
-        while (s1 + x * gap < end.getTime()) {
+        while (s1 + x * gap < DateTools.toMilli(end)) {
             DD=DE?BUG: print("Looking for exception for gap " + x + " s1: " + fe(s1+x*gap) + " s2: " + fe(s2+x*gap));
             long pos1 = s1 + x*gap;
             long pos2 = s2 + x*gap;
@@ -738,7 +692,7 @@ public final class AppointmentImpl extends SimpleEntity implements Appointment
             // Find first exception from app1 that matches gap
             while (i1<exceptions1.length)
             {
-               	exceptionTime1=exceptions1[i1].getTime();
+               	exceptionTime1=DateTools.toMilli(exceptions1[i1]);
             	if ( exceptionTime1  >= pos1)
             	{
             		DD=DE?BUG: print("Exception  a1: " + fe(exceptionTime1));
@@ -750,7 +704,7 @@ public final class AppointmentImpl extends SimpleEntity implements Appointment
             // Find first exception from app2 that matches gap
             while (i2<exceptions2.length)
             {
-            	exceptionTime2 = exceptions2[i2].getTime();
+            	exceptionTime2 = DateTools.toMilli(exceptions2[i2]);
             	if ( exceptionTime2 >= pos1)
             	{
             		DD=DE?BUG: print("Exception a2: " + fe(exceptionTime2));
@@ -808,8 +762,8 @@ public final class AppointmentImpl extends SimpleEntity implements Appointment
 
     /* Formats 2 dates in milliseconds as appointment. Usefull for debugging output.*/
     static String f(long s,long e) {
-        Date start = new Date(s);
-        Date end = new Date(e);
+        LocalDateTime start = DateTools.toLocalDateTime(s);
+        LocalDateTime end = DateTools.toLocalDateTime(e);
         if (DateTools.isSameDay(s,e)) {
             return DateTools.formatDateTime(start) + "-" +  DateTools.formatTime(end);
         } else {
@@ -853,7 +807,7 @@ public final class AppointmentImpl extends SimpleEntity implements Appointment
      * @param excludeExceptions
      * @return
      */
-    static public SortedSet<Appointment> getAppointments(SortedSet<Appointment> sortedAppointmentList,User user,Date start,Date end, boolean excludeExceptions) {
+    static public SortedSet<Appointment> getAppointments(SortedSet<Appointment> sortedAppointmentList,User user,LocalDateTime start,LocalDateTime end, boolean excludeExceptions) {
 	    SortedSet<Appointment> appointmentSet = new TreeSet<>(new AppointmentStartComparator());
 	    Iterator<Appointment> it;
 		if (end != null) {
@@ -870,7 +824,7 @@ public final class AppointmentImpl extends SimpleEntity implements Appointment
 	    while (it.hasNext()) {
 	        AppointmentImpl appointment = (AppointmentImpl) it.next();
 	        // test if appointment end before the start-date
-	        if (end != null && appointment.getStart().after(end))
+	        if (end != null && appointment.getStart().isAfter(end))
 	            break;
 	
 	        // Ignore appointments without a reservation
@@ -888,8 +842,8 @@ public final class AppointmentImpl extends SimpleEntity implements Appointment
 	
 	public static Set<Appointment> getConflictingAppointments(SortedSet<Appointment> appointmentSet, Appointment appointment, Collection<Reservation> ignoreList, boolean onlyFirstConflictingAppointment) {
 		Set<Appointment> conflictingAppointments = new HashSet<>();
-		Date start =appointment.getStart();
-		Date end = appointment.getMaxEnd();
+		LocalDateTime start =appointment.getStart();
+		LocalDateTime end = appointment.getMaxEnd();
 		// Templates don't cause conflicts
 		if ( RaplaComponent.isTemplate( appointment))
 		{

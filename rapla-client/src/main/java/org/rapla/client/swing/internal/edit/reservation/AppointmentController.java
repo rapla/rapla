@@ -95,7 +95,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.Date;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
@@ -104,6 +103,7 @@ import java.util.Set;
 import java.util.TreeSet;
 import java.util.function.Consumer;
 
+import java.time.LocalDateTime;
 /** GUI for editing a single Appointment. */
 public class AppointmentController extends RaplaGUIComponent implements Disposable, RaplaWidget, AppointmentEditExtensionFactory.AppointmentEditExtensionEvents
 {
@@ -133,7 +133,7 @@ public class AppointmentController extends RaplaGUIComponent implements Disposab
 
     private final CommandHistory commandHistory;
 
-    Date selectedEditDate = null;
+    LocalDateTime selectedEditDate = null;
 
     private final DateRenderer dateRenderer;
 
@@ -300,12 +300,12 @@ public class AppointmentController extends RaplaGUIComponent implements Disposab
     public void appointmentChanged() {
     }
 
-    public void setSelectedEditDate(Date selectedEditDate)
+    public void setSelectedEditDate(LocalDateTime selectedEditDate)
     {
         this.selectedEditDate = selectedEditDate;
     }
 
-    public Date getSelectedEditDate()
+    public LocalDateTime getSelectedEditDate()
     {
         return selectedEditDate;
     }
@@ -370,10 +370,10 @@ public class AppointmentController extends RaplaGUIComponent implements Disposab
             CalendarOptions calenderOptions = getCalendarOptions();
             int startMinutes = calenderOptions.getWorktimeStartMinutes();
             int endMinutes = calenderOptions.getWorktimeEndMinutes();
-            Date start = new Date(appointment.getStart().getTime() + startMinutes * DateTools.MILLISECONDS_PER_MINUTE);
-            Date end = new Date(appointment.getEnd().getTime() - DateTools.MILLISECONDS_PER_DAY + endMinutes * DateTools.MILLISECONDS_PER_MINUTE);
+            LocalDateTime start = appointment.getStart().plusMinutes(startMinutes);
+            LocalDateTime end = appointment.getEnd().minusDays(1).plusMinutes(endMinutes);
             // BJO 00000070
-            if (end.before(start))
+            if (end.isBefore(start))
             {
                 end = DateTools.addDay(end);
             }
@@ -461,17 +461,17 @@ public class AppointmentController extends RaplaGUIComponent implements Disposab
             {
                 listenerEnabled = false;
                 RaplaLocale raplaLocale = getRaplaLocale();
-                Date appStart = appointment.getStart();
-                Date appEnd = appointment.getEnd();
-                long duration = appEnd.getTime() - appStart.getTime();
+                LocalDateTime appStart = appointment.getStart();
+                LocalDateTime appEnd = appointment.getEnd();
+                java.time.Duration duration = java.time.Duration.between(appStart, appEnd);
                 boolean wholeDaysSet = appointment.isWholeDaysSet();
                 boolean oneDayEventSelected = oneDayEventCheckBox.isSelected();
                 if (source == startDate || source == startTime)
                 {
-                    Date date = startDate.getDate();
-                    Date time = startTime.getTime();
-                    Date newStart = raplaLocale.toDate(date, time);
-                    Date newEnd = new Date(newStart.getTime() + duration);
+                    LocalDateTime date = startDate.getDate();
+                    LocalDateTime time = startTime.getTime();
+                    LocalDateTime newStart = raplaLocale.toDate(date, time);
+                    LocalDateTime newEnd = newStart.plus(duration);
                     if (newStart.equals(appStart) && newEnd.equals(appEnd))
                         return;
                     UndoSingleEditorChange command = new UndoSingleEditorChange(appStart, appEnd, wholeDaysSet, newStart, newEnd, oneDayEventSelected);
@@ -480,8 +480,8 @@ public class AppointmentController extends RaplaGUIComponent implements Disposab
                 }
                 if (source == endTime)
                 {
-                    Date newEnd = raplaLocale.toDate(endDate.getDate(), endTime.getTime());
-                    if (appStart.after(newEnd))
+                    LocalDateTime newEnd = raplaLocale.toDate(endDate.getDate(), endTime.getTime());
+                    if (appStart.isAfter(newEnd))
                     {
                         newEnd = DateTools.addDay(newEnd);
                     }
@@ -492,14 +492,14 @@ public class AppointmentController extends RaplaGUIComponent implements Disposab
                 }
                 if (source == endDate)
                 {
-                    Date newEnd = raplaLocale.toDate(DateTools.addDays(endDate.getDate(), oneDayEventSelected ? 1 : 0), endTime.getTime());
-                    Date newStart = null;
-                    if (appStart.after(newEnd) || (oneDayEventSelected && !appStart.before(newEnd)))
+                    LocalDateTime newEnd = raplaLocale.toDate(DateTools.addDays(endDate.getDate(), oneDayEventSelected ? 1 : 0), endTime.getTime());
+                    LocalDateTime newStart = null;
+                    if (appStart.isAfter(newEnd) || (oneDayEventSelected && !appStart.isBefore(newEnd)))
                     {
-                        long mod = duration % DateTools.MILLISECONDS_PER_DAY;
+                        long mod = duration.toMillis() % DateTools.MILLISECONDS_PER_DAY;
                         if (mod != 0)
                         {
-                            newStart = new Date(newEnd.getTime() - mod);
+                            newStart = newEnd.minus(java.time.Duration.ofMillis(mod));
                         }
                         else
                         {
@@ -511,10 +511,10 @@ public class AppointmentController extends RaplaGUIComponent implements Disposab
                 }
                 if (source == oneDayEventCheckBox)
                 {
-                    Date date = startDate.getDate();
-                    Date time = startTime.getTime();
-                    Date oldStart = raplaLocale.toDate(date, time);
-                    Date oldEnd = raplaLocale.toDate(endDate.getDate(), endTime.getTime());
+                    LocalDateTime date = startDate.getDate();
+                    LocalDateTime time = startTime.getTime();
+                    LocalDateTime oldStart = raplaLocale.toDate(date, time);
+                    LocalDateTime oldEnd = raplaLocale.toDate(endDate.getDate(), endTime.getTime());
                     UndoSingleEditorChange command = new UndoSingleEditorChange(oldStart, oldEnd, !oneDayEventSelected, appStart, appEnd, oneDayEventSelected);
                     commandHistory.storeAndExecute(command);
 
@@ -532,9 +532,9 @@ public class AppointmentController extends RaplaGUIComponent implements Disposab
             try
             {
                 final boolean wholeDaysSet = appointment.isWholeDaysSet();
-                Date start = appointment.getStart();
+                LocalDateTime start = appointment.getStart();
                 startDate.setDate(start);
-                Date end = appointment.getEnd();
+                LocalDateTime end = appointment.getEnd();
                 endDate.setDate(DateTools.addDays(end, wholeDaysSet ? -1 : 0));
                 endTime.setDurationStart(DateTools.isSameDay(start, end) ? start : null);
                 startTime.setTime(start);
@@ -558,8 +558,8 @@ public class AppointmentController extends RaplaGUIComponent implements Disposab
         private void mapToAppointment()
         {
             RaplaLocale raplaLocale = getRaplaLocale();
-            Date start = raplaLocale.toDate(startDate.getDate(), startTime.getTime());
-            Date end = raplaLocale.toDate(endDate.getDate(), endTime.getTime());
+            LocalDateTime start = raplaLocale.toDate(startDate.getDate(), startTime.getTime());
+            LocalDateTime end = raplaLocale.toDate(endDate.getDate(), endTime.getTime());
             if (oneDayEventCheckBox.isSelected())
             {
                 end = raplaLocale.toDate(DateTools.addDay(endDate.getDate()), endTime.getTime());
@@ -580,15 +580,15 @@ public class AppointmentController extends RaplaGUIComponent implements Disposab
         //Erstellt von Dominik Krickl-Vorreiter
         public class UndoSingleEditorChange implements CommandUndo<RuntimeException>
         {
-            Date oldStart;
-            Date oldEnd;
+            LocalDateTime oldStart;
+            LocalDateTime oldEnd;
             boolean oldoneDay;
 
-            Date newStart;
-            Date newEnd;
+            LocalDateTime newStart;
+            LocalDateTime newEnd;
             boolean newoneDay;
 
-            public UndoSingleEditorChange(Date oldstart, Date oldend, boolean oldoneDay, Date newstart, Date newend, boolean newoneDay)
+            public UndoSingleEditorChange(LocalDateTime oldstart, LocalDateTime oldend, boolean oldoneDay, LocalDateTime newstart, LocalDateTime newend, boolean newoneDay)
             {
                 this.oldStart = oldstart;
                 this.oldEnd = oldend;
@@ -924,9 +924,9 @@ public class AppointmentController extends RaplaGUIComponent implements Disposab
             startDatePeriod.removeActionListener(this);
         }
 
-        private Date getStart()
+        private LocalDateTime getStart()
         {
-            Date start = getRaplaLocale().toDate(startDate.getDate(), startTime.getTime());
+            LocalDateTime start = getRaplaLocale().toDate(startDate.getDate(), startTime.getTime());
             /*
              * if (repeating.isWeekly() || repeating.isMonthly()) { Calendar
 			 * calendar = getRaplaLocale().createCalendar();
@@ -946,9 +946,9 @@ public class AppointmentController extends RaplaGUIComponent implements Disposab
             return start;
         }
 
-        private Date getEnd()
+        private LocalDateTime getEnd()
         {
-            Date end = getRaplaLocale().toDate(getStart(), endTime.getTime());
+            LocalDateTime end = getRaplaLocale().toDate(getStart(), endTime.getTime());
             if (dayChooser.getSelectedIndex() == NEXT_DAY)
                 end = DateTools.addDay(end);
             if (dayChooser.getSelectedIndex() == X_DAYS)
@@ -995,7 +995,7 @@ public class AppointmentController extends RaplaGUIComponent implements Disposab
                     int index = endingChooser.getSelectedIndex();
                     if (index == REPEAT_UNTIL)
                     {
-                        Date slotDate = getSelectedEditDate();
+                        LocalDateTime slotDate = getSelectedEditDate();
                         if (slotDate != null)
                             endDate.setDate(slotDate);
                     }
@@ -1003,7 +1003,7 @@ public class AppointmentController extends RaplaGUIComponent implements Disposab
                 else if (evt.getSource() == weekdayChooser)
                 {
                     int weekday = weekdayChooser.getSelectedWeekday();
-                    final Date date = DateTools.setWeekday(startDate.getDate(), weekday);
+                    final LocalDateTime date = DateTools.setWeekday(startDate.getDate(), weekday);
                     startDate.setDate(date);
                     resetWeekdays(weekday);
                 }
@@ -1011,13 +1011,13 @@ public class AppointmentController extends RaplaGUIComponent implements Disposab
                 {
                     int year = DateTools.getYear(startDate.getDate());
                     final long l = DateTools.toDate(year, monthChooser.getSelectedMonth(), dayInMonth.getNumber().intValue());
-                    startDate.setDate(new Date(l));
+                    startDate.setDate(DateTools.toLocalDateTime(l));
                 }
                 else if (evt.getSource() == dayChooser)
                 {
                     if (dayChooser.getSelectedIndex() == SAME_DAY)
                     {
-                        if (getEnd().before(getStart()))
+                        if (getEnd().isBefore(getStart()))
                         {
                             endTime.setTime(getStart());
                             getLogger().debug("endtime adjusted");
@@ -1027,14 +1027,14 @@ public class AppointmentController extends RaplaGUIComponent implements Disposab
                 }
                 else if (evt.getSource() == startDatePeriod && startDatePeriod.getPeriod() != null)
                 {
-                    Date date = startDatePeriod.getPeriod().getStart();
+                    LocalDateTime date = startDatePeriod.getPeriod().getStart();
                     if (repeating.isWeekly() || repeating.isMonthly())
                     {
                         int selectedWeekday = weekdayChooser.getSelectedWeekday();
                         if (selectedWeekday == 1)
                         {
                             date = DateTools.setWeekday(date, selectedWeekday);
-                            if (date.before(startDatePeriod.getPeriod().getStart()))
+                            if (date.isBefore(startDatePeriod.getPeriod().getStart()))
                             {
                                 date = DateTools.addWeeks(date, 1);
                             }
@@ -1086,7 +1086,7 @@ public class AppointmentController extends RaplaGUIComponent implements Disposab
                     if (weekdayOfMonthValue != null && repeating.isMonthly())
                     {
                         final int weekday = weekdayOfMonthValue.intValue();
-                        final Date date = DateTools.setWeekday(appointment.getStart(), weekday);
+                        final LocalDateTime date = DateTools.setWeekday(appointment.getStart(), weekday);
                         startDate.setDate(date);
                     }
                 }
@@ -1095,9 +1095,9 @@ public class AppointmentController extends RaplaGUIComponent implements Disposab
                     Number dayOfMonthValue = dayInMonth.getNumber();
                     if (dayOfMonthValue != null && repeating.isYearly())
                     {
-                        final DateTools.DateWithoutTimezone dateWithoutTimezone = DateTools.toDate(appointment.getStart().getTime());
+                        final DateTools.DateWithoutTimezone dateWithoutTimezone = DateTools.toDate(DateTools.toMilli(appointment.getStart()));
                         final long l = DateTools.toTime(dateWithoutTimezone.year, dateWithoutTimezone.month, dayOfMonthValue.intValue());
-                        startDate.setDate(new Date(l));
+                        startDate.setDate(DateTools.toLocalDateTime(l));
                     }
                 }
 
@@ -1117,17 +1117,17 @@ public class AppointmentController extends RaplaGUIComponent implements Disposab
             {
                 listenerEnabled = false;
 
-                long duration = appointment.getEnd().getTime() - appointment.getStart().getTime();
+                java.time.Duration duration = java.time.Duration.between(appointment.getStart(), appointment.getEnd());
                 if (evt.getSource() == startTime)
                 {
-                    Date newEnd = new Date(getStart().getTime() + duration);
+                    LocalDateTime newEnd = getStart().plus(duration);
                     endTime.setTime(newEnd);
                     getLogger().debug("endtime adjusted");
                 }
                 else if (evt.getSource() == endTime)
                 {
-                    Date newEnd = getEnd();
-                    if (getStart().after(newEnd))
+                    LocalDateTime newEnd = getEnd();
+                    if (getStart().isAfter(newEnd))
                     {
                         newEnd = DateTools.addDay(newEnd);
                         endTime.setTime(newEnd);
@@ -1215,7 +1215,7 @@ public class AppointmentController extends RaplaGUIComponent implements Disposab
 
         private void updateExceptionCount()
         {
-            Date[] exceptions = repeating != null ? repeating.getExceptions() : new Date[]{};
+            LocalDateTime[] exceptions = repeating != null ? repeating.getExceptions() : new LocalDateTime[]{};
             int count = exceptions != null ? exceptions.length :0;
             if (count > 0)
             {
@@ -1274,12 +1274,12 @@ public class AppointmentController extends RaplaGUIComponent implements Disposab
 
                 interval.setNumber(Integer.valueOf(repeating.getInterval()));
 
-                Date start = appointment.getStart();
-                LocalDate localStartDate = appointment.getStartDateTime().toLocalDate();
+                LocalDateTime start = appointment.getStart();
+                LocalDate localStartDate = appointment.getStart().toLocalDate();
                 startDate.setDate(start);
                 startDatePeriod.setDate(start);
                 startTime.setTime(start);
-                Date end = appointment.getEnd();
+                LocalDateTime end = appointment.getEnd();
                 endTime.setTime(end);
                 endTime.setDurationStart(DateTools.isSameDay(start, end) ? start : null);
 
@@ -1496,8 +1496,8 @@ public class AppointmentController extends RaplaGUIComponent implements Disposab
 
                 public Component getListCellRendererComponent(JList list, Object value, int index, boolean isSelected, boolean cellHasFocus)
                 {
-                    if (value instanceof Date)
-                        value = getRaplaLocale().formatDateLong((Date) value);
+                    if (value instanceof LocalDateTime)
+                        value = getRaplaLocale().formatDateLong((LocalDateTime) value);
                     return super.getListCellRendererComponent(list, value, index, isSelected, cellHasFocus);
                 }
             };
@@ -1518,8 +1518,8 @@ public class AppointmentController extends RaplaGUIComponent implements Disposab
                 {
                     return;
                 }
-                final Date newDate = evt.getDate();
-                if (newDate.after(exceptionEnd.getDate()))
+                final LocalDateTime newDate = evt.getDate();
+                if (newDate.isAfter(exceptionEnd.getDate()))
                 {
                     try
                     {
@@ -1540,8 +1540,8 @@ public class AppointmentController extends RaplaGUIComponent implements Disposab
                 {
                     return;
                 }
-                final Date newDate = evt.getDate();
-                if (newDate.before(exceptionStart.getDate()))
+                final LocalDateTime newDate = evt.getDate();
+                if (newDate.isBefore(exceptionStart.getDate()))
                 {
                     try
                     {
@@ -1566,7 +1566,7 @@ public class AppointmentController extends RaplaGUIComponent implements Disposab
         @SuppressWarnings("unchecked")
         public void mapFromAppointment()
         {
-            Date exceptDate = getSelectedEditDate();
+            LocalDateTime exceptDate = getSelectedEditDate();
             // only change exceptions dates if no execptions were changed with the exception dialog.
             // so we can keep the exception interval across multiple appointments
             try
@@ -1602,11 +1602,11 @@ public class AppointmentController extends RaplaGUIComponent implements Disposab
             }
             else
             {
-                Date[] specialExceptionDates = repeating.getExceptions();
+                LocalDateTime[] specialExceptionDates = repeating.getExceptions();
                 specialExceptions.setListData(specialExceptionDates);
                 for (int i = 0; i < specialExceptionDates.length; i++)
                 {
-                    Date specialExceptionDate = specialExceptionDates[i];
+                    LocalDateTime specialExceptionDate = specialExceptionDates[i];
                     if (specialExceptionDate.equals(exceptDate))
                     {
                         specialExceptions.setSelectedIndex(i);
@@ -1638,8 +1638,8 @@ public class AppointmentController extends RaplaGUIComponent implements Disposab
 
         private void addException()
         {
-            Date exceptionStart = this.exceptionStart.getDate();
-            Date exceptionEnd = DateTools.fillDate(this.exceptionEnd.getDate());
+            LocalDateTime exceptionStart = this.exceptionStart.getDate();
+            LocalDateTime exceptionEnd = DateTools.fillDate(this.exceptionEnd.getDate());
             final TimeInterval timeInterval = new TimeInterval(exceptionStart, exceptionEnd);
             final List<TimeInterval> addedException = Collections.singletonList(timeInterval);
             addExceptions(addedException);
@@ -1705,7 +1705,7 @@ public class AppointmentController extends RaplaGUIComponent implements Disposab
             {
                 for (int i = 0; i < removedExceptions.length; i++)
                 {
-                    repeating.removeException((Date) removedExceptions[i]);
+                    repeating.removeException((LocalDateTime) removedExceptions[i]);
                 }
                 updateExcpetionEditor(repeating);
                 fireAppointmentChanged();
@@ -1727,7 +1727,7 @@ public class AppointmentController extends RaplaGUIComponent implements Disposab
             {
                 for (int i = 0; i < removedExceptions.length; i++)
                 {
-                    repeating.addException((Date) removedExceptions[i]);
+                    repeating.addException((LocalDateTime) removedExceptions[i]);
                 }
                 updateExcpetionEditor(repeating);
                 fireAppointmentChanged();
@@ -1886,7 +1886,7 @@ public class AppointmentController extends RaplaGUIComponent implements Disposab
         try
         {
             CalendarOptions options = getCalendarOptions();
-            Promise<Date> nextAllocatableDate = getQuery().getNextAllocatableDate(Arrays.asList(allocatables), appointment, options);
+            Promise<LocalDateTime> nextAllocatableDate = getQuery().getNextAllocatableDate(Arrays.asList(allocatables), appointment, options);
             nextAllocatableDate.thenAccept((newStart) ->
             {
                 if (newStart != null)
