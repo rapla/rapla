@@ -13,9 +13,7 @@
 package org.rapla.components.util;
 
 import java.time.*;
-import java.util.Date;
 import java.util.Locale;
-
 /** Tools for manipulating dates.
  * At the moment of writing rapla internaly stores all appointments
  * in the GMT timezone.
@@ -23,12 +21,11 @@ import java.util.Locale;
 public abstract class DateTools
 {
     public static String DEFAULT_GWT_LOCALE = "en_UK";
-    public static Date setWeekday(Date date, int selectedWeekday)
+    public static LocalDateTime setWeekday(LocalDateTime dateTime, int selectedWeekday)
     {
-        final int weekday = DateTools.getWeekday(date);
-        int diff = selectedWeekday -weekday;
-        final Date result = DateTools.addDays(date, diff);
-        return result;
+        final int weekday = DateTools.getWeekday(dateTime);
+        int diff = selectedWeekday - weekday;
+        return dateTime.plusDays(diff);
     }
 
 
@@ -122,58 +119,40 @@ public abstract class DateTools
         throw new IllegalArgumentException("Invalid weekday: " + dayOfWeek);
     }
 
-    public static String formatDate(Date date)
+    public static String formatDate(LocalDateTime dateTime)
 	{
-		SerializableDateTimeFormat format = new SerializableDateTimeFormat();
-        String string = format.formatDate( date);
-        return string;
+        return SerializableDateTimeFormat.INSTANCE.formatDate(dateTime);
 	}
 
 	/** {@code long}-millis variant. UTC. */
 	public static String formatDate(long millis)
 	{
-        return formatDate(new Date(millis));
+        return formatDate(toLocalDateTime(millis));
 	}
-	
-	public static String formatTime(Date date)
+
+	public static String formatTime(LocalDateTime dateTime)
 	{
-        String string = SerializableDateTimeFormat.INSTANCE.formatTime( date);
-        return string;
+        return SerializableDateTimeFormat.INSTANCE.formatTime(dateTime);
 	}
 
 	/** {@code long}-millis variant. UTC. */
 	public static String formatTime(long timeInMillis)
 	{
-        return SerializableDateTimeFormat.INSTANCE.formatTime( new Date(timeInMillis));
+        return SerializableDateTimeFormat.INSTANCE.formatTime(toLocalDateTime(timeInMillis));
 	}
 
     public static LocalDateTime toLocalDateTime(long dateTimeInMillis) {
-        LocalDateTime result = LocalDateTime.ofEpochSecond( dateTimeInMillis / 1000, 0, ZoneOffset.UTC);
-        return result;
+        return LocalDateTime.ofInstant(Instant.ofEpochMilli(dateTimeInMillis), ZoneOffset.UTC);
     }
 
-    public static LocalDateTime toLocalDateTime(Date dateTime) {
-        return toLocalDateTime( dateTime.getTime() );
-    }
-
-    /** Inverse of {@link #toLocalDateTime(long)}. UTC. */
+    /** Inverse of {@link #toLocalDateTime(long)}. UTC. Preserves millisecond precision. */
     public static long toMilli(LocalDateTime dateTime) {
-        return dateTime.toEpochSecond(ZoneOffset.UTC) * 1000;
+        return dateTime.toInstant(ZoneOffset.UTC).toEpochMilli();
     }
 
     /** UTC midnight epoch milliseconds for the given local date. */
     public static long toMilli(LocalDate date) {
-        return date.atStartOfDay().toEpochSecond(ZoneOffset.UTC) * 1000;
-    }
-
-    /** Returns the date+time as a {@code java.util.Date} (epoch millis interpretation, UTC). */
-    public static Date toDate(LocalDateTime dateTime) {
-        return new Date(toMilli(dateTime));
-    }
-
-    /** Returns the local date as a midnight {@code java.util.Date} (UTC). */
-    public static Date toDate(LocalDate date) {
-        return new Date(toMilli(date));
+        return date.atStartOfDay().toInstant(ZoneOffset.UTC).toEpochMilli();
     }
 
     public static int getHourOfDay(LocalDateTime dateTime) {
@@ -255,29 +234,20 @@ public abstract class DateTools
         return java.time.temporal.ChronoUnit.DAYS.between(from.toLocalDate(), to.toLocalDate());
     }
 
-    public static String formatDateTime(Date date)
+    public static String formatDateTime(LocalDateTime dateTime)
 	{
-        return formatDateTime(date, null);
+		SerializableDateTimeFormat format = SerializableDateTimeFormat.INSTANCE;
+		return format.formatDate(dateTime) + " " + format.formatTime(dateTime);
 	}
 
 	public static String formatDateTime(long millis)
 	{
-        return formatDateTime(new Date(millis), null);
+        return formatDateTime(toLocalDateTime(millis));
 	}
 
-	public static String formatDateTime(Date date, Locale locale)
+	public static int getDaysInMonth(LocalDateTime dateTime)
 	{
-		SerializableDateTimeFormat format = SerializableDateTimeFormat.INSTANCE;
-		String dateString = format.formatDate( date);
-		String timeString = format.formatTime( date);
-        String string = dateString + " " + timeString;
-        return string;
-	}
-
-	public static int getDaysInMonth(Date date)
-	{
-	    DateWithoutTimezone date2 = toDate(date.getTime());
-	    return getDaysInMonth( date2.year, date2.month);
+	    return getDaysInMonth(dateTime.getYear(), dateTime.getMonthValue());
 	}
 	
 	public static int getDaysInMonth(final int year, final int month)
@@ -306,8 +276,7 @@ public abstract class DateTools
 	} 
 	
     /** sets time of day to 0:00.
-        @see #cutDate(Date)
-     */
+    /** sets time of day to 0:00. */
     public static long cutDate(long date) {
     	long dateModMillis = date % MILLISECONDS_PER_DAY;
     	if ( dateModMillis == 0)
@@ -329,150 +298,61 @@ public abstract class DateTools
         return cutDate( date  ) == date ;
     }
 
-    public static boolean isMidnight(Date date) {
-        return isMidnight( date.getTime());
-    }
-
-    /** sets time of day to 0:00. */
-    public static Date cutDate(Date date) {
-        long time = date.getTime();
-        if ( time %MILLISECONDS_PER_DAY == 0)
-        {
-        	return date;
-        }
-		return new Date(cutDate(time));
-    }
-
-    /** sets time of day to 0:00 and increases day.
-        @see #fillDate(Date)
-     */
+    /** sets time of day to 0:00 and increases day. */
     public static long fillDate(long date) {
         // cut date
         long cuttedDate = (date - (date % MILLISECONDS_PER_DAY));
         return cuttedDate +  MILLISECONDS_PER_DAY;
     }
 
-    public static Date fillDate(Date date) {
-        return new Date(fillDate(date.getTime()));
-    }
-
-    /** {@code LocalDateTime} variant of {@link #fillDate(Date)}: rounds up to next-day midnight. UTC. */
+    /** Rounds up to next-day midnight. UTC. */
     public static LocalDateTime fillDate(LocalDateTime dateTime) {
         if (dateTime == null) return null;
         return toLocalDateTime(fillDate(toMilli(dateTime)));
     }
 
-    /** Monday 24:00 = tuesday 0:00.
-        But the first means end of monday and the second start of tuesday.
-        The default DateFormat always displays tuesday.
-        If you want to edit the first interpretation in calendar components.
-        call addDay() to add 1 day to the given date before displaying
-        and subDay() for mapping a day back after editing.
-        @see #subDay
-        @see #addDays
-     */
-    public static Date addDay(Date date) {
-        return addDays(date, 1);
-    }
-    
-    public static Date addYear(Date date) {
-    	return addYears(date, 1);
-    }
-    
-    public static Date addWeeks(Date date, int weeks) {
-        LocalDateTime localDate = toLocalDateTime(date.getTime());
-        LocalDateTime newDate = localDate.plusWeeks(weeks);
-
-        //Date result = new Date(date.getTime() + MILLISECONDS_PER_WEEK * weeks);
-		return new Date(newDate.toInstant(ZoneOffset.UTC).toEpochMilli());
-    }
-    
-    public static Date addYears(Date date, int yearModifier) {
-    
-    	int monthModifier = 0;
-    	return modifyDate(date, yearModifier, monthModifier);
-    }
-    
-    public static Date addMonth(Date startDate) {
-    	return addMonths(startDate, 1);
-    }
-    
-    public static Date addMonths(Date startDate, int monthModifier) {
-    	int yearModifier = 0;
-    	return modifyDate(startDate, yearModifier, monthModifier);
+    public static LocalDateTime addYear(LocalDateTime dateTime) {
+    	return dateTime.plusYears(1);
     }
 
-	private static Date modifyDate(Date startDate, int yearModifier,
-			int monthModifier) {
-		long original = startDate.getTime();
-    	long millis = original  - DateTools.cutDate( original );
-		DateWithoutTimezone date = toDate( original);
-    	int year = date.year + yearModifier;
-    	int month = date.month + monthModifier;
-    	if ( month < 1 )
-    	{
-    		year += month/ 12 -1 ;
-    		month = ((month +11) % 12) + 1;
-    	    
-    	}
-    	if ( month >12 )
-    	{
-    		year += month/ 12;
-    		month = ((month -1) % 12) + 1;
-    	}
-    	int maxDay = getDaysInMonth( year, month );
-        int day = Math.min(date.day, maxDay) ;
-        long newDate = toDate(year, month, day);
-    	Date result = new Date( newDate + millis);
-		return result;
-	}
-
-
-    /** see #addDay*/
-    public static Date addDays(Date date,long days) {
-        return new Date(date.getTime() + MILLISECONDS_PER_DAY * days);
+    public static LocalDateTime addWeeks(LocalDateTime dateTime, int weeks) {
+		return dateTime.plusWeeks(weeks);
     }
 
-    /**
-        @see #addDay
-        @see #subDays
-    */
-    public static Date subDay(Date date) {
-        return new Date(date.getTime() - MILLISECONDS_PER_DAY);
+    public static LocalDateTime addYears(LocalDateTime dateTime, int yearModifier) {
+    	return dateTime.plusYears(yearModifier);
     }
 
-    /**
-        @see #addDay
-    */
-    public static Date subDays(Date date,int days) {
-        return new Date(date.getTime() - MILLISECONDS_PER_DAY * days);
+    public static LocalDateTime addMonth(LocalDateTime startDate) {
+    	return startDate.plusMonths(1);
     }
-    
-    /** returns if the two dates are one the same date.
-     * Dates must be in GMT */
-    static public boolean isSameDay( Date d1, Date d2) {
-        return cutDate( d1 ).equals( cutDate ( d2 ));
+
+    public static LocalDateTime addMonths(LocalDateTime startDate, int monthModifier) {
+    	return startDate.plusMonths(monthModifier);
+    }
+
+
+    /** returns if the two dates are on the same date. UTC. */
+    static public boolean isSameDay( LocalDateTime d1, LocalDateTime d2) {
+        return d1.toLocalDate().equals(d2.toLocalDate());
     }
 
     /** returns if the two dates are one the same date.
      * Dates must be in GMT */
+    /** returns if the two dates are one the same date.
+     * Dates must be in GMT */
+    /** returns if the two dates are on the same date. */
     static public boolean isSameDay( long d1, long d2) {
         return cutDate( d1 ) == cutDate ( d2 );
     }
 
     /** returns the day of week SUNDAY = 1, MONDAY = 2, TUESDAY = 3, WEDNESDAY = 4, THURSDAY = 5, FRIDAY = 6, SATURDAY = 7 */
-    public static int getWeekday(Date date) {
-    	long days = countDays(0,date.getTime());
-    	return getWeekday( days);
-    }
-
-    /** {@code LocalDateTime} variant of {@link #getWeekday(Date)}. */
     public static int getWeekday(LocalDateTime dateTime) {
         long days = countDays(0, toMilli(dateTime));
         return getWeekday( days);
     }
 
-    /** {@code LocalDate} variant of {@link #getWeekday(Date)}. */
+    /** {@code LocalDate} variant. */
     public static int getWeekday(LocalDate date) {
         long days = countDays(0, toMilli(date));
         return getWeekday( days);
@@ -498,66 +378,34 @@ public abstract class DateTools
         return weekday;
     }
 
-    public static int getYear(Date date) {
-        DateWithoutTimezone date2 = toDate( date.getTime());
-        return date2.year;
+    public static int getYear(LocalDateTime dateTime) {
+        return dateTime.getYear();
     }
 
-    public static int getMonth(Date date) {
-        DateWithoutTimezone date2 = toDate( date.getTime());
-        return date2.month;
+    public static int getMonth(LocalDateTime dateTime) {
+        return dateTime.getMonthValue();
     }
 
-    public static int getDayOfMonth(Date date) {
-        DateWithoutTimezone date2 = toDate( date.getTime());
-        int result = date2.day;
-        return result;
+    public static int getDayOfMonth(LocalDateTime dateTime) {
+        return dateTime.getDayOfMonth();
     }
 
     /** calculates how often the weekday of the passed date occured. e.g. if you pass a date thats on monday it returns 1 if its the first monday in the month and 3 if its the third monday*/
     public static int getDayOfWeekInMonth(LocalDate date)
     {
-    	//DateWithoutTimezone date2 = toDate( date.getTime());
     	int day = date.getDayOfMonth();
     	int occurances = (day-1) / 7 + 1;
     	return occurances;
     }
 
-//    public static int getWeekOfYear(Date date) 
-//    {
-//    	// 1970/1/1 is a thursday
-//    	long millis = date.getTime();
-//		long daysSince1970 = millis >= 0 ? millis/ MILLISECONDS_PER_DAY : ((millis + MILLISECONDS_PER_DAY - 1)/ MILLISECONDS_PER_DAY  + 1) ;
-//        int weekday = daysSince1970 + 4;	
-//    	
-//    }    
-
-//    /** uses the calendar-object for date comparison.
-//    * Use this for non GMT Dates*/
-//    static public boolean isSameDay( Calendar calendar, Date d1, Date d2 ) {
-//        calendar.setTime( d1 );
-//        int era1 = calendar.get( Calendar.ERA );
-//        int year1 = calendar.get( Calendar.YEAR );
-//        int day_of_year1 = calendar.get( Calendar.DAY_OF_YEAR );
-//        calendar.setTime( d2 );
-//        int era2 = calendar.get( Calendar.ERA );
-//        int year2 = calendar.get( Calendar.YEAR );
-//        int day_of_year2 = calendar.get( Calendar.DAY_OF_YEAR );
-//        return ( era1 == era2 && year1 == year2 && day_of_year1 == day_of_year2 );
-//    }
-
-    static public long countDays(Date start,Date end) {
-        return countDays(start.getTime(), end.getTime());
-    }
-    
     static public long countDays(long start,long end) {
         return (cutDate(end) - cutDate(start)) / MILLISECONDS_PER_DAY;
     }
 
-    static public long countMinutes(Date start, Date end) {
-    	return (end.getTime()- start.getTime())/ MILLISECONDS_PER_MINUTE;
+    static public long countMinutes(LocalDateTime start, LocalDateTime end) {
+    	return (toMilli(end) - toMilli(start)) / MILLISECONDS_PER_MINUTE;
     }
-    
+
     static public long countMinutes(long start, long end){
     	return (end-start)/ MILLISECONDS_PER_MINUTE;
     }
@@ -595,17 +443,15 @@ public abstract class DateTools
    }
 
    
-   public static Date toDateTime(Date date, Date time )
+   public static LocalDateTime toDateTime(LocalDateTime date, LocalDateTime time)
    {
-       long millisTime = time.getTime() - DateTools.cutDate( time.getTime());
-       Date result = new Date( DateTools.cutDate(date.getTime()) + millisTime);
-       return result;
+       return date.toLocalDate().atTime(time.toLocalTime());
    }
 
 
-    public static int getWeekInYearIso(Date date)
+    private static int getWeekInYearIso(long millis)
     {
-        DateWithoutTimezone dateWithoutTimezone = toDate(date.getTime());
+        DateWithoutTimezone dateWithoutTimezone = toDate(millis);
         DateWithoutTimezone thursdayInWeek = thursdayInWeekISO(dateWithoutTimezone);
         int calendarweekInYear = thursdayInWeek.year;
         DateWithoutTimezone fourthOfJanuary = new DateWithoutTimezone();
@@ -617,27 +463,28 @@ public abstract class DateTools
         return calendarweek;
     }
 
-    public static int getWeekInYear(Date date, Locale locale)
-    {
-        if(isUsStyle(DateTools.getCountry(locale)))
-        {
-            return getWeekInYearUs(date);
-        }
-        return getWeekInYearIso(date);
-    }
-
-    /** {@code LocalDate} variant. */
     public static int getWeekInYear(java.time.LocalDate date, Locale locale)
     {
         if (date == null) return 0;
-        return getWeekInYear(toDate(date), locale);
+        long millis = toMilli(date);
+        return isUsStyle(getCountry(locale)) ? getWeekInYearUs(millis) : getWeekInYearIso(millis);
     }
 
-    /** {@code LocalDateTime} variant. */
+    public static int getWeekInYearIso(LocalDateTime dateTime)
+    {
+        return getWeekInYearIso(toMilli(dateTime));
+    }
+
+    public static int getWeekInYearUs(LocalDateTime dateTime)
+    {
+        return getWeekInYearUs(toMilli(dateTime));
+    }
+
     public static int getWeekInYear(java.time.LocalDateTime dateTime, Locale locale)
     {
         if (dateTime == null) return 0;
-        return getWeekInYear(toDate(dateTime), locale);
+        long millis = toMilli(dateTime);
+        return isUsStyle(getCountry(locale)) ? getWeekInYearUs(millis) : getWeekInYearIso(millis);
     }
 
     private static boolean isUsStyle(String country)
@@ -652,9 +499,9 @@ public abstract class DateTools
         return false;
     }
 
-    public static int getWeekInYearUs(Date date)
+    private static int getWeekInYearUs(long millis)
     {
-        DateWithoutTimezone dateWithoutTimezone = toDate(date.getTime());
+        DateWithoutTimezone dateWithoutTimezone = toDate(millis);
         DateWithoutTimezone sundayInWeek = sundayInWeekUs(dateWithoutTimezone);
         DateWithoutTimezone sixthOfJanuary = new DateWithoutTimezone();
         sixthOfJanuary.year = dateWithoutTimezone.year;
@@ -673,15 +520,9 @@ public abstract class DateTools
         return calendarweek;
     }
 
-    public static int getDayInYear(Date date)
+    public static int getDayInYear(LocalDateTime dateTime)
     {
-        DateWithoutTimezone dateWithoutTimezone = toDate(date.getTime());
-        DateWithoutTimezone firstOfJanuary = new DateWithoutTimezone();
-        firstOfJanuary.year = dateWithoutTimezone.year;
-        firstOfJanuary.month = 1;
-        firstOfJanuary.day = 1;
-        int dayOfYear = calculateJulianDayNumberAtNoon( dateWithoutTimezone)- calculateJulianDayNumberAtNoon(firstOfJanuary) + 1;
-        return dayOfYear;
+        return dateTime.getDayOfYear();
     }
 
     private static DateWithoutTimezone thursdayInWeekISO(DateWithoutTimezone dateWithoutTimezone) {
@@ -741,17 +582,6 @@ public abstract class DateTools
             return "";
         }
         return parts[1];
-    }
-
-    public static Date add(Date date, DateTools.IncrementSize incrementSize, int incrementAmount)
-    {
-        switch ( incrementSize)
-        {
-            case DAY_OF_YEAR:return addDays( date, incrementAmount);
-            case MONTH:return addMonths( date, incrementAmount);
-            case WEEK_OF_YEAR:return addWeeks( date, incrementAmount);
-            default:throw new IllegalArgumentException("unssuported incrementsize");
-        }
     }
 
     public static LocalDateTime add(LocalDateTime dateTime, DateTools.IncrementSize incrementSize, int incrementAmount)
@@ -828,11 +658,6 @@ public abstract class DateTools
 	   millis += millisecond;
 	   return millis;
 	}
-   
-   public static int toHour(long millisecond) {
-       long result = (millisecond % MILLISECONDS_PER_DAY - millisecond % MILLISECONDS_PER_HOUR)/MILLISECONDS_PER_HOUR;
-       return (int) result;
-   }
 
 
    public static LocalDate toLocalDate(long millis)
@@ -842,10 +667,6 @@ public abstract class DateTools
        return result;
    }
 
-   public static LocalDate toLocalDate(Date date)
-   {
-       return date == null ? null : toLocalDate(date.getTime());
-   }
    public static DateWithoutTimezone toDate(long millis)
    {
 	   // special case for negative milliseconds as day rounding needs to get the lower day
@@ -876,10 +697,11 @@ public abstract class DateTools
    }
 
    /** returns the largest date null dates count as postive infinity*/
-   public static Date max(Date... param) {
-		Date max = null;
+   /** returns the largest date; null dates count as positive infinity */
+   public static LocalDateTime max(LocalDateTime... param) {
+		LocalDateTime max = null;
 		boolean set = false;
-		for (Date d:param)
+		for (LocalDateTime d : param)
 		{
 			if ( !set)
 			{
@@ -888,33 +710,24 @@ public abstract class DateTools
 			}
 			else if ( max != null )
 			{
-				if ( d == null || max.before( d))
+				if ( d == null || max.isBefore(d))
 				{
 					max = d;
 				}
 			}
-			
 		}
 		return max;
    }
 
-
-
-   public static Date getFirstWeekday(Date date, int firstWeekday)
+   public static LocalDateTime getFirstWeekday(LocalDateTime dateTime, int firstWeekday)
    {
-       int weekday = getWeekday( date);
-       int diff =  firstWeekday- weekday;
-       if ( diff >0)
+       int weekday = getWeekday( dateTime);
+       int diff = firstWeekday - weekday;
+       if ( diff > 0)
        {
            diff -= 7;
        }
-       Date result = DateTools.addDays( date, diff);
-//       
-//       calendar.setTime( startDate );
-//       calendar.set( Calendar.DAY_OF_WEEK, firstWeekday );
-//       getWeekday(date)
-       return result;
-       
+       return dateTime.plusDays(diff);
    }
 
 
