@@ -21,6 +21,7 @@ import java.util.Calendar;
 import java.util.Locale;
 import java.util.TimeZone;
 
+import java.time.LocalDateTime;
 @RunWith(JUnit4.class)
 public class SunBugsTest
 {
@@ -42,7 +43,7 @@ public class SunBugsTest
     public void testCalendarBug1_5_0() {
         Calendar calendar =  Calendar.inject(TimeZone.getTimeZone("GMT+0"), Locale.GERMANY);
         calendar.setLenient( false );
-        calendar.setTime( new Date());
+        calendar.setTime( LocalDateTime.of());
     
         // calculate the number of days of the current month
         calendar.set(Calendar.MONTH,2);

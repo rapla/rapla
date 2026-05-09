@@ -6,10 +6,11 @@ import org.rapla.entities.configuration.internal.PreferencesImpl;
 import org.rapla.entities.configuration.internal.RaplaMapImpl;
 import org.rapla.entities.storage.ReferenceInfo;
 
-import java.util.Date;
 import java.util.LinkedHashSet;
 import java.util.Set;
 
+import java.time.LocalDateTime;
+import org.rapla.components.util.DateTools;
 public class PreferencePatch extends RaplaMapImpl {
     String userId;
     Set<String> removedEntries = new LinkedHashSet<>();
@@ -32,23 +33,15 @@ public class PreferencePatch extends RaplaMapImpl {
         return new ReferenceInfo<>(userId, User.class);
     }
 
-    public Date getLastChanged() {
-        return lastChanged == null ? null : org.rapla.components.util.DateTools.toDate(lastChanged);
+
+    public void setLastChanged(LocalDateTime lastChanged) {
+        this.lastChanged = lastChanged;
     }
 
-    public void setLastChanged(Date lastChanged) {
-        this.lastChanged = lastChanged == null ? null : org.rapla.components.util.DateTools.toLocalDateTime(lastChanged);
-    }
-
-    /** {@code LocalDateTime} variants. UTC. Distinct names to avoid `null`-passing ambiguity on the setter. */
-    public java.time.LocalDateTime getLastChangedAsLocalDateTime() {
+    public LocalDateTime getLastChanged() {
         return lastChanged;
     }
 
-    public void setLastChangedLocalDateTime(java.time.LocalDateTime lastChanged) {
-        this.lastChanged = lastChanged;
-    }
-    
     public Set<String> getRemovedEntries() 
     {
         return removedEntries;

@@ -65,7 +65,7 @@ public class CategoryReader extends RaplaXMLReader
             String key = atts.getValue( "key" );
             Assert.notNull( key );
             TimestampDates ts = readTimestamps( atts);
-            CategoryImpl category = CategoryImpl.ofLocalDateTime(ts.getCreateTimeAsLocalDateTime(), ts.getChangeTimeAsLocalDateTime() );
+            CategoryImpl category = new CategoryImpl(ts.createTime, ts.changeTime );
             //Ignore last changed for categories
             //setLastChangedBy(category, atts);
             category.setKey( key );

@@ -15,8 +15,7 @@ package org.rapla.components.calendarview;
 import org.rapla.entities.domain.AppointmentBlock;
 
 import java.util.Collection;
-import java.util.Date;
-
+import java.time.LocalDateTime;
 public interface Builder {
    /** Calculate the blocks that should be displayed in the weekview.
     * This method should not be called manually.
@@ -25,14 +24,7 @@ public interface Builder {
     * @param start
     * @param end
     */
-    PreperationResult prepareBuild(Date start, Date end);
-
-   /** {@code LocalDateTime} variant. */
-    default PreperationResult prepareBuild(java.time.LocalDateTime start, java.time.LocalDateTime end) {
-        return prepareBuild(
-            start == null ? null : org.rapla.components.util.DateTools.toDate(start),
-            end == null ? null : org.rapla.components.util.DateTools.toDate(end));
-    }
+    PreperationResult prepareBuild(LocalDateTime start, LocalDateTime end);
    
 
         class PreperationResult
@@ -70,12 +62,8 @@ public interface Builder {
     /** Build the calculated blocks into the weekview. This method should not be called manually.
      * It is called by the CalendarView during the build process.
      * @see #prepareBuild */
-    void build(BlockContainer blockContainer,Date startDate,Collection<AppointmentBlock> blocks);
+    void build(BlockContainer blockContainer,LocalDateTime startDate,Collection<AppointmentBlock> blocks);
 
-    /** {@code LocalDate} variant — distinct method name avoids `null`-passing ambiguity. */
-    default void buildLocalDate(BlockContainer blockContainer, java.time.LocalDate startDate, Collection<AppointmentBlock> blocks) {
-        build(blockContainer, startDate == null ? null : org.rapla.components.util.DateTools.toDate(startDate), blocks);
-    }
 }
 
 

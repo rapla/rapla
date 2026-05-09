@@ -14,25 +14,26 @@
 package org.rapla.components.calendar;
 
 import java.util.Calendar;
-import java.util.Date;
 import java.util.Locale;
 import java.util.TimeZone;
 
+import java.time.LocalDateTime;
+import org.rapla.components.util.DateTools;
 /** Maps the DateRenderer methods to the appropriate date method.
     @see DateRenderer
  */
 public class DateRendererAdapter implements DateRenderer {
     Calendar m_calendar;
     DateRenderer m_renderer = null;
-    /** use this constructor if you want to implement a custom getBackgroundColor(Date)
-        or getToolTipText(Date) method.
+    /** use this constructor if you want to implement a custom getBackgroundColor(LocalDateTime)
+        or getToolTipText(LocalDateTime) method.
     */
     public DateRendererAdapter(TimeZone timeZone,Locale locale) {
         m_calendar = Calendar.getInstance(timeZone,locale);
     }
 
     /** use this constructor if you want to make an existing {@link DateRenderer}
-        listen to the methods getBackgroundColor(Date) and getToolTipText(Date).
+        listen to the methods getBackgroundColor(LocalDateTime) and getToolTipText(LocalDateTime).
     */
     public DateRendererAdapter(DateRenderer renderer,TimeZone timeZone,Locale locale) {
         m_calendar = Calendar.getInstance(timeZone,locale);
@@ -41,10 +42,10 @@ public class DateRendererAdapter implements DateRenderer {
 
     /** override this method for a custom renderiungInfo
         @return null.*/
-    public RenderingInfo getRenderingInfo(Date date) {
+    public RenderingInfo getRenderingInfo(LocalDateTime date) {
         if (m_renderer == null)
             return null;
-        m_calendar.setTime(date);
+        m_calendar.setTimeInMillis(DateTools.toMilli(date));
         return m_renderer.getRenderingInfo(
                                            m_calendar.get(Calendar.DAY_OF_WEEK)
                                            ,m_calendar.get(Calendar.DATE)
@@ -54,7 +55,7 @@ public class DateRendererAdapter implements DateRenderer {
     }
 
 
-    /* calls {@link #getBackgroundColor(Date)} */
+    /* calls {@link #getBackgroundColor(LocalDateTime)} */
     public RenderingInfo getRenderingInfo(int dayOfWeek,int day,int month, int year) {
         m_calendar.set(Calendar.DATE,day);
         m_calendar.set(Calendar.MONTH,month -1 );
@@ -63,7 +64,7 @@ public class DateRendererAdapter implements DateRenderer {
         m_calendar.set(Calendar.MINUTE,0);
         m_calendar.set(Calendar.SECOND,0);
         m_calendar.set(Calendar.MILLISECOND,0);
-        return getRenderingInfo(m_calendar.getTime());
+        return getRenderingInfo(DateTools.toLocalDateTime(m_calendar.getTimeInMillis()));
     }
 
 }

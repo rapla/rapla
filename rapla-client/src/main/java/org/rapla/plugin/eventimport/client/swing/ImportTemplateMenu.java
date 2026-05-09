@@ -13,6 +13,7 @@
 package org.rapla.plugin.eventimport.client.swing;
 
 import org.rapla.RaplaResources;
+import org.rapla.components.util.DateTools;
 import org.rapla.client.PopupContext;
 import org.rapla.client.dialog.DialogInterface;
 import org.rapla.client.dialog.swing.DialogUI.DialogUiFactory;
@@ -64,7 +65,6 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.Date;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -73,6 +73,7 @@ import java.util.Map;
 import java.util.TreeSet;
 import java.util.Vector;
 
+import java.time.LocalDateTime;
 @org.springframework.stereotype.Service
 @org.springframework.context.annotation.Lazy
 public class ImportTemplateMenu implements ImportMenuExtension, ActionListener
@@ -204,7 +205,7 @@ public class ImportTemplateMenu implements ImportMenuExtension, ActionListener
 //                     while( (customerMap = mapReader.read(header, processors)) != null ) 
 //                     {
 //                          Entry e = new Entry(customerMap);
-//	                      Date beginn = e.getBeginn();
+//	                      LocalDateTime beginn = e.getBeginn();
 //	                      if ( beginn != null && beginn.after( getQuery().today()))
 //	                      {
 //	                    	  list.add(e);
@@ -306,17 +307,17 @@ public class ImportTemplateMenu implements ImportMenuExtension, ActionListener
             this.reservations = events;
         }
 
-        public Date getBeginn() throws Exception
+        public LocalDateTime getBeginn() throws Exception
         {
             final String dateString = entries.get(TemplateImport.BEGIN_KEY);
             if ( dateString != null )
             {
-                Date parse;
+                LocalDateTime parse;
                 try
                 {
                     final SimpleDateFormat format = new SimpleDateFormat("dd.MM.yyyy");
                     format.setTimeZone(IOUtil.getTimeZone());
-                    parse = format.parse(dateString);
+                    parse = DateTools.toLocalDateTime(format.parse(dateString).getTime());
                 }
                 catch ( final ParseException ex )
                 {
@@ -719,8 +720,8 @@ public class ImportTemplateMenu implements ImportMenuExtension, ActionListener
     protected Promise<Map<String, List<Reservation>>> getImportedReservations() throws RaplaException
     {
         final User user = clientFacade.getUser();
-        final Date start = facade.today();
-        final Date end = null;
+        final LocalDateTime start = facade.today().atStartOfDay();
+        final LocalDateTime end = null;
         Allocatable[] allocatables =facade.getAllocatables();
         User[] owners = new User[] {};
         final Promise<Map<String, List<Reservation>>> result = facade.getReservationsAsync(user, allocatables, owners,start, end, null).thenApply((reservations ) -> {

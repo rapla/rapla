@@ -55,7 +55,6 @@ import java.util.function.Supplier;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.Date;
 import java.util.Iterator;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -64,6 +63,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
 
+import java.time.LocalDateTime;
 @org.springframework.stereotype.Service
 @org.springframework.context.annotation.Lazy
 public class MenuFactoryImpl
@@ -118,7 +118,7 @@ public class MenuFactoryImpl
         if (permissionController.canCreateReservation(user))
         {
             //	        	 User user = getUserFromRequest();
-            //	 	        Date today = getQuery().today();
+            //	 	        java.time.LocalDate today = getQuery().today();
             //	 	        boolean canAllocate = false;
             //	 	        Collection<Allocatable> selectedAllocatables = getMarkedAllocatables();
             //	 	        for ( Allocatable alloc: selectedAllocatables) {
@@ -189,7 +189,7 @@ public class MenuFactoryImpl
         AppointmentBlock appointmentBlock = b.getAppointmentBlock();
         Appointment appointment = appointmentBlock.getAppointment();
         Reservation reservation = appointment.getReservation();
-        Date start = b.getStart();
+        LocalDateTime start = b.getStart();
         boolean isException = b.isException();
         Allocatable groupAllocatable = b.getGroupAllocatable();
         Collection<Allocatable> copyContextAllocatables;
@@ -253,10 +253,10 @@ public class MenuFactoryImpl
      * @param startDate
      * @return
      */
-    protected Date getEndDate(CalendarModel model, Date startDate)
+    protected LocalDateTime getEndDate(CalendarModel model, LocalDateTime startDate)
     {
         Collection<TimeInterval> markedIntervals = model.getMarkedIntervals();
-        Date endDate = null;
+        LocalDateTime endDate = null;
         if (markedIntervals.size() > 0)
         {
             TimeInterval first = markedIntervals.iterator().next();
@@ -266,13 +266,13 @@ public class MenuFactoryImpl
         {
             return endDate;
         }
-        return new Date(startDate.getTime() + DateTools.MILLISECONDS_PER_HOUR);
+        return LocalDateTime.ofInstant(java.time.Instant.ofEpochMilli(DateTools.toMilli(startDate) + DateTools.MILLISECONDS_PER_HOUR), java.time.ZoneOffset.UTC);
     }
 
-    protected Date getStartDate(CalendarModel model) throws RaplaException
+    protected LocalDateTime getStartDate(CalendarModel model) throws RaplaException
     {
         Collection<TimeInterval> markedIntervals = model.getMarkedIntervals();
-        Date startDate = null;
+        LocalDateTime startDate = null;
         if (markedIntervals.size() > 0)
         {
             TimeInterval first = markedIntervals.iterator().next();
@@ -283,13 +283,13 @@ public class MenuFactoryImpl
             return startDate;
         }
 
-        Date selectedDate = model.getSelectedDate();
+        LocalDateTime selectedDate = model.getSelectedDate();
         if (selectedDate == null)
         {
-            selectedDate = raplaFacade.today();
+            selectedDate = raplaFacade.today().atStartOfDay();
         }
         final CalendarOptions calendarOptions = RaplaComponent.getCalendarOptions(getUser(), raplaFacade);
-        Date time = new Date(DateTools.MILLISECONDS_PER_MINUTE * calendarOptions.getWorktimeStartMinutes());
+        LocalDateTime time = LocalDateTime.ofInstant(java.time.Instant.ofEpochMilli(DateTools.MILLISECONDS_PER_MINUTE * calendarOptions.getWorktimeStartMinutes()), java.time.ZoneOffset.UTC);
         startDate = raplaLocale.toDate(selectedDate, time);
         return startDate;
     }
@@ -334,11 +334,11 @@ public class MenuFactoryImpl
         {
             return true;
         }
-        Date today = raplaFacade.today();
+        java.time.LocalDate today = raplaFacade.today();
         boolean canAllocate = false;
         Collection<Allocatable> selectedAllocatables = model.getMarkedAllocatables();
-        Date start = getStartDate(model);
-        Date end = getEndDate(model, start);
+        LocalDateTime start = getStartDate(model);
+        LocalDateTime end = getEndDate(model, start);
         for (Allocatable alloc : selectedAllocatables)
         {
             if (permissionController.canAllocate(alloc, user, start, end, today) || permissionController.isRequestOnly(alloc, user, today)) {

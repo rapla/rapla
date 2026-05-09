@@ -9,6 +9,8 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.rapla.RaplaResources;
 import org.rapla.components.util.DateTools;
+
+import java.time.LocalDateTime;
 import org.rapla.components.util.TimeInterval;
 import org.rapla.components.i18n.CompoundI18n;
 import org.rapla.components.i18n.I18nBundle;
@@ -237,8 +239,8 @@ public class SynchronisationManager implements ServerExtension
         scheduleMailboxes = scheduler.schedule(synchronizeMailboxesAction, 0, SCHEDULE_PERIOD_REFRESH_MAILBOXES);
         final Action synchronizeAction = () ->
         {
-            Date lastUpdated = null;
-            Date updatedUntil = null;
+            LocalDateTime lastUpdated = null;
+            LocalDateTime updatedUntil = null;
             try {
                 lastUpdated = cachableStorageOperator.requestLock(EXCHANGE_LOCK_ID, VALID_LOCK_DURATION);
             } catch (Throwable t) {
@@ -781,17 +783,17 @@ public class SynchronisationManager implements ServerExtension
         appointmentStorage.refresh();
         Set<SynchronizationTask> allTasks = appointmentStorage.getAllTasks();
         Set<SynchronizationTask> includedTasks = new HashSet<>();
-        final Date now = new Date();
+        final LocalDateTime now = LocalDateTime.now();
         for (SynchronizationTask task : allTasks)
         {
             final int retries = task.getRetries();
             if (retries > 5 && !firstExecution)
             {
-                final Date lastRetry = task.getLastRetry();
+                final LocalDateTime lastRetry = task.getLastRetry();
                 if (lastRetry != null)
                 {
                     // skip a schedule Period for the time of retries
-                    if (lastRetry.getTime() > now.getTime() - (retries - 5) * SCHEDULE_PERIOD)
+                    if (DateTools.toMilli(lastRetry) > DateTools.toMilli(now) - (retries - 5) * SCHEDULE_PERIOD)
                     {
                         continue;
                     }
@@ -1264,9 +1266,9 @@ public class SynchronisationManager implements ServerExtension
 
     private TimeInterval getSyncRange()
     {
-        Date today = facade.today();
-        Date start = DateTools.addDays(today, -syncPeriodPast);
-        Date end = null;// DateTools.addDays(today, config.get(ExchangeConnectorConfig.SYNCING_PERIOD_FUTURE).intValue());
+        LocalDateTime today = facade.today().atStartOfDay();
+        LocalDateTime start = DateTools.addDays(today, -syncPeriodPast);
+        LocalDateTime end = null;// DateTools.addDays(today, config.get(ExchangeConnectorConfig.SYNCING_PERIOD_FUTURE).intValue());
         return new TimeInterval(start, end);
     }
 
@@ -1275,7 +1277,7 @@ public class SynchronisationManager implements ServerExtension
         if ( true ) {
             return true;
         }
-        final Date start = appointment.getStart();
+        final LocalDateTime start = appointment.getStart();
         final TimeInterval appointmentRange = new TimeInterval(start, appointment.getMaxEnd());
         final TimeInterval syncRange = getSyncRange();
         if (!syncRange.overlaps(appointmentRange))

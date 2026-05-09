@@ -13,6 +13,7 @@
 
 package org.rapla.components.calendar;
 
+import org.rapla.components.util.DateTools;
 import javax.swing.JFrame;
 import javax.swing.JPanel;
 import javax.swing.JTabbedPane;
@@ -125,13 +126,13 @@ public final class RaplaCalendarExample
     {
         Calendar cal1 = Calendar.getInstance( timeZone );
         Calendar cal2 = Calendar.getInstance( timeZone );
-        cal1.setTime( date );
-        cal2.setTime( time );
+        cal1.setTimeInMillis( DateTools.toMilli(date) );
+        cal2.setTimeInMillis( DateTools.toMilli(time) );
         cal1.set( Calendar.HOUR_OF_DAY, cal2.get( Calendar.HOUR_OF_DAY ) );
         cal1.set( Calendar.MINUTE, cal2.get( Calendar.MINUTE ) );
         cal1.set( Calendar.SECOND, cal2.get( Calendar.SECOND ) );
         cal1.set( Calendar.MILLISECOND, cal2.get( Calendar.MILLISECOND ) );
-        return cal1.getTime();
+        return DateTools.toLocalDateTime(cal1.getTimeInMillis());
     }
 
     public void start()
