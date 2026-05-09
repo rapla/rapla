@@ -71,12 +71,12 @@ import java.awt.Graphics2D;
 import java.awt.print.PageFormat;
 import java.awt.print.Printable;
 import java.awt.print.PrinterException;
-import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import java.time.LocalDateTime;
 public abstract class AbstractRaplaSwingCalendar extends RaplaGUIComponent
         implements SwingCalendarView, DateChangeListener, MultiCalendarPrint, VisibleTimeInterval, Printable
 {
@@ -227,19 +227,19 @@ public abstract class AbstractRaplaSwingCalendar extends RaplaGUIComponent
         } catch (RaplaException e) {
             return new ResolvedPromise<>(e);
         }
-        Date startDate = getStartDate();
-        Date endDate = getEndDate();
+        LocalDateTime startDate = getStartDate();
+        LocalDateTime endDate = getEndDate();
         ensureViewTimeframeIsInModel(startDate, endDate);
         final Promise<RaplaBuilder> builderPromise = createBuilder();
         return builderPromise;
     }
 
-    protected Date getEndDate()
+    protected LocalDateTime getEndDate()
     {
         return view.getEndDate();
     }
 
-    protected Date getStartDate()
+    protected LocalDateTime getStartDate()
     {
         return view.getStartDate();
     }
@@ -249,16 +249,16 @@ public abstract class AbstractRaplaSwingCalendar extends RaplaGUIComponent
         return new TimeInterval(getStartDate(), getEndDate());
     }
 
-    protected void ensureViewTimeframeIsInModel(Date startDate, Date endDate)
+    protected void ensureViewTimeframeIsInModel(LocalDateTime startDate, LocalDateTime endDate)
     {
         //      Update start- and enddate of the model
-        Date modelStart = model.getStartDate();
-        Date modelEnd = model.getEndDate();
-        if (modelStart == null || modelStart.after(startDate))
+        LocalDateTime modelStart = model.getStartDate();
+        LocalDateTime modelEnd = model.getEndDate();
+        if (modelStart == null || modelStart.isAfter(startDate))
         {
             model.setStartDate(startDate);
         }
-        if (modelEnd == null || modelEnd.before(endDate))
+        if (modelEnd == null || modelEnd.isBefore(endDate))
         {
             model.setEndDate(endDate);
         }
@@ -267,8 +267,8 @@ public abstract class AbstractRaplaSwingCalendar extends RaplaGUIComponent
     protected Promise<RaplaBuilder> createBuilder()
     {
         RaplaBuilder builder = new SwingRaplaBuilder(getFacade(), getI18n(), getRaplaLocale(), getLogger(), appointmentFormater);
-        Date startDate = getStartDate();
-        Date endDate = getEndDate();
+        LocalDateTime startDate = getStartDate();
+        LocalDateTime endDate = getEndDate();
         final Promise<RaplaBuilder> builderPromise = builder.initFromModel(model, startDate, endDate);
         final Promise<RaplaBuilder> nextBuilderPromise = builderPromise.thenApply((initializedBuilder) ->
         {
@@ -311,9 +311,9 @@ public abstract class AbstractRaplaSwingCalendar extends RaplaGUIComponent
         return view;
     }
 
-    //DateTools.addDays(new Date(), 100);
-    Date currentPrintDate;
-    Map<Date, Integer> pageStartMap = new HashMap<>();
+    //DateTools.addDays(LocalDateTime.of(), 100);
+    LocalDateTime currentPrintDate;
+    Map<LocalDateTime, Integer> pageStartMap = new HashMap<>();
     Double scaleFactor = null;
 
     /**
@@ -328,12 +328,12 @@ public abstract class AbstractRaplaSwingCalendar extends RaplaGUIComponent
         frame.getContentPane().add( container);
         frame.pack();
         frame.setVisible(false);*/
-        final Date startDate = model.getStartDate();
-        final Date endDate = model.getEndDate();
-        final Date selectedDate = model.getSelectedDate();
+        final LocalDateTime startDate = model.getStartDate();
+        final LocalDateTime endDate = model.getEndDate();
+        final LocalDateTime selectedDate = model.getSelectedDate();
 
         int pages = getUnits();
-        Date targetDate = DateTools.add(selectedDate, getIncrementSize(), pages - 1);
+        LocalDateTime targetDate = DateTools.add(selectedDate, getIncrementSize(), pages - 1);
 
         if (page <= 0)
         {
@@ -395,7 +395,7 @@ public abstract class AbstractRaplaSwingCalendar extends RaplaGUIComponent
                 int translatey = (int) ((page - pageStart) * format.getImageableHeight());
                 if (translatey > scaledPreferedHeigth - 20)
                 {
-                    if (targetDate != null && currentPrintDate.before(targetDate))
+                    if (targetDate != null && currentPrintDate.isBefore(targetDate))
                     {
                         currentPrintDate = DateTools.add(currentPrintDate, getIncrementSize(), 1);
                         pageStartMap.put(currentPrintDate, page);
@@ -411,7 +411,7 @@ public abstract class AbstractRaplaSwingCalendar extends RaplaGUIComponent
                     currentPrintDate = DateTools.add(currentPrintDate, getIncrementSize(), -1);
                     continue;
                 }
-                if (targetDate != null && currentPrintDate.after(targetDate))
+                if (targetDate != null && currentPrintDate.isAfter(targetDate))
                 {
                     return NO_SUCH_PAGE;
                 }

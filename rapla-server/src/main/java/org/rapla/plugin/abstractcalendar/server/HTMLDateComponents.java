@@ -17,16 +17,14 @@ import org.jetbrains.annotations.NotNull;
 import org.rapla.components.util.DateTools;
 import org.rapla.framework.RaplaLocale;
 
-import java.util.Date;
-
+import java.time.LocalDateTime;
 public class HTMLDateComponents {
-    static public String getDateSelection(String prefix, Date calendarview, RaplaLocale raplaLocale) {
+    static public String getDateSelection(String prefix, LocalDateTime calendarview, RaplaLocale raplaLocale) {
         StringBuffer buf = new StringBuffer();
-        final DateTools.DateWithoutTimezone dateWithoutTimezone = DateTools.toDate(calendarview.getTime());
-        int day = dateWithoutTimezone.day;
-        int month = dateWithoutTimezone.month;
-        int year = dateWithoutTimezone.year;
-        int currentYear = DateTools.getYear(new Date());
+        int day = calendarview.getDayOfMonth();
+        int month = calendarview.getMonthValue();
+        int year = calendarview.getYear();
+        int currentYear = DateTools.getYear(LocalDateTime.now());
         int minYear = currentYear - 8;
         int maxYear = currentYear + 8;
 
@@ -72,7 +70,7 @@ public class HTMLDateComponents {
         buf.append("<select name=\"");
         buf.append(name);
         buf.append("\">\n");
-        Date date = new Date(DateTools.toDate(2000, 1, 1));
+        LocalDateTime date = LocalDateTime.of(2000, 1, 1, 0, 0);
         for (int i = 1; i <= 12; i++) {
             buf.append("<option ");
             buf.append("value=\"");

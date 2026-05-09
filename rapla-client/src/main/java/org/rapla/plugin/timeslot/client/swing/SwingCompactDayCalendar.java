@@ -56,13 +56,13 @@ import javax.swing.JLabel;
 import java.awt.Point;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Date;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import java.time.LocalDateTime;
 public class SwingCompactDayCalendar extends AbstractRaplaSwingCalendar
 {
     List<Timeslot> timeslots;
@@ -122,25 +122,25 @@ public class SwingCompactDayCalendar extends AbstractRaplaSwingCalendar
 
             @Override public TimeInterval normalizeBlockIntervall(SwingBlock block)
             {
-                Date start = block.getStart();
-                Date end = block.getEnd();
+                LocalDateTime start = block.getStart();
+                LocalDateTime end = block.getEnd();
                 for (Timeslot slot : timeslots)
                 {
-                    int minuteOfDay = DateTools.getMinuteOfDay(start.getTime());
+                    int minuteOfDay = DateTools.getMinuteOfDay(DateTools.toMilli(start));
                     int minuteOfDay1 = slot.getMinuteOfDay();
                     if (minuteOfDay >= minuteOfDay1)
                     {
-                        start = new Date(DateTools.cutDate(start).getTime() + minuteOfDay1);
+                        start = LocalDateTime.ofInstant(java.time.Instant.ofEpochMilli(DateTools.toMilli(DateTools.cutDate(start)) + minuteOfDay1), java.time.ZoneOffset.UTC);
                         break;
                     }
                 }
                 for (Timeslot slot : timeslots)
                 {
-                    int minuteOfDay = DateTools.getMinuteOfDay(end.getTime());
+                    int minuteOfDay = DateTools.getMinuteOfDay(DateTools.toMilli(end));
                     final int minuteOfDay1 = slot.getMinuteOfDay();
                     if (minuteOfDay < minuteOfDay1)
                     {
-                        end = new Date(DateTools.cutDate(end).getTime() + minuteOfDay1);
+                        end = LocalDateTime.ofInstant(java.time.Instant.ofEpochMilli(DateTools.toMilli(DateTools.cutDate(end)) + minuteOfDay1), java.time.ZoneOffset.UTC);
                     }
                     if (minuteOfDay1 > minuteOfDay)
                     {
@@ -185,17 +185,17 @@ public class SwingCompactDayCalendar extends AbstractRaplaSwingCalendar
 
             }
 
-            @Override public void selectionChanged(Date start, Date end)
+            @Override public void selectionChanged(LocalDateTime start, LocalDateTime end)
             {
                 TimeInterval inter = getMarkedInterval(start);
                 super.selectionChanged(inter.getStart(), inter.getEnd());
             }
 
-            protected TimeInterval getMarkedInterval(Date start)
+            protected TimeInterval getMarkedInterval(LocalDateTime start)
             {
                 List<Allocatable> selectedAllocatables = getSortedAllocatables();
                 int columns = selectedAllocatables.size();
-                Date end;
+                LocalDateTime end;
                 Integer startTime = null;
                 Integer endTime = null;
                 int slots = columns * timeslots.size();
@@ -229,13 +229,13 @@ public class SwingCompactDayCalendar extends AbstractRaplaSwingCalendar
                     endTime = calendarOptions.getWorktimeEndMinutes() + (calendarOptions.isWorktimeOvernight() ? 24 * 60 : 0);
                 }
 
-                start = DateTools.toDateTime(start, new Date(DateTools.toTime(startTime / 60, startTime % 60, 0)));
-                end = DateTools.toDateTime(start, new Date(DateTools.toTime(endTime / 60, endTime % 60, 0)));
+                start = DateTools.toDateTime(start, DateTools.toLocalDateTime(DateTools.toTime(startTime / 60, startTime % 60, 0)));
+                end = DateTools.toDateTime(start, DateTools.toLocalDateTime(DateTools.toTime(endTime / 60, endTime % 60, 0)));
                 TimeInterval intervall = new TimeInterval(start, end);
                 return intervall;
             }
 
-            @Override public void moved(Block block, Point p, Date newStart, int slotNr)
+            @Override public void moved(Block block, Point p, LocalDateTime newStart, int slotNr)
             {
                 int index = slotNr;//getIndex( selectedAllocatables, block );
 
@@ -253,7 +253,7 @@ public class SwingCompactDayCalendar extends AbstractRaplaSwingCalendar
                 Timeslot timeslot = timeslots.get(rowIndex);
                 int time = timeslot.getMinuteOfDay();
                 int minuteOfDayBefore;
-                final DateTools.TimeWithoutTimezone timeWithoutTimezone = DateTools.toTime(block.getStart().getTime());
+                final DateTools.TimeWithoutTimezone timeWithoutTimezone = DateTools.toTime(DateTools.toMilli(block.getStart()));
                 minuteOfDayBefore = timeWithoutTimezone.hour * 60 + timeWithoutTimezone.minute;
                 boolean sameTimeSlot = minuteOfDayBefore == time;
                 if (rowIndex + 1 < timeslots.size())
@@ -270,7 +270,7 @@ public class SwingCompactDayCalendar extends AbstractRaplaSwingCalendar
                     time = minuteOfDayBefore;
                 }
                 final long l = DateTools.toTime(time / 60, time % 60, 0);
-                newStart = DateTools.toDateTime(newStart, new Date(l));
+                newStart = DateTools.toDateTime(newStart, DateTools.toLocalDateTime(l));
                 Promise<Void> ready;
                 if (newAlloc != null && oldAlloc != null && !newAlloc.equals(oldAlloc))
                 {
@@ -307,7 +307,7 @@ public class SwingCompactDayCalendar extends AbstractRaplaSwingCalendar
             GroupStartTimesStrategy strategy = new GroupStartTimesStrategy()
             {
                 @Override
-                protected Map<Block, Integer> getBlockMap(BlockContainer wv, List<Block> blocks,Date startDate)
+                protected Map<Block, Integer> getBlockMap(BlockContainer wv, List<Block> blocks,LocalDateTime startDate)
                 {
                     if (allocatables != null)
                     {

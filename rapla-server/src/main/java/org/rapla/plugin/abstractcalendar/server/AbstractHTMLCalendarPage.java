@@ -45,9 +45,9 @@ import java.io.PrintWriter;
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
 import java.util.ArrayList;
+import java.time.LocalDateTime;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.Date;
 import java.util.List;
 import java.util.Locale;
 
@@ -88,8 +88,8 @@ public abstract class AbstractHTMLCalendarPage  implements HTMLViewPage
 
     protected RaplaBuilder createBuilder() throws RaplaException {
         RaplaBuilder builder = new HTMLRaplaBuilder( raplaLocale,facade,raplaResources, logger, appointmentFormater);
-        Date startDate = view.getStartDate();
-		Date endDate = view.getEndDate();
+        LocalDateTime startDate = view.getStartDate();
+        LocalDateTime endDate = view.getEndDate();
         builder.setNonFilteredEventsVisible( false);
         return builder.initFromModelSync( model, startDate, endDate );
     }
@@ -101,16 +101,16 @@ public abstract class AbstractHTMLCalendarPage  implements HTMLViewPage
         return view != null ? view.getHtml() : "";
     }
 
-    public String getDateChooserHTML( Date date) {
+    public String getDateChooserHTML( LocalDateTime date) {
         return HTMLDateComponents.getDateSelection("", date, raplaLocale);
     }
 
 
-    public Date getStartDate() {
+    public LocalDateTime getStartDate() {
         return view.getStartDate();
     }
 
-    public Date getEndDate() {
+    public LocalDateTime getEndDate() {
         return view.getEndDate();
     }
 
@@ -118,19 +118,16 @@ public abstract class AbstractHTMLCalendarPage  implements HTMLViewPage
         return Tools.createXssSafeString(model.getNonEmptyTitle());
     }
 
-    public int getDay( Date date) {
-        final DateTools.DateWithoutTimezone dateWithoutTimezone = DateTools.toDate(date.getTime());
-        return dateWithoutTimezone.day;
+    public int getDay( LocalDateTime date) {
+        return date.getDayOfMonth();
     }
 
-    public int getMonth( Date date) {
-        final DateTools.DateWithoutTimezone dateWithoutTimezone = DateTools.toDate(date.getTime());
-        return dateWithoutTimezone.month;
+    public int getMonth( LocalDateTime date) {
+        return date.getMonthValue();
     }
 
-    public int getYear( Date date) {
-        final DateTools.DateWithoutTimezone dateWithoutTimezone = DateTools.toDate(date.getTime());
-        return dateWithoutTimezone.year;
+    public int getYear( LocalDateTime date) {
+        return date.getYear();
     }
     
     abstract protected void configureView() throws RaplaException;
@@ -152,10 +149,9 @@ public abstract class AbstractHTMLCalendarPage  implements HTMLViewPage
         response.setContentType("text/html; charset=" + raplaLocale.getCharsetForHtml());
         java.io.PrintWriter out = response.getWriter();
 
-        Date calendarview = model.getSelectedDate();
+        LocalDateTime calendarview = model.getSelectedDate();
         if ( request.getParameter("today") != null ) {
-            Date today = facade.today();
-			calendarview =  today;
+            calendarview = facade.today().atStartOfDay();
         } else if ( request.getParameter("day") != null ) {
             String dateString = Tools.createXssSafeString(request.getParameter("year") + "-"
                                + request.getParameter("month") + "-"
@@ -180,7 +176,7 @@ public abstract class AbstractHTMLCalendarPage  implements HTMLViewPage
             }
         }
 
-        Date currentDate = calendarview;
+        LocalDateTime currentDate = calendarview;
         model.setSelectedDate( currentDate );
         try {
             view = createCalendarView();
@@ -213,7 +209,7 @@ public abstract class AbstractHTMLCalendarPage  implements HTMLViewPage
      * @throws ServletException  
      * @throws UnsupportedEncodingException 
      */
-    protected void printPage(HttpServletRequest request, java.io.PrintWriter out, Date currentDate) throws ServletException, UnsupportedEncodingException {
+    protected void printPage(HttpServletRequest request, java.io.PrintWriter out, LocalDateTime currentDate) throws ServletException, UnsupportedEncodingException {
         boolean navigationVisible = isNavigationVisible( request );
 
         out.println("<!DOCTYPE html>"); // we have HTML5 
@@ -310,8 +306,8 @@ public abstract class AbstractHTMLCalendarPage  implements HTMLViewPage
 			out.println(title);
 			out.println("</h2>");
 
-            final Date selectedDate = model.getSelectedDate();
-            Date currentPrintDate = selectedDate;
+            final LocalDateTime selectedDate = model.getSelectedDate();
+            LocalDateTime currentPrintDate = selectedDate;
 			for ( int i=0;i<selectedPageCount;i++) {
                 out.println("<div class=\"calendar\">");
                 int printOffset = (int) DateTools.countDays(selectedDate, currentPrintDate);

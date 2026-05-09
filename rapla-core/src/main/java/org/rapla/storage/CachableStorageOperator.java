@@ -28,7 +28,12 @@ import org.rapla.storage.impl.EntityStore;
 import javax.xml.stream.events.EntityReference;
 import java.util.*;
 
+import java.time.LocalDateTime;
 public interface CachableStorageOperator extends StorageOperator {
+
+    LocalDateTime getLastRefreshed();
+    LocalDateTime getHistoryValidStart();
+    LocalDateTime getConnectStart();
 
     void connect() throws RaplaException;
 	void runWithReadLock(CachableStorageOperatorCommand cmd) throws RaplaException;
@@ -37,8 +42,8 @@ public interface CachableStorageOperator extends StorageOperator {
     void saveData(LocalCache cache, Collection<ExternalSyncEntity> syncEntities, String version) throws RaplaException;
     
     Collection<Entity> getVisibleEntities(final User user) throws RaplaException;
-    //Collection<Entity> getUpdatedEntities(final User user,Date timestamp) throws RaplaException;
-    //Collection<ReferenceInfo> getDeletedEntities(finaldf User user, final Date timestamp) throws RaplaException;
+    //Collection<Entity> getUpdatedEntities(final User user,LocalDateTime timestamp) throws RaplaException;
+    //Collection<ReferenceInfo> getDeletedEntities(finaldf User user, final LocalDateTime timestamp) throws RaplaException;
 
     ReferenceInfo tryResolveExternalId(String externalId);
 
@@ -46,34 +51,8 @@ public interface CachableStorageOperator extends StorageOperator {
     //DynamicType getUnresolvedAllocatableType(); 
     //DynamicType getAnonymousReservationType();
 
-    UpdateResult getUpdateResult(Date since) throws RaplaException;
-    UpdateResult getUpdateResult(Date since,User user) throws RaplaException;
-
-    /** {@code LocalDateTime} variants — distinct names to avoid `null`-passing ambiguity. */
-    default UpdateResult getUpdateResultLocalDateTime(java.time.LocalDateTime since) throws RaplaException {
-        return getUpdateResult(since == null ? null : org.rapla.components.util.DateTools.toDate(since));
-    }
-    default UpdateResult getUpdateResultLocalDateTime(java.time.LocalDateTime since, User user) throws RaplaException {
-        return getUpdateResult(since == null ? null : org.rapla.components.util.DateTools.toDate(since), user);
-    }
-
-    Date getLastRefreshed();
-    Date getHistoryValidStart();
-    Date getConnectStart();
-
-    /** {@code LocalDateTime} read accessors. UTC. */
-    default java.time.LocalDateTime getLastRefreshedAsLocalDateTime() {
-        Date d = getLastRefreshed();
-        return d == null ? null : org.rapla.components.util.DateTools.toLocalDateTime(d);
-    }
-    default java.time.LocalDateTime getHistoryValidStartAsLocalDateTime() {
-        Date d = getHistoryValidStart();
-        return d == null ? null : org.rapla.components.util.DateTools.toLocalDateTime(d);
-    }
-    default java.time.LocalDateTime getConnectStartAsLocalDateTime() {
-        Date d = getConnectStart();
-        return d == null ? null : org.rapla.components.util.DateTools.toLocalDateTime(d);
-    }
+    UpdateResult getUpdateResult(LocalDateTime since) throws RaplaException;
+    UpdateResult getUpdateResult(LocalDateTime since,User user) throws RaplaException;
 
     Map<String, ExternalSyncEntity> getImportExportEntities(String systemId, int importExportDirection) throws RaplaException;
     
@@ -85,8 +64,8 @@ public interface CachableStorageOperator extends StorageOperator {
      * @return the time taken from the underlying system (database or file) when the lock was last requested
      * @throws RaplaException if the lock can not be received
      */
-    Date requestLock(String id, Long validMilliseconds) throws RaplaException;
-    void releaseLock(String id, Date updatedUntil) throws RaplaException;
+    LocalDateTime requestLock(String id, Long validMilliseconds) throws RaplaException;
+    void releaseLock(String id, LocalDateTime updatedUntil) throws RaplaException;
 
     Set<ReferenceInfo<Allocatable>> filterAllocatablesWithNonTemplateReservations(Set<ReferenceInfo<Allocatable>> allocatables);
 }

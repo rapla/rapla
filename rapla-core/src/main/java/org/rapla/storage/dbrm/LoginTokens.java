@@ -1,8 +1,8 @@
 package org.rapla.storage.dbrm;
 
 
-import java.util.Date;
 
+import java.time.LocalDateTime;
 /**
  * Wire-format DTO mirroring the server's {@code AuthController.TokenResponse}.
  * Fields {@code accessToken}, {@code refreshToken}, {@code expiresIn} are
@@ -30,22 +30,12 @@ public class LoginTokens {
                 : null;
     }
 
-    /** Legacy constructor — kept for callers that compute validUntil themselves. */
-    public LoginTokens(String accessToken, Date validUntil) {
-        this(accessToken, validUntil == null ? null : org.rapla.components.util.DateTools.toLocalDateTime(validUntil));
-    }
-
     /** {@code LocalDateTime} ctor. UTC. */
-    public LoginTokens(String accessToken, java.time.LocalDateTime validUntil) {
+    public LoginTokens(String accessToken, LocalDateTime validUntil) {
         this.accessToken = accessToken;
         this.validUntil = validUntil;
         this.expiresIn = validUntil == null ? 0
                 : Math.max(0L, (org.rapla.components.util.DateTools.toMilli(validUntil) - System.currentTimeMillis()) / 1000L);
-    }
-
-    /** {@code LocalDateTime} factory paralleling {@link #LoginTokens(String, Date)}. UTC. */
-    public static LoginTokens ofLocalDateTime(String accessToken, java.time.LocalDateTime validUntil) {
-        return new LoginTokens(accessToken, validUntil);
     }
 
     /**
@@ -76,13 +66,7 @@ public class LoginTokens {
 
     public void setRefreshToken(String refreshToken) { this.refreshToken = refreshToken; }
 
-    public Date getValidUntil()
-    {
-        return validUntil == null ? null : org.rapla.components.util.DateTools.toDate(validUntil);
-    }
-
-    /** {@code LocalDateTime} variant. UTC. */
-    public java.time.LocalDateTime getValidUntilAsLocalDateTime()
+    public LocalDateTime getValidUntil()
     {
         return validUntil;
     }

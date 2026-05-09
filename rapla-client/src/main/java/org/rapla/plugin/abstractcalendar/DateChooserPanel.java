@@ -46,8 +46,7 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Date;
-
+import java.time.LocalDateTime;
 public class DateChooserPanel extends RaplaGUIComponent
     implements
         Disposable
@@ -100,7 +99,7 @@ public class DateChooserPanel extends RaplaGUIComponent
         panel.add(periodPanel,"7,0");
      
         
-        periodChooser.setDate(getQuery().today());
+        periodChooser.setDate(getQuery().today().atStartOfDay());
 
         nextButton.addActionListener( listener );
         prevButton.addActionListener( listener);
@@ -122,10 +121,10 @@ public class DateChooserPanel extends RaplaGUIComponent
                 periodChooser.setPeriodModel(periodModel);
             }
             if ( model.getSelectedDate() == null) {
-				Date today = getQuery().today();
-				model.setSelectedDate( today);
+				java.time.LocalDate today = getQuery().today();
+				model.setSelectedDate( today.atStartOfDay());
             }
-            Date date = model.getSelectedDate();
+            LocalDateTime date = model.getSelectedDate();
             periodChooser.setDate( date);
             dateSelection.setDate( date);
             periodPanel.setVisible( periodModel != null && periodModel.getSize() > 0);
@@ -174,7 +173,7 @@ public class DateChooserPanel extends RaplaGUIComponent
     /** An ActionEvent will be fired to every registered ActionListener
      *  when the a different date is selected.
     */
-    protected void fireDateChange(Date date) {
+    protected void fireDateChange(LocalDateTime date) {
         if (listenerList.isEmpty())
             return;
         DateChangeListener[] listeners = getDateChangeListeners();
@@ -204,26 +203,26 @@ public class DateChooserPanel extends RaplaGUIComponent
             if (!listenersEnabled)
                 return;
 
-            Date date;
+            LocalDateTime date;
 
-            Date date2 = dateSelection.getDate();
+            LocalDateTime date2 = dateSelection.getDate();
             if (evt.getSource() == prevButton) {
                 date2= DateTools.add(date2,incrementSize,-getIncrementAmount(incrementSize ));
             }
             //eingefuegt: rku
             if (evt.getSource() == todayButton) {
-                Date today = getQuery().today();
-				date2 = today;
+                java.time.LocalDate today = getQuery().today();
+				date2 = today.atStartOfDay();
             }
  
             if (evt.getSource() == nextButton) {
                 date2= DateTools.add(date2,incrementSize,getIncrementAmount(incrementSize ));
             }
             if (evt.getSource() == periodChooser) {
-                final Date periodDate = periodChooser.getDate();
+                final LocalDateTime periodDate = periodChooser.getDate();
                 Period period = periodChooser.getPeriod();
-                final Date start = period.getStart();
-                final Date end = period.getEnd();
+                final LocalDateTime start = period.getStart();
+                final LocalDateTime end = period.getEnd();
                 if ( start == null || end == null)
                 {
                     getLogger().warn("Period start or end can't be null");
@@ -247,12 +246,12 @@ public class DateChooserPanel extends RaplaGUIComponent
             } finally {
                 listenersEnabled = true;
             }
-            Date date = evt.getDate();
+            LocalDateTime date = evt.getDate();
 			updateDates( date);
             fireDateChange(date);
         }
 
-        private void updateDates(Date date) {
+        private void updateDates(LocalDateTime date) {
             try {
                 listenersEnabled = false;
                 model.setSelectedDate( date );
@@ -261,7 +260,7 @@ public class DateChooserPanel extends RaplaGUIComponent
 		// from the model.
 		// But, with this way, I am certain that
 		// nothing can get broken.
-                Date endDate = model.getEndDate();
+                LocalDateTime endDate = model.getEndDate();
 				periodChooser.setDate( date, endDate );
                 dateSelection.setDate( date);
             } finally {

@@ -3,53 +3,41 @@ package org.rapla.components.util;
 
 import java.io.Serializable;
 import java.time.LocalDateTime;
-import java.util.Date;
-
 public final class TimeInterval implements Serializable
 {
 	private static final long serialVersionUID = -8387919392038291664L;
-	Date start;
-	Date end;
+	LocalDateTime start;
+	LocalDateTime end;
 
 	TimeInterval()
 	{
 		this( null, null);
 	}
-	public TimeInterval(Date start, Date end) {
+	public TimeInterval(LocalDateTime start, LocalDateTime end) {
 		this.start = start;
 		this.end = end;
 	}
 
 	/** {@code LocalDateTime} factory method. UTC. */
 	public static TimeInterval of(LocalDateTime start, LocalDateTime end) {
-		Date s = start == null ? null : DateTools.toDate(start);
-		Date e = end == null ? null : DateTools.toDate(end);
+		LocalDateTime s = start == null ? null : start;
+		LocalDateTime e = end == null ? null : end;
 		return new TimeInterval(s, e);
 	}
 
-	public Date getStart() {
+	public LocalDateTime getStart() {
 		return start;
 	}
-	public void setStart(Date start) {
+	public void setStart(LocalDateTime start) {
 		this.start = start;
 	}
-	public Date getEnd() {
+	public LocalDateTime getEnd() {
 		return end;
 	}
-	public void setEnd(Date end) {
+	public void setEnd(LocalDateTime end) {
 		this.end = end;
 	}
 
-	/** {@code LocalDateTime} variant of {@link #getStart()}. UTC. */
-	public LocalDateTime getStartAsLocalDateTime() {
-		return start == null ? null : DateTools.toLocalDateTime(start);
-	}
-
-	/** {@code LocalDateTime} variant of {@link #getEnd()}. UTC. */
-	public LocalDateTime getEndAsLocalDateTime() {
-		return end == null ? null : DateTools.toLocalDateTime(end);
-	}
-	
 	public String toString()
 	{
 		return start + " - " + end;
@@ -62,8 +50,8 @@ public final class TimeInterval implements Serializable
 			return false;
 		}
 		TimeInterval other = (TimeInterval) obj;
-		Date start2 = other.getStart();
-		Date end2 = other.getEnd();
+		LocalDateTime start2 = other.getStart();
+		LocalDateTime end2 = other.getEnd();
 		
 		if ( start == null  )
 		{
@@ -114,14 +102,14 @@ public final class TimeInterval implements Serializable
 	}
 
 	public boolean overlaps(TimeInterval other) {
-		Date start2 = other.getStart();
-		Date end2 = other.getEnd();
+		LocalDateTime start2 = other.getStart();
+		LocalDateTime end2 = other.getEnd();
 		
 		if ( start != null)
 		{
 			if ( end2 != null)
 			{
-				if ( !start.before(end2))
+				if ( !start.isBefore(end2))
 				{
 					return false;
 				}
@@ -131,25 +119,25 @@ public final class TimeInterval implements Serializable
 		{
 			if ( start2 != null)
 			{
-                return start2.before(end);
+                return start2.isBefore(end);
 			}
 		}
 		return true;
 	}
 
 	public TimeInterval union(TimeInterval interval) {
-		Date start = getStart();
-		Date end = getEnd();
+		LocalDateTime start = getStart();
+		LocalDateTime end = getEnd();
 		if ( interval == null )
 		{
 			interval = new TimeInterval(start, end);
 		}
-		if  ( start == null || (interval.getStart() != null && interval.getStart().after( start)))
+		if  ( start == null || (interval.getStart() != null && interval.getStart().isAfter( start)))
 		{
 			interval = new TimeInterval( start, interval.getEnd());
 		}
 		
-		if  ( end == null || ( interval.getEnd() != null && end.after( interval.getEnd()))) 
+		if  ( end == null || ( interval.getEnd() != null && end.isAfter( interval.getEnd()))) 
 		{
 			interval = new TimeInterval( interval.getStart(), end);
 		}

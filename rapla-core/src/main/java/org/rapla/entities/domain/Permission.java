@@ -18,8 +18,7 @@ import org.rapla.entities.Category;
 import org.rapla.entities.User;
 
 import java.time.LocalDateTime;
-import java.util.Date;
-
+import java.time.LocalDate;
 /** New feature to restrict the access to allocatables on a per user/group basis.
  * Specify absolute and relative booking-timeframes for each resource
  * per user/group. You can, for example, prevent modifing appointments
@@ -168,6 +167,11 @@ public interface Permission
     void setGroup(Category category);
     Category getGroup();
 
+    void setStart(LocalDateTime start);
+    LocalDateTime getStart();
+    void setEnd(LocalDateTime end);
+    LocalDateTime getEnd();
+
     /** set the minumum number of days a resource must be booked in advance. If days is null, a reservation can be booked anytime.
      * Example: If you set days to 7, a resource must be allocated 7 days before its acutual use */
     void setMinAdvance(Integer days);
@@ -179,56 +183,21 @@ public interface Permission
     Integer getMaxAdvance();
 
     /** sets the starttime of the period in which the resource can be booked*/
-    void setStart(Date end);
-    Date getStart();
-
     /** sets the endtime of the period in which the resource can be booked*/
-    void setEnd(Date end);
-    Date getEnd();
-
-    /** {@code java.time} variant of {@link #getStart()}. Distinct method name to
-     *  avoid overload ambiguity with {@code setStart(null)}. */
-    default LocalDateTime getStartAsLocalDateTime() {
-        Date d = getStart();
-        return d == null ? null : DateTools.toLocalDateTime(d);
-    }
-
-    /** {@code java.time} variant of {@link #getEnd()}. */
-    default LocalDateTime getEndAsLocalDateTime() {
-        Date d = getEnd();
-        return d == null ? null : DateTools.toLocalDateTime(d);
-    }
-
-    /** {@code LocalDateTime} write-side. Distinct name to avoid {@code setStart(null)}/{@code setEnd(null)} ambiguity. */
-    default void setStartLocalDateTime(LocalDateTime start) {
-        setStart(start == null ? null : DateTools.toDate(start));
-    }
-    default void setEndLocalDateTime(LocalDateTime end) {
-        setEnd(end == null ? null : DateTools.toDate(end));
-    }
-
     /** Convenince Method: returns the last date for which the resource can be booked */
-    Date getMaxAllowed(Date today);
+    LocalDateTime getMaxAllowed(java.time.LocalDate today);
     /** Convenince Method: returns the first date for which the resource can be booked */
-    Date getMinAllowed(Date today);
+    LocalDateTime getMinAllowed(java.time.LocalDate today);
 
-    /** {@code LocalDate} variants — `today` is a date, no time component. */
-    default Date getMaxAllowed(java.time.LocalDate today) {
-        return getMaxAllowed(today == null ? null : DateTools.toDate(today));
-    }
-    default Date getMinAllowed(java.time.LocalDate today) {
-        return getMinAllowed(today == null ? null : DateTools.toDate(today));
-    }
-    
     /** returns true if one of start, end or maxAllowed, MinAllowed is set*/
     boolean hasTimeLimits();
-        
+
 
     /** returns if the permission covers the interval specified by the start and end date.
      * The current date must be passed to calculate the permissable
      * interval from minAdvance and maxAdvance.
     */
-    boolean covers( Date start, Date end, Date currentDate);
+    boolean covers( LocalDateTime start, LocalDateTime end, java.time.LocalDate currentDate);
 
     /** Possible values are
      *  DENIED, READ_ONLY_INFORMATION, READ, ALLOCATE, ALLOCATE_CONFLICTS, ADMIN  

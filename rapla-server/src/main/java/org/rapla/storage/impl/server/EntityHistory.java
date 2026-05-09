@@ -1,5 +1,7 @@
 package org.rapla.storage.impl.server;
 
+import org.rapla.components.util.DateTools;
+
 import org.rapla.entities.Category;
 import org.rapla.entities.Entity;
 import org.rapla.entities.Timestamp;
@@ -25,13 +27,13 @@ import org.rapla.rest.JsonParserWrapper;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
+import java.time.LocalDateTime;
 public class EntityHistory
 {
     public Collection<ReferenceInfo> getAllIds()
@@ -114,7 +116,7 @@ public class EntityHistory
     }
 
     /** returns the history entry with a timestamp<= since or null if no such entry exists*/
-    public Entity get(ReferenceInfo id, Date since) throws RaplaException
+    public Entity get(ReferenceInfo id, LocalDateTime since) throws RaplaException
     {
         final List<EntityHistory.HistoryEntry> historyEntries = map.get(id);
         if (historyEntries == null)
@@ -123,7 +125,7 @@ public class EntityHistory
         }
         synchronized ( historyEntries) {
             final EntityHistory.HistoryEntry emptyEntryWithTimestamp = new EntityHistory.HistoryEntry();
-            emptyEntryWithTimestamp.timestamp = since.getTime();
+            emptyEntryWithTimestamp.timestamp = DateTools.toMilli(since);
             int index = Collections.binarySearch(historyEntries, emptyEntryWithTimestamp, (o1, o2) -> (int) (o1.timestamp - o2.timestamp));
             /*
              * possible results:
@@ -135,8 +137,8 @@ public class EntityHistory
             }
             if (index < 0 && !historyEntries.isEmpty()) {
                 EntityHistory.HistoryEntry entry = historyEntries.get(0);
-                final Date lastChanged = getLastChanged(entry);
-                if (lastChanged.before(since)) {
+                final LocalDateTime lastChanged = getLastChanged(entry);
+                if (lastChanged.isBefore(since)) {
                     return getEntity(entry);
                 } else {
                     return null;
@@ -156,10 +158,10 @@ public class EntityHistory
                 }
                 if (entryBefore != null && entryBefore.getTimestamp() == entry.getTimestamp()) {
                     Entity otherEntity = getEntity(entryBefore);
-                    final Date lastChanged1 = ((Timestamp) entity).getLastChanged();
-                    final Date lastChanged2 = ((Timestamp) (otherEntity)).getLastChanged();
+                    final LocalDateTime lastChanged1 = ((Timestamp) entity).getLastChanged();
+                    final LocalDateTime lastChanged2 = ((Timestamp) (otherEntity)).getLastChanged();
                     // we return the newest change
-                    if (lastChanged2.after(lastChanged1)) {
+                    if (lastChanged2.isAfter(lastChanged1)) {
                         return otherEntity;
                     }
                 }
@@ -200,10 +202,10 @@ public class EntityHistory
         return entity;
     }
 
-    public EntityHistory.HistoryEntry addHistoryEntry(ReferenceInfo id, String json, Date timestamp, boolean isDelete)
+    public EntityHistory.HistoryEntry addHistoryEntry(ReferenceInfo id, String json, LocalDateTime timestamp, boolean isDelete)
     {
         List<EntityHistory.HistoryEntry> historyEntries = map.computeIfAbsent(id, x-> new ArrayList());
-        final EntityHistory.HistoryEntry newEntry = new EntityHistory.HistoryEntry(id, timestamp.getTime(), json, isDelete);
+        final EntityHistory.HistoryEntry newEntry = new EntityHistory.HistoryEntry(id, DateTools.toMilli(timestamp), json, isDelete);
         synchronized ( historyEntries) {
             int index = historyEntries.size();
             insert(historyEntries, newEntry, index);
@@ -230,9 +232,9 @@ public class EntityHistory
                 final String json = newEntry.json;
                 if (json != null && !json.equals( lastEntry.json))
                 {
-                    Date lastChanged1 = getLastChanged(newEntry);
-                    Date lastChanged2 = getLastChanged(lastEntry);
-                    if ( lastChanged1.before(lastChanged2))
+                    LocalDateTime lastChanged1 = getLastChanged(newEntry);
+                    LocalDateTime lastChanged2 = getLastChanged(lastEntry);
+                    if ( lastChanged1.isBefore(lastChanged2))
                     {
                         historyEntries.add(index-1, newEntry);
                     }
@@ -249,13 +251,13 @@ public class EntityHistory
         }
     }
 
-    private Date getLastChanged(HistoryEntry newEntry)
+    private LocalDateTime getLastChanged(HistoryEntry newEntry)
     {
         final Entity entity = getEntity(newEntry);
         return((Timestamp)entity).getLastChanged();
     }
 
-    public EntityHistory.HistoryEntry addHistoryEntry(Entity entity, Date timestamp, boolean isDelete)
+    public EntityHistory.HistoryEntry addHistoryEntry(Entity entity, LocalDateTime timestamp, boolean isDelete)
     {
         final ReferenceInfo id = entity.getReference();
         final String json = jsonParser.toJson(entity);
@@ -272,10 +274,10 @@ public class EntityHistory
         return map.get(key);
     }
 
-    public void removeUnneeded(Date date)
+    public void removeUnneeded(LocalDateTime date)
     {
         final Set<ReferenceInfo> keySet = map.keySet();
-        final long time = date.getTime();
+        final long time = DateTools.toMilli(date);
         for (ReferenceInfo key : keySet)
         {
             final List<HistoryEntry> list = map.get(key);
@@ -295,9 +297,9 @@ public class EntityHistory
      * @param timestamp
      * @return
      */
-    public HistoryEntry getLastChangedUntil(ReferenceInfo id, Date timestamp)
+    public HistoryEntry getLastChangedUntil(ReferenceInfo id, LocalDateTime timestamp)
     {
-        final long time = timestamp.getTime();
+        final long time = DateTools.toMilli(timestamp);
         final List<HistoryEntry> list = map.get(id);
         synchronized ( list)
         {

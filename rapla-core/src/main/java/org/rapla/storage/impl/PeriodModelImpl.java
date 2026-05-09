@@ -33,7 +33,6 @@ import org.rapla.storage.StorageOperator;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.Date;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedHashSet;
@@ -42,6 +41,7 @@ import java.util.Set;
 import java.util.TreeSet;
 
 
+import java.time.LocalDateTime;
 class PeriodModelImpl implements PeriodModel
 {
     TreeSet<PeriodImpl> m_periods = createPeriodSet();
@@ -69,8 +69,8 @@ class PeriodModelImpl implements PeriodModel
         {
         	Classification classification = alloc.getClassification();
         	String name = (String)classification.getValue("name");
-			Date start = (Date) classification.getValue("start");
-			Date end = (Date) classification.getValue("end");
+			LocalDateTime start = (LocalDateTime) classification.getValue("start");
+			LocalDateTime end = (LocalDateTime) classification.getValue("end");
             final Collection<Category> categories = (Collection)classification.getValues(categoryAtt);
             if ( !machtesKey(categories))
             {
@@ -153,7 +153,7 @@ class PeriodModelImpl implements PeriodModel
     }
 
     /** returns the first matching period or null if no period matches.*/
-    public Period getPeriodFor(Date date) {
+    public Period getPeriodFor(LocalDateTime date) {
         if (date == null)
             return null;
 
@@ -165,33 +165,22 @@ class PeriodModelImpl implements PeriodModel
         return null;
     }
 
-    static private long diff(Date d1,Date d2) {
-        long diff = d1.getTime()-d2.getTime();
-        if (diff<0)
-           diff = diff * -1;
-        return diff;
+    static private long diff(LocalDateTime d1,LocalDateTime d2) {
+        return Math.abs(java.time.Duration.between(d2, d1).toMillis());
     }
 
-    public Period getNearestPeriodForDate(Date date) {
+    public Period getNearestPeriodForDate(LocalDateTime date) {
         return getNearestPeriodForStartDate( m_periods, date, null);
-    }
-
-    public Period getNearestPeriodForStartDate(Date date) {
-        return getNearestPeriodForStartDate( new TimeInterval(date, null));
     }
 
     public Period getNearestPeriodForStartDate(TimeInterval interval)
     {
-        Date date = interval.getStart();
-        Date endDate = interval.getEnd();
+        LocalDateTime date = interval.getStart();
+        LocalDateTime endDate = interval.getEnd();
         return getNearestPeriodForStartDate( getPeriodsFor( date ), date, endDate);
     }
 
-    public Period getNearestPeriodForEndDate(Date date) {
-        return getNearestPeriodForEndDate( getPeriodsFor( date ), date);
-    }
-
-    static private Period getNearestPeriodForStartDate(Collection<? extends Period> periodList, Date date, Date endDate) {
+    static private Period getNearestPeriodForStartDate(Collection<? extends Period> periodList, LocalDateTime date, LocalDateTime endDate) {
         Period result = null;
         long min_from_start=Long.MAX_VALUE, min_from_end=0;
         long from_start, from_end=0;
@@ -230,7 +219,17 @@ class PeriodModelImpl implements PeriodModel
         return result;
     }
 
-    static private Period getNearestPeriodForEndDate(Collection<Period> periodList, Date date) {
+    @Override
+    public Period getNearestPeriodForEndDate(LocalDateTime date) {
+        return getNearestPeriodForEndDate(getPeriodsFor(date), date);
+    }
+
+    @Override
+    public Period getNearestPeriodForStartDate(LocalDateTime date) {
+        return getNearestPeriodForStartDate(new TimeInterval(date, null));
+    }
+
+    static private Period getNearestPeriodForEndDate(Collection<Period> periodList, LocalDateTime date) {
         Period result = null;
         long min=-1;
         Iterator<Period> it = periodList.iterator();
@@ -253,7 +252,7 @@ class PeriodModelImpl implements PeriodModel
 
 
     /** return all matching periods.*/
-    public List<Period> getPeriodsFor(Date date) {
+    public List<Period> getPeriodsFor(LocalDateTime date) {
         ArrayList<Period> list = new ArrayList<>();
         if (date == null)
             return list;

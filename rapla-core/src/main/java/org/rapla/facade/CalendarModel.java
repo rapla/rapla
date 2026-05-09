@@ -9,12 +9,12 @@ import org.rapla.framework.RaplaException;
 import org.rapla.scheduler.Promise;
 
 import java.util.Collection;
-import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Predicate;
 
 
+import java.time.LocalDateTime;
 public interface CalendarModel extends Cloneable, ClassifiableFilter
 {
     String SHOW_NAVIGATION_ENTRY = "org.rapla.plugin.abstractcalendar.show_navigation";
@@ -31,42 +31,19 @@ public interface CalendarModel extends Cloneable, ClassifiableFilter
 
 	User getUser();
 
-    Date getSelectedDate();
+    LocalDateTime getSelectedDate();
 
-    void setSelectedDate( Date date );
+    void setSelectedDate( LocalDateTime date );
 
-    Date getStartDate();
+    LocalDateTime getStartDate();
 
-    void setStartDate( Date date );
+    void setStartDate( LocalDateTime date );
 
-    Date getEndDate();
+    LocalDateTime getEndDate();
 
-    void setEndDate( Date date );
+    void setEndDate( LocalDateTime date );
 
     TimeInterval getTimeIntervall();
-
-    /** {@code LocalDate} variants — selectedDate/startDate/endDate are date-only. */
-    default java.time.LocalDate getSelectedLocalDate() {
-        Date d = getSelectedDate();
-        return d == null ? null : org.rapla.components.util.DateTools.toLocalDate(d);
-    }
-    default void setSelectedLocalDate(java.time.LocalDate date) {
-        setSelectedDate(date == null ? null : org.rapla.components.util.DateTools.toDate(date));
-    }
-    default java.time.LocalDate getStartLocalDate() {
-        Date d = getStartDate();
-        return d == null ? null : org.rapla.components.util.DateTools.toLocalDate(d);
-    }
-    default void setStartLocalDate(java.time.LocalDate date) {
-        setStartDate(date == null ? null : org.rapla.components.util.DateTools.toDate(date));
-    }
-    default java.time.LocalDate getEndLocalDate() {
-        Date d = getEndDate();
-        return d == null ? null : org.rapla.components.util.DateTools.toLocalDate(d);
-    }
-    default void setEndLocalDate(java.time.LocalDate date) {
-        setEndDate(date == null ? null : org.rapla.components.util.DateTools.toDate(date));
-    }
 
     Collection<RaplaObject> getSelectedObjects();
 
@@ -79,7 +56,7 @@ public interface CalendarModel extends Cloneable, ClassifiableFilter
 
     Collection<Allocatable> getSelectedAllocatablesAsList() throws RaplaException;
 
-    //Map<Allocatable,Collection<Reservation>> queryReservations( Date startDate, Date endDate ) throws RaplaException;
+    //Map<Allocatable,Collection<Reservation>> queryReservations( LocalDateTime startDate, LocalDateTime endDate ) throws RaplaException;
 
 
 
