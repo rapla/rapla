@@ -13,9 +13,9 @@ public class ConflictText {
 
   public static String getConflictText(Conflict conflict, RaplaLocale raplaLocale, RaplaResources i18n) {
     StringBuilder sb = new StringBuilder();
-    LocalDateTime startDate = conflict.getStartDateAsLocalDateTime();
+    LocalDateTime startDate = conflict.getStartDate();
     sb.append(raplaLocale.formatDate(startDate));
-    if (!startDate.toLocalDate().atStartOfDay().equals(startDate)) {
+    if (!startDate.toLocalTime().equals(java.time.LocalTime.MIDNIGHT)) {
       sb.append(' ');
       sb.append(raplaLocale.formatTime(startDate));
     }
