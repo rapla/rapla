@@ -49,9 +49,11 @@ import java.text.DateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Collection;
-import java.util.Date;
 import java.util.Locale;
 import java.util.TimeZone;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
+import org.rapla.components.util.DateTools;
 /** A ComboBox like time chooser.
  *  It is localizable and it uses swing-components.
  *  <p>The combobox editor is a {@link TimeField}. If the ComboBox-Button
@@ -65,7 +67,7 @@ public final class RaplaTime extends RaplaComboBox {
     protected TimeList m_timeList;
     protected TimeModel m_timeModel;
     protected Collection<DateChangeListener> m_listenerList = new ArrayList<>();
-    private Date m_lastTime;
+    private LocalDateTime m_lastTime;
     private int m_visibleRowCount = -1;
     private int m_rowsPerHour = 4;
     private TimeRenderer m_renderer;
@@ -94,7 +96,7 @@ public final class RaplaTime extends RaplaComboBox {
         Listener listener = new Listener();
         m_timeField.addChangeListener(listener);
         m_timeModel.addDateChangeListener(listener);
-        m_lastTime = m_timeModel.getTime();
+        m_lastTime = asLocalDateTime(m_timeModel.getTime());
         
         if ( showClock ) 
         {
@@ -127,7 +129,9 @@ public final class RaplaTime extends RaplaComboBox {
     protected Image createClockImage() {
         BufferedImage image = new BufferedImage( 17, 17, BufferedImage.TYPE_INT_ARGB);
         Calendar calendar = Calendar.getInstance(getTimeZone(),m_timeModel.getLocale());
-        calendar.setTime( m_timeModel.getTime());
+        LocalTime modelTime = m_timeModel.getTime();
+        calendar.set(Calendar.HOUR_OF_DAY, modelTime.getHour());
+        calendar.set(Calendar.MINUTE, modelTime.getMinute());
         int hourOfDay  = calendar.get( Calendar.HOUR_OF_DAY) % 12; 
         int minute  = calendar.get( Calendar.MINUTE);
         
@@ -179,7 +183,7 @@ public final class RaplaTime extends RaplaComboBox {
         public void dateChanged(DateChangeEvent evt) {
             closePopup();
             if (needSync())
-                m_timeField.setTime(evt.getDate());
+                m_timeField.setTime(evt.getDate().toLocalTime());
             if (m_lastTime == null || !m_lastTime.equals(evt.getDate()))
                 fireTimeChanged(evt.getDate());
             m_lastTime = evt.getDate();
@@ -198,6 +202,10 @@ public final class RaplaTime extends RaplaComboBox {
     protected void validateEditor() {
         if (needSync())
             m_timeModel.setTime(m_timeField.getTime());
+    }
+
+    private LocalDateTime asLocalDateTime(LocalTime time) {
+        return java.time.LocalDate.now().atTime(time);
     }
 
     /** the number of visble rows in the drop-down menu.*/
@@ -222,16 +230,16 @@ public final class RaplaTime extends RaplaComboBox {
     /** Set the time relative to the given timezone.
      * The date,month and year values will be ignored.
      */
-    public void setTime(Date time) {
-        m_timeModel.setTime(time);
+    public void setTime(LocalDateTime time) {
+        m_timeModel.setTime(time.toLocalTime());
     }
     
-    public Date getDurationStart() 
+    public LocalDateTime getDurationStart() 
     {
 		return m_timeModel.getDurationStart();
 	}
 
-	public void setDurationStart(Date durationStart) 
+	public void setDurationStart(LocalDateTime durationStart) 
 	{
 		m_timeModel.setDurationStart(durationStart);
 		if ( m_timeList != null)
@@ -250,14 +258,14 @@ public final class RaplaTime extends RaplaComboBox {
         time-zone to get the hour,minute and second. The
         date,month and year values should be ignored.
      */
-    public Date getTime() {
-        return m_timeModel.getTime();
+    public LocalDateTime getTime() {
+        return asLocalDateTime(m_timeModel.getTime());
     }
 
     protected void showPopup() {
         validateEditor();
         super.showPopup();
-        m_timeList.selectTime(m_timeField.getTime());
+        m_timeList.selectTime(asLocalDateTime(m_timeField.getTime()));
     }
 
     /** registers new DateChangedListener for this component.
@@ -279,7 +287,7 @@ public final class RaplaTime extends RaplaComboBox {
         return m_listenerList.toArray(new DateChangeListener[]{});
     }
 
-    protected void fireTimeChanged(Date date) {
+    protected void fireTimeChanged(LocalDateTime date) {
         DateChangeListener[] listeners = getDateChangeListeners();
         if (listeners.length == 0)
             return;
@@ -416,16 +424,15 @@ class TimeList extends JPanel implements MenuElement,MouseListener,MouseMotionLi
             calendar.setTimeInMillis(0);
 			calendar.set(Calendar.HOUR_OF_DAY,hour );
 			calendar.set(Calendar.MINUTE,minute);
-            Date durationStart = m_timeModel.getDurationStart();
+            LocalDateTime durationStart = m_timeModel.getDurationStart();
             String duration = "";
             if ( m_renderer != null && durationStart != null)
             {
-                Date time = calendar.getTime();
-                long millis = time.getTime() - durationStart.getTime();
+                long millis = calendar.getTimeInMillis() - DateTools.toMilli(durationStart);
                 int durationInMinutes = (int) (millis / (1000 * 60));
 				duration = m_renderer.getDurationString(durationInMinutes);
             }
-            String timeWithoutDuration = m_format.format(calendar.getTime());
+            String timeWithoutDuration = m_format.format(new java.util.Date(calendar.getTimeInMillis()));
             String time = timeWithoutDuration;
             if ( duration != null)
             {
@@ -491,9 +498,9 @@ class TimeList extends JPanel implements MenuElement,MouseListener,MouseMotionLi
         m_list.setSelectedIndex(index);
     }
 
-    public void selectTime(Date time) {
+    public void selectTime(LocalDateTime time) {
         Calendar calendar = Calendar.getInstance(m_timeModel.getTimeZone(),m_timeModel.getLocale());
-        calendar.setTime(time);
+        calendar.setTimeInMillis(DateTools.toMilli(time));
         int index = (calendar.get(Calendar.HOUR_OF_DAY))  * m_rowsPerHour
             + (calendar.get(Calendar.MINUTE) / m_minutesPerRow);
         select(index);
@@ -566,7 +573,7 @@ class TimeList extends JPanel implements MenuElement,MouseListener,MouseMotionLi
             calendar.set(Calendar.MINUTE,minute);
             calendar.set(Calendar.SECOND,0);
             calendar.set(Calendar.MILLISECOND,0);
-            m_timeModel.setTime(calendar.getTime());
+            m_timeModel.setTime(LocalTime.of(calendar.get(Calendar.HOUR_OF_DAY), calendar.get(Calendar.MINUTE)));
         }
     }
 
