@@ -16,4 +16,38 @@
 		<module>rapla-app</module>
 		<!-- custom/ is intentionally NOT in the reactor — its WAR-overlay shape is being rethought; PRD 005 + PRD 003 (2026-05-07 direction change) will replace it. -->
 	</modules>
+
+	<profiles>
+		<!-- PRD 017 Phase 3 follow-up: full-stack JaCoCo report.
+		     mvn -Pcoverage verify
+		     produces target/site/jacoco-aggregate/index.html with coverage from
+		     ALL modules' jacoco.exec — so a rapla-app @SpringBootTest that
+		     exercises rapla-server code shows up against rapla-server here,
+		     not just in rapla-app's own per-module report. -->
+		<profile>
+			<id>coverage</id>
+			<dependencies>
+				<dependency><groupId>${project.groupId}</groupId><artifactId>rapla-core</artifactId><version>${project.version}</version></dependency>
+				<dependency><groupId>${project.groupId}</groupId><artifactId>rapla-client</artifactId><version>${project.version}</version></dependency>
+				<dependency><groupId>${project.groupId}</groupId><artifactId>rapla-server</artifactId><version>${project.version}</version></dependency>
+				<dependency><groupId>${project.groupId}</groupId><artifactId>rapla-app</artifactId><version>${project.version}</version></dependency>
+			</dependencies>
+			<build>
+				<plugins>
+					<plugin>
+						<groupId>org.jacoco</groupId>
+						<artifactId>jacoco-maven-plugin</artifactId>
+						<version>0.8.11</version>
+						<executions>
+							<execution>
+								<id>aggregate</id>
+								<phase>verify</phase>
+								<goals><goal>report-aggregate</goal></goals>
+							</execution>
+						</executions>
+					</plugin>
+				</plugins>
+			</build>
+		</profile>
+	</profiles>
 </project>
