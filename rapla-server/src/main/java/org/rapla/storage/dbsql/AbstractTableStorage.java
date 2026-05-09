@@ -1,5 +1,6 @@
 package org.rapla.storage.dbsql;
 
+import org.rapla.components.util.DateTools;
 import org.rapla.components.util.IOUtil;
 import org.rapla.framework.RaplaException;
 import org.rapla.logger.Logger;
@@ -15,7 +16,6 @@ import java.sql.Types;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Collection;
-import java.util.Date;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
@@ -25,6 +25,7 @@ import java.util.TimeZone;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import java.time.LocalDateTime;
 public class AbstractTableStorage implements TableStorage
 {
 	/** first paramter is 1 */
@@ -43,7 +44,7 @@ public class AbstractTableStorage implements TableStorage
 	protected String selectUpdateSql;
 	protected String idName;
 	final private Calendar datetimeCal;
-	private Date connectionTimestamp;
+	private LocalDateTime connectionTimestamp;
 
 
 	public AbstractTableStorage(String table, Logger logger, String[] entries,boolean checkLastChanged)
@@ -96,15 +97,9 @@ public class AbstractTableStorage implements TableStorage
 		con = null;
 	}
 
-	public Date getConnectionTimestamp()
+	public LocalDateTime getConnectionTimestamp()
 	{
 		return connectionTimestamp;
-	}
-
-	/** {@code LocalDateTime} variant. UTC. */
-	public java.time.LocalDateTime getConnectionTimestampAsLocalDateTime()
-	{
-		return connectionTimestamp == null ? null : org.rapla.components.util.DateTools.toLocalDateTime(connectionTimestamp);
 	}
 
 	protected String getDatabaseProductType(String type) {
@@ -330,15 +325,15 @@ public class AbstractTableStorage implements TableStorage
 	}
 
 	// Always use gmt for storing timestamps
-	protected Date getTimestampOrNow(ResultSet rset, int column) throws SQLException {
-	    Date currentTimestamp = getConnectionTimestamp();
+	protected LocalDateTime getTimestampOrNow(ResultSet rset, int column) throws SQLException {
+	    LocalDateTime currentTimestamp = getConnectionTimestamp();
 	    java.sql.Timestamp timestamp = rset.getTimestamp( column, datetimeCal);
         if (rset.wasNull() || timestamp == null)
         {
             return currentTimestamp;
         }
-        Date date = new Date( timestamp.getTime());
-		if ( date.after( currentTimestamp))
+        LocalDateTime date = LocalDateTime.ofInstant(java.time.Instant.ofEpochMilli(timestamp.getTime()), java.time.ZoneOffset.UTC);
+		if ( date.isAfter( currentTimestamp))
 		{
 			getLogger().error("Timestamp in table " + getTableName() + " in the future. " + date+ " > "+ currentTimestamp +" Ignoring.");
 		}
@@ -349,15 +344,15 @@ public class AbstractTableStorage implements TableStorage
 	    return currentTimestamp;
 	}
 
-	protected Date getTimestamp(ResultSet rset, int column, boolean checkCurrent) throws SQLException {
-        Date currentTimestamp = getConnectionTimestamp();
+	protected LocalDateTime getTimestamp(ResultSet rset, int column, boolean checkCurrent) throws SQLException {
+        LocalDateTime currentTimestamp = getConnectionTimestamp();
         java.sql.Timestamp timestamp = rset.getTimestamp( column, datetimeCal);
         if (rset.wasNull() || timestamp == null)
         {
             return null;
         }
-        Date date = new Date( timestamp.getTime());
-		if ( date.after( currentTimestamp) && checkCurrent)
+        LocalDateTime date = LocalDateTime.ofInstant(java.time.Instant.ofEpochMilli(timestamp.getTime()), java.time.ZoneOffset.UTC);
+		if ( date.isAfter( currentTimestamp) && checkCurrent)
 		{
 			getLogger().error("Timestamp in table " + getTableName() + " in the future. Something went wrong");
 			return null;
@@ -368,13 +363,13 @@ public class AbstractTableStorage implements TableStorage
 		}
     }
 
-	protected void setDate(PreparedStatement stmt,int column, Date time) throws SQLException {
+	protected void setDate(PreparedStatement stmt,int column, LocalDateTime time) throws SQLException {
     	if ( time != null)
         {
     		TimeZone systemTimeZone = getSystemTimeZone();
     		// same as TimeZoneConverterImpl.fromRaplaTime
-    		long offset = TimeZoneConverterImpl.getOffset( IOUtil.getTimeZone(), systemTimeZone, time.getTime());
-            long timeInMillis = time.getTime() - offset;
+    		long offset = TimeZoneConverterImpl.getOffset( IOUtil.getTimeZone(), systemTimeZone, DateTools.toMilli(time));
+            long timeInMillis = DateTools.toMilli(time) - offset;
 			stmt.setTimestamp( column, new java.sql.Timestamp( timeInMillis), datetimeCal);
         }
         else
@@ -383,14 +378,14 @@ public class AbstractTableStorage implements TableStorage
         }
 	}
 
-	protected void setTimestamp(PreparedStatement stmt,int column, Date time) throws SQLException {
+	protected void setTimestamp(PreparedStatement stmt,int column, LocalDateTime time) throws SQLException {
     	if ( time != null)
         {
     		//TimeZone systemTimeZone = getSystemTimeZone();
     		// same as TimeZoneConverterImpl.fromRaplaTime
     		//long offset = TimeZoneConverterImpl.getOffset( DateTools.getTimeZone(), systemTimeZone, time.getTime());
     		long offset = 0;
-            long timeInMillis = time.getTime() - offset;
+            long timeInMillis = DateTools.toMilli(time) - offset;
 			final java.sql.Timestamp x = new java.sql.Timestamp(timeInMillis);
 			stmt.setTimestamp( column, x, datetimeCal);
         }
@@ -398,25 +393,6 @@ public class AbstractTableStorage implements TableStorage
         {
             stmt.setObject(column, null, Types.TIMESTAMP);
         }
-	}
-
-	/** {@code LocalDateTime} variants. UTC. Distinct method names avoid `null`-passing ambiguity.
-	 *  Reads/writes go through {@code java.sql.Timestamp} which has nanosecond precision matching {@code LocalDateTime}. */
-	protected void setTimestampLocalDateTime(PreparedStatement stmt, int column, java.time.LocalDateTime time) throws SQLException {
-		setTimestamp(stmt, column, time == null ? null : org.rapla.components.util.DateTools.toDate(time));
-	}
-
-	protected void setDateLocalDateTime(PreparedStatement stmt, int column, java.time.LocalDateTime time) throws SQLException {
-		setDate(stmt, column, time == null ? null : org.rapla.components.util.DateTools.toDate(time));
-	}
-
-	protected java.time.LocalDateTime getTimestampAsLocalDateTime(ResultSet rset, int column, boolean checkCurrent) throws SQLException {
-		Date d = getTimestamp(rset, column, checkCurrent);
-		return d == null ? null : org.rapla.components.util.DateTools.toLocalDateTime(d);
-	}
-
-	protected java.time.LocalDateTime getTimestampOrNowAsLocalDateTime(ResultSet rset, int column) throws SQLException {
-		return org.rapla.components.util.DateTools.toLocalDateTime(getTimestampOrNow(rset, column));
 	}
 
 	public String getIdColumn() {
@@ -432,7 +408,7 @@ public class AbstractTableStorage implements TableStorage
         return null;
     }
 
-	public void setConnection(Connection con, Date connectionTimestamp) throws SQLException
+	public void setConnection(Connection con, LocalDateTime connectionTimestamp) throws SQLException
 	{
 		this.connectionTimestamp = connectionTimestamp;
 		this.con = con;
@@ -486,7 +462,7 @@ public class AbstractTableStorage implements TableStorage
         return buf.toString();
     }
 
-	protected Date getDate( ResultSet rset,int column) throws SQLException
+	protected LocalDateTime getDate( ResultSet rset,int column) throws SQLException
 	{
 
 		java.sql.Timestamp timestamp = rset.getTimestamp( column, datetimeCal);
@@ -497,15 +473,8 @@ public class AbstractTableStorage implements TableStorage
 		long time = timestamp.getTime();
 		TimeZone systemTimeZone = getSystemTimeZone();
 		long offset = TimeZoneConverterImpl.getOffset(IOUtil.getTimeZone(), systemTimeZone, time);
-		Date returned = new Date(time + offset);
+		LocalDateTime returned = DateTools.toLocalDateTime(time + offset);
 		return returned;
-	}
-
-	/** {@code LocalDateTime} variant of {@link #getDate(ResultSet, int)}. UTC. */
-	protected java.time.LocalDateTime getDateAsLocalDateTime(ResultSet rset, int column) throws SQLException
-	{
-		Date d = getDate(rset, column);
-		return d == null ? null : org.rapla.components.util.DateTools.toLocalDateTime(d);
 	}
 
 	public String getTableName() {

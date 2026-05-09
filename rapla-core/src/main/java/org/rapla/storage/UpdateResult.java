@@ -18,13 +18,13 @@ import org.rapla.entities.storage.ReferenceInfo;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.Date;
 import java.util.Iterator;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import java.time.LocalDateTime;
 public class UpdateResult
 {
     private final List<UpdateOperation> operations = new ArrayList<>();
@@ -34,19 +34,12 @@ public class UpdateResult
     private final Map<ReferenceInfo, Entity> oldEntities;
     private final Map<ReferenceInfo, Entity> updatedEntities;
 
-    public UpdateResult(Date since, Date until, Map<ReferenceInfo, Entity> oldEntities,Map<ReferenceInfo, Entity> updatedEntities)
-    {
-        this(since == null ? null : org.rapla.components.util.DateTools.toLocalDateTime(since),
-             until == null ? null : org.rapla.components.util.DateTools.toLocalDateTime(until),
-             oldEntities, updatedEntities);
-    }
-
-    public UpdateResult(java.time.LocalDateTime since, java.time.LocalDateTime until, Map<ReferenceInfo, Entity> oldEntities, Map<ReferenceInfo, Entity> updatedEntities)
+    public UpdateResult(LocalDateTime since, LocalDateTime until, Map<ReferenceInfo, Entity> oldEntities, Map<ReferenceInfo, Entity> updatedEntities)
     {
         this.since = since;
         this.until = until;
         this.oldEntities = oldEntities;
-        this.updatedEntities= updatedEntities;
+        this.updatedEntities = updatedEntities;
     }
 
     public void addOperation(final UpdateOperation operation) {
@@ -55,24 +48,12 @@ public class UpdateResult
         operations.add(operation);
     }
 
-    public Date getSince()
-    {
-        return since == null ? null : org.rapla.components.util.DateTools.toDate(since);
-    }
-
-    public Date getUntil()
-    {
-        return until == null ? null : org.rapla.components.util.DateTools.toDate(until);
-    }
-
-    /** {@code LocalDateTime} variant of {@link #getSince()}. UTC. */
-    public java.time.LocalDateTime getSinceAsLocalDateTime()
+    public LocalDateTime getSince()
     {
         return since;
     }
 
-    /** {@code LocalDateTime} variant of {@link #getUntil()}. UTC. */
-    public java.time.LocalDateTime getUntilAsLocalDateTime()
+    public LocalDateTime getUntil()
     {
         return until;
     }
@@ -206,12 +187,7 @@ public class UpdateResult
             return unresolvedEntity;
         }
 
-        public Date getTimestamp()
-        {
-            return timestamp == null ? null : org.rapla.components.util.DateTools.toDate(timestamp);
-        }
-
-        public java.time.LocalDateTime getTimestampAsLocalDateTime()
+        public LocalDateTime getTimestamp()
         {
             return timestamp;
         }

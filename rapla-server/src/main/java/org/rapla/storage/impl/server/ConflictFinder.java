@@ -36,7 +36,6 @@ import org.rapla.storage.UpdateResult.Change;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -47,6 +46,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
+import java.time.LocalDateTime;
 class ConflictFinder {
 	AllocationMap  allocationMap;
     // stores all conflicts (can be without enable/disable information)
@@ -54,7 +54,7 @@ class ConflictFinder {
     Logger logger;
     EntityResolver resolver;
     private final PermissionController permissionController;
-    public ConflictFinder( AllocationMap  allocationMap, Date today, Logger logger, EntityResolver resolver,  PermissionController permissionController)  {
+    public ConflictFinder( AllocationMap  allocationMap, LocalDateTime today, Logger logger, EntityResolver resolver,  PermissionController permissionController)  {
     	this.logger = logger;
     	this.allocationMap = allocationMap;
         this.permissionController = permissionController;
@@ -78,7 +78,7 @@ class ConflictFinder {
         try {
             //
             java.time.LocalDateTime date = java.time.LocalDateTime.now();
-            dummyConflict = ConflictImpl.ofLocalDateTime(ref.getId(), date, dummyLastChanged);
+            dummyConflict = new ConflictImpl(ref.getId(), date, dummyLastChanged);
         } catch (RaplaException e) {
             logger.error(e.getMessage(), e);
             return null;
@@ -96,7 +96,7 @@ class ConflictFinder {
         }
     }
 
-    private Map<ReferenceInfo<Conflict>,Conflict> calculateConflicts(Allocatable allocatable,Date today )
+    private Map<ReferenceInfo<Conflict>,Conflict> calculateConflicts(Allocatable allocatable,LocalDateTime today )
     {
         if ( isConflictIgnored(allocatable))
         {
@@ -142,7 +142,7 @@ class ConflictFinder {
     }
 
 
-//    private void updateConflictsOld(Allocatable allocatable, Date today, Set<Appointment> allAppointments, Set<Appointment> changedAppointments, Set<Conflict> conflictList) {
+//    private void updateConflictsOld(Allocatable allocatable, LocalDateTime today, Set<Appointment> allAppointments, Set<Appointment> changedAppointments, Set<Conflict> conflictList) {
 //        Set<String> foundConflictIds = new HashSet<String>();
 //        //SortedSet<AppointmentBlock> allAppointmentBlocksSortedByStartDescending = null;//new TreeSet<AppointmentBlock>(new InverseComparator<AppointmentBlock>(new AppointmentBlockStartComparator())); 
 //        SortedSet<AppointmentBlock> allAppointmentBlocks =new TreeSet<AppointmentBlock>( new AppointmentBlockEndComparator()); 
@@ -231,7 +231,7 @@ class ConflictFinder {
 //        }
 //    }
     
-    private  Map<ReferenceInfo<Conflict>,Conflict>  updateConflicts(Allocatable allocatable, Date today, Set<Appointment> allAppointments) {
+    private  Map<ReferenceInfo<Conflict>,Conflict>  updateConflicts(Allocatable allocatable, LocalDateTime today, Set<Appointment> allAppointments) {
         Collection<AppointmentBlock> allAppointmentBlocks = new LinkedList<>();
         createBlocks(today,allAppointments,allAppointmentBlocks);
 //        Collection<AppointmentBlock> appointmentBlocks =  new LinkedList<AppointmentBlock>();
@@ -270,7 +270,7 @@ class ConflictFinder {
 
 
     // the sweep-line algorithm
-    public static Map<ReferenceInfo<Conflict>,Conflict> sweepLine(Allocatable allocatable, Date today, Collection<AppointmentBlock> intervals) {
+    public static Map<ReferenceInfo<Conflict>,Conflict> sweepLine(Allocatable allocatable, LocalDateTime today, Collection<AppointmentBlock> intervals) {
         Map<ReferenceInfo<Conflict>,Conflict> conflictList = new HashMap<>();//conflictMap.get(allocatable);
         Set<String> foundConflictIds = new HashSet<>();
         // generate N random intervals
@@ -341,7 +341,7 @@ class ConflictFinder {
     }
 
     
-//    private Map<AppointmentBlock,Integer> updateConflictsRandomTree(Allocatable allocatable, Date today, Set<Conflict> conflictList, Collection<AppointmentBlock> allAppointmentBlocks,
+//    private Map<AppointmentBlock,Integer> updateConflictsRandomTree(Allocatable allocatable, LocalDateTime today, Set<Conflict> conflictList, Collection<AppointmentBlock> allAppointmentBlocks,
 //            Collection<AppointmentBlock> appointmentBlocks) {
 //        Map<AppointmentBlock,Integer> intersections = new LinkedHashMap();
 //        Set<String> foundConflictIds = new HashSet<String>();
@@ -424,7 +424,7 @@ class ConflictFinder {
 //        return( idList.contains( appointment1) || idList.contains( appointment2));
 //	}
 	
-    private void createBlocks(Date today, Collection<Appointment> appointmentSet,  Collection<AppointmentBlock> allAppointmentBlocks) {
+    private void createBlocks(LocalDateTime today, Collection<Appointment> appointmentSet,  Collection<AppointmentBlock> allAppointmentBlocks) {
         // overlaps will be checked  260 weeks (5 years) from now on
 		long maxCheck = System.currentTimeMillis() + DateTools.MILLISECONDS_PER_WEEK * 260;
 		//Appointment last = appointmentSet.last();
@@ -433,14 +433,14 @@ class ConflictFinder {
 		for (Appointment appointment:appointmentSet)
 		{
 			// Get the end date of the appointment (if repeating, end date of last occurence)
-			Date maxEnd = appointment.getMaxEnd();
+			LocalDateTime maxEnd = appointment.getMaxEnd();
 		       // Check if the appointment is repeating forever
-            if ( maxEnd == null || maxEnd.getTime() > maxCheck)
+            if ( maxEnd == null || DateTools.toMilli(maxEnd) > maxCheck)
             {
                 // If the repeating has no end, set the end to the start of the last appointment in the set + 100 weeks (~2 years)
-                maxEnd = new Date(maxCheck); 
+                maxEnd = DateTools.toLocalDateTime(maxCheck); 
             }
-            if ( maxEnd.before( today))
+            if ( maxEnd.isBefore( today))
             {
                 continue;
             }
@@ -462,8 +462,8 @@ class ConflictFinder {
 			 * repeating, this will just createInfoDialog one block, which is equal to the appointment
 			 * itself.
 			 */
-			Date start = appointment.getStart();
-			if ( start.before( today))
+			LocalDateTime start = appointment.getStart();
+			if ( start.isBefore( today))
 			{
 			    start = today;
 			}
@@ -497,7 +497,7 @@ class ConflictFinder {
 	}
 
 
-	private boolean endsBefore(Conflict conflict,Date date )
+	private boolean endsBefore(Conflict conflict,LocalDateTime date )
 	{
 		Appointment appointment1 = getAppointment( conflict.getAppointment1());
 		Appointment appointment2 = getAppointment( conflict.getAppointment2());
@@ -509,7 +509,7 @@ class ConflictFinder {
 		return result;
 	}
 	
-	public boolean isActiveConflict(Conflict conflict,Date today)
+	public boolean isActiveConflict(Conflict conflict,LocalDateTime today)
 	{
 	    Appointment appointment1 = getAppointment( conflict.getAppointment1());
         Appointment appointment2 = getAppointment( conflict.getAppointment2());
@@ -575,7 +575,7 @@ class ConflictFinder {
         }
     }
 
-	public Collection<ConflictChangeOperation> updateConflicts(LocalAbstractCachableOperator.UpdateBindingsResult bindingsResult,UpdateResult currentUpdateResult, Date today)
+	public Collection<ConflictChangeOperation> updateConflicts(LocalAbstractCachableOperator.UpdateBindingsResult bindingsResult,UpdateResult currentUpdateResult, LocalDateTime today)
 	{
         Collection<ConflictChangeOperation> conflictChanges = new ArrayList<>();
         Set<ReferenceInfo<Allocatable>> toUpdate = bindingsResult.toUpdate;
@@ -757,7 +757,7 @@ class ConflictFinder {
 //		return foundAppointment;
 //	}
 
-	public Set<ReferenceInfo<Conflict>> removeOldConflicts(Date today)
+	public Set<ReferenceInfo<Conflict>> removeOldConflicts(LocalDateTime today)
 	{
         Set<ReferenceInfo<Conflict>> result = new LinkedHashSet<>();
 		for (Map.Entry<ReferenceInfo<Allocatable>,Map<ReferenceInfo<Conflict>,Conflict>> conflictMapEntry: this.conflictMap.entrySet())

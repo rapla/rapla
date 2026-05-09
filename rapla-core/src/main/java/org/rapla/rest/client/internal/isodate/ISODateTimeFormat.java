@@ -1,13 +1,15 @@
 package org.rapla.rest.client.internal.isodate;
 
-import java.util.Date;
+import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 import java.util.NoSuchElementException;
 
 public class ISODateTimeFormat
 {
     public static final ISODateTimeFormat INSTANCE = new ISODateTimeFormat();
 
-    public Date parseTimestamp(String timestamp)
+    public LocalDateTime parseTimestamp(String timestamp)
     {
         boolean fillDate = false;
         timestamp = timestamp.trim();
@@ -22,8 +24,7 @@ public class ISODateTimeFormat
                 millisDate += time;
             }
         }
-        Date result = new Date(millisDate);
-        return result;
+        return LocalDateTime.ofInstant(Instant.ofEpochMilli(millisDate), ZoneOffset.UTC);
     }
 
     // we ommit T
@@ -116,14 +117,14 @@ public class ISODateTimeFormat
         throw new IllegalArgumentException("No valid time format: " + time);
     }
 
-    private String formatTime(Date date, boolean includeMilliseconds)
+    private String formatTime(LocalDateTime date, boolean includeMilliseconds)
     {
         StringBuilder buf = new StringBuilder();
         if (date == null)
         {
-            date = new Date();
+            date = LocalDateTime.now(ZoneOffset.UTC);
         }
-        TimeWithoutTimezone time = toTime(date.getTime());
+        TimeWithoutTimezone time = toTime(date.toInstant(ZoneOffset.UTC).toEpochMilli());
         append(buf, time.hour, 2);
         buf.append(':');
         append(buf, time.minute, 2);
@@ -143,11 +144,11 @@ public class ISODateTimeFormat
      This is usefull for end-dates: 2001-10-21 00:00 is then interpreted as
      2001-10-20 24:00.
      */
-    public String formatDate(Date date, boolean adaptDay)
+    public String formatDate(LocalDateTime date, boolean adaptDay)
     {
         StringBuilder buf = new StringBuilder();
-        DateWithoutTimezone splitDate;
-        splitDate = toDate(date.getTime() - (adaptDay ? MILLISECONDS_PER_DAY : 0));
+        long millis = date.toInstant(ZoneOffset.UTC).toEpochMilli() - (adaptDay ? MILLISECONDS_PER_DAY : 0);
+        DateWithoutTimezone splitDate = toDate(millis);
         append(buf, splitDate.year, 4);
         buf.append('-');
         append(buf, splitDate.month, 2);
@@ -156,16 +157,15 @@ public class ISODateTimeFormat
         return buf.toString();
     }
 
-    public String formatTimestamp(Date date)
+    public String formatTimestamp(LocalDateTime date)
     {
         StringBuilder builder = new StringBuilder();
         builder.append(formatDate(date, false));
         builder.append(DATE_TIME_SEPERATOR);
         builder.append(formatTime(date, true));
         builder.append('Z');
-        String timestamp = builder.toString();
         ;
-        return timestamp;
+        return builder.toString();
     }
 
     private void append(StringBuilder buf, int number, int minLength)

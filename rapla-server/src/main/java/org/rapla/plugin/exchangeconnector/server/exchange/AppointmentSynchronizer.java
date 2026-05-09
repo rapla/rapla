@@ -61,6 +61,7 @@ import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.stream.Collectors;
 
+import java.time.LocalDateTime;
 /**
  * 
  * synchronizes a rapla appointment with an exchange appointment.
@@ -317,7 +318,7 @@ public class AppointmentSynchronizer
                 {
                     String time = source.substring(11);
                     source = source.substring(0, 10);
-                    Date timeString = new SimpleDateFormat("hh:mm").parse(time);
+                    java.util.Date timeString = new SimpleDateFormat("hh:mm").parse(time);
                     Calendar instance = Calendar.getInstance();
                     instance.setTime(timeString);
                     offset = instance.get(Calendar.HOUR_OF_DAY);
@@ -438,10 +439,10 @@ public class AppointmentSynchronizer
         }
         // Maybe use thie ical uid to refer to the original appointment, check if a url is expected
 
-        Date start = raplaAppointment.getStart();
-        Date end = raplaAppointment.getEnd();
-        Date startDate = rapla2exchange(start);
-        Date endDate = rapla2exchange(end);
+        LocalDateTime start = raplaAppointment.getStart();
+        LocalDateTime end = raplaAppointment.getEnd();
+        java.util.Date startDate = rapla2exchange(start);
+        java.util.Date endDate = rapla2exchange(end);
 
         exchangeAppointment.setStart(startDate);
         //String[] availableIDs = TimeZone.getAvailableIDs();
@@ -504,7 +505,7 @@ public class AppointmentSynchronizer
         if ( reservation == null) {
             return T_00_00_00_Z;
         }
-        Date lastChanged = reservation.getLastChanged();
+        LocalDateTime lastChanged = reservation.getLastChanged();
         String lastUpdated = lastChanged != null ? new SerializableDateTimeFormat().formatTimestamp(lastChanged) : T_00_00_00_Z;
         return lastUpdated;
     }
@@ -525,28 +526,24 @@ public class AppointmentSynchronizer
         }
     }
 
-    private Date rapla2exchange(Date date)
+    private java.util.Date rapla2exchange(LocalDateTime date)
     {
-        //        return new Date( date.getTime() - DateTools.MILLISECONDS_PER_HOUR);
         TimeZone timeZone = timeZoneConverter.getImportExportTimeZone();
-        long time = date.getTime();
+        long time = DateTools.toMilli(date);
         int offset = 0;//TimeZoneConverterImpl.getOffset(timeZone, systemTimeZone, time);
-        Date offsetToSystemTime = new Date(time + offset);
-        Date exportDate = timeZoneConverter.fromRaplaTime(timeZone, offsetToSystemTime);
+        LocalDateTime offsetToSystemTime = DateTools.toLocalDateTime(time + offset);
+        LocalDateTime exportDate = timeZoneConverter.fromRaplaTime(timeZone, offsetToSystemTime);
         getLogger().debug("Rapladate " + date + " converted to exchange " + exportDate);
-        return exportDate;
-        //Date exchangeDate = timeZoneConverter.fromRaplaTime(systemTimeZone, exportDate);
-        //return exchangeDate;
-
-        //		return exchangeDate ;
+        return java.util.Date.from(exportDate.toInstant(java.time.ZoneOffset.UTC));
     }
 
-    private Date exchange2rapla(Date date)
+    private LocalDateTime exchange2rapla(java.util.Date date)
     {
-        Date importDate = timeZoneConverter.toRaplaTime(systemTimeZone, date);
+        if (date == null) return null;
+        LocalDateTime ldt = LocalDateTime.ofInstant(date.toInstant(), java.time.ZoneOffset.UTC);
+        LocalDateTime importDate = timeZoneConverter.toRaplaTime(systemTimeZone, ldt);
         TimeZone timeZone = timeZoneConverter.getImportExportTimeZone();
-        Date raplaDate = timeZoneConverter.toRaplaTime(timeZone, importDate);
-        return raplaDate;
+        return timeZoneConverter.toRaplaTime(timeZone, importDate);
     }
 
     protected static final String RAPLA_NOSYNC_KEYWORD = "<==8NO_SYNC8==>";
@@ -674,8 +671,9 @@ public class AppointmentSynchronizer
     {
         final Recurrence returnVal;
         Calendar calendar = new GregorianCalendar();
-        Date start = raplaAppointment.getStart();
-        calendar.setTime(start);
+        LocalDateTime start = raplaAppointment.getStart();
+        java.util.Date startAsDate = java.util.Date.from(start.toInstant(java.time.ZoneOffset.UTC));
+        calendar.setTime(startAsDate);
         int dayOfMonthInt = calendar.get(Calendar.DAY_OF_MONTH);
 
         Month month = Month.values()[calendar.get(Calendar.MONTH)];
@@ -683,22 +681,22 @@ public class AppointmentSynchronizer
         int interval = repeating.getInterval();
         if (type.is(RepeatingType.DAILY))
         {
-            returnVal = new Recurrence.DailyPattern(start, interval);
+            returnVal = new Recurrence.DailyPattern(startAsDate, interval);
         }
         else if (type.is(RepeatingType.WEEKLY))
         {
             DayOfTheWeek dayOfWeek = getDayOfWeek(calendar);
-            returnVal = new Recurrence.WeeklyPattern(start, interval, dayOfWeek);
+            returnVal = new Recurrence.WeeklyPattern(startAsDate, interval, dayOfWeek);
         }
         else if (type.is(RepeatingType.MONTHLY))
         {
             DayOfTheWeekIndex weekOfMonth = getWeekOfMonth(calendar);
             DayOfTheWeek dayOfWeek = getDayOfWeek(calendar);
-            returnVal = new Recurrence.RelativeMonthlyPattern(start, interval, dayOfWeek, weekOfMonth);
+            returnVal = new Recurrence.RelativeMonthlyPattern(startAsDate, interval, dayOfWeek, weekOfMonth);
         }
         else
         {
-            returnVal = new Recurrence.YearlyPattern(start, month, dayOfMonthInt);
+            returnVal = new Recurrence.YearlyPattern(startAsDate, month, dayOfMonthInt);
         }
         if (repeating.isFixedNumber())
         {
@@ -707,7 +705,7 @@ public class AppointmentSynchronizer
         else
         {
 
-            Date end = repeating.getEnd();
+            LocalDateTime end = repeating.getEnd();
             if (end != null)
             {
                 returnVal.setEndDate(rapla2exchange(DateTools.subDay(end)));
@@ -758,7 +756,7 @@ public class AppointmentSynchronizer
         return weekOfMonth;
     }
 
-    private boolean isDeletedRecurrenceRemoved(microsoft.exchange.webservices.data.core.service.item.Appointment exchangeAppointment, Set<Date> exceptionDates)
+    private boolean isDeletedRecurrenceRemoved(microsoft.exchange.webservices.data.core.service.item.Appointment exchangeAppointment, Set<LocalDateTime> exceptionDates)
     {
         boolean result = false;
         try
@@ -771,7 +769,7 @@ public class AppointmentSynchronizer
                 while (iterator.hasNext())
                 {
                     final DeletedOccurrenceInfo next = iterator.next();
-                    final Date originalStart = DateTools.cutDate(exchange2rapla(next.getOriginalStart()));
+                    final LocalDateTime originalStart = DateTools.cutDate(exchange2rapla(next.getOriginalStart()));
                     if (!exceptionDates.contains(originalStart))
                     {
                         result = true;
@@ -788,12 +786,12 @@ public class AppointmentSynchronizer
 
     private void removeRecurrenceExceptions(microsoft.exchange.webservices.data.core.service.item.Appointment exchangeAppointment) throws Exception
     {
-        SortedSet<Date> exceptionDates = calcExceptionDates();
+        SortedSet<LocalDateTime> exceptionDates = calcExceptionDates();
         if (exceptionDates.size() == 0)
         {
             return;
         }
-        Date lastException = exceptionDates.last();
+        LocalDateTime lastException = exceptionDates.last();
         ItemId id = exchangeAppointment.getId();
         final int MAX_TRIES=1000;
         for (int occurrenceIndex = 1;occurrenceIndex<MAX_TRIES;occurrenceIndex++)
@@ -816,8 +814,8 @@ public class AppointmentSynchronizer
             {
                 continue;
             }
-            Date exchangeException = DateTools.cutDate(exchange2rapla(occurrence.getStart()));
-            if (exchangeException.after(lastException))
+            LocalDateTime exchangeException = DateTools.cutDate(exchange2rapla(occurrence.getStart()));
+            if (exchangeException.isAfter(lastException))
             {
                 break;
             }
@@ -829,13 +827,13 @@ public class AppointmentSynchronizer
         }
     }
 
-    private SortedSet<Date> calcExceptionDates()
+    private SortedSet<LocalDateTime> calcExceptionDates()
     {
-        SortedSet<Date> exceptionDates = new TreeSet<>();
+        SortedSet<LocalDateTime> exceptionDates = new TreeSet<>();
         if (raplaAppointment.isRepeatingEnabled())
         {
-            Date[] exceptions = raplaAppointment.getRepeating().getExceptions();
-            for (Date exceptionDate : exceptions)
+            LocalDateTime[] exceptions = raplaAppointment.getRepeating().getExceptions();
+            for (LocalDateTime exceptionDate : exceptions)
             {
                 exceptionDates.add(DateTools.cutDate(exceptionDate));
             }

@@ -23,6 +23,7 @@ import java.util.stream.Collectors;
 
 
 
+import java.time.LocalDateTime;
 public class StandardFunctions implements FunctionFactory
 {
     public static final String NAMESPACE = "org.rapla";
@@ -265,10 +266,10 @@ public class StandardFunctions implements FunctionFactory
         private int getAppointmentNumber(AppointmentBlock appointmentBlock)
         {
             final long blockStart = appointmentBlock.getEnd();
-            final Date end = new Date(blockStart);
+            final LocalDateTime end = DateTools.toLocalDateTime(blockStart);
             final Appointment appointment = appointmentBlock.getAppointment();
             final Reservation reservation = appointment.getReservation();
-            final Date start = reservation.getFirstDate();
+            final LocalDateTime start = reservation.getFirstDate();
             SortedSet<AppointmentBlock> blocks = new TreeSet<>();
             for (Appointment app : reservation.getAppointments())
             {
@@ -313,8 +314,8 @@ public class StandardFunctions implements FunctionFactory
         @Override public Collection<AppointmentBlock> eval(EvalContext context)
         {
             Object object;
-            Date start = null;
-            Date end = null;
+            LocalDateTime start = null;
+            LocalDateTime end = null;
             if (subFunction != null)
             {
                 object = subFunction.eval(context);
@@ -326,17 +327,17 @@ public class StandardFunctions implements FunctionFactory
             if (startFunction != null)
             {
                 Object value = startFunction.eval(context);
-                if (value instanceof Date)
+                if (value instanceof LocalDateTime)
                 {
-                    start = (Date) value;
+                    start = (LocalDateTime) value;
                 }
             }
             if (endFunction != null)
             {
                 Object value = endFunction.eval(context);
-                if (value instanceof Date)
+                if (value instanceof LocalDateTime)
                 {
-                    start = (Date) value;
+                    start = (LocalDateTime) value;
                 }
             }
             if (object instanceof Reservation)
@@ -397,7 +398,7 @@ public class StandardFunctions implements FunctionFactory
             subFunction = args.get(0);
         }
 
-        @Override public Date eval(EvalContext context)
+        @Override public LocalDateTime eval(EvalContext context)
         {
             Object object = subFunction.eval(context);
             if (object == null)
@@ -407,7 +408,7 @@ public class StandardFunctions implements FunctionFactory
             if (object instanceof AppointmentBlock)
             {
                 AppointmentBlock block = (AppointmentBlock) object;
-                return new Date(block.getEnd());
+                return DateTools.toLocalDateTime(block.getEnd());
             }
             else if (object instanceof Appointment)
             {
@@ -508,7 +509,7 @@ public class StandardFunctions implements FunctionFactory
             subFunction = args.get(0);
         }
 
-        @Override public Date eval(EvalContext context)
+        @Override public LocalDateTime eval(EvalContext context)
         {
             Object object = subFunction.eval(context);
             if (object == null)
@@ -518,7 +519,7 @@ public class StandardFunctions implements FunctionFactory
             if (object instanceof AppointmentBlock)
             {
                 AppointmentBlock block = (AppointmentBlock) object;
-                return new Date(block.getStart());
+                return DateTools.toLocalDateTime(block.getStart());
             }
             else if (object instanceof Appointment)
             {
@@ -571,27 +572,27 @@ public class StandardFunctions implements FunctionFactory
                 final AppointmentBlock block = (AppointmentBlock) object;
                 long start = block.getStart();
                 long end = block.getEnd();
-                interval = new TimeInterval( new Date(start),new Date(end));
+                interval = new TimeInterval( DateTools.toLocalDateTime(start),DateTools.toLocalDateTime(end));
             }
             else if (object instanceof Appointment)
             {
                 Appointment appointment = (Appointment) object;
-                final Date start = appointment.getStart();
-                final Date end = appointment.getEnd();
+                final LocalDateTime start = appointment.getStart();
+                final LocalDateTime end = appointment.getEnd();
                 interval = new TimeInterval(start, end);
             }
             else if (object instanceof Reservation)
             {
                 Reservation reservation = (Reservation) object;
-                Date start =  reservation.getFirstDate();
-                Date end = reservation.getMaxEnd();
-                interval = new TimeInterval(start, end);
+                java.time.LocalDateTime start = reservation.getFirstDate();
+                java.time.LocalDateTime end = reservation.getMaxEnd();
+                interval = TimeInterval.of(start, end);
             }
             else if (object instanceof CalendarModel)
             {
                 CalendarModel model = (CalendarModel) object;
-                final Date endDate = model.getEndDate();
-                final Date startDate = model.getStartDate();
+                final LocalDateTime endDate = model.getEndDate();
+                final LocalDateTime startDate = model.getStartDate();
                 interval = new TimeInterval(startDate, endDate);
             }
             return format(interval);
@@ -604,13 +605,13 @@ public class StandardFunctions implements FunctionFactory
                 return "";
             }
             StringBuilder builder = new StringBuilder();
-            final Date start = timeInterval.getStart();
+            final LocalDateTime start = timeInterval.getStart();
             if ( start != null)
             {
                 builder.append( raplaLocale.formatTime(start));
                 builder.append(" - ");
             }
-            final Date end = timeInterval.getEnd();
+            final LocalDateTime end = timeInterval.getEnd();
 
             if ( end != null)
             {
@@ -959,7 +960,7 @@ public class StandardFunctions implements FunctionFactory
             subFunction = args.get(0);
         }
 
-        @Override public Date eval(EvalContext context)
+        @Override public LocalDateTime eval(EvalContext context)
         {
             Object object = subFunction.eval(context);
             if (object == null)
@@ -969,7 +970,7 @@ public class StandardFunctions implements FunctionFactory
             if (object instanceof AppointmentBlock)
             {
                 AppointmentBlock block = (AppointmentBlock) object;
-                return new Date(DateTools.cutDate(block.getStart()));
+                return DateTools.toLocalDateTime(DateTools.cutDate(block.getStart()));
             }
             else if (object instanceof Appointment)
             {
@@ -980,7 +981,8 @@ public class StandardFunctions implements FunctionFactory
             else if (object instanceof Reservation)
             {
                 Reservation reservation = (Reservation) object;
-                return DateTools.cutDate(reservation.getFirstDate());
+                java.time.LocalDateTime firstDate = reservation.getFirstDate();
+                return firstDate == null ? null : DateTools.cutDate(firstDate);
             }
             else if (object instanceof CalendarModel)
             {
@@ -1014,7 +1016,7 @@ public class StandardFunctions implements FunctionFactory
             if (object instanceof AppointmentBlock)
             {
                 AppointmentBlock block = (AppointmentBlock) object;
-                return new TimeInterval(new Date(block.getStart()), new Date(block.getEnd()));
+                return new TimeInterval(DateTools.toLocalDateTime(block.getStart()), DateTools.toLocalDateTime(block.getEnd()));
             }
             else if (object instanceof Appointment)
             {
@@ -1024,7 +1026,7 @@ public class StandardFunctions implements FunctionFactory
             else if (object instanceof Reservation)
             {
                 Reservation reservation = (Reservation) object;
-                return new TimeInterval(reservation.getFirstDate(), reservation.getMaxEnd());
+                return TimeInterval.of(reservation.getFirstDate(), reservation.getMaxEnd());
             }
             else if (object instanceof CalendarModel)
             {
@@ -1375,7 +1377,7 @@ public class StandardFunctions implements FunctionFactory
             subFunction = args.get(0);
         }
 
-        @Override public Date eval(EvalContext context)
+        @Override public LocalDateTime eval(EvalContext context)
         {
             Object object = subFunction.eval(context);
             if (object instanceof AppointmentBlock)

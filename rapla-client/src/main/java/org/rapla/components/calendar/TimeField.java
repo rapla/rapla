@@ -17,9 +17,9 @@ import java.text.FieldPosition;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
-import java.util.Date;
 import java.util.Locale;
 import java.util.TimeZone;
+import java.time.LocalTime;
 /** The TimeField only accepts characters that are part of DateFormat.getTimeInstance(DateFormat.SHORT,locale).
  * The input blocks are [hour,minute,am_pm] or [hour_of_day,minute]
  * depending on the selected locale. You can use the keyboard to
@@ -51,7 +51,7 @@ final public class TimeField extends AbstractBlockField {
         m_calendar = Calendar.getInstance(timeZone, locale);
         super.setLocale(locale);
         setFormat();
-        setTime(new Date());
+        setTime(LocalTime.now());
     }
 
 
@@ -64,13 +64,13 @@ final public class TimeField extends AbstractBlockField {
     private void setFormat() {
         m_parsingFormat = DateFormat.getTimeInstance(DateFormat.SHORT, getLocale());
         m_parsingFormat.setTimeZone(getTimeZone());
-        Date oldDate = m_calendar.getTime();
+        long oldDateMillis = m_calendar.getTimeInMillis();
         m_calendar.set(Calendar.HOUR_OF_DAY,0);
         m_calendar.set(Calendar.MINUTE,0);
-        String formatStr = m_parsingFormat.format(m_calendar.getTime());
+        String formatStr = m_parsingFormat.format(new java.util.Date(m_calendar.getTimeInMillis()));
 
         FieldPosition minutePos = new FieldPosition(DateFormat.MINUTE_FIELD);
-        m_parsingFormat.format(m_calendar.getTime(), new StringBuffer(),minutePos);
+        m_parsingFormat.format(new java.util.Date(m_calendar.getTimeInMillis()), new StringBuffer(),minutePos);
 
         FieldPosition hourPos = new FieldPosition(DateFormat.HOUR0_FIELD);
         StringBuffer hourBuf = new StringBuffer();
@@ -197,7 +197,7 @@ final public class TimeField extends AbstractBlockField {
             m_outputFormat.setTimeZone(getTimeZone());
             setColumns(5);
         }
-        m_calendar.setTime(oldDate);
+        m_calendar.setTimeInMillis(oldDateMillis);
     }
 
     public TimeZone getTimeZone() {
@@ -222,23 +222,29 @@ final public class TimeField extends AbstractBlockField {
     }
 
     private void update(TimeZone timeZone, Locale locale) {
-        Date date = getTime();
+        LocalTime time = getTime();
         m_calendar = Calendar.getInstance(timeZone, locale);
+        setTime(time);
         setFormat();
-        setText(m_outputFormat.format(date));
     }
 
     public void setTimeZone(TimeZone timeZone) {
         update(timeZone, getLocale());
     }
 
-    public Date getTime() {
-        return m_calendar.getTime();
+    public LocalTime getTime() {
+        return LocalTime.of(
+            m_calendar.get(Calendar.HOUR_OF_DAY),
+            m_calendar.get(Calendar.MINUTE),
+            m_calendar.get(Calendar.SECOND));
     }
 
-    public void setTime(Date value) {
-        m_calendar.setTime(value);
-        setText(m_outputFormat.format(value));
+    public void setTime(LocalTime value) {
+        m_calendar.set(Calendar.HOUR_OF_DAY, value.getHour());
+        m_calendar.set(Calendar.MINUTE, value.getMinute());
+        m_calendar.set(Calendar.SECOND, value.getSecond());
+        m_calendar.set(Calendar.MILLISECOND, 0);
+        setText(m_outputFormat.format(new java.util.Date(m_calendar.getTimeInMillis())));
     }
 
     protected char[] getSeparators() {
@@ -268,7 +274,10 @@ final public class TimeField extends AbstractBlockField {
             else
                 m_calendar.add(type,count/Math.abs(count));
         }
-        setTime(m_calendar.getTime());
+        setTime(LocalTime.of(
+            m_calendar.get(Calendar.HOUR_OF_DAY),
+            m_calendar.get(Calendar.MINUTE),
+            m_calendar.get(Calendar.SECOND)));
         calcBlocks(blocks);
         markBlock(blocks,block);
     }

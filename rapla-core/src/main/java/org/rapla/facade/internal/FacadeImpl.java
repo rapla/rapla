@@ -63,7 +63,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -77,6 +76,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.rapla.scheduler.Consumer;
 
+import java.time.LocalDateTime;
 /**
  * This is the default implementation of the necessary JavaClient-Facade to the
  * DB-Subsystem.
@@ -132,12 +132,12 @@ public class FacadeImpl implements RaplaFacade {
         {
             return true;
         }
-		//Date start, Date end,
+		//LocalDateTime start, LocalDateTime end,
 		Collection<Allocatable> allocatables = model.getMarkedAllocatables();
 		boolean canAllocate = true;
 
-		Date start = RaplaComponent.getStartDate(model, this,user);
-		Date end = RaplaComponent.calcEndDate(model, start);
+		LocalDateTime start = RaplaComponent.getStartDate(model, this,user);
+		LocalDateTime end = RaplaComponent.calcEndDate(model, start);
 		for (Allocatable allo : allocatables)
 		{
 			final PermissionController permissionController = getPermissionController();
@@ -174,6 +174,11 @@ public class FacadeImpl implements RaplaFacade {
 
 	public void setOperator(StorageOperator operator) {
 		this.operator = operator;
+	}
+
+	@Override
+	public java.time.LocalDate today() {
+		return operator.today();
 	}
 
 	/******************************
@@ -236,7 +241,7 @@ public class FacadeImpl implements RaplaFacade {
 		return objects;
 	}
 
-	public Promise<Collection<Reservation>> getReservationsAsync(User user, Allocatable[] allocatables, User[] owners,Date start, Date end, ClassificationFilter[] reservationFilters) {
+	public Promise<Collection<Reservation>> getReservationsAsync(User user, Allocatable[] allocatables, User[] owners,LocalDateTime start, LocalDateTime end, ClassificationFilter[] reservationFilters) {
         final CommandScheduler scheduler = getScheduler();
         final Promise<Collection<Allocatable>> allocatablesPromise = scheduler.supply(() ->
         {
@@ -320,8 +325,8 @@ public class FacadeImpl implements RaplaFacade {
 		if ( allocatablesCollection.isEmpty()) {
 			return new ResolvedPromise<>(Collections.emptyList());
 		}
-		Date start = null;
-		Date end = null;
+		LocalDateTime start = null;
+		LocalDateTime end = null;
 		ClassificationFilter[] reservationFilters = null;
 		Collection<User> ownersList = Collections.emptyList();
 
@@ -406,8 +411,8 @@ public class FacadeImpl implements RaplaFacade {
 		Collection<Allocatable> allocList = new ArrayList<>();
 		Collection<User> owners = new ArrayList<>();
 		allocList.add(template);
-		Date start = null;
-		Date end = null;
+		LocalDateTime start = null;
+		LocalDateTime end = null;
 		Map<String,String> annotationQuery = null;
 		//Map<String,String> annotationQuery = new LinkedHashMap<String,String>();
 		//annotationQuery.put(RaplaObjectAnnotations.KEY_TEMPLATE, template.getId());
@@ -420,13 +425,13 @@ public class FacadeImpl implements RaplaFacade {
         return reservationPromise;
 	}
 	
-	public Promise<Collection<Reservation>> getReservations(User user, Date start, Date end,ClassificationFilter[] reservationFilters) {
+	public Promise<Collection<Reservation>> getReservations(User user, LocalDateTime start, LocalDateTime end,ClassificationFilter[] reservationFilters) {
         User[] users = user != null ? new User[] {user} : User.USER_ARRAY;
 		Promise<Collection<Reservation>>collection = getReservationsAsync(user, null,users,start, end, reservationFilters);
         return collection;
 	}
 	
-	public Promise<Collection<Reservation>> getReservationsForAllocatable(Allocatable[] allocatables, Date start, Date end,ClassificationFilter[] reservationFilters) {
+	public Promise<Collection<Reservation>> getReservationsForAllocatable(Allocatable[] allocatables, LocalDateTime start, LocalDateTime end,ClassificationFilter[] reservationFilters) {
         Promise<Collection<Reservation>> collection = getReservationsAsync(null, allocatables,null,start, end, reservationFilters);
         return collection;
     }
@@ -600,7 +605,7 @@ public class FacadeImpl implements RaplaFacade {
 	}
 	
 	
-	public Promise<Date> getNextAllocatableDate(Collection<Allocatable> allocatables,	Appointment appointment, CalendarOptions options)  {
+	public Promise<LocalDateTime> getNextAllocatableDate(Collection<Allocatable> allocatables,	Appointment appointment, CalendarOptions options)  {
 		int worktimeStartMinutes = options.getWorktimeStartMinutes();
 		int worktimeEndMinutes = options.getWorktimeEndMinutes();
 		Integer[] excludeDays = options.getExcludeDays().toArray( new Integer[] {});
@@ -659,7 +664,7 @@ public class FacadeImpl implements RaplaFacade {
 
 
     @Deprecated
-    public Appointment newAppointmentDeprecated(Date startDate, Date endDate) throws RaplaException {
+    public Appointment newAppointmentDeprecated(LocalDateTime startDate, LocalDateTime endDate) throws RaplaException {
         User user = getUser();
         return newAppointmentWithUser(startDate, endDate, user);
     }
@@ -700,8 +705,8 @@ public class FacadeImpl implements RaplaFacade {
 		{
 			throw new RaplaException("User not allowed to createInfoDialog events");
 		}
-		java.time.LocalDateTime now = operator.getCurrentTimestampAsLocalDateTime();
-		ReservationImpl reservation = ReservationImpl.ofLocalDateTime(now ,now );
+		java.time.LocalDateTime now = operator.getCurrentTimestamp();
+		ReservationImpl reservation = new ReservationImpl(now ,now );
 		reservation.setClassification(classification);
 		PermissionContainer.Util.copyPermissions(classification.getType(), reservation);
 		setNew(Collections.singletonList(reservation),ids, user);
@@ -732,8 +737,8 @@ public class FacadeImpl implements RaplaFacade {
     }
 
 	public Allocatable newAllocatable( Classification classification, User user) throws RaplaException {
-        java.time.LocalDateTime now = operator.getCurrentTimestampAsLocalDateTime();
-        AllocatableImpl allocatable = AllocatableImpl.ofLocalDateTime(now, now);
+        java.time.LocalDateTime now = operator.getCurrentTimestamp();
+        AllocatableImpl allocatable = new AllocatableImpl(now, now);
         allocatable.setClassification(classification);
         PermissionContainer.Util.copyPermissions(classification.getType(), allocatable);
         setNew(allocatable, user);
@@ -742,7 +747,7 @@ public class FacadeImpl implements RaplaFacade {
 
 
 
-    public Appointment newAppointmentWithUser(Date startDate, Date endDate, User user) throws RaplaException {
+    public Appointment newAppointmentWithUser(LocalDateTime startDate, LocalDateTime endDate, User user) throws RaplaException {
         AppointmentImpl appointment = new AppointmentImpl(startDate, endDate);
         setNew(appointment, user);
         return appointment;
@@ -761,8 +766,8 @@ public class FacadeImpl implements RaplaFacade {
 		DynamicType periodType = getDynamicType(StorageOperator.PERIOD_TYPE);
 		Classification classification = periodType.newClassification();
 		classification.setValue("name", "");
-		Date today = today();
-		classification.setValue("start", DateTools.cutDate(today));
+		LocalDateTime today = today().atStartOfDay();
+		classification.setValue("start", today);
 		classification.setValue("end", DateTools.addDays(DateTools.fillDate(today),7));
 		Allocatable period = newAllocatable(classification, user);
 		setNew(period, user);
@@ -770,14 +775,9 @@ public class FacadeImpl implements RaplaFacade {
 	}
 
     @Override
-	public Date today() {
-		return operator.today();
-	}
-
-    @Override
 	public Category newCategory() throws RaplaException {
-		java.time.LocalDateTime now = operator.getCurrentTimestampAsLocalDateTime();
-        CategoryImpl category = CategoryImpl.ofLocalDateTime(now, now);
+		java.time.LocalDateTime now = operator.getCurrentTimestamp();
+        CategoryImpl category = new CategoryImpl(now, now);
 		setNew(category);
 		return category;
 	}
@@ -791,8 +791,8 @@ public class FacadeImpl implements RaplaFacade {
 
 	@Override
 	public DynamicType newDynamicType(String classificationType) throws RaplaException {
-		java.time.LocalDateTime now = operator.getCurrentTimestampAsLocalDateTime();
-		DynamicTypeImpl dynamicType = DynamicTypeImpl.ofLocalDateTime(now,now);
+		java.time.LocalDateTime now = operator.getCurrentTimestamp();
+		DynamicTypeImpl dynamicType = new DynamicTypeImpl(now,now);
 		dynamicType.setAnnotation(DynamicTypeAnnotations.KEY_CLASSIFICATION_TYPE, classificationType);
 		dynamicType.setKey(createDynamicTypeKey(classificationType));
 		setNew(dynamicType);
@@ -871,8 +871,8 @@ public class FacadeImpl implements RaplaFacade {
 	}
 
 	public User newUser() throws RaplaException {
-		java.time.LocalDateTime now = operator.getCurrentTimestampAsLocalDateTime();
-		UserImpl user = UserImpl.ofLocalDateTime( now, now);
+		java.time.LocalDateTime now = operator.getCurrentTimestamp();
+		UserImpl user = new UserImpl( now, now);
 		setNew(user);
 		@SuppressWarnings("deprecation")
         String[] defaultGroups = new String[] {Permission.GROUP_CAN_READ_EVENTS_FROM_OTHERS,Permission.GROUP_CAN_CREATE_EVENTS, Permission.GROUP_MODIFY_PREFERENCES_KEY, Permission.GROUP_MODIFY_PREFERENCES_KEY};
@@ -1073,9 +1073,9 @@ public class FacadeImpl implements RaplaFacade {
 		Reservation copy(Reservation reservation,Iterator<ReferenceInfo<Reservation>> reservationIds,Iterator<ReferenceInfo<Appointment>> appointmentIds) throws RaplaException;
 	}
 	@Override
-    public Promise<Collection<Reservation>> copyReservations(Collection<Reservation> toCopy, Date beginn, boolean keepTime, User user)
+    public Promise<Collection<Reservation>> copyReservations(Collection<Reservation> toCopy, LocalDateTime beginn, boolean keepTime, User user)
 	{
-		Optional<Date> firstStart = toCopy.stream().sorted(new ReservationStartComparator(i18n.getLocale())).findFirst().map( ReservationStartComparator::getStart);
+		Optional<LocalDateTime> firstStart = toCopy.stream().sorted(new ReservationStartComparator(i18n.getLocale())).findFirst().map( ReservationStartComparator::getStart);
 		CopyFunction copyFunction = (reservation,reservationIds,appointmentIds)  -> copy(reservation, beginn, firstStart.get(), keepTime, reservationIds, appointmentIds, user);
 		return copyReservations(toCopy, copyFunction);
 		// createInfoDialog ids for reservation and appointments first
@@ -1096,47 +1096,47 @@ public class FacadeImpl implements RaplaFacade {
 				});
 	}
 
-	private  Reservation copy(Reservation reservation, Date destStart, Date firstStart, boolean keepTime, Iterator<ReferenceInfo<Reservation>> reservationIds, Iterator<ReferenceInfo<Appointment>> appoimtmentIds, User user)  throws  RaplaException{
+	private  Reservation copy(Reservation reservation, LocalDateTime destStart, LocalDateTime firstStart, boolean keepTime, Iterator<ReferenceInfo<Reservation>> reservationIds, Iterator<ReferenceInfo<Appointment>> appoimtmentIds, User user)  throws  RaplaException{
 		Reservation r =  cloneReservation( reservation, reservationIds, appoimtmentIds,user);
 		Appointment[] appointments = r.getAppointments();
 
 		for ( Appointment app :appointments) {
 			Repeating repeating = app.getRepeating();
 
-			Date oldStart = app.getStart();
-			Date newStart ;
+			LocalDateTime oldStart = app.getStart();
+			LocalDateTime newStart ;
 			// we need to calculate an offset so that the reservations will place themself relativ to the first reservation in the list
 			if ( keepTime)
 			{
-				long offset = DateTools.countDays( firstStart, oldStart) * DateTools.MILLISECONDS_PER_DAY;
-				Date destWithOffset = new Date(destStart.getTime() + offset );
+				long offsetDays = DateTools.countDays( firstStart, oldStart);
+				LocalDateTime destWithOffset = destStart.plusDays(offsetDays);
 				newStart = DateTools.toDateTime(  destWithOffset  , oldStart );
 			}
 			else
 			{
-				long offset = destStart.getTime() - firstStart.getTime();
-				newStart = new Date(oldStart.getTime() + offset );
+				java.time.Duration offset = java.time.Duration.between(firstStart, destStart);
+				newStart = oldStart.plus(offset);
 			}
 			app.moveTo( newStart) ;
 			if (repeating != null)
 			{
-				Date[] exceptions = repeating.getExceptions();
+				LocalDateTime[] exceptions = repeating.getExceptions();
 				repeating.clearExceptions();
-				for (Date exc: exceptions)
+				for (LocalDateTime exc: exceptions)
 				{
 					long days = DateTools.countDays(oldStart, exc);
-					Date newDate = DateTools.addDays(newStart, days);
+					LocalDateTime newDate = DateTools.addDays(newStart, days);
 					repeating.addException( newDate);
 				}
 
 				if ( !repeating.isFixedNumber())
 				{
-					Date oldEnd = repeating.getEnd();
+					LocalDateTime oldEnd = repeating.getEnd();
 					if ( oldEnd != null)
 					{
 						// If we don't have and ending destination, just make the repeating to the original length
 						long days = DateTools.countDays(oldStart, oldEnd);
-						Date end = DateTools.addDays(newStart, days);
+						LocalDateTime end = DateTools.addDays(newStart, days);
 						repeating.setEnd( end);
 					}
 				}
