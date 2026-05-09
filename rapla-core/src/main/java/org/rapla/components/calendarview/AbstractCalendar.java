@@ -6,8 +6,7 @@ import org.rapla.framework.RaplaLocale;
 
 import java.util.Collection;
 import java.util.Collections;
-import java.util.Date;
-
+import java.time.LocalDateTime;
 public abstract class  AbstractCalendar {
 	protected int offsetMinutes = 0;
 
@@ -16,8 +15,8 @@ public abstract class  AbstractCalendar {
     /** shared calendar instance. Only used for temporary stored values. */
 	protected Collection<Integer> excludeDays = Collections.emptySet();
 
-    private Date startDate;
-    private Date endDate;
+    private LocalDateTime startDate;
+    private LocalDateTime endDate;
     protected int daysInMonth;
     
     protected RaplaLocale raplaLocale;
@@ -69,27 +68,27 @@ public abstract class  AbstractCalendar {
         this.raplaLocale = raplaLocale;
     }
 
-    public void setToDate(Date date) 
+    public void setToDate(LocalDateTime date) 
     {
         calcMinMaxDates( date );
     }
 
-    public Date getStartDate()
+    public LocalDateTime getStartDate()
     {
         return startDate;
     }
 
-    public Date getEndDate()
+    public LocalDateTime getEndDate()
     {
         return endDate;
     }
     
-    protected void setStartDate(Date date)
+    protected void setStartDate(LocalDateTime date)
     {
     	this.startDate = date;
     }
     
-    protected void setEndDate(Date date)
+    protected void setEndDate(LocalDateTime date)
     {
     	this.endDate = date;
     }
@@ -100,15 +99,14 @@ public abstract class  AbstractCalendar {
             calcMinMaxDates( getStartDate() );
     }
     
-    public void calcMinMaxDates(Date date)
+    public void calcMinMaxDates(LocalDateTime date)
     {
     	date = DateTools.cutDate(date);
         this.daysInMonth = DateTools.getDaysInMonth(date) ;
         if ( daysInView > 14)
     	{
-    	     DateWithoutTimezone date2 = DateTools.toDate( date.getTime());
-    	     this.startDate = new Date(DateTools.toDate( date2.year, date2.month, 1));
-    	     this.endDate = new Date(DateTools.fillDate(DateTools.toDate( date2.year, date2.month, daysInMonth)));
+    	     this.startDate = LocalDateTime.of(date.getYear(), date.getMonthValue(), 1, 0, 0);
+    	     this.endDate = LocalDateTime.of(date.getYear(), date.getMonthValue(), daysInMonth, 0, 0).plusDays(1);
     		 firstWeekday = getFirstWeekday();
     	}
     	else
@@ -124,8 +122,8 @@ public abstract class  AbstractCalendar {
         	}
         	endDate =DateTools.addDays(startDate, daysInView);
     	}
-    	startDate = new Date( startDate.getTime() + offsetMinutes * DateTools.MILLISECONDS_PER_MINUTE);
-		endDate = new Date( endDate.getTime() + offsetMinutes * DateTools.MILLISECONDS_PER_MINUTE);
+    	startDate = startDate.plusMinutes(offsetMinutes);
+		endDate = endDate.plusMinutes(offsetMinutes);
 	}
     
     public RaplaLocale getRaplaLocale()

@@ -12,6 +12,8 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.entities.internal;
 
+import java.time.LocalDateTime;
+
 import org.rapla.entities.Category;
 import org.rapla.entities.Entity;
 import org.rapla.entities.User;
@@ -23,7 +25,6 @@ import org.rapla.entities.storage.internal.SimpleEntity;
 import org.rapla.framework.RaplaException;
 
 import java.util.Collection;
-import java.util.Date;
 import java.util.HashSet;
 import java.util.Locale;
 
@@ -48,61 +49,26 @@ public class UserImpl extends SimpleEntity implements User, ModifiableTimestamp
     	this((java.time.LocalDateTime) null, (java.time.LocalDateTime) null);
 	}
 
-    public UserImpl(Date createDate,Date lastChanged)
-    {
-        this.createDate = createDate == null ? null : org.rapla.components.util.DateTools.toLocalDateTime(createDate);
-        this.lastChanged = lastChanged == null ? null : org.rapla.components.util.DateTools.toLocalDateTime(lastChanged);
-    }
-
-    public UserImpl(java.time.LocalDateTime createDate, java.time.LocalDateTime lastChanged)
+    public UserImpl(LocalDateTime createDate, LocalDateTime lastChanged)
     {
         this.createDate = createDate;
         this.lastChanged = lastChanged;
     }
 
-    /** {@code LocalDateTime} factory paralleling {@link #UserImpl(Date, Date)}. UTC. */
-    public static UserImpl ofLocalDateTime(java.time.LocalDateTime createDate, java.time.LocalDateTime lastChanged) {
-        return new UserImpl(createDate, lastChanged);
-    }
-
-    public Date getLastChanged() {
-        return lastChanged == null ? null : org.rapla.components.util.DateTools.toDate(lastChanged);
-    }
-
-    @Deprecated
-    public Date getLastChangeTime() {
-        return getLastChanged();
-    }
-
-    public Date getCreateDate() {
-        return createDate == null ? null : org.rapla.components.util.DateTools.toDate(createDate);
-    }
+    @Override
+    public LocalDateTime getLastChanged() { return lastChanged; }
 
     @Override
-    public java.time.LocalDateTime getLastChangedAsLocalDateTime() { return lastChanged; }
+    public LocalDateTime getCreateDate() { return createDate; }
 
     @Override
-    public java.time.LocalDateTime getCreateDateAsLocalDateTime() { return createDate; }
-
-    @Override public void setCreateDate(Date date)
-    {
-        checkWritable();
-        this.createDate = date == null ? null : org.rapla.components.util.DateTools.toLocalDateTime(date);
-    }
-
-    @Override
-    public void setCreateDateLocalDateTime(java.time.LocalDateTime date) {
+    public void setCreateDate(LocalDateTime date) {
         checkWritable();
         this.createDate = date;
     }
 
-    public void setLastChanged(Date date) {
-        checkWritable();
-        lastChanged = date == null ? null : org.rapla.components.util.DateTools.toLocalDateTime(date);
-    }
-
     @Override
-    public void setLastChangedLocalDateTime(java.time.LocalDateTime date) {
+    public void setLastChanged(LocalDateTime date) {
         checkWritable();
         lastChanged = date;
     }

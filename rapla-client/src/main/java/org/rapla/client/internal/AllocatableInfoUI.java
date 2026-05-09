@@ -23,9 +23,9 @@ import org.rapla.logger.Logger;
 
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Date;
 import java.util.List;
 
+import java.time.LocalDateTime;
 public class AllocatableInfoUI extends ClassificationInfoUI<Allocatable> {
     final private ClientFacade clientFacade;
     public AllocatableInfoUI(ClientFacade clientFacade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger) {
@@ -35,10 +35,10 @@ public class AllocatableInfoUI extends ClassificationInfoUI<Allocatable> {
 
     void insertPermissions( Allocatable allocatable, StringBuffer buf ) {
         User user;
-        Date today;
+        LocalDateTime today;
         try {
             user = clientFacade.getUser();
-            today = getQuery().today();
+            today = getQuery().today().atStartOfDay();
         } catch (Exception ex) {
             return;
         }
@@ -50,8 +50,8 @@ public class AllocatableInfoUI extends ClassificationInfoUI<Allocatable> {
 	        buf.append( ":</strong>" );
 	        buf.append("<br>");
 	
-	        Date start = accessInterval.getStart();
-			Date end = accessInterval.getEnd();
+	        LocalDateTime start = accessInterval.getStart();
+			LocalDateTime end = accessInterval.getEnd();
 			if ( start == null && end == null ) {
 	            buf.append( getString("everytime") );
 	        }
