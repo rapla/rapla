@@ -3,6 +3,8 @@
  */
 package org.rapla.entities.dynamictype.internal;
 
+import java.time.LocalDateTime;
+
 import org.rapla.components.util.DateTools;
 import org.rapla.components.util.TimeInterval;
 import org.rapla.components.util.Tools;
@@ -613,14 +615,9 @@ public class ParsedText implements Serializable
             this.attribute = attribute;
         }
 
-        public Date getLastChanged()
+        public LocalDateTime getLastChanged()
         {
             return parent.getLastChanged();
-        }
-
-        public java.time.LocalDateTime getLastChangedAsLocalDateTime()
-        {
-            return parent.getLastChangedAsLocalDateTime();
         }
 
         public String getName(Locale locale)
@@ -633,14 +630,9 @@ public class ParsedText implements Serializable
             return parent.getId();
         }
 
-        public Date getCreateDate()
+        public LocalDateTime getCreateDate()
         {
             return parent.getCreateDate();
-        }
-
-        public java.time.LocalDateTime getCreateDateAsLocalDateTime()
-        {
-            return parent.getCreateDateAsLocalDateTime();
         }
 
         @Override public Class<Category> getTypeClass()
@@ -968,8 +960,8 @@ public class ParsedText implements Serializable
         }
         else if (object instanceof TimeInterval)
         {
-            Date start = ((TimeInterval) object).getStart();
-            Date end = ((TimeInterval) object).getEnd();
+            LocalDateTime start = ((TimeInterval) object).getStart();
+            LocalDateTime end = ((TimeInterval) object).getEnd();
             if (DateTools.cutDate(end).equals(end))
             {
                 end = DateTools.subDay(end);
@@ -977,17 +969,17 @@ public class ParsedText implements Serializable
             StringBuffer buf = new StringBuffer();
             buf.append(DateTools.formatDate(start));
 
-            if (end != null && end.after(start))
+            if (end != null && end.isAfter(start))
             {
                 buf.append("-");
                 buf.append(DateTools.formatDate(end));
             }
             return buf.toString();
         }
-        else if (object instanceof Date)
+        else if (object instanceof LocalDateTime)
         {
-            Date date = (Date) object;
-            String formatDate = DateTools.formatDateTime(date, locale);
+            LocalDateTime date = (LocalDateTime) object;
+            String formatDate = DateTools.formatDateTime(date);
             return formatDate;
         }
         else if (object instanceof Boolean)
