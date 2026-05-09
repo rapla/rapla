@@ -58,7 +58,18 @@ public class ClientProxyConfig
         // (java.time.* support is built into Jackson 3 — no JavaTimeModule registration needed.)
         JacksonJsonHttpMessageConverter jacksonConverter =
                 new JacksonJsonHttpMessageConverter(JacksonObjectMapperFactory.create());
+        // Use SimpleClientHttpRequestFactory (URLConnection-based) instead of the JDK
+        // HttpClient default. The async JDK HttpClient path fails with
+        // "java.io.IOException: selector manager closed" when called from the Swing
+        // client's commandScheduler worker thread (raplascheduler-N) — the daemon
+        // SelectorManager terminates between request submission and execution. The
+        // synchronous URLConnection-based factory has no background selector and
+        // works reliably on every thread, at the cost of HTTP/1.1 only (we don't
+        // need HTTP/2 for the Rapla wire protocol).
+        org.springframework.http.client.SimpleClientHttpRequestFactory requestFactory =
+                new org.springframework.http.client.SimpleClientHttpRequestFactory();
         RestClient restClient = builder
+                .requestFactory(requestFactory)
                 .uriBuilderFactory(dynamicFactory)
                 .messageConverters(converters -> converters.add(0, jacksonConverter))
                 .requestInitializer(request -> {

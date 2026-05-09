@@ -6,6 +6,7 @@ import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 import org.rapla.entities.dynamictype.internal.DynamicTypeImpl;
 import org.rapla.entities.dynamictype.internal.ParsedText;
+import org.rapla.storage.dbrm.AppointmentMap;
 
 import tools.jackson.databind.json.JsonMapper;
 
@@ -113,6 +114,33 @@ public class Jackson3TransientInitializerTest
     }
 
     /**
+     * The server-side SQL-history blob serializer ({@link org.rapla.rest.jackson.JacksonParserWrapper})
+     * has its own {@code JsonMapper} config, separate from {@link JacksonObjectMapperFactory}.
+     * It also stores entity JSON, so it has the same final-field exposure. This test pins
+     * that the wrapper round-trips final-field bearing entities correctly.
+     *
+     * <p>Without harmonizing through the factory, a final collection on a future entity
+     * would silently drop data when written into and read out of the SQL history table.
+     */
+    @Test
+    public void jacksonParserWrapperRoundTripsFinalFieldsToo() throws Exception
+    {
+        org.rapla.rest.JsonParserWrapper.JsonParser parser = new org.rapla.rest.jackson.JacksonParserWrapper().get();
+        FinalCollectionProbe original = new FinalCollectionProbe();
+        original.finalMap.put("k", "v");
+        original.mutableMap.put("k", "v");
+
+        String json = parser.toJson(original);
+        FinalCollectionProbe restored = parser.fromJson(json, FinalCollectionProbe.class, null);
+
+        Assert.assertEquals("v", restored.mutableMap.get("k"));
+        Assert.assertEquals(
+            "JacksonParserWrapper (SQL-history mapper) must also handle final fields. "
+            + "If this fails, route its mapper through JacksonObjectMapperFactory.configure(...).",
+            "v", restored.finalMap.get("k"));
+    }
+
+    /**
      * Realistic shape: a {@code DynamicType} carrying a {@code nameformat} annotation
      * (the actual mechanism by which a resource computes its display name) must
      * survive a Jackson 3 round-trip with the annotation map intact.
@@ -182,8 +210,14 @@ public class Jackson3TransientInitializerTest
     }
 
     @Test
-    public void jackson3SilentlySkipsFinalFieldsWithInitializers() throws Exception
+    public void factoryReEnablesFinalFieldMutationForBeltAndSuspenders() throws Exception
     {
+        // We've already dropped `final` from every entity collection field that
+        // round-trips on the wire. As belt-and-suspenders, JacksonObjectMapperFactory
+        // re-enables MapperFeature.ALLOW_FINAL_FIELDS_AS_MUTATORS — Jackson 3 turned
+        // this off by default (PR FasterXML/jackson-databind#4552), which is what
+        // caused the original bug. Re-enabling protects future final-collection
+        // additions from silently regressing the same wire-format breakage.
         JsonMapper mapper = JacksonObjectMapperFactory.create();
         FinalCollectionProbe original = new FinalCollectionProbe();
         original.finalMap.put("k", "v");
@@ -192,16 +226,65 @@ public class Jackson3TransientInitializerTest
         String json = mapper.writeValueAsString(original);
         FinalCollectionProbe restored = mapper.readValue(json, FinalCollectionProbe.class);
 
-        // The mutable field round-trips fine (control).
         Assert.assertEquals("v", restored.mutableMap.get("k"));
-        // The final field is the actual bug: Jackson 3 doesn't write into it.
-        // If this assertion ever STARTS passing (post-Jackson-upgrade or post-config-change),
-        // the Workarounds in the entities (`data` non-final) can be reverted.
+        Assert.assertEquals(
+            "JacksonObjectMapperFactory must re-enable ALLOW_FINAL_FIELDS_AS_MUTATORS so "
+            + "future `final` collection fields don't silently lose data. If this fails, "
+            + "the .enable(MapperFeature.ALLOW_FINAL_FIELDS_AS_MUTATORS) was dropped — "
+            + "restore it.",
+            "v", restored.finalMap.get("k"));
+    }
+
+    /**
+     * Regression test for the queryAppointments wire-format bug: the response type
+     * {@link AppointmentMap} carries a {@code Map<String, Set<String>>
+     * entityIdToAppointmentIds} that maps each allocatable to its appointment ids.
+     * The field was originally declared {@code final} with an empty initializer; under
+     * Jackson 3 (with {@code ALLOW_FINAL_FIELDS_AS_MUTATORS=false}) deserialization
+     * silently left it empty, so the Swing calendar grid never linked the server's
+     * returned reservations to the selected resource and rendered nothing.
+     *
+     * <p>Server-side observation that confirmed the bug:
+     * <pre>
+     * Get reservations 2026-05-04T00:00 2026-05-11T00:00:
+     *   AppointmentMap{reservations=[Reservation [e2ec…] {name:[test]}],
+     *                  allocatableIdToAppointmentIds={r05b…=[a7b7…]}}
+     * </pre>
+     * — server returned the populated map, but client deserialized
+     * {@code entityIdToAppointmentIds = {}}.
+     *
+     * <p>Fix: drop {@code final} from the field. This test pins the round-trip.
+     */
+    @Test
+    public void appointmentMapEntityIdToAppointmentIdsRoundTripsAfterFinalDropped() throws Exception
+    {
+        JsonMapper mapper = JacksonObjectMapperFactory.create();
+        AppointmentMap original = new AppointmentMap();
+
+        Field f = AppointmentMap.class.getDeclaredField("entityIdToAppointmentIds");
+        f.setAccessible(true);
+        @SuppressWarnings("unchecked")
+        java.util.Map<String, java.util.Set<String>> idMap =
+                (java.util.Map<String, java.util.Set<String>>) f.get(original);
+        idMap.put("r05b83f9-46c4-4690-a414-20a741f9abf9",
+                new java.util.LinkedHashSet<>(java.util.List.of("a7b791b3-c503-4396-afe3-0291d3c8d87f")));
+
+        String json = mapper.writeValueAsString(original);
+        AppointmentMap restored = mapper.readValue(json, AppointmentMap.class);
+
+        @SuppressWarnings("unchecked")
+        java.util.Map<String, java.util.Set<String>> restoredMap =
+                (java.util.Map<String, java.util.Set<String>>) f.get(restored);
+
+        Assert.assertNotNull("entityIdToAppointmentIds must not be null after deserialize", restoredMap);
+        Assert.assertFalse(
+            "entityIdToAppointmentIds must contain the resource→appointment mapping after round-trip "
+            + "(if empty, the field is `final` again — Jackson 3 silently won't write into it, "
+            + "and the Swing calendar grid won't render any reservation)",
+            restoredMap.isEmpty());
         Assert.assertTrue(
-            "Jackson 3 currently does NOT mutate final fields — confirmed by this probe. "
-            + "If this assertion newly fails, the Jackson 3 final-field policy changed; "
-            + "remove the `final` work-around in ClassificationImpl.data and friends.",
-            restored.finalMap.isEmpty());
+            "expected resource id key in restored map; got: " + restoredMap.keySet(),
+            restoredMap.containsKey("r05b83f9-46c4-4690-a414-20a741f9abf9"));
     }
 
     /**

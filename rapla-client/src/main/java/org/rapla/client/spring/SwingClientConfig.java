@@ -51,4 +51,24 @@ public class SwingClientConfig
         }
         return map;
     }
+
+    /**
+     * Same wrapping as {@link #activityPresenters} but for {@code EditComponent}.
+     * {@link org.rapla.client.internal.edit.swing.EditTaskViewSwing} declares
+     * {@code Map<String, Supplier<EditComponent>>} keyed by entity-type class name.
+     * Each editor (e.g. {@code PreferencesEditUI}, {@code DynamicTypeEditUI}) is
+     * registered with {@code @Service("<typeClass.getName()>")}; without this bean
+     * the map injects empty and clicking "edit" on those types throws
+     * {@code RuntimeException("Can't edit objects of type …")}.
+     */
+    @Bean
+    public Map<String, Supplier<org.rapla.client.swing.EditComponent>> editUiProvider(ListableBeanFactory beanFactory)
+    {
+        Map<String, Supplier<org.rapla.client.swing.EditComponent>> map = new LinkedHashMap<>();
+        for (String name : beanFactory.getBeanNamesForType(org.rapla.client.swing.EditComponent.class))
+        {
+            map.put(name, () -> beanFactory.getBean(name, org.rapla.client.swing.EditComponent.class));
+        }
+        return map;
+    }
 }

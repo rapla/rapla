@@ -190,6 +190,29 @@ class HeadlessClientNameResolutionIntegrationTest
                 });
             }
 
+            // Regression: every @Service("<typeClass.getName()>") EditComponent must end up
+            // in EditTaskViewSwing.editUiProvider keyed by that class name. The map is a
+            // Map<String, Supplier<EditComponent>>; Spring's auto-Map injection only works
+            // when matching Supplier<EditComponent> beans exist with the right names — that
+            // requires an explicit @Bean factory in SwingClientConfig (parallel to
+            // activityPresenters). Without it, edit-on-Preferences fails with
+            // "Can't edit objects of type interface org.rapla.entities.configuration.Preferences".
+            checks.add(() -> {
+                org.rapla.client.internal.edit.swing.EditTaskViewSwing editView =
+                        client.getContext().getBean(org.rapla.client.internal.edit.swing.EditTaskViewSwing.class);
+                java.lang.reflect.Field f = org.rapla.client.internal.edit.swing.EditTaskViewSwing.class
+                        .getDeclaredField("editUiProvider");
+                f.setAccessible(true);
+                @SuppressWarnings("unchecked")
+                java.util.Map<String, java.util.function.Supplier<org.rapla.client.swing.EditComponent>> map =
+                        (java.util.Map<String, java.util.function.Supplier<org.rapla.client.swing.EditComponent>>) f.get(editView);
+                assertNotNull(map, "editUiProvider map must inject");
+                assertTrue(map.containsKey("org.rapla.entities.configuration.Preferences"),
+                        "editUiProvider must contain Preferences key — saw keys: " + map.keySet());
+                assertTrue(map.containsKey("org.rapla.entities.dynamictype.DynamicType"),
+                        "editUiProvider must contain DynamicType key — saw keys: " + map.keySet());
+            });
+
             assertAll("end-to-end name resolution from Jackson 3 wire format",
                     checks.toArray(new org.junit.jupiter.api.function.Executable[0]));
         }

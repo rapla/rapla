@@ -14,6 +14,7 @@ import tools.jackson.databind.module.SimpleModule;
 import tools.jackson.databind.node.ArrayNode;
 import tools.jackson.databind.node.ObjectNode;
 import org.rapla.logger.ConsoleLogger;
+import org.rapla.rest.JacksonObjectMapperFactory;
 import org.rapla.rest.JsonParserWrapper;
 import org.rapla.rest.client.RemoteConnectException;
 import org.rapla.scheduler.Promise;
@@ -84,15 +85,18 @@ public class JacksonParserWrapper  implements Supplier<JsonParserWrapper.JsonPar
                 }
             }
         });
-        return JsonMapper.builder()
+        // Route through JacksonObjectMapperFactory.configure() so the SQL-history
+        // serializer inherits the same field-based / transient-aware / final-field-
+        // mutable settings as the wire-format mapper. Then override creator
+        // visibility back to NONE (history doesn't use @JsonCreator constructors)
+        // and add the SQL-history-specific bits: UTC timezone, custom date format,
+        // single-quote tolerance for legacy blobs, and the Promise async-resolver
+        // serializer.
+        return JacksonObjectMapperFactory.configure(JsonMapper.builder())
                 .defaultTimeZone(TimeZone.getTimeZone("UTC"))
                 .defaultDateFormat(df)
                 .enable(JsonReadFeature.ALLOW_SINGLE_QUOTES)
                 .changeDefaultVisibility(vc -> vc
-                        .withFieldVisibility(JsonAutoDetect.Visibility.ANY)
-                        .withGetterVisibility(JsonAutoDetect.Visibility.NONE)
-                        .withIsGetterVisibility(JsonAutoDetect.Visibility.NONE)
-                        .withSetterVisibility(JsonAutoDetect.Visibility.NONE)
                         .withCreatorVisibility(JsonAutoDetect.Visibility.NONE))
                 .addModule(module)
                 .disable(DateTimeFeature.WRITE_DATES_AS_TIMESTAMPS)

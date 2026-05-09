@@ -50,6 +50,14 @@ public final class JacksonObjectMapperFactory
     {
         return builder
                 .enable(MapperFeature.PROPAGATE_TRANSIENT_MARKER)
+                // Belt-and-suspenders: Jackson 3 flipped the default of
+                // ALLOW_FINAL_FIELDS_AS_MUTATORS to false (PR jackson-databind#4552).
+                // We've already dropped `final` from every entity collection field
+                // that round-trips on the wire, but re-enabling here protects future
+                // `final` additions from silently losing data on deserialize. See
+                // Jackson3TransientInitializerTest#factoryReEnablesFinalFieldMutation
+                // for the regression guard.
+                .enable(MapperFeature.ALLOW_FINAL_FIELDS_AS_MUTATORS)
                 .changeDefaultVisibility(vc -> vc
                         .withFieldVisibility(Visibility.ANY)
                         .withGetterVisibility(Visibility.NONE)
