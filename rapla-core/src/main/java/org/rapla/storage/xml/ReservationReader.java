@@ -29,6 +29,7 @@ import org.rapla.framework.RaplaException;
 import java.util.Set;
 import java.util.TreeSet;
 
+import java.time.LocalDate;
 public class ReservationReader extends RaplaXMLReader {
     ReservationImpl reservation;
     private ReferenceInfo<Allocatable> allocatableId = null;
@@ -75,7 +76,7 @@ public class ReservationReader extends RaplaXMLReader {
         if ( localName.equals( "reservation" ) ) 
         {
             TimestampDates ts = readTimestamps( atts);
-            reservation = ReservationImpl.ofLocalDateTime( ts.getCreateTimeAsLocalDateTime(), ts.getChangeTimeAsLocalDateTime() );
+            reservation = new ReservationImpl( ts.createTime, ts.changeTime );
 			reservation.setResolver( store );
             currentAnnotatable = reservation;
             setId(reservation, atts);
@@ -98,16 +99,16 @@ public class ReservationReader extends RaplaXMLReader {
             java.time.LocalDateTime end;
             if (startTime != null && endTime != null)
             {
-                start = parseLocalDateTime(startDate,startTime);
-                end = parseLocalDateTime(endDate,endTime);
+                start = parseDateTime(startDate,startTime);
+                end = parseDateTime(endDate,endTime);
             }
             else
             {
-                start = parseLocalDate(startDate).atStartOfDay();
-                end = parseLocalDate(endDate).atStartOfDay().plusDays(1);
+                start = parseDate(startDate, false);
+                end = parseDate(endDate, true);
             }
 
-            appointment= AppointmentImpl.ofLocalDateTime(start,end);
+            appointment= new AppointmentImpl(start,end);
             appointment.setWholeDays(startTime== null && endTime==null);
             if (id!=null)
             {
@@ -135,8 +136,7 @@ public class ReservationReader extends RaplaXMLReader {
             }
             if (enddate != null)
             {
-                // parseDate(s, true) → date with fillDate=true (fills missing time as midnight). LocalDate covers this.
-                repeating.setEndLocalDateTime(parseLocalDate(enddate).atStartOfDay());
+                repeating.setEnd(parseDate(enddate, true));
             }
             else if (number != null)
             {
@@ -144,7 +144,7 @@ public class ReservationReader extends RaplaXMLReader {
             }
             else
             {
-                repeating.setEndLocalDateTime(null);
+                repeating.setEnd(null);
             }
             if (weekdays != null)
             {
