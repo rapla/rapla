@@ -38,9 +38,10 @@ import org.rapla.logger.Logger;
 import org.rapla.storage.IdCreator;
 import org.rapla.storage.impl.EntityStore;
 
-import java.util.Date;
 import java.util.Map;
 
+import java.time.LocalDateTime;
+import java.time.LocalDate;
 public class RaplaXMLReader extends DelegationHandler implements Namespaces
 {
     public static TypedComponentRole<Double> VERSION = new TypedComponentRole<>("org.rapla.version");
@@ -51,25 +52,19 @@ public class RaplaXMLReader extends DelegationHandler implements Namespaces
     private final Map<Class<? extends RaplaObject>,RaplaXMLReader> readerMap;
     private final SerializableDateTimeFormat dateTimeFormat;
     private final RaplaResources i18n;
-    private final Date now;
+    private final LocalDateTime now;
     private final RaplaXMLContext context;
     private final KeyAndPathResolver keyAndPathResolver;
     
     public static class TimestampDates
     {
-    	public Date createTime;
-    	public Date changeTime;
+    	public LocalDateTime createTime;
+    	public LocalDateTime changeTime;
 
     	/** {@code LocalDateTime} accessors. UTC. */
-    	public java.time.LocalDateTime getCreateTimeAsLocalDateTime() {
-    	    return createTime == null ? null : org.rapla.components.util.DateTools.toLocalDateTime(createTime);
-    	}
-    	public java.time.LocalDateTime getChangeTimeAsLocalDateTime() {
-    	    return changeTime == null ? null : org.rapla.components.util.DateTools.toLocalDateTime(changeTime);
-    	}
     }
 
-    public Date getReadTimestamp()
+    public LocalDateTime getReadTimestamp()
     {
         return now;
     }
@@ -77,7 +72,7 @@ public class RaplaXMLReader extends DelegationHandler implements Namespaces
     /** {@code LocalDateTime} variant. UTC. */
     public java.time.LocalDateTime getReadLocalDateTime()
     {
-        return now == null ? null : org.rapla.components.util.DateTools.toLocalDateTime(now);
+        return now;
     }
     
     public boolean isBefore1_2()
@@ -105,15 +100,15 @@ public class RaplaXMLReader extends DelegationHandler implements Namespaces
         dateTimeFormat = raplaLocale.getSerializableFormat();
         this.localnameMap = context.lookup( PreferenceReader.LOCALNAMEMAPENTRY );
         this.readerMap = context.lookup( PreferenceReader.READERMAP );
-        now = new Date();
+        now = LocalDateTime.now();
     }
     
     public TimestampDates readTimestamps(RaplaSAXAttributes atts) throws RaplaSAXParseException
     {
 	    String createdAt = atts.getValue( "", "created-at");
 	    String lastChanged = atts.getValue( "", "last-changed");
-	    Date createTime = null;
-	    Date changeTime = createTime;
+	    LocalDateTime createTime = null;
+	    LocalDateTime changeTime = createTime;
 	    if (createdAt != null)
 	    {
 	        createTime = parseTimestamp( createdAt);
@@ -130,12 +125,12 @@ public class RaplaXMLReader extends DelegationHandler implements Namespaces
 	    {
 	    	changeTime = createTime;
 	    }
-	    if ( changeTime.after( now) )
+	    if ( changeTime.isAfter( now) )
 	    {
 	        getLogger().warn("Last changed is in the future " +lastChanged  + ". Taking current time as new timestamp.");
 	        changeTime = now;
 	    }
-	    if ( createTime.after( now) )
+	    if ( createTime.isAfter( now) )
 	    {
 	        getLogger().warn("Create time is in the future " +createTime  + ". Taking current time as new timestamp.");
 	        createTime = now;
@@ -200,7 +195,7 @@ public class RaplaXMLReader extends DelegationHandler implements Namespaces
         return Boolean.valueOf(text);
     }
 
-    public Date parseDate( String date, boolean fillDate ) throws RaplaSAXParseException
+    public LocalDateTime parseDate( String date, boolean fillDate ) throws RaplaSAXParseException
     {
         try
         {
@@ -214,7 +209,7 @@ public class RaplaXMLReader extends DelegationHandler implements Namespaces
 
 
 
-    public Date parseDateTime( String date, String time ) throws RaplaSAXParseException
+    public LocalDateTime parseDateTime( String date, String time ) throws RaplaSAXParseException
     {
         try
         {
@@ -226,7 +221,7 @@ public class RaplaXMLReader extends DelegationHandler implements Namespaces
         }
     }
 
-    public Date parseTimestamp( String timestamp ) throws RaplaSAXParseException
+    public LocalDateTime parseTimestamp( String timestamp ) throws RaplaSAXParseException
     {
         try
         {

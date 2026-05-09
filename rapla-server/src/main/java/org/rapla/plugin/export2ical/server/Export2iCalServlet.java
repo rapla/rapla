@@ -40,6 +40,7 @@ import java.io.Writer;
 import java.text.SimpleDateFormat;
 import java.util.*;
 
+import java.time.LocalDateTime;
 @Path("{path:ical|internal_ical}")
 public class Export2iCalServlet
 {
@@ -58,7 +59,7 @@ public class Export2iCalServlet
 
 	//private java.util.Calendar calendar;
     //private Preferences preferences;
-	private final Date firstPluginStartDate = new Date(0);
+	private final LocalDateTime firstPluginStartDate = LocalDateTime.ofInstant(java.time.Instant.ofEpochMilli(0), java.time.ZoneOffset.UTC);
 	//private TimeZone pluginTimeZone;
 	private int lastModifiedIntervall;
 	@Autowired
@@ -205,10 +206,10 @@ public class Export2iCalServlet
 			int daysBefore = global_interval ? global_daysBefore : preferences.getEntryAsInteger(Export2iCalPlugin.PREF_BEFORE_DAYS, global_daysBefore);
 			int daysAfter = global_interval ? global_daysAfter : preferences.getEntryAsInteger(Export2iCalPlugin.PREF_AFTER_DAYS, global_daysAfter);
 
-			final java.time.LocalDate today = facade.todayAsLocalDate();
+			final LocalDateTime today = facade.today().atStartOfDay();
 
-			calModel.setStartLocalDate(DateTools.add(today, DateTools.IncrementSize.DAY_OF_YEAR, -daysBefore));
-			calModel.setEndLocalDate(DateTools.add(today, DateTools.IncrementSize.DAY_OF_YEAR, daysAfter));
+			calModel.setStartDate(DateTools.add(today, DateTools.IncrementSize.DAY_OF_YEAR, -daysBefore));
+			calModel.setEndDate(DateTools.add(today, DateTools.IncrementSize.DAY_OF_YEAR, daysAfter));
 
 			//debug sysout
 			//System.out.println("startdate - before  "+ calModel.getStartDate() + " - " + daysBefore);
@@ -260,38 +261,37 @@ public class Export2iCalServlet
 	 *
 	 * @return
 	 */
-	private Date getGlobalLastModified()
+	private LocalDateTime getGlobalLastModified()
 	{
 		if (lastModifiedIntervall == -1) {
 			return firstPluginStartDate;
 		}
-		long nowInMillis = DateTools.cutDate(new Date()).getTime();
-		long daysSinceStart = (nowInMillis - firstPluginStartDate.getTime()) / DateTools.MILLISECONDS_PER_DAY;
-		return new Date(nowInMillis - (daysSinceStart % lastModifiedIntervall) * DateTools.MILLISECONDS_PER_DAY);
+		long nowInMillis = DateTools.toMilli(DateTools.cutDate(LocalDateTime.now()));
+		long daysSinceStart = (nowInMillis - DateTools.toMilli(firstPluginStartDate)) / DateTools.MILLISECONDS_PER_DAY;
+		return LocalDateTime.ofInstant(java.time.Instant.ofEpochMilli(nowInMillis - (daysSinceStart % lastModifiedIntervall) * DateTools.MILLISECONDS_PER_DAY), java.time.ZoneOffset.UTC);
 	}
 
 	/**
 	 * Get last modified if a list of allocatables
 	 *
 	 */
-	private Date getLastModified(CalendarModel calModel) throws RaplaException {
+	private LocalDateTime getLastModified(CalendarModel calModel) throws RaplaException {
 
-		Date endDate = null;
-	Date startDate = facade.today();
+		LocalDateTime endDate = null;
+		LocalDateTime startDate = facade.today().atStartOfDay();
 		final Collection<Reservation> reservations = ((org.rapla.facade.SyncCalendarModel) calModel).queryReservationsSync(new TimeInterval(startDate, endDate));
 		// set to minvalue
-		Date maxDate = new Date();
-		maxDate.setTime(0);
+		LocalDateTime maxDate = LocalDateTime.MIN;
 
 		for (Reservation r:reservations) {
-			Date lastMod = r.getLastChanged();
+			LocalDateTime lastMod = r.getLastChanged();
 
-			if (lastMod != null && maxDate.before(lastMod)) {
+			if (lastMod != null && maxDate.isBefore(lastMod)) {
 				maxDate = lastMod;
 			}
 		}
 
-		if (lastModifiedIntervall != -1 && DateTools.countDays(maxDate, new Date()) < lastModifiedIntervall) {
+		if (lastModifiedIntervall != -1 && DateTools.countDays(maxDate, LocalDateTime.now()) < lastModifiedIntervall) {
 			return maxDate;
 		} else {
 			return getGlobalLastModified();

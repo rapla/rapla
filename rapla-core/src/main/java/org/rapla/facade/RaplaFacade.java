@@ -12,6 +12,8 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.facade;
 
+import java.time.LocalDateTime;
+
 import org.rapla.components.util.TimeInterval;
 import org.rapla.entities.Category;
 import org.rapla.entities.Entity;
@@ -38,7 +40,6 @@ import org.rapla.storage.StorageOperator;
 import org.rapla.scheduler.Consumer;
 
 import java.util.Collection;
-import java.util.Date;
 import java.util.Map;
 import java.util.Set;
 
@@ -89,20 +90,8 @@ public interface RaplaFacade
      @param end   only reservations beginning before the end-date will be returned (can be null).
      @param reservationFilters  you can specify classificationfilters or null for all reservations .
      */
-    Promise<Collection<Reservation>> getReservations(User user,Date start,Date end,ClassificationFilter[] reservationFilters);
-    Promise<Collection<Reservation>> getReservationsAsync(User user, Allocatable[] allocatables, User[] owners, Date start, Date end, ClassificationFilter[] reservationFilters);
-
-    /** {@code LocalDateTime} variant of {@link #getReservations(User, Date, Date, ClassificationFilter[])}. UTC.
-     *  Distinct method name avoids overload ambiguity at {@code null}-passing call sites. */
-    default Promise<Collection<Reservation>> getReservationsByLocalDateTime(User user, java.time.LocalDateTime start, java.time.LocalDateTime end, ClassificationFilter[] reservationFilters) {
-        return getReservations(user,
-            start == null ? null : org.rapla.components.util.DateTools.toDate(start),
-            end == null ? null : org.rapla.components.util.DateTools.toDate(end),
-            reservationFilters);
-    }
-
-
-
+    Promise<Collection<Reservation>> getReservations(User user,LocalDateTime start,LocalDateTime end,ClassificationFilter[] reservationFilters);
+    Promise<Collection<Reservation>> getReservationsAsync(User user, Allocatable[] allocatables, User[] owners, LocalDateTime start, LocalDateTime end, ClassificationFilter[] reservationFilters);
 
     /**returns all reservations that have allocated at least one Resource or Person that is part of the allocatables array.
      @param allocatables only reservations that allocate at least on element of this array will be returned.
@@ -110,18 +99,13 @@ public interface RaplaFacade
      @param end   only reservations beginning before the end-date will be returned (can be null).
      @param filters  you can specify classificationfilters or null for all reservations.
      **/
-    Promise<Collection<Reservation>> getReservationsForAllocatable(Allocatable[] allocatables, Date start,Date end,ClassificationFilter[] filters);
+    Promise<Collection<Reservation>> getReservationsForAllocatable(Allocatable[] allocatables, LocalDateTime start,LocalDateTime end,ClassificationFilter[] filters);
 
     /** returns the current date in GMT+0 Timezone. If rapla operates
      in multi-user mode, the date should be calculated from the
      server date.
      */
-    Date today();
-
-    /** {@code LocalDate} variant of {@link #today()}. UTC. */
-    default java.time.LocalDate todayAsLocalDate() {
-        return org.rapla.components.util.DateTools.toLocalDate(today());
-    }
+    java.time.LocalDate today();
 
     /** returns all allocatables from the set of passed allocatables, that are already allocated by different parallel reservations at the time-slices, that are described by the appointment */
     Promise<Map<ReferenceInfo<Allocatable>, Collection<Appointment>>> getAllocatableBindings(Collection<Allocatable> allocatables, Collection<Appointment> forAppointment);
@@ -155,11 +139,11 @@ public interface RaplaFacade
 
     Promise<Collection<Reservation>> getTemplateReservations(Allocatable name);
 
-    Promise<Date> getNextAllocatableDate(Collection<Allocatable> asList, Appointment appointment, CalendarOptions options);
+    Promise<LocalDateTime> getNextAllocatableDate(Collection<Allocatable> asList, Appointment appointment, CalendarOptions options);
 
     /** {@code LocalDateTime} variant of {@link #getNextAllocatableDate}. UTC. */
     default Promise<java.time.LocalDateTime> getNextAllocatableLocalDateTime(Collection<Allocatable> asList, Appointment appointment, CalendarOptions options) {
-        return getNextAllocatableDate(asList, appointment, options).thenApply(d -> d == null ? null : org.rapla.components.util.DateTools.toLocalDateTime(d));
+        return getNextAllocatableDate(asList, appointment, options).thenApply(d -> d);
     }
 
     boolean canAllocate(CalendarModel model,User user);
@@ -192,19 +176,19 @@ public interface RaplaFacade
 
     /** @deprecated use #newAppointmentWithUser or #newAppointmentAsync (on the client) instead */
     @Deprecated
-    Appointment newAppointmentDeprecated(Date startDate, Date endDate) throws RaplaException;
+    Appointment newAppointmentDeprecated(LocalDateTime startDate, LocalDateTime endDate) throws RaplaException;
 
     Promise<Reservation> newReservationAsync(Classification classification);
     Promise<Appointment> newAppointmentAsync(TimeInterval interval);
     Promise<Collection<Appointment>> newAppointmentsAsync(Collection<TimeInterval> interval);
-    Appointment newAppointmentWithUser(Date startDate,Date endDate, User user) throws RaplaException;
+    Appointment newAppointmentWithUser(LocalDateTime startDate,LocalDateTime endDate, User user) throws RaplaException;
 
     /** {@code LocalDateTime} variant of {@link #newAppointmentWithUser}. UTC.
      *  Distinct method name avoids ambiguity at {@code null}-passing call sites. */
     default Appointment newAppointmentWithUserLocalDateTime(java.time.LocalDateTime start, java.time.LocalDateTime end, User user) throws RaplaException {
         return newAppointmentWithUser(
-            start == null ? null : org.rapla.components.util.DateTools.toDate(start),
-            end == null ? null : org.rapla.components.util.DateTools.toDate(end),
+            start,
+            end,
             user);
     }
 
@@ -239,7 +223,7 @@ public interface RaplaFacade
     <T extends Entity> Promise<Void> updateList(Collection<T> list, Consumer<Collection<T>> updateFunction);
 
     /** copies a list of reservations to a new beginning. KeepTime specifies if the original time is used or the time of the new beginDate*/
-    Promise<Collection<Reservation>> copyReservations(Collection<Reservation> toCopy, Date beginn, boolean keepTime, User user);
+    Promise<Collection<Reservation>> copyReservations(Collection<Reservation> toCopy, LocalDateTime beginn, boolean keepTime, User user);
 
     <T extends Entity, S extends Entity> Promise<Void> dispatch( Collection<T> storeList, Collection<ReferenceInfo<S>> removeList);
 

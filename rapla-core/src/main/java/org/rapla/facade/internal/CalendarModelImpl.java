@@ -60,7 +60,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -77,15 +76,16 @@ import java.util.stream.Stream;
 
 import static org.rapla.entities.configuration.CalendarModelConfiguration.EXPORT_ENTRY;
 
+import java.time.LocalDateTime;
 public class CalendarModelImpl implements CalendarSelectionModel, org.rapla.facade.SyncCalendarModel
 {
     private static final String DEFAULT_VIEW = "week";//WeekViewFactory.WEEK_VIEW;
     private static final String ICAL_EXPORT_ENABLED = "org.rapla.plugin.export2ical" + ".selected";
     private static final String HTML_EXPORT_ENABLED = EXPORT_ENTRY + ".selected";
     private final Logger logger;
-    Date startDate;
-    Date endDate;
-    Date selectedDate;
+    LocalDateTime startDate;
+    LocalDateTime endDate;
+    LocalDateTime selectedDate;
     Collection<RaplaObject> selectedObjects = new LinkedHashSet<>();
     String title;
     final StorageOperator operator;
@@ -142,7 +142,7 @@ public class CalendarModelImpl implements CalendarSelectionModel, org.rapla.faca
         this.logger = logger.getChildLogger("calendarmodel");
         this.locale = locale;
         this.operator = operator;
-        Date today = this.operator.today();
+        LocalDateTime today = this.operator.today().atStartOfDay();
         setSelectedDate(today);
         setStartDate(today);
         setEndDate(DateTools.addYear(getStartDate()));
@@ -293,18 +293,18 @@ public class CalendarModelImpl implements CalendarSelectionModel, org.rapla.faca
         }
         else if (updateSelectedDates)
         {
-            setSelectedDate(operator.today());
+            setSelectedDate(operator.today().atStartOfDay());
         }
-        final Date startDate = config.getStartDate();
+        final LocalDateTime startDate = config.getStartDate();
         if (startDate != null && isSaveDate)
         {
             setStartDate(startDate);
         }
         else if (updateSelectedDates)
         {
-            setStartDate(operator.today());
+            setStartDate(operator.today().atStartOfDay());
         }
-        final Date endDate = config.getEndDate();
+        final LocalDateTime endDate = config.getEndDate();
         if (endDate != null && isSaveDate)
         {
             setEndDate(endDate);
@@ -374,9 +374,9 @@ public class CalendarModelImpl implements CalendarSelectionModel, org.rapla.faca
             }
         }
 
-        final Date selectedDate = getSelectedDate();
-        final Date startDate = getStartDate();
-        final Date endDate = getEndDate();
+        final LocalDateTime selectedDate = getSelectedDate();
+        final LocalDateTime startDate = getStartDate();
+        final LocalDateTime endDate = getEndDate();
         boolean resourceRootSelected = selectedObjects.contains(ALLOCATABLES_ROOT);
         return newRaplaCalendarModel(selected, resourceRootSelected, allocatableFilter, eventFilter, title, startDate, endDate, selectedDate, viewName,
                 optionMap);
@@ -399,7 +399,7 @@ public class CalendarModelImpl implements CalendarSelectionModel, org.rapla.faca
     }
 
     public CalendarModelConfigurationImpl newRaplaCalendarModel(Collection<Entity> selected, boolean resourceRootSelected,
-            ClassificationFilter[] allocatableFilter, ClassificationFilter[] eventFilter, String title, Date startDate, Date endDate, Date selectedDate,
+            ClassificationFilter[] allocatableFilter, ClassificationFilter[] eventFilter, String title, LocalDateTime startDate, LocalDateTime endDate, LocalDateTime selectedDate,
             String view, Map<String, String> optionMap) throws RaplaException
     {
         boolean defaultResourceTypes;
@@ -515,12 +515,12 @@ public class CalendarModelImpl implements CalendarSelectionModel, org.rapla.faca
         }
     }
 
-    @Override public Date getSelectedDate()
+    @Override public LocalDateTime getSelectedDate()
     {
         return selectedDate;
     }
 
-    @Override public void setSelectedDate(Date date)
+    @Override public void setSelectedDate(LocalDateTime date)
     {
         if (date == null)
             throw new IllegalStateException("Date can't be null");
@@ -533,24 +533,24 @@ public class CalendarModelImpl implements CalendarSelectionModel, org.rapla.faca
 
     }
 
-    @Override public Date getStartDate()
+    @Override public LocalDateTime getStartDate()
     {
         return startDate;
     }
 
-    @Override public void setStartDate(Date date)
+    @Override public void setStartDate(LocalDateTime date)
     {
         if (date == null)
             throw new IllegalStateException("Date can't be null");
         this.startDate = date;
     }
 
-    @Override public Date getEndDate()
+    @Override public LocalDateTime getEndDate()
     {
         return endDate;
     }
 
-    @Override public void setEndDate(Date date)
+    @Override public void setEndDate(LocalDateTime date)
     {
         if (date == null)
             throw new IllegalStateException("Date can't be null");
@@ -966,8 +966,8 @@ public class CalendarModelImpl implements CalendarSelectionModel, org.rapla.faca
             if (obj instanceof Allocatable) allocatables.add((Allocatable) obj);
             if (obj instanceof User) owners.add((User) obj);
         }
-        final Date startDate = interval != null ? interval.getStart() : null;
-        final Date endDate = interval != null ? interval.getEnd() : null;
+        final LocalDateTime startDate = interval != null ? interval.getStart() : null;
+        final LocalDateTime endDate = interval != null ? interval.getEnd() : null;
         final boolean useFilter = getSelectedConflicts().isEmpty() && getSelectedResourceRequests().isEmpty();
         final String cacheKey = createCacheKey(allocatables, startDate, endDate);
         if (cachingEnabled && cacheValidString != null && cacheValidString.equals(cacheKey) && cachedReservations != null)
@@ -1006,8 +1006,8 @@ public class CalendarModelImpl implements CalendarSelectionModel, org.rapla.faca
         }
 
         final long selectedAllocatableTimes = (debugEnabled) ? System.currentTimeMillis() - start : 0;
-        Date startDate = interval != null ? interval.getStart() : null;
-        Date endDate = interval != null ? interval.getEnd() : null;
+        LocalDateTime startDate = interval != null ? interval.getStart() : null;
+        LocalDateTime endDate = interval != null ? interval.getEnd() : null;
 
         boolean useFilter = getSelectedConflicts().isEmpty() && getSelectedResourceRequests().isEmpty();
         AppointmentMapping result = queryAppointmentBindingsSync(allocatables, owners, startDate, endDate, useFilter);
@@ -1058,7 +1058,7 @@ public class CalendarModelImpl implements CalendarSelectionModel, org.rapla.faca
     private AppointmentMapping cachedReservations;
     private boolean cachingEnabled = false;
 
-    private AppointmentMapping queryAppointmentBindingsSync(Collection<Allocatable> allocatables, final Collection<User> owners, Date start, Date end, boolean useFilter) throws RaplaException
+    private AppointmentMapping queryAppointmentBindingsSync(Collection<Allocatable> allocatables, final Collection<User> owners, LocalDateTime start, LocalDateTime end, boolean useFilter) throws RaplaException
     {
         final String cacheKey = createCacheKey(allocatables, start, end);
         if (cachingEnabled)
@@ -1097,7 +1097,7 @@ public class CalendarModelImpl implements CalendarSelectionModel, org.rapla.faca
         cachedReservations = null;
     }
 
-    private String createCacheKey(Collection<Allocatable> allocatables, Date start, Date end)
+    private String createCacheKey(Collection<Allocatable> allocatables, LocalDateTime start, LocalDateTime end)
     {
         StringBuilder buf = new StringBuilder();
         if (allocatables != null)
@@ -1114,11 +1114,11 @@ public class CalendarModelImpl implements CalendarSelectionModel, org.rapla.faca
         }
         if (start != null)
         {
-            buf.append(start.getTime() + ";");
+            buf.append(DateTools.toMilli(start) + ";");
         }
         if (end != null)
         {
-            buf.append(end.getTime() + ";");
+            buf.append(DateTools.toMilli(end) + ";");
         }
         return buf.toString();
     }
@@ -1593,7 +1593,7 @@ public class CalendarModelImpl implements CalendarSelectionModel, org.rapla.faca
         }
     }
 
-    @Override public void markInterval(Date start, Date end)
+    @Override public void markInterval(LocalDateTime start, LocalDateTime end)
     {
         TimeInterval timeInterval = new TimeInterval(start, end);
         setMarkedIntervals(Collections.singletonList(timeInterval), false);

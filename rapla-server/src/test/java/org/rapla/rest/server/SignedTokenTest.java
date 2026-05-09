@@ -21,6 +21,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
+import java.time.LocalDateTime;
 @RunWith(JUnit4.class)
 public class SignedTokenTest {
 
@@ -35,7 +36,7 @@ public class SignedTokenTest {
     {
         SimpleDateFormat df = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSX");
         df.setTimeZone( TimeZone.getTimeZone("UTC"));
-        Date date = df.parse("2017-08-03T13:10:49.472Z");
+        LocalDateTime date = DateTools.toLocalDateTime(df.parse("2017-08-03T13:10:49.472Z").getTime());
 
     }
 
@@ -43,10 +44,10 @@ public class SignedTokenTest {
         
         DateFormat df = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSX");
         df.setTimeZone(TimeZone.getTimeZone("UTC"));
-        final Date date = new Date();
+        final LocalDateTime date = LocalDateTime.now();
         final String format4 = SerializableDateTimeFormat.INSTANCE.formatTimestamp(date);
-        final String format = df.format(date);
-        Date parsed = df.parse( format);
+        final String format = df.format(new java.util.Date(DateTools.toMilli(date)));
+        LocalDateTime parsed = DateTools.toLocalDateTime(df.parse(format).getTime());
         Assert.assertEquals(date, parsed);
         Assert.assertEquals(format4, format);
     }
@@ -77,7 +78,7 @@ public class SignedTokenTest {
     public void testSignedToken() throws Throwable {
         SignedToken tokenGenerator = new SignedToken(-1, seed);
         final int tokenCount = 100000;
-        final Date now = new Date();
+        final LocalDateTime now = LocalDateTime.now();
 
         Function<String,String> sign = (id)->tokenGenerator.newToken(id, calculateExpirationTime());
         Function<String,String> check = (id)->tokenGenerator.checkToken(id, null,now).getData();
@@ -151,7 +152,7 @@ public class SignedTokenTest {
         System.out.println("Time to check " + tokenCount + " tokens " + timeCheck + " ms");
     }
 
-    private Date calculateExpirationTime() {
-        return DateTools.addDay( new Date());
+    private LocalDateTime calculateExpirationTime() {
+        return DateTools.addDay( LocalDateTime.now());
     }
 }

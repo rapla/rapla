@@ -42,6 +42,7 @@ import java.util.stream.Collector;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import java.time.LocalDateTime;
 public class UpdateEvent
 {
     transient Map listMap;// = new HashMap<Class, List<Entity>>();
@@ -353,7 +354,7 @@ public class UpdateEvent
         return null;
     }
 
-    public void setLastValidated(Date serverTime)
+    public void setLastValidated(LocalDateTime serverTime)
     {
         if (serverTime == null)
         {
@@ -401,7 +402,7 @@ public class UpdateEvent
         return isEmpty;
     }
 
-    public Date getLastValidated()
+    public LocalDateTime getLastValidated()
     {
         if (lastValidated == null)
         {
@@ -415,26 +416,6 @@ public class UpdateEvent
         {
             throw new IllegalStateException(e.getMessage());
         }
-    }
-
-    /** {@code LocalDateTime} variant of {@link #getLastValidated()}. UTC. */
-    public java.time.LocalDateTime getLastValidatedAsLocalDateTime()
-    {
-        if (lastValidated == null) return null;
-        try
-        {
-            return SerializableDateTimeFormat.INSTANCE.parseLocalDateTime(lastValidated);
-        }
-        catch (ParseDateException e)
-        {
-            throw new IllegalStateException(e.getMessage());
-        }
-    }
-
-    /** {@code LocalDateTime} variant of {@link #setLastValidated(Date)}. UTC. Distinct method name to avoid `null`-passing ambiguity. */
-    public void setLastValidatedLocalDateTime(java.time.LocalDateTime serverTime)
-    {
-        setLastValidated(serverTime == null ? null : org.rapla.components.util.DateTools.toDate(serverTime));
     }
 
     public int getTimezoneOffset()

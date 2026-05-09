@@ -60,7 +60,6 @@ import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.Date;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
@@ -70,6 +69,7 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
 
+import java.time.LocalDateTime;
 /** This Operator is used to store the data in a SQL-DBMS.*/
  public class DBOperator extends LocalAbstractCachableOperator
 {
@@ -146,7 +146,7 @@ import java.util.Set;
                 {
                     final RaplaDefaultXMLContext context = createOutputContext(cache);
                     final RaplaSQL raplaSQL = new RaplaSQL(context);
-                    final Date date = new Date(getLastRefreshed().getTime() - LocalAbstractCachableOperator.HISTORY_DURATION);
+                    final LocalDateTime date = getLastRefreshed().minus(java.time.Duration.ofMillis(LocalAbstractCachableOperator.HISTORY_DURATION));
                     raplaSQL.cleanupHistory(con, date);
                 }
                 catch(Throwable t)
@@ -329,7 +329,7 @@ import java.util.Set;
         }
         catch (Throwable e)
         {
-            Date lastUpdated = getLastRefreshed();
+            LocalDateTime lastUpdated = getLastRefreshed();
             logger.error("Error updating model from DB. Last success was at " + lastUpdated, e);
             return null;
         }
@@ -342,9 +342,9 @@ import java.util.Set;
         final EntityStore entityStore = new EntityStore(cache);
         final Category superCategory = cache.getSuperCategory();
         final RaplaSQL raplaSQLInput = new RaplaSQL(createInputContext(entityStore, DBOperator.this, superCategory));
-        Date lastUpdated = getLastRefreshed();
-        Date connectionTime = raplaSQLInput.getLastUpdated(c);
-        if (connectionTime.before(lastUpdated))
+        LocalDateTime lastUpdated = getLastRefreshed();
+        LocalDateTime connectionTime = raplaSQLInput.getLastUpdated(c);
+        if (connectionTime.isBefore(lastUpdated))
         {
             return null;
         }
@@ -357,8 +357,8 @@ import java.util.Set;
 
     private static class RefreshObject
     {
-        Date lastUpdated;
-        Date connectionTime;
+        LocalDateTime lastUpdated;
+        LocalDateTime connectionTime;
         Collection<ReferenceInfo> allIds;
         List<PreferencePatch> patches;
     }
@@ -683,7 +683,7 @@ import java.util.Set;
         RaplaLock.WriteLock writeLock = writeLockIfLoaded("Dispatching " + evt.toString());
         try
         {
-            //Date since = lastUpdated;
+            //LocalDateTime since = lastUpdated;
             preprocessEventStorage(evt);
             Collection<Entity> storeObjects = evt.getStoreObjects();
             List<PreferencePatch> preferencePatches = evt.getPreferencePatches();
@@ -748,7 +748,7 @@ import java.util.Set;
         }
 
         final boolean needsGlobalLock = containsDynamicType(ids);
-        Date connectionTimestamp = null;
+        LocalDateTime connectionTimestamp = null;
         final Collection<String> lockIds = needsGlobalLock ? Collections.singletonList(LockStorage.GLOBAL_LOCK) : getLockIds(ids);
         RaplaSQL raplaSQLOutput = new RaplaSQL(createOutputContext(cache));
         Map<Entity,Entity> storeMap = new LinkedHashMap<>();
@@ -988,23 +988,22 @@ import java.util.Set;
         }
     }
 
-    @Override public Date getHistoryValidStart()
+    @Override public LocalDateTime getHistoryValidStart()
     {
-        final Date date = new Date(getLastRefreshed().getTime() - HISTORY_DURATION);
-        return date;
+        return getLastRefreshed().minus(java.time.Duration.ofMillis(HISTORY_DURATION));
     }
 
-    private Date loadInitialLastUpdateFromDb(Connection connection) throws SQLException, RaplaException
+    private LocalDateTime loadInitialLastUpdateFromDb(Connection connection) throws SQLException, RaplaException
     {
         final RaplaDefaultXMLContext createOutputContext = createOutputContext(cache);
         final RaplaSQL raplaSQL = new RaplaSQL(createOutputContext);
-        final Date lastUpdated = raplaSQL.getLastUpdated(connection);
+        final LocalDateTime lastUpdated = raplaSQL.getLastUpdated(connection);
         return lastUpdated;
     }
 
     protected void loadData(Connection connection, LocalCache cache) throws RaplaException, SQLException
     {
-        final Date lastUpdated = loadInitialLastUpdateFromDb(connection);
+        final LocalDateTime lastUpdated = loadInitialLastUpdateFromDb(connection);
         setLastRefreshed(lastUpdated);
         setConnectStart(lastUpdated);
         EntityStore entityStore = new EntityStore(cache);
@@ -1014,7 +1013,7 @@ import java.util.Set;
         superCategory.setKey("supercategory");
         superCategory.getName().setName("en", "Root");
         // this is when Rapla categories started
-        final Date superCategoryCreateTime = new Date(DateTools.toDate(2000, 0, 0));
+        final LocalDateTime superCategoryCreateTime = LocalDateTime.of(2000, 1, 1, 0, 0);
         superCategory.setCreateDate(superCategoryCreateTime);
         superCategory.setLastChanged(superCategoryCreateTime);
         entityStore.put( superCategory);
@@ -1051,7 +1050,7 @@ import java.util.Set;
             ((RefEntity) entity).setReadOnly();
             if(  EntityHistory.isSupportedEntity(entity.getTypeClass()))
             {
-                Date lastChanged = ((Timestamp) entity).getLastChanged();
+                LocalDateTime lastChanged = ((Timestamp) entity).getLastChanged();
                 if ( lastChanged != null)
                 {
                     history.addHistoryEntry(entity, lastChanged, false);
@@ -1078,7 +1077,7 @@ import java.util.Set;
         RaplaDefaultXMLContext inputContext = new IOContext().createInputContext(logger, raplaLocale, i18n, store, idCreator, superCategory);
         RaplaNonValidatedInput xmlAdapter = new ConfigTools.RaplaReaderImpl();
         inputContext.put(RaplaNonValidatedInput.class, xmlAdapter);
-        inputContext.put(Date.class, new Date(getLastRefreshed().getTime() - HISTORY_DURATION));
+        inputContext.put(LocalDateTime.class, getLastRefreshed().minus(java.time.Duration.ofMillis(HISTORY_DURATION)));
         inputContext.put(EntityHistory.class, history);
         final RaplaDefaultXMLContext inputContext1 = inputContext;
         return inputContext1;
@@ -1122,16 +1121,16 @@ import java.util.Set;
         }
     }
 
-    @Override public Date requestLock(String id, Long validMilliseconds) throws RaplaException
+    @Override public LocalDateTime requestLock(String id, Long validMilliseconds) throws RaplaException
     {
         // no commit needed as getLocks will do a commit
         try (Connection con = createConnection())
         {
             final RaplaDefaultXMLContext context = createOutputContext(cache);
             final RaplaSQL raplaSQL = new RaplaSQL(context);
-            final Date databaseTimestamp = raplaSQL.getDatabaseTimestamp(con);
+            final LocalDateTime databaseTimestamp = raplaSQL.getDatabaseTimestamp(con);
             raplaSQL.requestLocks(con, databaseTimestamp, Collections.singletonList(id), validMilliseconds, false);
-            final Date lastRequested = raplaSQL.getLastRequested(con, id);
+            final LocalDateTime lastRequested = raplaSQL.getLastRequested(con, id);
             return lastRequested;
         }
         catch (SQLException e)
@@ -1140,7 +1139,7 @@ import java.util.Set;
         }
     }
 
-    @Override public void releaseLock(String id, Date updatedUntil) throws RaplaException
+    @Override public void releaseLock(String id, LocalDateTime updatedUntil) throws RaplaException
     {
         try (Connection con = createConnection())
         {

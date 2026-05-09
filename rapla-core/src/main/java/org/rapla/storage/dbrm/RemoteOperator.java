@@ -68,7 +68,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -83,6 +82,7 @@ import java.util.Vector;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
+import java.time.LocalDateTime;
 /**
  * This operator can be used to modify and access data over the
  * network.  It needs an server-process providing the StorageService
@@ -98,8 +98,8 @@ public class RemoteOperator
     RemoteStorage remoteStorage;
     protected CommandScheduler commandQueue;
 
-    Date lastSyncedTimeLocal;
-    Date lastValidatedTimeServer;
+    LocalDateTime lastSyncedTimeLocal;
+    LocalDateTime lastValidatedTimeServer;
     int timezoneOffset;
     RemoteConnectionInfo connectionInfo;
 
@@ -184,24 +184,24 @@ public class RemoteOperator
         return userPromise;
     }
 
-    public Date getCurrentTimestamp() {
+    public LocalDateTime getCurrentTimestamp() {
         if (lastValidatedTimeServer == null) {
-            return new Date(System.currentTimeMillis());
+            return DateTools.toLocalDateTime(System.currentTimeMillis());
         }
         // no matter what the client clock says we always sync to the server clock
-        long passedMillis = System.currentTimeMillis() - lastSyncedTimeLocal.getTime();
+        long passedMillis = System.currentTimeMillis() - DateTools.toMilli(lastSyncedTimeLocal);
         if (passedMillis < 0) {
             passedMillis = 0;
         }
-        long correctTime = this.lastValidatedTimeServer.getTime() + passedMillis;
-        Date date = new Date(correctTime);
+        long correctTime = DateTools.toMilli(this.lastValidatedTimeServer) + passedMillis;
+        LocalDateTime date = DateTools.toLocalDateTime(correctTime);
         return date;
     }
 
-    public Date today() {
-        long time = getCurrentTimestamp().getTime();
-        Date raplaTime = new Date(time + timezoneOffset);
-        return DateTools.cutDate(raplaTime);
+    public java.time.LocalDate today() {
+        long time = DateTools.toMilli(getCurrentTimestamp());
+        LocalDateTime raplaTime = DateTools.toLocalDateTime(time + timezoneOffset);
+        return DateTools.cutDate(raplaTime).toLocalDate();
     }
 
 
@@ -401,7 +401,7 @@ public class RemoteOperator
     }
 
     private User loadData(UpdateEvent evt) throws RaplaException {
-        Date lastUpdated = evt.getLastValidated();
+        LocalDateTime lastUpdated = evt.getLastValidated();
         setLastRefreshed(lastUpdated);
         {
             this.userId = evt.getUserId();
@@ -439,7 +439,7 @@ public class RemoteOperator
         if (evt.getLastValidated() == null) {
             throw new RaplaException("Server sync time is missing");
         }
-        lastSyncedTimeLocal = new Date(System.currentTimeMillis());
+        lastSyncedTimeLocal = DateTools.toLocalDateTime(System.currentTimeMillis());
         lastValidatedTimeServer = evt.getLastValidated();
         timezoneOffset = evt.getTimezoneOffset();
         //long offset = TimeZoneConverterImpl.getOffset( DateTools.getTimeZone(), systemTimeZone, time);
@@ -698,7 +698,7 @@ public class RemoteOperator
     }
 
     @Override
-    public Promise<AppointmentMapping> queryAppointments(User user, Collection<Allocatable> allocatables, Collection<User> owners, Date start, Date end,
+    public Promise<AppointmentMapping> queryAppointments(User user, Collection<Allocatable> allocatables, Collection<User> owners, LocalDateTime start, LocalDateTime end,
                                                              final ClassificationFilter[] filters, Map<String, String> annotationQuery, boolean requestsOnly) {
         final RemoteStorage serv = getRemoteStorage();
         Promise<AppointmentMapping> result = refreshIfIdle().thenCompose((refreshed) -> {String[] allocatableId = getIdList(allocatables);
@@ -724,7 +724,7 @@ public class RemoteOperator
     protected Promise<Promise<Boolean>> refreshIfIdle() {
         return getScheduler().supply(() -> {
             // if a refresh is due, we assume the system went to sleep so we refresh before we continue
-            if (intervalLength > 0 && lastValidatedTimeServer != null && (lastValidatedTimeServer.getTime() + intervalLength * 2L) < getCurrentTimestamp().getTime()) {
+            if (intervalLength > 0 && lastValidatedTimeServer != null && (DateTools.toMilli(lastValidatedTimeServer) + intervalLength * 2L) < DateTools.toMilli(getCurrentTimestamp())) {
                 getLogger().info("cache not uptodate. Refreshing first.");
                 return refreshAsync().thenApply((dummy)->true);
             } else {
@@ -780,8 +780,8 @@ public class RemoteOperator
 
         // we don't test the references of the removed objects
         //setResolver(evt.getRemoveObjects());
-        Date since = getLastRefreshed();
-        Date until = evt.getLastValidated();
+        LocalDateTime since = getLastRefreshed();
+        LocalDateTime until = evt.getLastValidated();
         if (bSessionActive && !evt.isEmpty()) {
             getLogger().debug("Objects updated!");
             // TODO User informieren, dass sich daten evtl geaendert haben
@@ -871,8 +871,8 @@ public class RemoteOperator
         for (Entity entity : toRemove) {
             removeInfo.add(new ReferenceInfo(entity.getId(), entity.getTypeClass()));
         }
-        Date since = null;
-        Date until = getLastRefreshed();
+        LocalDateTime since = null;
+        LocalDateTime until = getLastRefreshed();
         result = createUpdateResult(oldEntityMap, updated, removeInfo, since, until);
         TimeInterval invalidateInterval = new TimeInterval(null, null);
         fireStorageUpdated(result, invalidateInterval);
@@ -1006,7 +1006,7 @@ public class RemoteOperator
     }
 
     @Override
-    public Promise<Date> getNextAllocatableDate(Collection<Allocatable> allocatables, Appointment appointment, Collection<Reservation> ignoreList,
+    public Promise<LocalDateTime> getNextAllocatableDate(Collection<Allocatable> allocatables, Appointment appointment, Collection<Reservation> ignoreList,
                                                 Integer worktimeStartMinutes, Integer worktimeEndMinutes, Integer[] excludedDays, Integer rowsPerHour) {
         RemoteStorage serv = getRemoteStorage();
         String[] allocatableIds = getIdList(removeUnresolvedAllocatables(allocatables));

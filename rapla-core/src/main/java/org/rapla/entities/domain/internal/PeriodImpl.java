@@ -17,11 +17,11 @@ import org.rapla.components.util.TimeInterval;
 import org.rapla.entities.Category;
 import org.rapla.entities.domain.Period;
 
-import java.util.Date;
 import java.util.LinkedHashSet;
 import java.util.Locale;
 import java.util.Set;
 
+import java.time.LocalDateTime;
 public class PeriodImpl implements Period
 {
     private final static long WEEK_MILLIS= DateTools.MILLISECONDS_PER_WEEK;
@@ -30,7 +30,7 @@ public class PeriodImpl implements Period
     String id;
     Set<Category> categories;
 
-    public PeriodImpl(String name,Date start, Date end, String id,Set<Category> categories) {
+    public PeriodImpl(String name,LocalDateTime start, LocalDateTime end, String id,Set<Category> categories) {
         this.name = name;
     	this.interval = new TimeInterval( start, end);
         this.id = id;
@@ -43,24 +43,12 @@ public class PeriodImpl implements Period
         return Period.class;
     }
 
-    public Date getStart() {
+    public LocalDateTime getStart() {
         return interval.getStart();
     }
 
-    public Date getEnd() {
+    public LocalDateTime getEnd() {
         return interval.getEnd();
-    }
-
-    @Override
-    public java.time.LocalDate getStartAsLocalDate() {
-        Date d = interval.getStart();
-        return d == null ? null : DateTools.toLocalDateTime(d).toLocalDate();
-    }
-
-    @Override
-    public java.time.LocalDate getEndAsLocalDate() {
-        Date d = interval.getEnd();
-        return d == null ? null : DateTools.toLocalDateTime(d).toLocalDate();
     }
 
     @Override
@@ -77,13 +65,13 @@ public class PeriodImpl implements Period
 
     public int getWeeks()
     {
-        final Date start = getStart();
-        final Date end = getEnd();
+        final LocalDateTime start = getStart();
+        final LocalDateTime end = getEnd();
         if ( end == null || start == null)
     	{
     		return -1;
     	}
-        long diff= end.getTime()- start.getTime();
+        long diff = java.time.Duration.between(start, end).toMillis();
         return (int)(((diff-1)/WEEK_MILLIS )+ 1);
     }
 
@@ -95,20 +83,14 @@ public class PeriodImpl implements Period
         return name;
     }
 
-    public boolean contains(Date date) {
+    public boolean contains(LocalDateTime date) {
         if ( date == null )
         {
             return false;
         }
-        final Date start = getStart();
-        final Date end = getEnd();
-        final boolean result = (end == null || date.before(end)) && (start == null || !date.before(start));
-        return result;
-    }
-
-    @Override
-    public boolean contains(java.time.LocalDateTime dateTime) {
-        return dateTime != null && contains(DateTools.toDate(dateTime));
+        final LocalDateTime start = getStart();
+        final LocalDateTime end = getEnd();
+        return (end == null || date.isBefore(end)) && (start == null || !date.isBefore(start));
     }
 
     public String toString() {
@@ -130,8 +112,8 @@ public class PeriodImpl implements Period
     }
 
     /*
-    public int compareTo_(Date date) {
-        final Date end2 = getEnd();
+    public int compareTo_(LocalDateTime date) {
+        final LocalDateTime end2 = getEnd();
         int result = end2.compareTo(date);
         if (result == 0)
             return 1;
@@ -141,8 +123,8 @@ public class PeriodImpl implements Period
     */
 
     public int compareTo(Period period) {
-        final Date start1 = getStart();
-        final Date start2 = period.getStart();
+        final LocalDateTime start1 = getStart();
+        final LocalDateTime start2 = period.getStart();
         if ( start1 == null || start2 == null)
         {
             if ( start1 != null)
@@ -170,11 +152,11 @@ public class PeriodImpl implements Period
     	return new PeriodImpl(name, interval.getStart(),interval.getEnd(), id, new LinkedHashSet<>(categories));
     }
 
-	public void setStart(Date start) {
+	public void setStart(LocalDateTime start) {
 		this.interval = new TimeInterval(start, getEnd());
 	}
 
-	public void setEnd(Date end) {
+	public void setEnd(LocalDateTime end) {
 		this.interval = new TimeInterval( getStart(), end);
 	}
 

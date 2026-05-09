@@ -29,12 +29,13 @@ import org.rapla.framework.RaplaException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.Date;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
 
+import java.time.LocalDateTime;
+import org.rapla.components.util.DateTools;
 public class CalendarModelConfigurationImpl extends AbstractClassifiableFilter implements CalendarModelConfiguration
 {
    // Don't forget to increase the serialVersionUID when you change the fields
@@ -50,16 +51,8 @@ public class CalendarModelConfigurationImpl extends AbstractClassifiableFilter i
    boolean defaultEventTypes;
    boolean defaultResourceTypes;
    boolean resourceRootSelected;
-    
-   public CalendarModelConfigurationImpl( Collection<String> selected,Collection<Class<? extends Entity>> idTypeList,boolean resourceRootSelected, ClassificationFilter[] filter, boolean defaultResourceTypes, boolean defaultEventTypes,String title, Date startDate, Date endDate, Date selectedDate,String view,Map<String,String> extensionMap) {
-       this(selected, idTypeList, resourceRootSelected, filter, defaultResourceTypes, defaultEventTypes, title,
-           startDate == null ? null : org.rapla.components.util.DateTools.toLocalDateTime(startDate),
-           endDate == null ? null : org.rapla.components.util.DateTools.toLocalDateTime(endDate),
-           selectedDate == null ? null : org.rapla.components.util.DateTools.toLocalDateTime(selectedDate),
-           view, extensionMap);
-   }
 
-   public CalendarModelConfigurationImpl( Collection<String> selected,Collection<Class<? extends Entity>> idTypeList,boolean resourceRootSelected, ClassificationFilter[] filter, boolean defaultResourceTypes, boolean defaultEventTypes,String title, java.time.LocalDateTime startDate, java.time.LocalDateTime endDate, java.time.LocalDateTime selectedDate,String view,Map<String,String> extensionMap) {
+   public CalendarModelConfigurationImpl( Collection<String> selected,Collection<Class<? extends Entity>> idTypeList,boolean resourceRootSelected, ClassificationFilter[] filter, boolean defaultResourceTypes, boolean defaultEventTypes,String title, LocalDateTime startDate, LocalDateTime endDate, LocalDateTime selectedDate,String view,Map<String,String> extensionMap) {
 	   if (selected != null)
 	   {
 	       this.selected = Collections.unmodifiableList(new ArrayList<>(selected));
@@ -120,21 +113,17 @@ public class CalendarModelConfigurationImpl extends AbstractClassifiableFilter i
        super.setResolver( resolver );
    }
 
-    public Date getStartDate() {
-        return startDate == null ? null : org.rapla.components.util.DateTools.toDate(startDate);
+    public LocalDateTime getStartDate() {
+        return startDate == null ? null : startDate;
     }
 
-    public Date getEndDate() {
-        return endDate == null ? null : org.rapla.components.util.DateTools.toDate(endDate);
+    public LocalDateTime getEndDate() {
+        return endDate == null ? null : endDate;
     }
 
-    public Date getSelectedDate() {
-        return selectedDate == null ? null : org.rapla.components.util.DateTools.toDate(selectedDate);
+    public LocalDateTime getSelectedDate() {
+        return selectedDate == null ? null : selectedDate;
     }
-
-    public java.time.LocalDateTime getStartDateAsLocalDateTime() { return startDate; }
-    public java.time.LocalDateTime getEndDateAsLocalDateTime() { return endDate; }
-    public java.time.LocalDateTime getSelectedDateAsLocalDateTime() { return selectedDate; }
 
     public String getTitle() {
         return title;

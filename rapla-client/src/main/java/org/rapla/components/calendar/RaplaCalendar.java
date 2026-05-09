@@ -19,9 +19,9 @@ import javax.swing.event.ChangeListener;
 import java.awt.Font;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Date;
 import java.util.Locale;
 import java.util.TimeZone;
+import java.time.LocalDateTime;
 /** This is another ComboBox-like calendar component.
  *  It is localizable and it uses swing-components.
  *  <p>The combobox editor is a {@link DateField}. If the ComboBox-Button
@@ -37,7 +37,7 @@ public final class RaplaCalendar extends RaplaComboBox {
     protected CalendarMenu m_calendarMenu;
     Collection<DateChangeListener> m_listenerList = new ArrayList<>();
     protected DateModel m_model;
-    private Date m_lastDate;
+    private LocalDateTime m_lastDate;
     DateRenderer m_dateRenderer;
 
     /** Create a new Calendar with the default locale. The calendarmenu
@@ -69,7 +69,7 @@ public final class RaplaCalendar extends RaplaComboBox {
         Listener listener = new Listener();
         m_dateField.addChangeListener(listener);
         m_model.addDateChangeListener(listener);
-        m_lastDate = m_model.getDate();
+        m_lastDate = m_model.getDate().atStartOfDay();
         setDateRenderer(new WeekendHighlightRenderer());
     }
 
@@ -83,7 +83,7 @@ public final class RaplaCalendar extends RaplaComboBox {
         public void dateChanged(DateChangeEvent evt) {
             closePopup();
             if (needSync())
-                m_dateField.setDate(evt.getDate());
+                m_dateField.setDate(evt.getDate().toLocalDate());
             if (m_lastDate == null || !m_lastDate.equals(evt.getDate()))
                 fireDateChange(evt.getDate());
             m_lastDate = evt.getDate();
@@ -118,11 +118,11 @@ public final class RaplaCalendar extends RaplaComboBox {
     /** Selects the date relative to the given timezone.
      * The hour,minute,second and millisecond values will be ignored.
      */
-    public void setDate(Date date) 
+    public void setDate(LocalDateTime date)
     {
         if ( date != null)
         {
-            m_model.setDate(date);
+            m_model.setDate(date.toLocalDate());
         }
         else
         {
@@ -144,16 +144,16 @@ public final class RaplaCalendar extends RaplaComboBox {
      * @see #getMonth
      * @see #getDay
     */
-    public Date getDate() {
+    public LocalDateTime getDate() {
         if ( m_dateField.isNullValue())
         {
             return null;
         }
-        return m_model.getDate();
+        return m_model.getDate().atStartOfDay();
     }
 
     /** selects the specified day, month and year.
-       @see #setDate(Date date)*/
+       @see #setDate(LocalDateTime date)*/
     public void select(int day,int month,int year) {
         m_model.setDate(day,month,year);
     }
@@ -220,7 +220,7 @@ public final class RaplaCalendar extends RaplaComboBox {
     /** A DateChangeEvent will be fired to every registered DateChangeListener
      *  when the a different date is selected.
     */
-    protected void fireDateChange( Date date ) {
+    protected void fireDateChange( LocalDateTime date ) {
         if (m_listenerList.size() == 0)
             return;
         DateChangeListener[] listeners = getDateChangeListeners();

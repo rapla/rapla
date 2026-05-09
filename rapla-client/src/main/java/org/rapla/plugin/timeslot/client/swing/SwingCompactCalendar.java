@@ -56,10 +56,10 @@ import javax.swing.JLabel;
 import java.awt.Font;
 import java.awt.Point;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.List;
 import java.util.Set;
 
+import java.time.LocalDateTime;
 public class SwingCompactCalendar extends AbstractRaplaSwingCalendar
 {
 	private List<Timeslot> timeslots;
@@ -79,8 +79,8 @@ public class SwingCompactCalendar extends AbstractRaplaSwingCalendar
                protected JComponent createColumnHeader(Integer column) {
                    JLabel component = (JLabel) super.createColumnHeader(column);
                    if ( column != null ) {
-                   	Date date = getDateFromColumn(column);
-                       boolean today = DateTools.isSameDay(getQuery().today().getTime(), date.getTime());
+                   	LocalDateTime date = getDateFromColumn(column);
+                       boolean today = DateTools.isSameDay(DateTools.toMilli(getQuery().today()), DateTools.toMilli(date));
                        if ( today)
                        {
                            component.setFont(component.getFont().deriveFont( Font.BOLD));
@@ -114,25 +114,25 @@ public class SwingCompactCalendar extends AbstractRaplaSwingCalendar
                @Override
                public TimeInterval normalizeBlockIntervall(SwingBlock block) 
                {
-	               	Date start = block.getStart();
-	   				Date end = block.getEnd();
+	               	LocalDateTime start = block.getStart();
+	   				LocalDateTime end = block.getEnd();
 	   				for (Timeslot slot:timeslots)
 	   				{
-	   					int minuteOfDay = DateTools.getMinuteOfDay( start.getTime());
+	   					int minuteOfDay = DateTools.getMinuteOfDay( DateTools.toMilli(start));
 						int minuteOfDay1 = slot.getMinuteOfDay();
 						if ( minuteOfDay >= minuteOfDay1)
 	   					{
-	   						start = new Date(DateTools.cutDate( start).getTime() + minuteOfDay1);
+	   						start = LocalDateTime.ofInstant(java.time.Instant.ofEpochMilli(DateTools.toMilli(DateTools.cutDate( start)) + minuteOfDay1), java.time.ZoneOffset.UTC);
 	   						break;
 	   					}
 	   				}
 	   				for (Timeslot slot:timeslots)
 	   				{
-	   					int minuteOfDay = DateTools.getMinuteOfDay( end.getTime());
+	   					int minuteOfDay = DateTools.getMinuteOfDay( DateTools.toMilli(end));
 						int minuteOfDay1 = slot.getMinuteOfDay();
 						if ( minuteOfDay < minuteOfDay1)
 	   					{
-	   						end = new Date(DateTools.cutDate( end).getTime() + minuteOfDay1);
+	   						end = LocalDateTime.ofInstant(java.time.Instant.ofEpochMilli(DateTools.toMilli(DateTools.cutDate( end)) + minuteOfDay1), java.time.ZoneOffset.UTC);
 	   					}
 	   					if (  minuteOfDay1 > minuteOfDay)
 	   					{
@@ -159,13 +159,13 @@ public class SwingCompactCalendar extends AbstractRaplaSwingCalendar
         return  new RaplaCalendarViewListener(getClientFacade(), getI18n(), getRaplaLocale(), getLogger(), model, view.getComponent(),  menuFactory,   reservationController,  dialogUiFactory, editController) {
         	/** override to change the allocatable to the row that is selected */
             @Override
-            public void selectionChanged(Date start,Date end) 
+            public void selectionChanged(LocalDateTime start,LocalDateTime end) 
             {
             	TimeInterval inter = getMarkedInterval(start);
         		super.selectionChanged(inter.getStart(), inter.getEnd());
             }
 
-            public void moved(Block block, Point p, Date newStart, int slotNr) {
+            public void moved(Block block, Point p, LocalDateTime newStart, int slotNr) {
                 int days = view.getDaysInView();
 
             	int columns = days;
@@ -174,7 +174,7 @@ public class SwingCompactCalendar extends AbstractRaplaSwingCalendar
             	Timeslot timeslot = timeslots.get(rowIndex);
             	int time = timeslot.getMinuteOfDay();
             	int lastMinuteOfDay;
-				DateTools.TimeWithoutTimezone timeWithoutTimezone = DateTools.toTime(block.getStart().getTime());
+				DateTools.TimeWithoutTimezone timeWithoutTimezone = DateTools.toTime(DateTools.toMilli(block.getStart()));
 				lastMinuteOfDay = timeWithoutTimezone.hour  * 60 +  timeWithoutTimezone.minute;
             	boolean sameTimeSlot = lastMinuteOfDay >= time;
                 if ( rowIndex +1 < timeslots.size())
@@ -190,13 +190,13 @@ public class SwingCompactCalendar extends AbstractRaplaSwingCalendar
             		time = lastMinuteOfDay;
             	}
 				final long l = DateTools.toTime(time / 60, time % 60, 0);
-            	newStart = DateTools.toDateTime( newStart, new Date(l));
+            	newStart = DateTools.toDateTime( newStart, DateTools.toLocalDateTime(l));
             	moved(block, p, newStart);
 	        }
          
-            protected TimeInterval getMarkedInterval(Date start) {
+            protected TimeInterval getMarkedInterval(LocalDateTime start) {
 				int columns =  view.getDaysInView();
-				Date end;
+				LocalDateTime end;
 				Integer startTime = null;
 		        Integer endTime = null;
 		        int slots = columns*timeslots.size();
@@ -230,8 +230,8 @@ public class SwingCompactCalendar extends AbstractRaplaSwingCalendar
 		        	endTime = calendarOptions.getWorktimeEndMinutes() + (calendarOptions.isWorktimeOvernight() ? 24*60:0);
 		        }
 
-		        start = DateTools.toDateTime( start,new Date(DateTools.toTime( startTime/60, startTime%60, 0)));
-				end = DateTools.toDateTime( start,new Date(DateTools.toTime( endTime/60, endTime%60, 0)));
+		        start = DateTools.toDateTime( start,DateTools.toLocalDateTime(DateTools.toTime( startTime/60, startTime%60, 0)));
+				end = DateTools.toDateTime( start,DateTools.toLocalDateTime(DateTools.toTime( endTime/60, endTime%60, 0)));
 		        TimeInterval intervall = new TimeInterval(start,end);
 				return intervall;
 			}

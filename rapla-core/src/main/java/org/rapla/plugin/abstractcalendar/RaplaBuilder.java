@@ -63,7 +63,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
-import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -76,6 +75,7 @@ import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
+import java.time.LocalDateTime;
 public class RaplaBuilder
     implements
         Builder
@@ -152,7 +152,7 @@ public class RaplaBuilder
      *  {@link org.rapla.storage.SyncStorageOperator} (server-side only). The async version
      *  delegates to this when the model has a sync operator; otherwise it falls back to
      *  the async query path. */
-    public RaplaBuilder initFromModelSync(CalendarModel model, Date startDate, Date endDate) throws RaplaException
+    public RaplaBuilder initFromModelSync(CalendarModel model, LocalDateTime startDate, LocalDateTime endDate) throws RaplaException
     {
         final TimeInterval interval = new TimeInterval( startDate, endDate);
         appointmentFilter = model.getAppointmentFilter();
@@ -160,7 +160,7 @@ public class RaplaBuilder
         return applyBindings(model, appointmentBindings);
     }
 
-    public Promise<RaplaBuilder> initFromModel(CalendarModel model, Date startDate, Date endDate)
+    public Promise<RaplaBuilder> initFromModel(CalendarModel model, LocalDateTime startDate, LocalDateTime endDate)
     {
         final RaplaBuilder builder = this;
         final TimeInterval interval = new TimeInterval( startDate, endDate);
@@ -411,7 +411,7 @@ public class RaplaBuilder
 		AppointmentBlock original;
     }
 
-    static public List<AppointmentBlock> splitBlocks(Collection<AppointmentBlock> preparedBlocks, Date startDate, Date endDate, int offsetMinutes) {
+    static public List<AppointmentBlock> splitBlocks(Collection<AppointmentBlock> preparedBlocks, LocalDateTime startDate, LocalDateTime endDate, int offsetMinutes) {
         List<AppointmentBlock> result = new ArrayList<>();
         for (AppointmentBlock block:preparedBlocks) {
             long blockStart = block.getStart();
@@ -425,15 +425,15 @@ public class RaplaBuilder
 
 
             if (shouldSplit.apply(blockStart, blockEnd) ) {
-                long firstBlockDate = Math.max(blockStart, startDate.getTime());
-                long lastBlockDate = Math.min(blockEnd, endDate.getTime());
+                long firstBlockDate = Math.max(blockStart, DateTools.toMilli(startDate));
+                long lastBlockDate = Math.min(blockEnd, DateTools.toMilli(endDate));
                 long currentBlockDate = firstBlockDate;
                 while ( currentBlockDate >= blockStart && minStart.apply( currentBlockDate )  < lastBlockDate) {
                     final boolean splitStart =shouldSplit.apply(blockStart, currentBlockDate);
                     final long start = splitStart ? minStart.apply(currentBlockDate): blockStart;
                     final boolean splitEnd = shouldSplit.apply(blockEnd, currentBlockDate) || minStart.apply(blockEnd) == blockEnd;
                     final long end = splitEnd ? maxEnd.apply( currentBlockDate ): blockEnd;
-                    //System.out.println("Adding Block " + new Date(start) + " - " + new Date(end));
+                    //System.out.println("Adding Block " + DateTools.toLocalDateTime(start) + " - " + DateTools.toLocalDateTime(end));
                     result.add ( new SplittedBlock(block,start, end, appointment,isException, splitStart, splitEnd));
                     currentBlockDate+= DateTools.MILLISECONDS_PER_DAY;
                 }
@@ -446,9 +446,7 @@ public class RaplaBuilder
 
 
     /** selects all blocks that should be visible and calculates the max start- and end-time  */
-    public PreperationResult prepareBuild(Date start,Date end) {
-        start = new Date( start.getTime() );
-        end = new Date( end.getTime() );
+    public PreperationResult prepareBuild(LocalDateTime start,LocalDateTime end) {
         boolean excludeExceptions = isExceptionsExcluded();
     	boolean nonFilteredEventsVisible = isNonFilteredEventsVisible();
         //long time = System.currentTimeMillis();
@@ -486,7 +484,7 @@ public class RaplaBuilder
         return new PreperationResult( min, max,preparedBlocks);
     }
 
-    public void build(BlockContainer blockContainer, Date startDate, Collection<AppointmentBlock> preparedBlocks) {
+    public void build(BlockContainer blockContainer, LocalDateTime startDate, Collection<AppointmentBlock> preparedBlocks) {
 
         List<Block> blocks = createBlocks(preparedBlocks, blockCreator);
         //long time = System.currentTimeMillis();
@@ -497,7 +495,7 @@ public class RaplaBuilder
 
     public interface BlockCreator
     {
-        Block createBlock(RaplaBlockContext blockContext, Date start, Date end);
+        Block createBlock(RaplaBlockContext blockContext, LocalDateTime start, LocalDateTime end);
     }
 
     @NotNull
@@ -512,8 +510,8 @@ public class RaplaBuilder
             Assert.notNull(preparedBlocks, "call prepareBuild first");
             for (AppointmentBlock block:preparedBlocks)
             {
-                Date start = new Date( block.getStart() );
-                Date end = new Date( block.getEnd() );
+                LocalDateTime start = LocalDateTime.ofInstant(java.time.Instant.ofEpochMilli(block.getStart()), java.time.ZoneOffset.UTC);
+                LocalDateTime end = LocalDateTime.ofInstant(java.time.Instant.ofEpochMilli(block.getEnd()), java.time.ZoneOffset.UTC);
                 RaplaBlockContext[] blockContext = getBlocksForAppointment( block, buildContext );
                 for ( int j=0;j< blockContext.length; j++) {
                     blocks.add( blockCreator.createBlock(blockContext[j], start, end));
