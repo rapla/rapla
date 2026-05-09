@@ -13,6 +13,7 @@
 
 package org.rapla.components.calendarview;
 
+import org.rapla.components.util.DateTools;
 import org.rapla.components.calendarview.swing.SwingBlock;
 import org.rapla.components.calendarview.swing.SwingMonthView;
 import org.rapla.components.calendarview.swing.SwingWeekView;
@@ -37,12 +38,12 @@ import java.awt.event.WindowEvent;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Collection;
-import java.util.Date;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 
+import java.time.LocalDateTime;
 /** Test class for RaplaCalendar and RaplaTime */
 public final class RaplaCalendarViewExample {
     private final JTabbedPane tabbedPane = new JTabbedPane();
@@ -79,13 +80,13 @@ public final class RaplaCalendarViewExample {
     void initAppointments( ) {
         Calendar cal = Calendar.getInstance();
         // the first appointment
-        cal.setTime( new Date());
+        cal.setTimeInMillis(DateTools.toMilli(LocalDateTime.now()));
         cal.set( Calendar.HOUR_OF_DAY, 12);
         cal.set( Calendar.MINUTE, 0);
         cal.set( Calendar.DAY_OF_WEEK, Calendar.MONDAY);
-        Date start = cal.getTime();
+        LocalDateTime start = DateTools.toLocalDateTime(cal.getTimeInMillis());
         cal.set( Calendar.HOUR_OF_DAY, 14);
-        Date end = cal.getTime();
+        LocalDateTime end = DateTools.toLocalDateTime(cal.getTimeInMillis());
         
         
         // FIXME add real appointments
@@ -94,9 +95,9 @@ public final class RaplaCalendarViewExample {
         // the second appointment 
         cal.set( Calendar.DAY_OF_WEEK, Calendar.WEDNESDAY);
         cal.set( Calendar.HOUR_OF_DAY, 13);
-        Date start2 = cal.getTime();
+        LocalDateTime start2 = DateTools.toLocalDateTime(cal.getTimeInMillis());
         cal.set( Calendar.HOUR_OF_DAY, 15);
-        Date end2 = cal.getTime();
+        LocalDateTime end2 = DateTools.toLocalDateTime(cal.getTimeInMillis());
         // FIXME add real
 //        appointments.add( new MyAppointment( start2, end2, "TEST2" ));
     }
@@ -106,7 +107,7 @@ public final class RaplaCalendarViewExample {
     {
         final SwingWeekView wv = new SwingWeekView();
         tabbedPane.addTab("Weekview", wv.getComponent());
-        Date today = new Date();
+        LocalDateTime today = LocalDateTime.now();
         // set to German locale
         wv.setLocale( new RaplaLocaleImpl(null));
 
@@ -150,9 +151,9 @@ public final class RaplaCalendarViewExample {
         // we exclude everyday except the monday of the current week
         Set<Integer> excludeDays = new HashSet<Integer>();
         Calendar cal = Calendar.getInstance();
-        cal.setTime ( new Date());
+        cal.setTimeInMillis(DateTools.toMilli(LocalDateTime.now()));
         cal.set( Calendar.DAY_OF_WEEK, Calendar.MONDAY);
-        Date mondayOfWeek = cal.getTime();
+        LocalDateTime mondayOfWeek = DateTools.toLocalDateTime(cal.getTimeInMillis());
         for (int i=0;i<8;i++) {
             if ( i != cal.get( Calendar.DAY_OF_WEEK)) {
                 excludeDays.add(Integer.valueOf(i));
@@ -189,7 +190,7 @@ public final class RaplaCalendarViewExample {
     {
         final SwingMonthView mv = new SwingMonthView();
         tabbedPane.addTab("Monthview", mv.getComponent());
-        Date today = new Date();
+        LocalDateTime today = LocalDateTime.now();
         // set to German locale
         mv.setLocale( raplaLocale );
         // we exclude Saturday and Sunday
@@ -227,12 +228,12 @@ public final class RaplaCalendarViewExample {
             strategy.setResolveConflictsEnabled( true );
         }
          
-        public PreperationResult prepareBuild(Date startDate, Date endDate) {
+        public PreperationResult prepareBuild(LocalDateTime startDate, LocalDateTime endDate) {
             List<AppointmentBlock> blocks = new ArrayList<AppointmentBlock>();
             for ( Iterator<Appointment> it = appointments.iterator(); it.hasNext(); )
             {
                 Appointment appointment = it.next();
-                if ( !appointment.getStart().before( startDate) && !appointment.getEnd().after( endDate ))
+                if ( !appointment.getStart().isBefore( startDate) && !appointment.getEnd().isAfter( endDate ))
                 {
                     blocks.add( AppointmentBlock.create(  appointment ));
                 }
@@ -248,7 +249,7 @@ public final class RaplaCalendarViewExample {
             return 0;
         }
 
-        public void build(BlockContainer  cv,Date startDate, Collection<AppointmentBlock> blocks ) {
+        public void build(BlockContainer  cv,LocalDateTime startDate, Collection<AppointmentBlock> blocks ) {
             List<Block> swingBlocks = new ArrayList<Block>();
             for ( AppointmentBlock block:blocks)
             {
@@ -284,11 +285,11 @@ public final class RaplaCalendarViewExample {
         }
 
 
-        public Date getStart() {
+        public LocalDateTime getStart() {
             return appointment.getStart();
         }
 
-        public Date getEnd() {
+        public LocalDateTime getEnd() {
             return appointment.getEnd();
         }
 
@@ -335,11 +336,11 @@ public final class RaplaCalendarViewExample {
             this.builder = builder;
         }
         
-        public void selectionPopup(Component slotComponent, Point p, Date start, Date end, int slotNr) {
+        public void selectionPopup(Component slotComponent, Point p, LocalDateTime start, LocalDateTime end, int slotNr) {
             System.out.println("Selection Popup in slot " + slotNr);
         }
 
-        public void selectionChanged(Date start, Date end) {
+        public void selectionChanged(LocalDateTime start, LocalDateTime end) {
             System.out.println("Selection change " + start + " - " + end );
         }
 
@@ -351,14 +352,14 @@ public final class RaplaCalendarViewExample {
             System.out.println("Block double click");
         }
 
-        public void moved(Block block, Point p, Date newStart, int slotNr) {
+        public void moved(Block block, Point p, LocalDateTime newStart, int slotNr) {
             Appointment appointment = ((MyBlock) block).getAppointment();
             appointment.moveTo( newStart);
             System.out.println("Block moved");
             view.rebuild(builder);
         }
 
-        public void resized(Block block, Point p, Date newStart, Date newEnd, int slotNr) {
+        public void resized(Block block, Point p, LocalDateTime newStart, LocalDateTime newEnd, int slotNr) {
             Appointment appointment = ((MyBlock) block).getAppointment();
             appointment.move( newStart, newEnd);
             System.out.println("Block resized");
@@ -374,17 +375,18 @@ public final class RaplaCalendarViewExample {
         }
 
         @Override
-        public void moved(Block block, Point p, Date newStart, int slotNr) {
+        public void moved(Block block, Point p, LocalDateTime newStart, int slotNr) {
             Appointment appointment = ((MyBlock) block).getAppointment();
             Calendar cal = Calendar.getInstance();
-            cal.setTime( appointment.getStart() );
+            cal.setTimeInMillis(DateTools.toMilli(appointment.getStart()));
             int hour = cal.get( Calendar.HOUR_OF_DAY);
             int minute = cal.get( Calendar.MINUTE);
-            cal.setTime( newStart );
+            cal.setTimeInMillis(DateTools.toMilli(newStart));
             cal.set( Calendar.HOUR_OF_DAY, hour);
             cal.set( Calendar.MINUTE, minute);
-            appointment.moveTo( cal.getTime());
-            System.out.println("Block moved to " + cal.getTime());
+            LocalDateTime moved = DateTools.toLocalDateTime(cal.getTimeInMillis());
+            appointment.moveTo( moved);
+            System.out.println("Block moved to " + moved);
             view.rebuild(builder);
         }
 

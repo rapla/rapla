@@ -113,6 +113,7 @@ import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import java.time.LocalDateTime;
 public abstract class LocalAbstractCachableOperator extends AbstractCachableOperator implements Disposable, CachableStorageOperator, IdCreator, org.rapla.storage.SyncStorageOperator
 {
 
@@ -148,7 +149,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
     private TimeZone systemTimeZone = TimeZone.getDefault();
     private final CommandScheduler scheduler;
     private final List<org.rapla.scheduler.Cancellation> scheduledTasks = new ArrayList<>();
-    private Date connectStart;
+    private java.time.LocalDateTime connectStart;
     private final DefaultRaplaLock disconnectLock;
 
     public LocalAbstractCachableOperator(Logger logger, RaplaResources i18n, RaplaLocale raplaLocale, CommandScheduler scheduler,
@@ -368,14 +369,13 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
         return name;
     }
 
-    @SuppressWarnings("rawtypes")
     @Override
-    public Date getConnectStart()
+    public LocalDateTime getConnectStart()
     {
         return connectStart;
     }
 
-    protected void setConnectStart(Date connectStart)
+    protected void setConnectStart(LocalDateTime connectStart)
     {
         this.connectStart = connectStart;
     }
@@ -449,15 +449,15 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
      * @param user the owner of the reservation or null for reservations from all users
      */
     @Override
-    public Promise<AppointmentMapping> queryAppointments(final User user, final Collection<Allocatable> allocatables, final Collection<User> owners, final Date start,
-                                                         final Date end, final ClassificationFilter[] filters, final Map<String, String> annotationQuery, boolean requestsOnly)
+    public Promise<AppointmentMapping> queryAppointments(final User user, final Collection<Allocatable> allocatables, final Collection<User> owners, final LocalDateTime start,
+                                                         final LocalDateTime end, final ClassificationFilter[] filters, final Map<String, String> annotationQuery, boolean requestsOnly)
     {
         return scheduler.supply(() -> queryAppointmentsSync(user, allocatables, owners, start, end, filters, annotationQuery, requestsOnly));
     }
 
     @Override
-    public AppointmentMapping queryAppointmentsSync(final User user, final Collection<Allocatable> allocatables, final Collection<User> owners, final Date start,
-                                                    final Date end, final ClassificationFilter[] filters, final Map<String, String> annotationQuery, boolean requestsOnly) throws RaplaException
+    public AppointmentMapping queryAppointmentsSync(final User user, final Collection<Allocatable> allocatables, final Collection<User> owners, final LocalDateTime start,
+                                                    final LocalDateTime end, final ClassificationFilter[] filters, final Map<String, String> annotationQuery, boolean requestsOnly) throws RaplaException
     {
         {
             boolean excludeExceptions = false;
@@ -641,18 +641,18 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
     }
 
 
-    public Date today()
+    @Override
+    public java.time.LocalDate today()
     {
-        long time = getCurrentTimestamp().getTime();
+        long time = DateTools.toMilli(getCurrentTimestamp());
         long offset = TimeZoneConverterImpl.getOffset(IOUtil.getTimeZone(), systemTimeZone, time);
-        Date raplaTime = new Date(time + offset);
-        return DateTools.cutDate(raplaTime);
+        return DateTools.toLocalDateTime(time + offset).toLocalDate();
     }
 
-    public Date getCurrentTimestamp()
+    @Override
+    public LocalDateTime getCurrentTimestamp()
     {
-        long time = System.currentTimeMillis();
-        return new Date(time);
+        return DateTools.toLocalDateTime(System.currentTimeMillis());
     }
 
     public void setTimeZone(TimeZone timeZone)
@@ -820,8 +820,8 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
         for (String templateKey : templateMap.keySet())
         {
             Collection<Reservation> templateEvents = templateMap.get(templateKey);
-            java.time.LocalDateTime date = getCurrentTimestampAsLocalDateTime();
-            AllocatableImpl template = AllocatableImpl.ofLocalDateTime(date, date);
+            java.time.LocalDateTime date = getCurrentTimestamp();
+            AllocatableImpl template = new AllocatableImpl(date, date);
             template.setResolver(this);
             String templateId = createId(Allocatable.class);
             Classification newClassification = getDynamicType(RAPLA_TEMPLATE).newClassification();
@@ -933,7 +933,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
         final Collection<org.rapla.entities.domain.Reservation> ignoreList = java.util.Collections.singleton(reservation);
         final Map<org.rapla.entities.storage.ReferenceInfo<Allocatable>, Map<org.rapla.entities.domain.Appointment, Collection<org.rapla.entities.domain.Appointment>>> map =
                 getAllocatableBindings(allocatables, appointments, ignoreList, false);
-        final Date today = today();
+        final java.time.LocalDate today = today();
         final ArrayList<Conflict> conflictList = new ArrayList<>();
         for (Map.Entry<org.rapla.entities.storage.ReferenceInfo<Allocatable>, Map<org.rapla.entities.domain.Appointment, Collection<org.rapla.entities.domain.Appointment>>> entry : map.entrySet())
         {
@@ -949,7 +949,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
                 if (conflictingAppointments == null) continue;
                 for (org.rapla.entities.domain.Appointment conflicting : conflictingAppointments)
                 {
-                    org.rapla.facade.internal.ConflictImpl.checkAndAddConflicts(conflictList, allocatable, appointment, conflicting, today);
+                    org.rapla.facade.internal.ConflictImpl.checkAndAddConflicts(conflictList, allocatable, appointment, conflicting, today.atStartOfDay());
                 }
             }
         }
@@ -1067,7 +1067,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
             }
         }
         appointmentBindings.initAppointmentBindings(events);
-        Date today2 = today();
+        java.time.LocalDate today2 = today();
         AllocationMap allocationMap = new AllocationMap()
         {
             public SortedSet<Appointment> getAppointments(Allocatable allocatable)
@@ -1083,7 +1083,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
         };
         // The conflict map
         Logger logger = getLogger();
-        conflictFinder = new ConflictFinder(allocationMap, today2, logger, this, permissionController);
+        conflictFinder = new ConflictFinder(allocationMap, today2.atStartOfDay(), logger, this, permissionController);
 
         // if a client request changes before the start date return refresh conflict flag
         Action cleanUpConflicts = ()->
@@ -1103,7 +1103,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
         {
             ReferenceInfo referenceInfo = conflict.getReference();
             boolean isDelete = false;
-            Date timestamp = conflict.getLastChanged();
+            LocalDateTime timestamp = conflict.getLastChanged();
             addToDeleteUpdate(referenceInfo, timestamp, isDelete, conflict);
         }
 
@@ -1119,7 +1119,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
             }
             ReferenceInfo referenceInfo = preference.getReference();
             boolean isDelete = false;
-            Date timestamp = preference.getLastChanged();
+            LocalDateTime timestamp = preference.getLastChanged();
             addToDeleteUpdate(referenceInfo, timestamp, isDelete, preference);
         }
         final long delayCleanup = DateTools.MILLISECONDS_PER_HOUR;
@@ -1237,7 +1237,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
     }
 
     /*
-    public void setConflictEnabledState( String conflictId,Date date, boolean appointment1Enabled,boolean appointment2Enabled, Date lastChanged)
+    public void setConflictEnabledState( String conflictId,LocalDateTime date, boolean appointment1Enabled,boolean appointment2Enabled, LocalDateTime lastChanged)
     {
         ConflictImpl conflict = (ConflictImpl)conflictFinder.findConflict(conflictId, date);
         conflict.setAppointment1Enabled( appointment1Enabled);
@@ -1254,7 +1254,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
         }
         Conflict conflict = (Conflict) entity;
         String conflictId = conflict.getId();
-        Date date = getCurrentTimestamp();
+        LocalDateTime date = getCurrentTimestamp();
         boolean appointment1Enabled = conflict.isAppointment1Enabled();
         boolean appointment2Enabled = conflict.isAppointment2Enabled();
         setConflictEnabledState(conflictId, date, appointment1Enabled, appointment2Enabled,conflict.getLastChanged());
@@ -1283,7 +1283,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
                     || raplaType == User.class || raplaType == Category.class)
             {
                 //history.getBefore(id, now);
-                //Date timestamp = ((LastChangedTimestamp) newEntity).getLastChanged();
+                //LocalDateTime timestamp = ((LastChangedTimestamp) newEntity).getLastChanged();
                 //boolean isDelete = false;
                 //final EntityHistory.HistoryEntry historyEntry = history.addHistoryEntry(newEntity, timestamp, isDelete);
                 final EntityHistory.HistoryEntry historyEntry = history.getLatest(id);
@@ -1297,7 +1297,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
                 Entity current = tryResolve(referenceInfo.getId(), Preferences.class);
                 if (current != null)
                 {
-                    Date timestamp = ((Preferences) current).getLastChanged();
+                    LocalDateTime timestamp = ((Preferences) current).getLastChanged();
                     addToDeleteUpdate(referenceInfo, timestamp, isDelete, current);
                 }
             }
@@ -1329,26 +1329,24 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
         {
             String id = changes.getCurrentId();
             final Entity lastKnown = result.getLastKnown(id);//.getUnresolvedEntity();
-            checkAndAddConflict(lastKnown);
         }
 
         for (Remove removed : result.getOperations(UpdateResult.Remove.class))
         {
             String id = removed.getCurrentId();
             final Entity lastKnown = result.getLastEntryBeforeUpdate(id);
-            checkAndAddConflict(lastKnown);
         }
         */
-        Date today = today();
+        java.time.LocalDate today = today();
         // processes the conflicts and adds the changes to the result
-        final Collection<ConflictFinder.ConflictChangeOperation> calculatedConflictChanges = conflictFinder.updateConflicts(bindingResult, result, today);
+        final Collection<ConflictFinder.ConflictChangeOperation> calculatedConflictChanges = conflictFinder.updateConflicts(bindingResult, result, today.atStartOfDay());
         for (ConflictFinder.ConflictChangeOperation updateOperation : calculatedConflictChanges)
         {
             final UpdateOperation operation = updateOperation.getOperation();
             ReferenceInfo referenceInfo = operation.getReference();
             final Conflict conflict;
             boolean isDelete;
-            Date timestamp;
+            LocalDateTime timestamp;
             if (operation instanceof Remove)
             {
                 conflict = null;
@@ -1500,12 +1498,12 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
     {
         Entity current = history.getEntity(historyEntry);
         final boolean isDelete = historyEntry.isDelete();
-        final Date timestamp = new Date(historyEntry.getTimestamp());
+        final LocalDateTime timestamp = DateTools.toLocalDateTime(historyEntry.getTimestamp());
         ReferenceInfo ref = historyEntry.getId();
         addToDeleteUpdate(ref, timestamp, isDelete, current);
     }
 
-    private void addToDeleteUpdate(ReferenceInfo referenceInfo, Date timestamp, boolean isDelete, Entity current)
+    private void addToDeleteUpdate(ReferenceInfo referenceInfo, LocalDateTime timestamp, boolean isDelete, Entity current)
     {
         synchronized ( deleteUpdateSet ) {
             final Class<? extends Entity> type = referenceInfo.getType();
@@ -1566,7 +1564,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
     }
 
     /*
-    @Override public Collection<ReferenceInfo> getDeletedEntities(User user, final Date timestamp) throws RaplaException
+    @Override public Collection<ReferenceInfo> getDeletedEntities(User user, final LocalDateTime timestamp) throws RaplaException
     {
         boolean isDelete = true;
         Collection<ReferenceInfo> result = getEntities(user, timestamp, isDelete);
@@ -1600,13 +1598,13 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
     class DeleteUpdateEntry implements Comparable<DeleteUpdateEntry>
     {
         public boolean affectAll;
-        Date timestamp;
+        LocalDateTime timestamp;
         final ReferenceInfo reference;
         Set<String> affectedGroupIds;
         Set<String> affectedUserIds;
         boolean isDelete;
 
-        DeleteUpdateEntry(ReferenceInfo reference, Date timestamp, boolean isDelete)
+        DeleteUpdateEntry(ReferenceInfo reference, LocalDateTime timestamp, boolean isDelete)
         {
             this.isDelete = isDelete;
             this.timestamp = timestamp;
@@ -1620,8 +1618,8 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
             {
                 return 0;
             }
-            Date time1 = this.timestamp;
-            Date time2 = o.timestamp;
+            LocalDateTime time1 = this.timestamp;
+            LocalDateTime time2 = o.timestamp;
             int result = time1.compareTo(time2);
             if (result != 0)
             {
@@ -1762,14 +1760,14 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
     /**
      * returns all entities with a timestamp > the passed timestamp
      */
-    private Collection<ReferenceInfo> getEntities(User user, final Date timestamp, boolean isDelete)
+    private Collection<ReferenceInfo> getEntities(User user, final LocalDateTime timestamp, boolean isDelete)
     {
         Assert.notNull(timestamp);
         // we use an empty id here because the implmentation of the DeleteUpdateEntry compare compares idStrings if timestamps are equal
         // so tailMap returns all entities with a timestamp >= timestamp
         final String dummyId = "";
         // we need to add +1 so that we dont get entities with the passed (guaranteed timestamp)
-        DeleteUpdateEntry fromElement = new DeleteUpdateEntry(new ReferenceInfo(dummyId, Allocatable.class), new Date(timestamp.getTime() + 1), isDelete);
+        DeleteUpdateEntry fromElement = new DeleteUpdateEntry(new ReferenceInfo(dummyId, Allocatable.class), LocalDateTime.ofInstant(java.time.Instant.ofEpochMilli(DateTools.toMilli(timestamp) + 1), java.time.ZoneOffset.UTC), isDelete);
         LinkedList<ReferenceInfo> result = new LinkedList<>();
 
         final Collection<String> groupsIncludingParents = user != null ? UserImpl.getGroupsIncludingParents(user) : null;
@@ -2033,8 +2031,8 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
                                 Reservation persistent = cache.tryResolve(id);
                                 if (persistent != null)
                                 {
-                                    Date lastChanged = original.getLastChanged();
-                                    Date persistantLastChanged = persistent.getLastChanged();
+                                    LocalDateTime lastChanged = original.getLastChanged();
+                                    LocalDateTime persistantLastChanged = persistent.getLastChanged();
                                     if (persistantLastChanged != null && !persistantLastChanged.equals(lastChanged))
                                     {
                                         if ( !problematicIdSet.contains( persistent.getId()))
@@ -2090,7 +2088,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 
     }
 
-    protected UpdateResult refresh(Date since, Date until, Collection<Entity> storeObjects, Collection<PreferencePatch> preferencePatches,
+    protected UpdateResult refresh(LocalDateTime since, LocalDateTime until, Collection<Entity> storeObjects, Collection<PreferencePatch> preferencePatches,
             Collection<ReferenceInfo> removedIds) throws RaplaException
     {
 
@@ -2106,24 +2104,24 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 
     private void removeOldHistory()
     {
-        Date lastUpdated = getLastRefreshed();
-        Date date = new Date(lastUpdated.getTime() - HISTORY_DURATION);
+        LocalDateTime lastUpdated = getLastRefreshed();
+        LocalDateTime date = LocalDateTime.ofInstant(java.time.Instant.ofEpochMilli(DateTools.toMilli(lastUpdated) - HISTORY_DURATION), java.time.ZoneOffset.UTC);
         history.removeUnneeded(date);
     }
 
     private void removeOldConflicts()
     {
-        Date today = today();
+        java.time.LocalDate today = today();
         Set<ReferenceInfo<Conflict>> conflictsToDelete;
         {
-            conflictsToDelete = new HashSet<>(conflictFinder.removeOldConflicts(today));
+            conflictsToDelete = new HashSet<>(conflictFinder.removeOldConflicts(today.atStartOfDay()));
             conflictsToDelete.retainAll(cache.getDisabledConflictIds());
         }
 
         Collection<Conflict> conflicts = cache.getDisabledConflicts();
         for (Conflict conflict : conflicts)
         {
-            if (!conflictFinder.isActiveConflict(conflict, today))
+            if (!conflictFinder.isActiveConflict(conflict, today.atStartOfDay()))
             {
                 conflictsToDelete.add(conflict.getReference());
             }
@@ -2261,11 +2259,11 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
             // The undo cache does not notice the change in type
             if (entity instanceof Classifiable && entity instanceof Timestamp)
             {
-                Date lastChanged = ((LastChangedTimestamp) entity).getLastChanged();
+                LocalDateTime lastChanged = ((LastChangedTimestamp) entity).getLastChanged();
                 ClassificationImpl classification = (ClassificationImpl) ((Classifiable) entity).getClassification();
                 DynamicTypeImpl dynamicType = classification.getType();
-                Date typeLastChanged = dynamicType.getLastChanged();
-                if (typeLastChanged != null && lastChanged != null && typeLastChanged.after(lastChanged))
+                LocalDateTime typeLastChanged = dynamicType.getLastChanged();
+                if (typeLastChanged != null && lastChanged != null && typeLastChanged.isAfter(lastChanged))
                 {
                     if (classification.needsChange(dynamicType))
                     {
@@ -2897,9 +2895,9 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
             {
                 if ((persistantVersion instanceof Timestamp))
                 {
-                    Date lastChangeTimePersistant = ((LastChangedTimestamp) persistantVersion).getLastChanged();
-                    Date lastChangeTime = ((LastChangedTimestamp) entity).getLastChanged();
-                    if (lastChangeTimePersistant != null && lastChangeTime != null && lastChangeTimePersistant.after(lastChangeTime))
+                    LocalDateTime lastChangeTimePersistant = ((LastChangedTimestamp) persistantVersion).getLastChanged();
+                    LocalDateTime lastChangeTime = ((LastChangedTimestamp) entity).getLastChanged();
+                    if (lastChangeTimePersistant != null && lastChangeTime != null && lastChangeTimePersistant.isAfter(lastChangeTime))
                     {
                         getLogger().warn("There is a newer  version for: " + entity.getId() + " stored version :" + SerializableDateTimeFormat.INSTANCE
                                 .formatTimestamp(lastChangeTimePersistant) + " version to store :" + SerializableDateTimeFormat.INSTANCE
@@ -3341,7 +3339,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
             if (appointments.length > 0)
             {
                 buf.append(" ");
-                Date start = appointments[0].getStart();
+                LocalDateTime start = appointments[0].getStart();
                 buf.append(raplaLocale.formatDate(start));
             }
 
@@ -3524,7 +3522,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
     }
 
     @Override
-    public Promise<Date> getNextAllocatableDate(final Collection<Allocatable> allocatables, final Appointment appointment,
+    public Promise<LocalDateTime> getNextAllocatableDate(final Collection<Allocatable> allocatables, final Appointment appointment,
             final Collection<Reservation> ignoreList, final Integer worktimeStartMinutes, final Integer worktimeEndMinutes, final Integer[] excludedDays,
             final Integer rowsPerHour)
     {
@@ -3532,13 +3530,13 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
     }
 
     @Override
-    public Date getNextAllocatableDateSync(final Collection<Allocatable> allocatables, final Appointment appointment,
+    public LocalDateTime getNextAllocatableDateSync(final Collection<Allocatable> allocatables, final Appointment appointment,
             final Collection<Reservation> ignoreList, final Integer worktimeStartMinutes, final Integer worktimeEndMinutes, final Integer[] excludedDays,
             final Integer rowsPerHour) throws RaplaException
     {
         try {
         Appointment newState = appointment;
-        Date firstStart = appointment.getStart();
+        LocalDateTime firstStart = appointment.getStart();
         boolean startDateExcluded = isExcluded(excludedDays, firstStart);
         boolean wholeDay = appointment.isWholeDaysSet();
         boolean inWorktime = inWorktime(appointment, worktimeStartMinutes, worktimeEndMinutes);
@@ -3546,9 +3544,9 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
         for (int i = 0; i < 366 * 24 * rowsPerHourInt; i++)
         {
             newState = ((AppointmentImpl) newState).clone();
-            Date start = newState.getStart();
+            LocalDateTime start = newState.getStart();
             long millisToAdd = wholeDay ? DateTools.MILLISECONDS_PER_DAY : (DateTools.MILLISECONDS_PER_HOUR / rowsPerHourInt);
-            Date newStart = new Date(start.getTime() + millisToAdd);
+            LocalDateTime newStart = LocalDateTime.ofInstant(java.time.Instant.ofEpochMilli(DateTools.toMilli(start) + millisToAdd), java.time.ZoneOffset.UTC);
             if (!startDateExcluded && isExcluded(excludedDays, newStart))
             {
                 continue;
@@ -3573,16 +3571,16 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 
     private boolean inWorktime(Appointment appointment, Integer worktimeStartMinutes, Integer worktimeEndMinutes)
     {
-        long start = appointment.getStart().getTime();
+        long start = DateTools.toMilli(appointment.getStart());
         int minuteOfDayStart = DateTools.getMinuteOfDay(start);
-        long end = appointment.getEnd().getTime();
+        long end = DateTools.toMilli(appointment.getEnd());
         int minuteOfDayEnd = DateTools.getMinuteOfDay(end) + (int) DateTools.countDays(start, end) * 24 * 60;
         boolean inWorktime = (worktimeStartMinutes == null || worktimeStartMinutes <= minuteOfDayStart) && (worktimeEndMinutes == null
                 || worktimeEndMinutes >= minuteOfDayEnd);
         return inWorktime;
     }
 
-    private boolean isExcluded(Integer[] excludedDays, Date date)
+    private boolean isExcluded(Integer[] excludedDays, LocalDateTime date)
     {
         Integer weekday = DateTools.getWeekday(date);
         if (excludedDays != null)
@@ -3646,9 +3644,9 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 
     protected void createDefaultSystem(EntityStore store) throws RaplaException
     {
-        java.time.LocalDateTime now = getCurrentTimestampAsLocalDateTime();
+        java.time.LocalDateTime now = getCurrentTimestamp();
 
-        PreferencesImpl newPref = PreferencesImpl.ofLocalDateTime(now, now);
+        PreferencesImpl newPref = new PreferencesImpl(now, now);
         newPref.setId(PreferencesImpl.getPreferenceIdFromUser(null).getId());
         newPref.setResolver(store);
         newPref.setReadOnly();
@@ -3657,21 +3655,21 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
         @SuppressWarnings("deprecation")
         String[] userGroups = new String[] { Permission.GROUP_CAN_READ_EVENTS_FROM_OTHERS, Permission.GROUP_CAN_CREATE_EVENTS, ExchangeConnectorPlugin.EXCHANGE_SYNCHRONIZATION_GROUP};
 
-        CategoryImpl groupsCategory = CategoryImpl.ofLocalDateTime(now, now);
+        CategoryImpl groupsCategory = new CategoryImpl(now, now);
         groupsCategory.setKey("user-groups");
         groupsCategory.setResolver(store);
         setName(groupsCategory.getName(), groupsCategory.getKey());
         setNew(groupsCategory);
         store.put(groupsCategory);
 
-        CategoryImpl periodsCategory = CategoryImpl.ofLocalDateTime(now, now);
+        CategoryImpl periodsCategory = new CategoryImpl(now, now);
         periodsCategory.setKey("periods");
         periodsCategory.setResolver(store);
         setName(periodsCategory.getName(), periodsCategory.getKey());
         setNew(periodsCategory);
         store.put(periodsCategory);
 
-        CategoryImpl holidaysCategory = CategoryImpl.ofLocalDateTime(now, now);
+        CategoryImpl holidaysCategory = new CategoryImpl(now, now);
 
         holidaysCategory.setKey("holiday");
         holidaysCategory.setResolver(store);
@@ -3682,7 +3680,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 
         for (String catName : userGroups)
         {
-            CategoryImpl group = CategoryImpl.ofLocalDateTime(now, now);
+            CategoryImpl group = new CategoryImpl(now, now);
             group.setKey(catName);
             setNew(group);
             setName(group.getName(), group.getKey());
@@ -3708,7 +3706,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
         setName(eventType.getName(), "event");
         addDependencies(store, eventType);
 
-        UserImpl admin = UserImpl.ofLocalDateTime(now, now);
+        UserImpl admin = new UserImpl(now, now);
         admin.setUsername("admin");
         admin.setAdmin(true);
         setNew(admin);
@@ -3727,7 +3725,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
         store.putPassword(admin.getReference(), password);
         ((CategoryImpl) superCategory).setReadOnly();
 
-        AllocatableImpl allocatable = AllocatableImpl.ofLocalDateTime(now, now);
+        AllocatableImpl allocatable = new AllocatableImpl(now, now);
         allocatable.setResolver(store);
         Classification classification = resourceType.newClassificationWithoutCheck(true);
 
@@ -3858,21 +3856,21 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
         return referenceInfo;
     }
 
-    public UpdateResult getUpdateResult(Date since, User user) throws RaplaException
+    public UpdateResult getUpdateResult(LocalDateTime since, User user) throws RaplaException
     {
         checkConnected();
         // date when current history begins. history entries before that date can be deleted, so they should be ingnored here
-        final Date historyValidStart = getHistoryValidStart();
+        final LocalDateTime historyValidStart = getHistoryValidStart();
         // check if we can use the history to return a result
-        if (since == null || since.before(historyValidStart))
+        if (since == null || since.isBefore(historyValidStart))
         {
             since = historyValidStart;
             // if not we tell the server what would be a valid history
             // 10 minutes
-            final Date until = new Date(historyValidStart.getTime() + DateTools.MILLISECONDS_PER_MINUTE * 10);
+            final LocalDateTime until = historyValidStart.plus(10 * DateTools.MILLISECONDS_PER_MINUTE, java.time.temporal.ChronoUnit.MILLIS);
             return new UpdateResult(since, until, Collections.emptyMap(), Collections.emptyMap());
         }
-        Date until = getLastRefreshed();
+        LocalDateTime until = getLastRefreshed();
         final Collection<ReferenceInfo> toUpdate = getEntities(user, since, false);
         Map<ReferenceInfo, Entity> oldEntities = new LinkedHashMap<>();
         Collection<Entity> updatedEntities = new ArrayList<>();
@@ -3951,7 +3949,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
     }
 
     @Override
-    public UpdateResult getUpdateResult(Date since) throws RaplaException
+    public UpdateResult getUpdateResult(LocalDateTime since) throws RaplaException
     {
         return getUpdateResult(since, null);
     }
@@ -4042,7 +4040,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 
     @Override
     public AppointmentMapping queryAppointmentsSync(User user, Collection<Allocatable> allocatables, Collection<User> owners,
-                                                    Date start, Date end, ClassificationFilter[] filters, String templateId) throws RaplaException
+                                                    LocalDateTime start, LocalDateTime end, ClassificationFilter[] filters, String templateId) throws RaplaException
     {
         Collection<Allocatable> allocList;
         if (allocatables != null)

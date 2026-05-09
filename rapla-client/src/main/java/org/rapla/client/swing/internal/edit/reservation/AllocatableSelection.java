@@ -121,7 +121,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.Date;
 import java.util.Enumeration;
 import java.util.EventObject;
 import java.util.HashMap;
@@ -134,6 +133,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 
+import java.time.LocalDateTime;
 /**
  * <p>
  * GUI for editing the allocations of a reservation. Presents two TreeTables. The left one displays
@@ -375,7 +375,7 @@ public class AllocatableSelection extends RaplaGUIComponent implements Appointme
     }
 
     private void changeRequestStatus() {
-        Date today = getQuery().today();
+        java.time.LocalDate today = getQuery().today();
         for (Reservation reservation:mutableReservations) {
             for (Allocatable allocatable:reservation.getAllocatables()) {
                 final RequestStatus status = reservation.getRequestStatus(allocatable);
@@ -488,7 +488,7 @@ public class AllocatableSelection extends RaplaGUIComponent implements Appointme
     {
         Allocatable[] allocatables = getQuery().getAllocatablesWithFilter(calendarModel.getModel().getAllocatableFilter());
         Set<Allocatable> rightsToAllocate = new HashSet<>();
-        Date today = getQuery().today();
+        java.time.LocalDate today = getQuery().today();
         for (Allocatable alloc : allocatables)
         {
             if (permissionController.canAllocate(alloc, user, today) || permissionController.isRequestOnly(alloc, user, today))
@@ -519,7 +519,7 @@ public class AllocatableSelection extends RaplaGUIComponent implements Appointme
         setAppointments(mutableReservation);
         Collection<Allocatable> allocatableList = getAllAllocatables();
         for (Allocatable allocatable:allocatableList) {
-            Date today = getQuery().today();
+            java.time.LocalDate today = getQuery().today();
             if (permissionController.isRequestOnly( allocatable, user, today))
             {
                 for (Reservation reservation: mutableReservation) {
@@ -693,7 +693,7 @@ public class AllocatableSelection extends RaplaGUIComponent implements Appointme
 
     protected void add(Collection<Allocatable> elements)
     {
-        Date today = getQuery().today();
+        java.time.LocalDate today = getQuery().today();
         Iterator<Allocatable> it = elements.iterator();
         boolean bChanged = false;
         while (it.hasNext())
@@ -719,11 +719,11 @@ public class AllocatableSelection extends RaplaGUIComponent implements Appointme
         fireAllocationsChanged();
     }
 
-    private Date findFirstStart(Collection<Appointment> appointments)
+    private LocalDateTime findFirstStart(Collection<Appointment> appointments)
     {
-        Date firstStart = null;
+        LocalDateTime firstStart = null;
         for (Appointment app : appointments)
-            if (firstStart == null || app.getStart().before(firstStart))
+            if (firstStart == null || app.getStart().isBefore(firstStart))
                 firstStart = app.getStart();
 
         return firstStart;
@@ -1260,9 +1260,9 @@ public class AllocatableSelection extends RaplaGUIComponent implements Appointme
     // returns if the user is allowed to allocate the passed allocatable
     private boolean isAllowed(Allocatable allocatable, Appointment appointment)
     {
-        Date start = appointment.getStart();
-        Date end = appointment.getMaxEnd();
-        Date today = getQuery().today();
+        LocalDateTime start = appointment.getStart();
+        LocalDateTime end = appointment.getMaxEnd();
+        java.time.LocalDate today = getQuery().today();
         return permissionController.canAllocate(allocatable, user, start, end, today);
     }
 
@@ -2019,7 +2019,7 @@ public class AllocatableSelection extends RaplaGUIComponent implements Appointme
 
         private Icon getIcon(Allocatable allocatable)
         {
-            Date today = getQuery().today();
+            java.time.LocalDate today = getQuery().today();
 
             AllocationRendering allocBinding = calcConflictingAppointments(allocatable);
             if (allocBinding.conflictCount == 0)
@@ -2169,7 +2169,7 @@ public class AllocatableSelection extends RaplaGUIComponent implements Appointme
 
     public boolean hasPermissionToAllocate(Appointment appointment, Allocatable allocatable)
     {
-        Date today = getQuery().today();
+        java.time.LocalDate today = getQuery().today();
         User workingUser;
         try
         {
@@ -2258,7 +2258,7 @@ public class AllocatableSelection extends RaplaGUIComponent implements Appointme
                 final CalendarSelectionModel clone = calendarModel.getModel().clone();
                 clone.setReservationFilter(null);
                 clone.setSelectedObjects( selectedAllocatables);
-                final Date firstStart = findFirstStart(selectedAppointments.isEmpty() ? Arrays.asList(appointments): selectedAppointments);
+                final LocalDateTime firstStart = findFirstStart(selectedAppointments.isEmpty() ? Arrays.asList(appointments): selectedAppointments);
                 menuContext.setSelectedObjects( selectedAllocatables);
                 menuContext.setModel( clone);
                 clone.setSelectedDate( firstStart);

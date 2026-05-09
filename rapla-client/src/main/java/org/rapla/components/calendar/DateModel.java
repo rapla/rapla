@@ -17,11 +17,13 @@ import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
-import java.util.Date;
 import java.util.GregorianCalendar;
 import java.util.Locale;
 import java.util.TimeZone;
 
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import org.rapla.components.util.DateTools;
 /**
  * The model of the obligatory MVC approach is a wrapper arround an
  * Calendar object.
@@ -49,15 +51,8 @@ final class DateModel {
         recalculate();
     }
 
-    public boolean sameDate(Date date) {
-        Calendar calendar2 = Calendar.getInstance(m_locale);
-        TimeZone timeZone = getTimeZone();
-		calendar2.setTimeZone(timeZone);
-        calendar2.setTime(date);
-        trim(calendar2);
-        Date trimedDate = getDate();
-		Date date2 = calendar2.getTime();
-		return date2.equals(trimedDate);
+    public boolean sameDate(LocalDate date) {
+        return getDate().equals(date);
     }
 
     public void addDateChangeListener(DateChangeListener listener) {
@@ -86,8 +81,11 @@ final class DateModel {
         return (((firstWeekday() - 1) + (day - 1))  % 7 ) + 1;
     }
 
-    public Date getDate() {
-        return m_calendar.getTime();
+    public LocalDate getDate() {
+        return LocalDate.of(
+            m_calendar.get(Calendar.YEAR),
+            m_calendar.get(Calendar.MONTH) + 1,
+            m_calendar.get(Calendar.DATE));
     }
 
     // #TODO Property change listener for TimeZone
@@ -103,11 +101,11 @@ final class DateModel {
     }
 
     public String getDateString() {
-        return m_currentDayFormat.format(getDate());
+        return m_currentDayFormat.format(new java.util.Date(m_calendar.getTimeInMillis()));
     }
 
     public String getCurrentDateString() {
-        return m_currentDayFormat.format(new Date());
+        return m_currentDayFormat.format(new java.util.Date());
     }
 
     public void addMonth(int count) {
@@ -140,7 +138,7 @@ final class DateModel {
             format = new SimpleDateFormat("yyyy GG", getLocale());
         else
             format = m_yearFormat;
-        return format.format(getDate());
+        return format.format(new java.util.Date(m_calendar.getTimeInMillis()));
     }
 
     public void setYear(int year) {
@@ -156,8 +154,10 @@ final class DateModel {
         recalculate();
    }
 
-    public void setDate(Date date) {
-        m_calendar.setTime(date);
+    public void setDate(LocalDate date) {
+        m_calendar.set(Calendar.YEAR, date.getYear());
+        m_calendar.set(Calendar.MONTH, date.getMonthValue() - 1);
+        m_calendar.set(Calendar.DATE, date.getDayOfMonth());
         trim(m_calendar);
         recalculate();
     }
@@ -172,8 +172,7 @@ final class DateModel {
     // 18.02.2004 CK: Workaround for bug in JDK 1.5.0 .Replace add with roll
     private void recalculate() {
         Calendar calendar =  Calendar.getInstance(getTimeZone(), getLocale());
-        Date date = getDate();
-		calendar.setTime(date);
+        calendar.setTimeInMillis(m_calendar.getTimeInMillis());
         // calculate the number of days of the selected month
         calendar.add(Calendar.MONTH,1);
         calendar.set(Calendar.DATE,1);
@@ -197,7 +196,7 @@ final class DateModel {
 
     protected void fireDateChanged() {
         DateChangeListener[] listeners = getDateChangeListeners();
-        Date date = getDate();
+        LocalDateTime date = getDate().atStartOfDay();
 		DateChangeEvent evt = new DateChangeEvent(this,date);
         for (int i = 0;i<listeners.length; i++) {
             listeners[i].dateChanged(evt);
