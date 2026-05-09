@@ -48,9 +48,9 @@ import javax.swing.JPanel;
 import java.awt.Component;
 import java.awt.FlowLayout;
 import java.util.Arrays;
-import java.util.Date;
 import java.util.Locale;
 
+import java.time.LocalDateTime;
 @Service
 @Scope("prototype")
 
@@ -216,9 +216,9 @@ public class CalendarOption extends RaplaGUIComponent implements UserOptionPanel
         rowsPerHourField.setNumber( Long.valueOf(options.getRowsPerHour()));
         
         int workTime = options.getWorktimeStartMinutes();
-        worktimeStart.setTime(  new Date(DateTools.toTime(workTime / 60, workTime % 60, 0)));
+        worktimeStart.setTime(  DateTools.toLocalDateTime(DateTools.toTime(workTime / 60, workTime % 60, 0)));
         workTime = options.getWorktimeEndMinutes();
-        worktimeEnd.setTime(  new Date(DateTools.toTime(workTime / 60, workTime % 60, 0)));
+        worktimeEnd.setTime(  DateTools.toLocalDateTime(DateTools.toTime(workTime / 60, workTime % 60, 0)));
         
         for ( int i=0;i<box.length;i++) {
             int weekday = mapper.dayForIndex( i);
@@ -255,11 +255,11 @@ public class CalendarOption extends RaplaGUIComponent implements UserOptionPanel
             colorBlocks.setValue(  colorValue );
         }
         calendarOptions.addChild( colorBlocks );
-        final DateTools.TimeWithoutTimezone startTime = DateTools.toTime(worktimeStart.getTime().getTime());
+        final DateTools.TimeWithoutTimezone startTime = DateTools.toTime(DateTools.toMilli(worktimeStart.getTime()));
         int worktimeStartHour = startTime.hour;
         int worktimeStartMinute = startTime.minute;
 
-        final DateTools.TimeWithoutTimezone endTime = DateTools.toTime(worktimeEnd.getTime().getTime());
+        final DateTools.TimeWithoutTimezone endTime = DateTools.toTime(DateTools.toMilli(worktimeEnd.getTime()));
         int worktimeEndHour = endTime.hour;
         int worktimeEndMinute = endTime.minute;
         if ( worktimeStartMinute > 0 || worktimeEndMinute > 0)
@@ -306,9 +306,9 @@ public class CalendarOption extends RaplaGUIComponent implements UserOptionPanel
 	}
 
 	public void dateChanged(DateChangeEvent evt) {
-        final DateTools.TimeWithoutTimezone startTime = DateTools.toTime(worktimeEnd.getTime().getTime());
+        final DateTools.TimeWithoutTimezone startTime = DateTools.toTime(DateTools.toMilli(worktimeEnd.getTime()));
         int worktimeS = startTime.hour*60  + startTime.minute;
-        final DateTools.TimeWithoutTimezone endTime = DateTools.toTime(worktimeEnd.getTime().getTime());
+        final DateTools.TimeWithoutTimezone endTime = DateTools.toTime(DateTools.toMilli(worktimeEnd.getTime()));
         int worktimeE = endTime.hour * 60 + endTime.minute;
         worktimeE = (worktimeE == 0)?24*60:worktimeE;
         boolean overnight = worktimeS >= worktimeE|| worktimeE == 24*60;

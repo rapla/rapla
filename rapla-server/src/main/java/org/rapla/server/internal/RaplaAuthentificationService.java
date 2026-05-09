@@ -139,8 +139,8 @@ public class RaplaAuthentificationService
             if (user == null)
             {
                 logger.info("Successfull for User " + username + ".Creating new Rapla user.");
-                java.time.LocalDateTime now = operator.getCurrentTimestampAsLocalDateTime();
-                UserImpl newUser = UserImpl.ofLocalDateTime(now, now);
+                java.time.LocalDateTime now = operator.getCurrentTimestamp();
+                UserImpl newUser = new UserImpl(now, now);
                 final ReferenceInfo<User> userReferenceInfo = operator.createIdentifier(User.class, 1).get(0);
                 newUser.setId(userReferenceInfo.getId());
                 newUser.setResolver( operator);

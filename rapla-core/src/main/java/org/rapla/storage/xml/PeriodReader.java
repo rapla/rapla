@@ -35,7 +35,7 @@ public class PeriodReader extends DynAttReader {
     {
         if (namespaceURI.equals(RAPLA_NS) && localName.equals("period")) {	 
         	java.time.LocalDateTime now = getReadLocalDateTime();
-        	AllocatableImpl period = AllocatableImpl.ofLocalDateTime(now, now);
+        	AllocatableImpl period = new AllocatableImpl(now, now);
         	Classification classification = ((DynamicTypeImpl)store.getDynamicType(StorageOperator.PERIOD_TYPE)).newClassificationWithoutCheck(true);
             classification.setValue("name", getString(atts,"name"));
             classification.setValue("start",parseDate(getString(atts,"start"),false));

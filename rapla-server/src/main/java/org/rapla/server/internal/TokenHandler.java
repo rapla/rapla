@@ -71,7 +71,7 @@ public class TokenHandler
         final String recvText = tokenString.substring(s + 1);
         try
         {
-            java.time.LocalDateTime now = operator.getCurrentTimestampAsLocalDateTime();
+            java.time.LocalDateTime now = operator.getCurrentTimestamp();
             ValidToken checkToken = tokenSigner.checkToken(tokenString, recvText, now);
             if (checkToken == null)
             {
@@ -103,7 +103,7 @@ public class TokenHandler
     public LoginTokens generateAccessToken(User user) throws RaplaException
     {
         String userId = user.getId();
-        java.time.LocalDateTime now = operator.getCurrentTimestampAsLocalDateTime();
+        java.time.LocalDateTime now = operator.getCurrentTimestamp();
         long validityInSeconds = accessTokenValiditySeconds;
         java.time.LocalDateTime validUntil = now.plusSeconds(validityInSeconds);
         String signedToken = null;
@@ -116,7 +116,7 @@ public class TokenHandler
             throw new RaplaException(e.getMessage(), e);
         }
 
-        return LoginTokens.ofLocalDateTime(signedToken, validUntil);
+        return new LoginTokens(signedToken, validUntil);
 
     }
 
@@ -141,7 +141,7 @@ public class TokenHandler
 
     public String regenerateRefreshToken(User user) throws RaplaException
     {
-        java.time.LocalDateTime now = operator.getCurrentTimestampAsLocalDateTime();
+        java.time.LocalDateTime now = operator.getCurrentTimestamp();
         String userId = user.getId();
         String generatedAPIKey;
         try

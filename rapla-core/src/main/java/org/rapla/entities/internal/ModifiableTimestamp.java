@@ -16,19 +16,11 @@ package org.rapla.entities.internal;
 import org.rapla.entities.Timestamp;
 import org.rapla.entities.User;
 
-import java.util.Date;
-
+import java.time.LocalDateTime;
 public interface ModifiableTimestamp extends Timestamp {
     /** updates the last-changed timestamp */
-    void setLastChanged(Date date);
-    void setCreateDate(Date date);
+    void setLastChanged(LocalDateTime date);
+    void setCreateDate(LocalDateTime date);
     void setLastChangedBy( User user);
 
-    /** {@code LocalDateTime} variants. UTC. Distinct names avoid `null`-passing ambiguity. */
-    default void setLastChangedLocalDateTime(java.time.LocalDateTime date) {
-        setLastChanged(date == null ? null : org.rapla.components.util.DateTools.toDate(date));
-    }
-    default void setCreateDateLocalDateTime(java.time.LocalDateTime date) {
-        setCreateDate(date == null ? null : org.rapla.components.util.DateTools.toDate(date));
-    }
 }

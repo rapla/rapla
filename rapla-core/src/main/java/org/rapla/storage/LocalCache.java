@@ -222,7 +222,7 @@ public class LocalCache implements EntityResolver
             {
                 disabledConflictApp2.put(entityId, conflict.getAppointment2());
             }
-            final LocalDateTime lastChanged = conflict.getLastChangedAsLocalDateTime();
+            final LocalDateTime lastChanged = conflict.getLastChanged();
             conflictLastChanged.put(entityId, lastChanged);
             if (conflict.isAppointment1Enabled() && conflict.isAppointment2Enabled())
             {
@@ -420,7 +420,7 @@ public class LocalCache implements EntityResolver
         conflict.setAppointment1Enabled(!disabledConflictApp1.containsKey(id));
         conflict.setAppointment2Enabled(!disabledConflictApp2.containsKey(id));
         LocalDateTime lastChangedInCache = conflictLastChanged.get(id);
-        LocalDateTime origLastChanged = conflict.getLastChangedAsLocalDateTime();
+        LocalDateTime origLastChanged = conflict.getLastChanged();
 
         LocalDateTime lastChanged = origLastChanged;
         if (lastChanged == null || (lastChangedInCache != null && lastChangedInCache.isAfter(lastChanged)))
@@ -431,7 +431,7 @@ public class LocalCache implements EntityResolver
         {
             lastChanged = LocalDateTime.now();
         }
-        conflict.setLastChangedLocalDateTime(lastChanged);
+        conflict.setLastChanged(lastChanged);
         if (user != null)
         {
             final ReferenceInfo<Reservation> reservation1Id = conflict.getReservation1();
@@ -481,7 +481,7 @@ public class LocalCache implements EntityResolver
             Conflict conflict;
             try
             {
-                conflict = ConflictImpl.ofLocalDateTime(conflictId, lastChanged, lastChanged);
+                conflict = new ConflictImpl(conflictId, lastChanged, lastChanged);
             }
             catch (RaplaException ex)
             {

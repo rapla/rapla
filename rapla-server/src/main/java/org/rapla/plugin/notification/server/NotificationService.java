@@ -46,6 +46,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import java.util.function.Supplier;
 import java.util.*;
 
+import java.time.LocalDateTime;
 /** Sends Notification Mails on allocation change.*/
 
 
@@ -88,8 +89,8 @@ public class NotificationService implements ServerExtension
         getLogger().info("scheduling command for NotificationSercice");
         Action sentUpdateMails = () ->
         {
-            Date lastUpdated = null;
-            Date updatedUntil = null;
+            LocalDateTime lastUpdated = null;
+            LocalDateTime updatedUntil = null;
             try
             {
                 lastUpdated = operator.requestLock(NOTIFICATION_LOCK_ID, VALID_LOCK);
@@ -114,7 +115,7 @@ public class NotificationService implements ServerExtension
         /*
         Action retryMails = () ->
         {
-            Date lastUpdated = null;
+            LocalDateTime lastUpdated = null;
             try
             {
                 lastUpdated = operator.requestLock(NOTIFICATION_LOCK_ID, VALID_LOCK);
@@ -466,7 +467,7 @@ public class NotificationService implements ServerExtension
             {
                 // TODO is there a unknown event type needed?
                 java.time.LocalDateTime now = java.time.LocalDateTime.now();
-                ReservationImpl anonymousReservation = ReservationImpl.ofLocalDateTime(now, now);
+                ReservationImpl anonymousReservation = new ReservationImpl(now, now);
                 DynamicType anonymousReservationType = operator.getDynamicType(StorageOperator.ANONYMOUSEVENT_TYPE);
                 anonymousReservation.setClassification(anonymousReservationType.newClassification());
                 // print unknown ressource

@@ -1,5 +1,7 @@
 package org.rapla.server.internal;
 
+import org.rapla.components.util.DateTools;
+
 import org.rapla.RaplaResources;
 import org.rapla.components.util.ParseDateException;
 import org.rapla.components.util.SerializableDateTimeFormat;
@@ -50,7 +52,6 @@ import jakarta.ws.rs.core.Context;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.Date;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
@@ -59,6 +60,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import java.time.LocalDateTime;
 public class RemoteStorageImpl implements RemoteStorage
 {
     @Autowired RemoteSession session;
@@ -181,8 +183,8 @@ public class RemoteStorageImpl implements RemoteStorage
         User sessionUser = checkSessionUser();
         String[] allocatableIds = job.getResources();
         String[] ownerIds = job.getOwnerIds();
-        Date start = job.getStart();
-        Date end = job.getEnd();
+        LocalDateTime start = job.getStart();
+        LocalDateTime end = job.getEnd();
         Map<String, String> annotationQuery = job.getAnnotations();
         getLogger().debug("A RemoteAuthentificationService wants to reservations from ." + start + " to " + end);
         User user = null;
@@ -245,16 +247,16 @@ public class RemoteStorageImpl implements RemoteStorage
     public UpdateEvent store(UpdateEvent event) throws RaplaException
     {
         User sessionUser = checkSessionUser();
-        Date lastRefreshed = operator.getLastRefreshed();
+        LocalDateTime lastRefreshed = operator.getLastRefreshed();
 
-        Date lastSynced = event.getLastValidated();
+        LocalDateTime lastSynced = event.getLastValidated();
         if (lastSynced == null)
         {
             throw new RaplaException("client sync time is missing");
         }
-        if (lastSynced.after(lastRefreshed))
+        if (lastSynced.isAfter(lastRefreshed))
         {
-            long diff = lastSynced.getTime() - lastRefreshed.getTime();
+            long diff = DateTools.toMilli(lastSynced) - DateTools.toMilli(lastRefreshed);
             getLogger().warn("Timestamp of client " + diff + " ms  after server ");
             lastSynced = lastRefreshed;
         }
@@ -390,7 +392,7 @@ public class RemoteStorageImpl implements RemoteStorage
         final User user = checkSessionUser();
         try
         {
-            Date clientRepoVersion = lastSyncedTime != null ? SerializableDateTimeFormat.INSTANCE.parseTimestamp(lastSyncedTime) : null;
+            LocalDateTime clientRepoVersion = lastSyncedTime != null ? SerializableDateTimeFormat.INSTANCE.parseTimestamp(lastSyncedTime) : null;
             UpdateEvent event = updateDataManager.createUpdateEvent(user, clientRepoVersion);
             return event;
         }
@@ -405,7 +407,7 @@ public class RemoteStorageImpl implements RemoteStorage
         final User user = checkSessionUser();
         try
         {
-            Date clientRepoVersion = lastSyncedTime != null ? SerializableDateTimeFormat.INSTANCE.parseTimestamp(lastSyncedTime) : null;
+            LocalDateTime clientRepoVersion = lastSyncedTime != null ? SerializableDateTimeFormat.INSTANCE.parseTimestamp(lastSyncedTime) : null;
             UpdateEvent event = updateDataManager.createUpdateEventReservations(user, clientRepoVersion);
             return event;
         }
@@ -518,7 +520,7 @@ public class RemoteStorageImpl implements RemoteStorage
     }
 
 
-    public Date getNextAllocatableDate(NextAllocatableDateRequest job) throws RaplaException
+    public LocalDateTime getNextAllocatableDate(NextAllocatableDateRequest job) throws RaplaException
     {
         String[] allocatableIds = job.getAllocatableIds();
         AppointmentImpl appointment = job.getAppointment();

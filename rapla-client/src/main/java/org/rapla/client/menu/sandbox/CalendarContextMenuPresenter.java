@@ -13,6 +13,7 @@ import org.rapla.client.menu.sandbox.data.MenuCallback;
 import org.rapla.client.menu.sandbox.data.MenuEntry;
 import org.rapla.client.menu.sandbox.data.Point;
 import org.rapla.components.calendarview.Block;
+import org.rapla.components.util.DateTools;
 import org.rapla.components.util.TimeInterval;
 import org.rapla.entities.User;
 import org.rapla.entities.domain.Allocatable;
@@ -33,11 +34,11 @@ import org.springframework.beans.factory.annotation.Autowired;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import java.time.LocalDateTime;
 public class CalendarContextMenuPresenter extends RaplaComponent implements MenuView.Presenter
 {
     protected boolean keepTime = false;
@@ -80,7 +81,7 @@ public class CalendarContextMenuPresenter extends RaplaComponent implements Menu
     }
 
     /** override this method if you want to implement a custom time selection */
-    public void selectionChanged(final Date start, final Date end)
+    public void selectionChanged(final LocalDateTime start, final LocalDateTime end)
     {
         TimeInterval interval = new TimeInterval(start, end);
         model.setMarkedIntervals(Collections.singleton(interval), !keepTime);
@@ -125,16 +126,16 @@ public class CalendarContextMenuPresenter extends RaplaComponent implements Menu
         }
     }
 
-    public void moved(final Block block, Date newStart, int slotNr, final PopupContext popupContext)
+    public void moved(final Block block, LocalDateTime newStart, int slotNr, final PopupContext popupContext)
     {
         moved(block, newStart, popupContext);
     }
 
-    protected void moved(Block block, Date newStart, final PopupContext popupContext)
+    protected void moved(Block block, LocalDateTime newStart, final PopupContext popupContext)
     {
         RaplaBlock b = (RaplaBlock) block;
-        long offset = newStart.getTime() - b.getStart().getTime();
-        Date newStartWithOffset = new Date(b.getAppointmentBlock().getStart() + offset);
+        long offset = DateTools.toMilli(newStart) - DateTools.toMilli(b.getStart());
+        LocalDateTime newStartWithOffset = DateTools.toLocalDateTime(b.getAppointmentBlock().getStart() + offset);
         handleException(reservationController.moveAppointment(b.getAppointmentBlock(), newStartWithOffset, popupContext, keepTime));
     }
 
@@ -148,7 +149,7 @@ public class CalendarContextMenuPresenter extends RaplaComponent implements Menu
         this.keepTime = keepTime;
     }
 
-    public void resized(Block block, Point p, Date newStart, Date newEnd, int slotNr, final PopupContext popupContext)
+    public void resized(Block block, Point p, LocalDateTime newStart, LocalDateTime newEnd, int slotNr, final PopupContext popupContext)
     {
         RaplaBlock b = (RaplaBlock) block;
         handleException(reservationController.resizeAppointment(b.getAppointmentBlock(), newStart, newEnd, popupContext, keepTime));

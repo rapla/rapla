@@ -4,9 +4,10 @@ import org.rapla.components.util.IOUtil;
 import org.rapla.framework.TimeZoneConverter;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import java.util.Date;
 import java.util.TimeZone;
 
+import java.time.LocalDateTime;
+import org.rapla.components.util.DateTools;
 public class TimeZoneConverterImpl implements TimeZoneConverter
 {
     TimeZone zone;
@@ -41,15 +42,15 @@ public class TimeZoneConverterImpl implements TimeZoneConverter
 	}
 	
 
-	public Date fromRaplaTime(TimeZone timeZone,Date raplaTime) 
+	public LocalDateTime fromRaplaTime(TimeZone timeZone,LocalDateTime raplaTime)
 	{
-		return new Date( fromRaplaTime(timeZone, raplaTime.getTime()));
+		return DateTools.toLocalDateTime(fromRaplaTime(timeZone, DateTools.toMilli(raplaTime)));
 	}
 
 
-	public Date toRaplaTime(TimeZone timeZone,Date time) 
+	public LocalDateTime toRaplaTime(TimeZone timeZone,LocalDateTime time)
 	{
-		return new Date( toRaplaTime(timeZone, time.getTime()));
+		return DateTools.toLocalDateTime(toRaplaTime(timeZone, DateTools.toMilli(time)));
 	}
 
 	public static int getOffset(TimeZone zone1,TimeZone zone2,long time) {

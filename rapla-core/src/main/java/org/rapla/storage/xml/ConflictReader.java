@@ -42,11 +42,11 @@ public class ConflictReader extends RaplaXMLReader
         ReferenceInfo<Appointment> appId1 = getRef(atts, "appointment1", Appointment.class);
         ReferenceInfo<Appointment> appId2 = getRef(atts, "appointment2", Appointment.class);
         String id = ConflictImpl.createId(allocId, appId1, appId2);
-        java.time.LocalDateTime today = getReadLocalDateTime();
+        java.time.LocalDateTime today = getReadTimestamp();
         ConflictImpl conflict;
         try {
-            final java.time.LocalDateTime lastChanged = readTimestamps(atts).getChangeTimeAsLocalDateTime();
-            conflict = ConflictImpl.ofLocalDateTime(id, today, lastChanged);
+            final java.time.LocalDateTime lastChanged = readTimestamps(atts).changeTime;
+            conflict = new ConflictImpl(id, today, lastChanged);
 
         } catch (RaplaException e) {
             throw new RaplaSAXParseException(e.getMessage(), e);

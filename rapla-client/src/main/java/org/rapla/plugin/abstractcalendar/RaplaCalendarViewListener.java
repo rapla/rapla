@@ -4,6 +4,7 @@
 package org.rapla.plugin.abstractcalendar;
 
 import org.rapla.RaplaResources;
+import org.rapla.components.util.DateTools;
 import org.rapla.client.EditController;
 import org.rapla.client.PopupContext;
 import org.rapla.client.ReservationController;
@@ -33,9 +34,9 @@ import java.awt.Component;
 import java.awt.Point;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.Date;
 import java.util.List;
 
+import java.time.LocalDateTime;
 public class RaplaCalendarViewListener extends RaplaGUIComponent implements ViewListener
 {
     protected boolean keepTime = false;
@@ -68,7 +69,7 @@ public class RaplaCalendarViewListener extends RaplaGUIComponent implements View
     }
 
     /** override this method if you want to implement a custom time selection */
-    public void selectionChanged(Date start, Date end)
+    public void selectionChanged(LocalDateTime start, LocalDateTime end)
     {
         // #TODO this cast need to be replaced without adding the setter methods to the readOnly interface CalendarModel
         CalendarSelectionModel castedModel = (CalendarSelectionModel) model;
@@ -85,7 +86,7 @@ public class RaplaCalendarViewListener extends RaplaGUIComponent implements View
      * @param slotNr not used because handled by selectionChanged method
      * 
      */
-    public void selectionPopup(Component component, Point p, Date start, Date end, int slotNr)
+    public void selectionPopup(Component component, Point p, LocalDateTime start, LocalDateTime end, int slotNr)
     {
         selectionPopup(component, p);
     }
@@ -147,17 +148,17 @@ public class RaplaCalendarViewListener extends RaplaGUIComponent implements View
         }
     }
 
-    public void moved(Block block, Point p, Date newStart, int slotNr)
+    public void moved(Block block, Point p, LocalDateTime newStart, int slotNr)
     {
         handleException(moved(block, p, newStart));
     }
 
-    protected Promise<Void> moved(Block block, Point p, Date newStart)
+    protected Promise<Void> moved(Block block, Point p, LocalDateTime newStart)
     {
         SwingRaplaBlock b = (SwingRaplaBlock) block;
         final PopupContext popupContext = getPopupContext(p);
-        long offset = newStart.getTime() - b.getStart().getTime();
-        Date newStartWithOffset = new Date(b.getAppointmentBlock().getStart() + offset);
+        long offset = DateTools.toMilli(newStart) - DateTools.toMilli(b.getStart());
+        LocalDateTime newStartWithOffset = DateTools.toLocalDateTime(b.getAppointmentBlock().getStart() + offset);
         return reservationController.moveAppointment(b.getAppointmentBlock(), newStartWithOffset, popupContext,
                 keepTime);
 
@@ -183,7 +184,7 @@ public class RaplaCalendarViewListener extends RaplaGUIComponent implements View
         this.keepTime = keepTime;
     }
 
-    public void resized(Block block, Point p, Date newStart, Date newEnd, int slotNr)
+    public void resized(Block block, Point p, LocalDateTime newStart, LocalDateTime newEnd, int slotNr)
     {
         SwingRaplaBlock b = (SwingRaplaBlock) block;
          handleException(reservationController.resizeAppointment(b.getAppointmentBlock(), newStart, newEnd, getPopupContext(p), keepTime));

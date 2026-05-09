@@ -122,7 +122,7 @@ public class RaplaAuthRestPage
                 {
                     newUrl = targetUrl + "#"+LOGIN_COOKIE + "=" + accessToken;
                 }
-                newUrl+="&valid_until="+token.getValidUntil().getTime();
+                newUrl+="&valid_until="+org.rapla.components.util.DateTools.toMilli(token.getValidUntil());
                 final Cookie cookie = new Cookie(LOGIN_COOKIE, token.toString());
                 cookie.setPath("/");
                 response.addCookie(cookie);

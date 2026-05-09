@@ -13,6 +13,7 @@
 package org.rapla.plugin.tableview.server;
 
 import org.rapla.components.i18n.I18nBundle;
+import org.rapla.components.util.DateTools;
 import org.rapla.components.util.TimeInterval;
 import org.rapla.components.util.Tools;
 import org.rapla.entities.User;
@@ -36,6 +37,7 @@ import javax.swing.table.TableColumn;
 import java.io.IOException;
 import java.util.*;
 
+import java.time.LocalDateTime;
  public class AppointmentPerDayViewPage
         implements HTMLViewPage
 {
@@ -43,7 +45,7 @@ import java.util.*;
     RaplaLocale raplaLocale;
     String getDayString(AppointmentBlock block)
     {
-        final Date start = new Date(block.getStart());
+        final LocalDateTime start = DateTools.toLocalDateTime(block.getStart());
         return raplaLocale.formatDayOfWeekLongDateMonth(start);
     }
 

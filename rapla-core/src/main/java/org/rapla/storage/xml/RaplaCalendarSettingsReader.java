@@ -28,10 +28,10 @@ import org.rapla.framework.RaplaException;
 
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.Date;
 import java.util.List;
 import java.util.Map;
 
+import java.time.LocalDateTime;
 public class RaplaCalendarSettingsReader extends RaplaXMLReader  {
 
     CalendarModelConfiguration settings;
@@ -139,8 +139,8 @@ public class RaplaCalendarSettingsReader extends RaplaXMLReader  {
         String dateString = getString( atts,key, null);
 
         if ( dateString != null) {
-            Date d = parseDate( dateString, false );
-            return d == null ? null : org.rapla.components.util.DateTools.toLocalDateTime(d);
+            LocalDateTime d = parseDate( dateString, false );
+            return d == null ? null : d;
         } else {
             return null;
         }
