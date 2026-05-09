@@ -26,6 +26,7 @@ The repo-root `pom.xml` is the reactor aggregator (artifactId `rapla-aggregator`
 - Run the dev server: `mvn -pl rapla-app -am spring-boot:run -Dspring-boot.run.fork=false` *(must use `-am` from repo root — see §8 hard rules; do not `cd rapla-app`, do not `mvn install`)*
 - Full server lifecycle (background, PID/logs, graceful stop): see §8 below
 - Test the deployable fat JAR + signed JNLP webclient: load the **`test-deployment`** skill
+- Probe the running server's REST API directly (login, getResources, queryAppointments, etc.) — load the **`api-testing`** skill
 - Requires SDKMAN (Java 21 + Maven) on WSL2 Ubuntu
 
 The reactor aggregator (`pom.xml` at the repo root, packaging=pom, artifactId=`rapla-aggregator`) lists the 5 module siblings. Running `mvn` from the repo root walks the whole reactor.
@@ -188,6 +189,18 @@ curl -sf -o /dev/null -w '%{http_code}\n' "http://localhost:8051/rapla/raplaclie
 ```
 
 `server.servlet.context-path=/rapla` (PRD 001 Phase 0) means all URLs live under `/rapla/...`.
+
+#### Default credentials (dev only)
+
+The bundled dev DB ships with one admin: **username `admin`, empty password**. To get a JWT for direct REST probing:
+
+```bash
+ACCESS=$(curl -s -X POST "http://localhost:8051/rapla/auth/login" \
+  -H "Content-Type: application/json" \
+  -d '{"username":"admin","password":""}' \
+  | python3 -c "import sys,json; print(json.load(sys.stdin)['accessToken'])")
+curl -s -H "Authorization: Bearer $ACCESS" "http://localhost:8051/rapla/storage/resources" | head -c 500
+```
 
 #### Inspect logs
 
