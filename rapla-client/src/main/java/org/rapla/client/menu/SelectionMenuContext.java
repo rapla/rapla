@@ -5,13 +5,12 @@ import org.rapla.client.PopupContext;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.Date;
-
+import java.time.LocalDateTime;
 public class SelectionMenuContext implements MenuContext {
     Collection<?> selectedObjects = Collections.EMPTY_LIST;
     Object focused;
     private final PopupContext popupContext;
-    private Date selectedDate;
+    private LocalDateTime selectedDate;
 
     public SelectionMenuContext(Object focusedObject, PopupContext popupContext) {this.focused = focusedObject;
         this.popupContext = popupContext;
@@ -35,12 +34,12 @@ public class SelectionMenuContext implements MenuContext {
         return  focused;
     }
 
-    public void setSelectedDate(Date selectedDate)
+    public void setSelectedDate(LocalDateTime selectedDate)
     {
         this.selectedDate = selectedDate;
     }
 
-    public Date getSelectedDate()
+    public LocalDateTime getSelectedDate()
     {
         return selectedDate;
     }

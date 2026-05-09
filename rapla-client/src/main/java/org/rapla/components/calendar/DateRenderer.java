@@ -15,9 +15,10 @@ package org.rapla.components.calendar;
 
 import java.awt.Color;
 
+import java.time.LocalDateTime;
 /**  Implement this interface if you want to highlight special days or
     show tooltip for some days. Use {@link DateRendererAdapter} if you
-    want to work with Date objects.
+    want to work with LocalDateTime objects.
  */
 public interface DateRenderer {
     /** Specifies a rendering info ( colors and tooltip text) for the passed day.

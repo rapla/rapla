@@ -71,7 +71,7 @@ public class ComplexTreeCellRenderer extends DefaultTreeCellRenderer {
             Allocatable allocatable = (Allocatable) object;
             try {
                 User user = clientFacade.getUser();
-                java.time.LocalDate today = raplaFacade.todayAsLocalDate();
+                java.time.LocalDate today = raplaFacade.today();
                 final PermissionController permissionController = raplaFacade.getPermissionController();
                 if (!permissionController.canAllocate(allocatable, user, today)) {
                     if ( permissionController.isRequestOnly( allocatable, user, today) ) {

@@ -4,23 +4,22 @@ import org.rapla.components.calendarview.Block;
 import org.rapla.plugin.weekview.client.weekview.HTMLWeekViewPresenter.Slot;
 
 import java.util.ArrayList;
-import java.util.Date;
-
+import java.time.LocalDateTime;
 public class HTMLDaySlot extends ArrayList<HTMLWeekViewPresenter.Slot>
 {
     private static final long serialVersionUID = 1L;
     private boolean empty = true;
     String header;
-    Date startDate;
+    LocalDateTime startDate;
 
-    public HTMLDaySlot(int size, String header, Date startDate)
+    public HTMLDaySlot(int size, String header, LocalDateTime startDate)
     {
         super(size);
         this.header = header;
         this.startDate = startDate;
     }
 
-    public Date getStartDate()
+    public LocalDateTime getStartDate()
     {
         return startDate;
     }

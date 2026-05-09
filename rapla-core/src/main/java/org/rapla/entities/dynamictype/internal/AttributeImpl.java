@@ -33,13 +33,13 @@ import org.rapla.entities.storage.internal.SimpleEntity;
 import org.rapla.framework.RaplaException;
 
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 
+import java.time.LocalDateTime;
 final public class AttributeImpl extends SimpleEntity implements Attribute
 {
     public static final MultiLanguageName TRUE_TRANSLATION = new MultiLanguageName();
@@ -411,7 +411,7 @@ final public class AttributeImpl extends SimpleEntity implements Attribute
         }
         if (type.equals(AttributeType.DATE))
         {
-            return !(value instanceof Date);
+            return !(value instanceof LocalDateTime);
         }
         if (type.equals(AttributeType.BOOLEAN))
         {
@@ -452,9 +452,9 @@ final public class AttributeImpl extends SimpleEntity implements Attribute
         {
             if (value == null)
                 return null;
-            if (value instanceof Date)
+            if (value instanceof LocalDateTime)
             {
-                return new SerializableDateTimeFormat().formatDate((Date) value);
+                return new SerializableDateTimeFormat().formatDate((LocalDateTime) value);
             }
             //            if (value instanceof Category)
             //            {
@@ -466,7 +466,7 @@ final public class AttributeImpl extends SimpleEntity implements Attribute
         {
             if (value == null)
                 return null;
-            else if (value instanceof Date)
+            else if (value instanceof LocalDateTime)
                 return value;
 
             try
@@ -792,7 +792,7 @@ final public class AttributeImpl extends SimpleEntity implements Attribute
         }
         else if (type.equals(AttributeType.DATE))
         {
-            return new SerializableDateTimeFormat().formatDate((Date) value);
+            return new SerializableDateTimeFormat().formatDate((LocalDateTime) value);
         }
         else
         {
@@ -855,10 +855,10 @@ final public class AttributeImpl extends SimpleEntity implements Attribute
             String name = classification.getName(locale);
             return name;
         }
-        if (value instanceof Date)
+        if (value instanceof LocalDateTime)
         {
         	// FIXME has to be replaced with locale implementation
-            return DateTools.formatDate((Date) value);
+            return DateTools.formatDate((LocalDateTime) value);
         }
         if (value instanceof Boolean)
         {

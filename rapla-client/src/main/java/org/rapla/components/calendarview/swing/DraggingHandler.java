@@ -19,9 +19,7 @@ import org.rapla.components.util.TimeInterval;
 import java.awt.Cursor;
 import java.awt.Point;
 import java.awt.event.MouseEvent;
-import java.util.Date;
-
-
+import java.time.LocalDateTime;
 /** DraggingHandler coordinates the drag events from the Block-Components
  * between the different MultiSlots of a weekview.
  */
@@ -31,10 +29,10 @@ class DraggingHandler {
     int oldY = 0;
     int oldHeight = 0;
     AbstractSwingCalendar m_cv;
-    Date start = null;
-    Date newStart = null;
-    Date end = null;
-    Date newEnd = null;
+    LocalDateTime start = null;
+    LocalDateTime newStart = null;
+    LocalDateTime end = null;
+    LocalDateTime newEnd = null;
     int resizeDirection;
     boolean bMoving;
     boolean bResizing;
@@ -218,8 +216,8 @@ class DraggingHandler {
                     ,y-upperLeft.y);
             int slotNr = m_cv.getSlotNr(oldSlot); 
             TimeInterval normalizedInterval = m_cv.normalizeBlockIntervall(block);
-            Date blockStart = normalizedInterval.getStart();
-            Date blockEnd = normalizedInterval.getEnd();
+            LocalDateTime blockStart = normalizedInterval.getStart();
+            LocalDateTime blockEnd = normalizedInterval.getEnd();
 			if ( bMoving ) {
                 // Has the block moved
                 //System.out.println("Moved to " + newStart + " - " + newEnd);

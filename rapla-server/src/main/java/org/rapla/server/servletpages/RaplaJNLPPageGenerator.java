@@ -241,7 +241,7 @@ public class RaplaJNLPPageGenerator
                     final Repeating repeating = app.getRepeating();
                     if ( repeating != null && repeating.isFixedNumber())
                     {
-                        final Date end = repeating.getEnd();
+                        final java.time.LocalDateTime end = repeating.getEnd();
                         if ( end != null)
                         {
                             repeating.setEnd( end);

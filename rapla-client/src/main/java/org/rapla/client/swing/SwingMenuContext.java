@@ -20,15 +20,14 @@ import java.awt.Point;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.Date;
-
+import java.time.LocalDateTime;
 public class SwingMenuContext implements MenuContext
 {
     Collection<?> selectedObjects = Collections.EMPTY_LIST;
     Object focused;
     private final PopupContext popupContext;
 
-    private Date selectedDate;
+    private LocalDateTime selectedDate;
     private final JComponent component;
     private final Point point;
     
@@ -59,12 +58,12 @@ public class SwingMenuContext implements MenuContext
         return  focused;
     }
 
-    public void setSelectedDate(Date selectedDate)
+    public void setSelectedDate(LocalDateTime selectedDate)
     {
         this.selectedDate = selectedDate;
     }
 
-    public Date getSelectedDate()
+    public LocalDateTime getSelectedDate()
     {
         return selectedDate;
     }

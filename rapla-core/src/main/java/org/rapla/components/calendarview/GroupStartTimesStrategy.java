@@ -19,13 +19,13 @@ import org.rapla.plugin.abstractcalendar.RaplaBlock;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.Date;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
 
+import java.time.LocalDateTime;
 /** Tries to put reservations that allocate the same Ressources in the same column.*/
 public class GroupStartTimesStrategy extends AbstractGroupStrategy {
 	List<Allocatable> allocatables;
@@ -42,7 +42,7 @@ public class GroupStartTimesStrategy extends AbstractGroupStrategy {
 	
 	@Override
 	protected Map<Block, Integer> getBlockMap(BlockContainer blockContainer,
-			List<Block> blocks, Date startDate)
+			List<Block> blocks, LocalDateTime startDate)
 	{
 		if (allocatables != null)
 		{
@@ -72,7 +72,7 @@ public class GroupStartTimesStrategy extends AbstractGroupStrategy {
     	TreeMap<Integer,List<Block>> groups = new TreeMap<>();
         for (Iterator<Block> it = list.iterator();it.hasNext();) {
             Block block = it.next();
-            long startTime = block.getStart().getTime();
+            long startTime = DateTools.toMilli(block.getStart());
             int minuteOfDay = DateTools.getMinuteOfDay(startTime);
             int rowNumber = -1 ;
             for ( Integer start: startTimes)

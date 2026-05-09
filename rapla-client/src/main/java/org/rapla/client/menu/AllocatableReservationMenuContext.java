@@ -3,11 +3,10 @@ package org.rapla.client.menu;
 import org.rapla.client.PopupContext;
 import org.rapla.facade.CalendarSelectionModel;
 
-import java.util.Date;
-
+import java.time.LocalDateTime;
 public class AllocatableReservationMenuContext extends SelectionMenuContext
 {
-    Date start;
+    LocalDateTime start;
 
     public CalendarSelectionModel getModel()
     {
@@ -26,12 +25,12 @@ public class AllocatableReservationMenuContext extends SelectionMenuContext
     }
 
 
-    public void setStart(Date start)
+    public void setStart(LocalDateTime start)
     {
         this.start = start;
     }
 
-    public Date getStart()
+    public LocalDateTime getStart()
     {
         return start;
     }

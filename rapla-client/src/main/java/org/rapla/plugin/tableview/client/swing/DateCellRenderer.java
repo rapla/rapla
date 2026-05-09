@@ -9,8 +9,7 @@ import org.rapla.framework.RaplaLocale;
 import javax.swing.JTable;
 import javax.swing.table.DefaultTableCellRenderer;
 import java.awt.Component;
-import java.util.Date;
-
+import java.time.LocalDateTime;
 final public class DateCellRenderer extends DefaultTableCellRenderer {
     private static final long serialVersionUID = 1L;
     
@@ -28,7 +27,7 @@ final public class DateCellRenderer extends DefaultTableCellRenderer {
 
     public Component getTableCellRendererComponent( JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column )
     {
-        final Date date = (Date) value;
+        final LocalDateTime date = (LocalDateTime) value;
         if ( date == null)
         {
         	value = "";

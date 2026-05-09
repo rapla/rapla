@@ -17,9 +17,7 @@ import org.rapla.scheduler.Promise;
 import org.springframework.beans.factory.annotation.Autowired;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.Date;
-
-
+import java.time.LocalDateTime;
 public class CalendarTableViewPresenter implements Presenter, CalendarPlugin
 {
 
@@ -53,13 +51,13 @@ public class CalendarTableViewPresenter implements Presenter, CalendarPlugin
     }
 
     @Override
-    public Date calcNext(Date currentDate)
+    public LocalDateTime calcNext(LocalDateTime currentDate)
     {
         return DateTools.addMonths(currentDate, 1);
     }
 
     @Override
-    public Date calcPrevious(Date currentDate)
+    public LocalDateTime calcPrevious(LocalDateTime currentDate)
     {
         return DateTools.addMonths(currentDate, -1);
     }

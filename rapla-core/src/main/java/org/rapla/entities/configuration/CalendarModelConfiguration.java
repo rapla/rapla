@@ -18,9 +18,9 @@ import org.rapla.entities.dynamictype.ClassificationFilter;
 import org.rapla.framework.TypedComponentRole;
 
 import java.util.Collection;
-import java.util.Date;
 import java.util.Map;
 
+import java.time.LocalDateTime;
 /**
  *
  * @author ckohlhaas
@@ -31,9 +31,9 @@ public interface CalendarModelConfiguration extends RaplaObject<CalendarModelCon
 {
     TypedComponentRole<CalendarModelConfiguration> CONFIG_ENTRY = new TypedComponentRole<>("org.rapla.DefaultSelection");
     TypedComponentRole<RaplaMap<CalendarModelConfiguration>> EXPORT_ENTRY = new TypedComponentRole<>("org.rapla.plugin.autoexport");
-    Date getStartDate();
-    Date getEndDate();
-    Date getSelectedDate();
+    LocalDateTime getStartDate();
+    LocalDateTime getEndDate();
+    LocalDateTime getSelectedDate();
     String getTitle();
     String getView();
     Collection<Entity> getSelected();

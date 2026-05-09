@@ -146,7 +146,7 @@ public class SaveUndo<T extends Entity> implements CommandUndo<RaplaException> {
 		}
 		if ( entity instanceof Classifiable)
 		{
-			java.time.LocalDateTime lastChanged = ((Classifiable) entity).getClassification().getType().getLastChangedAsLocalDateTime();
+			java.time.LocalDateTime lastChanged = ((Classifiable) entity).getClassification().getType().getLastChanged();
 			if ( lastChanged != null)
 			{
 
@@ -158,8 +158,8 @@ public class SaveUndo<T extends Entity> implements CommandUndo<RaplaException> {
 	private  void setNewTimestamp( Entity dest, Entity persistent) {
 		 if ( persistent instanceof ModifiableTimestamp)
 		 {
-			 java.time.LocalDateTime version = ((ModifiableTimestamp)persistent).getLastChangedAsLocalDateTime();
-			 ((ModifiableTimestamp)dest).setLastChangedLocalDateTime(version);
+			 java.time.LocalDateTime version = ((ModifiableTimestamp)persistent).getLastChanged();
+			 ((ModifiableTimestamp)dest).setLastChanged(version);
 		 }
 	 }
 

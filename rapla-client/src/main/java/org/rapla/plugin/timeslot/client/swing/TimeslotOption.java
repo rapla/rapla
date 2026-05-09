@@ -51,10 +51,10 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.Date;
 import java.util.List;
 import java.util.Locale;
 
+import java.time.LocalDateTime;
 @Service(TimeslotPlugin.PLUGIN_ID)
 @Scope("prototype")
 
@@ -230,10 +230,10 @@ public class TimeslotOption extends RaplaGUIComponent implements PluginOptionPan
     		
     		String name = row.textfield.getText();
     		RaplaTime raplatime = row.raplatime;
-			Date time = raplatime.getTime();
+			LocalDateTime time = raplatime.getTime();
     	   	if ( time != null )
     		{
-				int minuteOfDay = DateTools.getMinuteOfDay(time.getTime());
+				int minuteOfDay = DateTools.getMinuteOfDay(DateTools.toMilli(time));
     			timeslots.add( new Timeslot( name, minuteOfDay));
     		}
     	}

@@ -44,17 +44,17 @@ import java.awt.Rectangle;
 import java.awt.TexturePaint;
 import java.awt.event.MouseEvent;
 import java.awt.image.BufferedImage;
-import java.util.Date;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
+import java.time.LocalDateTime;
 public class SwingRaplaBlock extends RaplaBlock implements SwingBlock {
     private static BufferedImage exceptionImage;
     RaplaBlockView m_view = new RaplaBlockView();
 
-    public SwingRaplaBlock(RaplaBuilder.RaplaBlockContext blockContext, Date start, Date end) {
+    public SwingRaplaBlock(RaplaBuilder.RaplaBlockContext blockContext, LocalDateTime start, LocalDateTime end) {
         super(blockContext, start, end);
     }
 

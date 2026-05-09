@@ -40,6 +40,7 @@ import java.util.Collections;
 import java.util.Map;
 import java.util.Set;
 
+import java.time.LocalDateTime;
 @Service
 
 public class ConflictPeriodReservationButton extends RaplaGUIComponent implements ReservationToolbarExtension
@@ -87,9 +88,9 @@ public class ConflictPeriodReservationButton extends RaplaGUIComponent implement
                     edit.addExceptionsToCurrentAppointment( result);
                     boolean modified = false;
 
-                    //            final Date[] exceptionsBefore = repeating.getExceptions();
+                    //            final LocalDateTime[] exceptionsBefore = repeating.getExceptions();
                     //            repeating.addExceptions(period.getInterval());
-                    //            final Date[] exceptionsAfter = repeating.getExceptions();
+                    //            final LocalDateTime[] exceptionsAfter = repeating.getExceptions();
                     //            if (!Arrays.equals(exceptionsAfter, exceptionsBefore)) {
                     //                modified = true;
                     //modified ? DialogResult.OK_MODIFIED : DialogResult.OK;

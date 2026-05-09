@@ -16,9 +16,9 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.util.Date;
 import java.util.List;
 
+import java.time.LocalDateTime;
 /**
  * REST endpoints for the {@code /storage/*} family — the bulk-fetch / dispatch / refresh
  * surface the Swing client uses for batched operations. After PRD 008 phases 5-7 + this turn,
@@ -156,7 +156,7 @@ public class RemoteStorageController
     }
 
     @PostMapping("/allocatable/date/next")
-    public Date getNextAllocatableDate(@RequestBody RemoteStorage.NextAllocatableDateRequest job) throws RaplaException
+    public LocalDateTime getNextAllocatableDate(@RequestBody RemoteStorage.NextAllocatableDateRequest job) throws RaplaException
     {
         return delegate.getNextAllocatableDate(job);
     }

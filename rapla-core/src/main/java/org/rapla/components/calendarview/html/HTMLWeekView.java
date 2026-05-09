@@ -20,11 +20,11 @@ import org.rapla.components.util.DateTools;
 
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Date;
 import java.util.HashMap;
 import java.util.SortedSet;
 import java.util.TreeSet;
 
+import java.time.LocalDateTime;
 public class HTMLWeekView extends AbstractHTMLView {
     private int endMinutes;
     private int minMinute;
@@ -67,7 +67,7 @@ public class HTMLWeekView extends AbstractHTMLView {
         this.endMinutes = endMinutes;
     }
 
-    public void setToDate(Date weekDate) {
+    public void setToDate(LocalDateTime weekDate) {
         calcMinMaxDates( weekDate );
     }
 
@@ -216,7 +216,7 @@ public class HTMLWeekView extends AbstractHTMLView {
 					Block block = slot.getBlock(minuteOfDay);
 					if ( block != null)
 					{
-						long endTime = block.getEnd().getTime();
+						long endTime = DateTools.toMilli(block.getEnd());
                         int endMinute = Math.min(maxMinute,DateTools.getMinuteOfDay(endTime));
 						int rowspan = calcRowspan(minuteOfDay, endMinute);
 						result.append("<td valign=\"top\" class=\"week_block\"");
@@ -314,7 +314,7 @@ public class HTMLWeekView extends AbstractHTMLView {
 
 
 	protected String createColumnHeader(int i) {
-		Date date = DateTools.addDays(getStartDate(), i);
+		LocalDateTime date = DateTools.addDays(getStartDate(), i);
 		String headerName = getRaplaLocale().formatDayOfWeekDateMonth(date );
 		return headerName;
 	}
@@ -324,12 +324,12 @@ public class HTMLWeekView extends AbstractHTMLView {
    public void addBlock(Block block,int column,int slot) {
         checkBlock ( block );
         HTMLDaySlot multiSlot =multSlots[column];
-        long start = block.getStart().getTime();
+        long start = DateTools.toMilli(block.getStart());
         int startMinute =  Math.max(minMinute,(
                 DateTools.getHourOfDay( start)* 60
             + DateTools.getMinuteOfHour( start)
             ));
-        long end = block.getEnd().getTime();
+        long end = DateTools.toMilli(block.getEnd());
         int endMinute =  (Math.min(maxMinute,
                 DateTools.getHourOfDay( end)* 60
                 + DateTools.getMinuteOfHour( end)

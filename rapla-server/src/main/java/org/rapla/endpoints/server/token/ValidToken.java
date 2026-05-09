@@ -15,7 +15,7 @@
 package org.rapla.endpoints.server.token;
 
 
-/** A validated token from {@link SignedToken#checkToken(String, String, java.util.Date)} */
+/** A validated token from {@link SignedToken#checkToken(String, String, java.time.LocalDateTime)} */
 public class ValidToken {
   private final boolean refresh;
   private final String data;

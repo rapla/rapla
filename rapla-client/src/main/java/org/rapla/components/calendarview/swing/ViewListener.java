@@ -16,16 +16,15 @@ import org.rapla.components.calendarview.Block;
 
 import java.awt.Component;
 import java.awt.Point;
-import java.util.Date;
-
+import java.time.LocalDateTime;
 /** Listeners for user-changes in the weekview.*/
 public interface ViewListener {
     /** Invoked when the user invokes the slot-contex (right-clicks on slot).
         The selected area and suggested
         coordinates at which the popup menu can be shown are passed.*/
-    void selectionPopup(Component slotComponent,Point p,Date start,Date end, int slotNr);
+    void selectionPopup(Component slotComponent,Point p,LocalDateTime start,LocalDateTime end, int slotNr);
     /** Invoked when the selection has changed.*/
-    void selectionChanged(Date start,Date end);
+    void selectionChanged(LocalDateTime start,LocalDateTime end);
     /** Invoked when the user invokes a block-context (right-clicks on a block).
         The suggested coordinates at which the popup menu can be shown are passed.*/
     void blockPopup(Block block,Point p);
@@ -33,9 +32,9 @@ public interface ViewListener {
         The suggested coordinates at which the popup menu can be shown are passed.*/
     void blockEdit(Block block,Point p);
     /** Invoked when the user has dragged/moved a block */
-    void moved(Block block,Point p,Date newStart, int slotNr);
+    void moved(Block block,Point p,LocalDateTime newStart, int slotNr);
     /** Invoked when the user has resized a block */
-    void resized(Block block,Point p,Date newStart, Date newEnd, int slotNr);
+    void resized(Block block,Point p,LocalDateTime newStart, LocalDateTime newEnd, int slotNr);
 }
 
 

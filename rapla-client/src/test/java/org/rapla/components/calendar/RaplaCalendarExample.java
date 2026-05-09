@@ -25,10 +25,10 @@ import java.awt.event.WindowEvent;
 import java.text.DateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
-import java.util.Date;
 import java.util.Locale;
 import java.util.TimeZone;
 
+import java.time.LocalDateTime;
 /** Test class for RaplaCalendar and RaplaTime */
 public final class RaplaCalendarExample
 {
@@ -80,11 +80,11 @@ public final class RaplaCalendarExample
                 int index = raplaCalendars.indexOf( evt.getSource() );
                 if ( index < 0 )
                     index = raplaTimes.indexOf( evt.getSource() );
-                Date date = (  raplaCalendars.get( index ) ).getDate();
-                Date time = ( raplaTimes.get( index ) ).getTime();
+                LocalDateTime date = (  raplaCalendars.get( index ) ).getDate();
+                LocalDateTime time = ( raplaTimes.get( index ) ).getTime();
                 TimeZone timeZone = (  raplaCalendars.get( index ) ).getTimeZone();
 
-                Date dateTime = toDateTime( date, time, timeZone );
+                LocalDateTime dateTime = toDateTime( date, time, timeZone );
 
                 DateFormat format = DateFormat.getDateTimeInstance();
                 format.setTimeZone( TimeZone.getTimeZone( "GMT" ) );
@@ -121,7 +121,7 @@ public final class RaplaCalendarExample
 
     /** Uses the first date parameter for year, month, date information and
      the second for hour, minutes, second, millisecond information.*/
-    private Date toDateTime( Date date, Date time, TimeZone timeZone )
+    private LocalDateTime toDateTime( LocalDateTime date, LocalDateTime time, TimeZone timeZone )
     {
         Calendar cal1 = Calendar.getInstance( timeZone );
         Calendar cal2 = Calendar.getInstance( timeZone );

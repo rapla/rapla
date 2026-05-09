@@ -71,8 +71,8 @@ public abstract class HTMLInfo<T> extends RaplaComponent
 
     protected void insertModificationRow(Timestamp timestamp, StringBuffer buf)
     {
-        final java.time.LocalDateTime createTime = timestamp.getCreateDateAsLocalDateTime();
-        final java.time.LocalDateTime lastChangeTime = timestamp.getLastChangedAsLocalDateTime();
+        final java.time.LocalDateTime createTime = timestamp.getCreateDate();
+        final java.time.LocalDateTime lastChangeTime = timestamp.getLastChanged();
         if (lastChangeTime != null)
         {
             buf.append("<div style=\"font-size:7px;margin-bottom:4px;\">");

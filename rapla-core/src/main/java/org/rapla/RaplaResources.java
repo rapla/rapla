@@ -8,10 +8,11 @@ import org.rapla.components.i18n.I18nBundle;
 import org.rapla.components.i18n.I18nIcon;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import java.util.Date;
 import java.util.Locale;
 
 
+import java.time.LocalDateTime;
+import java.time.LocalDate;
 public class RaplaResources extends AbstractBundle {
     public static final String BUNDLENAME = "org.rapla.RaplaResources";
 
@@ -47,7 +48,7 @@ public class RaplaResources extends AbstractBundle {
     // add custom format methods
 
     // custom format for the calendarweek
-    public String calendarweek(Date startDate) {
+    public String calendarweek(LocalDateTime startDate) {
         String format = getString("calendarweek.abbreviation");
         int week = DateTools.getWeekInYear(startDate, getLocale());
         String result = format.replace("{0}", "" + week);
@@ -56,7 +57,7 @@ public class RaplaResources extends AbstractBundle {
         return result;
     }
 
-    /** {@code LocalDate} variant of {@link #calendarweek(Date)}. */
+    /** {@code LocalDate} variant of {@link #calendarweek(LocalDateTime)}. */
     public String calendarweek(java.time.LocalDate startDate) {
         String format = getString("calendarweek.abbreviation");
         int week = DateTools.getWeekInYear(startDate, getLocale());

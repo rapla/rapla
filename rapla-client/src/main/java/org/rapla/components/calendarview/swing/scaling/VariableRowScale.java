@@ -2,10 +2,7 @@ package org.rapla.components.calendarview.swing.scaling;
 
 import org.rapla.components.util.DateTools;
 
-import java.util.Date;
-
-
-
+import java.time.LocalDateTime;
 public class VariableRowScale implements IRowScale
 {
     PeriodRow[] periodRows;
@@ -73,8 +70,8 @@ public class VariableRowScale implements IRowScale
        return periodRows.length;
     }
     
-    private int getMinuteOfDay(Date time) {
-       return DateTools.getMinuteOfDay(time.getTime());
+    private int getMinuteOfDay(LocalDateTime time) {
+       return DateTools.getMinuteOfDay(DateTools.toMilli(time));
    }
 
     public int calcHour(int index) {
@@ -85,7 +82,7 @@ public class VariableRowScale implements IRowScale
         return periodRows[index].startMinute % MINUTES_PER_HOUR;
     }
 
-   public int getYCoord(Date time)  {
+   public int getYCoord(LocalDateTime time)  {
        int diff = getMinuteOfDay(time) - mintime * MINUTES_PER_HOUR ;
        return (diff * hourSize) / MINUTES_PER_HOUR;
    }

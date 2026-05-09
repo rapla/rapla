@@ -359,7 +359,7 @@ public class Export2iCalConverter
      */
     private void addLastModifiedDateToEvent(Appointment appointment, VEvent properties)
     {
-        LocalDateTime lastChange = appointment.getReservation().getLastChangedAsLocalDateTime();
+        LocalDateTime lastChange = appointment.getReservation().getLastChanged();
         properties.add(new DtStamp(lastChange.atZone(timeZone.toZoneId()).toInstant()));
     }
 
@@ -464,7 +464,7 @@ public class Export2iCalConverter
         // rku: use seperate EXDATE for each exception
         List<ZonedDateTime> exceptionDates = new ArrayList<>();
         LocalDateTime startDateTime = appointment.getStartDateTime();
-        for (LocalDateTime exception : repeating.getExceptionsAsLocalDateTime())
+        for (LocalDateTime exception : repeating.getExceptions())
         {
             LocalDateTime exceptionDate = LocalDateTime.of(exception.toLocalDate(), startDateTime.toLocalTime());
             exceptionDates.add(exceptionDate.atZone(timeZone.toZoneId()));
@@ -705,7 +705,7 @@ public class Export2iCalConverter
      */
     private void addCreateDateToEvent(Appointment appointment, VEvent properties)
     {
-        LocalDateTime createTime = appointment.getReservation().getCreateDateAsLocalDateTime();
+        LocalDateTime createTime = appointment.getReservation().getCreateDate();
         properties.add(new Created(createTime.atZone(timeZone.toZoneId()).toInstant()));
     }
 }

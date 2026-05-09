@@ -22,17 +22,17 @@ import org.rapla.entities.dynamictype.Attribute;
 import org.rapla.entities.dynamictype.internal.EvalContext;
 import org.rapla.plugin.abstractcalendar.RaplaBuilder.RaplaBlockContext;
 
-import java.util.Date;
 import java.util.List;
 
 
+import java.time.LocalDateTime;
 public class HTMLRaplaBlock extends RaplaBlock implements HTMLBlock {
     private int m_day;
     private int m_row;
     private int m_rowCount;
     private int index = 0;
     EvalContext context;
-    public HTMLRaplaBlock( RaplaBlockContext context, Date start, Date end)
+    public HTMLRaplaBlock( RaplaBlockContext context, LocalDateTime start, LocalDateTime end)
     {
         super( context, start, end);
     	timeStringSeperator ="&#160;-";

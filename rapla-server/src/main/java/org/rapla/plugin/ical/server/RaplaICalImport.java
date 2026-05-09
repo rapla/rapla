@@ -42,7 +42,6 @@ import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.temporal.Temporal;
 import java.util.*;
-import java.util.Date;
 import java.util.TimeZone;
 
 public class RaplaICalImport implements ICalImport {
@@ -206,8 +205,8 @@ public class RaplaICalImport implements ICalImport {
 //    					duration = null;
 //    				} else if (!component.getProperties("DURATION").isEmpty()) {
 //    				    duration = new Dur(component.getProperty("DURATION").get().getValue());
-//    			        Date t1 = new Date();
-//    			        Date t2 = duration.getTime(t1);
+//    			        LocalDateTime t1 = LocalDateTime.of();
+//    			        LocalDateTime t2 = duration.getTime(t1);
 //    			        duration_millis = t2.getTime() - t1.getTime();
 //    				} else {
 //    					logger.warn("Error in ics File. There is an event without DTEND or DURATION. " + "SUMMARY: " + name + ", DTSTART: " + startdate);
@@ -235,16 +234,16 @@ public class RaplaICalImport implements ICalImport {
 //		            Appointment appointment;
 //		        	if ( !(startdate instanceof DateTime))
 //		            {
-//		            	Date begin = new Date( startdate.getTime());
-//			            Date end = new Date(begin.getTime() + duration_millis);
+//		            	LocalDateTime begin = DateTools.toLocalDateTime( startdate.getTime());
+//			            LocalDateTime end = DateTools.toLocalDateTime(begin.getTime() + duration_millis);
 //			            appointment = newAppointment(user,begin, end);
 //		            	wholeDay = true;
 //			            appointment.setWholeDays(wholeDay);
 //		            }
 //		            else
 //		            {
-//                        Date begin = timeZoneConverter.toRaplaTime(timeZone, startdate);
-//			            Date end = new Date(begin.getTime() + duration_millis);
+//                        LocalDateTime begin = timeZoneConverter.toRaplaTime(timeZone, startdate);
+//			            LocalDateTime end = DateTools.toLocalDateTime(begin.getTime() + duration_millis);
 //			            appointment = newAppointment(user,begin, end);
 //		            }
 //
@@ -296,8 +295,8 @@ public class RaplaICalImport implements ICalImport {
 //                            {
 //                                Period p = it.next();
 //
-//								Date s = timeZoneConverter.toRaplaTime(timeZone, p.getStart());
-//                                Date e = timeZoneConverter.toRaplaTime(timeZone,p.getEnd());
+//								LocalDateTime s = timeZoneConverter.toRaplaTime(timeZone, p.getStart());
+//                                LocalDateTime e = timeZoneConverter.toRaplaTime(timeZone,p.getEnd());
 //                                Appointment singleAppointment = newAppointment( user,s, e);
 //                                event.addAppointment( singleAppointment);
 //                            }
@@ -330,7 +329,7 @@ public class RaplaICalImport implements ICalImport {
 
 //        final int eventsInICalFinal = eventsInICal;
 //        int eventsSkippedFinal = eventsSkipped;
-        Date minStart = null;
+        LocalDateTime minStart = null;
         final int eventsInICalFinal = 0;
         int eventsSkippedFinal = 0;
         List<Reservation> eventList = new ArrayList<>();
@@ -367,10 +366,10 @@ public class RaplaICalImport implements ICalImport {
         return new Integer[] { eventsInICalFinal, eventsImported, eventsPresent, eventsSkippedFinal };
 	}
 
-    protected Map<String, List<Entity<Reservation>>> getImportedReservations(Date start) throws RaplaException
+    protected Map<String, List<Entity<Reservation>>> getImportedReservations(LocalDateTime start) throws RaplaException
     {
         User user = null;
-        Date end = null;
+        LocalDateTime end = null;
         Map<String, List<Entity<Reservation>>> keyMap = new LinkedHashMap<>();
         Collection<Reservation> reservations = syncOperator.getReservationsSync(user, null, null, start, end, null);
         for (Reservation r : reservations)
@@ -391,7 +390,7 @@ public class RaplaICalImport implements ICalImport {
     }
 
 //    
-//	private Date toRaplaDate(TimeZone timeZone2,
+//	private LocalDateTime toRaplaDate(TimeZone timeZone2,
 //			net.fortuna.ical4j.model.Date startdate) 
 //	{
 //		java.util.Calendar cal = java.util.Calendar.inject( getRaplaLocale().getSystemTimeZone());
@@ -401,12 +400,12 @@ public class RaplaICalImport implements ICalImport {
 //		int month = cal.get( java.util.Calendar.MONTH);
 //		int year = cal.get( java.util.Calendar.YEAR);
 //		
-//		Date time = cal.getTime();
-//		Date convertedDate = getRaplaLocale().toRaplaTime(timeZone2, time);
+//		LocalDateTime time = cal.getTime();
+//		LocalDateTime convertedDate = getRaplaLocale().toRaplaTime(timeZone2, time);
 //		return null;
 //	}
 
-	private Appointment newAppointment(User user,Date begin, Date end) throws RaplaException {
+	private Appointment newAppointment(User user,LocalDateTime begin, LocalDateTime end) throws RaplaException {
         Appointment appointment = facade.newAppointmentWithUser(begin,end,user);
         return appointment;
     }
@@ -460,7 +459,7 @@ public class RaplaICalImport implements ICalImport {
             if (count <= 0) 
             {
 				Temporal until = recur.getUntil();
-				Date repeatingEnd;
+				LocalDateTime repeatingEnd;
 				if ( until == null )
 				{
                     repeatingEnd = null;

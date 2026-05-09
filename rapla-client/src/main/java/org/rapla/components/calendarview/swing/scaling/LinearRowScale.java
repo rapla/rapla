@@ -2,10 +2,7 @@ package org.rapla.components.calendarview.swing.scaling;
 
 import org.rapla.components.util.DateTools;
 
-import java.util.Date;
-
-
-
+import java.time.LocalDateTime;
 public class LinearRowScale implements IRowScale
 {
     private int rowSize = 15;
@@ -85,11 +82,11 @@ public class LinearRowScale implements IRowScale
         return max;
     }
     
-    private int getMinuteOfDay(Date time) {
-       return (DateTools.getMinuteOfDay(time.getTime()));
+    private int getMinuteOfDay(LocalDateTime time) {
+       return (DateTools.getMinuteOfDay(DateTools.toMilli(time)));
    }
 
-   public int getYCoord(Date time)  {
+   public int getYCoord(LocalDateTime time)  {
        int diff = getMinuteOfDay(time) - mintime  ;
        int pixelPerHour= rowSize * rowsPerHour;
        return (diff * pixelPerHour) / MINUTES_PER_HOUR;

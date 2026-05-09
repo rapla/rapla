@@ -34,6 +34,7 @@ import org.rapla.framework.RaplaException;
 import java.util.*;
 import java.util.Map.Entry;
 
+import java.time.LocalDateTime;
 /** Use the method <code>newClassification()</code> of class <code>DynamicType</code> to
  *  createInfoDialog a classification. Once created it is not possible to change the
  *  type of a classifiction. But you can replace the classification of an
@@ -483,7 +484,7 @@ public class ClassificationImpl implements Classification,DynamicTypeDependant, 
             }
         }
         else if (attributeType.equals( AttributeType.DATE )) {
-            return new SerializableDateTimeFormat().formatDate((Date)value);
+            return new SerializableDateTimeFormat().formatDate((LocalDateTime)value);
         }
         else if ( value != null)
         {

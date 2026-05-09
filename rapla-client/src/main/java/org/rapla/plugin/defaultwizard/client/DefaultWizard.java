@@ -41,6 +41,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import java.util.ArrayList;
 import java.util.List;
 
+import java.time.LocalDateTime;
 /** This ReservationWizard displays no wizard and directly opens a ReservationEdit Window
  */
 @Service
@@ -161,9 +162,9 @@ import java.util.List;
     //	 * @param startDate
     //	 * @return
     //	 */
-    //	protected Date getEndDate( CalendarModel model,Date startDate) {
+    //	protected LocalDateTime getEndDate( CalendarModel model,LocalDateTime startDate) {
     //		Collection<TimeInterval> markedIntervals = model.getMarkedIntervals();
-    //		Date endDate = null;
+    //		LocalDateTime endDate = null;
     //    	if ( markedIntervals.size() > 0)
     //    	{
     //    		TimeInterval first = markedIntervals.iterator().next();
@@ -173,12 +174,12 @@ import java.util.List;
     //    	{
     //    		return endDate;
     //    	}
-    //		return new Date(startDate.getTime() + DateTools.MILLISECONDS_PER_HOUR);
+    //		return DateTools.toLocalDateTime(startDate.getTime() + DateTools.MILLISECONDS_PER_HOUR);
     //	}
     //
-    //	protected Date getStartDate(CalendarModel model) {
+    //	protected LocalDateTime getStartDate(CalendarModel model) {
     //		Collection<TimeInterval> markedIntervals = model.getMarkedIntervals();
-    //		Date startDate = null;
+    //		LocalDateTime startDate = null;
     //    	if ( markedIntervals.size() > 0)
     //    	{
     //    		TimeInterval first = markedIntervals.iterator().next();
@@ -190,12 +191,12 @@ import java.util.List;
     //    	}
     //
     //
-    //		Date selectedDate = model.getSelectedDate();
+    //		LocalDateTime selectedDate = model.getSelectedDate();
     //		if ( selectedDate == null)
     //		{
     //			selectedDate = getQuery().today();
     //		}
-    //		Date time = new Date (DateTools.MILLISECONDS_PER_MINUTE * getCalendarOptions().getWorktimeStartMinutes());
+    //		LocalDateTime time = DateTools.toLocalDateTime(DateTools.MILLISECONDS_PER_MINUTE * getCalendarOptions().getWorktimeStartMinutes());
     //		startDate = getRaplaLocale().toDate(selectedDate,time);
     //		return startDate;
     //	}

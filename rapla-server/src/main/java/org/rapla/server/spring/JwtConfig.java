@@ -1,5 +1,6 @@
 package org.rapla.server.spring;
 
+import org.rapla.components.util.DateTools;
 import com.nimbusds.jose.JOSEException;
 import com.nimbusds.jose.JWSAlgorithm;
 import com.nimbusds.jose.JWSHeader;
@@ -16,8 +17,7 @@ import org.springframework.security.oauth2.jose.jws.MacAlgorithm;
 
 import javax.crypto.spec.SecretKeySpec;
 import java.util.Base64;
-import java.util.Date;
-
+import java.time.LocalDateTime;
 @Configuration
 @org.springframework.boot.autoconfigure.condition.ConditionalOnProperty(prefix = "rapla.file-datasources", name = "raplafile")
 public class JwtConfig
@@ -91,8 +91,8 @@ public class JwtConfig
             long now = System.currentTimeMillis();
             JWTClaimsSet claims = new JWTClaimsSet.Builder()
                     .subject(subject)
-                    .issueTime(new Date(now))
-                    .expirationTime(new Date(now + expiresInSeconds * 1000))
+                    .issueTime(new java.util.Date(now))
+                    .expirationTime(new java.util.Date(now + expiresInSeconds * 1000))
                     .jwtID(java.util.UUID.randomUUID().toString())
                     .claim("typ", type)
                     .build();

@@ -23,8 +23,7 @@ import org.rapla.components.util.SerializableDateTimeFormat;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.internal.RaplaLocaleImpl;
 
-import java.util.Date;
-
+import java.time.LocalDateTime;
 @RunWith(JUnit4.class)
 public class RaplaLocaleTest 
 {
@@ -35,7 +34,7 @@ public class RaplaLocaleTest
         bundleManager.setCountry("de");
         bundleManager.setLanguage("DE");
         RaplaLocale raplaLocale = new RaplaLocaleImpl(bundleManager);
-        final Date date = new SerializableDateTimeFormat().parseDate("2001-01-12", false);
+        final LocalDateTime date = new SerializableDateTimeFormat().parseDate("2001-01-12", false);
         {
             String s = raplaLocale.formatDate(date);
             Assert.assertEquals("12.01.01", s);
@@ -53,7 +52,7 @@ public class RaplaLocaleTest
         bundleManager.setCountry("US");
         bundleManager.setLanguage("en");
         RaplaLocale raplaLocale = new RaplaLocaleImpl(bundleManager);
-        final Date date = new SerializableDateTimeFormat().parseDate("2001-01-12", false);
+        final LocalDateTime date = new SerializableDateTimeFormat().parseDate("2001-01-12", false);
         {
             String s = raplaLocale.formatDate(date);
             Assert.assertEquals("1/12/01", s);
@@ -71,7 +70,7 @@ public class RaplaLocaleTest
         bundleManager.setCountry("us");
         bundleManager.setLanguage("en");
         RaplaLocale raplaLocale = new RaplaLocaleImpl(bundleManager);
-        final Date time = new SerializableDateTimeFormat().parseTime("21:00:00");
+        final LocalDateTime time = new SerializableDateTimeFormat().parseTime("21:00:00");
         String s = raplaLocale.formatTime(time);
         Assert.assertEquals("9:00 PM", s);
     }
@@ -83,7 +82,7 @@ public class RaplaLocaleTest
         bundleManager.setCountry("DE");
         bundleManager.setLanguage("de");
         RaplaLocale raplaLocale = new RaplaLocaleImpl(bundleManager);
-        final Date time = new SerializableDateTimeFormat().parseTime("21:00:00");
+        final LocalDateTime time = new SerializableDateTimeFormat().parseTime("21:00:00");
         String s = raplaLocale.formatTime(time);
         Assert.assertEquals("21:00", s);
     }

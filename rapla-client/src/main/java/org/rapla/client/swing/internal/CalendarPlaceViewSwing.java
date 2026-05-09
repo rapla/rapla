@@ -34,6 +34,7 @@ import java.awt.GridBagLayout;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 
+import java.time.LocalDateTime;
 @org.springframework.stereotype.Service
 final public class CalendarPlaceViewSwing
         implements CalendarPlaceView<Component>
@@ -158,7 +159,7 @@ final public class CalendarPlaceViewSwing
     //    public void initForPlace(AbstractActivityController.Place place)
     //    {
     //        // keep current date   in mind
-    //        final Date tmpDate = model.getSelectedDate();
+    //        final LocalDateTime tmpDate = model.getSelectedDate();
     //        // keep in mind if current model had saved date
     //
     //        String tmpModelHasStoredCalenderDate = model.getOption(CalendarModel.SAVE_SELECTED_DATE);
@@ -178,7 +179,7 @@ final public class CalendarPlaceViewSwing
     //            {
     //                model.setSelectedDate(tmpDate);
     //            } else {
-    //                model.setSelectedDate(new Date());
+    //                model.setSelectedDate(LocalDateTime.of());
     //            }
     //        }
     //

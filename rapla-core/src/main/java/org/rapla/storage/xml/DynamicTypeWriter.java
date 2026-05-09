@@ -22,8 +22,7 @@ import org.rapla.entities.internal.CategoryImpl;
 import org.rapla.framework.RaplaException;
 
 import java.io.IOException;
-import java.util.Date;
-
+import java.time.LocalDateTime;
 /** Stores the data from the local cache in XML-format to a print-writer.*/
 public class DynamicTypeWriter extends RaplaXMLWriter
 {
@@ -105,8 +104,8 @@ public class DynamicTypeWriter extends RaplaXMLWriter
                 DynamicType dynamicType = (DynamicType) constraint;
                 printEncode( dynamicType.getKey() );
             }
-            else if ( constraint instanceof Date) {
-                final String formatDate = dateTimeFormat.formatDate( (Date) constraint);
+            else if ( constraint instanceof LocalDateTime) {
+                final String formatDate = dateTimeFormat.formatDate( (LocalDateTime) constraint);
                 print( formatDate);
             } else {
                 printEncode( constraint.toString());
@@ -122,8 +121,8 @@ public class DynamicTypeWriter extends RaplaXMLWriter
             if ( defaultValue instanceof Category) {
                 Category category = (Category) defaultValue;
                 printEncode( getCategoryPath( category ) );
-            }  else if ( defaultValue instanceof Date) {
-                final String formatDate = dateTimeFormat.formatDate( (Date) defaultValue);
+            }  else if ( defaultValue instanceof LocalDateTime) {
+                final String formatDate = dateTimeFormat.formatDate( (LocalDateTime) defaultValue);
                 print( formatDate);
             } else {
                 printEncode( defaultValue.toString());

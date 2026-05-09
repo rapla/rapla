@@ -147,7 +147,7 @@ public class ReservationWriter extends ClassifiableWriter {
                 att("end-date"
                     ,dateTimeFormat.formatDate(r.getEndDateTime(),true));
         }
-        java.time.LocalDateTime[] exceptions = r.getExceptionsAsLocalDateTime();
+        java.time.LocalDateTime[] exceptions = r.getExceptions();
         if (exceptions.length==0) {
             closeElementTag();
             return;

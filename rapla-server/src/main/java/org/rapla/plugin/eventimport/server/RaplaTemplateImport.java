@@ -18,11 +18,11 @@ import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.util.Arrays;
-import java.util.Date;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
 
+import java.time.LocalDateTime;
 public class RaplaTemplateImport implements TemplateImport
 {
     @Autowired
@@ -78,10 +78,10 @@ public class RaplaTemplateImport implements TemplateImport
                     if ( object != null )
                     {
                         String string;
-                        if ( object instanceof Date )
+                        if ( object instanceof LocalDateTime )
                         {
                             final SerializableDateTimeFormat formater = raplaLocale.getSerializableFormat();
-                            final Date date = converter.toRaplaTime(converter.getImportExportTimeZone(), ((Date) object));
+                            final LocalDateTime date = converter.toRaplaTime(converter.getImportExportTimeZone(), ((LocalDateTime) object));
                             string = formater.formatDate(date);
                         }
                         else

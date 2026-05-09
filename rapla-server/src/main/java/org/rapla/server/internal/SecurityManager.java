@@ -32,6 +32,7 @@ import org.rapla.storage.RaplaSecurityException;
 import org.springframework.beans.factory.annotation.Autowired;
 import java.util.*;
 
+import java.time.LocalDateTime;
 /** checks if the client can store or delete an entity */
  public class SecurityManager
 {
@@ -287,7 +288,7 @@ import java.util.*;
      * removed allocatable and the newly inserted allocatable */
     private boolean canExchange(User user, Entity entity, Entity original)
     {
-        Date today = operator.today();
+        java.time.LocalDate today = operator.today();
         final Class<? extends Entity> typeClass = entity.getTypeClass();
         if (Appointment.class == typeClass)
         {
@@ -462,7 +463,7 @@ import java.util.*;
             for (int j = 0; j < appointments.length; j++)
             {
                 Appointment appointment = appointments[j];
-                Date today = operator.today();
+                java.time.LocalDate today = operator.today();
                 if (r.hasAllocatedOn(allocatable, appointment) && !permissionController.hasPermissionToAllocate(user, appointment, allocatable, original, today))
                 {
                     boolean canRequest = permissionController.canRequest(allocatable, user, today);
@@ -478,7 +479,7 @@ import java.util.*;
         if (original == null)
             return;
 
-        Date today = operator.today();
+        java.time.LocalDate today = operator.today();
 
         // 1. calculate the deleted assignments from allocatable to appointments
         // 2. check if they were allowed to change in the specified time
@@ -495,8 +496,8 @@ import java.util.*;
                 for (int j = 0; j < appointments.length; j++) {
                     Appointment appointment = appointments[j];
                     if (original.hasAllocatedOn(allocatable, appointment) && !r.hasAllocatedOn(allocatable, appointment)) {
-                        Date start = appointment.getStart();
-                        Date end = appointment.getMaxEnd();
+                        LocalDateTime start = appointment.getStart();
+                        LocalDateTime end = appointment.getMaxEnd();
                         if (!permissionController.canAllocate(allocatable, user, start, end, today)) {
                             if (permissionController.canRequest(allocatable, user, today)) {
                                 r.setRequestStatus(allocatable, RequestStatus.REQUESTED);

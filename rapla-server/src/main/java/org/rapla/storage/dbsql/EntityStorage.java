@@ -36,12 +36,12 @@ import java.sql.Statement;
 import java.sql.Types;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Date;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Set;
 
+import java.time.LocalDateTime;
 abstract class EntityStorage<T extends Entity<T>> extends AbstractTableStorage implements Storage<T> {
 	//String searchForIdSql;
 
@@ -190,7 +190,7 @@ abstract class EntityStorage<T extends Entity<T>> extends AbstractTableStorage i
 	}
 
 
-    public void setConnection(Connection con, Date connectionTimestamp) throws SQLException {
+    public void setConnection(Connection con, LocalDateTime connectionTimestamp) throws SQLException {
 		super.setConnection(con,connectionTimestamp);
 		for (TableStorage subStore: subStores) {
 		    subStore.setConnection(con, connectionTimestamp);
@@ -324,7 +324,7 @@ abstract class EntityStorage<T extends Entity<T>> extends AbstractTableStorage i
 
 	protected void updateTimestamp(ModifiableTimestamp timestamp)
 	{
-		final Date currentTimestamp = getConnectionTimestamp();
+		final LocalDateTime currentTimestamp = getConnectionTimestamp();
 		timestamp.setLastChanged(currentTimestamp);
 	}
 

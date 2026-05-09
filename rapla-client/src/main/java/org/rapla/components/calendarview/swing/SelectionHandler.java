@@ -17,15 +17,14 @@ import java.awt.Component;
 import java.awt.Point;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
-import java.util.Date;
-
+import java.time.LocalDateTime;
 /** SelectionHandler handles the  selection events and the Slot
  * Context Menu (right click).
  * This is internally used by the weekview to communicate with its slots.
  */
 public class SelectionHandler extends MouseAdapter {
-    Date start;
-    Date end;
+    LocalDateTime start;
+    LocalDateTime end;
     boolean bPopupClicked = false;
     boolean bSelecting = false;
     public int selectionStart = -1;

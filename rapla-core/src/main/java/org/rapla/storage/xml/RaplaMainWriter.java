@@ -252,8 +252,8 @@ public class RaplaMainWriter extends RaplaXMLWriter
         }
         if ( invalidateInterval != null)
         {
-            java.time.LocalDateTime startDate = invalidateInterval.getStartAsLocalDateTime();
-            java.time.LocalDateTime endDate = invalidateInterval.getEndAsLocalDateTime();
+            java.time.LocalDateTime startDate = invalidateInterval.getStart();
+            java.time.LocalDateTime endDate = invalidateInterval.getEnd();
 			String start;
 			if ( startDate == null)
 			{

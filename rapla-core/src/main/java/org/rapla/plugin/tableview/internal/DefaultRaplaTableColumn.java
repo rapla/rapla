@@ -22,9 +22,9 @@ import org.rapla.plugin.tableview.internal.TableConfig.TableColumnConfig;
 import org.rapla.plugin.tableview.TableColumnType;
 
 import java.util.Collections;
-import java.util.Date;
 import java.util.Locale;
 
+import java.time.LocalDateTime;
 public class DefaultRaplaTableColumn<T> implements RaplaTableColumn<T>
 {
 
@@ -45,7 +45,7 @@ public class DefaultRaplaTableColumn<T> implements RaplaTableColumn<T>
     public TableColumnType getType()
     {
         final Class<?> columnClass = getColumnClass();
-        if ( columnClass.equals(Date.class))
+        if ( columnClass.equals(LocalDateTime.class))
         {
             return TableColumnType.DATE;
         }
@@ -111,7 +111,7 @@ public class DefaultRaplaTableColumn<T> implements RaplaTableColumn<T>
         String format = parsedAnnotation.formatName(context);
         if (isDate() || isDatetime())
         {
-            java.util.Date date;
+            java.time.LocalDateTime date;
             try
             {
                 if (isDatetime())
@@ -142,7 +142,7 @@ public class DefaultRaplaTableColumn<T> implements RaplaTableColumn<T>
     {
         if (isDate() || isDatetime())
         {
-            return Date.class;
+            return LocalDateTime.class;
         }
         return String.class;
     }
@@ -170,13 +170,13 @@ public class DefaultRaplaTableColumn<T> implements RaplaTableColumn<T>
         if (isDate() || isDatetime())
         {
             RaplaLocale raplaLocale = getRaplaLocale();
-            if (!(value instanceof Date))
+            if (!(value instanceof LocalDateTime))
             {
                 value = "invalid date";
             }
             else
             {
-                Date date = (Date) value;
+                LocalDateTime date = (LocalDateTime) value;
                 if (isDatetime())
                 {
                     value = raplaLocale.formatDateLong(date) + " " + raplaLocale.formatTime(date);

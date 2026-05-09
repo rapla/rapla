@@ -26,9 +26,7 @@ import org.rapla.logger.Logger;
 import org.rapla.scheduler.Promise;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import java.util.Date;
-
-
+import java.time.LocalDateTime;
 public class HTMLRaplaBuilder extends RaplaBuilder {
     
     static String COLOR_NO_RESOURCE = "#BBEEBB";
@@ -46,7 +44,7 @@ public class HTMLRaplaBuilder extends RaplaBuilder {
 
     
     @Override
-    public Promise<RaplaBuilder> initFromModel(CalendarModel model, Date startDate, Date endDate) 
+    public Promise<RaplaBuilder> initFromModel(CalendarModel model, LocalDateTime startDate, LocalDateTime endDate) 
     {
     	final Promise<RaplaBuilder> builderPromise = super.initFromModel(model, startDate, endDate);
     	final Promise<RaplaBuilder> nextBuilderPromise = builderPromise.thenApply((builder) -> {
@@ -79,19 +77,19 @@ public class HTMLRaplaBuilder extends RaplaBuilder {
         return true;
     }
 
-    private Block createBlock(RaplaBlockContext blockContext, Date start, Date end) {
+    private Block createBlock(RaplaBlockContext blockContext, LocalDateTime start, LocalDateTime end) {
         HTMLRaplaBlock block = new HTMLRaplaBlock(blockContext, start, end);
         block.setIndex( index ++ );
 
         int row = (int) (
-            DateTools.getHourOfDay(start.getTime())* m_rowsPerHour
-            + Math.round((DateTools.getMinuteOfHour(start.getTime()) * m_rowsPerHour)/60.0)
+            DateTools.getHourOfDay(start) * m_rowsPerHour
+            + Math.round((DateTools.getMinuteOfHour(start) * m_rowsPerHour)/60.0)
             );
         block.setRow(row);
         block.setDay(DateTools.getWeekday( start));
         int endRow = (int) (
-            DateTools.getHourOfDay(end.getTime())* m_rowsPerHour
-            + Math.round((DateTools.getMinuteOfHour(end.getTime()) * m_rowsPerHour)/60.0)
+            DateTools.getHourOfDay(end) * m_rowsPerHour
+            + Math.round((DateTools.getMinuteOfHour(end) * m_rowsPerHour)/60.0)
             );
         int rowCount = endRow -row;
         block.setRowCount(rowCount);

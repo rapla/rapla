@@ -22,12 +22,12 @@ import org.rapla.entities.domain.AppointmentBlock;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.Date;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
+import java.time.LocalDateTime;
 public class HTMLCompactWeekView extends AbstractHTMLView {
     public final static int ROWS = 6; //without the header row
     /** shared calendar instance. Only used for temporary stored values. */
@@ -83,7 +83,7 @@ public class HTMLCompactWeekView extends AbstractHTMLView {
         PreperationResult prep = b.prepareBuild(getStartDate(),getEndDate());
         
         // build Blocks
-        final Date startDate = this.getStartDate();
+        final LocalDateTime startDate = this.getStartDate();
         final Collection<AppointmentBlock> appointmentBlocks = prep.getBlocks();
         b.build(this, startDate, appointmentBlocks);
         
@@ -148,7 +148,7 @@ public class HTMLCompactWeekView extends AbstractHTMLView {
 
 	protected List<String> getHeaderNames() {
 		List<String> headerNames = new ArrayList<>();
-        Date date = getStartDate();
+        LocalDateTime date = getStartDate();
         int columnCount = getColumnCount();
 		for (int i=0;i<columnCount;i++) {
             headerNames.add (getRaplaLocale().formatDayOfWeekDateMonth(date ));

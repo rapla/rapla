@@ -16,9 +16,7 @@ import org.rapla.storage.PermissionController;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import java.util.Collection;
-import java.util.Date;
-
-
+import java.time.LocalDateTime;
 public class RaplaDefaultPermissionImpl implements PermissionExtension
 {
 
@@ -28,7 +26,7 @@ public class RaplaDefaultPermissionImpl implements PermissionExtension
     }
 
     @Override
-    public boolean hasAccess(Entity entity, User user, Permission.AccessLevel accessLevel, Date start, Date end, Date today,
+    public boolean hasAccess(Entity entity, User user, Permission.AccessLevel accessLevel, LocalDateTime start, LocalDateTime end, java.time.LocalDate today,
             boolean checkOnlyToday)
     {
         if (user == null || user.isAdmin())

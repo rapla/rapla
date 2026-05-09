@@ -6,10 +6,10 @@ import org.rapla.entities.domain.Reservation;
 import org.rapla.scheduler.Promise;
 
 import java.util.Collection;
-import java.util.Date;
 import java.util.Map;
 import java.util.Set;
 
+import java.time.LocalDateTime;
 /** Use the ReservationController to modify or createInfoDialog a {@link Reservation}.
     This class handles all interactions with the user. Examples:
     <ul>
@@ -39,18 +39,18 @@ public interface ReservationController
     Promise<Void> deleteAppointment( AppointmentBlock appointmentBlock, PopupContext context );
     Promise<Void> copyAppointmentBlock(AppointmentBlock appointmentBlock, PopupContext context, Collection<Allocatable> contextAllocatables );
     Promise<Void> cutAppointment(AppointmentBlock appointmentBlock, PopupContext context, Collection<Allocatable> contextAllocatables);
-    Promise<Void> pasteAppointment( Date start, PopupContext context, boolean asNewReservation, boolean keepTime );
+    Promise<Void> pasteAppointment( LocalDateTime start, PopupContext context, boolean asNewReservation, boolean keepTime );
     Promise<Void> copyReservations(Collection<Reservation> reservations,Collection<Allocatable> contextAllocatables );
     Promise<Void> cutReservations(Collection<Reservation> reservations,Collection<Allocatable> contextAllocatables );
 
     /**
      * @param keepTime when moving only the date part and not the time part is modified*/
-    Promise<Void> moveAppointment( AppointmentBlock appointmentBlock,  Date newStart, PopupContext context, boolean keepTime );
+    Promise<Void> moveAppointment( AppointmentBlock appointmentBlock,  LocalDateTime newStart, PopupContext context, boolean keepTime );
     /**
      * @param keepTime when moving only the date part and not the time part is modified*/
-    Promise<Void> resizeAppointment( AppointmentBlock appointmentBlock, Date newStart, Date newEnd, PopupContext context, boolean keepTime );
+    Promise<Void> resizeAppointment( AppointmentBlock appointmentBlock, LocalDateTime newStart, LocalDateTime newEnd, PopupContext context, boolean keepTime );
     
-	Promise<Void> exchangeAllocatable(AppointmentBlock appointmentBlock, Allocatable oldAlloc, Allocatable newAlloc,Date newStart, PopupContext context);
+	Promise<Void> exchangeAllocatable(AppointmentBlock appointmentBlock, Allocatable oldAlloc, Allocatable newAlloc,LocalDateTime newStart, PopupContext context);
 	boolean isAppointmentOnClipboard();
 	
 	Promise<Void> deleteBlocks(Collection<AppointmentBlock> blockList, PopupContext context);

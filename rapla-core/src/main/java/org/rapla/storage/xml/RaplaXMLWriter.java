@@ -37,11 +37,11 @@ import org.rapla.logger.Logger;
 
 import java.util.function.Supplier;
 import java.io.IOException;
-import java.util.Date;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
+import java.time.LocalDateTime;
 /** Stores the data from the local cache in XML-format to a print-writer.*/
 abstract public class RaplaXMLWriter extends XMLWriter
     implements Namespaces
@@ -89,8 +89,8 @@ abstract public class RaplaXMLWriter extends XMLWriter
     }
 
     protected void printTimestamp(Timestamp stamp) throws IOException {
-        final java.time.LocalDateTime createTime = stamp.getCreateDateAsLocalDateTime();
-        final java.time.LocalDateTime lastChangeTime = stamp.getLastChangedAsLocalDateTime();
+        final java.time.LocalDateTime createTime = stamp.getCreateDate();
+        final java.time.LocalDateTime lastChangeTime = stamp.getLastChanged();
         if ( createTime != null)
         {
             att("created-at", SerializableDateTimeFormat.INSTANCE.formatTimestamp( createTime));
@@ -150,11 +150,11 @@ abstract public class RaplaXMLWriter extends XMLWriter
         if ( p.getMaxAdvance() != null ) {
             att ( "max-advance", p.getMaxAdvance().toString() );
         }
-        if ( p.getStartAsLocalDateTime() != null ) {
-            att ( "start-date", dateTimeFormat.formatDate(  p.getStartAsLocalDateTime().toLocalDate() ) );
+        if ( p.getStart() != null ) {
+            att ( "start-date", dateTimeFormat.formatDate(  p.getStart().toLocalDate() ) );
         }
-        if ( p.getEndAsLocalDateTime() != null ) {
-            att ( "end-date", dateTimeFormat.formatDate(  p.getEndAsLocalDateTime().toLocalDate() ) );
+        if ( p.getEnd() != null ) {
+            att ( "end-date", dateTimeFormat.formatDate(  p.getEnd().toLocalDate() ) );
         }
         att("access", accessLevel.name().toLowerCase() );
         closeElementTag();
@@ -223,9 +223,9 @@ abstract public class RaplaXMLWriter extends XMLWriter
         }
         else if (type.equals(AttributeType.DATE) )
         {
-            final Date date;
-            if  ( value instanceof Date) 
-                date = (Date)value;
+            final LocalDateTime date;
+            if  ( value instanceof LocalDateTime) 
+                date = (LocalDateTime)value;
             else
                 date = null;
             printEncode( dateTimeFormat.formatDate( date ) );

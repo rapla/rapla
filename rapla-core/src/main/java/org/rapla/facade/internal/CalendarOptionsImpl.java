@@ -21,10 +21,10 @@ import org.rapla.framework.RaplaInitializationException;
 import org.rapla.framework.TypedComponentRole;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import java.util.Date;
 import java.util.LinkedHashSet;
 import java.util.Set;
 
+import java.time.LocalDateTime;
 /** <strong>WARNING!!</strong> This class should not be public to the outside. Please use the interface */
 public class CalendarOptionsImpl implements CalendarOptions {
     public final static TypedComponentRole<RaplaConfiguration> CALENDAR_OPTIONS= new TypedComponentRole<>("org.rapla.calendarview");
@@ -203,7 +203,7 @@ public class CalendarOptionsImpl implements CalendarOptions {
 	}
 
     @Override
-    public int getFirstDayOfWeek(Date now)
+    public int getFirstDayOfWeek(LocalDateTime now)
     {
         if ( firstDayOfWeek == DateTools.CURRENT_WEEKDAY) {
             return DateTools.getWeekday( now );

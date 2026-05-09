@@ -54,7 +54,6 @@ import javax.swing.JComponent;
 import javax.swing.JLabel;
 import java.awt.Point;
 import java.util.Collection;
-import java.util.Date;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -62,6 +61,7 @@ import java.util.Map;
 import java.util.Set;
 
 
+import java.time.LocalDateTime;
 public class SwingDayResourceCalendar extends SwingDayCalendar
 {
     public SwingDayResourceCalendar(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, CalendarModel model, boolean editable,
@@ -134,7 +134,7 @@ public class SwingDayResourceCalendar extends SwingDayCalendar
         GroupAllocatablesStrategy strategy = new GroupAllocatablesStrategy(getRaplaLocale().getLocale())
         {
             @Override
-            protected Map<Block, Integer> getBlockMap(BlockContainer wv, List<Block> blocks, Date startDate)
+            protected Map<Block, Integer> getBlockMap(BlockContainer wv, List<Block> blocks, LocalDateTime startDate)
             {
                 if (allocatables != null)
                 {
@@ -185,7 +185,7 @@ public class SwingDayResourceCalendar extends SwingDayCalendar
         	}
 		
 			 @Override
-			 public void moved(Block block, Point p, Date newStart, int slotNr) {
+			 public void moved(Block block, Point p, LocalDateTime newStart, int slotNr) {
 				 int column= slotNr;//getIndex( selectedAllocatables, block );
 				 if ( column < 0)
 				 {

@@ -19,9 +19,9 @@ import org.rapla.plugin.exchangeconnector.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import javax.swing.*;
 import java.util.Collection;
-import java.util.Date;
 import java.util.Locale;
 
+import java.time.LocalDateTime;
 @org.springframework.stereotype.Service
 @org.springframework.context.annotation.Scope("prototype")
 @org.springframework.context.annotation.Lazy
@@ -412,13 +412,13 @@ public class ExchangeConnectorUserOptions implements UserOptionPanel
         if (syncInterval != null)
         {
             StringBuilder buf = new StringBuilder();
-            Date start = syncInterval.getStart();
+            LocalDateTime start = syncInterval.getStart();
             if (start != null)
             {
                 buf.append(raplaLocale.formatDate(start));
             }
             buf.append(" - ");
-            Date end = syncInterval.getEnd();
+            LocalDateTime end = syncInterval.getEnd();
             if (end != null)
             {
                 buf.append(raplaLocale.formatDate(end));

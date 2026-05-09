@@ -4,6 +4,8 @@
 package org.rapla.plugin.exchangeconnector.server.unused;
 
 
+
+import java.time.LocalDateTime;
 /**
  * @author lutz
  */
@@ -47,8 +49,8 @@ package org.rapla.plugin.exchangeconnector.server.unused;
 //    private void uploadAll() throws RaplaException, Exception {
 //
 //       /* DynamicType importEventType = ExchangeConnectorPlugin.getImportEventType(clientFacade);
-//        final Date from = ExchangeConnectorPlugin.getSynchingPeriodPast(new Date());
-//        final Date to = ExchangeConnectorPlugin.getSynchingPeriodFuture(new Date());
+//        final LocalDateTime from = ExchangeConnectorPlugin.getSynchingPeriodPast(LocalDateTime.of());
+//        final LocalDateTime to = ExchangeConnectorPlugin.getSynchingPeriodFuture(LocalDateTime.of());
 //
 //        for (User user : clientFacade.getUsers()) {
 ////			User user= clientFacade.getUser(raplaUsername);

@@ -30,12 +30,12 @@ import java.awt.Point;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.Date;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
+import java.time.LocalDateTime;
 /** Graphical component for displaying a calendar like weekview.
  * This view doesn't show the times and arranges the different slots
  * Vertically.
@@ -199,7 +199,7 @@ public class SwingCompactWeekView extends AbstractSwingCalendar
         jLabel.setForeground(Color.black);
         Dimension dim;
         if (column != null ) {
-        	Date date = getDateFromColumn(column);
+        	LocalDateTime date = getDateFromColumn(column);
             jLabel.setText(getRaplaLocale().formatDayOfWeekDateMonth(date));
             jLabel.setBorder(isEditable() ? SLOTHEADER_BORDER : null);
          	dim = new Dimension(this.slotSize,20);
@@ -228,14 +228,13 @@ public class SwingCompactWeekView extends AbstractSwingCalendar
     protected List<Block> getBlocksForColumn(List<Block> blocks,int column)
     {
     	List<Block> result = new ArrayList<>();
-    	//Date startDate = getDateFromColumn(column);
+    	//LocalDateTime startDate = getDateFromColumn(column);
     	if ( blocks != null) {
     		
     		Iterator<Block> it = blocks.iterator();
     		while (it.hasNext()){
     			Block block = it.next();
     			if (columnMap.get( block) == column) {
-//    			if ( DateTools.cutDate( block.getStart()).equals( startDate)) {
     				result.add( block);
                 }
            }
@@ -243,8 +242,8 @@ public class SwingCompactWeekView extends AbstractSwingCalendar
         return result;
     }
 
-	protected Date getDateFromColumn(int column) {
-		Date startDate = getStartDate();
+	protected LocalDateTime getDateFromColumn(int column) {
+		LocalDateTime startDate = getStartDate();
 		return DateTools.addDays( startDate, column);
 	}
 
@@ -310,11 +309,11 @@ public class SwingCompactWeekView extends AbstractSwingCalendar
         }
     }
 
-    Date createDate(DaySlot slot, int row, boolean startOfRow) {
-        Date startDate = DateTools.cutDate(getStartDate());
-        Date date = DateTools.getFirstWeekday( startDate, getFirstWeekday());
+    LocalDateTime createDate(DaySlot slot, int row, boolean startOfRow) {
+        LocalDateTime startDate = DateTools.cutDate(getStartDate());
+        LocalDateTime date = DateTools.getFirstWeekday( startDate, getFirstWeekday());
 		int column = getSlotNr( slot ) % getDaysInView();
-        Date result = DateTools.addDays( date , column);
+        LocalDateTime result = DateTools.addDays( date , column);
         //calendar.set( Calendar.DAY_OF_WEEK, getDayOfWeek(slot) );
         if ( !startOfRow ) {
             result =DateTools.addDays(result,1 );

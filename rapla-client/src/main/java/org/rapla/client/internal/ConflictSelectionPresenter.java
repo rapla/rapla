@@ -41,7 +41,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
-import java.util.Date;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedHashSet;
@@ -49,6 +48,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import java.time.LocalDateTime;
 @org.springframework.stereotype.Service
 @org.springframework.context.annotation.Lazy
 public class ConflictSelectionPresenter implements Presenter
@@ -307,7 +307,7 @@ public class ConflictSelectionPresenter implements Presenter
         if (!selectedConflicts.isEmpty())
         {
             Conflict conflict = selectedConflicts.iterator().next();
-            Date date = conflict.getStartDate();
+            LocalDateTime date = conflict.getStartDate();
             if (date != null)
             {
                 model.setSelectedDate(date);
@@ -371,8 +371,8 @@ public class ConflictSelectionPresenter implements Presenter
             {
                 return 0;
             }
-            Date d1 = c1.getStartDate();
-            Date d2 = c2.getStartDate();
+            LocalDateTime d1 = c1.getStartDate();
+            LocalDateTime d2 = c2.getStartDate();
             if (d1 != null)
             {
                 if (d2 == null)

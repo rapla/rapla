@@ -11,12 +11,12 @@ import org.rapla.plugin.abstractcalendar.HTMLRaplaBlock;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.SortedSet;
 import java.util.TreeSet;
 
+import java.time.LocalDateTime;
 public class HTMLWeekViewPresenter extends AbstractHTMLView
 {
     private final CalendarWeekView<?> view;
@@ -75,7 +75,7 @@ public class HTMLWeekViewPresenter extends AbstractHTMLView
         this.endMinutes = endMinutes;
     }
 
-    public void setToDate(Date weekDate)
+    public void setToDate(LocalDateTime weekDate)
     {
         calcMinMaxDates(weekDate);
     }
@@ -118,7 +118,7 @@ public class HTMLWeekViewPresenter extends AbstractHTMLView
                 int start = startMinutes;
                 int end = endMinutes;
                 minuteBlock.clear();
-                Date startDate = getStartDate();
+                LocalDateTime startDate = getStartDate();
                 prepareBuild = b.prepareBuild(startDate, getEndDate());
                 start = Math.min(prepareBuild.getMinMinutes(), start);
                 end = Math.max(prepareBuild.getMaxMinutes(), end);
@@ -131,7 +131,7 @@ public class HTMLWeekViewPresenter extends AbstractHTMLView
                 maxMinute = end;
                 for (int i = 0; i < daySlots.length; i++)
                 {
-                    Date date = DateTools.addDays(startDate, i);
+                    LocalDateTime date = DateTools.addDays(startDate, i);
                     daySlots[i] = new HTMLDaySlot(2, headerNames[i], date);
                 }
             }
@@ -177,7 +177,7 @@ public class HTMLWeekViewPresenter extends AbstractHTMLView
                         Block block = slot.getBlock(minuteOfDay);
                         if (block != null)
                         {
-                            int endMinute = Math.min(maxMinute, DateTools.getMinuteOfDay(block.getEnd().getTime()));
+                            int endMinute = Math.min(maxMinute, DateTools.getMinuteOfDay(DateTools.toMilli(block.getEnd())));
                             int rowspan = calcRowspan(minuteOfDay, endMinute);
                             if (block instanceof HTMLRaplaBlock)
                             {
@@ -304,7 +304,7 @@ public class HTMLWeekViewPresenter extends AbstractHTMLView
 
     protected String createColumnHeader(int i)
     {
-        Date date = DateTools.addDays(getStartDate(), i);
+        LocalDateTime date = DateTools.addDays(getStartDate(), i);
         String headerName = getRaplaLocale().formatDayOfWeekDateMonth(date);
         return headerName;
     }
@@ -315,8 +315,8 @@ public class HTMLWeekViewPresenter extends AbstractHTMLView
     {
         checkBlock(block);
         HTMLDaySlot multiSlot = daySlots[column];
-        int startMinute = Math.max(minMinute, DateTools.getMinuteOfDay(block.getStart().getTime()));
-        int endMinute = (Math.min(maxMinute, DateTools.getMinuteOfDay(block.getEnd().getTime())));
+        int startMinute = Math.max(minMinute, DateTools.getMinuteOfDay(DateTools.toMilli(block.getStart())));
+        int endMinute = (Math.min(maxMinute, DateTools.getMinuteOfDay(DateTools.toMilli(block.getEnd()))));
         blocks.add(block);
         //            startBlock.add( startMinute);
         //       endBlock.add( endMinute);

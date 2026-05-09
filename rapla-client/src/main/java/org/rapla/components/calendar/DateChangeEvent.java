@@ -12,17 +12,17 @@
  *--------------------------------------------------------------------------*/
 
 package org.rapla.components.calendar;
-import java.util.Date;
 import java.util.EventObject;
+import java.time.LocalDateTime;
 public class DateChangeEvent extends EventObject {
     private static final long serialVersionUID = 1L;
 
-    Date m_date;
-    public DateChangeEvent(Object source,Date date) {
+    LocalDateTime m_date;
+    public DateChangeEvent(Object source,LocalDateTime date) {
         super(source);
         m_date = date;
     }
-    public Date getDate() {
+    public LocalDateTime getDate() {
         return m_date;
     }
 }

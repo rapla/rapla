@@ -32,9 +32,8 @@ import java.awt.Component;
 import java.awt.Font;
 import java.awt.event.FocusEvent;
 import java.awt.event.FocusListener;
-import java.util.Date;
-
-public class DateField extends AbstractEditField implements DateChangeListener, FocusListener, SetGetField<Date> ,MultiEditField{
+import java.time.LocalDateTime;
+public class DateField extends AbstractEditField implements DateChangeListener, FocusListener, SetGetField<LocalDateTime> ,MultiEditField{
     RaplaCalendar field;
     JPanel panel;
     boolean multipleValues = false; // Indikator, ob mehrere verschiedene Werte ueber dieses Feld angezeigt werden
@@ -66,16 +65,16 @@ public class DateField extends AbstractEditField implements DateChangeListener, 
         field.addFocusListener(this);
     }
 
-    public Date getValue() {
+    public LocalDateTime getValue() {
         return field.getDate();
     }
-    public void setValue(Date date) {
-//    	//check if standard-value exists and is a Date-Object
-//    	if(object instanceof Date)
-//    		 date = (Date) object;
-//    	//if it's not a Date-Object, set the current Date as Standart
+    public void setValue(LocalDateTime date) {
+//    	//check if standard-value exists and is a LocalDateTime-Object
+//    	if(object instanceof LocalDateTime)
+//    		 date = (LocalDateTime) object;
+//    	//if it's not a LocalDateTime-Object, set the current LocalDateTime as Standart
 //    	else
-//    		date = new Date();
+//    		date = LocalDateTime.of();
         field.setDate(date);
     }
 

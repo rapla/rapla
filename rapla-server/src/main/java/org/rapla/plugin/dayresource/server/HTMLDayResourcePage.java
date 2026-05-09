@@ -21,12 +21,12 @@ import org.rapla.server.extensionpoints.HTMLViewPage;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import java.util.Collection;
-import java.util.Date;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
 
+import java.time.LocalDateTime;
 public class HTMLDayResourcePage extends HTMLDayViewPage
 {
     @Autowired
@@ -87,7 +87,7 @@ public class HTMLDayResourcePage extends HTMLDayViewPage
         {
         	@Override
         	protected Map<Block, Integer> getBlockMap(BlockContainer wv,
-        			List<Block> blocks, Date startDate)
+        			List<Block> blocks, LocalDateTime startDate)
         	{
         		if (allocatables != null)
         		{

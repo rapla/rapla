@@ -38,9 +38,9 @@ import org.rapla.storage.PermissionController;
 import org.springframework.beans.factory.annotation.Autowired;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.Date;
 import java.util.Iterator;
 
+import java.time.LocalDateTime;
 @org.springframework.stereotype.Service
 @org.springframework.context.annotation.Scope("prototype")
 @org.springframework.context.annotation.Lazy
@@ -365,7 +365,7 @@ public class AppointmentAction extends RaplaComponent  {
     private void paste(boolean asNewReservation) throws RaplaException {
         
 		ReservationController reservationController = getReservationController();
-        Date start = getStartDate(calendarSelectionModel, raplaFacade, getUser());
+        LocalDateTime start = getStartDate(calendarSelectionModel, raplaFacade, getUser());
     	boolean keepTime = !calendarSelectionModel.isMarkedIntervalTimeEnabled();
     	handleException(reservationController.pasteAppointment(	start
                                                ,popupContext
@@ -374,8 +374,8 @@ public class AppointmentAction extends RaplaComponent  {
 
     private void addToReservation() throws RaplaException
     {
-    	Date start = getStartDate(calendarSelectionModel, raplaFacade, getUser());
-    	Date end = getEndDate(calendarSelectionModel, start);
+    	LocalDateTime start = getStartDate(calendarSelectionModel, raplaFacade, getUser());
+    	LocalDateTime end = getEndDate(calendarSelectionModel, start);
     	handleException(reservationEdit.addAppointment(start,end));
     }
 

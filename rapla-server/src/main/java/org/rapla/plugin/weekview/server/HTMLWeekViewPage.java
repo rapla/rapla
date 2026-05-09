@@ -30,11 +30,11 @@ import org.rapla.plugin.weekview.WeekviewPlugin;
 import org.rapla.server.extensionpoints.HTMLViewPage;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import java.util.Date;
 import java.util.HashSet;
 import java.util.Set;
 
 
+import java.time.LocalDateTime;
 public class HTMLWeekViewPage extends AbstractHTMLCalendarPage
 {
     @Autowired
@@ -47,7 +47,7 @@ public class HTMLWeekViewPage extends AbstractHTMLCalendarPage
         HTMLWeekView weekView = new HTMLWeekView()
         {
         	public void rebuild(Builder b) {
-                Date startDate = getStartDate();
+                LocalDateTime startDate = getStartDate();
                 String calendarweek = getI18n().calendarweek(startDate);
                 setWeeknumber(calendarweek);
         		super.rebuild(b);
