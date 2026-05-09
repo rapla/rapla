@@ -32,8 +32,7 @@ import java.awt.Rectangle;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.Date;
-
+import java.time.LocalDateTime;
 /** Graphical component for displaying a calendar like weekview.
  */
 public class SwingWeekView extends AbstractSwingCalendar
@@ -137,7 +136,7 @@ public class SwingWeekView extends AbstractSwingCalendar
             timeScale.setLocale(locale);
     }
 
-    public void scrollDateVisible(Date date)
+    public void scrollDateVisible(LocalDateTime date)
     {
         LargeDaySlot slot = getSlot(date);
         if (slot == null)
@@ -340,7 +339,7 @@ public class SwingWeekView extends AbstractSwingCalendar
         daySlots[pos] = c;
     }
 
-    protected Date getDateFromColumn(int column)
+    protected LocalDateTime getDateFromColumn(int column)
     {
         return DateTools.addDays(getStartDate(), column);
     }
@@ -350,7 +349,7 @@ public class SwingWeekView extends AbstractSwingCalendar
     {
         JLabel jLabel = new JLabel();
         jLabel.setBorder(isEditable() ? SLOTHEADER_BORDER : null);
-        Date date = getDateFromColumn(column);
+        LocalDateTime date = getDateFromColumn(column);
         jLabel.setText(raplaLocale.formatDayOfWeekDateMonth(date));
         jLabel.setFont(new Font("SansSerif", Font.PLAIN, 13));
         jLabel.setHorizontalAlignment(JLabel.CENTER);
@@ -371,7 +370,7 @@ public class SwingWeekView extends AbstractSwingCalendar
         dslot.putBlock((SwingBlock) bl, slot);
     }
 
-    private LargeDaySlot getSlot(Date start)
+    private LargeDaySlot getSlot(LocalDateTime start)
     {
         long countDays = DateTools.countDays(DateTools.cutDate(getStartDate()), start);
         int slotNr = (int) countDays;
@@ -453,17 +452,17 @@ public class SwingWeekView extends AbstractSwingCalendar
             return daySlots[nr];
     }
 
-    protected Date createDate(DaySlot slot, int index, boolean startOfRow)
+    protected LocalDateTime createDate(DaySlot slot, int index, boolean startOfRow)
     {
-        Date startDate = DateTools.cutDate(getStartDate());
-        Date date = DateTools.getFirstWeekday(startDate, getFirstWeekday());
+        LocalDateTime startDate = DateTools.cutDate(getStartDate());
+        LocalDateTime date = DateTools.getFirstWeekday(startDate, getFirstWeekday());
         date = DateTools.addDays(date, getSlotNr(slot) % getDaysInView());
         if (!startOfRow)
             index++;
         int calcHour = rowScale.calcHour(index);
         int calcMinute = rowScale.calcMinute(index);
         boolean addDay = (calcHour * 60 + calcMinute)< offsetMinutes;
-        date = new Date(date.getTime() + calcHour * DateTools.MILLISECONDS_PER_HOUR + calcMinute * DateTools.MILLISECONDS_PER_MINUTE);
+        date = LocalDateTime.ofInstant(java.time.Instant.ofEpochMilli(DateTools.toMilli(date) + calcHour * DateTools.MILLISECONDS_PER_HOUR + calcMinute * DateTools.MILLISECONDS_PER_MINUTE), java.time.ZoneOffset.UTC);
         if ( addDay)
         {
             date = DateTools.addDay( date);

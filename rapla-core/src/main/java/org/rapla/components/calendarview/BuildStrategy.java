@@ -13,17 +13,13 @@
 
 package org.rapla.components.calendarview;
 
-import java.util.Date;
 import java.util.List;
 
+import java.time.LocalDateTime;
 public interface BuildStrategy {
-    void build(BlockContainer wv, List<Block> blocks, Date startDate);
+    void build(BlockContainer wv, List<Block> blocks, LocalDateTime startDate);
     int getOffsetMinutes();
 
-    /** {@code LocalDate} variant — distinct method name avoids `null`-passing ambiguity. */
-    default void buildLocalDate(BlockContainer wv, List<Block> blocks, java.time.LocalDate startDate) {
-        build(wv, blocks, startDate == null ? null : org.rapla.components.util.DateTools.toDate(startDate));
-    }
 }
 
 

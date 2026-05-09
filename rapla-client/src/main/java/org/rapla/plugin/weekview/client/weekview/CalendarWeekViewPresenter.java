@@ -30,11 +30,11 @@ import org.rapla.scheduler.Promise;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import java.util.Collections;
-import java.util.Date;
 import java.util.HashSet;
 import java.util.Set;
 
 
+import java.time.LocalDateTime;
 public class CalendarWeekViewPresenter implements Presenter, CalendarPlugin
 {
     public static final String WEEK_VIEW = "week";
@@ -86,13 +86,13 @@ public class CalendarWeekViewPresenter implements Presenter, CalendarPlugin
     }
 
     @Override
-    public Date calcNext(Date currentDate)
+    public LocalDateTime calcNext(LocalDateTime currentDate)
     {
         return DateTools.addDays(currentDate, 7);
     }
 
     @Override
-    public Date calcPrevious(Date currentDate)
+    public LocalDateTime calcPrevious(LocalDateTime currentDate)
     {
         return DateTools.subDays(currentDate, 7);
     }
@@ -117,7 +117,7 @@ public class CalendarWeekViewPresenter implements Presenter, CalendarPlugin
     public void updateReservation(HTMLRaplaBlock block, HTMLDaySlot daySlot, Integer minuteOfDay, PopupContext context)
     {
         AppointmentBlock appointmentBlock = block.getAppointmentBlock();
-        Date newStart = calcDate(daySlot, minuteOfDay);
+        LocalDateTime newStart = calcDate(daySlot, minuteOfDay);
         boolean keepTime = false;
         handleException(reservationController.moveAppointment(appointmentBlock, newStart, context, keepTime));
     }
@@ -127,12 +127,12 @@ public class CalendarWeekViewPresenter implements Presenter, CalendarPlugin
     {
 
         AppointmentBlock appointmentBlock = block.getAppointmentBlock();
-        final Date appintmentStart = appointmentBlock.getAppointment().getStart();
-        final Date date1 = calcDate(daySlot, minuteOfDay);
-        final Date date2 = DateTools.toDateTime(date1, appintmentStart);
-        final Date newStart;
-        final Date newEnd;
-        if (date1.getTime() < date2.getTime())
+        final LocalDateTime appintmentStart = appointmentBlock.getAppointment().getStart();
+        final LocalDateTime date1 = calcDate(daySlot, minuteOfDay);
+        final LocalDateTime date2 = DateTools.toDateTime(date1, appintmentStart);
+        final LocalDateTime newStart;
+        final LocalDateTime newEnd;
+        if (DateTools.toMilli(date1) < DateTools.toMilli(date2))
         {
             newStart = date1;
             newEnd = date2;
@@ -157,11 +157,11 @@ public class CalendarWeekViewPresenter implements Presenter, CalendarPlugin
         presenter.selectionPopup(context);
     }
 
-    private Date calcDate(HTMLDaySlot daySlot, Integer minuteOfDay)
+    private LocalDateTime calcDate(HTMLDaySlot daySlot, Integer minuteOfDay)
     {
-        Date newStartTime = new Date(minuteOfDay * DateTools.MILLISECONDS_PER_MINUTE);
-        Date newStartDate = daySlot.getStartDate();
-        Date newDate = DateTools.toDateTime(newStartDate, newStartTime);
+        LocalDateTime newStartTime = LocalDateTime.ofInstant(java.time.Instant.ofEpochMilli(minuteOfDay * DateTools.MILLISECONDS_PER_MINUTE), java.time.ZoneOffset.UTC);
+        LocalDateTime newStartDate = daySlot.getStartDate();
+        LocalDateTime newDate = DateTools.toDateTime(newStartDate, newStartTime);
         return newDate;
     }
 
@@ -170,8 +170,8 @@ public class CalendarWeekViewPresenter implements Presenter, CalendarPlugin
     {
         HTMLWeekViewPresenter weekView = new HTMLWeekViewPresenter(view, logger);
         configure(weekView);
-        Date startDate = weekView.getStartDate();
-        Date endDate = weekView.getEndDate();
+        LocalDateTime startDate = weekView.getStartDate();
+        LocalDateTime endDate = weekView.getEndDate();
         model.setStartDate(startDate);
         model.setEndDate(endDate);
         String weeknumber = i18n.calendarweek(startDate);

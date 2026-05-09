@@ -12,6 +12,7 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.client.swing.internal.edit.reservation;
 
+import org.rapla.components.util.DateTools;
 import org.rapla.scheduler.Consumer;
 import org.rapla.RaplaResources;
 import org.rapla.client.AppointmentListener;
@@ -75,11 +76,11 @@ import java.awt.event.KeyEvent;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import java.time.LocalDateTime;
 @org.springframework.stereotype.Service
 @org.springframework.context.annotation.Scope("prototype")
 @org.springframework.context.annotation.Lazy
@@ -315,7 +316,7 @@ public final class ReservationEditImpl extends AbstractAppointmentEditor impleme
         saveButtonTop.setEnabled(flag);
     }
 
-    public Promise<Void> addAppointment(Date start, Date end)
+    public Promise<Void> addAppointment(LocalDateTime start, LocalDateTime end)
     {
         return getFacade().newAppointmentAsync(new TimeInterval(start, end)).thenAccept( (appointment)->
         {
@@ -385,7 +386,7 @@ public final class ReservationEditImpl extends AbstractAppointmentEditor impleme
                 mutableAppointment = app;
             }
         }
-        Date selectedDate = appointmentBlock != null ? new Date(appointmentBlock.getStart()) : null;
+        LocalDateTime selectedDate = appointmentBlock != null ? DateTools.toLocalDateTime(appointmentBlock.getStart()) : null;
         setReservation(mutableReservation, mutableAppointment);
         appointmentEdit.getAppointmentController().setSelectedEditDate(selectedDate);
 

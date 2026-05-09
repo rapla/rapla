@@ -66,7 +66,6 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
-import java.util.Date;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -74,6 +73,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import java.time.LocalDateTime;
 /** Default GUI for editing multiple appointments.*/
 class AppointmentListEdit extends AbstractAppointmentEditor
     implements
@@ -389,8 +389,8 @@ class AppointmentListEdit extends AbstractAppointmentEditor
 //		Appointment[] appointments = mutableReservation.getAppointments();
 		Promise<Appointment> appointment;
 		if (sortedModel.getSize() == 0) {
-			Date start = new Date(DateTools.cutDate(new Date()).getTime()+ getCalendarOptions().getWorktimeStartMinutes()	* DateTools.MILLISECONDS_PER_MINUTE);
-			Date end = new Date(start.getTime()+ DateTools.MILLISECONDS_PER_HOUR);
+			LocalDateTime start = LocalDateTime.ofInstant(java.time.Instant.ofEpochMilli(DateTools.toMilli(DateTools.cutDate(LocalDateTime.now()))+ getCalendarOptions().getWorktimeStartMinutes()	* DateTools.MILLISECONDS_PER_MINUTE), java.time.ZoneOffset.UTC);
+			LocalDateTime end = LocalDateTime.ofInstant(java.time.Instant.ofEpochMilli(DateTools.toMilli(start)+ DateTools.MILLISECONDS_PER_HOUR), java.time.ZoneOffset.UTC);
 			appointment = getFacade().newAppointmentAsync(new TimeInterval(start, end));
 		} else { 
 			// copyReservations the selected appointment as template

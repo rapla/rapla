@@ -46,11 +46,11 @@ import java.util.function.Supplier;
 import javax.swing.JComponent;
 import javax.swing.JLabel;
 import java.awt.Font;
-import java.util.Date;
 import java.util.HashSet;
 import java.util.Set;
 
 
+import java.time.LocalDateTime;
 public class SwingWeekCalendar extends AbstractRaplaSwingCalendar
 {
     
@@ -74,8 +74,8 @@ public class SwingWeekCalendar extends AbstractRaplaSwingCalendar
             
             protected JComponent createSlotHeader(Integer column) {
                 JLabel component = (JLabel) super.createSlotHeader(column);
-                Date date = getDateFromColumn(column);
-                boolean today = DateTools.isSameDay(getQuery().today().getTime(), date.getTime());
+                LocalDateTime date = getDateFromColumn(column);
+                boolean today = DateTools.isSameDay(DateTools.toMilli(getQuery().today()), DateTools.toMilli(date));
                 if ( today)
                 {
                     component.setFont(component.getFont().deriveFont( Font.BOLD));
@@ -101,7 +101,7 @@ public class SwingWeekCalendar extends AbstractRaplaSwingCalendar
             @Override
             public void rebuild(Builder b) {
                 // update week
-                Date startDate = getStartDate();
+                LocalDateTime startDate = getStartDate();
 				weekTitle.setText(getI18n().calendarweek( startDate));
                 super.rebuild(b);
             }

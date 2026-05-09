@@ -49,10 +49,10 @@ import org.rapla.scheduler.Promise;
 import java.util.function.Supplier;
 import javax.swing.JComponent;
 import java.awt.Color;
-import java.util.Date;
 import java.util.Set;
 
 
+import java.time.LocalDateTime;
 public class SwingMonthCalendar extends AbstractRaplaSwingCalendar
 {
     public SwingMonthCalendar(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, CalendarModel settings, boolean editable, boolean printing, Set<ObjectMenuFactory> objectMenuFactories,
@@ -88,7 +88,7 @@ public class SwingMonthCalendar extends AbstractRaplaSwingCalendar
             }
 
             @Override
-            protected SmallDaySlot createSmallslot(int pos, Date date) {
+            protected SmallDaySlot createSmallslot(int pos, LocalDateTime date) {
             	String header = "" + (pos + 1);
                 DateRenderer.RenderingInfo info = dateRendererAdapter.getRenderingInfo(date);
                 Color color = getNumberColor( date);
@@ -115,9 +115,9 @@ public class SwingMonthCalendar extends AbstractRaplaSwingCalendar
                 return smallslot;
             }
 
-            protected Color getNumberColor( Date date )
+            protected Color getNumberColor( LocalDateTime date )
             {
-                boolean today = DateTools.isSameDay(getQuery().today().getTime(), date.getTime());
+                boolean today = DateTools.isSameDay(DateTools.toMilli(getQuery().today()), DateTools.toMilli(date));
                 if ( today)
                 {
                     return DATE_NUMBER_COLOR_HIGHLIGHTED;
