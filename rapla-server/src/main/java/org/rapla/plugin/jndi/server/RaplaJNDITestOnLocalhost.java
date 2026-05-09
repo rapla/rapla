@@ -21,8 +21,6 @@ import org.rapla.framework.RaplaException;
 import org.rapla.logger.Logger;
 import org.rapla.plugin.jndi.JNDIPlugin;
 import org.rapla.plugin.jndi.internal.JNDIConfig;
-import org.rapla.scheduler.Promise;
-import org.rapla.scheduler.ResolvedPromise;
 import org.rapla.server.RemoteSession;
 import org.rapla.storage.RaplaSecurityException;
 
@@ -45,10 +43,9 @@ public class RaplaJNDITestOnLocalhost implements JNDIConfig
         this.request = request;
     }
 
-    @Override public Promise<Boolean> test(MailTestRequest job)
+    @Override public boolean test(MailTestRequest job) throws RaplaException
     {
-        try { return new ResolvedPromise<>(testSync(job)); }
-        catch (RaplaException ex) { return new ResolvedPromise<>(ex); }
+        return testSync(job);
     }
 
     public boolean testSync(MailTestRequest job) throws RaplaException

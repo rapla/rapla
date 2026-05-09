@@ -17,6 +17,7 @@ import org.rapla.client.RaplaWidget;
 import org.rapla.framework.RaplaInitializationException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.logger.Logger;
+import org.rapla.scheduler.CommandScheduler;
 import org.rapla.storage.RemoteLocaleService;
 
 import javax.swing.Action;
@@ -40,26 +41,23 @@ final public class CountryChooser implements RaplaWidget
     Logger logger;
     Map<String,Set<String>> countries;
     
-    public CountryChooser(Logger logger,final RaplaResources i18n, final RaplaLocale raplaLocale, RemoteLocaleService remoteLocaleService) throws RaplaInitializationException {
+    public CountryChooser(Logger logger, final RaplaResources i18n, final RaplaLocale raplaLocale,
+                          RemoteLocaleService remoteLocaleService, CommandScheduler scheduler) throws RaplaInitializationException {
         this.logger = logger;
         final String localeCountry = raplaLocale.getLocale().getCountry();
         language = raplaLocale.getLocale().getLanguage();
         Collection<String> languages = raplaLocale.getAvailableLanguages();
-        remoteLocaleService.countries(new LinkedHashSet<>(languages)).thenAccept((countries)->
-        {
-            this.countries = countries;
-            String[] entries = createCountryArray();
-            SwingUtilities.invokeLater(()-> {
-                jComboBox.setModel(new DefaultComboBoxModel(entries));
-                if(localeCountry != null)
-                {
-                    jComboBox.setSelectedItem(localeCountry);
-                }
-            });
-
-        }).exceptionally(e->
-             logger.error(e.getMessage(), e)
-        );
+        scheduler.supply(() -> remoteLocaleService.countries(new LinkedHashSet<>(languages)))
+                .thenAccept((countries) -> {
+                    this.countries = countries;
+                    String[] entries = createCountryArray();
+                    SwingUtilities.invokeLater(() -> {
+                        jComboBox.setModel(new DefaultComboBoxModel(entries));
+                        if (localeCountry != null) {
+                            jComboBox.setSelectedItem(localeCountry);
+                        }
+                    });
+                }).exceptionally(e -> logger.error(e.getMessage(), e));
 
 		jComboBox = new JComboBox();
         DefaultListCellRenderer aRenderer = new DefaultListCellRenderer() {

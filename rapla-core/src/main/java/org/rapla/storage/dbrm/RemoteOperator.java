@@ -149,6 +149,7 @@ public class RemoteOperator
                 String accessToken = loginToken.getAccessToken();
                 if (accessToken != null) {
                     connectionInfo.setAccessToken(accessToken);
+                    connectionInfo.setRefreshToken(loginToken.getRefreshToken());
                 } else {
                     throw new RaplaSecurityException("Invalid Access token");
                 }

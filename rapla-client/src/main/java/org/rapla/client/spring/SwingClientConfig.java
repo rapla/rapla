@@ -1,6 +1,7 @@
 package org.rapla.client.spring;
 
 import org.rapla.client.event.TaskPresenter;
+import org.rapla.client.extensionpoints.PluginOptionPanel;
 import org.springframework.beans.factory.ListableBeanFactory;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
@@ -68,6 +69,25 @@ public class SwingClientConfig
         for (String name : beanFactory.getBeanNamesForType(org.rapla.client.swing.EditComponent.class))
         {
             map.put(name, () -> beanFactory.getBean(name, org.rapla.client.swing.EditComponent.class));
+        }
+        return map;
+    }
+
+    /**
+     * Same wrapping as {@link #activityPresenters} but for {@code PluginOptionPanel}.
+     * {@link org.rapla.client.swing.internal.edit.PreferencesEditUI} declares
+     * {@code Map<String, Supplier<PluginOptionPanel>>} keyed by plugin id. Each plugin
+     * options panel is registered with {@code @Service("<pluginId>")}; without this
+     * bean the map injects empty and the "plugins" branch of the Edit Preferences
+     * dialog has no children.
+     */
+    @Bean
+    public Map<String, Supplier<PluginOptionPanel>> pluginOptionPanel(ListableBeanFactory beanFactory)
+    {
+        Map<String, Supplier<PluginOptionPanel>> map = new LinkedHashMap<>();
+        for (String name : beanFactory.getBeanNamesForType(PluginOptionPanel.class))
+        {
+            map.put(name, () -> beanFactory.getBean(name, PluginOptionPanel.class));
         }
         return map;
     }

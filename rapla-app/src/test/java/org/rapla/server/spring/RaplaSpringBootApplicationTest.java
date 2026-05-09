@@ -1,6 +1,7 @@
 package org.rapla.server.spring;
 
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.rapla.RaplaResources;
@@ -27,6 +28,7 @@ import java.nio.file.StandardCopyOption;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 @SpringBootTest(classes = RaplaSpringBootApplication.class)
+@Tag("e2e")
 class RaplaSpringBootApplicationTest
 {
     @TempDir

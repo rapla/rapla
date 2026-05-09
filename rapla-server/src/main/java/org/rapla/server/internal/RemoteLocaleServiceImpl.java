@@ -11,8 +11,6 @@ import org.rapla.entities.configuration.Preferences;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.logger.Logger;
-import org.rapla.scheduler.Promise;
-import org.rapla.scheduler.ResolvedPromise;
 import org.rapla.server.RemoteSession;
 import org.rapla.storage.RemoteLocaleService;
 import org.rapla.storage.StorageOperator;
@@ -47,10 +45,10 @@ public class RemoteLocaleServiceImpl implements RemoteLocaleService
     }
 
     @Override
-    public Promise<LocalePackage> locale(String id, String localeString)
+    public LocalePackage locale(String id, String localeString)
     {
-        try { return new ResolvedPromise<>(localeSync(id, localeString)); }
-        catch (RaplaException ex) { return new ResolvedPromise<>(ex); }
+        try { return localeSync(id, localeString); }
+        catch (RaplaException ex) { throw new RuntimeException(ex); }
     }
 
     /** Sync sibling for server-internal callers (REST controllers etc.) — same work as
@@ -84,9 +82,9 @@ public class RemoteLocaleServiceImpl implements RemoteLocaleService
     }
 
     @Override
-    public Promise<Map<String, Set<String>>> countries(Set<String> languages)
+    public Map<String, Set<String>> countries(Set<String> languages)
     {
-        return new ResolvedPromise<>(countriesSync(languages));
+        return countriesSync(languages);
     }
 
     public Map<String, Set<String>> countriesSync(Set<String> languages)

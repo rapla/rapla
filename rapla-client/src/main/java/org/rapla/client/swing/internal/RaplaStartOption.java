@@ -30,6 +30,7 @@ import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.internal.AbstractRaplaLocale;
 import org.rapla.logger.Logger;
 import org.rapla.plugin.export2ical.ICalTimezones;
+import org.rapla.scheduler.CommandScheduler;
 import org.rapla.storage.RemoteLocaleService;
 import org.rapla.storage.dbrm.RestartServer;
 import org.springframework.context.annotation.Scope;
@@ -70,7 +71,7 @@ public class RaplaStartOption extends RaplaGUIComponent implements SystemOptionP
 
 
     @Autowired
-    public RaplaStartOption(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, ICalTimezones timezoneService, RemoteLocaleService localeService, IOInterface ioInterface, RestartServer restartServer) throws
+    public RaplaStartOption(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, ICalTimezones timezoneService, RemoteLocaleService localeService, IOInterface ioInterface, RestartServer restartServer, CommandScheduler scheduler) throws
             RaplaInitializationException {
         super(facade, i18n, raplaLocale, logger);
         isRestartPossible = restartServer.isRestartPossible();
@@ -108,7 +109,7 @@ public class RaplaStartOption extends RaplaGUIComponent implements SystemOptionP
         panel.add( new JLabel(i18n.getString("server.language") ), "0,4");
         panel.add( languageChooser.getComponent(), "2,4");
 
-        countryChooser = new CountryChooser(getLogger(),i18n,raplaLocale,localeService);
+        countryChooser = new CountryChooser(getLogger(),i18n,raplaLocale,localeService,scheduler);
         panel.add( new JLabel(i18n.getString("server.country") ), "0,6");
         panel.add( countryChooser.getComponent(), "2,6");
         languageChooser.addActionListener(e -> countryChooser.changeLanguage(languageChooser.getSelectedLanguage()));

@@ -10,8 +10,6 @@ import org.rapla.framework.RaplaException;
 import org.rapla.logger.Logger;
 import org.rapla.plugin.archiver.ArchiverService;
 import org.rapla.scheduler.CommandScheduler;
-import org.rapla.scheduler.Promise;
-import org.rapla.scheduler.ResolvedPromise;
 import org.rapla.server.RemoteSession;
 import org.rapla.storage.ImportExportManager;
 import org.rapla.storage.RaplaSecurityException;
@@ -71,10 +69,10 @@ public class ArchiverServiceImpl  implements ArchiverService
         return enabled;
     }
 
-    public Promise<Void> backupNow() {
-        try { backupNowSync(); return new ResolvedPromise<>(null); }
-        catch (RaplaException e) { return new ResolvedPromise<>(e); }
-	}
+    @Override
+    public void backupNow() throws RaplaException {
+        backupNowSync();
+    }
 
 	public void backupNowSync() throws RaplaException {
         checkAccess();
@@ -85,10 +83,10 @@ public class ArchiverServiceImpl  implements ArchiverService
         importExportManager.doExport();
 	}
 
-	public Promise<Void> restore() {
-        try { restoreSync(); return new ResolvedPromise<>(null); }
-        catch (RaplaException e) { return new ResolvedPromise<>(e); }
-	}
+    @Override
+    public void restore() throws RaplaException {
+        restoreSync();
+    }
 
 	public void restoreSync() throws RaplaException {
         checkAccess();
@@ -100,10 +98,10 @@ public class ArchiverServiceImpl  implements ArchiverService
         importExportManager.doImport();
 	}
 
-	public Promise<Void> delete(Integer removeOlderInDays) {
-        try { deleteSync(removeOlderInDays); return new ResolvedPromise<>(null); }
-        catch (RaplaException e) { return new ResolvedPromise<>(e); }
-	}
+    @Override
+    public void delete(Integer removeOlderInDays) throws RaplaException {
+        deleteSync(removeOlderInDays);
+    }
 
 	public void deleteSync(Integer removeOlderInDays) throws RaplaException {
         checkAccess();

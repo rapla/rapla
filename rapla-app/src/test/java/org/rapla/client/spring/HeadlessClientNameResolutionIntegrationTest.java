@@ -2,6 +2,7 @@ package org.rapla.client.spring;
 
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.rapla.entities.User;
@@ -68,6 +69,7 @@ import static org.junit.jupiter.api.Assertions.fail;
         classes = RaplaSpringBootApplication.class,
         webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT
 )
+@Tag("e2e")
 class HeadlessClientNameResolutionIntegrationTest
 {
     @TempDir
@@ -190,6 +192,57 @@ class HeadlessClientNameResolutionIntegrationTest
                 });
             }
 
+            // Regression: RemoteLocaleService is the only @HttpExchange REST proxy whose
+            // methods return Promise<X> — Spring's HttpServiceProxyFactory has no built-in
+            // adapter for Promise (unlike Mono/Flux), so it tries to deserialize the response
+            // body into a Promise instance directly. Promise is an interface → Jackson throws
+            // "InvalidDefinitionException: Cannot construct instance of org.rapla.scheduler.Promise".
+            // Hits whenever the user opens anything that constructs a CountryChooser
+            // (e.g. Edit Preferences → User options).
+            checks.add(() -> {
+                org.rapla.storage.RemoteLocaleService localeService =
+                        client.getContext().getBean(org.rapla.storage.RemoteLocaleService.class);
+                java.util.Set<String> languages = new java.util.LinkedHashSet<>();
+                languages.add("en");
+                java.util.Map<String, java.util.Set<String>> countries = localeService.countries(languages);
+                assertNotNull(countries, "countries() must return a non-null map (interface is now sync — "
+                        + "Promise<X> return broke Spring HttpServiceProxyFactory deserialization)");
+                assertTrue(countries.containsKey("en"),
+                        "countries() must include the requested 'en' language; saw: " + countries.keySet());
+            });
+
+            // Regression: when a REST call returns 401 (access token expired), the client
+            // should transparently call /auth/refresh with the stored refresh token, update
+            // the access token, and retry the original request once. Without this, every
+            // long-running session has to re-prompt the user after the JWT TTL elapses.
+            // Probe by manually corrupting the access token and asserting a follow-up call
+            // still succeeds.
+            checks.add(() -> {
+                org.rapla.storage.dbrm.RemoteConnectionInfo info =
+                        client.getContext().getBean(org.rapla.storage.dbrm.RemoteConnectionInfo.class);
+                String good = info.getAccessToken();
+                assertNotNull(good, "must have valid access token after login");
+                int refreshesBefore = org.rapla.client.spring.ClientProxyConfig.RefreshOn401Interceptor.refreshAttempts.get();
+                info.setAccessToken("garbage-expired-token");
+                try
+                {
+                    org.rapla.storage.dbrm.RemoteStorage rs =
+                            client.getContext().getBean(org.rapla.storage.dbrm.RemoteStorage.class);
+                    java.util.List<org.rapla.facade.internal.ConflictImpl> conflicts = rs.getConflicts();
+                    assertNotNull(conflicts,
+                            "/storage/conflicts must succeed after transparent refresh-on-401 — "
+                            + "interceptor should call /auth/refresh with the stored refreshToken, "
+                            + "update connectionInfo.accessToken, and retry the original request.");
+                }
+                finally
+                {
+                    int refreshesAfter = org.rapla.client.spring.ClientProxyConfig.RefreshOn401Interceptor.refreshAttempts.get();
+                    assertTrue(refreshesAfter > refreshesBefore,
+                            "interceptor must have attempted at least one /auth/refresh call after the corrupted token returned 401");
+                    info.setAccessToken(good);
+                }
+            });
+
             // Regression: every @Service("<typeClass.getName()>") EditComponent must end up
             // in EditTaskViewSwing.editUiProvider keyed by that class name. The map is a
             // Map<String, Supplier<EditComponent>>; Spring's auto-Map injection only works
@@ -211,6 +264,34 @@ class HeadlessClientNameResolutionIntegrationTest
                         "editUiProvider must contain Preferences key — saw keys: " + map.keySet());
                 assertTrue(map.containsKey("org.rapla.entities.dynamictype.DynamicType"),
                         "editUiProvider must contain DynamicType key — saw keys: " + map.keySet());
+            });
+
+            // Regression: every @Service("<pluginId>") PluginOptionPanel must end up in
+            // PreferencesEditUI.pluginOptionPanel keyed by that plugin id. Same wiring
+            // gap as editUiProvider / activityPresenters above — without an explicit
+            // @Bean Map<String, Supplier<PluginOptionPanel>> factory in SwingClientConfig,
+            // the field receives a single auto-wrapped Supplier whose .get() blows up on
+            // multi-bean ambiguity, and the "plugins" branch of the preferences tree is
+            // empty / broken.
+            checks.add(() -> {
+                org.rapla.client.swing.internal.edit.PreferencesEditUI ui =
+                        client.getContext().getBean(org.rapla.client.swing.internal.edit.PreferencesEditUI.class);
+                java.lang.reflect.Field f = org.rapla.client.swing.internal.edit.PreferencesEditUI.class
+                        .getDeclaredField("pluginOptionPanel");
+                f.setAccessible(true);
+                @SuppressWarnings("unchecked")
+                java.util.Map<String, java.util.function.Supplier<org.rapla.client.extensionpoints.PluginOptionPanel>> map =
+                        (java.util.Map<String, java.util.function.Supplier<org.rapla.client.extensionpoints.PluginOptionPanel>>) f.get(ui);
+                assertNotNull(map, "pluginOptionPanel map must inject");
+                assertTrue(map.size() >= 5,
+                        "pluginOptionPanel must contain one entry per @Service-registered PluginOptionPanel "
+                        + "(saw " + map.size() + " — keys: " + map.keySet() + ")");
+                java.util.function.Supplier<org.rapla.client.extensionpoints.PluginOptionPanel> any =
+                        map.values().iterator().next();
+                assertNotNull(any.get(),
+                        "pluginOptionPanel supplier .get() must resolve a real PluginOptionPanel "
+                        + "(NoUniqueBeanDefinitionException here means the supplier was the auto-wrapper "
+                        + "fallback, not a per-name @Bean factory)");
             });
 
             assertAll("end-to-end name resolution from Jackson 3 wire format",

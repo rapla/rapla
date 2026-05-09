@@ -166,6 +166,13 @@ public class ClientConfig
     }
 
     @Bean
+    public org.rapla.plugin.exchangeconnector.ShowExchangeForUser showExchangeForUser(
+            org.rapla.storage.StorageOperator storageOperator)
+    {
+        return new org.rapla.plugin.exchangeconnector.ShowExchangeForUser(storageOperator);
+    }
+
+    @Bean
     public org.rapla.storage.dbrm.RemoteOperator remoteOperator(Logger logger,
                                                                   org.rapla.RaplaResources i18n,
                                                                   org.rapla.framework.RaplaLocale locale,

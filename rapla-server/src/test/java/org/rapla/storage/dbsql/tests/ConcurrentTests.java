@@ -1,11 +1,10 @@
 package org.rapla.storage.dbsql.tests;
 
-import org.junit.After;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.Test;
 import org.rapla.components.util.DateTools;
 import org.rapla.logger.Logger;
 import org.rapla.logger.RaplaBootstrapLogger;
@@ -24,7 +23,7 @@ import java.util.concurrent.Semaphore;
 import java.util.concurrent.atomic.AtomicReference;
 
 import java.time.LocalDateTime;
-@RunWith(JUnit4.class) public class ConcurrentTests
+@Tag("db") public class ConcurrentTests
 {
     private Connection con1;
     private Connection con2;
@@ -57,7 +56,7 @@ import java.time.LocalDateTime;
     private final List<T1Obj> t1Objs = new ArrayList<ConcurrentTests.T1Obj>();
     private final List<T2Obj> t2Objs = new ArrayList<ConcurrentTests.T2Obj>();
 
-    @Before public void createDb() throws Exception
+    @BeforeEach public void createDb() throws Exception
     {
         t1Objs.clear();
         t2Objs.clear();
@@ -120,7 +119,7 @@ import java.time.LocalDateTime;
         return DriverManager.getConnection("jdbc:hsqldb:target/test/db", "sa", "");
     }
 
-    @After public void cleanUpDb() throws Exception
+    @AfterEach public void cleanUpDb() throws Exception
     {
         con1.close();
         con2.close();
@@ -220,7 +219,7 @@ import java.time.LocalDateTime;
                 catch (Exception e)
                 {
                     semaphore.release();
-                    Assert.fail("Exception should not happen: " + e.getMessage());
+                    Assertions.fail("Exception should not happen: " + e.getMessage());
                 }
             }
         });
@@ -250,7 +249,7 @@ import java.time.LocalDateTime;
                     insertT2Ps.executeBatch();
                     con.commit();
                     semaphore.release();
-                    Assert.fail("Exception should happen: ");
+                    Assertions.fail("Exception should happen: ");
                 }
                 catch (Exception e)
                 {
@@ -295,7 +294,7 @@ import java.time.LocalDateTime;
                 catch (Exception e)
                 {
                     semaphore.release();
-                    Assert.fail("Exception should not happen: " + e.getMessage());
+                    Assertions.fail("Exception should not happen: " + e.getMessage());
                 }
             }
         });
@@ -329,7 +328,7 @@ import java.time.LocalDateTime;
                     insert(t1Insert, t1ObjNew);
                     con.commit();
                     semaphore.release();
-                    Assert.fail("Exception should happen: ");
+                    Assertions.fail("Exception should happen: ");
                 }
                 catch (Exception e)
                 {
@@ -365,7 +364,7 @@ import java.time.LocalDateTime;
             con1.rollback();
         }
         final T1Obj newT1 = getT1ById(con1.prepareStatement(selectT1), t1Objs.get(1).id);
-        Assert.assertNotNull(newT1);
+        Assertions.assertNotNull(newT1);
     }
 
     @Test public void testCurrentTimestamp() throws Exception
@@ -384,7 +383,7 @@ import java.time.LocalDateTime;
             stmt.setString(1, "TEST");
             try (final ResultSet resultSet = stmt.executeQuery())
             {
-                Assert.assertTrue(resultSet.next());
+                Assertions.assertTrue(resultSet.next());
                 timestamp = resultSet.getTimestamp(1);
             }
         }
@@ -394,9 +393,9 @@ import java.time.LocalDateTime;
             stmt.setString(1, "TEST");
             try (final ResultSet resultSet = stmt.executeQuery())
             {
-                Assert.assertTrue(resultSet.next());
+                Assertions.assertTrue(resultSet.next());
                 Timestamp timestamp2 = resultSet.getTimestamp(1);
-                Assert.assertEquals(timestamp,timestamp2);
+                Assertions.assertEquals(timestamp,timestamp2);
             }
         }
     }
@@ -433,7 +432,7 @@ import java.time.LocalDateTime;
                     stmt.setString(1, t1Obj.id);
                     try (final ResultSet resultSet = stmt.executeQuery())
                     {
-                        Assert.assertTrue(resultSet.next());
+                        Assertions.assertTrue(resultSet.next());
                         timestamp1 = resultSet.getTimestamp(3);
                     }
                     logger.info(threadname +" read table 1 " + timestamp1);
@@ -445,7 +444,7 @@ import java.time.LocalDateTime;
                     stmt.setString(1, t1Obj.id);
                     try (final ResultSet resultSet = stmt.executeQuery())
                     {
-                        Assert.assertTrue(resultSet.next());
+                        Assertions.assertTrue(resultSet.next());
                         timestamp2 = resultSet.getTimestamp(3);
                     }
                     logger.info(threadname +" read table 2 " + timestamp2);
@@ -454,14 +453,14 @@ import java.time.LocalDateTime;
                 //Thread.sleep(100);
 
                 con.setSavepoint();
-                Assert.assertEquals(timestamp1, timestamp2);
+                Assertions.assertEquals(timestamp1, timestamp2);
                 {
                     final PreparedStatement stmt = con.prepareStatement(selectT2);
                     final T2Obj t2Obj = t2Objs.get(0);
                     stmt.setString(1, t2Obj.id);
                     try (final ResultSet resultSet = stmt.executeQuery())
                     {
-                        Assert.assertTrue(resultSet.next());
+                        Assertions.assertTrue(resultSet.next());
                         timestamp3 = resultSet.getTimestamp(3);
                         logger.info(threadname +" read table 2 again " + timestamp1);
                     }
@@ -469,12 +468,12 @@ import java.time.LocalDateTime;
                 con.commit();
 
                 final Timestamp newValue = x.get();
-                Assert.assertEquals(timestamp3, newValue);
+                Assertions.assertEquals(timestamp3, newValue);
 
             }
             catch (Exception e)
             {
-                Assert.fail("Exception should not happen: " + e.getMessage());
+                Assertions.fail("Exception should not happen: " + e.getMessage());
             }
             finally
             {
@@ -531,7 +530,7 @@ import java.time.LocalDateTime;
                 }
                 catch (Exception e)
                 {
-                    Assert.fail("Exception should not happen: " + e.getMessage());
+                    Assertions.fail("Exception should not happen: " + e.getMessage());
                 }
                 finally
                 {
@@ -591,9 +590,9 @@ import java.time.LocalDateTime;
                     final PreparedStatement rstmt = con.prepareStatement("SELECT LAST_CHANGED FROM WRITE_LOCK WHERE LOCKID = ?");
                     rstmt.setString(1, "TEST");
                     final ResultSet result = rstmt.executeQuery();
-                    Assert.assertTrue(result.next());
+                    Assertions.assertTrue(result.next());
                     final Timestamp timestamp = result.getTimestamp(1);
-                    Assert.assertTrue(timestamp.after(at.get()));
+                    Assertions.assertTrue(timestamp.after(at.get()));
                 }
                 catch (Throwable e)
                 {
@@ -622,7 +621,7 @@ import java.time.LocalDateTime;
                     final PreparedStatement rstmt = con.prepareStatement("SELECT LAST_CHANGED FROM WRITE_LOCK WHERE LOCKID = ?");
                     rstmt.setString(1, "TEST");
                     final ResultSet executeQuery = rstmt.executeQuery();
-                    Assert.assertTrue(executeQuery.next());
+                    Assertions.assertTrue(executeQuery.next());
                     final Timestamp timestamp = executeQuery.getTimestamp(1);
                     at.set(timestamp);
                     con.commit();

@@ -34,9 +34,13 @@ The reactor aggregator (`pom.xml` at the repo root, packaging=pom, artifactId=`r
 ## Rules
 
 ### 1. Test-First Approach
-- Always write a failing test before implementing a feature or bug fix.
-- Run `mvn test` to verify the test fails, then implement, then verify it passes.
-- Tests go in `src/test/java/` mirroring the source package structure.
+
+The order is **(a) understand → (b) write failing test → (c) fix → (d) verify test passes**, then commit. Skipping the test step for "obvious" fixes is the most common form of slippage in this codebase — don't.
+
+- **Write the failing test before any production code change** for: bug fixes (every one — including 1-line ones), new features, behaviour changes, refactors that should preserve observable behaviour. Run `mvn test` to confirm it fails for the right reason, then fix, then re-run to confirm it passes. Tests live in `src/test/java/` mirroring the source package.
+- **Diagnostics-first is fine when** you're still locating the root cause — curl probes, log inspection, exploratory println/diagnostic dumps in a test, integration-test bisects, reading code. Once you can name the broken function/field/method, switch to test-first for the fix.
+- **No exception for "trivial" fixes.** A removed `final` keyword, a missing null-check, a typo'd config key — all bug fixes get a regression test. The point isn't to verify the fix works; it's to lock the fix in so the next refactor doesn't reopen the bug. The Jackson-3 `final`-field bugs (PRD 011 follow-up, 2026-05-09) reopened the same pattern five times across different fields — a per-bug regression test would have caught the second one immediately.
+- **Verifying the test would catch the bug:** After writing the fix and seeing the test go green, briefly revert the fix and re-run the test to confirm it goes red for the right reason. Re-apply the fix. This costs one extra test run and prevents tests that pass for the wrong reason (e.g. asserting on a field that gets initialized in setUp regardless of the bug).
 
 ### 2. PRD-Driven Development
 - Before implementing anything, check **both `docs/prd/` AND `docs/prd/done/`** for an existing PRD. The `done/` subfolder holds completed PRDs — read them too; they capture decisions and alternatives already considered.
@@ -235,7 +239,7 @@ timeout 30 sh -c 'until grep -q "Started.*in [0-9.]+ seconds" logs/rapla.log; do
 **Lifecycle follows §8** — same `run_in_background` pattern, same PID-file convention, same log-inspection commands (substitute `logs/rapla-client.{pid,log}`). Stop snippet identical to §8 except the graceful window is **5 s** (no JDBC pool, no file locks).
 
 **Differences from the server:**
-- **Launch:** `mvn -pl rapla-client -am compile exec:java` — NOT `spring-boot:run` (client uses plain `AnnotationConfigApplicationContext`, not `@SpringBootApplication`; `spring-boot:run` silently no-ops). For auto-login: `-Dexec.args="user pass"`; without args, the Swing login dialog opens. Wait ~5–15 s for the Swing tier to come up.
+- **Launch:** `mvn -pl rapla-client -am compile exec:java` — NOT `spring-boot:run` (client uses plain `AnnotationConfigApplicationContext`, not `@SpringBootApplication`; `spring-boot:run` silently no-ops). For auto-login: `-Dexec.args="user pass"` (e.g. `admin` with no password against the dev DB, or `admin admin-password` if changed; the bundled testdefault.xml additionally has `homer/duffs`). Without args, the Swing login dialog opens. Wait ~5–15 s for the Swing tier to come up.
 - **No HTTP probe** — the client is a window, not a server. Use log markers: `grep -q "Starting gui" logs/rapla-client.log` for readiness; `grep -E "(POST|GET) request"` for REST round-trips.
 - **Connects to `http://localhost:8051/`** (`RemoteConnectionInfo.serverURL`, defaulted from `StartupEnvironment.getDownloadURL()`). Start §8's server first, or the login dialog hangs at "Connection refused" / "401 Unauthorized".
 - **Two logs in play.** `logs/rapla.log` is server-side (Spring Boot, JDBC, REST handlers); `logs/rapla-client.log` is client-side (Swing, REST proxies, login). For end-to-end issues, check both — a 401 in the client log usually has a matching auth-failure entry server-side.
@@ -243,14 +247,137 @@ timeout 30 sh -c 'until grep -q "Started.*in [0-9.]+ seconds" logs/rapla.log; do
 
 **Why the launch needs `-am compile exec:java`:** `mvn -pl rapla-client exec:java` (single-module) can't resolve rapla-core unless it's in m2. The fix lives in `rapla-bom/pom.xml`: `exec-maven-plugin` is bound with `<skip>true</skip>` and a placeholder `<mainClass>java.lang.Object</mainClass>` (the plugin validates `mainClass` before honouring `skip`). `rapla-client/pom.xml` overrides `skip=false` and the real `mainClass=SpringRaplaClient`. Net: `-am exec:java` walks the reactor, skips the goal on parents, runs only on rapla-client — which sees freshly-compiled in-reactor `target/classes` of every sibling. Per §5, never `mvn install`.
 
-#### Start
+#### Start — two modes
+
+**Foreground** — interactive, log streams to terminal, Ctrl-C stops cleanly. Use for human debugging or when you want stdout in your shell:
+
+```bash
+mvn -pl rapla-client -am compile exec:java -Dexec.args="admin" -Dexec.daemonThreadJoinTimeout=86400000
+```
+
+**Background** — returns immediately, log to file, PID tracked. Use this when an agent launches the client (Bash tool with `run_in_background=true`), or when you also want to keep using the shell:
 
 ```bash
 mkdir -p logs
-mvn -pl rapla-client -am compile exec:java > logs/rapla-client.log 2>&1 &
+mvn -pl rapla-client -am compile exec:java -Dexec.args="admin" \
+    -Dexec.daemonThreadJoinTimeout=86400000 \
+    > logs/rapla-client.log 2>&1 &
 CLIENT_PID=$!
 echo $CLIENT_PID > logs/rapla-client.pid
 echo "Started client, PID=$CLIENT_PID"
 ```
 
-`exec-maven-plugin` runs `main()` inside the Maven JVM (no fork), so `$!` is the actual app PID and SIGTERM triggers Spring's context shutdown hooks (e.g. `@PreDestroy` on `RaplaClientServiceImpl`) cleanly.
+In both modes the Swing window opens on `$DISPLAY` regardless — `mvn exec:java` runs `main()` in the Maven JVM (no fork), so the EDT is alive whether or not stdout is on a TTY. `$!` in the background snippet is the actual app PID and SIGTERM triggers Spring's context shutdown hooks (e.g. `@PreDestroy` on `RaplaClientServiceImpl`) cleanly.
+
+**Why the long `daemonThreadJoinTimeout`:** `exec-maven-plugin` interrupts every thread (including the EDT and `raplascheduler-N` workers) after `main()` returns + this timeout (default 15 s). Since `clientService.start()` is async and `main()` returns immediately, the default kills the client ~15 s after login. 86 400 000 ms (24 h) effectively disables the kill so the JVM lives until the user closes the window or you SIGTERM the PID.
+
+#### Restart
+
+Two separate Bash calls (don't chain — start would hang the agent):
+
+```bash
+# 1) stop
+[ -f logs/rapla-client.pid ] && kill "$(cat logs/rapla-client.pid)" 2>/dev/null
+for i in 1 2 3 4 5; do
+  [ -f logs/rapla-client.pid ] && kill -0 "$(cat logs/rapla-client.pid)" 2>/dev/null || break
+  sleep 1
+done
+rm -f logs/rapla-client.pid
+```
+
+Then re-run the Background start snippet above.
+
+### 10. Testing conventions — pyramid + base classes
+
+PRD 017 establishes a four-tier pyramid; pick the cheapest tier that exercises
+your code path. **Default to tier 1 or 2; reach for tier 3/4 only when you
+actually need a Spring context.**
+
+| Tier | Where | Engine | Cost / first test | Use for |
+|---|---|---|---:|---|
+| 1. Pure unit | `rapla-core/src/test/...` | plain JUnit, **no Spring** | < 100 ms | Entities, util, date math, parsing, repeating-rule logic, permission rules, JSON wire-format |
+| 2. Facade / storage unit | `rapla-server/src/test/...` extending `FacadeTestSupport` | plain JUnit, **no Spring** | ~150 ms | `RaplaFacade`-level behaviour, XML round-trip, conflict detection, anything that needs real `LocalCache` over real `FileOperator` |
+| 3. Web slice | `rapla-app/src/test/...` with `@SpringBootTest` + `@AutoConfigureMockMvc` | Spring context (cached) | ~3–5 s amortised | Controllers, error-mapping, JWT gate, JSON DTO contracts |
+| 4. Full E2E | `rapla-app/src/test/...` with `@SpringBootTest(webEnvironment=RANDOM_PORT)` | Spring + Tomcat | 7–15 s | Server↔REST-client round-trips, login → query → mutate. Keep small. |
+
+**Speed numbers, measured 2026-05-09** (`mvn -pl <module> -am test -Dtest=Class`):
+
+| Test | Wall (Surefire-reported) | Per test |
+|---|---:|---:|
+| `FacadeTestSupportTest` (tier 2, 6 tests) | 3.3 s | ~550 ms (incl. 150 ms fresh facade) |
+| `ServerServiceIntegrationTest` (tier 3, 2 tests, shared context) | 7.2 s | ~3.6 s (cold-boot dominates the first; second amortised) |
+
+Net: **first-test cold ~45× faster at tier 2**; for a 6-test class, ~4× faster.
+
+#### Using `FacadeTestSupport`
+
+`org.rapla.test.util.FacadeTestSupport` (in `rapla-server/src/test/...`) gives
+each `@Test` a freshly-connected `RaplaFacade` over a temp-dir copy of
+`testdefault.xml`:
+
+```java
+class MyFacadeTest extends FacadeTestSupport {
+    @Test
+    void categoriesLoad() throws Exception {
+        Category[] children = facade.getSuperCategory().getCategories();
+        assertEquals(2, children.length);
+    }
+}
+```
+
+- JUnit 5 (`@TempDir`, `@BeforeEach`). Don't mix with JUnit 4 in the same class.
+- Override `fixtureResource()` to point at a smaller hand-written XML when
+  the 500-line default is overkill.
+- Mirrors production wiring in `ServerCoreConfig.raplaFacade()` +
+  `ServerStorageSelector.createFileOperator()`. **If you add a constructor
+  argument to `FacadeImpl` or `FileOperator`, update this base class in the
+  same change** — the rapla-app `@SpringBootTest` ring is the only thing that
+  catches drift in CI.
+
+#### When NOT to use `FacadeTestSupport`
+
+- Pure entity/util logic: stay in tier 1 (rapla-core). Don't pull in `FileOperator`
+  to test `DateTools` or appointment expansion.
+- Controller behaviour, JSON shape, error mapping, JWT gate: tier 3 with
+  `@AutoConfigureMockMvc`. MockMvc beats `RANDOM_PORT` ~5–10×.
+- The very few "does the bean graph wire end-to-end" smoke tests: tier 4. One
+  per major surface is enough.
+
+#### Tagging — fast lane vs. full lane
+
+Slow / environment-dependent tests carry a JUnit 5 `@Tag`:
+
+| Tag | Meaning | Currently tagged |
+|---|---|---|
+| `db` | Hits a JDBC target (HSQLDB embedded today; still seconds) | `ConcurrentTests` |
+| `e2e` | Full `@SpringBootTest` acceptance — cold context, often `RANDOM_PORT` | `RaplaSpringBootApplicationTest`, `ServerServiceIntegrationTest`, `HeadlessClientNameResolutionIntegrationTest`, `SwingClientStartIntegrationTest` |
+
+Default `mvn test` excludes both via surefire `<excludedGroups>${test.excludedGroups}</excludedGroups>`
+(default value `db,e2e` set in `rapla-bom/pom.xml`). To include them:
+
+```bash
+mvn test -Dtest.excludedGroups=         # run everything
+mvn test -Dtest.excludedGroups=db       # full + e2e, skip db
+```
+
+When you add a test that fits one of these categories, tag it. New tags need
+a row above and a corresponding entry in PRD 017's plan.
+
+#### Coverage report (JaCoCo)
+
+```bash
+mvn -Pcoverage test                           # fast lane + coverage
+mvn -Pcoverage test -Dtest.excludedGroups=    # full lane + coverage (recommended)
+```
+
+Reports land at `<module>/target/site/jacoco/index.html`. The profile flips
+surefire from the default `forkCount=0` to `forkCount=1` because JaCoCo's
+`-javaagent` argLine needs a forked JVM. Off by default — the fork costs
+~10 s and the instrumentation isn't free.
+
+**Caveat:** per-module reports only count coverage from each module's own
+surefire run. Tests in rapla-app that exercise rapla-server/rapla-core code
+land in rapla-app's `jacoco.exec`, not the upstream module's. A future
+aggregator-level `report-aggregate` (PRD 017 Phase 3 follow-up) would fix
+this; for now, read each module's report as "what does *this module's own
+test suite* cover."

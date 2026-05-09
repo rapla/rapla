@@ -7,6 +7,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 public class RemoteConnectionInfo
 {
     String accessToken;
+    String refreshToken;
     String serverURL;
     transient StatusUpdater statusUpdater;
     ConnectInfo connectInfo;
@@ -38,6 +39,14 @@ public class RemoteConnectionInfo
 
     public String getAccessToken() {
         return accessToken;
+    }
+
+    public void setRefreshToken(String refreshToken) {
+        this.refreshToken = refreshToken;
+    }
+
+    public String getRefreshToken() {
+        return refreshToken;
     }
 
     public String getServerURL() {

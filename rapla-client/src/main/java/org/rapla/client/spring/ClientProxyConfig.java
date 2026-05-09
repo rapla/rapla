@@ -72,17 +72,118 @@ public class ClientProxyConfig
                 .requestFactory(requestFactory)
                 .uriBuilderFactory(dynamicFactory)
                 .messageConverters(converters -> converters.add(0, jacksonConverter))
-                .requestInitializer(request -> {
-                    String token = info.getAccessToken();
-                    if (token != null && !token.isEmpty())
-                    {
-                        request.getHeaders().setBearerAuth(token);
-                    }
-                })
+                .requestInterceptor(new RefreshOn401Interceptor(info, requestFactory))
                 .build();
         return HttpServiceProxyFactory
                 .builderFor(RestClientAdapter.create(restClient))
                 .build();
+    }
+
+    /**
+     * Adds the bearer token to every outgoing request, then on 401 calls
+     * {@code POST /auth/refresh} with the stored refresh token, updates
+     * {@link RemoteConnectionInfo#setAccessToken}, and retries the request once.
+     * Avoids the user having to re-login when the JWT TTL (default 1h) elapses
+     * mid-session. If the refresh itself returns 401 the original 401 is propagated
+     * (caller can prompt for re-login).
+     *
+     * <p>Refreshes are skipped for the auth endpoint itself ({@code /auth/...}) to
+     * avoid an infinite recursion if the refresh token is also invalid.
+     */
+    public static class RefreshOn401Interceptor implements org.springframework.http.client.ClientHttpRequestInterceptor
+    {
+        /** Test instrumentation. Counts every intercepted request and every refresh attempt
+         *  so integration tests can assert "refresh fired exactly once". Production code
+         *  should never read these. */
+        public static final java.util.concurrent.atomic.AtomicInteger interceptCount = new java.util.concurrent.atomic.AtomicInteger();
+        public static final java.util.concurrent.atomic.AtomicInteger refreshAttempts = new java.util.concurrent.atomic.AtomicInteger();
+        private final RemoteConnectionInfo info;
+        private final org.springframework.http.client.ClientHttpRequestFactory requestFactory;
+        private final java.util.concurrent.locks.Lock refreshLock = new java.util.concurrent.locks.ReentrantLock();
+
+        RefreshOn401Interceptor(RemoteConnectionInfo info,
+                                org.springframework.http.client.ClientHttpRequestFactory requestFactory)
+        {
+            this.info = info;
+            this.requestFactory = requestFactory;
+        }
+
+        @Override
+        public org.springframework.http.client.ClientHttpResponse intercept(
+                org.springframework.http.HttpRequest request,
+                byte[] body,
+                org.springframework.http.client.ClientHttpRequestExecution execution) throws java.io.IOException
+        {
+            interceptCount.incrementAndGet();
+            String token = info.getAccessToken();
+            if (token != null && !token.isEmpty()) request.getHeaders().setBearerAuth(token);
+            org.springframework.http.client.ClientHttpResponse response = execution.execute(request, body);
+            if (response.getStatusCode().value() != 401) return response;
+            refreshAttempts.incrementAndGet();
+            // Don't recurse on /auth/* itself.
+            if (request.getURI().getPath().contains("/auth/")) return response;
+            String refresh = info.getRefreshToken();
+            if (refresh == null || refresh.isEmpty()) return response;
+            // Single-flight refresh — concurrent 401-failed requests share one /auth/refresh hit.
+            refreshLock.lock();
+            try
+            {
+                String currentToken = info.getAccessToken();
+                if (java.util.Objects.equals(currentToken, token))
+                {
+                    if (!doRefresh(refresh)) return response;
+                }
+            }
+            finally
+            {
+                refreshLock.unlock();
+            }
+            response.close();
+            request.getHeaders().setBearerAuth(info.getAccessToken());
+            return execution.execute(request, body);
+        }
+
+        private boolean doRefresh(String refreshToken) throws java.io.IOException
+        {
+            String baseUrl = info.getServerURL();
+            if (baseUrl == null || baseUrl.isEmpty()) return false;
+            // baseUrl already includes the /rapla context path (set by RaplaClientServiceImpl
+            // from rapla.download.url + the configured context). Just append the auth path.
+            String trimmed = baseUrl.endsWith("/") ? baseUrl.substring(0, baseUrl.length() - 1) : baseUrl;
+            String refreshUrl = trimmed.endsWith("/rapla") ? trimmed + "/auth/refresh"
+                                                           : trimmed + "/rapla/auth/refresh";
+            byte[] reqBody = ("{\"refreshToken\":\"" + refreshToken + "\"}").getBytes(java.nio.charset.StandardCharsets.UTF_8);
+            org.springframework.http.client.ClientHttpRequest req =
+                    requestFactory.createRequest(java.net.URI.create(refreshUrl), org.springframework.http.HttpMethod.POST);
+            req.getHeaders().setContentType(org.springframework.http.MediaType.APPLICATION_JSON);
+            req.getBody().write(reqBody);
+            try (org.springframework.http.client.ClientHttpResponse resp = req.execute())
+            {
+                if (resp.getStatusCode().value() != 200) return false;
+                String json = new String(resp.getBody().readAllBytes(), java.nio.charset.StandardCharsets.UTF_8);
+                String newAccess = extractJsonStringField(json, "accessToken");
+                String newRefresh = extractJsonStringField(json, "refreshToken");
+                if (newAccess == null) return false;
+                info.setAccessToken(newAccess);
+                if (newRefresh != null) info.setRefreshToken(newRefresh);
+                return true;
+            }
+        }
+
+        /** Tiny string-grep extractor so we don't pull a Jackson mapper in here just to read 2 fields. */
+        private static String extractJsonStringField(String json, String field)
+        {
+            String key = "\"" + field + "\"";
+            int k = json.indexOf(key);
+            if (k < 0) return null;
+            int colon = json.indexOf(':', k + key.length());
+            if (colon < 0) return null;
+            int q1 = json.indexOf('"', colon + 1);
+            if (q1 < 0) return null;
+            int q2 = json.indexOf('"', q1 + 1);
+            if (q2 < 0) return null;
+            return json.substring(q1 + 1, q2);
+        }
     }
 
     /**

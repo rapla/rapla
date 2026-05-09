@@ -51,6 +51,10 @@
 		<keystore.alias>rapla</keystore.alias>
 		<keystore.password>raplaselfsigned</keystore.password>
 		<keystore.keypass>${keystore.password}</keystore.keypass>
+
+		<!-- PRD 017 Phase 2: default test lane excludes slow tagged tests.
+		     Override on CLI: mvn test -Dtest.excludedGroups= (empty = run all) -->
+		<test.excludedGroups>db,e2e</test.excludedGroups>
 	</properties>
 	<distributionManagement>
 		<snapshotRepository>
@@ -80,6 +84,13 @@
 					<systemPropertyVariables>
 						<java.awt.headless>false</java.awt.headless>
 					</systemPropertyVariables>
+					<!-- PRD 017 Phase 2: dev-loop fast lane excludes slow tagged tests by
+					     default. Override for the full set:
+					       mvn test -DexcludedGroups=
+					     Tags in use:
+					       db   — tests requiring a JDBC target (HSQLDB embedded; still ~seconds)
+					       e2e  — full @SpringBootTest acceptance tests (cold context, RANDOM_PORT) -->
+					<excludedGroups>${test.excludedGroups}</excludedGroups>
 				</configuration>
 			</plugin>
 			<plugin>
@@ -454,6 +465,45 @@
 			<properties>
 				<disableGwtCompile>true</disableGwtCompile>
 			</properties>
+		</profile>
+
+		<!-- PRD 017 Phase 3: JaCoCo coverage. Opt-in to keep instrumentation
+		     overhead off the default test path.
+		         mvn -Pcoverage test
+		     produces target/site/jacoco/index.html per module. The default
+		     surefire forkCount=0 doesn't honour argLine (no fork = no JVM
+		     args), so this profile flips to forkCount=1 — only when active. -->
+		<profile>
+			<id>coverage</id>
+			<build>
+				<plugins>
+					<plugin>
+						<groupId>org.apache.maven.plugins</groupId>
+						<artifactId>maven-surefire-plugin</artifactId>
+						<configuration>
+							<forkCount>1</forkCount>
+							<reuseForks>true</reuseForks>
+							<argLine>@{argLine}</argLine>
+						</configuration>
+					</plugin>
+					<plugin>
+						<groupId>org.jacoco</groupId>
+						<artifactId>jacoco-maven-plugin</artifactId>
+						<version>0.8.11</version>
+						<executions>
+							<execution>
+								<id>jacoco-prepare</id>
+								<goals><goal>prepare-agent</goal></goals>
+							</execution>
+							<execution>
+								<id>jacoco-report</id>
+								<phase>test</phase>
+								<goals><goal>report</goal></goals>
+							</execution>
+						</executions>
+					</plugin>
+				</plugins>
+			</build>
 		</profile>
 
 	</profiles>

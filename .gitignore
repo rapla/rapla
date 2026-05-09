@@ -37,3 +37,9 @@ src/test/test.iml
 application-local.yml
 src/main/resources/application-local.yml
 proxy.conf.local.json
+/rapla-app/jetty.home_IS_UNDEFINED/logs/rapla.log
+/rapla-client/jetty.home_IS_UNDEFINED/logs/rapla.log
+/rapla-server/jetty.home_IS_UNDEFINED/logs/rapla.log
+/rapla-app/jetty.home_IS_UNDEFINED/logs/rapla_client.csv
+/rapla-client/jetty.home_IS_UNDEFINED/logs/rapla_client.csv
+/rapla-server/jetty.home_IS_UNDEFINED/logs/rapla_client.csv

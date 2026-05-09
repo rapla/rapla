@@ -1,6 +1,6 @@
 # PRD 011 — Upgrade to Spring Boot 4 + Jackson 3
 
-**Status:** done (2026-05-08) — full reactor `mvn test` green on Spring Boot 4.0.6 + Jackson 3.1.2 (rapla-bom + rapla-core + rapla-client + rapla-server + rapla-app, 35 rapla-app tests + all upstream module tests passing). Stale `<jackson.version>` overrides removed from rapla-bom; only `com.fasterxml.jackson.core:jackson-annotations:2.21` remains in the dep tree (deliberately preserved per Jackson 3's design — see D1).
+**Status:** in-progress (reopened 2026-05-09) — Phase 4 originally landed green on 2026-05-08, but Swing-client smoke testing on 2026-05-09 surfaced six related production bugs that share the same root cause: Jackson 3 silently changed several behaviours that PRD 010's wire-format pinning depended on. See **§Phase 6 — Jackson 3 behaviour-default follow-up** below. Move back to `done/` once Phase 6 verification passes end-to-end through the Swing client.
 **Date:** 2026-05-08
 **Depends on:** PRD 001 (Spring Boot Migration) substantially complete; PRD 010 (Jackson wire format) lands first so the upgrade can re-pin the same configuration on the new mapper API.
 **Supersedes pin:** `rapla-bom/pom.xml` `<spring-boot.version>3.2.5</spring-boot.version>` and `<jackson.version>2.15.1 / 2.19.0</jackson.version>`.
@@ -355,3 +355,118 @@ Beyond the verification-only steps the plan called for, Phase 5 had to fix three
 | **009** RemoteStorage REST controllers | Hard prerequisite — without the bulk-storage endpoints, the smoke test in Phase 5 has nothing to exercise. |
 | **010** Jackson field-based wire format | Hard prerequisite — locks the configuration we re-pin against in Phase 4. Without 010, we don't know what "the right Jackson config" is. |
 | **012** (future) Gson removal | This PRD makes 012 trivially small. |
+
+## Phase 6 — Jackson 3 behaviour-default follow-up (2026-05-09)
+
+Phase 4's "test Reservation/Category round-trip via the new mapper" probe (Risk #4) only covered serialization, not the full setResolver→init chain that the Swing client exercises after deserialize. End-to-end smoke-testing on 2026-05-09 surfaced **six concrete bugs**, all sharing the same root cause:
+
+> **Jackson 3.0 flipped `MapperFeature.ALLOW_FINAL_FIELDS_AS_MUTATORS` default from `true` (Jackson 2) to `false`** ([jackson-databind#4552](https://github.com/FasterXML/jackson-databind/pull/4552)). Field-based deserialization no longer writes into `private final` fields. Existing entities relied on Jackson 2's behaviour, so any `private final Map/List/Set` collection silently stayed at its initializer value (empty) after deserialize.
+
+User-visible manifestation: every resource name and every reservation in the Swing client rendered blank.
+
+### Discoveries (D4)
+
+#### D4. `MapperFeature.ALLOW_FINAL_FIELDS_AS_MUTATORS` default flipped to false
+
+Risk #4 had asked to verify the wire-format knobs transferred. `Visibility.NONE`, `PROPAGATE_TRANSIENT_MARKER`, and `JavaTimeModule` all came across cleanly — but `ALLOW_FINAL_FIELDS_AS_MUTATORS` (Jackson 2 default `true`) became Jackson 3 default `false`. PRD 010's wire format used `private final Collection<…> = new ArrayList<>();` style declarations on five entity collection fields, all of which silently failed.
+
+Diagnostic confirmation chain:
+1. Curl `/storage/resources` against the running server — JSON contained `classification.data: {"name":["test"]}` correctly. Server-side serialization fine.
+2. End-to-end probe `HeadlessClientNameResolutionIntegrationTest` (added 2026-05-09) booted the full server + headless `SpringRaplaClient`, logged in, called `facade.getAllocatables()`, asserted each one's `getName(locale)` was non-empty. Failed with empty names on all 6 allocatables.
+3. Diagnostic dump showed `ParsedText.formatString="{name}"`, `variablesList=[name]` (init succeeded); `type.getAttribute("name")` returned the right attribute; **but** `classification.data={}` instead of `{"name":["test"]}`.
+4. Inspected `ClassificationImpl.java:49` — `private final Map<String,List<String>> data = new LinkedHashMap<>();`. Hypothesis test (`Jackson3TransientInitializerTest#jackson3SilentlySkipsFinalFieldsWithInitializers`) confirmed Jackson 3's behaviour.
+
+### Fixes applied
+
+**1. Drop `final` from every wire-format collection field that Jackson deserializes:**
+
+| File | Field | Symptom that surfaced |
+|---|---|---|
+| `ClassificationImpl` | `data` | resource/reservation names empty (the visible bug) |
+| `DynamicTypeImpl` | `permissions` | type permissions ignored |
+| `ReservationImpl` | `appointments`, `permissions` | reservations had no appointments → calendar grid empty even when reservation found |
+| `AllocatableImpl` | `permissions` | resource permissions ignored |
+| `AppointmentMap` (wire DTO for `/storage/queryAppointments`) | `entityIdToAppointmentIds` | calendar couldn't link returned reservations to selected resource |
+
+**2. Belt-and-suspenders: re-enable the feature in `JacksonObjectMapperFactory.configure(…)`:**
+
+```java
+.enable(MapperFeature.ALLOW_FINAL_FIELDS_AS_MUTATORS)
+```
+
+This protects future `private final` collection additions from silently regressing the same wire-format breakage. (Jackson docs note this "may not work with future JVMs", so the strategy is "drop final where touched + flag as a defensive net".)
+
+**3. Route `JacksonParserWrapper` through `JacksonObjectMapperFactory.configure(…)`:**
+
+The SQL-history-blob serializer (`JacksonParserWrapper`, used by `RaplaSQL`/`EntityHistory` per PRD 001 §492) had its own `JsonMapper.builder()` that didn't pin `PROPAGATE_TRANSIENT_MARKER` or the new `ALLOW_FINAL_FIELDS_AS_MUTATORS`. It now routes through the shared factory, then overlays its SQL-history-specific knobs (UTC timezone, custom date format, single-quote tolerance, Promise async-resolver serializer, and creator visibility back to `NONE`).
+
+### Tests added
+
+All in `rapla-core/src/test/java/org/rapla/rest/Jackson3TransientInitializerTest.java`:
+
+| # | Test | Pins |
+|---|---|---|
+| 1 | `transientFieldInitializerSurvivesRoundTrip` | Jackson 3 calls the no-arg constructor (transient field initializers run). |
+| 2 | `parsedTextFirstFieldHasInitializedValueAfterRoundTrip` | `ParsedText.first` defaults to `""` after deserialize. |
+| 3 | `dynamicTypeParseContextIsNonNullAfterRoundTrip` | `DynamicTypeImpl.parseContext` initializer runs. |
+| 4 | `dynamicTypeNameformatAnnotationSurvivesRoundTrip` | Annotations Map round-trips with `formatString`. |
+| 5 | `plainTextFormatNameSurvivesDeserializeAndInit` | End-to-end `init` + `formatName` works. |
+| 6 | `appointmentMapEntityIdToAppointmentIdsRoundTripsAfterFinalDropped` | `AppointmentMap.entityIdToAppointmentIds` round-trips. |
+| 7 | `factoryReEnablesFinalFieldMutationForBeltAndSuspenders` | Factory enables `ALLOW_FINAL_FIELDS_AS_MUTATORS`. |
+| 8 | `jacksonParserWrapperRoundTripsFinalFieldsToo` | SQL-history wrapper inherits the same final-field behaviour. |
+
+Plus integration test `rapla-app/src/test/java/org/rapla/client/spring/HeadlessClientNameResolutionIntegrationTest` — boots full server + headless client, asserts every allocatable's `getName(locale)` and every reservation's `getName(locale)` resolve through the entire deserialize → setResolver → init → formatName chain.
+
+### Audit completeness
+
+Every other `private final (Map|List|Set|Collection)` field in `rapla-core/src/main/java/org/rapla/entities/**` and `…/storage/**` was inspected:
+- Wire-format types: clean after the 5 entity + 1 DTO fixes above.
+- `EvalContext`, `StandardFunctions.*` inner classes, `ParsedText` inner classes — runtime-only Function instances, never serialized.
+- `ModificationEventImpl`, `UpdateResult`, `AppointmentMapping` — facade-internal types; the wire types (`UpdateEvent`, `AppointmentMap`) are different classes and already non-final where needed.
+- `RaplaXMLReader/Writer` — legacy XML, not Jackson.
+- `AuthController.TokenResponse` — server-side response type, only ever **serialized** (write-only); client deserializes into `LoginTokens` which is non-final.
+- `AttributeType.type`, `Permission.AccessLevel.level`, `RepeatingType.type` — `enum` constants, Jackson handles by name.
+- `RepeatingEnding.type` — singleton class, not held as a field by any wire-format entity (`RepeatingImpl` uses `RepeatingType` enum).
+
+### Lessons learned
+
+- **End-to-end matters.** Phase 4's Risk #4 verification was a serialize/deserialize byte-equality probe on `Category` and `Reservation`. That confirmed *the wire format hadn't changed* but didn't catch that **the deserialized objects were broken** for downstream `setResolver`/init consumption. The class of bugs Jackson 3 introduces here is "deserialization silently produces a half-populated object" — only end-to-end exercises catch that.
+- **Belt-and-suspenders config flags are cheap.** Re-enabling `ALLOW_FINAL_FIELDS_AS_MUTATORS` is one line; it doesn't fully restore Jackson 2 semantics (Jackson docs warn it may stop working on future JDKs) but it does protect any future `private final` field that lands by accident.
+- **Mapper-factory harmonization is overdue.** Five places construct their own `JsonMapper.builder()`; only one routes through `JacksonObjectMapperFactory`. The SQL-history wrapper now does too. The remaining cases (`JacksonMergePatch`, `HTTPWithJsonConnector`, mail connectors) don't serialize entities, but the pattern of "every Jackson user goes through the factory" should be the long-term shape — defer to a future PRD.
+
+## Phase 7 — REST proxy follow-ups (2026-05-09, after Phase 6 client smoke testing)
+
+Two additional production bugs surfaced during Swing-client smoke testing on 2026-05-09. Neither is a Jackson 3 issue per se, but both come from the same wave of REST-proxy migration work that PRD 011 enabled.
+
+### D5. `RemoteLocaleService` returned `Promise<X>` — Spring `HttpServiceProxyFactory` has no Promise adapter
+
+Spring's `HttpServiceProxyFactory` adapts `Mono<X>`, `Flux<X>`, `CompletableFuture<X>` to async transport, but `org.rapla.scheduler.Promise<X>` is a custom interface it doesn't recognize. With `Promise<X>` as the return type, Spring tells Jackson to deserialize the response body INTO a `Promise` directly — which is an interface, so Jackson throws `InvalidDefinitionException`. Symptom: opening Edit Preferences (any path that constructs `CountryChooser`) failed instantly.
+
+**Fix:** `RemoteLocaleService.{locale,countries}` now return synchronous types (`LocalePackage` and `Map<String, Set<String>>`). `RemoteLocaleServiceImpl` matches. `CountryChooser` wraps the call in `commandScheduler.supply(() -> ...)` so the EDT isn't blocked. `RaplaStartOption` injects the new `CommandScheduler` ctor arg.
+
+**Test:** `HeadlessClientNameResolutionIntegrationTest` now resolves the proxy and asserts `localeService.countries(["en"])` returns a non-null map containing "en". Failed with the exact production exception before the fix.
+
+### D6. `Map<String, Supplier<EditComponent>>` injection point had no matching beans
+
+`EditTaskViewSwing` injects `Map<String, Supplier<EditComponent>>`, keyed by entity-type class name. Each editor is registered with `@Service("<typeClass.getName()>")` — but those are `EditComponent` beans, not `Supplier<EditComponent>` beans. Spring's auto-Map injection only populates from beans of the value type — so the map injected empty and clicking "edit" on Preferences (or any other type) threw `RuntimeException("Can't edit objects of type …")`.
+
+**Fix:** `SwingClientConfig` now has explicit `@Bean Map<String, Supplier<EditComponent>> editUiProvider(...)` mirroring the existing `activityPresenters` pattern: walks `getBeanNamesForType(EditComponent.class)` and wraps each in a `Supplier`. The linter also added a parallel bean for `Map<String, Supplier<PluginOptionPanel>>` (used inside `PreferencesEditUI`). Same problem class.
+
+**Test:** Integration test now asserts the editUiProvider map contains the `Preferences` and `DynamicType` keys.
+
+### D7. JWT refresh-on-401 (2026-05-09 — user-driven follow-up)
+
+Access tokens have a 1-hour TTL; the client previously had no path to renew them, so any session longer than the TTL would start failing every REST call with 401 until the user re-logged in. The server's `/auth/refresh` endpoint had been wired since PRD 001 Phase 3 and the `LoginTokens` payload included the refresh token, but the client dropped it on the floor at login time and never used it.
+
+**Fixes:**
+- `RemoteConnectionInfo` gained a `refreshToken` field.
+- `RaplaClientServiceImpl.login` and `RemoteOperator.connect` now capture `loginToken.getRefreshToken()` after successful login.
+- `ClientProxyConfig.RefreshOn401Interceptor` (replaces the old `requestInitializer`): adds the bearer header, then on 401 calls `POST /auth/refresh` with the stored refresh token, updates `connectionInfo.{accessToken,refreshToken}`, and retries the original request once. Single-flight guard so concurrent in-flight requests share one refresh round-trip. Skip-recursion guard for `/auth/...` paths so a failed refresh propagates as 401 (caller can prompt re-login).
+
+**Test:** Integration test corrupts the access token mid-session, calls `/storage/conflicts`, asserts it succeeds AND that `RefreshOn401Interceptor.refreshAttempts` incremented. Verified the test fails red without the interceptor (`401 : [no body]`) and goes green with it.
+
+### Lessons learned (Phase 7)
+
+- **Spring's auto-Map injection has a subtle gotcha.** `Map<String, T>` populates from beans of type `T`. `Map<String, Supplier<T>>` populates from beans of type `Supplier<T>` — NOT from `T` beans wrapped in Suppliers. The `SwingClientConfig.activityPresenters` @Bean (added during PRD 002) already knew this; nothing in the code base reminded us to apply the same pattern when `EditTaskViewSwing` started consuming `Map<String, Supplier<EditComponent>>`. **Default rule: every `Map<String, Supplier<X>>` injection point needs a matching `@Bean` factory in `SwingClientConfig`** — TODO grep audit and add the missing ones in one sweep.
+- **Promise-typed REST proxies are a footgun.** Spring's HTTP service proxy quietly tries to deserialize whatever the return type is. `Promise<X>` and other custom async wrappers aren't async — they're treated as "weird response shape" by Jackson. The `RemoteLocaleService` interface was the only such case in the wire-protocol surface; flagged for new contributors.
+- **The api-testing skill paid off.** Curling the failing endpoint to confirm the server returns the expected JSON (`/storage/conflicts`, `/auth/refresh`, etc.) bisected each bug between server-side and client-side in seconds. Used three times during this debugging session.

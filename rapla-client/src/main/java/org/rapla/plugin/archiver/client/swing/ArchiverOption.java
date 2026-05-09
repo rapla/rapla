@@ -62,12 +62,15 @@ public class ArchiverOption  implements PluginOptionPanel,ActionListener  {
     Subject<String> busyIdleObservable;
     private final DialogUiFactoryInterface dialogUiFactory;
 
+    private final CommandScheduler scheduler;
+
     @Autowired
     public ArchiverOption( Logger logger,ArchiverService archiver, RestartServer restartServer, DialogUiFactoryInterface dialogUiFactory, CommandScheduler scheduler){
         this.archiver = archiver;
         this.logger = logger;
         this.restartServer = restartServer;
         this.dialogUiFactory = dialogUiFactory;
+        this.scheduler = scheduler;
         this.busyIdleObservable = org.rapla.scheduler.Observables.createPublisher(scheduler.getExecutor());
     }
 
@@ -210,7 +213,7 @@ public class ArchiverOption  implements PluginOptionPanel,ActionListener  {
                 Number days =  dayField.getNumber();
                 if ( days != null)
                 {
-                    result = archiver.delete(Integer.valueOf(days.intValue()));
+                    result = scheduler.run(() -> archiver.delete(Integer.valueOf(days.intValue())));
                 }
                 else
                 {
@@ -219,14 +222,14 @@ public class ArchiverOption  implements PluginOptionPanel,ActionListener  {
             }
             else if (source == backupButton)
             {
-                result = archiver.backupNow();
+                result = scheduler.run(() -> archiver.backupNow());
             }
             else if (source == restoreButton)
             {
                 DialogInterface dialog = dialogUiFactory.createTextDialog(popupContext, "Warning", "The current data will be overwriten by the backup version. Do you want to proceed?", new String[]{"restore data","abort"});
                 dialog.setDefault( 1);
                 result = dialog.start(true).thenCompose((index) -> (index == 0) ?
-                        archiver.restore().thenCompose((dummy) -> restartServer.restartServer()) :
+                        scheduler.run(() -> archiver.restore()).thenCompose((dummy) -> restartServer.restartServer()) :
                         ResolvedPromise.VOID_PROMISE);
             }
             else

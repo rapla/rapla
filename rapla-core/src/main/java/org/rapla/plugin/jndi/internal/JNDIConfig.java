@@ -2,17 +2,20 @@ package org.rapla.plugin.jndi.internal;
 
 import org.rapla.framework.DefaultConfiguration;
 import org.rapla.framework.RaplaException;
-import org.rapla.scheduler.Promise;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.service.annotation.GetExchange;
 import org.springframework.web.service.annotation.HttpExchange;
 import org.springframework.web.service.annotation.PostExchange;
 
+/**
+ * Returns synchronous types — see {@link org.rapla.plugin.archiver.ArchiverService}
+ * for the rationale (Spring's HttpServiceProxyFactory has no Promise adapter).
+ */
 @HttpExchange("/jndi")
 public interface JNDIConfig
 {
     @PostExchange
-    Promise<Boolean> test(@RequestBody MailTestRequest job) throws RaplaException;
+    boolean test(@RequestBody MailTestRequest job) throws RaplaException;
 
     class MailTestRequest
     {

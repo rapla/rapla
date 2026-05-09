@@ -99,8 +99,10 @@ public class JNDIOption implements JNDIConf, PluginOptionPanel
     RaplaFacade facade;
     ClientFacade clientFacade;
 
+    private final org.rapla.scheduler.CommandScheduler scheduler;
+
     @Autowired
-    public JNDIOption(ClientFacade clientFacade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, RaplaResources raplaResources, JNDIConfig config, DialogUiFactoryInterface dialogUiFactory, Supplier<GroupListField>groupListFieldProvider, IOInterface ioInterface) {
+    public JNDIOption(ClientFacade clientFacade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, RaplaResources raplaResources, JNDIConfig config, DialogUiFactoryInterface dialogUiFactory, Supplier<GroupListField>groupListFieldProvider, IOInterface ioInterface, org.rapla.scheduler.CommandScheduler scheduler) {
         this.i18n = i18n;
         this.raplaLocale = raplaLocale;
         this.facade = clientFacade.getRaplaFacade();
@@ -112,6 +114,7 @@ public class JNDIOption implements JNDIConf, PluginOptionPanel
         this.dialogUiFactory = dialogUiFactory;
         this.groupListFieldProvider = groupListFieldProvider;
         this.ioInterface = ioInterface;
+        this.scheduler = scheduler;
     }
 
     protected JPanel createPanel() throws RaplaException {
@@ -194,7 +197,7 @@ public class JNDIOption implements JNDIConf, PluginOptionPanel
                     }
                     String username = testUser.getUsername();
                     String password = new String(testUser.getNewPassword());
-                    final Promise<Boolean> testPromise = configService.test(new MailTestRequest(conf, username, password));
+                    final Promise<Boolean> testPromise = scheduler.supply(() -> configService.test(new MailTestRequest(conf, username, password)));
                     return testPromise.thenCompose((dummy) ->
                             dialogUiFactory.createInfoDialog(popupContext, "JNDI", "JNDI Authentification successfull").start(true)
                     ).thenApply((index2) -> null);

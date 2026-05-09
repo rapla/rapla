@@ -633,6 +633,7 @@ public class RaplaClientServiceImpl implements ClientService, UpdateErrorListene
             String accessToken = loginToken.getAccessToken();
             if (accessToken != null) {
                 this.connectionInfo.setAccessToken(accessToken);
+                this.connectionInfo.setRefreshToken(loginToken.getRefreshToken());
                 this.connectionInfo.setReconnectInfo( connectInfo);
                 this.reconnectInfo = connectInfo;
             } else {

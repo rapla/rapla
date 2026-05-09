@@ -2,6 +2,7 @@ package org.rapla.client.spring;
 
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.rapla.facade.client.ClientFacade;
@@ -46,6 +47,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
         classes = RaplaSpringBootApplication.class,
         webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT
 )
+@Tag("e2e")
 class SwingClientStartIntegrationTest
 {
     @TempDir
