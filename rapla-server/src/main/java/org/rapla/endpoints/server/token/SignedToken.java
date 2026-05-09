@@ -23,8 +23,7 @@ import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.util.Arrays;
-import java.util.Date;
-
+import java.time.LocalDateTime;
 /**
  * Utility function to compute and verify XSRF tokens.
  * <p>
@@ -114,10 +113,6 @@ public class SignedToken {
    */
   /** {@code LocalDateTime} variant — distinct name. */
   synchronized public String newToken(final String text, java.time.LocalDateTime now) throws TokenInvalidException {
-    return newToken(text, now == null ? null : org.rapla.components.util.DateTools.toDate(now));
-  }
-
-  synchronized public String newToken(final String text, Date now) throws TokenInvalidException {
     final int q = rng.nextInt();
     final byte[] buf = new byte[tokenLength];
     encodeInt(buf, 0, q);
@@ -130,7 +125,7 @@ public class SignedToken {
    * Validate a returned token.
    *
    * @param tokenString a token string previously created by this class.
-   * @param text text that must have been used during {@link #newToken(String,Date)}
+   * @param text text that must have been used during {@link #newToken(String,LocalDateTime)}
    *        in order for the token to be valid. If null the text will be taken
    *        from the token string itself.
    * @return true if the token is valid; false if the token is null, the empty
@@ -139,12 +134,7 @@ public class SignedToken {
    * @throws TokenInvalidException the JVM doesn't support the necessary algorithms to
    *         generate a token. XSRF services are simply not available.
    */
-  /** {@code LocalDateTime} variant — distinct name. */
-  public ValidToken checkToken(final String tokenString, final String text, java.time.LocalDateTime now) throws TokenInvalidException {
-    return checkToken(tokenString, text, now == null ? null : org.rapla.components.util.DateTools.toDate(now));
-  }
-
-  public ValidToken checkToken(final String tokenString, final String text,Date now)
+  public ValidToken checkToken(final String tokenString, final String text, LocalDateTime now)
       throws TokenInvalidException {
     if (tokenString == null || tokenString.length() == 0) {
       return null;
@@ -207,8 +197,8 @@ public class SignedToken {
     }
   }
 
-  private static int now(Date now) {
-    return (int) (now.getTime() / 5000L);
+  private static int now(LocalDateTime now) {
+    return (int) (org.rapla.components.util.DateTools.toMilli(now) / 5000L);
   }
 
   private static byte[] decodeBase64(final String s) {

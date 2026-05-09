@@ -20,7 +20,6 @@ import org.rapla.entities.RaplaObject;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.util.Date;
 import java.util.Set;
 /**
 Most universities and schools are planning for fixed periods/terms
@@ -28,32 +27,15 @@ rather than arbitrary dates. Rapla provides support for this periods.
 */
 public interface Period extends RaplaObject<Period>,Comparable<Period>,Named {
 
-    /** {@code java.time} primary: returns the period start as a {@code LocalDate} (UTC midnight). */
-    LocalDate getStartAsLocalDate();
-    /** {@code java.time} primary: returns the period end as a {@code LocalDate} (UTC midnight). */
-    LocalDate getEndAsLocalDate();
     TimeInterval getInterval();
     int getWeeks();
     String getName();
     Set<Category> getCategories();
 
-    /** {@code LocalDateTime} variant of {@link #contains(Date)}. UTC. */
     boolean contains(LocalDateTime dateTime);
 
-    /** Legacy {@code Date} accessor — delegates to {@link #getStartAsLocalDate()}. */
-    default Date getStart() {
-        LocalDate d = getStartAsLocalDate();
-        return d == null ? null : DateTools.toDate(d);
-    }
-    /** Legacy {@code Date} accessor — delegates to {@link #getEndAsLocalDate()}. */
-    default Date getEnd() {
-        LocalDate d = getEndAsLocalDate();
-        return d == null ? null : DateTools.toDate(d);
-    }
-    /** Legacy {@code Date} accessor — delegates to {@link #contains(LocalDateTime)}. */
-    default boolean contains(Date date) {
-        return date != null && contains(DateTools.toLocalDateTime(date));
-    }
+    LocalDateTime getStart();
+    LocalDateTime getEnd();
 
     String toString();
     Period[] PERIOD_ARRAY = new Period[0];

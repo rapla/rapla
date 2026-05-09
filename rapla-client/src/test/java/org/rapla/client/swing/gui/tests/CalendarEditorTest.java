@@ -18,15 +18,15 @@ import org.junit.Test;
 import org.rapla.client.swing.internal.CalendarPlaceViewSwing;
 import org.rapla.facade.CalendarSelectionModel;
 
-import java.util.Date;
 
+import java.time.LocalDateTime;
 @Ignore
 public final class CalendarEditorTest extends GUITestCase
 {
     @Test
     public void testShow() throws Exception {
         CalendarSelectionModel settings = getFacade().getRaplaFacade().newCalendarModel(getFacade().getUser() );
-        settings.setSelectedDate(new Date());
+        settings.setSelectedDate(LocalDateTime.now());
         CalendarPlaceViewSwing editor = null;// new CalendarPlaceViewSwing(getContext(),settings);
         testComponent(editor.getComponent(),1024,600);
         //editor.start();
@@ -38,7 +38,7 @@ public final class CalendarEditorTest extends GUITestCase
     public void testCreateException() throws Exception {
         CalendarModel settings = new CalendarModelImpl( getClientService().getContext() );
         settings.setSelectionType( Reservation.TYPE );
-        settings.setSelectedDate(new Date());
+        settings.setSelectedDate(LocalDateTime.of());
         CalendarPlaceViewSwing editor = new CalendarPlaceViewSwing(getClientService().getContext(),settings);
         testComponent(editor.getComponent(),1024,600);
         editor.start();
@@ -48,7 +48,7 @@ public final class CalendarEditorTest extends GUITestCase
         //editor.getComponent().revalidate();
 
         //editor.calendarContainer.dateChooser.goNext();
-        Date date1 = editor.getCalendarView().getStartDate();
+        LocalDateTime date1 = editor.getCalendarView().getStartDate();
         Reservation editableRes = (Reservation) getFacade().edit( r );
         Appointment app1 = editableRes.getAppointments()[0];
         Appointment app2= editableRes.getAppointments()[1];

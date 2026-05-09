@@ -31,10 +31,11 @@ import org.rapla.framework.RaplaException;
 import org.springframework.beans.factory.annotation.Autowired;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Date;
 import java.util.Set;
 
 
+import java.time.LocalDateTime;
+import java.time.LocalDate;
 public class PermissionController
 {
     private final Set<PermissionExtension> permissionExtensions;
@@ -115,9 +116,9 @@ public class PermissionController
     {
         for (PermissionExtension permissionExtension : permissionExtensions)
         {
-            final Date start = null;
-            final Date end = null;
-            final Date today = null;
+            final LocalDateTime start = null;
+            final LocalDateTime end = null;
+            final java.time.LocalDate today = null;
             if (!permissionExtension.hasAccess(entity, user, accessLevel, start, end, today,false))
             {
                 return false;
@@ -126,7 +127,7 @@ public class PermissionController
         return true;
     }
 
-    private boolean hasAccess(Entity entity, User user, final AccessLevel permission, final Date start, final Date end, final Date today,
+    private boolean hasAccess(Entity entity, User user, final AccessLevel permission, final LocalDateTime start, final LocalDateTime end, final java.time.LocalDate today,
             final boolean checkOnlyToday)
     {
         for (PermissionExtension permissionExtension : permissionExtensions)
@@ -288,9 +289,9 @@ public class PermissionController
         {
             return false;
         }
-        final Date start = null;
-        final Date end = null;
-        final Date today = null;
+        final LocalDateTime start = null;
+        final LocalDateTime end = null;
+        final java.time.LocalDate today = null;
         final AccessLevel permission = Permission.ALLOCATE_CONFLICTS;
         final boolean checkOnlyToday = false;
         return hasAccess(container, user, permission, start, end, today, checkOnlyToday);
@@ -335,35 +336,26 @@ public class PermissionController
      *  Checks if the user is allowed to make an allocation in the passed time.
      * @return
      */
-    public boolean canAllocate(Allocatable container, User user, Date start, Date end, Date today)
+    public boolean canAllocate(Allocatable container, User user, LocalDateTime start, LocalDateTime end, java.time.LocalDate today)
     {
         return hasAccess(container, user, Permission.ALLOCATE, start, end, today, false);
     }
 
-    public boolean canRequest(Allocatable container, User user,Date today) {
+    public boolean canRequest(Allocatable container, User user, java.time.LocalDate today) {
         return hasAccess(container, user, Permission.REQUEST, null, null, today, true);
     }
 
-    public boolean isRequestOnly(Allocatable alloc, User user, Date today) {
+    public boolean isRequestOnly(Allocatable alloc, User user, java.time.LocalDate today) {
         if (canAllocate( alloc, user, today)) {
             return false;
         }
         return canRequest(alloc, user, today);
     }
 
-    /** {@code LocalDate} variant — `today` is date-only. */
-    public boolean isRequestOnly(Allocatable alloc, User user, java.time.LocalDate today) {
-        return isRequestOnly(alloc, user, today == null ? null : org.rapla.components.util.DateTools.toDate(today));
-    }
-
     /**
      *  Checks if the user is allowed to make an allocation in the future (starting with date today)
-     * @param container
-     * @param user
-     * @param today
-     * @return
      */
-    public boolean canAllocate(Allocatable container, User user, Date today)
+    public boolean canAllocate(Allocatable container, User user, java.time.LocalDate today)
     {
         if (!canReadType(container, user))
         {
@@ -371,16 +363,9 @@ public class PermissionController
         }
         boolean hasAccess = hasAccess(container, user, Permission.ALLOCATE, null, null, today, true);
         return hasAccess;
-
     }
 
-    /** {@code LocalDate} variant — `today` is date-only. */
-    public boolean canAllocate(Allocatable container, User user, java.time.LocalDate today)
-    {
-        return canAllocate(container, user, today == null ? null : org.rapla.components.util.DateTools.toDate(today));
-    }
-
-    public boolean hasPermissionToAllocate(User user, Appointment appointment, Allocatable allocatable, Reservation original, Date today)
+    public boolean hasPermissionToAllocate(User user, Appointment appointment, Allocatable allocatable, Reservation original, java.time.LocalDate today)
     {
         if (user.isAdmin())
         {
@@ -388,8 +373,8 @@ public class PermissionController
         }
         Collection<String> groups = UserImpl.getGroupsIncludingParents(user);
 
-        Date start = appointment.getStart();
-        Date end = appointment.getMaxEnd();
+        LocalDateTime start = appointment.getStart();
+        LocalDateTime end = appointment.getMaxEnd();
 
         for (Permission p : allocatable.getPermissionList())
         {
@@ -433,14 +418,14 @@ public class PermissionController
             }
             if (accessLevel.includes(Permission.ALLOCATE))
             {
-                Date maxTime = DateTools.max(appointment.getMaxEnd(), originalAppointment.getMaxEnd());
+                LocalDateTime maxTime = DateTools.max(appointment.getMaxEnd(), originalAppointment.getMaxEnd());
                 if (maxTime == null)
                 {
-                    maxTime = DateTools.addYears(today, 4);
+                    maxTime = DateTools.addYears(today.atStartOfDay(), 4);
                 }
 
-                Date minChange = appointment.getFirstDifference(originalAppointment, maxTime);
-                Date maxChange = appointment.getLastDifference(originalAppointment, maxTime);
+                LocalDateTime minChange = appointment.getFirstDifference(originalAppointment, maxTime);
+                LocalDateTime maxChange = appointment.getLastDifference(originalAppointment, maxTime);
                 //System.out.println ( "minChange: " + minChange + ", maxChange: " + maxChange );
 
                 if (p.covers(minChange, maxChange, today))
@@ -577,13 +562,13 @@ public class PermissionController
         return false;
     }
 
-    public boolean canAllocate(Date start, Date end, Allocatable allocatables, User user)
+    public boolean canAllocate(LocalDateTime start, LocalDateTime end, Allocatable allocatables, User user)
     {
         if (allocatables == null)
         {
             return true;
         }
-        Date today = operator.today();
+        java.time.LocalDate today = operator.today();
         return canAllocate(allocatables, user, start, end, today);
     }
 

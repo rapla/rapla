@@ -79,7 +79,7 @@ public class DynamicTypeReader extends RaplaXMLReader
                 isDynamictypeActive = true;
                 typeAnnotations.clear();
                 TimestampDates ts = readTimestamps( atts);
-                dynamicType = DynamicTypeImpl.ofLocalDateTime(ts.getCreateTimeAsLocalDateTime(), ts.getChangeTimeAsLocalDateTime());
+                dynamicType = new DynamicTypeImpl(ts.createTime, ts.changeTime);
                 setLastChangedBy(dynamicType, atts);
                 if (atts.getValue( "id" )!=null)
                 {
@@ -361,7 +361,7 @@ public class DynamicTypeReader extends RaplaXMLReader
                 return;
             }
             java.time.LocalDateTime date = getReadLocalDateTime();
-            CategoryImpl category = CategoryImpl.ofLocalDateTime(date, date);
+            CategoryImpl category = new CategoryImpl(date, date);
             setNewId( category );
             category.setKey( groupKey );
             category.getName().setName("en", groupKey);

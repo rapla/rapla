@@ -4,10 +4,11 @@ import org.rapla.facade.PeriodModel;
 
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Date;
 import java.util.Iterator;
 import java.util.List;
 
+import java.time.LocalDateTime;
+import org.rapla.components.util.DateTools;
 public class ReservationHelper
 {
 
@@ -24,22 +25,22 @@ public class ReservationHelper
     }
 
     /** find the first visible reservation*/
-    static public Date findFirst( List<Reservation> reservationList) {
-        Date firstStart = null;
+    static public LocalDateTime findFirst( List<Reservation> reservationList) {
+        LocalDateTime firstStart = null;
         Iterator<Reservation> it = reservationList.iterator();
         while (it.hasNext()) {
             Appointment[] appointments = ( it.next()).getAppointments();
             for (int i=0;i<appointments.length;i++) {
-                Date start = appointments[i].getStart();
+                LocalDateTime start = appointments[i].getStart();
                 Repeating r = appointments[i].getRepeating();
                 if (firstStart == null) {
                     firstStart = start;
                     continue;
                 }
-                if (!start.before(firstStart))
+                if (!start.isBefore(firstStart))
                     continue;
                 
-                if ( r== null || !r.isException(start.getTime()))
+                if ( r== null || !r.isException(DateTools.toMilli(start)))
                 {
                     firstStart = start;
                 } 
@@ -48,8 +49,8 @@ public class ReservationHelper
                     Collection<AppointmentBlock> blocks = new ArrayList<>();
                     appointments[i].createBlocks( start, firstStart, blocks );
                     for (AppointmentBlock block: blocks) {
-                        if (block.getStart()<firstStart.getTime()) {
-                            firstStart = new Date(block.getStart());
+                        if (block.getStart()<DateTools.toMilli(firstStart)) {
+                            firstStart = LocalDateTime.ofInstant(java.time.Instant.ofEpochMilli(block.getStart()), java.time.ZoneOffset.UTC);
                             continue;
                         }
                     }

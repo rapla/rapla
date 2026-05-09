@@ -56,12 +56,12 @@ import javax.swing.JLabel;
 import java.awt.Font;
 import java.awt.Point;
 import java.util.Collection;
-import java.util.Date;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
 
+import java.time.LocalDateTime;
 public class SwingCompactWeekCalendar extends AbstractRaplaSwingCalendar
 {
     public SwingCompactWeekCalendar(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, CalendarModel settings, boolean editable,
@@ -81,8 +81,8 @@ public class SwingCompactWeekCalendar extends AbstractRaplaSwingCalendar
             protected JComponent createColumnHeader(Integer column) {
                 JLabel component = (JLabel) super.createColumnHeader(column);
                 if ( column != null ) {
-                	Date date = getDateFromColumn(column);
-                    boolean today = DateTools.isSameDay(getQuery().today().getTime(), date.getTime());
+                	LocalDateTime date = getDateFromColumn(column);
+                    boolean today = DateTools.isSameDay(DateTools.toMilli(getQuery().today()), DateTools.toMilli(date));
                     if ( today)
                     {
                         component.setFont(component.getFont().deriveFont( Font.BOLD));
@@ -125,11 +125,11 @@ public class SwingCompactWeekCalendar extends AbstractRaplaSwingCalendar
         RaplaCalendarViewListener listener = new RaplaCalendarViewListener(getClientFacade(), getI18n(), getRaplaLocale(), getLogger(), model, view.getComponent(),  menuFactory,  reservationController,  dialogUiFactory, editController) {
             
             @Override
-            public void selectionChanged(Date start, Date end) {
-                if ( end.getTime()- start.getTime() == DateTools.MILLISECONDS_PER_DAY ) {
+            public void selectionChanged(LocalDateTime start, LocalDateTime end) {
+                if ( DateTools.toMilli(end)- DateTools.toMilli(start) == DateTools.MILLISECONDS_PER_DAY ) {
                     int worktimeStartMinutes = getCalendarOptions().getWorktimeStartMinutes();
-                    start = DateTools.toDateTime(start,new Date(DateTools.toTime(worktimeStartMinutes/60, worktimeStartMinutes%60, 0)));
-                    end = new Date ( start.getTime() + 30 * DateTools.MILLISECONDS_PER_MINUTE );
+                    start = DateTools.toDateTime(start,DateTools.toLocalDateTime(DateTools.toTime(worktimeStartMinutes/60, worktimeStartMinutes%60, 0)));
+                    end = LocalDateTime.ofInstant(java.time.Instant.ofEpochMilli(DateTools.toMilli(start) + 30 * DateTools.MILLISECONDS_PER_MINUTE), java.time.ZoneOffset.UTC);
                 }
             	super.selectionChanged(start, end);
             }
@@ -165,7 +165,7 @@ public class SwingCompactWeekCalendar extends AbstractRaplaSwingCalendar
             }
             
             @Override
-			 public void moved(Block block, Point p, Date newStart, int slotNr) {
+			 public void moved(Block block, Point p, LocalDateTime newStart, int slotNr) {
 				 int index= slotNr / view.getDaysInView();//getIndex( selectedAllocatables, block );
 				 if ( index < 0)
 				 {

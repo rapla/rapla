@@ -1,5 +1,7 @@
 package org.rapla.storage;
 
+import java.time.LocalDateTime;
+
 import org.rapla.entities.User;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.Appointment;
@@ -11,7 +13,6 @@ import org.rapla.facade.Conflict;
 import org.rapla.framework.RaplaException;
 
 import java.util.Collection;
-import java.util.Date;
 import java.util.Map;
 
 /** Sync sibling of {@link StorageOperator}. Implemented only by in-process server-side
@@ -38,23 +39,13 @@ public interface SyncStorageOperator
 
     /** Returns appointments matching the given query. */
     AppointmentMapping queryAppointmentsSync(User user, Collection<Allocatable> allocatables, Collection<User> owners,
-                                             Date start, Date end, ClassificationFilter[] filters,
+                                             LocalDateTime start, LocalDateTime end, ClassificationFilter[] filters,
                                              Map<String, String> annotationQuery, boolean requestsOnly) throws RaplaException;
 
     /** Template-id variant — mirrors {@link StorageOperator#queryAppointments(User, Collection, Collection, Date, Date, ClassificationFilter[], String)}. */
     AppointmentMapping queryAppointmentsSync(User user, Collection<Allocatable> allocatables, Collection<User> owners,
-                                             Date start, Date end, ClassificationFilter[] filters, String templateId) throws RaplaException;
+                                             LocalDateTime start, LocalDateTime end, ClassificationFilter[] filters, String templateId) throws RaplaException;
 
-    /** {@code LocalDateTime} variant of {@link #queryAppointmentsSync} — converts to {@code Date} and delegates. */
-    default AppointmentMapping queryAppointmentsByLocalDateTimeSync(User user, Collection<Allocatable> allocatables, Collection<User> owners,
-                                                                    java.time.LocalDateTime start, java.time.LocalDateTime end,
-                                                                    ClassificationFilter[] filters, Map<String, String> annotationQuery, boolean requestsOnly) throws RaplaException
-    {
-        return queryAppointmentsSync(user, allocatables, owners,
-                start == null ? null : org.rapla.components.util.DateTools.toDate(start),
-                end == null ? null : org.rapla.components.util.DateTools.toDate(end),
-                filters, annotationQuery, requestsOnly);
-    }
 
     /** First-allocatable-bindings query — for each allocatable, the appointments that already use it. */
     Map<ReferenceInfo<Allocatable>, Collection<Appointment>> getFirstAllocatableBindingsSync(
@@ -70,7 +61,7 @@ public interface SyncStorageOperator
     Allocatable doMergeSync(Allocatable selectedObject, java.util.Set<ReferenceInfo<Allocatable>> allocatableIds, User user) throws RaplaException;
 
     /** Find the next free allocation slot for the given appointment. */
-    Date getNextAllocatableDateSync(Collection<Allocatable> allocatables, Appointment appointment, Collection<Reservation> ignoreList,
+    LocalDateTime getNextAllocatableDateSync(Collection<Allocatable> allocatables, Appointment appointment, Collection<Reservation> ignoreList,
                                     Integer worktimeStartMinutes, Integer worktimeEndMinutes, Integer[] excludedDays, Integer rowsPerHour) throws RaplaException;
 
     /** Resolve a set of entity references in one batch. Used by {@code SyncCalendarModel}'s
@@ -83,7 +74,7 @@ public interface SyncStorageOperator
      *  the underlying mapping shape. Pass {@code null} for any param that should not be used
      *  as a filter; matches the {@code RaplaFacade.getReservations(...)} convention. */
     default Collection<Reservation> getReservationsSync(User user, Allocatable[] allocatables, User[] owners,
-                                                        Date start, Date end, ClassificationFilter[] filters) throws RaplaException
+                                                        LocalDateTime start, LocalDateTime end, ClassificationFilter[] filters) throws RaplaException
     {
         Collection<Allocatable> allocatablesCol = allocatables != null ? java.util.Arrays.asList(allocatables) : null;
         java.util.List<User> ownersList = owners != null ? java.util.Arrays.asList(owners) : java.util.Collections.emptyList();

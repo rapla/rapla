@@ -1,9 +1,9 @@
 package org.rapla.framework;
 
-import java.util.Date;
 import java.util.TimeZone;
 
 
+import java.time.LocalDateTime;
 public interface TimeZoneConverter
 {
     /**
@@ -15,7 +15,7 @@ public interface TimeZoneConverter
 
     long fromRaplaTime(TimeZone timeZone,long raplaTime);
  	long toRaplaTime(TimeZone timeZone,long time);
-	Date fromRaplaTime(TimeZone timeZone,Date raplaTime);
+	LocalDateTime fromRaplaTime(TimeZone timeZone,LocalDateTime raplaTime);
 	/**
 	 * converts a common Date object into a Date object that
 	 * assumes that the user (being in the given timezone) is in the
@@ -32,19 +32,5 @@ public interface TimeZoneConverter
 	 * @param time
 	 *            the Date object in the passed timezone 
 	 */
-	Date toRaplaTime(TimeZone timeZone,Date time);
-
-	/** {@code LocalDateTime} variant of {@link #fromRaplaTime(TimeZone, Date)}. UTC. */
-	default java.time.LocalDateTime fromRaplaTime(TimeZone timeZone, java.time.LocalDateTime raplaTime) {
-		if (raplaTime == null) return null;
-		long millis = fromRaplaTime(timeZone, org.rapla.components.util.DateTools.toMilli(raplaTime));
-		return org.rapla.components.util.DateTools.toLocalDateTime(millis);
-	}
-
-	/** {@code LocalDateTime} variant of {@link #toRaplaTime(TimeZone, Date)}. UTC. */
-	default java.time.LocalDateTime toRaplaTime(TimeZone timeZone, java.time.LocalDateTime time) {
-		if (time == null) return null;
-		long millis = toRaplaTime(timeZone, org.rapla.components.util.DateTools.toMilli(time));
-		return org.rapla.components.util.DateTools.toLocalDateTime(millis);
-	}
+	LocalDateTime toRaplaTime(TimeZone timeZone,LocalDateTime time);
 }

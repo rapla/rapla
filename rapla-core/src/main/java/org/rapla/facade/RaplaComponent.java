@@ -38,6 +38,7 @@ import org.rapla.storage.PermissionController;
 
 import java.util.*;
 
+import java.time.LocalDateTime;
 /**
     Base class for most components. Eases
     access to frequently used services, e.g. {@link I18nBundle}.
@@ -71,7 +72,7 @@ public class RaplaComponent
             allocatables = markedAllocatables;
         }
 
-        Date today = facade.today();
+        java.time.LocalDate today = facade.today();
         PermissionController permissionController = facade.getPermissionController();
         for (Reservation event : newReservations)
         {
@@ -287,7 +288,7 @@ public class RaplaComponent
 		return false;
 	}
 
-    public static Date getStartDate(CalendarModel model, RaplaFacade raplaFacade, User user) {
+    public static LocalDateTime getStartDate(CalendarModel model, RaplaFacade raplaFacade, User user) {
 
         return getMarkedInterval( model,raplaFacade, user).getStart();
     }
@@ -300,32 +301,32 @@ public class RaplaComponent
             TimeInterval first = markedIntervals.iterator().next();
             return new TimeInterval( first.getStart(), first.getEnd());
         }
-        Date selectedDate = model.getSelectedDate();
+        LocalDateTime selectedDate = model.getSelectedDate();
         if ( selectedDate == null)
         {
             selectedDate = model.getStartDate();
         }
         if ( selectedDate == null)
         {
-            selectedDate = facade.today();
+            selectedDate = facade.today().atStartOfDay();
         }
         final CalendarOptions calendarOptions = RaplaComponent.getCalendarOptions(user, facade);
-        Date time = new Date (DateTools.MILLISECONDS_PER_MINUTE * calendarOptions.getWorktimeStartMinutes());
-        Date startDate = DateTools.toDateTime(selectedDate,time);
-        Date endDate = new Date(startDate.getTime() + DateTools.MILLISECONDS_PER_HOUR);
+        LocalDateTime time = DateTools.toLocalDateTime(DateTools.MILLISECONDS_PER_MINUTE * calendarOptions.getWorktimeStartMinutes());
+        LocalDateTime startDate = DateTools.toDateTime(selectedDate,time);
+        LocalDateTime endDate = startDate.plusHours(1);
         return new TimeInterval( startDate, endDate);
 
     }
     
-    protected Date getEndDate(CalendarModel model, Date startDate)
+    protected LocalDateTime getEndDate(CalendarModel model, LocalDateTime startDate)
     {
         return calcEndDate(model, startDate);
     }
 
-    public static Date calcEndDate(CalendarModel model, Date startDate)
+    public static LocalDateTime calcEndDate(CalendarModel model, LocalDateTime startDate)
     {
         Collection<TimeInterval> markedIntervals = model.getMarkedIntervals();
-        Date endDate = null;
+        LocalDateTime endDate = null;
         if (markedIntervals.size() > 0)
         {
             TimeInterval first = markedIntervals.iterator().next();
@@ -335,7 +336,7 @@ public class RaplaComponent
         {
             return endDate;
         }
-        return new Date(startDate.getTime() + DateTools.MILLISECONDS_PER_HOUR);
+        return startDate.plusHours(1);
 
     }
 }

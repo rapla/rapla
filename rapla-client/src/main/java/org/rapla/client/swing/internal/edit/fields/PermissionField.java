@@ -47,9 +47,9 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.Date;
 import java.util.List;
 
+import java.time.LocalDateTime;
 public class PermissionField extends AbstractEditField implements  ChangeListener, ActionListener {
     SetGetField<Category> groupSelect;
     ListField<User> userSelect;
@@ -289,9 +289,9 @@ public class PermissionField extends AbstractEditField implements  ChangeListene
                 permission.setMinAdvance( null );
             }
             if ( i == 1 ) {
-                Date today = raplaFacade.today();
-                permission.setStart( today );
-                startDate.setValue( today);
+                java.time.LocalDate today = raplaFacade.today();
+                permission.setStart( today.atStartOfDay() );
+                startDate.setValue( today.atStartOfDay() );
             } if ( i == 2 ) {
                 permission.setMinAdvance(Integer.valueOf(0));
                 minAdvance.setValue(Integer.valueOf(0));
@@ -304,9 +304,9 @@ public class PermissionField extends AbstractEditField implements  ChangeListene
                 permission.setMaxAdvance( null );
             }
             if ( i == 1 ) {
-                Date today = raplaFacade.today();
-                permission.setEnd( today );
-                endDate.setValue( today);
+                java.time.LocalDate today = raplaFacade.today();
+                permission.setEnd( today.atStartOfDay() );
+                endDate.setValue( today.atStartOfDay() );
             } if ( i == 2 ) {
                 permission.setMaxAdvance(Integer.valueOf(30));
                 maxAdvance.setValue(Integer.valueOf(30));

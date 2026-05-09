@@ -23,6 +23,8 @@
  */
 package org.rapla.storage;
 
+import java.time.LocalDateTime;
+
 import org.rapla.entities.Category;
 import org.rapla.entities.Entity;
 import org.rapla.entities.User;
@@ -42,7 +44,6 @@ import org.rapla.framework.RaplaException;
 import org.rapla.scheduler.Promise;
 
 import java.util.Collection;
-import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -105,15 +106,15 @@ public interface StorageOperator extends EntityResolver {
      * @param allocatables 
      * @param reservationFilters 
      * @param annotationQuery */
-    Promise<AppointmentMapping> queryAppointments(User user, Collection<Allocatable> allocatables,Collection<User> owners, Date start, Date end,  ClassificationFilter[] reservationFilters, Map<String, String> annotationQuery, boolean requestsOnly);
+    Promise<AppointmentMapping> queryAppointments(User user, Collection<Allocatable> allocatables,Collection<User> owners, LocalDateTime start, LocalDateTime end,  ClassificationFilter[] reservationFilters, Map<String, String> annotationQuery, boolean requestsOnly);
 
-    Promise<AppointmentMapping> queryAppointments(User user, Collection<Allocatable> allocatables, Collection<User> owners, Date start, Date end, ClassificationFilter[] reservationFilters, String templateId);
+    Promise<AppointmentMapping> queryAppointments(User user, Collection<Allocatable> allocatables, Collection<User> owners, LocalDateTime start, LocalDateTime end, ClassificationFilter[] reservationFilters, String templateId);
 
     /** {@code LocalDateTime} variant. UTC. Distinct method name avoids `null`-passing ambiguity. */
     default Promise<AppointmentMapping> queryAppointmentsByLocalDateTime(User user, Collection<Allocatable> allocatables, Collection<User> owners, java.time.LocalDateTime start, java.time.LocalDateTime end, ClassificationFilter[] reservationFilters, Map<String, String> annotationQuery, boolean requestsOnly) {
         return queryAppointments(user, allocatables, owners,
-            start == null ? null : org.rapla.components.util.DateTools.toDate(start),
-            end == null ? null : org.rapla.components.util.DateTools.toDate(end),
+            start,
+            end,
             reservationFilters, annotationQuery, requestsOnly);
     }
 
@@ -136,20 +137,10 @@ public interface StorageOperator extends EntityResolver {
 
 
     /** returns the beginning of the current day. Uses getCurrentTimstamp. */
-    Date today();
-
-    /** {@code LocalDate} variant of {@link #today()}. UTC. */
-    default java.time.LocalDate todayAsLocalDate() {
-        return org.rapla.components.util.DateTools.toLocalDate(today());
-    }
+    java.time.LocalDate today();
 
     /** returns the date and time in seconds for creation. Server time will be used if in client/server mode. Note that this is always the utc time */
-    Date getCurrentTimestamp();
-
-    /** {@code LocalDateTime} variant of {@link #getCurrentTimestamp()}. UTC. */
-    default java.time.LocalDateTime getCurrentTimestampAsLocalDateTime() {
-        return org.rapla.components.util.DateTools.toLocalDateTime(getCurrentTimestamp());
-    }
+    LocalDateTime getCurrentTimestamp();
     
     boolean supportsActiveMonitoring();
 
@@ -157,7 +148,7 @@ public interface StorageOperator extends EntityResolver {
     
     Promise<Map<ReferenceInfo<Allocatable>, Map<Appointment,Collection<Appointment>>>> getAllAllocatableBindings(Collection<Allocatable> allocatables, Collection<Appointment> appointments, Collection<Reservation> ignoreList);
 
-    Promise<Date> getNextAllocatableDate(Collection<Allocatable> allocatables,Appointment appointment, Collection<Reservation> ignoreList, Integer worktimeStartMinutes,Integer worktimeEndMinutes, Integer[] excludedDays, Integer rowsPerHour);
+    Promise<LocalDateTime> getNextAllocatableDate(Collection<Allocatable> allocatables,Appointment appointment, Collection<Reservation> ignoreList, Integer worktimeStartMinutes,Integer worktimeEndMinutes, Integer[] excludedDays, Integer rowsPerHour);
     
     Promise<Collection<Conflict>> getConflicts(User user);
 

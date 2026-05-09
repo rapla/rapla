@@ -80,6 +80,7 @@ import java.net.URI;
 import java.util.*;
 import java.util.stream.Collectors;
 
+import java.time.LocalDateTime;
 /** Use this Operator to keep the data stored in an XML-File.
  @see AbstractCachableOperator
  @see org.rapla.storage.StorageOperator
@@ -180,11 +181,11 @@ final public class FileOperator extends LocalAbstractCachableOperator
         return false;
     }
 
-    @Override public Date getHistoryValidStart()
+    @Override public LocalDateTime getHistoryValidStart()
     {
-        Date connectStart = getConnectStart();
-        final Date date = new Date(Math.max(getLastRefreshed().getTime() - HISTORY_DURATION, connectStart.getTime()));
-        return date;
+        LocalDateTime connectStart = getConnectStart();
+        LocalDateTime historyStart = getLastRefreshed().minus(java.time.Duration.ofMillis(HISTORY_DURATION));
+        return historyStart.isAfter(connectStart) ? historyStart : connectStart;
     }
 
     /** Sets the isConnected-flag and calls loadData.*/
@@ -249,7 +250,7 @@ final public class FileOperator extends LocalAbstractCachableOperator
             getLogger().debug("Reading data from file:" + getURL());
 
         // TODO implement history storage
-        Date lastUpdated = getCurrentTimestamp();
+        java.time.LocalDateTime lastUpdated = getCurrentTimestamp();
         setLastRefreshed(lastUpdated);
         setConnectStart(lastUpdated);
 
@@ -344,7 +345,7 @@ final public class FileOperator extends LocalAbstractCachableOperator
             {
                 if(EntityHistory.isSupportedEntity(entity.getTypeClass()))
                 {
-                    Date lastChanged = ((Timestamp) entity).getLastChanged();
+                    LocalDateTime lastChanged = ((Timestamp) entity).getLastChanged();
                     if ( lastChanged != null)
                     {
                         history.addHistoryEntry(entity, lastChanged, false);
@@ -446,9 +447,9 @@ final public class FileOperator extends LocalAbstractCachableOperator
         try
         {
             preprocessEventStorage(evt);
-            Date since = getCurrentTimestamp();//evt.getLastValidated();
+            LocalDateTime since = getCurrentTimestamp();//evt.getLastValidated();
             updateHistory(evt);
-            Date until = getCurrentTimestamp();
+            LocalDateTime until = getCurrentTimestamp();
             // this since is for the server and used to check if an entity is new created in this write transaction so set it to the current timestamp
             // the since for the client will be used later when requesting the update event
             // call of update must be first to update the cache.
@@ -587,7 +588,7 @@ final public class FileOperator extends LocalAbstractCachableOperator
         } catch (InterruptedException e1) {
             throw new RaplaException( e1.getMessage(), e1);
         }
-        Date currentTime = getCurrentTimestamp();
+        LocalDateTime currentTime = getCurrentTimestamp();
         for ( Entity e: evt.getStoreObjects())
         {
             final boolean isDelete = false;
@@ -701,16 +702,16 @@ final public class FileOperator extends LocalAbstractCachableOperator
     
     private static class SystemLock
     {
-        private Date lastRequested;
-        private Date validUntil;
+        private LocalDateTime lastRequested;
+        private LocalDateTime validUntil;
         private boolean active;
     }
     private final Map<String, SystemLock> locks = new HashMap<>();
 
     @Override
-    public Date requestLock(String id, Long validMilliseconds) throws RaplaException
+    public LocalDateTime requestLock(String id, Long validMilliseconds) throws RaplaException
     {
-        final Date currentTimestamp = getCurrentTimestamp();
+        final LocalDateTime currentTimestamp = getCurrentTimestamp();
         SystemLock systemLock = locks.get(id);
         if(systemLock == null)
         {
@@ -719,12 +720,12 @@ final public class FileOperator extends LocalAbstractCachableOperator
         }
         if (systemLock.active)
         {
-            if (systemLock.validUntil != null && currentTimestamp.before(systemLock.validUntil))
+            if (systemLock.validUntil != null && currentTimestamp.isBefore(systemLock.validUntil))
             {
                 throw new RaplaException("Lock already in use");
             }
         }
-        final Date lastRequested = systemLock.lastRequested != null ? systemLock.lastRequested : getHistoryValidStart();
+        final LocalDateTime lastRequested = systemLock.lastRequested != null ? systemLock.lastRequested : getHistoryValidStart();
         final long offset;
         if(validMilliseconds != null)
         {
@@ -741,14 +742,14 @@ final public class FileOperator extends LocalAbstractCachableOperator
                 offset = DateTools.MILLISECONDS_PER_MINUTE / 4;
             }
         }
-        Date startRequest = systemLock.lastRequested != null ? systemLock.lastRequested : currentTimestamp;
-        systemLock.validUntil = new Date(startRequest.getTime() + offset);
+        LocalDateTime startRequest = systemLock.lastRequested != null ? systemLock.lastRequested : currentTimestamp;
+        systemLock.validUntil = startRequest.plus(java.time.Duration.ofMillis(offset));
         systemLock.active = true;
         return lastRequested;
     }
     
     @Override
-    public synchronized void releaseLock(String id, Date updatedUntil)
+    public synchronized void releaseLock(String id, LocalDateTime updatedUntil)
     {
         final SystemLock systemLock = locks.get(id);
         if(systemLock != null)
