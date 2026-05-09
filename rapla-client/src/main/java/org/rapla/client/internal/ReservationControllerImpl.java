@@ -48,7 +48,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
@@ -58,6 +57,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import java.time.LocalDateTime;
 @org.springframework.stereotype.Service
 @org.springframework.context.annotation.Lazy
 public class ReservationControllerImpl implements ReservationController {
@@ -121,7 +121,7 @@ public class ReservationControllerImpl implements ReservationController {
         final Promise<Void> no_delete = booleanPromise.thenCompose(deleted -> {
             final Promise promise;
             Set<Appointment> appointmentsToRemove = Collections.emptySet();
-            Map<Appointment, List<Date>> exceptionsToAdd = Collections.emptyMap();
+            Map<Appointment, List<LocalDateTime>> exceptionsToAdd = Collections.emptyMap();
             CommandUndo<RaplaException> command = new DeleteBlocksCommand(getClientFacade(), i18n, reservationsToRemove,
                     appointmentsToRemove, exceptionsToAdd) {
                 public String getCommandoName() {
@@ -147,17 +147,17 @@ public class ReservationControllerImpl implements ReservationController {
 
 
             Set<Appointment> appointmentsToRemove = new LinkedHashSet<>();
-            HashMap<Appointment, List<Date>> exceptionsToAdd = new LinkedHashMap<>();
+            HashMap<Appointment, List<LocalDateTime>> exceptionsToAdd = new LinkedHashMap<>();
             HashMap<Reservation, Integer> appointmentsRemoved = new LinkedHashMap<>();
             Set<Reservation> reservationsToRemove = new LinkedHashSet<>();
 
             for (AppointmentBlock block : blockList) {
                 Appointment appointment = block.getAppointment();
-                Date from = new Date(block.getStart());
+                LocalDateTime from = DateTools.toLocalDateTime(block.getStart());
                 Repeating repeating = appointment.getRepeating();
                 boolean exceptionsAdded = false;
                 if (repeating != null) {
-                    List<Date> dateList = exceptionsToAdd.get(appointment);
+                    List<LocalDateTime> dateList = exceptionsToAdd.get(appointment);
                     if (dateList == null) {
                         dateList = new ArrayList<>();
                         exceptionsToAdd.put(appointment, dateList);
@@ -272,13 +272,13 @@ public class ReservationControllerImpl implements ReservationController {
     static public class DeleteBlocksCommand extends DeleteUndo<Reservation> {
         final Set<Reservation> reservationsToRemove;
         final Set<Appointment> appointmentsToRemove;
-        final Map<Appointment, List<Date>> exceptionsToAdd;
+        final Map<Appointment, List<LocalDateTime>> exceptionsToAdd;
 
         private Map<Appointment, Allocatable[]> allocatablesRemoved = new HashMap<>();
         private Map<Appointment, Reservation> parentReservations = new HashMap<>();
 
         public DeleteBlocksCommand(ClientFacade clientFacade, RaplaResources i18n, Set<Reservation> reservationsToRemove, Set<Appointment> appointmentsToRemove,
-                                   Map<Appointment, List<Date>> exceptionsToAdd) throws RaplaException {
+                                   Map<Appointment, List<LocalDateTime>> exceptionsToAdd) throws RaplaException {
             super(clientFacade.getRaplaFacade(), i18n, reservationsToRemove, clientFacade.getUser());
             this.reservationsToRemove = reservationsToRemove;
             this.appointmentsToRemove = appointmentsToRemove;
@@ -335,8 +335,8 @@ public class ReservationControllerImpl implements ReservationController {
                     if (found != null) {
                         Repeating repeating = found.getRepeating();
                         if (repeating != null) {
-                            List<Date> list = exceptionsToAdd.get(appointment);
-                            for (Date exception : list) {
+                            List<LocalDateTime> list = exceptionsToAdd.get(appointment);
+                            for (LocalDateTime exception : list) {
                                 repeating.addException(exception);
                             }
                         }
@@ -386,8 +386,8 @@ public class ReservationControllerImpl implements ReservationController {
                         if (found != null) {
                             Repeating repeating = found.getRepeating();
                             if (repeating != null) {
-                                List<Date> list = exceptionsToAdd.get(appointment);
-                                for (Date exception : list) {
+                                List<LocalDateTime> list = exceptionsToAdd.get(appointment);
+                                for (LocalDateTime exception : list) {
                                     repeating.removeException(exception);
                                 }
                             }
@@ -421,15 +421,15 @@ public class ReservationControllerImpl implements ReservationController {
 
     private Promise<Void> deleteAppointment(AppointmentBlock appointmentBlock, final DialogAction dialogResult, final boolean isCut)  {
         Appointment appointment = appointmentBlock.getAppointment();
-        final Date startDate = new Date(appointmentBlock.getStart());
+        final LocalDateTime startDate = DateTools.toLocalDateTime(appointmentBlock.getStart());
         Set<Appointment> appointmentsToRemove = new LinkedHashSet<>();
-        HashMap<Appointment, List<Date>> exceptionsToAdd = new LinkedHashMap<>();
+        HashMap<Appointment, List<LocalDateTime>> exceptionsToAdd = new LinkedHashMap<>();
         Set<Reservation> reservationsToRemove = new LinkedHashSet<>();
         switch (dialogResult) {
             case SINGLE:
                 Repeating repeating = appointment.getRepeating();
                 if (repeating != null) {
-                    List<Date> exceptionList = Collections.singletonList(DateTools.cutDate(startDate));
+                    List<LocalDateTime> exceptionList = Collections.singletonList(DateTools.cutDate(startDate));
                     if (isNotEmptyWithExceptions(appointment, exceptionList)) {
                         exceptionsToAdd.put(appointment, exceptionList);
                     } else {
@@ -474,7 +474,7 @@ public class ReservationControllerImpl implements ReservationController {
         return commandHistory.storeAndExecute(command);
     }
 
-    private boolean isNotEmptyWithExceptions(Appointment appointment, List<Date> exceptions) {
+    private boolean isNotEmptyWithExceptions(Appointment appointment, List<LocalDateTime> exceptions) {
         Repeating repeating = appointment.getRepeating();
         if (repeating != null) {
 
@@ -488,8 +488,8 @@ public class ReservationControllerImpl implements ReservationController {
                     for (AppointmentBlock block : blocks) {
                         long start = block.getStart();
                         boolean blocked = false;
-                        for (Date excepion : exceptions) {
-                            if (DateTools.isSameDay(excepion.getTime(), start)) {
+                        for (LocalDateTime excepion : exceptions) {
+                            if (DateTools.isSameDay(DateTools.toMilli(excepion), start)) {
                                 blocked = true;
                             }
                         }
@@ -516,7 +516,7 @@ public class ReservationControllerImpl implements ReservationController {
 
     private Promise<DialogAction> showDialog(AppointmentBlock appointmentBlock, String action, boolean includeEvent, PopupContext context)  {
         Appointment appointment = appointmentBlock.getAppointment();
-        Date from = new Date(appointmentBlock.getStart());
+        LocalDateTime from = DateTools.toLocalDateTime(appointmentBlock.getStart());
         Reservation reservation = appointment.getReservation();
         getLogger().debug(action + " '" + appointment + "' for reservation '" + reservation + "'");
         List<String> optionList = new ArrayList<>();
@@ -596,7 +596,7 @@ public class ReservationControllerImpl implements ReservationController {
                 getClipboard().setReservation(clones, contextAllocatables);
                 Set<Reservation> reservationsToRemove = new HashSet<>(reservations);
                 Set<Appointment> appointmentsToRemove = Collections.emptySet();
-                Map<Appointment, List<Date>> exceptionsToAdd = Collections.emptyMap();
+                Map<Appointment, List<LocalDateTime>> exceptionsToAdd = Collections.emptyMap();
                 DeleteBlocksCommand command = new DeleteBlocksCommand(getClientFacade(), i18n, reservationsToRemove, appointmentsToRemove, exceptionsToAdd) {
                     public String getCommandoName() {
                         return getI18n().getString("cut");
@@ -639,9 +639,9 @@ public class ReservationControllerImpl implements ReservationController {
                 ready = getFacade().cloneAsync(appointment).thenAccept( copy->
                 {
                     copy.setRepeatingEnabled(false);
-                    Date date = DateTools.cutDate(copy.getStart());
-                    TimeWithoutTimezone time = DateTools.toTime(date.getTime());
-                    Date newStart = new Date(date.getTime() + time.getMilliseconds());
+                    LocalDateTime date = DateTools.cutDate(copy.getStart());
+                    TimeWithoutTimezone time = DateTools.toTime(DateTools.toMilli(date));
+                    LocalDateTime newStart = LocalDateTime.ofInstant(java.time.Instant.ofEpochMilli(DateTools.toMilli(date) + time.getMilliseconds()), java.time.ZoneOffset.UTC);
                     copy.moveTo(newStart);
                     RaplaClipboard.CopyType copyType = deleteOriginal ? CopyType.CUT_BLOCK : CopyType.COPY_BLOCK;
                     raplaClipboard.setAppointment(copy, sourceReservation, copyType, restrictedAllocatables, contextAllocatables);
@@ -708,7 +708,7 @@ public class ReservationControllerImpl implements ReservationController {
         return (getClipboard().getAppointment() != null || !getClipboard().getReservations().isEmpty());
     }
 
-    public Promise<Void> pasteAppointment(Date start, PopupContext popupContext, boolean asNewReservation, boolean keepTime) {
+    public Promise<Void> pasteAppointment(LocalDateTime start, PopupContext popupContext, boolean asNewReservation, boolean keepTime) {
         RaplaClipboard clipboard = getClipboard();
 
         Collection<Reservation> reservations = clipboard.getReservations();
@@ -764,30 +764,30 @@ public class ReservationControllerImpl implements ReservationController {
         return getClientFacade().getCommandHistory();
     }
 
-    public Promise<Void> moveAppointment(AppointmentBlock appointmentBlock, Date newStart, PopupContext context, boolean keepTime)  {
-        Date from = new Date(appointmentBlock.getStart());
+    public Promise<Void> moveAppointment(AppointmentBlock appointmentBlock, LocalDateTime newStart, PopupContext context, boolean keepTime)  {
+        LocalDateTime from = DateTools.toLocalDateTime(appointmentBlock.getStart());
         if (newStart.equals(from))
             return ResolvedPromise.VOID_PROMISE;
         getLogger().info("Moving appointment " + appointmentBlock.getAppointment() + " from " + from + " to " + newStart);
         return resizeAppointment(appointmentBlock, newStart, null, context, keepTime);
     }
 
-    public Promise<Void> resizeAppointment(AppointmentBlock appointmentBlock, Date newStart, Date newEnd, final PopupContext context, boolean keepTime)
+    public Promise<Void> resizeAppointment(AppointmentBlock appointmentBlock, LocalDateTime newStart, LocalDateTime newEnd, final PopupContext context, boolean keepTime)
              {
         boolean includeEvent = newEnd == null;
         Appointment appointment = appointmentBlock.getAppointment();
-        Date from = new Date(appointmentBlock.getStart());
+        LocalDateTime from = DateTools.toLocalDateTime(appointmentBlock.getStart());
         return showDialog(appointmentBlock, "move", includeEvent, context).thenCompose(result ->
         {
             if (result == DialogAction.CANCEL) {
                 return ResolvedPromise.VOID_PROMISE;
             }
 
-            Date oldStart = from;
-            Date oldEnd = (newEnd == null) ? null : new Date(from.getTime() + appointment.getEnd().getTime() - appointment.getStart().getTime());
-            Date newStart2;
+            LocalDateTime oldStart = from;
+            LocalDateTime oldEnd = (newEnd == null) ? null : LocalDateTime.ofInstant(java.time.Instant.ofEpochMilli(DateTools.toMilli(from) + DateTools.toMilli(appointment.getEnd()) - DateTools.toMilli(appointment.getStart())), java.time.ZoneOffset.UTC);
+            LocalDateTime newStart2;
             if (keepTime && newStart != null && !newStart.equals(oldStart)) {
-                newStart2 = new Date(oldStart.getTime() + getOffset(oldStart, newStart, keepTime));
+                newStart2 = LocalDateTime.ofInstant(java.time.Instant.ofEpochMilli(DateTools.toMilli(oldStart) + getOffset(oldStart, newStart, keepTime)), java.time.ZoneOffset.UTC);
             } else {
                 newStart2 = newStart;
             }
@@ -806,21 +806,21 @@ public class ReservationControllerImpl implements ReservationController {
         });
     }
 
-    public long getOffset(Date appStart, Date newStart, boolean keepTime) {
-        Date newStartAdjusted;
+    public long getOffset(LocalDateTime appStart, LocalDateTime newStart, boolean keepTime) {
+        LocalDateTime newStartAdjusted;
         if (!keepTime) {
             newStartAdjusted = newStart;
         } else {
             //TimeWithoutTimezone oldStartTime = DateTools.toTime( appStart.getTime());
             newStartAdjusted = DateTools.toDateTime(newStart, appStart);
         }
-        long offset = newStartAdjusted.getTime() - appStart.getTime();
+        long offset = DateTools.toMilli(newStartAdjusted) - DateTools.toMilli(appStart);
         return offset;
     }
 
     @Override
     public Promise<Void> exchangeAllocatable(final AppointmentBlock appointmentBlock, final Allocatable oldAllocatable, final Allocatable newAllocatable,
-                                    final Date newStart, PopupContext context) {
+                                    final LocalDateTime newStart, PopupContext context) {
         return exchangeAllocatebleCmd(appointmentBlock, oldAllocatable, newAllocatable, newStart, context).thenAccept(command ->
         {
             if (command != null) {
@@ -832,15 +832,15 @@ public class ReservationControllerImpl implements ReservationController {
     }
 
     private Promise<AllocatableExchangeCommand> exchangeAllocatebleCmd(AppointmentBlock appointmentBlock, final Allocatable oldAllocatable,
-                                                                       final Allocatable newAllocatable, final Date newStart, PopupContext context)  {
+                                                                       final Allocatable newAllocatable, final LocalDateTime newStart, PopupContext context)  {
         Map<Allocatable, Appointment[]> newRestrictions = new HashMap<>();
         //Appointment appointment;
         //Allocatable oldAllocatable;
         //Allocatable newAllocatable;
-        List<Date> exceptionsAdded = new ArrayList<>();
+        List<LocalDateTime> exceptionsAdded = new ArrayList<>();
         Appointment appointment = appointmentBlock.getAppointment();
         Reservation reservation = appointment.getReservation();
-        Date date = new Date(appointmentBlock.getStart());
+        LocalDateTime date = DateTools.toLocalDateTime(appointmentBlock.getStart());
 
         Appointment[] restriction = reservation.getRestriction(oldAllocatable);
         boolean includeEvent = restriction.length == 0;
@@ -858,7 +858,7 @@ public class ReservationControllerImpl implements ReservationController {
             if (dialogResult == DialogAction.SINGLE && appointment.getRepeating() != null) {
                 copy = clonedAppointment;
                 copy.setRepeatingEnabled(false);
-                Date dateTime = DateTools.toDateTime(date, appointment.getStart());
+                LocalDateTime dateTime = DateTools.toDateTime(date, appointment.getStart());
                 copy.moveTo(dateTime);
             }
 
@@ -934,11 +934,11 @@ public class ReservationControllerImpl implements ReservationController {
                     }
                 }
             }
-            Date newStart2;
+            LocalDateTime newStart2;
             if (newStart != null) {
-                long offset = newStart.getTime() - appointmentBlock.getStart();
+                long offset = DateTools.toMilli(newStart) - appointmentBlock.getStart();
                 Appointment app = addAppointment != null ? addAppointment : appointment;
-                newStart2 = new Date(app.getStart().getTime() + offset);
+                newStart2 = LocalDateTime.ofInstant(java.time.Instant.ofEpochMilli(DateTools.toMilli(app.getStart()) + offset), java.time.ZoneOffset.UTC);
             } else {
                 newStart2 = null;
             }
@@ -958,14 +958,14 @@ public class ReservationControllerImpl implements ReservationController {
         boolean removeAllocatable;
         boolean addAllocatable;
         Appointment addAppointment;
-        List<Date> exceptionsAdded;
-        Date newStart;
+        List<LocalDateTime> exceptionsAdded;
+        LocalDateTime newStart;
         boolean firstTimeCall = true;
         PopupContext sourceComponent;
 
-        AllocatableExchangeCommand(Appointment appointment, Allocatable oldAllocatable, Allocatable newAllocatable, Date newStart,
+        AllocatableExchangeCommand(Appointment appointment, Allocatable oldAllocatable, Allocatable newAllocatable, LocalDateTime newStart,
                                    Map<Allocatable, Appointment[]> newRestrictions, boolean removeAllocatable, boolean addAllocatable, Appointment addAppointment,
-                                   List<Date> exceptionsAdded, PopupContext sourceComponent) {
+                                   List<LocalDateTime> exceptionsAdded, PopupContext sourceComponent) {
             this.appointment = appointment;
             this.oldAllocatable = oldAllocatable;
             this.newAllocatable = newAllocatable;
@@ -997,7 +997,7 @@ public class ReservationControllerImpl implements ReservationController {
                 }
                 Appointment existingAppointment = modifiableReservation.findAppointment(appointment);
                 if (existingAppointment != null) {
-                    for (Date exception : exceptionsAdded) {
+                    for (LocalDateTime exception : exceptionsAdded) {
                         existingAppointment.getRepeating().addException(exception);
                     }
                 }
@@ -1055,11 +1055,11 @@ public class ReservationControllerImpl implements ReservationController {
 
                 Appointment existingAppointment = modifiableReservation.findAppointment(appointment);
                 if (existingAppointment != null) {
-                    for (Date exception : exceptionsAdded) {
+                    for (LocalDateTime exception : exceptionsAdded) {
                         existingAppointment.getRepeating().removeException(exception);
                     }
                     if (newStart != null) {
-                        Date oldStart = appointment.getStart();
+                        LocalDateTime oldStart = appointment.getStart();
                         existingAppointment.moveTo(oldStart);
                     }
                 }
@@ -1112,10 +1112,10 @@ public class ReservationControllerImpl implements ReservationController {
     //Erstellt und bearbeitet von Dominik Krickl-Vorreiter und Jens Fritz
     class AppointmentResize implements CommandUndo<RaplaException> {
 
-        private final Date oldStart;
-        private final Date oldEnd;
-        private final Date newStart;
-        private final Date newEnd;
+        private final LocalDateTime oldStart;
+        private final LocalDateTime oldEnd;
+        private final LocalDateTime newStart;
+        private final LocalDateTime newEnd;
 
         private final Appointment appointment;
         private final PopupContext sourceComponent;
@@ -1125,7 +1125,7 @@ public class ReservationControllerImpl implements ReservationController {
         private boolean firstTimeCall = true;
         private boolean keepTime;
 
-        public AppointmentResize(Appointment appointment, Date oldStart, Date oldEnd, Date newStart, Date newEnd, PopupContext sourceComponent,
+        public AppointmentResize(Appointment appointment, LocalDateTime oldStart, LocalDateTime oldEnd, LocalDateTime newStart, LocalDateTime newEnd, PopupContext sourceComponent,
                                  DialogAction dialogResult, boolean keepTime) {
             this.oldStart = oldStart;
             this.oldEnd = oldEnd;
@@ -1140,23 +1140,23 @@ public class ReservationControllerImpl implements ReservationController {
 
         public Promise<Void> execute() {
             boolean resizing = newEnd != null;
-            Date sourceStart = oldStart;
-            Date destStart = newStart;
-            Date destEnd = newEnd;
+            LocalDateTime sourceStart = oldStart;
+            LocalDateTime destStart = newStart;
+            LocalDateTime destEnd = newEnd;
             return doMove(resizing, sourceStart, destStart, destEnd, false);
         }
 
         public Promise<Void> undo() {
             boolean resizing = newEnd != null;
 
-            Date sourceStart = newStart;
-            Date destStart = oldStart;
-            Date destEnd = oldEnd;
+            LocalDateTime sourceStart = newStart;
+            LocalDateTime destStart = oldStart;
+            LocalDateTime destEnd = oldEnd;
 
             return doMove(resizing, sourceStart, destStart, destEnd, true);
         }
 
-        private Promise<Void> doMove(boolean resizing, Date sourceStart, Date destStart, Date destEnd, boolean undo) {
+        private Promise<Void> doMove(boolean resizing, LocalDateTime sourceStart, LocalDateTime destStart, LocalDateTime destEnd, boolean undo) {
             Reservation reservation = appointment.getReservation();
             final Promise<Map<Reservation,Reservation>> reservationPromise;
             if ( undo)
@@ -1188,7 +1188,7 @@ public class ReservationControllerImpl implements ReservationController {
             return mutableAppointment;
         }
 
-        private Promise<Reservation> change(boolean resizing, Date sourceStart, Date destStart, Date destEnd, boolean undo, Reservation mutableReservation, Appointment mutableAppointment) {
+        private Promise<Reservation> change(boolean resizing, LocalDateTime sourceStart, LocalDateTime destStart, LocalDateTime destEnd, boolean undo, Reservation mutableReservation, Appointment mutableAppointment) {
             final Promise<Appointment> clonedAppointment = getFacade().cloneAsync(mutableAppointment);
             return clonedAppointment.thenApply(appointmentClone ->
             {
@@ -1228,16 +1228,16 @@ public class ReservationControllerImpl implements ReservationController {
                         throw new IllegalStateException("Dialog choice not supported " + dialogResult);
                 }
 
-                Date changeStart;
-                Date changeEnd;
+                LocalDateTime changeStart;
+                LocalDateTime changeEnd;
 
                 for (Appointment ap : appointments) {
-                    long startTime = (dialogResult == DialogAction.SINGLE) ? sourceStart.getTime() : ap.getStart().getTime();
+                    long startTime = (dialogResult == DialogAction.SINGLE) ? DateTools.toMilli(sourceStart) : DateTools.toMilli(ap.getStart());
 
-                    changeStart = new Date(startTime + offset);
+                    changeStart = DateTools.toLocalDateTime(startTime + offset);
 
                     if (resizing) {
-                        changeEnd = new Date(changeStart.getTime() + (destEnd.getTime() - destStart.getTime()));
+                        changeEnd = LocalDateTime.ofInstant(java.time.Instant.ofEpochMilli(DateTools.toMilli(changeStart) + (DateTools.toMilli(destEnd) - DateTools.toMilli(destStart))), java.time.ZoneOffset.UTC);
                         ap.move(changeStart, changeEnd);
                     } else {
                         ap.moveTo(changeStart);
@@ -1257,7 +1257,7 @@ public class ReservationControllerImpl implements ReservationController {
                     }
                 }
                 User user = facade.getUser();
-                Date today = facade.getRaplaFacade().today();
+                java.time.LocalDate today = facade.getRaplaFacade().today();
                 for (Allocatable allocatable:mutableReservation.getAllocatables()) {
                     final RequestStatus status = mutableReservation.getRequestStatus(allocatable);
                     if (status == null && permissionController.isRequestOnly( allocatable, user, today)) {
@@ -1357,7 +1357,7 @@ public class ReservationControllerImpl implements ReservationController {
                     {
                         saveAppointment = newAppointment;
                         if (moveTo) {
-                            final Date newStart = new Date(saveAppointment.getStart().getTime() + offset);
+                            final LocalDateTime newStart = LocalDateTime.ofInstant(java.time.Instant.ofEpochMilli(DateTools.toMilli(saveAppointment.getStart()) + offset), java.time.ZoneOffset.UTC);
                             saveAppointment.moveTo(newStart);
                         }
                         mutableReservation.addAppointment(saveAppointment);
@@ -1387,7 +1387,7 @@ public class ReservationControllerImpl implements ReservationController {
                         Appointment app = appointments[i];
                         if (copyWholeReservation) {
                             if (saveReservation == null) {
-                                app.moveTo(new Date(app.getStart().getTime() + offset));
+                                app.moveTo(LocalDateTime.ofInstant(java.time.Instant.ofEpochMilli(DateTools.toMilli(app.getStart()) + offset), java.time.ZoneOffset.UTC));
                             }
                         } else {
                             mutableReservation.removeAppointment(app);
@@ -1476,13 +1476,13 @@ public class ReservationControllerImpl implements ReservationController {
     class ReservationPaste implements CommandUndo<RaplaException> {
 
         private final Collection<Reservation> fromReservations;
-        Date start;
+        LocalDateTime start;
         boolean keepTime;
         Collection<Reservation> clones;
         boolean firstTimeCall = true;
         private final PopupContext popupContext;
 
-        public ReservationPaste(Collection<Reservation> fromReservation, Date start, boolean keepTime, PopupContext popupContext) {
+        public ReservationPaste(Collection<Reservation> fromReservation, LocalDateTime start, boolean keepTime, PopupContext popupContext) {
             this.fromReservations = fromReservation;
             this.start = start;
             this.keepTime = keepTime;
