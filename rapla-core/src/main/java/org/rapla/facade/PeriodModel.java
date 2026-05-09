@@ -46,7 +46,7 @@ public interface PeriodModel
 
     /** {@code LocalDate} variant — date-only. */
     default Period getPeriodFor(java.time.LocalDate date) {
-        return getPeriodFor(date == null ? null : date);
+        return getPeriodFor(date == null ? null : date.atStartOfDay());
     }
     Period getNearestPeriodForDate(LocalDateTime date);
     Period getNearestPeriodForStartDate(LocalDateTime date);
