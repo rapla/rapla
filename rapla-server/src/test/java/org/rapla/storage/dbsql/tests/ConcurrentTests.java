@@ -6,6 +6,7 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
+import org.rapla.components.util.DateTools;
 import org.rapla.logger.Logger;
 import org.rapla.logger.RaplaBootstrapLogger;
 
@@ -22,6 +23,7 @@ import java.util.List;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.atomic.AtomicReference;
 
+import java.time.LocalDateTime;
 @RunWith(JUnit4.class) public class ConcurrentTests
 {
     private Connection con1;
@@ -42,14 +44,14 @@ import java.util.concurrent.atomic.AtomicReference;
     {
         private String id;
         private String name;
-        private Date lastChanged;
+        private LocalDateTime lastChanged;
     }
 
     private static class T2Obj
     {
         private String id;
         private String t1Id;
-        private Date lastChanged;
+        private LocalDateTime lastChanged;
     }
 
     private final List<T1Obj> t1Objs = new ArrayList<ConcurrentTests.T1Obj>();
@@ -79,7 +81,7 @@ import java.util.concurrent.atomic.AtomicReference;
         stmt.addBatch("CREATE TABLE WRITE_LOCK (LOCKID VARCHAR(255) PRIMARY KEY, LAST_CHANGED TIMESTAMP)");
         stmt.executeBatch();
         con1.commit();
-        Date lastChanged =  new Date(getNow());
+        LocalDateTime lastChanged =  DateTools.toLocalDateTime(getNow());
         final PreparedStatement ps = con1.prepareStatement(insertT1);
         {
             final T1Obj t11 = new T1Obj();
@@ -129,7 +131,7 @@ import java.util.concurrent.atomic.AtomicReference;
     {
         ps.setString(1, t21.id);
         ps.setString(2, t21.t1Id);
-        ps.setDate(3, t21.lastChanged);
+        ps.setTimestamp(3, java.sql.Timestamp.valueOf(t21.lastChanged));
         ps.addBatch();
     }
 
@@ -137,7 +139,7 @@ import java.util.concurrent.atomic.AtomicReference;
     {
         ps.setString(1, t1.id);
         ps.setString(2, t1.name);
-        ps.setDate(3, t1.lastChanged);
+        ps.setTimestamp(3, java.sql.Timestamp.valueOf(t1.lastChanged));
         ps.addBatch();
     }
 
@@ -157,7 +159,7 @@ import java.util.concurrent.atomic.AtomicReference;
             final T2Obj t2Obj = new T2Obj();
             t2Obj.id = resultSet.getString("ID");
             t2Obj.t1Id = resultSet.getString("T1_ID");
-            t2Obj.lastChanged = resultSet.getDate("LAST_CHANGED");
+            t2Obj.lastChanged = resultSet.getTimestamp("LAST_CHANGED").toLocalDateTime();
             result.add(t2Obj);
         }
         return result;
@@ -174,7 +176,7 @@ import java.util.concurrent.atomic.AtomicReference;
             final T1Obj t2Obj = new T1Obj();
             t2Obj.id = resultSet.getString("ID");
             t2Obj.name = resultSet.getString("NAME");
-            t2Obj.lastChanged = resultSet.getDate("LAST_CHANGED");
+            t2Obj.lastChanged = resultSet.getTimestamp("LAST_CHANGED").toLocalDateTime();
             result.add(t2Obj);
         }
         if (result.size() != 1)
@@ -201,11 +203,11 @@ import java.util.concurrent.atomic.AtomicReference;
                     final PreparedStatement psDelete = con.prepareStatement(deleteT1);
                     final T1Obj t1Obj = t1Objs.get(0);
                     psDelete.setString(1, t1Obj.id);
-                    psDelete.setDate(2, t1Objs.get(0).lastChanged);
+                    psDelete.setTimestamp(2, java.sql.Timestamp.valueOf(t1Objs.get(0).lastChanged));
                     psDelete.addBatch();
                     psDelete.executeBatch();
                     Thread.sleep(500);
-                    t1Obj.lastChanged = new Date(getNow());
+                    t1Obj.lastChanged = DateTools.toLocalDateTime(getNow());
                     final PreparedStatement t2Select = con.prepareStatement(selectT2ByT1);
                     final List<T2Obj> allOthers = getAllT2ByT1Id(t2Select, t1Obj.id);
                     if (!allOthers.isEmpty())
@@ -242,7 +244,7 @@ import java.util.concurrent.atomic.AtomicReference;
                     final PreparedStatement insertT2Ps = con.prepareStatement(insertT2);
                     T2Obj t21 = new T2Obj();
                     t21.id = "new";
-                    t21.lastChanged = new Date(getNow());
+                    t21.lastChanged = DateTools.toLocalDateTime(getNow());
                     t21.t1Id = t1ById.id;
                     insert(insertT2Ps, t21);
                     insertT2Ps.executeBatch();
@@ -277,12 +279,12 @@ import java.util.concurrent.atomic.AtomicReference;
                     final PreparedStatement psDelete = con.prepareStatement(deleteT1);
                     final T1Obj t1Obj = t1Objs.get(0);
                     psDelete.setString(1, t1Obj.id);
-                    psDelete.setDate(2, t1Objs.get(0).lastChanged);
+                    psDelete.setTimestamp(2, java.sql.Timestamp.valueOf(t1Objs.get(0).lastChanged));
                     psDelete.addBatch();
                     psDelete.executeBatch();
                     Thread.sleep(500);
                     final T1Obj t1ObjNew = new T1Obj();
-                    t1ObjNew.lastChanged = new Date(getNow());
+                    t1ObjNew.lastChanged = DateTools.toLocalDateTime(getNow());
                     t1ObjNew.name = "newName";
                     t1ObjNew.id = t1Obj.id;
                     final PreparedStatement t1Insert = con.prepareStatement(insertT1);
@@ -311,7 +313,7 @@ import java.util.concurrent.atomic.AtomicReference;
                     final PreparedStatement psDelete = con.prepareStatement(deleteT1);
                     final T1Obj t1Obj = t1Objs.get(0);
                     psDelete.setString(1, t1Obj.id);
-                    psDelete.setDate(2, t1Objs.get(0).lastChanged);
+                    psDelete.setTimestamp(2, java.sql.Timestamp.valueOf(t1Objs.get(0).lastChanged));
                     psDelete.addBatch();
                     final int[] result = psDelete.executeBatch();
                     if (result[0] != 1)
@@ -320,7 +322,7 @@ import java.util.concurrent.atomic.AtomicReference;
                     }
                     Thread.sleep(500);
                     final T1Obj t1ObjNew = new T1Obj();
-                    t1ObjNew.lastChanged = new Date(getNow());
+                    t1ObjNew.lastChanged = DateTools.toLocalDateTime(getNow());
                     t1ObjNew.name = "newName";
                     t1ObjNew.id = t1Obj.id;
                     final PreparedStatement t1Insert = con.prepareStatement(insertT1);
@@ -346,7 +348,7 @@ import java.util.concurrent.atomic.AtomicReference;
             final PreparedStatement deleteT1Ps = con1.prepareStatement(deleteT1);
             final T1Obj t1Obj = t1Objs.get(1);
             deleteT1Ps.setString(1, t1Obj.id);
-            deleteT1Ps.setDate(2, t1Obj.lastChanged);
+            deleteT1Ps.setTimestamp(2, java.sql.Timestamp.valueOf(t1Obj.lastChanged));
             deleteT1Ps.addBatch();
             deleteT1Ps.executeBatch();
             final PreparedStatement selectT2ByT1Ps = con1.prepareStatement(selectT2ByT1);
