@@ -1,6 +1,6 @@
 # PRD 010 — Jackson field-based JSON wire format (shared client + server)
 
-**Status:** done (2026-05-08) — all plan items shipped; `SwingClientStartIntegrationTest` runs green and locks in the wire format.
+**Status:** done (2026-05-08) — all plan items shipped; `SwingClientStartIntegrationTest` runs green and locks in the wire format. Configuration migrated to the Jackson 3 mapper API (`tools.jackson.*`) under [PRD 011 Phase 4](../011-spring-boot-4-jackson-3.md); `JacksonObjectMapperFactory.configure(JsonMapper.Builder)` is the post-migration entry point — same four knobs (`FIELD=ANY`, `GETTER/IS_GETTER/SETTER=NONE`, `CREATOR=ANY`, `PROPAGATE_TRANSIENT_MARKER=true`) and same wire format, just on the immutable-builder shape Jackson 3 requires.
 
 ## Goal
 

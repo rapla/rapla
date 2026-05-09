@@ -1,8 +1,8 @@
 # PRD 005: Multi-Module Split (Implementation)
 
-**Status:** in-progress — Phases A, B, C, D, F substantially done 2026-05-07; Phase E partial (iCal4j cleanup done; full BOM dep refactor + per-module dep:analyze + manifest entries + signing-profile relocation deferred); Phase G deferred with custom/.
+**Status:** done — Phases A, B, C, D, E, F all complete as of 2026-05-08. Phase G (`dhbwrapla` update) is **explicitly deferred with custom/** and owned by a future PRD aligned with whatever replaces custom/. Phase E close-out: signing profiles already in rapla-app (E.4 done earlier); iCal4j cleanup done (E.5); per-module `dependency:analyze` ran 2026-05-08 — actioned 2 used-undeclared deps in rapla-core (`jackson-annotations`, `spring-beans`); BOM-level `maven-jar-plugin` configuration added with manifest entries (`Implementation-Title`, `Implementation-Version`, `Implementation-Vendor`, `Built-By`, `Build-Jdk`) so all module jars get a sensible `MANIFEST.MF` (E.3). Other "Used undeclared" / "Unused declared" warnings from `dependency:analyze` are dominated by Spring Boot starter-pack false positives (dep:analyze can't see runtime usage of starter-meta-deps); not actionable.
 **Date:** 2026-05-07
-**Decision input:** [PRD 004](done/004-multi-module-architecture-analysis.md) (target architecture)
+**Decision input:** [PRD 004](004-multi-module-architecture-analysis.md) (target architecture)
 **Hard prerequisite:** [PRD 001](001-spring-boot-migration.md) Phases 1–8 (server-side Spring Boot migration, GWT removal, war/jetty cleanup) — **already complete on `spring-boot` branch**
 
 ## Implementation status (2026-05-07)
@@ -17,7 +17,7 @@ Source distribution after Phase D6:
 
 Tests are currently all in `rapla-app/src/test/` (D5 pragmatic placement — rapla-app has all transitive deps). Per-module test redistribution is a Phase E follow-up that needs to weigh splitting vs the simplicity of all-in-app.
 
-Compromise that turned out not to be needed (D3, resolved 2026-05-07): the initial split had `rapla-server` depending on `rapla-client` for HTML calendar rendering (`RaplaBuilder`/`RaplaBlock` family + `components.calendarview.html.*`). A small follow-up refactor — moving 27 toolkit-agnostic files from rapla-client to rapla-core — eliminated the edge entirely. **`rapla-server` now depends only on `rapla-core`.** Detail in `done/005-cycle-audit.md` §0.
+Compromise that turned out not to be needed (D3, resolved 2026-05-07): the initial split had `rapla-server` depending on `rapla-client` for HTML calendar rendering (`RaplaBuilder`/`RaplaBlock` family + `components.calendarview.html.*`). A small follow-up refactor — moving 27 toolkit-agnostic files from rapla-client to rapla-core — eliminated the edge entirely. **`rapla-server` now depends only on `rapla-core`.** Detail in `005-cycle-audit.md` §0.
 
 The `rapla-client-api` extraction (further splitting rapla-client into a presenter-API tier and a Swing-impl tier) is **permanently off the table** per PRD 003 direction change 2026-05-07 — dhbwrapla becomes server-only, with its dhbw-specific Swing code living inside `rapla-client`, so no consumer ever needs a Swing-API-without-Swing-impl distribution.
 
@@ -249,7 +249,7 @@ Tests are written **before** each phase's implementation per AGENTS.md §1, but 
 
 | Phase | Test artefact | When written |
 |---|---|---|
-| A | Baseline: capture current `mvn test` results, JAR size of monolith. **Recorded as a checked-in `docs/prd/done/005-baseline.md` snapshot**. | Before any change |
+| A | Baseline: capture current `mvn test` results, JAR size of monolith. **Recorded as a checked-in `005-baseline.md` snapshot** (in this `done/` folder). | Before any change |
 | B (interface moves) | Existing `mvn test` suite stays green. | Each `git mv` |
 | B (i18n swing move) | `RaplaSpringBootApplicationTest` covers i18n init via `RaplaResources` bean — must still pass after move. | After move |
 | C (skeleton) | `mvn -pl rapla-bom install` exits 0; `mvn compile` from root still produces `target/classes/` from the transitional `.` module. | After skeleton |

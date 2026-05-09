@@ -6,12 +6,12 @@
     </encoder>
   </appender>
 
-  <root level="INFO">
+  <root level="DEBUG">
     <appender-ref ref="STDOUT" />
   </root>
 
-  <logger name="rapla" level="INFO"/>
-  <logger name="rapla.remote" level="INFO"/>
+  <logger name="rapla" level="DEBUG"/>
+  <logger name="rapla.remote" level="DEBUG"/>
 
   <logger name="org.springframework" level="WARN"/>
   <logger name="org.springframework.beans.factory" level="WARN"/>

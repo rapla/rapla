@@ -1,7 +1,7 @@
 # PRD 001: Spring Boot Migration
 
-**Status:** in-progress — **Phase 1, 2, 3, 4, 5, 6, 7, 8 complete; Phase 9 substantially complete** (server-side Jackson default + `JsonParserWrapper` swapped to `JacksonParserWrapper` + `JavaTimeModule` registered + `jackson-datatype-jsr310` dep added; `GsonParserWrapper` no longer the default factory but kept for any explicit users; remaining: drop `gson` dep from BOM after `HTTPWithJsonMailConnector` + `HTTPWithJsonConnector` migrate to Jackson — voluminous + risky for active mail flow). Phase 4 substantially complete via PRD 002 (~50 core beans + 43 plugin extensions wired; `SpringRaplaClient` boots client end-to-end with global lazy-init).
-**Date:** 2026-05-06
+**Status:** done — **Phases 1–9 all complete** as of 2026-05-08. Phase 9 step 2 (Gson removal) shipped end-to-end alongside the Jackson 2 → Jackson 3 cutover under [PRD 011](../011-spring-boot-4-jackson-3.md): `gson` dep dropped from rapla-bom; `HTTPWithJsonConnector`, `HTTPWithJsonMailConnector`, `MailapiClient`, `JacksonMergePatch`, `RestAPIExample` migrated to Jackson; reactor `mvn test` green on Spring Boot 4.0.6 + Jackson 3.1.2. Phase 4 (client DI) completed via [PRD 002](002-swing-spring-di.md). Verified 2026-05-08: zero `gson` in dep tree, zero `gson` imports in source, zero `gson` references in any pom file.
+**Date:** 2026-05-06 (initial); 2026-05-08 (Phase 9 + Spring Boot 4 / Jackson 3 follow-on)
 
 ## Implementation Status
 

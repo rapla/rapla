@@ -1,6 +1,6 @@
 # PRD 011 — Upgrade to Spring Boot 4 + Jackson 3
 
-**Status:** in-progress (Phases 0–4 source rewrite complete 2026-05-08; reactor `mvn compile test-compile` green on Spring Boot 4.0.6 + Jackson 3.1.2; Phases 2/5 verification passes still pending)
+**Status:** done (2026-05-08) — full reactor `mvn test` green on Spring Boot 4.0.6 + Jackson 3.1.2 (rapla-bom + rapla-core + rapla-client + rapla-server + rapla-app, 35 rapla-app tests + all upstream module tests passing). Stale `<jackson.version>` overrides removed from rapla-bom; only `com.fasterxml.jackson.core:jackson-annotations:2.21` remains in the dep tree (deliberately preserved per Jackson 3's design — see D1).
 **Date:** 2026-05-08
 **Depends on:** PRD 001 (Spring Boot Migration) substantially complete; PRD 010 (Jackson wire format) lands first so the upgrade can re-pin the same configuration on the new mapper API.
 **Supersedes pin:** `rapla-bom/pom.xml` `<spring-boot.version>3.2.5</spring-boot.version>` and `<jackson.version>2.15.1 / 2.19.0</jackson.version>`.
@@ -324,7 +324,23 @@ on a held reference.
 - Files actually touched in Phase 4 source rewrite: 14 (plan estimated 7).
 - All mechanical — no behavioral changes beyond what the migration map predicted.
 - Reactor compile + test-compile: green on `mvn compile test-compile` from the repo root.
-- Reactor full `mvn test`: not yet run (deferred to Phase 5 per AGENTS.md §5).
+- Reactor full `mvn test`: green at end of Phase 5 (35 rapla-app tests + all upstream module tests passing).
+
+### Phase 5 actual work (additions to the original plan)
+
+Beyond the verification-only steps the plan called for, Phase 5 had to fix three classes of problem the plan didn't predict — surfaced only by `mvn clean test` (incremental compile masked them):
+
+**D11. `org.springframework.boot.autoconfigure.jdbc.DataSourceProperties` moved.** Spring Boot 4 split DataSource autoconfig out of `spring-boot-autoconfigure` into a dedicated `spring-boot-jdbc` module. The class is at `org.springframework.boot.jdbc.autoconfigure.DataSourceProperties` now. Two-step fix: add `spring-boot-jdbc` (compile scope) to `rapla-server/pom.xml` and rewrite the import in `RaplaServerProperties.java`.
+
+**D12. `jakarta.inject.Provider` / `@Named` references that should already have been migrated.** Five constructs in `ServerCoreConfig` and `ServerServiceConfig` still wrapped `ObjectProvider<T>` as `jakarta.inject.Provider<T>` to call legacy code paths. Spring Boot 4 dropped jakarta.inject from the default starter classpath, so they failed to compile — but adding the dep would have papered over the real issue: the downstream constructors had already been migrated to take `java.util.function.Supplier<T>`. The real fix is to delete the `Provider<T>` wrappers entirely and pass `objectProvider::getObject` (a `Supplier`) directly. Same for `@jakarta.inject.Named(...)` → `@org.springframework.beans.factory.annotation.Qualifier(...)`. Also affected: `PluginResourcesConfig` in rapla-client (its two `Supplier<RaplaFacade>` parameters needed to be re-shaped as `ObjectProvider<RaplaFacade> facadeProvider` + `facadeProvider::getObject`, because Spring doesn't auto-wrap a single `RaplaFacade` bean as a `Supplier<RaplaFacade>` — only top-level injection points get the auto-wrap, not nested generics).
+
+**D13. `Supplier<Application>` bridge bean.** `RaplaClientServiceImpl` has `@Autowired` constructor parameter `Supplier<Application> applicationProvider` to break a cycle with the `Application` `@Service` bean. Spring won't auto-wrap a single bean of type `Application` as `Supplier<Application>` for nested-generic positions, so we register an explicit `@Bean Supplier<Application> applicationProvider(ObjectProvider<Application>)` in `ClientConfig`. Same shape as the existing `mailInterfaceSupplier` bean in `ServerCoreConfig` — generalized pattern: any class wanting `Supplier<X>` injection where `X` is a normal singleton needs an `ObjectProvider<X> → Supplier<X>` bridge.
+
+**D14. Stale per-module `target/test-classes`.** Three test files (`ICalTimezonesControllerTest`, `RemoteLoggerControllerTest`, `UrlPreservationTest`) still imported the old `org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc` path. They appeared to compile because `target/test-classes/` had stale `.class` files referencing the old class — but those classes weren't on the SB 4 classpath, so the surefire run failed at autoconfigure time. The `*.class` files needed deleting (or `mvn clean`) to expose the source-level breakage; once exposed, the fix was the same import rewrite as D8.
+
+**D15. `application.yml` Spring Boot 4 binding rule change.** Not encountered yet — `application.yml`'s `rapla.dbDatasources` map binds to `Map<String, DataSourceProperties>`. With `DataSourceProperties` moved (D11), if the binding shape ever stops working, the workaround is to introduce a record-shaped `RaplaDataSourceConfig` POJO and bind to that; SB 4's relaxed-binding rules are otherwise the same as 3.x.
+
+**RaplaJacksonConfig + ClientProxyConfig — left unchanged.** The plan called for explicit Spring Boot 4 customizers (`JsonMapperBuilderCustomizer`, `JacksonJsonHttpMessageConverter`). In practice the existing wiring works because (a) `JacksonObjectMapperFactory.create()` already returns a Jackson 3 `JsonMapper`, and (b) Spring Boot 4 auto-discovers the application's Jackson configuration via the existing customizer SPI without needing the new type. Reactor tests pass; if `RestClient` ever stops honoring our visibility config in production we'll revisit, but no behavior gap was observed during Phase 5.
 
 ## Effort estimate
 

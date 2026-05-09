@@ -8,7 +8,6 @@
 	<name>rapla - bom</name>
 	<packaging>pom</packaging>
 	<properties>
-        <jackson.version>2.19.0</jackson.version>
 		<disableGwtCompile>false</disableGwtCompile>
 		<slf4j.version>2.0.12</slf4j.version>
 		<logback.version>1.3.15</logback.version>
@@ -18,7 +17,6 @@
 		<spring-boot.version>4.0.6</spring-boot.version>
 		<java.version>17</java.version>
 		<exchange.webservice.api>2.0</exchange.webservice.api>
-		<jackson.version>2.15.1</jackson.version>
 		<maven.install.skip>false</maven.install.skip>
 		<guava.version>21.0</guava.version>
 		<requestfactory.version>2.8.0</requestfactory.version>
@@ -170,6 +168,26 @@
 		</plugins>
 		<pluginManagement>
 			<plugins>
+				<!-- PRD 005 Phase E.3: BOM-level maven-jar-plugin so every module's jar
+				     ships a sensible MANIFEST.MF (Implementation-Title, Implementation-Version,
+				     Implementation-Vendor). Modules inherit the manifestEntries; rapla-app's
+				     fat-jar build via spring-boot-maven-plugin overrides this for the boot jar. -->
+				<plugin>
+					<groupId>org.apache.maven.plugins</groupId>
+					<artifactId>maven-jar-plugin</artifactId>
+					<version>3.4.1</version>
+					<configuration>
+						<archive>
+							<manifestEntries>
+								<Implementation-Title>${project.artifactId}</Implementation-Title>
+								<Implementation-Version>${project.version}</Implementation-Version>
+								<Implementation-Vendor>${doc.copyright}</Implementation-Vendor>
+								<Built-By>rapla-build</Built-By>
+								<Build-Jdk>${java.version}</Build-Jdk>
+							</manifestEntries>
+						</archive>
+					</configuration>
+				</plugin>
 				<!-- PRD 005 cleanup: register spring-boot-maven-plugin at BOM level so
 				     `mvn -pl rapla-app -am spring-boot:run` from the repo root resolves the
 				     plugin prefix without needing the explicit GAV.
