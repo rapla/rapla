@@ -13,6 +13,7 @@
 package org.rapla.components.calendar;
 
 import org.rapla.components.calendar.DateRenderer.RenderingInfo;
+import org.rapla.components.util.DateTools;
 
 import java.awt.Color;
 import java.awt.FontMetrics;
@@ -24,9 +25,9 @@ import java.text.FieldPosition;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
-import java.util.Date;
 import java.util.Locale;
 import java.util.TimeZone;
+import java.time.LocalDate;
 /** The DateField only accepts characters that are part of
  * DateFormat.getDateInstance(DateFormat.SHORT,locale).  The
  * inputblocks are [date,month,year]. The order of the input-blocks is
@@ -79,7 +80,7 @@ final public class DateField extends AbstractBlockField {
         m_calendar = Calendar.getInstance(timeZone, locale);
         super.setLocale(locale);
         setFormat();
-        setDate(new Date());
+        setDate(LocalDate.now());
     }
 
 
@@ -175,17 +176,16 @@ final public class DateField extends AbstractBlockField {
             null;
     }
 
-    public Date getDate() 
+    public LocalDate getDate()
     {
         if ( nullValue && nullValuePossible)
         {
             return null;
         }
-        Date date = m_calendar.getTime();
-		return date;
+        return DateTools.toLocalDateTime(m_calendar.getTimeInMillis()).toLocalDate();
     }
 
-    public void setDate(Date value) 
+    public void setDate(LocalDate value)
     {
         if ( value == null)
         {
@@ -197,7 +197,7 @@ final public class DateField extends AbstractBlockField {
         nullValue = value == null;
         if ( !nullValue)
         {
-            m_calendar.setTime(value);
+            m_calendar.setTimeInMillis(DateTools.toMilli(value));   // LocalDate → millis at start of day
             if (m_dateRenderer != null) {
                    renderingInfo = m_dateRenderer.getRenderingInfo(
                                                 m_calendar.get(Calendar.DAY_OF_WEEK)
@@ -208,7 +208,9 @@ final public class DateField extends AbstractBlockField {
                    String text = renderingInfo.getTooltipText();
                    setToolTipText(text);
             }
-            String formatedDate = m_outputFormat.format(value);
+            // m_outputFormat is a SimpleDateFormat (java.text) which only accepts java.util.Date.
+            // m_calendar was already set to value's millis at line above — reuse its Date.
+            String formatedDate = m_outputFormat.format(m_calendar.getTime());
 			setText(formatedDate);
         }
         else
@@ -259,7 +261,7 @@ final public class DateField extends AbstractBlockField {
         else
             m_calendar.add(type,count);
 
-        setDate(m_calendar.getTime());
+        setDate(DateTools.toLocalDateTime(m_calendar.getTimeInMillis()).toLocalDate());
         calcBlocks(blocks);
         markBlock(blocks,block);
     }

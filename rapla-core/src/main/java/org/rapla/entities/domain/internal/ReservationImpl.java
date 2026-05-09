@@ -11,6 +11,8 @@
  | Definition as published by the Open Source Initiative (OSI).             |
  *--------------------------------------------------------------------------*/
 package org.rapla.entities.domain.internal;
+
+import java.time.LocalDateTime;
 /** The default Implementation of the <code>Reservation</code>
  *  @see ModificationEvent
  *  @see org.rapla.facade.RaplaFacade
@@ -49,8 +51,8 @@ import java.util.stream.Stream;
 public final class ReservationImpl extends SimpleEntity implements Reservation, ModifiableTimestamp, DynamicTypeDependant, ParentEntity
 {
     private ClassificationImpl classification;
-    private final List<AppointmentImpl> appointments = new ArrayList<>(1);
-    private final List<PermissionImpl> permissions = new ArrayList<>(1);
+    private List<AppointmentImpl> appointments = new ArrayList<>(1);
+    private List<PermissionImpl> permissions = new ArrayList<>(1);
     private Map<String,List<String>> restrictions;
     private Map<String,String> annotations;
     private java.time.LocalDateTime lastChanged;
@@ -63,23 +65,13 @@ public final class ReservationImpl extends SimpleEntity implements Reservation, 
         this ((java.time.LocalDateTime) null, (java.time.LocalDateTime) null);
     }
 
-    public ReservationImpl( Date createDate, Date lastChanged ) {
-        this(createDate == null ? null : org.rapla.components.util.DateTools.toLocalDateTime(createDate),
-             lastChanged == null ? null : org.rapla.components.util.DateTools.toLocalDateTime(lastChanged));
-    }
-
-    public ReservationImpl( java.time.LocalDateTime createDate, java.time.LocalDateTime lastChanged ) {
+    public ReservationImpl( LocalDateTime createDate, LocalDateTime lastChanged ) {
         this.createDate = createDate;
         if (createDate == null)
             this.createDate = java.time.LocalDateTime.now();
         this.lastChanged = lastChanged;
         if (lastChanged == null)
             this.lastChanged = this.createDate;
-    }
-
-    /** {@code LocalDateTime} factory paralleling {@link #ReservationImpl(Date, Date)}. UTC. */
-    public static ReservationImpl ofLocalDateTime(java.time.LocalDateTime createDate, java.time.LocalDateTime lastChanged) {
-        return new ReservationImpl(createDate, lastChanged);
     }
 
     public static void checkReservation(RaplaResources i18n,Reservation reservation, EntityResolver resolver) throws RaplaException
@@ -266,40 +258,20 @@ public final class ReservationImpl extends SimpleEntity implements Reservation, 
         return format(locale, annotationName, block);
     }
     
-    public Date getLastChanged() {
-        return lastChanged == null ? null : org.rapla.components.util.DateTools.toDate(lastChanged);
-    }
-
-    public Date getCreateDate() {
-        return createDate == null ? null : org.rapla.components.util.DateTools.toDate(createDate);
-    }
+    @Override
+    public LocalDateTime getLastChanged() { return lastChanged; }
 
     @Override
-    public java.time.LocalDateTime getLastChangedAsLocalDateTime() { return lastChanged; }
+    public LocalDateTime getCreateDate() { return createDate; }
 
     @Override
-    public java.time.LocalDateTime getCreateDateAsLocalDateTime() { return createDate; }
-
-    public void setLastChanged(Date date) {
-    	checkWritable();
-        lastChanged = date == null ? null : org.rapla.components.util.DateTools.toLocalDateTime(date);
-    }
-
-    @Override
-    public void setLastChangedLocalDateTime(java.time.LocalDateTime date) {
+    public void setLastChanged(LocalDateTime date) {
         checkWritable();
         lastChanged = date;
     }
 
-    @Override public void setCreateDate(Date date)
-    {
-        checkWritable();
-        this.createDate = date == null ? null : org.rapla.components.util.DateTools.toLocalDateTime(date);
-    }
-
     @Override
-    public void setCreateDateLocalDateTime(java.time.LocalDateTime date)
-    {
+    public void setCreateDate(LocalDateTime date) {
         checkWritable();
         this.createDate = date;
     }
@@ -817,31 +789,31 @@ public final class ReservationImpl extends SimpleEntity implements Reservation, 
         classification.commitRemove(type);
     }
 
-	public Date getFirstDate() 
+	public LocalDateTime getFirstDate() 
 	{
         Appointment[] apps = getAppointments();
-        Date minimumDate = null;
+        LocalDateTime minimumDate = null;
         for (int i=0;i< apps.length;i++) {
             Appointment app = apps[i];
-            if ( minimumDate == null || app.getStart().before( minimumDate)) {
+            if ( minimumDate == null || app.getStart().isBefore( minimumDate)) {
                 minimumDate = app.getStart();
             }
         }
         return minimumDate;
 	}
 	
-	public Date getMaxEnd() 
+	public LocalDateTime getMaxEnd() 
 	{
         Appointment[] apps = getAppointments();
-        Date maximumDate = getFirstDate();
+        LocalDateTime maximumDate = getFirstDate();
         for (int i=0;i< apps.length;i++) {
 			if ( maximumDate == null)
 			{
 				break;
 			}
             Appointment app = apps[i];
-            Date maxEnd = app.getMaxEnd();
-			if ( maxEnd == null || maxEnd.after( maximumDate)) {
+            LocalDateTime maxEnd = app.getMaxEnd();
+			if ( maxEnd == null || maxEnd.isAfter( maximumDate)) {
             	maximumDate = maxEnd;
             }
         }

@@ -31,10 +31,11 @@ import org.rapla.framework.Configuration;
 import org.rapla.framework.TypedComponentRole;
 import org.rapla.storage.PreferencePatch;
 
-import java.util.Date;
 import java.util.Locale;
 import java.util.Set;
 
+import java.time.LocalDateTime;
+import org.rapla.components.util.DateTools;
 public class PreferencesImpl extends SimpleEntity implements Preferences, ModifiableTimestamp, DynamicTypeDependant
 {
     private java.time.LocalDateTime lastChanged;
@@ -54,72 +55,22 @@ public class PreferencesImpl extends SimpleEntity implements Preferences, Modifi
         this((java.time.LocalDateTime) null, (java.time.LocalDateTime) null);
     }
 
-    public PreferencesImpl(Date createDate, Date lastChanged)
+    public PreferencesImpl(LocalDateTime createDate, LocalDateTime lastChanged)
     {
         super();
-        this.createDate = createDate == null ? null : org.rapla.components.util.DateTools.toLocalDateTime(createDate);
-        this.lastChanged = lastChanged == null ? null : org.rapla.components.util.DateTools.toLocalDateTime(lastChanged);
+        this.createDate = createDate == null ? null : createDate;
+        this.lastChanged = lastChanged == null ? null : lastChanged;
     }
 
-    public PreferencesImpl(java.time.LocalDateTime createDate, java.time.LocalDateTime lastChanged)
-    {
-        super();
-        this.createDate = createDate;
-        this.lastChanged = lastChanged;
-    }
-
-    /** {@code LocalDateTime} factory paralleling {@link #PreferencesImpl(Date, Date)}. UTC. */
-    public static PreferencesImpl ofLocalDateTime(java.time.LocalDateTime createDate, java.time.LocalDateTime lastChanged) {
-        return new PreferencesImpl(createDate, lastChanged);
-    }
-
-    public Date getLastChanged()
-    {
-        return lastChanged == null ? null : org.rapla.components.util.DateTools.toDate(lastChanged);
-    }
-
-    @Deprecated public Date getLastChangeTime()
-    {
-        return getLastChanged();
-    }
-
-    public Date getCreateDate()
-    {
-        return createDate == null ? null : org.rapla.components.util.DateTools.toDate(createDate);
-    }
-
-    @Override
-    public java.time.LocalDateTime getLastChangedAsLocalDateTime() { return lastChanged; }
-
-    @Override
-    public java.time.LocalDateTime getCreateDateAsLocalDateTime() { return createDate; }
-
-    @Override public void setCreateDate(Date date)
-    {
-        checkWritable();
-        this.createDate = date == null ? null : org.rapla.components.util.DateTools.toLocalDateTime(date);
-    }
-
-    @Override
-    public void setCreateDateLocalDateTime(java.time.LocalDateTime date)
+    @Override public void setCreateDate(LocalDateTime date)
     {
         checkWritable();
         this.createDate = date;
     }
 
-    public void setLastChanged(Date date)
-    {
-        checkWritable();
-        java.time.LocalDateTime ldt = date == null ? null : org.rapla.components.util.DateTools.toLocalDateTime(date);
-        if( createDate == null)
-        {
-            createDate = ldt;
-        }
-        lastChanged = ldt;
-    }
+    @Override public LocalDateTime getCreateDate() { return createDate; }
 
-    @Override
-    public void setLastChangedLocalDateTime(java.time.LocalDateTime date)
+    public void setLastChanged(LocalDateTime date)
     {
         checkWritable();
         if( createDate == null)
@@ -128,6 +79,8 @@ public class PreferencesImpl extends SimpleEntity implements Preferences, Modifi
         }
         lastChanged = date;
     }
+
+    @Override public LocalDateTime getLastChanged() { return lastChanged; }
 
     @Override public void putEntry(TypedComponentRole<CalendarModelConfiguration> role, CalendarModelConfiguration entry)
     {
@@ -340,14 +293,13 @@ public class PreferencesImpl extends SimpleEntity implements Preferences, Modifi
         {
             map.putPrivate( remove, null );
         }
-        Date lastChangedPatch = patch.getLastChanged();
+        java.time.LocalDateTime lastChangedPatch = patch.getLastChanged();
         if (lastChangedPatch != null)
         {
-            Date lastChanged = getLastChanged();
-            if (lastChanged == null || lastChanged.before(lastChangedPatch))
-            {
+            java.time.LocalDateTime lastChanged = getLastChanged();
+            if (lastChanged == null || lastChanged.isBefore(lastChangedPatch))
                 setLastChanged(lastChangedPatch);
-            }
+            {            }
 
         }
     }

@@ -35,7 +35,6 @@ import org.rapla.entities.storage.internal.SimpleEntity;
 
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Date;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
@@ -43,10 +42,12 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 
+import java.time.LocalDateTime;
+import org.rapla.components.util.DateTools;
 public final class AllocatableImpl extends SimpleEntity implements Allocatable,DynamicTypeDependant, ModifiableTimestamp {
     
     private ClassificationImpl classification;
-    private final List<PermissionImpl> permissions = new ArrayList<>();
+    private List<PermissionImpl> permissions = new ArrayList<>();
     private java.time.LocalDateTime lastChanged;
     private java.time.LocalDateTime createDate;
     private Map<String,String> annotations;
@@ -55,28 +56,15 @@ public final class AllocatableImpl extends SimpleEntity implements Allocatable,D
         this ((java.time.LocalDateTime) null, (java.time.LocalDateTime) null);
     }
 
-    public AllocatableImpl(Date createDate, Date lastChanged ) {
-        this(createDate == null ? null : org.rapla.components.util.DateTools.toLocalDateTime(createDate),
-             lastChanged == null ? null : org.rapla.components.util.DateTools.toLocalDateTime(lastChanged));
-    }
-
-    public AllocatableImpl(java.time.LocalDateTime createDate, java.time.LocalDateTime lastChanged ) {
-// No createInfoDialog date should be possible and time should always be set through storage operators as they now the timezone settings
-//        if (createDate == null) {
-//        	Calendar calendar = Calendar.inject();
-//            this.createDate = calendar.getTime();
-//       }
-//       else
+    public AllocatableImpl(LocalDateTime createDate, LocalDateTime lastChanged ) {
         this.createDate = createDate;
         this.lastChanged = lastChanged;
-        if (lastChanged == null)
-            this.lastChanged = this.createDate;
     }
 
-    /** {@code LocalDateTime} factory paralleling {@link #AllocatableImpl(Date, Date)}. UTC. */
-    public static AllocatableImpl ofLocalDateTime(java.time.LocalDateTime createDate, java.time.LocalDateTime lastChanged) {
-        return new AllocatableImpl(createDate, lastChanged);
-    }
+// No createInfoDialog date should be possible and time should always be set through storage operators as they now the timezone settings
+//        	Calendar calendar = Calendar.inject();
+//       }
+//       else
 
     public void setResolver( EntityResolver resolver) {
         super.setResolver( resolver);
@@ -99,43 +87,29 @@ public final class AllocatableImpl extends SimpleEntity implements Allocatable,D
         }
     }
 
-    public Date getLastChanged() {
-        return lastChanged == null ? null : org.rapla.components.util.DateTools.toDate(lastChanged);
-    }
 
-    public Date getCreateDate() {
-        return createDate == null ? null : org.rapla.components.util.DateTools.toDate(createDate);
-    }
 
-    @Override
-    public java.time.LocalDateTime getLastChangedAsLocalDateTime() { return lastChanged; }
-
-    @Override
-    public java.time.LocalDateTime getCreateDateAsLocalDateTime() { return createDate; }
-
-    @Override public void setCreateDate(Date date)
+    @Override public void setCreateDate(LocalDateTime date)
     {
-        checkWritable();
-        this.createDate = date == null ? null : org.rapla.components.util.DateTools.toLocalDateTime(date);
-    }
-
-    @Override
-    public void setCreateDateLocalDateTime(java.time.LocalDateTime date) {
         checkWritable();
         this.createDate = date;
     }
 
-    public void setLastChanged(Date date) {
-        checkWritable();
-        lastChanged = date == null ? null : org.rapla.components.util.DateTools.toLocalDateTime(date);
+    @Override public LocalDateTime getCreateDate()
+    {
+        return createDate;
     }
 
-    @Override
-    public void setLastChangedLocalDateTime(java.time.LocalDateTime date) {
+    public void setLastChanged(LocalDateTime date) {
         checkWritable();
         lastChanged = date;
     }
-    
+
+    @Override public LocalDateTime getLastChanged()
+    {
+        return lastChanged;
+    }
+
     @Override public Class<Allocatable> getTypeClass()
     {
         return Allocatable.class;
@@ -165,7 +139,7 @@ public final class AllocatableImpl extends SimpleEntity implements Allocatable,D
     }
     
     
-    public TimeInterval getAllocateInterval( User user, Date today) {
+    public TimeInterval getAllocateInterval( User user, LocalDateTime today) {
         return PermissionContainer.Util.getInterval(permissions,user, today, Permission.ALLOCATE);
     }
 

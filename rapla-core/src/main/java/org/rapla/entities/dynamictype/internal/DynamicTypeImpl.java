@@ -54,7 +54,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.Date;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -64,6 +63,8 @@ import java.util.stream.Collectors;
 
 import static org.rapla.entities.storage.EntityResolver.UNRESOLVED_RESOURCE_TYPE;
 
+import java.time.LocalDateTime;
+import org.rapla.components.util.DateTools;
 final public class DynamicTypeImpl extends SimpleEntity implements DynamicType, ParentEntity, ModifiableTimestamp
 {
     private java.time.LocalDateTime lastChanged;
@@ -71,7 +72,7 @@ final public class DynamicTypeImpl extends SimpleEntity implements DynamicType, 
 
     // added an attribute array for performance reasons
 	List<AttributeImpl> attributes = new ArrayList<>();
-    private final List<PermissionImpl> permissions = new ArrayList<>(1);
+    private List<PermissionImpl> permissions = new ArrayList<>(1);
     MultiLanguageName name  = new MultiLanguageName();
     String key = "";
     //Map<String,String> unparsedAnnotations = new HashMap<String,String>();
@@ -83,19 +84,9 @@ final public class DynamicTypeImpl extends SimpleEntity implements DynamicType, 
     }
     transient StorageOperator operator;
 
-    public DynamicTypeImpl(Date createDate, Date lastChanged) {
-        this.createDate = createDate == null ? null : org.rapla.components.util.DateTools.toLocalDateTime(createDate);
-        this.lastChanged = lastChanged == null ? null : org.rapla.components.util.DateTools.toLocalDateTime(lastChanged);
-    }
-
-    public DynamicTypeImpl(java.time.LocalDateTime createDate, java.time.LocalDateTime lastChanged) {
-        this.createDate = createDate;
-        this.lastChanged = lastChanged;
-    }
-
-    /** {@code LocalDateTime} factory paralleling {@link #DynamicTypeImpl(Date, Date)}. UTC. */
-    public static DynamicTypeImpl ofLocalDateTime(java.time.LocalDateTime createDate, java.time.LocalDateTime lastChanged) {
-        return new DynamicTypeImpl(createDate, lastChanged);
+    public DynamicTypeImpl(LocalDateTime createDate, LocalDateTime lastChanged) {
+        this.createDate = createDate == null ? null : createDate;
+        this.lastChanged = lastChanged == null ? null : lastChanged;
     }
 
     public Attribute getBelongsToAttribute()
@@ -310,44 +301,21 @@ final public class DynamicTypeImpl extends SimpleEntity implements DynamicType, 
         }
     }
     
-    @Override
-    public Date getLastChanged() {
-        return lastChanged == null ? null : org.rapla.components.util.DateTools.toDate(lastChanged);
-    }
-
-    public Date getCreateDate() {
-        return createDate == null ? null : org.rapla.components.util.DateTools.toDate(createDate);
-    }
-
-    @Override
-    public java.time.LocalDateTime getLastChangedAsLocalDateTime() { return lastChanged; }
-
-    @Override
-    public java.time.LocalDateTime getCreateDateAsLocalDateTime() { return createDate; }
-
-    @Override public void setCreateDate(Date date)
+    @Override public void setCreateDate(LocalDateTime date)
     {
-        checkWritable();
-        this.createDate = date == null ? null : org.rapla.components.util.DateTools.toLocalDateTime(date);
-    }
-
-    @Override
-    public void setCreateDateLocalDateTime(java.time.LocalDateTime date) {
         checkWritable();
         this.createDate = date;
     }
 
-    public void setLastChanged(Date date) {
-        checkWritable();
-        lastChanged = date == null ? null : org.rapla.components.util.DateTools.toLocalDateTime(date);
-    }
+    @Override public LocalDateTime getCreateDate() { return createDate; }
 
-    @Override
-    public void setLastChangedLocalDateTime(java.time.LocalDateTime date) {
+    public void setLastChanged(LocalDateTime date) {
         checkWritable();
         lastChanged = date;
     }
-    
+
+    @Override public LocalDateTime getLastChanged() { return lastChanged; }
+
     @Override
     public Iterable<ReferenceInfo> getReferenceInfo()
     {

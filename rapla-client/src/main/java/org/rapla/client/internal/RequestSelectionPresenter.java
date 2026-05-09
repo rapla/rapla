@@ -39,6 +39,7 @@ import org.rapla.scheduler.Promise;
 import org.springframework.beans.factory.annotation.Autowired;
 import java.util.*;
 
+import java.time.LocalDateTime;
 @org.springframework.stereotype.Service
 @org.springframework.context.annotation.Lazy
 public class RequestSelectionPresenter implements ResourceRequestSelectionView.Presenter
@@ -212,7 +213,7 @@ public class RequestSelectionPresenter implements ResourceRequestSelectionView.P
         {
             Collection<Appointment> requestedAppointments = ReservationImpl.getRequestedAppointments(selectedRequests);
             if ( !requestedAppointments.isEmpty()) {
-                Date date = requestedAppointments.iterator().next().getStart();
+                LocalDateTime date = requestedAppointments.iterator().next().getStart();
                 if (date != null) {
                     model.setSelectedDate(date);
                 }
@@ -277,8 +278,8 @@ public class RequestSelectionPresenter implements ResourceRequestSelectionView.P
             {
                 return 0;
             }
-            Date d1 = c1.getFirstDate();
-            Date d2 = c2.getFirstDate();
+            java.time.LocalDateTime d1 = c1.getFirstDate();
+            java.time.LocalDateTime d2 = c2.getFirstDate();
             if (d1 != null)
             {
                 if (d2 == null)

@@ -13,6 +13,7 @@
 package org.rapla.facade.internal;
 
 import org.jetbrains.annotations.Nullable;
+import java.time.LocalDateTime;
 import org.rapla.components.util.DateTools;
 import org.rapla.entities.User;
 import org.rapla.entities.domain.Allocatable;
@@ -36,7 +37,6 @@ import org.rapla.framework.RaplaException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -71,24 +71,11 @@ public class ConflictImpl extends SimpleEntity implements Conflict, ModifiableTi
     {
     }
 
-    public ConflictImpl(String id, Date today, Date lastChanged) throws RaplaException
-    {
-        this(id,
-            today == null ? null : org.rapla.components.util.DateTools.toLocalDateTime(today),
-            lastChanged == null ? null : org.rapla.components.util.DateTools.toLocalDateTime(lastChanged));
-    }
-
-    public ConflictImpl(String id, java.time.LocalDateTime today, java.time.LocalDateTime lastChanged) throws RaplaException
+    public ConflictImpl(String id, LocalDateTime today, LocalDateTime lastChanged) throws RaplaException
     {
         this.startDate = today;
         this.lastChanged = lastChanged;
         initFromId(id);
-    }
-
-    /** {@code LocalDateTime} factory. UTC. */
-    public static ConflictImpl ofLocalDateTime(String id, java.time.LocalDateTime today, java.time.LocalDateTime lastChanged) throws RaplaException
-    {
-        return new ConflictImpl(id, today, lastChanged);
     }
 
     private void initFromId(String id) throws RaplaException
@@ -112,34 +99,20 @@ public class ConflictImpl extends SimpleEntity implements Conflict, ModifiableTi
 
     /** Note that app1 does not necessarily go to appointment1 field.
      * The appointment with the lowest id goes to appointment1 and the other to appointment2*/
-    public ConflictImpl(Allocatable allocatable, Appointment app1, Appointment app2, Date today)
+    public ConflictImpl(Allocatable allocatable, Appointment app1, Appointment app2, LocalDateTime today)
     {
         this(allocatable, app1, app2, today, createId(allocatable.getReference(), app1.getReference(), app2.getReference()));
     }
 
-    /** {@code LocalDateTime} factory paralleling {@link #ConflictImpl(Allocatable, Appointment, Appointment, Date)}. UTC. */
-    public static ConflictImpl ofLocalDateTime(Allocatable allocatable, Appointment app1, Appointment app2, java.time.LocalDateTime today)
-    {
-        return new ConflictImpl(allocatable, app1, app2,
-            today == null ? null : org.rapla.components.util.DateTools.toDate(today));
-    }
-
-    /** {@code LocalDateTime} factory paralleling {@link #ConflictImpl(Allocatable, Appointment, Appointment, Date, String)}. UTC. */
-    public static ConflictImpl ofLocalDateTime(Allocatable allocatable, Appointment app1, Appointment app2, java.time.LocalDateTime today, String id)
-    {
-        return new ConflictImpl(allocatable, app1, app2,
-            today == null ? null : org.rapla.components.util.DateTools.toDate(today), id);
-    }
-
     /** Note that app1 does not necessarily go to appointment1 field.
      * The appointment with the lowest id goes to appointment1 and the other to appointment2*/
-    public ConflictImpl(Allocatable allocatable, Appointment app1, Appointment app2, Date today, String id)
+    public ConflictImpl(Allocatable allocatable, Appointment app1, Appointment app2, LocalDateTime today, String id)
     {
-        Date lc = getLastChanged(allocatable, app1, app2);
-        lastChanged = lc == null ? null : org.rapla.components.util.DateTools.toLocalDateTime(lc);
+        LocalDateTime lc = getLastChanged(allocatable, app1, app2);
+        lastChanged = lc;
         putEntity("allocatable", allocatable);
-        Date sd = getStartDate_(today, app1, app2);
-        startDate = sd == null ? null : org.rapla.components.util.DateTools.toLocalDateTime(sd);
+        LocalDateTime sd = getStartDate_(today, app1, app2);
+        startDate = sd;
         if (app1.getId().compareTo(app2.getId()) >= 0)
         {
             Appointment temp = app1;
@@ -218,46 +191,24 @@ public class ConflictImpl extends SimpleEntity implements Conflict, ModifiableTi
         }
     }
 
-    public Date getLastChanged()
-    {
-        return lastChanged == null ? null : org.rapla.components.util.DateTools.toDate(lastChanged);
-    }
-
-    public Date getCreateDate()
-    {
-        return lastChanged == null ? null : org.rapla.components.util.DateTools.toDate(lastChanged);
-    }
-
-    public java.time.LocalDateTime getLastChangedAsLocalDateTime()
+    public LocalDateTime getLastChanged()
     {
         return lastChanged;
     }
 
-    public java.time.LocalDateTime getCreateDateAsLocalDateTime()
+    public LocalDateTime getCreateDate()
     {
         return lastChanged;
     }
 
-    public void setLastChanged(Date date)
+    public void setLastChanged(LocalDateTime date)
     {
         checkWritable();
-        lastChanged = date == null ? null : org.rapla.components.util.DateTools.toLocalDateTime(date);
+        lastChanged = date;
     }
 
     @Override
-    public void setCreateDate(Date date)
-    {
-        checkWritable();
-        this.lastChanged = date == null ? null : org.rapla.components.util.DateTools.toLocalDateTime(date);
-    }
-
-    public void setLastChangedLocalDateTime(java.time.LocalDateTime date)
-    {
-        checkWritable();
-        this.lastChanged = date;
-    }
-
-    public void setCreateDateLocalDateTime(java.time.LocalDateTime date)
+    public void setCreateDate(LocalDateTime date)
     {
         checkWritable();
         this.lastChanged = date;
@@ -288,12 +239,7 @@ public class ConflictImpl extends SimpleEntity implements Conflict, ModifiableTi
     }
 
     @Override
-    public Date getStartDate()
-    {
-        return startDate == null ? null : org.rapla.components.util.DateTools.toDate(startDate);
-    }
-
-    public java.time.LocalDateTime getStartDateAsLocalDateTime()
+    public LocalDateTime getStartDate()
     {
         return startDate;
     }
@@ -303,27 +249,27 @@ public class ConflictImpl extends SimpleEntity implements Conflict, ModifiableTi
         return Collections.emptyList();
     }
 
-    private Date getStartDate_(Date today, Appointment app1, Appointment app2)
+    private LocalDateTime getStartDate_(LocalDateTime today, Appointment app1, Appointment app2)
     {
-        Date fromDate = today;
-        Date start1 = app1.getStart();
-        if (start1.before(fromDate))
+        LocalDateTime fromDate = today;
+        LocalDateTime start1 = app1.getStart();
+        if (start1.isBefore(fromDate))
         {
             fromDate = start1;
         }
-        Date start2 = app2.getStart();
-        if (start2.before(fromDate))
+        LocalDateTime start2 = app2.getStart();
+        if (start2.isBefore(fromDate))
         {
             fromDate = start2;
         }
-        Date toDate = DateTools.addDays(today, 365 * 10);
-        Date date = getFirstConflictDate(fromDate, toDate, app1, app2);
+        LocalDateTime toDate = DateTools.addDays(today, 365 * 10);
+        LocalDateTime date = getFirstConflictDate(fromDate, toDate, app1, app2);
         if (date == null)
         {
             // in case no overlapping is found, add the last of the start dates as conflict date
             // this should not occur often as conflicts should only be added if they have overlapping appointments
             // however noone prevents an api user from doing this
-            date = start1.after(start2) ? start1 : start2;
+            date = start1.isAfter(start2) ? start1 : start2;
         }
         return date;
     }
@@ -542,27 +488,27 @@ public class ConflictImpl extends SimpleEntity implements Conflict, ModifiableTi
         return buf.toString();
     }
 
-    static public Date getFirstConflictDate(final Date fromDate, Date toDate, Appointment a1, Appointment a2)
+    static public LocalDateTime getFirstConflictDate(final LocalDateTime fromDate, LocalDateTime toDate, Appointment a1, Appointment a2)
     {
-        Date minEnd = a1.getMaxEnd();
-        if (a1.getMaxEnd() != null && a2.getMaxEnd() != null && a2.getMaxEnd().before(a1.getMaxEnd()))
+        LocalDateTime minEnd = a1.getMaxEnd();
+        if (a1.getMaxEnd() != null && a2.getMaxEnd() != null && a2.getMaxEnd().isBefore(a1.getMaxEnd()))
         {
             minEnd = a2.getMaxEnd();
         }
-        Date maxStart = a1.getStart();
-        if (a2.getStart().after(a1.getStart()))
+        LocalDateTime maxStart = a1.getStart();
+        if (a2.getStart().isAfter(a1.getStart()))
         {
             maxStart = a2.getStart();
         }
-        if (fromDate != null && maxStart.before(fromDate))
+        if (fromDate != null && maxStart.isBefore(fromDate))
         {
             maxStart = fromDate;
         }
         // look for  10 years in the future (365 days * 10 days +3 for possible leap years)
         if (minEnd == null)
-            minEnd = new Date(maxStart.getTime() + DateTools.MILLISECONDS_PER_DAY * (365 * 10 + 3));
+            minEnd = maxStart.plusDays(365L * 10 + 3);
 
-        if (toDate != null && minEnd.after(toDate))
+        if (toDate != null && minEnd.isAfter(toDate))
         {
             minEnd = toDate;
         }
@@ -579,7 +525,7 @@ public class ConflictImpl extends SimpleEntity implements Conflict, ModifiableTi
             long e2 = listB.get(j).getEnd();
             if (s1 < e2 && s2 < e1)
             {
-                return new Date(Math.max(s1, s2));
+                return DateTools.toLocalDateTime(Math.max(s1, s2));
             }
             if (s1 > s2)
                 j++;
@@ -590,7 +536,7 @@ public class ConflictImpl extends SimpleEntity implements Conflict, ModifiableTi
     }
 
     public static void checkAndAddConflicts(Collection<Conflict> conflictList, Allocatable allocatable, Appointment appointment1, Appointment appointment2,
-            Date today)
+            LocalDateTime today)
     {
         if (ConflictImpl.isConflict(appointment1, appointment2, today))
         {
@@ -603,36 +549,36 @@ public class ConflictImpl extends SimpleEntity implements Conflict, ModifiableTi
         }
     }
 
-    @Nullable public static Date getLastChanged(Allocatable allocatable, Appointment appointment1, Appointment appointment2)
+    @Nullable public static LocalDateTime getLastChanged(Allocatable allocatable, Appointment appointment1, Appointment appointment2)
     {
-        Date lastChanged = allocatable.getLastChanged();
+        LocalDateTime lastChanged = allocatable.getLastChanged();
         final Reservation reservation1 = appointment1.getReservation();
         final Reservation reservation2 = appointment2.getReservation();
-        final Date lastChanged1 = reservation1 != null ? reservation1.getLastChanged() : null;
-        final Date lastChanged2 = reservation2 != null ? reservation2.getLastChanged() : null;
-        if (lastChanged == null || (lastChanged1 != null && lastChanged1.after(lastChanged)))
+        final LocalDateTime lastChanged1 = reservation1 != null ? reservation1.getLastChanged() : null;
+        final LocalDateTime lastChanged2 = reservation2 != null ? reservation2.getLastChanged() : null;
+        if (lastChanged == null || (lastChanged1 != null && lastChanged1.isAfter(lastChanged)))
         {
             lastChanged = lastChanged1;
         }
-        if (lastChanged == null || (lastChanged2 != null && lastChanged2.after(lastChanged)))
+        if (lastChanged == null || (lastChanged2 != null && lastChanged2.isAfter(lastChanged)))
         {
             lastChanged = lastChanged2;
         }
         return lastChanged;
     }
 
-    public static boolean endsBefore(Appointment appointment1, Appointment appointment2, Date date)
+    public static boolean endsBefore(Appointment appointment1, Appointment appointment2, LocalDateTime date)
     {
-        Date maxEnd1 = appointment1.getMaxEnd();
-        Date maxEnd2 = appointment2.getMaxEnd();
-        if (maxEnd1 != null && maxEnd1.before(date))
+        LocalDateTime maxEnd1 = appointment1.getMaxEnd();
+        LocalDateTime maxEnd2 = appointment2.getMaxEnd();
+        if (maxEnd1 != null && maxEnd1.isBefore(date))
         {
             return true;
         }
-        return maxEnd2 != null && maxEnd2.before(date);
+        return maxEnd2 != null && maxEnd2.isBefore(date);
     }
 
-    public static boolean isConflict(Appointment appointment1, Appointment appointment2, Date today)
+    public static boolean isConflict(Appointment appointment1, Appointment appointment2, LocalDateTime today)
     {
         // Don't add conflicts, when in the past
         if (endsBefore(appointment1, appointment2, today))
@@ -655,17 +601,17 @@ public class ConflictImpl extends SimpleEntity implements Conflict, ModifiableTi
         {
             return false;
         }
-        Date maxEnd1 = appointment1.getMaxEnd();
-        Date maxEnd2 = appointment2.getMaxEnd();
-        Date checkEnd = maxEnd1;
-        if (maxEnd2 != null && checkEnd != null && maxEnd2.before(checkEnd))
+        LocalDateTime maxEnd1 = appointment1.getMaxEnd();
+        LocalDateTime maxEnd2 = appointment2.getMaxEnd();
+        LocalDateTime checkEnd = maxEnd1;
+        if (maxEnd2 != null && checkEnd != null && maxEnd2.isBefore(checkEnd))
         {
             checkEnd = maxEnd2;
         }
         return ConflictImpl.getFirstConflictDate(today, checkEnd, appointment1, appointment2) != null;
     }
 
-    public static boolean isConflictWithoutCheck(Appointment appointment1, Appointment appointment2, Date today)
+    public static boolean isConflictWithoutCheck(Appointment appointment1, Appointment appointment2, LocalDateTime today)
     {
         // Don't add conflicts, when in the past
         if (appointment1.equals(appointment2))
@@ -676,10 +622,10 @@ public class ConflictImpl extends SimpleEntity implements Conflict, ModifiableTi
         {
             return false;
         }
-        Date maxEnd1 = appointment1.getMaxEnd();
-        Date maxEnd2 = appointment2.getMaxEnd();
-        Date checkEnd = maxEnd1;
-        if (maxEnd2 != null && checkEnd != null && maxEnd2.before(checkEnd))
+        LocalDateTime maxEnd1 = appointment1.getMaxEnd();
+        LocalDateTime maxEnd2 = appointment2.getMaxEnd();
+        LocalDateTime checkEnd = maxEnd1;
+        if (maxEnd2 != null && checkEnd != null && maxEnd2.isBefore(checkEnd))
         {
             checkEnd = maxEnd2;
         }

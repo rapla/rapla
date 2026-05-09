@@ -26,7 +26,6 @@ import org.rapla.entities.storage.internal.SimpleEntity;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.Date;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
@@ -36,6 +35,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 
+import java.time.LocalDateTime;
 final public class CategoryImpl extends SimpleEntity implements Category, ModifiableTimestamp
 {
     private MultiLanguageName name = new MultiLanguageName();
@@ -48,19 +48,9 @@ final public class CategoryImpl extends SimpleEntity implements Category, Modifi
         this(java.time.LocalDateTime.now(), java.time.LocalDateTime.now());
     }
 
-    public CategoryImpl(Date createDate, Date lastChanged) {
-        this.createDate = createDate == null ? null : org.rapla.components.util.DateTools.toLocalDateTime(createDate);
-        this.lastChanged = lastChanged == null ? null : org.rapla.components.util.DateTools.toLocalDateTime(lastChanged);
-    }
-
-    public CategoryImpl(java.time.LocalDateTime createDate, java.time.LocalDateTime lastChanged) {
-        this.createDate = createDate;
-        this.lastChanged = lastChanged;
-    }
-
-    /** {@code LocalDateTime} factory paralleling {@link #CategoryImpl(Date, Date)}. UTC. */
-    public static CategoryImpl ofLocalDateTime(java.time.LocalDateTime createDate, java.time.LocalDateTime lastChanged) {
-        return new CategoryImpl(createDate, lastChanged);
+    public CategoryImpl(LocalDateTime createDate, LocalDateTime lastChanged) {
+        this.createDate = createDate == null ? null : createDate;
+        this.lastChanged = lastChanged == null ? null : lastChanged;
     }
 
     public static Collection<Category> getRecursive(Category cat)
@@ -132,35 +122,14 @@ final public class CategoryImpl extends SimpleEntity implements Category, Modifi
     	super.setResolver(resolver);
     }
 
-    public Date getLastChanged() {
-        return lastChanged == null ? null : org.rapla.components.util.DateTools.toDate(lastChanged);
-    }
 
-    public Date getCreateDate() {
-        return createDate == null ? null : org.rapla.components.util.DateTools.toDate(createDate);
-    }
 
-    @Override
-    public java.time.LocalDateTime getLastChangedAsLocalDateTime() {
-        return lastChanged;
-    }
-
-    @Override
-    public java.time.LocalDateTime getCreateDateAsLocalDateTime() {
-        return createDate;
-    }
-
-    public void setLastChanged(Date date) {
-        checkWritable();
-        lastChanged = date == null ? null : org.rapla.components.util.DateTools.toLocalDateTime(date);
-    }
-
-    @Override
-    public void setLastChangedLocalDateTime(java.time.LocalDateTime date) {
+    public void setLastChanged(LocalDateTime date) {
         checkWritable();
         lastChanged = date;
     }
 
+    @Override public LocalDateTime getLastChanged() { return lastChanged; }
 
     @Override public Class<Category> getTypeClass()
     {
@@ -321,18 +290,13 @@ final public class CategoryImpl extends SimpleEntity implements Category, Modifi
         }
     }
 
-    public void setCreateDate(Date createTime)
-    {
-        checkWritable();
-        this.createDate = createTime == null ? null : org.rapla.components.util.DateTools.toLocalDateTime(createTime);
-    }
-
-    @Override
-    public void setCreateDateLocalDateTime(java.time.LocalDateTime createTime)
+    public void setCreateDate(LocalDateTime createTime)
     {
         checkWritable();
         this.createDate = createTime;
     }
+
+    @Override public LocalDateTime getCreateDate() { return createDate; }
 
     interface ParentResolver<T>
     {

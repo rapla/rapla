@@ -55,9 +55,9 @@ import java.io.File;
 import java.net.URI;
 import java.security.AccessControlException;
 import java.text.SimpleDateFormat;
-import java.util.Date;
 import java.util.List;
 
+import java.time.LocalDateTime;
 /**
     Base class for most components in the gui package. Eases
     access to frequently used services, e.g. {@link I18nBundle}.
@@ -126,7 +126,7 @@ public class RaplaGUIComponent extends RaplaComponent
         return false;
     }
 
-    protected Date getStartDate( final CalendarModel model ) throws RaplaException
+    protected LocalDateTime getStartDate( final CalendarModel model ) throws RaplaException
     {
         final RaplaFacade raplaFacade = getFacade();
         return getStartDate(model, raplaFacade, getUser());
@@ -375,14 +375,13 @@ public class RaplaGUIComponent extends RaplaComponent
                 final Object value = table.getValueAt(row, col);
                 String formated;
                 final Class<?> columnClass = table.getColumnClass(col);
-                final boolean isDate = columnClass.isAssignableFrom(java.util.Date.class);
+                final boolean isDate = columnClass.isAssignableFrom(java.time.LocalDateTime.class);
                 if ( isDate )
                 {
-                    final SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
-                    format.setTimeZone(IOUtil.getTimeZone());
-                    if ( value instanceof java.util.Date )
+                    final java.time.format.DateTimeFormatter format = java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+                    if ( value instanceof java.time.LocalDateTime )
                     {
-                        final String timestamp = format.format((java.util.Date) value);
+                        final String timestamp = format.format((java.time.LocalDateTime) value);
                         formated = timestamp;
                     }
                     else

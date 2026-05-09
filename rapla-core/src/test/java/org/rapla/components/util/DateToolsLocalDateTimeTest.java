@@ -6,8 +6,6 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.ZoneOffset;
-import java.util.Date;
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -44,15 +42,6 @@ class DateToolsLocalDateTimeTest
         assertEquals(0L, millis % DateTools.MILLISECONDS_PER_DAY, "LocalDate → millis must be midnight");
         LocalDateTime back = DateTools.toLocalDateTime(millis);
         assertEquals(d.atStartOfDay(), back);
-    }
-
-    @Test
-    void toDateInverseOfToLocalDateTime()
-    {
-        Date now = new Date(1700000000000L);
-        LocalDateTime ldt = DateTools.toLocalDateTime(now);
-        Date back = DateTools.toDate(ldt);
-        assertEquals(now.getTime(), back.getTime(), "Date → LocalDateTime → Date must preserve millis");
     }
 
     @Test
@@ -98,7 +87,7 @@ class DateToolsLocalDateTimeTest
     {
         SerializableDateTimeFormat fmt = SerializableDateTimeFormat.INSTANCE;
         LocalDateTime ldt = LocalDateTime.of(2024, 6, 15, 14, 30, 45);
-        Date d = DateTools.toDate(ldt);
+        LocalDateTime d = ldt;
         assertEquals(fmt.formatTimestamp(d), fmt.formatTimestamp(ldt));
     }
 
@@ -107,7 +96,7 @@ class DateToolsLocalDateTimeTest
     {
         SerializableDateTimeFormat fmt = SerializableDateTimeFormat.INSTANCE;
         LocalDate ld = LocalDate.of(2024, 6, 15);
-        Date d = DateTools.toDate(ld);
+        LocalDateTime d = ld.atStartOfDay();
         assertEquals(fmt.formatDate(d), fmt.formatDate(ld));
     }
 

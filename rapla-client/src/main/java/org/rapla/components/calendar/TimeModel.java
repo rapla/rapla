@@ -15,16 +15,19 @@ package org.rapla.components.calendar;
 
 import java.util.ArrayList;
 import java.util.Calendar;
-import java.util.Date;
 import java.util.Locale;
 import java.util.TimeZone;
 
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
+import org.rapla.components.util.DateTools;
 /** The model is a wrapper arround an Calendar object.
  */
 final class TimeModel {
     Calendar m_calendar;
     Locale m_locale;
-	private Date durationStart;
+	private LocalDateTime durationStart;
 	ArrayList<DateChangeListener> m_listenerList = new ArrayList<>();
 
     public TimeModel(Locale locale,TimeZone timeZone) {
@@ -43,16 +46,18 @@ final class TimeModel {
     }
 
     public Locale getLocale() {return m_locale; }
-    public Date getTime() {
-        return m_calendar.getTime();
+    public LocalTime getTime() {
+        return LocalTime.of(
+            m_calendar.get(Calendar.HOUR_OF_DAY),
+            m_calendar.get(Calendar.MINUTE));
     }
 
-    public Date getDurationStart() 
+    public LocalDateTime getDurationStart()
     {
 		return durationStart;
 	}
 
-	public void setDurationStart(Date durationStart) 
+	public void setDurationStart(LocalDateTime durationStart)
 	{
 		if ( durationStart == null)
 		{
@@ -60,9 +65,9 @@ final class TimeModel {
 			return;
 		}
 		Calendar clone = Calendar.getInstance(m_calendar.getTimeZone(), m_locale);
-		clone.setTime( durationStart);
+		clone.setTimeInMillis(DateTools.toMilli(durationStart));
 		trim(clone);
-		this.durationStart = clone.getTime();
+		this.durationStart = DateTools.toLocalDateTime(clone.getTimeInMillis());
 	}
 
     // #TODO Property change listener for TimeZone
@@ -81,17 +86,15 @@ final class TimeModel {
         fireDateChanged();
    }
 
-    public void setTime(Date date) {
-        m_calendar.setTime(date);
+    public void setTime(LocalTime time) {
+        m_calendar.set(Calendar.HOUR_OF_DAY, time.getHour());
+        m_calendar.set(Calendar.MINUTE, time.getMinute());
         trim(m_calendar);
         fireDateChanged();
    }
 
-    public boolean sameTime(Date date) {
-        Calendar calendar = Calendar.getInstance(getTimeZone(), getLocale());
-        calendar.setTime(date);
-        trim(calendar);
-        return calendar.getTime().equals(getTime());
+    public boolean sameTime(LocalTime time) {
+        return getTime().equals(LocalTime.of(time.getHour(), time.getMinute()));
     }
 
     private void trim(Calendar calendar) {
@@ -108,7 +111,7 @@ final class TimeModel {
 
     protected void fireDateChanged() {
         DateChangeListener[] listeners = getDateChangeListeners();
-        DateChangeEvent evt = new DateChangeEvent(this,getTime());
+        DateChangeEvent evt = new DateChangeEvent(this, LocalDate.now().atTime(getTime()));
         for (int i = 0;i<listeners.length; i++) {
             listeners[i].dateChanged(evt);
         }

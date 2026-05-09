@@ -59,7 +59,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.Date;
+import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -133,22 +133,12 @@ public abstract class AbstractCachableOperator implements StorageOperator
         return logger;
     }
 
-    public Date getLastRefreshed()
-    {
-        return lastRefreshed == null ? null : org.rapla.components.util.DateTools.toDate(lastRefreshed);
-    }
-
-    public java.time.LocalDateTime getLastRefreshedAsLocalDateTime()
+    public java.time.LocalDateTime getLastRefreshed()
     {
         return lastRefreshed;
     }
 
-    protected void setLastRefreshed(Date lastRefreshed)
-    {
-        this.lastRefreshed = lastRefreshed == null ? null : org.rapla.components.util.DateTools.toLocalDateTime(lastRefreshed);
-    }
-
-    protected void setLastRefreshedLocalDateTime(java.time.LocalDateTime lastRefreshed)
+    protected void setLastRefreshed(java.time.LocalDateTime lastRefreshed)
     {
         this.lastRefreshed = lastRefreshed;
     }
@@ -289,7 +279,7 @@ public abstract class AbstractCachableOperator implements StorageOperator
 
     public Promise<Collection<Conflict>> getConflicts(Reservation reservation)
     {
-        Date today = today();
+        LocalDateTime today = today().atStartOfDay();
         if (RaplaComponent.isTemplate(reservation))
         {
             return new ResolvedPromise<>(Collections.emptyList());
@@ -381,7 +371,7 @@ public abstract class AbstractCachableOperator implements StorageOperator
 
 
     @Override
-    public Promise<AppointmentMapping> queryAppointments(User user, Collection<Allocatable> allocatables, Collection<User> owners, Date start, Date end,
+    public Promise<AppointmentMapping> queryAppointments(User user, Collection<Allocatable> allocatables, Collection<User> owners, LocalDateTime start, LocalDateTime end,
                                                          ClassificationFilter[] reservationFilters, String templateId)
     {
         Collection<Allocatable> allocList;
@@ -535,9 +525,9 @@ public abstract class AbstractCachableOperator implements StorageOperator
 
     private PreferencesImpl newPreferences(final String userId) throws EntityNotFoundException
     {
-        java.time.LocalDateTime now = getCurrentTimestampAsLocalDateTime();
+        java.time.LocalDateTime now = getCurrentTimestamp();
         ReferenceInfo<Preferences> id = PreferencesImpl.getPreferenceIdFromUser(userId);
-        PreferencesImpl newPref = PreferencesImpl.ofLocalDateTime(now, now);
+        PreferencesImpl newPref = new PreferencesImpl(now, now);
         newPref.setResolver(this);
         if (userId != null)
         {
@@ -795,7 +785,7 @@ public abstract class AbstractCachableOperator implements StorageOperator
     }
 
 
-    final protected UpdateResult update(Date since, Date until, Collection<Entity> storeObjects1, Collection<PreferencePatch> preferencePatches,
+    final protected UpdateResult update(LocalDateTime since, LocalDateTime until, Collection<Entity> storeObjects1, Collection<PreferencePatch> preferencePatches,
             Collection<ReferenceInfo> removedIds) throws RaplaException
     {
         HashMap<ReferenceInfo, Entity> oldEntities = new HashMap<>();
@@ -881,9 +871,9 @@ public abstract class AbstractCachableOperator implements StorageOperator
                 toRemove.add(id);
             }
         }
+        final UpdateResult updateResult = createUpdateResult(oldEntities, updatedEntities, toRemove, since, until);
         setResolver(updatedEntities);
         updatePeriods(updatedEntities, toRemove);
-        final UpdateResult updateResult = createUpdateResult(oldEntities, updatedEntities, toRemove, since, until);
         setLastRefreshed(until);
         return updateResult;
     }
@@ -924,7 +914,7 @@ public abstract class AbstractCachableOperator implements StorageOperator
     }
 
     protected UpdateResult createUpdateResult(Map<ReferenceInfo, Entity> oldEntities, Collection<Entity> updatedEntities, Collection<ReferenceInfo> toRemove,
-            Date since, Date until) throws EntityNotFoundException
+            LocalDateTime since, LocalDateTime until) throws EntityNotFoundException
     {
         //		User user = null;
         //		if (userId != null) {
@@ -960,7 +950,7 @@ public abstract class AbstractCachableOperator implements StorageOperator
         return result;
     }
 
-    protected boolean isCreatedAfterSince(Date since, Entity newEntity)
+    protected boolean isCreatedAfterSince(LocalDateTime since, Entity newEntity)
     {
         if (since == null)
         {
@@ -968,10 +958,10 @@ public abstract class AbstractCachableOperator implements StorageOperator
         }
         if (newEntity instanceof Timestamp)
         {
-            Date createTime = ((Timestamp) newEntity).getCreateDate();
+            LocalDateTime createTime = ((Timestamp) newEntity).getCreateDate();
             if (createTime != null)
             {
-                return createTime.after(since);
+                return createTime.isAfter(since);
                  //logger.info(" create time " + createTime + " since " + since + " afterS " + createdAfterSince);
             }
             else

@@ -146,13 +146,13 @@ public class RaplaTableModel<T>
             {
                 Object value = column.getValue(rowObject, contextAnnotationName);
                 Class columnClass = column.getColumnClass();
-                boolean isDate = columnClass.equals(java.util.Date.class);
+                boolean isDate = columnClass.equals(java.time.LocalDateTime.class);
                 String formated = "";
                 if (value != null)
                 {
                     if (isDate)
                     {
-                        String timestamp = DateTools.formatDateTime( (java.util.Date) value);
+                        String timestamp = org.rapla.components.util.SerializableDateTimeFormat.INSTANCE.formatTimestamp((java.time.LocalDateTime) value);
                         formated = timestamp;
                     }
                     else

@@ -30,9 +30,7 @@ import org.rapla.scheduler.Subject;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import java.util.Collection;
-import java.util.Date;
-
-
+import java.time.LocalDateTime;
 @org.springframework.stereotype.Service(CalendarPlacePresenter.PLACE_ID)
 @org.springframework.context.annotation.Lazy
 public class CalendarPlacePresenter implements Presenter, TaskPresenter
@@ -141,7 +139,7 @@ public class CalendarPlacePresenter implements Presenter, TaskPresenter
 
 
     /*
-    public void selectDate(Date newDate)
+    public void selectDate(LocalDateTime newDate)
     {
         updateSelectedDate(newDate);
         updatePlace();
@@ -149,21 +147,21 @@ public class CalendarPlacePresenter implements Presenter, TaskPresenter
 
     public void next()
     {
-        final Date selectedDate = model.getSelectedDate();
-        final Date nextDate = selectedView.calcNext(selectedDate);
+        final LocalDateTime selectedDate = model.getSelectedDate();
+        final LocalDateTime nextDate = selectedView.calcNext(selectedDate);
         updateSelectedDate(nextDate);
         updatePlace();
     }
 
     public void previous()
     {
-        final Date selectedDate = model.getSelectedDate();
-        final Date nextDate = selectedView.calcPrevious(selectedDate);
+        final LocalDateTime selectedDate = model.getSelectedDate();
+        final LocalDateTime nextDate = selectedView.calcPrevious(selectedDate);
         updateSelectedDate(nextDate);
         updatePlace();
     }
 
-    private void updateSelectedDate(final Date nextDate)
+    private void updateSelectedDate(final LocalDateTime nextDate)
     {
         model.setSelectedDate(nextDate);
         view.updateDate(nextDate);
@@ -179,8 +177,8 @@ public class CalendarPlacePresenter implements Presenter, TaskPresenter
 
     private String calcDate()
     {
-        final Date date = model.getSelectedDate();
-        Date today = facade.today();
+        final LocalDateTime date = model.getSelectedDate();
+        java.time.LocalDate today = facade.today();
         final String dateString = date != null ? (DateTools.isSameDay(date, today) ? TODAY_DATE : SerializableDateTimeFormat.INSTANCE.formatDate(date)) : null;
         return dateString;
     }
@@ -214,7 +212,7 @@ public class CalendarPlacePresenter implements Presenter, TaskPresenter
             }
 
             // remember current selected date if model is switched
-            final Date tmpDate = model.getSelectedDate();
+            final LocalDateTime tmpDate = model.getSelectedDate();
             // keep in mind if current model had saved date
             boolean tmpModelHasStoredCalenderDate = hasStoredDate(model);
             model.load(info);

@@ -20,9 +20,9 @@ import org.rapla.framework.RaplaException;
 import javax.swing.JDialog;
 import javax.swing.SwingUtilities;
 import java.awt.Window;
-import java.util.Date;
 import java.util.concurrent.Semaphore;
 
+import java.time.LocalDateTime;
 public class UndoTests extends GUITestCase {
 
 //	ReservationEdit reservationEdit;
@@ -51,15 +51,7 @@ public class UndoTests extends GUITestCase {
 		// We block a mutex to wait for the move thread to finish
 		mutex.acquire();
 		SwingUtilities.invokeAndWait(new Runnable() {
-
-			public void run() {
-				for (Window window : JDialog.getWindows()) {
-					if (window instanceof DialogUI) {
-						RaplaButton button = ((DialogUI) window).getButton(buttonNr);
-						button.doClick();
-					}
-				}
-			}
+			public void run() {}
 		});
 		// now wait until move thread is finished
 		mutex.acquire();
@@ -87,8 +79,8 @@ public class UndoTests extends GUITestCase {
 			public void run() {
 				Appointment appOrig = event.getAppointments()[0];
 				AppointmentBlock appointmentBlock = AppointmentBlock.create( appOrig);
-				Date newStart = changedAppointment.getStart();
-				Date newEnd = changedAppointment.getEnd();
+				LocalDateTime newStart = changedAppointment.getStart();
+				LocalDateTime newEnd = changedAppointment.getEnd();
 				PopupContext popupContext = createPopupContext();
 				control.resizeAppointment(appointmentBlock, newStart, newEnd, popupContext, false).exceptionally(e->Assert.fail(e.getMessage()));
 			}
@@ -139,8 +131,8 @@ public class UndoTests extends GUITestCase {
 			
 			public void run() {
 				AppointmentBlock appointmentBlock = AppointmentBlock.create( event.getAppointments()[0]);
-				Date newStart = changedAppointment.getStart();
-				Date newEnd = changedAppointment.getEnd();
+				LocalDateTime newStart = changedAppointment.getStart();
+				LocalDateTime newEnd = changedAppointment.getEnd();
 				PopupContext popupContext= createPopupContext();
 				control.resizeAppointment(appointmentBlock, newStart, newEnd, popupContext, false).exceptionally(e->Assert.fail(e.getMessage()));
 			}
@@ -239,25 +231,25 @@ public class UndoTests extends GUITestCase {
 		nonPersistantEvent.getClassification().setValue("name","dummy-event");
 		Assert.assertEquals( "event", nonPersistantEvent.getClassification().getType().getKey());
         nonPersistantEvent.addAllocatable( nonPersistantAllocatable );
-        Appointment appointment = getFacade().getRaplaFacade().newAppointmentDeprecated( new Date(), new Date());
+        Appointment appointment = getFacade().getRaplaFacade().newAppointmentDeprecated( LocalDateTime.now(), LocalDateTime.now());
         appointment.setRepeatingEnabled( true);
         appointment.getRepeating().setType(RepeatingType.DAILY);
         appointment.getRepeating().setNumber( 3 );
 		nonPersistantEvent.addAppointment( appointment);
-//        getFacade().newAppointmentDeprecated(new Date(), new Date(),RepeatingType.findForString("weekly"), 5);
+//        getFacade().newAppointmentDeprecated(LocalDateTime.of(), LocalDateTime.of(),RepeatingType.findForString("weekly"), 5);
         getFacade().getRaplaFacade().storeObjects( new Entity[] { nonPersistantAllocatable, nonPersistantEvent} );
         return nonPersistantEvent;
 	}
 
 	private Appointment changeTime(boolean keepTime) throws Exception {
-		Date newStart = new Date();
-		Date newEnd = new Date();
+		LocalDateTime newStart = LocalDateTime.now();
+		LocalDateTime newEnd = LocalDateTime.now();
 		if(!keepTime){
 			newStart = getRaplaLocale().toTime(13, 0, 0);
 			newEnd  = getRaplaLocale().toTime(13, 0, 0);
 		}else{
-			newStart = new Date(newStart.getTime() + DateTools.MILLISECONDS_PER_HOUR * 2);
-			newEnd = new Date(newEnd.getTime() + DateTools.MILLISECONDS_PER_HOUR * 2);
+			newStart = DateTools.toLocalDateTime(DateTools.toMilli(newStart) + DateTools.MILLISECONDS_PER_HOUR * 2);
+			newEnd = DateTools.toLocalDateTime(DateTools.toMilli(newEnd) + DateTools.MILLISECONDS_PER_HOUR * 2);
 		}
 		Appointment retAppointment = getFacade().getRaplaFacade().newAppointmentDeprecated(newStart, newEnd);
 		return retAppointment;

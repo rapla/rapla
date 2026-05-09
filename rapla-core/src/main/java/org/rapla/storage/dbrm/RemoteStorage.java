@@ -28,10 +28,10 @@ import org.springframework.web.service.annotation.HttpExchange;
 import org.springframework.web.service.annotation.PatchExchange;
 import org.springframework.web.service.annotation.PostExchange;
 import org.springframework.web.service.annotation.PutExchange;
-import java.util.Date;
 import java.util.List;
 import java.util.Map;
 
+import java.time.LocalDateTime;
 @HttpExchange("/storage")
 public interface RemoteStorage
 {
@@ -98,14 +98,13 @@ public interface RemoteStorage
     {
         private String[] ownerIds;
         private String[] resources;
-        private Date start;
-        private Date end;
+        private LocalDateTime start;
+        private LocalDateTime end;
         private Map<String, String> annotations;
         private boolean requestsOnly = false;
 
-        public QueryAppointments(String[] ownerIds, String[] resources, Date start, Date end, Map<String, String> annotations, boolean requestsOnly)
+        public QueryAppointments(String[] ownerIds, String[] resources, LocalDateTime start, LocalDateTime end, Map<String, String> annotations, boolean requestsOnly)
         {
-            super();
             this.resources = resources;
             this.ownerIds = ownerIds;
             this.start = start;
@@ -127,7 +126,7 @@ public interface RemoteStorage
             return resources;
         }
 
-        public Date getStart()
+        public LocalDateTime getStart()
         {
             return start;
         }
@@ -141,7 +140,7 @@ public interface RemoteStorage
             this.requestsOnly = requestsOnly;
         }
 
-        public Date getEnd()
+        public LocalDateTime getEnd()
         {
             return end;
         }
@@ -217,7 +216,7 @@ public interface RemoteStorage
     List<ReservationImpl> getAllAllocatableBindings(@RequestBody AllocatableBindingsRequest job) throws RaplaException;
 
     @PostExchange("/allocatable/date/next")
-    Date getNextAllocatableDate(@RequestBody NextAllocatableDateRequest job) throws RaplaException;
+    LocalDateTime getNextAllocatableDate(@RequestBody NextAllocatableDateRequest job) throws RaplaException;
 
     class NextAllocatableDateRequest
     {
