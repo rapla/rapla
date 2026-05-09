@@ -46,7 +46,7 @@ public class ClassificationImpl implements Classification,DynamicTypeDependant, 
 
 	private String typeId;
 	private String type;
-	private final Map<String,List<String>> data = new LinkedHashMap<>();
+	private Map<String,List<String>> data = new LinkedHashMap<>();
 	private transient boolean readOnly = false;
 
 	private transient TextCache name;

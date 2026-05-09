@@ -163,6 +163,48 @@ public class Jackson3TransientInitializerTest
     }
 
     /**
+     * Pin the Jackson-3-specific behaviour around {@code final} fields with initializers.
+     * The Swing-client "empty resource names" bug traces back to
+     * {@code ClassificationImpl.data} being declared
+     * {@code private final Map<String,List<String>> data = new LinkedHashMap<>();}
+     * — Jackson 2 happily wrote into final fields via reflection; Jackson 3 silently
+     * does not, leaving every classification's {@code data} map empty post-deserialize.
+     *
+     * <p>This test pins the behaviour so any future change to the final-field policy
+     * (Jackson upgrade, mapper-feature toggle) is visible.
+     */
+    public static class FinalCollectionProbe
+    {
+        public final java.util.Map<String, String> finalMap = new java.util.LinkedHashMap<>();
+        public java.util.Map<String, String> mutableMap = new java.util.LinkedHashMap<>();
+
+        public FinalCollectionProbe() {}
+    }
+
+    @Test
+    public void jackson3SilentlySkipsFinalFieldsWithInitializers() throws Exception
+    {
+        JsonMapper mapper = JacksonObjectMapperFactory.create();
+        FinalCollectionProbe original = new FinalCollectionProbe();
+        original.finalMap.put("k", "v");
+        original.mutableMap.put("k", "v");
+
+        String json = mapper.writeValueAsString(original);
+        FinalCollectionProbe restored = mapper.readValue(json, FinalCollectionProbe.class);
+
+        // The mutable field round-trips fine (control).
+        Assert.assertEquals("v", restored.mutableMap.get("k"));
+        // The final field is the actual bug: Jackson 3 doesn't write into it.
+        // If this assertion ever STARTS passing (post-Jackson-upgrade or post-config-change),
+        // the Workarounds in the entities (`data` non-final) can be reverted.
+        Assert.assertTrue(
+            "Jackson 3 currently does NOT mutate final fields — confirmed by this probe. "
+            + "If this assertion newly fails, the Jackson 3 final-field policy changed; "
+            + "remove the `final` work-around in ClassificationImpl.data and friends.",
+            restored.finalMap.isEmpty());
+    }
+
+    /**
      * End-to-end probe: simulates the production setResolver→init→formatName chain
      * on a freshly deserialized {@link DynamicTypeImpl} carrying a plain-text
      * nameformat. {@code formatName} for a no-variable format returns the

@@ -30,6 +30,7 @@ public class SpringRaplaClient implements AutoCloseable
     {
         this.context = new AnnotationConfigApplicationContext();
         context.addBeanFactoryPostProcessor(globalLazyInitPostProcessor());
+        context.addBeanFactoryPostProcessor(new SupplierAutoWrapperBeanFactoryPostProcessor());
         context.register(configClasses);
         context.refresh();
         this.facade = context.getBean(ClientFacade.class);

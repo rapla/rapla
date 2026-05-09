@@ -195,6 +195,48 @@ class HeadlessClientNameResolutionIntegrationTest
         }
     }
 
+    /** Print enough of the first allocatable's deserialized state to localize the bug. */
+    private static void dumpFirstAllocatableState(Allocatable a, Locale locale) throws Exception
+    {
+        System.out.println("=== diagnostic: first allocatable state ===");
+        System.out.println("id=" + a.getId());
+        System.out.println("getName(en)=" + a.getName(locale));
+        Classification c = a.getClassification();
+        System.out.println("classification=" + (c == null ? "null" : c.getClass().getSimpleName()));
+        if (c == null) return;
+        org.rapla.entities.dynamictype.internal.DynamicTypeImpl type =
+                (org.rapla.entities.dynamictype.internal.DynamicTypeImpl) c.getType();
+        System.out.println("type.key=" + type.getKey());
+        System.out.println("type.getName(en)=" + type.getName(locale));
+        System.out.println("type.attributes.length=" + type.getAttributes().length);
+        for (org.rapla.entities.dynamictype.Attribute at : type.getAttributes())
+        {
+            System.out.println("  attr key=" + at.getKey() + " id=" + at.getId() + " typeImpl=" + at.getClass().getSimpleName());
+        }
+        System.out.println("type.getAttribute('name')=" + type.getAttribute("name"));
+        var parsed = type.getParsedAnnotation("nameformat");
+        System.out.println("nameformat ParsedText=" + parsed);
+        if (parsed != null)
+        {
+            for (String f : new String[]{"formatString", "first", "variablesList", "nonVariablesList"})
+            {
+                java.lang.reflect.Field fld = org.rapla.entities.dynamictype.internal.ParsedText.class.getDeclaredField(f);
+                fld.setAccessible(true);
+                System.out.println("  ParsedText." + f + "=" + fld.get(parsed));
+            }
+        }
+        // Classification.data raw values
+        try
+        {
+            java.lang.reflect.Field dataField = org.rapla.entities.dynamictype.internal.ClassificationImpl.class
+                    .getDeclaredField("data");
+            dataField.setAccessible(true);
+            System.out.println("classification.data=" + dataField.get(c));
+        }
+        catch (NoSuchFieldException e) { System.out.println("(no data field)"); }
+        System.out.println("=== end diagnostic ===");
+    }
+
     /** Block on a Promise-returning facade method. The facade scheduler is on a worker thread,
      *  so the test thread can wait without deadlocking. */
     private static Collection<Reservation> awaitReservations(RaplaFacade facade, User user) throws Exception
