@@ -13,28 +13,28 @@
 
 package org.rapla.components.calendar;
 
-import java.util.ArrayList;
-import java.util.Calendar;
-import java.util.Locale;
-import java.util.TimeZone;
-
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
-import org.rapla.components.util.DateTools;
-/** The model is a wrapper arround an Calendar object.
- */
-final class TimeModel {
-    Calendar m_calendar;
-    Locale m_locale;
-	private LocalDateTime durationStart;
-	ArrayList<DateChangeListener> m_listenerList = new ArrayList<>();
+import java.util.ArrayList;
+import java.util.Locale;
+import java.util.TimeZone;
 
-    public TimeModel(Locale locale,TimeZone timeZone) {
+/** State model for time-only input widgets. PRD 014 Calendar migration:
+ *  the previous {@link java.util.Calendar} field is gone — {@link LocalTime}
+ *  is the right type for "hour + minute" with no date/zone semantics.
+ *  TimeZone parameter preserved on the public API (no-op now) for back-compat. */
+final class TimeModel {
+    LocalTime m_time;
+    Locale m_locale;
+    private TimeZone m_timeZone;
+    private LocalDateTime durationStart;
+    ArrayList<DateChangeListener> m_listenerList = new ArrayList<>();
+
+    public TimeModel(Locale locale, TimeZone timeZone) {
         m_locale = locale;
-        m_calendar = Calendar.getInstance(timeZone, m_locale);
-        trim(m_calendar);
-        m_calendar.setLenient(true);
+        m_timeZone = timeZone;
+        m_time = LocalTime.of(0, 0);
     }
 
     public void addDateChangeListener(DateChangeListener listener) {
@@ -45,64 +45,42 @@ final class TimeModel {
         m_listenerList.remove(listener);
     }
 
-    public Locale getLocale() {return m_locale; }
-    public LocalTime getTime() {
-        return LocalTime.of(
-            m_calendar.get(Calendar.HOUR_OF_DAY),
-            m_calendar.get(Calendar.MINUTE));
+    public Locale getLocale() { return m_locale; }
+    public LocalTime getTime() { return m_time; }
+
+    public LocalDateTime getDurationStart() {
+        return durationStart;
     }
 
-    public LocalDateTime getDurationStart()
-    {
-		return durationStart;
-	}
+    public void setDurationStart(LocalDateTime durationStart) {
+        if (durationStart == null) {
+            this.durationStart = null;
+            return;
+        }
+        // Trim to hour+minute precision to match the previous Calendar.trim semantic.
+        this.durationStart = durationStart.withSecond(0).withNano(0);
+    }
 
-	public void setDurationStart(LocalDateTime durationStart)
-	{
-		if ( durationStart == null)
-		{
-			this.durationStart = durationStart;
-			return;
-		}
-		Calendar clone = Calendar.getInstance(m_calendar.getTimeZone(), m_locale);
-		clone.setTimeInMillis(DateTools.toMilli(durationStart));
-		trim(clone);
-		this.durationStart = DateTools.toLocalDateTime(clone.getTimeInMillis());
-	}
-
-    // #TODO Property change listener for TimeZone
     public void setTimeZone(TimeZone timeZone) {
-        m_calendar.setTimeZone(timeZone);
+        m_timeZone = timeZone;
     }
 
     public TimeZone getTimeZone() {
-        return m_calendar.getTimeZone();
+        return m_timeZone;
     }
 
-    public void setTime(int hours,int minutes) {
-        m_calendar.set(Calendar.HOUR_OF_DAY,hours);
-        m_calendar.set(Calendar.MINUTE,minutes);
-        trim(m_calendar);
+    public void setTime(int hours, int minutes) {
+        m_time = LocalTime.of(hours, minutes);
         fireDateChanged();
-   }
+    }
 
     public void setTime(LocalTime time) {
-        m_calendar.set(Calendar.HOUR_OF_DAY, time.getHour());
-        m_calendar.set(Calendar.MINUTE, time.getMinute());
-        trim(m_calendar);
+        m_time = LocalTime.of(time.getHour(), time.getMinute());
         fireDateChanged();
-   }
-
-    public boolean sameTime(LocalTime time) {
-        return getTime().equals(LocalTime.of(time.getHour(), time.getMinute()));
     }
 
-    private void trim(Calendar calendar) {
-    	int hours = calendar.get(Calendar.HOUR_OF_DAY);
-    	int minutes = calendar.get(Calendar.MINUTE);
-    	calendar.setTimeInMillis(0);
-    	calendar.set(Calendar.HOUR_OF_DAY, hours);
-    	calendar.set(Calendar.MINUTE, minutes);
+    public boolean sameTime(LocalTime time) {
+        return m_time.equals(LocalTime.of(time.getHour(), time.getMinute()));
     }
 
     public DateChangeListener[] getDateChangeListeners() {
@@ -111,12 +89,9 @@ final class TimeModel {
 
     protected void fireDateChanged() {
         DateChangeListener[] listeners = getDateChangeListeners();
-        DateChangeEvent evt = new DateChangeEvent(this, LocalDate.now().atTime(getTime()));
-        for (int i = 0;i<listeners.length; i++) {
+        DateChangeEvent evt = new DateChangeEvent(this, LocalDate.now().atTime(m_time));
+        for (int i = 0; i < listeners.length; i++) {
             listeners[i].dateChanged(evt);
         }
     }
 }
-
-
-

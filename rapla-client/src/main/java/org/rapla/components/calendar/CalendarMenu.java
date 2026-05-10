@@ -38,9 +38,9 @@ import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
-import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.Calendar;
+import java.time.Month;
+import java.time.format.TextStyle;
 import java.util.Collection;
 import java.util.TimeZone;
 import java.time.LocalDateTime;
@@ -295,25 +295,16 @@ public class CalendarMenu extends JPanel implements MenuElement {
         add(labelCurrentDay,BorderLayout.SOUTH);
     }
 
-    private String[] createMonthNames( ) {
-        Calendar calendar = Calendar.getInstance(m_model.getLocale());
-        calendar.setLenient(true);
-        Collection<String> monthNames = new ArrayList<>();
-        SimpleDateFormat format = new SimpleDateFormat("MMM",m_model.getLocale());
-        int firstMonth = 0;
-        int month = 0;
-        while (true) {
-            calendar.set(Calendar.DATE,1);
-            calendar.set(Calendar.MONTH,month);
-            if (month == 0)
-                firstMonth = calendar.get(Calendar.MONTH);
-            else
-                if (calendar.get(Calendar.MONTH) == firstMonth)
-                    break;
-            monthNames.add(format.format(calendar.getTime()));
-            month ++;
+    private String[] createMonthNames() {
+        // Gregorian calendar: 12 months. (Some non-Gregorian calendars have
+        // 13 months — but LocalDate is Gregorian-only, matching Rapla's existing
+        // assumption everywhere else in the codebase.)
+        java.util.Locale locale = m_model.getLocale();
+        String[] names = new String[12];
+        for (int i = 0; i < 12; i++) {
+            names[i] = Month.of(i + 1).getDisplayName(TextStyle.SHORT, locale);
         }
-        return monthNames.toArray(new String[0]);
+        return names;
     }
 
     private void processCalendarKey(KeyEvent e) {

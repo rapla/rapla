@@ -47,7 +47,6 @@ import java.awt.image.BufferedImage;
 import java.net.URL;
 import java.text.DateFormat;
 import java.util.ArrayList;
-import java.util.Calendar;
 import java.util.Collection;
 import java.util.Locale;
 import java.util.TimeZone;
@@ -128,12 +127,9 @@ public final class RaplaTime extends RaplaComboBox {
     
     protected Image createClockImage() {
         BufferedImage image = new BufferedImage( 17, 17, BufferedImage.TYPE_INT_ARGB);
-        Calendar calendar = Calendar.getInstance(getTimeZone(),m_timeModel.getLocale());
         LocalTime modelTime = m_timeModel.getTime();
-        calendar.set(Calendar.HOUR_OF_DAY, modelTime.getHour());
-        calendar.set(Calendar.MINUTE, modelTime.getMinute());
-        int hourOfDay  = calendar.get( Calendar.HOUR_OF_DAY) % 12; 
-        int minute  = calendar.get( Calendar.MINUTE);
+        int hourOfDay = modelTime.getHour() % 12;
+        int minute = modelTime.getMinute();
         
         Graphics g = image.getGraphics();
         
@@ -416,23 +412,24 @@ class TimeList extends JPanel implements MenuElement,MouseListener,MouseMotionLi
 	public void setModel(TimeModel model,DateFormat format) {
         m_timeModel = model;
         m_format = (DateFormat) format.clone();
-        Calendar calendar = Calendar.getInstance(m_format.getTimeZone(),model.getLocale());
+        java.time.ZoneId zoneId = m_format.getTimeZone().toZoneId();
         DefaultListModel listModel = new DefaultListModel();
         for (int i=0;i<24 * m_rowsPerHour;i++) {
             int hour = i/m_rowsPerHour;
             int minute = (i%m_rowsPerHour) * m_minutesPerRow;
-            calendar.setTimeInMillis(0);
-			calendar.set(Calendar.HOUR_OF_DAY,hour );
-			calendar.set(Calendar.MINUTE,minute);
+            // Build a Date at "today, hour:minute" in the format's timezone, since
+            // SimpleDateFormat needs a Date for format(...).
+            LocalTime slotTime = LocalTime.of(hour, minute);
+            java.util.Date slotDate = java.util.Date.from(LocalDate.now().atTime(slotTime).atZone(zoneId).toInstant());
             LocalDateTime durationStart = m_timeModel.getDurationStart();
             String duration = "";
             if ( m_renderer != null && durationStart != null)
             {
-                long millis = calendar.getTimeInMillis() - DateTools.toMilli(durationStart);
+                long millis = slotDate.getTime() - DateTools.toMilli(durationStart);
                 int durationInMinutes = (int) (millis / (1000 * 60));
 				duration = m_renderer.getDurationString(durationInMinutes);
             }
-            String timeWithoutDuration = m_format.format(new java.util.Date(calendar.getTimeInMillis()));
+            String timeWithoutDuration = m_format.format(slotDate);
             String time = timeWithoutDuration;
             if ( duration != null)
             {
@@ -499,10 +496,8 @@ class TimeList extends JPanel implements MenuElement,MouseListener,MouseMotionLi
     }
 
     public void selectTime(LocalDateTime time) {
-        Calendar calendar = Calendar.getInstance(m_timeModel.getTimeZone(),m_timeModel.getLocale());
-        calendar.setTimeInMillis(DateTools.toMilli(time));
-        int index = (calendar.get(Calendar.HOUR_OF_DAY))  * m_rowsPerHour
-            + (calendar.get(Calendar.MINUTE) / m_minutesPerRow);
+        int index = time.getHour() * m_rowsPerHour
+            + (time.getMinute() / m_minutesPerRow);
         select(index);
     }
 
@@ -567,13 +562,8 @@ class TimeList extends JPanel implements MenuElement,MouseListener,MouseMotionLi
         int index = m_list.getSelectedIndex();
         int hour = getHourForIndex( index );
         int minute = getMinuteForIndex( index );
-        Calendar calendar = Calendar.getInstance(m_timeModel.getTimeZone(),m_timeModel.getLocale());
         if (hour >= 0) {
-            calendar.set(Calendar.HOUR_OF_DAY,hour );
-            calendar.set(Calendar.MINUTE,minute);
-            calendar.set(Calendar.SECOND,0);
-            calendar.set(Calendar.MILLISECOND,0);
-            m_timeModel.setTime(LocalTime.of(calendar.get(Calendar.HOUR_OF_DAY), calendar.get(Calendar.MINUTE)));
+            m_timeModel.setTime(LocalTime.of(hour, minute));
         }
     }
 

@@ -47,7 +47,11 @@
 		<doc.developer-list>rapla-developers@lists.sourceforge.net</doc.developer-list>
 		<doc.homepage>http://rapla.org</doc.homepage>
 		<rapla.module>moduleDescription</rapla.module>
-		<keystore.file>raplaselfsigned.ks</keystore.file>
+		<!-- Default to the committed dev keystore at the reactor root.
+		     ${maven.multiModuleProjectDirectory} is the repo root regardless of which
+		     module Maven is invoked from, so the path resolves correctly when the
+		     jarsigner plugin runs from rapla-app/. Override via -Dkeystore.file=... -->
+		<keystore.file>${maven.multiModuleProjectDirectory}/raplaselfsigned.ks</keystore.file>
 		<keystore.alias>rapla</keystore.alias>
 		<keystore.password>raplaselfsigned</keystore.password>
 		<keystore.keypass>${keystore.password}</keystore.keypass>

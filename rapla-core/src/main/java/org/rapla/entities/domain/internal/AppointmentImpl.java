@@ -484,7 +484,7 @@ public final class AppointmentImpl extends SimpleEntity implements Appointment
         if (getMaxEnd() != null && !start2.isBefore(getMaxEnd()))
             return false;
 
-        if (DateTools.toMilli(this.start) >= DateTools.toMilli(end2))
+        if (!this.start.isBefore(end2))
             return false;
 
         // "Does any occurrence overlap the window?" — visitor returns true on
@@ -623,10 +623,10 @@ public final class AppointmentImpl extends SimpleEntity implements Appointment
         Repeating r2 = a2.getRepeating();
         LocalDateTime maxEnd = r2.getEnd();
         // overlaps will be checked up to 250 weeks (~5 years) from now
-        long maxCheck = System.currentTimeMillis() + DateTools.MILLISECONDS_PER_WEEK * 250;
-        if (maxEnd == null || DateTools.toMilli(maxEnd) > maxCheck)
+        LocalDateTime maxCheck = LocalDateTime.now().plusWeeks(250);
+        if (maxEnd == null || maxEnd.isAfter(maxCheck))
         {
-            maxEnd = DateTools.toLocalDateTime(maxCheck);
+            maxEnd = maxCheck;
         }
         return processBlocks(getStart(), maxEnd,
                 (start, end, ex) -> a2.overlaps(start, end, true),
@@ -661,9 +661,9 @@ public final class AppointmentImpl extends SimpleEntity implements Appointment
         int i2 = 0;
         long x = 0;
         if (exceptions1.length>i1)
-            DD=DE?BUG: print("Exception a1: " + fe(DateTools.toMilli(exceptions1[i1])));
+            DD=DE?BUG: print("Exception a1: " + fe(exceptions1[i1]));
         if (exceptions2.length>i2)
-            DD=DE?BUG: print("Exception a2: " + fe(DateTools.toMilli(exceptions2[i2])));
+            DD=DE?BUG: print("Exception a2: " + fe(exceptions2[i2]));
         long exceptionTime1 = 0;
         long exceptionTime2 = 0;
   
@@ -751,7 +751,7 @@ public final class AppointmentImpl extends SimpleEntity implements Appointment
 
     /* Formats 2 dates as appointment. Used by toString and DEBUG print. */
     static String f(LocalDateTime start, LocalDateTime end) {
-        if (DateTools.isSameDay(DateTools.toMilli(start), DateTools.toMilli(end))) {
+        if (DateTools.isSameDay(start, end)) {
             return DateTools.formatDateTime(start) + "-" +  DateTools.formatTime(end);
         } else {
             return DateTools.formatDateTime(start) + "-" +  DateTools.formatDateTime(end);

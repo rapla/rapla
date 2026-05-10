@@ -24,10 +24,11 @@ import java.text.DateFormat;
 import java.text.FieldPosition;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
-import java.util.Calendar;
+import java.time.LocalDate;
+import java.time.ZoneId;
+import java.util.Date;
 import java.util.Locale;
 import java.util.TimeZone;
-import java.time.LocalDate;
 /** The DateField only accepts characters that are part of
  * DateFormat.getDateInstance(DateFormat.SHORT,locale).  The
  * inputblocks are [date,month,year]. The order of the input-blocks is
@@ -39,9 +40,18 @@ import java.time.LocalDate;
 final public class DateField extends AbstractBlockField {
     private static final long serialVersionUID = 1L;
 
+    /** Local field-rank constants — used to identify date components in {@link #m_rank}.
+     *  Replaces the {@link java.util.Calendar} integer-field constants this class
+     *  previously borrowed (PRD 014 Calendar migration). Their numeric values are
+     *  arbitrary; only equality comparisons matter. */
+    private static final int FIELD_DATE = 0;
+    private static final int FIELD_MONTH = 1;
+    private static final int FIELD_YEAR = 2;
+
     private DateFormat m_outputFormat;
     private DateFormat m_parsingFormat;
-    private final Calendar m_calendar;
+    private LocalDate m_date;
+    private TimeZone m_timeZone;
     private int[] m_rank = null;
     private char[] m_separators;
     private SimpleDateFormat m_weekdayFormat;
@@ -77,10 +87,18 @@ final public class DateField extends AbstractBlockField {
 
     public DateField(Locale locale,TimeZone timeZone) {
         super();
-        m_calendar = Calendar.getInstance(timeZone, locale);
+        m_timeZone = timeZone;
+        m_date = LocalDate.now();
         super.setLocale(locale);
         setFormat();
         setDate(LocalDate.now());
+    }
+
+    /** {@code DateFormat}/{@code SimpleDateFormat} only accept {@link Date} —
+     *  this is the only place we cross that boundary. The TimeZone the format
+     *  was created with applies. */
+    private Date asDate() {
+        return Date.from(m_date.atStartOfDay(m_timeZone.toZoneId()).toInstant());
     }
 
 
@@ -99,62 +117,61 @@ final public class DateField extends AbstractBlockField {
     private void setFormat() {
         m_parsingFormat = DateFormat.getDateInstance(DateFormat.SHORT, getLocale());
         m_weekdayFormat = new SimpleDateFormat("EE", getLocale());
-        TimeZone timeZone = getTimeZone();
+        TimeZone timeZone = m_timeZone;
 		m_parsingFormat.setTimeZone(timeZone);
         m_weekdayFormat.setTimeZone(timeZone);
 
-        String formatStr = m_parsingFormat.format(m_calendar.getTime());
+        Date sample = asDate();
+        String formatStr = m_parsingFormat.format(sample);
         FieldPosition datePos = new FieldPosition(DateFormat.DATE_FIELD);
         FieldPosition monthPos = new FieldPosition(DateFormat.MONTH_FIELD);
         FieldPosition yearPos = new FieldPosition(DateFormat.YEAR_FIELD);
-        m_parsingFormat.format(m_calendar.getTime(), new StringBuffer(),datePos);
-        m_parsingFormat.format(m_calendar.getTime(), new StringBuffer(),monthPos);
-        m_parsingFormat.format(m_calendar.getTime(), new StringBuffer(),yearPos);
+        m_parsingFormat.format(sample, new StringBuffer(), datePos);
+        m_parsingFormat.format(sample, new StringBuffer(), monthPos);
+        m_parsingFormat.format(sample, new StringBuffer(), yearPos);
 
         int mp = monthPos.getBeginIndex();
         int dp = datePos.getBeginIndex();
         int yp = yearPos.getBeginIndex();
         int[] pos = null;
-        //      System.out.println(formatStr + " day:"+dp+" month:"+mp+" year:"+yp);
         if (mp<0 || dp<0 || yp<0) {
             throw new IllegalArgumentException("Can't parse the date-format for this locale");
         }
         // quick and diry sorting
         if (dp<mp && mp<yp) {
             pos = new int[] {dp,mp,yp};
-            m_rank = new int[] {Calendar.DATE, Calendar.MONTH, Calendar.YEAR};
+            m_rank = new int[] {FIELD_DATE, FIELD_MONTH, FIELD_YEAR};
         } else if (dp<yp && yp<mp) {
             pos = new int[] {dp,yp,mp};
-            m_rank = new int[] {Calendar.DATE, Calendar.YEAR, Calendar.MONTH};
+            m_rank = new int[] {FIELD_DATE, FIELD_YEAR, FIELD_MONTH};
         } else if (mp<dp && dp<yp) {
             pos = new int[] {mp,dp,yp};
-            m_rank = new int[] {Calendar.MONTH, Calendar.DATE, Calendar.YEAR};
+            m_rank = new int[] {FIELD_MONTH, FIELD_DATE, FIELD_YEAR};
         } else if (mp<yp && yp<dp) {
             pos = new int[] {mp,yp,dp};
-            m_rank = new int[] {Calendar.MONTH, Calendar.YEAR, Calendar.DATE};
+            m_rank = new int[] {FIELD_MONTH, FIELD_YEAR, FIELD_DATE};
         } else if (yp<dp && dp<mp) {
             pos = new int[] {yp,dp,mp};
-            m_rank = new int[] {Calendar.YEAR, Calendar.DATE, Calendar.MONTH};
+            m_rank = new int[] {FIELD_YEAR, FIELD_DATE, FIELD_MONTH};
         } else if (yp<mp && mp<dp) {
             pos = new int[] {yp,mp,dp};
-            m_rank = new int[] {Calendar.YEAR, Calendar.MONTH, Calendar.DATE};
+            m_rank = new int[] {FIELD_YEAR, FIELD_MONTH, FIELD_DATE};
         } else {
             throw new IllegalStateException("Ordering y=" +yp + " d=" +dp + " m="+mp +" not supported");
         }
         char firstSeparator = formatStr.charAt(pos[1]-1);
         char secondSeparator = formatStr.charAt(pos[2]-1);
-        //      System.out.println("first-sep:"+firstSeparator+" sec-sep:"+secondSeparator);
         if (Character.isDigit(firstSeparator)
             || Character.isDigit(secondSeparator))
             throw new IllegalArgumentException("Can't parse the date-format for this locale");
         m_separators = new char[] {firstSeparator,secondSeparator};
         StringBuffer buf = new StringBuffer();
         for (int i=0;i<m_rank.length;i++) {
-            if (m_rank[i] == Calendar.YEAR) {
+            if (m_rank[i] == FIELD_YEAR) {
                 buf.append("yyyy");
-            } else if (m_rank[i] == Calendar.MONTH) {
+            } else if (m_rank[i] == FIELD_MONTH) {
                 buf.append("MM");
-            } else if (m_rank[i] == Calendar.DATE) {
+            } else if (m_rank[i] == FIELD_DATE) {
                 buf.append("dd");
             }
 
@@ -170,10 +187,7 @@ final public class DateField extends AbstractBlockField {
     }
 
     public TimeZone getTimeZone() {
-        if (m_calendar != null)
-            return m_calendar.getTimeZone();
-        return
-            null;
+        return m_timeZone;
     }
 
     public LocalDate getDate()
@@ -182,7 +196,7 @@ final public class DateField extends AbstractBlockField {
         {
             return null;
         }
-        return DateTools.toLocalDateTime(m_calendar.getTimeInMillis()).toLocalDate();
+        return m_date;
     }
 
     public void setDate(LocalDate value)
@@ -197,21 +211,19 @@ final public class DateField extends AbstractBlockField {
         nullValue = value == null;
         if ( !nullValue)
         {
-            m_calendar.setTimeInMillis(DateTools.toMilli(value));   // LocalDate → millis at start of day
+            m_date = value;
             if (m_dateRenderer != null) {
                    renderingInfo = m_dateRenderer.getRenderingInfo(
-                                                m_calendar.get(Calendar.DAY_OF_WEEK)
-                                                ,m_calendar.get(Calendar.DATE)
-                                                ,m_calendar.get(Calendar.MONTH) + 1 
-                                                ,m_calendar.get(Calendar.YEAR)
-                                                );
+                           DateTools.mapDateAPIToRapla(m_date.getDayOfWeek())
+                           , m_date.getDayOfMonth()
+                           , m_date.getMonthValue()
+                           , m_date.getYear()
+                   );
                    String text = renderingInfo.getTooltipText();
                    setToolTipText(text);
             }
-            // m_outputFormat is a SimpleDateFormat (java.text) which only accepts java.util.Date.
-            // m_calendar was already set to value's millis at line above — reuse its Date.
-            String formatedDate = m_outputFormat.format(m_calendar.getTime());
-			setText(formatedDate);
+            String formatedDate = m_outputFormat.format(asDate());
+            setText(formatedDate);
         }
         else
         {
@@ -248,20 +260,19 @@ final public class DateField extends AbstractBlockField {
         if (m_rank.length<block)
             return;
 
-        if (type == Calendar.MONTH)
-            if (Math.abs(count) == 10)
-                m_calendar.add(type,count/Math.abs(count) * 3);
-            else
-                m_calendar.add(type,count/Math.abs(count));
-        else if (type == Calendar.DATE)
-            if (Math.abs(count) == 10)
-                m_calendar.add(type,count/Math.abs(count) * 7);
-            else
-                m_calendar.add(type,count/Math.abs(count));
-        else
-            m_calendar.add(type,count);
+        int step;
+        if (type == FIELD_MONTH) {
+            step = (Math.abs(count) == 10) ? count / Math.abs(count) * 3 : count / Math.abs(count);
+            m_date = m_date.plusMonths(step);
+        } else if (type == FIELD_DATE) {
+            step = (Math.abs(count) == 10) ? count / Math.abs(count) * 7 : count / Math.abs(count);
+            m_date = m_date.plusDays(step);
+        } else {
+            // FIELD_YEAR
+            m_date = m_date.plusYears(count);
+        }
 
-        setDate(DateTools.toLocalDateTime(m_calendar.getTimeInMillis()).toLocalDate());
+        setDate(m_date);
         calcBlocks(blocks);
         markBlock(blocks,block);
     }
@@ -281,8 +292,10 @@ final public class DateField extends AbstractBlockField {
                 nullValue = true;
                 return true;
             }
-            m_calendar.setTime(m_parsingFormat.parse(dateTxt));
-            
+            // Parse via DateFormat (returns Date), then convert to LocalDate
+            // using the configured TimeZone.
+            Date parsed = m_parsingFormat.parse(dateTxt);
+            m_date = parsed.toInstant().atZone(m_timeZone.toZoneId()).toLocalDate();
             nullValue = false;
             return true;
         } catch (ParseException e) {
@@ -322,7 +335,7 @@ final public class DateField extends AbstractBlockField {
         if (!m_weekdaysVisible)
             return;
         Insets insets = getInsets();
-        final String format = nullValue ? "" :m_weekdayFormat.format(m_calendar.getTime());
+        final String format = nullValue ? "" : m_weekdayFormat.format(asDate());
         String s = small(format);
         FontMetrics fm = g.getFontMetrics();
         int width = fm.stringWidth(s);

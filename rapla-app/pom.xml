@@ -24,26 +24,33 @@
             </resource>
         </resources>
         <plugins>
-            <!-- JNLP webclient/ staging for Spring Boot fat JAR. All executions bind to
-                 prepare-package; in-phase order = POM declaration order, with profile plugins
-                 appended last (so the signing plugin runs after every step below).
-                 (1) maven-dependency-plugin → target/webclient/ (raw client-runtime jars).
-                 (2) maven-resources-plugin → target/classes/static/webclient/ (the bundled
-                     copy spring-boot:repackage embeds in the fat JAR; static/** is served
-                     automatically).
-                 (3) antrun add-jnlp-manifest-attributes → injects Permissions: all-permissions
-                     (and Codebase: *, Application-Name) into every bundled jar's MANIFEST.MF.
-                     Required by Java Web Start since 7u51 for <all-permissions/> JNLPs.
-                 (4) antrun strip-mr-from-slf4j-api → removes META-INF/versions/ entries from
-                     slf4j-api specifically. icedtea-netx 1.x rejects the MR module-info.class
-                     entry as unsigned; OWS 1.13+ doesn't need this strip but it's safe.
-                 (5) antrun generate-clientlibs-properties → writes the ;-separated jar list
-                     to target/classes/clientlibs.properties; RaplaJNLPPageGenerator reads it.
-                 (6) (profile) maven-jarsigner-plugin → signs target/classes/static/webclient/.
-                     Must run AFTER (3) and (4) — both modify jar contents, which would
-                     invalidate prior signatures.
-                 See docs/development.md and .agents/skills/test-jnlp-launch/SKILL.md for the
-                 end-to-end OWS launch flow this enables. -->
+            <!-- JNLP webclient/ build flow for Spring Boot fat JAR. Single-copy strategy:
+                 jars live ONCE in BOOT-INF/lib/ (signed, manifest-patched), and
+                 WebClientJarController streams them out at /webclient/X.jar. No duplicate
+                 under static/webclient/ — saves ~14 MB on the fat JAR.
+
+                 prepare-package phase (in declaration order, profile plugins append last):
+                 (1) maven-dependency-plugin:copy-dependencies → target/webclient/
+                     (raw client-runtime jars per <includeArtifactIds>).
+                 (2) antrun:add-jnlp-manifest-attributes → injects
+                     Permissions: all-permissions / Codebase: * / Application-Name: Rapla
+                     into every staged jar's MANIFEST.MF. Required since Java 7u51.
+                 (3) antrun:strip-mr-from-slf4j-api → removes META-INF/versions/ entries
+                     from slf4j-api (icedtea-netx 1.x rejects MR module-info.class).
+                 (4) antrun:generate-clientlibs-properties → writes ;-separated jar list
+                     to target/classes/clientlibs.properties (read by RaplaJNLPPageGenerator).
+                 (5) (profile) maven-jarsigner-plugin → signs target/webclient/*.jar.
+
+                 package phase:
+                 (6) maven-jar-plugin → builds the regular rapla-app.jar.
+                 (7) spring-boot-maven-plugin:repackage → wraps it as a fat JAR, bundles
+                     dependencies (UNSIGNED, from Maven's resolved deps) into BOOT-INF/lib/.
+                 (8) antrun:replace-bootinf-lib-with-signed → updates the fat JAR in place,
+                     replacing each BOOT-INF/lib/X.jar entry with the signed copy from
+                     target/webclient/. The server JVM doesn't care about signatures; the
+                     same single physical copy serves the JNLP launcher.
+
+                 See docs/development.md and .agents/skills/test-jnlp-launch/SKILL.md. -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-dependency-plugin</artifactId>
@@ -81,7 +88,15 @@
                                  surface but bridges every call to SLF4J → logback for unified
                                  output. The two artifacts CONFLICT (same class names) so use ONLY
                                  one — commons-logging is excluded transitively. -->
-                            <includeArtifactIds>rapla-client,rapla-core,spring-beans,spring-context,spring-core,spring-web,jackson-core,jackson-databind,jackson-annotations,jakarta.ws.rs-api,jakarta.annotation-api,slf4j-api,logback-classic,logback-core,jul-to-slf4j,jcl-over-slf4j,jspecify,rxjava,reactive-streams</includeArtifactIds>
+                            <!-- spring-aop and spring-expression: never IMPORTED by our code, but
+                                 spring-context's bean factory references them eagerly during startup
+                                 (TargetSource for proxy infrastructure, Expression for @Value/SpEL
+                                 evaluation hooks). Empirically required at runtime — dropping either
+                                 produced NoClassDefFoundError on the launched client. -->
+                            <!-- micrometer-observation/-commons: Spring 7's RestClient.Builder
+                                 factory hard-requires io.micrometer.observation.ObservationRegistry
+                                 even with no metrics configured. Was optional in Spring 6. -->
+                            <includeArtifactIds>rapla-client,rapla-core,spring-aop,spring-beans,spring-context,spring-core,spring-expression,spring-web,jackson-core,jackson-databind,jackson-annotations,jakarta.ws.rs-api,jakarta.annotation-api,slf4j-api,logback-classic,logback-core,jul-to-slf4j,jcl-over-slf4j,jspecify,rxjava,reactive-streams,micrometer-observation,micrometer-commons</includeArtifactIds>
                             <overWriteReleases>false</overWriteReleases>
                             <overWriteSnapshots>true</overWriteSnapshots>
                         </configuration>
@@ -92,8 +107,15 @@
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-resources-plugin</artifactId>
                 <executions>
+                    <!-- Bundle ONLY client-only jars under BOOT-INF/classes/static/webclient/.
+                         These are jars the server's bytecode never references (verified with
+                         strings on rapla-server + rapla-core), so they don't belong on the
+                         server's classpath. They live as static resources instead, served by
+                         the controller's fallback path. Keep this list narrow — most webclient
+                         jars are also used by the server (Spring, Jackson, slf4j, etc.) and
+                         stay in BOOT-INF/lib/ via the post-repackage replace step. -->
                     <execution>
-                        <id>bundle-webclient-into-fatjar</id>
+                        <id>bundle-client-only-into-static</id>
                         <phase>prepare-package</phase>
                         <goals>
                             <goal>copy-resources</goal>
@@ -104,7 +126,8 @@
                                 <resource>
                                     <directory>${project.build.directory}/webclient</directory>
                                     <includes>
-                                        <include>*.jar</include>
+                                        <include>rxjava-*.jar</include>
+                                        <include>rapla-client-*.jar</include>
                                     </includes>
                                 </resource>
                             </resources>
@@ -120,9 +143,10 @@
                     <!-- Java Web Start since 7u51 requires every signed jar in an
                          <all-permissions/> JNLP to declare Permissions: all-permissions
                          in its manifest. Inject that (plus Codebase: * and Application-Name)
-                         into every staged webclient jar BEFORE any signing profile fires.
-                         Runs against target/classes/static/webclient/ — the bundle the fat JAR
-                         actually ships, NOT the staging dir under target/webclient/. -->
+                         into every staged webclient jar in target/webclient/. The signing
+                         profile signs in-place here too; the resulting signed jars later
+                         REPLACE BOOT-INF/lib/ entries inside the fat JAR (see
+                         replace-bootinf-lib-with-signed below) so we ship one copy not two. -->
                     <execution>
                         <id>add-jnlp-manifest-attributes</id>
                         <phase>prepare-package</phase>
@@ -138,7 +162,7 @@
                                     <arg value="uvfm" />
                                     <srcfile />
                                     <arg file="${project.build.directory}/jnlp-manifest-attrs.txt" />
-                                    <fileset dir="${project.build.directory}/classes/static/webclient">
+                                    <fileset dir="${project.build.directory}/webclient">
                                         <include name="*.jar" />
                                     </fileset>
                                 </apply>
@@ -164,7 +188,7 @@
                         <configuration>
                             <target>
                                 <fileset id="slf4j.api.jars"
-                                         dir="${project.build.directory}/classes/static/webclient"
+                                         dir="${project.build.directory}/webclient"
                                          includes="slf4j-api-*.jar" />
                                 <pathconvert pathsep="," property="slf4j.api.list" refid="slf4j.api.jars" />
                                 <sequential>
@@ -199,6 +223,44 @@
                             </target>
                         </configuration>
                     </execution>
+                    <!-- Post-repackage: replace BOOT-INF/lib/X.jar entries inside the fat JAR
+                         with the signed copies from target/webclient/. This is the dedup step:
+                         instead of bundling a separate signed copy under static/webclient/
+                         (paid ~14 MB), we ship ONE physical copy in BOOT-INF/lib/, signed and
+                         manifest-patched. WebClientJarController serves /webclient/X.jar by
+                         streaming from BOOT-INF/lib/. The server's classloader doesn't care
+                         that the jars are signed — JVM ignores signatures for class loading.
+                         Phase=package binds AFTER spring-boot:repackage (also package phase,
+                         and declared earlier in plugin order so runs first within the phase). -->
+                    <execution>
+                        <id>replace-bootinf-lib-with-signed</id>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>run</goal>
+                        </goals>
+                        <configuration>
+                            <target>
+                                <mkdir dir="${project.build.directory}/fatjar-overlay/BOOT-INF/lib" />
+                                <copy todir="${project.build.directory}/fatjar-overlay/BOOT-INF/lib" overwrite="true">
+                                    <fileset dir="${project.build.directory}/webclient" includes="*.jar">
+                                        <!-- rxjava + rapla-client are excluded from BOOT-INF/lib/ via
+                                             spring-boot:repackage's <excludes> (server bytecode has 0 refs
+                                             to either). Don't add them back here; they live at
+                                             static/webclient/ and are served via the controller fallback. -->
+                                        <exclude name="rxjava-*.jar" />
+                                        <exclude name="rapla-client-*.jar" />
+                                    </fileset>
+                                </copy>
+                                <exec executable="jar" failonerror="true"
+                                      dir="${project.build.directory}/fatjar-overlay">
+                                    <arg value="-uf" />
+                                    <arg file="${project.build.directory}/${project.build.finalName}.jar" />
+                                    <arg value="BOOT-INF/lib" />
+                                </exec>
+                                <delete dir="${project.build.directory}/fatjar-overlay" />
+                            </target>
+                        </configuration>
+                    </execution>
                 </executions>
             </plugin>
             <plugin>
@@ -209,6 +271,27 @@
                 <configuration>
                     <mainClass>org.rapla.server.spring.RaplaSpringBootApplication</mainClass>
                     <skip>false</skip>
+                    <!-- Client-only jars excluded from BOOT-INF/lib/ — server bytecode has zero
+                         references to either (verified with strings on rapla-server + rapla-core).
+                         They live under BOOT-INF/classes/static/webclient/ instead and are served
+                         via RaplaJNLPController's static-resource fallback for the JNLP launcher.
+                           rxjava        — pure client-side reactive abstraction.
+                           rapla-client  — Swing UI module; server has 0 refs (org.rapla.client.internal
+                                          classes referenced from RaplaBuilder physically live in
+                                          rapla-core despite the misleading package name).
+                         org.reactivestreams CANNOT be excluded — Spring 7's spring-web,
+                         spring-core, spring-context, spring-security-* all reference it
+                         internally at runtime even with no reactive endpoints. -->
+                    <excludes>
+                        <exclude>
+                            <groupId>io.reactivex.rxjava3</groupId>
+                            <artifactId>rxjava</artifactId>
+                        </exclude>
+                        <exclude>
+                            <groupId>org.rapla</groupId>
+                            <artifactId>rapla-client</artifactId>
+                        </exclude>
+                    </excludes>
                 </configuration>
                 <executions>
                     <execution>
@@ -312,7 +395,7 @@
                     <plugin>
                         <groupId>org.apache.maven.plugins</groupId>
                         <artifactId>maven-jarsigner-plugin</artifactId>
-                        <version>1.4</version>
+                        <version>3.1.0</version>
                         <executions>
                             <execution>
                                 <id>sign-webclient-jks</id>
@@ -327,7 +410,7 @@
                             <keystore>${keystore.file}</keystore>
                             <keypass>${keystore.keypass}</keypass>
                             <storepass>${keystore.password}</storepass>
-                            <archiveDirectory>${project.build.directory}/classes/static/webclient</archiveDirectory>
+                            <archiveDirectory>${project.build.directory}/webclient</archiveDirectory>
                             <includes>
                                 <include>*.jar</include>
                             </includes>
@@ -362,7 +445,7 @@
                             <storepass>123456</storepass>
                             <alias>Certificate for PIV Authentication</alias>
                             <certchain>${project.basedir}/certificate-chain.pem</certchain>
-                            <archiveDirectory>${project.build.directory}/classes/static/webclient</archiveDirectory>
+                            <archiveDirectory>${project.build.directory}/webclient</archiveDirectory>
                             <includes>
                                 <include>*.jar</include>
                             </includes>
