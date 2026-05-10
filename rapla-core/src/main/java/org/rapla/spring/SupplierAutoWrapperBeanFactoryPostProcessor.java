@@ -1,4 +1,4 @@
-package org.rapla.client.spring;
+package org.rapla.spring;
 
 import org.springframework.beans.factory.config.BeanFactoryPostProcessor;
 import org.springframework.beans.factory.config.ConfigurableListableBeanFactory;
@@ -8,9 +8,6 @@ import org.springframework.core.ResolvableType;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
-import java.lang.reflect.ParameterizedType;
-import java.lang.reflect.Type;
-import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
@@ -20,23 +17,12 @@ import java.util.function.Supplier;
  * Spring auto-wires {@code ObjectProvider<T>} and {@code jakarta.inject.Provider<T>} but NOT
  * {@code java.util.function.Supplier<T>}. PRD 002's Provider→Supplier rename therefore needs
  * a wrapper bean for every {@code Supplier<X>} injection point.
- *
- * <p>This BFPP scans every registered bean class for fields and constructor parameters typed
- * {@code Supplier<X>}, and registers a singleton {@code Supplier<X>} bean per unique {@code X}
- * by closing over {@code beanFactory.getBean(X.class)}. The lookup is lazy — the lambda only
- * fires when {@code .get()} is called, mirroring the legacy {@code Provider<T>} semantics.
- *
- * <p>Self-contained alternative to per-type {@code @Bean Supplier<X>} factories that would
- * otherwise have to grow with every new {@code Supplier<X>} injection point.
  */
 public class SupplierAutoWrapperBeanFactoryPostProcessor implements BeanFactoryPostProcessor
 {
     @Override
     public void postProcessBeanFactory(ConfigurableListableBeanFactory beanFactory)
     {
-        // Dedupe by ResolvableType.toString() — ResolvableType.equals() is unreliable across
-        // Field/Constructor sources for the same generic type (e.g. Field-derived RT and
-        // ctor-param-derived RT for the same Supplier<RaplaFacade> may not be equal).
         Map<String, ResolvableType> wantedByName = new LinkedHashMap<>();
         for (String beanName : beanFactory.getBeanDefinitionNames())
         {
@@ -77,14 +63,10 @@ public class SupplierAutoWrapperBeanFactoryPostProcessor implements BeanFactoryP
     {
         if (!Supplier.class.equals(rt.resolve())) return;
         ResolvableType arg = rt.getGeneric(0);
-        if (arg.resolve() == null) return;  // unresolved type variable
+        if (arg.resolve() == null) return;
         out.putIfAbsent(arg.toString(), arg);
     }
 
-    /** Spring auto-collects {@code Set<X>}/{@code List<X>}/{@code Map<String,X>} at injection time
-     *  from individual {@code X} beans, but {@code BeanFactory.getBeanProvider(Set<X>)} does NOT
-     *  trigger that auto-collection — it looks for a literal bean of type {@code Set<X>}. So for
-     *  collection-typed Suppliers we have to do the collection ourselves. */
     private static Object resolveValue(ConfigurableListableBeanFactory bf, ResolvableType targetType)
     {
         Class<?> raw = targetType.resolve();
@@ -104,11 +86,5 @@ public class SupplierAutoWrapperBeanFactoryPostProcessor implements BeanFactoryP
             if (valueType != null) return bf.getBeansOfType(valueType);
         }
         return bf.getBeanProvider(targetType).getObject();
-    }
-
-    private static String decapitalize(String s)
-    {
-        if (s.isEmpty()) return s;
-        return Character.toLowerCase(s.charAt(0)) + s.substring(1);
     }
 }

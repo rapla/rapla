@@ -214,11 +214,12 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
     public <T extends Entity,S extends Entity> Promise<Void> storeAndRemoveAsync(final Collection<T> storeObjects,
                                                                                  final Collection<ReferenceInfo<S>> removeObjects, final User user, boolean forceRessourceDelete)
     {
-        return scheduler.run(()
-                ->
-        {
-
-        });
+        // Async sibling of the sync storeAndRemove. Per PRD 008 the sync path
+        // is the source of truth; this just wraps it on the scheduler so
+        // in-process callers (FacadeImpl.dispatch, CalendarModelImpl.save)
+        // get the Promise<Void> shape they expect. Was previously an empty
+        // stub that silently dropped writes (PRD 017 round 4 finding).
+        return scheduler.run(() -> storeAndRemove(storeObjects, removeObjects, user, forceRessourceDelete));
     }
 
     @Override
@@ -3955,11 +3956,53 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
     }
 
 
+    /** Generic, config-driven server-side merge gate. Replaces the legacy client-side
+     *  {@code MergeCheckExtension}. Configured via the
+     *  {@code rapla.merge.blocked-sync-attributes} property; empty list (the default)
+     *  means no merges are blocked. */
+    private volatile java.util.List<String> blockedMergeAttributeKeys = java.util.List.of();
+
+    public void setBlockedMergeAttributeKeys(java.util.List<String> keys)
+    {
+        this.blockedMergeAttributeKeys = (keys == null) ? java.util.List.of() : java.util.List.copyOf(keys);
+    }
+
+    public java.util.List<String> getBlockedMergeAttributeKeys()
+    {
+        return blockedMergeAttributeKeys;
+    }
+
+    private void checkBlockedMergeAttributes(Allocatable a) throws RaplaException
+    {
+        org.rapla.entities.dynamictype.Classification cls = a.getClassification();
+        for (String key : blockedMergeAttributeKeys)
+        {
+            org.rapla.entities.dynamictype.Attribute attr = cls.getAttribute(key);
+            if (attr == null) continue;
+            Object v = cls.getValueForAttribute(attr);
+            if (v != null && !v.toString().isEmpty())
+            {
+                throw new RaplaException("Cannot merge resource '" + a.getName(null)
+                        + "' — has external sync attribute '" + key + "' set");
+            }
+        }
+    }
+
     /*
      * Dependencies for belongsTo and package
      */
     protected void merge(Allocatable selectedObject, Set<ReferenceInfo<Allocatable>> allocatableIds, User user) throws RaplaException
     {
+        if (!blockedMergeAttributeKeys.isEmpty())
+        {
+            checkBlockedMergeAttributes(selectedObject);
+            for (ReferenceInfo<Allocatable> ref : allocatableIds)
+            {
+                if (selectedObject.getReference().equals(ref)) continue;
+                Allocatable other = tryResolve(ref);
+                if (other != null) checkBlockedMergeAttributes(other);
+            }
+        }
         final RaplaLock.WriteLock writeLock = writeLockIfLoaded("merging " + allocatableIds.size() + " allocatables into " + selectedObject.getId()  );
         try
         {

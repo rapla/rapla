@@ -3,7 +3,9 @@ package org.rapla.server.spring;
 import org.springframework.boot.jdbc.autoconfigure.DataSourceProperties;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 
 @ConfigurationProperties(prefix = "rapla")
@@ -14,6 +16,7 @@ public class RaplaServerProperties
     private Map<String, Boolean> services = new LinkedHashMap<>();
     private String mailSession;
     private String patchScript;
+    private Merge merge = new Merge();
 
     public Map<String, DataSourceProperties> getDbDatasources()
     {
@@ -63,5 +66,37 @@ public class RaplaServerProperties
     public void setPatchScript(String patchScript)
     {
         this.patchScript = patchScript;
+    }
+
+    public Merge getMerge()
+    {
+        return merge;
+    }
+
+    public void setMerge(Merge merge)
+    {
+        this.merge = merge;
+    }
+
+    /**
+     * Server-side merge-check config. {@link #blockedSyncAttributes} lists the
+     * dynamic-type attribute keys whose presence on a resource blocks a merge —
+     * a deployment-agnostic replacement for the legacy client-side
+     * {@code MergeCheckExtension}. Vanilla rapla leaves it empty (merges are
+     * unrestricted).
+     */
+    public static class Merge
+    {
+        private List<String> blockedSyncAttributes = new ArrayList<>();
+
+        public List<String> getBlockedSyncAttributes()
+        {
+            return blockedSyncAttributes;
+        }
+
+        public void setBlockedSyncAttributes(List<String> blockedSyncAttributes)
+        {
+            this.blockedSyncAttributes = blockedSyncAttributes;
+        }
     }
 }

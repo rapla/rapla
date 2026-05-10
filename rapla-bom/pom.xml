@@ -52,9 +52,14 @@
 		<keystore.password>raplaselfsigned</keystore.password>
 		<keystore.keypass>${keystore.password}</keystore.keypass>
 
-		<!-- PRD 017 Phase 2: default test lane excludes slow tagged tests.
-		     Override on CLI: mvn test -Dtest.excludedGroups= (empty = run all) -->
-		<test.excludedGroups>db,e2e</test.excludedGroups>
+		<!-- PRD 017 Phase 2 (+perf added in hardening round): default test
+		     lane excludes slow tagged tests.
+		     Override on CLI: mvn test -Dtest.excludedGroups= (empty = run all)
+		     Tags:
+		       db    — JDBC-touching (HSQLDB embedded; still seconds)
+		       e2e   — full @SpringBootTest acceptance, often RANDOM_PORT
+		       perf  — large-fixture stress / throughput tests (~10–60 s) -->
+		<test.excludedGroups>db,e2e,perf</test.excludedGroups>
 	</properties>
 	<distributionManagement>
 		<snapshotRepository>

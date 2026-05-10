@@ -7,11 +7,13 @@ import org.rapla.entities.extensionpoints.FunctionFactory;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.logger.Logger;
 import org.rapla.scheduler.CommandScheduler;
+import org.rapla.server.spring.RaplaServerProperties;
 import org.rapla.storage.CachableStorageOperator;
 import org.rapla.storage.ImportExportManager;
 import org.rapla.storage.dbfile.FileOperator;
 import org.rapla.storage.dbsql.DBOperator;
 import org.rapla.storage.impl.server.ImportExportManagerImpl;
+import org.rapla.storage.impl.server.LocalAbstractCachableOperator;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import java.util.function.Supplier;
@@ -32,10 +34,11 @@ public class ServerStorageSelector implements Supplier<CachableStorageOperator>
     final CommandScheduler scheduler;
     final Map<String, FunctionFactory> functionFactoryMap;
     final Set<PermissionExtension> permissionExtensions;
+    final RaplaServerProperties properties;
     ImportExportManager manager;
 
     @Autowired public ServerStorageSelector(ServerContainerContext containerContext, Logger logger, RaplaResources i18n, RaplaLocale raplaLocale, CommandScheduler scheduler, Map<String, FunctionFactory> functionFactoryMap,
-            Set<PermissionExtension> permissionExtensions)
+            Set<PermissionExtension> permissionExtensions, RaplaServerProperties properties)
     {
 
         this.containerContext = containerContext;
@@ -45,13 +48,24 @@ public class ServerStorageSelector implements Supplier<CachableStorageOperator>
         this.scheduler = scheduler;
         this.functionFactoryMap = functionFactoryMap;
         this.permissionExtensions = permissionExtensions;
+        this.properties = properties;
+    }
+
+    private void applyMergeConfig(LocalAbstractCachableOperator op)
+    {
+        if (properties != null && properties.getMerge() != null)
+        {
+            op.setBlockedMergeAttributeKeys(properties.getMerge().getBlockedSyncAttributes());
+        }
     }
 
     @NotNull private FileOperator createFileOperator()
     {
         final String raplafile = containerContext.getMainFilesource();
         final String fileDatasource = raplafile != null ? raplafile : "data/data.xml";
-        return new FileOperator(logger, i18n, raplaLocale, scheduler, functionFactoryMap, fileDatasource, permissionExtensions);
+        FileOperator op = new FileOperator(logger, i18n, raplaLocale, scheduler, functionFactoryMap, fileDatasource, permissionExtensions);
+        applyMergeConfig(op);
+        return op;
     }
 
     synchronized private ImportExportManager getImportExport()
@@ -72,7 +86,9 @@ public class ServerStorageSelector implements Supplier<CachableStorageOperator>
     {
         Supplier<ImportExportManager> importExportMananger = getImportExportManager();
         final DataSource dbDatasource = containerContext.getMainDbDatasource();
-        return new DBOperator(logger, i18n, raplaLocale, scheduler, functionFactoryMap, importExportMananger, dbDatasource, permissionExtensions);
+        DBOperator op = new DBOperator(logger, i18n, raplaLocale, scheduler, functionFactoryMap, importExportMananger, dbDatasource, permissionExtensions);
+        applyMergeConfig(op);
+        return op;
     }
 
 

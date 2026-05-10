@@ -1,7 +1,30 @@
 # PRD 003: Custom Deployment Model After Spring Migration
 
-**Status:** in-progress — major direction change 2026-05-07 (see "2026-05-07 Direction Change" below).
+**Status:** in-progress — major direction change 2026-05-07; rapla-side autoconfig (Phase A), pom rewrite (D1), config (D3) and `DhbwRaplaApplication` (D3) landed 2026-05-10. Annotation/Date/jcifs migration of dhbwrapla server source still pending under D2.
 **Date:** 2026-05-06
+
+## 2026-05-10 Implementation snapshot
+
+Landed this date:
+- **Rapla-server auto-configuration** (`RaplaServerAutoConfiguration` + `META-INF/spring/AutoConfiguration.imports`). `RaplaSpringBootApplication` is now a thin `@SpringBootApplication`. Verified by `AutoConfigImportTest` — a third-party `@SpringBootApplication` in a foreign package boots the full server stack via classpath alone. Resolves OQ6.
+- **dhbwrapla pom.xml rewrite** — parent=`rapla-bom` (with explicit `${rapla.version}` overrides on each rapla-* dep to defeat the inherited `${project.version}` interpolation), depends on `rapla-server` + `rapla-app`. Replaces system-scope JARs with maven deps (jcifs-ng, unboundid-ldapsdk 6.x, jtds, gson, jakarta.inject-api, jetbrains annotations). Uses Spring Boot's HikariCP for the secondary Dualis DataSource.
+- **dhbwrapla obsolete-files purge** — deleted `dhbwrapla-container/`, `lib/`, `src/main/java9/`, `src/main/webapp/`. Deleted the four obsolete Swing option panels (`DhbwAuthPluginOptionPanel`, `TerminalOption`, `MoradaPluginOptionPanel`, `DhbwMergeChecker` + test) and `DhbwResources` (replaced respectively by yaml config, server-rendered admin pages, and metadata-driven labels in PRD 012's wizard).
+- **`DhbwRaplaApplication`** thin `@SpringBootApplication(scanBasePackages={"org.rapla.dhbw","org.rapla.plugin.dhbw"})`. No `@Import` shim — autoconfig delivers rapla-server.
+- **`DhbwProperties`** absorbing all server-level dhbw config (auth, dualis datasource, morada, terminal). Replaces what the deleted Swing option panels used to write into rapla `Preferences`.
+- **`DhbwDatasourceConfig`** secondary `@Bean DataSource` for Dualis, qualified.
+- **`application.yml`** — pre-wired with `rapla.merge.blocked-sync-attributes=morada_id,dualis_id` (Phase G server-side merge gate), `rapla.externalevents.enabled=true` (PRD 012 external-event-import wizard activation), and `rapla.dhbw.*` placeholders.
+- **`TerminalUrlController`** — single small server-rendered HTML admin page (super-admin gated) replacing the URL-display field of the legacy `TerminalOption` Swing panel (the only HTML admin UI we keep; rest is yaml).
+- **`PromiseWait` shim** restored at `org.rapla.dhbw.server.PromiseWait` (the original `org.rapla.server.PromiseWait` was deleted from rapla-core during the Spring migration). Delegates to `SynchronizedCompletablePromise.waitFor`.
+- **`custom/pom.xml` deleted** from the rapla repo.
+- **Annotation migration partly mechanical-sed'd**: `javax.*` → `jakarta.*` imports flipped across all dhbw .java files; `@Extension(...)` → `@Component @Named(...)`; `@DefaultImplementation(...)` → `@Service`; `org.rapla.inject` imports stripped.
+
+Pending — the deeper API-drift work that mechanical sed cannot do (sized at the bottom):
+- Date → LocalDateTime / LocalDate migration impact across ~15 dhbw files (`AllocatableExporter`, `CourseExporter`/`2`/`3`, `DualisAPIImpl`, `MoradaRaplaMapping`, etc.) — rapla-core has migrated time signatures (`fillDate`, `cutDate`, `formatTime`, `addDay`, `toRaplaTime`) to LocalDateTime/LocalDate; dhbw call sites still pass legacy `java.util.Date`.
+- jcifs → jcifs-ng API change in `NtlmBindRequest` (`Type1Message`/`Type2Message` constructors changed).
+- Scheduler API: `CommandScheduler.scheduleAtGivenTime` was removed (PRD 002); `DualisSyncJobStarter` and `MoradaSyncJobStarter` use it. `DualisImportJob` and `MoradaImportJob` no longer satisfy the `Action` interface contract.
+- `DualisEventsLoaderImpl` rewrite as `ExternalEventImportService` (Phase E).
+- Remaining ~20 server-side `@Service`/`@Component` annotation cleanup (constructor injection, qualifier names).
+
 
 ## 2026-05-07 Direction Change — dhbwrapla becomes server-only
 

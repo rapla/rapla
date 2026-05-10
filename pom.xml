@@ -14,7 +14,9 @@
 		<module>rapla-client</module>
 		<module>rapla-server</module>
 		<module>rapla-app</module>
-		<!-- custom/ is intentionally NOT in the reactor — its WAR-overlay shape is being rethought; PRD 005 + PRD 003 (2026-05-07 direction change) will replace it. -->
+		<!-- PRD 003 direction change (2026-05-07) deleted the custom/ WAR-overlay parent.
+		     Custom deployments (e.g. dhbwrapla) now declare org.rapla:rapla-server as a
+		     dependency and pick up the server stack via Spring Boot autoconfig (Phase A). -->
 	</modules>
 
 	<profiles>
@@ -27,10 +29,18 @@
 		<profile>
 			<id>coverage</id>
 			<dependencies>
+				<!-- rapla-app excluded from class-scan: its target/classes
+				     contains JNLP webclient/ jars (multi-release shaded Jackson)
+				     that crash JaCoCo's bundle analyzer with "Can't add different
+				     class with same name". rapla-app's own bytecode is only
+				     RaplaSpringBootApplication.java — losing it from the report
+				     scan is fine, what matters is that rapla-app's jacoco.exec
+				     (the @SpringBootTest trace, which DOES exercise rapla-core /
+				     rapla-server code) gets folded in. The merge step below
+				     handles that. -->
 				<dependency><groupId>${project.groupId}</groupId><artifactId>rapla-core</artifactId><version>${project.version}</version></dependency>
 				<dependency><groupId>${project.groupId}</groupId><artifactId>rapla-client</artifactId><version>${project.version}</version></dependency>
 				<dependency><groupId>${project.groupId}</groupId><artifactId>rapla-server</artifactId><version>${project.version}</version></dependency>
-				<dependency><groupId>${project.groupId}</groupId><artifactId>rapla-app</artifactId><version>${project.version}</version></dependency>
 			</dependencies>
 			<build>
 				<plugins>
@@ -39,6 +49,26 @@
 						<artifactId>jacoco-maven-plugin</artifactId>
 						<version>0.8.11</version>
 						<executions>
+							<!-- Merge rapla-app's jacoco.exec into the aggregator's
+							     target/ dir. report-aggregate's default discovery
+							     (**/target/jacoco.exec) picks this up alongside the
+							     per-module exec files, so @SpringBootTest coverage
+							     gets attributed back to rapla-core / rapla-server
+							     bytecode in the final report. -->
+							<execution>
+								<id>aggregate-merge-app</id>
+								<phase>verify</phase>
+								<goals><goal>merge</goal></goals>
+								<configuration>
+									<destFile>${project.basedir}/target/jacoco.exec</destFile>
+									<fileSets>
+										<fileSet>
+											<directory>${project.basedir}/rapla-app/target</directory>
+											<includes><include>jacoco.exec</include></includes>
+										</fileSet>
+									</fileSets>
+								</configuration>
+							</execution>
 							<execution>
 								<id>aggregate</id>
 								<phase>verify</phase>

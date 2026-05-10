@@ -14,7 +14,6 @@ import org.rapla.client.event.ApplicationEvent;
 import org.rapla.client.event.ApplicationEvent.ApplicationEventContext;
 import org.rapla.client.event.ApplicationEventBus;
 import org.rapla.client.event.TaskPresenter;
-import org.rapla.client.extensionpoints.MergeCheckExtension;
 import org.rapla.client.internal.CommandAbortedException;
 import org.rapla.client.internal.SaveUndo;
 import org.rapla.components.util.DateTools;
@@ -76,7 +75,6 @@ public class EditTaskPresenter implements TaskPresenter
     private final EditTaskViewFactory editTaskViewFactory;
     AppointmentBlock appointmentBlock= null;
     final ReservationController reservationController;
-    private final Set<MergeCheckExtension> mergeCheckers;
     Subject<String> busyIdleObservable;
     EditTaskView editTaskView;
 
@@ -91,7 +89,7 @@ public class EditTaskPresenter implements TaskPresenter
 
     @Autowired
     public EditTaskPresenter(ClientFacade clientFacade, EditTaskViewFactory editTaskViewFactory, DialogUiFactoryInterface dialogUiFactory, RaplaResources i18n, ApplicationEventBus eventBus, CalendarSelectionModel model, Supplier<ReservationEdit> reservationEditProvider,
-                             ReservationController reservationController, Set<MergeCheckExtension> mergeCheckers, CommandScheduler scheduler)
+                             ReservationController reservationController, CommandScheduler scheduler)
     {
         this.editTaskViewFactory = editTaskViewFactory;
         this.dialogUiFactory = dialogUiFactory;
@@ -102,7 +100,6 @@ public class EditTaskPresenter implements TaskPresenter
         this.reservationEditProvider = reservationEditProvider;
         this.raplaFacade = clientFacade.getRaplaFacade();
         this.reservationController = reservationController;
-        this.mergeCheckers = mergeCheckers;
         this.busyIdleObservable = org.rapla.scheduler.Observables.createPublisher(scheduler.getExecutor());
     }
 
@@ -159,14 +156,9 @@ public class EditTaskPresenter implements TaskPresenter
 
                 }
 
-                if ( clazz.equals( Allocatable.class) && isMerge)
-                {
-                    for (MergeCheckExtension mergeCheckExtension : mergeCheckers)
-                    {
-                        final Collection allocatableCollection =  entities;
-                        mergeCheckExtension.precheckAllocatableSelection(allocatableCollection);
-                    }
-                }
+                // Server-side merge gate (rapla.merge.blocked-sync-attributes) replaces the
+                // legacy client-side MergeCheckExtension precheck. Errors surface from the
+                // server as RaplaException via the doMerge call later.
                 editTaskView = createEditDialog(entities,  popupContext, applicationEvent);
             }
             else if (CREATE_RESERVATION_FOR_DYNAMIC_TYPE.equals(taskId))

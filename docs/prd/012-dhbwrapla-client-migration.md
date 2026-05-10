@@ -1,7 +1,34 @@
 # PRD 012: Migrate dhbwrapla client-side plugin code to server pages / general rapla
 
-**Status:** draft
+**Status:** in-progress — rapla-side carve-out fully landed 2026-05-10 (`externaleventimport` wire contract + 12-file move + metadata-driven wizard refactor + `ExternalEventImportResources` bundle + property-gated activation). dhbwrapla server-side adapter (`DualisEventsLoaderImpl` → `ExternalEventImportService`) pending under PRD 003 D2/E.
 **Date:** 2026-05-08
+
+## 2026-05-10 Implementation snapshot
+
+**Major design refinement during implementation: server-driven UI metadata.** The wizard is fully generic — column labels, hierarchy levels, source name, and CSV-support flag all come from the server's `getMetadata()` response at runtime. Vanilla rapla carries zero domain-specific terminology (no "Studiengang", "Fakultät", "Dualis"). Every dhbw user-visible string lives in dhbw's server-side `getMetadata()` Java return value, NOT in any client-side `.properties` or `.java` file. Server-side `Locale`-aware metadata returns German strings to German clients. The wizard's UI templates parameterize the source-supplied nouns (e.g. `"Please choose at least one {0} from the list"` filled with `metadata.hierarchyLevels[leaf].label`).
+
+**Wire contract additions** (beyond original PRD 012 §4.1):
+- `getMetadata()` GET — returns `ExternalEventImportMetadata` (sourceName, hierarchyLevels, resultColumns, supportsCsvImport, csvFileFilterLabel, uiMessageOverrides, selectableAllocatableTypeKey, maxSelectableItems).
+- `uploadCsv(MultipartFile)` POST — server-side CSV parse, returns same `ExternalEventImportResult` shape as `loadEvents`.
+- `createReservations(CreateReservationsRequest)` POST — server-side reservation creation/sync. The wizard sends only picked source-item IDs; all dhbw mapping logic stays server-side.
+
+**Wire DTO simplification**: typed `ExternalExam`/`ExternalLecture`/`ExternalCourse` from the original PRD §4.1 are dropped in favor of a generic `ImportItem { sourceItemId, hierarchy: Map<String,String>, columns: Map<String,Object> }`. Wizard renders any column shape declared by `metadata.resultColumns`.
+
+**Activation gate**: `@Conditional(ExternalEventImportEnabledCondition.class)` (custom condition, not Spring Boot's `@ConditionalOnProperty`, since rapla-client deliberately stays on plain spring-context with no spring-boot-autoconfigure dep). The condition checks `rapla.externalevents.enabled`. Resolves OQ §4.3 in favor of property-gated activation (option b).
+
+**Files landed in rapla-core/`org.rapla.plugin.externaleventimport`**:
+- `ExternalEventImportPlugin` (constants), `ExternalEventImportService` (`@HttpExchange`), `ExternalEventImportMetadata`, `ExternalEventImportResult`, `ImportItem`, `ImportCriteria`, `CreateReservationsRequest`, `HierarchyLevel`, `ResultColumn`. Pinned by `ExternalEventImportServiceContractTest` (9 assertions).
+
+**Files landed in rapla-client/`org.rapla.plugin.externaleventimport.client[/swing]`** — replaces all 12 dhbwrapla `dualisimport/client/**`:
+- Top-level: `ExternalEventImportController`, `ExternalEventImportDialog` (interface), `ExternalEventImportSubmitCallback`, `ExternalEventSyncTaskPresenter`, `ExternalEventImportEnabledCondition`, `ExternalEventImportResources` (15-key bundle, EN+DE).
+- Swing: `ExternalEventImportPanel` (metadata-driven JTable), `ExternalEventImportAllocatableSelectionDialog`, `ExternalEventImportDialogImpl`, `ExternalEventSyncButtonExtension`, `ExternalEventImportWizard`, `XTableColumnModel` (copied verbatim).
+
+**dhbwrapla deletions**: `org.rapla.plugin.dhbw.dualisimport.client/**` (12 files), `DualisEventsLoader.java` + `DualisEventsResult.java` (moved upstream), `DhbwResources.java` + 2 `.properties` files (replaced by metadata).
+
+**Phases 1+2+3 (auth/terminal admin pages and index links)** — ALL DROPPED per user direction 2026-05-10. Auth+Morada+Terminal config moved to `application.yml` / `DhbwProperties` (no UI). Only one tiny admin page kept: `TerminalUrlController` for the encrypted export-URL query (PRD 003 §I).
+
+Pending: dhbwrapla server-side `DualisEventsLoaderImpl` rewrite as `ExternalEventImportService` impl with `Locale`-aware `getMetadata()` returning dhbw labels (PRD 003 Phase E).
+
 
 ## Goal
 

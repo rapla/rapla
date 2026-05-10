@@ -366,18 +366,18 @@ a row above and a corresponding entry in PRD 017's plan.
 #### Coverage report (JaCoCo)
 
 ```bash
-mvn -Pcoverage test                           # fast lane + coverage
-mvn -Pcoverage test -Dtest.excludedGroups=    # full lane + coverage (recommended)
+mvn -Pcoverage test                                    # per-module reports only
+mvn -Pcoverage verify -Dtest.excludedGroups=           # per-module + aggregate (recommended)
 ```
 
-Reports land at `<module>/target/site/jacoco/index.html`. The profile flips
-surefire from the default `forkCount=0` to `forkCount=1` because JaCoCo's
-`-javaagent` argLine needs a forked JVM. Off by default — the fork costs
-~10 s and the instrumentation isn't free.
+- Per-module: `<module>/target/site/jacoco/index.html` — what each module's *own* test suite covers.
+- Aggregate: `target/site/jacoco-aggregate/index.html` — full-stack picture, rolls up @SpringBootTest contributions back to rapla-core / rapla-server bytecode.
 
-**Caveat:** per-module reports only count coverage from each module's own
-surefire run. Tests in rapla-app that exercise rapla-server/rapla-core code
-land in rapla-app's `jacoco.exec`, not the upstream module's. A future
-aggregator-level `report-aggregate` (PRD 017 Phase 3 follow-up) would fix
-this; for now, read each module's report as "what does *this module's own
-test suite* cover."
+The profile flips surefire from `forkCount=0` to `forkCount=1` because
+JaCoCo's `-javaagent` argLine needs a forked JVM. Off by default — the fork
+costs ~10 s.
+
+The aggregate excludes rapla-app's `target/classes` from class-scanning
+(JNLP webclient/ jars crash JaCoCo's bundle analyzer). rapla-app's
+`jacoco.exec` is still folded in via a `merge` step, so its @SpringBootTest
+runs *do* attribute back to rapla-server/rapla-core in the aggregate.

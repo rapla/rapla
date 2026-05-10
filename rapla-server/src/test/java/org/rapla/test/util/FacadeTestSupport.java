@@ -4,6 +4,7 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.io.TempDir;
 import org.rapla.RaplaResources;
+import org.rapla.scheduler.Promise;
 import org.rapla.components.i18n.internal.AbstractBundleManager;
 import org.rapla.components.i18n.server.ServerBundleManager;
 import org.rapla.entities.domain.permission.PermissionExtension;
@@ -28,6 +29,9 @@ import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * Tier-2 base for tests that need a real {@link RaplaFacade} backed by a
@@ -95,5 +99,23 @@ public abstract class FacadeTestSupport
         {
             try { operator.disconnect(); } catch (Exception ignored) {}
         }
+    }
+
+    /**
+     * Synchronously wait on a {@link Promise} from a facade async API.
+     * The custom {@code Promise} has neither {@code .get()} nor
+     * {@code whenComplete}; this bridges via {@code thenAccept} +
+     * {@code exceptionally} backed by a {@link CountDownLatch}.
+     */
+    protected static <T> T waitFor(Promise<T> promise) throws Exception
+    {
+        AtomicReference<T> result = new AtomicReference<>();
+        AtomicReference<Throwable> err = new AtomicReference<>();
+        CountDownLatch done = new CountDownLatch(1);
+        promise.thenAccept(value -> { result.set(value); done.countDown(); })
+                .exceptionally(throwable -> { err.set(throwable); done.countDown(); });
+        if (!done.await(5, TimeUnit.SECONDS)) throw new IllegalStateException("Promise timeout");
+        if (err.get() != null) throw new RuntimeException(err.get());
+        return result.get();
     }
 }

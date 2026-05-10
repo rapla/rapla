@@ -334,9 +334,10 @@ public class ServerCoreConfig
                                                        RaplaLocale raplaLocale,
                                                        CommandScheduler scheduler,
                                                        Map<String, FunctionFactory> functionFactoryMap,
-                                                       Set<PermissionExtension> permissionExtensions)
+                                                       Set<PermissionExtension> permissionExtensions,
+                                                       RaplaServerProperties properties)
     {
         return new ServerStorageSelector(containerContext, logger, i18n, raplaLocale, scheduler,
-                functionFactoryMap, permissionExtensions);
+                functionFactoryMap, permissionExtensions, properties);
     }
 }

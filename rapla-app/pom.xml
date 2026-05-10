@@ -26,14 +26,17 @@
         <plugins>
             <!-- PRD 005 cleanup E2: JNLP webclient/ staging for Spring Boot fat JAR.
                  (1) maven-dependency-plugin copies the client-runtime jars into target/webclient/.
-                 (2) Optional signing profile (sign-jks / sign-pkcs11) signs them in place.
-                 (3) maven-resources-plugin copies the (signed) jars into target/classes/static/webclient/
+                 (2) maven-resources-plugin copies them into target/classes/static/webclient/
                      so spring-boot:repackage bundles them inside the fat JAR. Spring Boot serves
                      classpath:/static/** automatically, so RaplaJNLPController's <jar href="webclient/X.jar"/>
                      entries resolve at runtime.
-                 (4) antrun generates clientlibs.properties (the ;-separated list of jars in the
+                 (3) antrun generates clientlibs.properties (the ;-separated list of jars in the
                      codebase) into target/classes/, where RaplaJNLPPageGenerator.getClientLibs()
-                     reads it. -->
+                     reads it.
+                 (4) Optional signing profile (sign-jks / sign-pkcs11) signs the bundled copies
+                     under target/classes/static/webclient/ — must run AFTER the bundle step so the
+                     signatures land inside the fat JAR (signing the staging dir would be wasted —
+                     repackage takes target/classes/static/, not target/webclient/). -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-dependency-plugin</artifactId>
@@ -163,6 +166,32 @@
     </dependencies>
 
     <profiles>
+        <!-- PRD 017 Phase 3: skip rapla-app's per-module JaCoCo report. The
+             webclient/ directory under target/classes/static/ contains JNLP
+             jars (multi-release shaded Jackson) that JaCoCo's class scanner
+             chokes on with "Can't add different class with same name".
+             Rapla-app's own bytecode is just RaplaSpringBootApplication so
+             the per-module report adds no signal anyway — the cross-module
+             attribution lives in the aggregate at the reactor root. The
+             prepare-agent execution still runs, so rapla-app's test JVM
+             still writes a jacoco.exec for the aggregate to consume. -->
+        <profile>
+            <id>coverage</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.jacoco</groupId>
+                        <artifactId>jacoco-maven-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <id>jacoco-report</id>
+                                <phase>none</phase>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
         <!-- PRD 005 cleanup C: signing profiles relocated from the deleted root pom.xml
              into rapla-app, where the runnable fat JAR + JNLP webclient/ staging lives.
              archiveDirectory still points at ${project.build.directory}/${project.build.finalName}/webclient
@@ -191,7 +220,7 @@
                             <keystore>${keystore.file}</keystore>
                             <keypass>${keystore.keypass}</keypass>
                             <storepass>${keystore.password}</storepass>
-                            <archiveDirectory>${project.build.directory}/webclient</archiveDirectory>
+                            <archiveDirectory>${project.build.directory}/classes/static/webclient</archiveDirectory>
                             <includes>
                                 <include>*.jar</include>
                             </includes>
@@ -226,7 +255,7 @@
                             <storepass>123456</storepass>
                             <alias>Certificate for PIV Authentication</alias>
                             <certchain>${project.basedir}/certificate-chain.pem</certchain>
-                            <archiveDirectory>${project.build.directory}/webclient</archiveDirectory>
+                            <archiveDirectory>${project.build.directory}/classes/static/webclient</archiveDirectory>
                             <includes>
                                 <include>*.jar</include>
                             </includes>
