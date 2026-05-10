@@ -320,7 +320,112 @@ class ConflictPerformanceTest extends FacadeTestSupport
         liveSign("[perf]   averaged " + (ms * 1000.0 / iterations) + " µs/call");
         // Loose ceiling: 100 µs per call is pathologically slow for this size.
         long perCallUs = ms * 1000 / iterations;
-        assertTrue(perCallUs < 5_000,
-                "overlapsAppointment averaged " + perCallUs + " µs/call; budget 5000 µs");
+        // Budget tightened post-baseline (PRD 014 Phase 6c, 2026-05-10):
+        // 3-run median = 36 µs/call, max = 48 µs/call. Phase 7's signature
+        // flip is allowed ≤1.5× slowdown (~72 µs); 100 µs ceiling leaves
+        // noise headroom while catching anything that doubles per-call cost.
+        // Baseline: docs/perf/processblocks-baseline-2026-05-10.txt
+        assertTrue(perCallUs < 100,
+                "overlapsAppointment averaged " + perCallUs + " µs/call; budget 100 µs (was ~36 µs at baseline)");
+    }
+
+    @Test
+    @DisplayName("perf: overlapsHard — variable×variable repeats hit the visitor short-circuit path")
+    void overlapsHardVariableInterval() throws Exception
+    {
+        // overlapsHard is dispatched when at least one side is variable-interval
+        // (MONTHLY / YEARLY / multi-weekday WEEKLY). DAILY×WEEKLY uses the gcd
+        // fast-path; MONTHLY×MONTHLY does NOT — it goes via overlapsHard, which
+        // (post-Phase-8 visitor refactor) walks `this`'s occurrences and asks
+        // a2.overlaps(...) per occurrence, short-circuiting on first hit.
+        //
+        // a = MONTHLY × 36 starting 2026-01-15 (3rd Thursday)
+        // b = MONTHLY × 36 starting 2026-01-15 09:30 (overlapping by design,
+        //     so visitor returns true on the FIRST occurrence — measures the
+        //     short-circuit path).
+        // Pre-refactor: createBlocks materialised all 36 blocks before checking.
+        // Post-refactor: 1 occurrence visited, return true.
+
+        org.rapla.entities.domain.internal.AppointmentImpl a =
+                new org.rapla.entities.domain.internal.AppointmentImpl(
+                        LocalDateTime.parse("2026-01-15T09:00"),
+                        LocalDateTime.parse("2026-01-15T10:00"));
+        a.setRepeatingEnabled(true);
+        Repeating ar = a.getRepeating();
+        ar.setType(RepeatingType.MONTHLY);
+        ar.setNumber(36);
+
+        org.rapla.entities.domain.internal.AppointmentImpl b =
+                new org.rapla.entities.domain.internal.AppointmentImpl(
+                        LocalDateTime.parse("2026-01-15T09:30"),
+                        LocalDateTime.parse("2026-01-15T10:30"));
+        b.setRepeatingEnabled(true);
+        Repeating br = b.getRepeating();
+        br.setType(RepeatingType.MONTHLY);
+        br.setNumber(36);
+
+        int iterations = 1000;
+        long ms = phase("overlapsHard MONTHLY×36 vs MONTHLY×36 (early-hit)", () -> {
+            for (int i = 0; i < iterations; i++)
+            {
+                if (!a.overlapsAppointment(b))
+                {
+                    throw new IllegalStateException("two overlapping monthlies must overlap");
+                }
+            }
+        });
+        long perCallUs = ms * 1000 / iterations;
+        liveSign("[perf]   averaged " + (ms * 1000.0 / iterations) + " µs/call");
+        assertTrue(perCallUs < 1000,
+                "overlapsHard MONTHLY×MONTHLY averaged " + perCallUs + " µs/call; budget 1000 µs");
+    }
+
+    @Test
+    @DisplayName("perf: MONTHLY-far-window — exercises the variable-interval iterate-from-start path")
+    void monthlyFarWindowOverlap() throws Exception
+    {
+        // Targets the path idea #1 (PRD 014 Phase 8c-full) optimises:
+        // a MONTHLY appointment (variable interval — repeating.isFixedIntervalLength()=false)
+        // with a query window in occurrence ~50 of 60. Without the analytical
+        // skip-ahead, processBlocks iterates from occurrence #1 every call.
+        // With the skip-ahead, it should jump to ~50 in O(1).
+        //
+        // a = MONTHLY × 60, third Thursday of each month from 2026-01-15
+        // b = single, in month 50 (around 2030-02-XX)
+        // overlapsAppointment must return false (b doesn't fall on a's days)
+        // but processBlocks still has to walk the occurrences to verify.
+
+        org.rapla.entities.domain.internal.AppointmentImpl a =
+                new org.rapla.entities.domain.internal.AppointmentImpl(
+                        LocalDateTime.parse("2026-01-15T09:00"),
+                        LocalDateTime.parse("2026-01-15T10:00"));
+        a.setRepeatingEnabled(true);
+        Repeating ar = a.getRepeating();
+        ar.setType(RepeatingType.MONTHLY);
+        ar.setNumber(60);
+
+        // single appointment in mid-month ~50 (around 2030-02-15) on a different
+        // hour so it doesn't collide with the MONTHLY occurrence
+        org.rapla.entities.domain.internal.AppointmentImpl b =
+                new org.rapla.entities.domain.internal.AppointmentImpl(
+                        LocalDateTime.parse("2030-03-10T14:00"),
+                        LocalDateTime.parse("2030-03-10T15:00"));
+
+        int iterations = 1000;
+        long ms = phase("overlapsAppointment MONTHLY×60 vs single in occurrence ~50", () -> {
+            for (int i = 0; i < iterations; i++)
+            {
+                // Truth: b doesn't overlap any MONTHLY occurrence (different time of day).
+                // processBlocks has to walk to verify the negative answer.
+                a.overlapsAppointment(b);
+            }
+        });
+        long perCallUs = ms * 1000 / iterations;
+        liveSign("[perf]   averaged " + (ms * 1000.0 / iterations) + " µs/call");
+        // Pre-idea-#1 baseline: TBD (capture in docs/perf/processblocks-monthly-2026-05-XX.txt).
+        // Loose ceiling for now to catch pathological regression; tighten after
+        // idea #1 lands and we have post-jump numbers.
+        assertTrue(perCallUs < 1000,
+                "MONTHLY-far-window overlapsAppointment averaged " + perCallUs + " µs/call; budget 1000 µs");
     }
 }

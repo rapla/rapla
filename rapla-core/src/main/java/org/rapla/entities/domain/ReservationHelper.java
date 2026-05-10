@@ -49,8 +49,9 @@ public class ReservationHelper
                     Collection<AppointmentBlock> blocks = new ArrayList<>();
                     appointments[i].createBlocks( start, firstStart, blocks );
                     for (AppointmentBlock block: blocks) {
-                        if (block.getStart()<DateTools.toMilli(firstStart)) {
-                            firstStart = LocalDateTime.ofInstant(java.time.Instant.ofEpochMilli(block.getStart()), java.time.ZoneOffset.UTC);
+                        LocalDateTime blockStart = block.getStartDateTime();
+                        if (blockStart.isBefore(firstStart)) {
+                            firstStart = blockStart;
                             continue;
                         }
                     }

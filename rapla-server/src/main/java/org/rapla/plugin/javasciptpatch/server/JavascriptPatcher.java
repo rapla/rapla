@@ -1,30 +1,26 @@
 package org.rapla.plugin.javasciptpatch.server;
 
-import org.rapla.entities.domain.Allocatable;
-import org.rapla.entities.storage.ImportExportDirections;
-import org.rapla.entities.storage.ExternalSyncEntity;
-import org.rapla.entities.storage.ReferenceInfo;
 import org.rapla.facade.RaplaFacade;
 import org.rapla.logger.Logger;
-import org.rapla.server.extensionpoints.ServerExtension;
 import org.rapla.server.internal.ServerContainerContext;
 import org.rapla.storage.CachableStorageOperator;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.context.event.ApplicationReadyEvent;
+import org.springframework.context.event.EventListener;
+
 import javax.script.ScriptEngine;
-import javax.script.ScriptEngineManager;
 import javax.script.ScriptException;
 import java.io.File;
 import java.io.FileReader;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
 
-
-public class JavascriptPatcher  implements ServerExtension
+/** Loads + runs an optional one-shot JS patch script at server startup.
+ *
+ *  <p>PRD 019 Phase 3d: migrated from {@code ServerExtension} to
+ *  {@code @EventListener(ApplicationReadyEvent.class)}. There's no recurring
+ *  cadence — this is a single-fire startup hook. {@code @PreDestroy} is
+ *  unneeded because the legacy {@code stop()} body was empty. */
+public class JavascriptPatcher
 {
     final RaplaFacade facade;
     final Logger logger;
@@ -41,28 +37,23 @@ public class JavascriptPatcher  implements ServerExtension
         this.cachableStorageOperator = cachableStorageOperator;
     }
 
-    @Override
-    public void start()
+    @EventListener(ApplicationReadyEvent.class)
+    public void runPatchScript()
     {
         final String patchScript = serverContainerContext.getPatchScript();
-        if ( patchScript != null)
+        if (patchScript == null) return;
+        File file = new File(patchScript);
+        try (final FileReader reader = new FileReader(file))
         {
-            //ScriptEngine engine = new ScriptEngineManager().getEngineByName("nashorn");
-            File file = new File(patchScript);
-            //final String absolutePath = file.getAbsolutePath();
-            try (final FileReader reader = new FileReader(file))
-            {
-                logger.info( "Patch Script " + patchScript  + " done.");
-            }
-            catch (Exception e)
-            {
-                logger.error(e.getMessage(), e);
-            }
-
+            logger.info("Patch Script " + patchScript + " done.");
         }
-
+        catch (Exception e)
+        {
+            logger.error(e.getMessage(), e);
+        }
     }
-    static PatchScript loadScript(ScriptEngine engine,String patchscript) throws ScriptException
+
+    static PatchScript loadScript(ScriptEngine engine, String patchscript) throws ScriptException
     {
         final Object eval = engine.eval("load('" + patchscript + "')");
         return (PatchScript) eval;
@@ -70,11 +61,5 @@ public class JavascriptPatcher  implements ServerExtension
 
     public interface PatchScript {
         void patchRapla(RaplaFacade raplaFacade);
-    }
-
-    @Override
-    public void stop()
-    {
-
     }
 }

@@ -132,7 +132,7 @@ public class CalendarWeekViewPresenter implements Presenter, CalendarPlugin
         final LocalDateTime date2 = DateTools.toDateTime(date1, appintmentStart);
         final LocalDateTime newStart;
         final LocalDateTime newEnd;
-        if (DateTools.toMilli(date1) < DateTools.toMilli(date2))
+        if (date1.isBefore(date2))
         {
             newStart = date1;
             newEnd = date2;

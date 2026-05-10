@@ -186,6 +186,16 @@ This would be registered in `SecurityConfig` and the `AuthController`'s login fl
 
 ### Scheduled Background Jobs
 
+> **As of 2026-05-10:** the cron mechanism (`CommandScheduler.scheduleAtGivenTime`)
+> referenced in Option 1 below was removed during the Spring Boot migration without a
+> Spring-native replacement. **PRD 019 (Spring Boot Lifecycle Migration) is now the
+> canonical plan** — migrate to `@Scheduled` (cron tasks) +
+> `@EventListener(ApplicationReadyEvent.class)` (one-shot startup) + delete
+> `ServerExtension` entirely. The Option 1 / Option 2 framing below is preserved for
+> historical context only.
+
+
+
 **Current:** `DualisSyncJobStarter` and `MoradaSyncJobStarter` implement `ServerExtension`, started by `ServerServiceImpl` calling `serverExtension.start()` at startup. They use `CommandScheduler.scheduleAtGivenTime()` for cron-like scheduling.
 
 **After migration:** Two options:

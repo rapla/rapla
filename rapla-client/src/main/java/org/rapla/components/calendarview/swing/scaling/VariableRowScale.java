@@ -71,7 +71,7 @@ public class VariableRowScale implements IRowScale
     }
     
     private int getMinuteOfDay(LocalDateTime time) {
-       return DateTools.getMinuteOfDay(DateTools.toMilli(time));
+       return DateTools.getMinuteOfDay(time);
    }
 
     public int calcHour(int index) {

@@ -134,7 +134,7 @@ public class CalendarContextMenuPresenter extends RaplaComponent implements Menu
     protected void moved(Block block, LocalDateTime newStart, final PopupContext popupContext)
     {
         RaplaBlock b = (RaplaBlock) block;
-        long offset = DateTools.toMilli(newStart) - DateTools.toMilli(b.getStart());
+        long offset = java.time.Duration.between(b.getStart(), newStart).toMillis();
         LocalDateTime newStartWithOffset = DateTools.toLocalDateTime(b.getAppointmentBlock().getStart() + offset);
         handleException(reservationController.moveAppointment(b.getAppointmentBlock(), newStartWithOffset, popupContext, keepTime));
     }

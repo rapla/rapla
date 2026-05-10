@@ -12,41 +12,24 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.components.calendarview;
 
-import java.text.SimpleDateFormat;
-import java.util.Calendar;
+import java.time.Month;
+import java.time.format.TextStyle;
 import java.util.Locale;
 
 
-/** maps weekday names to Calendar.DAY_OF_WEEK.
-    Example:
-   <pre>
-       WeekdayMapper mapper = new WeekdayMapper();
-       // print name of Sunday
-       System.out.println(mapper.getName(Calendar.SUNDAY));
-       // Create a weekday ComboBox
-       JComboBox comboBox = new JComboBox();
-       comboBox.setModel(new DefaultComboBoxModel(mapper.getNames()));
-       // select sunday
-       comboBox.setSelectedIndex(mapper.getIndexForDay(Calendar.SUNDAY));
-       // weekday == Calendar.SUNDAY
-       int weekday = mapper.getDayForIndex(comboBox.getSelectedIndex());
-   </pre>
-
-*/
+/** Maps month index (0-11) to its localised display name. */
 public class MonthMapper {
     String[] monthNames;
-    
+
     public MonthMapper() {
         this(Locale.getDefault());
     }
 
     public MonthMapper(Locale locale) {
         monthNames = new String[12];
-        SimpleDateFormat format = new SimpleDateFormat("MMMMMM",locale);
-        Calendar calendar = Calendar.getInstance(locale);
-        for (int i=0;i<12;i++) {
-            calendar.set(Calendar.MONTH,i);
-            monthNames[i] = format.format(calendar.getTime());
+        for (int i = 0; i < 12; i++) {
+            // Month enum is 1-based (JANUARY = 1); legacy MonthMapper API is 0-based.
+            monthNames[i] = Month.of(i + 1).getDisplayName(TextStyle.FULL, locale);
         }
     }
 
@@ -59,6 +42,5 @@ public class MonthMapper {
         return getNames()[month];
     }
 
-    
-}
 
+}

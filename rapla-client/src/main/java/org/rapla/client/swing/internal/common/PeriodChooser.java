@@ -110,10 +110,9 @@ public class PeriodChooser extends JComboBox implements Disposable
     	LocalDateTime start = period.getStart();
         if (!period.contains(date) || start == null)
             return -1;
-        long duration = DateTools.toMilli(date) - DateTools.toMilli(start);
+        long duration = java.time.Duration.between(start, date).toMillis();
         long weeks = duration / (DateTools.MILLISECONDS_PER_WEEK);
-        // setTimeInMillis has protected access in JDK 1.3.1
-        final LocalDateTime date1 = LocalDateTime.ofInstant(java.time.Instant.ofEpochMilli(DateTools.toMilli(date) - weeks * DateTools.MILLISECONDS_PER_WEEK), java.time.ZoneOffset.UTC);
+        final LocalDateTime date1 = date.minusWeeks(weeks);
         Locale locale = i18n.getLocale();
         int week_of_year = DateTools.getWeekInYear( date1, locale);
         int week_of_year_start = DateTools.getWeekInYear( start, locale);

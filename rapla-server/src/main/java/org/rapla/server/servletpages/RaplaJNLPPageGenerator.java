@@ -79,7 +79,7 @@ public class RaplaJNLPPageGenerator
             buf.append("\n<jar href=\"" + webstartRoot + "/");
             buf.append(file);
             buf.append("\"");
-            if (file.contains("/rapla-client.jar"))
+            if (isMainRaplaClientJar(file))
             {
                 buf.append(" main=\"true\"");
             }
@@ -87,6 +87,17 @@ public class RaplaJNLPPageGenerator
         }
 
         return buf.toString();
+    }
+
+    /**
+     * Matches both the legacy unversioned {@code rapla-client.jar} and the Maven-packaged
+     * {@code rapla-client-<version>.jar} (e.g. {@code rapla-client-2.1-SNAPSHOT.jar}).
+     * Excludes sibling artifacts like a hypothetical {@code rapla-client-api.jar}
+     * (the next char after {@code rapla-client} must be a digit when versioned).
+     */
+    static boolean isMainRaplaClientJar(String pathOrName)
+    {
+        return pathOrName != null && pathOrName.matches(".*rapla-client(-[0-9][\\w.-]*)?\\.jar$");
     }
 
     public static List<String> getClientLibs(ServletContext context) throws IOException
@@ -122,7 +133,7 @@ public class RaplaJNLPPageGenerator
         for (int i = 0; i < size; i++)
         {
             String entry = list.get(i);
-            if (entry.contains("raplaclient"))
+            if (isMainRaplaClientJar(entry))
             {
                 list.remove(i);
                 list.add(0, entry);
@@ -199,6 +210,17 @@ public class RaplaJNLPPageGenerator
         {
             out.println("  <j2se version=\"1.8+\"/>");
         }
+
+        // rapla.download.url is the server root URL WITHOUT the servlet context path —
+        // the REST proxy appends the context path itself. Emitting the full codebase
+        // (e.g. http://host:port/rapla/) caused doubled paths like /rapla/rapla/auth/login → 401.
+        String contextPath = request.getContextPath();
+        String rootUrl = codebase;
+        if (contextPath != null && !contextPath.isEmpty() && rootUrl.endsWith(contextPath + "/"))
+        {
+            rootUrl = rootUrl.substring(0, rootUrl.length() - contextPath.length() - 1) + "/";
+        }
+        out.println("  <property name=\"rapla.download.url\" value=\"" + rootUrl + "\"/>");
 
         String passedUsername = request.getParameter("username");
         if (passedUsername != null)

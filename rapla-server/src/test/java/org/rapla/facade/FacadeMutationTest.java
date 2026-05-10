@@ -11,6 +11,7 @@ import org.rapla.test.util.FacadeTestSupport;
 
 import java.time.LocalDateTime;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Locale;
 import java.util.Map;
 
@@ -207,6 +208,34 @@ class FacadeMutationTest extends FacadeTestSupport
     }
 
     // ---------- helpers ----------
+
+    // ---------- async dispatch (regression test for the
+    //            storeAndRemoveAsync stub fix) ----------
+
+    @Test
+    void asyncDispatchActuallyPersists() throws Exception
+    {
+        // Regression: LocalAbstractCachableOperator.storeAndRemoveAsync used to
+        // be an empty stub that silently dropped the storeList. facade.dispatch
+        // routes through it. This test pins that the async path actually
+        // persists, so the stub can't quietly come back. (Surfaced by
+        // ConflictPerformanceTest; fix in PRD 017 round 4.)
+        DynamicType type = facade.getDynamicTypes(null)[0];
+        Classification c = type.newClassification();
+        if (c.getType().getAttribute("name") != null) c.setValue("name", "ASYNC-DISPATCH");
+        Allocatable created = facade.newAllocatable(c, actingUser);
+
+        int beforeCount = facade.getAllocatables().length;
+
+        // Async path — the one that used to silently no-op.
+        waitFor(facade.dispatch(Collections.singletonList(created), Collections.emptyList()));
+
+        int afterCount = facade.getAllocatables().length;
+        assertEquals(beforeCount + 1, afterCount,
+                "facade.dispatch (async) must actually persist — was a silent no-op stub");
+        assertNotNull(facade.tryResolve(created.getReference()),
+                "the dispatched allocatable must be resolvable after dispatch");
+    }
 
     private Allocatable findFirstByTypeKey(String typeKey) throws Exception
     {

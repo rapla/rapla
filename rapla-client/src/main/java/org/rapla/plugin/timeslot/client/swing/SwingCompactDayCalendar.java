@@ -126,21 +126,23 @@ public class SwingCompactDayCalendar extends AbstractRaplaSwingCalendar
                 LocalDateTime end = block.getEnd();
                 for (Timeslot slot : timeslots)
                 {
-                    int minuteOfDay = DateTools.getMinuteOfDay(DateTools.toMilli(start));
+                    int minuteOfDay = DateTools.getMinuteOfDay(start);
                     int minuteOfDay1 = slot.getMinuteOfDay();
                     if (minuteOfDay >= minuteOfDay1)
                     {
-                        start = LocalDateTime.ofInstant(java.time.Instant.ofEpochMilli(DateTools.toMilli(DateTools.cutDate(start)) + minuteOfDay1), java.time.ZoneOffset.UTC);
+                        // FIXME: minuteOfDay1 is MINUTES (Timeslot) but added as millis below. Pre-existing.
+                        start = DateTools.cutDate(start).plus(java.time.Duration.ofMillis(minuteOfDay1));
                         break;
                     }
                 }
                 for (Timeslot slot : timeslots)
                 {
-                    int minuteOfDay = DateTools.getMinuteOfDay(DateTools.toMilli(end));
+                    int minuteOfDay = DateTools.getMinuteOfDay(end);
                     final int minuteOfDay1 = slot.getMinuteOfDay();
                     if (minuteOfDay < minuteOfDay1)
                     {
-                        end = LocalDateTime.ofInstant(java.time.Instant.ofEpochMilli(DateTools.toMilli(DateTools.cutDate(end)) + minuteOfDay1), java.time.ZoneOffset.UTC);
+                        // FIXME: same unit-mismatch concern as above.
+                        end = DateTools.cutDate(end).plus(java.time.Duration.ofMillis(minuteOfDay1));
                     }
                     if (minuteOfDay1 > minuteOfDay)
                     {
@@ -253,7 +255,7 @@ public class SwingCompactDayCalendar extends AbstractRaplaSwingCalendar
                 Timeslot timeslot = timeslots.get(rowIndex);
                 int time = timeslot.getMinuteOfDay();
                 int minuteOfDayBefore;
-                final DateTools.TimeWithoutTimezone timeWithoutTimezone = DateTools.toTime(DateTools.toMilli(block.getStart()));
+                final DateTools.TimeWithoutTimezone timeWithoutTimezone = DateTools.toTime(block.getStart());
                 minuteOfDayBefore = timeWithoutTimezone.hour * 60 + timeWithoutTimezone.minute;
                 boolean sameTimeSlot = minuteOfDayBefore == time;
                 if (rowIndex + 1 < timeslots.size())

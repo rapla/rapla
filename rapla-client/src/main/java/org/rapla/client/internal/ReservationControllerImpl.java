@@ -486,10 +486,10 @@ public class ReservationControllerImpl implements ReservationController {
                     appointment.createBlocks(appointment.getStart(), appointment.getMaxEnd(), blocks);
                     int blockswithException = 0;
                     for (AppointmentBlock block : blocks) {
-                        long start = block.getStart();
+                        LocalDateTime start = block.getStartDateTime();
                         boolean blocked = false;
                         for (LocalDateTime excepion : exceptions) {
-                            if (DateTools.isSameDay(DateTools.toMilli(excepion), start)) {
+                            if (DateTools.isSameDay(excepion, start)) {
                                 blocked = true;
                             }
                         }
@@ -640,8 +640,8 @@ public class ReservationControllerImpl implements ReservationController {
                 {
                     copy.setRepeatingEnabled(false);
                     LocalDateTime date = DateTools.cutDate(copy.getStart());
-                    TimeWithoutTimezone time = DateTools.toTime(DateTools.toMilli(date));
-                    LocalDateTime newStart = LocalDateTime.ofInstant(java.time.Instant.ofEpochMilli(DateTools.toMilli(date) + time.getMilliseconds()), java.time.ZoneOffset.UTC);
+                    TimeWithoutTimezone time = DateTools.toTime(date);
+                    LocalDateTime newStart = date.plus(java.time.Duration.ofMillis(time.getMilliseconds()));
                     copy.moveTo(newStart);
                     RaplaClipboard.CopyType copyType = deleteOriginal ? CopyType.CUT_BLOCK : CopyType.COPY_BLOCK;
                     raplaClipboard.setAppointment(copy, sourceReservation, copyType, restrictedAllocatables, contextAllocatables);
@@ -784,10 +784,10 @@ public class ReservationControllerImpl implements ReservationController {
             }
 
             LocalDateTime oldStart = from;
-            LocalDateTime oldEnd = (newEnd == null) ? null : LocalDateTime.ofInstant(java.time.Instant.ofEpochMilli(DateTools.toMilli(from) + DateTools.toMilli(appointment.getEnd()) - DateTools.toMilli(appointment.getStart())), java.time.ZoneOffset.UTC);
+            LocalDateTime oldEnd = (newEnd == null) ? null : from.plus(java.time.Duration.between(appointment.getStart(), appointment.getEnd()));
             LocalDateTime newStart2;
             if (keepTime && newStart != null && !newStart.equals(oldStart)) {
-                newStart2 = LocalDateTime.ofInstant(java.time.Instant.ofEpochMilli(DateTools.toMilli(oldStart) + getOffset(oldStart, newStart, keepTime)), java.time.ZoneOffset.UTC);
+                newStart2 = oldStart.plus(java.time.Duration.ofMillis(getOffset(oldStart, newStart, keepTime)));
             } else {
                 newStart2 = newStart;
             }
@@ -814,8 +814,7 @@ public class ReservationControllerImpl implements ReservationController {
             //TimeWithoutTimezone oldStartTime = DateTools.toTime( appStart.getTime());
             newStartAdjusted = DateTools.toDateTime(newStart, appStart);
         }
-        long offset = DateTools.toMilli(newStartAdjusted) - DateTools.toMilli(appStart);
-        return offset;
+        return java.time.Duration.between(appStart, newStartAdjusted).toMillis();
     }
 
     @Override
@@ -936,9 +935,9 @@ public class ReservationControllerImpl implements ReservationController {
             }
             LocalDateTime newStart2;
             if (newStart != null) {
-                long offset = DateTools.toMilli(newStart) - appointmentBlock.getStart();
+                java.time.Duration offset = java.time.Duration.between(appointmentBlock.getStartDateTime(), newStart);
                 Appointment app = addAppointment != null ? addAppointment : appointment;
-                newStart2 = LocalDateTime.ofInstant(java.time.Instant.ofEpochMilli(DateTools.toMilli(app.getStart()) + offset), java.time.ZoneOffset.UTC);
+                newStart2 = app.getStart().plus(offset);
             } else {
                 newStart2 = null;
             }
@@ -1232,12 +1231,11 @@ public class ReservationControllerImpl implements ReservationController {
                 LocalDateTime changeEnd;
 
                 for (Appointment ap : appointments) {
-                    long startTime = (dialogResult == DialogAction.SINGLE) ? DateTools.toMilli(sourceStart) : DateTools.toMilli(ap.getStart());
-
-                    changeStart = DateTools.toLocalDateTime(startTime + offset);
+                    LocalDateTime baseStart = (dialogResult == DialogAction.SINGLE) ? sourceStart : ap.getStart();
+                    changeStart = baseStart.plus(java.time.Duration.ofMillis(offset));
 
                     if (resizing) {
-                        changeEnd = LocalDateTime.ofInstant(java.time.Instant.ofEpochMilli(DateTools.toMilli(changeStart) + (DateTools.toMilli(destEnd) - DateTools.toMilli(destStart))), java.time.ZoneOffset.UTC);
+                        changeEnd = changeStart.plus(java.time.Duration.between(destStart, destEnd));
                         ap.move(changeStart, changeEnd);
                     } else {
                         ap.moveTo(changeStart);
@@ -1357,8 +1355,7 @@ public class ReservationControllerImpl implements ReservationController {
                     {
                         saveAppointment = newAppointment;
                         if (moveTo) {
-                            final LocalDateTime newStart = LocalDateTime.ofInstant(java.time.Instant.ofEpochMilli(DateTools.toMilli(saveAppointment.getStart()) + offset), java.time.ZoneOffset.UTC);
-                            saveAppointment.moveTo(newStart);
+                            saveAppointment.moveTo(saveAppointment.getStart().plus(java.time.Duration.ofMillis(offset)));
                         }
                         mutableReservation.addAppointment(saveAppointment);
                         mutableReservation.setRestrictionForAppointment(saveAppointment, restrictedAllocatables);
@@ -1387,7 +1384,7 @@ public class ReservationControllerImpl implements ReservationController {
                         Appointment app = appointments[i];
                         if (copyWholeReservation) {
                             if (saveReservation == null) {
-                                app.moveTo(LocalDateTime.ofInstant(java.time.Instant.ofEpochMilli(DateTools.toMilli(app.getStart()) + offset), java.time.ZoneOffset.UTC));
+                                app.moveTo(app.getStart().plus(java.time.Duration.ofMillis(offset)));
                             }
                         } else {
                             mutableReservation.removeAppointment(app);

@@ -12,8 +12,6 @@
  *--------------------------------------------------------------------------*/
 package org.rapla.plugin.notification.server;
 
-import org.rapla.scheduler.Cancellation;
-import org.rapla.scheduler.Action;
 import org.jetbrains.annotations.NotNull;
 import org.rapla.RaplaResources;
 import org.rapla.components.util.DateTools;
@@ -36,111 +34,84 @@ import org.rapla.plugin.mail.server.MailToUserImpl;
 import org.rapla.plugin.notification.NotificationPlugin;
 import org.rapla.plugin.notification.NotificationResources;
 import org.rapla.plugin.planningstatus.PlanningStatusPlugin;
-import org.rapla.scheduler.CommandScheduler;
-import org.rapla.server.extensionpoints.ServerExtension;
 import org.rapla.storage.CachableStorageOperator;
 import org.rapla.storage.StorageOperator;
 import org.rapla.storage.UpdateResult;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.scheduling.annotation.Scheduled;
+
 import java.util.function.Supplier;
 import java.util.*;
 
 import java.time.LocalDateTime;
-/** Sends Notification Mails on allocation change.*/
 
-
-public class NotificationService implements ServerExtension
+/** Sends Notification Mails on allocation change.
+ *
+ *  <p>PRD 019 Phase 3a: migrated from {@code ServerExtension} to Spring's
+ *  {@code @Scheduled} for the recurring-task lifecycle. */
+public class NotificationService
 {
     static final String NOTIFICATION_LOCK_ID = "NOTIFICATION";
     private static final long VALID_LOCK = DateTools.MILLISECONDS_PER_MINUTE * 5;
     private final RaplaFacade raplaFacade;
     private final Supplier<MailToUserImpl> mailToUserInterface;
     private final boolean planningStatusEnabled;
-    protected CommandScheduler scheduler;
     private final AppointmentFormater appointmentFormater;
     private final NotificationResources notificationI18n;
     private final RaplaResources raplaI18n;
     private final CachableStorageOperator operator;
 
     private final Logger logger;
-    private final List<Cancellation> scheduleList = new ArrayList<>();
 
     @Autowired
     public NotificationService(RaplaFacade facade, RaplaResources i18nBundle, NotificationResources notificationI18n, AppointmentFormater appointmentFormater,
-                               Supplier<MailToUserImpl> mailToUserInterface, CommandScheduler scheduler, Logger logger/*, NotificationStorage notificationStorage */) throws RaplaException {
+                               Supplier<MailToUserImpl> mailToUserInterface, Logger logger) throws RaplaException {
         this.notificationI18n = notificationI18n;
         this.raplaFacade = facade;
         this.raplaI18n = i18nBundle;
         this.logger = logger.getChildLogger("notification");
-        //setChildBundleName( NotificationPlugin.RESOURCE_FILE );
         this.mailToUserInterface = mailToUserInterface;
-        this.scheduler = scheduler;
-        //raplaFacade.addAllocationChangedListener(this);
         this.appointmentFormater = appointmentFormater;
         this.operator = (CachableStorageOperator) facade.getOperator();
         planningStatusEnabled = raplaFacade.getSystemPreferences().getEntryAsBoolean(PlanningStatusPlugin.ENABLED, PlanningStatusPlugin.ENABLE_BY_DEFAULT);
+        getLogger().info("NotificationServer Plugin started");
     }
 
-    @Override
-    public void start()
+    /** Sends notification mails for any allocation changes that have happened since
+     *  the last invocation. Spring's TaskScheduler invokes this every 30s after
+     *  application context refresh completes — by then the storage is connected
+     *  (PRD 019 Phase 1 ordering). */
+    @Scheduled(fixedRate = 30_000L)
+    public void sendUpdateMails()
     {
-        getLogger().info("NotificationServer Plugin started");
-        getLogger().info("scheduling command for NotificationSercice");
-        Action sentUpdateMails = () ->
+        LocalDateTime lastUpdated = null;
+        LocalDateTime updatedUntil = null;
+        try
         {
-            LocalDateTime lastUpdated = null;
-            LocalDateTime updatedUntil = null;
+            lastUpdated = operator.requestLock(NOTIFICATION_LOCK_ID, VALID_LOCK);
+            final UpdateResult updateResult = operator.getUpdateResult(lastUpdated);
+            changed(updateResult);
+            updatedUntil = updateResult.getUntil();
+        }
+        catch (Throwable t)
+        {
+            logger.warn("Could not send mail: " + t.getMessage(), t);
+        }
+        finally
+        {
             try
-            {
-                lastUpdated = operator.requestLock(NOTIFICATION_LOCK_ID, VALID_LOCK);
-                final UpdateResult updateResult = operator.getUpdateResult(lastUpdated);
-                changed(updateResult);
-                // set it as last, so update must have been successful
-                updatedUntil = updateResult.getUntil();
-            }
-            catch (Throwable t)
-            {
-                NotificationService.this.logger.warn("Could not send mail: " + t.getMessage(),t);
-            }
-            finally
             {
                 if (lastUpdated != null)
                 {
                     operator.releaseLock(NOTIFICATION_LOCK_ID, updatedUntil);
                 }
             }
-        };
-        scheduleList.add( scheduler.schedule( sentUpdateMails,0, 30000L));
-        /*
-        Action retryMails = () ->
-        {
-            LocalDateTime lastUpdated = null;
-            try
+            catch (RaplaException re)
             {
-                lastUpdated = operator.requestLock(NOTIFICATION_LOCK_ID, VALID_LOCK);
-                final Collection<AllocationMail> mailsToSend = notificationStorage.getMailsToSend();
-                sendMails(mailsToSend);
+                logger.warn("Failed to release notification lock: " + re.getMessage(), re);
             }
-            catch (Throwable t)
-            {
-                NotificationService.this.logger.warn("Could not send mail: " + t.getMessage());
-            }
-            finally
-            {
-                if (lastUpdated != null)
-                {
-                    operator.releaseLock(NOTIFICATION_LOCK_ID, null);
-                }
-            }
-        };
-        scheduleList.add(scheduler.schedule( retryMails, 45000L,DateTools.MILLISECONDS_PER_MINUTE * 15 + 531L));
-         */
-    }
-
-    public void stop()
-    {
-        scheduleList.forEach(Cancellation::cancel);
+        }
     }
 
     protected Logger getLogger()

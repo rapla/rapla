@@ -314,9 +314,17 @@ public class ServerCoreConfig
     }
 
     @Bean
-    public RaplaFacade raplaFacade(RaplaResources i18n, CommandScheduler scheduler, Logger logger)
+    public RaplaFacade raplaFacade(RaplaResources i18n, CommandScheduler scheduler, Logger logger,
+            org.rapla.storage.CachableStorageOperator operator)
     {
-        return new FacadeImpl(i18n, scheduler, logger);
+        // PRD 019 Phase 1: wire the operator into the facade up-front so consumers
+        // injecting RaplaFacade get a fully-configured (storage-attached) facade.
+        // Removes the historical "ServerServiceImpl constructor calls setOperator"
+        // dependency, which forced @DependsOn("serverServiceContainer") on every
+        // bean that wanted to use the facade.
+        FacadeImpl facade = new FacadeImpl(i18n, scheduler, logger);
+        facade.setOperator(operator);
+        return facade;
     }
 
     @Bean

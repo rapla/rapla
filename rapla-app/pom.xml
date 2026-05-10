@@ -24,19 +24,26 @@
             </resource>
         </resources>
         <plugins>
-            <!-- PRD 005 cleanup E2: JNLP webclient/ staging for Spring Boot fat JAR.
-                 (1) maven-dependency-plugin copies the client-runtime jars into target/webclient/.
-                 (2) maven-resources-plugin copies them into target/classes/static/webclient/
-                     so spring-boot:repackage bundles them inside the fat JAR. Spring Boot serves
-                     classpath:/static/** automatically, so RaplaJNLPController's <jar href="webclient/X.jar"/>
-                     entries resolve at runtime.
-                 (3) antrun generates clientlibs.properties (the ;-separated list of jars in the
-                     codebase) into target/classes/, where RaplaJNLPPageGenerator.getClientLibs()
-                     reads it.
-                 (4) Optional signing profile (sign-jks / sign-pkcs11) signs the bundled copies
-                     under target/classes/static/webclient/ — must run AFTER the bundle step so the
-                     signatures land inside the fat JAR (signing the staging dir would be wasted —
-                     repackage takes target/classes/static/, not target/webclient/). -->
+            <!-- JNLP webclient/ staging for Spring Boot fat JAR. All executions bind to
+                 prepare-package; in-phase order = POM declaration order, with profile plugins
+                 appended last (so the signing plugin runs after every step below).
+                 (1) maven-dependency-plugin → target/webclient/ (raw client-runtime jars).
+                 (2) maven-resources-plugin → target/classes/static/webclient/ (the bundled
+                     copy spring-boot:repackage embeds in the fat JAR; static/** is served
+                     automatically).
+                 (3) antrun add-jnlp-manifest-attributes → injects Permissions: all-permissions
+                     (and Codebase: *, Application-Name) into every bundled jar's MANIFEST.MF.
+                     Required by Java Web Start since 7u51 for <all-permissions/> JNLPs.
+                 (4) antrun strip-mr-from-slf4j-api → removes META-INF/versions/ entries from
+                     slf4j-api specifically. icedtea-netx 1.x rejects the MR module-info.class
+                     entry as unsigned; OWS 1.13+ doesn't need this strip but it's safe.
+                 (5) antrun generate-clientlibs-properties → writes the ;-separated jar list
+                     to target/classes/clientlibs.properties; RaplaJNLPPageGenerator reads it.
+                 (6) (profile) maven-jarsigner-plugin → signs target/classes/static/webclient/.
+                     Must run AFTER (3) and (4) — both modify jar contents, which would
+                     invalidate prior signatures.
+                 See docs/development.md and .agents/skills/test-jnlp-launch/SKILL.md for the
+                 end-to-end OWS launch flow this enables. -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-dependency-plugin</artifactId>
@@ -53,9 +60,28 @@
                         <configuration>
                             <outputDirectory>${project.build.directory}/webclient</outputDirectory>
                             <includeScope>runtime</includeScope>
-                            <!-- Exclude server-only artifacts that the JNLP launcher doesn't need.
-                                 Refine over time as the deployable surface settles. -->
-                            <excludeArtifactIds>spring-boot-starter-web,spring-boot-starter-security,spring-boot-starter-oauth2-resource-server,spring-boot-starter-tomcat,spring-boot-starter-actuator,tomcat-embed-core,tomcat-embed-el,tomcat-embed-websocket,jakarta.servlet-api,spring-security-web,spring-security-config,ews-java-api,hsqldb,mysql-connector-java,mariadb-java-client,jakarta.mail-api,angus-mail,ical4j</excludeArtifactIds>
+                            <!-- The Swing client uses spring-context (NOT @SpringBootApplication —
+                                 see AGENTS.md rapla-client description), so we ship a focused subset
+                                 of the server's runtime classpath. Allow-list comes from a literal
+                                 import audit of rapla-client + rapla-core source — only artifacts
+                                 actually referenced (directly or via Spring's reflective wiring) make
+                                 the cut. Server-only transitive leaks (commons-* via ews-java-api,
+                                 httpclient via Spring's optional Apache HTTP transport, joda-time
+                                 via ical4j, all spring-boot-* and spring-security-* etc.) stay on
+                                 the server.
+                                 NOTE: maven-dependency-plugin tokenises this on commas only;
+                                 whitespace inside is treated as part of the artifactId. Keep it on
+                                 ONE LINE. -->
+                            <!-- jcl-over-slf4j: Spring's internal logging façade still calls
+                                 org.apache.commons.logging.LogFactory at runtime. Spring 5/6 shipped
+                                 a shim inside spring-jcl (merged into spring-core in 6); Spring 7
+                                 dropped it. We could ship commons-logging.jar but Spring's logs
+                                 would then go through commons-logging's own discovery (JUL/stderr).
+                                 jcl-over-slf4j provides the same org.apache.commons.logging.* API
+                                 surface but bridges every call to SLF4J → logback for unified
+                                 output. The two artifacts CONFLICT (same class names) so use ONLY
+                                 one — commons-logging is excluded transitively. -->
+                            <includeArtifactIds>rapla-client,rapla-core,spring-beans,spring-context,spring-core,spring-web,jackson-core,jackson-databind,jackson-annotations,jakarta.ws.rs-api,jakarta.annotation-api,slf4j-api,logback-classic,logback-core,jul-to-slf4j,jcl-over-slf4j,jspecify,rxjava,reactive-streams</includeArtifactIds>
                             <overWriteReleases>false</overWriteReleases>
                             <overWriteSnapshots>true</overWriteSnapshots>
                         </configuration>
@@ -91,6 +117,67 @@
                 <artifactId>maven-antrun-plugin</artifactId>
                 <version>3.1.0</version>
                 <executions>
+                    <!-- Java Web Start since 7u51 requires every signed jar in an
+                         <all-permissions/> JNLP to declare Permissions: all-permissions
+                         in its manifest. Inject that (plus Codebase: * and Application-Name)
+                         into every staged webclient jar BEFORE any signing profile fires.
+                         Runs against target/classes/static/webclient/ — the bundle the fat JAR
+                         actually ships, NOT the staging dir under target/webclient/. -->
+                    <execution>
+                        <id>add-jnlp-manifest-attributes</id>
+                        <phase>prepare-package</phase>
+                        <goals>
+                            <goal>run</goal>
+                        </goals>
+                        <configuration>
+                            <target>
+                                <echo file="${project.build.directory}/jnlp-manifest-attrs.txt"
+                                      message="Permissions: all-permissions${line.separator}Codebase: *${line.separator}Application-Name: Rapla${line.separator}"
+                                      encoding="UTF-8" />
+                                <apply executable="jar" failonerror="true" parallel="false">
+                                    <arg value="uvfm" />
+                                    <srcfile />
+                                    <arg file="${project.build.directory}/jnlp-manifest-attrs.txt" />
+                                    <fileset dir="${project.build.directory}/classes/static/webclient">
+                                        <include name="*.jar" />
+                                    </fileset>
+                                </apply>
+                            </target>
+                        </configuration>
+                    </execution>
+                    <!-- icedtea-netx 1.x's signing verifier rejects the
+                         META-INF/versions/9/module-info.class entry in slf4j-api as unsigned
+                         (despite jarsigner accepting it), failing the <all-permissions/> gate
+                         with "Cannot grant permissions to unsigned jars". 11 other multi-release
+                         jars in the set are unaffected; slf4j-api specifically because its MR
+                         entry is a module-info.class. Strip versions/ from slf4j-api before
+                         signing. OWS 1.13 (icedtea-web 2.x) handles MR correctly so this strip
+                         is purely a parity gesture for the legacy launcher.
+                         Repackages via ant <zip> rather than `zip -d` so the build doesn't
+                         require the OS-level zip binary. -->
+                    <execution>
+                        <id>strip-mr-from-slf4j-api</id>
+                        <phase>prepare-package</phase>
+                        <goals>
+                            <goal>run</goal>
+                        </goals>
+                        <configuration>
+                            <target>
+                                <fileset id="slf4j.api.jars"
+                                         dir="${project.build.directory}/classes/static/webclient"
+                                         includes="slf4j-api-*.jar" />
+                                <pathconvert pathsep="," property="slf4j.api.list" refid="slf4j.api.jars" />
+                                <sequential>
+                                    <copy file="${slf4j.api.list}" tofile="${slf4j.api.list}.mr" />
+                                    <delete file="${slf4j.api.list}" />
+                                    <zip destfile="${slf4j.api.list}">
+                                        <zipfileset src="${slf4j.api.list}.mr" excludes="META-INF/versions/**" />
+                                    </zip>
+                                    <delete file="${slf4j.api.list}.mr" />
+                                </sequential>
+                            </target>
+                        </configuration>
+                    </execution>
                     <execution>
                         <id>generate-clientlibs-properties</id>
                         <phase>prepare-package</phase>
@@ -151,6 +238,26 @@
         <dependency>
             <groupId>ch.qos.logback</groupId>
             <artifactId>logback-classic</artifactId>
+        </dependency>
+        <!-- slf4j-api: declared 'provided' upstream (rapla-bom) for compile-time use.
+             Override to 'runtime' here so maven-dependency-plugin:copy-dependencies
+             stages it under target/webclient/ and it lands in the JNLP set.
+             Without this, the Swing client launched via JNLP dies on startup with
+             NoClassDefFoundError: org.slf4j.LoggerFactory (logback-classic depends on it). -->
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-api</artifactId>
+            <scope>runtime</scope>
+        </dependency>
+        <!-- jcl-over-slf4j: provides org.apache.commons.logging.LogFactory but routes
+             every call through SLF4J → logback. Required because Spring 7 dropped
+             spring-jcl (the in-tree commons-logging shim that older Spring shipped).
+             Without this, Spring framework code throws NoClassDefFoundError at runtime.
+             Conflicts with commons-logging.jar — ship one or the other. -->
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>jcl-over-slf4j</artifactId>
+            <scope>runtime</scope>
         </dependency>
         <!-- Tests are full-stack @SpringBootTest integration tests + bootstrap loaders -->
         <dependency>

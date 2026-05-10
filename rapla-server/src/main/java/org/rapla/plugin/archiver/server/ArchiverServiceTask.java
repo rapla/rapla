@@ -1,6 +1,5 @@
 package org.rapla.plugin.archiver.server;
 
-import org.rapla.scheduler.Cancellation;
 import org.rapla.components.util.DateTools;
 import org.rapla.entities.configuration.RaplaConfiguration;
 import org.rapla.facade.RaplaFacade;
@@ -8,76 +7,73 @@ import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaInitializationException;
 import org.rapla.logger.Logger;
 import org.rapla.plugin.archiver.ArchiverService;
-import org.rapla.scheduler.CommandScheduler;
-import org.rapla.server.extensionpoints.ServerExtension;
 import org.rapla.storage.ImportExportManager;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.scheduling.annotation.Scheduled;
 
-
-public class ArchiverServiceTask  implements ServerExtension
+/** Hourly task to archive (delete + optionally export) old reservations.
+ *
+ *  <p>PRD 019 Phase 3c: migrated from {@code ServerExtension} to {@code @Scheduled}.
+ *  The hourly cadence is kept; the {@code days != -20 || export} gate is now
+ *  evaluated each hour rather than only at start-up, so changes to the system-
+ *  preferences config are picked up between hours without a restart. */
+public class ArchiverServiceTask
 {
-    final CommandScheduler timer;
     final Logger logger;
     final RaplaFacade facade;
     final org.rapla.storage.SyncStorageOperator syncOperator;
     final ImportExportManager importExportManager;
-    Cancellation schedule;
+
     @Autowired
-	public ArchiverServiceTask(  CommandScheduler timer, final Logger logger, final RaplaFacade facade, final org.rapla.storage.SyncStorageOperator syncOperator, final ImportExportManager importExportManager)
+    public ArchiverServiceTask(final Logger logger, final RaplaFacade facade,
+                               final org.rapla.storage.SyncStorageOperator syncOperator,
+                               final ImportExportManager importExportManager)
             throws RaplaInitializationException
     {
-
-        this.timer = timer;
         this.logger = logger;
         this.facade = facade;
         this.syncOperator = syncOperator;
-        this.importExportManager =importExportManager;
+        this.importExportManager = importExportManager;
     }
 
-    @Override public void start()
+    @Scheduled(fixedRate = DateTools.MILLISECONDS_PER_HOUR)
+    public void runHourlyArchive()
     {
-
         final RaplaConfiguration config;
         try
         {
-            config = facade.getSystemPreferences().getEntry(ArchiverService.CONFIG,new RaplaConfiguration());
+            config = facade.getSystemPreferences().getEntry(ArchiverService.CONFIG, new RaplaConfiguration());
         }
         catch (RaplaException e)
         {
-            throw new RaplaInitializationException(e);
+            logger.error("Could not read archiver config", e);
+            return;
         }
-        final int days = config.getChild( ArchiverService.REMOVE_OLDER_THAN_ENTRY).getValueAsInteger(-20);
-        final boolean export = config.getChild( ArchiverService.EXPORT).getValueAsBoolean(false);
-        if ( days != -20 || export)
+        final int days = config.getChild(ArchiverService.REMOVE_OLDER_THAN_ENTRY).getValueAsInteger(-20);
+        final boolean export = config.getChild(ArchiverService.EXPORT).getValueAsBoolean(false);
+        if (days == -20 && !export)
         {
-            // Call it each hour
-            schedule = timer.schedule(() -> doArchive(export, days), 0, DateTools.MILLISECONDS_PER_HOUR);
+            return;
         }
-    }
-    
-    public void stop()
-    {
-        if ( schedule != null)
-        {
-            schedule.cancel();
-        }
+        doArchive(export, days);
     }
 
     private void doArchive(boolean export, int days)
     {
         try
         {
-            if ( export && ArchiverServiceImpl.isExportEnabled(facade))
+            if (export && ArchiverServiceImpl.isExportEnabled(facade))
             {
                 importExportManager.doExport();
             }
-            if ( days != -20 )
+            if (days != -20)
             {
                 ArchiverServiceImpl.delete(days, facade, syncOperator, logger);
             }
         }
-        catch (Exception e) {
+        catch (Exception e)
+        {
             logger.error("Could not execute archiver task ", e);
         }
     }

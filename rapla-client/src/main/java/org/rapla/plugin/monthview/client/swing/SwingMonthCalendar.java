@@ -117,7 +117,7 @@ public class SwingMonthCalendar extends AbstractRaplaSwingCalendar
 
             protected Color getNumberColor( LocalDateTime date )
             {
-                boolean today = DateTools.isSameDay(DateTools.toMilli(getQuery().today()), DateTools.toMilli(date));
+                boolean today = DateTools.isSameDay(getQuery().today(), date);
                 if ( today)
                 {
                     return DATE_NUMBER_COLOR_HIGHLIGHTED;

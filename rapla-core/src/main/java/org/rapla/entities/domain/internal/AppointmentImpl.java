@@ -26,6 +26,7 @@ import org.rapla.entities.storage.ReferenceInfo;
 import org.rapla.entities.storage.internal.SimpleEntity;
 import org.rapla.facade.RaplaComponent;
 
+import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -134,7 +135,7 @@ public final class AppointmentImpl extends SimpleEntity implements Appointment
 
     public String toString() {
         if (start != null && end != null)
-            return f(DateTools.toMilli(start), DateTools.toMilli(end)) +
+            return f(start, end) +
                 ((repeating != null) ? (" [" + repeating) + "]": "");
         else
             return start + "-" + end;
@@ -257,22 +258,22 @@ public final class AppointmentImpl extends SimpleEntity implements Appointment
         a2.createBlocks(a2.getStart(), maxDate, blocks2);
         int i=0;
         for ( AppointmentBlock block:blocks1) {
-            long a1Start = block.getStart();
-            long a1End = block.getEnd();
+            LocalDateTime a1Start = block.getStartDateTime();
+            LocalDateTime a1End = block.getEndDateTime();
             if ( i >= blocks2.size() ) {
-                return DateTools.toLocalDateTime( a1Start );
+                return a1Start;
             }
-            long a2Start = blocks2.get( i ).getStart();
-            long a2End = blocks2.get( i ).getEnd();
-            if ( a1Start != a2Start )
-                return DateTools.toLocalDateTime( Math.min ( a1Start, a2Start ) );
+            LocalDateTime a2Start = blocks2.get( i ).getStartDateTime();
+            LocalDateTime a2End = blocks2.get( i ).getEndDateTime();
+            if ( !a1Start.equals(a2Start) )
+                return a1Start.isBefore(a2Start) ? a1Start : a2Start;
 
-            if ( a1End != a2End )
-                return DateTools.toLocalDateTime( Math.min ( a1End, a2End ) );
+            if ( !a1End.equals(a2End) )
+                return a1End.isBefore(a2End) ? a1End : a2End;
             i++;
         }
         if ( blocks2.size() > blocks1.size() ) {
-            return DateTools.toLocalDateTime( blocks2.get( blocks1.size() ).getStart() );
+            return blocks2.get( blocks1.size() ).getStartDateTime();
         }
         return null;
     }
@@ -283,21 +284,21 @@ public final class AppointmentImpl extends SimpleEntity implements Appointment
         List<AppointmentBlock> blocks2 = new ArrayList<>();
         a2.createBlocks(a2.getStart(), maxDate, blocks2);
         if ( blocks2.size() > blocks1.size() ) {
-            return DateTools.toLocalDateTime( blocks2.get( blocks1.size() ).getEnd() );
+            return blocks2.get( blocks1.size() ).getEndDateTime();
         }
         if ( blocks1.size() > blocks2.size() ) {
-            return DateTools.toLocalDateTime( blocks1.get( blocks2.size() ).getEnd() );
+            return blocks1.get( blocks2.size() ).getEndDateTime();
         }
         for ( int i = blocks1.size() - 1 ; i >= 0; i-- ) {
-            long a1Start = blocks1.get( i ).getStart();
-            long a1End = blocks1.get( i ).getEnd();
-            long a2Start = blocks2.get( i ).getStart();
-            long a2End = blocks2.get( i ).getEnd();
-            if ( a1End != a2End )
-                return DateTools.toLocalDateTime( Math.max ( a1End, a2End ) );
+            LocalDateTime a1Start = blocks1.get( i ).getStartDateTime();
+            LocalDateTime a1End = blocks1.get( i ).getEndDateTime();
+            LocalDateTime a2Start = blocks2.get( i ).getStartDateTime();
+            LocalDateTime a2End = blocks2.get( i ).getEndDateTime();
+            if ( !a1End.equals(a2End) )
+                return a1End.isAfter(a2End) ? a1End : a2End;
 
-            if ( a1Start != a2Start )
-                return DateTools.toLocalDateTime( Math.max ( a1Start, a2Start ) );
+            if ( !a1Start.equals(a2Start) )
+                return a1Start.isAfter(a2Start) ? a1Start : a2Start;
         }
         return null;
     }
@@ -360,99 +361,93 @@ public final class AppointmentImpl extends SimpleEntity implements Appointment
         Assert.notNull(blocks);
         Assert.notNull(start,"You must set a startDate");
         Assert.notNull(end, "You must set an endDate");
-        processBlocks(DateTools.toMilli(start), DateTools.toMilli(end), blocks, excludeExceptions);
+        processBlocks(start, end, (s, e, ex) -> {
+            blocks.add(new AppointmentBlock(s, e, this, ex));
+            return false;
+        }, excludeExceptions);
     }
-    
 
-    /* returns true if there is at least one block in an array. If the passed blocks array is not null it will contain all blocks
-     * that overlap the start,end period after a call.*/
-    private boolean processBlocks(long start,long end,Collection<AppointmentBlock> blocks, boolean excludeExceptions) {
-        long c1 = start;
-        long c2 = end;
-        long s = DateTools.toMilli(this.start);
-        long e = DateTools.toMilli(this.end);
+    /** Visitor invoked for each occurrence that overlaps the window. Returns
+     *  {@code true} to short-circuit iteration (e.g. for "any overlap?" checks).
+     *  PRD 014 Phase 8 (visitor refactor): callers receive primitive
+     *  (start, end, isException) so {@code overlapsHard} never allocates a block.
+     */
+    @FunctionalInterface
+    private interface BlockVisitor {
+        boolean visit(LocalDateTime start, LocalDateTime end, boolean isException);
+    }
+
+    /* Iterate occurrences in [windowStart, windowEnd]. For each occurrence
+     * that satisfies the boundary + exception checks, invoke visitor.visit(...);
+     * return true on the first visitor returning true (short-circuit).
+     *
+     * PRD 014 Phase 8 visitor refactor: replaces the previous dual-mode
+     * Collection<AppointmentBlock> parameter. Three call sites:
+     *   - createBlocks: closure appends to a list, never short-circuits
+     *   - overlaps(...): `(s,e,ex)->true` — short-circuits, no block allocation
+     *   - overlapsHard:  `(s,e,ex)->a2.overlaps(s,e,true)` — short-circuits, no allocation
+     *
+     * Phase 8g attempted a 2-method split (collect + first-hit) on the theory
+     * that the megamorphic call site hurt JIT inlining; perf measurements
+     * showed the split made all workloads slower (DAILY×WEEKLY 1.97×, MONTHLY
+     * 1.47×, overlapsHard 1.98×). Reverted. The single visitor-style method
+     * is the right call.
+     */
+    private boolean processBlocks(LocalDateTime windowStart, LocalDateTime windowEnd, BlockVisitor visitor, boolean excludeExceptions) {
+        LocalDateTime appStart = this.start;
+        LocalDateTime appEnd = this.end;
         RepeatingImpl repeating = getRepeating();
-        // if there is no repeating
-        if (repeating==null) {
-            if (s <c2 && e>c1) {
-                // check only
-                if ( blocks == null )
-                {
-                	return true;
-                }
-                else
-                {
-                    AppointmentBlock block = new AppointmentBlock(s,e,this, false);
-                    blocks.add(block);
-                }
-            } 
+        if (repeating == null) {
+            if (appStart.isBefore(windowEnd) && appEnd.isAfter(windowStart)) {
+                return visitor.visit(appStart, appEnd, false);
+            }
             return false;
         }
 
-        DD=DE?BUG: print("s = appointmentstart, e = appointmentend, c1 = intervalstart c2 = intervalend");
-        DD=DE?BUG: print("s:" + n(s) + " e:" + n(e) + " c2:" + n(c2) + " c1:" + n(c1));
-        if (s <c2 && e>c1  && (!repeating.isException(s) || !excludeExceptions)) {
-            // check only
-            if ( blocks == null) 
-            {
-                return true;
-            } 
-            else 
-            {
-                AppointmentBlock block = new AppointmentBlock(s,e,this, repeating.isException(s));
-                blocks.add(block);
-            }
+        long appStartMillis = DateTools.toMilli(appStart);
+        if (appStart.isBefore(windowEnd) && appEnd.isAfter(windowStart)
+                && (!repeating.isException(appStartMillis) || !excludeExceptions)) {
+            if (visitor.visit(appStart, appEnd, repeating.isException(appStartMillis))) return true;
         }
-        
-        long l = repeating.getIntervalLength( s  );
-        //System.out.println( "l in days " + l / DateTools.MILLISECONDS_PER_DAY );
-        Assert.isTrue(l>0);
-        long timeFromStart = l ;
-        if ( repeating.isFixedIntervalLength())
-        {
-            timeFromStart = Math.max(l,((c1-e) / l)* l);
-        }
+
+        long intervalMillis = repeating.getIntervalLength(appStartMillis);
+        Assert.isTrue(intervalMillis > 0);
+
         int maxNumber = repeating.getNumber();
-        long maxEnding = Long.MAX_VALUE;
-        if ( maxNumber >= 0)
-        {
-            LocalDateTime end2 = repeating.getEnd();
-            maxEnding = DateTools.toMilli(end2);
+        LocalDateTime maxEnding = null;
+        if (maxNumber >= 0) {
+            maxEnding = repeating.getEnd();
         }
-        
-        DD=DE?BUG: print("l = repeatingInterval (in minutes), x = stepcount");
-        DD=DE?BUG: print("Maxend " + f( maxEnding));
-        long currentPos = s + timeFromStart;
-        DD=DE?BUG: print( " currentPos:" + n(currentPos) + " c2-s:" + n(c2-s) + " c1-e:" + n(c1-e));
-        long blockLength = Math.max(0, e - s);
-        while (currentPos <= c2 && (maxNumber<0 || (currentPos<=maxEnding ))) {
-            DD=DE?BUG: print(" current pos:" + f(currentPos));
-            if (( currentPos + blockLength > c1  )  && ( currentPos < c2 ) && (( end!=DateTools.cutDate(end) || !repeating.isDaily() || currentPos < maxEnding))) {
-                boolean isException =repeating.isException( currentPos ); 
-                if ((!isException || !excludeExceptions)) {
-                    // check only
-                    if ( blocks == null ) 
-                    {
-                        return true;
-                    } 
-                    else 
-                    {
-                        AppointmentBlock block = new AppointmentBlock(currentPos,currentPos + blockLength,this, isException);
-                        blocks.add( block);
-                    }
+
+        Duration blockLength = Duration.between(appStart, appEnd);
+        if (blockLength.isNegative()) blockLength = Duration.ZERO;
+
+        LocalDateTime currentPos = repeating.computeFirstOccurrenceAfter(windowStart.minus(blockLength));
+        if (!currentPos.isAfter(appStart)) {
+            currentPos = repeating.nextStartAfter(appStart);
+        }
+
+        boolean appEndIsMidnight = appEnd.equals(DateTools.cutDate(appEnd));
+
+        while (!currentPos.isAfter(windowEnd) && (maxNumber < 0 || (maxEnding != null && !currentPos.isAfter(maxEnding)))) {
+            LocalDateTime currentEnd = currentPos.plus(blockLength);
+            if (currentEnd.isAfter(windowStart)
+                    && currentPos.isBefore(windowEnd)
+                    && (!appEndIsMidnight || !repeating.isDaily() || (maxEnding != null && currentPos.isBefore(maxEnding)))) {
+                long currentMillis = DateTools.toMilli(currentPos);
+                boolean isException = repeating.isException(currentMillis);
+                if (!isException || !excludeExceptions) {
+                    if (visitor.visit(currentPos, currentEnd, isException)) return true;
                 }
             }
-            currentPos += repeating.getIntervalLength( currentPos) ;
-            
+            currentPos = repeating.nextStartAfter(currentPos);
         }
         return false;
     }
     
     public boolean overlapsBlock(AppointmentBlock block)
     {
-    	long end = block.getEnd();
-		long start = block.getStart();
-		return overlaps(start, end, true);
+        return overlaps(block.getStartDateTime(), block.getEndDateTime(), true);
     }
     
     
@@ -492,20 +487,11 @@ public final class AppointmentImpl extends SimpleEntity implements Appointment
         if (DateTools.toMilli(this.start) >= DateTools.toMilli(end2))
             return false;
 
-        boolean overlaps  = processBlocks( DateTools.toMilli(start2), DateTools.toMilli(end2), null,  excludeExceptions );
-        return overlaps;
+        // "Does any occurrence overlap the window?" — visitor returns true on
+        // the first hit. No AppointmentBlock allocation needed.
+        return processBlocks(start2, end2, (s, e, ex) -> true, excludeExceptions);
     }
 
-    public boolean overlaps(long start,long end, boolean excludeExceptions) {
-        if (getMaxEnd() != null && DateTools.toMilli(getMaxEnd())<start)
-            return false;
-
-        if (DateTools.toMilli(this.start) > end)
-            return false;
-
-        boolean overlaps  = processBlocks( start, end, null,  excludeExceptions );
-        return overlaps;
-    }
 
     private static LocalDateTime getOverlappingEnd(Repeating r1,Repeating r2) {
         LocalDateTime maxEnd = null;
@@ -625,29 +611,26 @@ public final class AppointmentImpl extends SimpleEntity implements Appointment
     }
 
 
-    // check every block in the appointment
+    // For each occurrence of `this` in [getStart(), maxEnd], check if a2
+    // overlaps it. Short-circuits on the first hit via the visitor — never
+    // materialises an AppointmentBlock list.
+    // PRD 014 Phase 8 visitor refactor: previously this path called
+    // createBlocks (allocating every block of `this`) then iterated. Now
+    // processBlocks invokes the visitor inline; first overlap returns true,
+    // remaining occurrences are skipped.
     private boolean overlapsHard( AppointmentImpl a2 )
     {
         Repeating r2 = a2.getRepeating();
-        Collection<AppointmentBlock> array = new ArrayList<>();
-        LocalDateTime maxEnd =r2.getEnd();
-        // overlaps will be checked two  250 weeks (5 years) from now on
+        LocalDateTime maxEnd = r2.getEnd();
+        // overlaps will be checked up to 250 weeks (~5 years) from now
         long maxCheck = System.currentTimeMillis() + DateTools.MILLISECONDS_PER_WEEK * 250;
-        if ( maxEnd == null || DateTools.toMilli(maxEnd) > maxCheck)
+        if (maxEnd == null || DateTools.toMilli(maxEnd) > maxCheck)
         {
-        	maxEnd = DateTools.toLocalDateTime(maxCheck); 
+            maxEnd = DateTools.toLocalDateTime(maxCheck);
         }
-        createBlocks( getStart(), maxEnd, array);
-        for ( AppointmentBlock block:array)
-        {
-            long start = block.getStart();
-            long end = block.getEnd();
-            if (a2.overlaps( start, end, true))
-            {
-                return true;
-            }
-        }
-        return false;
+        return processBlocks(getStart(), maxEnd,
+                (start, end, ex) -> a2.overlaps(start, end, true),
+                true);
     }
 
     /** the greatest common divider of a and b (Euklids Algorithm) */
@@ -760,15 +743,25 @@ public final class AppointmentImpl extends SimpleEntity implements Appointment
         return DateTools.formatDate(n);
     }
 
-    /* Formats 2 dates in milliseconds as appointment. Usefull for debugging output.*/
-    static String f(long s,long e) {
-        LocalDateTime start = DateTools.toLocalDateTime(s);
-        LocalDateTime end = DateTools.toLocalDateTime(e);
-        if (DateTools.isSameDay(s,e)) {
+    /* LocalDateTime variant of fe — used by RepeatingImpl.toString. Avoids a
+     * round-trip when the caller already has a LocalDateTime. */
+    static String fe(LocalDateTime ldt) {
+        return DateTools.formatDate(DateTools.toMilli(ldt));
+    }
+
+    /* Formats 2 dates as appointment. Used by toString and DEBUG print. */
+    static String f(LocalDateTime start, LocalDateTime end) {
+        if (DateTools.isSameDay(DateTools.toMilli(start), DateTools.toMilli(end))) {
             return DateTools.formatDateTime(start) + "-" +  DateTools.formatTime(end);
         } else {
             return DateTools.formatDateTime(start) + "-" +  DateTools.formatDateTime(end);
         }
+    }
+
+    /* Long-millis variant kept for DEBUG print sites that work in long-millis
+     * arithmetic (the gcd math in overlapsAppointment, Group B carve-out). */
+    static String f(long s, long e) {
+        return f(DateTools.toLocalDateTime(s), DateTools.toLocalDateTime(e));
     }
 
     static private void copy(AppointmentImpl source,AppointmentImpl dest) {

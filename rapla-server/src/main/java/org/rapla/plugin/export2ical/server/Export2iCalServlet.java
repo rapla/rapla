@@ -266,9 +266,9 @@ public class Export2iCalServlet
 		if (lastModifiedIntervall == -1) {
 			return firstPluginStartDate;
 		}
-		long nowInMillis = DateTools.toMilli(DateTools.cutDate(LocalDateTime.now()));
-		long daysSinceStart = (nowInMillis - DateTools.toMilli(firstPluginStartDate)) / DateTools.MILLISECONDS_PER_DAY;
-		return LocalDateTime.ofInstant(java.time.Instant.ofEpochMilli(nowInMillis - (daysSinceStart % lastModifiedIntervall) * DateTools.MILLISECONDS_PER_DAY), java.time.ZoneOffset.UTC);
+		LocalDateTime today = DateTools.cutDate(LocalDateTime.now());
+		long daysSinceStart = java.time.temporal.ChronoUnit.DAYS.between(firstPluginStartDate, today);
+		return today.minusDays(daysSinceStart % lastModifiedIntervall);
 	}
 
 	/**

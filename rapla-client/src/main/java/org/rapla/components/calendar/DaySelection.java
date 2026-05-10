@@ -27,8 +27,6 @@ import java.awt.Rectangle;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
 import java.text.NumberFormat;
-import java.text.SimpleDateFormat;
-import java.util.Calendar;
 import java.util.Locale;
 /** The graphical date-selection field
  *  @author Christopher Kohlhaas
@@ -264,13 +262,17 @@ final class DaySelection extends JComponent implements DateChangeListener,MouseL
     }
 
     private void createWeekdays(Locale locale ) {
-        Calendar calendar = Calendar.getInstance(locale);
-        SimpleDateFormat format = new SimpleDateFormat("EE",locale);
-        calendar.set(Calendar.DAY_OF_WEEK,calendar.getFirstDayOfWeek());
-        for (int i=0;i<7;i++) {
-            weekday2slot[calendar.get(Calendar.DAY_OF_WEEK)] = i;
-            weekdayNames[i] = small(format.format(calendar.getTime()));
-            calendar.add(Calendar.DAY_OF_WEEK,1);
+        // Locale's first day of week (e.g. SUNDAY in US, MONDAY in DE)
+        java.time.DayOfWeek firstDay = java.time.temporal.WeekFields.of(locale).getFirstDayOfWeek();
+        java.time.DayOfWeek dow = firstDay;
+        for (int i = 0; i < 7; i++) {
+            // Rapla weekday convention: SUNDAY=1..SATURDAY=7 (matches the Calendar.DAY_OF_WEEK ints
+            // the existing weekday2slot indexing uses). DayOfWeek.getValue() is MONDAY=1..SUNDAY=7,
+            // so we convert via DateTools.mapDateAPIToRapla.
+            int raplaWeekday = org.rapla.components.util.DateTools.mapDateAPIToRapla(dow);
+            weekday2slot[raplaWeekday] = i;
+            weekdayNames[i] = small(dow.getDisplayName(java.time.format.TextStyle.SHORT, locale));
+            dow = dow.plus(1);
         }
     }
 

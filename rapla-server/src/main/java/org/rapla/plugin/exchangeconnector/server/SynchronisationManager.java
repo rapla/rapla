@@ -1,7 +1,5 @@
 package org.rapla.plugin.exchangeconnector.server;
 
-import org.rapla.scheduler.Cancellation;
-import org.rapla.scheduler.Action;
 import microsoft.exchange.webservices.data.core.exception.http.HttpErrorException;
 import microsoft.exchange.webservices.data.core.exception.service.remote.ServiceResponseException;
 import microsoft.exchange.webservices.data.core.service.folder.CalendarFolder;
@@ -37,18 +35,17 @@ import org.rapla.plugin.exchangeconnector.server.exchange.AppointmentSynchronize
 import org.rapla.plugin.exchangeconnector.server.exchange.EWSConnector;
 import org.rapla.plugin.exchangeconnector.server.exchange.ExchangeAppointment;
 import org.rapla.plugin.mail.server.MailToUserImpl;
-import org.rapla.scheduler.CommandScheduler;
 import org.rapla.scheduler.Promise;
 import org.rapla.scheduler.sync.SynchronizedCompletablePromise;
 import org.rapla.server.RaplaKeyStorage;
 import org.rapla.server.RaplaKeyStorage.LoginInfo;
 import org.rapla.framework.TimeZoneConverter;
-import org.rapla.server.extensionpoints.ServerExtension;
 import org.rapla.storage.CachableStorageOperator;
 import org.rapla.storage.UpdateOperation;
 import org.rapla.storage.UpdateResult;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.scheduling.annotation.Scheduled;
 import javax.net.ssl.HttpsURLConnection;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.TrustManager;
@@ -65,7 +62,13 @@ import java.util.stream.Stream;
 import static org.rapla.entities.configuration.CalendarModelConfiguration.EXPORT_ENTRY;
 
 
-public class SynchronisationManager implements ServerExtension
+/** Exchange-connector mailbox + appointment sync.
+ *
+ *  <p>PRD 019 Phase 3b: migrated from {@code ServerExtension} to Spring's
+ *  {@code @Scheduled} for both recurring tasks. The {@link #enabled} flag is
+ *  checked at the top of each scheduled method so an unconfigured deployment
+ *  silently no-ops. */
+public class SynchronisationManager
 {
     private static final long SCHEDULE_PERIOD = DateTools.MILLISECONDS_PER_MINUTE / 10;
 
@@ -91,11 +94,8 @@ public class SynchronisationManager implements ServerExtension
     private final String exchangeAppointmentCategory;
 
     private final int syncPeriodPast;
-    CommandScheduler scheduler;
     private final Set<ExchangeConfigExtensionPoint> configExtensions;
     private final MailToUserImpl mailToUserInterface;
-    Cancellation schedule;
-    Cancellation scheduleMailboxes;
     boolean enabled;
     ShowExchangeForUser showExchangeForUser;
 
@@ -104,11 +104,10 @@ public class SynchronisationManager implements ServerExtension
     @Autowired
     public SynchronisationManager(RaplaFacade facade, RaplaResources i18nRapla, ExchangeConnectorResources i18nExchange, Logger logger,
                                   TimeZoneConverter converter, AppointmentFormater appointmentFormater, RaplaKeyStorage keyStorage, ExchangeAppointmentStorage appointmentStorage,
-                                  CommandScheduler scheduler, ConfigReader config, Set<ExchangeConfigExtensionPoint> configExtensions, MailToUserImpl mailToUserInterface, ShowExchangeForUser showExchangeForUser) throws
+                                  ConfigReader config, Set<ExchangeConfigExtensionPoint> configExtensions, MailToUserImpl mailToUserInterface, ShowExchangeForUser showExchangeForUser) throws
             RaplaInitializationException
     {
         super();
-        this.scheduler = scheduler;
         this.converter = converter;
         this.logger = logger;
         this.facade = facade;
@@ -133,14 +132,14 @@ public class SynchronisationManager implements ServerExtension
         //scheduledDownloadTimer.schedule(new ScheduledDownloadHandler(context, clientFacade, getLogger()), 30000, ExchangeConnectorPlugin.PULL_FREQUENCY*1000);
     }
 
-    @Override
-    public void start()
+    /** Long-period sweep that re-pulls every shared mailbox and re-aligns all rapla
+     *  appointments under it. {@link Scheduled#fixedRate} matches the legacy 60-minute
+     *  cadence of {@code SCHEDULE_PERIOD_REFRESH_MAILBOXES}. */
+    @Scheduled(fixedRate = SCHEDULE_PERIOD_REFRESH_MAILBOXES)
+    public void synchronizeMailboxes()
     {
-        if ( !enabled ) {
-            return;
-        }
-        logger.info("Scheduling Exchange synchronization tasks");
-        final Action synchronizeMailboxesAction = () ->
+        if (!enabled) return;
+        try
         {
             logger.info("Synchronizing mailboxes");
             Collection<User> users = cachableStorageOperator.getUsers();
@@ -235,41 +234,41 @@ public class SynchronisationManager implements ServerExtension
             if ( synchronizationTasks.size() >0 ) {
                 logger.info("Executing done.");
             }
-        };
-        scheduleMailboxes = scheduler.schedule(synchronizeMailboxesAction, 0, SCHEDULE_PERIOD_REFRESH_MAILBOXES);
-        final Action synchronizeAction = () ->
+        }
+        catch (Throwable t)
         {
-            LocalDateTime lastUpdated = null;
-            LocalDateTime updatedUntil = null;
-            try {
-                lastUpdated = cachableStorageOperator.requestLock(EXCHANGE_LOCK_ID, VALID_LOCK_DURATION);
-            } catch (Throwable t) {
-                SynchronisationManager.this.logger.error("Can't get exchange lock. Another Process maybe blocking. Waiting until its released again ");
-            }
-            if (lastUpdated == null) {
-                return;
-            }
-            try {
-                final UpdateResult updateResult = cachableStorageOperator.getUpdateResult(lastUpdated);
-                synchronize(updateResult);
-                // set it as last, so update must have been successful
-                updatedUntil = updateResult.getUntil();
-            } catch (Throwable t) {
-                SynchronisationManager.this.logger.error("Error updating exchange queue", t);
-            } finally {
-                cachableStorageOperator.releaseLock(EXCHANGE_LOCK_ID, updatedUntil);
-            }
-        };
-        schedule = scheduler.schedule(synchronizeAction, 0, SCHEDULE_PERIOD);
+            logger.error("Error in mailbox synchronization sweep", t);
+        }
     }
 
-    @Override
-    public void stop() {
-        if ( scheduleMailboxes != null) {
-            scheduleMailboxes.cancel();
+    /** Short-period sweep that processes pending exchange queue updates. {@link Scheduled#fixedRate}
+     *  matches the legacy 6-second cadence of {@code SCHEDULE_PERIOD}. */
+    @Scheduled(fixedRate = SCHEDULE_PERIOD)
+    public void synchronizeQueue()
+    {
+        if (!enabled) return;
+        LocalDateTime lastUpdated = null;
+        LocalDateTime updatedUntil = null;
+        try {
+            lastUpdated = cachableStorageOperator.requestLock(EXCHANGE_LOCK_ID, VALID_LOCK_DURATION);
+        } catch (Throwable t) {
+            logger.error("Can't get exchange lock. Another Process maybe blocking. Waiting until its released again ");
         }
-        if ( schedule != null) {
-            schedule.cancel();
+        if (lastUpdated == null) {
+            return;
+        }
+        try {
+            final UpdateResult updateResult = cachableStorageOperator.getUpdateResult(lastUpdated);
+            synchronize(updateResult);
+            updatedUntil = updateResult.getUntil();
+        } catch (Throwable t) {
+            logger.error("Error updating exchange queue", t);
+        } finally {
+            try {
+                cachableStorageOperator.releaseLock(EXCHANGE_LOCK_ID, updatedUntil);
+            } catch (RaplaException re) {
+                logger.warn("Failed to release exchange lock: " + re.getMessage(), re);
+            }
         }
     }
 

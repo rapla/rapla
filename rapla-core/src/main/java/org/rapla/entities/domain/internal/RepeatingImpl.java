@@ -393,7 +393,7 @@ final class RepeatingImpl implements Repeating,java.io.Serializable {
         } else {
             if (end != null) {
                 buf.append(" end-date=");
-                buf.append(AppointmentImpl.fe(DateTools.toMilli(end)));
+                buf.append(AppointmentImpl.fe(end));
             }
         }
         if ( exceptions != null && exceptions.size()>0)
@@ -502,6 +502,79 @@ final class RepeatingImpl implements Repeating,java.io.Serializable {
         return  newTime- s;
         // yearly
         
+    }
+
+    /** Advance to the next occurrence's start time. Dispatches by repeat shape:
+     *  fixed-interval (DAILY, single-weekday WEEKLY) uses the cached millis delta;
+     *  variable-interval (MONTHLY, YEARLY, multi-weekday WEEKLY) defers to
+     *  {@link #gotoNextStep(LocalDateTime)}. PRD 014 Phase 8c-full (idea #1).
+     */
+    public LocalDateTime nextStartAfter(LocalDateTime current) {
+        if (isFixedIntervalLength()) {
+            return current.plus(java.time.Duration.ofMillis(getFixedIntervalLength()));
+        }
+        return gotoNextStep(current);
+    }
+
+    /** Returns the first occurrence at or after {@code threshold}.
+     *
+     *  <p>For fixed-interval repeats (DAILY, single-weekday WEEKLY) and for
+     *  MONTHLY (Nth-weekday-of-month), this jumps in O(1). For YEARLY and
+     *  multi-weekday WEEKLY it falls back to iteration from {@code appointment.getStart()}.
+     *  PRD 014 Phase 8c-full (idea #1).
+     */
+    public LocalDateTime computeFirstOccurrenceAfter(LocalDateTime threshold) {
+        LocalDateTime appStart = appointment.getStart();
+        if (!threshold.isAfter(appStart)) {
+            return appStart;
+        }
+
+        if (isFixedIntervalLength()) {
+            // Linear-interval math: ceiling-divide millis-diff by intervalLength.
+            long intervalMs = getFixedIntervalLength();
+            long thresholdMs = DateTools.toMilli(threshold);
+            long appStartMs = DateTools.toMilli(appStart);
+            long diff = thresholdMs - appStartMs;
+            long n = (diff + intervalMs - 1) / intervalMs; // ceil
+            return appStart.plus(java.time.Duration.ofMillis(n * intervalMs));
+        }
+
+        if (monthly) {
+            // Analytical jump: months-between in O(1), snap to the same Nth-weekday-of-month
+            // pattern (the gotoNextMonth semantic).
+            java.time.YearMonth startYm = java.time.YearMonth.from(appStart);
+            java.time.YearMonth thresholdYm = java.time.YearMonth.from(threshold);
+            long monthsDiff = startYm.until(thresholdYm, java.time.temporal.ChronoUnit.MONTHS);
+            if (monthsDiff < 0) monthsDiff = 0;
+            DayOfWeek targetDow = appStart.getDayOfWeek();
+            int targetN = (appStart.getDayOfMonth() - 1) / 7 + 1; // 1..5
+            java.time.LocalTime targetTime = appStart.toLocalTime();
+            LocalDateTime candidate = nthWeekdayOfMonth(startYm.plusMonths(monthsDiff), targetDow, targetN, targetTime);
+            // The Nth-weekday-of-month math may land before threshold within the
+            // same calendar month; advance one month if so. At most 1 extra step.
+            if (candidate.isBefore(threshold)) {
+                candidate = nthWeekdayOfMonth(startYm.plusMonths(monthsDiff + 1), targetDow, targetN, targetTime);
+            }
+            return candidate;
+        }
+
+        // YEARLY or multi-weekday WEEKLY: iterate from appStart.
+        // (YEARLY iteration is bounded by appointment.number; multi-weekday WEEKLY
+        // jumps in 1-week increments — both are typically short.)
+        LocalDateTime candidate = appStart;
+        while (candidate.isBefore(threshold)) {
+            candidate = gotoNextStep(candidate);
+        }
+        return candidate;
+    }
+
+    /** Helper: the {@code targetN}-th occurrence of {@code targetDow} in
+     *  {@code ym} (e.g., the 3rd Thursday of March 2026), at the given time-of-day.
+     */
+    private static LocalDateTime nthWeekdayOfMonth(java.time.YearMonth ym, DayOfWeek targetDow, int targetN, java.time.LocalTime time) {
+        LocalDateTime firstOfMonth = ym.atDay(1).atTime(time);
+        LocalDateTime firstTarget = firstOfMonth.with(java.time.temporal.TemporalAdjusters.firstInMonth(targetDow));
+        return firstTarget.plusWeeks(targetN - 1);
     }
 
     private LocalDateTime gotoNextStep( LocalDateTime startDate)

@@ -203,7 +203,7 @@ public class EditTaskPresenter implements TaskPresenter
                             }
                             if (!beginn.isBefore(end))
                             {
-                                end = LocalDateTime.ofInstant(java.time.Instant.ofEpochMilli(DateTools.toMilli(app.getStart()) + DateTools.MILLISECONDS_PER_HOUR), java.time.ZoneOffset.UTC);
+                                end = app.getStart().plusHours(1);
                             }
                             app.move(app.getStart(), end);
                         }

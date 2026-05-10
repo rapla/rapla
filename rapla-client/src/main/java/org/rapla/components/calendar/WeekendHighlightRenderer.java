@@ -15,8 +15,9 @@ package org.rapla.components.calendar;
 
 
 
+import org.rapla.components.util.DateTools;
+
 import java.awt.Color;
-import java.util.Calendar;
 /** Renders the weekdays (or any other day of week, if selected) in a special color. */
 public class WeekendHighlightRenderer implements DateRenderer {
 
@@ -25,8 +26,8 @@ public class WeekendHighlightRenderer implements DateRenderer {
     boolean[] m_highlightedDays = new boolean[10];
 
     public WeekendHighlightRenderer() {
-        setHighlight(Calendar.SATURDAY,true);
-        setHighlight(Calendar.SUNDAY,true);
+        setHighlight(DateTools.SATURDAY, true);
+        setHighlight(DateTools.SUNDAY, true);
     }
 
     /** Default color is #e2f3ff */

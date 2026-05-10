@@ -13,46 +13,52 @@
 
 package org.rapla.components.calendar;
 
-import java.text.DateFormat;
-import java.text.SimpleDateFormat;
-import java.util.ArrayList;
-import java.util.Calendar;
-import java.util.GregorianCalendar;
-import java.util.Locale;
-import java.util.TimeZone;
+import org.rapla.components.util.DateTools;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import org.rapla.components.util.DateTools;
+import java.time.format.DateTimeFormatter;
+import java.time.format.FormatStyle;
+import java.util.ArrayList;
+import java.util.Locale;
+import java.util.TimeZone;
+
 /**
- * The model of the obligatory MVC approach is a wrapper arround an
- * Calendar object.
+ * The model of the obligatory MVC approach is now a wrapper around a
+ * {@link LocalDate}. PRD 014 Calendar migration: the previous
+ * {@link java.util.Calendar} field is gone — LocalDate has no time-of-day
+ * or timezone, which matches this class's actual semantics (it never
+ * exposed a time-of-day; {@code trim()} zeroed it on every set anyway).
+ *
+ * <p>The {@link TimeZone} parameter is preserved on the public API for
+ * back-compat but no longer participates in any computation; it's now a
+ * no-op stored only for the {@link #getTimeZone()} getter.
  */
 final class DateModel {
-    private final Calendar m_calendar;
+    private LocalDate m_date;
     private int m_daysMonth;
     private int m_daysLastMonth;
     private int m_firstWeekday;
     private final Locale m_locale;
-    private final DateFormat m_yearFormat;
-    private final DateFormat m_currentDayFormat;
+    private TimeZone m_timeZone;
+    private final DateTimeFormatter m_yearFormat;
+    private final DateTimeFormatter m_yearFormatWithEra;
+    private final DateTimeFormatter m_currentDayFormat;
 
     ArrayList<DateChangeListener> listenerList = new ArrayList<>();
 
-    public DateModel(Locale locale,TimeZone timeZone) {
+    public DateModel(Locale locale, TimeZone timeZone) {
         m_locale = locale;
-        m_calendar = Calendar.getInstance(timeZone,m_locale);
-        trim(m_calendar);
-        m_yearFormat = new SimpleDateFormat("yyyy", m_locale);
-        m_yearFormat.setTimeZone(timeZone);
-        m_currentDayFormat = DateFormat.getDateInstance(DateFormat.MEDIUM, m_locale);
-        m_currentDayFormat.setTimeZone(timeZone);
-        m_calendar.setLenient(true);
+        m_timeZone = timeZone;
+        m_date = LocalDate.now();
+        m_yearFormat = DateTimeFormatter.ofPattern("yyyy", m_locale);
+        m_yearFormatWithEra = DateTimeFormatter.ofPattern("yyyy GG", m_locale);
+        m_currentDayFormat = DateTimeFormatter.ofLocalizedDate(FormatStyle.MEDIUM).withLocale(m_locale);
         recalculate();
     }
 
     public boolean sameDate(LocalDate date) {
-        return getDate().equals(date);
+        return m_date.equals(date);
     }
 
     public void addDateChangeListener(DateChangeListener listener) {
@@ -63,130 +69,105 @@ final class DateModel {
         listenerList.remove(listener);
     }
 
-    public Locale getLocale() {return m_locale; }
-    public int getDay() {  return m_calendar.get(Calendar.DATE);  }
-    public int getMonth() {  return m_calendar.get(Calendar.MONTH) + 1;   }
-    public int getYear() {   return  m_calendar.get(Calendar.YEAR);   }
+    public Locale getLocale() { return m_locale; }
+    public int getDay() { return m_date.getDayOfMonth(); }
+    public int getMonth() { return m_date.getMonthValue(); }
+    public int getYear() { return m_date.getYear(); }
 
     /** return the number of days of the selected month */
-    public int daysMonth() {  return m_daysMonth;   }
+    public int daysMonth() { return m_daysMonth; }
     /** return the number of days of the month before the selected month. */
-    public int daysLastMonth() { return m_daysLastMonth;   }
-    /** return the first weekday of the selected month (1 - 7). */
-    public int firstWeekday() { return m_firstWeekday;   }
+    public int daysLastMonth() { return m_daysLastMonth; }
+    /** return the first weekday of the selected month (1 - 7, SUNDAY=1..SATURDAY=7). */
+    public int firstWeekday() { return m_firstWeekday; }
 
     /** calculates the weekday from the passed day. */
     public int getWeekday(int day) {
         // calculate the weekday, consider the index shift
-        return (((firstWeekday() - 1) + (day - 1))  % 7 ) + 1;
+        return (((firstWeekday() - 1) + (day - 1)) % 7) + 1;
     }
 
     public LocalDate getDate() {
-        return LocalDate.of(
-            m_calendar.get(Calendar.YEAR),
-            m_calendar.get(Calendar.MONTH) + 1,
-            m_calendar.get(Calendar.DATE));
+        return m_date;
     }
 
-    // #TODO Property change listener for TimeZone
     public void setTimeZone(TimeZone timeZone) {
-        m_calendar.setTimeZone(timeZone);
-        m_yearFormat.setTimeZone(timeZone);
-        m_currentDayFormat.setTimeZone(timeZone);
+        m_timeZone = timeZone;
+        // No-op for LocalDate state, but recalculate to fire the listeners
+        // in case downstream cares.
         recalculate();
     }
 
     public TimeZone getTimeZone() {
-        return m_calendar.getTimeZone();
+        return m_timeZone;
     }
 
     public String getDateString() {
-        return m_currentDayFormat.format(new java.util.Date(m_calendar.getTimeInMillis()));
+        return m_currentDayFormat.format(m_date);
     }
 
     public String getCurrentDateString() {
-        return m_currentDayFormat.format(new java.util.Date());
+        return m_currentDayFormat.format(LocalDate.now());
     }
 
     public void addMonth(int count) {
-        m_calendar.add(Calendar.MONTH,count);
+        m_date = m_date.plusMonths(count);
         recalculate();
     }
 
     public void addYear(int count) {
-        m_calendar.add(Calendar.YEAR,count);
+        m_date = m_date.plusYears(count);
         recalculate();
     }
 
     public void addDay(int count) {
-        m_calendar.add(Calendar.DATE,count);
+        m_date = m_date.plusDays(count);
         recalculate();
     }
 
     public void setDay(int day) {
-        m_calendar.set(Calendar.DATE,day);
+        m_date = m_date.withDayOfMonth(day);
         recalculate();
     }
 
-    public void setMonth(int month) {
-        m_calendar.set(Calendar.MONTH,month);
+    public void setMonth(int month0Based) {
+        // Calendar.MONTH was 0-based; preserve the API contract.
+        m_date = m_date.withMonth(month0Based + 1);
         recalculate();
     }
+
     public String getYearString() {
-        DateFormat format;
-        if (m_calendar.get(Calendar.ERA)!=GregorianCalendar.AD)
-            format = new SimpleDateFormat("yyyy GG", getLocale());
-        else
-            format = m_yearFormat;
-        return format.format(new java.util.Date(m_calendar.getTimeInMillis()));
+        // Years <= 0 are BC under the Gregorian calendar; use era format then.
+        DateTimeFormatter format = (m_date.getYear() < 1) ? m_yearFormatWithEra : m_yearFormat;
+        return format.format(m_date);
     }
 
     public void setYear(int year) {
-        m_calendar.set(Calendar.YEAR,year);
+        m_date = m_date.withYear(year);
         recalculate();
     }
 
-    public void setDate(int day,int month,int year) {
-        m_calendar.set(Calendar.DATE,day);
-        m_calendar.set(Calendar.MONTH,month -1);
-        m_calendar.set(Calendar.YEAR,year);
-        trim(m_calendar);
+    public void setDate(int day, int month, int year) {
+        m_date = LocalDate.of(year, month, day);
         recalculate();
-   }
+    }
 
     public void setDate(LocalDate date) {
-        m_calendar.set(Calendar.YEAR, date.getYear());
-        m_calendar.set(Calendar.MONTH, date.getMonthValue() - 1);
-        m_calendar.set(Calendar.DATE, date.getDayOfMonth());
-        trim(m_calendar);
+        m_date = date;
         recalculate();
     }
 
-    private void trim(Calendar calendar) {
-        calendar.set(Calendar.HOUR_OF_DAY,0);
-        calendar.set(Calendar.MINUTE,0);
-        calendar.set(Calendar.SECOND,0);
-        calendar.set(Calendar.MILLISECOND,0);
-    }
-
-    // 18.02.2004 CK: Workaround for bug in JDK 1.5.0 .Replace add with roll
     private void recalculate() {
-        Calendar calendar =  Calendar.getInstance(getTimeZone(), getLocale());
-        calendar.setTimeInMillis(m_calendar.getTimeInMillis());
         // calculate the number of days of the selected month
-        calendar.add(Calendar.MONTH,1);
-        calendar.set(Calendar.DATE,1);
-        calendar.add(Calendar.DAY_OF_YEAR,-1);
-        calendar.getTime();
-        m_daysMonth = calendar.get(Calendar.DAY_OF_MONTH);
+        m_daysMonth = m_date.lengthOfMonth();
 
-        // calculate the number of days of the month before the selected month
-        calendar.set(Calendar.DATE,1);
-        m_firstWeekday = calendar.get(Calendar.DAY_OF_WEEK);
-        calendar.add(Calendar.DAY_OF_YEAR,-1);
-        m_daysLastMonth = calendar.get(Calendar.DAY_OF_MONTH);
+        // first weekday of the selected month
+        LocalDate firstOfMonth = m_date.withDayOfMonth(1);
+        m_firstWeekday = DateTools.mapDateAPIToRapla(firstOfMonth.getDayOfWeek());
 
-        //        System.out.println("Calendar Recalculate:  " + getDay() + "." + getMonth() + "." + getYear());
+        // number of days of the month before the selected month
+        m_daysLastMonth = firstOfMonth.minusDays(1).lengthOfMonth();
+
         fireDateChanged();
     }
 
@@ -196,14 +177,11 @@ final class DateModel {
 
     protected void fireDateChanged() {
         DateChangeListener[] listeners = getDateChangeListeners();
-        LocalDateTime date = getDate().atStartOfDay();
-		DateChangeEvent evt = new DateChangeEvent(this,date);
-        for (int i = 0;i<listeners.length; i++) {
+        LocalDateTime date = m_date.atStartOfDay();
+        DateChangeEvent evt = new DateChangeEvent(this, date);
+        for (int i = 0; i < listeners.length; i++) {
             listeners[i].dateChanged(evt);
         }
     }
 
 }
-
-
-

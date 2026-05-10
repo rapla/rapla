@@ -129,7 +129,7 @@ public class UpdateDataManagerImpl implements  UpdateDataManager
         }
         else if (lastSynced.isAfter(lastRefreshed))
         {
-            long diff = DateTools.toMilli(lastSynced) - DateTools.toMilli(lastRefreshed);
+            long diff = java.time.Duration.between(lastRefreshed, lastSynced).toMillis();
             getLogger().warn("Timestamp of client " + diff + " ms  after server ");
             lastSynced = currentTimestamp;
         }

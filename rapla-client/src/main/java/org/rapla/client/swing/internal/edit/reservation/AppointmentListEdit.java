@@ -389,8 +389,8 @@ class AppointmentListEdit extends AbstractAppointmentEditor
 //		Appointment[] appointments = mutableReservation.getAppointments();
 		Promise<Appointment> appointment;
 		if (sortedModel.getSize() == 0) {
-			LocalDateTime start = LocalDateTime.ofInstant(java.time.Instant.ofEpochMilli(DateTools.toMilli(DateTools.cutDate(LocalDateTime.now()))+ getCalendarOptions().getWorktimeStartMinutes()	* DateTools.MILLISECONDS_PER_MINUTE), java.time.ZoneOffset.UTC);
-			LocalDateTime end = LocalDateTime.ofInstant(java.time.Instant.ofEpochMilli(DateTools.toMilli(start)+ DateTools.MILLISECONDS_PER_HOUR), java.time.ZoneOffset.UTC);
+			LocalDateTime start = DateTools.cutDate(LocalDateTime.now()).plusMinutes(getCalendarOptions().getWorktimeStartMinutes());
+			LocalDateTime end = start.plusHours(1);
 			appointment = getFacade().newAppointmentAsync(new TimeInterval(start, end));
 		} else { 
 			// copyReservations the selected appointment as template

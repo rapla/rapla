@@ -14,7 +14,6 @@ import org.rapla.server.RemoteSession;
 import org.rapla.server.ServerServiceContainer;
 import org.rapla.framework.TimeZoneConverter;
 import org.rapla.server.AuthenticationStore;
-import org.rapla.server.extensionpoints.ServerExtension;
 import org.rapla.server.extensionpoints.ServletRequestPreprocessor;
 import org.rapla.server.internal.RaplaAuthentificationService;
 import org.rapla.server.internal.RaplaKeyStorageImpl;
@@ -40,9 +39,15 @@ import java.util.Set;
 public class ServerServiceConfig
 {
     @Bean
-    public CachableStorageOperator cachableStorageOperator(ServerStorageSelector selector)
+    public CachableStorageOperator cachableStorageOperator(ServerStorageSelector selector) throws Exception
     {
-        return selector.get();
+        // PRD 019 Phase 1: connect the operator here, in the @Bean factory, so by the time
+        // any consumer (RaplaFacade, ServerServiceImpl, downstream beans) injects this bean
+        // it is already connected to the data store. Removes the implicit "must be created
+        // by ServerServiceImpl's constructor first" ordering.
+        CachableStorageOperator operator = selector.get();
+        operator.connect();
+        return operator;
     }
 
     @Bean
@@ -52,7 +57,6 @@ public class ServerServiceConfig
             RaplaLocale raplaLocale,
             TimeZoneConverter timeZoneConverter,
             Logger logger,
-            ObjectProvider<Map<String, ServerExtension>> serverExtensionsProvider,
             ObjectProvider<Set<ServletRequestPreprocessor>> requestPreProcessorsProvider,
             CommandScheduler scheduler,
             ServerContainerContext containerContext,
@@ -60,18 +64,21 @@ public class ServerServiceConfig
             RaplaSystemInfo systemInfo,
             ServerBundleManager bundleManager) throws RaplaInitializationException
     {
-        java.util.function.Supplier<Map<String, ServerExtension>> mapProvider =
-                () -> serverExtensionsProvider.getIfAvailable(Collections::emptyMap);
         java.util.function.Supplier<Set<ServletRequestPreprocessor>> setProvider =
                 () -> requestPreProcessorsProvider.getIfAvailable(Collections::emptySet);
+        // PRD 019 Phase 4: ServerExtension Map<> arg dropped. Scheduling/startup work
+        // is now driven by @Scheduled / @EventListener.
         return new ServerServiceImpl(operator, facade, raplaLocale, timeZoneConverter, logger,
-                mapProvider, setProvider, scheduler, containerContext, i18n, systemInfo, bundleManager);
+                setProvider, scheduler, containerContext, i18n, systemInfo, bundleManager);
     }
 
     @Bean
-    @DependsOn("serverServiceContainer")
     public RaplaKeyStorage raplaKeyStorage(RaplaFacade facade, Logger logger) throws RaplaInitializationException
     {
+        // PRD 019 Phase 1: @DependsOn("serverServiceContainer") removed — the facade
+        // is now wired with a connected operator at @Bean factory time, so any consumer
+        // that injects RaplaFacade gets a ready-to-use instance regardless of whether
+        // ServerServiceImpl has been constructed yet.
         return new RaplaKeyStorageImpl(facade, logger);
     }
 
@@ -374,10 +381,11 @@ public class ServerServiceConfig
     // ctor needs ConfigReader, ShowExchangeForUser, ExchangeAppointmentStorage,
     // Set<ExchangeConfigExtensionPoint> which aren't currently in the bean graph.
 
+    // PRD 019 Phase 3d: JavascriptPatcher uses @EventListener(ApplicationReadyEvent) internally.
     @Bean(name = "org.rapla.plugin.javascriptpatch.server")
     @org.springframework.boot.autoconfigure.condition.ConditionalOnProperty(
             prefix = "rapla.services", name = "org.rapla.plugin.javascriptpatch", matchIfMissing = true)
-    public ServerExtension javascriptPatcherExtension(RaplaFacade facade, Logger logger,
+    public org.rapla.plugin.javasciptpatch.server.JavascriptPatcher javascriptPatcher(RaplaFacade facade, Logger logger,
                                                       ServerContainerContext serverContainerContext,
                                                       org.rapla.storage.CachableStorageOperator cachableStorageOperator)
     {
@@ -385,17 +393,18 @@ public class ServerServiceConfig
                 facade, logger, serverContainerContext, cachableStorageOperator);
     }
 
+    // PRD 019 Phase 3c: ArchiverServiceTask uses @Scheduled internally.
     @Bean(name = org.rapla.plugin.archiver.ArchiverService.PLUGIN_ID + ".server")
     @org.springframework.boot.autoconfigure.condition.ConditionalOnProperty(
             prefix = "rapla.services", name = "org.rapla.plugin.archiver", matchIfMissing = true)
-    public ServerExtension archiverServiceTaskExtension(CommandScheduler scheduler, Logger logger,
+    public org.rapla.plugin.archiver.server.ArchiverServiceTask archiverServiceTask(Logger logger,
                                                         RaplaFacade facade,
                                                         org.rapla.storage.SyncStorageOperator syncOperator,
                                                         org.rapla.storage.ImportExportManager importExportManager)
             throws RaplaInitializationException
     {
         return new org.rapla.plugin.archiver.server.ArchiverServiceTask(
-                scheduler, logger, facade, syncOperator, importExportManager);
+                logger, facade, syncOperator, importExportManager);
     }
 
     @Bean
@@ -404,17 +413,21 @@ public class ServerServiceConfig
         return new org.rapla.plugin.notification.NotificationResources(bundleManager);
     }
 
+    // PRD 019 Phase 3a: NotificationService is now a regular @Bean (not a ServerExtension)
+    // and uses @Scheduled internally. The bean name (PLUGIN_ID) is kept so anything that
+    // looks it up by name still resolves; ServerServiceImpl no longer iterates this type.
     @Bean(name = org.rapla.plugin.notification.NotificationPlugin.PLUGIN_ID)
     @org.springframework.boot.autoconfigure.condition.ConditionalOnProperty(
             prefix = "rapla.services", name = "org.rapla.plugin.notification", matchIfMissing = true)
-    public ServerExtension notificationServiceExtension(RaplaFacade facade, RaplaResources i18nBundle,
-                                                        org.rapla.plugin.notification.NotificationResources notificationI18n,
-                                                        org.rapla.entities.domain.AppointmentFormater appointmentFormater,
-                                                        org.springframework.beans.factory.ObjectProvider<org.rapla.plugin.mail.server.MailToUserImpl> mailToUserProvider,
-                                                        CommandScheduler scheduler, Logger logger)
+    public org.rapla.plugin.notification.server.NotificationService notificationService(
+            RaplaFacade facade, RaplaResources i18nBundle,
+            org.rapla.plugin.notification.NotificationResources notificationI18n,
+            org.rapla.entities.domain.AppointmentFormater appointmentFormater,
+            org.springframework.beans.factory.ObjectProvider<org.rapla.plugin.mail.server.MailToUserImpl> mailToUserProvider,
+            Logger logger)
             throws org.rapla.framework.RaplaException
     {
         return new org.rapla.plugin.notification.server.NotificationService(
-                facade, i18nBundle, notificationI18n, appointmentFormater, mailToUserProvider::getObject, scheduler, logger);
+                facade, i18nBundle, notificationI18n, appointmentFormater, mailToUserProvider::getObject, logger);
     }
 }

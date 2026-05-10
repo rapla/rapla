@@ -18,78 +18,90 @@ import org.rapla.components.util.TimeInterval;
 import java.time.LocalDateTime;
 /**
  * This class represents a time block of an appointment.
+ *
+ * <p>PRD 014 Phase 8 (Group E flip, 2026-05-10): primary storage is now
+ * {@link LocalDateTime}. The legacy {@link #getStart()} / {@link #getEnd()}
+ * accessors return long-millis via {@link DateTools#toMilli(LocalDateTime)}
+ * so view-layer pixel math (HTMLWeekView, SwingMonthView, etc.) keeps
+ * working unchanged. New code should prefer {@link #getStartDateTime()} /
+ * {@link #getEndDateTime()}.
+ *
  * @since Rapla 1.4
  */
 public class AppointmentBlock implements Comparable<AppointmentBlock>
 {
-    long start;
-    long end;
+    LocalDateTime start;
+    LocalDateTime end;
     boolean isException;
     private final Appointment	appointment;
-	
+
 	/**
-	 * Basic constructor
+	 * Long-millis constructor (legacy). Retained because processBlocks emission
+	 * still has the millis on hand from its inner-loop math.
 	 */
 	public AppointmentBlock(long start, long end, Appointment appointment, boolean isException)
+	{
+		this(DateTools.toLocalDateTime(start), DateTools.toLocalDateTime(end), appointment, isException);
+	}
+
+	/** LocalDateTime constructor — preferred for new call sites. */
+	public AppointmentBlock(LocalDateTime start, LocalDateTime end, Appointment appointment, boolean isException)
 	{
 		this.start = start;
 		this.end = end;
 		this.appointment = appointment;
 		this.isException = isException;
 	}
+
 	static public AppointmentBlock create(Appointment appointment)
 	{
 		return new AppointmentBlock(appointment);
 	}
-	
+
 	protected AppointmentBlock(Appointment appointment)
 	{
-	    this(DateTools.toMilli(appointment.getStart()), DateTools.toMilli(appointment.getEnd()), appointment, false);
+	    this(appointment.getStart(), appointment.getEnd(), appointment, false);
 	}
-	
+
 	public boolean includes(AppointmentBlock a2)
 	{
-	    return start <= a2.start  &&  end>= a2.end;
+	    return !start.isAfter(a2.start) && !end.isBefore(a2.end);
 	}
-	
+
 	public boolean intersects(AppointmentBlock a2)
     {
-        return start < a2.end  &&  end> a2.start;
+        return start.isBefore(a2.end) && end.isAfter(a2.start);
     }
-    
-	
+
+
 	/**
-	 * Returns the start date of this block
-	 * 
-	 * @return LocalDateTime
+	 * Returns the start date of this block as long-millis (UTC epoch).
+	 * Kept on the long-millis API so view-layer pixel math doesn't churn.
+	 * For LocalDateTime, use {@link #getStartDateTime()}.
 	 */
 	public long getStart()
 	{
-		return start;
+		return DateTools.toMilli(start);
 	}
-	
-	/**
-	 * Returns the end date of this block
-	 * 
-	 * @return LocalDateTime
-	 */
+
+	/** End as long-millis. See {@link #getStart()}. */
 	public long getEnd()
 	{
-		return end;
+		return DateTools.toMilli(end);
 	}
 
 	public LocalDateTime getStartDateTime() {
-		return DateTools.toLocalDateTime(start);
+		return start;
 	}
 
 	public LocalDateTime getEndDateTime() {
-		return DateTools.toLocalDateTime(end);
+		return end;
 	}
 
 
 	/**
      * Returns if the block is an exception from the appointment rule
-     * 
+     *
      */
     public boolean isException()
     {
@@ -97,27 +109,23 @@ public class AppointmentBlock implements Comparable<AppointmentBlock>
     }
 	/**
 	 * Returns the appointment to which this block belongs
-	 * 
+	 *
 	 * @return Appointment
 	 */
 	public Appointment getAppointment()
 	{
 		return appointment;
 	}
-	
+
 	/**
      * This method is used to compare two appointment blocks by their start dates
      */
-	public int compareTo(AppointmentBlock other) 
+	public int compareTo(AppointmentBlock other)
 	{
-        if (other.start > start)
-            return -1;
-        if (other.start < start) 
-            return 1;
-        if (other.end > end)
-            return 1;
-        if (other.end < end)
-            return -1;
+        int startCmp = start.compareTo(other.start);
+        if (startCmp != 0) return startCmp;
+        int endCmp = end.compareTo(other.end);
+        if (endCmp != 0) return endCmp;
         if ( other == this)
         {
             return 0;
@@ -126,7 +134,7 @@ public class AppointmentBlock implements Comparable<AppointmentBlock>
 		int compareTo = appointment.compareTo(other.appointment);
 		return compareTo;
     }
-	
+
 	public boolean equals( Object obj)
 	{
 	    if ( obj == this)
@@ -134,25 +142,23 @@ public class AppointmentBlock implements Comparable<AppointmentBlock>
 	        return true;
 	    }
 	    AppointmentBlock other = (AppointmentBlock) obj;
-	    if ( other.start != start || other.end != end)
+	    if ( !start.equals(other.start) || !end.equals(other.end))
 	    {
 	        return false;
 	    }
 	    return appointment.equals( other.appointment);
 	}
-	
-	
+
+
 	public String toString()
 	{
-        final String startDate = DateTools.formatDateTime(start);
-        final String endDate = DateTools.formatDateTime(end);
-        return startDate + " - " + endDate;
+        return DateTools.formatDateTime(start) + " - " + DateTools.formatDateTime(end);
 	}
 
 	public TimeInterval toInterval()
 	{
-		return new TimeInterval(LocalDateTime.ofInstant(java.time.Instant.ofEpochMilli(getStart()), java.time.ZoneOffset.UTC), LocalDateTime.ofInstant(java.time.Instant.ofEpochMilli(getEnd()), java.time.ZoneOffset.UTC));
+		return new TimeInterval(start, end);
 	}
 
-    
+
 }

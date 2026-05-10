@@ -3572,9 +3572,9 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
 
     private boolean inWorktime(Appointment appointment, Integer worktimeStartMinutes, Integer worktimeEndMinutes)
     {
-        long start = DateTools.toMilli(appointment.getStart());
+        LocalDateTime start = appointment.getStart();
+        LocalDateTime end = appointment.getEnd();
         int minuteOfDayStart = DateTools.getMinuteOfDay(start);
-        long end = DateTools.toMilli(appointment.getEnd());
         int minuteOfDayEnd = DateTools.getMinuteOfDay(end) + (int) DateTools.countDays(start, end) * 24 * 60;
         boolean inWorktime = (worktimeStartMinutes == null || worktimeStartMinutes <= minuteOfDayStart) && (worktimeEndMinutes == null
                 || worktimeEndMinutes >= minuteOfDayEnd);

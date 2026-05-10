@@ -157,7 +157,7 @@ public class RaplaCalendarViewListener extends RaplaGUIComponent implements View
     {
         SwingRaplaBlock b = (SwingRaplaBlock) block;
         final PopupContext popupContext = getPopupContext(p);
-        long offset = DateTools.toMilli(newStart) - DateTools.toMilli(b.getStart());
+        long offset = java.time.Duration.between(b.getStart(), newStart).toMillis();
         LocalDateTime newStartWithOffset = DateTools.toLocalDateTime(b.getAppointmentBlock().getStart() + offset);
         return reservationController.moveAppointment(b.getAppointmentBlock(), newStartWithOffset, popupContext,
                 keepTime);

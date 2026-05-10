@@ -37,7 +37,6 @@ import org.rapla.scheduler.CommandScheduler;
 import org.rapla.server.ServerServiceContainer;
 import org.rapla.framework.TimeZoneConverter;
 import org.rapla.framework.internal.TimeZoneConverterImpl;
-import org.rapla.server.extensionpoints.ServerExtension;
 import org.rapla.server.extensionpoints.ServletRequestPreprocessor;
 import org.rapla.storage.CachableStorageOperator;
 import org.rapla.storage.StorageOperator;
@@ -62,14 +61,13 @@ public class ServerServiceImpl implements ServerServiceContainer
     private final CommandScheduler scheduler;
 
     final Set<ServletRequestPreprocessor> requestPreProcessors;
-    final Map<String, ServerExtension> stringServerExtensionMap;
     public Collection<ServletRequestPreprocessor> getServletRequestPreprocessors()
     {
         return requestPreProcessors;
     }
 
     @Autowired public ServerServiceImpl(CachableStorageOperator operator, RaplaFacade facade, RaplaLocale raplaLocale, TimeZoneConverter importExportLocale,
-            Logger logger, final Supplier<Map<String, ServerExtension>> serverExtensions, final Supplier<Set<ServletRequestPreprocessor>> requestPreProcessors,
+            Logger logger, final Supplier<Set<ServletRequestPreprocessor>> requestPreProcessors,
             CommandScheduler scheduler, ServerContainerContext serverContainerContext,RaplaResources i18n, RaplaSystemInfo systemInfo, ServerBundleManager bundleManager) throws RaplaInitializationException
     {
         String version = systemInfo.getString("rapla.version");
@@ -98,10 +96,14 @@ public class ServerServiceImpl implements ServerServiceContainer
             //        }
             this.operator = operator;
             this.facade = facade;
-            ((FacadeImpl) facade).setOperator(operator);
-
-            // Start database or file connection and read data
-            operator.connect();
+            // PRD 019 Phase 1: operator.connect() now happens in the @Bean factory
+            // (ServerServiceConfig.cachableStorageOperator), and FacadeImpl.setOperator()
+            // happens in the raplaFacade @Bean factory. By the time we get here both are
+            // already done. Idempotent setOperator call kept defensively in case a test
+            // wires the facade without going through the bean factory.
+            if (((FacadeImpl) facade).getOperator() == null) {
+                ((FacadeImpl) facade).setOperator(operator);
+            }
             AttributeImpl.TRUE_TRANSLATION.setName(i18n.getLang(), i18n.getString("yes"));
             AttributeImpl.FALSE_TRANSLATION.setName(i18n.getLang(), i18n.getString("no"));
             Preferences preferences = operator.getPreferences(null, true);
@@ -171,17 +173,10 @@ public class ServerServiceImpl implements ServerServiceContainer
                         "Timezone " + timezoneId + " not found. " + rc.getMessage() + " Using system timezone " + importExportLocale.getImportExportTimeZone());
             }
             this.requestPreProcessors = requestPreProcessors.get();
-
-            stringServerExtensionMap = serverExtensions.get();
-            for (Map.Entry<String, ServerExtension> extensionEntry : stringServerExtensionMap.entrySet())
-            {
-                final String key = extensionEntry.getKey();
-                ServerExtension extension = extensionEntry.getValue();
-                if (serverContainerContext.isServiceEnabled(key))
-                {
-                    extension.start();
-                }
-            }
+            // PRD 019 Phase 4: ServerExtension iteration removed. Recurring tasks now use
+            // Spring's @Scheduled (registered automatically by @EnableScheduling) and one-shot
+            // startup work uses @EventListener(ApplicationReadyEvent.class). Bean lifecycle
+            // is owned by Spring, not by this class.
         }
         catch( RaplaException e)
         {
@@ -233,12 +228,9 @@ public class ServerServiceImpl implements ServerServiceContainer
 
     private void stop()
     {
-        for (Map.Entry<String, ServerExtension> extensionEntry : stringServerExtensionMap.entrySet())
-        {
-            final String key = extensionEntry.getKey();
-            ServerExtension extension = extensionEntry.getValue();
-            extension.stop();
-        }
+        // PRD 019 Phase 4: ServerExtension.stop() iteration removed — Spring's TaskScheduler
+        // shuts down its own scheduled jobs on context close, and @PreDestroy callbacks
+        // handle per-bean teardown.
         ((DefaultScheduler) scheduler).dispose();
         boolean wasConnected = operator.isConnected();
         Logger logger = getLogger();

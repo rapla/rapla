@@ -179,7 +179,7 @@ public class CopyPluginMenu  extends RaplaGUIComponent implements EditMenuExtens
 		    // we need to calculate an offset so that the reservations will place themself relativ to the first reservation in the list
 		    long offset = DateTools.countDays( firstStart, oldStart) * DateTools.MILLISECONDS_PER_DAY;
 		    LocalDateTime newStart ;
-		    LocalDateTime destWithOffset = LocalDateTime.ofInstant(java.time.Instant.ofEpochMilli(DateTools.toMilli(destStart) + offset), java.time.ZoneOffset.UTC);
+		    LocalDateTime destWithOffset = destStart.plus(java.time.Duration.ofMillis(offset));
 		    if ( repeating != null && repeating.getType().equals ( Repeating.DAILY) ) 
 		    {
 				newStart = getRaplaLocale().toDate(  destWithOffset  , oldStart );

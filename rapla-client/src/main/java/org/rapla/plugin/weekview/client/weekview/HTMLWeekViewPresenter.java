@@ -177,7 +177,7 @@ public class HTMLWeekViewPresenter extends AbstractHTMLView
                         Block block = slot.getBlock(minuteOfDay);
                         if (block != null)
                         {
-                            int endMinute = Math.min(maxMinute, DateTools.getMinuteOfDay(DateTools.toMilli(block.getEnd())));
+                            int endMinute = Math.min(maxMinute, DateTools.getMinuteOfDay(block.getEnd()));
                             int rowspan = calcRowspan(minuteOfDay, endMinute);
                             if (block instanceof HTMLRaplaBlock)
                             {
@@ -315,8 +315,8 @@ public class HTMLWeekViewPresenter extends AbstractHTMLView
     {
         checkBlock(block);
         HTMLDaySlot multiSlot = daySlots[column];
-        int startMinute = Math.max(minMinute, DateTools.getMinuteOfDay(DateTools.toMilli(block.getStart())));
-        int endMinute = (Math.min(maxMinute, DateTools.getMinuteOfDay(DateTools.toMilli(block.getEnd()))));
+        int startMinute = Math.max(minMinute, DateTools.getMinuteOfDay(block.getStart()));
+        int endMinute = (Math.min(maxMinute, DateTools.getMinuteOfDay(block.getEnd())));
         blocks.add(block);
         //            startBlock.add( startMinute);
         //       endBlock.add( endMinute);

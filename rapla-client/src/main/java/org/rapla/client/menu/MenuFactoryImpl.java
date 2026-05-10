@@ -266,7 +266,7 @@ public class MenuFactoryImpl
         {
             return endDate;
         }
-        return LocalDateTime.ofInstant(java.time.Instant.ofEpochMilli(DateTools.toMilli(startDate) + DateTools.MILLISECONDS_PER_HOUR), java.time.ZoneOffset.UTC);
+        return startDate.plusHours(1);
     }
 
     protected LocalDateTime getStartDate(CalendarModel model) throws RaplaException

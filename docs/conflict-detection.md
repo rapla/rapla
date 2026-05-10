@@ -271,25 +271,25 @@ tier-1, runs in the default lane. 23 tests, ~110 ms total. Pins:
 - DST spring-forward and fall-back days
 - **Symmetry check on every test** — `a.overlaps(b)` must equal `b.overlaps(a)`. This catches the largest class of conflict-detection bugs (asymmetric predicates that miss one direction).
 
-## Known issue
+## storeAndRemoveAsync (fixed 2026-05-10)
 
-`LocalAbstractCachableOperator.storeAndRemoveAsync(...)` is an empty stub
-([source](../rapla-server/src/main/java/org/rapla/storage/impl/server/LocalAbstractCachableOperator.java#L214)).
-It returns an OK promise without persisting anything. So
-`facade.dispatch(Collection, Collection)` silently no-ops on the
-file-operator backend.
+`LocalAbstractCachableOperator.storeAndRemoveAsync(...)` was an empty stub
+that returned an OK promise without persisting anything. `facade.dispatch(...)`
+routes through it, so the async dispatch path silently dropped writes on
+file-backed operators.
 
-**Affected callers:** anyone calling `facade.dispatch(...)` against a
-file-backed operator. The synchronous paths (`facade.store(T)`,
-`facade.storeObjects(T[])`, `facade.remove(T)`,
-`facade.removeObjects(T[])`) all work — they go through
-`AbstractCachableOperator.storeAndRemove(...)` which calls
-`dispatch(UpdateEvent)` correctly.
+**Surfaced by:** `ConflictPerformanceTest` — first run reported 1000
+reservations "dispatched" in 54 ms with 0 actually persisted.
 
-**Workaround in tests:** use `facade.storeObjects(Reservation[])` for
-bulk inserts, not `facade.dispatch(...)`.
+**Fix:** delegate to the sync `storeAndRemove` inside `scheduler.run(...)` —
+matches the pattern PRD 008 established (server uses sync as source of truth,
+async wraps it).
 
-This was surfaced by `ConflictPerformanceTest` — its first run reported
-1000 reservations dispatched in 54 ms with 0 actually persisted. The fix
-is either to implement the async path or to remove it from the operator
-interface; tracked separately.
+```java
+public Promise<Void> storeAndRemoveAsync(...) {
+    return scheduler.run(() -> storeAndRemove(storeObjects, removeObjects, user, forceRessourceDelete));
+}
+```
+
+**Pinned by:** `FacadeMutationTest.asyncDispatchActuallyPersists` — calls
+`facade.dispatch(...)` and asserts the entity is resolvable afterward.

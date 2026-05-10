@@ -462,7 +462,7 @@ public class SwingWeekView extends AbstractSwingCalendar
         int calcHour = rowScale.calcHour(index);
         int calcMinute = rowScale.calcMinute(index);
         boolean addDay = (calcHour * 60 + calcMinute)< offsetMinutes;
-        date = LocalDateTime.ofInstant(java.time.Instant.ofEpochMilli(DateTools.toMilli(date) + calcHour * DateTools.MILLISECONDS_PER_HOUR + calcMinute * DateTools.MILLISECONDS_PER_MINUTE), java.time.ZoneOffset.UTC);
+        date = date.plusHours(calcHour).plusMinutes(calcMinute);
         if ( addDay)
         {
             date = DateTools.addDay( date);

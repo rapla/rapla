@@ -381,3 +381,7 @@ The aggregate excludes rapla-app's `target/classes` from class-scanning
 (JNLP webclient/ jars crash JaCoCo's bundle analyzer). rapla-app's
 `jacoco.exec` is still folded in via a `merge` step, so its @SpringBootTest
 runs *do* attribute back to rapla-server/rapla-core in the aggregate.
+
+### 11. Never delete code to fix compile errors
+
+Don't delete code to make a compile pass — unless the removal is part of the plan.

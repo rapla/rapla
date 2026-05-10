@@ -82,7 +82,7 @@ public class SwingCompactWeekCalendar extends AbstractRaplaSwingCalendar
                 JLabel component = (JLabel) super.createColumnHeader(column);
                 if ( column != null ) {
                 	LocalDateTime date = getDateFromColumn(column);
-                    boolean today = DateTools.isSameDay(DateTools.toMilli(getQuery().today()), DateTools.toMilli(date));
+                    boolean today = DateTools.isSameDay(getQuery().today(), date);
                     if ( today)
                     {
                         component.setFont(component.getFont().deriveFont( Font.BOLD));
@@ -126,10 +126,10 @@ public class SwingCompactWeekCalendar extends AbstractRaplaSwingCalendar
             
             @Override
             public void selectionChanged(LocalDateTime start, LocalDateTime end) {
-                if ( DateTools.toMilli(end)- DateTools.toMilli(start) == DateTools.MILLISECONDS_PER_DAY ) {
+                if ( java.time.Duration.between(start, end).toMillis() == DateTools.MILLISECONDS_PER_DAY ) {
                     int worktimeStartMinutes = getCalendarOptions().getWorktimeStartMinutes();
                     start = DateTools.toDateTime(start,DateTools.toLocalDateTime(DateTools.toTime(worktimeStartMinutes/60, worktimeStartMinutes%60, 0)));
-                    end = LocalDateTime.ofInstant(java.time.Instant.ofEpochMilli(DateTools.toMilli(start) + 30 * DateTools.MILLISECONDS_PER_MINUTE), java.time.ZoneOffset.UTC);
+                    end = start.plusMinutes(30);
                 }
             	super.selectionChanged(start, end);
             }

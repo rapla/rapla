@@ -75,7 +75,7 @@ public class SwingWeekCalendar extends AbstractRaplaSwingCalendar
             protected JComponent createSlotHeader(Integer column) {
                 JLabel component = (JLabel) super.createSlotHeader(column);
                 LocalDateTime date = getDateFromColumn(column);
-                boolean today = DateTools.isSameDay(DateTools.toMilli(getQuery().today()), DateTools.toMilli(date));
+                boolean today = DateTools.isSameDay(getQuery().today(), date);
                 if ( today)
                 {
                     component.setFont(component.getFont().deriveFont( Font.BOLD));

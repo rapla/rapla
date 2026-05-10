@@ -337,10 +337,20 @@ public abstract class DateTools
         return d1.toLocalDate().equals(d2.toLocalDate());
     }
 
-    /** returns if the two dates are one the same date.
-     * Dates must be in GMT */
-    /** returns if the two dates are one the same date.
-     * Dates must be in GMT */
+    /** Mixed-type overloads — common when {@code today()} returns LocalDate
+     *  but the comparand is a LocalDateTime (or vice versa). */
+    static public boolean isSameDay( LocalDate d1, LocalDateTime d2) {
+        return d1.equals(d2.toLocalDate());
+    }
+
+    static public boolean isSameDay( LocalDateTime d1, LocalDate d2) {
+        return d1.toLocalDate().equals(d2);
+    }
+
+    static public boolean isSameDay( LocalDate d1, LocalDate d2) {
+        return d1.equals(d2);
+    }
+
     /** returns if the two dates are on the same date. */
     static public boolean isSameDay( long d1, long d2) {
         return cutDate( d1 ) == cutDate ( d2 );
@@ -640,11 +650,17 @@ public abstract class DateTools
    {
 	   long millisInDay = millis - DateTools.cutDate( millis);
 	   TimeWithoutTimezone result = new TimeWithoutTimezone();
-	   result.hour = (int) (millisInDay / MILLISECONDS_PER_HOUR); 
-	   result.minute = (int) ((millisInDay % MILLISECONDS_PER_HOUR) / MILLISECONDS_PER_MINUTE); 
+	   result.hour = (int) (millisInDay / MILLISECONDS_PER_HOUR);
+	   result.minute = (int) ((millisInDay % MILLISECONDS_PER_HOUR) / MILLISECONDS_PER_MINUTE);
 	   result.second = (int) ((millisInDay % MILLISECONDS_PER_MINUTE) / 1000);
 	   result.milliseconds = (int) (millisInDay % 1000 );
 	   return result;
+   }
+
+   /** LocalDateTime overload — drops the {@code toMilli(...)} round-trip at call sites. */
+   public static TimeWithoutTimezone toTime(LocalDateTime dateTime)
+   {
+       return toTime(toMilli(dateTime));
    }
    
    public static long toTime(int hour, int minute, int second) {
@@ -670,10 +686,16 @@ public abstract class DateTools
    public static DateWithoutTimezone toDate(long millis)
    {
 	   // special case for negative milliseconds as day rounding needs to get the lower day
-	   int day = millis >= 0 ? (int) (millis/ MILLISECONDS_PER_DAY) : (int) (( millis + MILLISECONDS_PER_DAY -1) / MILLISECONDS_PER_DAY); 
+	   int day = millis >= 0 ? (int) (millis/ MILLISECONDS_PER_DAY) : (int) (( millis + MILLISECONDS_PER_DAY -1) / MILLISECONDS_PER_DAY);
 	   int julianDateAtNoon = day +  date_1970_1_1;
 	   DateWithoutTimezone result = fromJulianDayNumberAtNoon( julianDateAtNoon);
 	   return result;
+   }
+
+   /** LocalDateTime overload — drops the {@code toMilli(...)} round-trip at call sites. */
+   public static DateWithoutTimezone toDate(LocalDateTime dateTime)
+   {
+       return toDate(toMilli(dateTime));
    }
    
    private static DateWithoutTimezone fromJulianDayNumberAtNoon(int julianDateAtNoon) 

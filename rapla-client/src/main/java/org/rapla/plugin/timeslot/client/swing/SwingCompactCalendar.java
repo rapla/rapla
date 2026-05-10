@@ -80,7 +80,7 @@ public class SwingCompactCalendar extends AbstractRaplaSwingCalendar
                    JLabel component = (JLabel) super.createColumnHeader(column);
                    if ( column != null ) {
                    	LocalDateTime date = getDateFromColumn(column);
-                       boolean today = DateTools.isSameDay(DateTools.toMilli(getQuery().today()), DateTools.toMilli(date));
+                       boolean today = DateTools.isSameDay(getQuery().today(), date);
                        if ( today)
                        {
                            component.setFont(component.getFont().deriveFont( Font.BOLD));
@@ -118,21 +118,25 @@ public class SwingCompactCalendar extends AbstractRaplaSwingCalendar
 	   				LocalDateTime end = block.getEnd();
 	   				for (Timeslot slot:timeslots)
 	   				{
-	   					int minuteOfDay = DateTools.getMinuteOfDay( DateTools.toMilli(start));
+	   					int minuteOfDay = DateTools.getMinuteOfDay(start);
 						int minuteOfDay1 = slot.getMinuteOfDay();
 						if ( minuteOfDay >= minuteOfDay1)
 	   					{
-	   						start = LocalDateTime.ofInstant(java.time.Instant.ofEpochMilli(DateTools.toMilli(DateTools.cutDate( start)) + minuteOfDay1), java.time.ZoneOffset.UTC);
+	   						// FIXME (PRD 014 audit): minuteOfDay1 is MINUTES (per Timeslot.minuteOfDay)
+	   						// but is being added as millis below. Likely pre-existing bug — preserved
+	   						// during the long→LDT migration; flagged for separate fix.
+	   						start = DateTools.cutDate(start).plus(java.time.Duration.ofMillis(minuteOfDay1));
 	   						break;
 	   					}
 	   				}
 	   				for (Timeslot slot:timeslots)
 	   				{
-	   					int minuteOfDay = DateTools.getMinuteOfDay( DateTools.toMilli(end));
+	   					int minuteOfDay = DateTools.getMinuteOfDay(end);
 						int minuteOfDay1 = slot.getMinuteOfDay();
 						if ( minuteOfDay < minuteOfDay1)
 	   					{
-	   						end = LocalDateTime.ofInstant(java.time.Instant.ofEpochMilli(DateTools.toMilli(DateTools.cutDate( end)) + minuteOfDay1), java.time.ZoneOffset.UTC);
+	   						// FIXME: same unit-mismatch concern as above.
+	   						end = DateTools.cutDate(end).plus(java.time.Duration.ofMillis(minuteOfDay1));
 	   					}
 	   					if (  minuteOfDay1 > minuteOfDay)
 	   					{
@@ -174,7 +178,7 @@ public class SwingCompactCalendar extends AbstractRaplaSwingCalendar
             	Timeslot timeslot = timeslots.get(rowIndex);
             	int time = timeslot.getMinuteOfDay();
             	int lastMinuteOfDay;
-				DateTools.TimeWithoutTimezone timeWithoutTimezone = DateTools.toTime(DateTools.toMilli(block.getStart()));
+				DateTools.TimeWithoutTimezone timeWithoutTimezone = DateTools.toTime(block.getStart());
 				lastMinuteOfDay = timeWithoutTimezone.hour  * 60 +  timeWithoutTimezone.minute;
             	boolean sameTimeSlot = lastMinuteOfDay >= time;
                 if ( rowIndex +1 < timeslots.size())

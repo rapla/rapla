@@ -233,7 +233,7 @@ public class TimeslotOption extends RaplaGUIComponent implements PluginOptionPan
 			LocalDateTime time = raplatime.getTime();
     	   	if ( time != null )
     		{
-				int minuteOfDay = DateTools.getMinuteOfDay(DateTools.toMilli(time));
+				int minuteOfDay = DateTools.getMinuteOfDay(time);
     			timeslots.add( new Timeslot( name, minuteOfDay));
     		}
     	}

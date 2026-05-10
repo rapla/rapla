@@ -27,6 +27,7 @@ class RaplaJNLPPageGeneratorTest
     private HttpServletRequest request;
     private HttpServletResponse response;
     private StringWriter body;
+    private java.io.File fakeWebRoot;
 
     @BeforeEach
     void setUp() throws Exception
@@ -51,6 +52,16 @@ class RaplaJNLPPageGeneratorTest
         ServletContext servletContext = mock(ServletContext.class);
         when(request.getServletContext()).thenReturn(servletContext);
 
+        // Stage a fake webclient/ dir so getClientLibs() (fallback branch) returns
+        // a deterministic versioned filename — exercises the "is this the main jar?" matcher.
+        fakeWebRoot = java.nio.file.Files.createTempDirectory("rapla-jnlp-test-").toFile();
+        java.io.File webclient = new java.io.File(fakeWebRoot, "webclient");
+        webclient.mkdirs();
+        new java.io.File(webclient, "rapla-core-2.1-SNAPSHOT.jar").createNewFile();
+        new java.io.File(webclient, "rapla-client-2.1-SNAPSHOT.jar").createNewFile();
+        new java.io.File(webclient, "slf4j-api-2.0.17.jar").createNewFile();
+        when(servletContext.getRealPath(".")).thenReturn(fakeWebRoot.getAbsolutePath());
+
         response = mock(HttpServletResponse.class);
         body = new StringWriter();
         when(response.getWriter()).thenReturn(new PrintWriter(body));
@@ -66,6 +77,33 @@ class RaplaJNLPPageGeneratorTest
         assertFalse(
                 jnlp.contains("/rapla//webclient/"),
                 "icon URL must not contain '/rapla//webclient/' (Spring Security 401s the doubled slash):\n" + jnlp);
+    }
+
+    @Test
+    void mainRaplaClientJarIsMarkedMainTrueRegardlessOfVersion() throws Exception
+    {
+        generator.generatePage(request, response, "");
+        String jnlp = body.toString();
+
+        java.util.regex.Matcher m = java.util.regex.Pattern.compile(
+                "<jar href=\"[^\"]*rapla-client-[0-9][^\"]*\\.jar\"([^/]*)/>").matcher(jnlp);
+        assertTrue(m.find(), "expected a <jar href=\"...rapla-client-VERSION.jar\".../> entry in:\n" + jnlp);
+        assertTrue(m.group(1).contains("main=\"true\""),
+                "rapla-client jar entry must carry main=\"true\" but found: <jar href=\"...rapla-client-...jar\""
+                        + m.group(1) + "/>");
+    }
+
+    @Test
+    void mainRaplaClientJarIsListedFirst() throws Exception
+    {
+        generator.generatePage(request, response, "");
+        String jnlp = body.toString();
+
+        java.util.regex.Matcher m = java.util.regex.Pattern.compile("<jar href=\"[^\"]*\"").matcher(jnlp);
+        assertTrue(m.find(), "expected at least one <jar> entry in:\n" + jnlp);
+        String firstJar = m.group();
+        assertTrue(firstJar.matches(".*rapla-client-[0-9][^\"]*\\.jar.*"),
+                "first <jar> in JNLP should be the main rapla-client jar but was: " + firstJar);
     }
 
     @Test
