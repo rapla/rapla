@@ -43,3 +43,5 @@ proxy.conf.local.json
 /rapla-app/jetty.home_IS_UNDEFINED/logs/rapla_client.csv
 /rapla-client/jetty.home_IS_UNDEFINED/logs/rapla_client.csv
 /rapla-server/jetty.home_IS_UNDEFINED/logs/rapla_client.csv
+**/*.log
+**/logs/
