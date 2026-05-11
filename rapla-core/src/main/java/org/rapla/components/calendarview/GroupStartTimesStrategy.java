@@ -72,8 +72,7 @@ public class GroupStartTimesStrategy extends AbstractGroupStrategy {
     	TreeMap<Integer,List<Block>> groups = new TreeMap<>();
         for (Iterator<Block> it = list.iterator();it.hasNext();) {
             Block block = it.next();
-            long startTime = DateTools.toMilli(block.getStart());
-            int minuteOfDay = DateTools.getMinuteOfDay(startTime);
+            int minuteOfDay = DateTools.getMinuteOfDay(block.getStart());
             int rowNumber = -1 ;
             for ( Integer start: startTimes)
             {

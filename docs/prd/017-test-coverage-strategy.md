@@ -1,7 +1,124 @@
 # PRD 017: Test Coverage Strategy
 
-**Status:** in-progress (Phases 1–3 + Phase 4 expanded with hardening + perf round 2026-05-10)
+**Status:** Phases 1–4 ✅ done 2026-05-10. Phase 5 in progress (first test landed).
 **Date:** 2026-05-10
+
+### 2026-05-10 — Phase 5 first test: DBOperator boot
+
+`DbOperatorBootTest` (rapla-server, tier-2 with `@Tag("db")`, 2 tests, 7.6 s wall):
+
+- `connectImportsFromFileSourceAndBootstrapsSchema` — fresh HSQLDB temp file, file→db
+  import via `ImportExportManagerImpl`. Exercises every `create*` table in
+  `RaplaSQL` (15 CREATE TABLE statements) plus the full insert path for every
+  entity type in `testdefault.xml`.
+- `disconnectThenReconnectReadsExistingSchemaWithoutReimporting` — second
+  connect on the seeded DB skips the upgrade/import path and re-reads the
+  schema; asserts dynamic-type count is unchanged (no double-import).
+
+**Coverage delta on `org.rapla.storage.dbsql`:**
+
+| | Before | After |
+|---|---:|---:|
+| Instruction coverage | ~10 % (only `ConcurrentTests` raw JDBC) | **58 %** (5,950 of 10,320) |
+| Branch coverage | ~5 % | **43 %** (397 of 930) |
+| Per-class wins | 0 % on `RaplaSQL`, `DBOperator`, `AbstractTableStorage`, `EntityStorage` | All four classes now have direct exercise via the import + reconnect flows |
+
+**+48 instruction-points on a 10K package off one test class.** The leverage
+comes from the import path: file→db copy walks the entire RaplaSQL writer
+tree (every `INSERT INTO`, every `addColumn`, every type-specific encoder),
+which dwarfs anything else in the package.
+
+Implementation note: the `Supplier<ImportExportManager>` field on `DBOperator`
+has package-private visibility, so the test in `org.rapla.storage.dbsql.*`
+can swap a real `ImportExportManagerImpl(file, db)` after construction.
+Production wiring uses the same constructor + late-binding pattern via
+`ServerStorageSelector`.
+
+Not yet covered: refresh-tick path (`getRefreshData` / `refreshWithoutLock`),
+lock-timeout edges, schema-upgrade path on a pre-existing pre-2.0 schema.
+Candidates for a Phase 5 follow-up.
+
+### 2026-05-10 — Phase 5 second test: DBOperator live round-trip
+
+`DbOperatorRoundTripTest` (rapla-server, tier-2 with `@Tag("db")`, 3 tests,
+12.9 s wall): exercises the live UPDATE / INSERT / DELETE paths of
+`RaplaSQL` (the boot test only hits the bulk file→db importer). Each test
+mutates state via a `FacadeImpl` on the DB-backed operator, disconnects,
+reconnects, and asserts the change actually round-tripped through HSQLDB.
+
+- `editAttributeRoundTripsThroughDb` — `facade.edit` → `setValue("name", ...)`
+  → `facade.store` → disconnect → reconnect → re-read shows new name.
+- `newAllocatableInsertedRoundTripsThroughDb` — `newAllocatable` → `store` →
+  disconnect → reconnect → `tryResolve` returns the entity.
+- `removedAllocatableRoundTripsThroughDb` — insert (with reconnect verifying
+  precondition) → `facade.remove` → reconnect → `tryResolve` returns null.
+
+**Combined Phase 5 coverage delta on `org.rapla.storage.dbsql`:**
+
+| | Before Phase 5 | After boot test | After + round-trip |
+|---|---:|---:|---:|
+| Instruction | ~10 % | 58 % | **72 %** (7,443 of 10,320) |
+| Branch      | ~5 %  | 43 % | **58 %** (542 of 930) |
+
+**+62 instruction-points, +53 branch-points off 5 tests / ~20 s wall** on a
+10K-instruction package — the highest-leverage Phase 5 round so far. The
+round-trip test adds ~14 instruction-points by hitting the DELETE + per-row
+UPDATE paths the bulk-importer skips (the importer just delete-all + bulk
+insert, never per-id UPDATE).
+
+### 2026-05-10 — Phase 4 close-out: final aggregate
+
+Full-lane `mvn -Pcoverage verify -Dtest.excludedGroups=` after all Phase 4 +
+follow-up tests landed. Compared to the Phase 3 baseline (2026-05-09):
+
+| Bundle | Phase 3 baseline | Phase 4 close-out | Δ |
+|---|---:|---:|---:|
+| **Aggregate (instr)** | 12 % | **15 %** | +3 pts |
+| **Aggregate (branch)** | 10 % | **14 %** | +4 pts |
+| rapla-core | 26 % | **35 %** | +9 pts |
+| rapla-server | 16 % | **21 %** | +5 pts |
+| rapla-client | 1 % | 2 % | +1 pt |
+
+Raw numbers: 41,072 / 264,024 instructions covered, 3,470 / 24,644 branches.
+rapla-client stays low — its existing tests are interactive Swing harnesses
+(out of scope for this PRD; see §Scope).
+
+**Phase 4 deliverables (chronological):**
+
+| Test | Tier | Tests | Wall | Lands |
+|---|---|---:|---:|---|
+| `AppointmentBlocksExpansionTest` | 1 | 14 | 84 ms | item #10 |
+| `PermissionMatrixTest` | 2 | 12 | 5 s | item #11 |
+| `XmlRoundTripTest` | 2 | 6 | 3.5 s | item #12 |
+| `ClassificationAndNameformatTest` | 2 | 6 | 4 s | follow-up |
+| `FacadeMutationTest` | 2 | 9 | 5 s | follow-up |
+| `ConflictFinderViaFacadeTest` | 2 | 5 | 15 s | follow-up |
+| `AppointmentOverlapHardeningTest` | 1 | 23 | 110 ms | hardening |
+| `ConflictPerformanceTest` | 2 perf | 3 | 18 s | hardening |
+| **Total new tests** | | **78** | | |
+
+**Real bugs surfaced during Phase 4:** 3
+1. PRD 011 follow-up — Jackson 3 `final`-field bugs (caught by `XmlRoundTripTest`).
+2. `LocalAbstractCachableOperator.storeAndRemoveAsync(...)` empty-stub no-op
+   (caught by `ConflictPerformanceTest`; fixed in same session).
+3. MONTHLY semantic clarification (Nth-weekday-of-month) — not a bug, but a
+   load-bearing convention that nothing previously pinned (`AppointmentOverlapHardeningTest`).
+
+**Full-lane health check:** `mvn -Pcoverage verify -Dtest.excludedGroups=` runs
+**211 tests across 49 classes, 0 failures, 0 errors** — including the four
+`@SpringBootTest` e2e ring and `ConcurrentTests` (db-tagged HSQLDB).
+`HeadlessClientNameResolutionIntegrationTest` (the previously-failing 401 bug
+flagged at Phase 2 close-out) now passes — likely fixed transitively by the
+date-migration + Jackson-3 follow-up work in PRDs 011 / 014.
+
+Phase 4 marked ✅ done. Phase 5 began the same day with `DbOperatorBootTest`
+(see top of PRD) which lifted `storage.dbsql` from ~10 % to 58 % off a single
+test class. Remaining Phase 5 weakest areas: `rapla-server.server.spring.web`
+(controller layer — partially covered by the existing rapla-app
+`*ControllerIntegrationTest` ring) and the Phase 5 follow-ups noted in the
+DBOperator test section (refresh-tick, conflict DB round-trip, schema-upgrade
+from pre-2.0). `rapla-client` (Swing UI) stays out of scope for unit-style
+coverage; better answered by integration smoke tests.
 
 ### 2026-05-10 — Hardening + performance round
 
@@ -646,7 +763,12 @@ candidates for CI.
       shaky to gate on. Re-evaluate after Phase 4 lands a few rounds of
       backfill.
 
-### Phase 4 — Backfill the three weakest areas
+### Phase 4 — Backfill the three weakest areas ✅ Done 2026-05-10
+
+All three original items + six follow-up tests landed (78 new test methods
+total). Aggregate coverage 12 → 15 % instr, 10 → 14 % branch; rapla-core
+26 → 35 %, rapla-server 16 → 21 %. See close-out section at top of PRD for
+the full breakdown, or per-test detail in the dated sections below.
 
 Pick targets by reading the JaCoCo aggregate report from Phase 3 and
 cross-referencing with the date-migration PRDs.

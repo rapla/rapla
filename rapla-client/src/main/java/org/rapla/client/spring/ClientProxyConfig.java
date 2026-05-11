@@ -325,6 +325,12 @@ public class ClientProxyConfig
         return factory.createClient(org.rapla.storage.dbrm.RemoteStorage.class);
     }
 
+    @Bean
+    public org.rapla.plugin.adminpanels.PreferencesAdminService preferencesAdminServiceProxy(HttpServiceProxyFactory factory)
+    {
+        return factory.createClient(org.rapla.plugin.adminpanels.PreferencesAdminService.class);
+    }
+
     // RestartServer has no @Bean here — RemoteOperator implements RestartServer directly
     // (legacy @DefaultImplementation annotation; honored by ClientConfig.remoteOperator() bean).
     // Adding a separate HTTP proxy here would create a NoUniqueBeanDefinitionException since

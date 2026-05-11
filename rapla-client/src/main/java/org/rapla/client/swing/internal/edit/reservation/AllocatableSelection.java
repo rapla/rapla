@@ -64,6 +64,8 @@ import org.rapla.framework.RaplaLocale;
 import org.rapla.logger.Logger;
 import org.rapla.scheduler.Promise;
 import org.rapla.scheduler.ResolvedPromise;
+import org.rapla.client.edit.reservation.AllocationConflictModel;
+import org.rapla.client.edit.reservation.AllocationConflictModel.AllocationOutcome;
 import org.rapla.storage.PermissionController;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -1257,86 +1259,33 @@ public class AllocatableSelection extends RaplaGUIComponent implements Appointme
         return appointments;
     }
 
-    // returns if the user is allowed to allocate the passed allocatable
-    private boolean isAllowed(Allocatable allocatable, Appointment appointment)
+    // calculates the number of conflicting appointments for this allocatable.
+    // Delegates to the pure-Java AllocationConflictModel in rapla-core (PRD 023 Phase 3).
+    private AllocationOutcome calcConflictingAppointments(Allocatable allocatable)
     {
-        LocalDateTime start = appointment.getStart();
-        LocalDateTime end = appointment.getMaxEnd();
-        java.time.LocalDate today = getQuery().today();
-        return permissionController.canAllocate(allocatable, user, start, end, today);
-    }
-
-    class AllocationRendering
-    {
-        boolean[] conflictingAppointments = new boolean[appointments.length]; // stores the temp conflicting appointments
-        int conflictCount = 0; // temp value for conflicts
-        int permissionConflictCount = 0; // temp value for conflicts that are the result of denied permission
-        RequestStatus requestStatus;
-    }
-
-    // calculates the number of conflicting appointments for this allocatable
-    private AllocationRendering calcConflictingAppointments(Allocatable allocatable)
-    {
-        AllocationRendering result = new AllocationRendering();
-        String annotation = allocatable.getAnnotation(ResourceAnnotations.KEY_CONFLICT_CREATION);
-        boolean holdBackConflicts = annotation != null && annotation.equals(ResourceAnnotations.VALUE_CONFLICT_CREATION_IGNORE);
-        for (int i = 0; i < appointments.length; i++)
-        {
-            Appointment appointment = appointments[i];
-            Collection<Appointment> collection = allocatableBindings.get(allocatable.getReference());
-            boolean conflictingAppointments = collection != null && collection.contains(appointment);
-            result.conflictingAppointments[i] = false;
-            final RequestStatus status = appointment.getReservation().getRequestStatus(allocatable);
-            if ( status != null) {
-                if (result.requestStatus == null) {
-                    result.requestStatus = status;
-                }
-            }
-            if (conflictingAppointments)
-            {
-                if (!holdBackConflicts)
-                {
-                    result.conflictingAppointments[i] = true;
-                    result.conflictCount++;
-                }
-            }
-            else if (!isAllowed(allocatable, appointment))
-            {
-                if (!holdBackConflicts)
-                {
-                    result.conflictingAppointments[i] = true;
-                    result.conflictCount++;
-                }
-                result.permissionConflictCount++;
-            }
-        }
-        return result;
+        return AllocationConflictModel.compute(
+                allocatable, appointments, allocatableBindings,
+                permissionController, user, getQuery().today());
     }
 
     private void paintAllocation(Graphics g, Allocatable allocatable, JComponent c)
     {
-        AllocationRendering a = calcConflictingAppointments(allocatable);
+        AllocationOutcome a = calcConflictingAppointments(allocatable);
         if (appointments.length == 0)
         {
         }
-        else if (a.conflictCount == 0)
+        else if (a.conflictCount() == 0)
         {
             g.setColor(Color.green);
             g.drawString(getString("every_appointment"), 2, c.getHeight() - 4);
             return;
-        } /*
-          * else if (conflictCount == appointments.length) {
-          * g.setColor(Color.red);
-          * g.drawString(getString("zero_appointment"),2,c.getHeight()-4);
-          * return;
-          * }
-          */
+        }
         int x = 2;
         Insets insets = c.getInsets();
         FontMetrics fm = g.getFontMetrics();
         for (int i = 0; i < appointments.length; i++)
         {
-            if (a.conflictingAppointments[i])
+            if (a.conflictingAppointments()[i])
                 continue;
             x = paintApp(c, g, fm, i, insets, x);
         }
@@ -1510,7 +1459,7 @@ public class AllocatableSelection extends RaplaGUIComponent implements Appointme
             Object source = evt.getSource();
             if (source == selectedMenu)
             {
-                AllocationRendering allocBinding = null;
+                AllocationOutcome allocBinding = null;
                 if (selectedObject instanceof Allocatable)
                 {
                     Allocatable allocatable = (Allocatable) selectedObject;
@@ -1519,7 +1468,7 @@ public class AllocatableSelection extends RaplaGUIComponent implements Appointme
                 List<Appointment> newRestrictions = new ArrayList<>();
                 for (int i = 0; i < appointments.length; i++)
                 {
-                    boolean conflicting = (allocBinding != null && allocBinding.conflictingAppointments[i]);
+                    boolean conflicting = (allocBinding != null && allocBinding.conflictingAppointments()[i]);
                     (appointmentList.get(i)).setSelected(!conflicting);
                     if (!conflicting)
                     {
@@ -1584,7 +1533,7 @@ public class AllocatableSelection extends RaplaGUIComponent implements Appointme
         private void showComp()
         {
             Object selectedObject = selectedNode.getUserObject();
-            AllocationRendering allocBinding = null;
+            AllocationOutcome allocBinding = null;
             if (selectedObject instanceof Allocatable)
             {
                 Allocatable allocatable = (Allocatable) selectedObject;
@@ -1638,7 +1587,7 @@ public class AllocatableSelection extends RaplaGUIComponent implements Appointme
                     appointmentSummary += " " + getString("repeating.start_date") + " "  + getRaplaLocale().formatDateShort(appointment.getStart());
                     // we check if another appointment summary has the same name, then we add the start date to the existing appointment
                 }
-                if (allocBinding != null && allocBinding.conflictingAppointments[i])
+                if (allocBinding != null && allocBinding.conflictingAppointments()[i])
                 {
                     item.setText((i + 1) + ": " + appointmentSummary);
                     item.setIcon(conflictIcon);
@@ -1867,7 +1816,7 @@ public class AllocatableSelection extends RaplaGUIComponent implements Appointme
         private void showComp()
         {
             Object selectedObject = selectedNode.getUserObject();
-            AllocationRendering allocBinding;
+            AllocationOutcome allocBinding;
             if (selectedObject != null && selectedObject instanceof Allocatable)
             {
                 Allocatable allocatable = (Allocatable) selectedObject;
@@ -1882,7 +1831,7 @@ public class AllocatableSelection extends RaplaGUIComponent implements Appointme
             boolean test = true;
             for (int i = 0; i < appointments.length; i++)
             {
-                if (allocBinding.conflictingAppointments[i]) {
+                if (allocBinding.conflictingAppointments()[i]) {
                     test = false;
                     break;
                 }
@@ -1895,7 +1844,7 @@ public class AllocatableSelection extends RaplaGUIComponent implements Appointme
             {
                 for (int i = 0; i < appointments.length; i++)
                 {
-                    if (allocBinding.conflictingAppointments[i])
+                    if (allocBinding.conflictingAppointments()[i])
                         continue;
 
                     JMenuItem item = new JMenuItem();
@@ -1904,7 +1853,7 @@ public class AllocatableSelection extends RaplaGUIComponent implements Appointme
 
                     // set conflicting icon if appointment causes conflicts
                     String appointmentSummary = appointmentFormater.getShortSummary(appointments[i]);
-                    if (allocBinding.conflictingAppointments[i])
+                    if (allocBinding.conflictingAppointments()[i])
                     {
                         item.setText((i + 1) + ": " + appointmentSummary);
                         Icon conflictIcon = RaplaImages.getIcon(i18n.getIcon("icon.allocatable_taken"));
@@ -2021,14 +1970,14 @@ public class AllocatableSelection extends RaplaGUIComponent implements Appointme
         {
             java.time.LocalDate today = getQuery().today();
 
-            AllocationRendering allocBinding = calcConflictingAppointments(allocatable);
-            if (allocBinding.conflictCount == 0)
+            AllocationOutcome allocBinding = calcConflictingAppointments(allocatable);
+            if (allocBinding.conflictCount() == 0)
             {
                 return getAvailableIcon(allocatable);
             }
-            else if (allocBinding.conflictCount == appointments.length)
+            else if (allocBinding.conflictCount() == appointments.length)
             {
-                if (allocBinding.conflictCount == allocBinding.permissionConflictCount)
+                if (allocBinding.conflictCount() == allocBinding.permissionConflictCount())
                 {
                     if (!checkRestrictions)
                     {
@@ -2051,7 +2000,7 @@ public class AllocatableSelection extends RaplaGUIComponent implements Appointme
 
             if (checkRestrictions && permissionController.isRequestOnly( allocatable, user,  today))
             {
-                final RequestStatus requestStatus = allocBinding.requestStatus;
+                final RequestStatus requestStatus = allocBinding.aggregateRequestStatus();
                 if ( requestStatus == RequestStatus.REQUESTED) {
                     return requestIcon;
                 }
@@ -2068,7 +2017,7 @@ public class AllocatableSelection extends RaplaGUIComponent implements Appointme
                 }
             }
 
-            if (allocBinding.permissionConflictCount - allocBinding.conflictCount == 0)
+            if (allocBinding.permissionConflictCount() - allocBinding.conflictCount() == 0)
             {
                 return getAvailableIcon(allocatable);
             }

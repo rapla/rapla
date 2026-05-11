@@ -153,15 +153,14 @@ public abstract class AbstractGroupStrategy implements BuildStrategy {
     }
 
     protected boolean isCollision(Block b1, Block b2) {
-        final long start1 = DateTools.toMilli(b1.getStart());
-        long minimumLength = DateTools.MILLISECONDS_PER_MINUTE * 5;
-        final long end1 = Math.max(start1+ minimumLength, DateTools.toMilli(b1.getEnd()));
-
-        final long start2 = DateTools.toMilli(b2.getStart());
-        final long end2 = Math.max(start2 + minimumLength, DateTools.toMilli(b2.getEnd()));
-        
-        boolean result = start1 < end2 && start2 <end1 ;
-        return result;
+        final java.time.Duration minimumLength = java.time.Duration.ofMinutes(5);
+        final java.time.LocalDateTime start1 = b1.getStart();
+        java.time.LocalDateTime end1 = b1.getEnd();
+        if (java.time.Duration.between(start1, end1).compareTo(minimumLength) < 0) end1 = start1.plus(minimumLength);
+        final java.time.LocalDateTime start2 = b2.getStart();
+        java.time.LocalDateTime end2 = b2.getEnd();
+        if (java.time.Duration.between(start2, end2).compareTo(minimumLength) < 0) end2 = start2.plus(minimumLength);
+        return start1.isBefore(end2) && start2.isBefore(end1);
     }
 
 

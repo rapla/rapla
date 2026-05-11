@@ -8,6 +8,13 @@
         <relativePath>../rapla-bom/pom.xml</relativePath>
     </parent>
     <artifactId>rapla-app</artifactId>
+
+    <properties>
+        <!-- Default for the spring-boot:run skip flag (see <plugins> below).
+             Downstream deployments override to true so this module's run goal
+             doesn't run alongside theirs. -->
+        <rapla.app.spring-boot-run.skip>false</rapla.app.spring-boot-run.skip>
+    </properties>
     <name>rapla - app</name>
     <description>Runnable Spring Boot application: @SpringBootApplication entry point, JNLP webclient/ staging, signing profiles, distribution assembly. Depends on rapla-server + rapla-client. Final on-disk JAR is rapla-2.1-SNAPSHOT.jar via &lt;finalName&gt; (PRD 005 OQ2).</description>
 
@@ -267,10 +274,14 @@
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
                 <!-- version inherited from rapla-bom <pluginManagement>;
-                     skip=false overrides the BOM default so spring-boot:run actually fires here. -->
+                     skip=false overrides the BOM default so spring-boot:run actually fires here.
+                     Property-driven so downstream deployments (e.g. dhbwrapla) can suppress
+                     rapla-app's run goal when launching their own @SpringBootApplication via
+                     `mvn -pl :<deployment> -am spring-boot:run` — otherwise rapla-app fires
+                     first in reactor order and blocks dhbwrapla from ever starting. -->
                 <configuration>
                     <mainClass>org.rapla.server.spring.RaplaSpringBootApplication</mainClass>
-                    <skip>false</skip>
+                    <skip>${rapla.app.spring-boot-run.skip}</skip>
                     <!-- Client-only jars excluded from BOOT-INF/lib/ — server bytecode has zero
                          references to either (verified with strings on rapla-server + rapla-core).
                          They live under BOOT-INF/classes/static/webclient/ instead and are served

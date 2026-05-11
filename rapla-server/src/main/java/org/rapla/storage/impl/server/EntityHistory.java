@@ -281,6 +281,11 @@ public class EntityHistory
         for (ReferenceInfo key : keySet)
         {
             final List<HistoryEntry> list = map.get(key);
+            if (list == null)
+            {
+                // concurrent clear() removed this entry — skip
+                continue;
+            }
             synchronized ( list)
             {
                 while (list.size() >= 2 && list.get(1).timestamp < time)
@@ -299,8 +304,12 @@ public class EntityHistory
      */
     public HistoryEntry getLastChangedUntil(ReferenceInfo id, LocalDateTime timestamp)
     {
-        final long time = DateTools.toMilli(timestamp);
         final List<HistoryEntry> list = map.get(id);
+        if (list == null)
+        {
+            return null;
+        }
+        final long time = DateTools.toMilli(timestamp);
         synchronized ( list)
         {
             for (int i = list.size() - 1; i >= 0; i--)

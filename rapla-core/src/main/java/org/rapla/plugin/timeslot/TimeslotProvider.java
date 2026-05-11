@@ -83,7 +83,7 @@ public class TimeslotProvider {
 						time =  i + ":00:00";
 					}
 					final LocalDateTime date = format.parseTime(time);
-					final DateTools.TimeWithoutTimezone timeWithoutTimezone = DateTools.toTime(DateTools.toMilli(date));
+					final DateTools.TimeWithoutTimezone timeWithoutTimezone = DateTools.toTime(date);
 					int hour = timeWithoutTimezone.hour;
 					if ( i != 0)
 					{
@@ -106,17 +106,20 @@ public class TimeslotProvider {
 		return timeslots;
 	}
 
+	/** 7-slot default at 2-hour intervals from 06:00 to 18:00 — covers a typical
+	 *  working day with 5 daytime blocks plus an early and a late slot. Matches
+	 *  what {@code TimeslotPreferencesPanel} shows as the JSON_EDITOR default,
+	 *  so calendars and panel stay in sync before any explicit config is saved.
+	 *  (Previous default was 24 hourly slots — too verbose for most schedules.) */
 	public static ArrayList<Timeslot> getDefaultTimeslots(RaplaLocale raplaLocale) {
 		ArrayList<Timeslot> timeslots = new ArrayList<>();
 		final LocalDateTime date = DateTools.cutDate(LocalDateTime.now());
-		for (int i = 0; i <=23; i++ ) {
-    		 int minuteOfDay = i * 60;
-			 LocalDateTime toFormat = date.plusMinutes(minuteOfDay);
-    		 String name =raplaLocale.formatTime( toFormat);
-    		 //String name = minuteOfDay / 60 + ":" + minuteOfDay%60;
-    		 Timeslot slot = new Timeslot(name, minuteOfDay);
-    		 timeslots.add(slot);
-    	}
+		int[] starts = {6 * 60, 8 * 60, 10 * 60, 12 * 60, 14 * 60, 16 * 60, 18 * 60};
+		for (int minuteOfDay : starts) {
+			LocalDateTime toFormat = date.plusMinutes(minuteOfDay);
+			String name = raplaLocale.formatTime(toFormat);
+			timeslots.add(new Timeslot(name, minuteOfDay));
+		}
 		return timeslots;
 	}
 	

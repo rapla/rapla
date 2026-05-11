@@ -792,7 +792,7 @@ public class SynchronisationManager
                 if (lastRetry != null)
                 {
                     // skip a schedule Period for the time of retries
-                    if (DateTools.toMilli(lastRetry) > DateTools.toMilli(now) - (retries - 5) * SCHEDULE_PERIOD)
+                    if (lastRetry.isAfter(now.minus(java.time.Duration.ofMillis((retries - 5) * SCHEDULE_PERIOD))))
                     {
                         continue;
                     }

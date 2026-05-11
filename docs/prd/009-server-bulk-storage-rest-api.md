@@ -7,7 +7,7 @@
 
 ## Goal
 
-Make the Swing client (and any other `RemoteStorage` consumer) work end-to-end against the post-Spring-Boot server by porting **every `RemoteStorage` method** to a Spring `@RestController` endpoint. Today the client's `@HttpExchange("/storage")` interface declares ~25 methods; the server exposes one matching shape (`/resources`). Most operations 404.
+Make the Swing client (and any other `RemoteStorage` consumer) work end-to-end against the post-Spring-Boot server by porting **every `RemoteStorage` method** to a Spring `@RestController` endpoint. Today the client's `@HttpExchange("/storage")` interface declares 20 methods; the server exposes one matching shape (`/resources`). Most operations 404.
 
 After this PRD lands:
 - Swing client can `start(connectInfo)` against the dev server and complete the initial sync without a single 404.

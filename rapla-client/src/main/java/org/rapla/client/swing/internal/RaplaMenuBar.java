@@ -106,6 +106,7 @@ public class RaplaMenuBar extends RaplaGUIComponent
     JMenuItem templateEdit;
     private final EditController editController;
     private final DialogUiFactoryInterface dialogUiFactory;
+    private final org.rapla.client.swing.internal.adminpanels.ServerDrivenSettingsDialog settingsDialog;
     private final Supplier<TemplateEdit> templateEditFactory;
     private final CalendarSelectionModel model;
     Supplier<LicenseInfoUI> licenseInfoUIProvider;
@@ -119,7 +120,8 @@ public class RaplaMenuBar extends RaplaGUIComponent
             PrintAction printAction, Set<AdminMenuExtension> adminMenuExt, Set<EditMenuExtension> editMenuExt, Set<ViewMenuExtension> viewMenuExt, Set<HelpMenuExtension> helpMenuExt, Set<ImportMenuExtension> importMenuExt,
             Set<ExportMenuExtension> exportMenuExt, EditController editController, CalendarSelectionModel model, UserClientService clientService, RestartServer restartServerService,
             DialogUiFactoryInterface dialogUiFactory, Supplier<TemplateEdit> templateEditFactory, Supplier<LicenseInfoUI> licenseInfoUIProvider, CalendarEventBus eventBus, ApplicationEventBus appEventBus, MenuItemFactory menuItemFactory,
-            Supplier<UserAction> userActionProvider)            throws RaplaInitializationException
+            Supplier<UserAction> userActionProvider,
+            org.rapla.client.swing.internal.adminpanels.ServerDrivenSettingsDialog settingsDialog)            throws RaplaInitializationException
     {
         super(clientFacade, i18n, raplaLocale, logger);
         this.systemInfo = systemInfo;
@@ -131,6 +133,7 @@ public class RaplaMenuBar extends RaplaGUIComponent
         this.appEventBus = appEventBus;
         this.menuItemFactory = menuItemFactory;
         this.userActionProvider = userActionProvider;
+        this.settingsDialog = settingsDialog;
 
         RaplaMenu editMenu = menuBarContainer.getEditMenu();
         RaplaMenu viewMenu = menuBarContainer.getViewMenu();
@@ -230,14 +233,7 @@ public class RaplaMenuBar extends RaplaGUIComponent
         boolean modifyPreferencesAllowed = isModifyPreferencesAllowed();
         if (modifyPreferencesAllowed)
         {
-            try
-            {
-                userOptions.setAction(createOptionAction(getFacade().getPreferences(user)));
-            }
-            catch (RaplaException e)
-            {
-                throw new RaplaInitializationException(e);
-            }
+            userOptions.setAction(createSettingsAction(org.rapla.plugin.adminpanels.PanelScope.PER_USER));
         }
         else
         {
@@ -304,14 +300,7 @@ public class RaplaMenuBar extends RaplaGUIComponent
         if (isAdmin)
         {
             RaplaMenuItem adminOptions = new RaplaMenuItem("adminOptions");
-            try
-            {
-                adminOptions.setAction(createOptionAction(getQuery().getSystemPreferences()));
-            }
-            catch (RaplaException e)
-            {
-                throw new RaplaInitializationException(e);
-            }
+            adminOptions.setAction(createSettingsAction(org.rapla.plugin.adminpanels.PanelScope.SYSTEM));
             adminMenu.add(adminOptions);
         }
 
@@ -452,7 +441,12 @@ public class RaplaMenuBar extends RaplaGUIComponent
         }
     }
 
-    private Action createOptionAction(final Preferences preferences)
+    /** Opens the unified server-driven settings dialog at the requested scope.
+     *  Replaces the prior {@code editController.edit(preferences, ...)} flow:
+     *  legacy {@code OptionPanel} impls still appear (via the bridge in
+     *  {@code ServerDrivenSettingsDialog}) so this is wire-compatible at the
+     *  user-facing level. */
+    private Action createSettingsAction(final org.rapla.plugin.adminpanels.PanelScope scope)
     {
         AbstractAction action = new AbstractAction()
         {
@@ -460,9 +454,15 @@ public class RaplaMenuBar extends RaplaGUIComponent
 
             public void actionPerformed(ActionEvent arg0)
             {
-                editController.edit(preferences, dialogUiFactory.createPopupContext( null));
+                try
+                {
+                    settingsDialog.show(dialogUiFactory.createPopupContext(null), scope);
+                }
+                catch (Exception ex)
+                {
+                    dialogUiFactory.showException(ex, dialogUiFactory.createPopupContext(null));
+                }
             }
-
         };
         action.putValue(Action.SMALL_ICON, RaplaImages.getIcon(i18n.getIcon("icon.options")));
         action.putValue(Action.NAME, getString("options"));

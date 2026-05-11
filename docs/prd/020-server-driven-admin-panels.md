@@ -1,6 +1,6 @@
 # PRD 020: Server-Driven Admin / Preferences Panels
 
-**Status:** draft
+**Status:** in-progress — foundation done; 5/11 vanilla + 4 dhbw panels migrated (2026-05-10)
 **Date:** 2026-05-10
 
 ## Goal
@@ -209,33 +209,79 @@ Implementation in vanilla rapla:
 
 ## Plan
 
-### Phase 1 — Wire contract + generic types (rapla-core)
+### Phase 1 — Wire contract + generic types (rapla-core) — **DONE**
 
-1. Create `org.rapla.plugin.adminpanels` package: `PreferencesAdminService`,
-   `PanelSummary`, `PanelDefinition`, `Field`, `FieldType`, `ActionButton`,
-   `ActionResult`.
-2. Contract test (`PreferencesAdminServiceContractTest`) pinning paths,
-   methods, return types, and field-type enum stability.
+Implemented in `rapla-core/src/main/java/org/rapla/plugin/adminpanels/`:
+`PanelScope`, `FieldType` (10 types: BOOL, TEXT, LONG_TEXT, PASSWORD, INT,
+SELECT, RADIO_GROUP, DISPLAY_ONLY, ACTION_BUTTON, JSON_EDITOR), `PanelSummary`,
+`Field`, `ActionButton`, `ActionResult`, `PanelDefinition`, and the
+`PreferencesAdminService` `@HttpExchange("/admin/panels")` interface.
+9-test `PreferencesAdminServiceContractTest` pins method shapes, paths, enum
+stability. JSON_EDITOR is the universal escape hatch for arbitrary
+nested/list data; the server stores in whatever native shape it likes and
+translates to/from the wire `Map<String, Object>` per request.
 
-### Phase 2 — Server SPI + dispatcher (rapla-server)
+### Phase 2 — Server SPI + dispatcher (rapla-server) — **DONE**
 
-1. Create `org.rapla.server.adminpanels.PreferencesPanel` SPI.
-2. `PreferencesAdminController` (`@RestController @RequestMapping("/admin/panels")`)
-   injecting `Set<PreferencesPanel>`. Super-admin gate.
-3. Test: a fixture `PreferencesPanel` registered as `@Bean` in the test
-   context, MockMvc verifies list / get / save / action round-trips.
+`org.rapla.server.adminpanels.PreferencesPanel` SPI (in rapla-server) plus
+`org.rapla.server.spring.web.PreferencesAdminController`
+(`@RestController @RequestMapping("/admin/panels")`) injecting
+`Set<PreferencesPanel>`. Filters listings by scope; gates SYSTEM-scoped
+operations on `User.isAdmin()` (non-admins get an empty list for SYSTEM
+scope and `RaplaSecurityException` on direct gets).
+`PreferencesAdminControllerIntegrationTest` (rapla-app, MockMvc, 7 tests)
+covers non-admin gate, admin listing, get/save/action round-trip with two
+stub panels (`stub.system` + `stub.peruser`).
 
-### Phase 3 — Generic Swing renderer (rapla-client)
+### Phase 3 — Generic Swing renderer (rapla-client) — **DONE**
 
-1. `AdminPanelsDialog` — top-level dialog with tabs per panel.
-2. `FieldRenderer` — switch on `FieldType`, returns Swing component +
-   value extractor. Reuses existing pickers from the dynamic-type editor
-   for typed fields (Category, Allocatable, User, DynamicType).
-3. `AdminPanelsMenuEntry` — admin-gated menu entry; opens the dialog;
-   `@ConditionalOnProperty("rapla.adminpanels.enabled")`.
-4. Test (`AdminPanelsDialogTest`): a stub `PreferencesAdminService`
-   returns a curated panel covering every `FieldType`; the dialog is
-   rendered headless; values round-trip through save.
+`org.rapla.client.swing.internal.adminpanels.*`:
+- `FieldRenderer` interface + per-type implementations: `BoolFieldRenderer`,
+  `TextFieldRenderer`, `LongTextFieldRenderer`, `PasswordFieldRenderer`,
+  `IntFieldRenderer`, `SelectFieldRenderer`, `RadioGroupFieldRenderer`,
+  `DisplayOnlyFieldRenderer`, `JsonEditorFieldRenderer`.
+- `FieldRendererFactory` switches on `FieldType` to instantiate.
+- `PanelRenderer` lays out one `PanelDefinition` (title + description +
+  GridBag-laid-out fields + action-button row) and exposes
+  `collectValues()` for save.
+- `ServerDrivenSettingsDialog` (`@Service`) — tree-on-left + form-on-right
+  split (modeled on `PreferencesEditUI`); fetches `listPanels(scope)`,
+  builds a tree from `PanelSummary.path()`, renders the selected panel
+  via `getPanel(id)`, and round-trips through `savePanel` /
+  `invokeAction`.
+- REST proxy bean `preferencesAdminServiceProxy` added to
+  `ClientProxyConfig`.
+- `FieldRendererTest` (10 tests) covers each renderer's setValue/getValue
+  round-trip. Wire-format invariant: INT widgets always emit `Long`;
+  TEXT empty string → `null`; DISPLAY_ONLY never round-trips (server-
+  computed only).
+- Reuse of classification UI patterns: GridBag label-on-left, BoxLayout
+  action row, monospace JTextArea+JScrollPane for JSON_EDITOR (as in
+  classification value editors).
+
+### Phase 4 — Legacy bridge + menu wiring (rapla-client) — **DONE**
+
+`ServerDrivenSettingsDialog` now consumes both server panels and the
+existing Swing extension points in one tree:
+- PER_USER scope merges `Set<UserOptionPanel>` with server PER_USER panels
+- SYSTEM scope merges `Set<SystemOptionPanel>` + `Map<String,
+  Supplier<PluginOptionPanel>>` with server SYSTEM panels under "Admin"
+  / "Plugins" subtrees
+
+Save path branches: server panels save through `api.savePanel(...)`;
+legacy panels mutate a shared editable `Preferences` (one
+`facade.edit(facade.getPreferences(user))` per dialog session) and
+persist with `facade.dispatch(...)` on save.
+
+`RaplaMenuBar` now wires *both* "Edit > Options" and "Admin > Admin
+Settings" menu items through `createSettingsAction(scope)` →
+`ServerDrivenSettingsDialog.show(...)`. The prior `editController.edit(preferences)`
+path is no longer used for these menu items (still in place for entity
+edits elsewhere).
+
+Confirmed: `SwingClientStartIntegrationTest` and
+`HeadlessClientNameResolutionIntegrationTest` still green after the
+bean-graph change.
 
 ### Phase 4 — dhbwrapla concrete panels
 
@@ -269,21 +315,148 @@ Three panels in dhbwrapla, each a `@Service implements PreferencesPanel`:
   This restores the runtime-editing capability the deleted
   `DhbwAuthPluginOptionPanel` provided, without a Swing class.
 
-### Phase 5 — Cleanup
+### Phase 7 — dhbw concrete panels (dhbwrapla repo) — **DONE**
 
-- Delete `TerminalUrlController` and its `/dhbw/terminal/url` HTML page.
-  (Already deletable as soon as Phase 4b lands; same functionality moved
-  upstream into the generic mechanism.)
+Four panels in `~/git/dhbwrapla` under the `DHBW/` tree node:
+
+- `TerminalPreferencesPanel` (`org.rapla.plugin.dhbw.dhbwterminal.server`)
+  — id `dhbw.terminal`. TEXT for kursTyp (one-shot, not persisted) +
+  DISPLAY_ONLY for encrypted result + 7 DISPLAY_ONLY fields mirroring
+  the rest of yaml-driven Terminal config (ueberschrift, keinekurse,
+  cssurl, raumTyp, steleUser, eventTypes, resourceTypes) +
+  ACTION_BUTTON "Compute encrypted URL" → `urlEncryption.encrypt(...)`.
+  No save side-effect (yaml-authoritative for terminal config per
+  PRD 003 §C4).
+- `MoradaPreferencesPanel` (`org.rapla.dhbw.sync.morada.server`) — id
+  `dhbw.morada`. DISPLAY_ONLY URL + trust store + connection status +
+  ACTION_BUTTON "Test connection" (HTTP HEAD, 2xx/3xx = OK, captures
+  the response code into the connectionStatus field).
+- `LdapRoleMappingsPreferencesPanel` (`org.rapla.plugin.dhbw.auth.server`)
+  — id `dhbw.auth`. DISPLAY_ONLY for `ldapServer` (yaml) + JSON_EDITOR
+  for role mappings as structured records
+  `{locationRegex, category, email, exchangeServer}`. Persists via the
+  legacy `DhbwAuthPreferences.RoleMapping` "=" / newline-delimited
+  shape in `Preferences` so `DhbwNtlmAuthStore` keeps working without
+  code change.
+- `DualisPreferencesPanel` (`org.rapla.plugin.dhbw.dualisimport.server`)
+  — id `dhbw.dualis`. DISPLAY_ONLY url/username/driver/password-status
+  (password value never echoed) + ACTION_BUTTON "Test connection" that
+  borrows a JDBC connection from the Hikari pool and calls
+  `Connection.isValid(5)`.
+
+Discovery uses `DhbwRaplaApplication`'s existing
+`@SpringBootApplication(scanBasePackages = {"org.rapla.dhbw", "org.rapla.plugin.dhbw"})` —
+no extra config needed.
+
+**Tests** (`dhbwrapla/src/test/java/org/rapla/dhbw/adminpanels/DhbwPanelsIntegrationTest`,
+5 tests): unit-level coverage of the action-button paths
+(Morada test-connection cleanly reports unreachable host; Terminal
+encryption action seeds the DISPLAY_ONLY field; blank input rejected)
++ panel-definition shape (yaml fields exposed correctly). LDAP
+read/save round-trip is **not** unit-tested here — building a
+sufficient `RaplaFacade` stub is impractical and the cleanest path is
+a `@SpringBootTest` once the pre-existing dhbwrapla bean-graph issues
+are sorted.
+
+**Pre-existing dhbwrapla bean-graph fix (2026-05-11):** seven dhbwrapla
+classes were annotated `@jakarta.inject.Singleton` + `@Inject` only —
+Spring doesn't treat `@Singleton` as a stereotype, so the beans weren't
+registered. The chain was `DualisSyncJobStarter` (`@Component` +
+`@Scheduled`) → `DualisImportJob` → `Dualis` impl → `RaplaImportMailSender`
+→ `MailToUserImpl` etc., with `MoradaImport` → `XmlConverter` on the
+parallel side, and `DhbwNtlmAuthStore` → `DhbwAuthPreferences.AuthPreferencesReader`.
+Fix: added `@Service` to all seven (`XmlConverter`, `JsonConverter`,
+`RaplaImportMailSender`, `MoradaImportJob`, `MoradaLocationMapping`,
+`DualisImportJob`, `AuthPreferencesReader`) plus
+`@Service @Scope("prototype")` on the two `Provider<>`-injected mappings
+(`DualisRaplaMapping`, `MoradaRaplaMapping`). Also added a test-scope
+HSQLDB dep so Hikari can bind a driver for the secondary Dualis
+DataSource in `@SpringBootTest`. Net result: dhbw deployment now boots
+without `NoSuchBeanDefinitionException`, and the full Spring stack is
+testable.
+
+`DhbwPanelsSpringIntegrationTest` is the result — 3 tests covering
+`listSystemIncludesAllDhbwPanels` / `ldapRoleMappingsRoundTripPersistsLegacyFormat`
+/ `terminalEncryptionActionUpdatesDisplayField` end-to-end through the
+live bean graph. Companion `DhbwPanelsIntegrationTest` (no Spring,
+5 tests) keeps the action-path + yaml-mirror coverage that doesn't need
+a context.
+
+The `maven-compiler-plugin.testExcludes` block in `dhbwrapla/pom.xml`
+still excludes stale legacy tests (`RestDHBWAPIExample`, `DhbwNtlmTest`,
+etc.) that referenced Jackson 2 / `javax.inject` / removed
+`org.rapla.test.util` — those are unrelated to the bean-graph issue
+and out of scope here; can be revisited in a focused test-cleanup pass.
+
+### Phase 8 — Cleanup — **PARTIAL**
+
+- ✅ Deleted `dhbwterminal/server/web/TerminalUrlController.java` and
+  the now-empty `web/` directory. `TerminalPreferencesPanel` covers
+  the same use-case in the unified admin tree.
+- ⏸ `JNDIConfigController` / `MailConfigController` /
+  `ArchiverController` (rapla-server) are NOT deleted: they're JSON
+  REST endpoints consumed by the legacy Swing
+  `JNDIOption`/`MailOption`/`ArchiverOption` panels which still ship via
+  the legacy bridge (Phase 4) until those plugins migrate. Delete them
+  in the follow-up that ports those three plugins.
+
+### Cleanup follow-ups
+
 - Update PRD 003 §I to point at PRD 020 ("Terminal URL admin page" is
   no longer a one-off; it's a panel under the generic admin tree.)
+- After the remaining 6 vanilla panel migrations land
+  (Export2iCal/ExchangeConnector/Mail/Archiver/EventTimeCalc/JNDI), the
+  legacy `OptionPanel` extension points and `PreferencesEditUI` can be
+  removed — at that point `ServerDrivenSettingsDialog`'s legacy bridge
+  (Phase 4 LegacyEntry handling) can also be deleted.
 
-### Phase 6 (deferred) — Migrate vanilla rapla `PluginOptionPanel`s
+### Phase 5 — γ-shape plugin enable gates — **DONE (no migration needed)**
 
-Out of scope for this PRD. Once the renderer covers all needed field
-types, we'd write a per-plugin port: each existing Swing
-`PluginOptionPanel` becomes a server-side `PreferencesPanel`. The
-legacy extension-point interface and its discovery wiring can then
-delete.
+Audit found no `@ConditionalOnProperty`-style runtime-toggle gates to
+migrate: vanilla rapla already drives plugin enables through
+`Preferences.getEntry(RaplaComponent.PLUGIN_CONFIG)` /
+`TypedComponentRole<Boolean>` keys (e.g. `PlanningStatusPlugin.ENABLED`),
+which is the γ-shape we wanted. Two boot-time `@Conditional`-style
+gates exist (`ExternalEventImportEnabledCondition` + dhbw's
+`@ConditionalOnProperty(ExternalEventImportPlugin.ENABLE_PROPERTY)` on
+`DualisEventsLoaderImpl`); both are appropriate boot-time gates (avoid
+HTTP / scheduler registration when feature off), not user-toggle
+settings — leave in place.
+
+### Phase 6 — Migrate vanilla `PluginOptionPanel`s — **5/11 DONE**
+
+Migrated to server-side `@Service` `PreferencesPanel` impls under
+`org/rapla/plugin/<name>/server/`:
+- `PlanningStatusPreferencesPanel` (BOOL)
+- `AppointmentNotePreferencesPanel` (BOOL)
+- `CSVExportPreferencesPanel` (BOOL)
+- `AutoExportPreferencesPanel` (2× BOOL)
+- `TimeslotPreferencesPanel` (JSON_EDITOR over the legacy
+  `RaplaConfiguration` "timeslot" tree)
+
+Common base class `org.rapla.server.adminpanels.AbstractPluginPreferencesPanel`
+handles SYSTEM scope + the read/clone-edit/dispatch lifecycle on
+system preferences. Legacy Swing classes deleted for the five
+migrated plugins (their server counterparts replace them in the
+unified tree; no duplicates).
+
+Spring discovery: new config class `AdminPanelsScanConfig` (imported
+from `RaplaServerAutoConfiguration`) does a targeted
+`@ComponentScan` over `org.rapla.server.adminpanels` +
+`org.rapla.plugin.*.server` panel packages — keeps the rest of the
+server tier on the explicit-`@Bean`-factory pattern (AGENTS.md §4)
+while letting these new panels register via `@Service`.
+
+`VanillaPluginPanelsIntegrationTest` (rapla-app, MockMvc) verifies
+list-includes-all-five and round-trips PlanningStatus + Timeslot
+through the live Spring stack including persistence side-effects.
+
+**Deferred to follow-up sessions** (heavyweight panels, kept on the
+legacy bridge for now): `Export2iCalAdminOption`,
+`ExchangeConnectorAdminOptions`, `MailOption`, `ArchiverOption`,
+`EventTimeCalculatorAdminOption`, `JNDIOption`. `TableviewOption`
+remains permanently excluded per direction — separate root tree if/when
+needed (ref. dialog with user 2026-05-10).
 
 ## Tests
 

@@ -28,7 +28,8 @@ public class SecurityConfig
                             "/logger/**", "/ical/timezones/**",
                             "/calendar", "/calendar.csv", "/internal_calendar", "/internal_calendar.csv",
                             "/ical", "/internal_ical",
-                            "/raplaclient", "/raplaclient.jnlp").permitAll();
+                            "/raplaclient", "/raplaclient.jnlp",
+                            "/dhbw/status").permitAll();
                     if (decoder != null)
                     {
                         auth.anyRequest().authenticated();

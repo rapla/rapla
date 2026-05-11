@@ -73,6 +73,9 @@ class ConflictFinder {
     
     public Conflict findConflict(ReferenceInfo<Conflict> ref)
     {
+        if (ref == null) {
+            return null;
+        }
         java.time.LocalDateTime dummyLastChanged = java.time.LocalDateTime.now();
         ConflictImpl dummyConflict;
         try {

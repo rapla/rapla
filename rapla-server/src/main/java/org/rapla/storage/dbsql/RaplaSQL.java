@@ -1805,7 +1805,7 @@ class AppointmentStorage extends RaplaTypeStorage<Appointment>
         }
         LocalDateTime start = getDate(rset, 3);
         LocalDateTime end = getDate(rset, 4);
-        boolean wholeDayAppointment = DateTools.toMilli(start) == DateTools.cutDate(DateTools.toMilli(start)) && DateTools.toMilli(end) == DateTools.cutDate(DateTools.toMilli(end));
+        boolean wholeDayAppointment = start.toLocalTime().equals(java.time.LocalTime.MIDNIGHT) && end.toLocalTime().equals(java.time.LocalTime.MIDNIGHT);
         AppointmentImpl appointment = new AppointmentImpl(start, end);
         appointment.setId(id);
         appointment.setWholeDays(wholeDayAppointment);
@@ -2791,7 +2791,7 @@ class HistoryStorage<T extends Entity<T>> extends RaplaTypeStorage<T>
         {
             try (PreparedStatement stmt = con.prepareStatement(insertSql))
             {
-                final LocalDateTime timestamp = LocalDateTime.ofInstant(java.time.Instant.ofEpochMilli(DateTools.toMilli(getConnectionTimestamp())), java.time.ZoneOffset.UTC);
+                final LocalDateTime timestamp = getConnectionTimestamp();
                 write(stmt, (T) oldEntity, false, timestamp);
                 stmt.executeBatch();
             }
@@ -2963,7 +2963,7 @@ class HistoryStorage<T extends Entity<T>> extends RaplaTypeStorage<T>
                 load(rset);
                 // the select is ordered desc by last_changed, so if we get to early in time, we do not need to load it
                 final LocalDateTime timestamp = getTimestamp(rset, 5, false);
-                if (supportTimestamp != null && timestamp != null && DateTools.toMilli(timestamp) < DateTools.toMilli(supportTimestamp))
+                if (supportTimestamp != null && timestamp != null && timestamp.isBefore(supportTimestamp))
                 {
                     finishedIdsToLoad.add(id);
                 }

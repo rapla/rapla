@@ -44,7 +44,7 @@ import java.util.TreeSet;
 import java.time.LocalDateTime;
 class PeriodModelImpl implements PeriodModel
 {
-    TreeSet<PeriodImpl> m_periods = createPeriodSet();
+    volatile TreeSet<PeriodImpl> m_periods = createPeriodSet();
 
     @NotNull
     static private TreeSet<PeriodImpl> createPeriodSet() {

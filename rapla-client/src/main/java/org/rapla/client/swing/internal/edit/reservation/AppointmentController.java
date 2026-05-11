@@ -15,6 +15,17 @@ package org.rapla.client.swing.internal.edit.reservation;
 import org.rapla.RaplaResources;
 import org.rapla.client.PopupContext;
 import org.rapla.client.RaplaWidget;
+import org.rapla.client.edit.reservation.RepeatingRuleModel;
+import org.rapla.client.edit.reservation.RepeatingRuleProjector;
+import org.rapla.client.edit.reservation.RepeatingRuleProjector.DayChooserState;
+import org.rapla.client.edit.reservation.RepeatingRuleProjector.EndDateBinding;
+import org.rapla.client.edit.reservation.RepeatingRuleProjector.EndingMode;
+import org.rapla.client.edit.reservation.RepeatingRuleProjector.EndingPanelVisibility;
+import org.rapla.client.edit.reservation.RepeatingRuleProjector.ExceptionButtonState;
+import org.rapla.client.edit.reservation.RepeatingRuleProjector.ExceptionCountStyle;
+import org.rapla.client.edit.reservation.RepeatingRuleProjector.RepeatingPanelVisibility;
+import org.rapla.client.edit.reservation.RepeatingRuleProjector.WeekdaySelection;
+import org.rapla.client.edit.reservation.RepeatingRuleWriter;
 import org.rapla.client.dialog.DialogInterface;
 import org.rapla.client.dialog.DialogUiFactoryInterface;
 import org.rapla.client.extensionpoints.AppointmentEditExtensionFactory;
@@ -1095,7 +1106,7 @@ public class AppointmentController extends RaplaGUIComponent implements Disposab
                     Number dayOfMonthValue = dayInMonth.getNumber();
                     if (dayOfMonthValue != null && repeating.isYearly())
                     {
-                        final DateTools.DateWithoutTimezone dateWithoutTimezone = DateTools.toDate(DateTools.toMilli(appointment.getStart()));
+                        final DateTools.DateWithoutTimezone dateWithoutTimezone = DateTools.toDate(appointment.getStart());
                         final long l = DateTools.toTime(dateWithoutTimezone.year, dateWithoutTimezone.month, dayOfMonthValue.intValue());
                         startDate.setDate(DateTools.toLocalDateTime(l));
                     }
@@ -1151,108 +1162,76 @@ public class AppointmentController extends RaplaGUIComponent implements Disposab
 
         private void mapToAppointment()
         {
-            int index = endingChooser.getSelectedIndex();
-            Number intervalValue = interval.getNumber();
+            final EndingMode mode = switch (endingChooser.getSelectedIndex())
+            {
+                case REPEAT_UNTIL   -> EndingMode.UNTIL;
+                case REPEAT_N_TIMES -> EndingMode.N_TIMES;
+                default             -> EndingMode.FOREVER;
+            };
 
-            if (intervalValue != null)
+            // Preserve original side-effect: snap the visible end-date widget
+            // back to the start date when the user picked an earlier end.
+            if (mode == EndingMode.UNTIL
+                    && DateTools.countDays(startDate.getDate(), endDate.getDate()) < 0)
             {
-                repeating.setInterval(intervalValue.intValue());
-            }
-            else
-            {
-                repeating.setInterval(1);
+                endDate.setDate(startDate.getDate());
             }
 
-            if (index == REPEAT_UNTIL)
-            {
-                if (DateTools.countDays(startDate.getDate(), endDate.getDate()) < 0)
-                {
-                    endDate.setDate(startDate.getDate());
-                }
-                repeating.setEnd(DateTools.addDay(endDate.getDate()));
-            }
-            else if (index == REPEAT_N_TIMES)
-            {
-                Number numberValue = number.getNumber();
-                if (number != null)
-                {
-                    repeating.setNumber(numberValue.intValue());
-                }
-                else
-                {
-                    repeating.setNumber(1);
-                }
-            }
-            else
-            { // REPEAT_FOREVER
-                repeating.setEnd(null);
-                repeating.setNumber(-1);
-            }
+            final Number intervalValue = interval.getNumber();
+            final Number numberValue = number.getNumber();
+            final RepeatingRuleModel model = new RepeatingRuleModel(
+                    repeating.getType(),
+                    intervalValue != null ? intervalValue.intValue() : 1,
+                    collectCheckedWeekdays(),
+                    mode,
+                    mode == EndingMode.UNTIL ? endDate.getDate() : null,
+                    numberValue != null ? numberValue.intValue() : 1);
+            RepeatingRuleWriter.writeTo(model, repeating, getStart());
+
             appointment.move(getStart(), getEnd());
-            updateWeekdays();
-            // We have todo the after the move to avoid reseting the dates
-            final boolean oneDayEvent = oneDayEventCheckBox.isSelected();
-            setToWholeDays(oneDayEvent);
+            // setToWholeDays runs after move to avoid resetting the dates
+            setToWholeDays(oneDayEventCheckBox.isSelected());
         }
 
-        private void updateWeekdays()
+        private Set<Integer> collectCheckedWeekdays()
         {
-            if ( repeating.isWeekly())
+            if (!repeating.isWeekly())
             {
-                final Set<Integer> weekdays = new TreeSet<>();
-                for (Map.Entry<Integer, JCheckBox> entry: weekdaysChecker.entrySet())
-                {
-                    final Integer weekday = entry.getKey();
-                    boolean isChecked = entry.getValue().isSelected();
-                    if (isChecked)
-                    {
-                        weekdays.add(weekday);
-                    }
-                }
-                repeating.setWeekdays( weekdays);
+                return java.util.Collections.emptySet();
             }
+            Set<Integer> weekdays = new TreeSet<>();
+            for (Map.Entry<Integer, JCheckBox> entry : weekdaysChecker.entrySet())
+            {
+                if (entry.getValue().isSelected())
+                {
+                    weekdays.add(entry.getKey());
+                }
+            }
+            return weekdays;
         }
 
         private void updateExceptionCount()
         {
-            LocalDateTime[] exceptions = repeating != null ? repeating.getExceptions() : new LocalDateTime[]{};
-            int count = exceptions != null ? exceptions.length :0;
-            if (count > 0)
-            {
-                exceptionButton.setForeground(Color.red);
-            }
-            else
-            {
-                exceptionButton.setForeground(UIManager.getColor("Label.foreground"));
-            }
-            String countValue = String.valueOf(count);
-            if (count < 9)
-            {
-                countValue = " " + countValue + " ";
-            }
-            exceptionButton.setText(getString("appointment.exceptions") + " (" + countValue + ")");
+            ExceptionButtonState state = RepeatingRuleProjector.exceptionButtonState(
+                    getString("appointment.exceptions"), repeating);
+            exceptionButton.setForeground(state.style() == ExceptionCountStyle.HIGHLIGHTED
+                    ? Color.red
+                    : UIManager.getColor("Label.foreground"));
+            exceptionButton.setText(state.label());
         }
 
         private void showEnding(int index)
         {
-            if (index == REPEAT_UNTIL)
+            EndingMode mode = switch (index)
             {
-                endDate.setVisible(true);
-                endDatePeriodPanel.setVisible(isPeriodVisible());
-                numberPanel.setVisible(false);
-            }
-            if (index == REPEAT_N_TIMES)
-            {
-                endDate.setVisible(false);
-                endDatePeriodPanel.setVisible(false);
-                numberPanel.setVisible(true);
-            }
-            if (index == REPEAT_FOREVER)
-            {
-                endDate.setVisible(false);
-                endDatePeriodPanel.setVisible(false);
-                numberPanel.setVisible(false);
-            }
+                case REPEAT_UNTIL   -> EndingMode.UNTIL;
+                case REPEAT_N_TIMES -> EndingMode.N_TIMES;
+                default             -> EndingMode.FOREVER;
+            };
+            EndingPanelVisibility v = RepeatingRuleProjector.endingPanelVisibility(mode, isPeriodVisible());
+            endDate.setVisible(v.endDateVisible());
+            endDatePeriodPanel.setVisible(v.endDatePeriodPanelVisible());
+            numberPanel.setVisible(v.numberPanelVisible());
         }
 
         private void mapFromAppointment()
@@ -1283,102 +1262,78 @@ public class AppointmentController extends RaplaGUIComponent implements Disposab
                 endTime.setTime(end);
                 endTime.setDurationStart(DateTools.isSameDay(start, end) ? start : null);
 
-                weekdayInMonthPanel.setVisible(repeating.isMonthly());
-                intervalPanel.setVisible(repeating.isDaily() || repeating.isWeekly());
-                dayInMonthPanel.setVisible(repeating.isYearly());
+                final RepeatingPanelVisibility panels =
+                        RepeatingRuleProjector.repeatingPanelVisibility(repeating, isPeriodVisible());
+                weekdayInMonthPanel.setVisible(panels.weekdayInMonthPanelVisible());
+                intervalPanel.setVisible(panels.intervalPanelVisible());
+                dayInMonthPanel.setVisible(panels.dayInMonthPanelVisible());
 
-                if (repeating.getEnd() != null)
+                final EndingMode mode = RepeatingRuleProjector.endingMode(repeating);
+                final EndDateBinding endBinding = RepeatingRuleProjector.endDateBinding(repeating);
+                if (endBinding != null)
                 {
-                    endDate.setDate(DateTools.subDay(repeating.getEnd()));
-                    endDatePeriod.setDate(DateTools.cutDate(endDate.getDate()));
-                    number.setNumber(Integer.valueOf(repeating.getNumber()));
-                    if (!repeating.isFixedNumber())
-                    {
-                        endingChooser.setSelectedIndex(REPEAT_UNTIL);
-                        showEnding(REPEAT_UNTIL);
-                    }
-                    else
-                    {
-                        endingChooser.setSelectedIndex(REPEAT_N_TIMES);
-                        showEnding(REPEAT_N_TIMES);
-                    }
+                    endDate.setDate(endBinding.endDate());
+                    endDatePeriod.setDate(endBinding.endDatePeriodDate());
+                    number.setNumber(Integer.valueOf(endBinding.number()));
                 }
-                else
+                endingChooser.setSelectedIndex(switch (mode)
                 {
-                    endingChooser.setSelectedIndex(REPEAT_FOREVER);
-                    showEnding(REPEAT_FOREVER);
-                }
+                    case UNTIL   -> REPEAT_UNTIL;
+                    case N_TIMES -> REPEAT_N_TIMES;
+                    case FOREVER -> REPEAT_FOREVER;
+                });
+                showEnding(endingChooser.getSelectedIndex());
 
-                startDatePeriod.setVisible(isPeriodVisible() && (repeating.isDaily() || repeating.isWeekly()));
-                endDatePeriod.setVisible(repeating.isDaily() || repeating.isWeekly());
-                weekdaysPanel.setVisible( repeating.isWeekly());
-                if ( repeating.isWeekly())
+                startDatePeriod.setVisible(panels.startDatePeriodVisible());
+                endDatePeriod.setVisible(panels.endDatePeriodVisible());
+                weekdaysPanel.setVisible(panels.weekdaysPanelVisible());
+                if (panels.weekdaysPanelVisible())
                 {
-                    final Set<Integer> weekdays = repeating.getWeekdays();
-
-                    for (Map.Entry<Integer, JCheckBox> entry: weekdaysChecker.entrySet())
+                    final int startWeekday = DateTools.getWeekday(appointment.getStart());
+                    final Map<Integer, WeekdaySelection> sels =
+                            RepeatingRuleProjector.weekdaySelections(repeating, startWeekday, weekdaysChecker.keySet());
+                    for (Map.Entry<Integer, JCheckBox> entry : weekdaysChecker.entrySet())
                     {
-                        final Integer weekday = entry.getKey();
-                        boolean toCheck = weekdays.contains(weekday) || weekday == DateTools.getWeekday( appointment.getStart());
-                        final JCheckBox checkBox = entry.getValue();
-                        checkBox.setSelected( toCheck);
-                        checkBox.setEnabled( weekday != DateTools.getWeekday( appointment.getStart()));
+                        WeekdaySelection s = sels.get(entry.getKey());
+                        if (s == null) continue;
+                        entry.getValue().setSelected(s.selected());
+                        entry.getValue().setEnabled(s.enabled());
                     }
                 }
 
-                if (repeating.isWeekly() || repeating.isMonthly())
+                dayLabel.setVisible(panels.dayLabelVisible());
+                weekdayChooser.setVisible(panels.weekdayChooserVisible());
+                monthChooser.setVisible(panels.monthChooserVisible());
+                if (panels.weekdayChooserVisible())
                 {
-                    dayLabel.setVisible(false);
-                    weekdayChooser.setVisible(true);
-                    monthChooser.setVisible(false);
                     weekdayChooser.selectWeekday(DateTools.getWeekday(start));
-                    //final Set<Integer> weekdays = repeating.getWeekdays();
-                    //weekdayChooser.selectWeekdays(weekdays);
                 }
-
-                if (repeating.isYearly())
+                if (panels.monthChooserVisible())
                 {
-                    dayLabel.setVisible(false);
-                    weekdayChooser.setVisible(false);
-                    monthChooser.setVisible(true);
                     monthChooser.selectMonth(DateTools.getMonth(start));
-                    int numb = DateTools.getDayOfMonth(start);
-                    dayInMonth.setNumber(Integer.valueOf(numb));
+                    dayInMonth.setNumber(Integer.valueOf(DateTools.getDayOfMonth(start)));
                 }
-
                 if (repeating.isMonthly())
                 {
-                    int numb = DateTools.getDayOfWeekInMonth(localStartDate);
-                    weekdayInMonth.setNumber(Integer.valueOf(numb));
-                }
-
-                if (repeating.isDaily())
-                {
-                    dayLabel.setVisible(true);
-                    weekdayChooser.setVisible(false);
-                    monthChooser.setVisible(false);
+                    weekdayInMonth.setNumber(Integer.valueOf(DateTools.getDayOfWeekInMonth(localStartDate)));
                 }
 
                 String typeString = repeating.getType().toString();
                 startDateLabel.setText(getString(typeString) + " " + getString("repeating.start_date"));
 
-                int daysBetween = (int) DateTools.countDays(start, end);
-                if (daysBetween == 0)
+                final DayChooserState dayState =
+                        RepeatingRuleProjector.dayChooserState(DateTools.countDays(start, end));
+                dayChooser.setSelectedIndex(switch (dayState.mode())
                 {
-                    dayChooser.setSelectedIndex(SAME_DAY);
-                    days.setVisible(false);
-                }
-                else if (daysBetween == 1)
+                    case SAME_DAY -> SAME_DAY;
+                    case NEXT_DAY -> NEXT_DAY;
+                    case X_DAYS   -> X_DAYS;
+                });
+                if (dayState.mode() == RepeatingRuleProjector.DayChooserMode.X_DAYS)
                 {
-                    dayChooser.setSelectedIndex(NEXT_DAY);
-                    days.setVisible(false);
+                    days.setNumber(Integer.valueOf(dayState.days()));
                 }
-                else
-                {
-                    dayChooser.setSelectedIndex(X_DAYS);
-                    days.setNumber(Integer.valueOf(daysBetween));
-                    days.setVisible(true);
-                }
+                days.setVisible(dayState.daysVisible());
                 final boolean wholeDaysSet = appointment.isWholeDaysSet();
                 startTime.setEnabled(!wholeDaysSet);
                 endTime.setEnabled(!wholeDaysSet);

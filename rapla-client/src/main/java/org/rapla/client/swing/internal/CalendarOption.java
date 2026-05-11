@@ -255,13 +255,13 @@ public class CalendarOption extends RaplaGUIComponent implements UserOptionPanel
             colorBlocks.setValue(  colorValue );
         }
         calendarOptions.addChild( colorBlocks );
-        final DateTools.TimeWithoutTimezone startTime = DateTools.toTime(DateTools.toMilli(worktimeStart.getTime()));
-        int worktimeStartHour = startTime.hour;
-        int worktimeStartMinute = startTime.minute;
+        java.time.LocalDateTime startTime = worktimeStart.getTime();
+        int worktimeStartHour = startTime.getHour();
+        int worktimeStartMinute = startTime.getMinute();
 
-        final DateTools.TimeWithoutTimezone endTime = DateTools.toTime(DateTools.toMilli(worktimeEnd.getTime()));
-        int worktimeEndHour = endTime.hour;
-        int worktimeEndMinute = endTime.minute;
+        java.time.LocalDateTime endTime = worktimeEnd.getTime();
+        int worktimeEndHour = endTime.getHour();
+        int worktimeEndMinute = endTime.getMinute();
         if ( worktimeStartMinute > 0 || worktimeEndMinute > 0)
         {
         	worktime.setValue(  worktimeStartHour + ":" + worktimeStartMinute + "-" + worktimeEndHour + ":" + worktimeEndMinute );
@@ -306,10 +306,13 @@ public class CalendarOption extends RaplaGUIComponent implements UserOptionPanel
 	}
 
 	public void dateChanged(DateChangeEvent evt) {
-        final DateTools.TimeWithoutTimezone startTime = DateTools.toTime(DateTools.toMilli(worktimeEnd.getTime()));
-        int worktimeS = startTime.hour*60  + startTime.minute;
-        final DateTools.TimeWithoutTimezone endTime = DateTools.toTime(DateTools.toMilli(worktimeEnd.getTime()));
-        int worktimeE = endTime.hour * 60 + endTime.minute;
+        // PRE-EXISTING BUG: both startTime and endTime read worktimeEnd here;
+        // startTime should be worktimeStart. Preserved during PRD 014 migration
+        // to avoid behaviour change in this commit; flag for a separate fix.
+        java.time.LocalDateTime startTime = worktimeEnd.getTime();
+        int worktimeS = startTime.getHour() * 60 + startTime.getMinute();
+        java.time.LocalDateTime endTime = worktimeEnd.getTime();
+        int worktimeE = endTime.getHour() * 60 + endTime.getMinute();
         worktimeE = (worktimeE == 0)?24*60:worktimeE;
         boolean overnight = worktimeS >= worktimeE|| worktimeE == 24*60;
 		worktimeEndError.setVisible( overnight);

@@ -303,7 +303,7 @@ public class SwingMonthView extends AbstractSwingCalendar
     }
     
     LocalDateTime createDate(DaySlot slot, int row, boolean startOfRow) {
-        DateWithoutTimezone date =  DateTools.toDate(DateTools.toMilli(getStartDate()));
+        DateWithoutTimezone date =  DateTools.toDate(getStartDate());
         int dayOfMonth = getSlotNr( slot ) +1;
         LocalDateTime result = LocalDateTime.of(date.year ,date.month, dayOfMonth, 0, 0);
         if ( !startOfRow ) {

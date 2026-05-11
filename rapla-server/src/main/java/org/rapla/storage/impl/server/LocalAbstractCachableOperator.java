@@ -1192,6 +1192,12 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
     @Override
     synchronized public void disconnect() throws RaplaException
     {
+        // Lock-ordering note (audited): disconnect() acquires lockManager.write
+        // BEFORE disconnectLock.write, while scheduled tasks acquire those in the
+        // opposite order (disconnectLock.read → lockManager.read inside command.run).
+        // The inversion is bounded by timeouts: scheduled tasks' lockManager.read
+        // is 20s and they swallow the timeout. Without timeouts this would deadlock.
+        // See LockOrderingAuditTest for the contract.
         if (!isConnected())
             return;
         RaplaLock.WriteLock writeLock = null;
@@ -1768,7 +1774,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
         // so tailMap returns all entities with a timestamp >= timestamp
         final String dummyId = "";
         // we need to add +1 so that we dont get entities with the passed (guaranteed timestamp)
-        DeleteUpdateEntry fromElement = new DeleteUpdateEntry(new ReferenceInfo(dummyId, Allocatable.class), LocalDateTime.ofInstant(java.time.Instant.ofEpochMilli(DateTools.toMilli(timestamp) + 1), java.time.ZoneOffset.UTC), isDelete);
+        DeleteUpdateEntry fromElement = new DeleteUpdateEntry(new ReferenceInfo(dummyId, Allocatable.class), timestamp.plus(java.time.Duration.ofMillis(1)), isDelete);
         LinkedList<ReferenceInfo> result = new LinkedList<>();
 
         final Collection<String> groupsIncludingParents = user != null ? UserImpl.getGroupsIncludingParents(user) : null;
@@ -1954,14 +1960,8 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
             Appointment[] allAppointments = event.getAppointments();
             for (ReferenceInfo<Allocatable> alloc: newResources) {
                 toUpdate.add( alloc );
-                SortedSet<Appointment> appointments;
-                synchronized (alloc.getId().intern()) {
-                    appointments = appointmentMap.get(alloc);
-                    if (appointments == null) {
-                        appointments = new ConcurrentSkipListSet<>(new AppointmentStartComparator());
-                        appointmentMap.put(alloc, appointments);
-                    }
-                }
+                SortedSet<Appointment> appointments = appointmentMap.computeIfAbsent(
+                        alloc, k -> new ConcurrentSkipListSet<>(new AppointmentStartComparator()));
                 Appointment[] restrictionForAllocatableRef = event.getRestrictionForAllocatableRef(alloc.getId());
                 Appointment[] newAppointments = (restrictionForAllocatableRef.length == 0) ? allAppointments : restrictionForAllocatableRef;
                 for (Appointment app : newAppointments) {
@@ -1971,14 +1971,8 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
             }
             reservationAllocatableMap.put( reference, new HashSet<>(newResources));
             {
-                SortedSet<Appointment> appointments;
-                synchronized (newUser.getId().intern()) {
-                    appointments = appointmentUserMap.get(newUser);
-                    if (appointments == null) {
-                        appointments = new ConcurrentSkipListSet<>(new AppointmentStartComparator());
-                        appointmentUserMap.put(newUser, appointments);
-                    }
-                }
+                SortedSet<Appointment> appointments = appointmentUserMap.computeIfAbsent(
+                        newUser, k -> new ConcurrentSkipListSet<>(new AppointmentStartComparator()));
                 for (Appointment app : allAppointments) {
                     appointments.remove( app );
                     appointments.add(app);
@@ -2106,7 +2100,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
     private void removeOldHistory()
     {
         LocalDateTime lastUpdated = getLastRefreshed();
-        LocalDateTime date = LocalDateTime.ofInstant(java.time.Instant.ofEpochMilli(DateTools.toMilli(lastUpdated) - HISTORY_DURATION), java.time.ZoneOffset.UTC);
+        LocalDateTime date = lastUpdated.minus(java.time.Duration.ofMillis(HISTORY_DURATION));
         history.removeUnneeded(date);
     }
 
@@ -3547,7 +3541,7 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
             newState = ((AppointmentImpl) newState).clone();
             LocalDateTime start = newState.getStart();
             long millisToAdd = wholeDay ? DateTools.MILLISECONDS_PER_DAY : (DateTools.MILLISECONDS_PER_HOUR / rowsPerHourInt);
-            LocalDateTime newStart = LocalDateTime.ofInstant(java.time.Instant.ofEpochMilli(DateTools.toMilli(start) + millisToAdd), java.time.ZoneOffset.UTC);
+            LocalDateTime newStart = start.plus(java.time.Duration.ofMillis(millisToAdd));
             if (!startDateExcluded && isExcluded(excludedDays, newStart))
             {
                 continue;

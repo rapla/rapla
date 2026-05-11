@@ -115,6 +115,7 @@ public class LocalCache implements EntityResolver
         {
             disabledConflictApp1.remove(entityId);
             disabledConflictApp2.remove(entityId);
+            conflictLastChanged.remove(entityId);
         }
         if (typeClass == Allocatable.class)
         {
@@ -187,8 +188,8 @@ public class LocalCache implements EntityResolver
             updateDependencies(entity);
         }
         // first remove the old children from the map
-        Entity oldEntity = entities.get(entity);
-        if (oldEntity != null && oldEntity instanceof ParentEntity)
+        Entity oldEntity = entities.get(entityId);
+        if (oldEntity instanceof ParentEntity)
         {
             Collection<Entity> subEntities = ((ParentEntity) oldEntity).getSubEntities();
             for (Entity child : subEntities)
@@ -514,13 +515,16 @@ public class LocalCache implements EntityResolver
 
         public void removeConnections(boolean onlyOutgoing)
         {
-            for (Map.Entry<GraphNode, ConnectionType> entry : connections.entrySet())
+            Iterator<Map.Entry<GraphNode, ConnectionType>> it = connections.entrySet().iterator();
+            while (it.hasNext())
             {
+                Map.Entry<GraphNode, ConnectionType> entry = it.next();
                 GraphNode connection = entry.getKey();
                 ConnectionType connectionType = entry.getValue();
                 if ( !onlyOutgoing || connectionType.isOutgoing())
                 {
                     connection.removeConnection(this);
+                    it.remove();
                 }
             }
         }
