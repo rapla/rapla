@@ -1,9 +1,26 @@
 # PRD 021 — Client-side resource stubs for large deployments
 
-**Status:** draft
+**Status:** wont-fix — superseded by PRD 026 (Angular frontend). 2026-05-11.
 **Author:** Christopher Kohlhaas
 **Created:** 2026-05-10
-**Related:** PRD 002 (multi-tenancy lazy init), PRD 009 (server bulk storage REST), PRD 012 (DHBW client migration)
+**Related:** PRD 002 (multi-tenancy lazy init), PRD 009 (server bulk storage REST), PRD 012 (DHBW client migration), PRD 026 (Angular frontend)
+
+## Why wont-fix
+
+The stub design would require a multi-phase carve-out of the Swing client's
+`LocalCache`/`RemoteOperator` paths plus a new server endpoint surface, plus a
+permission-flip detection mechanism, plus a per-plugin compat audit. The
+Angular frontend (PRD 026) replaces the whole Swing tier — including the
+client-side cache that motivates this PRD — so the investment would be paid
+off only on the deprecated client.
+
+**The one quick win extracted from this PRD** — a name-search field next to
+the filter button in `AllocatableSelection` and the reservation filter — has
+been moved to PRD 023 (presenter / view carve-out), since 023 already
+touches both components. The search field is implementable today against the
+existing full-resource client cache; no stub/server changes required.
+
+Everything below is preserved for reference only.
 
 ## Goal
 

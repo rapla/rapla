@@ -629,7 +629,12 @@ public class RaplaClientServiceImpl implements ClientService, UpdateErrorListene
         String username = connectInfo.getUsername();
         return commandScheduler.supply(()->
         {
-            LoginTokens loginToken = authentificationService.login(new org.rapla.storage.dbrm.LoginCredentials(username, password, connectAs));
+            LoginTokens loginToken;
+            try {
+                loginToken = authentificationService.login(new org.rapla.storage.dbrm.LoginCredentials(username, password, connectAs));
+            } catch (org.springframework.web.client.HttpClientErrorException.Unauthorized ex) {
+                return false;
+            }
             String accessToken = loginToken.getAccessToken();
             if (accessToken != null) {
                 this.connectionInfo.setAccessToken(accessToken);

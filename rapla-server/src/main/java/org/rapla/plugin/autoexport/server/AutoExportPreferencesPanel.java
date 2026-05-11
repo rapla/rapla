@@ -45,7 +45,11 @@ public class AutoExportPreferencesPanel extends AbstractPluginPreferencesPanel
     @Override
     protected void applyValues(Preferences preferences, Map<String, Object> values) throws RaplaException
     {
-        preferences.putEntry(AutoExportPlugin.SHOW_CALENDAR_LIST_IN_HTML_MENU, Boolean.TRUE.equals(values.get("showList")));
-        preferences.putEntry(AutoExportPlugin.SHOW_TOOLTIP_IN_EXPORT_CONFIG_ENTRY, Boolean.TRUE.equals(values.get("showTooltips")));
+        // showList default: false (legacy panel showed an unchecked checkbox on first open).
+        // showTooltips default: true (matches legacy read default in AutoExportPluginOption).
+        putOrRemove(preferences, AutoExportPlugin.SHOW_CALENDAR_LIST_IN_HTML_MENU,
+                Boolean.TRUE.equals(values.get("showList")), false);
+        putOrRemove(preferences, AutoExportPlugin.SHOW_TOOLTIP_IN_EXPORT_CONFIG_ENTRY,
+                Boolean.TRUE.equals(values.get("showTooltips")), true);
     }
 }

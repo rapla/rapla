@@ -3,14 +3,17 @@ package org.rapla.server.adminpanels;
 import org.rapla.entities.Entity;
 import org.rapla.entities.User;
 import org.rapla.entities.configuration.Preferences;
+import org.rapla.entities.configuration.RaplaConfiguration;
 import org.rapla.facade.RaplaFacade;
 import org.rapla.framework.RaplaException;
+import org.rapla.framework.TypedComponentRole;
 import org.rapla.plugin.adminpanels.ActionResult;
 import org.rapla.plugin.adminpanels.PanelDefinition;
 import org.rapla.plugin.adminpanels.PanelScope;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 /** Convenience base for {@link PreferencesPanel} impls that read/write the
  *  rapla SYSTEM preferences ({@code RaplaFacade.getSystemPreferences()}).
@@ -67,4 +70,51 @@ public abstract class AbstractPluginPreferencesPanel implements PreferencesPanel
      *  The base class handles the edit/dispatch boilerplate; this method only
      *  needs to {@code preferences.putEntry(...)} based on {@code values}. */
     protected abstract void applyValues(Preferences preferences, Map<String, Object> values) throws RaplaException;
+
+    // -----------------------------------------------------------------------
+    //  Default-aware persistence helpers
+    //
+    //  Pattern: if the submitted value matches the deployment's default, REMOVE
+    //  the entry instead of writing it. Future-proofs deployments — when a
+    //  default changes in code, every deployment that hasn't explicitly
+    //  overridden picks up the new default automatically (rather than being
+    //  pinned to the version-of-the-default current at first save).
+    // -----------------------------------------------------------------------
+
+    protected static void putOrRemove(Preferences prefs,
+                                      TypedComponentRole<Boolean> role,
+                                      boolean value, boolean defaultValue)
+    {
+        if (value == defaultValue) prefs.removeEntry(role.getId());
+        else                       prefs.putEntry(role, value);
+    }
+
+    protected static void putOrRemove(Preferences prefs,
+                                      TypedComponentRole<String> role,
+                                      String value, String defaultValue)
+    {
+        if (Objects.equals(value, defaultValue)) prefs.removeEntry(role.getId());
+        else                                     prefs.putEntry(role, value);
+    }
+
+    protected static void putOrRemove(Preferences prefs,
+                                      TypedComponentRole<Integer> role,
+                                      Integer value, Integer defaultValue)
+    {
+        if (Objects.equals(value, defaultValue)) prefs.removeEntry(role.getId());
+        else                                     prefs.putEntry(role, value);
+    }
+
+    /** {@link RaplaConfiguration}-valued entry. Caller pre-computes whether the
+     *  submitted config matches deployment defaults (structural equality on
+     *  {@code RaplaConfiguration} doesn't fit every panel's shape, so the
+     *  comparison stays in the panel where it's specific). */
+    protected static void putConfigOrRemove(Preferences prefs,
+                                            TypedComponentRole<RaplaConfiguration> role,
+                                            RaplaConfiguration config,
+                                            boolean matchesDefault)
+    {
+        if (matchesDefault) prefs.removeEntry(role.getId());
+        else                prefs.putEntry(role, config);
+    }
 }

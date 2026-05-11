@@ -85,29 +85,36 @@ public class Export2iCalPreferencesPanel extends AbstractPluginPreferencesPanel
     @Override
     protected void applyValues(Preferences preferences, Map<String, Object> values) throws RaplaException
     {
-        RaplaConfiguration config = new RaplaConfiguration("config");
-
-        config.getMutableChild(Export2iCalPlugin.ENABLED_STRING, true)
-                .setValue(Boolean.TRUE.equals(values.get("enabled")));
-        config.getMutableChild(Export2iCalPlugin.GLOBAL_INTERVAL, true)
-                .setValue("global".equals(values.getOrDefault("intervalMode", "global")));
-        config.getMutableChild(Export2iCalPlugin.DAYS_BEFORE, true)
-                .setValue(toInt(values.get("daysBefore"), Export2iCalPlugin.DEFAULT_daysBefore));
-        config.getMutableChild(Export2iCalPlugin.DAYS_AFTER, true)
-                .setValue(toInt(values.get("daysAfter"), Export2iCalPlugin.DEFAULT_daysAfter));
-
+        boolean enabled        = Boolean.TRUE.equals(values.get("enabled"));
+        boolean globalInterval = "global".equals(values.getOrDefault("intervalMode", "global"));
+        int daysBefore = toInt(values.get("daysBefore"), Export2iCalPlugin.DEFAULT_daysBefore);
+        int daysAfter  = toInt(values.get("daysAfter"),  Export2iCalPlugin.DEFAULT_daysAfter);
         boolean doNotDeliver = Boolean.TRUE.equals(values.get("doNotDeliverNewCalendar"));
         int interval = doNotDeliver ? -1 : toInt(values.get("lastModifiedIntervall"), Export2iCalPlugin.DEFAULT_lastModifiedIntervall);
+        boolean exportAttendees = Boolean.TRUE.equals(values.get("exportAttendees"));
+        String emailAttr = String.valueOf(values.getOrDefault("attendeeEmailAttribute", Export2iCalPlugin.DEFAULT_attendee_resource_attribute));
+        String partStatus = String.valueOf(values.getOrDefault("attendeeParticipationStatus", Export2iCalPlugin.DEFAULT_attendee_participation_status));
+
+        boolean matchesDefault = !enabled
+                && globalInterval == Export2iCalPlugin.DEFAULT_globalIntervall
+                && daysBefore == Export2iCalPlugin.DEFAULT_daysBefore
+                && daysAfter == Export2iCalPlugin.DEFAULT_daysAfter
+                && interval == Export2iCalPlugin.DEFAULT_lastModifiedIntervall
+                && exportAttendees == Export2iCalPlugin.DEFAULT_exportAttendees
+                && Export2iCalPlugin.DEFAULT_attendee_resource_attribute.equals(emailAttr)
+                && Export2iCalPlugin.DEFAULT_attendee_participation_status.equals(partStatus);
+
+        RaplaConfiguration config = new RaplaConfiguration("config");
+        config.getMutableChild(Export2iCalPlugin.ENABLED_STRING, true).setValue(enabled);
+        config.getMutableChild(Export2iCalPlugin.GLOBAL_INTERVAL, true).setValue(globalInterval);
+        config.getMutableChild(Export2iCalPlugin.DAYS_BEFORE, true).setValue(daysBefore);
+        config.getMutableChild(Export2iCalPlugin.DAYS_AFTER, true).setValue(daysAfter);
         config.getMutableChild(Export2iCalPlugin.LAST_MODIFIED_INTERVALL, true).setValue(Integer.toString(interval));
+        config.getMutableChild(Export2iCalPlugin.EXPORT_ATTENDEES, true).setValue(exportAttendees);
+        config.getMutableChild(Export2iCalPlugin.EXPORT_ATTENDEES_EMAIL_ATTRIBUTE, true).setValue(emailAttr);
+        config.getMutableChild(Export2iCalPlugin.EXPORT_ATTENDEES_PARTICIPATION_STATUS, true).setValue(partStatus);
 
-        config.getMutableChild(Export2iCalPlugin.EXPORT_ATTENDEES, true)
-                .setValue(Boolean.TRUE.equals(values.get("exportAttendees")));
-        config.getMutableChild(Export2iCalPlugin.EXPORT_ATTENDEES_EMAIL_ATTRIBUTE, true)
-                .setValue(String.valueOf(values.getOrDefault("attendeeEmailAttribute", Export2iCalPlugin.DEFAULT_attendee_resource_attribute)));
-        config.getMutableChild(Export2iCalPlugin.EXPORT_ATTENDEES_PARTICIPATION_STATUS, true)
-                .setValue(String.valueOf(values.getOrDefault("attendeeParticipationStatus", Export2iCalPlugin.DEFAULT_attendee_participation_status)));
-
-        preferences.putEntry(Export2iCalPlugin.ICAL_CONFIG, config);
+        putConfigOrRemove(preferences, Export2iCalPlugin.ICAL_CONFIG, config, matchesDefault);
     }
 
     private static int toInt(Object v, int fallback)

@@ -58,16 +58,21 @@ public class ClientProxyConfig
         // (java.time.* support is built into Jackson 3 — no JavaTimeModule registration needed.)
         JacksonJsonHttpMessageConverter jacksonConverter =
                 new JacksonJsonHttpMessageConverter(JacksonObjectMapperFactory.create());
-        // Use SimpleClientHttpRequestFactory (URLConnection-based) instead of the JDK
-        // HttpClient default. The async JDK HttpClient path fails with
-        // "java.io.IOException: selector manager closed" when called from the Swing
-        // client's commandScheduler worker thread (raplascheduler-N) — the daemon
-        // SelectorManager terminates between request submission and execution. The
-        // synchronous URLConnection-based factory has no background selector and
-        // works reliably on every thread, at the cost of HTTP/1.1 only (we don't
-        // need HTTP/2 for the Rapla wire protocol).
-        org.springframework.http.client.SimpleClientHttpRequestFactory requestFactory =
-                new org.springframework.http.client.SimpleClientHttpRequestFactory();
+        // URLConnection-based factory instead of the JDK HttpClient default.
+        // The async JDK HttpClient path fails with "java.io.IOException: selector
+        // manager closed" when called from the Swing client's commandScheduler
+        // worker thread (raplascheduler-N) — the daemon SelectorManager
+        // terminates between request submission and execution.
+        //
+        // Spring's stock SimpleClientHttpRequestFactory unconditionally enables
+        // HttpURLConnection streaming mode, which causes the JDK to discard the
+        // error-stream body on 401 responses (HttpRetryException path). The Swing
+        // login dialog then sees an empty body instead of the server's i18n'd
+        // "Login failed!". BufferingHttpUrlConnectionRequestFactory keeps the
+        // URLConnection path but buffers the request body so streaming mode
+        // never gets enabled — the 401 body survives.
+        org.springframework.http.client.ClientHttpRequestFactory requestFactory =
+                new BufferingHttpUrlConnectionRequestFactory();
         RestClient restClient = builder
                 .requestFactory(requestFactory)
                 .uriBuilderFactory(dynamicFactory)
@@ -329,6 +334,35 @@ public class ClientProxyConfig
     public org.rapla.plugin.adminpanels.PreferencesAdminService preferencesAdminServiceProxy(HttpServiceProxyFactory factory)
     {
         return factory.createClient(org.rapla.plugin.adminpanels.PreferencesAdminService.class);
+    }
+
+    @Bean
+    public org.rapla.plugin.externaleventimport.ExternalEventImportService externalEventImportServiceProxy(HttpServiceProxyFactory factory)
+    {
+        // PRD 012: the wizard's controller (gated by rapla.externalevents.enabled)
+        // injects this. Without the proxy, enabling the flag crashes context
+        // refresh with NoSuchBeanDefinitionException at login.
+        return factory.createClient(org.rapla.plugin.externaleventimport.ExternalEventImportService.class);
+    }
+
+    @Bean
+    public org.rapla.plugin.calendarview.CalendarViewService calendarViewServiceProxy(HttpServiceProxyFactory factory)
+    {
+        // PRD 024 Phase 3: server-side calendar layout. Swing client doesn't
+        // call this in-flow yet (the in-process RaplaBuilder path is still
+        // the renderer source), but the proxy is registered so a future
+        // migration or a worktree-side experiment can resolve the bean.
+        return factory.createClient(org.rapla.plugin.calendarview.CalendarViewService.class);
+    }
+
+    @Bean
+    public org.rapla.plugin.reservationedit.ReservationEditService reservationEditServiceProxy(HttpServiceProxyFactory factory)
+    {
+        // PRD 024 Phase 1: server-authoritative recurrence-rule validation.
+        // Wraps the pure-Java RepeatingRuleValidator from rapla-core. Swing
+        // client keeps calling the validator in-process; this proxy exists
+        // for the future Angular client.
+        return factory.createClient(org.rapla.plugin.reservationedit.ReservationEditService.class);
     }
 
     // RestartServer has no @Bean here — RemoteOperator implements RestartServer directly

@@ -23,8 +23,8 @@ references — pasting one into your IDE jumps to the right place.
 | [domain-model.md](domain-model.md) | What entities exist, how they relate (ER summary) |
 | [dynamic-types.md](dynamic-types.md) | The schema-on-data system: DynamicType, Attribute, Classification, name templates |
 | [conflicts-and-events.md](conflicts-and-events.md) | Reservation as event container; Appointment / AppointmentBlock; how `ConflictFinder` works |
-| [reservation-edit.md](reservation-edit.md) | End-to-end edit flow with clone semantics, EventCheck, save |
-| [reservation-frontend-rewrite.md](reservation-frontend-rewrite.md) | Wire model, AppointmentController edge cases, and SPA-rewrite guide (Angular target) |
+| [reservation-edit.md](reservation-edit.md) | End-to-end edit flow with clone semantics, EventCheck, save; wire model; AppointmentController rules; edge case reference |
+| [rest-api.md](rest-api.md) | Full REST endpoint catalog grouped by audience (SPA, admin, import/export); auth header, error envelope, common-flow recipes |
 | [permissions.md](permissions.md) | AccessLevel, PermissionImpl, resolution algorithm, server enforcement, JWT |
 | [extension-points.md](extension-points.md) | Spring DI plugin wiring, extension-point catalog, plugin list |
 | [flows.md](flows.md) | Cross-cutting flows: login, query, store/dispatch, refresh poll |

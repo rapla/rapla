@@ -1,6 +1,6 @@
 # PRD 024 — Server-side edit services (Angular precursor)
 
-**Status:** draft
+**Status:** in-progress — Phase 3 contract layer landed 2026-05-11 (8 tier-1 tests); server-side assembler/controller deferred. Phases 1+2 still draft. Scope adjusted 2026-05-11: allocatable search + format service dropped; calendar layout added — see Considered & Rejected.
 **Author:** Christopher Kohlhaas (with AI assistance)
 **Created:** 2026-05-11
 
@@ -46,15 +46,62 @@ Angular client calls the REST endpoint and renders the result.
 
 ## Scope
 
-### In scope — five REST surfaces
+### In scope — three REST surfaces
 
-| # | Surface | Wraps (after 023 lands) | Client use today | Angular use later |
+| # | Surface | Wraps | Client use today | Angular use later |
 |---|---|---|---|---|
-| 1 | `/reservations/check-conflicts` | `AllocationConflictModel.compute(...)` | `AllocatableSelection.paintAllocation` | Conflict-warning sidebar |
-| 2 | `/appointments/validate-recurrence` | `RepeatingRuleValidator.validate(...)` | `AppointmentController.RepeatingEditor.mapToAppointment` | Inline form validation |
-| 3 | `/allocatables/search` | `RaplaFacade.getAllocatables(...)` + classification filter + permission filter | New (today client filters in-memory) | Allocatable picker autocomplete |
-| 4 | `/calendar/layout` (opt-in) | `CalendarBlockLayout.compute(...)` + `ReservationBlockStyle.compute(...)` | Currently in-process; server endpoint is opt-in for clients that don't want to ship the algorithm | Angular week / month view |
-| 5 | `/format/duration`, `/format/date-range`, `/format/appointment-time` | `RaplaLocale` formatters | New (today via `RaplaGUIComponent.getTimeRenderer().getDurationString()`) | Locale-aware display strings |
+| 1 | `/edit/check-conflicts` | `AllocationConflictModel.compute(...)` | `AllocatableSelection.paintAllocation` | Conflict-warning sidebar |
+| 2 | `/edit/validate-recurrence` | `RepeatingRuleValidator.validate(...)` | `AppointmentController.RepeatingEditor.mapToAppointment` | Inline form validation |
+| 3 | `/calendar/view` | `RaplaBuilder` + `GroupStartTimesStrategy`/`BestFitStrategy` + `RaplaBlock`/`HTMLRaplaBlock` | New (today the client builds blocks locally after fetching reservations) | Angular week / month / day view consumes pre-positioned tiles |
+
+(1) and (2) wrap pure-Java models that already exist in rapla-core (PRD 023 Phases 2+3 landed 2026-05-11). (3) wraps the existing `RaplaBuilder` + layout strategies — they're already in rapla-core and headless; the server endpoint runs them server-side and serializes the result instead of shipping raw reservation entities for the client to re-layout.
+
+### Why server-side calendar layout is the right call
+
+The "no-op on round-trips" rationale: **the server queries the reservations for a date range either way**. Today's flow is:
+
+```
+client                           server
+  │   GET /storage/reservations?from=…&to=…
+  │ ────────────────────────────▶
+  │                               (load reservations + permissions)
+  │ ◀────────────────────────────
+  │   (Reservation, Appointment, Allocatable entities + classifications)
+  │
+  │   RaplaBuilder.build(blocks)
+  │   GroupStartTimesStrategy.layout()
+  │   → positions, colors, overlap resolution
+  │
+  │   Swing/HTML renderer paints
+```
+
+The same query, returning **pre-positioned tiles** instead of raw entities:
+
+```
+client                                            server
+  │   GET /calendar/view?from=…&to=…&strategy=group&…
+  │ ────────────────────────────────────────────▶
+  │                                                (load reservations)
+  │                                                RaplaBuilder.build(...)
+  │                                                strategy.layout(...)
+  │ ◀────────────────────────────────────────────
+  │   (RenderedBlock: id, slot, x/y/w/h, colors, time, name…)
+  │
+  │   renderer paints (Swing JComponent OR Angular tile component)
+```
+
+**Concrete benefits:**
+- Less data over the wire. `RenderedBlock` is a flat record with one name + one time string + one colour list — *not* the full reservation graph (allocatables, classifications, permissions, dynamic types).
+- The Angular team gets **byte-for-byte identical** layout to Swing/HTML without porting the sweep-line / overlap / group-strategy code. Rapla's specific semantics (group-by-resource vs group-by-day, fixed slots, conflict resolution, period overlay) are non-trivial — a generic Angular calendar widget will not replicate them.
+- One source of truth for layout. When the strategy gets a fix (e.g. overlap edge case), both Swing and Angular get it the same week.
+- Closes the PRD 005 D3 back-edge: the only reason `rapla-server` depends on `rapla-client` today is the calendar-builder coupling. Exposing layout via REST means that dependency is no longer load-bearing for the calendar.
+
+The Swing client **keeps calling the builder in-process** — same in-process model as today, same render path. Migration to the REST endpoint is opt-in and not part of this PRD.
+
+### Considered & rejected
+
+- **`/allocatables/search`** — *not a win.* The Swing client already has the full allocatable set loaded via `RaplaFacade.getAllocatables(...)`; in-memory filtering is O(N) over a few hundred to a few thousand entries — sub-millisecond. A server round-trip per keystroke would be strictly slower. The future Angular client can either pre-fetch the same way (the set is small) or paginate via the existing `/storage/resources` endpoint (PRD 009). No reason for a dedicated edit-time search endpoint.
+- **`/format/duration`, `/format/date-range`, `/format/appointment-time`** — *not a win.* Locale-aware formatting is not heavy work — `RaplaLocale.formatTime(...)` etc. are local string concatenation. The future Angular client should format with the browser's native `Intl.DateTimeFormat` / `Intl.NumberFormat`, which is well-supported and zero-round-trip. Server-side formatting would add latency per format call and force the server to ship strings for every locale variant. Skip.
 
 ### In scope — wire contract
 
@@ -92,14 +139,9 @@ All endpoints follow the patterns already established by PRD 020:
   the Swing client today, they can do via the REST endpoints.
   Per-endpoint admin gating handled via `User.isAdmin()` as in
   `PreferencesAdminController`.
-- **`/calendar/layout` may stay deferred to v2.** It's expensive
-  (returns geometry for every block in a view) and the Angular client
-  may prefer to compute layout client-side. Ship it only if the
-  Angular team explicitly wants it.
-
 ## Architecture
 
-### Wire contract sketches
+### Wire contract sketch
 
 ```java
 @HttpExchange("/edit")
@@ -113,15 +155,6 @@ public interface ReservationEditService {
     // 2. Recurrence-rule validation — pure rule check, no facade hit
     @PostExchange("/validate-recurrence")
     RecurrenceValidation validateRecurrence(@RequestBody RecurrenceRule rule)
-            throws RaplaException;
-
-    // 3. Allocatable search — server filters & permission-checks
-    @GetExchange("/allocatables/search")
-    List<AllocatableStub> searchAllocatables(
-            @RequestParam("q") String query,
-            @RequestParam(value = "type", required = false) String dynamicTypeKey,
-            @RequestParam(value = "max", defaultValue = "50") int maxResults,
-            @RequestParam(value = "atDate", required = false) String isoDate)
             throws RaplaException;
 }
 
@@ -155,34 +188,64 @@ record RecurrenceRule(
 ) {}
 
 record RecurrenceValidation(boolean valid, List<String> errors) {}
+```
 
-record AllocatableStub(
-    ReferenceInfo<Allocatable> id,
-    String name,
-    String dynamicTypeKey,
-    boolean canAllocate
+`AllocationOutcome` matches the existing record in
+`rapla-core/.../client/edit/reservation/AllocationConflictModel.java`
+(PRD 023 Phase 3 landed). `RecurrenceRule` corresponds to the existing
+`RepeatingRuleModel`. The controllers map DTO → model input, call the
+pure compute / validate, and map model output → DTO. Nothing new to
+implement on the rapla-core side.
+
+```java
+@HttpExchange("/calendar")
+public interface CalendarViewService {
+
+    @GetExchange("/view")
+    CalendarPage view(@RequestParam("from") String fromIso,
+                      @RequestParam("to") String toIso,
+                      @RequestParam("strategy") LayoutStrategyId strategy,
+                      @RequestParam(value = "groupBy", required = false) GroupBy groupBy,
+                      @RequestParam(value = "allocatables", required = false) List<String> allocatableIds,
+                      @RequestParam(value = "classificationFilter", required = false) String filterJson)
+            throws RaplaException;
+}
+
+enum LayoutStrategyId { GROUP_START_TIMES, BEST_FIT }
+enum GroupBy { RESOURCE, DAY }
+
+record CalendarPage(
+    LocalDate from,
+    LocalDate to,
+    List<Column> columns,            // one per day or per resource depending on groupBy
+    List<RenderedBlock> blocks
+) {}
+
+record Column(String id, String label, int index) {}
+
+record RenderedBlock(
+    String reservationId,
+    String appointmentId,
+    int columnIndex,                 // which Column this block belongs to
+    LocalDateTime start,
+    LocalDateTime end,
+    int slotIndex,                   // overlap-resolved slot within the column
+    int slotCount,                   // total slots in this column (for x/w computation)
+    List<String> colorsHex,          // from RaplaBlock.getColorsAsHex()
+    boolean isException,
+    boolean isRequest,
+    String name,                     // pre-formatted display name
+    String tooltip
 ) {}
 ```
 
-```java
-@HttpExchange("/format")
-public interface FormatService {
-    @PostExchange("/duration")
-    String formatDuration(@RequestBody DurationFormatRequest req)
-            throws RaplaException;
-
-    @PostExchange("/date-range")
-    String formatDateRange(@RequestBody DateRangeFormatRequest req)
-            throws RaplaException;
-
-    @PostExchange("/appointment-time")
-    String formatAppointmentTime(@RequestBody AppointmentTimeFormatRequest req)
-            throws RaplaException;
-}
-```
-
-`/format/*` is the smallest of the three and the easiest first
-deliverable.
+The endpoint deliberately does **not** ship pixel x/y/w/h. It ships
+`(columnIndex, slotIndex, slotCount)` plus the time range — the client
+multiplies by its own pixel-per-minute / column-width. This keeps the
+contract resolution-independent: same JSON renders correctly in a
+2000×1000 Swing window and a 360×640 mobile Angular view. The
+overlap-resolution semantics (which sweep-line algorithm packs blocks
+into slots) — the expensive bit — is server-authoritative.
 
 ### Server side
 
@@ -205,68 +268,86 @@ deliverable.
 
 ## Plan
 
-Each phase produces one ship-able REST surface plus tests. Phases
-are independent and can be ordered to match Angular team priorities.
+Three phases, independent. Order to match Angular team priorities.
 
-### Phase 1 — `FormatService` (≈3 days)
+### Phase 1 — `validateRecurrence` (≈3 days)
 
-Smallest surface; flushes out the JWT-protected `@HttpExchange`
-registration boilerplate without business risk.
+Depends on PRD 023 Phase 2 (`RepeatingRuleValidator`, DONE 2026-05-11).
+One endpoint, no facade hit. Lowest-risk first deliverable; flushes
+out the JWT-protected `@HttpExchange` registration boilerplate.
 
-1. `rapla-core`: `FormatService` interface, three DTO records, contract
-   test.
-2. `rapla-server`: `FormatController`, calls existing `RaplaLocale`
-   formatters.
-3. `rapla-app`: MockMvc test — non-admin allowed (per-user surface),
-   round-trip for each formatter.
+1. `rapla-core`: `ReservationEditService` `@HttpExchange` interface +
+   `RecurrenceRule` / `RecurrenceValidation` DTO records.
+2. `rapla-server`: `ReservationEditController` mapping the DTO to a
+   `RepeatingRuleModel` and back via `RepeatingRuleValidator.validate(...)`.
+3. `rapla-app`: MockMvc test covering the same cases as
+   `RepeatingRuleValidatorTest` end-to-end.
+4. `rapla-core`: contract test (`ReservationEditServiceContractTest`)
+   pinning paths, method shapes, DTO field names.
 
-### Phase 2 — `ReservationEditService.validateRecurrence` (≈3 days)
+### Phase 2 — `checkConflicts` (≈5 days)
 
-Depends on PRD 023 Phase 2 (`RepeatingRuleValidator`). One endpoint,
-no facade hit, easy.
-
-1. Wire the `validateRecurrence` POST.
-2. Contract test pins the DTO shape.
-3. MockMvc test covers the same cases as
-   `RepeatingRuleValidatorTest` (PRD 023 Phase 2).
-
-### Phase 3 — `ReservationEditService.checkConflicts` (≈5 days)
-
-Depends on PRD 023 Phase 3 (`AllocationConflictModel`). The
-allocatable-bindings map (today built client-side in
+Depends on PRD 023 Phase 3 (`AllocationConflictModel`, DONE 2026-05-11).
+The allocatable-bindings map (today built client-side in
 `AllocatableSelection.setReservation(...)`) is built server-side from
 the requested allocatables + the user's permission scope; this is the
 biggest behavioural carve-out.
 
 1. Server-side: `AllocationBindingsLoader` (rapla-server) — given a
    list of allocatables + an effective time range, queries the
-   reservation cache and returns the bindings map. This becomes the
+   reservation cache and returns the bindings map. The
    server-authoritative replacement for the in-memory map maintained
    in `AllocatableSelection`.
-2. `checkConflicts` POST wires the loader + the pure model.
+2. `checkConflicts` POST wires the loader + `AllocationConflictModel.compute(...)`.
 3. MockMvc test covers: zero conflicts, all conflicts, permission-denied
    case, `hold-back-conflicts` annotation, request-status aggregation.
 
-### Phase 4 — `ReservationEditService.searchAllocatables` (≈4 days)
+### Phase 3 — `CalendarViewService.view` (≈8 days) — **CONTRACT LAYER DONE 2026-05-11**
 
-1. Server-side: extend the existing `getAllocatables` facade with a
-   search-and-paginate variant (or add a thin `AllocatableSearch`
-   service if the facade is too coarse).
-2. Apply permission filtering server-side; `canAllocate` against
-   `atDate` if provided.
-3. MockMvc test: classification filter, max-results enforced,
-   permission filtering observable.
+Landed in `rapla-core/.../plugin/calendarview/`: `CalendarViewService` `@HttpExchange` interface, `CalendarPage`, `Column`, `RenderedBlock` records, `LayoutStrategyId` and `GroupBy` enums. `CalendarViewServiceContractTest` (8 tier-1 tests, ~170 ms) pins paths, method shapes, record-component declaration order, enum names. Angular team can start writing TS types from the contract immediately.
 
-### Phase 5 — `/calendar/layout` (opt-in, ≈5 days, gated on Angular team ask)
+**Server-side `CalendarLayoutAssembler` + `CalendarViewController` + `BuildContext`-server-equivalent + MockMvc integration test: deferred to a focused session.** This is the multi-day part — wiring `RaplaBuilder` headlessly, building a non-Swing `BuildContext`, mapping reservation permissions per-block. The contract surface is stable enough that the server impl can be written without breaking the wire format.
 
-Skip unless explicitly requested. Depends on PRD 023 Phase 4
-(`CalendarBlockLayout` + `ReservationBlockStyle`).
+Original plan follows for the record:
 
-1. `CalendarLayoutService` wraps the two pure models.
-2. Endpoint: `POST /calendar/layout` with a time range + allocatable
-   list + column width → returns `List<RenderedBlock>` with
-   `(blockId, x, y, w, h, styleRgb, borderEnum)`.
-3. MockMvc test exercises overlap layout, all-day rows.
+Largest of the three. The bones already exist — `RaplaBuilder`,
+`AbstractGroupStrategy`, `GroupStartTimesStrategy`, `BestFitStrategy`,
+`RaplaBlock`, `HTMLRaplaBlock` are all in rapla-core today and run
+headlessly. The work is **wrapping** them in a controller + DTOs.
+
+1. **Server `BuildContext` factory.** Today's `BuildContext` is built
+   inside `RaplaBuilder` from the running calendar widget's state
+   (visible time window, colour scheme, period overlay, time-visible
+   flag). The server needs a no-Swing constructor that takes
+   request params instead. Likely a thin `ServerBuildContext` that
+   implements the same interface but pulls user preferences from
+   `Preferences` instead of widget state.
+2. **`CalendarLayoutAssembler` (rapla-server).** Given a date range,
+   strategy id, group-by, optional allocatable filter and classification
+   filter: queries reservations via `RaplaFacade`, builds `Block`s via
+   `RaplaBuilder`, runs the chosen strategy, flattens the
+   strategy's placement output into `RenderedBlock` records.
+3. **`CalendarViewController` (rapla-server).** Thin: parse query
+   params → call assembler → return `CalendarPage`. Permission-checks
+   on a per-reservation basis (a user only sees blocks for
+   reservations they can read).
+4. **`CalendarViewServiceContractTest`** (rapla-core, tier 1): pin
+   `LayoutStrategyId`, `GroupBy`, `RenderedBlock` field names.
+5. **`CalendarViewControllerIntegrationTest`** (rapla-app, MockMvc,
+   tier 3): for each strategy × groupBy combination, seed
+   reservations and verify the returned page has the expected
+   `(columnIndex, slotIndex, slotCount)` layout. Use
+   `FacadeTestSupport`'s `testdefault.xml` so the fixture is real.
+6. **Permission-filter integration test:** verify that a
+   non-admin user gets only their own + readable reservations,
+   not the full server view.
+
+The Swing calendar widget is **not** migrated to this endpoint in this
+phase — it keeps calling `RaplaBuilder` in-process. Net delta on the
+Swing tier from this phase: zero. The deliverable is the contract +
+the headless assembler, validated end-to-end by the MockMvc tests.
+Swing migration is a follow-up PRD (and may never happen — Swing
+performance is fine in-process).
 
 ## Tests
 
@@ -274,16 +355,14 @@ Skip unless explicitly requested. Depends on PRD 023 Phase 4
 |---|---|---|
 | 1 | 1 (contract) + 3 (MockMvc) | `rapla-core` + `rapla-app` |
 | 2 | 1 + 3 | `rapla-core` + `rapla-app` |
-| 3 | 1 + 3 | `rapla-core` + `rapla-app` |
-| 4 | 1 + 3 | `rapla-core` + `rapla-app` |
-| 5 | 1 + 3 | `rapla-core` + `rapla-app` |
+| 3 | 1 + 3 (per-strategy × groupBy combinations) | `rapla-core` + `rapla-app` |
 
 Reuse `PreferencesAdminControllerIntegrationTest` as a template for
 each Phase's MockMvc class — same Spring context, same JWT setup.
 
-A single per-phase contract test (`*ContractTest` in rapla-core) pins
-the `@HttpExchange` paths and DTO field names, so an Angular team
-reading the contract gets a stable surface.
+A single contract test (`ReservationEditServiceContractTest` in
+rapla-core) pins the `@HttpExchange` paths and DTO field names, so an
+Angular team reading the contract gets a stable surface.
 
 ## Risks
 
@@ -312,29 +391,32 @@ reading the contract gets a stable surface.
 6. **Discovery / versioning.** Spring 6 `@HttpExchange` interfaces
    don't ship a wire-version header. If we later need v2 endpoints,
    add `/v2/...` URLs alongside; don't break the v1 path.
+7. **`BuildContext` carries widget state.** Today's `BuildContext` is
+   coupled to whatever the open Swing calendar view has selected
+   (colour scheme, period overlay, time-visible flag). Phase 3 needs
+   a server-side equivalent that resolves these from `Preferences`
+   instead of widget state. Risk: edge cases where widget-only flags
+   matter and Preferences doesn't capture them. Mitigation: audit
+   `BuildContext`'s ~10 flags against `Preferences` keys; for any
+   widget-only flag, surface it as a request param on `/calendar/view`.
+8. **Per-strategy contract stability.** `GroupStartTimesStrategy` vs
+   `BestFitStrategy` produce different layouts for the same data.
+   The DTO must not bake in the strategy's terminology
+   (`slotIndex`/`slotCount` is generic enough). Avoid leaking
+   strategy-specific concepts into the wire contract — the strategy
+   choice is a request param, not a response shape.
 
 ## Open Questions
 
-1. **Should `/format/*` be cached by an HTTP header?** Locale-dependent
-   strings are stable for the user's locale. `Cache-Control: max-age`
-   on the response is cheap. Punt; add when Angular hits the endpoint
-   and benchmarks show it.
-2. **`AppointmentSpec` vs. transient `Appointment` entity.** Today's
+1. **`AppointmentSpec` vs. transient `Appointment` entity.** Today's
    `Appointment` is an entity with an ID. The endpoint accepts
    *unsaved* appointment specs. `AppointmentSpec` is a separate DTO
    to avoid pretending it's a persisted entity. Confirm naming.
-3. **Allocatable search ranking.** `searchAllocatables` returns by
-   name match; should we add a relevance score, by-type filter,
-   by-recently-used heuristic? Out of scope for v1; one open question
-   per follow-up.
-4. **Bulk vs. per-allocatable conflict check.** `checkConflicts`
+2. **Bulk vs. per-allocatable conflict check.** `checkConflicts`
    takes a list of allocatables and returns a map. Could be split
    into per-allocatable calls; bulk is more efficient. Confirm with
    Angular team.
-5. **Should `/calendar/layout` exist at all?** A modern Angular
-   calendar widget will likely do its own layout. We keep this
-   phase optional and gated on explicit Angular-team demand.
-6. **Should we publish OpenAPI?** Yes eventually; the `@HttpExchange`
+3. **Should we publish OpenAPI?** Yes eventually; the `@HttpExchange`
    interfaces are a partial spec. Adding springdoc-openapi gives a
    public schema. Out of scope here; track separately.
 
@@ -342,7 +424,8 @@ reading the contract gets a stable surface.
 
 | PRD | Relationship |
 |---|---|
-| **023** presenter / model carve-out | **Prerequisite.** 024 wraps the pure models 023 produces. Phases align: 023 P2 → 024 P2, 023 P3 → 024 P3, 023 P4 → 024 P5. |
+| **023** presenter / model carve-out | **Prerequisite, mostly DONE.** 024 wraps the pure models 023 produces. Phases align: 023 P2 → 024 P1, 023 P3 → 024 P2; 024 P3 wraps the pre-existing `RaplaBuilder` + strategies in rapla-core. |
+| **005** multi-module split | 024 P3 (`/calendar/view`) is the path to retiring PRD 005 D3's `rapla-server → rapla-client` back-edge — that coupling exists today only for the calendar builder. |
 | **020** server-driven admin panels | Pattern source. The `@HttpExchange` + record-DTO + `@ConditionalOnProperty` + MockMvc-contract-test pattern is copied verbatim. |
 | **012** dhbwrapla client carve-out | Pattern source for the **wizard-flow → metadata** style. `/edit/...` endpoints in 024 echo `/external-event-import/...` in 012. |
 | **009** server bulk storage REST API | Sibling REST surface. 009 is bulk read/write of entities; 024 is edit-time decisions. No overlap. |

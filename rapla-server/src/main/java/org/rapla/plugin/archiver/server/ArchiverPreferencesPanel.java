@@ -110,21 +110,34 @@ public class ArchiverPreferencesPanel implements PreferencesPanel
     public PanelDefinition save(User user, Map<String, Object> wireValues) throws RaplaException
     {
         Preferences editable = facade.edit(facade.getSystemPreferences());
-        RaplaConfiguration newConfig = new RaplaConfiguration("config");
-        if (Boolean.TRUE.equals(wireValues.get("removeOlder")))
+        boolean removeOlder    = Boolean.TRUE.equals(wireValues.get("removeOlder"));
+        boolean exportToDataXML = Boolean.TRUE.equals(wireValues.get("exportToDataXML"));
+
+        if (!removeOlder && !exportToDataXML)
         {
-            int days = toInt(wireValues.get("days"), 30);
-            DefaultConfiguration child = new DefaultConfiguration(ArchiverService.REMOVE_OLDER_THAN_ENTRY);
-            child.setValue(days);
-            newConfig.addChild(child);
+            // Matches the deployment default (both off ⇒ empty config). Remove
+            // the entry so future default changes propagate without an explicit
+            // override pinning this deployment.
+            editable.removeEntry(ArchiverService.CONFIG.getId());
         }
-        if (Boolean.TRUE.equals(wireValues.get("exportToDataXML")))
+        else
         {
-            DefaultConfiguration child = new DefaultConfiguration(ArchiverService.EXPORT);
-            child.setValue(true);
-            newConfig.addChild(child);
+            RaplaConfiguration newConfig = new RaplaConfiguration("config");
+            if (removeOlder)
+            {
+                int days = toInt(wireValues.get("days"), 30);
+                DefaultConfiguration child = new DefaultConfiguration(ArchiverService.REMOVE_OLDER_THAN_ENTRY);
+                child.setValue(days);
+                newConfig.addChild(child);
+            }
+            if (exportToDataXML)
+            {
+                DefaultConfiguration child = new DefaultConfiguration(ArchiverService.EXPORT);
+                child.setValue(true);
+                newConfig.addChild(child);
+            }
+            editable.putEntry(ArchiverService.CONFIG, newConfig);
         }
-        editable.putEntry(ArchiverService.CONFIG, newConfig);
         facade.storeAndRemove(new Entity[]{editable}, Entity.ENTITY_ARRAY, user);
         return getDefinition(Locale.getDefault(), user);
     }

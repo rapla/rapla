@@ -41,6 +41,8 @@ public class PlanningStatusPreferencesPanel extends AbstractPluginPreferencesPan
     @Override
     protected void applyValues(Preferences preferences, Map<String, Object> values) throws RaplaException
     {
-        preferences.putEntry(PlanningStatusPlugin.ENABLED, Boolean.TRUE.equals(values.get("enabled")));
+        putOrRemove(preferences, PlanningStatusPlugin.ENABLED,
+                Boolean.TRUE.equals(values.get("enabled")),
+                PlanningStatusPlugin.ENABLE_BY_DEFAULT);
     }
 }

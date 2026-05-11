@@ -28,6 +28,12 @@ public class ExternalEventImportWizard extends TemplateWizard implements Identif
 {
     private final ExternalEventImportResources resources;
     private final ExternalEventImportController importController;
+    /** Source name (e.g. "Dualis") for the menu label's {@code {0}} placeholder.
+     *  Populated async at construction time from {@link ExternalEventImportController#getMetadata()};
+     *  defaults to empty so the menu still renders if the call hasn't finished
+     *  by the time the user opens the menu. The controller caches the metadata,
+     *  so a brief lag on the very first menu open is the worst case. */
+    private volatile String sourceName = "";
 
     @Autowired
     public ExternalEventImportWizard(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, CalendarModel model,
@@ -37,6 +43,9 @@ public class ExternalEventImportWizard extends TemplateWizard implements Identif
         super(facade, i18n, raplaLocale, logger, model, eventBus, dialogUiFactory, menuItemFactory);
         this.resources = resources;
         this.importController = importController;
+        importController.getMetadata()
+                .thenAccept(m -> sourceName = m.getSourceName() == null ? "" : m.getSourceName())
+                .exceptionally(ex -> logger.warn("Could not fetch external-event-import metadata: " + ex.getMessage()));
     }
 
     @Override
@@ -48,9 +57,7 @@ public class ExternalEventImportWizard extends TemplateWizard implements Identif
     @Override
     protected String getMultipleTemplateName()
     {
-        // The actual source name (e.g. "Dualis") is shown in the dialog's window title at runtime,
-        // sourced from ExternalEventImportMetadata. The menu entry stays generic.
-        return resources.getString("import.menu.entry").replace("{0}", "");
+        return resources.getString("import.menu.entry").replace("{0}", sourceName);
     }
 
     @Override

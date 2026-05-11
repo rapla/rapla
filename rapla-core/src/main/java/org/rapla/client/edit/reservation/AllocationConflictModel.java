@@ -4,6 +4,7 @@ import org.rapla.entities.User;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.Appointment;
 import org.rapla.entities.domain.RequestStatus;
+import org.rapla.entities.domain.Reservation;
 import org.rapla.entities.domain.ResourceAnnotations;
 import org.rapla.entities.storage.ReferenceInfo;
 import org.rapla.storage.PermissionController;
@@ -80,10 +81,17 @@ public final class AllocationConflictModel
             Appointment appointment = appointments[i];
             boolean isConflict = binding != null && binding.contains(appointment);
 
-            RequestStatus status = appointment.getReservation().getRequestStatus(allocatable);
-            if (status != null && aggregateRequestStatus == null)
+            // appointment.getReservation() may be null for transient
+            // appointments built from a wire DTO (PRD 024 P2 controller).
+            // Treat null-reservation as "no request status set".
+            Reservation parent = appointment.getReservation();
+            if (parent != null)
             {
-                aggregateRequestStatus = status;
+                RequestStatus status = parent.getRequestStatus(allocatable);
+                if (status != null && aggregateRequestStatus == null)
+                {
+                    aggregateRequestStatus = status;
+                }
             }
 
             if (isConflict)

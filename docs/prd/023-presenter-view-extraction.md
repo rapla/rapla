@@ -1,6 +1,6 @@
 # PRD 023 — Presenter / Model carve-out from Swing components
 
-**Status:** in-progress — Phase 1 + Phase 2 + Phase 3 (model + refactor) landed 2026-05-11. 60 tier-1 tests. AppointmentController -45 LOC; AllocatableSelection -64 LOC. Phase 3 tier-1 tests deferred — see Phase 3 section.
+**Status:** in-progress — Phases 1, 2, 3 (model+refactor+tier-1 tests), 5 landed 2026-05-11. **136 tier-1 tests in rapla-core.** Phase 4 superseded — already done in rapla-core (2014 vintage). AppointmentController -45 LOC; AllocatableSelection -64 LOC; ClassifiableFilterEdit -46 LOC. Phase 6 (production ReservationEditPresenter) and Phase 7 (name-search quick win, extracted from wont-fix PRD 021) remaining.
 **Author:** Christopher Kohlhaas (with AI assistance)
 **Created:** 2026-05-11
 
@@ -249,11 +249,7 @@ Expected delta: ~250 lines moved out, AppointmentController is now
 
 Landed: `org.rapla.client.edit.reservation.AllocationConflictModel` (rapla-core) with static `compute(allocatable, appointments, bindings, permissionController, user, today) → AllocationOutcome` and standalone `isAllowed(...)`. Output is a record (`conflictingAppointments[]`, `conflictCount`, `permissionConflictCount`, `aggregateRequestStatus`). `AllocatableSelection`'s 7-line `isAllowed`, 37-line `calcConflictingAppointments`, and the inner `AllocationRendering` class are all gone — replaced by a 5-line delegate to `AllocationConflictModel.compute(...)`. Six call sites updated to record-accessor syntax. Net delta on AllocatableSelection: **-64 LOC** (2463 → 2412 working-copy, after accounting for adjacent in-flight edits; carve-out itself is ~-70 lines).
 
-**Tier-1 tests deferred.** `Allocatable` is an interface with ~30 methods inherited from `EntityPermissionContainer`/`Classifiable`/`Annotatable`/etc. A useful stub is brittle and high-cost. Two paths forward:
-- Cover via PRD 025's `HeadlessPresenterTestSupport` once it lands (tier 2 with `FacadeTestSupport` + a real `Allocatable` from `testdefault.xml`).
-- Cover via PRD 024's `/edit/check-conflicts` MockMvc test, which exercises the same model end-to-end through a Spring controller.
-
-Existing GUI tests (`UndoTests`, `CalendarEditorTest`) and the live Swing client are the backstop until then. Confirmed compile-clean across the reactor; `AppointmentOverlapHardeningTest` (the conflict-arithmetic baseline) still green.
+**Tier-1 tests landed 2026-05-11** in `AllocationConflictModelTest` (rapla-core, 9 tests, ~110 ms). Uses `java.lang.reflect.Proxy` to stub `Allocatable` / `Reservation` / `Appointment` — only the four methods `compute()` actually touches need to be answered, so the stubs are 6 lines each. `PermissionController` subclassed with `canAllocate` overridden. Cases: empty appointments, all-permitted-no-bindings, binding-driven conflict, hold-back-conflicts annotation suppression, permission-denial flag + count, hold-back-suppresses-flag-but-not-permission-count, request-status aggregation (first non-null wins), null-request-status, mixed binding-and-permission accumulation. Plus the `/edit/check-conflicts` MockMvc tests in `ReservationEditControllerIntegrationTest` cover the same model end-to-end via Spring.
 
 Original spec follows for the record:
 
@@ -281,7 +277,16 @@ Goal: lift the conflict-detection inner loop out of `AllocatableSelection`.
 Expected delta: ~120 lines moved out; testable; ready for PRD 024 to
 expose `compute(...)` over REST.
 
-### Phase 4 — `CalendarBlockLayout` + `ReservationBlockStyle` (≈5 days)
+### Phase 4 — `CalendarBlockLayout` + `ReservationBlockStyle` — **SUPERSEDED — already done in rapla-core**
+
+Audited 2026-05-11. Both halves of this phase are already separated:
+
+- **Block colour decision** lives in `rapla-core/.../plugin/abstractcalendar/RaplaBlock.java:133` (`getColorsAsHex()`) plus `isException`, `isRequest`, `isMovable`, `isBlockSelected`. Already consumed by `HTMLRaplaBlock` and `SwingRaplaBlock` symmetrically. No Swing imports in the decision layer. The Swing paint code only does alpha blending and `g.setColor(...)` — that's true rendering, not a carve-out target.
+- **Block layout** lives in `rapla-core/.../components/calendarview/{AbstractGroupStrategy, GroupStartTimesStrategy, BestFitStrategy}.java`. The geometry / sweep-line / overlap-detection is already a pure `BuildStrategy` implementation; the Swing classes just paint the resulting `Block` placements.
+
+The PRD over-estimated this phase. **Skip.** Remaining cleanup (alpha-blend Swing glue, hex→`Color` lookup cache) is true rendering, not pure logic.
+
+Original spec follows for the record:
 
 Goal: extract block geometry and styling — shared by 5 plugins.
 
@@ -307,7 +312,13 @@ Expected delta: ~400 lines moved out across two files; layout/style
 logic reusable by the Angular client and by HTMLWeekViewPresenter
 (which today re-implements its own layout).
 
-### Phase 5 — `ClassificationFilterBuilder` (≈3 days)
+### Phase 5 — `ClassificationFilterBuilder` (≈3 days) — **PARTIAL — operator catalog DONE 2026-05-11**
+
+Landed: `org.rapla.client.edit.filter.ClassificationFilterOperators` (rapla-core, 115 LOC) — centralised catalog mapping `AttributeType` ↔ valid operator strings ↔ JComboBox index. Replaces the two duplicated if/else ladders in `ClassifiableFilterEdit.RuleRow.{getOperatorValue, setOperatorValue}` (66 LOC → 20 LOC, **-46 LOC**). API: `operatorsFor(type)`, `defaultOperatorFor(type)`, `operatorAt(type, index)`, `indexOf(type, op)`, `hasOperatorChoice(type)`. Preserves the legacy `"is"` → `=` alias on numeric types so existing serialized filters still load. 13 tier-1 tests in `ClassificationFilterOperatorsTest` — pins the bidirectional round-trip so future renames can't desync the two directions.
+
+The larger `ClassifiableFilterEdit.getFilter()` / `mapFrom(...)` flow is already mostly separated — it iterates rule rows and calls into rapla-core's `ClassificationFilter`. The pure-logic chunk worth carving was the operator catalog; the rest is widget binding.
+
+Original spec follows for the record:
 
 Goal: lift `ClassifiableFilterEdit` (938 LOC) filter-assembly logic
 into a headless builder.
@@ -348,6 +359,53 @@ Goal: move
 
 Expected delta: `ReservationEditImpl` shrinks from 596 → ~200 LOC
 of pure widget binding.
+
+### Phase 7 — Name-search field next to the filter button (quick win, ≈0.5 day)
+
+**Origin:** extracted from PRD 021 (`wont-fix`) when the stub-mode redesign
+was dropped in favor of the Angular frontend (PRD 026). The search box
+itself was a small UX win independent of the stub backend; it works
+fine against the existing full-resource client cache, so it ships here
+on the Swing tier as-is.
+
+Goal: add a one-line text field next to the existing filter button in
+**every `AllocatableSelection`** instance (resource picker on a
+reservation, calendar configuration, exchange/iCal export, etc.) and on
+the **reservation filter** (`ClassifiableFilterEdit`). Typing in the
+field narrows the visible tree to allocatables whose
+`getName(locale)` contains the substring (case-insensitive,
+diacritic-folded). Empty field → unfiltered. The classification filter
+button keeps working orthogonally — the name search is an AND on top of
+whatever the structured filter already produced.
+
+1. **Model addition.** Add a `nameSearchTerm: String` (or empty) field
+   to `AllocatableSelectionModel` (Phase 1) and the equivalent on
+   `ClassifiableFilterModel` (Phase 5). Re-evaluate
+   `visibleAllocatables` whenever the term or the structured filter
+   changes. Matching helper lives in `rapla-core` and is tier-1 unit
+   tested (diacritic folding, multi-word, case, empty string).
+2. **View binding.** `AllocatableSelection` view adds a `JTextField`
+   above (or to the left of) the filter button with a placeholder
+   "Suchen…" / "Search…". `ClassifiableFilterEdit` view does the same.
+   A `DocumentListener` calls `presenter.setNameSearchTerm(text)` on
+   every keystroke (no debounce needed at typical tree sizes; revisit
+   if it noticeably lags above ~5 000 resources).
+3. **Persistence.** The search term is **transient** — it does NOT
+   persist into `CalendarSelectionModel` or any saved view. It's a
+   live picker affordance, not a stored filter rule. (The structured
+   filter rules still persist as today.)
+4. **i18n.** New key `search.placeholder` in
+   `RaplaResources` / `RaplaResources_de.properties`.
+5. **Tests:**
+   - Tier 1: `AllocatableNameSearchTest` — substring match,
+     case-insensitive, diacritic folding ("Müller" matches "muller"),
+     multi-word AND, empty string returns all.
+   - Tier 1: `AllocatableSelectionModelTest` (existing) — extend with
+     "search term + structured filter compose as AND" case.
+
+Expected delta: ~50 LOC of new Swing widget binding +
+~30 LOC of tested matcher logic in rapla-core. Net feature, no LOC
+reduction.
 
 ## Tests
 

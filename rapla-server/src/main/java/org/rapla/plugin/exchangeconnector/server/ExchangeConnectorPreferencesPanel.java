@@ -95,21 +95,43 @@ public class ExchangeConnectorPreferencesPanel implements PreferencesPanel
     {
         Preferences editable = facade.edit(facade.getSystemPreferences());
 
-        RaplaConfiguration serverConfig = new RaplaConfiguration("config");
-        serverConfig.getMutableChild(ExchangeConnectorConfig.EXCHANGE_WS_FQDN.getId(), true)
-                .setValue(String.valueOf(wireValues.getOrDefault("fqdn", ExchangeConnectorConfig.DEFAULT_EXCHANGE_WS_FQDN)));
-        serverConfig.getMutableChild(ExchangeConnectorConfig.EXCHANGE_APPOINTMENT_CATEGORY.getId(), true)
-                .setValue(String.valueOf(wireValues.getOrDefault("appointmentCategory", ExchangeConnectorConfig.DEFAULT_EXCHANGE_APPOINTMENT_CATEGORY)));
-        serverConfig.getMutableChild(ExchangeConnectorConfig.SYNCING_PERIOD_PAST.getId(), true)
-                .setValue(toInt(wireValues.get("syncPeriodPast"), ExchangeConnectorConfig.DEFAULT_SYNCING_PERIOD_PAST));
-        serverConfig.getMutableChild(ExchangeConnectorConfig.EXCHANGE_TIMEZONE.getId(), true)
-                .setValue(String.valueOf(wireValues.getOrDefault("timezone", ExchangeConnectorConfig.DEFAULT_EXCHANGE_TIMEZONE)));
-        editable.putEntry(ExchangeConnectorConfig.EXCHANGESERVER_CONFIG, serverConfig);
+        String fqdn        = String.valueOf(wireValues.getOrDefault("fqdn", ExchangeConnectorConfig.DEFAULT_EXCHANGE_WS_FQDN));
+        String category    = String.valueOf(wireValues.getOrDefault("appointmentCategory", ExchangeConnectorConfig.DEFAULT_EXCHANGE_APPOINTMENT_CATEGORY));
+        int syncPast       = toInt(wireValues.get("syncPeriodPast"), ExchangeConnectorConfig.DEFAULT_SYNCING_PERIOD_PAST);
+        String timezone    = String.valueOf(wireValues.getOrDefault("timezone", ExchangeConnectorConfig.DEFAULT_EXCHANGE_TIMEZONE));
+        boolean enabled    = Boolean.TRUE.equals(wireValues.get("enabled"));
 
-        RaplaConfiguration clientConfig = new RaplaConfiguration("clientConfig");
-        clientConfig.getMutableChild(ExchangeConnectorConfig.ENABLED_BY_ADMIN_STRING, true)
-                .setValue(Boolean.TRUE.equals(wireValues.get("enabled")));
-        editable.putEntry(ExchangeConnectorConfig.EXCHANGE_CLIENT_CONFIG, clientConfig);
+        boolean serverMatchesDefault =
+                ExchangeConnectorConfig.DEFAULT_EXCHANGE_WS_FQDN.equals(fqdn)
+                && ExchangeConnectorConfig.DEFAULT_EXCHANGE_APPOINTMENT_CATEGORY.equals(category)
+                && syncPast == ExchangeConnectorConfig.DEFAULT_SYNCING_PERIOD_PAST
+                && ExchangeConnectorConfig.DEFAULT_EXCHANGE_TIMEZONE.equals(timezone);
+        boolean clientMatchesDefault = enabled == ExchangeConnectorConfig.DEFAULT_ENABLED_BY_ADMIN;
+
+        if (serverMatchesDefault)
+        {
+            editable.removeEntry(ExchangeConnectorConfig.EXCHANGESERVER_CONFIG.getId());
+        }
+        else
+        {
+            RaplaConfiguration serverConfig = new RaplaConfiguration("config");
+            serverConfig.getMutableChild(ExchangeConnectorConfig.EXCHANGE_WS_FQDN.getId(),              true).setValue(fqdn);
+            serverConfig.getMutableChild(ExchangeConnectorConfig.EXCHANGE_APPOINTMENT_CATEGORY.getId(), true).setValue(category);
+            serverConfig.getMutableChild(ExchangeConnectorConfig.SYNCING_PERIOD_PAST.getId(),           true).setValue(syncPast);
+            serverConfig.getMutableChild(ExchangeConnectorConfig.EXCHANGE_TIMEZONE.getId(),             true).setValue(timezone);
+            editable.putEntry(ExchangeConnectorConfig.EXCHANGESERVER_CONFIG, serverConfig);
+        }
+
+        if (clientMatchesDefault)
+        {
+            editable.removeEntry(ExchangeConnectorConfig.EXCHANGE_CLIENT_CONFIG.getId());
+        }
+        else
+        {
+            RaplaConfiguration clientConfig = new RaplaConfiguration("clientConfig");
+            clientConfig.getMutableChild(ExchangeConnectorConfig.ENABLED_BY_ADMIN_STRING, true).setValue(enabled);
+            editable.putEntry(ExchangeConnectorConfig.EXCHANGE_CLIENT_CONFIG, clientConfig);
+        }
 
         facade.storeAndRemove(new Entity[]{editable}, Entity.ENTITY_ARRAY, user);
         return getDefinition(Locale.getDefault(), user);

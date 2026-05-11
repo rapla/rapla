@@ -113,11 +113,41 @@ public class JNDIPreferencesPanel implements PreferencesPanel
     public PanelDefinition save(User user, Map<String, Object> wireValues) throws RaplaException
     {
         Preferences editable = facade.edit(facade.getSystemPreferences());
-        RaplaConfiguration newConfig = new RaplaConfiguration("config");
-        applyAttributes(newConfig, wireValues);
-        editable.putEntry(JNDIPlugin.JNDISERVER_CONFIG, newConfig);
+
+        // Defaults match the legacy panel's first-open read defaults. If the
+        // submitted values match all of them, drop the entry rather than
+        // pinning this deployment to the version-of-defaults current at save.
+        boolean enabled = Boolean.TRUE.equals(wireValues.get("enabled"));
+        boolean matchesDefault = !enabled
+                && "uid=admin,ou=system".equals(str(wireValues, "connectionName"))
+                && "secret".equals(str(wireValues, "connectionPassword"))
+                && "ldap://localhost:10389".equals(str(wireValues, "connectionURL"))
+                && "com.sun.jndi.ldap.LdapCtxFactory".equals(str(wireValues, "contextFactory"))
+                && "".equals(str(wireValues, "digest"))
+                && "".equals(str(wireValues, "userPassword"))
+                && "mail".equals(str(wireValues, "userMail"))
+                && "cn".equals(str(wireValues, "userCn"))
+                && "(uid={0})".equals(str(wireValues, "userSearch"))
+                && "dc=example,dc=com".equals(str(wireValues, "userBase"));
+
+        if (matchesDefault)
+        {
+            editable.removeEntry(JNDIPlugin.JNDISERVER_CONFIG.getId());
+        }
+        else
+        {
+            RaplaConfiguration newConfig = new RaplaConfiguration("config");
+            applyAttributes(newConfig, wireValues);
+            editable.putEntry(JNDIPlugin.JNDISERVER_CONFIG, newConfig);
+        }
         facade.storeAndRemove(new Entity[]{editable}, Entity.ENTITY_ARRAY, user);
         return getDefinition(Locale.getDefault(), user);
+    }
+
+    private static String str(Map<String, Object> m, String key)
+    {
+        Object v = m.get(key);
+        return v == null ? "" : v.toString();
     }
 
     @Override

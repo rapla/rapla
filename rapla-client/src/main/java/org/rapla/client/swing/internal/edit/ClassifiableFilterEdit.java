@@ -14,6 +14,7 @@ package org.rapla.client.swing.internal.edit;
 
 import org.rapla.RaplaResources;
 import org.rapla.client.RaplaWidget;
+import org.rapla.client.edit.filter.ClassificationFilterOperators;
 import org.rapla.client.dialog.DialogUiFactoryInterface;
 import org.rapla.client.swing.EditField;
 import org.rapla.client.swing.RaplaGUIComponent;
@@ -767,69 +768,22 @@ class ClassificationEdit extends RaplaGUIComponent implements ItemListener {
 
         public String getOperatorValue() {
             AttributeType type = attribute.getType();
-            if (type.equals(AttributeType.ALLOCATABLE) || type.equals(AttributeType.CATEGORY) || type.equals(AttributeType.BOOLEAN) )
-                return "is";
-            if (type.equals(AttributeType.STRING)) {
-            	int index = ((JComboBox)operatorComponent).getSelectedIndex();
-            	if (index == 0)
-                    return "contains";
-            	else if (index == 1)
-            		return "starts";
-                else if (index == 2)
-                    return "ends";
+            if (!ClassificationFilterOperators.hasOperatorChoice(type))
+            {
+                return ClassificationFilterOperators.defaultOperatorFor(type);
             }
-            if (type.equals(AttributeType.DATE) || type.equals(AttributeType.INT)) {
-                int index = ((JComboBox)operatorComponent).getSelectedIndex();
-                if (index == 0)
-                    return "<";
-                if (index == 1)
-                    return "=";
-                if (index == 2)
-                    return ">";
-                if (index == 3)
-                    return "<>";
-                if (index == 4)
-                    return "<=";
-                if (index == 5)
-                    return ">=";
-                
-            }
-            Assert.notNull(field,"Unknown AttributeType" + type);
-            return null;
+            int index = ((JComboBox) operatorComponent).getSelectedIndex();
+            return ClassificationFilterOperators.operatorAt(type, index);
         }
 
         private void setOperatorValue(String operator) {
             AttributeType type = attribute.getType();
-            if ((type.equals(AttributeType.DATE) || type.equals(AttributeType.INT)))
+            if (!ClassificationFilterOperators.hasOperatorChoice(type))
             {
-                if (operator == null)
-                    operator = "<";
-                JComboBox box = (JComboBox)operatorComponent;
-                if (operator.equals("<"))
-                    box.setSelectedIndex(0);
-                if (operator.equals("=") || operator.equals("is"))
-                    box.setSelectedIndex(1);
-                if (operator.equals(">"))
-                    box.setSelectedIndex(2);
-                if (operator.equals("<>"))
-                    box.setSelectedIndex(3);
-                if (operator.equals("<="))
-                    box.setSelectedIndex(4);
-                if (operator.equals(">="))
-                    box.setSelectedIndex(5);
-                
+                return; // ALLOCATABLE / CATEGORY / BOOLEAN render the operator as a label
             }
-            if (type.equals(AttributeType.STRING)) {
-                JComboBox box = (JComboBox)operatorComponent;
-                if (operator == null)
-                    operator = "contains";
-                if (operator.equals("contains"))
-                    box.setSelectedIndex(0);
-                else if (operator.equals("starts"))
-                    box.setSelectedIndex(1);
-                else if (operator.equals("ends"))
-                    box.setSelectedIndex(2);
-            }
+            JComboBox box = (JComboBox) operatorComponent;
+            box.setSelectedIndex(ClassificationFilterOperators.indexOf(type, operator));
         }
 
         private EditField createField(Attribute attribute) {

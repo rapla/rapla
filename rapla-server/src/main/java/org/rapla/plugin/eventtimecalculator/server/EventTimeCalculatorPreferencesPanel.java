@@ -63,13 +63,26 @@ public class EventTimeCalculatorPreferencesPanel extends AbstractPluginPreferenc
     @Override
     protected void applyValues(Preferences preferences, Map<String, Object> values) throws RaplaException
     {
+        int intervalNumber = toInt(values.get("intervalNumber"), EventTimeCalculatorPlugin.DEFAULT_intervalNumber);
+        int breakNumber    = toInt(values.get("breakNumber"),    EventTimeCalculatorPlugin.DEFAULT_breakNumber);
+        int timeUnit       = toInt(values.get("timeUnit"),       EventTimeCalculatorPlugin.DEFAULT_timeUnit);
+        String timeFormat  = String.valueOf(values.getOrDefault("timeFormat", EventTimeCalculatorPlugin.DEFAULT_timeFormat));
+        boolean allowUserPrefs = Boolean.TRUE.equals(values.get("allowUserPrefs"));
+
+        boolean matchesDefault = intervalNumber == EventTimeCalculatorPlugin.DEFAULT_intervalNumber
+                && breakNumber == EventTimeCalculatorPlugin.DEFAULT_breakNumber
+                && timeUnit    == EventTimeCalculatorPlugin.DEFAULT_timeUnit
+                && EventTimeCalculatorPlugin.DEFAULT_timeFormat.equals(timeFormat)
+                && allowUserPrefs == EventTimeCalculatorPlugin.DEFAULT_userPrefs;
+
         RaplaConfiguration config = new RaplaConfiguration(EventTimeCalculatorPlugin.PLUGIN_ID);
-        config.getMutableChild(EventTimeCalculatorPlugin.INTERVAL_NUMBER, true).setValue(toInt(values.get("intervalNumber"), EventTimeCalculatorPlugin.DEFAULT_intervalNumber));
-        config.getMutableChild(EventTimeCalculatorPlugin.BREAK_NUMBER, true).setValue(toInt(values.get("breakNumber"), EventTimeCalculatorPlugin.DEFAULT_breakNumber));
-        config.getMutableChild(EventTimeCalculatorPlugin.TIME_UNIT, true).setValue(toInt(values.get("timeUnit"), EventTimeCalculatorPlugin.DEFAULT_timeUnit));
-        config.getMutableChild(EventTimeCalculatorPlugin.TIME_FORMAT, true).setValue(String.valueOf(values.getOrDefault("timeFormat", EventTimeCalculatorPlugin.DEFAULT_timeFormat)));
-        config.getMutableChild(EventTimeCalculatorPlugin.USER_PREFS, true).setValue(Boolean.TRUE.equals(values.get("allowUserPrefs")));
-        preferences.putEntry(EventTimeCalculatorPlugin.SYSTEM_CONFIG, config);
+        config.getMutableChild(EventTimeCalculatorPlugin.INTERVAL_NUMBER, true).setValue(intervalNumber);
+        config.getMutableChild(EventTimeCalculatorPlugin.BREAK_NUMBER,    true).setValue(breakNumber);
+        config.getMutableChild(EventTimeCalculatorPlugin.TIME_UNIT,       true).setValue(timeUnit);
+        config.getMutableChild(EventTimeCalculatorPlugin.TIME_FORMAT,     true).setValue(timeFormat);
+        config.getMutableChild(EventTimeCalculatorPlugin.USER_PREFS,      true).setValue(allowUserPrefs);
+
+        putConfigOrRemove(preferences, EventTimeCalculatorPlugin.SYSTEM_CONFIG, config, matchesDefault);
     }
 
     private static int toInt(Object v, int fallback)

@@ -282,31 +282,19 @@ final class PanelRenderer
             JButton save = new JButton(saveLabel);
             save.addActionListener(e -> saveAction.accept(collectValues()));
             // Default button — pressing Enter inside any field saves the form.
-            rootPanel_setDefaultButton(save);
+            // The button isn't in a window yet, so register a hierarchy listener
+            // ON THE BUTTON ITSELF (not on rootPanel — that's still null during
+            // build()) and wire up setDefaultButton once a rootPane is reachable.
+            save.addHierarchyListener(e ->
+            {
+                javax.swing.JRootPane rp = javax.swing.SwingUtilities.getRootPane(save);
+                if (rp != null) rp.setDefaultButton(save);
+            });
             row.add(save);
         }
 
         footer.add(row, BorderLayout.CENTER);
         return footer;
-    }
-
-    private JButton pendingDefaultButton;
-    /** Defer registering the rootRoot's default button until the panel is on
-     *  screen (rootPane isn't available until {@link #getComponent()} is added
-     *  to a window). Cached and applied lazily when the panel notices a
-     *  parent rootPane. */
-    private void rootPanel_setDefaultButton(JButton button)
-    {
-        pendingDefaultButton = button;
-        rootPanel.addHierarchyListener(e ->
-        {
-            javax.swing.JRootPane rp = javax.swing.SwingUtilities.getRootPane(rootPanel);
-            if (rp != null && pendingDefaultButton != null)
-            {
-                rp.setDefaultButton(pendingDefaultButton);
-                pendingDefaultButton = null;
-            }
-        });
     }
 
     private void runAction(ActionButton action, BiFunction<String, Map<String, Object>, ActionResult> actionInvoker)

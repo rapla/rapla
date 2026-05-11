@@ -123,15 +123,48 @@ public class MailPreferencesPanel implements PreferencesPanel
     {
         Preferences editable = facade.edit(facade.getSystemPreferences());
 
-        RaplaConfiguration newConfig = new RaplaConfiguration("config");
-        applyConfigChildren(newConfig, wireValues);
-        editable.putEntry(MailPlugin.MAILSERVER_CONFIG, newConfig);
+        // Default-detection: legacy panel's defaults are localhost/25/none/no
+        // username/no password. If everything matches, remove the entry.
+        String authMethod = String.valueOf(wireValues.getOrDefault("authMethod", "none"));
+        String host       = String.valueOf(wireValues.getOrDefault("smtpHost", "localhost"));
+        int port          = toInt(wireValues.get("smtpPort"), NO_AUTH_DEFAULT_PORT);
+        String username   = String.valueOf(wireValues.getOrDefault("username", "")).trim();
+        String password   = String.valueOf(wireValues.getOrDefault("password", "")).trim();
+        boolean mailServerDefault = "none".equals(authMethod)
+                && "localhost".equals(host)
+                && port == NO_AUTH_DEFAULT_PORT
+                && username.isEmpty() && password.isEmpty();
 
+        if (mailServerDefault)
+        {
+            editable.removeEntry(MailPlugin.MAILSERVER_CONFIG.getId());
+        }
+        else
+        {
+            RaplaConfiguration newConfig = new RaplaConfiguration("config");
+            applyConfigChildren(newConfig, wireValues);
+            editable.putEntry(MailPlugin.MAILSERVER_CONFIG, newConfig);
+        }
+
+        // Default sender — legacy default "rapla@domainname". Remove if matching.
         Object sender = wireValues.get("defaultSender");
-        if (sender != null) editable.putEntry(MailPlugin.DEFAULT_SENDER_ENTRY, sender.toString());
+        String senderStr = sender == null ? "" : sender.toString();
+        putOrRemoveSender(editable, senderStr);
 
         facade.storeAndRemove(new Entity[]{editable}, Entity.ENTITY_ARRAY, user);
         return getDefinition(Locale.getDefault(), user);
+    }
+
+    private static void putOrRemoveSender(Preferences prefs, String sender)
+    {
+        if ("rapla@domainname".equals(sender) || sender.isEmpty())
+        {
+            prefs.removeEntry(MailPlugin.DEFAULT_SENDER_ENTRY.getId());
+        }
+        else
+        {
+            prefs.putEntry(MailPlugin.DEFAULT_SENDER_ENTRY, sender);
+        }
     }
 
     @Override

@@ -385,3 +385,87 @@ runs *do* attribute back to rapla-server/rapla-core in the aggregate.
 ### 11. Never delete code to fix compile errors
 
 Don't delete code to make a compile pass — unless the removal is part of the plan.
+
+### 12. Never leak server-side data past the user's read scope
+
+When you move logic from the Swing client to the server (any REST endpoint
+that returns entities, ids, names, or **the existence** of entities), the
+client must only ever see what the **current user is already permitted to
+see** on the Swing side. The Swing client today only holds allocatables /
+reservations / classifications the user can read — REST endpoints must
+preserve that invariant.
+
+Concrete rules for new server endpoints:
+
+- **Filter by user permission at every output boundary.** Don't trust that
+  upstream queries did it. Pattern:
+  ```java
+  User user = session.checkAndGetUser(request);
+  PermissionController pc = facade.getPermissionController();
+  result.removeIf(a -> !pc.canRead(a, user));
+  ```
+- **Existence is information.** If the client passes a list of ids (e.g.
+  `?allocatables=a1,a7,a99`), the response must not differentiate between
+  "id doesn't exist" and "id exists but you're not allowed to see it" —
+  silently drop both. A user must not be able to probe for hidden ids by
+  watching which ones echo back as columns / blocks / facets.
+- **Per-entity, not per-collection.** A reservation the user can read may
+  reference an allocatable the user **can't** read. Re-check the contained
+  allocatables before exposing their names/ids in the response shape.
+- **Server-derived data inherits the strictest permission of its inputs.**
+  A computed `RenderedBlock` that mixes reservation data + allocatable
+  colours is only safe to return when the user can read both. If either
+  is private, drop the block (or strip the private field).
+- **Reference implementation:** `CalendarViewController.resolveResourceFilter`
+  (rapla-server). The comment there spells out the probe risk.
+- **Test the leak.** Every new endpoint that takes ids or filters needs a
+  tier-3 MockMvc test where a non-admin user requests data they shouldn't
+  see and the response is verified to contain neither the id nor any
+  attribute that reveals existence (column count, error message text,
+  HTTP status differentiation, latency, …).
+
+When in doubt: behave as if the response were a CSV dump emailed to the
+user. If anything in the response is something they couldn't have got via
+the Swing client, the endpoint is broken.
+
+### 13. Mock-framework policy
+
+**Default: no mocks of internal rapla types.** Use the real thing —
+`FacadeTestSupport` (PRD 017) at tier 2, real Spring context +
+MockMvc at tier 3. Booting a real `FacadeImpl` over `testdefault.xml`
+costs ~150 ms; mocks save < 100 ms per test and silently bypass the
+class of bugs rapla actually ships (Jackson final-field round-trip,
+operator stub no-ops, permission leaks, MONTHLY semantic, constructor
+drift). Full rationale in **PRD 027**.
+
+**Allowed:**
+- Mockito for Servlet-API types you don't own
+  (`HttpServletRequest`/`Response`/`ServletContext`) — see
+  `RaplaJNLPPageGeneratorTest` for the canonical shape.
+- Hand-rolled test doubles for external integrations behind a
+  rapla-owned interface — see `MockMailer` (`MailInterface`),
+  `RecordingPanel` (`PreferencesPanel`). Prefer these over Mockito
+  when the interface has < ~6 methods.
+
+**Not allowed:**
+- `mock(RaplaFacade.class)` / `mock(LocalCache.class)` /
+  `mock(PermissionController.class)` / any rapla entity, facade,
+  storage, or permission type. Construct the real one via
+  `FacadeTestSupport`.
+- `@MockBean` / `@SpyBean` in `@SpringBootTest` — they bust the
+  Spring context cache (fights PRD 007 Phase 2.7). Use a
+  `@TestConfiguration` static class with hand-rolled stub beans
+  instead — pattern in `PreferencesAdminControllerIntegrationTest`'s
+  `StubPanelsConfig`.
+- Mocks of pure-Java models from PRDs 023 / 024
+  (`AllocationConflictModel`, `RepeatingRuleValidator`,
+  `RaplaBuilder`, layout strategies). They have no I/O — just
+  construct them with the inputs the test needs.
+
+If a facade setup feels awkward, the answer is usually "extend
+`FacadeTestSupport` with the helper you wanted" (as `waitFor(Promise)`
+was promoted in PRD 017 Phase 4) — not "reach for Mockito".
+
+Audit grep at PR-review time:
+`grep -rE "mock\(.*(Facade|Operator|Cache|Permission|Conflict)\.class\)" rapla-*/src/test`
+Expected: zero matches outside `RaplaJNLPPageGeneratorTest`.

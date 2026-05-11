@@ -40,6 +40,8 @@ public class CSVExportPreferencesPanel extends AbstractPluginPreferencesPanel
     @Override
     protected void applyValues(Preferences preferences, Map<String, Object> values) throws RaplaException
     {
-        preferences.putEntry(CSVExportPlugin.ENABLED, Boolean.TRUE.equals(values.get("enabled")));
+        putOrRemove(preferences, CSVExportPlugin.ENABLED,
+                Boolean.TRUE.equals(values.get("enabled")),
+                false);   // legacy default-off
     }
 }

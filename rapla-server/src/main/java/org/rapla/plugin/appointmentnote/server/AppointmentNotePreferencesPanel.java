@@ -40,6 +40,8 @@ public class AppointmentNotePreferencesPanel extends AbstractPluginPreferencesPa
     @Override
     protected void applyValues(Preferences preferences, Map<String, Object> values) throws RaplaException
     {
-        preferences.putEntry(AppointmentNotePlugin.ENABLED, Boolean.TRUE.equals(values.get("enabled")));
+        putOrRemove(preferences, AppointmentNotePlugin.ENABLED,
+                Boolean.TRUE.equals(values.get("enabled")),
+                false);   // legacy default-off
     }
 }

@@ -66,6 +66,7 @@ import org.rapla.scheduler.Promise;
 import org.rapla.scheduler.ResolvedPromise;
 import org.rapla.client.edit.reservation.AllocationConflictModel;
 import org.rapla.client.edit.reservation.AllocationConflictModel.AllocationOutcome;
+import org.rapla.client.edit.reservation.ReservationEditSelection;
 import org.rapla.storage.PermissionController;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -164,6 +165,11 @@ public class AllocatableSelection extends RaplaGUIComponent implements Appointme
 
     Collection<Reservation> mutableReservations = Collections.emptyList();
     Collection<Reservation> originalReservations = Collections.emptyList();
+
+    /** Pure-Java mirror of the mutable / original / appointments state.
+     *  Kept in sync with the legacy fields above via {@link #setReservation};
+     *  newer code should query the selection model rather than the fields. */
+    final ReservationEditSelection selection = new ReservationEditSelection();
 
     AllocatablesModel completeModel = new CompleteModel();
     AllocatablesModel selectedModel = new SelectedModel();
@@ -503,12 +509,7 @@ public class AllocatableSelection extends RaplaGUIComponent implements Appointme
 
     private Set<Allocatable> getAllocated()
     {
-        Set<Allocatable> result = new HashSet<>();
-        for (Reservation r : mutableReservations)
-        {
-            result.addAll(Arrays.asList(r.getAllocatables()));
-        }
-        return result;
+        return selection.allocatedAllocatables();
     }
 
     private boolean bWorkaround = false; // Workaround for Bug ID  4480264 on developer.java.sun.com
@@ -517,6 +518,7 @@ public class AllocatableSelection extends RaplaGUIComponent implements Appointme
     {
         this.originalReservations = originalReservations;
         this.mutableReservations = mutableReservation;
+        this.selection.setReservations(mutableReservation, originalReservations);
         this.user = getUser();
         setAppointments(mutableReservation);
         Collection<Allocatable> allocatableList = getAllAllocatables();
@@ -563,15 +565,7 @@ public class AllocatableSelection extends RaplaGUIComponent implements Appointme
     }
 
     private Reservation findMatchingOriginalReservation(Reservation reservation, Collection<Reservation> originalReservations) {
-        if ( originalReservations == null) {
-            return null;
-        }
-        for (Reservation original: this.originalReservations) {
-            if (original.equals(reservation)) {
-                return original;
-            }
-        }
-        return null;
+        return selection.findMatchingOriginal(reservation);
     }
 
     private void setAppointments(Collection<Reservation> reservations)
