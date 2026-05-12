@@ -4,13 +4,14 @@ import org.rapla.RaplaResources;
 import org.rapla.client.extensionpoints.PublishExtensionFactory;
 import org.rapla.client.swing.PublishExtension;
 import org.rapla.components.iolayer.IOInterface;
-import org.rapla.entities.configuration.RaplaConfiguration;
 import org.rapla.facade.CalendarSelectionModel;
 import org.rapla.facade.client.ClientFacade;
+import org.rapla.framework.Configuration;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.logger.Logger;
 import org.rapla.plugin.export2ical.Export2iCalPlugin;
+import org.rapla.plugin.export2ical.ICalConfigService;
 import org.springframework.stereotype.Service;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -25,31 +26,42 @@ public class IcalPublishExtensionFactory implements PublishExtensionFactory
     private final RaplaLocale raplaLocale;
     private final Logger logger;
     private final IOInterface ioInterface;
+    private final ICalConfigService configService;
+    /** Cached enabled flag — isEnabled() is called on every UI render. Null = not yet fetched. */
+    private volatile Boolean cachedEnabled;
 
     @Autowired
-	public IcalPublishExtensionFactory(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, IOInterface ioInterface)
+	public IcalPublishExtensionFactory(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, IOInterface ioInterface, ICalConfigService configService)
 	{
         this.facade = facade;
         this.i18n = i18n;
         this.raplaLocale = raplaLocale;
         this.logger = logger;
         this.ioInterface = ioInterface;
+        this.configService = configService;
 	}
-    
+
     @Override
     public boolean isEnabled()
     {
-        RaplaConfiguration config;
+        Boolean cached = cachedEnabled;
+        if (cached != null) return cached;
         try
         {
-            config = facade.getRaplaFacade().getSystemPreferences().getEntry(Export2iCalPlugin.ICAL_CONFIG, new RaplaConfiguration());
+            // Previously read .server.-named ICAL_CONFIG directly from
+            // /storage/resources system prefs. That key is now stripped for
+            // admins too (PRD 026 §5 security fix), so we go via the
+            // dedicated endpoint instead. Server-side reads are unchanged.
+            Configuration config = configService.getUserDefaultConfig();
+            boolean enabled = config != null && config.getAttributeAsBoolean("enabled", Export2iCalPlugin.ENABLE_BY_DEFAULT);
+            cachedEnabled = enabled;
+            return enabled;
         }
         catch (RaplaException e)
         {
-            return false;
+            logger.warn("Failed to load iCal config via /ical/config/default; falling back to default", e);
+            return Export2iCalPlugin.ENABLE_BY_DEFAULT;
         }
-        final boolean enabled = config.getAttributeAsBoolean("enabled", Export2iCalPlugin.ENABLE_BY_DEFAULT);
-        return enabled;
     }
 
 	public PublishExtension creatExtension(CalendarSelectionModel model,

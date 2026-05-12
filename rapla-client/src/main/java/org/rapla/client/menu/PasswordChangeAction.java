@@ -18,11 +18,9 @@ import org.rapla.client.PopupContext;
 import org.rapla.client.dialog.DialogInterface;
 import org.rapla.client.dialog.DialogUiFactoryInterface;
 import org.rapla.components.i18n.I18nIcon;
-import org.rapla.components.util.Tools;
 import org.rapla.entities.User;
 import org.rapla.facade.client.ClientFacade;
 import org.rapla.framework.RaplaException;
-import org.rapla.storage.PermissionController;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import java.util.function.Supplier;
@@ -87,11 +85,10 @@ public class PasswordChangeAction {
 
     private void update() {
         try {
-            if ( object != null && object instanceof  User)
+            if ( object instanceof User selectedUser)
             {
-                User selectedUser = (User) object;
                 User user = clientFacade.getUser();
-                setEnabled(PermissionController.canAdminUser(user, selectedUser) || user.equals(selectedUser));
+                setEnabled(PasswordChangePolicy.canChangePassword(user, selectedUser));
             }
             else
             {
@@ -109,7 +106,7 @@ public class PasswordChangeAction {
                 return;
             User selectedUser = (User) object;
             User user = clientFacade.getUser();
-            boolean showOldPassword = !PermissionController.canAdminUser(user, selectedUser) || user.equals( selectedUser);
+            boolean showOldPassword = PasswordChangePolicy.requiresOldPassword(user, selectedUser);
             changePassword(selectedUser, showOldPassword);
         } catch (RaplaException ex) {
             dialogUiFactory.showException(ex, popupContext);
@@ -130,8 +127,10 @@ public class PasswordChangeAction {
                         char[] oldPassword = showOld ? ui.getOldPassword() : new char[0];
                         char[] p1= ui.getNewPassword();
                         char[] p2= ui.getPasswordVerification();
-                        if (!Tools.match(p1,p2))
-                            throw new RaplaException(i18n.getString("error.passwords_dont_match"));
+                        PasswordChangePolicy.ValidationResult v =
+                                PasswordChangePolicy.validate(showOld, oldPassword, p1, p2);
+                        if (!v.valid())
+                            throw new RaplaException(i18n.getString(v.errorKey()));
                         clientFacade.changePassword(user , oldPassword, p1);
                         dlg.close();
                     } catch (RaplaException ex) {

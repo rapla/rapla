@@ -460,7 +460,10 @@ public final class ReservationEditImpl extends AbstractAppointmentEditor impleme
         Collection<Reservation> emptySet = Collections.emptySet();
         Collection<Reservation> originalCollection = original != null ? Collections.singleton(original) : emptySet;
         allocatableEdit.setReservation(Collections.singleton(mutableReservation), originalCollection);
-        allocatableEdit.appointmentSelected( Collections.singletonList( mutableAppointment));
+        allocatableEdit.appointmentSelected(
+                mutableAppointment != null
+                        ? Collections.singletonList(mutableAppointment)
+                        : Collections.emptyList());
         reservationInfo.setReservation(mutableReservation);
 
         List<AppointmentStatusFactory> statusFactories = new ArrayList<>();

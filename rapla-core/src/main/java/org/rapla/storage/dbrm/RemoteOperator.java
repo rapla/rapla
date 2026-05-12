@@ -141,17 +141,22 @@ public class RemoteOperator
         getLogger().info("Connecting to server and starting login..");
         if (connectInfo != null) {
             try {
-                String connectAs = connectInfo.getConnectAs();
-                String password = new String(connectInfo.getPassword());
-                String username = connectInfo.getUsername();
-                RemoteAuthentificationService serv1 = getRemoteAuthentificationService();
-                LoginTokens loginToken = serv1.login(new LoginCredentials(username, password, connectAs));
-                String accessToken = loginToken.getAccessToken();
-                if (accessToken != null) {
-                    connectionInfo.setAccessToken(accessToken);
-                    connectionInfo.setRefreshToken(loginToken.getRefreshToken());
+                if (connectInfo.getAccessToken() != null) {
+                    connectionInfo.setAccessToken(connectInfo.getAccessToken());
+                    connectionInfo.setRefreshToken(connectInfo.getRefreshToken());
                 } else {
-                    throw new RaplaSecurityException("Invalid Access token");
+                    String connectAs = connectInfo.getConnectAs();
+                    String password = new String(connectInfo.getPassword());
+                    String username = connectInfo.getUsername();
+                    RemoteAuthentificationService serv1 = getRemoteAuthentificationService();
+                    LoginTokens loginToken = serv1.login(new LoginCredentials(username, password, connectAs));
+                    String accessToken = loginToken.getAccessToken();
+                    if (accessToken != null) {
+                        connectionInfo.setAccessToken(accessToken);
+                        connectionInfo.setRefreshToken(loginToken.getRefreshToken());
+                    } else {
+                        throw new RaplaSecurityException("Invalid Access token");
+                    }
                 }
             } catch (RaplaException ex) {
                 disconnect();

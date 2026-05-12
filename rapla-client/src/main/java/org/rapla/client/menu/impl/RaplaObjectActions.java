@@ -198,56 +198,16 @@ public class RaplaObjectActions {
 
 
     public boolean isEnabled() {
-        boolean enabled = true;
-        User user = null;
         try
         {
-            user = clientFacade.getUser();
+            User user = clientFacade.getUser();
+            return org.rapla.client.menu.RaplaObjectActionPolicy.isEnabled(
+                    type, object, objectList, raplaType, user, permissionController);
         }
         catch (RaplaException e)
         {
             return false;
         }
-
-        if (type == EDIT || type == DELETE) {
-            enabled = permissionController.canModify(object, user);
-
-        } else if (type == NEW ) {
-            final boolean admin = user.isAdmin();
-            if ( raplaType != null && !admin)
-            {
-                if ( raplaType == Allocatable.class)
-                {
-                    enabled = permissionController.isRegisterer(null, user);
-                }
-                else if ( raplaType == Category.class && object != null && object instanceof Category)
-                {
-
-                    enabled = permissionController.canModify( object, user);
-                }
-                else
-                {
-                    enabled = false;
-                }
-            }
-            else {
-                enabled = admin;
-            }
-
-        } else if (type == EDIT_SELECTION || type == DELETE_SELECTION) {
-            if (objectList != null && objectList.size() > 0 ) {
-                Iterator<Entity<?>> it = objectList.iterator();
-                while (it.hasNext()) {
-                    if (!permissionController.canModify(it.next(), user)){
-                        enabled = false;
-                        break;
-                    }
-                }
-            } else {
-                enabled = false;
-            }
-        }
-        return enabled;
     }
 
 

@@ -20,6 +20,7 @@ import org.rapla.client.dialog.DialogUiFactoryInterface;
 import org.rapla.client.event.CalendarEventBus;
 import org.rapla.client.event.CalendarRefreshEvent;
 import org.rapla.client.internal.ResourceSelectionView.Presenter;
+import org.rapla.client.sidebar.ResourceSelectionState;
 import org.rapla.entities.Entity;
 import org.rapla.entities.RaplaObject;
 import org.rapla.entities.User;
@@ -40,6 +41,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
+import java.util.LinkedHashSet;
+import java.util.Set;
 
 @org.springframework.stereotype.Service
 @org.springframework.context.annotation.Lazy
@@ -55,6 +58,10 @@ public class ResourceSelectionPresenter implements Presenter
     private final Logger logger;
     private PresenterChangeCallback callback;
     private final CommandScheduler scheduler;
+    private final ResourceSelectionState state = new ResourceSelectionState();
+    /** Re-entrance guard for the state→model bridge. Set while {@link #syncSelectionToModel}
+     *  is writing to the model so the model→state echo doesn't re-trigger the bridge. */
+    private boolean syncingToModel = false;
 
     @Autowired
     public ResourceSelectionPresenter(ClientFacade facade, Logger logger, CalendarSelectionModel model, EditController editController,
@@ -71,6 +78,12 @@ public class ResourceSelectionPresenter implements Presenter
         this.scheduler = scheduler;
         view.setPresenter(this);
 
+        // Initial sync: state mirrors the canonical model selection.
+        state.setSelected(model.getSelectedObjects());
+
+        // Bridge: state mutations flow back to CalendarSelectionModel + downstream UI.
+        state.addListener(this::onStateChanged);
+
         try
         {
             updateMenu();
@@ -81,6 +94,37 @@ public class ResourceSelectionPresenter implements Presenter
         catch (RaplaException e)
         {
             throw new RaplaInitializationException(e);
+        }
+    }
+
+    @Override
+    public ResourceSelectionState getState()
+    {
+        return state;
+    }
+
+    private void onStateChanged(ResourceSelectionState s)
+    {
+        if (syncingToModel) return;
+        Set<Object> stateSelection = s.selected();
+        Set<Object> modelSelection = new LinkedHashSet<>(model.getSelectedObjects());
+        if (!stateSelection.equals(modelSelection))
+        {
+            syncingToModel = true;
+            try
+            {
+                model.setSelectedObjects(new LinkedHashSet<>(stateSelection));
+                updateMenu();
+                applyFilter();
+            }
+            catch (RaplaException ex)
+            {
+                logger.error("Failed to sync sidebar selection to model", ex);
+            }
+            finally
+            {
+                syncingToModel = false;
+            }
         }
     }
 
@@ -160,6 +204,17 @@ public class ResourceSelectionPresenter implements Presenter
     {
         if (evt == null || evt.isModified())
         {
+            // Mirror the model's selection into state. Equality guard inside
+            // ResourceSelectionState prevents a fire when nothing changed.
+            syncingToModel = true;
+            try
+            {
+                state.setSelected(model.getSelectedObjects());
+            }
+            finally
+            {
+                syncingToModel = false;
+            }
             ClassificationFilter[] filter = model.getAllocatableFilter();
             Collection<Object> selectedObjects = new ArrayList<>(model.getSelectedObjects());
             view.update(filter, model, selectedObjects);
@@ -173,18 +228,8 @@ public class ResourceSelectionPresenter implements Presenter
     @Override
     public void updateSelectedObjects(Collection<Object> elements)
     {
-        try
-        {
-            HashSet<Object> selectedElements = new HashSet<>(elements);
-            getModel().setSelectedObjects(selectedElements);
-            updateMenu();
-            applyFilter();
-        }
-        catch (RaplaException ex)
-        {
-            PopupContext popupContext = dialogUiFactory.createPopupContext(view);
-            dialogUiFactory.showException(ex, popupContext);
-        }
+        // Route through canonical state — the bridge writes the model.
+        state.setSelected(elements == null ? java.util.Collections.emptySet() : elements);
     }
 
     @Override

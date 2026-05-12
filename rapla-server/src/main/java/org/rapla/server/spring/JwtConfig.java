@@ -6,28 +6,106 @@ import com.nimbusds.jose.JWSAlgorithm;
 import com.nimbusds.jose.JWSHeader;
 import com.nimbusds.jose.JWSSigner;
 import com.nimbusds.jose.crypto.MACSigner;
+import com.nimbusds.jose.jwk.JWK;
+import com.nimbusds.jose.jwk.JWKSelector;
+import com.nimbusds.jose.jwk.KeyType;
+import com.nimbusds.jose.jwk.RSAKey;
+import com.nimbusds.jose.jwk.source.JWKSource;
+import com.nimbusds.jose.proc.SecurityContext;
 import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.SignedJWT;
 import org.rapla.server.RaplaKeyStorage;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
+import org.springframework.security.oauth2.jwt.JwtException;
 import org.springframework.security.oauth2.jwt.NimbusJwtDecoder;
 import org.springframework.security.oauth2.jose.jws.MacAlgorithm;
 
 import javax.crypto.spec.SecretKeySpec;
+import java.security.interfaces.RSAPublicKey;
 import java.util.Base64;
 import java.time.LocalDateTime;
 @Configuration
 @org.springframework.boot.autoconfigure.condition.ConditionalOnProperty(prefix = "rapla.file-datasources", name = "raplafile")
 public class JwtConfig
 {
+    /**
+     * Composite decoder: tries HMAC first (Rapla's /auth/login tokens),
+     * falls back to RSA (Spring Authorization Server tokens at /oauth2/token).
+     * Both validate against the same resource-server endpoints.
+     *
+     * Long-term: unify on RSA when AuthController migrates to sign with the
+     * same JwkSource as the auth server. PRD 026 §5.
+     */
     @Bean
-    public JwtDecoder jwtDecoder(RaplaKeyStorage keyStorage)
+    public JwtDecoder jwtDecoder(RaplaKeyStorage keyStorage,
+                                 ObjectProvider<JWKSource<SecurityContext>> jwkSourceProvider)
     {
         byte[] secretBytes = deriveHmacSecret(keyStorage.getRootKeyBase64());
         SecretKeySpec key = new SecretKeySpec(secretBytes, "HmacSHA256");
-        return NimbusJwtDecoder.withSecretKey(key).macAlgorithm(MacAlgorithm.HS256).build();
+        JwtDecoder hmacDecoder = NimbusJwtDecoder.withSecretKey(key).macAlgorithm(MacAlgorithm.HS256).build();
+
+        JWKSource<SecurityContext> jwkSource = jwkSourceProvider.getIfAvailable();
+        if (jwkSource == null)
+        {
+            return hmacDecoder;
+        }
+        JwtDecoder rsaDecoder = NimbusJwtDecoder.withPublicKey(extractRsaPublicKey(jwkSource)).build();
+        return new CompositeJwtDecoder(hmacDecoder, rsaDecoder);
+    }
+
+    private static RSAPublicKey extractRsaPublicKey(JWKSource<SecurityContext> jwkSource)
+    {
+        try
+        {
+            java.util.List<JWK> keys = jwkSource.get(
+                    new JWKSelector(new com.nimbusds.jose.jwk.JWKMatcher.Builder().keyType(KeyType.RSA).build()),
+                    null);
+            if (keys.isEmpty())
+            {
+                throw new IllegalStateException("No RSA key in JWK set");
+            }
+            return ((RSAKey) keys.get(0)).toRSAPublicKey();
+        }
+        catch (Exception e)
+        {
+            throw new IllegalStateException("Failed to extract RSA public key from JWK set", e);
+        }
+    }
+
+    private static final class CompositeJwtDecoder implements JwtDecoder
+    {
+        private final JwtDecoder hmac;
+        private final JwtDecoder rsa;
+
+        CompositeJwtDecoder(JwtDecoder hmac, JwtDecoder rsa)
+        {
+            this.hmac = hmac;
+            this.rsa = rsa;
+        }
+
+        @Override
+        public Jwt decode(String token) throws JwtException
+        {
+            try
+            {
+                return hmac.decode(token);
+            }
+            catch (JwtException hmacFailure)
+            {
+                try
+                {
+                    return rsa.decode(token);
+                }
+                catch (JwtException rsaFailure)
+                {
+                    throw rsaFailure;
+                }
+            }
+        }
     }
 
     @Bean

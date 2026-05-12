@@ -247,4 +247,72 @@ class ReservationEditControllerIntegrationTest
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.outcomes.length()").value(0));
     }
+
+    // ---------- /expand-blocks (PRD 026 §B4) ----------
+
+    @Test
+    void expandBlocksRequiresAuthentication() throws Exception
+    {
+        mockMvc.perform(post("/edit/expand-blocks")
+                        .contentType("application/json")
+                        .content("""
+                            {"appointment":{"start":"2026-06-01T09:00:00","end":"2026-06-01T10:00:00","recurrence":null},
+                             "windowStart":"2026-06-01T00:00:00","windowEnd":"2026-06-30T00:00:00",
+                             "excludeExceptions":true}"""))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    void expandBlocksSingleOccurrenceYieldsOneBlock() throws Exception
+    {
+        // No recurrence — single-occurrence appointment. One block expected.
+        mockMvc.perform(post("/edit/expand-blocks")
+                        .header("Authorization", "Bearer " + adminToken())
+                        .contentType("application/json")
+                        .content("""
+                            {"appointment":{"start":"2026-06-01T09:00:00","end":"2026-06-01T10:00:00","recurrence":null},
+                             "windowStart":"2026-06-01T00:00:00","windowEnd":"2026-06-30T00:00:00",
+                             "excludeExceptions":true}"""))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.length()").value(1))
+                .andExpect(jsonPath("$[0].start").value("2026-06-01T09:00:00"))
+                .andExpect(jsonPath("$[0].end").value("2026-06-01T10:00:00"));
+    }
+
+    @Test
+    void expandBlocksDailyRecurrenceYieldsExpectedCount() throws Exception
+    {
+        // Daily recurrence with repeatCount=5 over a 30-day window → 5 occurrences.
+        mockMvc.perform(post("/edit/expand-blocks")
+                        .header("Authorization", "Bearer " + adminToken())
+                        .contentType("application/json")
+                        .content("""
+                            {"appointment":{
+                                "start":"2026-06-01T09:00:00","end":"2026-06-01T10:00:00",
+                                "recurrence":{
+                                    "type":"daily","interval":1,"weekdays":[],
+                                    "endingMode":"N_TIMES","endDate":null,"repeatCount":5,
+                                    "appointmentStart":"2026-06-01T09:00:00"}},
+                             "windowStart":"2026-06-01T00:00:00","windowEnd":"2026-06-30T00:00:00",
+                             "excludeExceptions":true}"""))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.length()").value(5))
+                .andExpect(jsonPath("$[0].start").value("2026-06-01T09:00:00"))
+                .andExpect(jsonPath("$[4].start").value("2026-06-05T09:00:00"));
+    }
+
+    @Test
+    void expandBlocksRejectsMalformedRequest() throws Exception
+    {
+        // Missing windowStart — the controller's IllegalArgumentException
+        // surfaces as 400 via the existing RaplaExceptionHandler.
+        mockMvc.perform(post("/edit/expand-blocks")
+                        .header("Authorization", "Bearer " + adminToken())
+                        .contentType("application/json")
+                        .content("""
+                            {"appointment":{"start":"2026-06-01T09:00:00","end":"2026-06-01T10:00:00","recurrence":null},
+                             "windowStart":null,"windowEnd":"2026-06-30T00:00:00",
+                             "excludeExceptions":true}"""))
+                .andExpect(status().isBadRequest());
+    }
 }

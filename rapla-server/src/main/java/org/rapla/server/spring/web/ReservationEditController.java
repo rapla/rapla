@@ -14,12 +14,15 @@ import org.rapla.entities.storage.ReferenceInfo;
 import org.rapla.facade.RaplaFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.plugin.reservationedit.AllocationOutcomeDto;
+import org.rapla.plugin.reservationedit.AppointmentBlockDto;
 import org.rapla.plugin.reservationedit.AppointmentSpec;
 import org.rapla.plugin.reservationedit.ConflictCheckRequest;
 import org.rapla.plugin.reservationedit.ConflictReport;
+import org.rapla.plugin.reservationedit.ExpandBlocksRequest;
 import org.rapla.plugin.reservationedit.RecurrenceRule;
 import org.rapla.plugin.reservationedit.RecurrenceValidation;
 import org.rapla.plugin.reservationedit.ReservationEditService;
+import org.rapla.entities.domain.AppointmentBlock;
 import org.rapla.scheduler.Promise;
 import org.rapla.server.RemoteSession;
 import org.rapla.storage.PermissionController;
@@ -134,6 +137,36 @@ public class ReservationEditController implements ReservationEditService
                     out.aggregateRequestStatus() == null ? null : out.aggregateRequestStatus().toString()));
         }
         return new ConflictReport(outcomes);
+    }
+
+    @Override
+    @PostMapping("/expand-blocks")
+    public List<AppointmentBlockDto> expandBlocks(@RequestBody ExpandBlocksRequest req) throws RaplaException
+    {
+        session.checkAndGetUser(request);   // JWT gate
+        if (req == null || req.appointment() == null)
+            throw new IllegalArgumentException("appointment must not be null");
+        if (req.windowStart() == null || req.windowEnd() == null)
+            throw new IllegalArgumentException("windowStart / windowEnd must not be null");
+
+        // Build a transient AppointmentImpl from the wire spec — same path
+        // checkConflicts uses for its candidate appointments.
+        Appointment[] arr = buildCandidateAppointments(List.of(req.appointment()));
+        Appointment appointment = arr[0];
+
+        List<AppointmentBlock> raw = new ArrayList<>();
+        appointment.createBlocks(req.windowStart(), req.windowEnd(), raw, req.excludeExceptions());
+
+        List<AppointmentBlockDto> out = new ArrayList<>(raw.size());
+        for (AppointmentBlock b : raw)
+        {
+            // AppointmentBlock carries millis-since-epoch; convert to LocalDateTime
+            // in UTC to match PRD 014's timezone-naive wire convention.
+            out.add(new AppointmentBlockDto(
+                    LocalDateTime.ofInstant(java.time.Instant.ofEpochMilli(b.getStart()), java.time.ZoneOffset.UTC),
+                    LocalDateTime.ofInstant(java.time.Instant.ofEpochMilli(b.getEnd()),   java.time.ZoneOffset.UTC)));
+        }
+        return out;
     }
 
     private static Appointment[] buildCandidateAppointments(List<AppointmentSpec> specs)

@@ -39,6 +39,7 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 
 @org.springframework.stereotype.Service
+@org.springframework.context.annotation.Scope(org.springframework.beans.factory.config.ConfigurableBeanFactory.SCOPE_PROTOTYPE)
 public class MultiCalendarViewSwing implements MultiCalendarView
 {
     private final JPanel page = new JPanel();

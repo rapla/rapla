@@ -24,6 +24,10 @@ import org.rapla.client.dialog.DialogInterface;
 import org.rapla.client.dialog.DialogUiFactoryInterface;
 import org.rapla.client.internal.LanguageChooser;
 import org.rapla.client.internal.LoginDialog;
+import org.rapla.client.internal.OAuthCallbackPasteDialog;
+import org.rapla.client.internal.OAuthConfig;
+import org.rapla.client.internal.OAuthTokens;
+import org.rapla.client.internal.SwingOAuthLoginFlow;
 import org.rapla.client.swing.RaplaGUIComponent;
 import org.rapla.client.swing.SwingSchedulerImpl;
 import org.rapla.client.swing.images.RaplaImages;
@@ -55,12 +59,21 @@ import java.util.function.Supplier;
 import javax.swing.AbstractAction;
 import javax.swing.Action;
 import javax.swing.SwingUtilities;
+import java.awt.AWTEvent;
 import java.awt.Component;
 import java.awt.Dimension;
+import java.awt.EventQueue;
 import java.awt.Toolkit;
 import java.awt.Window;
 import java.awt.event.ActionEvent;
+import java.net.URI;
 import java.net.URL;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
+import java.nio.charset.StandardCharsets;
+import java.time.Duration;
+import java.util.List;
 import java.util.Locale;
 import java.util.Vector;
 import java.util.concurrent.Semaphore;
@@ -164,6 +177,33 @@ public class RaplaClientServiceImpl implements ClientService, UpdateErrorListene
             {
                 logger.error("Can't set default exception handler-", ex);
             }
+        }
+
+        // EDT exceptions bypass Thread.setDefaultUncaughtExceptionHandler — they go through
+        // EventDispatchThread.processException, which only consults the legacy sun.awt.exception.handler
+        // system property and otherwise prints to System.err. Wrap the system event queue so every
+        // dispatched AWT event runs inside our try/catch and uncaughts surface through the rapla logger.
+        try
+        {
+            Toolkit.getDefaultToolkit().getSystemEventQueue().push(new EventQueue()
+            {
+                @Override
+                protected void dispatchEvent(AWTEvent event)
+                {
+                    try
+                    {
+                        super.dispatchEvent(event);
+                    }
+                    catch (Throwable t)
+                    {
+                        logger.error("Uncaught exception in AWT event dispatch", t);
+                    }
+                }
+            });
+        }
+        catch (Throwable ex)
+        {
+            logger.error("Can't install AWT event-queue exception handler", ex);
         }
 
         ApplicationViewSwing.setLookandFeel();
@@ -518,11 +558,22 @@ public class RaplaClientServiceImpl implements ClientService, UpdateErrorListene
                     fireClientAborted();
                 }
             };
+            Action oauthAction = new AbstractAction()
+            {
+                private static final long serialVersionUID = 1L;
+
+                public void actionPerformed(ActionEvent evt)
+                {
+                    runOauthLogin(dlg, loginMutex);
+                }
+            };
             loginAction.putValue(Action.NAME, i18n.getString("login"));
             exitAction.putValue(Action.NAME, i18n.getString("exit"));
+            oauthAction.putValue(Action.NAME, i18n.getString("login.oauth.button"));
             dlg.setIconImage(RaplaImages.getImage(i18n.getIcon("icon.rapla_small")));
             dlg.setLoginAction(loginAction);
             dlg.setExitAction(exitAction);
+            dlg.setOauthAction(oauthAction);
             //dlg.setSize( 480, 270);
             centerWindowOnScreen(dlg);
             dlg.setVisible(true);
@@ -539,6 +590,141 @@ public class RaplaClientServiceImpl implements ClientService, UpdateErrorListene
         {
             loginMutex.release();
         }
+    }
+
+    private void runOauthLogin(LoginDialog dlg, Semaphore loginMutex)
+    {
+        dlg.busy(i18n.getString("login.oauth.button"));
+        commandScheduler.supply(() -> {
+            OAuthConfig cfg = fetchOauthConfig();
+            if (cfg == null || !cfg.isEnabled())
+            {
+                throw new IllegalStateException("OAuth login not enabled on the server");
+            }
+            SwingOAuthLoginFlow flow = new SwingOAuthLoginFlow(cfg, getLogger());
+            SwingOAuthLoginFlow.Session session = flow.start();
+            scheduleDelayedPasteHelper(dlg, session);
+            return session.future().get();
+        }).thenAccept(tokens -> SwingUtilities.invokeLater(() -> finishOauthLogin(dlg, loginMutex, tokens)))
+                .exceptionally(ex -> SwingUtilities.invokeLater(() -> {
+                    Throwable root = unwrap(ex);
+                    if (root instanceof java.util.concurrent.CancellationException)
+                    {
+                        getLogger().info("OAuth login cancelled by user");
+                        dlg.idle();
+                        return;
+                    }
+                    getLogger().error("OAuth login failed", ex);
+                    dlg.idle();
+                    dialogUiFactory.showException(ex, new SwingPopupContext(dlg, null));
+                }));
+    }
+
+    private static Throwable unwrap(Throwable t)
+    {
+        Throwable current = t;
+        while (current.getCause() != null && current != current.getCause())
+        {
+            if (current instanceof java.util.concurrent.CancellationException) return current;
+            current = current.getCause();
+        }
+        return current;
+    }
+
+    private void scheduleDelayedPasteHelper(LoginDialog dlg, SwingOAuthLoginFlow.Session session)
+    {
+        // Don't show the paste dialog if the automatic callback arrives quickly
+        // (the typical case on native OSes). Wait 12 s; if the flow hasn't
+        // completed by then, surface the fallback so the user can paste the URL
+        // their browser is stuck on.
+        java.util.concurrent.CompletableFuture
+                .runAsync(() -> {}, java.util.concurrent.CompletableFuture.delayedExecutor(12, java.util.concurrent.TimeUnit.SECONDS))
+                .thenRun(() -> SwingUtilities.invokeLater(() -> {
+                    if (session.future().isDone())
+                    {
+                        return;
+                    }
+                    javax.swing.JDialog paste = OAuthCallbackPasteDialog.show(dlg, i18n, getLogger(),
+                            pastedUrl -> {
+                                try
+                                {
+                                    session.deliverPasted(pastedUrl);
+                                }
+                                catch (Exception ex)
+                                {
+                                    getLogger().error("paste delivery failed", ex);
+                                    dialogUiFactory.showException(ex, new SwingPopupContext(dlg, null));
+                                }
+                            },
+                            () -> {
+                                // User cancelled the paste dialog — abort the OAuth flow so the
+                                // login dialog releases its busy state and the user can retry
+                                // without waiting the 5-minute callback timeout.
+                                session.future().cancel(true);
+                            });
+                    session.future().whenComplete((t, e) -> SwingUtilities.invokeLater(paste::dispose));
+                }));
+    }
+
+    private void finishOauthLogin(LoginDialog dlg, Semaphore loginMutex, OAuthTokens tokens)
+    {
+        ConnectInfo info = ConnectInfo.withAccessToken(tokens.getAccessToken(), tokens.getRefreshToken());
+        reconnectInfo = info;
+        login(info).thenAccept(success -> {
+            if (!success)
+            {
+                dlg.idle();
+                dialogUiFactory.showWarning(i18n.getString("error.login"), new SwingPopupContext(dlg, null));
+                return;
+            }
+            dlg.idle();
+            loginMutex.release();
+            dlg.busy(i18n.getString("load"));
+            beginRaplaSession().thenRun(() -> {
+                dlg.idle();
+                dlg.dispose();
+            }).exceptionally(ex -> {
+                dialogUiFactory.showException(ex, null);
+                dlg.idle();
+                fireClientAborted();
+            });
+        }).exceptionally(ex -> {
+            dialogUiFactory.showException(ex, new SwingPopupContext(dlg, null));
+            dlg.idle();
+        });
+    }
+
+    private OAuthConfig fetchOauthConfig() throws Exception
+    {
+        URI discovery = URI.create(connectionInfo.getServerURL() + "/auth/oauth/config");
+        HttpRequest req = HttpRequest.newBuilder(discovery)
+                .timeout(Duration.ofSeconds(10))
+                .header("Accept", "application/json")
+                .GET()
+                .build();
+        HttpClient client = HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(10)).build();
+        HttpResponse<String> resp = client.send(req, HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8));
+        if (resp.statusCode() / 100 != 2)
+        {
+            throw new IllegalStateException("OAuth discovery failed: HTTP " + resp.statusCode());
+        }
+        tools.jackson.databind.JsonNode tree = tools.jackson.databind.json.JsonMapper.builder().build().readTree(resp.body());
+        boolean enabled = tree.path("enabled").asBoolean(false);
+        if (!enabled)
+        {
+            return new OAuthConfig(false, null, null, null, List.of());
+        }
+        List<String> scopes = new java.util.ArrayList<>();
+        if (tree.has("scopes") && tree.get("scopes").isArray())
+        {
+            tree.get("scopes").forEach(n -> scopes.add(n.asString()));
+        }
+        return new OAuthConfig(
+                true,
+                tree.path("clientId").asString(),
+                tree.path("authorizeUrl").asString(),
+                tree.path("tokenUrl").asString(),
+                scopes);
     }
 
     /** centers the window around the specified center */
@@ -624,6 +810,16 @@ public class RaplaClientServiceImpl implements ClientService, UpdateErrorListene
 
     private Promise<Boolean> login(ConnectInfo connectInfo)
     {
+        if (connectInfo.getAccessToken() != null)
+        {
+            return commandScheduler.supply(() -> {
+                this.connectionInfo.setAccessToken(connectInfo.getAccessToken());
+                this.connectionInfo.setRefreshToken(connectInfo.getRefreshToken());
+                this.connectionInfo.setReconnectInfo(connectInfo);
+                this.reconnectInfo = connectInfo;
+                return true;
+            });
+        }
         String connectAs = connectInfo.getConnectAs();
         String password = new String(connectInfo.getPassword());
         String username = connectInfo.getUsername();

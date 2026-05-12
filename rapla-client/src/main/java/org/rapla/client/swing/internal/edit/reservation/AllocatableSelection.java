@@ -64,6 +64,8 @@ import org.rapla.framework.RaplaLocale;
 import org.rapla.logger.Logger;
 import org.rapla.scheduler.Promise;
 import org.rapla.scheduler.ResolvedPromise;
+import org.rapla.client.edit.reservation.AllocatableRowStatusModel;
+import org.rapla.client.edit.reservation.AllocatableRowStatusModel.Status;
 import org.rapla.client.edit.reservation.AllocationConflictModel;
 import org.rapla.client.edit.reservation.AllocationConflictModel.AllocationOutcome;
 import org.rapla.client.edit.reservation.ReservationEditSelection;
@@ -163,12 +165,10 @@ public class AllocatableSelection extends RaplaGUIComponent implements Appointme
     RaplaButton btnRemove = new RaplaButton(RaplaButton.SMALL);
     RaplaButton btnCalendar2 = new RaplaButton(RaplaButton.SMALL);
 
-    Collection<Reservation> mutableReservations = Collections.emptyList();
-    Collection<Reservation> originalReservations = Collections.emptyList();
-
-    /** Pure-Java mirror of the mutable / original / appointments state.
-     *  Kept in sync with the legacy fields above via {@link #setReservation};
-     *  newer code should query the selection model rather than the fields. */
+    /** Pure-Java state (mutable + original reservations, flattened appointments,
+     *  transient name-search term). Single source of truth — the legacy
+     *  {@code selection.mutableReservations()} / {@code selection.originalReservations()} fields have
+     *  been removed; all reads now go through this. */
     final ReservationEditSelection selection = new ReservationEditSelection();
 
     AllocatablesModel completeModel = new CompleteModel();
@@ -196,6 +196,12 @@ public class AllocatableSelection extends RaplaGUIComponent implements Appointme
     CommandHistory commandHistory;
 
     FilterEditButton filter;
+
+    /** PRD 023 Phase 7: name-search field above the resource tree.
+     *  Empty → no name filter; non-empty → narrows the visible tree to
+     *  allocatables whose locale-aware name contains the substring
+     *  (case-insensitive, diacritic-folded). */
+    final JTextField nameSearchField = new JTextField(12);
 
     AppointmentFormater appointmentFormater;
     private final PermissionController permissionController;
@@ -302,7 +308,30 @@ public class AllocatableSelection extends RaplaGUIComponent implements Appointme
 
         calendarModel = new ModifiableCalendarState(facade,originalModel.clone());
         filter = filterEditButtonFactory.create(calendarModel.getModel(),true,listener);
-        leftPanel.add(filter.getButton(), "4,0,r,f");
+
+        // PRD 023 Phase 7: search field + filter button packed into one
+        // sub-panel at column 4. Search is transient (not persisted to
+        // CalendarSelectionModel) — DocumentListener re-binds the visible
+        // allocatable tree on every keystroke. No debounce — the matcher
+        // is sub-millisecond at typical tree sizes (< 5 000 resources).
+        nameSearchField.setToolTipText(getI18n().getString("search.placeholder"));
+        nameSearchField.putClientProperty("JTextField.placeholderText", getI18n().getString("search.placeholder"));
+        nameSearchField.getDocument().addDocumentListener(new javax.swing.event.DocumentListener()
+        {
+            @Override public void insertUpdate(javax.swing.event.DocumentEvent e)  { onSearchChanged(); }
+            @Override public void removeUpdate(javax.swing.event.DocumentEvent e)  { onSearchChanged(); }
+            @Override public void changedUpdate(javax.swing.event.DocumentEvent e) { onSearchChanged(); }
+            private void onSearchChanged()
+            {
+                selection.setNameSearchTerm(nameSearchField.getText());
+                refreshCompleteTreeForNameSearch();
+            }
+        });
+        JPanel topRightPanel = new JPanel(new java.awt.FlowLayout(java.awt.FlowLayout.RIGHT, 4, 0));
+        topRightPanel.setOpaque(false);
+        topRightPanel.add(nameSearchField);
+        topRightPanel.add(filter.getButton());
+        leftPanel.add(topRightPanel, "4,0,r,f");
         //		filterAction = new FilterAction(getContext(), getComponent(), null);
         //		filterAction.setFilter(calendarModel);
         //		filterAction.setResourceOnly(true);
@@ -344,14 +373,14 @@ public class AllocatableSelection extends RaplaGUIComponent implements Appointme
             {
                 if (!allAllocatables.contains(allocatable))
                 {
-                    for (Reservation r : mutableReservations)
+                    for (Reservation r : selection.mutableReservations())
                     {
                         r.removeAllocatable(allocatable);
                     }
                 }
             }
             Set<Allocatable> selectedAllocatables = new HashSet<>();
-            for (Reservation r : mutableReservations)
+            for (Reservation r : selection.mutableReservations())
             {
                 selectedAllocatables.addAll(Arrays.asList(r.getAllocatables()));
             }
@@ -369,7 +398,7 @@ public class AllocatableSelection extends RaplaGUIComponent implements Appointme
     /** Implementation of appointment listener */
     public void appointmentAdded(Collection<Appointment> appointments)
     {
-        setAppointments(mutableReservations);
+        setAppointments(selection.mutableReservations());
         selectedModel.setAllocatables(getAllocated(), selectedTable.getTree());
         changeRequestStatus();
         updateBindings(appointments);
@@ -377,14 +406,14 @@ public class AllocatableSelection extends RaplaGUIComponent implements Appointme
 
     public void appointmentChanged(Collection<Appointment> appointments)
     {
-        setAppointments(mutableReservations);
+        setAppointments(selection.mutableReservations());
         changeRequestStatus();
         updateBindings(appointments);
     }
 
     private void changeRequestStatus() {
         java.time.LocalDate today = getQuery().today();
-        for (Reservation reservation:mutableReservations) {
+        for (Reservation reservation:selection.mutableReservations()) {
             for (Allocatable allocatable:reservation.getAllocatables()) {
                 final RequestStatus status = reservation.getRequestStatus(allocatable);
                 if (status == null && permissionController.isRequestOnly( allocatable, user, today)) {
@@ -397,7 +426,7 @@ public class AllocatableSelection extends RaplaGUIComponent implements Appointme
     public void appointmentRemoved(Collection<Appointment> appointments)
     {
         removeFromBindings(appointments);
-        setAppointments(mutableReservations);
+        setAppointments(selection.mutableReservations());
         selectedModel.setAllocatables(getAllocated(), selectedTable.getTree());
         removeFromBindings(appointments);
         List<Appointment> emptyList = Collections.emptyList();
@@ -413,7 +442,7 @@ public class AllocatableSelection extends RaplaGUIComponent implements Appointme
     private void updateBindings(Collection<Appointment> appointments)
     {
         Collection<Allocatable> allAllocatables = new LinkedHashSet<>(completeModel.getAllocatables());
-        for (Reservation r : mutableReservations)
+        for (Reservation r : selection.mutableReservations())
         {
             allAllocatables.addAll(Arrays.asList(r.getAllocatables()));
         }
@@ -426,7 +455,7 @@ public class AllocatableSelection extends RaplaGUIComponent implements Appointme
                 allocatableBindings.put(allocatable.getReference(), new HashSet<>());
             }
             appointments = new ArrayList<>();
-            for (Reservation r : mutableReservations)
+            for (Reservation r : selection.mutableReservations())
             {
                 Collection<Appointment> sortedAppointments = r.getSortedAppointments();
                 appointments.addAll(sortedAppointments);
@@ -492,6 +521,25 @@ public class AllocatableSelection extends RaplaGUIComponent implements Appointme
         return content;
     }
 
+    /** PRD 023 Phase 7: re-bind the complete-allocatable tree using the
+     *  current name-search term composed with the classification filter
+     *  the user already configured. Called on every search-field keystroke. */
+    private void refreshCompleteTreeForNameSearch()
+    {
+        try
+        {
+            Collection<Allocatable> base = getAllAllocatables();
+            java.util.Locale locale = getRaplaLocale().getLocale();
+            java.util.List<Allocatable> filtered = selection.filterByNameSearch(base, locale);
+            completeModel.setAllocatables(filtered, completeTable.getTree());
+        }
+        catch (RaplaException ex)
+        {
+            // Don't blow up typing — log + leave the tree as-is.
+            getLogger().warn("Name-search refresh failed: " + ex.getMessage());
+        }
+    }
+
     private Set<Allocatable> getAllAllocatables() throws RaplaException
     {
         Allocatable[] allocatables = getQuery().getAllocatablesWithFilter(calendarModel.getModel().getAllocatableFilter());
@@ -516,8 +564,6 @@ public class AllocatableSelection extends RaplaGUIComponent implements Appointme
 
     public void setReservation(Collection<Reservation> mutableReservation, Collection<Reservation> originalReservations) throws RaplaException
     {
-        this.originalReservations = originalReservations;
-        this.mutableReservations = mutableReservation;
         this.selection.setReservations(mutableReservation, originalReservations);
         this.user = getUser();
         setAppointments(mutableReservation);
@@ -529,7 +575,7 @@ public class AllocatableSelection extends RaplaGUIComponent implements Appointme
                 for (Reservation reservation: mutableReservation) {
                     final RequestStatus requestStatus = reservation.getRequestStatus(allocatable);
                     if (requestStatus == null) {
-                        Reservation originalReservation = findMatchingOriginalReservation(reservation, originalReservations);
+                        Reservation originalReservation = findMatchingOriginalReservation(reservation);
                         if ( originalReservation == null || (originalReservation.hasAllocated( allocatable ) && originalReservation.getRequestStatus(allocatable) != null)) {
                             reservation.setRequestStatus(allocatable, RequestStatus.REQUESTED);
                         }
@@ -564,7 +610,7 @@ public class AllocatableSelection extends RaplaGUIComponent implements Appointme
         SwingUtilities.invokeLater(() -> selectObjects(model.getSelectedObjects(), completeTable.getTree()));
     }
 
-    private Reservation findMatchingOriginalReservation(Reservation reservation, Collection<Reservation> originalReservations) {
+    private Reservation findMatchingOriginalReservation(Reservation reservation) {
         return selection.findMatchingOriginal(reservation);
     }
 
@@ -671,7 +717,7 @@ public class AllocatableSelection extends RaplaGUIComponent implements Appointme
         while (it.hasNext())
         {
             Allocatable a = it.next();
-            for (Reservation r : mutableReservations)
+            for (Reservation r : selection.mutableReservations())
             {
                 if (r.hasAllocated(a))
                 {
@@ -695,7 +741,7 @@ public class AllocatableSelection extends RaplaGUIComponent implements Appointme
         while (it.hasNext())
         {
             Allocatable a = it.next();
-            for (Reservation r : mutableReservations)
+            for (Reservation r : selection.mutableReservations())
             {
                 if (!r.hasAllocated(a))
                 {
@@ -728,7 +774,7 @@ public class AllocatableSelection extends RaplaGUIComponent implements Appointme
     private void updateButtons()
     {
         boolean template = false;
-        for ( Reservation reservation:mutableReservations)
+        for ( Reservation reservation:selection.mutableReservations())
         {
             if (isTemplate(reservation) )
             {
@@ -1012,7 +1058,7 @@ public class AllocatableSelection extends RaplaGUIComponent implements Appointme
                 Appointment[] newValue = (Appointment[]) value;
                 if (!Arrays.equals(restriction, newValue))
                 {
-                    for (Reservation r : mutableReservations)
+                    for (Reservation r : selection.mutableReservations())
                     {
                         // FIXME check if appointment is in reservation
                         r.setRestriction((Allocatable) o, newValue);
@@ -1226,7 +1272,7 @@ public class AllocatableSelection extends RaplaGUIComponent implements Appointme
     public Appointment[] getRestriction(Allocatable alloc)
     {
         List<Appointment> restrictions = new ArrayList<>();
-        for (Reservation r : mutableReservations)
+        for (Reservation r : selection.mutableReservations())
         {
             Appointment[] restriction = r.getRestriction(alloc);
             restrictions.addAll(Arrays.asList(restriction));
@@ -1237,7 +1283,7 @@ public class AllocatableSelection extends RaplaGUIComponent implements Appointme
     private Collection<Appointment> getAllAppointmentsFor(Allocatable alloc)
     {
         List<Appointment> appointments = new ArrayList<>();
-        for (Reservation r : mutableReservations)
+        for (Reservation r : selection.mutableReservations())
         {
             if (!r.hasAllocated(alloc))
             {
@@ -1962,76 +2008,31 @@ public class AllocatableSelection extends RaplaGUIComponent implements Appointme
 
         private Icon getIcon(Allocatable allocatable)
         {
-            java.time.LocalDate today = getQuery().today();
+            AllocatableRowStatusModel.Inputs inputs = new AllocatableRowStatusModel.Inputs(
+                    allocatable,
+                    calcConflictingAppointments(allocatable),
+                    appointments,
+                    selection.mutableReservations(),
+                    selection.originalReservations(),
+                    allocatableBindings,
+                    permissionController,
+                    user,
+                    getQuery().today(),
+                    checkRestrictions);
+            return iconFor(AllocatableRowStatusModel.statusOf(inputs), allocatable);
+        }
 
-            AllocationOutcome allocBinding = calcConflictingAppointments(allocatable);
-            if (allocBinding.conflictCount() == 0)
+        /** Map a {@link Status} (pure model output) to the corresponding Swing icon. */
+        private Icon iconFor(Status status, Allocatable allocatable)
+        {
+            return switch (status)
             {
-                return getAvailableIcon(allocatable);
-            }
-            else if (allocBinding.conflictCount() == appointments.length)
-            {
-                if (allocBinding.conflictCount() == allocBinding.permissionConflictCount())
-                {
-                    if (!checkRestrictions)
-                    {
-                        if (permissionController.canRequest( allocatable, user, today)) {
-                            return requestIcon;
-                        } else {
-                            return forbiddenIcon;
-                        }
-                    }
-                }
-                else
-                {
-                    return conflictIcon;
-                }
-            }
-            else if (!checkRestrictions)
-            {
-                return getNotAlwaysAvailableIcon(allocatable);
-            }
-
-            if (checkRestrictions && permissionController.isRequestOnly( allocatable, user,  today))
-            {
-                final RequestStatus requestStatus = allocBinding.aggregateRequestStatus();
-                if ( requestStatus == RequestStatus.REQUESTED) {
-                    return requestIcon;
-                }
-            }
-            for (int i = 0; i < appointments.length; i++)
-            {
-                Appointment appointment = appointments[i];
-                for (Reservation r : mutableReservations)
-                {
-                    if (r.hasAllocatedOn(allocatable, appointment) && !hasPermissionToAllocate(appointment, allocatable))
-                    {
-                        return forbiddenIcon;
-                    }
-                }
-            }
-
-            if (allocBinding.permissionConflictCount() - allocBinding.conflictCount() == 0)
-            {
-                return getAvailableIcon(allocatable);
-            }
-            Collection<Appointment> restriction = getAllAppointmentsFor(allocatable);
-            {
-                boolean conflict = false;
-                for (Appointment app : restriction)
-                {
-                    Collection<Appointment> list = allocatableBindings.get(allocatable.getReference());
-                    if (list.contains(app))
-                    {
-                        conflict = true;
-                        break;
-                    }
-                }
-                if (conflict)
-                    return conflictIcon;
-                else
-                    return getNotAlwaysAvailableIcon(allocatable);
-            }
+                case AVAILABLE            -> getAvailableIcon(allocatable);
+                case NOT_ALWAYS_AVAILABLE -> getNotAlwaysAvailableIcon(allocatable);
+                case REQUEST              -> requestIcon;
+                case CONFLICT             -> conflictIcon;
+                case FORBIDDEN            -> forbiddenIcon;
+            };
         }
 
         public Component getTreeCellRendererComponent(JTree tree, Object value, boolean sel, boolean expanded, boolean leaf, int row, boolean hasFocus)
@@ -2060,9 +2061,9 @@ public class AllocatableSelection extends RaplaGUIComponent implements Appointme
                         value = classification.format(locale, DynamicTypeAnnotations.KEY_NAME_FORMAT_PLANNING);
                     }
                     if ( checkRestrictions ) {
-                        if (mutableReservations.size() == 1)
+                        if (selection.mutableReservations().size() == 1)
                         {
-                            final RequestStatus requestStatus = mutableReservations.iterator().next().getRequestStatus(allocatable);
+                            final RequestStatus requestStatus = selection.mutableReservations().iterator().next().getRequestStatus(allocatable);
                             if ( requestStatus == RequestStatus.REQUESTED) {
                                 value = "Anfrage:" + value;
                             }
@@ -2077,7 +2078,7 @@ public class AllocatableSelection extends RaplaGUIComponent implements Appointme
             }
             Component component = super.getTreeCellRendererComponent(tree, value, sel, expanded, leaf, row, hasFocus);
             Font f;
-            if (allocatable != null && mutableReservations.size() > 1 && checkRestrictions)
+            if (allocatable != null && selection.mutableReservations().size() > 1 && checkRestrictions)
             {
                 if (isNotForAll(allocatable))
                 {
@@ -2098,7 +2099,7 @@ public class AllocatableSelection extends RaplaGUIComponent implements Appointme
 
         private boolean isNotForAll(Allocatable allocatable)
         {
-            for (Reservation r : mutableReservations)
+            for (Reservation r : selection.mutableReservations())
             {
                 if (!r.hasAllocated(allocatable))
                 {
@@ -2112,31 +2113,17 @@ public class AllocatableSelection extends RaplaGUIComponent implements Appointme
 
     public boolean hasPermissionToAllocate(Appointment appointment, Allocatable allocatable)
     {
-        java.time.LocalDate today = getQuery().today();
-        User workingUser;
         try
         {
-            workingUser = getUser();
+            return AllocatableRowStatusModel.hasPermissionToAllocate(
+                    appointment, allocatable, getUser(),
+                    selection.originalReservations(), permissionController,
+                    getQuery().today());
         }
         catch (RaplaException ex)
         {
             getLogger().error("Can't get permissions!", ex);
             return false;
-        }
-        if (originalReservations == null || originalReservations.size() == 0)
-        {
-            return permissionController.canAllocate(allocatable, workingUser, appointment.getStart(), appointment.getMaxEnd(), today);
-        }
-        else
-        {
-            for (Reservation r : originalReservations)
-            {
-                if (!permissionController.hasPermissionToAllocate(workingUser, appointment, allocatable, r, today))
-                {
-                    return false;
-                }
-            }
-            return true;
         }
     }
 
@@ -2275,7 +2262,7 @@ public class AllocatableSelection extends RaplaGUIComponent implements Appointme
             while (it.hasNext())
             {
                 Allocatable a = it.next();
-                for (Reservation r : mutableReservations)
+                for (Reservation r : selection.mutableReservations())
                 {
                     if (r.hasAllocated(a) == addOrRemove)
                     {

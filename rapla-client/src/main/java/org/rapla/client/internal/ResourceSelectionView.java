@@ -1,6 +1,7 @@
 package org.rapla.client.internal;
 
 import org.rapla.client.RaplaWidget;
+import org.rapla.client.sidebar.ResourceSelectionState;
 import org.rapla.entities.dynamictype.ClassificationFilter;
 import org.rapla.facade.ClassifiableFilter;
 import org.rapla.framework.RaplaException;
@@ -23,7 +24,13 @@ public interface ResourceSelectionView extends RaplaWidget
         void treeSelectionChanged();
 
         void updateFilters(ClassificationFilter[] filters) throws RaplaException;
-        
+
+        /**
+         * Canonical sidebar state — search term, selection, sticky mode.
+         * The view binds its search field and reads the hidden-count via
+         * this state; clicks ultimately route here too.
+         */
+        ResourceSelectionState getState();
     }
 
 

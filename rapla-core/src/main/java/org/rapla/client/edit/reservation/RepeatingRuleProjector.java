@@ -2,6 +2,7 @@ package org.rapla.client.edit.reservation;
 
 import org.rapla.components.util.DateTools;
 import org.rapla.entities.domain.Repeating;
+import org.rapla.entities.domain.RepeatingType;
 
 import java.time.LocalDateTime;
 import java.util.Collections;
@@ -29,6 +30,13 @@ public final class RepeatingRuleProjector
     public enum DayChooserMode { SAME_DAY, NEXT_DAY, X_DAYS }
 
     public enum ExceptionCountStyle { NORMAL, HIGHLIGHTED }
+
+    /**
+     * The five repeating-choice radio buttons on the appointment editor.
+     * {@code NONE} maps to "no repetition" (single-occurrence appointment);
+     * the others map 1:1 to {@link org.rapla.entities.domain.RepeatingType}.
+     */
+    public enum RepeatingChoice { NONE, DAILY, WEEKLY, MONTHLY, YEARLY }
 
     public record ExceptionButtonState(int count, ExceptionCountStyle style, String label) {}
 
@@ -207,6 +215,76 @@ public final class RepeatingRuleProjector
             boolean isStart = weekday != null && weekday == startWeekday;
             boolean selected = isStart || (active != null && active.contains(weekday));
             boolean enabled = !isStart;
+            out.put(weekday, new WeekdaySelection(selected, enabled));
+        }
+        return out;
+    }
+
+    /**
+     * Map a {@link RepeatingType} (or {@code null} for "no repetition")
+     * to the corresponding radio-button choice. Used at initial display
+     * and on undo/redo of a repeating-type change.
+     */
+    public static RepeatingChoice choiceFor(RepeatingType type)
+    {
+        if (type == null) return RepeatingChoice.NONE;
+        return switch (type)
+        {
+            case DAILY   -> RepeatingChoice.DAILY;
+            case WEEKLY  -> RepeatingChoice.WEEKLY;
+            case MONTHLY -> RepeatingChoice.MONTHLY;
+            case YEARLY  -> RepeatingChoice.YEARLY;
+        };
+    }
+
+    /**
+     * Inverse of {@link #choiceFor}. {@code NONE} maps to {@code null} —
+     * callers should branch on null to disable the repeating editor.
+     */
+    public static RepeatingType repeatingTypeFor(RepeatingChoice choice)
+    {
+        if (choice == null) return null;
+        return switch (choice)
+        {
+            case NONE    -> null;
+            case DAILY   -> RepeatingType.DAILY;
+            case WEEKLY  -> RepeatingType.WEEKLY;
+            case MONTHLY -> RepeatingType.MONTHLY;
+            case YEARLY  -> RepeatingType.YEARLY;
+        };
+    }
+
+    /**
+     * Weekday-selection update when the appointment's anchor weekday
+     * shifts (typically: user changed the start date, the anchor moves
+     * with it). Distinct semantics from {@link #weekdaySelections}:
+     * <ul>
+     *   <li>If the current weekday set has &gt; 1 entries, keep the
+     *       existing selection unchanged.</li>
+     *   <li>If &le; 1 entries, select only the new anchor weekday.</li>
+     * </ul>
+     * The anchor weekday is always enabled=false (cannot opt out — it's
+     * implied by the start date).
+     * <p>
+     * Mirrors {@code AppointmentController.RepeatingEditor.resetWeekdays(int)}.
+     */
+    public static Map<Integer, WeekdaySelection> weekdaysOnAnchorShift(
+            Set<Integer> currentWeekdays,
+            int newAnchorWeekday,
+            Set<Integer> weekdayKeys)
+    {
+        if (weekdayKeys == null || weekdayKeys.isEmpty())
+        {
+            return Collections.emptyMap();
+        }
+        boolean moreThanOneSelected = currentWeekdays != null && currentWeekdays.size() > 1;
+        Map<Integer, WeekdaySelection> out = new LinkedHashMap<>();
+        for (Integer weekday : weekdayKeys)
+        {
+            boolean selected = moreThanOneSelected
+                    ? (currentWeekdays.contains(weekday))
+                    : (weekday != null && weekday == newAnchorWeekday);
+            boolean enabled = weekday == null || weekday != newAnchorWeekday;
             out.put(weekday, new WeekdaySelection(selected, enabled));
         }
         return out;

@@ -221,6 +221,9 @@ public class CalendarPlacePresenter implements Presenter, TaskPresenter
 
                 model.setSelectedDate(tmpDate);
             }
+            // Reset sidebar transients on saved-calendar switch — search term
+            // is a UI affordance, not part of the saved calendar.
+            resourceSelectionPresenter.getState().setSearchTerm("");
             updateView( null);
         }
         catch (RaplaException e)

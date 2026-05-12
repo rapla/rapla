@@ -28,6 +28,7 @@ references — pasting one into your IDE jumps to the right place.
 | [permissions.md](permissions.md) | AccessLevel, PermissionImpl, resolution algorithm, server enforcement, JWT |
 | [extension-points.md](extension-points.md) | Spring DI plugin wiring, extension-point catalog, plugin list |
 | [flows.md](flows.md) | Cross-cutting flows: login, query, store/dispatch, refresh poll |
+| [mvp-pattern.md](mvp-pattern.md) | Presenter / View / pure-model carve-out pattern; headless test harness; AGENTS.md §12 leak-probe pattern |
 
 ## What lives where (quick lookup)
 

@@ -6,7 +6,6 @@ import org.rapla.client.PopupContext;
 import org.rapla.client.ReservationController;
 import org.rapla.client.base.CalendarPlugin;
 import org.rapla.client.dialog.DialogUiFactoryInterface;
-import org.rapla.client.edit.reservation.sample.ReservationPresenter;
 import org.rapla.client.event.ApplicationEvent;
 import org.rapla.client.event.ApplicationEvent.ApplicationEventContext;
 import org.rapla.client.event.ApplicationEventBus;
@@ -110,7 +109,10 @@ public class CalendarWeekViewPresenter implements Presenter, CalendarPlugin
         final Appointment appointment = appointmentBlock.getAppointment();
         final Reservation reservation = appointment.getReservation();
         ApplicationEventContext eventContext = new EditApplicationEventContext<>(Collections.singletonList(appointment));
-        eventBus.publish(new ApplicationEvent(ReservationPresenter.EDIT_ACTIVITY_ID, reservation.getId(), context, eventContext));
+        // Activity id preserved from the deleted sample presenter
+        // (org.rapla.client.edit.reservation.sample.ReservationPresenter).
+        // See CalendarTableViewPresenter for the same id usage.
+        eventBus.publish(new ApplicationEvent("editevent", reservation.getId(), context, eventContext));
     }
 
     @Override

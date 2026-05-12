@@ -2,6 +2,7 @@ package org.rapla.server.spring.web;
 
 import org.rapla.entities.EntityNotFoundException;
 import org.rapla.framework.RaplaException;
+import org.rapla.storage.RaplaNewVersionException;
 import org.rapla.storage.RaplaSecurityException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -26,6 +27,7 @@ import java.util.Map;
  *   EntityNotFoundException                  → 404 Not Found
  *   MissingServletRequestParameterException  → 400 Bad Request   (Spring's auto-thrown when @RequestParam(required=true) is absent)
  *   IllegalArgumentException, AssertionError → 400 Bad Request   (typical for null/empty IDs reaching Assert.notNull deep in the call chain)
+ *   RaplaNewVersionException                 → 409 Conflict       (concurrent modification — another user changed the entity; SPA refreshes and retries)
  *   RaplaException                           → 500 Internal Server Error  (catch-all for unexpected server faults)
  * </pre>
  *
@@ -62,6 +64,22 @@ public class RaplaExceptionHandler
     public ResponseEntity<Map<String, Object>> handleBadRequest(Throwable ex)
     {
         return body(HttpStatus.BAD_REQUEST, ex.getMessage());
+    }
+
+    /**
+     * Concurrent-modification: another user changed the same entity between
+     * this client's read and write. PRD 026 §B2 — the SPA needs a distinguishable
+     * status to drive its "refresh and retry" flow; left as 500 (via the catch-all
+     * below) the SPA can't tell this from a real server fault.
+     * <p>
+     * 409 over 412 because there's no precondition header on the request — this
+     * is server-side optimistic-concurrency detection, not client-supplied
+     * If-Match. The semantic match is "conflict with current state of the resource".
+     */
+    @ExceptionHandler(RaplaNewVersionException.class)
+    public ResponseEntity<Map<String, Object>> handleNewVersion(RaplaNewVersionException ex)
+    {
+        return body(HttpStatus.CONFLICT, ex.getMessage());
     }
 
     @ExceptionHandler(RaplaException.class)

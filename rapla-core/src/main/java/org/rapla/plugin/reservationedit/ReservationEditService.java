@@ -32,4 +32,14 @@ public interface ReservationEditService
      */
     @PostExchange("/check-conflicts")
     ConflictReport checkConflicts(@RequestBody ConflictCheckRequest req) throws RaplaException;
+
+    /**
+     * Expand an appointment's recurrence rule into concrete occurrences
+     * inside a time window (PRD 026 §B4). Server-side implementation of
+     * {@link org.rapla.entities.domain.Appointment#createBlocks} — saves
+     * the Angular client from re-porting the weekday-flip-on-move logic
+     * and exception-skip rules.
+     */
+    @PostExchange("/expand-blocks")
+    java.util.List<AppointmentBlockDto> expandBlocks(@RequestBody ExpandBlocksRequest req) throws RaplaException;
 }

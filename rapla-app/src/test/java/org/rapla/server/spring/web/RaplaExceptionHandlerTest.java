@@ -3,6 +3,7 @@ package org.rapla.server.spring.web;
 import org.junit.jupiter.api.Test;
 import org.rapla.entities.EntityNotFoundException;
 import org.rapla.framework.RaplaException;
+import org.rapla.storage.RaplaNewVersionException;
 import org.rapla.storage.RaplaSecurityException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -66,6 +67,18 @@ class RaplaExceptionHandlerTest
         ResponseEntity<Map<String, Object>> response = handler.handleBadRequest(
                 new AssertionError("Assertion failed"));
         assertEquals(HttpStatus.BAD_REQUEST.value(), response.getStatusCode().value());
+    }
+
+    @Test
+    void newVersionException_mapsTo409()
+    {
+        // PRD 026 §B2 — concurrent-modification must be distinguishable from
+        // the 500 catch-all so the SPA can drive its refresh-and-retry flow.
+        ResponseEntity<Map<String, Object>> response = handler.handleNewVersion(
+                new RaplaNewVersionException("Reservation 'My Event' was modified by another user"));
+        assertEquals(HttpStatus.CONFLICT.value(), response.getStatusCode().value());
+        assertBodyShape(response.getBody(), 409, "Conflict",
+                "Reservation 'My Event' was modified by another user");
     }
 
     @Test

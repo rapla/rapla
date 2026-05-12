@@ -5,7 +5,6 @@ import org.rapla.client.extensionpoints.UserOptionPanel;
 import org.rapla.client.swing.RaplaGUIComponent;
 import org.rapla.components.layout.TableLayout;
 import org.rapla.entities.configuration.Preferences;
-import org.rapla.entities.configuration.RaplaConfiguration;
 import org.rapla.facade.client.ClientFacade;
 import org.rapla.framework.Configuration;
 import org.rapla.framework.RaplaException;
@@ -72,20 +71,29 @@ public class Export2iCalUserOption extends RaplaGUIComponent implements UserOpti
 		this.i18nIcal = i18nIcal;
 	}
 	
+	/** Cached enabled flag — isEnabled() is called repeatedly during user-options rendering. */
+	private volatile Boolean cachedEnabled;
+
 	@Override
 	public boolean isEnabled()
 	{
-	    RaplaConfiguration config;
+	    Boolean cached = cachedEnabled;
+	    if (cached != null) return cached;
         try
         {
-            config = getFacade().getSystemPreferences().getEntry(Export2iCalPlugin.ICAL_CONFIG, new RaplaConfiguration());
+            // Previously read .server.-named ICAL_CONFIG from system prefs.
+            // That key is now stripped from the bulk bootstrap for admins
+            // too (PRD 026 §5 security fix); fetch via the dedicated endpoint.
+            Configuration config = configService.getUserDefaultConfig();
+            boolean enabled = config != null && config.getAttributeAsBoolean("enabled", Export2iCalPlugin.ENABLE_BY_DEFAULT);
+            cachedEnabled = enabled;
+            return enabled;
         }
         catch (RaplaException e)
         {
-            return false;
+            getLogger().warn("Failed to load iCal config via /ical/config/default; falling back to default", e);
+            return Export2iCalPlugin.ENABLE_BY_DEFAULT;
         }
-        final boolean enabled = config.getAttributeAsBoolean("enabled", Export2iCalPlugin.ENABLE_BY_DEFAULT);
-        return enabled;
 	}
 
 	public JComponent getComponent() {

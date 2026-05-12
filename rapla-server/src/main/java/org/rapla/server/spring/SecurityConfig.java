@@ -5,7 +5,6 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
-import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.web.cors.CorsConfiguration;
@@ -18,6 +17,7 @@ import java.util.List;
 public class SecurityConfig
 {
     @Bean
+    @org.springframework.core.annotation.Order(2)
     public SecurityFilterChain filterChain(HttpSecurity http, ObjectProvider<JwtDecoder> jwtDecoderProvider) throws Exception
     {
         JwtDecoder decoder = jwtDecoderProvider.getIfAvailable();
@@ -29,6 +29,8 @@ public class SecurityConfig
                             "/calendar", "/calendar.csv", "/internal_calendar", "/internal_calendar.csv",
                             "/ical", "/internal_ical",
                             "/raplaclient", "/raplaclient.jnlp",
+                            "/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html",
+                            "/oauth2/**", "/.well-known/**", "/login", "/error",
                             "/dhbw/status").permitAll();
                     if (decoder != null)
                     {
@@ -39,8 +41,8 @@ public class SecurityConfig
                         auth.anyRequest().permitAll();
                     }
                 })
+                .formLogin(form -> form.loginPage("/login").permitAll())
                 .csrf(csrf -> csrf.disable())
-                .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .cors(Customizer.withDefaults());
         if (decoder != null)
         {

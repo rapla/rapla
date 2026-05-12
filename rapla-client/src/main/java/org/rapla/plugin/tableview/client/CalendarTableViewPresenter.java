@@ -3,7 +3,6 @@ package org.rapla.plugin.tableview.client;
 import org.rapla.client.EditApplicationEventContext;
 import org.rapla.client.PopupContext;
 import org.rapla.client.base.CalendarPlugin;
-import org.rapla.client.edit.reservation.sample.ReservationPresenter;
 import org.rapla.client.event.ApplicationEvent;
 import org.rapla.client.event.ApplicationEvent.ApplicationEventContext;
 import org.rapla.client.event.ApplicationEventBus;
@@ -73,7 +72,12 @@ public class CalendarTableViewPresenter implements Presenter, CalendarPlugin
     public void selectReservation(Reservation selectedObject, PopupContext context)
     {
         ApplicationEventContext editContext = new EditApplicationEventContext<>(Collections.singletonList(selectedObject));
-        final ApplicationEvent activity = new ApplicationEvent(ReservationPresenter.EDIT_ACTIVITY_ID, selectedObject.getId(),context, editContext);
+        // Activity id preserved verbatim from the deleted sample presenter
+        // (org.rapla.client.edit.reservation.sample.ReservationPresenter). No
+        // production listener is registered for this id today — the call
+        // was pre-existing, deliberately kept as-is to avoid silently
+        // changing double-click behaviour while the sample is removed.
+        final ApplicationEvent activity = new ApplicationEvent("editevent", selectedObject.getId(),context, editContext);
         eventBus.publish(activity);
         logger.info("selection changed");
 

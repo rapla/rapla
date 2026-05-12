@@ -265,22 +265,7 @@ public class AppointmentController extends RaplaGUIComponent implements Disposab
         {
             repeatingEditor.mapFromAppointment();
             repeatingCard.show(repeatingContainer, "1");
-            if (repeating.isWeekly())
-            {
-                weeklyRepeating.setSelected(true);
-            }
-            else if (repeating.isDaily())
-            {
-                dailyRepeating.setSelected(true);
-            }
-            else if (repeating.isMonthly())
-            {
-                monthlyRepeating.setSelected(true);
-            }
-            else if (repeating.isYearly())
-            {
-                yearlyRepeating.setSelected(true);
-            }
+            selectRepeatingChoiceButton(RepeatingRuleProjector.choiceFor(repeating.getType()));
         }
         else
         {
@@ -289,6 +274,20 @@ public class AppointmentController extends RaplaGUIComponent implements Disposab
             noRepeating.setSelected(true);
         }
         savedRepeatingType = getCurrentRepeatingType();
+    }
+
+    /** Map a {@link RepeatingRuleProjector.RepeatingChoice} to the corresponding
+     *  radio button. View-side counterpart of {@code choiceFor(...)}. */
+    private void selectRepeatingChoiceButton(RepeatingRuleProjector.RepeatingChoice choice)
+    {
+        switch (choice)
+        {
+            case NONE    -> noRepeating.setSelected(true);
+            case DAILY   -> dailyRepeating.setSelected(true);
+            case WEEKLY  -> weeklyRepeating.setSelected(true);
+            case MONTHLY -> monthlyRepeating.setSelected(true);
+            case YEARLY  -> yearlyRepeating.setSelected(true);
+        }
     }
 
     List<Consumer<Appointment>> appointmentChangedConsumer = new ArrayList<>();
@@ -1072,14 +1071,14 @@ public class AppointmentController extends RaplaGUIComponent implements Disposab
 
         private void resetWeekdays(int weekday)
         {
-            final Set<Integer> weekdays = repeating.getWeekdays();
-            final boolean moreThenOneSelected = weekdays.size() > 1;
-            for ( Map.Entry<Integer,JCheckBox> entry:weekdaysChecker.entrySet())
+            Map<Integer, WeekdaySelection> sels = RepeatingRuleProjector.weekdaysOnAnchorShift(
+                    repeating.getWeekdays(), weekday, weekdaysChecker.keySet());
+            for (Map.Entry<Integer, JCheckBox> entry : weekdaysChecker.entrySet())
             {
-                final Integer key = entry.getKey();
-                boolean selected = moreThenOneSelected ? weekdays.contains( key ) : key.equals(weekday);
-                entry.getValue().setSelected( selected);
-                entry.getValue().setEnabled( key != weekday);
+                WeekdaySelection s = sels.get(entry.getKey());
+                if (s == null) continue;
+                entry.getValue().setSelected(s.selected());
+                entry.getValue().setEnabled(s.enabled());
             }
         }
 
@@ -1792,31 +1791,16 @@ public class AppointmentController extends RaplaGUIComponent implements Disposab
 
         private void setRepeatingType(RepeatingType repeatingType)
         {
+            RepeatingRuleProjector.RepeatingChoice choice = RepeatingRuleProjector.choiceFor(repeatingType);
+            selectRepeatingChoiceButton(choice);
             if (repeatingType == null)
             {
-                noRepeating.setSelected(true);
                 repeatingCard.show(repeatingContainer, "0");
                 singleEditor.mapFromAppointment();
                 appointment.setRepeatingEnabled(false);
             }
             else
             {
-                if (repeatingType == RepeatingType.WEEKLY)
-                {
-                    weeklyRepeating.setSelected(true);
-                }
-                else if (repeatingType == RepeatingType.DAILY)
-                {
-                    dailyRepeating.setSelected(true);
-                }
-                else if (repeatingType == RepeatingType.MONTHLY)
-                {
-                    monthlyRepeating.setSelected(true);
-                }
-                else if (repeatingType == RepeatingType.YEARLY)
-                {
-                    yearlyRepeating.setSelected(true);
-                }
                 ReservationHelper.makeRepeatingForPeriod(getPeriodModel(), appointment, repeatingType, 1);
                 repeatingEditor.mapFromAppointment();
                 repeatingCard.show(repeatingContainer, "1");

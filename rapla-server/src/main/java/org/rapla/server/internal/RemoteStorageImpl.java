@@ -98,8 +98,17 @@ public class RemoteStorageImpl implements RemoteStorage
                 {
                     Preferences preferences = (Preferences) entity;
                     ReferenceInfo<User> ownerId = preferences.getOwnerRef();
-                    if (ownerId == null && !user.isAdmin())
+                    if (ownerId == null)
                     {
+                        // Strip .server.* entries (RSA private key, LDAP / SMTP /
+                        // Exchange credentials) regardless of admin status. Matches
+                        // the other call sites in this codebase: getEntityRecursive
+                        // and UpdateDataManagerImpl.processClientReadable both strip
+                        // unconditionally. The previous '&& !user.isAdmin()' bypass
+                        // leaked the server's signing key to admin browsers on
+                        // bootstrap — admin tools that need those values use the
+                        // dedicated plugin-config endpoints (/mail/config,
+                        // /jndi, /exchange/config, /ical/config) instead.
                         entity = UpdateDataManagerImpl.removeServerOnlyPreferences(preferences);
                     }
                 }

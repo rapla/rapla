@@ -59,6 +59,7 @@ import java.util.Set;
 
 @org.springframework.stereotype.Service
 @org.springframework.context.annotation.Lazy
+@org.springframework.context.annotation.Scope(org.springframework.beans.factory.config.ConfigurableBeanFactory.SCOPE_PROTOTYPE)
 public class MultiCalendarPresenter implements CalendarContainer,Presenter
 {
     private static final String ERROR_NO_VIEW_DEFINED = "No views enabled. Please add a plugin in the menu admin/settings/plugins";

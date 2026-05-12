@@ -3,12 +3,12 @@ import org.rapla.RaplaResources;
 import org.rapla.client.PopupContext;
 import org.rapla.client.dialog.DialogInterface;
 import org.rapla.client.dialog.DialogUiFactoryInterface;
+import org.rapla.client.edit.check.DefaultReservationWarnings;
+import org.rapla.client.edit.check.ReservationWarning;
 import org.rapla.client.extensionpoints.EventCheck;
 import org.rapla.entities.User;
 import org.rapla.entities.configuration.Preferences;
-import org.rapla.entities.domain.Appointment;
 import org.rapla.entities.domain.AppointmentFormater;
-import org.rapla.entities.domain.RaplaObjectAnnotations;
 import org.rapla.entities.domain.Reservation;
 import org.rapla.entities.domain.internal.ReservationImpl;
 import org.rapla.facade.CalendarModel;
@@ -54,40 +54,29 @@ public class DefaultReservationCheck implements EventCheck
             Preferences preferences = clientFacade.getRaplaFacade().getPreferences(user);
             final boolean showNotInCalendar = preferences.getEntryAsBoolean(CalendarOptionsImpl.SHOW_NOT_IN_CALENDAR_WARNING, true);
             RaplaFacade raplaFacade = clientFacade.getRaplaFacade();
+            // Pre-flight entity-level sanity check (server-replicated).
             for (Reservation reservation : reservations)
             {
                 ReservationImpl.checkReservation(i18n, reservation, raplaFacade.getOperator());
-                Appointment[] appointments = reservation.getAppointments();
-                Appointment duplicatedAppointment = null;
-                for (int i=0;i<appointments.length;i++) {
-                    for (int j=i + 1;j<appointments.length;j++)
-                        if (appointments[i].matches(appointments[j])) {
-                            duplicatedAppointment = appointments[i];
-                            break;
-                        }
-                }
-                String template = reservation.getAnnotation(RaplaObjectAnnotations.KEY_TEMPLATE);
-                Locale locale = i18n.getLocale();
-                String name = reservation.getName(locale);
-                if (name.trim().length() == 0 && template == null)
-                {
-                    view.addWarning(i18n.getString("error.no_reservation_name"));
-                }
-
-                if (!model.isMatchingSelectionAndFilter(reservation, null) && clientFacade.getTemplate() == null && showNotInCalendar)
-                {
-                    view.addWarning(i18n.format("warning.not_in_calendar", reservation.getName(locale)));
-                }
-
-                if (duplicatedAppointment != null)
-                {
-                    view.addWarning(i18n.format("warning.duplicated_appointments", appointmentFormater.getShortSummary(duplicatedAppointment)));
-
-                }
-                if (reservation.getAllocatables().length == 0 && template == null)
-                {
-                    view.addWarning(i18n.getString("warning.no_allocatables_selected"));
-                }
+            }
+            // Pure decision: evaluate the four rules in rapla-core.
+            // Same decisions an Angular client (PRD 026/028) would run before
+            // calling /storage/dispatch — only the dialog popping below is
+            // view-specific.
+            boolean templateMode = clientFacade.getTemplate() != null;
+            java.util.List<ReservationWarning> warnings = DefaultReservationWarnings.evaluate(
+                    reservations,
+                    i18n.getLocale(),
+                    templateMode,
+                    showNotInCalendar,
+                    r -> {
+                        try { return model.isMatchingSelectionAndFilter(r, null); }
+                        catch (RaplaException e) { throw new RuntimeException(e); }
+                    },
+                    appointmentFormater::getShortSummary);
+            for (ReservationWarning w : warnings)
+            {
+                view.addWarning(formatWarning(w));
             }
         }
         catch (RaplaException ex)
@@ -108,5 +97,31 @@ public class DefaultReservationCheck implements EventCheck
         {
             return new ResolvedPromise<>(true);
         }
+    }
+
+    /** Map a {@link ReservationWarning} code to its i18n bundle key and
+     *  interpolate args. View-side counterpart of the pure check —
+     *  Angular has its own equivalent that builds Angular messages from
+     *  the same code+args. */
+    private String formatWarning(ReservationWarning w)
+    {
+        switch (w.code())
+        {
+            case NO_RESERVATION_NAME:
+                return i18n.getString("error.no_reservation_name");
+            case NOT_IN_CALENDAR:
+                return i18n.format("warning.not_in_calendar", arg(w, 0));
+            case DUPLICATED_APPOINTMENTS:
+                return i18n.format("warning.duplicated_appointments", arg(w, 0));
+            case NO_ALLOCATABLES_SELECTED:
+                return i18n.getString("warning.no_allocatables_selected");
+            default:
+                return w.code().name();
+        }
+    }
+
+    private static String arg(ReservationWarning w, int i)
+    {
+        return i < w.args().size() ? w.args().get(i) : "";
     }
 }

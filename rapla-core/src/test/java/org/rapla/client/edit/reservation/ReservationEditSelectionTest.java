@@ -1,13 +1,16 @@
 package org.rapla.client.edit.reservation;
 
 import org.junit.jupiter.api.Test;
+import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.Appointment;
 import org.rapla.entities.domain.Reservation;
 import org.rapla.entities.domain.internal.AppointmentImpl;
 
+import java.lang.reflect.Proxy;
 import java.time.LocalDateTime;
 import java.util.Collections;
 import java.util.List;
+import java.util.Locale;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -93,6 +96,88 @@ class ReservationEditSelectionTest
         assertEquals(2, sel.appointments().length);
         assertSame(b1, sel.appointments()[0]);
     }
+
+    // ---------- PRD 023 Phase 7 name-search ----------
+
+    @Test
+    void nameSearchTermDefaultsToEmpty()
+    {
+        ReservationEditSelection sel = new ReservationEditSelection();
+        assertEquals("", sel.nameSearchTerm());
+    }
+
+    @Test
+    void nameSearchTermNullCoercesToEmpty()
+    {
+        ReservationEditSelection sel = new ReservationEditSelection();
+        sel.setNameSearchTerm(null);
+        assertEquals("", sel.nameSearchTerm());
+    }
+
+    @Test
+    void filterByNameSearchEmptyTermReturnsAll()
+    {
+        ReservationEditSelection sel = new ReservationEditSelection();
+        Allocatable a1 = stubAllocatable("Room A66");
+        Allocatable a2 = stubAllocatable("Room B12");
+        assertEquals(2, sel.filterByNameSearch(List.of(a1, a2), Locale.ROOT).size());
+    }
+
+    @Test
+    void filterByNameSearchAppliesMatcher()
+    {
+        ReservationEditSelection sel = new ReservationEditSelection();
+        Allocatable a1 = stubAllocatable("Room A66");
+        Allocatable a2 = stubAllocatable("Room B12");
+        Allocatable a3 = stubAllocatable("Hall 1");
+        sel.setNameSearchTerm("room");
+        List<Allocatable> out = sel.filterByNameSearch(List.of(a1, a2, a3), Locale.ROOT);
+        assertEquals(2, out.size());
+        assertTrue(out.contains(a1));
+        assertTrue(out.contains(a2));
+        assertTrue(!out.contains(a3));
+    }
+
+    @Test
+    void filterByNameSearchUsesDiacriticFolding()
+    {
+        ReservationEditSelection sel = new ReservationEditSelection();
+        Allocatable cafe = stubAllocatable("Café Mocha");
+        Allocatable other = stubAllocatable("Diner");
+        sel.setNameSearchTerm("cafe");
+        List<Allocatable> out = sel.filterByNameSearch(List.of(cafe, other), Locale.ROOT);
+        assertEquals(1, out.size());
+        assertTrue(out.contains(cafe));
+    }
+
+    @Test
+    void filterByNameSearchNullInputReturnsEmpty()
+    {
+        ReservationEditSelection sel = new ReservationEditSelection();
+        sel.setNameSearchTerm("anything");
+        assertTrue(sel.filterByNameSearch(null, Locale.ROOT).isEmpty());
+    }
+
+    private static Allocatable stubAllocatable(String name)
+    {
+        return (Allocatable) Proxy.newProxyInstance(
+                Allocatable.class.getClassLoader(),
+                new Class[] { Allocatable.class },
+                (proxy, method, args) ->
+                {
+                    switch (method.getName())
+                    {
+                        case "getName":  return name;
+                        case "equals":   return proxy == args[0];
+                        case "hashCode": return System.identityHashCode(proxy);
+                        case "toString": return "StubAllocatable[" + name + "]";
+                        default: throw new UnsupportedOperationException(
+                                "stub does not implement " + method.getName());
+                    }
+                });
+    }
+
+    // ---------- existing helpers ----------
 
     private static Appointment appointment(String startIso, String endIso)
     {

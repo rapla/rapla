@@ -14,6 +14,7 @@ package org.rapla.client.swing.internal.edit;
 
 import org.rapla.RaplaResources;
 import org.rapla.client.dialog.DialogUiFactoryInterface;
+import org.rapla.client.edit.reservation.ClassificationFieldVisibility;
 import org.rapla.client.swing.EditField;
 import org.rapla.client.TreeFactory;
 import org.rapla.client.swing.internal.edit.fields.AllocatableSelectField;
@@ -245,29 +246,10 @@ public class ClassificationEditUI extends AbstractEditUI<Classification> {
             }
 		}
 		Assert.notNull(field, "Unknown AttributeType");
-        final User user = getUser();
-        boolean canRead = true;
-        boolean canWrite = true;
-        for ( Classification object: objectList)
-        {
-            if (permissionController.canRead(object, attribute, user))
-            {
-                if (!permissionController.canWrite(object, attribute, user))
-                {
-                    canWrite = false;
-                }
-            }
-            else
-            {
-                canRead = false;
-                canWrite = false;
-                break;
-            }
-        }
-        if ( isReadOnly())
-        {
-            canWrite = false;
-        }
+        final ClassificationFieldVisibility.Result visibility =
+                ClassificationFieldVisibility.resolve(objectList, attribute, getUser(), permissionController, isReadOnly());
+        boolean canRead = visibility.visible();
+        boolean canWrite = visibility.writable();
         final JComponent component = field.getComponent();
         component.setVisible(canRead);
         if ( field instanceof TextField)

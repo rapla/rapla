@@ -22,6 +22,8 @@ import org.rapla.scheduler.Promise;
 import org.rapla.scheduler.ResolvedPromise;
 import org.rapla.storage.PermissionController;
 
+import org.rapla.client.edit.check.RequestAllocationWarnings;
+import org.rapla.client.edit.check.ReservationWarning;
 import org.springframework.beans.factory.annotation.Autowired;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -52,14 +54,16 @@ public class RequestAllocationCheck implements EventCheck
 
     public Promise<Boolean> check(Collection<Reservation> reservations, PopupContext sourceComponent)
     {
-        for (Reservation reservation : reservations)
+        // Pure decision in rapla-core; rendered to Swing dialog text below.
+        // Same decision an Angular client would run before submitting a save.
+        List<ReservationWarning> warnings = RequestAllocationWarnings.evaluate(reservations, null);
+        for (ReservationWarning w : warnings)
         {
-            for(Allocatable allocatable :  reservation.getAllocatables()){
-                final RequestStatus requestStatus = reservation.getRequestStatus(allocatable);
-                if (requestStatus == RequestStatus.REQUESTED) {
-                    view.addWarning("Wollen Sie eine Buchungsanfrage für die Ressource '" + allocatable.getName( null ) + "' erstellen?");
-                }
-            }
+            // FIXME: hardcoded German pending an i18n key — preserved for parity
+            // with the legacy text. Move to bundle when the Angular port adds
+            // proper i18n for REQUEST_PENDING.
+            String allocName = w.args().isEmpty() ? "" : w.args().get(0);
+            view.addWarning("Wollen Sie eine Buchungsanfrage für die Ressource '" + allocName + "' erstellen?");
         }
         if (view.hasMessages())
         {

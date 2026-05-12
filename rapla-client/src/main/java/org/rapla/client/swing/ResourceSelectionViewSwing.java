@@ -34,6 +34,8 @@ import org.rapla.client.swing.internal.view.RaplaSwingTreeModel;
 import org.rapla.client.RaplaTreeNode;
 import org.rapla.client.swing.internal.view.RaplaTreeToolTipRenderer;
 import org.rapla.client.internal.TreeFactoryImpl;
+import org.rapla.client.edit.search.NameSearchMatcher;
+import org.rapla.client.sidebar.ResourceSelectionState;
 import org.rapla.client.swing.toolkit.*;
 import org.rapla.components.calendar.RaplaArrowButton;
 import org.rapla.components.layout.TableLayout;
@@ -53,11 +55,15 @@ import org.rapla.logger.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
 import javax.swing.BorderFactory;
 import javax.swing.JComponent;
+import javax.swing.JLabel;
 import javax.swing.JPanel;
+import javax.swing.JTextField;
 import javax.swing.JTree;
 import javax.swing.SwingUtilities;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
+import javax.swing.event.DocumentEvent;
+import javax.swing.event.DocumentListener;
 import javax.swing.tree.*;
 import java.awt.BorderLayout;
 import java.awt.Component;
@@ -81,6 +87,16 @@ public class ResourceSelectionViewSwing implements ResourceSelectionView
     Listener listener = new Listener();
 
     protected FilterEditButton filterEdit;
+    protected final JTextField nameSearchField = new JTextField();
+    protected final JLabel hiddenSelectionStatus = new JLabel(" ");
+    protected final JPanel topPanel = new JPanel();
+    private String nameSearchTerm = "";
+    private int hiddenSelectedCount = 0;
+    private ClassificationFilter[] lastFilter;
+    private Collection<Object> lastSelectedObjects = Collections.emptyList();
+    /** User objects rendered in the tree after the last generateTree() call.
+     *  Drives the hidden-count: any selected object NOT in this set is hidden. */
+    private java.util.Set<Object> visibleUserObjects = java.util.Collections.emptySet();
     private final TreeFactory treeFactory;
     private final Logger logger;
     private final RaplaResources i18n;
@@ -118,9 +134,26 @@ public class ResourceSelectionViewSwing implements ResourceSelectionView
         // content.setPreferredSize(new Dimension(260,400));
         content.setBorder(BorderFactory.createRaisedBevelBorder());
 
-        content.add(buttonsPanel, BorderLayout.NORTH);
+        topPanel.setLayout(new BorderLayout());
+        topPanel.add(buttonsPanel, BorderLayout.NORTH);
+        topPanel.add(hiddenSelectionStatus, BorderLayout.SOUTH);
+        content.add(topPanel, BorderLayout.NORTH);
 
         buttonsPanel.setLayout(new BorderLayout());
+
+        nameSearchField.setToolTipText(i18n.getString("search"));
+        buttonsPanel.add(nameSearchField, BorderLayout.CENTER);
+        nameSearchField.getDocument().addDocumentListener(new DocumentListener()
+        {
+            public void insertUpdate(DocumentEvent e) { onSearchTermChanged(); }
+            public void removeUpdate(DocumentEvent e) { onSearchTermChanged(); }
+            public void changedUpdate(DocumentEvent e) { onSearchTermChanged(); }
+        });
+
+        hiddenSelectionStatus.setFont(hiddenSelectionStatus.getFont().deriveFont(hiddenSelectionStatus.getFont().getSize2D() - 1f));
+        hiddenSelectionStatus.setForeground(java.awt.Color.GRAY);
+        hiddenSelectionStatus.setBorder(BorderFactory.createEmptyBorder(2, 4, 2, 4));
+        hiddenSelectionStatus.setVisible(false);
 
         treeSelection.setToolTipRenderer(new RaplaTreeToolTipRenderer(infoFactory));
         treeSelection.setMultiSelect(true);
@@ -151,13 +184,51 @@ public class ResourceSelectionViewSwing implements ResourceSelectionView
     }
     
 
+    private final ResourceSelectionState.Listener stateListener = s -> refreshFromState();
+
     @Override
     public void setPresenter(Presenter presenter) {
+        if (this.presenter != null && this.presenter.getState() != null) {
+            this.presenter.getState().removeListener(stateListener);
+        }
         this.presenter = presenter;
+        if (presenter != null && presenter.getState() != null) {
+            presenter.getState().addListener(stateListener);
+            refreshFromState();
+        }
     }
-    
+
     protected Presenter getPresenter() {
         return presenter;
+    }
+
+    private void refreshFromState()
+    {
+        if (presenter == null) return;
+        ResourceSelectionState s = presenter.getState();
+        this.nameSearchTerm = s.searchTerm();
+        if (!nameSearchField.getText().equals(s.searchTerm()))
+        {
+            nameSearchField.setText(s.searchTerm());
+        }
+        // Canonical selection lives in the state — not lastSelectedObjects,
+        // which only updates on the dataChanged path and is stale during a
+        // click→state→listener cycle.
+        Collection<Object> canonical = new java.util.ArrayList<>(s.selected());
+        this.lastSelectedObjects = canonical;
+        if (lastFilter != null)
+        {
+            try
+            {
+                updateTree(lastFilter, canonical);
+                updateSelection(canonical);
+            }
+            catch (RaplaException ex)
+            {
+                logger.error("Failed to refresh from state", ex);
+            }
+        }
+        updateHiddenSelectionStatus();
     }
     
     @Override
@@ -179,8 +250,11 @@ public class ResourceSelectionViewSwing implements ResourceSelectionView
                 }
                 //boolean defaultFilter = model.isDefaultResourceTypes();
                 //filterEdit.setFiltered( ! defaultFilter );
+                this.lastFilter = filter;
+                this.lastSelectedObjects = selectedObjects == null ? Collections.emptyList() : selectedObjects;
                 updateTree(filter, selectedObjects);
                 updateSelection(selectedObjects);
+                updateHiddenSelectionStatus();
             }
             catch (RaplaException e)
             {
@@ -188,6 +262,47 @@ public class ResourceSelectionViewSwing implements ResourceSelectionView
                 dialogUiFactory.showException(e, popupContext);
             }
         });
+    }
+
+    private void onSearchTermChanged()
+    {
+        if (presenter == null) return;
+        // Write through canonical state; the state listener handles tree
+        // rebuild + status-line refresh.
+        presenter.getState().setSearchTerm(nameSearchField.getText());
+    }
+
+    private void updateHiddenSelectionStatus()
+    {
+        if (nameSearchTerm == null || nameSearchTerm.isBlank()
+                || lastSelectedObjects == null || lastSelectedObjects.isEmpty())
+        {
+            hiddenSelectedCount = 0;
+            hiddenSelectionStatus.setVisible(false);
+            return;
+        }
+        // Hidden = selected user objects that are NOT in the post-prune tree.
+        // This catches allocatables whose name didn't match AND parent folders
+        // (DynamicType / categorization / etc.) that got pruned because they
+        // ended up empty after the search.
+        int hidden = 0;
+        for (Object obj : lastSelectedObjects)
+        {
+            if (!visibleUserObjects.contains(obj))
+            {
+                hidden++;
+            }
+        }
+        hiddenSelectedCount = hidden;
+        if (hidden == 0)
+        {
+            hiddenSelectionStatus.setVisible(false);
+        }
+        else
+        {
+            hiddenSelectionStatus.setText(i18n.format("search.hidden_status", hidden));
+            hiddenSelectionStatus.setVisible(true);
+        }
     }
 
     public RaplaArrowButton getFilterButton()
@@ -242,17 +357,70 @@ public class ResourceSelectionViewSwing implements ResourceSelectionView
     {
         final TreeFactory treeFactory =  getTreeFactory();
         final TreeFactory.AllocatableNodes allocatableNodes = treeFactory.createAllocatableModel(filter);
-        filterEdit.setFiltered( allocatableNodes.filtered );
-        treeCellRenderer.setFiltered( allocatableNodes.filtered);
+        boolean filtered = allocatableNodes.filtered;
+        if (nameSearchTerm != null && !nameSearchTerm.isBlank())
+        {
+            String[] preparedTerms = NameSearchMatcher.prepare(nameSearchTerm);
+            if (preparedTerms.length > 0)
+            {
+                pruneByName(allocatableNodes.allocatableNode, preparedTerms, i18n.getLocale());
+                filtered = true;
+            }
+        }
+        filterEdit.setFiltered( filtered );
+        treeCellRenderer.setFiltered( filtered );
         final RaplaTreeNode raplaTreeNode = treeFactory.newRootNode();
         raplaTreeNode.add( allocatableNodes.allocatableNode);
 
         RaplaTreeNode usersNode = treeFactory.newUsersNode();
         raplaTreeNode.add(usersNode);
 
+        java.util.Set<Object> visible = new java.util.HashSet<>();
+        collectVisibleUserObjects(raplaTreeNode, visible);
+        this.visibleUserObjects = visible;
 
         DefaultTreeModel treeModel = new RaplaSwingTreeModel(raplaTreeNode);
         return treeModel;
+    }
+
+    private static void collectVisibleUserObjects(RaplaTreeNode node, java.util.Set<Object> visible)
+    {
+        Object userObj = node.getUserObject();
+        if (userObj != null)
+        {
+            visible.add(userObj);
+        }
+        for (int i = 0; i < node.getChildCount(); i++)
+        {
+            collectVisibleUserObjects(node.getChild(i), visible);
+        }
+    }
+
+    private static void pruneByName(RaplaTreeNode parent, String[] preparedTerms, java.util.Locale locale)
+    {
+        java.util.List<RaplaTreeNode> toRemove = new java.util.ArrayList<>();
+        for (int i = 0; i < parent.getChildCount(); i++)
+        {
+            RaplaTreeNode child = parent.getChild(i);
+            pruneByName(child, preparedTerms, locale);
+            Object userObj = child.getUserObject();
+            if (userObj instanceof Allocatable)
+            {
+                String name = ((Allocatable) userObj).getName(locale);
+                if (!NameSearchMatcher.matchesPrepared(name, preparedTerms))
+                {
+                    toRemove.add(child);
+                }
+            }
+            else if (userObj != null && child.getChildCount() == 0)
+            {
+                toRemove.add(child);
+            }
+        }
+        for (RaplaTreeNode r : toRemove)
+        {
+            parent.remove(r);
+        }
     }
 
     protected void updateSelection(Collection<Object> selectedObjects)

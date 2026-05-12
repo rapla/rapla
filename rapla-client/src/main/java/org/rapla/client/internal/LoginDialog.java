@@ -66,6 +66,7 @@ public final class LoginDialog extends JFrame implements LocaleChangeListener
 	JLabel						passwordLabel		= new JLabel();
 	JButton						loginBtn			= new JButton();
 	JButton						exitBtn				= new JButton();
+	JButton						oauthBtn			= new JButton();
 	RaplaResources				i18n;
 	ImageObserver				observer;
 	Image						image;
@@ -121,11 +122,22 @@ public final class LoginDialog extends JFrame implements LocaleChangeListener
 	{
 		loginBtn.setAction(action);
 	}
-	
+
 	public void setExitAction(Action action)
 	{
 		exitAction = action;
 		exitBtn.setAction( action );
+	}
+
+	public void setOauthAction(Action action)
+	{
+		if (action == null)
+		{
+			oauthBtn.setVisible(false);
+			return;
+		}
+		oauthBtn.setAction(action);
+		oauthBtn.setVisible(true);
 	}
 	
 	private void init(JComponent languageSelector)
@@ -203,7 +215,7 @@ public final class LoginDialog extends JFrame implements LocaleChangeListener
 		// ################## BEGIN BUTTONS ###################
 		
 		// this is a separate JPanel for the buttons at the bottom
-		GridLayout gridLayout = new GridLayout(1, 2);
+		GridLayout gridLayout = new GridLayout(1, 3);
 		gridLayout.setHgap(20);
 		buttonPanel.setLayout(gridLayout);
 		buttonPanel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
@@ -211,6 +223,9 @@ public final class LoginDialog extends JFrame implements LocaleChangeListener
 		buttonPanel.add(exitBtn);
 		// and to login
 		buttonPanel.add(loginBtn);
+		// optional OAuth login (browser-based); hidden until setOauthAction is called
+		oauthBtn.setVisible(false);
+		buttonPanel.add(oauthBtn);
 		setLocale();
 		username.requestFocus();
 
@@ -299,6 +314,7 @@ public final class LoginDialog extends JFrame implements LocaleChangeListener
 		chooseLanguageLabel.setText(getI18n().getString("choose_language"));
 		exitBtn.setText(getI18n().getString("exit"));
 		loginBtn.setText(getI18n().getString("login"));
+		oauthBtn.setText(getI18n().getString("login.oauth.button"));
 		usernameLabel.setText(getI18n().getString("username") + ":");
 		passwordLabel.setText(getI18n().getString("password") + ":");
 		setTitle(getI18n().getString("logindialog.title"));

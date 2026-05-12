@@ -99,6 +99,33 @@ class ReservationEditServiceContractTest
         assertRecordComponents(ConflictReport.class, "outcomes");
     }
 
+    @Test
+    void expandBlocksIsPostExchange()
+    {
+        Method m = methodNamed("expandBlocks");
+        PostExchange pe = m.getAnnotation(PostExchange.class);
+        assertNotNull(pe);
+        assertEquals("/expand-blocks", pe.value());
+        assertEquals(java.util.List.class, m.getReturnType());
+        assertEquals(1, m.getParameterCount());
+        Parameter p = m.getParameters()[0];
+        assertEquals(ExpandBlocksRequest.class, p.getType());
+        assertNotNull(p.getAnnotation(RequestBody.class));
+    }
+
+    @Test
+    void expandBlocksRequestComponentsAreStable()
+    {
+        assertRecordComponents(ExpandBlocksRequest.class,
+                "appointment", "windowStart", "windowEnd", "excludeExceptions");
+    }
+
+    @Test
+    void appointmentBlockDtoComponentsAreStable()
+    {
+        assertRecordComponents(AppointmentBlockDto.class, "start", "end");
+    }
+
     private static void assertRecordComponents(Class<?> recordClass, String... expected)
     {
         if (!recordClass.isRecord()) fail(recordClass.getName() + " must be a record");

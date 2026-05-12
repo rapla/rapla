@@ -417,6 +417,119 @@ class RepeatingRuleProjectorTest
         assertTrue(sels.isEmpty());
     }
 
+    // ---------- choiceFor / repeatingTypeFor ----------
+
+    @Test
+    void choiceForNullIsNone()
+    {
+        assertEquals(RepeatingRuleProjector.RepeatingChoice.NONE,
+                RepeatingRuleProjector.choiceFor(null));
+    }
+
+    @Test
+    void choiceForEachRepeatingType()
+    {
+        assertEquals(RepeatingRuleProjector.RepeatingChoice.DAILY,
+                RepeatingRuleProjector.choiceFor(RepeatingType.DAILY));
+        assertEquals(RepeatingRuleProjector.RepeatingChoice.WEEKLY,
+                RepeatingRuleProjector.choiceFor(RepeatingType.WEEKLY));
+        assertEquals(RepeatingRuleProjector.RepeatingChoice.MONTHLY,
+                RepeatingRuleProjector.choiceFor(RepeatingType.MONTHLY));
+        assertEquals(RepeatingRuleProjector.RepeatingChoice.YEARLY,
+                RepeatingRuleProjector.choiceFor(RepeatingType.YEARLY));
+    }
+
+    @Test
+    void repeatingTypeForEachChoice()
+    {
+        assertNull(RepeatingRuleProjector.repeatingTypeFor(RepeatingRuleProjector.RepeatingChoice.NONE));
+        assertEquals(RepeatingType.DAILY,
+                RepeatingRuleProjector.repeatingTypeFor(RepeatingRuleProjector.RepeatingChoice.DAILY));
+        assertEquals(RepeatingType.WEEKLY,
+                RepeatingRuleProjector.repeatingTypeFor(RepeatingRuleProjector.RepeatingChoice.WEEKLY));
+        assertEquals(RepeatingType.MONTHLY,
+                RepeatingRuleProjector.repeatingTypeFor(RepeatingRuleProjector.RepeatingChoice.MONTHLY));
+        assertEquals(RepeatingType.YEARLY,
+                RepeatingRuleProjector.repeatingTypeFor(RepeatingRuleProjector.RepeatingChoice.YEARLY));
+    }
+
+    @Test
+    void choiceRoundTrip()
+    {
+        // For every non-null RepeatingType, choiceFor → repeatingTypeFor returns the same type.
+        for (RepeatingType type : RepeatingType.values())
+        {
+            assertEquals(type,
+                    RepeatingRuleProjector.repeatingTypeFor(RepeatingRuleProjector.choiceFor(type)));
+        }
+    }
+
+    @Test
+    void repeatingTypeForNullChoiceIsNull()
+    {
+        assertNull(RepeatingRuleProjector.repeatingTypeFor(null));
+    }
+
+    // ---------- weekdaysOnAnchorShift ----------
+
+    @Test
+    void anchorShiftEmptyKeysIsEmpty()
+    {
+        Map<Integer, WeekdaySelection> out = RepeatingRuleProjector.weekdaysOnAnchorShift(
+                Set.of(2), 3, Set.of());
+        assertTrue(out.isEmpty());
+    }
+
+    @Test
+    void anchorShiftSingleSelectedSelectsOnlyNewAnchor()
+    {
+        // Currently only Mon (2) selected; shift anchor to Wed (4).
+        // Result: Wed selected (and disabled), all others unselected (and enabled).
+        Map<Integer, WeekdaySelection> out = RepeatingRuleProjector.weekdaysOnAnchorShift(
+                Set.of(2), 4, mondayThroughSunday());
+        for (Integer key : mondayThroughSunday())
+        {
+            WeekdaySelection s = out.get(key);
+            assertNotNull(s);
+            if (key == 4)
+            {
+                assertTrue(s.selected(), "new anchor must be selected");
+                assertFalse(s.enabled(), "new anchor must be disabled");
+            }
+            else
+            {
+                assertFalse(s.selected(), "non-anchor unselected when shifting from single");
+                assertTrue(s.enabled());
+            }
+        }
+    }
+
+    @Test
+    void anchorShiftMultipleSelectedKeepsExisting()
+    {
+        // Currently Mon (2) + Wed (4) selected; shift anchor to Fri (6).
+        // Result: existing selection retained (Mon + Wed); Fri NOT selected
+        // (because it wasn't in the original); Fri disabled (anchor).
+        Set<Integer> current = Set.of(2, 4);
+        Map<Integer, WeekdaySelection> out = RepeatingRuleProjector.weekdaysOnAnchorShift(
+                current, 6, mondayThroughSunday());
+        assertTrue(out.get(2).selected(), "Mon stays selected");
+        assertTrue(out.get(4).selected(), "Wed stays selected");
+        assertFalse(out.get(6).selected(), "new anchor (Fri) not in original → not selected");
+        assertFalse(out.get(6).enabled(), "new anchor always disabled");
+        assertTrue(out.get(3).enabled(), "non-anchor enabled");
+    }
+
+    @Test
+    void anchorShiftNullCurrentSelectsOnlyAnchor()
+    {
+        // Defensive: null current set → treat as single-selected path.
+        Map<Integer, WeekdaySelection> out = RepeatingRuleProjector.weekdaysOnAnchorShift(
+                null, 3, mondayThroughSunday());
+        assertTrue(out.get(3).selected());
+        assertFalse(out.get(2).selected());
+    }
+
     // ---------- helpers ----------
 
     private static Appointment daily(String startIso, String endIso, int number)

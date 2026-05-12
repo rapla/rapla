@@ -1,29 +1,55 @@
 # PRD 023 — Presenter / Model carve-out from Swing components
 
-**Status:** in-progress — Phases 1, 2, 3 (model+refactor+tier-1 tests), 5 landed 2026-05-11. **136 tier-1 tests in rapla-core.** Phase 4 superseded — already done in rapla-core (2014 vintage). AppointmentController -45 LOC; AllocatableSelection -64 LOC; ClassifiableFilterEdit -46 LOC. Phase 6 (production ReservationEditPresenter) and Phase 7 (name-search quick win, extracted from wont-fix PRD 021) remaining.
+**Status:** in-progress — Phases 1, 2, 3 (model+refactor+tier-1 tests), 5, 7, 8, 9 landed 2026-05-11. Phase 6 re-aimed 2026-05-11 (no `ReservationEditPresenter`); Phase 6a (row-status) + 6c (field visibility) landed; 6b skipped (no real diff today); Phase 6e-partial landed 2026-05-12 (`RepeatingChoice` enum + `choiceFor`/`repeatingTypeFor` + `weekdaysOnAnchorShift` added to `RepeatingRuleProjector`). **336+ tier-1 tests in rapla-core.** Phase 4 superseded — already done in rapla-core (2014 vintage). AppointmentController -45 LOC then further -34 LOC (6e); AllocatableSelection -64 LOC then further -60 in 6a; ClassifiableFilterEdit -46 LOC; PasswordChangeAction -33 LOC; RaplaObjectActions -38 LOC; ClassificationEditUI -22 LOC (6c). Phase 9 added `ResourceSelectionState` + 27 tests for the sidebar's canonical selection. Plus AllocatableSelection legacy field migration (Finish-A) DONE. Arch-test gate (`NoSwingInRaplaCoreClientEditTest`) enforces the no-Swing rule on the carve-out packages. `docs/architecture/mvp-pattern.md` published. Harness validated via `PasswordChangePolicyHarnessTest`.
 **Author:** Christopher Kohlhaas (with AI assistance)
 **Created:** 2026-05-11
 
-## Goal
+## Goals
 
-Extract the **pure business logic** that today lives inside Swing
-components (`AppointmentController`, `AllocatableSelection`, the calendar
-block layout, `ClassifiableFilterEdit`, …) into headless **presenter**
-and **model** classes that:
+Two primary goals, both about the **decision logic** inside the
+existing Swing components — **not** about replacing the Swing UI:
 
-1. Can be unit-tested in tier 1 / tier 2 (no Swing, no EDT, no `JDialog`).
-2. Are reusable from a future Angular client — either directly (the pure
-   model classes are POJOs) or via the REST surface that PRD 024 will
-   add on top of them.
-3. Leave the Swing controllers as thin **view adapters** that bind
-   widgets to the presenter and translate Swing events into presenter
-   calls.
+### Goal 1 — Make the Swing UI better testable
 
-This is **carve-out, not rewrite**. The goal is not to eliminate Swing
-or replace `AppointmentController`'s outer shell; it is to move the
-~20–30 % of code per file that is *pure logic* (validation, state
-computation, conflict math, layout geometry, undo command assembly)
-out from under the JPanel.
+Today's edit-tier Swing classes (`AppointmentController` 1972 LOC,
+`AllocatableSelection` 2412 LOC, `ClassifiableFilterEdit` 938 LOC,
+`ReservationInfoEdit` 797 LOC, `ReservationEditImpl` 596 LOC,
+`EditTaskPresenter` 639 LOC) have ~5 % test coverage. Most decisions
+are verified by hand-clicking through dialogs. Recurring regressions
+(Jackson-3 `final` fields hit 5×, date-migration script collateral,
+undo-stack drift) are the symptom. Carving out pure-logic chunks into
+rapla-core unlocks tier-1 unit testing of those decisions — the Swing
+classes shrink slightly and the test-bench grows substantially.
+
+### Goal 2 — Identify logic worth reusing in the Angular client
+
+The Angular UI (PRD 026 / PRD 028) **will look very different** from
+the Swing one — power-search shell, different edit-flow surfaces,
+different overall layout. So this PRD is **not** producing presenter
+classes that Angular will drive. It is producing **pure-Java
+decision and computation classes** in rapla-core that Angular calls
+via REST (PRD 024), and that the existing Swing classes also
+delegate to. The same `RepeatingRuleValidator.validate(...)` decides
+"is this recurrence rule valid" regardless of which UI asked the
+question.
+
+### Anti-goals
+
+- **Not** building a production `ReservationEditPresenter` that
+  drives `ReservationEditImpl` via a `ReservationView` interface.
+  That design assumed Angular would mirror the Swing edit flow; it
+  won't. The dead-code sample
+  (`org.rapla.client.edit.reservation.sample.ReservationPresenter`)
+  has been removed (2026-05-11) so it doesn't keep being read as a
+  roadmap signal.
+- **Not** rewriting `ReservationEditImpl` or other dialog classes
+  with a Presenter↔View split — too risky for a UI tier that will be
+  replaced wholesale by Angular, not refactored. The dialog stays as
+  it is until Angular ships and the Swing tier is retired.
+- **Not** chasing every small permission check or display formatter
+  into rapla-core. Threshold for extraction: at least 20 LOC of
+  decision logic AND clear Angular reuse value (REST endpoint or
+  TS-port avoidance).
 
 ## Why this is needed now
 
@@ -43,17 +69,13 @@ out from under the JPanel.
    carve-out now means the Angular client gets a working contract; not
    doing it means reimplementing four years of subtle scheduling
    behaviour from scratch.
-3. **The skeleton already exists.** `RaplaWidget<T>`,
-   `TaskPresenter`, `EditTaskPresenter`, the inner-`Presenter`-in-View
-   pattern (`CalendarPlaceView.Presenter`, `MenuView.Presenter`),
-   `CalendarPlacePresenter`, `ConflictSelectionPresenter`,
-   `ResourceSelectionPresenter` and the sample
-   `org.rapla.client.edit.reservation.sample.ReservationPresenter` /
-   `ReservationView` already model the target shape. PRD 020's
+3. **The pattern already works elsewhere.** PRD 020's
    `FieldRenderer` / `PanelRenderer` extracted a similar split for
-   admin panels and produced the only well-unit-tested client code in
-   the repo (`FieldRendererTest`, 10 tests). The pattern is proven; we
-   need to apply it to the reservation-edit tier.
+   admin panels and produced 10 tier-1 tests in `FieldRendererTest`.
+   `CalendarPlacePresenter` / `ConflictSelectionPresenter` /
+   `ResourceSelectionPresenter` already exhibit the
+   inner-`Presenter`-in-View shape on the calendar tier — they're
+   the precedents this PRD's tier-1 carve-outs piggy-back on.
 4. **Direction lock-in.** PRD 005 (multi-module split) marked the
    coupling from `rapla-server` back to `rapla-client` (for
    `RaplaBuilder` / `abstractcalendar`) as a known compromise. The
@@ -90,16 +112,15 @@ Each extraction includes:
 
 ### In scope — house-pattern alignment
 
-- **Promote the sample MVP shape to production** for the
-  reservation-edit dialog. The
-  `org.rapla.client.edit.reservation.sample.ReservationPresenter` is
-  currently dead code; rename `.sample` → `.headless` and use it as the
-  template for the production `ReservationEditPresenter`. The
-  Swing impl (`ReservationEditImpl`, 596 LOC) becomes a `ReservationView`
-  adapter.
-- **Document the house pattern** in `docs/architecture/` (PRD 022 —
-  add an `mvp-pattern.md` page when 022 lands, or inline into
-  `extension-points.md`).
+- **Document the carve-out pattern** in
+  `docs/architecture/mvp-pattern.md` (landed 2026-05-11). The doc
+  records package layout, the carve-out recipe, the harness usage,
+  and the AGENTS.md §12 permission-leak rule with reference
+  implementations. New contributors read this first.
+
+*(The "promote sample to production" entry that was here previously
+has been dropped — see the re-aimed Phase 6 below for the new
+direction.)*
 
 ### Explicitly out of scope (this PRD)
 
@@ -335,32 +356,87 @@ into a headless builder.
 
 Expected delta: ~200 lines moved out.
 
-### Phase 6 — Promote sample to production reservation presenter (≈4 days)
+### Phase 6 — Continued opportunistic carve-outs from edit-tier classes (re-aimed 2026-05-11)
 
-Goal: move
-`org.rapla.client.edit.reservation.sample.ReservationPresenter` /
-`ReservationView` out of `.sample` and use them to back a refactored
-`ReservationEditImpl`.
+**Original framing dropped.** PRD 026 / PRD 028 confirm the Angular UI
+will look very different from the Swing edit dialog (power-search
+shell, redesigned edit flow). So there's no production
+`ReservationEditPresenter` to build — Angular will not drive the
+sample's `ReservationView` interface. Promoting the sample would
+produce a presenter shaped for a UI that's not going to exist.
 
-1. Rename `.sample` → `org.rapla.client.edit.reservation` (drop the
-   sample package).
-2. Expand `ReservationView` to cover what `ReservationEditImpl` does
-   today: appointment list, allocatable section, info section, save
-   / delete / cancel buttons, conflict-warning surface.
-3. Wire `ReservationEditPresenter` (production) through
-   `EditTaskPresenter` so that the existing edit-task workflow uses
-   it.
-4. **Test:** `ReservationEditPresenterTest` (tier 2 — needs a
-   facade for `facade.edit(...)`, but no Swing). Cases: open new /
-   open existing / save / cancel / change classification / add
-   appointment / delete appointment / change time.
-5. Existing GUI tests (`UndoTests`, `CalendarEditorTest`) still
-   green.
+The Swing `ReservationEditImpl` and friends therefore **stay as they
+are** until the Swing tier is retired. Rewriting the dialog with a
+Presenter↔View split is anti-goal #2 of this PRD.
 
-Expected delta: `ReservationEditImpl` shrinks from 596 → ~200 LOC
-of pure widget binding.
+What Phase 6 actually becomes: **keep extracting pure-logic chunks
+from the edit-tier god-classes**, on the same terms as Phases 1–5
+and 8 — Swing class delegates to a rapla-core class, tier-1 tests
+pin the behaviour, REST endpoint (PRD 024) consumes the same class
+if the Angular client needs the decision. No `*View` interfaces
+added; no dialog rewrites.
 
-### Phase 7 — Name-search field next to the filter button (quick win, ≈0.5 day)
+#### Audit — remaining extractables (each independently shippable)
+
+| # | Source | Chunk | Approx LOC | Angular reuse value | REST candidate |
+|---|---|---:|---:|---|---|
+| 6a | `AllocatableSelection` | **Row status decision** — extracted as `AllocatableRowStatusModel` (rapla-core). Pure function `Inputs` → `Status` enum (AVAILABLE / NOT_ALWAYS_AVAILABLE / REQUEST / CONFLICT / FORBIDDEN). Plus `hasPermissionToAllocate(...)` carved out alongside. Swing `getIcon(...)` is now a 1-line delegate + a 7-line enum→Icon switch. **DONE 2026-05-11** — 10 tier-1 tests in `AllocatableRowStatusModelTest`. |
+| 6b | `ReservationEditImpl` | **Dirty-state detection.** **SKIPPED** — audit found `EditTaskView.hasChanged()` currently returns hardcoded `true` in all impls. Carving would be NEW behaviour (real entity-diff), not a refactor. Reopen if/when the always-prompt UX changes. |
+| 6c | ~~`ReservationInfoEdit`~~ → `ClassificationEditUI` | **Field visibility per attribute** — `(visible, writable)` decision per attribute across the multi-edit object list, with conservative semantics. Extracted as `ClassificationFieldVisibility.Result resolve(...)` (rapla-core). Was inlined in `ClassificationEditUI.createEditField(...)` — found there, not in `ReservationInfoEdit` as the audit guessed. **DONE 2026-05-11** — 7 tier-1 tests in `ClassificationFieldVisibilityTest`. |
+| 6d | `EditTaskPresenter` | **Activity-type → entity-type dispatch** — which inner edit flow handles `editevent` / `editallocatable` / `edituser` / etc. | ~50 | Medium — Angular router has its own dispatch but the entity-type→handler map is the same. | No — client routing. |
+| 6e | `AppointmentController` | **`RepeatingType` → radio-button mapping** + **weekday-set update on anchor-shift**. Extracted as `RepeatingRuleProjector.choiceFor` / `repeatingTypeFor` + `weekdaysOnAnchorShift(...)` (rapla-core). The `RepeatingType ↔ radio button` mapping was duplicated in `setAppointment` (~20 LOC) and `setRepeatingType` (~16 LOC); replaced by a one-line `choiceFor(...)` + a 7-line `switch` on the choice in the view. `resetWeekdays(int)` rewrote from imperative weekday-iteration to one delegate call. **DONE 2026-05-12** — 9 new tests in `RepeatingRuleProjectorTest`. Undo-command CONSTRUCTION itself (the broader L120 LOC item) was deferred — the entity-mutation half is already pure (`Repeating.addExceptions` / `setEnd` / etc.); the command-class shells are thin glue not worth carving. |
+| 6f | `AllocatableSelection` | **`AllocationTextField` index-display logic** — which appointment indices light up which allocatable row. | ~50 | Medium — Angular table renders the same indicators. | No — derived from already-fetched data. |
+
+#### Priority
+
+Ship 6a, 6b, 6c first (high Angular reuse, smallest LOC each). 6d
+adds value when Angular's edit-flow router lands. 6e/6f are nice-to-have
+testability wins with lower Angular leverage.
+
+Each carve-out follows the same recipe documented in
+`docs/architecture/mvp-pattern.md` §"Adding a new carve-out":
+extract to rapla-core, tier-1 tests, Swing class delegates,
+existing GUI tests stay green.
+
+Note: this section deliberately doesn't lay out a single big plan —
+each extraction is independent, sized for one focused session.
+Pick one when the time is right.
+
+### Phase 7 — Name-search field next to the filter button (quick win, ≈0.5 day) — **DONE 2026-05-11**
+
+Landed:
+- `org.rapla.client.edit.search.NameSearchMatcher` (rapla-core) — substring, case-insensitive, diacritic-folded (NFD + Mn-strip), ß→ss for German user base, multi-word AND. 15 tier-1 tests in `NameSearchMatcherTest`.
+- `ReservationEditSelection.nameSearchTerm` + `filterByNameSearch(Collection<Allocatable>, Locale)` — 6 new tier-1 tests in `ReservationEditSelectionTest`.
+- `AllocatableSelection.nameSearchField` JTextField with placeholder + `DocumentListener` → `selection.setNameSearchTerm(...)` → `refreshCompleteTreeForNameSearch()` which re-binds `completeModel` with `selection.filterByNameSearch(getAllAllocatables(), getRaplaLocale().getLocale())`. No debounce (matcher is sub-millisecond at typical sizes).
+- Sub-panel groups the search field + the existing filter button at column 4 of the leftPanel `TableLayout`. No layout changes elsewhere.
+- `ResourceSelectionViewSwing` (main calendar-place resource sidebar): `nameSearchField` JTextField mounted in `buttonsPanel.CENTER` next to the existing filter button on `EAST`. `DocumentListener` records the term and re-runs `updateTree(...)`; `generateTree(...)` post-prunes the `AllocatableNodes` tree via a local `pruneByName(...)` that uses `NameSearchMatcher.matchesPrepared` per leaf and drops empty type/categorization folders. Tooltip uses the existing `search` i18n key. No new presenter state — view-local transient.
+- New i18n keys `search` (`"Search"` / `"Suche"`) and `search.placeholder` (`"Search…"` / `"Suchen…"`) in `RaplaResources` / `_de`.
+- The classification filter button still works orthogonally — the name search is an AND on top of whatever the structured filter produced (the search filters the already-classification-filtered list from `getAllAllocatables()` in `AllocatableSelection`, or post-prunes the already-classified tree in `ResourceSelectionViewSwing`).
+
+Also landed (`ResourceSelectionViewSwing` sidebar):
+- `hiddenSelectionStatus` JLabel below the `buttonsPanel`. Shows
+  `"{N} selected hidden by search — click replaces selection, Ctrl-click adds"`
+  whenever the search term is non-empty AND at least one currently-selected
+  allocatable doesn't match the term. Counts are recomputed on every
+  search-term change AND every `update(filter, model, selectedObjects)` call.
+  New i18n key `search.hidden_status` (EN+DE).
+- Selection semantics (Option 6 from the design discussion):
+  - Tree shows matches only.
+  - Selection state stays untouched by search — `model.getSelectedObjects()`
+    is never written by the search field.
+  - The status line tells the user how many selections are currently hidden.
+  - Plain click on a visible result still triggers `JTree`'s default
+    "replace selection" behaviour — the status line is **informational, not
+    protective**. Option (b) — sticky additive selection while search is
+    active — was discussed but deferred; the status line covers the common
+    case (user reads it before clicking).
+
+Not landed (deferred):
+- `ClassifiableFilterEdit` doesn't have its own search field yet — the dialog is heavier and the rule list there is typically small enough that name-search adds less value.
+- **Event search in the calendar view (`MultiCalendarViewSwing`) — explicitly dropped on the Swing tier.** Initial attempt added a transient `eventNameSearch` field to `CalendarSelectionModel` + `CalendarModelImpl` and filtered the appointment binding map at query time. Reverted 2026-05-11 after a design discussion: the per-view search is a UX affordance, not a calendar-model concept, and putting it on the model mixed transient view state into persistent calendar state. Event search will land in the Angular client as part of PRD 028's power-search (single ranked dialog across allocatables + reservations + conflicts).
+- Sticky additive selection while search is active (Option b from the same design discussion) — not landed. Status line informs; click semantics unchanged.
+
+Original spec follows for the record:
 
 **Origin:** extracted from PRD 021 (`wont-fix`) when the stub-mode redesign
 was dropped in favor of the Angular frontend (PRD 026). The search box
@@ -406,6 +482,21 @@ whatever the structured filter already produced.
 Expected delta: ~50 LOC of new Swing widget binding +
 ~30 LOC of tested matcher logic in rapla-core. Net feature, no LOC
 reduction.
+
+### Phase 8 — Action-class policy carve-outs (opportunistic) — **DONE 2026-05-11**
+
+Pattern: action / menu classes in `rapla-client/.../menu/...` often have a small `isEnabled()` or `validate(...)` method that's pure logic mixed with a Swing action's `setEnabled` / dialog-popping side effects. Carve the decision into rapla-core as a `*Policy` class; the Swing class delegates.
+
+Landed:
+
+- **`PasswordChangePolicy`** (rapla-core, 75 LOC) — carved out of `PasswordChangeAction`. Three pure functions: `canChangePassword`, `requiresOldPassword`, `validate`. 13 tier-1 tests in `PasswordChangePolicyTest`. Plus `PasswordChangePolicyHarnessTest` (rapla-server, 4 tier-2 tests) — first production use of `HeadlessPresenterTestSupport` against real `testdefault.xml` users; **validates the harness scaffold from PRD 025 works end-to-end**. `PasswordChangeAction` shrinks by 33 LOC.
+- **`RaplaObjectActionPolicy`** (rapla-core, 110 LOC) — carved out of `RaplaObjectActions.isEnabled()`. Branches per action type (NEW/EDIT/DELETE/EDIT_SELECTION/DELETE_SELECTION) × entity type (Allocatable/Category/other) × admin status. Two overloads: production (takes `PermissionController`) + test-friendly (takes lambda predicates), so tier-1 tests don't have to construct or subclass the full controller (whose `isRegisterer` is final). 15 tier-1 tests in `RaplaObjectActionPolicyTest`. `RaplaObjectActions.isEnabled()` shrinks from 52 LOC to 11 LOC.
+
+This is **not the same shape as Phases 1–5**. Those carved business-logic out of widget-binding code; Phase 8 carves decision logic out of `javax.swing.Action` shells. Same goal (tier-1 testability + Angular reuse), different starting point. Future similar carve-outs in `MenuFactoryImpl.java` (871 LOC, ~12 permission decisions) are deliberately not pursued here — each is 1–3 lines and the cost/benefit doesn't justify the touch. If we ever produce an Angular menu, those return to the table.
+
+### Architecture invariant — **DONE 2026-05-11**
+
+`NoSwingInRaplaCoreClientEditTest` (rapla-core/src/test/java/.../client/edit/) walks the source tree of `rapla-core/src/main/java/org/rapla/{client/edit,plugin/calendarview,plugin/reservationedit}` and fails the test if any `.java` file imports `javax.swing.*`, `java.awt.*`, `org.rapla.client.swing.*`, `org.rapla.facade.client.*`, or `org.rapla.facade.server.*`. Sanity-tested in both directions (plant a deliberate violation → fails with exact file:line; remove → green).
 
 ## Tests
 

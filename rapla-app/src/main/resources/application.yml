@@ -9,12 +9,91 @@ server:
 spring:
   application:
     name: rapla
+  security:
+    oauth2:
+      authorizationserver:
+        client:
+          swagger-ui:
+            registration:
+              client-id: swagger-ui
+              client-authentication-methods:
+                - none
+              authorization-grant-types:
+                - authorization_code
+                - refresh_token
+              redirect-uris:
+                - http://localhost:8051/rapla/swagger-ui/oauth2-redirect.html
+              scopes:
+                - openid
+                - profile
+            require-proof-key: true
+            require-authorization-consent: false
+          # Single public OAuth client for both rapla UIs (Swing desktop and
+          # Angular SPA). All loopback redirects → Spring's loopback any-port
+          # match applies, so the Swing client can bind a random port and the
+          # Angular dev server can run on any local port. Production deployments
+          # behind a real hostname add their URI via env override:
+          #   SPRING_SECURITY_OAUTH2_AUTHORIZATIONSERVER_CLIENT_RAPLA-CLIENT_REGISTRATION_REDIRECT-URIS_3=https://rapla.example.com/auth/callback
+          rapla-client:
+            registration:
+              client-id: ${rapla.oauth.client-id}
+              client-authentication-methods:
+                - none
+              authorization-grant-types:
+                - authorization_code
+                - refresh_token
+              redirect-uris:
+                - http://127.0.0.1/login/oauth2/code/rapla
+                - http://localhost/auth/callback
+                - http://127.0.0.1/auth/callback
+              scopes:
+                - openid
+                - profile
+            require-proof-key: true
+            require-authorization-consent: false
 
 rapla:
   file-datasources:
     raplafile: data/data.xml
+  oauth:
+    # Single public OAuth client config. Both the Swing desktop client and the
+    # Angular SPA use this client_id; the redirect-uris on the matching Spring
+    # `rapla-client` registration above are the only thing that differs per
+    # surface. Override with RAPLA_OAUTH_CLIENT_ID=... if a deployment renames
+    # the client.
+    enabled: true
+    client-id: rapla-client
+    # Dev-only convenience: accept redirect URIs whose host is in 172.16.0.0/12
+    # (the default Hyper-V WSL2 bridge range) with any port, provided the path
+    # matches one of the registered URIs. Lets a developer run the Swing client
+    # inside WSL2 without configuring WSL2 mirrored networking. The Windows
+    # browser routes directly to the WSL bridge IP, bypassing the NAT
+    # forwarder. PKCE still mandatory.
+    # PRODUCTION DEPLOYMENTS MUST SET THIS TO false (or unset). Set via env:
+    #   RAPLA_OAUTH_ALLOW_WSL_BRIDGE_REDIRECTS=false
+    allow-wsl-bridge-redirects: true
+    # Production convenience: accept any redirect URI whose scheme/host/port
+    # match the public origin the auth-server request came in on (honoring
+    # X-Forwarded-Proto and X-Forwarded-Host when behind a reverse proxy),
+    # provided the path matches one of the registered URIs. Lets a deployment
+    # at https://rapla.example.com auto-accept https://rapla.example.com/auth/callback
+    # for the Angular SPA without registering the deployment-specific URI in
+    # this YAML. Safe because PKCE is mandatory AND the path still has to
+    # match. Disable via:
+    #   RAPLA_OAUTH_ALLOW_SAME_ORIGIN_REDIRECTS=false
+    allow-same-origin-redirects: true
+
+springdoc:
+  swagger-ui:
+    # OAuth2 code+PKCE wiring — Swagger UI's "Authorize" button calls /oauth2/authorize
+    # with the pre-filled client_id and a fresh PKCE verifier on every login attempt.
+    oauth:
+      client-id: swagger-ui
+      use-pkce-with-authorization-code-grant: true
 
 logging:
   level:
     root: INFO
     org.rapla: INFO
+    # TEMPORARY: troubleshoot auth-server form login. Remove after POC works.
+    org.springframework.security: DEBUG

@@ -1,5 +1,6 @@
 package org.rapla.client.edit.reservation;
 
+import org.rapla.client.edit.search.NameSearchMatcher;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.Appointment;
 import org.rapla.entities.domain.AppointmentStartComparator;
@@ -11,6 +12,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Objects;
 import java.util.Set;
 
@@ -34,6 +36,8 @@ public final class ReservationEditSelection
     private Collection<Reservation> mutableReservations = Collections.emptyList();
     private Collection<Reservation> originalReservations = Collections.emptyList();
     private Appointment[] appointments = new Appointment[0];
+    /** Transient — PRD 023 Phase 7. NOT persisted to {@code CalendarSelectionModel}. */
+    private String nameSearchTerm = "";
 
     /**
      * Replaces the edit-session state. {@code appointments} is recomputed
@@ -59,6 +63,46 @@ public final class ReservationEditSelection
     public Appointment[] appointments()
     {
         return appointments;
+    }
+
+    /**
+     * Transient name-search term (PRD 023 Phase 7) — drives the
+     * resource-picker search field. {@code null} or empty disables the
+     * filter. Not persisted across edit sessions.
+     */
+    public String nameSearchTerm()
+    {
+        return nameSearchTerm;
+    }
+
+    public void setNameSearchTerm(String term)
+    {
+        this.nameSearchTerm = term == null ? "" : term;
+    }
+
+    /**
+     * Filter a list of allocatables by the current {@link #nameSearchTerm}.
+     * Empty term → input list passed through unchanged. Matcher semantics:
+     * see {@link NameSearchMatcher} (case-insensitive, diacritic-folded,
+     * multi-word AND).
+     *
+     * @param locale locale to read names in — typically the user's UI locale
+     */
+    public List<Allocatable> filterByNameSearch(Collection<Allocatable> input, Locale locale)
+    {
+        if (input == null) return List.of();
+        if (nameSearchTerm == null || nameSearchTerm.isEmpty()) return new ArrayList<>(input);
+        String[] terms = NameSearchMatcher.prepare(nameSearchTerm);
+        if (terms.length == 0) return new ArrayList<>(input);
+        List<Allocatable> out = new ArrayList<>();
+        for (Allocatable a : input)
+        {
+            if (a != null && NameSearchMatcher.matchesPrepared(a.getName(locale), terms))
+            {
+                out.add(a);
+            }
+        }
+        return out;
     }
 
     /**
