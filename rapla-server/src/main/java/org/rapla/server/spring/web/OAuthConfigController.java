@@ -16,6 +16,7 @@ public class OAuthConfigController
     private final boolean enabled;
     private final String clientId;
     private final List<String> scopes;
+    private final boolean showPasteFallback;
     private final String contextPath;
 
     // Properties resolved by rapla.oauth.* in application.yml; deployments
@@ -24,11 +25,13 @@ public class OAuthConfigController
             @Value("${rapla.oauth.enabled:true}") boolean enabled,
             @Value("${rapla.oauth.client-id:rapla-client}") String clientId,
             @Value("${rapla.oauth.scopes:openid,profile}") List<String> scopes,
+            @Value("${rapla.oauth.show-paste-fallback:false}") boolean showPasteFallback,
             @Value("${server.servlet.context-path:}") String contextPath)
     {
         this.enabled = enabled;
         this.clientId = clientId;
         this.scopes = scopes;
+        this.showPasteFallback = showPasteFallback;
         this.contextPath = contextPath == null ? "" : contextPath;
     }
 
@@ -37,7 +40,7 @@ public class OAuthConfigController
     {
         if (!enabled)
         {
-            return new OAuthConfig(false, null, null, null, List.of());
+            return new OAuthConfig(false, null, null, null, List.of(), false);
         }
         String base = baseUrl(request);
         return new OAuthConfig(
@@ -45,7 +48,8 @@ public class OAuthConfigController
                 clientId,
                 base + "/oauth2/authorize",
                 base + "/oauth2/token",
-                scopes);
+                scopes,
+                showPasteFallback);
     }
 
     private String baseUrl(HttpServletRequest request)
@@ -76,14 +80,17 @@ public class OAuthConfigController
         public final String authorizeUrl;
         public final String tokenUrl;
         public final List<String> scopes;
+        public final boolean showPasteFallback;
 
-        public OAuthConfig(boolean enabled, String clientId, String authorizeUrl, String tokenUrl, List<String> scopes)
+        public OAuthConfig(boolean enabled, String clientId, String authorizeUrl, String tokenUrl,
+                           List<String> scopes, boolean showPasteFallback)
         {
             this.enabled = enabled;
             this.clientId = clientId;
             this.authorizeUrl = authorizeUrl;
             this.tokenUrl = tokenUrl;
             this.scopes = scopes;
+            this.showPasteFallback = showPasteFallback;
         }
 
         public boolean isEnabled() { return enabled; }
@@ -91,5 +98,6 @@ public class OAuthConfigController
         public String getAuthorizeUrl() { return authorizeUrl; }
         public String getTokenUrl() { return tokenUrl; }
         public List<String> getScopes() { return scopes; }
+        public boolean isShowPasteFallback() { return showPasteFallback; }
     }
 }

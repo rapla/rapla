@@ -1,12 +1,12 @@
 package org.rapla.server.spring;
 
-import org.rapla.components.util.DateTools;
 import com.nimbusds.jose.JOSEException;
 import com.nimbusds.jose.JWSAlgorithm;
 import com.nimbusds.jose.JWSHeader;
 import com.nimbusds.jose.JWSSigner;
-import com.nimbusds.jose.crypto.MACSigner;
+import com.nimbusds.jose.crypto.RSASSASigner;
 import com.nimbusds.jose.jwk.JWK;
+import com.nimbusds.jose.jwk.JWKMatcher;
 import com.nimbusds.jose.jwk.JWKSelector;
 import com.nimbusds.jose.jwk.KeyType;
 import com.nimbusds.jose.jwk.RSAKey;
@@ -14,55 +14,50 @@ import com.nimbusds.jose.jwk.source.JWKSource;
 import com.nimbusds.jose.proc.SecurityContext;
 import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.SignedJWT;
-import org.rapla.server.RaplaKeyStorage;
-import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
-import org.springframework.security.oauth2.jwt.JwtException;
 import org.springframework.security.oauth2.jwt.NimbusJwtDecoder;
-import org.springframework.security.oauth2.jose.jws.MacAlgorithm;
 
-import javax.crypto.spec.SecretKeySpec;
 import java.security.interfaces.RSAPublicKey;
-import java.util.Base64;
-import java.time.LocalDateTime;
+import java.util.Date;
+import java.util.List;
+import java.util.UUID;
+
+/**
+ * Unified token issuance for rapla. Both {@code /auth/login} (this class's
+ * {@link JwtIssuer}) and {@code /oauth2/token} (Spring Authorization Server)
+ * sign tokens with the same RSA key — Spring's {@link JWKSource}, owned by
+ * {@code AuthorizationServerConfig}. The resource server validates both via
+ * the single {@link #jwtDecoder} bean.
+ *
+ * <p>Pre-2026-05-12 history: rapla had a parallel HMAC token path here for
+ * legacy {@code /auth/login} tokens, and the decoder was a composite that
+ * tried HMAC first then RSA. PRD 026 §5 called that out as cleanup; PRD 029
+ * Option A executed it. Single algorithm, single key, single decoder.
+ */
 @Configuration
 @org.springframework.boot.autoconfigure.condition.ConditionalOnProperty(prefix = "rapla.file-datasources", name = "raplafile")
 public class JwtConfig
 {
-    /**
-     * Composite decoder: tries HMAC first (Rapla's /auth/login tokens),
-     * falls back to RSA (Spring Authorization Server tokens at /oauth2/token).
-     * Both validate against the same resource-server endpoints.
-     *
-     * Long-term: unify on RSA when AuthController migrates to sign with the
-     * same JwkSource as the auth server. PRD 026 §5.
-     */
     @Bean
-    public JwtDecoder jwtDecoder(RaplaKeyStorage keyStorage,
-                                 ObjectProvider<JWKSource<SecurityContext>> jwkSourceProvider)
+    public JwtDecoder jwtDecoder(JWKSource<SecurityContext> jwkSource)
     {
-        byte[] secretBytes = deriveHmacSecret(keyStorage.getRootKeyBase64());
-        SecretKeySpec key = new SecretKeySpec(secretBytes, "HmacSHA256");
-        JwtDecoder hmacDecoder = NimbusJwtDecoder.withSecretKey(key).macAlgorithm(MacAlgorithm.HS256).build();
+        return NimbusJwtDecoder.withPublicKey(extractRsaPublicKey(jwkSource)).build();
+    }
 
-        JWKSource<SecurityContext> jwkSource = jwkSourceProvider.getIfAvailable();
-        if (jwkSource == null)
-        {
-            return hmacDecoder;
-        }
-        JwtDecoder rsaDecoder = NimbusJwtDecoder.withPublicKey(extractRsaPublicKey(jwkSource)).build();
-        return new CompositeJwtDecoder(hmacDecoder, rsaDecoder);
+    @Bean
+    public JwtIssuer jwtIssuer(JWKSource<SecurityContext> jwkSource)
+    {
+        return new JwtIssuer(jwkSource);
     }
 
     private static RSAPublicKey extractRsaPublicKey(JWKSource<SecurityContext> jwkSource)
     {
         try
         {
-            java.util.List<JWK> keys = jwkSource.get(
-                    new JWKSelector(new com.nimbusds.jose.jwk.JWKMatcher.Builder().keyType(KeyType.RSA).build()),
+            List<JWK> keys = jwkSource.get(
+                    new JWKSelector(new JWKMatcher.Builder().keyType(KeyType.RSA).build()),
                     null);
             if (keys.isEmpty())
             {
@@ -76,81 +71,29 @@ public class JwtConfig
         }
     }
 
-    private static final class CompositeJwtDecoder implements JwtDecoder
-    {
-        private final JwtDecoder hmac;
-        private final JwtDecoder rsa;
-
-        CompositeJwtDecoder(JwtDecoder hmac, JwtDecoder rsa)
-        {
-            this.hmac = hmac;
-            this.rsa = rsa;
-        }
-
-        @Override
-        public Jwt decode(String token) throws JwtException
-        {
-            try
-            {
-                return hmac.decode(token);
-            }
-            catch (JwtException hmacFailure)
-            {
-                try
-                {
-                    return rsa.decode(token);
-                }
-                catch (JwtException rsaFailure)
-                {
-                    throw rsaFailure;
-                }
-            }
-        }
-    }
-
-    @Bean
-    public JwtIssuer jwtIssuer(RaplaKeyStorage keyStorage)
-    {
-        byte[] secretBytes = deriveHmacSecret(keyStorage.getRootKeyBase64());
-        return new JwtIssuer(secretBytes);
-    }
-
-    private static byte[] deriveHmacSecret(String rootKeyBase64)
-    {
-        byte[] decoded;
-        try
-        {
-            decoded = Base64.getDecoder().decode(rootKeyBase64);
-        }
-        catch (IllegalArgumentException e)
-        {
-            decoded = Base64.getUrlDecoder().decode(rootKeyBase64);
-        }
-        if (decoded.length >= 32)
-        {
-            return decoded;
-        }
-        byte[] expanded = new byte[32];
-        for (int i = 0; i < 32; i++)
-        {
-            expanded[i] = decoded[i % decoded.length];
-        }
-        return expanded;
-    }
-
     public static class JwtIssuer
     {
         private final JWSSigner signer;
+        private final String keyId;
 
-        JwtIssuer(byte[] secretBytes)
+        JwtIssuer(JWKSource<SecurityContext> jwkSource)
         {
             try
             {
-                this.signer = new MACSigner(secretBytes);
+                List<JWK> keys = jwkSource.get(
+                        new JWKSelector(new JWKMatcher.Builder().keyType(KeyType.RSA).build()),
+                        null);
+                if (keys.isEmpty())
+                {
+                    throw new IllegalStateException("No RSA key in JWK set");
+                }
+                RSAKey rsaKey = (RSAKey) keys.get(0);
+                this.signer = new RSASSASigner(rsaKey.toRSAPrivateKey());
+                this.keyId = rsaKey.getKeyID();
             }
-            catch (JOSEException e)
+            catch (Exception e)
             {
-                throw new IllegalStateException("Failed to initialise HS256 JWT signer", e);
+                throw new IllegalStateException("Failed to initialise RS256 JWT signer", e);
             }
         }
 
@@ -169,12 +112,14 @@ public class JwtConfig
             long now = System.currentTimeMillis();
             JWTClaimsSet claims = new JWTClaimsSet.Builder()
                     .subject(subject)
-                    .issueTime(new java.util.Date(now))
-                    .expirationTime(new java.util.Date(now + expiresInSeconds * 1000))
-                    .jwtID(java.util.UUID.randomUUID().toString())
+                    .issueTime(new Date(now))
+                    .expirationTime(new Date(now + expiresInSeconds * 1000))
+                    .jwtID(UUID.randomUUID().toString())
                     .claim("typ", type)
                     .build();
-            SignedJWT jwt = new SignedJWT(new JWSHeader(JWSAlgorithm.HS256), claims);
+            SignedJWT jwt = new SignedJWT(
+                    new JWSHeader.Builder(JWSAlgorithm.RS256).keyID(keyId).build(),
+                    claims);
             jwt.sign(signer);
             return jwt.serialize();
         }

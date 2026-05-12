@@ -66,6 +66,12 @@ public class DefaultRaplaTableColumn<T> implements RaplaTableColumn<T>
         return raplaLocale;
     }
 
+    @Override
+    public String getKey()
+    {
+        return column.getKey();
+    }
+
     public String getColumnName()
     {
         final Locale locale = getLocale();

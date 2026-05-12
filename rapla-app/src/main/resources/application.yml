@@ -63,6 +63,13 @@ rapla:
     # the client.
     enabled: true
     client-id: rapla-client
+    # Show a "paste callback URL here" dialog alongside the OAuth browser launch
+    # as a fallback for environments where the automatic loopback redirect can't
+    # reach the Swing client (WSL2 NAT, corporate firewalls blocking inbound
+    # localhost, etc.). Off by default — most deployments don't need it. Enable
+    # via RAPLA_OAUTH_SHOW_PASTE_FALLBACK=true if your users hit "site can't be
+    # reached" after sign-in.
+    show-paste-fallback: false
     # Dev-only convenience: accept redirect URIs whose host is in 172.16.0.0/12
     # (the default Hyper-V WSL2 bridge range) with any port, provided the path
     # matches one of the registered URIs. Lets a developer run the Swing client

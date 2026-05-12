@@ -58,6 +58,10 @@ Pure-logic models in `rapla-core/src/main/java/`:
 | `org.rapla.client.edit.reservation` | `AllocatableRowStatusModel` | Picker row-status (AVAILABLE / NOT_ALWAYS_AVAILABLE / REQUEST / CONFLICT / FORBIDDEN) decision — carved out of `AllocatableSelection.getIcon` |
 | `org.rapla.client.edit.reservation` | `ClassificationFieldVisibility` | `(visible, writable)` decision per classification attribute, multi-edit-conservative — carved out of `ClassificationEditUI.createEditField` |
 | `org.rapla.client.edit.reservation` | `ReservationEditSelection` | Mutable + original reservations, flattened appointments, transient name-search term |
+| `org.rapla.client.edit.check` | `ReservationWarning` (record) + `Code` enum | Pre-save warning wire shape — stable codes + positional args. The Swing `CheckView` renders strings; Angular would render its own dialog from the same codes. |
+| `org.rapla.client.edit.check` | `DefaultReservationWarnings` | 4 rules: empty name, duplicate appointments, no allocatables, not-in-current-calendar. Carved out of `DefaultReservationCheck`. |
+| `org.rapla.client.edit.check` | `RequestAllocationWarnings` | One REQUEST_PENDING warning per allocatable in REQUESTED state. Carved out of `RequestAllocationCheck`. |
+| `org.rapla.client.edit.check` | `HolidayWarningModel` | `findHolidayConflicts(PeriodModel, reservations)` + `filterByPreference(...)`. Carved out of `HolidayExceptionCheck`. |
 | `org.rapla.client.edit.filter` | `ClassificationFilterOperators` | `AttributeType` ↔ operator-string ↔ JComboBox index catalog |
 | `org.rapla.client.edit.search` | `NameSearchMatcher` | Substring matcher with case folding, diacritic folding, ß→ss, multi-word AND |
 | `org.rapla.client.menu` | `PasswordChangePolicy` | `canChangePassword` / `requiresOldPassword` / `validate` — carved out of `PasswordChangeAction` |

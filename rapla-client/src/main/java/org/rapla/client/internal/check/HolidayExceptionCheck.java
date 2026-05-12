@@ -60,38 +60,17 @@ public class HolidayExceptionCheck implements EventCheck
         this.dialogUiFactory = dialogUiFactory;
     }
 
+    /**
+     * Thin wrapper over the pure-Java
+     * {@link org.rapla.client.edit.check.HolidayWarningModel#findHolidayConflicts}.
+     * Kept here as a {@code public static} method for callers that have
+     * a {@link RaplaFacade} but not a {@link PeriodModel} directly.
+     */
     @NotNull
     static public Map<Appointment, Set<Period>> getPeriodConflicts(RaplaFacade raplaFacade, Collection<Reservation> reservations) throws RaplaException
     {
-        Map<Appointment, Set<Period>> periodConflicts = new LinkedHashMap<>();
-        final PeriodModel periodModel = PeriodModel.getHoliday(raplaFacade);
-        if (periodModel == null)
-        {
-            return periodConflicts;
-        }
-        for (Reservation reservation : reservations)
-        {
-            for (Appointment app : reservation.getAppointments())
-            {
-                final TimeInterval interval = new TimeInterval(app.getStart(), app.getMaxEnd());
-                final List<Period> periodsFor = periodModel.getPeriodsFor(interval);
-                for (Period period : periodsFor)
-                {
-                    final boolean overlaps = app.overlaps(period.getStart(), period.getEnd());
-                    if (overlaps)
-                    {
-                        Set<Period> periods = periodConflicts.get(app);
-                        if (periods == null)
-                        {
-                            periods = new LinkedHashSet<>();
-                            periodConflicts.put(app, periods);
-                        }
-                        periods.add(period);
-                    }
-                }
-            }
-        }
-        return periodConflicts;
+        return org.rapla.client.edit.check.HolidayWarningModel.findHolidayConflicts(
+                PeriodModel.getHoliday(raplaFacade), reservations);
     }
 
     @Override
@@ -125,9 +104,8 @@ public class HolidayExceptionCheck implements EventCheck
         {
             return new ResolvedPromise<>(true);
         }
-        Map<Appointment, Set<Period>> filteredConflicts = periodConflicts.entrySet().stream().filter(
-                entry -> (entry.getKey().getRepeating() == null && showWarningSingleAppointments) || (entry.getKey().getRepeating() != null && showWarning)
-        ).collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+        Map<Appointment, Set<Period>> filteredConflicts = org.rapla.client.edit.check.HolidayWarningModel
+                .filterByPreference(periodConflicts, showWarning, showWarningSingleAppointments);
         if ( filteredConflicts.isEmpty()) {
             return new ResolvedPromise<>(true);
         }

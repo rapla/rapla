@@ -7,6 +7,7 @@ import com.nimbusds.jose.jwk.source.JWKSource;
 import com.nimbusds.jose.proc.SecurityContext;
 import jakarta.servlet.http.HttpServletRequest;
 import org.rapla.entities.User;
+import org.rapla.server.RaplaKeyStorage;
 import org.rapla.server.internal.RaplaAuthentificationService;
 import org.rapla.server.util.SameOriginUriCheck;
 import org.rapla.server.util.WslBridgeUriCheck;
@@ -40,18 +41,21 @@ import org.springframework.security.web.util.matcher.RequestMatcher;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
 
+import java.net.URI;
+import java.security.KeyFactory;
+import java.security.MessageDigest;
+import java.security.interfaces.RSAPrivateCrtKey;
+import java.security.interfaces.RSAPrivateKey;
+import java.security.interfaces.RSAPublicKey;
+import java.security.spec.PKCS8EncodedKeySpec;
+import java.security.spec.RSAPublicKeySpec;
 import java.util.Arrays;
+import java.util.Base64;
 import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
-
-import java.security.KeyPair;
-import java.security.KeyPairGenerator;
-import java.security.interfaces.RSAPrivateKey;
-import java.security.interfaces.RSAPublicKey;
-import java.util.UUID;
 
 /**
  * Minimal proof-of-concept: Spring Authorization Server with code+PKCE,
@@ -229,16 +233,62 @@ public class AuthorizationServerConfig
         return "https".equalsIgnoreCase(scheme) ? 443 : 80;
     }
 
-    private final KeyPair rsaKeyPair = generateRsaKey();
-
+    /**
+     * Builds the JWK set from the persistent RSA keypair stored in
+     * {@link RaplaKeyStorage} (rapla system preferences → data file). The
+     * keypair is generated on the first server start and reused on every
+     * subsequent start, so JWTs issued at this key survive server restarts.
+     * Same key, same kid → consistent identity for the auth server.
+     *
+     * <p>Replaces the previous in-memory keypair regenerated each startup
+     * (which invalidated every issued token on restart). Pre-Option-A this
+     * was actually the property the legacy {@code /auth/login} HMAC path
+     * had via {@code RaplaKeyStorage} — Option A regressed it by repointing
+     * at the in-memory keypair, and this restores it for both paths.
+     */
     @Bean
-    public JWKSource<SecurityContext> jwkSource()
+    public JWKSource<SecurityContext> jwkSource(RaplaKeyStorage keyStorage)
     {
-        RSAKey rsaKey = new RSAKey.Builder((RSAPublicKey) rsaKeyPair.getPublic())
-                .privateKey((RSAPrivateKey) rsaKeyPair.getPrivate())
-                .keyID(UUID.randomUUID().toString())
-                .build();
-        return new ImmutableJWKSet<>(new JWKSet(rsaKey));
+        try
+        {
+            RSAPrivateKey priv = decodePrivateKey(keyStorage.getRootKeyBase64());
+            if (!(priv instanceof RSAPrivateCrtKey crt))
+            {
+                throw new IllegalStateException("RaplaKeyStorage private key is not RSAPrivateCrtKey; cannot derive public key");
+            }
+            RSAPublicKey pub = (RSAPublicKey) KeyFactory.getInstance("RSA")
+                    .generatePublic(new RSAPublicKeySpec(crt.getModulus(), crt.getPublicExponent()));
+            RSAKey rsaKey = new RSAKey.Builder(pub)
+                    .privateKey(priv)
+                    .keyID(stableKeyId(pub))
+                    .build();
+            return new ImmutableJWKSet<>(new JWKSet(rsaKey));
+        }
+        catch (Exception e)
+        {
+            throw new IllegalStateException("Failed to build JWK set from RaplaKeyStorage", e);
+        }
+    }
+
+    private static RSAPrivateKey decodePrivateKey(String base64) throws Exception
+    {
+        byte[] bytes;
+        try { bytes = Base64.getDecoder().decode(base64); }
+        catch (IllegalArgumentException e) { bytes = Base64.getUrlDecoder().decode(base64); }
+        return (RSAPrivateKey) KeyFactory.getInstance("RSA")
+                .generatePrivate(new PKCS8EncodedKeySpec(bytes));
+    }
+
+    /**
+     * Derives a stable JWK key-id from the public key modulus so the
+     * {@code kid} header on issued tokens is consistent across restarts.
+     * Hash truncation matches Spring's typical kid length without disclosing
+     * the full modulus.
+     */
+    private static String stableKeyId(RSAPublicKey pub) throws Exception
+    {
+        byte[] digest = MessageDigest.getInstance("SHA-256").digest(pub.getModulus().toByteArray());
+        return Base64.getUrlEncoder().withoutPadding().encodeToString(Arrays.copyOf(digest, 16));
     }
 
     // No JwtDecoder bean here: JwtConfig already provides one for the resource
@@ -305,20 +355,6 @@ public class AuthorizationServerConfig
                 return UsernamePasswordAuthenticationToken.class.isAssignableFrom(authenticationClass);
             }
         };
-    }
-
-    private static KeyPair generateRsaKey()
-    {
-        try
-        {
-            KeyPairGenerator kpg = KeyPairGenerator.getInstance("RSA");
-            kpg.initialize(2048);
-            return kpg.generateKeyPair();
-        }
-        catch (Exception e)
-        {
-            throw new IllegalStateException("Failed to generate RSA key pair for OAuth2 JWK set", e);
-        }
     }
 
 }

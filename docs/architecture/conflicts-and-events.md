@@ -97,7 +97,7 @@ Key ops:
 | `DAILY` | `start + interval × N` days | Fixed-interval. |
 | `WEEKLY` | `start + 7 × interval × N` days, optionally restricted to specific weekdays | Fixed-interval if 1 weekday; variable if multiple. |
 | `MONTHLY` | **Nth weekday of the month** (e.g. "third Thursday"), NOT same day-of-month | Variable-interval. The semantic that surprises people. |
-| `YEARLY` | Same date next year (Feb 29 → next leap year) | Variable-interval. |
+| `YEARLY` | Same date next year. **Feb 29 anchor: skips non-leap years entirely** (does NOT roll to Feb 28). | Variable-interval. |
 
 Stored fields:
 
@@ -106,8 +106,29 @@ Stored fields:
 - `weekdays` — `Set<Integer>` (1=Mon … 7=Sun, ISO).
 - `exceptions` — `Set<LocalDateTime>` of skipped occurrences.
 
-The MONTHLY semantic is pinned by
-`AppointmentOverlapHardeningTest.monthlyRepeatUsesNthWeekdayOfMonthNotSameDayOfMonth`.
+#### Worked examples
+
+- `MONTHLY` anchor 2026-06-15 (3rd Monday): next occurrences are
+  2026-07-20, 2026-08-17, 2026-09-21 — the 3rd Monday of each month.
+  **Not** 2026-07-15, 2026-08-15.
+- `YEARLY` anchor 2024-02-29 with `number=5`, queried over
+  2024..2032: produces **2** occurrences (2024-02-29, 2028-02-29).
+  Non-leap years 2025/26/27/29/30/31 are skipped — the anchor does
+  not roll to Feb 28. A user who wants "every February" should use
+  day=28.
+
+#### Pinned in tests
+
+| Semantic | Test |
+|---|---|
+| MONTHLY = Nth-weekday-of-month (3rd Monday → 3rd Monday) | `AppointmentBlockExpansionHardeningTest.monthlyIsNthWeekdayOfMonth` |
+| YEARLY anchor on Feb 29 skips non-leap years | `AppointmentBlockExpansionHardeningTest.yearlyLeapYearFeb29SkipsNonLeapYears` |
+| DAILY with `number=N` produces exactly N occurrences | `AppointmentBlockExpansionHardeningTest.dailyFixedNumberYieldsExactCount` |
+| DAILY "forever" is bounded by query window | `AppointmentBlockExpansionHardeningTest.dailyForeverIsBoundedByWindow` |
+| WEEKLY with multiple weekdays produces one per picked day per week | `AppointmentBlockExpansionHardeningTest.weeklyMultipleWeekdaysProducesAllPickedDays` |
+| Exceptions excluded by default, included when `excludeExceptions=false` | `AppointmentBlockExpansionHardeningTest.{excludeExceptions*}` |
+| MONTHLY×MONTHLY overlap (slow path) | `AppointmentOverlapHardeningTest.monthlyRepeatUsesNthWeekdayOfMonthNotSameDayOfMonth` |
+| `ConflictFinder.sweepLine` direct semantics (self-pair skip, dedup of repeating-vs-repeating to 1, "neither reservation allocates this resource" skip, three-way overlap → 3 pairs, touching-edge non-overlap) | `ConflictFinderSweepLineTest` (rapla-server, tier-2 — needs `FacadeTestSupport` because `ConflictImpl(...)` casts to `AllocatableImpl` for the resolver) |
 
 ### AppointmentBlock
 
@@ -213,6 +234,17 @@ Lifecycle:
 Two clients see the same conflicts because the conflict index lives on
 the server. Clients learn about them through the modification stream
 (see [flows.md](flows.md)).
+
+The core algorithm is the `static sweepLine(Allocatable, today, Collection<AppointmentBlock>)`
+method — priority-queue sweep that pairs overlapping blocks per
+allocatable, deduplicates by `ConflictImpl.createId(...)`, and gates by
+"is this allocatable actually allocated by one of the involved
+reservations?" Two test classes cover it:
+- `ConflictFinderViaFacadeTest` — facade-level (round-trip through
+  `getConflictsForReservation`).
+- `ConflictFinderSweepLineTest` — invokes `sweepLine(...)` directly
+  with hand-built block collections; probes algorithmic edges
+  (self-pair, dedup, three-way, edge-touching, cross-allocatable filter).
 
 ### Querying conflicts
 

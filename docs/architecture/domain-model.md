@@ -196,12 +196,13 @@ is the recurrence rule:
 | `DAILY` | `start + interval × N` days |
 | `WEEKLY` | `start + 7 × interval × N` days, optionally restricted to specific weekdays |
 | `MONTHLY` | **Nth weekday of the month** (e.g. "third Thursday"), NOT same day-of-month |
-| `YEARLY` | Same date next year; for Feb 29 starts, advances to next leap year |
+| `YEARLY` | Same date next year. **Feb 29 anchor: skips non-leap years entirely** — does NOT roll to Feb 28. |
 
 Stored fields: `interval`, `type`, `number` (count) or `end` (date),
 `weekdays` (Set<Integer>), `exceptions` (Set<LocalDateTime>). See
 [../conflict-detection.md](../conflict-detection.md) for the overlap
-algorithm.
+algorithm and [conflicts-and-events.md §Repeating](conflicts-and-events.md#repeating)
+for worked examples + the regression-test pins.
 
 **AppointmentBlock**
 (`rapla-core/src/main/java/org/rapla/entities/domain/AppointmentBlock.java`)

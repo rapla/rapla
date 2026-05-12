@@ -603,7 +603,10 @@ public class RaplaClientServiceImpl implements ClientService, UpdateErrorListene
             }
             SwingOAuthLoginFlow flow = new SwingOAuthLoginFlow(cfg, getLogger());
             SwingOAuthLoginFlow.Session session = flow.start();
-            scheduleDelayedPasteHelper(dlg, session);
+            if (cfg.isShowPasteFallback())
+            {
+                scheduleDelayedPasteHelper(dlg, session);
+            }
             return session.future().get();
         }).thenAccept(tokens -> SwingUtilities.invokeLater(() -> finishOauthLogin(dlg, loginMutex, tokens)))
                 .exceptionally(ex -> SwingUtilities.invokeLater(() -> {
@@ -724,7 +727,8 @@ public class RaplaClientServiceImpl implements ClientService, UpdateErrorListene
                 tree.path("clientId").asString(),
                 tree.path("authorizeUrl").asString(),
                 tree.path("tokenUrl").asString(),
-                scopes);
+                scopes,
+                tree.path("showPasteFallback").asBoolean(false));
     }
 
     /** centers the window around the specified center */

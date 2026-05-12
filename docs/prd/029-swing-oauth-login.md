@@ -1,6 +1,6 @@
 # PRD 029: Swing Login via OAuth 2.0 (Browser-based, PKCE Loopback)
 
-**Status:** in-progress — phase 1 done (2026-05-12): discovery endpoint, single `rapla-client` RegisteredClient covering both Swing and (planned) Angular, `SwingOAuthLoginFlow`, `ConnectInfo` token path, UI button wired end-to-end, paste-URL fallback dialog for WSL2 NAT mode and other restricted-network cases. Phase 2 (refresh-token silent reauth, external IdP support, optional username/password hide) deferred.
+**Status:** in-progress — phase 1 done (2026-05-12). Shipped: discovery endpoint, single `rapla-client` RegisteredClient covering both Swing and (planned) Angular, `SwingOAuthLoginFlow`, `ConnectInfo` token path, UI button wired end-to-end, custom redirect URI validator with WSL bridge (172.16.0.0/12 dev convenience) and same-origin (zero-config Angular) allowances, paste-URL fallback dialog with cancel-aborts-flow, server-driven paste fallback toggle (`rapla.oauth.show-paste-fallback`, default off). **Token unification**: `/auth/login` now signs with the same RSA JWKSource as `/oauth2/token` (Option A from chat 2026-05-12) — composite HMAC+RSA decoder collapsed to a single RSA decoder, both login paths produce structurally identical tokens. End-to-end verified live with embedded auth server in WSL2. Setup doc at `docs/authentication.md`. Phase 2 deferred: refresh-token silent reauth, external IdP support (Keycloak/Azure/Google), persistent JWK source, optional username/password hide.
 **Date:** 2026-05-12
 
 ## Goal
