@@ -1,7 +1,17 @@
 # PRD 031: Refresh Tokens & API Keys — IdP-portable design
 
-**Status:** draft
+**Status:** in-progress — refresh-token half shipped 2026-05-12 (awaits e2e verification 2026-05-13); API-keys half still draft.
 **Date:** 2026-05-12
+
+**Shipped 2026-05-12 (refresh-token half):**
+- `/api/auth/login` mints access (1h) + refresh (30d) as RSA-signed JWTs (signing key from `RaplaKeyStorage`, survives restart).
+- `/api/auth/refresh` validates the refresh JWT (signature + `typ=refresh` claim) and the SHA-256 hash stored under `user.preferences["org.rapla.auth.session"]`. **Rotate-when-stale**: refresh token is reissued only when within `REFRESH_RENEWAL_THRESHOLD_SECONDS` (7 days) of expiry. Bounds DB writes to ~1/user/week.
+- `/api/auth/logout` clears the `org.rapla.auth.session` preference entry (Bearer-authenticated; revokes all sessions for the user — single-token-per-user model).
+- `MyCustomConnector.reauth` tries `refreshUsingToken` first (POST to `connectionInfo.refreshUrl` — read from discovery), falls back to password reauth if it fails.
+- Discovery endpoint (`/api/auth/oauth/config`) emits `refreshUrl` and `logoutUrl` so the Swing client doesn't hardcode paths — swap of IdP becomes a one-env-var change (`RAPLA_OAUTH_ISSUER`).
+- Client-side refresh-token cache: hybrid `TokenStore` (JNLP `PersistenceService` → `~/.rapla/tokens.json` 0600 → NoOp) — see PRD 029 OQ 10.
+
+**Open / API-keys half:** still draft. Mechanism + UI yet to land.
 
 ## Goal
 

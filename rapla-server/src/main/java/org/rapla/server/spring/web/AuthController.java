@@ -56,7 +56,7 @@ import java.time.Instant;
  */
 @RestController
 @org.springframework.boot.autoconfigure.condition.ConditionalOnProperty(prefix = "rapla.file-datasources", name = "raplafile")
-@RequestMapping("/auth")
+@RequestMapping(value = "/auth", produces = "application/json")
 public class AuthController
 {
     static final TypedComponentRole<String> SESSION = new TypedComponentRole<>("org.rapla.auth.session");

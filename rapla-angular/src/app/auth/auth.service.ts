@@ -1,37 +1,38 @@
 import { Injectable, inject } from '@angular/core';
 import { Router } from '@angular/router';
-import { Observable, tap } from 'rxjs';
+import { OAuthService } from 'angular-oauth2-oidc';
 
-import { AuthControllerService } from '../api/api/auth-controller.service';
-import { TokenResponse } from '../api/model/token-response';
-
-const TOKEN_KEY = 'rapla.accessToken';
-
+/**
+ * Thin wrapper around angular-oauth2-oidc's OAuthService.
+ *
+ * The library handles the Authorization Code + PKCE flow against Spring
+ * Authorization Server at /oauth2/authorize and /oauth2/token. PRD 031
+ * registers /app/auth/callback as a permitted loopback redirect-uri for
+ * the `rapla-client` registration in application.yml.
+ */
 @Injectable({ providedIn: 'root' })
 export class AuthService {
-  private readonly api = inject(AuthControllerService);
+  private readonly oauth = inject(OAuthService);
   private readonly router = inject(Router);
 
-  login(username: string, password: string): Observable<TokenResponse> {
-    return this.api.login({ username, password }).pipe(
-      tap((res) => {
-        if (res.accessToken) {
-          localStorage.setItem(TOKEN_KEY, res.accessToken);
-        }
-      })
-    );
+  signIn(): void {
+    this.oauth.initCodeFlow();
   }
 
-  logout(): void {
-    localStorage.removeItem(TOKEN_KEY);
+  signOut(): void {
+    this.oauth.logOut();
     this.router.navigateByUrl('/login');
   }
 
   token(): string | null {
-    return localStorage.getItem(TOKEN_KEY);
+    return this.oauth.getAccessToken() || null;
   }
 
   isLoggedIn(): boolean {
-    return !!this.token();
+    return this.oauth.hasValidAccessToken();
+  }
+
+  identityClaims(): Record<string, unknown> | null {
+    return (this.oauth.getIdentityClaims() as Record<string, unknown>) ?? null;
   }
 }

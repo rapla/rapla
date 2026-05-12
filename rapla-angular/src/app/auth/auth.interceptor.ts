@@ -1,13 +1,16 @@
 import { HttpInterceptorFn, HttpErrorResponse } from '@angular/common/http';
 import { inject } from '@angular/core';
-import { Router } from '@angular/router';
 import { catchError, throwError } from 'rxjs';
 
 import { AuthService } from './auth.service';
 
+/**
+ * Attach Bearer token to every outgoing request. On 401, sign out and bounce
+ * to /login. The OAuthService refreshes tokens silently in the background;
+ * we treat a 401 as definitive sign-out.
+ */
 export const authInterceptor: HttpInterceptorFn = (req, next) => {
   const auth = inject(AuthService);
-  const router = inject(Router);
   const token = auth.token();
 
   const authedReq = token
@@ -16,9 +19,8 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
 
   return next(authedReq).pipe(
     catchError((err: HttpErrorResponse) => {
-      if (err.status === 401 && !req.url.includes('/auth/login')) {
-        auth.logout();
-        router.navigateByUrl('/login');
+      if (err.status === 401 && !req.url.includes('/oauth2/') && !req.url.includes('/.well-known/')) {
+        auth.signOut();
       }
       return throwError(() => err);
     })

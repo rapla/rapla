@@ -315,3 +315,5 @@ Reference tests:
   built on the carved-out models.
 - [PRD 025](../prd/025-headless-client-test-harness.md) — the
   `HeadlessPresenterTestSupport` + `RecordingView` design.
+- [swing-platform-quirks.md](swing-platform-quirks.md) — WSLg / XWayland
+  popup workarounds (FilterEditButton positioning, focus dismissal).

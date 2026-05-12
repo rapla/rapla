@@ -1,6 +1,21 @@
 # PRD 029: Swing Login via OAuth 2.0 (Browser-based, PKCE Loopback)
 
-**Status:** in-progress — phase 1 done (2026-05-12). Shipped: discovery endpoint, single `rapla-client` RegisteredClient covering both Swing and (planned) Angular, `SwingOAuthLoginFlow`, `ConnectInfo` token path, UI button wired end-to-end, custom redirect URI validator with WSL bridge (172.16.0.0/12 dev convenience) and same-origin (zero-config Angular) allowances, paste-URL fallback dialog with cancel-aborts-flow, server-driven paste fallback toggle (`rapla.oauth.show-paste-fallback`, default off). **Token unification**: `/auth/login` now signs with the same RSA JWKSource as `/oauth2/token` (Option A from chat 2026-05-12) — composite HMAC+RSA decoder collapsed to a single RSA decoder, both login paths produce structurally identical tokens. **Persistent JWK**: the RSA keypair is read from `RaplaKeyStorage` (rapla preferences, persisted to data file) instead of being regenerated in-memory each startup — tokens survive server restart on both paths. End-to-end verified live with embedded auth server in WSL2. Setup doc at `docs/authentication.md`. Phase 2 (see §Phase 2 below) reframes the login UX with browser-OAuth as the primary path and Swing form as a fallback. PRD 031 handles refresh-token mechanics; PRD 032 (future) handles external IdP. Phase 2 includes those plus the UX direction change.
+**Status:** in-progress — phase 1 done (2026-05-12), phase 2 mostly landed (2026-05-12, awaits e2e verification 2026-05-13). Phase 1 shipped: discovery endpoint, single `rapla-client` RegisteredClient covering both Swing and (planned) Angular, `SwingOAuthLoginFlow`, `ConnectInfo` token path, UI button wired end-to-end, custom redirect URI validator with WSL bridge (172.16.0.0/12 dev convenience) and same-origin (zero-config Angular) allowances, paste-URL fallback dialog with cancel-aborts-flow, server-driven paste fallback toggle (`rapla.oauth.show-paste-fallback`, default off). **Token unification**: `/auth/login` now signs with the same RSA JWKSource as `/oauth2/token` — composite HMAC+RSA decoder collapsed to a single RSA decoder, both login paths produce structurally identical tokens. **Persistent JWK**: RSA keypair read from `RaplaKeyStorage` (rapla preferences, persisted to data file) instead of being regenerated each startup — tokens survive server restart.
+
+Phase 2 shipped 2026-05-12 (awaits e2e verification 2026-05-13):
+- **Auto-OAuth on client launch.** `RaplaClientServiceImpl.startLogin` probes discovery; if `enabled==true`, fires `runOauthLogin` directly. Login dialog only opens when discovery is unreachable or returns `enabled==false`.
+- **Refresh-token bootstrapping.** `MyCustomConnector.refreshUsingToken` reads `connectionInfo.refreshUrl` (added) and POSTs cached refresh JWT to `/api/auth/refresh`. Falls through to password-reauth only if refresh fails.
+- **Hybrid `TokenStore`** for refresh-token caching: JNLP `PersistenceService` → `~/.rapla/tokens.json` (0600) → NoOp. All operations are `catch(Throwable)`; never surface storage errors as login failures.
+- **In-JVM relaunch on logout.** `RaplaClientServiceImpl.logout()` POSTs `/api/auth/logout` (Bearer), opens browser tab to discovery's `logoutUrl`, clears `TokenStore`, then `SwingUtilities.invokeLater(start(null))`. Menu's "Logout / Restart" delegates to `logout()`.
+- **"Waiting for browser sign-in" mode** on `LoginDialog` (`setBrowserLoginInProgress(msg)` hides fields/login/oauth buttons, keeps Exit) shown after logout while OAuth re-runs.
+- **`prompt=login` race-defeater.** After logout, next `runOauthLogin` adds `prompt=login` to authorize URL so Spring SAS re-prompts even if the browser raced ahead of the server's session clear.
+- **Server-side single-token-per-user**, rotate-when-stale (7-day renewal of 30-day TTL). `AuthController` stores `sha256(refreshToken)` under `user.preferences["org.rapla.auth.session"]`. `/api/auth/logout` clears the entry. Bounds DB writes to ~1/user/week.
+- **REST path migration to `/api/`**. `RaplaSpringBootApplication` context-path dropped; all REST under `/api/`. Discovery's `refreshUrl` points at `/api/auth/refresh`; client's `serverURL` is `baseUrl + "api"`.
+- **Functional "Remember me" checkbox** on `LoginPageController` HTML (browser `/login` page). NOT in Swing dialog — Swing has its own refresh-token cache via `TokenStore`.
+- **`raplaUserDetailsService` bean** (`AuthorizationServerConfig`) adapting `RaplaFacade` — UUID-first (form-login stores `user.getId()` as auth name), username fallback. Returns `UserDetails` with placeholder password (`PersistentTokenBased…` doesn't use it).
+- **`PersistentTokenBasedRememberMeServices` + `RaplaTokenRepository`** (`rapla-server/.../internal/`). Stores `{series → {username, tokenValue, lastUsed}}` as JSON under system preferences `org.rapla.auth.rememberMeTokens` — cookies survive server restart (matches persistent-JWK pattern).
+
+Awaits e2e verification 2026-05-13: (a) remember-me cookie survives a server restart, (b) `prompt=login` forces fresh form even with a surviving remember-me cookie, (c) full Swing round-trip after `/api/` migration. Setup doc at `docs/authentication.md`. PRD 031 covers refresh-token mechanics (now mostly shipped); PRD 032 (future) handles external IdP.
 **Date:** 2026-05-12
 
 ## Goal
@@ -366,46 +381,13 @@ server.
 
 ### Plan
 
-1. **Server: `/rapla/login` remember-me.**
-   - Wire `PersistentTokenBasedRememberMeServices` (or
-     `TokenBasedRememberMeServices` — see Open Question 6) into
-     Spring Security's form-login.
-   - Add checkbox to `LoginPageController` HTML.
-   - Configurable TTL via `rapla.auth.remember-me-days` (default 30).
-2. **Server: `localAccountsEnabled` flag in discovery.**
-   - Add to `OAuthConfigController.OAuthConfig`. Defaults to `true`
-     for embedded auth server. Will flip to `false` when external IdP
-     is configured (PRD 032).
-3. **Client: auto-start OAuth flow on launch when enabled.**
-   - `RaplaClientServiceImpl.startLogin` probes discovery first.
-   - If `enabled == true`, run `runOauthLogin` directly (no Swing
-     login dialog). The dialog only opens if discovery says OAuth is
-     off OR the flow throws before the user sees a browser.
-4. **Client: OAuth retry on 401 when refresh fails.**
-   - In `MyCustomConnector.reauth`, after refresh and password reauth
-     both fail, surface a `SessionExpiredException`.
-   - `RaplaClientServiceImpl` (or a `ReauthCoordinator` injected into
-     `MyCustomConnector`) catches it and re-runs `runOauthLogin`.
-   - Cached refresh URL is reused; cached OAuth client_id is reused.
-5. **Client: hide password fields by default, show "Other options"
-   expander.**
-   - `LoginDialog` gains a collapsible fields panel.
-   - When discovery says `localAccountsEnabled == false`, the
-     expander is also hidden — only "Sign in with browser…" remains.
-   - When discovery is unreachable, default to "show fields" so the
-     user has a way to log in.
-6. **Client: logout flow.**
-   - Existing logout clears `RemoteConnectionInfo`.
-   - Add: revoke the SSO cookie if the auth server exposes a logout
-     endpoint (Spring SAS does at `/logout`; Keycloak at
-     `/protocol/openid-connect/logout`). Discovery endpoint exposes
-     this URL.
-   - On next launch, OAuth flow runs and prompts the user (since the
-     cookie was revoked).
-7. **Documentation.**
-   - Update `docs/authentication.md` with the new UX flow + screenshot
-     of the "Other options" expander.
-   - Update PRD 029 status to Phase 2 in-progress.
+1. ✅ **Server: `/rapla/login` remember-me.** Shipped 2026-05-12 — `PersistentTokenBasedRememberMeServices` with `RaplaTokenRepository` backing (system preferences). Checkbox in `LoginPageController` HTML. TTL `rapla.auth.remember-me-days` (default 30).
+2. ⏸ **Server: `localAccountsEnabled` flag in discovery.** Not yet wired — defer until PRD 032 (external IdP) needs it; the embedded SAS path doesn't gate on this today.
+3. ✅ **Client: auto-start OAuth flow on launch when enabled.** Shipped 2026-05-12 — `startLogin` probes discovery; if enabled, runs `runOauthLogin` directly and only shows the dialog for fallbacks/waiting state.
+4. ✅ **Client: OAuth retry on 401 when refresh fails.** Shipped 2026-05-12 — `MyCustomConnector.reauth` tries refresh-token first via `connectionInfo.refreshUrl`, falls through to password reauth, eventually to OAuth flow.
+5. ⏸ **Client: hide password fields by default, show "Other options" expander.** Phase 2 chose a simpler shape — the dialog is hidden entirely when OAuth is enabled (auto-fires the browser flow); a "waiting for browser sign-in" variant of the dialog replaces field-hiding. Collapsible expander deferred — revisit when `localAccountsEnabled=false` configurations land.
+6. ✅ **Client: logout flow.** Shipped 2026-05-12 — POST `/api/auth/logout`, browser tab to discovery's `logoutUrl`, `prompt=login` on next OAuth flow, in-JVM relaunch via `invokeLater(start(null))`.
+7. ⏸ **Documentation.** `docs/authentication.md` updated for Phase 1; Phase 2 UX additions still to write up (auto-OAuth, waiting dialog, remember-me).
 
 ### Tests
 
@@ -421,19 +403,7 @@ server.
 
 ### Open Questions (Phase 2 specific)
 
-6. **Persistent vs. signed remember-me?** Spring offers two
-   `RememberMeServices` flavours. `TokenBasedRememberMeServices` signs
-   a cookie with a server-side key (no DB rows); simpler, doesn't
-   support revocation. `PersistentTokenBasedRememberMeServices` stores
-   a row per device (revokable, audit-friendly).
-   **No JDBC table needed**: rapla can back the persistent variant with
-   its own preferences storage — either a single system-level JSON
-   blob, or per-user preferences with a custom RememberMeServices that
-   includes the username in the cookie. The preferences layer already
-   persists to data file / JDBC (whichever the deployment uses), so
-   restart-survival is free. Recommended: per-user variant for the
-   future "show me signed-in devices" UX; or token-based for the
-   simplest possible thing.
+6. ✅ **Persistent vs. signed remember-me?** *Resolved 2026-05-12.* Chose `PersistentTokenBasedRememberMeServices` because Rapla doesn't expose encoded user passwords (auth goes through opaque `operator.authenticate`), making the `TokenBased` variant's password-derived hash infeasible. Backing implementation: `RaplaTokenRepository` (system-preferences-backed, single JSON blob keyed by series). Survives server restart. Per-user-preferences variant deferred until "signed-in devices" UX is actually needed — the system-wide blob is simpler and adequate at expected scale.
 7. **Browser cookie scope.** Spring's `/rapla/login` cookie is scoped
    to `localhost:8051` in dev, the deployment domain in prod. Same
    browser already has session cookies for that domain — does
@@ -451,7 +421,8 @@ server.
    user a way to retry. Today's "Exit" button is fine; consider also
    a "Retry connection" button on the failure screen.
 
-10. **Refresh-token storage backend?**
+10. ✅ **Refresh-token storage backend?** *Resolved 2026-05-12.* Shipped hybrid `TokenStore`: JNLP `PersistenceService` → `~/.rapla/tokens.json` (0600) → NoOp fallback. Plain bytes, no app-level encryption (matches AWS CLI / GitHub CLI convention). Constructor-time lookup chain in `TokenStores`. Original analysis below kept for context.
+
     **Encryption note**: refresh tokens are not passwords. They are
     signed JWTs (~700 bytes) with claims `sub`, `typ=refresh`, `exp`.
     The threat model — other users on the same machine, malware

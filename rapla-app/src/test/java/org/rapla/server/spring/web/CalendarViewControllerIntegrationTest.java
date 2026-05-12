@@ -81,7 +81,7 @@ class CalendarViewControllerIntegrationTest
 
     private String loginAs(String username, String password) throws Exception
     {
-        MvcResult mvc = mockMvc.perform(post("/auth/login")
+        MvcResult mvc = mockMvc.perform(post("/api/auth/login")
                         .contentType("application/json")
                         .content("{\"username\":\"" + username + "\",\"password\":\"" + password + "\"}"))
                 .andExpect(status().isOk())
@@ -95,7 +95,7 @@ class CalendarViewControllerIntegrationTest
     @Test
     void requiresAuthentication() throws Exception
     {
-        mockMvc.perform(get("/calendar/view")
+        mockMvc.perform(get("/api/calendar/view")
                         .param("from", "2026-06-01")
                         .param("to", "2026-06-08")
                         .param("strategy", "BEST_FIT")
@@ -106,7 +106,7 @@ class CalendarViewControllerIntegrationTest
     @Test
     void dayLayoutReturnsSevenColumnsForOneWeek() throws Exception
     {
-        mockMvc.perform(get("/calendar/view")
+        mockMvc.perform(get("/api/calendar/view")
                         .param("from", "2026-06-01")
                         .param("to", "2026-06-08")
                         .param("strategy", "BEST_FIT")
@@ -121,7 +121,7 @@ class CalendarViewControllerIntegrationTest
     @Test
     void groupStartTimesStrategyAlsoServes() throws Exception
     {
-        mockMvc.perform(get("/calendar/view")
+        mockMvc.perform(get("/api/calendar/view")
                         .param("from", "2026-06-01")
                         .param("to", "2026-06-08")
                         .param("strategy", "GROUP_START_TIMES")
@@ -134,7 +134,7 @@ class CalendarViewControllerIntegrationTest
     @Test
     void resourceLayoutReturnsRequestedAllocatablesAsColumns() throws Exception
     {
-        mockMvc.perform(get("/calendar/view")
+        mockMvc.perform(get("/api/calendar/view")
                         .param("from", "2026-06-01")
                         .param("to", "2026-06-08")
                         .param("strategy", "BEST_FIT")
@@ -152,7 +152,7 @@ class CalendarViewControllerIntegrationTest
     {
         // testdefault.xml seeds one reservation in 2001-10-16 — query that
         // range and expect at least one block back.
-        mockMvc.perform(get("/calendar/view")
+        mockMvc.perform(get("/api/calendar/view")
                         .param("from", "2001-10-15")
                         .param("to", "2001-10-22")
                         .param("strategy", "BEST_FIT")
@@ -174,7 +174,7 @@ class CalendarViewControllerIntegrationTest
     @Test
     void unknownAllocatableIdIsSilentlyDroppedFromResourceColumns() throws Exception
     {
-        mockMvc.perform(get("/calendar/view")
+        mockMvc.perform(get("/api/calendar/view")
                         .param("from", "2026-06-01")
                         .param("to", "2026-06-08")
                         .param("strategy", "BEST_FIT")
@@ -197,7 +197,7 @@ class CalendarViewControllerIntegrationTest
     @Test
     void unknownAllocatableIdAlsoDroppedForNonAdmin() throws Exception
     {
-        mockMvc.perform(get("/calendar/view")
+        mockMvc.perform(get("/api/calendar/view")
                         .param("from", "2026-06-01")
                         .param("to", "2026-06-08")
                         .param("strategy", "BEST_FIT")
@@ -221,7 +221,7 @@ class CalendarViewControllerIntegrationTest
     @Test
     void onlyUnknownAllocatablesYieldEmptyColumnsNotAnError() throws Exception
     {
-        mockMvc.perform(get("/calendar/view")
+        mockMvc.perform(get("/api/calendar/view")
                         .param("from", "2026-06-01")
                         .param("to", "2026-06-08")
                         .param("strategy", "BEST_FIT")

@@ -265,7 +265,7 @@ public class RestAPIExample {
 
     public static void main(String[] args) {
         try {
-            URL baseUrl = new URL("http://localhost:8051/rapla/");
+            URL baseUrl = new URL("http://localhost:8051/api/");
             String username = "admin";
             String password = "";
             new RestAPIExample().testRestApi(baseUrl, username, password);

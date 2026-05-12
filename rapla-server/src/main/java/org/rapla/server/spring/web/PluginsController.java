@@ -38,7 +38,7 @@ import java.util.stream.Collectors;
  */
 @RestController
 @ConditionalOnBean(RemoteSession.class)
-@RequestMapping("/plugins")
+@RequestMapping(value = "/plugins", produces = "application/json")
 public class PluginsController
 {
     public record EnabledRequest(boolean enabled) {}

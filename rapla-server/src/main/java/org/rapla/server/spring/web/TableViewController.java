@@ -58,7 +58,7 @@ import java.util.concurrent.atomic.AtomicReference;
  */
 @RestController
 @ConditionalOnBean(RemoteSession.class)
-@RequestMapping("/table")
+@RequestMapping(value = "/table", produces = "application/json")
 public class TableViewController implements TableViewService
 {
     /** Server-side safety cap on the no-{@code pageSize} response. */

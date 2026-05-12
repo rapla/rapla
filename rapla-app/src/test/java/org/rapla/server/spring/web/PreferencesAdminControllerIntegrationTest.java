@@ -105,7 +105,7 @@ class PreferencesAdminControllerIntegrationTest
 
     private String loginAs(String username, String password) throws Exception
     {
-        MvcResult mvc = mockMvc.perform(post("/auth/login")
+        MvcResult mvc = mockMvc.perform(post("/api/auth/login")
                         .contentType("application/json")
                         .content("{\"username\":\"" + username + "\",\"password\":\"" + password + "\"}"))
                 .andExpect(status().isOk())
@@ -117,7 +117,7 @@ class PreferencesAdminControllerIntegrationTest
     @Test
     void listPanelsSystemRequiresAdmin() throws Exception
     {
-        mockMvc.perform(get("/admin/panels?scope=SYSTEM")
+        mockMvc.perform(get("/api/admin/panels?scope=SYSTEM")
                         .header("Authorization", "Bearer " + userToken()))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.length()").value(0));   // non-admin sees no SYSTEM panels
@@ -126,7 +126,7 @@ class PreferencesAdminControllerIntegrationTest
     @Test
     void listPanelsSystemForAdmin() throws Exception
     {
-        mockMvc.perform(get("/admin/panels?scope=SYSTEM")
+        mockMvc.perform(get("/api/admin/panels?scope=SYSTEM")
                         .header("Authorization", "Bearer " + adminToken()))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[?(@.id == 'stub.system')]").exists())
@@ -136,7 +136,7 @@ class PreferencesAdminControllerIntegrationTest
     @Test
     void listPanelsPerUserVisibleToAll() throws Exception
     {
-        mockMvc.perform(get("/admin/panels?scope=PER_USER")
+        mockMvc.perform(get("/api/admin/panels?scope=PER_USER")
                         .header("Authorization", "Bearer " + userToken()))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[?(@.id == 'stub.peruser')]").exists())
@@ -146,7 +146,7 @@ class PreferencesAdminControllerIntegrationTest
     @Test
     void getPanelReturnsDefinition() throws Exception
     {
-        mockMvc.perform(get("/admin/panels/stub.system")
+        mockMvc.perform(get("/api/admin/panels/stub.system")
                         .header("Authorization", "Bearer " + adminToken()))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").value("stub.system"))
@@ -160,7 +160,7 @@ class PreferencesAdminControllerIntegrationTest
     void savePanelPersists() throws Exception
     {
         String body = "{\"greeting\":\"world\"}";
-        mockMvc.perform(post("/admin/panels/stub.system/save")
+        mockMvc.perform(post("/api/admin/panels/stub.system/save")
                         .header("Authorization", "Bearer " + adminToken())
                         .contentType("application/json")
                         .content(body))
@@ -173,7 +173,7 @@ class PreferencesAdminControllerIntegrationTest
     void invokeActionRoundTrips() throws Exception
     {
         String body = "{\"greeting\":\"echo me\"}";
-        mockMvc.perform(post("/admin/panels/stub.system/action/echo")
+        mockMvc.perform(post("/api/admin/panels/stub.system/action/echo")
                         .header("Authorization", "Bearer " + adminToken())
                         .contentType("application/json")
                         .content(body))
@@ -185,7 +185,7 @@ class PreferencesAdminControllerIntegrationTest
     @Test
     void getPanelDeniedForNonAdminOnSystemPanel() throws Exception
     {
-        mockMvc.perform(get("/admin/panels/stub.system")
+        mockMvc.perform(get("/api/admin/panels/stub.system")
                         .header("Authorization", "Bearer " + userToken()))
                 .andExpect(status().isUnauthorized());
     }

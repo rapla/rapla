@@ -152,11 +152,11 @@ public class ClientProxyConfig
         {
             String baseUrl = info.getServerURL();
             if (baseUrl == null || baseUrl.isEmpty()) return false;
-            // baseUrl already includes the /rapla context path (set by RaplaClientServiceImpl
-            // from rapla.download.url + the configured context). Just append the auth path.
+            // PRD 031 Phase 1: server-side context-path /rapla dropped; serverURL is the
+            // server root (no /rapla/ prefix). Auth lives at /auth/refresh until Phase 2
+            // moves it to /api/auth/refresh — at which point serverURL will end with /api.
             String trimmed = baseUrl.endsWith("/") ? baseUrl.substring(0, baseUrl.length() - 1) : baseUrl;
-            String refreshUrl = trimmed.endsWith("/rapla") ? trimmed + "/auth/refresh"
-                                                           : trimmed + "/rapla/auth/refresh";
+            String refreshUrl = trimmed + "/auth/refresh";
             byte[] reqBody = ("{\"refreshToken\":\"" + refreshToken + "\"}").getBytes(java.nio.charset.StandardCharsets.UTF_8);
             org.springframework.http.client.ClientHttpRequest req =
                     requestFactory.createRequest(java.net.URI.create(refreshUrl), org.springframework.http.HttpMethod.POST);

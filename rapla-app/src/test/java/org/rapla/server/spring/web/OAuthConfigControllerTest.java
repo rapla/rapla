@@ -53,12 +53,12 @@ class OAuthConfigControllerTest
     @Test
     void discoveryReturnsAuthorizeAndTokenUrls() throws Exception
     {
-        mockMvc.perform(get("/auth/oauth/config"))
+        mockMvc.perform(get("/api/auth/oauth/config"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.enabled").value(true))
                 .andExpect(jsonPath("$.clientId").value("rapla-client"))
-                .andExpect(jsonPath("$.authorizeUrl").value(org.hamcrest.Matchers.endsWith("/rapla/oauth2/authorize")))
-                .andExpect(jsonPath("$.tokenUrl").value(org.hamcrest.Matchers.endsWith("/rapla/oauth2/token")))
+                .andExpect(jsonPath("$.authorizeUrl").value(org.hamcrest.Matchers.endsWith("/oauth2/authorize")))
+                .andExpect(jsonPath("$.tokenUrl").value(org.hamcrest.Matchers.endsWith("/oauth2/token")))
                 .andExpect(jsonPath("$.scopes[0]").value("openid"));
     }
 }

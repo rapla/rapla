@@ -9,7 +9,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-@RequestMapping("/logger")
+@RequestMapping(value = "/logger", produces = "application/json")
 public class RemoteLoggerController
 {
     private final RemoteLogger remoteLogger;

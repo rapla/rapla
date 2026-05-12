@@ -1,14 +1,18 @@
-import { Component, inject, signal, OnInit } from '@angular/core';
+import { Component, inject, signal, OnInit, ViewChild, AfterViewInit } from '@angular/core';
 import { DatePipe } from '@angular/common';
-import { forkJoin } from 'rxjs';
+import { MatTableDataSource, MatTableModule } from '@angular/material/table';
+import { MatSort, MatSortModule } from '@angular/material/sort';
+import { MatPaginator, MatPaginatorModule } from '@angular/material/paginator';
+import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
+import { MatToolbarModule } from '@angular/material/toolbar';
+import { MatButtonModule } from '@angular/material/button';
+import { MatIconModule } from '@angular/material/icon';
+import { MatDialog, MatDialogModule } from '@angular/material/dialog';
+import { switchMap, map } from 'rxjs';
 
 import { RemoteStorageControllerService } from '../api/api/remote-storage-controller.service';
 import { AuthService } from '../auth/auth.service';
-
-interface ResourceLite {
-  id: string;
-  label: string;
-}
+import { ReservationDialogComponent } from './reservation-dialog.component';
 
 interface AppointmentLite {
   start: string;
@@ -19,87 +23,141 @@ interface AppointmentLite {
 
 @Component({
   selector: 'app-reservations',
-  imports: [DatePipe],
+  imports: [
+    DatePipe,
+    MatTableModule,
+    MatSortModule,
+    MatPaginatorModule,
+    MatProgressSpinnerModule,
+    MatToolbarModule,
+    MatButtonModule,
+    MatIconModule,
+    MatDialogModule,
+  ],
   template: `
-    <header>
-      <h1>Reservations</h1>
-      <button type="button" (click)="auth.logout()">Sign out</button>
-    </header>
+    <mat-toolbar color="primary">
+      <span>Reservations</span>
+      <span class="spacer"></span>
+      <button matButton (click)="auth.signOut()">
+        <mat-icon>logout</mat-icon>
+        Sign out
+      </button>
+    </mat-toolbar>
 
-    @if (loading()) {
-      <p>Loading…</p>
-    } @else if (error()) {
-      <p class="error">{{ error() }}</p>
-    } @else {
-      <p class="meta">
-        {{ rows().length }} appointment(s),
-        {{ resourceCount() }} resource(s) hydrated.
-      </p>
-      <table>
-        <thead>
-          <tr>
-            <th>Start</th>
-            <th>End</th>
-            <th>Event</th>
-            <th>Allocatables</th>
+    <section class="content">
+      @if (loading()) {
+        <div class="centered"><mat-spinner diameter="32"></mat-spinner></div>
+      } @else if (error()) {
+        <p class="error">{{ error() }}</p>
+      } @else {
+        <p class="meta">
+          {{ dataSource.data.length }} appointment(s),
+          {{ resourceCount() }} resource(s) hydrated.
+        </p>
+
+        <table mat-table [dataSource]="dataSource" matSort class="mat-elevation-z1">
+          <ng-container matColumnDef="start">
+            <th mat-header-cell *matHeaderCellDef mat-sort-header>Start</th>
+            <td mat-cell *matCellDef="let r">{{ r.start | date:'medium' }}</td>
+          </ng-container>
+
+          <ng-container matColumnDef="end">
+            <th mat-header-cell *matHeaderCellDef mat-sort-header>End</th>
+            <td mat-cell *matCellDef="let r">{{ r.end | date:'medium' }}</td>
+          </ng-container>
+
+          <ng-container matColumnDef="reservationName">
+            <th mat-header-cell *matHeaderCellDef mat-sort-header>Event</th>
+            <td mat-cell *matCellDef="let r">{{ r.reservationName }}</td>
+          </ng-container>
+
+          <ng-container matColumnDef="allocatables">
+            <th mat-header-cell *matHeaderCellDef>Allocatables</th>
+            <td mat-cell *matCellDef="let r">{{ r.allocatables.join(', ') }}</td>
+          </ng-container>
+
+          <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+          <tr mat-row
+              *matRowDef="let r; columns: displayedColumns;"
+              class="row-clickable"
+              (click)="openDialog(r)"></tr>
+
+          <tr class="mat-row" *matNoDataRow>
+            <td class="empty" [attr.colspan]="displayedColumns.length">
+              No reservations in the queried window.
+            </td>
           </tr>
-        </thead>
-        <tbody>
-          @for (r of rows(); track r.start + r.reservationName) {
-            <tr>
-              <td>{{ r.start | date:'medium' }}</td>
-              <td>{{ r.end | date:'medium' }}</td>
-              <td>{{ r.reservationName }}</td>
-              <td>{{ r.allocatables.join(', ') }}</td>
-            </tr>
-          } @empty {
-            <tr><td colspan="4" class="empty">No reservations in the queried window.</td></tr>
-          }
-        </tbody>
-      </table>
-    }
+        </table>
+
+        <mat-paginator [pageSizeOptions]="[10, 25, 50, 100]"
+                       [pageSize]="25"
+                       showFirstLastButtons></mat-paginator>
+      }
+    </section>
   `,
   styles: [`
-    :host { display: block; font-family: system-ui, sans-serif; max-width: 1100px; margin: 2rem auto; padding: 0 1rem; }
-    header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; }
-    h1 { font-size: 1.5rem; margin: 0; }
-    button { padding: 0.4rem 0.8rem; border: 1px solid #ccc; background: white; border-radius: 4px; cursor: pointer; }
-    .meta { color: #666; font-size: 0.85rem; margin-bottom: 0.5rem; }
-    table { width: 100%; border-collapse: collapse; }
-    th, td { padding: 0.5rem; border-bottom: 1px solid #eee; text-align: left; font-size: 0.9rem; }
-    th { background: #f8f9fa; font-weight: 600; }
-    .empty { color: #888; text-align: center; font-style: italic; }
-    .error { color: #dc2626; }
+    :host { display: block; }
+    .spacer { flex: 1 1 auto; }
+    .content { max-width: 1100px; margin: 1.5rem auto; padding: 0 1rem; }
+    .meta { color: rgba(0, 0, 0, 0.6); font-size: 0.85rem; margin: 0 0 0.5rem; }
+    table { width: 100%; }
+    .row-clickable { cursor: pointer; }
+    .row-clickable:hover { background: rgba(0, 0, 0, 0.04); }
+    .empty { padding: 1rem; color: rgba(0, 0, 0, 0.5); text-align: center; font-style: italic; }
+    .centered { display: flex; justify-content: center; padding: 2rem; }
+    .error { color: #c62828; }
   `]
 })
-export class ReservationsComponent implements OnInit {
+export class ReservationsComponent implements OnInit, AfterViewInit {
   private readonly api = inject(RemoteStorageControllerService);
+  private readonly dialog = inject(MatDialog);
   protected readonly auth = inject(AuthService);
+
+  readonly displayedColumns = ['start', 'end', 'reservationName', 'allocatables'];
+  readonly dataSource = new MatTableDataSource<AppointmentLite>([]);
 
   loading = signal(true);
   error = signal<string | null>(null);
-  rows = signal<AppointmentLite[]>([]);
   resourceCount = signal(0);
+
+  @ViewChild(MatSort) sort!: MatSort;
+  @ViewChild(MatPaginator) paginator!: MatPaginator;
 
   ngOnInit() {
     const now = new Date();
     const start = new Date(now.getFullYear() - 1, 0, 1).toISOString().replace(/\.\d{3}Z$/, '');
     const end = new Date(now.getFullYear() + 2, 11, 31).toISOString().replace(/\.\d{3}Z$/, '');
 
-    forkJoin({
-      bundle: this.api.getResources(),
-      appts: this.api.queryAppointments({ start, end })
-    }).subscribe({
-      next: ({ bundle, appts }) => {
+    this.api.getResources().pipe(
+      switchMap((bundle: any) => {
         const resources = this.buildResourceIndex(bundle);
         this.resourceCount.set(resources.size);
-        this.rows.set(this.flattenAppointments(appts, resources));
+        const resourceIds = Array.from(resources.keys());
+        return this.api.queryAppointments({ start, end, resources: resourceIds })
+          .pipe(map((appts: any) => ({ appts, resources })));
+      })
+    ).subscribe({
+      next: ({ appts, resources }) => {
+        this.dataSource.data = this.flattenAppointments(appts, resources);
         this.loading.set(false);
       },
       error: (err) => {
         this.error.set(err?.error?.message ?? `Request failed (HTTP ${err?.status ?? '?'})`);
         this.loading.set(false);
       }
+    });
+  }
+
+  ngAfterViewInit() {
+    this.dataSource.sort = this.sort;
+    this.dataSource.paginator = this.paginator;
+  }
+
+  openDialog(row: AppointmentLite) {
+    this.dialog.open(ReservationDialogComponent, {
+      data: row,
+      width: '480px',
+      autoFocus: 'dialog',
     });
   }
 
@@ -127,7 +185,7 @@ export class ReservationsComponent implements OnInit {
     const reservations = (payload?.reservations ?? []) as any[];
     for (const res of reservations) {
       const name = this.labelFor(res) ?? '(no name)';
-      const allocIds: string[] = (res?.links?.allocatable ?? []) as string[];
+      const allocIds: string[] = (res?.links?.resources ?? res?.links?.allocatable ?? []) as string[];
       const allocNames = allocIds.map((id) => resources.get(id) ?? id);
       for (const appt of (res.appointments ?? []) as any[]) {
         result.push({

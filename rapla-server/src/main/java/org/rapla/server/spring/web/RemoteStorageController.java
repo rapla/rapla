@@ -28,7 +28,7 @@ import java.time.LocalDateTime;
  */
 @RestController
 @ConditionalOnBean(RemoteSession.class)
-@RequestMapping("/storage")
+@RequestMapping(value = "/storage", produces = org.springframework.http.MediaType.APPLICATION_JSON_VALUE)
 public class RemoteStorageController
 {
     private final RemoteStorageImpl delegate;

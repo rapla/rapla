@@ -51,7 +51,7 @@ import java.util.stream.Collectors;
  */
 @RestController
 @ConditionalOnBean(RemoteSession.class)
-@RequestMapping("/edit")
+@RequestMapping(value = "/edit", produces = "application/json")
 public class ReservationEditController implements ReservationEditService
 {
     private final RemoteSession session;

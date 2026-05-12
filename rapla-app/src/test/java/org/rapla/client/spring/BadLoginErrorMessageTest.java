@@ -72,7 +72,7 @@ class BadLoginErrorMessageTest
         try (AnnotationConfigApplicationContext ctx =
                      new AnnotationConfigApplicationContext(ClientProxyConfig.class))
         {
-            ctx.getBean(RemoteConnectionInfo.class).setServerURL("http://localhost:" + port + "/rapla/");
+            ctx.getBean(RemoteConnectionInfo.class).setServerURL("http://localhost:" + port + "/api");
             RemoteAuthentificationService proxy = ctx.getBean(RemoteAuthentificationService.class);
 
             HttpClientErrorException.Unauthorized ex = assertThrows(

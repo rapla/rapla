@@ -13,7 +13,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @ConditionalOnBean({ArchiverService.class, RemoteSession.class})
-@RequestMapping("/archiver")
+@RequestMapping(value = "/archiver", produces = "application/json")
 public class ArchiverController
 {
     private final ArchiverServiceImpl service;

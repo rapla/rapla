@@ -61,33 +61,33 @@ class UrlPreservationTest
     @Test
     void icalPathRoutes() throws Exception
     {
-        int status = mockMvc.perform(get("/ical").param("file", "x").param("user", "homer"))
+        int status = mockMvc.perform(get("/rapla/ical").param("file", "x").param("user", "homer"))
                 .andReturn().getResponse().getStatus();
-        assertNotEquals(404, status, "/ical must route — got 404");
+        assertNotEquals(404, status, "/rapla/ical must route — got 404");
     }
 
     @Test
     void internalIcalPathRoutes() throws Exception
     {
-        int status = mockMvc.perform(get("/internal_ical").param("file", "x").param("user", "homer"))
+        int status = mockMvc.perform(get("/rapla/internal_ical").param("file", "x").param("user", "homer"))
                 .andReturn().getResponse().getStatus();
-        assertNotEquals(404, status, "/internal_ical must route — got 404");
+        assertNotEquals(404, status, "/rapla/internal_ical must route — got 404");
     }
 
     @Test
     void calendarPathRoutes() throws Exception
     {
-        Object handler = mockMvc.perform(get("/calendar").param("user", "homer").param("file", "x"))
+        Object handler = mockMvc.perform(get("/rapla/calendar").param("user", "homer").param("file", "x"))
                 .andReturn().getHandler();
-        assertNotNull(handler, "/calendar must route to a controller — got null handler");
+        assertNotNull(handler, "/rapla/calendar must route to a controller — got null handler");
     }
 
     @Test
     void calendarCsvPathRoutes() throws Exception
     {
-        Object handler = mockMvc.perform(get("/calendar.csv").param("user", "homer").param("file", "x"))
+        Object handler = mockMvc.perform(get("/rapla/calendar.csv").param("user", "homer").param("file", "x"))
                 .andReturn().getHandler();
-        assertNotNull(handler, "/calendar.csv must route to a controller — got null handler");
+        assertNotNull(handler, "/rapla/calendar.csv must route to a controller — got null handler");
     }
 
     @Test
@@ -96,5 +96,57 @@ class UrlPreservationTest
         int status = mockMvc.perform(get("/raplaclient.jnlp"))
                 .andReturn().getResponse().getStatus();
         assertNotEquals(404, status, "/raplaclient.jnlp must route — got 404");
+    }
+
+    // ---- PRD 031 namespace coverage ----
+
+    @Test
+    void indexPathRoutes() throws Exception
+    {
+        int status = mockMvc.perform(get("/"))
+                .andReturn().getResponse().getStatus();
+        assertNotEquals(404, status, "/ (chooser landing) must route — got 404");
+    }
+
+    @Test
+    void indexAliasRoutes() throws Exception
+    {
+        int status = mockMvc.perform(get("/index"))
+                .andReturn().getResponse().getStatus();
+        assertNotEquals(404, status, "/index must route — got 404");
+    }
+
+    @Test
+    void appShellRoutes() throws Exception
+    {
+        int status = mockMvc.perform(get("/app/"))
+                .andReturn().getResponse().getStatus();
+        assertNotEquals(404, status, "/app/ (SPA shell) must route — got 404 (verify SpaResourceConfig + ng build artifacts)");
+    }
+
+    @Test
+    void apiAuthLoginRoutes() throws Exception
+    {
+        int status = mockMvc.perform(get("/api/auth/login"))
+                .andReturn().getResponse().getStatus();
+        // POST endpoint; GET returns 405 — anything but 404 proves route exists.
+        assertNotEquals(404, status, "/api/auth/login must route — got 404 (verify ApiPathPrefixConfig + AuthController)");
+    }
+
+    @Test
+    void apiStorageResourcesRoutes() throws Exception
+    {
+        int status = mockMvc.perform(get("/api/storage/resources"))
+                .andReturn().getResponse().getStatus();
+        // 401 expected (no Bearer); 404 means route doesn't exist.
+        assertNotEquals(404, status, "/api/storage/resources must route — got 404");
+    }
+
+    @Test
+    void apiDocsRoutes() throws Exception
+    {
+        int status = mockMvc.perform(get("/api/v3/api-docs"))
+                .andReturn().getResponse().getStatus();
+        assertNotEquals(404, status, "/api/v3/api-docs must route (SpringDoc honours /api/ prefix) — got 404");
     }
 }

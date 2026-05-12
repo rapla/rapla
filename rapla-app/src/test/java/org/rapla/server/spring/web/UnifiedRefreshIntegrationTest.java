@@ -75,7 +75,7 @@ class UnifiedRefreshIntegrationTest
         ObjectMapper mapper = JsonMapper.builder().build();
 
         // 1. Login
-        MvcResult login = mockMvc.perform(post("/auth/login")
+        MvcResult login = mockMvc.perform(post("/api/auth/login")
                         .contentType("application/json")
                         .content("{\"username\":\"homer\",\"password\":\"duffs\"}"))
                 .andExpect(status().isOk())
@@ -87,11 +87,11 @@ class UnifiedRefreshIntegrationTest
         assertNotNull(refreshToken);
 
         // 2. Old access token unlocks /resources (baseline)
-        mockMvc.perform(get("/resources").header("Authorization", "Bearer " + firstAccess))
+        mockMvc.perform(get("/api/resources").header("Authorization", "Bearer " + firstAccess))
                 .andExpect(status().isOk());
 
         // 3. Redeem refresh token for a new access token
-        MvcResult refreshed = mockMvc.perform(post("/auth/refresh")
+        MvcResult refreshed = mockMvc.perform(post("/api/auth/refresh")
                         .contentType("application/json")
                         .content("{\"refreshToken\":\"" + refreshToken + "\"}"))
                 .andExpect(status().isOk())
@@ -107,7 +107,7 @@ class UnifiedRefreshIntegrationTest
         assertEquals(refreshToken, secondRefresh, "refresh token kept when not stale");
 
         // 4. New access token also unlocks /resources
-        mockMvc.perform(get("/resources").header("Authorization", "Bearer " + secondAccess))
+        mockMvc.perform(get("/api/resources").header("Authorization", "Bearer " + secondAccess))
                 .andExpect(status().isOk());
     }
 
@@ -121,7 +121,7 @@ class UnifiedRefreshIntegrationTest
         // the previous refresh token, ensuring the chain works through rotation.
         ObjectMapper mapper = JsonMapper.builder().build();
 
-        MvcResult login = mockMvc.perform(post("/auth/login")
+        MvcResult login = mockMvc.perform(post("/api/auth/login")
                         .contentType("application/json")
                         .content("{\"username\":\"homer\",\"password\":\"duffs\"}"))
                 .andExpect(status().isOk())
@@ -129,7 +129,7 @@ class UnifiedRefreshIntegrationTest
         String refresh1 = mapper.readTree(login.getResponse().getContentAsString())
                 .get("refreshToken").asString();
 
-        MvcResult firstRefresh = mockMvc.perform(post("/auth/refresh")
+        MvcResult firstRefresh = mockMvc.perform(post("/api/auth/refresh")
                         .contentType("application/json")
                         .content("{\"refreshToken\":\"" + refresh1 + "\"}"))
                 .andExpect(status().isOk())
@@ -137,7 +137,7 @@ class UnifiedRefreshIntegrationTest
         String refresh2 = mapper.readTree(firstRefresh.getResponse().getContentAsString())
                 .get("refreshToken").asString();
 
-        MvcResult secondRefresh = mockMvc.perform(post("/auth/refresh")
+        MvcResult secondRefresh = mockMvc.perform(post("/api/auth/refresh")
                         .contentType("application/json")
                         .content("{\"refreshToken\":\"" + refresh2 + "\"}"))
                 .andExpect(status().isOk())
@@ -153,7 +153,7 @@ class UnifiedRefreshIntegrationTest
         // typ=access claim must not be accepted by /auth/refresh — that would
         // let a leaked access token mint indefinite new tokens.
         ObjectMapper mapper = JsonMapper.builder().build();
-        MvcResult login = mockMvc.perform(post("/auth/login")
+        MvcResult login = mockMvc.perform(post("/api/auth/login")
                         .contentType("application/json")
                         .content("{\"username\":\"homer\",\"password\":\"duffs\"}"))
                 .andExpect(status().isOk())
@@ -161,7 +161,7 @@ class UnifiedRefreshIntegrationTest
         String accessToken = mapper.readTree(login.getResponse().getContentAsString())
                 .get("accessToken").asString();
 
-        mockMvc.perform(post("/auth/refresh")
+        mockMvc.perform(post("/api/auth/refresh")
                         .contentType("application/json")
                         .content("{\"refreshToken\":\"" + accessToken + "\"}"))
                 .andExpect(status().is4xxClientError());

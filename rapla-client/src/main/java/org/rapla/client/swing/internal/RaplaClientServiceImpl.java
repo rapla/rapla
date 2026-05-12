@@ -107,6 +107,10 @@ public class RaplaClientServiceImpl implements ClientService, UpdateErrorListene
     RemoteAuthentificationService authentificationService;
     RemoteConnectionInfo connectionInfo;
     final org.rapla.storage.dbrm.TokenStore tokenStore;
+    /** Set by logout(); read+cleared by the next runOauthLogin call. Adds
+     *  prompt=login to the authorize URL to defeat the cookie-reuse race
+     *  when logout-and-restart happen in quick succession in the same JVM. */
+    private volatile boolean nextOauthForcesLogin = false;
 
     @Autowired
     public RaplaClientServiceImpl(StartupEnvironment env, Logger logger, DialogUiFactoryInterface dialogUiFactory, ClientFacade facade, RaplaResources i18n, RaplaSystemInfo systemInfo,
@@ -144,7 +148,11 @@ public class RaplaClientServiceImpl implements ClientService, UpdateErrorListene
         try
         {
             URL downloadURL = env.getDownloadURL();
-            connectionInfo.setServerURL(downloadURL.toExternalForm() + "rapla");
+            // PRD 031 Phase 2: REST API moved to /api/* via WebMvcConfigurer.addPathPrefix.
+            // serverURL must end at /api so existing @Path("/auth/login") proxies hit /api/auth/login.
+            String baseUrl = downloadURL.toExternalForm();
+            if (!baseUrl.endsWith("/")) baseUrl += "/";
+            connectionInfo.setServerURL(baseUrl + "api");
         }
         catch (RaplaException e)
         {
@@ -767,6 +775,13 @@ public class RaplaClientServiceImpl implements ClientService, UpdateErrorListene
                 connectionInfo.setLogoutUrl(cfg.getLogoutUrl());
             }
             SwingOAuthLoginFlow flow = new SwingOAuthLoginFlow(cfg, getLogger());
+            boolean force = nextOauthForcesLogin;
+            nextOauthForcesLogin = false;
+            if (force)
+            {
+                flow.forceLogin(true);
+                getLogger().info("OAuth flow: forcing IdP login (prompt=login) — post-logout restart");
+            }
             SwingOAuthLoginFlow.Session session = flow.start();
             if (cfg.isShowPasteFallback())
             {
@@ -1036,6 +1051,12 @@ public class RaplaClientServiceImpl implements ClientService, UpdateErrorListene
             }
         }
         tokenStore.tryClear();
+        // Tell the next OAuth flow to force the IdP login form regardless of
+        // the browser's session cookie. The cookie SHOULD be cleared by the
+        // logoutUrl tab opened above, but there's a race: that tab may not
+        // have completed before /oauth2/authorize runs. prompt=login defeats
+        // the race deterministically.
+        nextOauthForcesLogin = true;
         stop(new ConnectInfo(null, "".toCharArray()));
         // After logout, re-enter the login flow in the same JVM so the user
         // sees the login dialog / browser flow without needing to relaunch.

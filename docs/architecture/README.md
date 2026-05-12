@@ -29,6 +29,7 @@ references — pasting one into your IDE jumps to the right place.
 | [extension-points.md](extension-points.md) | Spring DI plugin wiring, extension-point catalog, plugin list |
 | [flows.md](flows.md) | Cross-cutting flows: login, query, store/dispatch, refresh poll |
 | [mvp-pattern.md](mvp-pattern.md) | Presenter / View / pure-model carve-out pattern; headless test harness; AGENTS.md §12 leak-probe pattern |
+| [swing-platform-quirks.md](swing-platform-quirks.md) | Platform/compositor workarounds in the Swing client (WSLg popup input-region leak, FilterEditButton positioning, focus-dismiss handlers) |
 
 ## What lives where (quick lookup)
 

@@ -62,7 +62,7 @@ class ReservationEditControllerIntegrationTest
 
     private String adminToken() throws Exception
     {
-        MvcResult mvc = mockMvc.perform(post("/auth/login")
+        MvcResult mvc = mockMvc.perform(post("/api/auth/login")
                         .contentType("application/json")
                         .content("{\"username\":\"homer\",\"password\":\"duffs\"}"))
                 .andExpect(status().isOk()).andReturn();
@@ -75,7 +75,7 @@ class ReservationEditControllerIntegrationTest
     @Test
     void requiresAuthentication() throws Exception
     {
-        mockMvc.perform(post("/edit/validate-recurrence")
+        mockMvc.perform(post("/api/edit/validate-recurrence")
                         .contentType("application/json")
                         .content("""
                             {"type":"daily","interval":1,"weekdays":[],
@@ -89,7 +89,7 @@ class ReservationEditControllerIntegrationTest
     @Test
     void validDailyForeverIsValid() throws Exception
     {
-        mockMvc.perform(post("/edit/validate-recurrence")
+        mockMvc.perform(post("/api/edit/validate-recurrence")
                         .header("Authorization", "Bearer " + adminToken())
                         .contentType("application/json")
                         .content("""
@@ -106,7 +106,7 @@ class ReservationEditControllerIntegrationTest
     @Test
     void intervalZeroReportsClampIssue() throws Exception
     {
-        mockMvc.perform(post("/edit/validate-recurrence")
+        mockMvc.perform(post("/api/edit/validate-recurrence")
                         .header("Authorization", "Bearer " + adminToken())
                         .contentType("application/json")
                         .content("""
@@ -121,7 +121,7 @@ class ReservationEditControllerIntegrationTest
     @Test
     void weeklyWithNoWeekdaysReportsIssue() throws Exception
     {
-        mockMvc.perform(post("/edit/validate-recurrence")
+        mockMvc.perform(post("/api/edit/validate-recurrence")
                         .header("Authorization", "Bearer " + adminToken())
                         .contentType("application/json")
                         .content("""
@@ -136,7 +136,7 @@ class ReservationEditControllerIntegrationTest
     @Test
     void untilEndBeforeStartReportsIssue() throws Exception
     {
-        mockMvc.perform(post("/edit/validate-recurrence")
+        mockMvc.perform(post("/api/edit/validate-recurrence")
                         .header("Authorization", "Bearer " + adminToken())
                         .contentType("application/json")
                         .content("""
@@ -151,7 +151,7 @@ class ReservationEditControllerIntegrationTest
     @Test
     void multipleIssuesAllSurface() throws Exception
     {
-        mockMvc.perform(post("/edit/validate-recurrence")
+        mockMvc.perform(post("/api/edit/validate-recurrence")
                         .header("Authorization", "Bearer " + adminToken())
                         .contentType("application/json")
                         .content("""
@@ -172,7 +172,7 @@ class ReservationEditControllerIntegrationTest
     @Test
     void checkConflictsRequiresAuthentication() throws Exception
     {
-        mockMvc.perform(post("/edit/check-conflicts")
+        mockMvc.perform(post("/api/edit/check-conflicts")
                         .contentType("application/json")
                         .content("""
                             {"allocatableIds":[],"appointments":[],"today":"2026-06-01"}"""))
@@ -182,7 +182,7 @@ class ReservationEditControllerIntegrationTest
     @Test
     void checkConflictsEmptyRequestReturnsEmptyOutcomes() throws Exception
     {
-        mockMvc.perform(post("/edit/check-conflicts")
+        mockMvc.perform(post("/api/edit/check-conflicts")
                         .header("Authorization", "Bearer " + adminToken())
                         .contentType("application/json")
                         .content("""
@@ -198,7 +198,7 @@ class ReservationEditControllerIntegrationTest
             {"allocatableIds":["%s"],
              "appointments":[{"start":"2026-06-01T09:00:00","end":"2026-06-01T10:00:00","recurrence":null}],
              "today":"2026-06-01"}""".formatted(ROOM_A66);
-        mockMvc.perform(post("/edit/check-conflicts")
+        mockMvc.perform(post("/api/edit/check-conflicts")
                         .header("Authorization", "Bearer " + adminToken())
                         .contentType("application/json")
                         .content(body))
@@ -221,7 +221,7 @@ class ReservationEditControllerIntegrationTest
             {"allocatableIds":["%s","%s"],
              "appointments":[{"start":"2026-06-01T09:00:00","end":"2026-06-01T10:00:00","recurrence":null}],
              "today":"2026-06-01"}""".formatted(ROOM_A66, UNKNOWN_ID);
-        mockMvc.perform(post("/edit/check-conflicts")
+        mockMvc.perform(post("/api/edit/check-conflicts")
                         .header("Authorization", "Bearer " + adminToken())
                         .contentType("application/json")
                         .content(body))
@@ -240,7 +240,7 @@ class ReservationEditControllerIntegrationTest
              "today":"2026-06-01"}""".formatted(UNKNOWN_ID);
         // Same status code + same shape as "known but no conflicts" —
         // probe-indistinguishable.
-        mockMvc.perform(post("/edit/check-conflicts")
+        mockMvc.perform(post("/api/edit/check-conflicts")
                         .header("Authorization", "Bearer " + adminToken())
                         .contentType("application/json")
                         .content(body))
@@ -253,7 +253,7 @@ class ReservationEditControllerIntegrationTest
     @Test
     void expandBlocksRequiresAuthentication() throws Exception
     {
-        mockMvc.perform(post("/edit/expand-blocks")
+        mockMvc.perform(post("/api/edit/expand-blocks")
                         .contentType("application/json")
                         .content("""
                             {"appointment":{"start":"2026-06-01T09:00:00","end":"2026-06-01T10:00:00","recurrence":null},
@@ -266,7 +266,7 @@ class ReservationEditControllerIntegrationTest
     void expandBlocksSingleOccurrenceYieldsOneBlock() throws Exception
     {
         // No recurrence — single-occurrence appointment. One block expected.
-        mockMvc.perform(post("/edit/expand-blocks")
+        mockMvc.perform(post("/api/edit/expand-blocks")
                         .header("Authorization", "Bearer " + adminToken())
                         .contentType("application/json")
                         .content("""
@@ -283,7 +283,7 @@ class ReservationEditControllerIntegrationTest
     void expandBlocksDailyRecurrenceYieldsExpectedCount() throws Exception
     {
         // Daily recurrence with repeatCount=5 over a 30-day window → 5 occurrences.
-        mockMvc.perform(post("/edit/expand-blocks")
+        mockMvc.perform(post("/api/edit/expand-blocks")
                         .header("Authorization", "Bearer " + adminToken())
                         .contentType("application/json")
                         .content("""
@@ -306,7 +306,7 @@ class ReservationEditControllerIntegrationTest
     {
         // Missing windowStart — the controller's IllegalArgumentException
         // surfaces as 400 via the existing RaplaExceptionHandler.
-        mockMvc.perform(post("/edit/expand-blocks")
+        mockMvc.perform(post("/api/edit/expand-blocks")
                         .header("Authorization", "Bearer " + adminToken())
                         .contentType("application/json")
                         .content("""

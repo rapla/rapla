@@ -91,7 +91,7 @@ public class RaplaAuthRestPage
     public void create_(@QueryParam("url") String url, @FormParam("username") String user, @FormParam("password")String password,
             @FormParam("connectAs") String connectAs, @Context HttpServletResponse response) throws Exception
     {
-        final String targetUrl = url !=null ? Tools.createXssSafeString(url): "../apiTest.html";
+        final String targetUrl = url !=null ? Tools.createXssSafeString(url): "../swagger-ui/index.html";
         URI uri = new URI(targetUrl);
         if (uri.isAbsolute()) {
             throw new RaplaSecurityException("Absolute target urls are not allowed at this point.");

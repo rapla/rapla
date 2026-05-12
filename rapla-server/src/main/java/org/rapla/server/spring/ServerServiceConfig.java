@@ -339,6 +339,12 @@ public class ServerServiceConfig
         return impl;
     }
 
+    @Bean(name = "0_spa")
+    public org.rapla.server.extensionpoints.HtmlMainMenu raplaSpaEntry(org.rapla.RaplaResources i18n)
+    {
+        return new org.rapla.server.internal.RaplaSpaEntry(i18n);
+    }
+
     @Bean(name = "1_jnlp")
     public org.rapla.server.extensionpoints.HtmlMainMenu raplaJnlpEntry(org.rapla.RaplaResources i18n)
     {

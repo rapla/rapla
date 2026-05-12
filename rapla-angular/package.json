@@ -3,21 +3,29 @@
   "version": "0.0.0",
   "scripts": {
     "ng": "ng",
-    "start": "ng serve",
-    "build": "ng build",
+    "start": "ng serve --proxy-config proxy.conf.js",
+    "start:ai": "ng serve --proxy-config proxy.conf.js --configuration ai-develop",
+    "build": "npm run lint && ng build",
+    "build:fast": "ng build",
     "watch": "ng build --watch --configuration development",
     "test": "ng test",
-    "gen:api": "openapi-generator-cli generate -i http://localhost:8051/rapla/v3/api-docs -g typescript-angular -o src/app/api --additional-properties=ngVersion=21.2.0,supportsES6=true,withInterfaces=true,fileNaming=kebab-case,enumPropertyNaming=original"
+    "gen:api": "openapi-generator-cli generate -i http://localhost:8051/api/v3/api-docs -g typescript-angular -o src/app/api --additional-properties=ngVersion=21.2.0,supportsES6=true,withInterfaces=true,fileNaming=kebab-case,enumPropertyNaming=original",
+    "lint": "ng lint && prettier --check \"src/**/*.{ts,html,css,json}\"",
+    "format": "prettier --write \"src/**/*.{ts,html,css,json}\""
   },
   "private": true,
   "packageManager": "npm@11.12.1",
   "dependencies": {
+    "@angular/animations": "^21.2.12",
+    "@angular/cdk": "^21.2.10",
     "@angular/common": "^21.2.0",
     "@angular/compiler": "^21.2.0",
     "@angular/core": "^21.2.0",
     "@angular/forms": "^21.2.0",
+    "@angular/material": "^21.2.10",
     "@angular/platform-browser": "^21.2.0",
     "@angular/router": "^21.2.0",
+    "angular-oauth2-oidc": "^20.0.2",
     "rxjs": "~7.8.0",
     "tslib": "^2.3.0"
   },
@@ -25,9 +33,13 @@
     "@angular/build": "^21.2.10",
     "@angular/cli": "^21.2.10",
     "@angular/compiler-cli": "^21.2.0",
+    "@eslint/js": "^10.0.1",
+    "angular-eslint": "21.3.1",
+    "eslint": "^10.0.3",
     "jsdom": "^28.0.0",
     "prettier": "^3.8.1",
     "typescript": "~5.9.2",
+    "typescript-eslint": "8.56.1",
     "vitest": "^4.0.8"
   }
 }

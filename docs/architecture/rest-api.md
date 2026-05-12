@@ -49,6 +49,139 @@ on `*Impl` classes are what travels — no `@JsonProperty` rewriting.
 local zone. See [reservation-edit.md §Wire model](reservation-edit.md)
 for the timezone-naive caveat.
 
+The factory's full configuration:
+
+```
+FIELD            = ANY      ← include private fields
+GETTER           = NONE     ← ignore all getX() / isX()
+IS_GETTER        = NONE
+SETTER           = NONE     ← ignore all setX()
+CREATOR          = ANY
++ PROPAGATE_TRANSIENT_MARKER = true   (Java `transient` excludes a field)
++ ALLOW_FINAL_FIELDS_AS_MUTATORS = true
+```
+
+Why field-based: rapla entities have getters that resolve
+cross-references through a `transient` resolver and cycle back to
+the source. Getter-based discovery → infinite recursion →
+`StackOverflowError`. The `transient`-marker contract is exactly
+the rapla wire contract.
+
+### OpenAPI / Swagger spec caveat
+
+**The OpenAPI spec at `/api/v3/api-docs` does NOT use Jackson 3's
+field-based introspection.** SpringDoc 3.0 builds the schema via
+`swagger-core`'s `io.swagger.v3.core.jackson.ModelResolver`, which
+uses **Jackson 2.x**. The package rename in Jackson 3 (`com.fasterxml.jackson.*`
+→ `tools.jackson.*`) is so deep in swagger-core that bridging
+versions inside one artifact isn't practical — upstream's
+position (swagger-core [#4991](https://github.com/swagger-api/swagger-core/issues/4991))
+is to wait for a swagger-core 3.x major release line, with
+SpringDoc 4.x downstream of that. Realistic timeline: 12-24
+months. Until then we're stuck with the two-mapper picture.
+Jackson 2's default visibility is getter/setter introspection, not
+field-based. So:
+
+- **Spec properties** = whatever Jackson 2 finds via `getX`/`setX`
+  pairs on the class.
+- **Wire properties** = whatever Jackson 3 serializes from the
+  fields (`Visibility.ANY` + `PROPAGATE_TRANSIENT_MARKER`).
+
+These two sets **don't have to match**, and in practice they
+don't:
+
+- **Phantom properties.** A class with `private transient
+  Resolver resolver; public String getName() { return
+  resolver.resolveBy(this).name; }` shows `name` in the spec but
+  doesn't serialize a `name` field at runtime — and at
+  *deserialization* time, the JSON's `name` has nowhere to land
+  (no field, setter ignored).
+- **Missing properties.** A `public final` field with no getter
+  (a pattern that rapla uses since PRD 011) shows up on the wire
+  but doesn't appear in the spec.
+- **False conflicts.** `DefaultConfiguration` has three overloaded
+  `setValue(String|int|boolean)` methods. The runtime ignores all
+  three (SETTER = NONE) and uses the `value` field directly.
+  swagger-core's `ModelResolver` collects the three setters and
+  logs `IllegalArgumentException: Conflicting setter definitions
+  for property "value"` at startup — a misleading warning about a
+  conflict that doesn't exist at the wire layer.
+
+**Consequence for openapi-generator-cli output.** TypeScript /
+Angular clients generated from `/api/v3/api-docs` describe what
+the *Jackson 2 ModelResolver* sees, not what *Jackson 3 actually
+serializes*. Generated DTOs may include phantom fields or omit
+real ones. Cross-check the generated client against actual wire
+data (the `api-testing` skill or a `curl` of the live endpoint)
+before depending on a DTO field shape.
+
+### Recommended fix (open follow-up, 2026-05-13)
+
+Register a custom `ModelResolver` bean in
+`rapla-app/.../spring/RaplaJacksonConfig` that wires a
+**Jackson-2 ObjectMapper configured the same as the Jackson-3
+runtime**:
+
+```java
+@Bean
+public ModelResolver swaggerModelResolver() {
+    com.fasterxml.jackson.databind.ObjectMapper mapper =
+            io.swagger.v3.core.util.Json.mapper().copy();
+    mapper.setVisibility(mapper.getVisibilityChecker()
+            .withFieldVisibility(Visibility.ANY)
+            .withGetterVisibility(Visibility.NONE)
+            .withIsGetterVisibility(Visibility.NONE)
+            .withSetterVisibility(Visibility.NONE)
+            .withCreatorVisibility(Visibility.ANY));
+    mapper.enable(MapperFeature.PROPAGATE_TRANSIENT_MARKER);
+    ModelResolver resolver = new ModelResolver(mapper);
+    // The @Bean alone isn't enough — swagger-core's ModelConverters
+    // singleton may already have wired its default resolver before
+    // Spring's bean lifecycle runs. Explicit addConverter() makes
+    // the custom one stick (springdoc issue #2574).
+    io.swagger.v3.core.converter.ModelConverters.getInstance()
+            .addConverter(resolver);
+    return resolver;
+}
+```
+
+After this, `/api/v3/api-docs` schemas correspond byte-for-byte to
+the JSON the SPA actually receives. Two mapper instances stay in
+play (one Jackson-2 for spec, one Jackson-3 for runtime) but they
+honour identical visibility rules, so the two views align.
+
+**Smoke test after enabling the resolver.** SpringDoc's bean
+chain has known fragility (springdoc-openapi #2574), and
+swagger-core sometimes still confuses identically-named
+getter/field pairs of different types (swagger-core #1611) —
+rapla has this pattern (e.g. `getId()` returning
+`ReferenceInfo<X>` for a String `id` field). To verify:
+
+1. Hit `/api/v3/api-docs` and copy one entity's schema (e.g.
+   `Reservation`).
+2. `curl` an endpoint returning that entity (e.g.
+   `POST /api/storage/queryAppointments` with the right
+   `resources` filter) and compare the JSON property set.
+3. If a property appears in one but not the other → either
+   `@Schema(hidden=true)` on the offending getter, or
+   `@JsonIgnore` on the conflicting field/setter, then re-test.
+
+Until the resolver lands: any field added to a `*Impl` class
+needs the generated TS client regenerated AND eyeballed against
+a real sample response. The bulk of rapla entities round-trip
+fine because their fields and `getX` pairs happen to align —
+but edge cases (resolver-traversing getters, overloaded setters,
+final fields with no getter) misrepresent the wire.
+
+### Sources
+
+- [SpringDoc FAQ — POJOs require getters](https://springdoc.org/faq.html)
+- [swagger-core #4776 — make ObjectMapper for property discovery configurable](https://github.com/swagger-api/swagger-core/issues/4776)
+- [springdoc-openapi #2381 — `spring.jackson.property-naming-strategy` not honoured](https://github.com/springdoc/springdoc-openapi/issues/2381)
+- [springdoc-openapi #2574 — custom ModelResolver wiring caveats](https://github.com/springdoc/springdoc-openapi/issues/2574)
+- [springdoc-openapi #1611 — getter/field name conflicts](https://github.com/springdoc/springdoc-openapi/issues/1611)
+- [DZone — Extending Swagger and SpringDoc OpenAPI](https://dzone.com/articles/extending-swagger-and-spring-doc-open-api)
+
 ### Error envelope
 
 `RaplaExceptionHandler` (`@RestControllerAdvice`) maps exceptions

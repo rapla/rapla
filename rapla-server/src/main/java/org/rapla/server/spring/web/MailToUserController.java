@@ -14,7 +14,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @ConditionalOnBean(RemoteSession.class)
-@RequestMapping("/mail/send")
+@RequestMapping(value = "/mail/send", produces = "application/json")
 public class MailToUserController
 {
     private final MailToUserImpl mailToUser;

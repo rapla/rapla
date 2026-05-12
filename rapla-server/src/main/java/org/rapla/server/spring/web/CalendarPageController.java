@@ -6,6 +6,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import org.rapla.plugin.autoexport.server.CalendarPageGenerator;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.io.IOException;
@@ -21,6 +22,7 @@ import java.io.IOException;
  * </ul>
  */
 @RestController
+@RequestMapping("/rapla")
 @ConditionalOnBean(CalendarPageGenerator.class)
 public class CalendarPageController
 {

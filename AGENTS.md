@@ -137,26 +137,61 @@ The dev server is a Spring Boot application started via `mvn spring-boot:run` (n
 
 The Bash tool waits for the spawned process to exit. A long-running server started in the foreground hangs the agent forever. **The right pattern is `run_in_background=true` on the Bash tool call** — the tool spawns the process, returns a shell ID immediately, and the agent keeps working.
 
+**Reliable recipe (lessons learned 2026-05-13):**
+
 ```bash
-mkdir -p logs
-# CRITICAL: run from the repo ROOT with -pl rapla-app -am.
-# Do NOT `cd rapla-app && mvn spring-boot:run` — that pulls sibling modules from ~/.m2 (stale).
-mvn -pl rapla-app -am compile -q
-mvn -pl rapla-app -am spring-boot:run -Dspring-boot.run.fork=false \
-  > logs/rapla.log 2>&1 &
-SERVER_PID=$!
-echo $SERVER_PID > logs/rapla.pid
-echo "Started, PID=$SERVER_PID"
+# 1. ABSOLUTE PATHS — the Bash tool's CWD persists between calls but can shift
+#    if any earlier command `cd`-ed elsewhere. Don't rely on relative paths
+#    here; use either `-f /home/chris/git/rapla/pom.xml` or explicitly
+#    `cd /home/chris/git/rapla &&` at the start of THIS command.
+# 2. SEPARATE STOP FROM START — never chain `pkill … ; sleep … ; mvn … &` in
+#    the same Bash invocation. The pkill races with the new spring-boot:run
+#    inside the same backgrounded shell — the new server gets SIGTERM'd
+#    right after startup.
+# 3. ABSOLUTE log path — `> /home/chris/git/rapla/logs/rapla.log` so the
+#    grep-wait pattern below finds the log regardless of CWD drift.
+
+> /home/chris/git/rapla/logs/rapla.log    # truncate so stale "Started" lines don't match
+mvn -f /home/chris/git/rapla/pom.xml -pl rapla-app -am spring-boot:run \
+    -Dspring-boot.run.fork=false \
+    > /home/chris/git/rapla/logs/rapla.log 2>&1 &
+echo "spawned"
 ```
 
-`-Dspring-boot.run.fork=false` runs the app in the Maven JVM so `$!` is the actual app PID (otherwise it's the Maven wrapper PID, and killing Maven leaves the forked app running).
-`-pl rapla-app -am` is mandatory — it tells Maven to also-make the dependent modules in-reactor, so the running JVM's classpath references `rapla-{core,client,server}/target/classes`, not `~/.m2/repository/.../*.jar`.
+Run with `run_in_background=true` on the Bash tool call.
+
+`-Dspring-boot.run.fork=false` runs the app in the Maven JVM so the
+classpath stays in-reactor (`rapla-{core,client,server,app}/target/classes`)
+rather than dropping back to `~/.m2/repository`.
+`-pl rapla-app -am` is mandatory.
 
 If you're a shell user (not the Bash tool), use `nohup ... < /dev/null &` + `disown` instead — same effect.
 
-Wait ~10 s before issuing HTTP requests; confirm with the status check below.
+**Confirm startup before issuing requests.** Use the EXACT `Started Rapla`
+marker — `Started.*in [0-9.]+ seconds` alone matches older Spring lines or
+stale log entries from a previous run:
+
+```bash
+# In a separate Bash call (NOT chained to the start above):
+timeout 120 sh -c 'until grep -q "Started Rapla.*in [0-9.]\+ seconds" \
+    /home/chris/git/rapla/logs/rapla.log 2>/dev/null; do sleep 1; done' \
+  && echo READY || echo TIMEOUT
+jps -l | grep RaplaSpringBoot   # find the actual JVM PID
+```
+
+**Don't rely on `logs/rapla.pid`** for the Bash-tool flow. With
+`-Dspring-boot.run.fork=false`, `$!` from a backgrounded `mvn` is the
+Maven wrapper PID, not the JVM. The reliable PID source is
+`jps -l | grep RaplaSpringBoot`. The PID file pattern in the snippets
+below is kept for compatibility with the shell-user case, but for
+agents `pkill -f RaplaSpringBootApplication` is simpler and equivalent.
 
 #### Stop
+
+> **Safe for ng-serve users:** the patterns below match `spring-boot:run`
+> and `RaplaSpringBootApplication` only. They will NOT touch `ng serve` /
+> `node` / Vite worker processes — feel free to run them while an Angular
+> dev server is up in another terminal.
 
 ```bash
 if [ -f logs/rapla.pid ]; then
@@ -183,27 +218,29 @@ Stop in one Bash call (returns immediately), then start in a separate Bash call 
 #### Status / health
 
 ```bash
-# Process alive?
-[ -f logs/rapla.pid ] && kill -0 "$(cat logs/rapla.pid)" 2>/dev/null \
-  && echo "RUNNING ($(cat logs/rapla.pid))" || echo "NOT RUNNING"
+# Process alive? (Use jps for the Bash-tool flow; the PID file is unreliable
+# when started via run_in_background.)
+jps -l | grep RaplaSpringBoot && echo RUNNING || echo "NOT RUNNING"
 
 # HTTP port answering? (no Actuator endpoint enabled today; hit a known URL.)
-curl -sf -o /dev/null -w '%{http_code}\n' "http://localhost:8051/rapla/raplaclient.jnlp" \
+curl -sf -o /dev/null -w '%{http_code}\n' "http://localhost:8051/raplaclient.jnlp" \
   && echo "HTTP OK" || echo "HTTP DOWN"
 ```
 
-`server.servlet.context-path=/rapla` (PRD 001 Phase 0) means all URLs live under `/rapla/...`.
+URL layout per PRD 031 (2026-05-12): context-path dropped; REST under
+`/api/`, SPA at `/app/`, legacy iCal/calendar load-bearing URLs at
+`/rapla/{calendar,ical,…}`. JNLP launcher at `/raplaclient.jnlp` (root).
 
 #### Default credentials (dev only)
 
 The bundled dev DB ships with one admin: **username `admin`, empty password**. To get a JWT for direct REST probing:
 
 ```bash
-ACCESS=$(curl -s -X POST "http://localhost:8051/rapla/auth/login" \
+ACCESS=$(curl -s -X POST "http://localhost:8051/api/auth/login" \
   -H "Content-Type: application/json" \
   -d '{"username":"admin","password":""}' \
   | python3 -c "import sys,json; print(json.load(sys.stdin)['accessToken'])")
-curl -s -H "Authorization: Bearer $ACCESS" "http://localhost:8051/rapla/storage/resources" | head -c 500
+curl -s -H "Authorization: Bearer $ACCESS" "http://localhost:8051/api/storage/resources" | head -c 500
 ```
 
 #### Inspect logs
@@ -469,3 +506,110 @@ was promoted in PRD 017 Phase 4) — not "reach for Mockito".
 Audit grep at PR-review time:
 `grep -rE "mock\(.*(Facade|Operator|Cache|Permission|Conflict)\.class\)" rapla-*/src/test`
 Expected: zero matches outside `RaplaJNLPPageGeneratorTest`.
+
+### 14. Angular frontend (`rapla-angular/`)
+
+The SPA lives in `rapla-angular/` (Angular 21, served at `/app/`).
+Full layout + URL space is in `rapla-angular/README.md` and PRD 026. Day-to-day
+rules for AI agents working in this module:
+
+#### Type-check on save — use `ng build` / `npm run build:fast`, NOT the test suite
+
+For routine type-check after an edit, use the fast path that skips lint:
+
+```bash
+cd rapla-angular && npx ng build --configuration development
+# equivalent: npm run build:fast
+```
+
+Time-box: ~15–25 s cold, ~5–10 s warm. Angular equivalent of `mvn compile` —
+surfaces TS errors and template-binding errors, no side effects.
+
+**`npm run build` chains `npm run lint && ng build`** (ESLint + Prettier
+formatting check, then build). Slower, but the right thing to run at
+session end or before handoff to confirm a clean state. During iteration
+use `build:fast` instead.
+
+**Do NOT run `npm test` / `ng test` during a session** — slow (Vitest spins
+up jsdom) and noisy. The user runs the suite at session end, or in CI.
+Mirrors §5's "`mvn test` only at session end" rule.
+
+**Do NOT run `npm run lint` repeatedly during a session** — also slow
+(walks the whole tree). One pass at session end (via `npm run build`) is
+enough. Auto-fix formatting via `npm run format` if needed.
+
+#### Never restart the `ng serve` dev server
+
+The user runs `npm start` (or `npm run start:ai`, see below) in their own
+terminal. **Do not start, stop, restart, or `kill` the ng server.** If a
+change isn't visible, ask the user to check their `ng serve` terminal for
+errors; don't try to "fix it" by relaunching.
+
+Spring Boot is fine to restart per §8 (stateless dev DB, AI doesn't do it
+often) — this no-restart rule applies only to the Angular dev server.
+
+#### `npm run start:ai` — quiet config for agent-driven development
+
+Default `npm start` rebuilds on every file change and pushes a live-reload
+to the browser. When an AI agent is editing files rapidly that produces
+tons of partial reloads, broken in-between states, and re-init traffic.
+
+The **`ai-develop` serve configuration** (in `angular.json`) tames this:
+
+- `liveReload: false` — browser does not auto-refresh. User reloads
+  manually when they want to see the latest.
+- `hmr: false` — no hot module replacement either.
+- `poll: 3000` — file watcher checks every 3 s rather than firing on every
+  fs event. Acts as a "grace period" — bursts of saves coalesce.
+
+User runs:
+
+```bash
+cd rapla-angular && npm run start:ai
+```
+
+The dev server still rebuilds in the background, but the page stays put
+until manually reloaded. Use this whenever an agent is the one making the
+edits.
+
+#### Regenerating the OpenAPI client
+
+`src/app/api/` is generated and gitignored. Regenerate after server REST
+surface changes (new controller, DTO field change, etc.):
+
+```bash
+cd rapla-angular && npm run gen:api
+```
+
+Requires the dev server to be running on `:8051` (the generator reads
+`/api/v3/api-docs` live). Generated files are excluded from ESLint
+(`eslint.config.js` ignores) and Prettier (`.prettierignore`).
+
+#### Code-style — same defaults as Java
+
+- No comments unless requested.
+- Constructor injection (Angular `inject()` or constructor params, not field
+  injection via `@Inject` decorator on a property).
+- Follow existing conventions in `src/app/auth/` and `src/app/reservations/`.
+- Prettier config in `.prettierrc` (100-col, single-quote). ESLint uses
+  the flat config in `eslint.config.js` (typescript-eslint recommended
+  + `@angular-eslint` recommended for `.ts` and template a11y for `.html`).
+
+#### Don't edit generated code
+
+`src/app/api/**` is regenerated by `npm run gen:api` — any edit there is
+lost on next regen. If a generated DTO is wrong, fix the server-side
+Spring/Jackson annotation, then regenerate.
+
+#### Probe the wire first — `curl` the REST call before coding against it
+
+Before writing SPA code that consumes a REST endpoint, `curl` it with the
+exact request the SPA will send (auth header, query params, JSON body) and
+inspect the response shape. Avoids guessing field names, missing required
+filters, or assuming the wrong JSON nesting. The **`api-testing`** skill
+(`.agents/skills/api-testing/SKILL.md`) bundles the login → bearer-token →
+request loop. Concretely: empty `resources` array on
+`POST /api/storage/queryAppointments` returns no events (saved hours of
+"why is the table empty" debugging); reservation links are under
+`links.resources`, not `links.allocatable` (different relation entirely).
+Probe first, then write to match.

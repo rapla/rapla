@@ -230,8 +230,8 @@ class HeadlessClientNameResolutionIntegrationTest
                             client.getContext().getBean(org.rapla.storage.dbrm.RemoteStorage.class);
                     java.util.List<org.rapla.facade.internal.ConflictImpl> conflicts = rs.getConflicts();
                     assertNotNull(conflicts,
-                            "/storage/conflicts must succeed after transparent refresh-on-401 — "
-                            + "interceptor should call /auth/refresh with the stored refreshToken, "
+                            "/api/storage/conflicts must succeed after transparent refresh-on-401 — "
+                            + "interceptor should call /api/auth/refresh with the stored refreshToken, "
                             + "update connectionInfo.accessToken, and retry the original request.");
                 }
                 finally

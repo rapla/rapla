@@ -7,6 +7,8 @@ import com.nimbusds.jose.jwk.source.JWKSource;
 import com.nimbusds.jose.proc.SecurityContext;
 import jakarta.servlet.http.HttpServletRequest;
 import org.rapla.entities.User;
+import org.rapla.facade.RaplaFacade;
+import org.rapla.framework.RaplaException;
 import org.rapla.server.RaplaKeyStorage;
 import org.rapla.server.internal.RaplaAuthentificationService;
 import org.rapla.server.util.SameOriginUriCheck;
@@ -28,6 +30,9 @@ import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.FactorGrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.oauth2.server.authorization.OAuth2TokenType;
 import org.springframework.security.oauth2.server.authorization.token.JwtEncodingContext;
 import org.springframework.security.oauth2.server.authorization.token.OAuth2TokenCustomizer;
@@ -378,6 +383,52 @@ public class AuthorizationServerConfig
             {
                 return UsernamePasswordAuthenticationToken.class.isAssignableFrom(authenticationClass);
             }
+        };
+    }
+
+    /**
+     * Looks up Rapla users for Spring Security's remember-me cookie validation.
+     * The form-login flow stores {@code user.getId()} (a UUID) as the
+     * authentication principal name — that's what gets persisted in the
+     * remember-me token store and arrives back as the "username" argument here.
+     * We try UUID resolution first and fall back to the human-readable username
+     * for any path that authenticates by name (e.g. direct DaoAuthenticationProvider
+     * usage, future API-key flows).
+     *
+     * The returned {@link UserDetails#getPassword()} is intentionally a placeholder:
+     * remember-me uses {@link org.springframework.security.web.authentication.rememberme.PersistentTokenBasedRememberMeServices},
+     * which validates cookies via the server-side token repository rather than
+     * recomputing a password-derived hash. Rapla's {@code operator.authenticate()}
+     * is opaque (could be a local hash, LDAP, or an external AuthenticationStore),
+     * so we have no encoded password to expose here.
+     */
+    @Bean
+    public UserDetailsService raplaUserDetailsService(RaplaFacade facade)
+    {
+        return name -> {
+            User user;
+            try
+            {
+                user = facade.getOperator().tryResolve(name, User.class);
+                if (user == null)
+                {
+                    user = facade.getUser(name);
+                }
+            }
+            catch (RaplaException e)
+            {
+                throw new UsernameNotFoundException(name, e);
+            }
+            if (user == null)
+            {
+                throw new UsernameNotFoundException(name);
+            }
+            String role = user.isAdmin() ? "ROLE_ADMIN" : "ROLE_USER";
+            return org.springframework.security.core.userdetails.User
+                    .withUsername(user.getId())
+                    .password("N/A")
+                    .authorities(role)
+                    .build();
         };
     }
 

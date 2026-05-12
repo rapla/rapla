@@ -305,7 +305,7 @@ expected impact on the SPA team, not by dependency.
 
 10. **CORS for prod.** `SecurityConfig.corsConfigurationSource`
     allows `*` origins. If SPA is hosted same-origin (recommended —
-    e.g. `/spa/**` from rapla-app), no change needed. If
+    e.g. `/app/**` from rapla-app), no change needed. If
     cross-origin, lock down `setAllowedOriginPatterns` for prod.
 
 11. **SSE / WebSocket for refresh.** Replace the 20–30 s long-poll
@@ -500,7 +500,7 @@ listing).
 | Question | Decision | Rationale |
 |---|---|---|
 | Framework | **Angular** | PRD's working assumption; RxJS aligns with rapla's RxJava patterns; `openapi-generator` has mature `typescript-angular` templates. |
-| Hosting | **Same-origin from rapla-app at `/spa/**`** | No CORS work; matches `SecurityConfig` shape; SPA assets ship inside the existing fat JAR with no extra deploy step. |
+| Hosting | **Same-origin from rapla-app at `/app/**`** | No CORS work; matches `SecurityConfig` shape; SPA assets ship inside the existing fat JAR with no extra deploy step. |
 | Prototype scope | **Login + read-only reservation list** | Smallest slice that exercises auth + REST + typed-client + render. Open questions §1, §2, §4 (edit-time concurrency / recurring-exception UX / per-field permissions) defer until edit work begins. |
 
 ### What needs to be installed on the dev machine
@@ -552,7 +552,7 @@ rapla/
 ├── rapla-server/                       # (Maven)
 ├── rapla-app/                          # (Maven — Spring Boot fat JAR)
 │   ├── src/main/java/...               # incl. DevSpaResourceConfig (@Profile("dev"))
-│   └── src/main/resources/static/spa/  # ONLY populated in distribution builds; gitignored
+│   └── src/main/resources/static/app/  # ONLY populated in distribution builds; gitignored
 └── rapla-angular/                          # NEW — Angular source tree (gitignore node_modules + dist)
     ├── angular.json                    # default outputPath: dist/rapla-angular
     ├── package.json
@@ -573,7 +573,7 @@ Spring picks up the result by configuration (dev) or by Maven copy
 
 ### Dev-mode vs. distribution-mode wiring
 
-Two code paths serve the same `/spa/**` URL:
+Two code paths serve the same `/app/**` URL:
 
 **Dev mode (`@Profile("dev")` active):**
 
@@ -586,7 +586,7 @@ public class DevSpaResourceConfig implements WebMvcConfigurer {
 
     @Override
     public void addResourceHandlers(ResourceHandlerRegistry registry) {
-        registry.addResourceHandler("/spa/**")
+        registry.addResourceHandler("/app/**")
             .addResourceLocations("file:" + devDir)
             .setCachePeriod(0);
     }
@@ -599,7 +599,7 @@ Developer workflow:
 # Terminal 1 — Angular keeps rebuilding incrementally
 cd rapla-angular && ng build --watch
 
-# Terminal 2 — Spring serves /spa/** from rapla-angular/dist/rapla-angular/browser/
+# Terminal 2 — Spring serves /app/** from rapla-angular/dist/rapla-angular/browser/
 mvn -pl rapla-app -am spring-boot:run -Dspring-boot.run.fork=false
 ```
 
@@ -614,9 +614,9 @@ shows the change. No server restart.
    `npm ci && npm run build -- --configuration=production` in
    `../rapla-angular/`, output lands in `rapla-angular/dist/rapla-angular/browser/`.
 2. `maven-resources-plugin` — copies that directory into
-   `target/classes/static/spa/` during `process-resources`.
+   `target/classes/static/app/` during `process-resources`.
 
-Result: the fat JAR contains the built SPA at `/static/spa/`, and
+Result: the fat JAR contains the built SPA at `/static/app/`, and
 Spring Boot's default static-resource handler serves it from the
 classpath. `DevSpaResourceConfig` isn't created (no dev profile),
 so there's no conflict.
@@ -628,16 +628,16 @@ distribution-build lane.
 
 ### Server-side changes
 
-1. **Permit `/spa/**`** in `rapla-server/.../SecurityConfig.java:26`.
-   Add `/spa/**` to the existing `permitAll` list (alongside
+1. **Permit `/app/**`** in `rapla-server/.../SecurityConfig.java:26`.
+   Add `/app/**` to the existing `permitAll` list (alongside
    `/Rapla/**`, `/webclient/**`, `/jsclient/**`). REST calls from
    the SPA still hit `/auth/**`, `/storage/**`, `/edit/**` and
    respect the existing JWT gate.
 2. **`index.html` fallback for Angular pushState routing.** Angular
-   router uses URLs like `/spa/reservations/123`; Spring Boot's
+   router uses URLs like `/app/reservations/123`; Spring Boot's
    default static handler returns 404 for unmatched paths. Add a
-   `WebMvcConfigurer` that forwards `/spa/**` non-asset requests to
-   `/spa/index.html`. (Alternative: hash-routing, uglier URLs, no
+   `WebMvcConfigurer` that forwards `/app/**` non-asset requests to
+   `/app/index.html`. (Alternative: hash-routing, uglier URLs, no
    server change. Recommendation: pushState + the forward.)
 3. **No new auth beans.** `POST /auth/login` already returns
    `{accessToken, ...}` per AGENTS.md §8 — the SPA `fetch`es it and
@@ -646,17 +646,17 @@ distribution-build lane.
 
 ### Plan (ordered, ~1 day each)
 
-1. **Scaffold.** `ng new rapla-angular --routing --style=css --strict --directory rapla-angular` from the repo root. Keep the default `outputPath: dist/rapla-angular`; set `baseHref: "/spa/"`. Root `.gitignore`: `rapla-angular/node_modules/`, `rapla-angular/dist/`, `rapla-angular/src/app/api/`, `rapla-app/src/main/resources/static/spa/`.
-2. **Wire dev-mode serving.** Add `DevSpaResourceConfig` in `rapla-app` (per §Dev-mode vs. distribution-mode wiring above). Add `/spa/**` to the `permitAll` list at `rapla-server/.../SecurityConfig.java:26`. Add the `index.html` fallback `WebMvcConfigurer` (also dev-profile only — distribution mode adds its own from classpath). Restart server with `dev` profile active, run `ng build --watch` in `rapla-angular/`, verify `http://localhost:8051/rapla/spa/` serves the default Angular landing page.
+1. **Scaffold.** `ng new rapla-angular --routing --style=css --strict --directory rapla-angular` from the repo root. Keep the default `outputPath: dist/rapla-angular`; set `baseHref: "/rapla/app/"`. Root `.gitignore`: `rapla-angular/node_modules/`, `rapla-angular/dist/`, `rapla-angular/src/app/api/`, `rapla-app/src/main/resources/static/app/`.
+2. **Wire dev-mode serving.** Add `DevSpaResourceConfig` in `rapla-app` (per §Dev-mode vs. distribution-mode wiring above). Add `/app/**` to the `permitAll` list at `rapla-server/.../SecurityConfig.java:26`. Add the `index.html` fallback `WebMvcConfigurer` (also dev-profile only — distribution mode adds its own from classpath). Restart server with `dev` profile active, run `ng build --watch` in `rapla-angular/`, verify `http://localhost:8051/rapla/app/` serves the default Angular landing page.
 3. **Generate typed client.** `openapi-generator-cli generate -i http://localhost:8051/rapla/v3/api-docs -g typescript-angular -o src/app/api/`. Wire as an Angular module. Add an npm script (`npm run gen:api`) for reproducibility.
 4. **Login.** Minimal form (username/password) → `POST /auth/login` → store `accessToken` in `localStorage` → navigate to `/reservations`. HTTP interceptor adds `Authorization: Bearer …` to outgoing requests.
 5. **Reservation list.** Call the reservation-query REST endpoint(s) the generated client exposes (resource hydrate via `/storage/resources`, then appointment query for a fixed 30-day window). Render in a plain HTML table — date, title, allocatables. No styling beyond default.
-6. **Smoke (dev).** With `ng build --watch` running, open `http://localhost:8051/rapla/spa/`, log in as `admin` (empty password — AGENTS.md §8), confirm the table populates.
+6. **Smoke (dev).** With `ng build --watch` running, open `http://localhost:8051/rapla/app/`, log in as `admin` (empty password — AGENTS.md §8), confirm the table populates.
 7. **Smoke (distribution).** `mvn -Pspa -pl rapla-app -am package`, then `java -jar rapla-app/target/rapla-2.1-SNAPSHOT.jar` with the dev profile disabled. Same smoke check confirms the SPA is bundled and the classpath path works.
 
 ### Tests
 
-- **Server:** one tier-3 MockMvc test asserting `GET /spa/index.html` returns 200 with `Content-Type: text/html` (proves SecurityConfig + static handler wiring). Don't test SPA contents — that drifts.
+- **Server:** one tier-3 MockMvc test asserting `GET /app/index.html` returns 200 with `Content-Type: text/html` (proves SecurityConfig + static handler wiring). Don't test SPA contents — that drifts.
 - **Client:** `ng test` skeleton from `ng new` is fine; no real coverage for the prototype. Real test discipline starts when Phase 1 begins.
 
 ### Out of scope for the prototype
@@ -665,7 +665,7 @@ distribution-build lane.
 - Refresh-token / silent re-auth.
 - Permission-aware UI gating (§Pre-migration items 6 + 12).
 - Edit / create flows (open questions §1, §2, §4).
-- Production CSP / CSRF tightening on `/spa/**` (item 10).
+- Production CSP / CSRF tightening on `/app/**` (item 10).
 - Locale / i18n — runs in English only.
 
 ### Exit criteria
@@ -678,7 +678,7 @@ The prototype is "done" when, on a fresh checkout:
 3. `cd rapla-angular && npm install && npm run gen:api`
 4. Terminal A: `cd rapla-angular && ng build --watch`
 5. Terminal B: `mvn -pl rapla-app -am spring-boot:run -Dspring-boot.run.fork=false` from repo root (dev profile active by default)
-6. Open `http://localhost:8051/rapla/spa/`, log in as `admin` (empty password — AGENTS.md §8), see the reservation table populate.
+6. Open `http://localhost:8051/rapla/app/`, log in as `admin` (empty password — AGENTS.md §8), see the reservation table populate.
 
 **Distribution path:**
 1. `mvn -Pspa -pl rapla-app -am package` (downloads pinned Node, runs `npm ci && ng build`, copies output into the fat JAR)
@@ -688,6 +688,137 @@ The prototype is "done" when, on a fresh checkout:
 A short `rapla-angular/README.md` documents both workflows. This PRD is
 updated with what we learned (typed-client gotchas, openapi-generator
 template quirks, etc.) before Phase 1 starts.
+
+## Post-prototype URL-layout decisions (2026-05-12)
+
+Discussed and documented here for traceability; **execution lives in
+[PRD 031 — API namespace redesign](031-api-namespace-redesign.md)**.
+**Phases 1+2+3+4 landed 2026-05-12.** URL layout is now:
+
+| Mode | SPA | REST |
+|---|---|---|
+| Dev (`ng serve`) | `http://localhost:4200/app/` | `http://localhost:4200/api/...` (proxied to :8051) |
+| Prod (Spring) | `http://localhost:8051/app/` | `http://localhost:8051/api/...` |
+| Legacy (preserved) | — | `http://host:8051/rapla/{calendar,ical,…}` |
+
+### Decisions
+
+- **SPA mount renamed `/spa/` → `/app/`** — framework-agnostic name
+  (survives any future framework swap), avoids leaking "SPA" as an
+  architectural choice in the URL. Already applied to
+  `SecurityConfig`, `SpaResourceConfig`, and `angular.json`
+  `baseHref`. Current URL: `http://localhost:8051/rapla/app/`.
+- **Target URL parity between dev and prod.** Once PRD 031 lands,
+  both modes use the same paths:
+  - SPA: `:4200/app/` (ng serve) ⇄ `:8051/app/` (Spring fat JAR)
+  - REST: `:4200/api/auth/login` ⇄ `:8051/api/auth/login`
+  - OAuth2: `:4200/oauth2/...` ⇄ `:8051/oauth2/...` (proxied in dev)
+  - Legacy iCal/calendar: `:4200/rapla/ical` ⇄ `:8051/rapla/ical`
+- **`ng serve` proxy mode** is the planned dev workflow once URL
+  parity is achievable. Until PRD 031 Phases 1+2 land, the prototype
+  stays on the `ng build --watch` + Spring static handler pattern
+  documented above (works today; same-origin; lower iteration speed
+  than HMR).
+- **Static cleanup done as a prerequisite** (2026-05-12):
+  - Deleted `static/Rapla/` (GWT artifacts), `static/jsclient/`,
+    `static/rapla.html`, `static/apiTest.html`, four unused icons
+    from `static/images/`.
+  - `RaplaAuthRestPage:94` fallback URL updated from `apiTest.html`
+    to `swagger-ui/index.html`.
+  - `SecurityConfig` permit list: `/Rapla/**` and `/jsclient/**`
+    removed.
+  - Total: ~416 KB out of the fat JAR.
+
+### What's blocked on PRD 031
+
+| Phase 0 task | Blocked by | Notes |
+|---|---|---|
+| `proxy.conf.json` + `npm start` script | PRD 031 Phases 1+2 | Without context-path drop + `/api/` prefix, dev/prod URLs would diverge; not worth wiring twice |
+| `ng serve --serve-path /app/ --base-href /app/` | PRD 031 Phase 1 | Need root-level `/app/` mount in prod for the dev URL to match |
+| `frontend-maven-plugin` distribution build wiring | None | Independent — can land any time |
+| Production CSP / CSRF tightening | PRD 031 | URL paths change with the redesign |
+
+### OAuth2 / OIDC wired into the SPA (2026-05-12)
+
+The Phase 0 prototype's raw `/api/auth/login` (username/password)
+flow has been replaced with the proper OAuth2 Authorization Code +
+PKCE flow. Implementation is **IdP-agnostic** — bundled Spring
+Authorization Server today, ready to swap to Keycloak / Auth0 / etc.
+by changing server-side properties only (no SPA rebuild needed).
+
+**Client side:**
+
+- **`angular-oauth2-oidc` ^20.0.2** added as runtime dependency.
+- `AuthService` reduced to a thin wrapper around `OAuthService` —
+  `signIn()` calls `initCodeFlow()`, `signOut()` calls `logOut()`,
+  `token()` returns the access token.
+- `app.config.ts` initializer **fetches the endpoint set from
+  `/api/auth/oauth/config`** at boot, then configures the library
+  with those URLs. No use of OIDC discovery (`/.well-known/...`)
+  because angular-oauth2-oidc's `loadDiscoveryDocument` does an
+  unconditional `doc.issuer === this.issuer` check that fails in
+  the dev-proxy + non-matching-origin case.
+- JWKS is fetched manually from `cfg.jwksUrl` and assigned to
+  `oauthService.jwks` for ID-token signature verification.
+- `skipIssuerCheck: true` bypasses ID-token `iss` claim comparison
+  (the AS issues tokens with its own server hostname, which
+  doesn't match `window.location.origin` in dev-proxy mode).
+- New `/app/auth/callback` route → `CallbackComponent` (thin
+  "Signing in…" view) navigates to `/reservations` once the
+  library has exchanged the code for tokens.
+- `LoginComponent` is a single "Sign in" button.
+- `authInterceptor` reads `OAuthService.getAccessToken()`; on 401
+  outside auth/OIDC paths, signs out and bounces to `/login`.
+
+**Server side:**
+
+- **`server.forward-headers-strategy: FRAMEWORK`** in
+  `application.yml` — Spring honours `X-Forwarded-{Host,Port,Proto}`
+  on incoming requests. Combined with `proxy.conf.js`'s `xfwd: true`
+  this makes the dev server return `:4200` URLs in dev (proxy
+  origin) and the real public origin in prod.
+- **`OAuthConfigController`** at `GET /api/auth/oauth/config`
+  returns a complete endpoint set: `issuer`, `authorizeUrl`,
+  `tokenUrl`, `refreshUrl`, `logoutUrl`, `jwksUrl`, `userinfoUrl`,
+  `endSessionUrl`, `clientId`, `scopes`. Each URL has a
+  corresponding `rapla.oauth.*-url` property override — Keycloak
+  swap is `rapla.oauth.authorize-url=...`, `rapla.oauth.token-url=...`,
+  etc. in `application.yml` (or env vars in CI/prod), no code change.
+- **Loopback `/app/auth/callback` redirect URIs** registered for
+  `rapla-client`: `localhost`, `127.0.0.1`, `localhost:4200`,
+  `127.0.0.1:4200` (the explicit `:4200` entries cover dev mode
+  since spring-security-oauth2-authorization-server 7.0.5's default
+  loopback any-port matching doesn't always apply on the issuer
+  side).
+
+**Dev proxy (`proxy.conf.js`):**
+
+- Forwards `/api`, `/oauth2`, `/.well-known`, `/userinfo`, `/connect`,
+  `/swagger-ui`, `/v3`, `/rapla`, `/raplaclient`, `/webclient`,
+  `/login`, `/logout`, `/error`, `/server`, `/index` to `:8051`.
+- `xfwd: true` sets `X-Forwarded-*` headers so Spring's
+  `forward-headers-strategy` knows the proxy origin.
+- `cookieDomainRewrite: 'localhost'` keeps Spring's `JSESSIONID`
+  cookie scoped correctly.
+- `onProxyRes` rewrites any absolute `http://localhost:8051` in
+  `Location` / `Content-Security-Policy` response headers back to
+  `http://localhost:4200` (belt-and-suspenders alongside the
+  forward-headers strategy).
+
+**Outcome:** all OAuth traffic from the SPA flows through the proxy
+in dev (no CORS), no `localhost:8051` URLs in the browser's address
+bar during sign-in, and the IdP is swappable via property overrides.
+
+### What the prototype proved (and now sticks)
+
+- `BASE_PATH` override in `app.config.ts` works correctly (currently
+  `/rapla`, becomes `/api` after PRD 031 Phase 2).
+- The `SpaResourceConfig` filesystem-first / classpath-fallback
+  pattern is robust (verified across multiple restarts).
+- `npm run gen:api` against `/v3/api-docs` produces a clean
+  TypeScript client; the `BASE_PATH` injection point + Bearer
+  interceptor pattern keep auth wiring framework-idiomatic.
+- The full-stack login → reservation-list flow round-trips end-to-end.
 
 ## Plan (post-prototype)
 

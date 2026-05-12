@@ -3,8 +3,18 @@ server:
   compression:
     enabled: true
     mime-types: application/json,application/xml,text/html,text/css,text/javascript,application/javascript
-  servlet:
-    context-path: /rapla
+  # Honour X-Forwarded-{Host,Port,Proto} on incoming requests. Lets the dev
+  # `ng serve` proxy (rapla-angular/proxy.conf.js with `xfwd: true`) tell Spring
+  # the request originally came from :4200, so OAuthConfigController returns
+  # :4200 URLs and the SPA can use them as same-origin (proxy-friendly).
+  # In prod behind a reverse proxy / load balancer this also produces correct
+  # absolute URLs when responses include the scheme/host/port.
+  forward-headers-strategy: FRAMEWORK
+  # Context-path dropped 2026-05-12 per PRD 031 Phase 1. Historical /rapla/ prefix
+  # was a servlet name carried forward from WAR-deployment days; new layout puts
+  # the SPA at /app/, REST under /api/ (Phase 2), and anchors only the six
+  # load-bearing legacy URLs (/rapla/calendar, /rapla/ical, etc.) explicitly via
+  # class-level @RequestMapping in CalendarPageController + Export2iCalController.
 
 spring:
   application:
@@ -22,7 +32,7 @@ spring:
                 - authorization_code
                 - refresh_token
               redirect-uris:
-                - http://localhost:8051/rapla/swagger-ui/oauth2-redirect.html
+                - http://localhost:8051/swagger-ui/oauth2-redirect.html
               scopes:
                 - openid
                 - profile
@@ -46,6 +56,18 @@ spring:
                 - http://127.0.0.1/login/oauth2/code/rapla
                 - http://localhost/auth/callback
                 - http://127.0.0.1/auth/callback
+                # PRD 031 + 026: Angular SPA's OAuth2 callback.
+                # - Loopback (no port) covers prod and any loopback port via
+                #   Spring's loopback any-port match (RFC 8252 native-app convention).
+                # - :4200 explicitly listed because spring-security-oauth2-authorization-server
+                #   7.0.5's DEFAULT_REDIRECT_URI_VALIDATOR doesn't always apply the
+                #   loopback any-port match in the issuer-side path. Same-origin
+                #   matcher (allow-same-origin-redirects) doesn't help here either
+                #   because the SPA's origin (:4200) differs from the AS origin (:8051).
+                - http://localhost/app/auth/callback
+                - http://127.0.0.1/app/auth/callback
+                - http://localhost:4200/app/auth/callback
+                - http://127.0.0.1:4200/app/auth/callback
               scopes:
                 - openid
                 - profile
@@ -95,6 +117,13 @@ rapla:
     allow-same-origin-redirects: true
 
 springdoc:
+  # Default response media type for endpoints that don't declare `produces`
+  # explicitly. Controllers without an explicit @GetMapping(produces=...) end
+  # up with Accept: */* in the generated OpenAPI spec, which makes the
+  # typescript-angular client treat the response as a Blob instead of parsing
+  # it as JSON (Configuration.isJsonMime('*/*') == false). Setting this to
+  # application/json makes responses default to JSON at both spec and runtime.
+  default-produces-media-type: application/json
   swagger-ui:
     # OAuth2 code+PKCE wiring — Swagger UI's "Authorize" button calls /oauth2/authorize
     # with the pre-filled client_id and a fresh PKCE verifier on every login attempt.

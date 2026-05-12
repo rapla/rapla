@@ -78,7 +78,7 @@ class VanillaPluginPanelsIntegrationTest
 
     private String adminToken() throws Exception
     {
-        MvcResult mvc = mockMvc.perform(post("/auth/login")
+        MvcResult mvc = mockMvc.perform(post("/api/auth/login")
                         .contentType("application/json")
                         .content("{\"username\":\"homer\",\"password\":\"duffs\"}"))
                 .andExpect(status().isOk())
@@ -89,7 +89,7 @@ class VanillaPluginPanelsIntegrationTest
     @Test
     void listSystemIncludesAllFiveVanillaPanels() throws Exception
     {
-        mockMvc.perform(get("/admin/panels?scope=SYSTEM")
+        mockMvc.perform(get("/api/admin/panels?scope=SYSTEM")
                         .header("Authorization", "Bearer " + adminToken()))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[?(@.id == 'org.rapla.plugin.planningstatus')]").exists())
@@ -103,7 +103,7 @@ class VanillaPluginPanelsIntegrationTest
     void planningStatusToggleRoundTrips() throws Exception
     {
         // Save: enabled=true
-        mockMvc.perform(post("/admin/panels/" + PlanningStatusPlugin.PLUGIN_ID + "/save")
+        mockMvc.perform(post("/api/admin/panels/" + PlanningStatusPlugin.PLUGIN_ID + "/save")
                         .header("Authorization", "Bearer " + adminToken())
                         .contentType("application/json")
                         .content("{\"enabled\":true}"))
@@ -122,7 +122,7 @@ class VanillaPluginPanelsIntegrationTest
                 + "{\"name\":\"Block 1\",\"minuteOfDay\":480},"
                 + "{\"name\":\"Block 2\",\"minuteOfDay\":600}"
                 + "]}";
-        mockMvc.perform(post("/admin/panels/" + TimeslotPlugin.PLUGIN_ID + "/save")
+        mockMvc.perform(post("/api/admin/panels/" + TimeslotPlugin.PLUGIN_ID + "/save")
                         .header("Authorization", "Bearer " + adminToken())
                         .contentType("application/json")
                         .content(body))

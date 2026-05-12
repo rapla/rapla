@@ -14,7 +14,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @ConditionalOnBean({MailConfigService.class, RemoteSession.class})
-@RequestMapping("/mail/config")
+@RequestMapping(value = "/mail/config", produces = "application/json")
 public class MailConfigController
 {
     private final MailConfigService service;

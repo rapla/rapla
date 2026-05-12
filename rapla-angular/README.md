@@ -1,9 +1,41 @@
 # rapla-angular
 
-Phase 0 prototype of the Angular reservation UI (PRD 026). Served same-origin
-from the Spring Boot app at `http://localhost:8051/rapla/spa/`.
+Angular SPA for rapla. Served at `/app/` in both dev (via `ng serve`
+proxy) and prod (via Spring Boot static handler).
 
-## Prerequisites
+## Quick start
+
+```bash
+# 1) one-time install
+cd rapla-angular && npm install
+
+# 2) Terminal A — Spring Boot (REST + OAuth2 on :8051)
+mvn -pl rapla-app -am spring-boot:run -Dspring-boot.run.fork=false
+
+# 3) Terminal B — Angular dev server (proxies API to :8051)
+cd rapla-angular && npm start          # human dev, with HMR
+# OR
+cd rapla-angular && npm run start:ai   # agent-driven dev, no auto-reload
+
+# 4) open http://localhost:4200/app/
+```
+
+Default login on the bundled dev DB: **user `admin`, empty password**.
+
+## Available scripts
+
+| Script | What it does | When |
+|---|---|---|
+| `npm start` | `ng serve` with HMR + live-reload | Default human dev workflow |
+| `npm run start:ai` | `ng serve` with `liveReload:false`, `hmr:false`, `poll:3000` | Use when an AI agent is editing — page won't keep reloading mid-edit |
+| `npm run build:fast` | `ng build` only | Type-check after a code change |
+| `npm run build` | `npm run lint && ng build` | Session end / pre-handoff sanity check |
+| `npm run lint` | ESLint + Prettier `--check` | Run via `build`; rarely directly |
+| `npm run format` | Prettier `--write` | Auto-fix formatting before commit |
+| `npm test` | Vitest (`ng test`) | Session end / CI |
+| `npm run gen:api` | Regenerate `src/app/api/` from live `/api/v3/api-docs` | After server REST changes |
+
+## Prerequisites (once-off)
 
 See PRD 026 §Phase 0 "What needs to be installed". Short version:
 
@@ -17,50 +49,97 @@ npm install -g @angular/cli @openapitools/openapi-generator-cli
 
 ```bash
 cd rapla-angular
-npm install                  # once
+npm install
 ```
 
-## Dev workflow (two terminals)
+## Dev workflow A — HMR via `ng serve` (recommended for humans)
 
-Terminal A — keep the Angular bundle fresh on every edit:
-
-```bash
-cd rapla-angular
-ng build --watch --configuration development
-```
-
-Output lands in `dist/rapla-angular/browser/`. Spring Boot's `SpaResourceConfig`
-serves `/spa/**` from there directly (see `rapla.spa.dev-dir` property).
-
-Terminal B — start the Spring Boot dev server (from the repo root, per
-AGENTS.md §8):
+Two terminals. The Angular dev server at `:4200` handles SPA assets;
+the proxy forwards `/api/**`, `/oauth2/**`, `/rapla/**`, etc. to Spring.
 
 ```bash
+# Terminal A — Angular dev server with HMR
+cd rapla-angular && npm start
+# (this runs: ng serve --proxy-config proxy.conf.js)
+
+# Terminal B — Spring Boot
 mvn -pl rapla-app -am spring-boot:run -Dspring-boot.run.fork=false
 ```
 
-Open `http://localhost:8051/rapla/spa/`, log in as `admin` with empty
-password (dev DB default), and the reservation table loads.
+Open **http://localhost:4200/app/** — same path as prod, just a
+different port. Edits to `.ts`/`.html` hot-reload in the browser.
+
+API calls from the SPA still hit `/api/auth/login`, `/api/storage/...`
+etc. — the proxy forwards them to Spring on `:8051` transparently.
+
+### Dev workflow A' — `npm run start:ai` for agent-driven sessions
+
+When an AI agent is editing files, default `ng serve` rebuilds and live-reloads
+on every save — bursts of edits cause partial reloads, broken in-between
+states, and re-init traffic. Use the **`ai-develop`** serve configuration
+instead:
+
+```bash
+cd rapla-angular && npm run start:ai
+# == ng serve --proxy-config proxy.conf.js --configuration ai-develop
+```
+
+The `ai-develop` configuration (in `angular.json`):
+
+- `liveReload: false` — browser stays put; reload manually (`Cmd/Ctrl-R`)
+  when you want to see the latest.
+- `hmr: false` — no HMR either.
+- `poll: 3000` — file watcher polls every 3 s, so rapid bursts of saves
+  coalesce into one rebuild.
+
+The dev server still rebuilds in the background, but it won't push to the
+browser. Same URL (`http://localhost:4200/app/`), same proxy.
+
+## Dev workflow B — prod-parity via `ng build --watch`
+
+Spring serves the SPA directly from the watched build output. Use this
+to test against the *production* path (`:8051/app/`) — e.g. before
+shipping, or to verify the `SpaResourceConfig` filesystem-handler is
+correct.
+
+```bash
+# Terminal A — Angular rebuilds on save
+cd rapla-angular
+ng build --watch --configuration development
+
+# Terminal B — Spring Boot serves /app/** from rapla-angular/dist/...
+mvn -pl rapla-app -am spring-boot:run -Dspring-boot.run.fork=false
+```
+
+Open **http://localhost:8051/app/**. Manual browser refresh required
+(no HMR), but the URL exactly matches prod.
 
 ## Regenerating the typed client
 
 The TypeScript client under `src/app/api/` is generated from the live
-server's `/v3/api-docs`:
+server's `/api/v3/api-docs`:
 
 ```bash
 npm run gen:api
 ```
 
-Requires the server to be running. Generated files are gitignored —
-rerun whenever the REST surface changes.
+Generated files are gitignored — regenerate whenever the REST surface
+changes (controller added, request/response DTO changed, etc.).
+
+`BASE_PATH` is set to `''` (empty) in `app.config.ts` because SpringDoc
+emits absolute paths that already include the `/api` prefix — adding
+it again at the client would double-prefix.
 
 ## Distribution build
 
-Building the fat JAR with the SPA bundled inside is gated on a Maven
-profile (not yet wired — see PRD 026 §Distribution path). Until then,
-manually copy `dist/rapla-angular/browser/*` into
-`rapla-app/src/main/resources/static/spa/` before running `mvn package`,
-or use the dev workflow above.
+```bash
+mvn -pl rapla-app -am package
+```
+
+(The `frontend-maven-plugin` Maven wiring is **not yet done** — for now
+the SPA must be manually built with `ng build` and copied into
+`rapla-app/src/main/resources/static/app/` before `mvn package`, or use
+dev workflow B which obviates the need.)
 
 ## Layout
 
@@ -69,10 +148,18 @@ or use the dev workflow above.
 | `src/app/auth/` | Login form, `AuthService`, JWT `HttpInterceptor`, route guard |
 | `src/app/reservations/` | Read-only reservation list |
 | `src/app/api/` | Auto-generated TypeScript-Angular client (gitignored) |
-| `src/app/app.config.ts` | Bootstrap providers: `provideHttpClient` + `BASE_PATH=/rapla` |
+| `src/app/app.config.ts` | Bootstrap providers: `provideHttpClient` + `BASE_PATH=''` |
 | `src/app/app.routes.ts` | `/login`, `/reservations` (guarded), `**` → login |
+| `proxy.conf.js` | `ng serve` proxy: forwards REST + OAuth2 + legacy to `:8051` |
 
-The `BASE_PATH` override at bootstrap re-routes all generated client
-calls from the hard-coded `http://localhost:8051/rapla` default to
-`/rapla` so the SPA works behind any host/port via same-origin
-requests.
+## URL space (post PRD 031)
+
+| URL | Purpose |
+|---|---|
+| `/` and `/index` | Chooser landing page (HTML, plugin-extensible) |
+| `/app/` | This SPA |
+| `/api/auth/**`, `/api/storage/**`, etc. | REST endpoints |
+| `/oauth2/**`, `/.well-known/**` | OAuth2 / OIDC (RFC paths) |
+| `/raplaclient.jnlp`, `/webclient/**` | JNLP Swing launcher |
+| `/rapla/calendar`, `/rapla/ical`, … | Legacy external URLs (preserved) |
+| `/swagger-ui/**` | API explorer |

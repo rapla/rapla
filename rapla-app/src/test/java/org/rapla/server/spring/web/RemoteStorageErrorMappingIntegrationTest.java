@@ -66,7 +66,7 @@ class RemoteStorageErrorMappingIntegrationTest
 
     private String adminToken() throws Exception
     {
-        MvcResult login = mockMvc.perform(post("/auth/login")
+        MvcResult login = mockMvc.perform(post("/api/auth/login")
                         .contentType("application/json")
                         .content("{\"username\":\"homer\",\"password\":\"duffs\"}"))
                 .andExpect(status().isOk())
@@ -78,7 +78,7 @@ class RemoteStorageErrorMappingIntegrationTest
     void getUser_withoutUserIdParam_returns400() throws Exception
     {
         String token = adminToken();
-        mockMvc.perform(get("/storage/user").header("Authorization", "Bearer " + token))
+        mockMvc.perform(get("/api/storage/user").header("Authorization", "Bearer " + token))
                 .andExpect(status().isBadRequest());
     }
 
@@ -86,21 +86,21 @@ class RemoteStorageErrorMappingIntegrationTest
     void postRefresh_withoutLastValidatedParam_returns400() throws Exception
     {
         String token = adminToken();
-        mockMvc.perform(post("/storage/refresh").header("Authorization", "Bearer " + token))
+        mockMvc.perform(post("/api/storage/refresh").header("Authorization", "Bearer " + token))
                 .andExpect(status().isBadRequest());
     }
 
     @Test
     void getResources_withoutAuth_returns401() throws Exception
     {
-        mockMvc.perform(get("/resources"))
+        mockMvc.perform(get("/api/resources"))
                 .andExpect(status().isUnauthorized());
     }
 
     @Test
     void postLogin_withBadCredentials_returns401() throws Exception
     {
-        mockMvc.perform(post("/auth/login")
+        mockMvc.perform(post("/api/auth/login")
                         .contentType("application/json")
                         .content("{\"username\":\"homer\",\"password\":\"wrong\"}"))
                 .andExpect(status().isUnauthorized());

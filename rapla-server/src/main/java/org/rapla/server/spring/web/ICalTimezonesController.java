@@ -8,7 +8,7 @@ import org.springframework.web.bind.annotation.RestController;
 import java.util.List;
 
 @RestController
-@RequestMapping("/ical/timezones")
+@RequestMapping(value = "/ical/timezones", produces = "application/json")
 public class ICalTimezonesController
 {
     private final ICalTimezones service;

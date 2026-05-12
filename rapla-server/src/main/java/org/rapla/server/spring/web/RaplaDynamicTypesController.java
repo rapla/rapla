@@ -14,7 +14,7 @@ import java.util.List;
 
 @RestController
 @ConditionalOnBean(RemoteSession.class)
-@RequestMapping("/dynamictypes")
+@RequestMapping(value = "/dynamictypes", produces = "application/json")
 public class RaplaDynamicTypesController
 {
     private final RaplaDynamicTypesRestPage page;

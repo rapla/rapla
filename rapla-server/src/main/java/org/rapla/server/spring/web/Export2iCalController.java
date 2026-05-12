@@ -23,6 +23,7 @@ import java.io.IOException;
  * Calendar, Apple Calendar, Thunderbird) must continue to resolve byte-identically.
  */
 @RestController
+@RequestMapping("/rapla")
 @ConditionalOnBean(Export2iCalServlet.class)
 public class Export2iCalController
 {

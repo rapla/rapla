@@ -501,5 +501,68 @@
                 </plugins>
             </build>
         </profile>
+        <!-- PRD 031 Phase 4: bundle the Angular SPA into the fat JAR.
+             Triggered explicitly via -Pspa so default `mvn test` / `mvn compile`
+             never download Node or run npm. Runs in process-resources so the
+             SPA's built bytes are inside target/classes/static/app/ before
+             spring-boot:repackage stages BOOT-INF/classes/. -->
+        <profile>
+            <id>spa</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>com.github.eirslett</groupId>
+                        <artifactId>frontend-maven-plugin</artifactId>
+                        <version>1.15.1</version>
+                        <configuration>
+                            <workingDirectory>../rapla-angular</workingDirectory>
+                            <installDirectory>target</installDirectory>
+                        </configuration>
+                        <executions>
+                            <execution>
+                                <id>install-node-and-npm</id>
+                                <goals><goal>install-node-and-npm</goal></goals>
+                                <phase>generate-resources</phase>
+                                <configuration>
+                                    <nodeVersion>v22.13.0</nodeVersion>
+                                </configuration>
+                            </execution>
+                            <execution>
+                                <id>npm-ci</id>
+                                <goals><goal>npm</goal></goals>
+                                <phase>generate-resources</phase>
+                                <configuration>
+                                    <arguments>ci</arguments>
+                                </configuration>
+                            </execution>
+                            <execution>
+                                <id>ng-build</id>
+                                <goals><goal>npm</goal></goals>
+                                <phase>generate-resources</phase>
+                                <configuration>
+                                    <arguments>run build -- --configuration=production</arguments>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                    <plugin>
+                        <artifactId>maven-resources-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <id>copy-spa</id>
+                                <phase>process-resources</phase>
+                                <goals><goal>copy-resources</goal></goals>
+                                <configuration>
+                                    <outputDirectory>${project.build.outputDirectory}/static/app</outputDirectory>
+                                    <resources>
+                                        <resource><directory>../rapla-angular/dist/rapla-angular/browser</directory></resource>
+                                    </resources>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
     </profiles>
 </project>

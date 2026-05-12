@@ -50,17 +50,23 @@ public class LoginPageController
                     button { margin-top: 1.2rem; padding: 0.6rem 1.2rem; background: #2a6; color: #fff; border: 0; border-radius: 4px; cursor: pointer; font-size: 1rem; width: 100%; }
                     button:hover { background: #248; }
                     .note { color: #888; font-size: 0.8rem; margin-top: 1rem; }
+                    .remember { display: flex; align-items: center; gap: 0.5rem; margin: 1rem 0 0.2rem; color: #555; font-size: 0.9rem; }
+                    .remember input { margin: 0; }
                   </style>
                 </head>
                 <body>
                   <div class="card">
                     <h1>Rapla — Sign in</h1>
                     %BANNER%
-                    <form method="post" action="/rapla/login">
+                    <form method="post" action="/login">
                       <label for="u">Username</label>
                       <input id="u" type="text" name="username" autofocus required>
                       <label for="p">Password</label>
                       <input id="p" type="password" name="password">
+                      <label class="remember">
+                        <input type="checkbox" name="remember-me" value="on">
+                        Remember me on this device
+                      </label>
                       <button type="submit">Sign in</button>
                     </form>
                     <p class="note">Dev default: <code>admin</code> with empty password.</p>

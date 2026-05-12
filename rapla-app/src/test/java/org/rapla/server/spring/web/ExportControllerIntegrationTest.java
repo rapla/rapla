@@ -68,7 +68,7 @@ class ExportControllerIntegrationTest
 
     private String adminToken() throws Exception
     {
-        MvcResult mvc = mockMvc.perform(post("/auth/login")
+        MvcResult mvc = mockMvc.perform(post("/api/auth/login")
                         .contentType("application/json")
                         .content("{\"username\":\"homer\",\"password\":\"duffs\"}"))
                 .andExpect(status().isOk())
@@ -82,7 +82,7 @@ class ExportControllerIntegrationTest
     @Test
     void exportRequiresAuthentication() throws Exception
     {
-        mockMvc.perform(get("/export/csv")
+        mockMvc.perform(get("/api/export/csv")
                         .param("tableName", "events")
                         .param("from", "2026-06-01")
                         .param("to", "2026-06-08"))
@@ -94,7 +94,7 @@ class ExportControllerIntegrationTest
     @Test
     void exportReturnsCsvContentTypeAndDispositionHeader() throws Exception
     {
-        MvcResult result = mockMvc.perform(get("/export/csv")
+        MvcResult result = mockMvc.perform(get("/api/export/csv")
                         .param("tableName", "events")
                         .param("from", "2026-06-01")
                         .param("to", "2026-06-08")
@@ -119,7 +119,7 @@ class ExportControllerIntegrationTest
     @Test
     void exportReservationsHeaderMatchesColumns() throws Exception
     {
-        MvcResult result = mockMvc.perform(get("/export/csv")
+        MvcResult result = mockMvc.perform(get("/api/export/csv")
                         .param("tableName", "events")
                         .param("from", "2001-10-15")
                         .param("to", "2001-10-22")
@@ -142,7 +142,7 @@ class ExportControllerIntegrationTest
     @Test
     void exportAppointmentsViewWorks() throws Exception
     {
-        mockMvc.perform(get("/export/csv")
+        mockMvc.perform(get("/api/export/csv")
                         .param("tableName", "appointments")
                         .param("from", "2001-10-15")
                         .param("to", "2001-10-22")
@@ -154,7 +154,7 @@ class ExportControllerIntegrationTest
     @Test
     void exportExplicitColumnsHonored() throws Exception
     {
-        MvcResult result = mockMvc.perform(get("/export/csv")
+        MvcResult result = mockMvc.perform(get("/api/export/csv")
                         .param("tableName", "events")
                         .param("from", "2001-10-15")
                         .param("to", "2001-10-22")
@@ -175,7 +175,7 @@ class ExportControllerIntegrationTest
     @Test
     void unknownTableNameReturnsEmptyCsvNotError() throws Exception
     {
-        MvcResult result = mockMvc.perform(get("/export/csv")
+        MvcResult result = mockMvc.perform(get("/api/export/csv")
                         .param("tableName", "no_such_view")
                         .param("from", "2026-06-01")
                         .param("to", "2026-06-08")

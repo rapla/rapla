@@ -11,7 +11,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @ConditionalOnBean({ICalImport.class, RemoteSession.class})
-@RequestMapping("/ical/import")
+@RequestMapping(value = "/ical/import", produces = "application/json")
 public class ICalImportController
 {
     private final ICalImport service;

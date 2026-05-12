@@ -21,7 +21,7 @@ class ICalTimezonesControllerTest
     @Test
     void getTimezonesReturnsArray() throws Exception
     {
-        mockMvc.perform(get("/ical/timezones"))
+        mockMvc.perform(get("/api/ical/timezones"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$").isArray());
     }
@@ -29,7 +29,7 @@ class ICalTimezonesControllerTest
     @Test
     void getDefaultTimezoneReturnsString() throws Exception
     {
-        mockMvc.perform(get("/ical/timezones/default"))
+        mockMvc.perform(get("/api/ical/timezones/default"))
                 .andExpect(status().isOk());
     }
 }

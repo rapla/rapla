@@ -20,7 +20,7 @@ class RemoteLoggerControllerTest
     @Test
     void putLoggerEndpointAccepts200() throws Exception
     {
-        mockMvc.perform(put("/logger/some-client-id")
+        mockMvc.perform(put("/api/logger/some-client-id")
                         .contentType("text/plain")
                         .content("hello from client"))
                 .andExpect(status().isOk());

@@ -36,6 +36,7 @@ public final class SwingOAuthLoginFlow
     private final Logger logger;
     private final HttpClient http;
     private final BrowserOpener browserOpener;
+    private boolean forceLogin = false;
 
     public SwingOAuthLoginFlow(OAuthConfig config, Logger logger)
     {
@@ -48,6 +49,20 @@ public final class SwingOAuthLoginFlow
         this.logger = logger;
         this.http = HttpClient.newBuilder().connectTimeout(HTTP_TIMEOUT).build();
         this.browserOpener = browserOpener;
+    }
+
+    /**
+     * Forces the IdP to re-authenticate the user even if a valid session cookie
+     * is present, by adding {@code prompt=login} to the authorize URL. Used
+     * after an explicit logout to defeat the race where the browser hasn't
+     * finished clearing its session cookie before the new OAuth flow starts.
+     * Standard OIDC parameter — supported by Spring Authorization Server,
+     * Keycloak, Auth0, and friends.
+     */
+    public SwingOAuthLoginFlow forceLogin(boolean force)
+    {
+        this.forceLogin = force;
+        return this;
     }
 
     @FunctionalInterface
@@ -194,6 +209,12 @@ public final class SwingOAuthLoginFlow
         if (config.getScopes() != null && !config.getScopes().isEmpty())
         {
             url.append('&').append("scope=").append(enc(String.join(" ", config.getScopes())));
+        }
+        if (forceLogin)
+        {
+            // OIDC: force the IdP to re-authenticate the user regardless of an
+            // existing session cookie. Used post-logout to avoid the silent-cookie-reuse race.
+            url.append('&').append("prompt=login");
         }
         return url.toString();
     }

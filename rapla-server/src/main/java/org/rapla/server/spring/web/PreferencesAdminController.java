@@ -33,7 +33,7 @@ import java.util.Set;
  *  {@link PanelScope}; gates SYSTEM-scoped operations on {@code User.isAdmin()}.
  */
 @RestController
-@RequestMapping("/admin/panels")
+@RequestMapping(value = "/admin/panels", produces = "application/json")
 public class PreferencesAdminController implements PreferencesAdminService
 {
     private final Set<PreferencesPanel> panels;

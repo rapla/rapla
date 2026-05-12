@@ -72,7 +72,7 @@ class TableViewControllerIntegrationTest
 
     private String loginAs(String username, String password) throws Exception
     {
-        MvcResult mvc = mockMvc.perform(post("/auth/login")
+        MvcResult mvc = mockMvc.perform(post("/api/auth/login")
                         .contentType("application/json")
                         .content("{\"username\":\"" + username + "\",\"password\":\"" + password + "\"}"))
                 .andExpect(status().isOk())
@@ -86,7 +86,7 @@ class TableViewControllerIntegrationTest
     @Test
     void reservationsRequiresAuthentication() throws Exception
     {
-        mockMvc.perform(get("/table/reservations")
+        mockMvc.perform(get("/api/table/reservations")
                         .param("from", "2026-06-01")
                         .param("to", "2026-06-08"))
                 .andExpect(status().isUnauthorized());
@@ -95,7 +95,7 @@ class TableViewControllerIntegrationTest
     @Test
     void appointmentsRequiresAuthentication() throws Exception
     {
-        mockMvc.perform(get("/table/appointments")
+        mockMvc.perform(get("/api/table/appointments")
                         .param("from", "2026-06-01")
                         .param("to", "2026-06-08"))
                 .andExpect(status().isUnauthorized());
@@ -106,7 +106,7 @@ class TableViewControllerIntegrationTest
     @Test
     void reservationsReturnsTablePageShape() throws Exception
     {
-        mockMvc.perform(get("/table/reservations")
+        mockMvc.perform(get("/api/table/reservations")
                         .param("from", "2026-06-01")
                         .param("to", "2026-06-08")
                         .header("Authorization", "Bearer " + adminToken()))
@@ -120,7 +120,7 @@ class TableViewControllerIntegrationTest
     @Test
     void appointmentsReturnsTablePageShape() throws Exception
     {
-        mockMvc.perform(get("/table/appointments")
+        mockMvc.perform(get("/api/table/appointments")
                         .param("from", "2026-06-01")
                         .param("to", "2026-06-08")
                         .header("Authorization", "Bearer " + adminToken()))
@@ -134,7 +134,7 @@ class TableViewControllerIntegrationTest
     void existingReservationsInRangeAppearAsRows() throws Exception
     {
         // testdefault.xml seeds reservations around 2001-10-16 — query that range.
-        mockMvc.perform(get("/table/reservations")
+        mockMvc.perform(get("/api/table/reservations")
                         .param("from", "2001-10-15")
                         .param("to", "2001-10-22")
                         .header("Authorization", "Bearer " + adminToken()))
@@ -148,7 +148,7 @@ class TableViewControllerIntegrationTest
     @Test
     void pageSizeEnforcedAndCursorReturned() throws Exception
     {
-        mockMvc.perform(get("/table/reservations")
+        mockMvc.perform(get("/api/table/reservations")
                         .param("from", "2001-10-01")
                         .param("to", "2001-11-01")
                         .param("pageSize", "1")
@@ -162,7 +162,7 @@ class TableViewControllerIntegrationTest
     @Test
     void unknownColumnIdIsSilentlyDropped() throws Exception
     {
-        mockMvc.perform(get("/table/reservations")
+        mockMvc.perform(get("/api/table/reservations")
                         .param("from", "2026-06-01")
                         .param("to", "2026-06-08")
                         .param("columns", "no-such-column-existing")
@@ -176,7 +176,7 @@ class TableViewControllerIntegrationTest
     @Test
     void unknownSortColumnIsIgnoredNotErrored() throws Exception
     {
-        mockMvc.perform(get("/table/reservations")
+        mockMvc.perform(get("/api/table/reservations")
                         .param("from", "2026-06-01")
                         .param("to", "2026-06-08")
                         .param("sort", "no-such-column:asc")
@@ -192,21 +192,21 @@ class TableViewControllerIntegrationTest
     @Test
     void configRequiresAuthentication() throws Exception
     {
-        mockMvc.perform(get("/table/config").param("tableName", "events"))
+        mockMvc.perform(get("/api/table/config").param("tableName", "events"))
                 .andExpect(status().isUnauthorized());
     }
 
     @Test
     void columnsCatalogRequiresAuthentication() throws Exception
     {
-        mockMvc.perform(get("/table/columns/catalog").param("tableName", "events"))
+        mockMvc.perform(get("/api/table/columns/catalog").param("tableName", "events"))
                 .andExpect(status().isUnauthorized());
     }
 
     @Test
     void configForEventsViewReturnsColumns() throws Exception
     {
-        mockMvc.perform(get("/table/config")
+        mockMvc.perform(get("/api/table/config")
                         .param("tableName", "events")
                         .header("Authorization", "Bearer " + adminToken()))
                 .andExpect(status().isOk())
@@ -221,7 +221,7 @@ class TableViewControllerIntegrationTest
     @Test
     void configForAppointmentsViewReturnsColumns() throws Exception
     {
-        mockMvc.perform(get("/table/config")
+        mockMvc.perform(get("/api/table/config")
                         .param("tableName", "appointments")
                         .header("Authorization", "Bearer " + adminToken()))
                 .andExpect(status().isOk())
@@ -233,7 +233,7 @@ class TableViewControllerIntegrationTest
     @Test
     void columnsCatalogReturnsUniverse() throws Exception
     {
-        mockMvc.perform(get("/table/columns/catalog")
+        mockMvc.perform(get("/api/table/columns/catalog")
                         .param("tableName", "events")
                         .header("Authorization", "Bearer " + adminToken()))
                 .andExpect(status().isOk())
@@ -249,7 +249,7 @@ class TableViewControllerIntegrationTest
     {
         // AGENTS.md §12: don't differentiate "unknown view" from "known view
         // with empty config" via status code. Both return 200 + empty columns.
-        mockMvc.perform(get("/table/config")
+        mockMvc.perform(get("/api/table/config")
                         .param("tableName", "nonexistent_view")
                         .header("Authorization", "Bearer " + adminToken()))
                 .andExpect(status().isOk())
@@ -263,7 +263,7 @@ class TableViewControllerIntegrationTest
     {
         // Each column descriptor must carry id + label + type so Angular
         // knows how to render the cell.
-        mockMvc.perform(get("/table/columns/catalog")
+        mockMvc.perform(get("/api/table/columns/catalog")
                         .param("tableName", "events")
                         .header("Authorization", "Bearer " + adminToken()))
                 .andExpect(status().isOk())

@@ -74,7 +74,7 @@ class NewVersionExceptionMappingIntegrationTest
     @Test
     void controllerThrowingNewVersionExceptionReaches409() throws Exception
     {
-        mockMvc.perform(get("/__test/throw-new-version")
+        mockMvc.perform(get("/api/__test/throw-new-version")
                         .header("Authorization", "Bearer " + adminToken()))
                 .andExpect(status().isConflict())
                 .andExpect(jsonPath("$.status").value(409))
@@ -85,7 +85,7 @@ class NewVersionExceptionMappingIntegrationTest
 
     private String adminToken() throws Exception
     {
-        MvcResult mvc = mockMvc.perform(post("/auth/login")
+        MvcResult mvc = mockMvc.perform(post("/api/auth/login")
                         .contentType("application/json")
                         .content("{\"username\":\"homer\",\"password\":\"duffs\"}"))
                 .andExpect(status().isOk()).andReturn();
