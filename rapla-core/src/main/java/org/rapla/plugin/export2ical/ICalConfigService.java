@@ -13,4 +13,7 @@ public interface ICalConfigService
 
     @GetExchange("/default")
     DefaultConfiguration getUserDefaultConfig() throws RaplaException;
+
+    @GetExchange("/user")
+    UserICalSettings getUserSettings() throws RaplaException;
 }

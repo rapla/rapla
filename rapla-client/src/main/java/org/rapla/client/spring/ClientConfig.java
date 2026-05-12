@@ -172,6 +172,15 @@ public class ClientConfig
         return new org.rapla.plugin.exchangeconnector.ShowExchangeForUser(storageOperator);
     }
 
+    /** Client-side persistent storage for the OAuth refresh token (PRD 029 Phase 2):
+     *  JNLP {@code PersistenceService} when launched via OWS/IcedTea-Web, dotfile
+     *  fallback otherwise. Best-effort — never throws even if storage is unavailable. */
+    @Bean
+    public org.rapla.storage.dbrm.TokenStore tokenStore(Logger logger)
+    {
+        return org.rapla.storage.dbrm.TokenStores.create(logger);
+    }
+
     @Bean
     public org.rapla.storage.dbrm.RemoteOperator remoteOperator(Logger logger,
                                                                   org.rapla.RaplaResources i18n,

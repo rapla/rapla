@@ -94,4 +94,22 @@ public final class HolidayWarningModel
                         (a, b) -> a,
                         LinkedHashMap::new));
     }
+
+    /**
+     * Total count of period conflicts across all appointments — sum of
+     * {@code Set<Period>.size()} across the map's values. Drives the
+     * "Holidays (N)" label on the reservation-edit toolbar.
+     *
+     * <p>Null map and null entries are treated as zero.
+     */
+    public static int countAllPeriodConflicts(Map<Appointment, Set<Period>> conflicts)
+    {
+        if (conflicts == null) return 0;
+        int total = 0;
+        for (Set<Period> periods : conflicts.values())
+        {
+            if (periods != null) total += periods.size();
+        }
+        return total;
+    }
 }

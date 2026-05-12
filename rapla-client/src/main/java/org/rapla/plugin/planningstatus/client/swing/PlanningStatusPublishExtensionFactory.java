@@ -13,6 +13,7 @@ import org.rapla.logger.Logger;
 import org.rapla.plugin.export2ical.Export2iCalPlugin;
 import org.rapla.plugin.planningstatus.PlanningStatusPlugin;
 import org.rapla.plugin.planningstatus.PlanningStatusResources;
+import org.rapla.rest.PluginsService;
 import org.springframework.stereotype.Service;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -27,30 +28,34 @@ public class PlanningStatusPublishExtensionFactory implements PublishExtensionFa
     private final PlanningStatusResources i18nPlanninsgStatus;
     private final RaplaLocale raplaLocale;
     private final Logger logger;
+    private final PluginsService plugins;
+    private volatile Boolean cachedEnabled;
 
     @Autowired
-	public PlanningStatusPublishExtensionFactory(ClientFacade facade, RaplaResources i18n, PlanningStatusResources i18nPlanninsgStatus,RaplaLocale raplaLocale, Logger logger)
+	public PlanningStatusPublishExtensionFactory(ClientFacade facade, RaplaResources i18n, PlanningStatusResources i18nPlanninsgStatus,RaplaLocale raplaLocale, Logger logger, PluginsService plugins)
 	{
         this.facade = facade;
         this.i18n = i18n;
         this.i18nPlanninsgStatus = i18nPlanninsgStatus;
         this.raplaLocale = raplaLocale;
         this.logger = logger;
+        this.plugins = plugins;
 	}
-    
+
     @Override
     public boolean isEnabled()
     {
-        boolean enabled;
+        Boolean c = cachedEnabled;
+        if (c != null) return c;
         try
         {
-            enabled = facade.getRaplaFacade().getSystemPreferences().getEntryAsBoolean(PlanningStatusPlugin.ENABLED, PlanningStatusPlugin.ENABLE_BY_DEFAULT);
+            cachedEnabled = plugins.get("planningstatus").enabled();
+            return cachedEnabled;
         }
-        catch (RaplaException e)
+        catch (Exception e)
         {
             return false;
         }
-        return enabled;
     }
 
 	public PublishExtension creatExtension(CalendarSelectionModel model,

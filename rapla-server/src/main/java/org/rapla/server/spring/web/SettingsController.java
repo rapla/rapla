@@ -10,6 +10,8 @@ import org.rapla.facade.internal.CalendarOptionsImpl;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.internal.AbstractRaplaLocale;
+import org.rapla.rest.dto.SystemSettings;
+import org.rapla.rest.dto.UserSettings;
 import org.rapla.server.RemoteSession;
 import org.rapla.storage.RaplaSecurityException;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
@@ -42,24 +44,6 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/settings")
 public class SettingsController
 {
-    public record SystemSettings(
-            String title,
-            String timezone,
-            String locale,
-            String csvCharset,
-            String htmlCharset,
-            int refreshIntervalMs
-    ) {}
-
-    public record UserSettings(
-            String language,
-            boolean showConflictWarning,
-            boolean showNotInCalendarWarning,
-            boolean showAbortEditWarning,
-            boolean showHolidayWarning,
-            boolean showHolidayWarningSingleAppointment
-    ) {}
-
     private final RaplaFacade facade;
     private final RemoteSession session;
 

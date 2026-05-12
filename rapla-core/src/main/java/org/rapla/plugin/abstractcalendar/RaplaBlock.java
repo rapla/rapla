@@ -132,37 +132,27 @@ public class RaplaBlock implements Block
 
     public String[] getColorsAsHex() {
         BuildContext buildContext = getBuildContext();
-    	LinkedHashSet<String> colorList = new LinkedHashSet<>();
-        if ( buildContext.isEventColoringEnabled())
+        Reservation reservation = getReservation();
+        String eventColor = reservation == null ? null : RaplaBuilder.getColorForClassifiable(reservation);
+        List<Allocatable> allocatables = getContext().getSelectedAllocatables();
+        java.util.List<String> resourceColors = new java.util.ArrayList<>(allocatables.size());
+        for (Allocatable alloc : allocatables)
         {
-        	Reservation reservation = getReservation();
-        	if (reservation != null)
-        	{
-				String eventColor = RaplaBuilder.getColorForClassifiable( reservation );
-	        	if ( eventColor != null)
-	        	{
-	        		colorList.add( eventColor);
-	        	}
-        	}
+            resourceColors.add(buildContext.lookupColorString(alloc));
         }
-    	
-        if ( buildContext.isResourceColoringEnabled())
+        java.util.List<String> colors = org.rapla.plugin.calendarview.BlockColors.resolve(
+                buildContext.isEventColoringEnabled(),
+                eventColor,
+                buildContext.isResourceColoringEnabled(),
+                resourceColors);
+        if (colors.isEmpty())
         {
-	       List<Allocatable> allocatables = getContext().getSelectedAllocatables();
-	       for (Allocatable  alloc:allocatables) 
-	       {
-	    	   String lookupColorString = buildContext.lookupColorString(alloc);
-	    	   if ( lookupColorString != null)
-	    	   {
-	    		   colorList.add( lookupColorString);
-	    	   }
-	       }
+            // Swing fallback: paint with the default colour rather than
+            // leaving an unrendered tile. The server-side decorator skips
+            // this fallback (Angular decides the default).
+            return new String[] { buildContext.lookupColorString(null) };
         }
-        if ( colorList.size() == 0)
-        {
-        	colorList.add(buildContext.lookupColorString(null));
-        }
-        return colorList.toArray(new String[] {});
+        return colors.toArray(new String[0]);
     }
 
     public String getTimeString(boolean small) {

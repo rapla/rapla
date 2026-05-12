@@ -1,6 +1,16 @@
 # PRD 030 — Server-side view rendering (the complete picture)
 
-**Status:** in-progress — Phase 1 (`TableViewEngine` + 26 tier-1 tests) and Phase 2 (`TableViewService` + `TableViewController` + 9 contract + 8 MockMvc tests) landed 2026-05-12.
+**Status:** in-progress — Phases 1–6 landed 2026-05-12. **84 new tests.** Phase 6 deletes the back-edge as an arch-test invariant (the pom.xml dependency was already gone; this commit pins it via `NoRaplaClientImportInServerTest`). Future migration of HTML autoexport calendar pages to `CalendarLayoutEngine` is a separate PRD.
+
+**Update 2026-05-12: Phase 7–9 added** — Swing reservation/appointment table views migrate to `/table/*` endpoints. Triggered by a bug report: switching to the Swing reservation-table view throws `UnsupportedOperationException` at `CalendarModelImpl.requireSyncOperator` because the multimodule shift (commit `6b65470d`, 2026-05-08) moved sync methods to `SyncStorageOperator` (server-only). The bug exposed that the original "Swing keeps the in-process model" decision was factually wrong — the Swing client has always been a REST consumer via `RemoteOperator`. A three-method stopgap fix (PRD 008 split applied to `CalendarModelImpl.queryReservations` / `queryBlocks` / `queryAppointments` Promise wrappers, 2026-05-12) restores the Swing table view immediately; Phases 7–9 retire the stopgap by routing Swing's table fetches through `/table/*`, then deleting the now-dead `CalendarModelImpl` async fallbacks.
+
+Phases:
+- Phase 1: `TableViewEngine` + records + 26 tier-1 tests
+- Phase 2: `TableViewService` (`/table/reservations`, `/table/appointments`) + `TableViewController` + 9 contract + 8 MockMvc tests
+- Phase 3: `/table/config` + `/table/columns/catalog` + 5 contract + 7 MockMvc tests
+- Phase 4: `BlockColors` helper (12 tier-1) + `BlockDecorator` interface + `RaplaBlockDecorator` + engine overload + `RaplaBlock.getColorsAsHex()` refactored to delegate + `CalendarViewController` wired to ship colors
+- Phase 5: `CsvSerializer` (12 tier-1) + `ExportService` (`/export/csv`) + `ExportController` + 4 contract + 6 MockMvc tests
+- Phase 6: `LocalCache.cachedReservations` documented as Swing-legacy + `NoRaplaClientImportInServerTest` arch-test pinning the no-back-edge state + three stale `javax.swing.table.TableColumn` imports cleaned out of the table-view-server pages
 **Author:** Christopher Kohlhaas (with AI assistance)
 **Created:** 2026-05-12
 **Related:** PRD 020 (server-driven admin panels — already-done piece of this picture), PRD 024 (server-side edit services, calendar layout already done), PRD 026 (Angular frontend, primary consumer), PRD 028 (Angular power search, sidebar replacement), PRD 021 wont-fix (resource stubs, historical motivation), PRD 005 (multi-module split, D3 back-edge), PRD 008 (server-sync update events, invalidation rides on this), PRD 009 (bulk storage REST, the other thin-client foundation)
@@ -144,6 +154,9 @@ Net deliverables:
 | 4 | CSV export | `/export/csv` (new) | streaming CSV body using the same engine |
 | 5 | Block-color sharing | (in-process refactor — no new endpoint) | `BlockColors.resolve(...)` shared between `RaplaBlock` and the (future) `RaplaBlockDecorator` |
 | 6 | Architectural cleanup | (no endpoint — code-mod) | `LocalCache.cachedReservations` documented as Swing-legacy; PRD 005 D3 back-edge deletion via arch-test |
+| 7 | Swing reservation-table | (consumer change, no new endpoint) | `ReservationTableViewFactory` + `SwingTableView<TableRow>` fetch from `/table/reservations`; lazy entity rehydrate for tooltip / edit / copy / cut |
+| 8 | Swing appointment-table + per-day | (consumer change) | Same for `AppointmentTableViewFactory`, `AppointmentsPerDayViewFactory`, `CSVExportMenu → /export/csv` |
+| 9 | `CalendarModelImpl` client-async cleanup | (code-mod) | Retire the stopgap async fallbacks added 2026-05-12 once Phases 7+8 ship |
 
 ### Explicitly out of scope (separate PRDs)
 
@@ -152,8 +165,9 @@ Net deliverables:
 - **Angular UI implementation** — PRD 026. PRD 030 produces the wire; PRD 026 produces the consumer.
 - **Real-time push.** Polling stays. SSE / WebSocket is a future PRD.
 - **GraphQL / aggregated queries.** Each surface = one REST endpoint. No combined queries.
-- **Swing migration to the REST endpoints.** Swing keeps the in-process model — `mvn spring-boot:run` cycles stay fast, the desktop calendar feels instant. The REST surface is for Angular and for any external integration. Migrating Swing → REST gains nothing and loses determinism for users who care about local-fast feedback.
+- ~~**Swing migration to the REST endpoints.** Swing keeps the in-process model~~ **— REVERSED 2026-05-12. The Swing client has always been a REST consumer via `RemoteOperator`; there was no in-process path for the table views. Phases 7+8 now migrate Swing reservation/appointment table views to `/table/*`. Swing *calendar* views (week / month / day / …) still keep their `RaplaBuilder` pipeline and remain out of scope for this PRD.**
 - **Calendar surface itself** — already covered by PRD 024 Phase 3. PRD 030 references the existing work but doesn't duplicate it. Phase 4 (block-color sharing) is the only calendar-touching item in PRD 030 because it sits at the seam between Swing and server.
+- **Swing calendar views** (week / month / day / compactweek / dayresource / timeslot) — out of scope. Only **Swing table views** migrate (Phases 7+8). Calendar surfaces keep their current `RaplaBuilder` + `AbstractRaplaSwingCalendar` pipeline; consolidation there is a future PRD if motivated.
 
 ## Plan
 
@@ -223,6 +237,44 @@ This is the natural completion of PRD 023's Phase 4 row.
 
 This phase may span multiple sessions and waits on Angular's actual deployment.
 
+### Phase 7 — Swing reservation-table → `/table/reservations` (rapla-client, ≈3-4 days)
+
+Migrates `ReservationTableViewFactory` + `SwingTableView<Reservation>` to fetch from `/table/reservations` and render `TableRow` rows directly. Retires `model.queryReservations(...)` for the table-view path.
+
+**Sub-phases (each independently shippable):**
+
+- **7.1 — `TableViewService` REST proxy bean.** **DONE 2026-05-12.** Added `@Bean tableViewServiceProxy` to `ClientProxyConfig`, wired via the existing `HttpServiceProxyFactory`. Mirrors the pattern of `iCalConfigServiceProxy`, `mailToUserProxy`, etc.
+- **7.2 — `RaplaTableColumn<TableRow>` adapter.** New implementation reading from `TableRow.cells` keyed by column id. Same `RaplaTableColumn<T>` interface, but `getValue(row, format)` looks up the scalar by column key rather than projecting from an entity. Replaces the column-projection responsibility on the client.
+- **7.3 — Lazy entity rehydration hook.** Tooltips (`infoFactory.getToolTip(rowObject)`), edit-dialog launch (`editController.edit(reservation)`), copy/cut menu items all need a live `Reservation`. New interaction protocol: the view caches a `Map<String, Reservation>` of resolved entities; on interaction, look up by `row.id()` — if absent, fire `GET /storage/reservation/{id}` and resolve. Single hit per row per session.
+- **7.4 — Plugin summary extension adapter.** `ReservationSummaryExtension.init(table, panel)` currently reads `List<Reservation>` directly from the `JTable` model. New shape: the extension receives a `RowSelectionProvider` interface with `List<String> getSelectedIds()` + `Promise<List<Reservation>> resolveSelected()`. Existing extensions (DHBW counters, etc.) get adapter classes; new extensions use the protocol directly.
+- **7.5 — Factory rewire.** `ReservationTableViewFactory.createSwingView` builds the `Supplier<Promise<List<TableRow>>>` from `tableViewService.reservations(from, to, columnIds, sort, null, null)` instead of `model.queryReservations(...)`. Column ids come from `tableConfigLoader.loadColumns(EVENTS_VIEW, user)`.
+- **7.6 — Update column-id contract.** Server's `TableColumnDescriptor` keys must match what `tableConfigLoader.loadColumns` returns. Audit; align if drifted.
+
+**Tests:**
+- Tier-3 MockMvc smoke test: ReservationTableViewFactory's REST call shape; permission-leak probe; sort + filter pass-through (already covered by Phase 2 MockMvc tests — extend as needed).
+- Tier-2 (rapla-client): a headless harness test for `SwingTableView<TableRow>` that asserts row count, column rendering, and tooltip lazy-fetch trigger.
+
+### Phase 8 — Swing appointment-table + appointments-per-day → `/table/appointments` (rapla-client, ≈2 days)
+
+Same migration as Phase 7 applied to:
+
+- `AppointmentTableViewFactory` (rows = `AppointmentBlock`).
+- `AppointmentsPerDayViewFactory` (rows = `AppointmentBlock`, with day grouping).
+- `CSVExportMenu` — switch to `GET /export/csv` (already exists from Phase 5); no in-process serialization, browser download.
+
+Depends on Phase 7's TableRow infrastructure (column adapter, lazy entity rehydration, plugin extension adapter). Mostly mechanical once 7 lands.
+
+### Phase 9 — Retire `CalendarModelImpl` client-async fallbacks (rapla-core, ≈1 day)
+
+Once Phases 7+8 ship and no client-side caller of `CalendarModelImpl.queryReservations` / `queryBlocks` / `queryAppointments` remains:
+
+- Delete the stopgap async-fallback branches added 2026-05-12 from those three Promise wrappers. The remaining body is just the `SyncStorageOperator` server path (which never broke).
+- Optionally hoist the three Promise methods into `SyncCalendarModel` only — i.e. remove them from the client-facing `CalendarModel` interface entirely. The client side never needs them again.
+- Audit `CopyDialog`, `CalendarTableViewPresenter` for stragglers — if they still call `model.queryReservations(...)`, route them through `/table/reservations` (or `/storage/queryAppointments` if they need entities, not table rows).
+- Update `MEMORY.md` / arch-test if any rapla-client-side test or arch invariant pins the old async-fallback shape.
+
+Net delete: ~30 LOC across `CalendarModelImpl`. Net cleanup: client-facing `CalendarModel` API shrinks; the "is this sync available?" `instanceof SyncStorageOperator` check disappears from the client path.
+
 ## Architecture — pipeline shape
 
 ```
@@ -236,34 +288,38 @@ client                                            server
   │ ◀────────────────────────────────────────────
   │   TablePage { columns: [id,label,…], rows: [{id, cells: {colId: scalar}}], nextCursor }
   │
-  │   renderer paints (Angular table component)
+  │   renderer paints (Angular table component, or Swing JTable post-Phase 7+8)
 ```
 
-Mirror of the existing PRD 024 Phase 3 `/calendar/view` flow, same JWT, same permission gate, same cursor pagination.
+Mirror of the existing PRD 024 Phase 3 `/calendar/view` flow, same JWT, same permission gate, same cursor pagination. Both Angular and Swing (post-Phase 7+8) consume the same endpoint; their differences are pagination shape (Angular paginates, Swing fetches all) and entity-rehydrate strategy (Angular never rehydrates, Swing lazy-fetches via `/storage/reservation/{id}` for interaction).
 
-## Migration strategy — how Swing and Angular coexist
+## Migration strategy — Swing and Angular both consume `/table/*`
 
-The Swing client is **not** migrated to the REST endpoints in this PRD. Practical reasons:
+**Revised 2026-05-12.** The original premise (this PRD's first draft, May 11) was "Swing keeps the in-process model unchanged". The multimodule-shift bug on 2026-05-12 made it clear that premise was wrong: the Swing client has always been a REST consumer via `RemoteOperator`. There is no in-process path for Swing today. So "not migrating Swing" was really "Swing keeps using `/storage/queryAppointments` while Angular uses `/table/*`" — two REST consumption paths for the same UX surface.
 
-- Migrating Swing → REST loses determinism (network in the loop) and gains nothing visible to the user.
-- The in-process path is fast and already works.
-- Swing's `LocalCache` performs other roles (e.g. cross-navigation caching) that the REST surface doesn't replicate.
+The revised strategy: **both clients consume `/table/*` for table views**. One server-side projection pipeline, one wire shape, one place to fix bugs. Net effects:
 
-So PRD 030 produces a parallel surface. Both surfaces share rapla-core engines and rapla-core entities — no code duplication, but **two consumption paths**. Net effect on the running Swing app: zero (Phase 6 may delete `LocalCache` later, but only if-and-when nobody depends on it).
+- The PRD 008 split (server-sync / client-async on `CalendarModelImpl`) becomes irrelevant for the table-view path — Swing stops calling `model.queryReservations` and friends entirely.
+- The stopgap async fallback added to `CalendarModelImpl.queryReservations` / `queryBlocks` / `queryAppointments` (2026-05-12) becomes deletable in Phase 9.
+- `LocalCache` keeps its role for calendar views (still on the in-Swing pipeline); the table-view migration doesn't depend on it.
 
-A future PRD can revisit whether the Swing client should also migrate, once Angular is in production and the comparison is concrete.
+### Calendar views still aren't migrated
 
-### Pagination is Angular-only
+This PRD only migrates Swing **table views**. Swing **calendar views** (week / month / day / compactweek / dayresource / timeslot / appointments-per-day-grid) keep their existing `RaplaBuilder`-based pipeline. Reasons:
 
-The Swing table keeps its current monolithic-scroll behaviour — JTable, all rows in memory, scrollable, no paging UI. PRD 030 does **not** add pagination to the Swing tier; it isn't on the migration path anyway.
+- The Swing calendar uses local layout via `AbstractRaplaSwingCalendar` + `SwingRaplaBlock`. Migrating that to consume `CalendarPage` (PRD 024 Phase 3) requires a parallel set of view adapters and is its own multi-week effort.
+- The table-view migration has a contained interaction surface (no resizable blocks, no drag-to-move). It is the natural first target.
 
-The REST endpoint supports pagination as an **opt-in** for Angular: pass `pageSize=N` to get a page + `nextCursor`; omit `pageSize` to get all rows (the Swing-style default, also useful for a future Swing migration). The server hard-caps the no-`pageSize` response (default 50 000 rows) and emits `incomplete: true` + a cursor if the cap is hit; clients can keep loading or narrow the date range.
+A future PRD can revisit Swing calendar migration once Phase 7+8 is shipped and the table-view experience is concrete.
 
-Angular picks its UX from either:
-- **Pagination** — explicit "next / prev / jump to page" UI, ~50 KB per response, cheap on the wire.
-- **Virtual scrolling** — request all rows once, render only the visible 50 via `cdk-virtual-scroll-viewport`, feels exactly like Swing JTable. ~1 MB per response at DHBW scale.
+### Pagination — Swing keeps monolithic-scroll, opt-in for Angular
 
-Either works. Pagination is the recommended default; virtual scroll is the escape hatch.
+Both clients call `/table/*`, but their UX shapes differ:
+
+- **Swing** — calls `/table/*` **without** `pageSize`, gets all rows back (subject to the 50 000-row server cap), renders in `JTable` with local scroll. Same look-and-feel as today's `JTable`-monolithic behaviour. `incomplete: true` + cursor in the response triggers a "narrow your date range" dialog rather than a paging UI.
+- **Angular** — picks either explicit pagination (`pageSize=N`, follow `nextCursor`) or virtual scrolling (one big response, render only visible rows via `cdk-virtual-scroll-viewport`). Pagination recommended; virtual scroll as escape hatch.
+
+The endpoint is identical; the client decides whether to use `pageSize`. ~50 KB per page for Angular; ~1 MB at DHBW scale for Swing's no-`pageSize` response.
 
 ## Tests
 
@@ -275,6 +331,9 @@ Either works. Pagination is the recommended default; virtual scroll is the escap
 | 4 | 1 + 2 | rapla-core + rapla-server (FacadeTestSupport) | Real entity color extraction |
 | 5 | 3 | rapla-app MockMvc | Streaming CSV body, locale |
 | 6 | arch | rapla-server | `NoRaplaClientImportFromServerTest` |
+| 7 | 1 (rapla-core adapter) + 2 (rapla-client headless harness) | TableRow column adapter + SwingTableView rehydrate trigger | Row-count, column rendering, lazy fetch fires on tooltip |
+| 8 | same as 7 | Appointment block + per-day flavours | Block-id stable key, day grouping |
+| 9 | arch | rapla-core | `NoClientAsyncFallbackInCalendarModelTest` — pins that the three Promise wrappers are sync-only post-deletion |
 
 Reuse `PreferencesAdminControllerIntegrationTest` as the MockMvc template per phase — same Spring context, same JWT setup, same AGENTS.md §12 leak-probe regression pattern.
 
@@ -296,7 +355,13 @@ Reuse `PreferencesAdminControllerIntegrationTest` as the MockMvc template per ph
 
 6. **`LocalCache` removal is risky and may be deferred indefinitely.** Phase 6 says "after Angular consumes". But Swing keeps using `LocalCache` for in-session navigation cache. **Acceptable end state:** keep `LocalCache` for Swing; mark its `cachedReservations` field as Swing-legacy in javadoc; never remove. Phase 6 then reduces to just the back-edge deletion.
 
-7. **HTML autoexport coupling — applies to *calendar-grid* HTML views only, not plain tables.** The HTML autoexport plugin renders two distinct families:
+7a. **Swing table-view migration: plugin extension breakage (Phase 7-8).** `ReservationSummaryExtension` is an extension point — third-party plugins (DHBW, etc.) implement it, and they currently consume `List<Reservation>` derived from selected rows. Migrating `SwingTableView<T>` to `T = TableRow` breaks every existing implementation. **Mitigation:** introduce a new `RowSelectionProvider` interface that exposes `getSelectedIds()` + `Promise<List<Reservation>> resolveSelected()`; provide a `ReservationSummaryAdapter` that wraps the legacy `List<Reservation>` API on top of the new shape. Audit each existing extension during Phase 7.4. Estimated 1-day adapter work.
+
+7b. **Swing table-view migration: lazy-rehydrate UX latency.** Tooltips on hover, right-click context menus, double-click-to-edit each need a `Reservation` entity. The new flow lazy-fetches via `GET /storage/reservation/{id}` on first access. **Risk:** noticeable lag (50-300 ms) on first interaction per row. **Mitigation:** prefetch the visible-row entities in the background after the initial table render; cache in-memory for the session. If perceived lag remains, add a bulk `POST /storage/reservations?ids=…` endpoint as a follow-up. Decision deferred until Phase 7.3 lands and the actual UX can be measured.
+
+7c. **Swing table-view migration: server-side sort vs. client-side `JTable` sort.** `JTable` supports column-header click sorting. With `/table/reservations` returning pre-sorted rows, every column-header click is a new REST round-trip. **Mitigation:** for the no-`pageSize` Swing case (all rows fetched), keep local `TableRowSorter` on the rendered `TableRow` cells — no round-trip; sort works on the scalar cells already in memory. The server-side `sort` parameter is only used for the initial fetch order. Net effect: Swing sort UX matches today's behaviour.
+
+8. **HTML autoexport coupling — applies to *calendar-grid* HTML views only, not plain tables.** The HTML autoexport plugin renders two distinct families:
     - **Calendar-grid HTML pages** (`HTMLWeekViewPage`, `HTMLMonthViewPage`, `HTMLDayViewPage`, `HTMLCompactWeekViewPage`, `HTMLDayResourcePage`, the two `timeslot` views, and `AppointmentPerDayViewPage`) — these run through `HTMLRaplaBuilder` (subclass of `RaplaBuilder`) and `AbstractHTMLView`, i.e. the same `BuildContext` + `BuildStrategy` pipeline the Swing client uses. PRD 030 builds `CalendarLayoutEngine` (Angular-bound) **alongside** that pipeline, not as a replacement. Risk: rendering rule changes (colors, visibility, conflict markers) land in one pipeline but not the other. **Mitigation:** when changing rendering rules, audit both call sites. A future PRD can migrate the HTML pages to consume the engine — pure code-deletion, ~1500 LOC of `HTMLRaplaBuilder` + `HTMLRaplaBlock` + much of `AbstractHTMLView` becomes deletable. Not in PRD 030 scope because DHBW relies on the autoexport for public schedule pages; the migration is risk-bearing for zero user-visible benefit.
     - **Plain HTML / CSV table pages** (`ReservationTableViewPage`, `AppointmentTableViewPage`) — these don't use `RaplaBuilder` at all. They query reservations directly, walk `RaplaTableColumn<T>` plugin columns, and emit `<table>` HTML. No coupling to the calendar-grid pipeline. The only overlap with PRD 030's `TableViewEngine` is the column abstraction itself, which Risk #3 (plugin SPI duality) already covers. Once Risk #3's mitigation lands (the new `CellExtractor` SPI alongside `RaplaTableColumn`, or `RaplaTableColumn` delegating to a `CellExtractor`), there's one column-value source feeding both HTML and JSON outputs. No code-duplication maintenance burden remains. **Not a risk for plain tables.**
 
@@ -319,6 +384,31 @@ Reuse `PreferencesAdminControllerIntegrationTest` as the MockMvc template per ph
 8. **`LocalCache` permanent retention. RESOLVED 2026-05-12: retain indefinitely for Swing.** Document `cachedReservations` as Swing-legacy in javadoc; never remove. Phase 6 reduces to back-edge deletion only.
 
 9. **Phase ordering vs Angular v1. RESOLVED 2026-05-12.** Angular v1 (PRD 026) is reservation **edit**; Phases 1–3 are not on the v1 critical path. Schedule: Phase 1+2 in parallel with PRD 024 Phases 1+2 (during Angular v1 prep); Phases 3+4+5 during v1.1; Phase 6 only after Angular ships and stabilises in production.
+
+10. **Lazy vs eager entity rehydration (Phase 7.3).** When `SwingTableView<TableRow>` needs a live `Reservation` (tooltip / edit / copy / cut), fetch options:
+    - **Lazy on first touch** (recommended): zero up-front cost, 50-300 ms latency on first interaction per row. Matches the pattern of "you only edit a few rows per session."
+    - **Eager prefetch in background** after initial render: hides the latency entirely but doubles wire traffic on first load. Worth doing only if Risk 7b's measured latency is actually painful.
+    - **Bulk endpoint** `POST /storage/reservations?ids=…`: bridges the two — one round-trip for prefetch instead of N. Add only if needed; not a Phase 7 deliverable.
+
+    Decision: lazy by default; measure in Phase 7.3; add prefetch / bulk if motivated.
+
+11. **`RaplaTableColumn<TableRow>` adapter location (Phase 7.2).** Where does the new adapter live?
+    - `rapla-core/.../tableview` (alongside `CellExtractor`) — visible to both client tiers, but rapla-core has no Swing dep.
+    - `rapla-client/.../tableview/client/swing` (next to `RaplaSwingTableColumnImpl`) — Swing-flavoured. The adapter is purely a value-lookup, no Swing imports needed, so either location is technically OK.
+
+    Decision: rapla-core for the value-lookup adapter (`TableRowColumn implements RaplaTableColumn<TableRow>`); a thin Swing wrapper in rapla-client only if needed for `init(TableColumn)` calls during render setup. **Pending Phase 7.2 implementation pass.**
+
+12. **`ReservationSummaryExtension` adapter shape (Phase 7.4).** Two routes:
+    - Adapter wraps the new `RowSelectionProvider` to look like today's `List<Reservation>` consumer; existing extensions keep working unchanged. Lower migration friction; defers the API shift.
+    - New `RowSelectionProvider` interface as primary; legacy extensions get a deprecation marker and an adapter; new extensions consume the new interface. Cleaner long term; more churn in DHBW now.
+
+    Decision: adapter route initially (Phase 7.4); deprecation pass + cleanup in a follow-up PRD. **Pending Phase 7.4 pass.**
+
+13. **Where does the rehydration cache live? (Phase 7.3)** The lazy fetch needs a `Map<String, Reservation>` somewhere — in the `SwingTableView` instance (lifecycle = view open) or in a session-scope service (lifecycle = whole client run)?
+    - View-scope: invalidates on view close. Simple. Loses cache on view switch.
+    - Session-scope: survives view switches. Coupled to `LocalCache` invalidation (server changes invalidate the cache).
+
+    Decision: view-scope initially, smallest blast radius. **Pending Phase 7.3 pass.**
 
 ## Cross-references
 

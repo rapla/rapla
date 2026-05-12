@@ -23,6 +23,8 @@ import org.rapla.facade.internal.CalendarOptionsImpl;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.logger.Logger;
+import org.rapla.rest.SettingsService;
+import org.rapla.rest.dto.UserSettings;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Service;
 
@@ -49,9 +51,12 @@ public class WarningsOption extends RaplaGUIComponent implements UserOptionPanel
     JCheckBox showHolidayWarningsSingleAppointment = new JCheckBox();
 
     final boolean isHolidayEnabled;
+    private final SettingsService settings;
+
     @Autowired
-    public WarningsOption(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger) {
+    public WarningsOption(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, SettingsService settings) {
         super(facade, i18n, raplaLocale, logger);
+        this.settings = settings;
         showConflictWarningsField.setText("");        
         double pre = TableLayout.PREFERRED;
         panel.setLayout( new TableLayout(new double[][] {{pre, 5,pre}, {pre,5,pre,5,pre,5,pre}}));
@@ -102,26 +107,37 @@ public class WarningsOption extends RaplaGUIComponent implements UserOptionPanel
     }
 
     public void show() throws RaplaException {
-        // get the options
+        // Read fresh values via /settings/me REST endpoint instead of the
+        // bulk /storage/resources preference cache. Save path is unchanged:
+        // commit() writes to the editable prefs clone and the dialog
+        // framework saves via facade.store -> /storage/dispatch.
+        UserSettings me;
+        try
         {
-            boolean config = preferences.getEntryAsBoolean( CalendarOptionsImpl.SHOW_CONFLICT_WARNING, true);
-            showConflictWarningsField.setSelected( config);
+            me = settings.getMe();
         }
+        catch (Exception e)
         {
-            boolean config = preferences.getEntryAsBoolean( CalendarOptionsImpl.SHOW_NOT_IN_CALENDAR_WARNING, true);
-            showNotInCalendarWarningsField.setSelected( config);
+            // Endpoint unreachable — fall back to the local cache reads so
+            // the dialog still opens with sensible values.
+            getLogger().warn("GET /settings/me failed, falling back to local cache: " + e.getMessage());
+            showConflictWarningsField.setSelected(preferences.getEntryAsBoolean(CalendarOptionsImpl.SHOW_CONFLICT_WARNING, true));
+            showNotInCalendarWarningsField.setSelected(preferences.getEntryAsBoolean(CalendarOptionsImpl.SHOW_NOT_IN_CALENDAR_WARNING, true));
+            showAbortEditWarningsField.setSelected(preferences.getEntryAsBoolean(CalendarOptionsImpl.SHOW_ABORT_EDIT_WARNING, true));
+            if (isHolidayEnabled)
+            {
+                showHolidayWarnings.setSelected(preferences.getEntryAsBoolean(CalendarOptionsImpl.SHOW_HOLIDAY_WARNING, true));
+                showHolidayWarningsSingleAppointment.setSelected(preferences.getEntryAsBoolean(CalendarOptionsImpl.SHOW_HOLIDAY_WARNING_SINGLE_APPOINTMENT, true));
+            }
+            return;
         }
-        {
-            boolean config = preferences.getEntryAsBoolean( CalendarOptionsImpl.SHOW_ABORT_EDIT_WARNING, true);
-            showAbortEditWarningsField.setSelected( config);
-        }
+        showConflictWarningsField.setSelected(me.showConflictWarning());
+        showNotInCalendarWarningsField.setSelected(me.showNotInCalendarWarning());
+        showAbortEditWarningsField.setSelected(me.showAbortEditWarning());
         if (isHolidayEnabled)
         {
-            boolean config = preferences.getEntryAsBoolean( CalendarOptionsImpl.SHOW_HOLIDAY_WARNING, true);
-            showHolidayWarnings.setSelected( config);
-
-            boolean configSingle = preferences.getEntryAsBoolean( CalendarOptionsImpl.SHOW_HOLIDAY_WARNING_SINGLE_APPOINTMENT, true);
-            showHolidayWarningsSingleAppointment.setSelected( configSingle);
+            showHolidayWarnings.setSelected(me.showHolidayWarning());
+            showHolidayWarningsSingleAppointment.setSelected(me.showHolidayWarningSingleAppointment());
         }
     }
 

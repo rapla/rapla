@@ -49,6 +49,10 @@ spring:
               scopes:
                 - openid
                 - profile
+                # offline_access is required for Spring Authorization Server to issue
+                # refresh tokens on OIDC flows (request includes openid scope).
+                # Without it, /oauth2/token returns access_token + id_token but NO refresh_token.
+                - offline_access
             require-proof-key: true
             require-authorization-consent: false
 

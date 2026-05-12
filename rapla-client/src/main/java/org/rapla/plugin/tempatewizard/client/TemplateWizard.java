@@ -79,9 +79,11 @@ import java.util.stream.Collectors;
     protected final RaplaResources i18n;
     protected final DialogUiFactoryInterface dialogUiFactory;
     protected final MenuItemFactory menuItemFactory;
+    protected final org.rapla.rest.PluginsService plugins;
+    private volatile Boolean cachedEnabled;
 
     @Autowired public TemplateWizard(ClientFacade clientFacade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, CalendarModel model,
-                                  ApplicationEventBus eventBus, DialogUiFactoryInterface dialogUiFactory, MenuItemFactory menuItemFactory) throws RaplaInitializationException
+                                  ApplicationEventBus eventBus, DialogUiFactoryInterface dialogUiFactory, MenuItemFactory menuItemFactory, org.rapla.rest.PluginsService plugins) throws RaplaInitializationException
     {
         this.logger = logger;
         this.i18n = i18n;
@@ -93,6 +95,7 @@ import java.util.stream.Collectors;
         this.menuItemFactory = menuItemFactory;
         this.permissionController = raplaFacade.getPermissionController();
         this.eventBus = eventBus;
+        this.plugins = plugins;
         clientFacade.addModificationListener(this);
 
     }
@@ -115,13 +118,16 @@ import java.util.stream.Collectors;
 
     @Override public boolean isEnabled()
     {
+        Boolean c = cachedEnabled;
+        if (c != null) return c;
         try
         {
-            return raplaFacade.getSystemPreferences().getEntryAsBoolean(ENABLED, true);
+            cachedEnabled = plugins.get("templatewizard").enabled();
+            return cachedEnabled;
         }
-        catch (RaplaException e)
+        catch (Exception e)
         {
-            return false;
+            return true;
         }
     }
 

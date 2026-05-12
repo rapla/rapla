@@ -50,6 +50,7 @@ public class ExchangeConnectorUserOptions implements UserOptionPanel
     //private JLabel eventTypesLabel;
     //    private JList eventTypesList;
     ExchangeConnectorRemote service;
+    private final ExchangeConnectorConfigRemote configService;
     RaplaButton loginButton;
     RaplaButton syncButton;
     RaplaButton removeButton;
@@ -68,7 +69,8 @@ public class ExchangeConnectorUserOptions implements UserOptionPanel
 
     @Autowired
     public ExchangeConnectorUserOptions(ClientFacade clientFacade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, ExchangeConnectorRemote service,
-            ExchangeConnectorResources exchangeConnectorResources, DialogUiFactoryInterface dialogUiFactory, ShowExchangeForUser showExchangeForUser)
+            ExchangeConnectorResources exchangeConnectorResources, DialogUiFactoryInterface dialogUiFactory, ShowExchangeForUser showExchangeForUser,
+            ExchangeConnectorConfigRemote configService)
     {
         this.exchangeConnectorResources = exchangeConnectorResources;
         this.logger = logger;
@@ -78,6 +80,7 @@ public class ExchangeConnectorUserOptions implements UserOptionPanel
         this.service = service;
         this.dialogUiFactory = dialogUiFactory;
         this.showExchangeForUser = showExchangeForUser;
+        this.configService = configService;
     }
 
     @Override
@@ -299,8 +302,25 @@ public class ExchangeConnectorUserOptions implements UserOptionPanel
 
     private void setValuesToJComponents() throws RaplaException
     {
-        boolean enableNotify = preferences.getEntryAsBoolean(ExchangeConnectorConfig.EXCHANGE_SEND_INVITATION_AND_CANCELATION,
-                ExchangeConnectorConfig.DEFAULT_EXCHANGE_SEND_INVITATION_AND_CANCELATION);
+        // Read the per-user override via /exchange/config/user instead of
+        // the bulk /storage/resources preference cache. Save path is
+        // unchanged: commit() writes to the prefs clone and the dialog
+        // framework saves via facade.store -> /storage/dispatch.
+        boolean enableNotify;
+        try
+        {
+            logger.info("ExchangeConnectorUserOptions.setValuesToJComponents(): fetching /exchange/config/user via REST");
+            ExchangeUserSettings settings = configService.getUserSettings();
+            enableNotify = settings.sendInvitationAndCancellation() != null
+                    ? settings.sendInvitationAndCancellation()
+                    : ExchangeConnectorConfig.DEFAULT_EXCHANGE_SEND_INVITATION_AND_CANCELATION;
+        }
+        catch (Exception e)
+        {
+            logger.warn("GET /exchange/config/user failed, falling back to local cache: " + e.getMessage());
+            enableNotify = preferences.getEntryAsBoolean(ExchangeConnectorConfig.EXCHANGE_SEND_INVITATION_AND_CANCELATION,
+                    ExchangeConnectorConfig.DEFAULT_EXCHANGE_SEND_INVITATION_AND_CANCELATION);
+        }
         enableNotifyBox.setSelected(enableNotify);
 
         //        downloadFromExchange = preferences.getEntryAsBoolean(ExchangeConnectorConfig.SYNC_FROM_EXCHANGE_ENABLED_KEY, ExchangeConnectorConfig.DEFAULT_SYNC_FROM_EXCHANGE_ENABLED);

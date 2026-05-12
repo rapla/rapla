@@ -28,6 +28,9 @@ import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.FactorGrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.oauth2.server.authorization.OAuth2TokenType;
+import org.springframework.security.oauth2.server.authorization.token.JwtEncodingContext;
+import org.springframework.security.oauth2.server.authorization.token.OAuth2TokenCustomizer;
 import org.springframework.security.oauth2.server.authorization.authentication.OAuth2AuthorizationCodeRequestAuthenticationContext;
 import org.springframework.security.oauth2.server.authorization.authentication.OAuth2AuthorizationCodeRequestAuthenticationException;
 import org.springframework.security.oauth2.server.authorization.authentication.OAuth2AuthorizationCodeRequestAuthenticationProvider;
@@ -268,6 +271,27 @@ public class AuthorizationServerConfig
         {
             throw new IllegalStateException("Failed to build JWK set from RaplaKeyStorage", e);
         }
+    }
+
+    /**
+     * Adds a {@code typ=refresh} claim to refresh tokens issued by Spring
+     * Authorization Server. The stateless rapla {@code /auth/refresh}
+     * endpoint validates this claim before re-issuing tokens; with the
+     * customizer in place, OAuth-issued refresh tokens are accepted by the
+     * same endpoint as legacy {@code /auth/login} refresh tokens. Net:
+     * one refresh endpoint, two issuance paths, refresh tokens survive
+     * server restart for both (since {@code /auth/refresh} doesn't
+     * consult SAS's in-memory authorization state).
+     */
+    @Bean
+    public OAuth2TokenCustomizer<JwtEncodingContext> jwtRefreshTokenCustomizer()
+    {
+        return ctx -> {
+            if (OAuth2TokenType.REFRESH_TOKEN.equals(ctx.getTokenType()))
+            {
+                ctx.getClaims().claim("typ", "refresh");
+            }
+        };
     }
 
     private static RSAPrivateKey decodePrivateKey(String base64) throws Exception

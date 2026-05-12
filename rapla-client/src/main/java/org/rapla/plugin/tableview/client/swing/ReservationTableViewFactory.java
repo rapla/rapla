@@ -26,6 +26,7 @@ import org.rapla.client.swing.internal.RaplaMenuBarContainer;
 import org.rapla.components.iolayer.IOInterface;
 import org.rapla.entities.domain.AppointmentBlock;
 import org.rapla.entities.domain.Reservation;
+import org.rapla.components.util.TimeInterval;
 import org.rapla.facade.CalendarModel;
 import org.rapla.facade.client.ClientFacade;
 import org.rapla.framework.RaplaException;
@@ -33,9 +34,14 @@ import org.rapla.framework.RaplaLocale;
 import org.rapla.logger.Logger;
 import org.rapla.plugin.abstractcalendar.client.swing.IntervalChooserPanel;
 import org.rapla.plugin.tableview.RaplaTableColumn;
+import org.rapla.plugin.tableview.TablePage;
+import org.rapla.plugin.tableview.TableRow;
 import org.rapla.plugin.tableview.TableViewPlugin;
+import org.rapla.plugin.tableview.TableViewService;
 import org.rapla.plugin.tableview.client.swing.extensionpoints.ReservationSummaryExtension;
 import org.rapla.plugin.tableview.internal.TableConfig;
+import org.rapla.plugin.tableview.internal.TableRowColumn;
+import org.rapla.scheduler.CommandScheduler;
 import org.rapla.scheduler.Promise;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -43,10 +49,12 @@ import org.springframework.stereotype.Service;
 import org.springframework.context.annotation.Lazy;
 import javax.swing.Icon;
 import javax.swing.table.TableColumn;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
 
 @Service
 @Lazy
@@ -67,12 +75,15 @@ public class ReservationTableViewFactory implements SwingViewFactory
     private final IOInterface ioInterface;
     private final RaplaMenuBarContainer menuBar;
     private final EditController editController;
+    private final TableViewService tableViewService;
+    private final CommandScheduler commandScheduler;
 
     @Autowired
     public ReservationTableViewFactory(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger,
                                        Set<ReservationSummaryExtension> reservationSummaryExtensions, TableConfig.TableConfigLoader tableConfigLoader, MenuFactory menuFactory,
                                        ReservationController reservationController, InfoFactory infoFactory, IntervalChooserPanel dateChooser,
-                                       DialogUiFactoryInterface dialogUiFactory, IOInterface ioInterface, RaplaMenuBarContainer menuBar, EditController editController)
+                                       DialogUiFactoryInterface dialogUiFactory, IOInterface ioInterface, RaplaMenuBarContainer menuBar, EditController editController,
+                                       TableViewService tableViewService, CommandScheduler commandScheduler)
     {
         this.facade = facade;
         this.i18n = i18n;
@@ -88,6 +99,8 @@ public class ReservationTableViewFactory implements SwingViewFactory
         this.ioInterface = ioInterface;
         this.menuBar = menuBar;
         this.editController = editController;
+        this.tableViewService = tableViewService;
+        this.commandScheduler = commandScheduler;
     }
     
     @Override
@@ -100,10 +113,33 @@ public class ReservationTableViewFactory implements SwingViewFactory
 
     public SwingCalendarView createSwingView(CalendarModel model, boolean editable, boolean printing) throws RaplaException
     {
-        Supplier<Promise<List<Reservation>>> initFunction = (() ->model.queryReservations(model.getTimeIntervall()).thenApply((list)->new ArrayList<>(list)));
         final String tableName = TableConfig.EVENTS_VIEW;
-        List<RaplaTableColumn<Reservation>> raplaTableColumns = tableConfigLoader.loadColumns(tableName, facade.getUser());
-        return new SwingTableView<Reservation>(menuBar,facade, i18n, raplaLocale, logger, model, reservationSummaryExtensions, editable, printing, raplaTableColumns, menuFactory,
+        // Reuse the existing column metadata (key + label + type) from the
+        // legacy plugin column SPI; values come from server-projected rows
+        // instead of in-process entity projection.
+        List<RaplaTableColumn<Reservation>> referenceColumns = tableConfigLoader.loadColumns(tableName, facade.getUser());
+        List<RaplaTableColumn<TableRow>> raplaTableColumns = referenceColumns.stream()
+                .<RaplaTableColumn<TableRow>>map(TableRowColumn::new)
+                .collect(Collectors.toList());
+        final List<String> columnIds = referenceColumns.stream()
+                .map(RaplaTableColumn::getKey)
+                .collect(Collectors.toList());
+
+        Supplier<Promise<List<TableRow>>> initFunction = () ->
+        {
+            TimeInterval interval = model.getTimeIntervall();
+            LocalDateTime start = interval != null ? interval.getStart() : null;
+            LocalDateTime end   = interval != null ? interval.getEnd()   : null;
+            final String fromIso = (start != null ? start.toLocalDate() : LocalDateTime.now().toLocalDate()).toString();
+            final String toIso   = (end   != null ? end.toLocalDate()   : LocalDateTime.now().toLocalDate().plusYears(1)).toString();
+            return commandScheduler.supply(() ->
+            {
+                TablePage page = tableViewService.reservations(fromIso, toIso, columnIds, null, null, null);
+                return new ArrayList<>(page.rows());
+            });
+        };
+
+        return new SwingTableView<TableRow>(menuBar, facade, i18n, raplaLocale, logger, model, reservationSummaryExtensions, editable, printing, raplaTableColumns, menuFactory,
                 editController, reservationController, infoFactory,  dateChooser,  dialogUiFactory, ioInterface, initFunction, tableName);
     }
 

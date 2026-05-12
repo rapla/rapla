@@ -45,3 +45,9 @@ proxy.conf.local.json
 /rapla-server/jetty.home_IS_UNDEFINED/logs/rapla_client.csv
 **/*.log
 **/logs/
+# rapla-angular (Phase 0 prototype, PRD 026)
+/rapla-angular/node_modules/
+/rapla-angular/dist/
+/rapla-angular/src/app/api/
+/rapla-angular/.angular/
+/rapla-app/src/main/resources/static/spa/

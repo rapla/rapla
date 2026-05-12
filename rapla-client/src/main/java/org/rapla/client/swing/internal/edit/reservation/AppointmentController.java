@@ -1641,7 +1641,6 @@ public class AppointmentController extends RaplaGUIComponent implements Disposab
             this.exceptions = addedException;
         }
 
-        @SuppressWarnings("unchecked")
         public Promise<Void> execute()
         {
             Repeating repeating = appointment.getRepeating();
@@ -1651,41 +1650,30 @@ public class AppointmentController extends RaplaGUIComponent implements Disposab
             }
             if (add)
             {
-                exceptions.forEach( repeating::addExceptions);
-                updateExcpetionEditor(repeating);
-                fireAppointmentChanged();
+                org.rapla.client.edit.reservation.ExceptionListMutator.applyAdditions(repeating, exceptions);
             }
             else
             {
-                for (int i = 0; i < removedExceptions.length; i++)
-                {
-                    repeating.removeException((LocalDateTime) removedExceptions[i]);
-                }
-                updateExcpetionEditor(repeating);
-                fireAppointmentChanged();
+                org.rapla.client.edit.reservation.ExceptionListMutator.applyRemovals(repeating, removedExceptions);
             }
+            updateExcpetionEditor(repeating);
+            fireAppointmentChanged();
             return ResolvedPromise.VOID_PROMISE;
         }
 
-        @SuppressWarnings("unchecked")
         public Promise<Void> undo()
         {
             Repeating repeating = appointment.getRepeating();
             if (add)
             {
-                exceptions.forEach( (exception)-> repeating.removeException( exception.getStart()));
-                updateExcpetionEditor(repeating);
-                fireAppointmentChanged();
+                org.rapla.client.edit.reservation.ExceptionListMutator.revertAdditions(repeating, exceptions);
             }
             else
             {
-                for (int i = 0; i < removedExceptions.length; i++)
-                {
-                    repeating.addException((LocalDateTime) removedExceptions[i]);
-                }
-                updateExcpetionEditor(repeating);
-                fireAppointmentChanged();
+                org.rapla.client.edit.reservation.ExceptionListMutator.revertRemovals(repeating, removedExceptions);
             }
+            updateExcpetionEditor(repeating);
+            fireAppointmentChanged();
             return ResolvedPromise.VOID_PROMISE;
         }
 

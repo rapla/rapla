@@ -365,7 +365,18 @@ public class RaplaBuilder
         }
     }
 
-    static String getColorForClassifiable( Classifiable classifiable ) {
+    /**
+     * Resolve the hex colour for one classifiable entity (reservation /
+     * allocatable / person) from its colour-typed attribute or category
+     * annotation. Returns {@code null} when no colour applies (attribute
+     * empty, type-level coloring disabled, etc.).
+     *
+     * <p>Public for cross-module use by the server-side render path
+     * (PRD 030 Phase 4 — both Swing's {@code RaplaBlock} and the
+     * server-side {@code RaplaBlockDecorator} resolve colours via this
+     * helper, then merge them through {@link org.rapla.plugin.calendarview.BlockColors#resolve}).
+     */
+    public static String getColorForClassifiable( Classifiable classifiable ) {
         Classification c = classifiable.getClassification();
         Attribute colorAttribute =((DynamicTypeImpl)c.getType()).getFirstAttributeWithAnnotation(AttributeAnnotations.KEY_COLOR);
         String annotation = c.getType().getAnnotation(DynamicTypeAnnotations.KEY_COLORS);

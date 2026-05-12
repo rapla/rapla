@@ -22,6 +22,7 @@ import tools.jackson.databind.ObjectMapper;
 import tools.jackson.databind.json.JsonMapper;
 import org.springframework.test.web.servlet.MvcResult;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -94,8 +95,11 @@ class AuthControllerIntegrationTest
     }
 
     @Test
-    void refreshTokenIssuesNewPair() throws Exception
+    void refreshIssuesNewAccessTokenAndKeepsRefreshWhenNotStale() throws Exception
     {
+        // PRD 031 design: rotate the refresh token only when it's within the
+        // renewal window (7 days remaining out of 30). A freshly-issued refresh
+        // token has 30 days remaining, so refresh should return the same token.
         MvcResult login = mockMvc.perform(post("/auth/login")
                         .contentType("application/json")
                         .content("{\"username\":\"homer\",\"password\":\"duffs\"}"))
@@ -103,6 +107,7 @@ class AuthControllerIntegrationTest
                 .andReturn();
         ObjectMapper mapper = JsonMapper.builder().build();
         JsonNode tokens = mapper.readTree(login.getResponse().getContentAsString());
+        String firstAccess = tokens.get("accessToken").asText();
         String refreshToken = tokens.get("refreshToken").asText();
 
         MvcResult refreshed = mockMvc.perform(post("/auth/refresh")
@@ -113,6 +118,57 @@ class AuthControllerIntegrationTest
                 .andExpect(jsonPath("$.refreshToken").exists())
                 .andReturn();
         JsonNode rotated = mapper.readTree(refreshed.getResponse().getContentAsString());
-        assertNotEquals(refreshToken, rotated.get("refreshToken").asText(), "refresh token must rotate (new jti)");
+        assertNotEquals(firstAccess, rotated.get("accessToken").asText(),
+                "access token must rotate on every refresh");
+        // Fresh refresh token has >7 days remaining → not rotated (rotation only when stale)
+        assertEquals(refreshToken, rotated.get("refreshToken").asText(),
+                "refresh token kept when far from expiry (rotate-when-stale)");
+    }
+
+    @Test
+    void revokedSessionRejectsSubsequentRefresh() throws Exception
+    {
+        // Single-token-per-user: a second login overwrites the server-side hash,
+        // so the first session's refresh token must be rejected on next use.
+        ObjectMapper mapper = JsonMapper.builder().build();
+        MvcResult login1 = mockMvc.perform(post("/auth/login")
+                        .contentType("application/json")
+                        .content("{\"username\":\"homer\",\"password\":\"duffs\"}"))
+                .andExpect(status().isOk()).andReturn();
+        String refresh1 = mapper.readTree(login1.getResponse().getContentAsString())
+                .get("refreshToken").asText();
+
+        mockMvc.perform(post("/auth/login")
+                        .contentType("application/json")
+                        .content("{\"username\":\"homer\",\"password\":\"duffs\"}"))
+                .andExpect(status().isOk());
+
+        // The first refresh token's hash is now stale (login overwrote it).
+        mockMvc.perform(post("/auth/refresh")
+                        .contentType("application/json")
+                        .content("{\"refreshToken\":\"" + refresh1 + "\"}"))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    void logoutClearsSessionAndInvalidatesFurtherRefresh() throws Exception
+    {
+        ObjectMapper mapper = JsonMapper.builder().build();
+        MvcResult login = mockMvc.perform(post("/auth/login")
+                        .contentType("application/json")
+                        .content("{\"username\":\"homer\",\"password\":\"duffs\"}"))
+                .andExpect(status().isOk()).andReturn();
+        JsonNode tokens = mapper.readTree(login.getResponse().getContentAsString());
+        String accessToken = tokens.get("accessToken").asText();
+        String refreshToken = tokens.get("refreshToken").asText();
+
+        mockMvc.perform(post("/auth/logout").header("Authorization", "Bearer " + accessToken))
+                .andExpect(status().isOk());
+
+        // After logout, the session entry is gone; refresh attempts must fail.
+        mockMvc.perform(post("/auth/refresh")
+                        .contentType("application/json")
+                        .content("{\"refreshToken\":\"" + refreshToken + "\"}"))
+                .andExpect(status().isUnauthorized());
     }
 }

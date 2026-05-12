@@ -30,6 +30,7 @@ import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.logger.Logger;
 import org.rapla.plugin.csvexport.CSVExportPlugin;
+import org.rapla.rest.PluginsService;
 import org.rapla.plugin.tableview.RaplaTableColumn;
 import org.rapla.plugin.tableview.RaplaTableModel;
 import org.rapla.plugin.tableview.client.swing.AppointmentTableViewFactory;
@@ -60,12 +61,16 @@ public class CSVExportMenu extends RaplaGUIComponent implements ExportMenuExtens
     private final DialogUiFactoryInterface dialogUiFactory;
 
     @Autowired
-    public CSVExportMenu(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, TableConfig.TableConfigLoader tableConfigLoader, CalendarSelectionModel model, IOInterface io, DialogUiFactoryInterface dialogUiFactory) {
+    private final PluginsService plugins;
+    private volatile Boolean cachedEnabled;
+
+    public CSVExportMenu(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, TableConfig.TableConfigLoader tableConfigLoader, CalendarSelectionModel model, IOInterface io, DialogUiFactoryInterface dialogUiFactory, PluginsService plugins) {
         super(facade, i18n, raplaLocale, logger);
         this.tableConfigLoader = tableConfigLoader;
         this.model = model;
         this.io = io;
         this.dialogUiFactory = dialogUiFactory;
+        this.plugins = plugins;
         exportEntry = new JMenuItem(getString("csv.export"));
         exportEntry.setIcon(RaplaImages.getIcon(i18n.getIcon("icon.export")));
         exportEntry.addActionListener(this);
@@ -161,9 +166,12 @@ public class CSVExportMenu extends RaplaGUIComponent implements ExportMenuExtens
 
     @Override
     public boolean isEnabled() {
+        Boolean c = cachedEnabled;
+        if (c != null) return c;
         try {
-           return getFacade().getSystemPreferences().getEntryAsBoolean(CSVExportPlugin.ENABLED, false);
-        } catch (RaplaException e) {
+            cachedEnabled = plugins.get("csvexport").enabled();
+            return cachedEnabled;
+        } catch (Exception e) {
             return false;
         }
     }

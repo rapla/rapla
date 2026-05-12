@@ -1022,8 +1022,13 @@ public class CalendarModelImpl implements CalendarSelectionModel, org.rapla.faca
 
     @Override public Promise<Collection<Reservation>> queryReservations(TimeInterval interval)
     {
-        try { return new ResolvedPromise<>(queryReservationsSync(interval)); }
-        catch (RaplaException e) { return new ResolvedPromise<>(e); }
+        if (operator instanceof org.rapla.storage.SyncStorageOperator)
+        {
+            try { return new ResolvedPromise<>(queryReservationsSync(interval)); }
+            catch (RaplaException e) { return new ResolvedPromise<>(e); }
+        }
+        return queryAppointmentBindings(interval)
+                .thenApply(bindings -> getAllReservations(bindings.getAllAppointments()));
     }
 
     @Override public Collection<Reservation> queryReservationsSync(TimeInterval interval) throws RaplaException
@@ -1055,6 +1060,16 @@ public class CalendarModelImpl implements CalendarSelectionModel, org.rapla.faca
     String templateId = null;
 
     private String cacheValidString;
+    /**
+     * <b>Swing-legacy (PRD 030 Phase 6).</b> Cross-navigation cache for the
+     * appointment-bindings query. Server-side rendered surfaces
+     * ({@code /calendar/view}, {@code /table/*}, {@code /export/csv})
+     * never hit this cache — each request runs the engine fresh. The cache
+     * is retained for the in-process Swing path; it stays {@code disabled}
+     * by default ({@link #cachingEnabled} {@code = false}), so it's
+     * effectively dormant. Don't add new callers; don't remove until the
+     * Swing client is retired.
+     */
     private AppointmentMapping cachedReservations;
     private boolean cachingEnabled = false;
 
@@ -1479,8 +1494,22 @@ public class CalendarModelImpl implements CalendarSelectionModel, org.rapla.faca
 
     @Override public Promise<List<AppointmentBlock>> queryBlocks(final TimeInterval timeInterval)
     {
-        try { return new ResolvedPromise<>(queryBlocksSync(timeInterval)); }
-        catch (RaplaException e) { return new ResolvedPromise<>(e); }
+        if (operator instanceof org.rapla.storage.SyncStorageOperator)
+        {
+            try { return new ResolvedPromise<>(queryBlocksSync(timeInterval)); }
+            catch (RaplaException e) { return new ResolvedPromise<>(e); }
+        }
+        final LocalDateTime start = getStartDate();
+        final LocalDateTime end   = getEndDate();
+        return queryAppointments(timeInterval).thenApply(apps ->
+        {
+            List<AppointmentBlock> blocks = new ArrayList<>();
+            for (Appointment a : apps)
+            {
+                a.createBlocks(start, end, blocks);
+            }
+            return blocks;
+        });
     }
 
     @Override public List<AppointmentBlock> queryBlocksSync(final TimeInterval timeInterval) throws RaplaException
@@ -1616,8 +1645,13 @@ public class CalendarModelImpl implements CalendarSelectionModel, org.rapla.faca
 
     public Promise<Collection<Appointment>> queryAppointments(TimeInterval interval)
     {
-        try { return new ResolvedPromise<>(queryAppointmentsSync(interval)); }
-        catch (RaplaException e) { return new ResolvedPromise<>(e); }
+        if (operator instanceof org.rapla.storage.SyncStorageOperator)
+        {
+            try { return new ResolvedPromise<>(queryAppointmentsSync(interval)); }
+            catch (RaplaException e) { return new ResolvedPromise<>(e); }
+        }
+        return queryAppointmentBindings(interval)
+                .thenApply(bindings -> bindings.getAllAppointments(appointmentFilter));
     }
 
     @Override public Collection<Appointment> queryAppointmentsSync(TimeInterval interval) throws RaplaException

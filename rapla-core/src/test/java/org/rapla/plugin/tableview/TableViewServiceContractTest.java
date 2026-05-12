@@ -112,6 +112,53 @@ class TableViewServiceContractTest
                 "v1 wire-format cell types: " + got);
     }
 
+    // ---------- /config + /columns/catalog (Phase 3) ----------
+
+    @Test
+    void configEndpointIsGetExchangeUnderRoot()
+    {
+        Method m = methodNamed("config");
+        GetExchange ge = m.getAnnotation(GetExchange.class);
+        assertNotNull(ge, "config() must be @GetExchange");
+        assertEquals("/config", ge.value());
+        assertEquals(TableColumnsResponse.class, m.getReturnType());
+    }
+
+    @Test
+    void columnsCatalogEndpointIsGetExchangeUnderRoot()
+    {
+        Method m = methodNamed("columnsCatalog");
+        GetExchange ge = m.getAnnotation(GetExchange.class);
+        assertNotNull(ge, "columnsCatalog() must be @GetExchange");
+        assertEquals("/columns/catalog", ge.value());
+        assertEquals(TableColumnsResponse.class, m.getReturnType());
+    }
+
+    @Test
+    void configHasSingleTableNameParam()
+    {
+        Method m = methodNamed("config");
+        Parameter[] ps = m.getParameters();
+        assertEquals(1, ps.length);
+        assertRequestParam(ps[0], "tableName", String.class, true);
+    }
+
+    @Test
+    void columnsCatalogHasSingleTableNameParam()
+    {
+        Method m = methodNamed("columnsCatalog");
+        Parameter[] ps = m.getParameters();
+        assertEquals(1, ps.length);
+        assertRequestParam(ps[0], "tableName", String.class, true);
+    }
+
+    @Test
+    void tableColumnsResponseHasExpectedRecordComponents()
+    {
+        assertRecordComponents(TableColumnsResponse.class,
+                List.of("tableName", "columns"));
+    }
+
     // ---------- helpers ----------
 
     private static Method methodNamed(String name)

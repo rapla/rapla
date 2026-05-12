@@ -24,7 +24,7 @@ public class SecurityConfig
         http
                 .authorizeHttpRequests(auth -> {
                     auth.requestMatchers("/auth/**", "/", "/index", "/server", "/static/**", "/*.html", "/*.css",
-                            "/Rapla/**", "/images/**", "/webclient/**", "/jsclient/**",
+                            "/Rapla/**", "/images/**", "/webclient/**", "/jsclient/**", "/app/**",
                             "/logger/**", "/ical/timezones/**",
                             "/calendar", "/calendar.csv", "/internal_calendar", "/internal_calendar.csv",
                             "/ical", "/internal_ical",

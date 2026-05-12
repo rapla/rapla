@@ -27,6 +27,7 @@ import org.rapla.framework.RaplaLocale;
 import org.rapla.logger.Logger;
 import org.rapla.plugin.appointmentnote.AppointmentNotePlugin;
 import org.rapla.plugin.appointmentnote.AppointmentNoteFunctions;
+import org.rapla.rest.PluginsService;
 import org.rapla.scheduler.Promise;
 import org.rapla.scheduler.ResolvedPromise;
 import org.springframework.stereotype.Service;
@@ -44,9 +45,11 @@ public class AppointmentNoteEditFactory implements AppointmentEditExtensionFacto
     private final RaplaLocale raplaLocale;
     private final Logger logger;
     private final TextField.TextFieldFactory textFieldFactory;
+    private final PluginsService plugins;
+    private volatile Boolean cachedEnabled;
 
     @Autowired
-    public AppointmentNoteEditFactory(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, TextField.TextFieldFactory textFieldFactory)
+    public AppointmentNoteEditFactory(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, TextField.TextFieldFactory textFieldFactory, PluginsService plugins)
     {
         super();
         this.facade = facade;
@@ -54,6 +57,7 @@ public class AppointmentNoteEditFactory implements AppointmentEditExtensionFacto
         this.raplaLocale = raplaLocale;
         this.logger = logger;
         this.textFieldFactory = textFieldFactory;
+        this.plugins = plugins;
     }
 
     @Override
@@ -65,9 +69,12 @@ public class AppointmentNoteEditFactory implements AppointmentEditExtensionFacto
     }
 
     public boolean isEnabled() {
+        Boolean c = cachedEnabled;
+        if (c != null) return c;
         try {
-            return facade.getRaplaFacade().getSystemPreferences().getEntryAsBoolean(AppointmentNotePlugin.ENABLED, false);
-        } catch (RaplaException e) {
+            cachedEnabled = plugins.get("appointmentnote").enabled();
+            return cachedEnabled;
+        } catch (Exception e) {
             return false;
         }
     }

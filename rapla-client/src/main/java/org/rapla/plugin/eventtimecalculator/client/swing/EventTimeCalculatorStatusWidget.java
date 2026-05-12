@@ -120,21 +120,14 @@ public class EventTimeCalculatorStatusWidget extends RaplaGUIComponent implement
             {
                 Locale locale = i18n.getLocale();
                 Object value = event.format(locale,EventTimeCalculatorPlugin.EVENTIME_CONDITION_ANNOTATION_NAME);
-                if ( value != null && value.toString().length() != 0) {
-                    try {
-                        long diff = Long.parseLong(value.toString());
-                        final Color color;
-                        if (diff > 0) {
-                            color = Color.red;
-                        } else if (diff < 0) {
-                            color = Color.red;
-                        } else {
-                            color = Color.green.darker().darker();
-                        }
-                        totalDurationLabel.setForeground(color);
-                    } catch (NumberFormatException ex) {
-                        getLogger().warn(ex.getMessage());
-                    }
+                org.rapla.plugin.eventtimecalculator.EventTimeStatus status =
+                        org.rapla.plugin.eventtimecalculator.EventTimeStatus.classify(
+                                value == null ? null : value.toString());
+                switch (status)
+                {
+                    case WITHIN_TARGET -> totalDurationLabel.setForeground(Color.green.darker().darker());
+                    case OFF_TARGET    -> totalDurationLabel.setForeground(Color.red);
+                    case UNKNOWN       -> { /* leave label colour alone */ }
                 }
             }
             totalDurationLabel.setText(eventTimei18n.getString("total_duration") + ": " + format);

@@ -158,11 +158,7 @@ public class ConflictPeriodReservationButton extends RaplaGUIComponent implement
             getLogger().error( e.getMessage(),e);
             return;
         }
-        int count = 0;
-        for (Set<Period> periods : periodConflicts.values())
-        {
-            count += periods.size();
-        }
+        int count = org.rapla.client.edit.check.HolidayWarningModel.countAllPeriodConflicts(periodConflicts);
         button.setText(i18n.getString("holidays") + " (" + count + ")");
     }
 }

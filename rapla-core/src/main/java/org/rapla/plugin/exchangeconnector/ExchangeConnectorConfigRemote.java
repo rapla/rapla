@@ -16,4 +16,6 @@ public interface ExchangeConnectorConfigRemote
     @GetExchange("/timezones")
     List<String> getTimezones() throws RaplaException;
 
+    @GetExchange("/user")
+    ExchangeUserSettings getUserSettings() throws RaplaException;
 }

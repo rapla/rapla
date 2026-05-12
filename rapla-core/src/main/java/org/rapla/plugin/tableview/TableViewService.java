@@ -67,4 +67,24 @@ public interface TableViewService
                            @RequestParam(value = "cursor", required = false) String cursor,
                            @RequestParam(value = "pageSize", required = false) Integer pageSize)
             throws RaplaException;
+
+    /**
+     * The user's visible column set for {@code tableName} ({@code "events"}
+     * or {@code "appointments"}). Server reads from per-user preferences —
+     * same store Swing's {@code TableviewOption} writes to, so settings
+     * survive device switches and stay consistent between the Swing and
+     * Angular clients. Ordered: the response's {@code columns} list defines
+     * display order.
+     */
+    @GetExchange("/config")
+    TableColumnsResponse config(@RequestParam("tableName") String tableName) throws RaplaException;
+
+    /**
+     * The universe of available columns for {@code tableName} — every column
+     * the system knows about, including plugin contributions, regardless of
+     * whether the current user has it in their visible set. Lets the Angular
+     * UI offer "add this column" without re-fetching the universe per request.
+     */
+    @GetExchange("/columns/catalog")
+    TableColumnsResponse columnsCatalog(@RequestParam("tableName") String tableName) throws RaplaException;
 }

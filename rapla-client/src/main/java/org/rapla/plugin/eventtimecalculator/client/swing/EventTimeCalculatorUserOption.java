@@ -12,6 +12,7 @@ import org.rapla.framework.RaplaInitializationException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.TypedComponentRole;
 import org.rapla.logger.Logger;
+import org.rapla.plugin.eventtimecalculator.EventTimeCalculatorConfigService;
 import org.rapla.plugin.eventtimecalculator.EventTimeCalculatorPlugin;
 import org.rapla.plugin.eventtimecalculator.EventTimeCalculatorResources;
 import org.springframework.context.annotation.Scope;
@@ -40,18 +41,34 @@ public class EventTimeCalculatorUserOption extends RaplaGUIComponent implements 
 	JPanel panel;
 
     EventTimeCalculatorResources eventTimei18n;
+    private final EventTimeCalculatorConfigService configService;
+
     @Autowired
-	public EventTimeCalculatorUserOption(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, EventTimeCalculatorResources eventTimei18n) throws
-            RaplaInitializationException
+	public EventTimeCalculatorUserOption(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, EventTimeCalculatorResources eventTimei18n,
+                                         EventTimeCalculatorConfigService configService) throws RaplaInitializationException
     {
         super(facade, i18n, raplaLocale, logger);
+        this.configService = configService;
+        // System default fetched via dedicated REST endpoint (was: bulk preference
+        // bootstrap via getSystemPreferences().getEntry(SYSTEM_CONFIG)).
         try
         {
-            this.config = facade.getRaplaFacade().getSystemPreferences().getEntry(EventTimeCalculatorPlugin.SYSTEM_CONFIG, new RaplaConfiguration());
+            Configuration restConfig = configService.getSystemConfig();
+            this.config = restConfig != null ? restConfig : new RaplaConfiguration();
         }
-        catch (RaplaException e)
+        catch (Exception e)
         {
-            throw new RaplaInitializationException(e);
+            // Fall back to the local cache if the REST call fails — lets the
+            // dialog still open with sensible defaults.
+            logger.warn("GET /eventtimecalculator/system-config failed, falling back to local cache: " + e.getMessage());
+            try
+            {
+                this.config = facade.getRaplaFacade().getSystemPreferences().getEntry(EventTimeCalculatorPlugin.SYSTEM_CONFIG, new RaplaConfiguration());
+            }
+            catch (RaplaException re)
+            {
+                throw new RaplaInitializationException(re);
+            }
         }
         this.eventTimei18n = eventTimei18n;
         optionPanel = new EventTimeCalculatorOption(facade, i18n, raplaLocale, logger, false, eventTimei18n);
@@ -70,12 +87,22 @@ public class EventTimeCalculatorUserOption extends RaplaGUIComponent implements 
     }
 
     public void show() throws RaplaException {
-    	Configuration config = preferences.getEntry(getConfigEntry());
-    	if  ( config == null)
-    	{
-    		config = this.config;
-    	}
-        optionPanel.readConfig( config);
+        // Read the per-user override via /eventtimecalculator/user-config
+        // instead of the bulk /storage/resources preference cache. Save path
+        // is unchanged: commit() writes to the editable prefs clone and the
+        // dialog framework saves via facade.store -> /storage/dispatch.
+        Configuration userConfig;
+        try
+        {
+            userConfig = configService.getUserConfig();
+        }
+        catch (Exception e)
+        {
+            getLogger().warn("GET /eventtimecalculator/user-config failed, falling back to local cache: " + e.getMessage());
+            userConfig = preferences.getEntry(getConfigEntry());
+        }
+        Configuration effective = userConfig != null ? userConfig : this.config;
+        optionPanel.readConfig(effective);
     }
 
     protected TypedComponentRole<RaplaConfiguration> getConfigEntry()

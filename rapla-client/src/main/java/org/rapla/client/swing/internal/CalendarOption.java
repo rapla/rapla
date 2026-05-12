@@ -306,15 +306,12 @@ public class CalendarOption extends RaplaGUIComponent implements UserOptionPanel
 	}
 
 	public void dateChanged(DateChangeEvent evt) {
-        // PRE-EXISTING BUG: both startTime and endTime read worktimeEnd here;
-        // startTime should be worktimeStart. Preserved during PRD 014 migration
-        // to avoid behaviour change in this commit; flag for a separate fix.
-        java.time.LocalDateTime startTime = worktimeEnd.getTime();
-        int worktimeS = startTime.getHour() * 60 + startTime.getMinute();
-        java.time.LocalDateTime endTime = worktimeEnd.getTime();
-        int worktimeE = endTime.getHour() * 60 + endTime.getMinute();
-        worktimeE = (worktimeE == 0)?24*60:worktimeE;
-        boolean overnight = worktimeS >= worktimeE|| worktimeE == 24*60;
+        // PRD 023 carve-out: overnight detection lives in WorktimeRange
+        // (rapla-core, tier-1 tested). This call site also fixes the
+        // pre-existing PRD-014-flagged bug — startTime now correctly
+        // reads from worktimeStart instead of worktimeEnd.
+        boolean overnight = org.rapla.facade.WorktimeRange.isOvernight(
+                worktimeStart.getTime(), worktimeEnd.getTime());
 		worktimeEndError.setVisible( overnight);
 	}
 

@@ -186,4 +186,89 @@ class TableViewControllerIntegrationTest
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.rows").isArray());
     }
+
+    // ---------- /config + /columns/catalog (Phase 3) ----------
+
+    @Test
+    void configRequiresAuthentication() throws Exception
+    {
+        mockMvc.perform(get("/table/config").param("tableName", "events"))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    void columnsCatalogRequiresAuthentication() throws Exception
+    {
+        mockMvc.perform(get("/table/columns/catalog").param("tableName", "events"))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    void configForEventsViewReturnsColumns() throws Exception
+    {
+        mockMvc.perform(get("/table/config")
+                        .param("tableName", "events")
+                        .header("Authorization", "Bearer " + adminToken()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.tableName").value("events"))
+                .andExpect(jsonPath("$.columns").isArray())
+                .andExpect(jsonPath("$.columns.length()").value(org.hamcrest.Matchers.greaterThan(0)))
+                // Built-in column ids that the default events view ships with:
+                .andExpect(jsonPath("$.columns[?(@.id == 'name')]").exists())
+                .andExpect(jsonPath("$.columns[?(@.id == 'start')]").exists());
+    }
+
+    @Test
+    void configForAppointmentsViewReturnsColumns() throws Exception
+    {
+        mockMvc.perform(get("/table/config")
+                        .param("tableName", "appointments")
+                        .header("Authorization", "Bearer " + adminToken()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.tableName").value("appointments"))
+                .andExpect(jsonPath("$.columns").isArray())
+                .andExpect(jsonPath("$.columns.length()").value(org.hamcrest.Matchers.greaterThan(0)));
+    }
+
+    @Test
+    void columnsCatalogReturnsUniverse() throws Exception
+    {
+        mockMvc.perform(get("/table/columns/catalog")
+                        .param("tableName", "events")
+                        .header("Authorization", "Bearer " + adminToken()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.tableName").value("events"))
+                .andExpect(jsonPath("$.columns").isArray())
+                // Catalog must contain at least the default columns plus any
+                // plugin contributions visible system-wide.
+                .andExpect(jsonPath("$.columns.length()").value(org.hamcrest.Matchers.greaterThan(0)));
+    }
+
+    @Test
+    void unknownTableNameReturnsEmptyConfigNotError() throws Exception
+    {
+        // AGENTS.md §12: don't differentiate "unknown view" from "known view
+        // with empty config" via status code. Both return 200 + empty columns.
+        mockMvc.perform(get("/table/config")
+                        .param("tableName", "nonexistent_view")
+                        .header("Authorization", "Bearer " + adminToken()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.tableName").value("nonexistent_view"))
+                .andExpect(jsonPath("$.columns").isArray())
+                .andExpect(jsonPath("$.columns.length()").value(0));
+    }
+
+    @Test
+    void columnsCatalogColumnsCarryTypeDescriptor() throws Exception
+    {
+        // Each column descriptor must carry id + label + type so Angular
+        // knows how to render the cell.
+        mockMvc.perform(get("/table/columns/catalog")
+                        .param("tableName", "events")
+                        .header("Authorization", "Bearer " + adminToken()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.columns[0].id").exists())
+                .andExpect(jsonPath("$.columns[0].label").exists())
+                .andExpect(jsonPath("$.columns[0].type").exists());
+    }
 }

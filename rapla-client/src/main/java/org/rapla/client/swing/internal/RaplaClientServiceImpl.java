@@ -106,12 +106,15 @@ public class RaplaClientServiceImpl implements ClientService, UpdateErrorListene
     final private Supplier<Application> applicationProvider;
     RemoteAuthentificationService authentificationService;
     RemoteConnectionInfo connectionInfo;
+    final org.rapla.storage.dbrm.TokenStore tokenStore;
 
     @Autowired
     public RaplaClientServiceImpl(StartupEnvironment env, Logger logger, DialogUiFactoryInterface dialogUiFactory, ClientFacade facade, RaplaResources i18n, RaplaSystemInfo systemInfo,
                                   RaplaLocale raplaLocale, BundleManager bundleManager, CommandScheduler commandScheduler, final RemoteOperator storageOperator,
-                                  Supplier<Application> applicationProvider, RemoteConnectionInfo connectionInfo, RemoteAuthentificationService authentificationService)
+                                  Supplier<Application> applicationProvider, RemoteConnectionInfo connectionInfo, RemoteAuthentificationService authentificationService,
+                                  org.rapla.storage.dbrm.TokenStore tokenStore)
     {
+        this.tokenStore = tokenStore == null ? org.rapla.storage.dbrm.TokenStores.noOp() : tokenStore;
         this.env = env;
         this.authentificationService = authentificationService;
         this.i18n = i18n;
@@ -455,7 +458,137 @@ public class RaplaClientServiceImpl implements ClientService, UpdateErrorListene
 
     private void startLogin() throws Exception
     {
-        SwingUtilities.invokeLater(()->startLoginInThread());
+        // Try to skip the login dialog entirely by refreshing a cached refresh token.
+        // PRD 029 Phase 2: zero-browser-on-launch property. Best-effort — any failure
+        // (no cached token, token expired, server unreachable, store unreadable) just
+        // falls through to the normal login dialog. Runs on a worker thread so the
+        // EDT isn't blocked by the HTTP call.
+        getLogger().info("startup: checking for cached refresh token to skip the login dialog…");
+        commandScheduler.supply(this::tryRestoreFromCachedRefreshToken)
+                .thenAccept(restored -> {
+                    if (restored)
+                    {
+                        getLogger().info("startup: silent reauth succeeded — main view loading, no dialog");
+                        SwingUtilities.invokeLater(this::beginRaplaSessionAfterRestore);
+                    }
+                    else
+                    {
+                        getLogger().info("startup: falling back to login dialog (Swing dialog is the emergency fallback path)");
+                        SwingUtilities.invokeLater(this::startLoginInThread);
+                    }
+                })
+                .exceptionally(ex -> {
+                    getLogger().info("startup: restore failed (" + ex.getMessage() + ") — falling back to login dialog");
+                    SwingUtilities.invokeLater(this::startLoginInThread);
+                });
+    }
+
+    /**
+     * Reads the cached refresh token (if any), calls the refresh endpoint to mint
+     * a fresh access token, and stashes both on the connectionInfo. Returns true
+     * if the user is now logged in; false to fall through to the login dialog.
+     * Never throws — any failure falls through.
+     */
+    private boolean tryRestoreFromCachedRefreshToken()
+    {
+        java.util.Optional<String> cached;
+        try
+        {
+            cached = tokenStore.read();
+        }
+        catch (Throwable t)
+        {
+            getLogger().info("startup: token-store read failed: " + t + " — falling back to login dialog");
+            return false;
+        }
+        if (cached.isEmpty())
+        {
+            getLogger().info("startup: no cached refresh token (first launch or after logout) — login dialog expected");
+            return false;
+        }
+        String cachedRefresh = cached.get();
+        getLogger().info("startup: cached refresh token found — attempting silent reauth");
+        try
+        {
+            // The discovery refresh URL isn't known until we hit /auth/oauth/config —
+            // for the cached-token path we use the rapla default <server>/auth/refresh.
+            // If discovery later changes the refresh URL (Keycloak), the cached token
+            // from the embedded auth server won't validate there anyway — fall through.
+            String serverUrl = connectionInfo.getServerURL();
+            if (serverUrl == null || serverUrl.isEmpty())
+            {
+                getLogger().info("startup: server URL not yet set — falling back to login dialog");
+                return false;
+            }
+            String refreshEndpoint = serverUrl + "/auth/refresh";
+            String body = "{\"refreshToken\":\"" + cachedRefresh + "\"}";
+            java.net.http.HttpClient http = java.net.http.HttpClient.newBuilder()
+                    .connectTimeout(java.time.Duration.ofSeconds(10)).build();
+            java.net.http.HttpRequest req = java.net.http.HttpRequest.newBuilder(java.net.URI.create(refreshEndpoint))
+                    .timeout(java.time.Duration.ofSeconds(10))
+                    .header("Content-Type", "application/json")
+                    .header("Accept", "application/json")
+                    .POST(java.net.http.HttpRequest.BodyPublishers.ofString(body, java.nio.charset.StandardCharsets.UTF_8))
+                    .build();
+            java.net.http.HttpResponse<String> resp = http.send(req,
+                    java.net.http.HttpResponse.BodyHandlers.ofString(java.nio.charset.StandardCharsets.UTF_8));
+            if (resp.statusCode() / 100 != 2)
+            {
+                getLogger().info("startup: cached refresh token rejected by server (HTTP " + resp.statusCode()
+                        + ") — clearing cache and falling back to login dialog");
+                tokenStore.tryClear();
+                return false;
+            }
+            String respBody = resp.body();
+            String newAccess = extractJson(respBody, "accessToken");
+            String newRefresh = extractJson(respBody, "refreshToken");
+            if (newAccess == null)
+            {
+                getLogger().info("startup: refresh response missing accessToken — falling back to login dialog. body=" + respBody);
+                return false;
+            }
+            ConnectInfo info = ConnectInfo.withAccessToken(newAccess, newRefresh);
+            reconnectInfo = info;
+            connectionInfo.setAccessToken(newAccess);
+            if (newRefresh != null)
+            {
+                connectionInfo.setRefreshToken(newRefresh);
+                tokenStore.tryWrite(newRefresh);
+            }
+            connectionInfo.setReconnectInfo(info);
+            getLogger().info("startup: silent reauth via cached refresh token succeeded — skipping login dialog");
+            return true;
+        }
+        catch (Throwable t)
+        {
+            getLogger().info("startup: refresh HTTP call failed: " + t + " — falling back to login dialog");
+            return false;
+        }
+    }
+
+    private static String extractJson(String body, String field)
+    {
+        if (body == null) return null;
+        String marker = "\"" + field + "\"";
+        int i = body.indexOf(marker);
+        if (i < 0) return null;
+        int colon = body.indexOf(':', i + marker.length());
+        if (colon < 0) return null;
+        int firstQuote = body.indexOf('"', colon + 1);
+        if (firstQuote < 0) return null;
+        int closingQuote = body.indexOf('"', firstQuote + 1);
+        if (closingQuote < 0) return null;
+        return body.substring(firstQuote + 1, closingQuote);
+    }
+
+    private void beginRaplaSessionAfterRestore()
+    {
+        beginRaplaSession().exceptionally(ex -> {
+            getLogger().error("post-restore session start failed; falling back to login dialog", ex);
+            // Drop the cached token if the session can't start with it for any reason
+            tokenStore.tryClear();
+            SwingUtilities.invokeLater(this::startLoginInThread);
+        });
     }
 
     private void startLoginInThread()
@@ -574,9 +707,33 @@ public class RaplaClientServiceImpl implements ClientService, UpdateErrorListene
             dlg.setLoginAction(loginAction);
             dlg.setExitAction(exitAction);
             dlg.setOauthAction(oauthAction);
-            //dlg.setSize( 480, 270);
             centerWindowOnScreen(dlg);
-            dlg.setVisible(true);
+
+            // PRD 029 Phase 2: OAuth is the primary login path. If discovery
+            // says OAuth is enabled, show the dialog in "browser login in
+            // progress" mode (status message, no credential fields, Exit
+            // still enabled to abort) and auto-launch the browser flow.
+            // If OAuth is disabled OR the probe fails, show the dialog in
+            // its normal full state as a fallback.
+            commandScheduler.supply(this::fetchOauthConfig).thenAccept(cfg -> SwingUtilities.invokeLater(() -> {
+                if (cfg != null && cfg.isEnabled())
+                {
+                    getLogger().info("startup: discovery confirms OAuth enabled — auto-launching browser flow (Swing dialog stays in waiting mode)");
+                    dlg.setBrowserLoginInProgress(i18n.getString("login.oauth.waiting"));
+                    dlg.setVisible(true);
+                    oauthAction.actionPerformed(null);
+                }
+                else
+                {
+                    getLogger().info("startup: OAuth not enabled — showing Swing login dialog as fallback");
+                    dlg.setVisible(true);
+                }
+            })).exceptionally(ex -> SwingUtilities.invokeLater(() -> {
+                Throwable root = ex;
+                while (root.getCause() != null && root.getCause() != root) root = root.getCause();
+                getLogger().info("startup: discovery failed (" + root.getClass().getSimpleName() + ": " + root.getMessage() + ") — showing Swing login dialog as fallback");
+                dlg.setVisible(true);
+            }));
 
             loginMutex.acquire();
         }
@@ -601,6 +758,14 @@ public class RaplaClientServiceImpl implements ClientService, UpdateErrorListene
             {
                 throw new IllegalStateException("OAuth login not enabled on the server");
             }
+            if (cfg.getRefreshUrl() != null)
+            {
+                connectionInfo.setRefreshUrl(cfg.getRefreshUrl());
+            }
+            if (cfg.getLogoutUrl() != null)
+            {
+                connectionInfo.setLogoutUrl(cfg.getLogoutUrl());
+            }
             SwingOAuthLoginFlow flow = new SwingOAuthLoginFlow(cfg, getLogger());
             SwingOAuthLoginFlow.Session session = flow.start();
             if (cfg.isShowPasteFallback())
@@ -613,12 +778,16 @@ public class RaplaClientServiceImpl implements ClientService, UpdateErrorListene
                     Throwable root = unwrap(ex);
                     if (root instanceof java.util.concurrent.CancellationException)
                     {
-                        getLogger().info("OAuth login cancelled by user");
+                        getLogger().info("OAuth login cancelled — restoring Swing login dialog to full state");
                         dlg.idle();
+                        dlg.clearBrowserLoginInProgress();
+                        if (!dlg.isVisible()) dlg.setVisible(true);
                         return;
                     }
-                    getLogger().error("OAuth login failed", ex);
+                    getLogger().error("OAuth login failed — restoring Swing login dialog to full state", ex);
                     dlg.idle();
+                    dlg.clearBrowserLoginInProgress();
+                    if (!dlg.isVisible()) dlg.setVisible(true);
                     dialogUiFactory.showException(ex, new SwingPopupContext(dlg, null));
                 }));
     }
@@ -722,11 +891,17 @@ public class RaplaClientServiceImpl implements ClientService, UpdateErrorListene
         {
             tree.get("scopes").forEach(n -> scopes.add(n.asString()));
         }
+        String refreshUrl = tree.has("refreshUrl") && !tree.get("refreshUrl").isNull()
+                ? tree.get("refreshUrl").asString() : null;
+        String logoutUrl = tree.has("logoutUrl") && !tree.get("logoutUrl").isNull()
+                ? tree.get("logoutUrl").asString() : null;
         return new OAuthConfig(
                 true,
                 tree.path("clientId").asString(),
                 tree.path("authorizeUrl").asString(),
                 tree.path("tokenUrl").asString(),
+                refreshUrl,
+                logoutUrl,
                 scopes,
                 tree.path("showPasteFallback").asBoolean(false));
     }
@@ -801,15 +976,81 @@ public class RaplaClientServiceImpl implements ClientService, UpdateErrorListene
 
     public void restart()
     {
-        if (reconnectInfo != null)
-        {
-            stop(reconnectInfo);
-        }
+        // The "Logout / Restart" menu action wires here. Users who click it
+        // expect both: their session is revoked AND the client returns to a
+        // login screen. The original implementation just stop()ed with the
+        // existing reconnectInfo, which left the JVM with no UI and no
+        // server-side session cleanup. Delegate to logout() so all the
+        // session/token/browser-cookie cleanup fires uniformly.
+        logout();
     }
 
     public void logout()
     {
+        // Best-effort: tell the server to invalidate this user's session before
+        // we drop the local tokens. If the server is unreachable the local
+        // logout still proceeds — never block the user-visible logout on a
+        // network call.
+        String accessToken = connectionInfo.getAccessToken();
+        String serverUrl = connectionInfo.getServerURL();
+        if (accessToken != null && serverUrl != null && !serverUrl.isEmpty())
+        {
+            try
+            {
+                HttpClient http = HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(3)).build();
+                HttpRequest req = HttpRequest.newBuilder(URI.create(serverUrl + "/auth/logout"))
+                        .timeout(Duration.ofSeconds(3))
+                        .header("Authorization", "Bearer " + accessToken)
+                        .POST(HttpRequest.BodyPublishers.noBody())
+                        .build();
+                HttpResponse<Void> resp = http.send(req, HttpResponse.BodyHandlers.discarding());
+                if (resp.statusCode() / 100 == 2)
+                {
+                    getLogger().info("logout: server-side session revoked");
+                }
+                else
+                {
+                    getLogger().info("logout: server returned HTTP " + resp.statusCode() + "; local logout proceeds");
+                }
+            }
+            catch (Throwable t)
+            {
+                getLogger().info("logout: server-side revocation failed (" + t.getMessage() + "); local logout proceeds");
+            }
+        }
+        // Also clear the browser's session cookie at the auth server (Spring's
+        // /logout or Keycloak's end-session). Without this, next launch's OAuth
+        // flow uses the surviving session cookie to silently re-authenticate
+        // and the user never sees the login page — defeating an explicit logout.
+        String logoutUrl = connectionInfo.getLogoutUrl();
+        if (logoutUrl != null && !logoutUrl.isEmpty())
+        {
+            try
+            {
+                org.rapla.client.internal.BrowserLauncher.open(URI.create(logoutUrl), getLogger());
+                getLogger().info("logout: opened browser to clear IdP session cookie at " + logoutUrl);
+            }
+            catch (Throwable t)
+            {
+                getLogger().info("logout: couldn't open browser for IdP logout (" + t.getMessage() + "); local logout proceeds anyway");
+            }
+        }
+        tokenStore.tryClear();
         stop(new ConnectInfo(null, "".toCharArray()));
+        // After logout, re-enter the login flow in the same JVM so the user
+        // sees the login dialog / browser flow without needing to relaunch.
+        // start() guards on `started == false` (which stop() just set), so this
+        // is safe.
+        SwingUtilities.invokeLater(() -> {
+            try
+            {
+                this.start(null);
+            }
+            catch (Exception ex)
+            {
+                getLogger().error("Failed to restart login flow after logout", ex);
+            }
+        });
     }
 
     private Promise<Boolean> login(ConnectInfo connectInfo)
@@ -821,6 +1062,15 @@ public class RaplaClientServiceImpl implements ClientService, UpdateErrorListene
                 this.connectionInfo.setRefreshToken(connectInfo.getRefreshToken());
                 this.connectionInfo.setReconnectInfo(connectInfo);
                 this.reconnectInfo = connectInfo;
+                if (connectInfo.getRefreshToken() != null)
+                {
+                    tokenStore.tryWrite(connectInfo.getRefreshToken());
+                    getLogger().info("login: refresh token persisted for next launch (skip login dialog)");
+                }
+                else
+                {
+                    getLogger().warn("login: no refresh token received — next launch will require login again");
+                }
                 return true;
             });
         }
@@ -841,6 +1091,15 @@ public class RaplaClientServiceImpl implements ClientService, UpdateErrorListene
                 this.connectionInfo.setRefreshToken(loginToken.getRefreshToken());
                 this.connectionInfo.setReconnectInfo( connectInfo);
                 this.reconnectInfo = connectInfo;
+                if (loginToken.getRefreshToken() != null)
+                {
+                    tokenStore.tryWrite(loginToken.getRefreshToken());
+                    getLogger().info("login: refresh token persisted for next launch (skip login dialog)");
+                }
+                else
+                {
+                    getLogger().warn("login: no refresh token from /auth/login — next launch will require login again");
+                }
             } else {
                 throw new RaplaSecurityException("Invalid Access token");
             }

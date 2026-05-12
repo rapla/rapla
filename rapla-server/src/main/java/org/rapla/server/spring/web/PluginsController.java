@@ -8,6 +8,7 @@ import org.rapla.entities.configuration.RaplaConfiguration;
 import org.rapla.facade.RaplaFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.TypedComponentRole;
+import org.rapla.rest.dto.PluginInfo;
 import org.rapla.server.RemoteSession;
 import org.rapla.storage.RaplaSecurityException;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
@@ -40,13 +41,6 @@ import java.util.stream.Collectors;
 @RequestMapping("/plugins")
 public class PluginsController
 {
-    public record PluginInfo(
-            String id,
-            String displayName,
-            boolean enabled,
-            boolean adminOnlyConfig
-    ) {}
-
     public record EnabledRequest(boolean enabled) {}
 
     private final RaplaFacade facade;

@@ -57,9 +57,11 @@ import java.time.LocalDateTime;
     private final RaplaResources i18n;
     RaplaFacade raplaFacade;
     private final ClientFacade clientFacade;
+    private final org.rapla.rest.PluginsService plugins;
+    private volatile Boolean cachedEnabled;
 
     @Autowired public DefaultWizard(ClientFacade clientFacade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, CalendarModel model,
-                                  ApplicationEventBus eventBus, MenuItemFactory menuFactory)
+                                  ApplicationEventBus eventBus, MenuItemFactory menuFactory, org.rapla.rest.PluginsService plugins)
     {
         this.clientFacade = clientFacade;
         this.i18n = i18n;
@@ -69,6 +71,7 @@ import java.time.LocalDateTime;
         this.permissionController = raplaFacade.getPermissionController();
         this.model = model;
         this.eventBus = eventBus;
+        this.plugins = plugins;
     }
 
     public void setEnabled( boolean b) {
@@ -76,13 +79,16 @@ import java.time.LocalDateTime;
 
     @Override public boolean isEnabled()
     {
+        Boolean c = cachedEnabled;
+        if (c != null) return c;
         try
         {
-            return raplaFacade.getSystemPreferences().getEntryAsBoolean(ENABLED, true);
+            cachedEnabled = plugins.get("defaultwizard").enabled();
+            return cachedEnabled;
         }
-        catch (RaplaException e)
+        catch (Exception e)
         {
-            return false;
+            return true;
         }
     }
 

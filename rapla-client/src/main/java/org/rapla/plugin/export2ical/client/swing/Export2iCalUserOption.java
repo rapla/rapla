@@ -13,6 +13,7 @@ import org.rapla.logger.Logger;
 import org.rapla.plugin.export2ical.Export2iCalPlugin;
 import org.rapla.plugin.export2ical.Export2iCalResources;
 import org.rapla.plugin.export2ical.ICalConfigService;
+import org.rapla.plugin.export2ical.UserICalSettings;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Service;
 
@@ -172,22 +173,43 @@ public class Export2iCalUserOption extends RaplaGUIComponent implements UserOpti
 	}
 
 	public void show() throws RaplaException {
+	    // System defaults (any-user) + per-user overrides — both via REST
+	    // instead of the bulk /storage/resources preference cache.
+	    getLogger().info("Export2iCalUserOption.show(): fetching /ical/config/{default,user} via REST");
 	    Configuration config = configService.getUserDefaultConfig();
-	    
+
 		global_days_before = config.getChild(Export2iCalPlugin.DAYS_BEFORE).getValueAsInteger(Export2iCalPlugin.DEFAULT_daysBefore);
 		global_days_after = config.getChild(Export2iCalPlugin.DAYS_AFTER).getValueAsInteger(Export2iCalPlugin.DEFAULT_daysAfter);
-		
-		userdefined = (preferences.hasEntry(Export2iCalPlugin.PREF_BEFORE_DAYS) || preferences.hasEntry(Export2iCalPlugin.PREF_AFTER_DAYS));
-		
-		user_days_before = preferences.getEntryAsInteger(Export2iCalPlugin.PREF_BEFORE_DAYS, global_days_before);
-		user_days_after = preferences.getEntryAsInteger(Export2iCalPlugin.PREF_AFTER_DAYS, global_days_after);
-		
 		global_interval = config.getChild(Export2iCalPlugin.GLOBAL_INTERVAL).getValueAsBoolean(Export2iCalPlugin.DEFAULT_globalIntervall);
         boolean global_export_attendees = config.getChild(Export2iCalPlugin.EXPORT_ATTENDEES).getValueAsBoolean(Export2iCalPlugin.DEFAULT_exportAttendees);
         String global_export_attendees_participants_status = config.getChild(Export2iCalPlugin.EXPORT_ATTENDEES_PARTICIPATION_STATUS).getValue(Export2iCalPlugin.DEFAULT_attendee_participation_status);
 
-        user_export_attendees = preferences.getEntryAsBoolean(Export2iCalPlugin.EXPORT_ATTENDEES_PREFERENCE, global_export_attendees);
-        user_export_attendees_participants_status = preferences.getEntryAsString(Export2iCalPlugin.EXPORT_ATTENDEES_PARTICIPATION_STATUS_PREFERENCE, global_export_attendees_participants_status);
+        UserICalSettings userSettings;
+        try
+        {
+            userSettings = configService.getUserSettings();
+        }
+        catch (Exception e)
+        {
+            getLogger().warn("GET /ical/config/user failed, falling back to local cache: " + e.getMessage());
+            userSettings = new UserICalSettings(
+                    preferences.hasEntry(Export2iCalPlugin.PREF_BEFORE_DAYS)
+                            ? preferences.getEntryAsInteger(Export2iCalPlugin.PREF_BEFORE_DAYS, 0) : null,
+                    preferences.hasEntry(Export2iCalPlugin.PREF_AFTER_DAYS)
+                            ? preferences.getEntryAsInteger(Export2iCalPlugin.PREF_AFTER_DAYS, 0) : null,
+                    preferences.hasEntry(Export2iCalPlugin.EXPORT_ATTENDEES_PREFERENCE)
+                            ? preferences.getEntryAsBoolean(Export2iCalPlugin.EXPORT_ATTENDEES_PREFERENCE, false) : null,
+                    preferences.hasEntry(Export2iCalPlugin.EXPORT_ATTENDEES_PARTICIPATION_STATUS_PREFERENCE)
+                            ? preferences.getEntryAsString(Export2iCalPlugin.EXPORT_ATTENDEES_PARTICIPATION_STATUS_PREFERENCE, null) : null
+            );
+        }
+
+        userdefined = (userSettings.daysBefore() != null || userSettings.daysAfter() != null);
+        user_days_before = userSettings.daysBefore() != null ? userSettings.daysBefore() : global_days_before;
+        user_days_after = userSettings.daysAfter() != null ? userSettings.daysAfter() : global_days_after;
+        user_export_attendees = userSettings.exportAttendees() != null ? userSettings.exportAttendees() : global_export_attendees;
+        user_export_attendees_participants_status = userSettings.participationStatus() != null
+                ? userSettings.participationStatus() : global_export_attendees_participants_status;
 
         createList();
 	}

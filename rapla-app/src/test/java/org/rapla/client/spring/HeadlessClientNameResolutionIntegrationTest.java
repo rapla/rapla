@@ -283,12 +283,10 @@ class HeadlessClientNameResolutionIntegrationTest
                 java.util.Map<String, java.util.function.Supplier<org.rapla.client.extensionpoints.PluginOptionPanel>> map =
                         (java.util.Map<String, java.util.function.Supplier<org.rapla.client.extensionpoints.PluginOptionPanel>>) f.get(ui);
                 assertNotNull(map, "pluginOptionPanel map must inject");
-                assertTrue(map.size() >= 5,
-                        "pluginOptionPanel must contain one entry per @Service-registered PluginOptionPanel "
-                        + "(saw " + map.size() + " — keys: " + map.keySet() + ")");
-                java.util.function.Supplier<org.rapla.client.extensionpoints.PluginOptionPanel> any =
-                        map.values().iterator().next();
-                assertNotNull(any.get(),
+                assertTrue(map.containsKey("org.rapla.plugin.tableview"),
+                        "pluginOptionPanel must contain the @Service(\"org.rapla.plugin.tableview\") "
+                        + "TableviewOption — saw keys: " + map.keySet());
+                assertNotNull(map.get("org.rapla.plugin.tableview").get(),
                         "pluginOptionPanel supplier .get() must resolve a real PluginOptionPanel "
                         + "(NoUniqueBeanDefinitionException here means the supplier was the auto-wrapper "
                         + "fallback, not a per-name @Bean factory)");

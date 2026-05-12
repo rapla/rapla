@@ -1,6 +1,13 @@
 # PRD 024 — Server-side edit services (Angular precursor)
 
-**Status:** in-progress — Phase 3 contract layer landed 2026-05-11 (8 tier-1 tests); server-side assembler/controller deferred. Phases 1+2 still draft. Scope adjusted 2026-05-11: allocatable search + format service dropped; calendar layout added — see Considered & Rejected.
+**Status:** in-progress —
+- **Phase 1 (`validateRecurrence`)** DONE: `ReservationEditService` + `ReservationEditController` + `RecurrenceRule` / `RecurrenceValidation` DTOs. Wraps `RepeatingRuleValidator` (rapla-core, PRD 023 Phase 2).
+- **Phase 2 (`checkConflicts`)** DONE: `ConflictCheckRequest` / `ConflictReport` / `AllocationOutcomeDto` / `AppointmentSpec` DTOs. Wraps `AllocationConflictModel.compute(...)` and pulls the allocatable bindings via the existing `facade.getAllocatableBindings(...)` path — no separate `AllocationBindingsLoader` was needed; the facade already does the equivalent server-side. AGENTS.md §12 leak-probe (unknown / unreadable ids silently dropped) covered.
+- **Phase 3 (`/calendar/view`)** DONE: engine + controller + 16 tier-1 + 7 MockMvc tests (landed 2026-05-11; colours added 2026-05-12 via PRD 030 Phase 4 `BlockColors`).
+- **Bonus** beyond original PRD: `expand-blocks` endpoint (`AppointmentSpec` → `AppointmentBlockDto[]`) — server-side implementation of `Appointment.createBlocks(...)` for the Angular form to enumerate concrete occurrences without porting the weekday-flip / exception-skip logic. PRD 026 §B4 hook.
+- **Test totals**: 12 contract tests (`ReservationEditServiceContractTest`) + 15 MockMvc tests (`ReservationEditControllerIntegrationTest`), all green 2026-05-12.
+
+Scope adjusted 2026-05-11: allocatable search + format service dropped; calendar layout added — see Considered & Rejected.
 **Author:** Christopher Kohlhaas (with AI assistance)
 **Created:** 2026-05-11
 

@@ -15,10 +15,12 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 
 /**
@@ -69,12 +71,32 @@ public final class CalendarLayoutEngine
                                       Collection<Reservation> reservations,
                                       List<Allocatable> resourceFilter)
     {
+        return layout(from, to, strategy, groupBy, reservations, resourceFilter,
+                null, BlockDecorator.NOOP);
+    }
+
+    /**
+     * Decorated variant (PRD 030 Phase 4). Same contract as the six-arg
+     * overload plus a {@link Locale} used for {@code Reservation.getName(locale)}
+     * and a {@link BlockDecorator} consulted per block for
+     * {@link RenderedBlock#colorsHex()} / {@link RenderedBlock#tooltip()}.
+     */
+    public static CalendarPage layout(LocalDate from,
+                                      LocalDate to,
+                                      LayoutStrategyId strategy,
+                                      GroupBy groupBy,
+                                      Collection<Reservation> reservations,
+                                      List<Allocatable> resourceFilter,
+                                      Locale locale,
+                                      BlockDecorator decorator)
+    {
         if (from == null) throw new IllegalArgumentException("from must not be null");
         if (to == null) throw new IllegalArgumentException("to must not be null");
         if (!to.isAfter(from)) throw new IllegalArgumentException("to must be after from");
         if (strategy == null) throw new IllegalArgumentException("strategy must not be null");
         if (groupBy == null) throw new IllegalArgumentException("groupBy must not be null");
         if (reservations == null) reservations = List.of();
+        if (decorator == null) decorator = BlockDecorator.NOOP;
 
         LocalDateTime fromDt = from.atStartOfDay();
         LocalDateTime toDt   = to.atStartOfDay();
@@ -85,14 +107,14 @@ public final class CalendarLayoutEngine
         {
             case DAY -> {
                 columns = buildDayColumns(from, to);
-                blocks = layoutByDay(fromDt, toDt, strategy, reservations, columns);
+                blocks = layoutByDay(fromDt, toDt, strategy, reservations, columns, locale, decorator);
             }
             case RESOURCE -> {
                 List<Allocatable> resources = resourceFilter != null
                         ? resourceFilter
                         : distinctAllocatables(reservations);
-                columns = buildResourceColumns(resources);
-                blocks = layoutByResource(fromDt, toDt, strategy, reservations, resources);
+                columns = buildResourceColumns(resources, locale);
+                blocks = layoutByResource(fromDt, toDt, strategy, reservations, resources, locale, decorator);
             }
             default -> throw new IllegalArgumentException("unsupported groupBy: " + groupBy);
         }
@@ -104,19 +126,23 @@ public final class CalendarLayoutEngine
     private static List<RenderedBlock> layoutByDay(LocalDateTime fromDt, LocalDateTime toDt,
                                                    LayoutStrategyId strategyId,
                                                    Collection<Reservation> reservations,
-                                                   List<Column> columns)
+                                                   List<Column> columns,
+                                                   Locale locale,
+                                                   BlockDecorator decorator)
     {
-        // 1. Expand reservations → InternalBlocks
+        // 1. Expand reservations → InternalBlocks. Each block carries the
+        //    visible-allocatables list passed to the decorator's color hook.
         List<InternalBlock> blocks = new ArrayList<>();
         for (Reservation r : reservations)
         {
+            List<Allocatable> reservationAllocatables = Arrays.asList(r.getAllocatables());
             for (Appointment a : r.getAppointments())
             {
                 List<AppointmentBlock> expanded = new ArrayList<>();
                 a.createBlocks(fromDt, toDt, expanded);
                 for (AppointmentBlock ab : expanded)
                 {
-                    blocks.add(new InternalBlock(r, a, ab));
+                    blocks.add(new InternalBlock(r, a, ab, reservationAllocatables));
                 }
             }
         }
@@ -125,7 +151,7 @@ public final class CalendarLayoutEngine
         //    countDays(startDate, blockStart) — so this maps directly to
         //    our DAY columns.
         BuildStrategy strategy = createStrategy(strategyId);
-        CapturingContainer capture = new CapturingContainer(columns.size());
+        CapturingContainer capture = new CapturingContainer(columns.size(), locale, decorator);
         @SuppressWarnings({"rawtypes","unchecked"})
         List<Block> rawBlocks = (List) blocks;
         strategy.build(capture, rawBlocks, fromDt);
@@ -153,7 +179,9 @@ public final class CalendarLayoutEngine
     private static List<RenderedBlock> layoutByResource(LocalDateTime fromDt, LocalDateTime toDt,
                                                        LayoutStrategyId strategyId,
                                                        Collection<Reservation> reservations,
-                                                       List<Allocatable> resources)
+                                                       List<Allocatable> resources,
+                                                       Locale locale,
+                                                       BlockDecorator decorator)
     {
         Map<Allocatable, Integer> columnIndex = new HashMap<>();
         for (int i = 0; i < resources.size(); i++) columnIndex.put(resources.get(i), i);
@@ -165,6 +193,9 @@ public final class CalendarLayoutEngine
         for (Allocatable alloc : resources)
         {
             int col = columnIndex.get(alloc);
+            // For RESOURCE groupBy the column allocatable is what drives
+            // resource coloring on each block in this column.
+            List<Allocatable> perColumnAllocatables = List.of(alloc);
             List<InternalBlock> perResource = new ArrayList<>();
             for (Reservation r : reservations)
             {
@@ -175,12 +206,12 @@ public final class CalendarLayoutEngine
                     a.createBlocks(fromDt, toDt, expanded);
                     for (AppointmentBlock ab : expanded)
                     {
-                        perResource.add(new InternalBlock(r, a, ab));
+                        perResource.add(new InternalBlock(r, a, ab, perColumnAllocatables));
                     }
                 }
             }
             BuildStrategy strategy = createStrategy(strategyId);
-            CapturingContainer capture = new CapturingContainer(1);
+            CapturingContainer capture = new CapturingContainer(1, locale, decorator);
             @SuppressWarnings({"rawtypes","unchecked"})
             List<Block> raw = (List) perResource;
             strategy.build(capture, raw, fromDt);
@@ -199,13 +230,13 @@ public final class CalendarLayoutEngine
         return all;
     }
 
-    private static List<Column> buildResourceColumns(List<Allocatable> resources)
+    private static List<Column> buildResourceColumns(List<Allocatable> resources, Locale locale)
     {
         List<Column> cols = new ArrayList<>();
         for (int i = 0; i < resources.size(); i++)
         {
             Allocatable a = resources.get(i);
-            cols.add(new Column(a.getId(), a.getName(null), i));
+            cols.add(new Column(a.getId(), a.getName(locale), i));
         }
         return cols;
     }
@@ -258,18 +289,21 @@ public final class CalendarLayoutEngine
         }
     }
 
-    /** Internal Block adapter that also carries reservation + appointment refs. */
+    /** Internal Block adapter — carries reservation/appointment refs plus the
+     *  visible-allocatables list the decorator's color hook needs. */
     private static final class InternalBlock implements Block
     {
         final Reservation reservation;
         final Appointment appointment;
         final AppointmentBlock appointmentBlock;
+        final List<Allocatable> visibleAllocatables;
 
-        InternalBlock(Reservation r, Appointment a, AppointmentBlock ab)
+        InternalBlock(Reservation r, Appointment a, AppointmentBlock ab, List<Allocatable> visibleAllocatables)
         {
             this.reservation = r;
             this.appointment = a;
             this.appointmentBlock = ab;
+            this.visibleAllocatables = visibleAllocatables;
         }
 
         @Override public LocalDateTime getStart()
@@ -281,6 +315,8 @@ public final class CalendarLayoutEngine
             return LocalDateTime.ofInstant(java.time.Instant.ofEpochMilli(appointmentBlock.getEnd()), ZoneOffset.UTC);
         }
         @Override public String getName() { return reservation.getName(null); }
+
+        String getName(Locale locale) { return reservation.getName(locale); }
 
         boolean isException()
         {
@@ -294,8 +330,15 @@ public final class CalendarLayoutEngine
     {
         private final List<Captured> captured = new ArrayList<>();
         private final int defaultColumnCount;
+        private final Locale locale;
+        private final BlockDecorator decorator;
 
-        CapturingContainer(int columnCount) { this.defaultColumnCount = columnCount; }
+        CapturingContainer(int columnCount, Locale locale, BlockDecorator decorator)
+        {
+            this.defaultColumnCount = columnCount;
+            this.locale = locale;
+            this.decorator = decorator;
+        }
 
         @Override public void addBlock(Block bl, int column, int slot)
         {
@@ -322,6 +365,8 @@ public final class CalendarLayoutEngine
                 int slotCount = maxSlotPerColumn.getOrDefault(c.column, 0) + 1;
                 InternalBlock ib = c.block;
                 Reservation r = ib.reservation;
+                List<String> colors = decorator.colorsFor(r, ib.visibleAllocatables);
+                String tooltip = decorator.tooltipFor(r, ib.appointment);
                 out.add(new RenderedBlock(
                         r.getId(),
                         ib.appointment.getId(),
@@ -330,11 +375,11 @@ public final class CalendarLayoutEngine
                         slotCount,
                         ib.getStart(),
                         ib.getEnd(),
-                        List.of(),                                // colours: caller decorates if needed
+                        colors,
                         ib.isException(),
                         r.getRequestStatus(null) != null,
-                        ib.getName(),
-                        null                                       // tooltip: caller decorates
+                        ib.getName(locale),
+                        tooltip
                 ));
             }
             return out;

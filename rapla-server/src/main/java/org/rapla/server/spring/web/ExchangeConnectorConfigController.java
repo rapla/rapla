@@ -7,6 +7,7 @@ import org.rapla.entities.configuration.RaplaConfiguration;
 import org.rapla.facade.RaplaFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.plugin.exchangeconnector.ExchangeConnectorConfig;
+import org.rapla.plugin.exchangeconnector.ExchangeUserSettings;
 import org.rapla.plugin.exchangeconnector.server.ExchangeConnectorServerPlugin;
 import org.rapla.server.RemoteSession;
 import org.rapla.storage.RaplaSecurityException;
@@ -48,5 +49,16 @@ public class ExchangeConnectorConfigController
     {
         session.checkAndGetUser(request);
         return ExchangeConnectorServerPlugin.TIMEZONES;
+    }
+
+    @GetMapping("/user")
+    public ExchangeUserSettings getUserSettings(HttpServletRequest request) throws RaplaException
+    {
+        User user = session.checkAndGetUser(request);
+        Preferences prefs = facade.getPreferences(user);
+        Boolean send = prefs.hasEntry(ExchangeConnectorConfig.EXCHANGE_SEND_INVITATION_AND_CANCELATION)
+                ? prefs.getEntryAsBoolean(ExchangeConnectorConfig.EXCHANGE_SEND_INVITATION_AND_CANCELATION, false)
+                : null;
+        return new ExchangeUserSettings(send);
     }
 }

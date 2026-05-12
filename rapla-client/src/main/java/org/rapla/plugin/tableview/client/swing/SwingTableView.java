@@ -28,6 +28,8 @@ import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.Appointment;
 import org.rapla.entities.domain.AppointmentBlock;
 import org.rapla.entities.domain.Reservation;
+import org.rapla.entities.storage.ReferenceInfo;
+import org.rapla.plugin.tableview.TableRow;
 import org.rapla.facade.CalendarModel;
 import org.rapla.facade.CalendarSelectionModel;
 import org.rapla.facade.client.ClientFacade;
@@ -405,17 +407,31 @@ public class SwingTableView<T> extends RaplaGUIComponent implements SwingCalenda
     class PopupTableHandler extends MouseAdapter {
 
         void showPopup(MouseEvent me) {
-        	 try
-             {
-                 Point p = new Point(me.getX(), me.getY());
-                 PopupContext popupContext = new SwingPopupContext((Component) me.getSource(), p);
-                 RaplaPopupMenu menu= new RaplaPopupMenu(popupContext);
-                 SelectionMenuContext context = createMenuContext( p);
-                 menuFactory.addEventMenu(menu, context , copyListener, cutListener);
-            	menu.show( table, p.x, p.y);
-            } catch (RaplaException ex) {
-                dialogUiFactory.showException (ex,new SwingPopupContext(getComponent(), null));
-            }
+            final Point p = new Point(me.getX(), me.getY());
+            final Component source = (Component) me.getSource();
+            // PRD 030 Phase 7.4 — resolve server-rendered rows to entities so
+            // menu items (view, edit, change-owner, paste, …) see real
+            // Reservations instead of TableRow shells.
+            List<T> selectedRows = getSelectedEvents();
+            resolveSelectedAsEntities(selectedRows).thenAccept(resolved ->
+            {
+                javax.swing.SwingUtilities.invokeLater(() ->
+                {
+                    try
+                    {
+                        PopupContext popupContext = new SwingPopupContext(source, p);
+                        RaplaPopupMenu menu = new RaplaPopupMenu(popupContext);
+                        SelectionMenuContext context = buildMenuContext(resolved, popupContext);
+                        menuFactory.addEventMenu(menu, context, copyListener, cutListener);
+                        menu.show(table, p.x, p.y);
+                    }
+                    catch (RaplaException ex)
+                    {
+                        dialogUiFactory.showException(ex, new SwingPopupContext(getComponent(), null));
+                    }
+                });
+            }).exceptionally(ex ->
+                    dialogUiFactory.showException(ex, new SwingPopupContext(getComponent(), null)));
         }
 
 
@@ -484,6 +500,93 @@ public class SwingTableView<T> extends RaplaGUIComponent implements SwingCalenda
             }
             editController.edit(reservation, popupContext);
         }
+        else if ( object instanceof TableRow tableRow)
+        {
+            // PRD 030 Phase 7.3 — server-rendered table row → resolve to entity on demand.
+            resolveReservation(tableRow).thenAccept(reservation ->
+            {
+                if (reservation == null) return;
+                try
+                {
+                    if (!permissionController.canModify(reservation, getUser())) return;
+                    editController.edit(reservation, popupContext);
+                }
+                catch (RaplaException ex)
+                {
+                    dialogUiFactory.showException(ex, popupContext);
+                }
+            }).execOn(javax.swing.SwingUtilities::invokeLater)
+              .exceptionally(ex -> dialogUiFactory.showException(ex, popupContext));
+        }
+    }
+
+    /**
+     * Resolves a server-rendered {@link TableRow} to the underlying
+     * {@link Reservation} entity. PRD 030 Phase 7.3.
+     *
+     * <p>Tries the local cache first ({@code facade.tryResolve}) — for rows
+     * the client has already touched the entity is free. On a cache miss,
+     * fires a single {@code GET /storage/...} via
+     * {@code operator.getFromIdAsync}.
+     */
+    private Promise<Reservation> resolveReservation(TableRow row)
+    {
+        if (row == null) return new org.rapla.scheduler.ResolvedPromise<>((Reservation) null);
+        ReferenceInfo<Reservation> ref = new ReferenceInfo<>(reservationIdOf(row), Reservation.class);
+        Reservation cached = getFacade().tryResolve(ref);
+        if (cached != null) return new org.rapla.scheduler.ResolvedPromise<>(cached);
+        return getFacade().getOperator()
+                .getFromIdAsync(java.util.List.of(ref), false)
+                .thenApply(map -> map.get(ref));
+    }
+
+    /**
+     * Extracts the reservation id from a {@link TableRow#id()}. Reservation-table
+     * rows carry the bare reservation id; appointment-block rows use the
+     * {@code reservationId#appointmentId#startEpochMs} composite emitted by
+     * {@code TableViewController.appointmentBlockId}.
+     */
+    private static String reservationIdOf(TableRow row)
+    {
+        String rawId = row.id();
+        int hash = rawId.indexOf('#');
+        return hash < 0 ? rawId : rawId.substring(0, hash);
+    }
+
+    /**
+     * Returns a promise for a {@link List} of {@link Reservation} entities
+     * corresponding to the given selected rows. For non-{@link TableRow}
+     * inputs (legacy {@code Reservation} or {@link AppointmentBlock} views)
+     * the list passes through unchanged.
+     */
+    @SuppressWarnings("unchecked")
+    private Promise<List<Object>> resolveSelectedAsEntities(List<T> rows)
+    {
+        if (rows.isEmpty() || !(rows.get(0) instanceof TableRow))
+        {
+            return new org.rapla.scheduler.ResolvedPromise<>((List<Object>)(List<?>) rows);
+        }
+        List<TableRow> tableRows = (List<TableRow>) (List<?>) rows;
+        List<ReferenceInfo<Reservation>> refs = new ArrayList<>(tableRows.size());
+        for (TableRow r : tableRows) refs.add(new ReferenceInfo<>(reservationIdOf(r), Reservation.class));
+        return getFacade().getOperator().getFromIdAsync(refs, false).thenApply(map ->
+        {
+            List<Object> out = new ArrayList<>(refs.size());
+            for (ReferenceInfo<Reservation> ref : refs)
+            {
+                Reservation r = map.get(ref);
+                if (r != null) out.add(r);
+            }
+            return out;
+        });
+    }
+
+    private SelectionMenuContext buildMenuContext(List<?> selected, PopupContext popupContext)
+    {
+        Object focused = selected.size() == 1 ? selected.get(0) : null;
+        SelectionMenuContext menuContext = new SelectionMenuContext(focused, popupContext);
+        menuContext.setSelectedObjects(selected);
+        return menuContext;
     }
 
     private Promise<Void> copyCut(List<T> selectedObjects, Collection<Allocatable> markedAllocatables, boolean isCut, PopupContext popupContext)
@@ -526,6 +629,28 @@ public class SwingTableView<T> extends RaplaGUIComponent implements SwingCalenda
             {
                 ready = reservationController.copyReservations(selectedEvents, markedAllocatables);
             }
+        }
+        else if (first instanceof TableRow)
+        {
+            // PRD 030 Phase 7.3 / Phase 8 — resolve server-rendered rows to entities for copy/cut.
+            java.util.List<TableRow> rows = (java.util.List<TableRow>) selectedObjects;
+            java.util.List<ReferenceInfo<Reservation>> refs = new ArrayList<>(rows.size());
+            for (TableRow row : rows) refs.add(new ReferenceInfo<>(reservationIdOf(row), Reservation.class));
+            ready = getFacade().getOperator()
+                    .getFromIdAsync(refs, false)
+                    .thenCompose(map ->
+                    {
+                        Collection<Reservation> resolved = new ArrayList<>();
+                        for (ReferenceInfo<Reservation> ref : refs)
+                        {
+                            Reservation r = map.get(ref);
+                            if (r != null) resolved.add(r);
+                        }
+                        if (resolved.isEmpty()) return ResolvedPromise.VOID_PROMISE;
+                        return isCut
+                                ? reservationController.cutReservations(resolved, markedAllocatables)
+                                : reservationController.copyReservations(resolved, markedAllocatables);
+                    });
         }
         else
         {

@@ -8,6 +8,8 @@ import org.rapla.entities.domain.Reservation;
 import org.rapla.entities.dynamictype.DynamicTypeAnnotations;
 import org.rapla.facade.RaplaFacade;
 import org.rapla.framework.RaplaException;
+import org.rapla.framework.RaplaLocale;
+import org.rapla.entities.configuration.Preferences;
 import org.rapla.plugin.tableview.CellExtractor;
 import org.rapla.plugin.tableview.EngineColumn;
 import org.rapla.plugin.tableview.PageSpec;
@@ -16,10 +18,12 @@ import org.rapla.plugin.tableview.SortSpec;
 import org.rapla.plugin.tableview.TableCellType;
 import org.rapla.plugin.tableview.TableColumnDescriptor;
 import org.rapla.plugin.tableview.TableColumnType;
+import org.rapla.plugin.tableview.TableColumnsResponse;
 import org.rapla.plugin.tableview.TablePage;
 import org.rapla.plugin.tableview.TableViewEngine;
 import org.rapla.plugin.tableview.TableViewService;
 import org.rapla.plugin.tableview.internal.TableConfig;
+import org.rapla.plugin.tableview.internal.TableConfig.TableColumnConfig;
 import org.rapla.scheduler.Promise;
 import org.rapla.server.RemoteSession;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
@@ -63,16 +67,19 @@ public class TableViewController implements TableViewService
     private final RemoteSession session;
     private final HttpServletRequest request;
     private final RaplaFacade facade;
+    private final RaplaLocale raplaLocale;
     private final TableConfig.TableConfigLoader tableConfigLoader;
 
     public TableViewController(RemoteSession session,
                                HttpServletRequest request,
                                RaplaFacade facade,
+                               RaplaLocale raplaLocale,
                                TableConfig.TableConfigLoader tableConfigLoader)
     {
         this.session = session;
         this.request = request;
         this.facade = facade;
+        this.raplaLocale = raplaLocale;
         this.tableConfigLoader = tableConfigLoader;
     }
 
@@ -163,20 +170,103 @@ public class TableViewController implements TableViewService
         return reservationId + "#" + appointmentId + "#" + block.getStart();
     }
 
+    /** Package-private bridge so {@link ExportController} can reuse the
+     *  same block id strategy without duplicating it. */
+    static String appointmentBlockIdPublic(AppointmentBlock block)
+    {
+        return appointmentBlockId(block);
+    }
+
+    // ---------- /config + /columns/catalog (Phase 3) ----------
+
+    /** Known table-view names — guard so we don't echo arbitrary user input. */
+    private static final java.util.Set<String> KNOWN_TABLE_NAMES = java.util.Set.of(
+            TableConfig.EVENTS_VIEW,
+            TableConfig.APPOINTMENTS_VIEW,
+            TableConfig.APPOINTMENTS_PER_DAY_VIEW);
+
+    @Override
+    @GetMapping("/config")
+    public TableColumnsResponse config(@RequestParam("tableName") String tableName) throws RaplaException
+    {
+        User user = session.checkAndGetUser(request);
+        if (!KNOWN_TABLE_NAMES.contains(tableName))
+        {
+            // Unknown table name — return an empty-columns response (don't 404).
+            // AGENTS.md §12: don't reveal whether tableName is plausible or not via
+            // status-code divergence.
+            return new TableColumnsResponse(tableName, List.of());
+        }
+        List<RaplaTableColumn<Object>> columns = tableConfigLoader.loadColumns(tableName, user);
+        List<TableColumnDescriptor> descriptors = new ArrayList<>(columns.size());
+        for (RaplaTableColumn<Object> col : columns)
+        {
+            descriptors.add(new TableColumnDescriptor(
+                    col.getKey(),
+                    col.getColumnName(),
+                    mapCellType(col.getType())));
+        }
+        return new TableColumnsResponse(tableName, descriptors);
+    }
+
+    @Override
+    @GetMapping("/columns/catalog")
+    public TableColumnsResponse columnsCatalog(@RequestParam("tableName") String tableName) throws RaplaException
+    {
+        User user = session.checkAndGetUser(request);
+        if (!KNOWN_TABLE_NAMES.contains(tableName))
+        {
+            return new TableColumnsResponse(tableName, List.of());
+        }
+        final Preferences preferences = facade.getSystemPreferences();
+        TableConfig config = tableConfigLoader.read(preferences, false);
+
+        java.util.Locale locale = raplaLocale.getLocale();
+        java.util.Set<TableColumnConfig> universe = config.getAllColumns();
+        List<TableColumnDescriptor> descriptors = new ArrayList<>(universe.size());
+        for (TableColumnConfig c : universe)
+        {
+            descriptors.add(new TableColumnDescriptor(
+                    c.getKey(),
+                    c.getName(locale),
+                    mapColumnConfigType(c.getType())));
+        }
+        return new TableColumnsResponse(tableName, descriptors);
+    }
+
+    private static TableCellType mapColumnConfigType(String legacyTypeString)
+    {
+        if (legacyTypeString == null) return TableCellType.STRING;
+        return switch (legacyTypeString.toLowerCase(java.util.Locale.ROOT))
+        {
+            case "date", "datetime" -> TableCellType.DATE;
+            case "integer", "int", "long" -> TableCellType.INTEGER;
+            case "double", "float", "number" -> TableCellType.DOUBLE;
+            case "boolean", "bool" -> TableCellType.BOOLEAN;
+            default -> TableCellType.STRING;
+        };
+    }
+
     // ---------- column resolution ----------
 
     private <T> List<EngineColumn<T>> resolveColumns(String tableName, User user, List<String> requestedIds)
             throws RaplaException
     {
-        List<RaplaTableColumn<T>> all = tableConfigLoader.loadColumns(tableName, user);
+        return resolveColumnsStatic(tableConfigLoader, tableName, user, requestedIds);
+    }
+
+    /** Package-private bridge so {@link ExportController} can reuse this
+     *  resolution without duplicating it. */
+    static <T> List<EngineColumn<T>> resolveColumnsStatic(TableConfig.TableConfigLoader loader,
+                                                          String tableName, User user,
+                                                          List<String> requestedIds) throws RaplaException
+    {
+        List<RaplaTableColumn<T>> all = loader.loadColumns(tableName, user);
 
         if (requestedIds == null || requestedIds.isEmpty())
         {
-            // No explicit column selection → use the user's configured set as-is.
             return adaptAll(all);
         }
-        // Order-preserving lookup by stable key. Unknown ids are silently dropped
-        // (matches the no-leak rule from AGENTS.md §12 — never echo back unknown ids).
         Map<String, RaplaTableColumn<T>> byKey = new LinkedHashMap<>();
         for (RaplaTableColumn<T> col : all)
         {
@@ -275,6 +365,13 @@ public class TableViewController implements TableViewService
 
     private static <T> T waitFor(Promise<T> promise) throws RaplaException
     {
+        return waitForCollection(promise, "table query");
+    }
+
+    /** Package-private bridge so {@link ExportController} can wait on the
+     *  same async facade query without duplicating the latch wiring. */
+    static <T> T waitForCollection(Promise<T> promise, String operationName) throws RaplaException
+    {
         AtomicReference<T> result = new AtomicReference<>();
         AtomicReference<Throwable> err = new AtomicReference<>();
         CountDownLatch done = new CountDownLatch(1);
@@ -284,13 +381,13 @@ public class TableViewController implements TableViewService
         {
             if (!done.await(30, TimeUnit.SECONDS))
             {
-                throw new RaplaException("table query timed out");
+                throw new RaplaException(operationName + " timed out");
             }
         }
         catch (InterruptedException e)
         {
             Thread.currentThread().interrupt();
-            throw new RaplaException("table query interrupted", e);
+            throw new RaplaException(operationName + " interrupted", e);
         }
         if (err.get() != null)
         {

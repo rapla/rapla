@@ -8,6 +8,8 @@ public class RemoteConnectionInfo
 {
     String accessToken;
     String refreshToken;
+    String refreshUrl;
+    String logoutUrl;
     String serverURL;
     transient StatusUpdater statusUpdater;
     ConnectInfo connectInfo;
@@ -47,6 +49,22 @@ public class RemoteConnectionInfo
 
     public String getRefreshToken() {
         return refreshToken;
+    }
+
+    public void setRefreshUrl(String refreshUrl) {
+        this.refreshUrl = refreshUrl;
+    }
+
+    public String getRefreshUrl() {
+        return refreshUrl;
+    }
+
+    public void setLogoutUrl(String logoutUrl) {
+        this.logoutUrl = logoutUrl;
+    }
+
+    public String getLogoutUrl() {
+        return logoutUrl;
     }
 
     public String getServerURL() {

@@ -22,6 +22,10 @@ import org.springframework.beans.factory.annotation.Autowired;
 import javax.swing.*;
 import javax.swing.event.ChangeListener;
 import java.awt.*;
+import java.awt.event.ActionEvent;
+import java.awt.event.KeyEvent;
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
 
 public class FilterEditButton extends RaplaGUIComponent
 {
@@ -43,9 +47,7 @@ public class FilterEditButton extends RaplaGUIComponent
 
             if ( popup != null)
             {
-                popup.setVisible(false);
-                popup= null;
-                filterButton.setChar('v');
+                dismissPopup();
                 return;
             }
             try {
@@ -60,8 +62,15 @@ public class FilterEditButton extends RaplaGUIComponent
                 }
                 ui.setFilter( filter);
                 final Point locationOnScreen = filterButton.getLocationOnScreen();
-                final int y = locationOnScreen.y + 18;
-                final int x = locationOnScreen.x;
+                // Place the popup immediately to the RIGHT of the button,
+                // aligned with the button's top edge. On Linux/WSLg the
+                // popup window's invisible hit-test margin leaks past its
+                // painted left edge back over the button — so anchoring
+                // beside the button (instead of below it) leaves most of
+                // the button clickable. Only the rightmost few pixels of
+                // the button may sit under the popup's input region.
+                final int y = locationOnScreen.y;
+                final int x = locationOnScreen.x + filterButton.getWidth();
                 if ( popup == null)
                 {
                     Component ownerWindow = DialogUI.getOwnerWindow(filterButton);
@@ -73,6 +82,10 @@ public class FilterEditButton extends RaplaGUIComponent
                     {
                         popup = new JWindow((Dialog)ownerWindow);
                     }
+                    if ( popup != null)
+                    {
+                        installDismissHandlers(popup);
+                    }
                 }
                 JComponent content = ui.getComponent();
                 popup.setContentPane(content );
@@ -80,6 +93,10 @@ public class FilterEditButton extends RaplaGUIComponent
                 popup.setLocation( x, y);
                 //.getSharedInstance().getPopup( filterButton, ui.getComponent(), x, y);
                 popup.setVisible(true);
+                // Heavyweight JWindow can be stacked below its owner by some
+                // Linux compositors (WSLg in particular). toFront() restacks
+                // and avoids the "click hits invisible popup over button" trap.
+                popup.toFront();
                 filterButton.setChar('^');
             } catch (Exception ex) {
                 dialogUiFactory.showException(ex, popupContext);
@@ -88,6 +105,49 @@ public class FilterEditButton extends RaplaGUIComponent
         
     }
     
+    /**
+     * Hide and forget the popup. Idempotent.
+     */
+    private void dismissPopup()
+    {
+        if (popup != null)
+        {
+            popup.setVisible(false);
+            popup = null;
+            filterButton.setChar('v');
+        }
+    }
+
+    /**
+     * Wire the dismiss-on-focus-loss and Escape behaviour. Independent of
+     * platform z-order bugs — gives users a way to close the popup even
+     * when the filter button is unclickable (e.g. WSLg compositor's
+     * input-region bug where the JWindow's hit-test rectangle extends
+     * past its painted content and swallows clicks on the button below).
+     */
+    private void installDismissHandlers(final JWindow popup)
+    {
+        popup.addWindowFocusListener(new WindowAdapter() {
+            @Override
+            public void windowLostFocus(WindowEvent e) {
+                // Defer: if the focus loss was caused by a click on the
+                // filter button, the button's action listener should run
+                // first and toggle the popup. Deferring with invokeLater
+                // means by the time this fires, popup is already null and
+                // we no-op. For any other focus loss (click outside, app
+                // switch), the popup is still alive and we dismiss it.
+                SwingUtilities.invokeLater(FilterEditButton.this::dismissPopup);
+            }
+        });
+        JComponent root = popup.getRootPane();
+        root.getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW)
+                .put(KeyStroke.getKeyStroke(KeyEvent.VK_ESCAPE, 0), "filter.dismiss");
+        root.getActionMap().put("filter.dismiss", new AbstractAction() {
+            @Override
+            public void actionPerformed(ActionEvent ae) { dismissPopup(); }
+        });
+    }
+
     public ClassifiableFilterEdit getFilterUI()
     {
     	return ui;

@@ -271,6 +271,24 @@ public class ClientProxyConfig
     }
 
     @Bean
+    public org.rapla.rest.PluginsService pluginsServiceProxy(HttpServiceProxyFactory factory)
+    {
+        return factory.createClient(org.rapla.rest.PluginsService.class);
+    }
+
+    @Bean
+    public org.rapla.rest.SettingsService settingsServiceProxy(HttpServiceProxyFactory factory)
+    {
+        return factory.createClient(org.rapla.rest.SettingsService.class);
+    }
+
+    @Bean
+    public org.rapla.plugin.eventtimecalculator.EventTimeCalculatorConfigService eventTimeCalculatorConfigServiceProxy(HttpServiceProxyFactory factory)
+    {
+        return factory.createClient(org.rapla.plugin.eventtimecalculator.EventTimeCalculatorConfigService.class);
+    }
+
+    @Bean
     public org.rapla.plugin.urlencryption.UrlEncryption urlEncryptionProxy(HttpServiceProxyFactory factory)
     {
         return factory.createClient(org.rapla.plugin.urlencryption.UrlEncryption.class);
@@ -316,6 +334,12 @@ public class ClientProxyConfig
     public org.rapla.endpoints.RemoteLogger remoteLoggerProxy(HttpServiceProxyFactory factory)
     {
         return factory.createClient(org.rapla.endpoints.RemoteLogger.class);
+    }
+
+    @Bean
+    public org.rapla.plugin.tableview.TableViewService tableViewServiceProxy(HttpServiceProxyFactory factory)
+    {
+        return factory.createClient(org.rapla.plugin.tableview.TableViewService.class);
     }
 
     @Bean

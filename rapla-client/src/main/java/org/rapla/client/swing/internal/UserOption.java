@@ -35,6 +35,8 @@ import org.rapla.facade.client.ClientFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.logger.Logger;
+import org.rapla.rest.SettingsService;
+import org.rapla.rest.dto.UserSettings;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Service;
 
@@ -74,15 +76,18 @@ public class UserOption extends RaplaGUIComponent implements UserOptionPanel
 
     private final IOInterface ioInterface;
     private final Supplier<PasswordChangeAction> passwordChangeAction;
+    private final SettingsService settings;
 
     @Autowired
     public UserOption(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger,
-            DialogUiFactoryInterface dialogUiFactory, IOInterface ioInterface,Supplier<PasswordChangeAction> passwordChangeAction)
+            DialogUiFactoryInterface dialogUiFactory, IOInterface ioInterface,Supplier<PasswordChangeAction> passwordChangeAction,
+            SettingsService settings)
     {
         super(facade, i18n, raplaLocale, logger);
         this.passwordChangeAction = passwordChangeAction;
         this.dialogUiFactory = dialogUiFactory;
         this.ioInterface = ioInterface;
+        this.settings = settings;
     }
 
     @Override
@@ -136,7 +141,19 @@ public class UserOption extends RaplaGUIComponent implements UserOptionPanel
     public void show() throws RaplaException
     {
         create();
-        String language = preferences.getEntryAsString(RaplaLocale.LANGUAGE_ENTRY, null);
+        String language;
+        try
+        {
+            getLogger().info("UserOption.show(): fetching /settings/me via REST");
+            UserSettings me = settings.getMe();
+            language = me.language();
+        }
+        catch (Exception e)
+        {
+            getLogger().warn("GET /settings/me failed, falling back to local cache: " + e.getMessage());
+            language = preferences.getEntryAsString(RaplaLocale.LANGUAGE_ENTRY, null);
+        }
+        if (language != null && language.isEmpty()) language = null;
         languageChooser.setSelectedLanguage(language);
     }
 

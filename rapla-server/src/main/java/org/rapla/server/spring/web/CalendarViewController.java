@@ -5,14 +5,19 @@ import org.rapla.entities.User;
 import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.Reservation;
 import org.rapla.entities.storage.ReferenceInfo;
+import org.rapla.facade.CalendarOptions;
+import org.rapla.facade.RaplaComponent;
 import org.rapla.facade.RaplaFacade;
+import org.rapla.framework.RaplaLocale;
 import org.rapla.storage.PermissionController;
 import org.rapla.framework.RaplaException;
+import org.rapla.plugin.calendarview.BlockDecorator;
 import org.rapla.plugin.calendarview.CalendarLayoutEngine;
 import org.rapla.plugin.calendarview.CalendarPage;
 import org.rapla.plugin.calendarview.CalendarViewService;
 import org.rapla.plugin.calendarview.GroupBy;
 import org.rapla.plugin.calendarview.LayoutStrategyId;
+import org.rapla.plugin.calendarview.RaplaBlockDecorator;
 import org.rapla.scheduler.Promise;
 import org.rapla.server.RemoteSession;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
@@ -47,12 +52,17 @@ public class CalendarViewController implements CalendarViewService
     private final RemoteSession session;
     private final HttpServletRequest request;
     private final RaplaFacade facade;
+    private final RaplaLocale raplaLocale;
 
-    public CalendarViewController(RemoteSession session, HttpServletRequest request, RaplaFacade facade)
+    public CalendarViewController(RemoteSession session,
+                                  HttpServletRequest request,
+                                  RaplaFacade facade,
+                                  RaplaLocale raplaLocale)
     {
         this.session = session;
         this.request = request;
         this.facade = facade;
+        this.raplaLocale = raplaLocale;
     }
 
     @Override
@@ -75,7 +85,18 @@ public class CalendarViewController implements CalendarViewService
 
         List<Allocatable> resourceFilter = resolveResourceFilter(allocatableIds, user);
 
-        return CalendarLayoutEngine.layout(from, to, strategy, groupBy, reservations, resourceFilter);
+        // Resolve the user's coloring preferences for this request. Both
+        // pipelines (Swing's RaplaBlock and this server-side decorator)
+        // call the same RaplaBuilder.getColorForClassifiable + BlockColors.resolve
+        // helpers, so the colours emitted here match what Swing renders for
+        // the same user + data.
+        CalendarOptions options = RaplaComponent.getCalendarOptions(user, facade);
+        BlockDecorator decorator = new RaplaBlockDecorator(
+                options.isEventColoring(),
+                options.isResourceColoring());
+
+        return CalendarLayoutEngine.layout(from, to, strategy, groupBy, reservations, resourceFilter,
+                raplaLocale.getLocale(), decorator);
     }
 
     /**

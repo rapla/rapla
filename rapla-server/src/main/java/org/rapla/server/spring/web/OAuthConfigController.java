@@ -17,6 +17,8 @@ public class OAuthConfigController
     private final String clientId;
     private final List<String> scopes;
     private final boolean showPasteFallback;
+    private final String refreshUrlOverride;
+    private final String logoutUrlOverride;
     private final String contextPath;
 
     // Properties resolved by rapla.oauth.* in application.yml; deployments
@@ -24,14 +26,18 @@ public class OAuthConfigController
     public OAuthConfigController(
             @Value("${rapla.oauth.enabled:true}") boolean enabled,
             @Value("${rapla.oauth.client-id:rapla-client}") String clientId,
-            @Value("${rapla.oauth.scopes:openid,profile}") List<String> scopes,
+            @Value("${rapla.oauth.scopes:openid,profile,offline_access}") List<String> scopes,
             @Value("${rapla.oauth.show-paste-fallback:false}") boolean showPasteFallback,
+            @Value("${rapla.oauth.refresh-url:}") String refreshUrlOverride,
+            @Value("${rapla.oauth.logout-url:}") String logoutUrlOverride,
             @Value("${server.servlet.context-path:}") String contextPath)
     {
         this.enabled = enabled;
         this.clientId = clientId;
         this.scopes = scopes;
         this.showPasteFallback = showPasteFallback;
+        this.refreshUrlOverride = refreshUrlOverride == null ? "" : refreshUrlOverride;
+        this.logoutUrlOverride = logoutUrlOverride == null ? "" : logoutUrlOverride;
         this.contextPath = contextPath == null ? "" : contextPath;
     }
 
@@ -40,14 +46,22 @@ public class OAuthConfigController
     {
         if (!enabled)
         {
-            return new OAuthConfig(false, null, null, null, List.of(), false);
+            return new OAuthConfig(false, null, null, null, null, null, List.of(), false);
         }
         String base = baseUrl(request);
+        String refreshUrl = refreshUrlOverride.isEmpty() ? base + "/auth/refresh" : refreshUrlOverride;
+        // Spring Security's default logout endpoint clears the HttpSession cookie.
+        // Opening the browser to this URL on logout ensures the next OAuth flow
+        // sees no session and prompts for credentials again. Override for external
+        // IdPs that use a different endpoint (Keycloak: /protocol/openid-connect/logout).
+        String logoutUrl = logoutUrlOverride.isEmpty() ? base + "/logout" : logoutUrlOverride;
         return new OAuthConfig(
                 true,
                 clientId,
                 base + "/oauth2/authorize",
                 base + "/oauth2/token",
+                refreshUrl,
+                logoutUrl,
                 scopes,
                 showPasteFallback);
     }
@@ -79,16 +93,20 @@ public class OAuthConfigController
         public final String clientId;
         public final String authorizeUrl;
         public final String tokenUrl;
+        public final String refreshUrl;
+        public final String logoutUrl;
         public final List<String> scopes;
         public final boolean showPasteFallback;
 
         public OAuthConfig(boolean enabled, String clientId, String authorizeUrl, String tokenUrl,
-                           List<String> scopes, boolean showPasteFallback)
+                           String refreshUrl, String logoutUrl, List<String> scopes, boolean showPasteFallback)
         {
             this.enabled = enabled;
             this.clientId = clientId;
             this.authorizeUrl = authorizeUrl;
             this.tokenUrl = tokenUrl;
+            this.refreshUrl = refreshUrl;
+            this.logoutUrl = logoutUrl;
             this.scopes = scopes;
             this.showPasteFallback = showPasteFallback;
         }
@@ -97,6 +115,8 @@ public class OAuthConfigController
         public String getClientId() { return clientId; }
         public String getAuthorizeUrl() { return authorizeUrl; }
         public String getTokenUrl() { return tokenUrl; }
+        public String getRefreshUrl() { return refreshUrl; }
+        public String getLogoutUrl() { return logoutUrl; }
         public List<String> getScopes() { return scopes; }
         public boolean isShowPasteFallback() { return showPasteFallback; }
     }

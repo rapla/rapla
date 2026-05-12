@@ -30,6 +30,8 @@ import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.internal.AbstractRaplaLocale;
 import org.rapla.logger.Logger;
 import org.rapla.plugin.export2ical.ICalTimezones;
+import org.rapla.rest.SettingsService;
+import org.rapla.rest.dto.SystemSettings;
 import org.rapla.scheduler.CommandScheduler;
 import org.rapla.storage.RemoteLocaleService;
 import org.rapla.storage.dbrm.RestartServer;
@@ -62,6 +64,7 @@ public class RaplaStartOption extends RaplaGUIComponent implements SystemOptionP
 	ICalTimezones timezoneService;
 	RaplaNumber seconds = new RaplaNumber(Double.valueOf(10),Double.valueOf(10),null, false);
     boolean isRestartPossible;
+    private final SettingsService settings;
 
     @Override
     public RaplaResources getI18n()
@@ -71,9 +74,10 @@ public class RaplaStartOption extends RaplaGUIComponent implements SystemOptionP
 
 
     @Autowired
-    public RaplaStartOption(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, ICalTimezones timezoneService, RemoteLocaleService localeService, IOInterface ioInterface, RestartServer restartServer, CommandScheduler scheduler) throws
+    public RaplaStartOption(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, ICalTimezones timezoneService, RemoteLocaleService localeService, IOInterface ioInterface, RestartServer restartServer, CommandScheduler scheduler, SettingsService settings) throws
             RaplaInitializationException {
         super(facade, i18n, raplaLocale, logger);
+        this.settings = settings;
         isRestartPossible = restartServer.isRestartPossible();
         double pre = TableLayout.PREFERRED;
         panel.setLayout( new TableLayout(new double[][] {{pre, 5,pre, 5, pre}, {pre,5,pre, 5 , pre, 5, pre,5 , pre, 5, pre ,5 , pre, 5, pre}}));
@@ -140,21 +144,48 @@ public class RaplaStartOption extends RaplaGUIComponent implements SystemOptionP
     }
 
     public void show() throws RaplaException {
-        String name = preferences.getEntryAsString( AbstractRaplaLocale.TITLE,"");
-        calendarName.setText(name);
-        
-    	try {
-    		String timezoneId = preferences.getEntryAsString( AbstractRaplaLocale.TIMEZONE,timezoneService.getDefaultTimezone());
-			cboTimezone.setSelectedItem(timezoneId);
+        // Read fresh values via GET /settings/system instead of the bulk
+        // /storage/resources preference cache. Save path is unchanged:
+        // commit() writes to the editable prefs clone and the dialog
+        // framework saves via facade.store -> /storage/dispatch.
+        SystemSettings sys;
+        try {
+            getLogger().info("RaplaStartOption.show(): fetching /settings/system via REST");
+            sys = settings.getSystem();
+        }
+        catch (Exception e)
+        {
+            getLogger().warn("GET /settings/system failed, falling back to local cache: " + e.getMessage());
+            try {
+                String tzFallback = preferences.getEntryAsString(AbstractRaplaLocale.TIMEZONE, timezoneService.getDefaultTimezone());
+                sys = new SystemSettings(
+                        preferences.getEntryAsString(AbstractRaplaLocale.TITLE, ""),
+                        tzFallback,
+                        preferences.getEntryAsString(AbstractRaplaLocale.LOCALE, null),
+                        preferences.getEntryAsString(AbstractRaplaLocale.CSV_CHARSET, AbstractRaplaLocale.CSV_CHARSET_DEFAULT),
+                        preferences.getEntryAsString(AbstractRaplaLocale.HTML_CHARSET, AbstractRaplaLocale.HTML_CHARSET_DEFAULT),
+                        preferences.getEntryAsInteger(ClientFacade.REFRESH_INTERVAL_ENTRY, ClientFacade.REFRESH_INTERVAL_DEFAULT)
+                );
+            }
+            catch (Exception inner) {
+                throw new RaplaException(inner);
+            }
+        }
+        calendarName.setText(sys.title());
 
-            csvCharset.setSelectedItem( preferences.getEntryAsString(AbstractRaplaLocale.CSV_CHARSET, AbstractRaplaLocale.CSV_CHARSET_DEFAULT));
-            htmlCharset.setSelectedItem( preferences.getEntryAsString(AbstractRaplaLocale.HTML_CHARSET, AbstractRaplaLocale.HTML_CHARSET_DEFAULT));
+        try {
+            String timezoneId = (sys.timezone() == null || sys.timezone().isEmpty())
+                    ? timezoneService.getDefaultTimezone()
+                    : sys.timezone();
+            cboTimezone.setSelectedItem(timezoneId);
+            csvCharset.setSelectedItem(sys.csvCharset());
+            htmlCharset.setSelectedItem(sys.htmlCharset());
 
-            String localeId = preferences.getEntryAsString( AbstractRaplaLocale.LOCALE,null);
-            if ( localeId != null) {
+            String localeId = sys.locale();
+            if (localeId != null && !localeId.isEmpty()) {
                 Locale locale = LocaleTools.getLocale(localeId);
                 languageChooser.setSelectedLanguage(locale.getLanguage());
-                if(locale.getCountry() != null)
+                if (locale.getCountry() != null)
                 {
                     countryChooser.setSelectedCountry(locale.getCountry());
                 }
@@ -162,16 +193,14 @@ public class RaplaStartOption extends RaplaGUIComponent implements SystemOptionP
             else {
                 languageChooser.setSelectedLanguage(null);
             }
-		}
-		catch (Exception ex)
-	    {
-	    	throw new RaplaException(ex);
-	    }
+        }
+        catch (Exception ex)
+        {
+            throw new RaplaException(ex);
+        }
 
-        int delay = preferences.getEntryAsInteger( ClientFacade.REFRESH_INTERVAL_ENTRY, ClientFacade.REFRESH_INTERVAL_DEFAULT);
-        seconds.setNumber(Long.valueOf(delay / 1000));
+        seconds.setNumber(Long.valueOf(sys.refreshIntervalMs() / 1000));
         seconds.setEnabled(isRestartPossible);
-
     }
 
     public void commit() {

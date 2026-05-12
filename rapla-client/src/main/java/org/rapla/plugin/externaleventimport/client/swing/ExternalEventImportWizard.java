@@ -38,9 +38,9 @@ public class ExternalEventImportWizard extends TemplateWizard implements Identif
     @Autowired
     public ExternalEventImportWizard(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger, CalendarModel model,
             DialogUiFactoryInterface dialogUiFactory, ExternalEventImportResources resources, ExternalEventImportController importController,
-            ApplicationEventBus eventBus, MenuItemFactory menuItemFactory) throws RaplaInitializationException
+            ApplicationEventBus eventBus, MenuItemFactory menuItemFactory, org.rapla.rest.PluginsService plugins) throws RaplaInitializationException
     {
-        super(facade, i18n, raplaLocale, logger, model, eventBus, dialogUiFactory, menuItemFactory);
+        super(facade, i18n, raplaLocale, logger, model, eventBus, dialogUiFactory, menuItemFactory, plugins);
         this.resources = resources;
         this.importController = importController;
         importController.getMetadata()

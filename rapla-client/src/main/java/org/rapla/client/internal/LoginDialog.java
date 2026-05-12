@@ -67,6 +67,7 @@ public final class LoginDialog extends JFrame implements LocaleChangeListener
 	JButton						loginBtn			= new JButton();
 	JButton						exitBtn				= new JButton();
 	JButton						oauthBtn			= new JButton();
+	JLabel						statusLabel			= new JLabel();
 	RaplaResources				i18n;
 	ImageObserver				observer;
 	Image						image;
@@ -139,6 +140,43 @@ public final class LoginDialog extends JFrame implements LocaleChangeListener
 		oauthBtn.setAction(action);
 		oauthBtn.setVisible(true);
 	}
+
+	/**
+	 * "Browser sign-in in progress" mode. The credential fields and the
+	 * Login / Sign-in-with-browser buttons are disabled, a status message is
+	 * shown, and the Exit button stays clickable so the user can abort.
+	 *
+	 * @param message status text displayed where the username/password rows
+	 *                normally are (e.g. "Sign in via the browser tab that just opened")
+	 */
+	public void setBrowserLoginInProgress(String message)
+	{
+		statusLabel.setText("<html><body style='width:280px;padding:8px;'>" + message + "</body></html>");
+		statusLabel.setVisible(true);
+		username.setVisible(false);
+		password.setVisible(false);
+		usernameLabel.setVisible(false);
+		passwordLabel.setVisible(false);
+		loginBtn.setVisible(false);
+		oauthBtn.setVisible(false);
+		// Exit button stays visible + enabled — it's the user's way to abort.
+		revalidate();
+		repaint();
+	}
+
+	/** Restore the dialog to its normal state (e.g. when OAuth fails and we want the user to type credentials). */
+	public void clearBrowserLoginInProgress()
+	{
+		statusLabel.setVisible(false);
+		username.setVisible(true);
+		password.setVisible(true);
+		usernameLabel.setVisible(true);
+		passwordLabel.setVisible(true);
+		loginBtn.setVisible(true);
+		oauthBtn.setVisible(true);
+		revalidate();
+		repaint();
+	}
 	
 	private void init(JComponent languageSelector)
 	{
@@ -202,6 +240,10 @@ public final class LoginDialog extends JFrame implements LocaleChangeListener
 		userandpassword.add(passwordLabel, "0,4");
 		userandpassword.add(username, "2,2");
 		userandpassword.add(password, "2,4");
+		// statusLabel occupies the same horizontal slot as the username/password rows
+		// but spans both columns; only shown in "browser login in progress" mode.
+		userandpassword.add(statusLabel, "0,2,2,4");
+		statusLabel.setVisible(false);
 		username.setColumns(14);
 		password.setColumns(14);
 		Listener listener = new Listener();

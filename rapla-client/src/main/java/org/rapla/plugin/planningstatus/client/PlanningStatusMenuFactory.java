@@ -34,6 +34,7 @@ import org.rapla.framework.RaplaInitializationException;
 import org.rapla.plugin.planningstatus.PlanningStatusFilter;
 import org.rapla.plugin.planningstatus.PlanningStatusPlugin;
 import org.rapla.plugin.planningstatus.PlanningStatusResources;
+import org.rapla.rest.PluginsService;
 import org.rapla.scheduler.Promise;
 import org.rapla.storage.PermissionController;
 import org.springframework.stereotype.Service;
@@ -54,7 +55,7 @@ import java.util.*;
     private final boolean enabled;
     private final DialogUiFactoryInterface dialogUiFactory;
 
-    @Autowired public PlanningStatusMenuFactory(RaplaResources i18n, MenuItemFactory menuItemFactory, ClientFacade facade, PlanningStatusResources planningStatusResources,DialogUiFactoryInterface dialogUiFactory) throws RaplaInitializationException
+    @Autowired public PlanningStatusMenuFactory(RaplaResources i18n, MenuItemFactory menuItemFactory, ClientFacade facade, PlanningStatusResources planningStatusResources,DialogUiFactoryInterface dialogUiFactory, PluginsService plugins) throws RaplaInitializationException
     {
         this.i18n = i18n;
         this.dialogUiFactory = dialogUiFactory;
@@ -63,12 +64,23 @@ import java.util.*;
         try
         {
             user = facade.getUser();
-            enabled = facade.getRaplaFacade().getSystemPreferences().getEntryAsBoolean(PlanningStatusPlugin.ENABLED, PlanningStatusPlugin.ENABLE_BY_DEFAULT);
         }
         catch (RaplaException e)
         {
             throw new RaplaInitializationException(e.getMessage(), e);
         }
+        boolean resolvedEnabled;
+        try
+        {
+            resolvedEnabled = plugins.get("planningstatus").enabled();
+        }
+        catch (Exception e)
+        {
+            // Fall back to plugin's default; allows the menu factory to wire
+            // even if the /plugins endpoint is unreachable at boot.
+            resolvedEnabled = PlanningStatusPlugin.ENABLE_BY_DEFAULT;
+        }
+        enabled = resolvedEnabled;
         permissionController = facade.getRaplaFacade().getPermissionController();
         this.clientFacade = facade;
         this.raplaFacade = facade.getRaplaFacade();
