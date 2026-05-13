@@ -108,3 +108,25 @@ Setup is in `docs/development.md` (one-off `npx playwright install` + `claude mc
 **Login shortcut for the dev server:** with `--user-data-dir` enabled (see setup doc), one OAuth login persists for the session. With `--isolated` (default for unattended), each navigate triggers a fresh OAuth roundtrip — fine for one-shot probes, painful for iteration.
 
 **Artefacts (`.playwright-mcp/*.yml`, `*.png`) are gitignored.** Don't commit them.
+
+### Playwright Agents (Planner / Generator / Healer) — available since 1.56
+
+rapla-angular is on Playwright **1.60** (`npx playwright --version`), so the agentic test layer that shipped in 1.56 is available — separate from the Playwright MCP that drives the browser interactively. Three agents, each runnable via `npx playwright agent <name>`:
+
+| Agent | Input | Output |
+|---|---|---|
+| Planner | Natural-language scenario + seed test | A structured test plan with steps + expected outcomes, validated against the live SPA |
+| Generator | A plan from Planner | An executable `.spec.ts` Playwright test, using stable locators it verifies against the live app |
+| Healer | Failing test + DOM | Patched selectors / assertions to fix flake from SPA changes |
+
+Reach for these when authoring tier-6-equivalent **browser e2e tests** (a layer above PRD 017's pyramid; not yet wired into CI per PRD 034 Phase 4). Don't reach for them to write Vitest `TestBed` component tests — that's tier 6 and the Generator can't see the DI graph.
+
+**Workflow for adding a new e2e test:**
+
+1. Have the dev stack up (`npm run start:ai` + Spring Boot per AGENTS.md §8).
+2. Author a seed `.spec.ts` that just logs in via OAuth and navigates to the page under test. Keep it 10–20 lines — it's the entry context.
+3. `npx playwright agent planner --seed <seed.spec.ts> --scenario "..."` → produces a plan file.
+4. `npx playwright agent generator --plan <plan.json>` → produces a test file.
+5. Run `npx playwright test`; if it fails for a real reason, fix the SPA. If it fails because a selector drifted, `npx playwright agent healer --test <failing.spec.ts>` → patches the selectors.
+
+Cited gains from the 2026 literature: **3–5× faster test authoring** and **60–80% reduction in selector-maintenance PRs** with auto-healing. We have no in-repo measurement yet — log timings on the first few uses to validate before scaling out.

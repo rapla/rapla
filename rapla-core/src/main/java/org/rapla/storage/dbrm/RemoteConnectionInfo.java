@@ -8,6 +8,7 @@ public class RemoteConnectionInfo
 {
     String accessToken;
     String refreshToken;
+    String idToken;
     String refreshUrl;
     String logoutUrl;
     String serverURL;
@@ -49,6 +50,19 @@ public class RemoteConnectionInfo
 
     public String getRefreshToken() {
         return refreshToken;
+    }
+
+    /** OIDC id_token from the token-endpoint response, used as {@code id_token_hint}
+     *  when opening the browser tab to the OIDC end-session endpoint
+     *  ({@code /connect/logout}). Without this hint, Spring SAS rejects the logout
+     *  request with 404 → the rapla-remember-me cookie survives and the next
+     *  OAuth flow silently re-authenticates. */
+    public void setIdToken(String idToken) {
+        this.idToken = idToken;
+    }
+
+    public String getIdToken() {
+        return idToken;
     }
 
     public void setRefreshUrl(String refreshUrl) {

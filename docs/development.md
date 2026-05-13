@@ -53,7 +53,37 @@ wsl-screenshot-cli start --daemon --quiet
 
 **Pasting a screenshot into Claude Code:** Win+Shift+S → snip an area → in the Claude Code prompt press **Ctrl+Shift+V** (terminal paste; plain Ctrl+V is copy in terminals). The path lands as text and Claude Code auto-attaches the image. PNGs accumulate in `/tmp/.wsl-screenshot-cli/` (tmpfs — cleared on reboot). `wsl-screenshot-cli status` shows daemon uptime + screenshot count.
 
-### 7. GitHub CLI (`gh`) — PRs, issues, reviews, releases
+### 8. jdwp-mcp — step-debug a live rapla JVM from Claude Code
+
+Lets the agent attach to a running JVM (Spring Boot dev server most commonly, sometimes the Swing client), set breakpoints, inspect locals/fields, evaluate expressions in scope. See the `java-debugger` skill for the workflow and when to reach for it.
+
+```bash
+# Pre-built binary into ~/.local/bin (already on PATH from step 4)
+TAG=$(curl -fsSL https://api.github.com/repos/dronsv/jdwp-mcp/releases/latest \
+        | grep '"tag_name"' | sed 's/.*"tag_name": *"\([^"]*\)".*/\1/')
+curl -fsSL "https://github.com/dronsv/jdwp-mcp/releases/download/${TAG}/jdwp-mcp-linux-x86_64.tar.gz" \
+  -o /tmp/jdwp-mcp.tgz
+tar -xzf /tmp/jdwp-mcp.tgz -C ~/.local/bin/
+chmod +x ~/.local/bin/jdwp-mcp
+
+# Register with Claude Code (project scope)
+claude mcp add jdwp jdwp-mcp
+claude mcp list | grep jdwp        # should show: jdwp: jdwp-mcp  - ✓ Connected
+```
+
+After register, the agent has `mcp__jdwp__attach`, `mcp__jdwp__set_breakpoint`, `mcp__jdwp__evaluate`, etc. (13 tools).
+
+**Enabling JDWP on the target JVM.** The dev server needs `-agentlib:jdwp=...` added to its JVM args. From the AGENTS.md §8 start recipe, append:
+
+```bash
+-Dspring-boot.run.jvmArguments="-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:5005"
+```
+
+`suspend=n` boots normally and waits for the agent's attach. Use `suspend=y` if you need to break before `main()` returns (early-init bugs). Port 5005 by rapla convention; the Swing client uses 5006 if debugged in parallel. Never start a production rapla with `-agentlib:jdwp` — it's a meaningful attack surface.
+
+Upstream is [dronsv/jdwp-mcp](https://github.com/dronsv/jdwp-mcp) (a fork of [navicore/jdwp-mcp](https://git.navicore.tech/navicore/jdwp-mcp), the originally-published version which is now in maintenance mode).
+
+### 9. GitHub CLI (`gh`) — PRs, issues, reviews, releases
 
 Claude Code's system prompt routes all GitHub work through `gh` via the Bash tool (`gh pr create`, `gh pr view`, `gh issue list`, `gh run watch`, etc.). No GitHub MCP server needed for our scale — `gh` and the MCP wrap the same REST API; the MCP only pays off for line-anchored review-comment loops we don't run.
 

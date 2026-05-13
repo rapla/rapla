@@ -144,11 +144,12 @@ The Bash tool waits for the spawned process to exit. A long-running server start
 > /home/chris/git/rapla/logs/rapla.log    # truncate so stale "Started" lines don't match
 mvn -f /home/chris/git/rapla/pom.xml -pl rapla-app -am spring-boot:run \
     -Dspring-boot.run.fork=false \
+    -Dspring-boot.run.jvmArguments="-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=localhost:5005" \
     > /home/chris/git/rapla/logs/rapla.log 2>&1 &
 echo "spawned"
 ```
 
-Run with `run_in_background=true` on the Bash tool call.
+Run with `run_in_background=true` on the Bash tool call. The `-agentlib:jdwp=…` arg makes the JVM debugger-attachable on `localhost:5005` — idle when nothing's attached, lets the `jdwp` MCP server step-debug on demand (see `java-debugger` skill). Loopback-only bind: never include `address=*:5005` outside dev, and never run a production rapla with `-agentlib:jdwp`.
 
 `-Dspring-boot.run.fork=false` runs the app in the Maven JVM so the
 classpath stays in-reactor (`rapla-{core,client,server,app}/target/classes`)
@@ -232,45 +233,15 @@ Don't delete code to make a compile pass — unless the removal is part of the p
 
 ### 12. Never leak server-side data past the user's read scope
 
-When you move logic from the Swing client to the server (any REST endpoint
-that returns entities, ids, names, or **the existence** of entities), the
-client must only ever see what the **current user is already permitted to
-see** on the Swing side. The Swing client today only holds allocatables /
-reservations / classifications the user can read — REST endpoints must
-preserve that invariant.
+Any REST endpoint that returns entities, ids, names, or **the existence** of entities must only ever surface what the current user is already permitted to see in the Swing client. Five rules that fire on every controller change — load the **`data-leak-prevention`** skill for the implementation patterns (Java code), the reference impl (`CalendarViewController.resolveResourceFilter`), and the mandatory tier-3 MockMvc leak-test recipe:
 
-Concrete rules for new server endpoints:
+- **Never return entities without filtering by `PermissionController.canRead(entity, user)` at the output boundary.** Don't trust upstream `facade.getX()` to have done it.
+- **Never let existence leak.** Id-list endpoints (`?allocatables=a1,a7,a99`) must respond identically for "id doesn't exist" and "id exists but you can't see it" — silently drop both.
+- **Never check permissions per-collection only.** A reservation the user can read may reference an allocatable they can't. Re-check contained entities before exposing their ids/names.
+- **Never return server-derived data unless every input is readable.** A `RenderedBlock` mixing a reservation + allocatable colours is only safe when the user can read both; otherwise drop the whole block, don't strip fields.
+- **Never merge a new id-list / filter endpoint without a tier-3 MockMvc leak test.** Non-admin user, mixed visible/hidden ids in request, assert response is byte-identical to the visible-only subset (and to the all-non-existent-ids case). Status code, headers, body, latency-bucket.
 
-- **Filter by user permission at every output boundary.** Don't trust that
-  upstream queries did it. Pattern:
-  ```java
-  User user = session.checkAndGetUser(request);
-  PermissionController pc = facade.getPermissionController();
-  result.removeIf(a -> !pc.canRead(a, user));
-  ```
-- **Existence is information.** If the client passes a list of ids (e.g.
-  `?allocatables=a1,a7,a99`), the response must not differentiate between
-  "id doesn't exist" and "id exists but you're not allowed to see it" —
-  silently drop both. A user must not be able to probe for hidden ids by
-  watching which ones echo back as columns / blocks / facets.
-- **Per-entity, not per-collection.** A reservation the user can read may
-  reference an allocatable the user **can't** read. Re-check the contained
-  allocatables before exposing their names/ids in the response shape.
-- **Server-derived data inherits the strictest permission of its inputs.**
-  A computed `RenderedBlock` that mixes reservation data + allocatable
-  colours is only safe to return when the user can read both. If either
-  is private, drop the block (or strip the private field).
-- **Reference implementation:** `CalendarViewController.resolveResourceFilter`
-  (rapla-server). The comment there spells out the probe risk.
-- **Test the leak.** Every new endpoint that takes ids or filters needs a
-  tier-3 MockMvc test where a non-admin user requests data they shouldn't
-  see and the response is verified to contain neither the id nor any
-  attribute that reveals existence (column count, error message text,
-  HTTP status differentiation, latency, …).
-
-When in doubt: behave as if the response were a CSV dump emailed to the
-user. If anything in the response is something they couldn't have got via
-the Swing client, the endpoint is broken.
+Mental model: behave as if the JSON response were a CSV dump emailed to the user. If anything in it — id, name, count, column header, error text, latency — is something they couldn't have got via the Swing client today, the endpoint is broken.
 
 ### 13. Mock-framework policy — nevers
 

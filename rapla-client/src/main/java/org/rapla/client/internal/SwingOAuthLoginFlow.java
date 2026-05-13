@@ -301,15 +301,18 @@ public final class SwingOAuthLoginFlow
                 throw new IOException("Token response missing access_token: " + resp.body());
             }
             JsonNode refresh = tree.get("refresh_token");
+            JsonNode idToken = tree.get("id_token");
             JsonNode expires = tree.get("expires_in");
             if (logger != null)
             {
                 logger.info("token endpoint returned: keys=" + tree.propertyNames()
-                        + (refresh == null ? " (NO refresh_token)" : " (refresh_token present)"));
+                        + (refresh == null ? " (NO refresh_token)" : " (refresh_token present)")
+                        + (idToken == null ? " (NO id_token)" : " (id_token present)"));
             }
             return new OAuthTokens(
                     access.asString(),
                     refresh != null ? refresh.asString() : null,
+                    idToken != null ? idToken.asString() : null,
                     expires != null ? expires.asLong() : 0L);
         }
     }

@@ -574,6 +574,17 @@ public class RaplaClientServiceImpl implements ClientService, UpdateErrorListene
         }
     }
 
+    /** Appends {@code id_token_hint=<idToken>} to the OIDC end-session URL.
+     *  When {@code idToken} is null/blank, returns the URL unchanged — the server
+     *  may reject the logout, but at least we don't send a malformed URL. */
+    private static String appendIdTokenHint(String logoutUrl, String idToken)
+    {
+        if (idToken == null || idToken.isEmpty()) return logoutUrl;
+        String encoded = java.net.URLEncoder.encode(idToken, java.nio.charset.StandardCharsets.UTF_8);
+        char sep = logoutUrl.indexOf('?') < 0 ? '?' : '&';
+        return logoutUrl + sep + "id_token_hint=" + encoded;
+    }
+
     private static String extractJson(String body, String field)
     {
         if (body == null) return null;
@@ -857,6 +868,11 @@ public class RaplaClientServiceImpl implements ClientService, UpdateErrorListene
     {
         ConnectInfo info = ConnectInfo.withAccessToken(tokens.getAccessToken(), tokens.getRefreshToken());
         reconnectInfo = info;
+        // Capture the id_token for use as id_token_hint when the user signs out.
+        // Without it, /connect/logout rejects the request (404) and the
+        // rapla-remember-me cookie is not cleared → next OAuth flow silently
+        // re-authenticates via the surviving cookie.
+        connectionInfo.setIdToken(tokens.getIdToken());
         login(info).thenAccept(success -> {
             if (!success)
             {
@@ -1033,17 +1049,21 @@ public class RaplaClientServiceImpl implements ClientService, UpdateErrorListene
                 getLogger().info("logout: server-side revocation failed (" + t.getMessage() + "); local logout proceeds");
             }
         }
-        // Also clear the browser's session cookie at the auth server (Spring's
-        // /logout or Keycloak's end-session). Without this, next launch's OAuth
-        // flow uses the surviving session cookie to silently re-authenticate
-        // and the user never sees the login page — defeating an explicit logout.
+        // Also clear the browser's session AND remember-me cookies at the auth
+        // server. Discovery's logoutUrl points at /connect/logout (OIDC RP-initiated
+        // logout). That endpoint requires an id_token_hint per spec — without it
+        // Spring SAS returns 404 and the rapla-remember-me cookie survives. With
+        // a valid hint, Spring's success handler (wired by AuthorizationServerConfig)
+        // also runs the CompositeLogoutHandler that drops the remember-me cookie.
         String logoutUrl = connectionInfo.getLogoutUrl();
         if (logoutUrl != null && !logoutUrl.isEmpty())
         {
             try
             {
-                org.rapla.client.internal.BrowserLauncher.open(URI.create(logoutUrl), getLogger());
-                getLogger().info("logout: opened browser to clear IdP session cookie at " + logoutUrl);
+                String fullUrl = appendIdTokenHint(logoutUrl, connectionInfo.getIdToken());
+                org.rapla.client.internal.BrowserLauncher.open(URI.create(fullUrl), getLogger());
+                getLogger().info("logout: opened browser to clear IdP session cookie at " + logoutUrl
+                        + (connectionInfo.getIdToken() != null ? " (with id_token_hint)" : " (NO id_token — server may reject)"));
             }
             catch (Throwable t)
             {
