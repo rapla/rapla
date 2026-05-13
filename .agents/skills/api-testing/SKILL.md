@@ -9,16 +9,27 @@ Use this when you need to inspect what the server actually returns over the wire
 
 ## Prerequisites
 
-Server must be running. Check via AGENTS.md §8 status check (`logs/rapla.pid` alive + `curl /rapla/raplaclient.jnlp` returns 200).
+Server must be running. Check via AGENTS.md §8 status check
+(`jps -l | grep RaplaSpringBoot` + `curl /raplaclient.jnlp` returns 200).
 
-All URLs live under `/rapla/...` because of `server.servlet.context-path=/rapla`.
+URL layout post PRD 031 (2026-05-12):
+
+| Namespace | Examples |
+|---|---|
+| `/api/...` | REST API — `/api/auth/login`, `/api/storage/resources`, `/api/v3/api-docs`, etc. |
+| `/oauth2/...`, `/.well-known/...` | OAuth2 / OIDC (RFC paths, root) |
+| `/rapla/{calendar,ical,internal_calendar,internal_ical,*.csv}` | Six legacy load-bearing URLs (external iCal subscribers, calendar embeds) |
+| `/raplaclient.jnlp`, `/webclient/**` | JNLP Swing launcher (root) |
+| `/app/` | Angular SPA (root mount) |
+
+The historical `/rapla` context-path was dropped — no global prefix.
 
 ## Login (admin / empty password — dev only)
 
 The bundled dev DB ships with one user: **`admin`** with **empty password**. The `/auth/login` endpoint returns a JSON body `{accessToken, expiresIn, refreshToken}`. The `accessToken` is a JWT (HS256) used as a Bearer token for all subsequent requests.
 
 ```bash
-ACCESS=$(curl -s -X POST "http://localhost:8051/rapla/auth/login" \
+ACCESS=$(curl -s -X POST "http://localhost:8051/api/auth/login" \
   -H "Content-Type: application/json" \
   -d '{"username":"admin","password":""}' \
   | python3 -c "import sys,json; print(json.load(sys.stdin)['accessToken'])")
@@ -33,7 +44,7 @@ Returns an `UpdateEvent` containing the entity bootstrap the client needs at log
 
 ```bash
 curl -s -H "Authorization: Bearer $ACCESS" \
-  "http://localhost:8051/rapla/storage/resources" > /tmp/resources.json
+  "http://localhost:8051/api/storage/resources" > /tmp/resources.json
 
 python3 - <<'PY'
 import json
@@ -61,7 +72,7 @@ Reservations are not in the bootstrap. Use `/queryAppointments` with a JSON body
 RESOURCE_ID=$(python3 -c "import json; print(json.load(open('/tmp/resources.json'))['resources'][0]['id'])")
 echo "Filtering by resource: $RESOURCE_ID"
 
-curl -s -X POST "http://localhost:8051/rapla/storage/queryAppointments" \
+curl -s -X POST "http://localhost:8051/api/storage/queryAppointments" \
   -H "Authorization: Bearer $ACCESS" \
   -H "Content-Type: application/json" \
   -d "{\"resources\":[\"$RESOURCE_ID\"],\"start\":\"2020-01-01T00:00:00\",\"end\":\"2030-01-01T00:00:00\"}" \
@@ -74,7 +85,7 @@ A reservation's display name comes from its classification (same mechanism as re
 
 ## Other endpoints worth knowing
 
-All on `/rapla/storage/...` from `RemoteStorage.java`:
+All on `/api/storage/...` from `RemoteStorage.java`:
 
 | Endpoint | Method | Purpose |
 |---|---|---|
@@ -86,7 +97,7 @@ All on `/rapla/storage/...` from `RemoteStorage.java`:
 | `/user?userId=<id>` | GET | Lookup username |
 | `/change/password` | POST | `{username, oldPassword, newPassword}` |
 
-Authentication endpoints are on `/rapla/auth/`:
+Authentication endpoints are on `/api/auth/`:
 
 | Endpoint | Method | Purpose |
 |---|---|---|

@@ -89,6 +89,19 @@ rapla:
     # the client.
     enabled: true
     client-id: rapla-client
+    # Origin the SPA should call for OAuth2/OIDC endpoints (authorize, token,
+    # jwks, userinfo, end-session). Returned by /api/auth/oauth/config so the
+    # SPA reads it at boot. When empty, falls back to the request-derived origin
+    # — i.e. same-origin as the rapla REST API, which is correct in production
+    # (SPA at :8051/app/ calls :8051/oauth2/token).
+    #
+    # In dev with the `ng serve` proxy (SPA at :4200, Spring at :8051), set this
+    # to http://localhost:8051 so the SPA bypasses the proxy for OAuth and hits
+    # Spring AS directly — same shape as cross-origin Keycloak. proxy.conf.js
+    # intentionally does NOT forward /oauth2/*.
+    #
+    # External IdP: set to the IdP's origin, e.g. https://keycloak.example.com.
+    public-base-url: ${RAPLA_OAUTH_PUBLIC_BASE_URL:http://localhost:8051}
     # Show a "paste callback URL here" dialog alongside the OAuth browser launch
     # as a fallback for environments where the automatic loopback redirect can't
     # reach the Swing client (WSL2 NAT, corporate firewalls blocking inbound

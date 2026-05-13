@@ -1,6 +1,5 @@
 package org.rapla.framework;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -10,15 +9,6 @@ public class DefaultConfiguration implements Configuration {
 
     Map<String,String> attributes = new LinkedHashMap<>();
     List<DefaultConfiguration> children = new ArrayList<>();
-    // @JsonProperty rescues this field after the @JsonIgnore annotations below
-    // mark the typed setValue(int)/setValue(boolean) overloads as ignored —
-    // Jackson 2's "any-ignorals-propagate" rule would otherwise hide the
-    // entire `value` property (including this field) from schema generation
-    // because the property is reachable via ignored accessors. Annotating the
-    // field explicitly tells Jackson "the field is a property regardless of
-    // what the accessors say". Runtime serializer is field-based so no behavior
-    // change; only swagger-core's schema generation cares.
-    @com.fasterxml.jackson.annotation.JsonProperty
     String value;
     String name;
     
@@ -70,38 +60,19 @@ public class DefaultConfiguration implements Configuration {
         this.value = value;
     }
 
-    /*
-     * The two typed setValue(...) overloads below are framework-API conveniences
-     * — they write into the same private `value` field that {@link #setValue(String)}
-     * does, just after a primitive→String conversion. They are NEVER called by the
-     * Jackson 3 runtime serializer (rapla configures it with SETTER=NONE +
-     * FIELD=ANY in rapla-core/.../JacksonObjectMapperFactory.java; deserialization
-     * goes straight to the field). But swagger-core 2.x's POJOPropertyBuilder
-     * collects ALL public setters regardless of visibility config during property
-     * discovery and then throws IllegalArgumentException because three overloads
-     * claim the same property name "value". swagger-core's ModelResolver.ignore()
-     * catches the exception, so the resulting OpenAPI schema is still correct
-     * (single `value` property, derived from the field), but the throw leaves a
-     * boot-time WARN log line:
-     *
-     *     IllegalArgumentException: Conflicting setter definitions for property
-     *     "value": setValue(boolean) vs setValue(int)
-     *
-     * Annotating these two overloads with @JsonIgnore removes them from
-     * swagger-core's property-discovery pass, eliminating the warning at the
-     * source while preserving the framework API for non-Jackson callers. See
-     * docs/architecture/rest-api.md §"OpenAPI / Swagger spec caveat" for the
-     * broader Jackson 2 / Jackson 3 split that makes this annotation necessary
-     * — once swagger-core 3.x ships with Jackson 3 (upstream #4991, ~12-24 months
-     * out as of 2026-05-13), the underlying mismatch goes away and these
-     * annotations can be removed.
-     */
-    @JsonIgnore
+    // The two typed setValue(...) overloads below are framework-API conveniences;
+    // they write into the same private `value` field that setValue(String) does,
+    // just with a primitive→String conversion. They are never called by Jackson
+    // 3 at runtime (SETTER=NONE + FIELD=ANY in JacksonObjectMapperFactory).
+    // swagger-core 2.x's schema introspection would log a "Conflicting setter
+    // definitions for property 'value'" warning because three overloads claim
+    // the same property name — that's suppressed via a Jackson mixin registered
+    // on the swagger-core mapper in rapla-app's SwaggerJacksonConfig, so this
+    // class stays clean of Jackson annotations.
     public void setValue(int intValue) {
         this.value = Integer.toString( intValue);
     }
 
-    @JsonIgnore
     public void setValue(boolean selected) {
         this.value = Boolean.toString( selected);
     }

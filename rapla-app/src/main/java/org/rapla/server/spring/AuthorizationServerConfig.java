@@ -112,14 +112,33 @@ public class AuthorizationServerConfig
                     }
                 })));
 
+        // Only redirect to the form-login page when the client EXPLICITLY accepts
+        // text/html — i.e. an actual browser navigation to /oauth2/authorize.
+        // Without setUseEquals + ignoring MediaType.ALL, `Accept: */*` (the
+        // default for fetch / XMLHttpRequest / curl) matches "compatible with"
+        // text/html, and programmatic POSTs to /oauth2/token would be 302'd to
+        // /login instead of getting the proper OAuth JSON error. That broke the
+        // angular-oauth2-oidc library's code-exchange round-trip — see PRD 026
+        // notes on the "404 on /oauth2/token" symptom.
+        MediaTypeRequestMatcher htmlMatcher = new MediaTypeRequestMatcher(MediaType.TEXT_HTML);
+        htmlMatcher.setUseEquals(true);
+        htmlMatcher.setIgnoredMediaTypes(Collections.singleton(MediaType.ALL));
+
         http
                 .securityMatcher(endpointsMatcher)
                 .authorizeHttpRequests(auth -> auth.anyRequest().authenticated())
                 .csrf(csrf -> csrf.ignoringRequestMatchers(endpointsMatcher))
+                // CORS for cross-origin SPA → OAuth endpoint calls. In dev the
+                // SPA at :4200 POSTs /oauth2/token to :8051 direct (the proxy
+                // explicitly does NOT forward OAuth paths — proxy.conf.js).
+                // Mirrors what would happen with an external Keycloak: SPA →
+                // separate IdP origin, CORS required. SecurityConfig already
+                // provides a CorsConfigurationSource bean that allows *.
+                .cors(Customizer.withDefaults())
                 .with(authServerConfigurer, c -> c.oidc(Customizer.withDefaults()))
                 .exceptionHandling(exc -> exc.defaultAuthenticationEntryPointFor(
                         new LoginUrlAuthenticationEntryPoint("/login"),
-                        new MediaTypeRequestMatcher(MediaType.TEXT_HTML)));
+                        htmlMatcher));
         return http.build();
     }
 
@@ -424,10 +443,23 @@ public class AuthorizationServerConfig
                 throw new UsernameNotFoundException(name);
             }
             String role = user.isAdmin() ? "ROLE_ADMIN" : "ROLE_USER";
+            // Include a FactorGrantedAuthority alongside the role so OIDC ID-token
+            // issuance (JwtGenerator.getAuthenticationTime) can populate the auth_time
+            // claim. Remember-me-restored Authentications would otherwise carry only
+            // the SimpleGrantedAuthority for ROLE_*, and Spring AS would throw
+            // "authenticationTime cannot be null" at /oauth2/token.
+            //
+            // issuedAt defaults to Instant.now() on .build(). That's an over-estimate
+            // (real auth happened when the remember-me cookie was issued, possibly
+            // weeks ago) but matches OIDC's intent of "the time the user authenticated
+            // for this session" — the cookie presentation is a re-authentication
+            // event in Spring's model.
             return org.springframework.security.core.userdetails.User
                     .withUsername(user.getId())
                     .password("N/A")
-                    .authorities(role)
+                    .authorities(
+                            FactorGrantedAuthority.fromAuthority(FactorGrantedAuthority.PASSWORD_AUTHORITY),
+                            new SimpleGrantedAuthority(role))
                     .build();
         };
     }

@@ -13,7 +13,6 @@ o//pyright (C) 2014 Christopher Kohlhaas                                  |
 *--------------------------------------------------------------------------*/
 package org.rapla.entities.configuration.internal;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import org.jetbrains.annotations.NotNull;
 import org.rapla.components.util.iterator.FilterIterable;
 import org.rapla.components.util.iterator.IterableChain;
@@ -354,28 +353,13 @@ public class RaplaMapImpl implements EntityReferencer, DynamicTypeDependant, Rap
         map = null;
     }
 
-    /*
-     * Private overload — internal helper used by {@link #setResolver(EntityResolver)}
-     * to propagate the resolver into a nested map of EntityReferencer values.
-     * It writes through to the same object graph the public overload reaches.
-     * It is NEVER called by Jackson at runtime: the rapla mapper has
-     * SETTER=NONE + FIELD=ANY (see rapla-core/.../JacksonObjectMapperFactory.java),
-     * so neither deserialization nor serialization consults this method.
-     *
-     * The @JsonIgnore here is solely a workaround for swagger-core 2.x's schema
-     * introspection: its POJOPropertyBuilder collects all setX methods regardless
-     * of Java visibility, sees two `setResolver` overloads claiming the same
-     * "resolver" property name, and logs a boot-time warning
-     * (IllegalArgumentException: Conflicting setter definitions for property
-     * "resolver"). swagger-core's ModelResolver.ignore() catches the exception
-     * so the OpenAPI schema is still produced correctly, but the WARN line is
-     * noise. @JsonIgnore removes this method from property discovery and
-     * silences the warning at source.
-     *
-     * Removable once swagger-core 3.x (Jackson 3 native) ships — see
-     * docs/architecture/rest-api.md §"OpenAPI / Swagger spec caveat".
-     */
-    @JsonIgnore
+    // Private overload — internal helper used by setResolver(EntityResolver).
+    // Jackson 3 runtime never sees it (SETTER=NONE + FIELD=ANY). swagger-core 2.x's
+    // schema introspection would log a "Conflicting setter definitions for property
+    // 'resolver'" warning because both setResolver overloads claim the same property
+    // name. The warning is suppressed via a Jackson mixin registered on swagger-core's
+    // mapper in rapla-app's SwaggerJacksonConfig, so this class stays clean of
+    // Jackson annotations.
     private void setResolver(Map<String, ? extends EntityReferencer> map)
     {
         if (map == null)

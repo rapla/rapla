@@ -1,5 +1,5 @@
 /**
- * Angular dev-server proxy. Forwards REST / OAuth2 / legacy iCal+calendar
+ * Angular dev-server proxy. Forwards rapla REST + legacy /rapla calendar/ical
  * paths to Spring on :8051; lets ng serve handle /app/** itself.
  *
  * Workflow (PRD 026 §dev / PRD 031 §dev workflow):
@@ -8,9 +8,13 @@
  *
  * Open http://localhost:4200/app/ — same path as prod (http://host:8051/app/).
  *
- * The bypass + onProxyRes hooks rewrite absolute Location/Origin URLs that
- * Spring AS emits (it builds them from request.getServerPort()=8051) so the
- * browser stays pinned to :4200 throughout the OAuth Code+PKCE round trip.
+ * OAuth endpoints (/oauth2/*, /.well-known/*, /userinfo, /connect/*, /login)
+ * are intentionally NOT proxied. The SPA hits them directly at :8051 — the
+ * same shape any external IdP (Keycloak, Auth0) would need. CORS on the
+ * Spring side (AuthorizationServerConfig.corsConfigurationSource) allows
+ * cross-origin POST /oauth2/token from :4200. The OAuth library reads
+ * absolute :8051 URLs from /api/auth/oauth/config (rapla.oauth.public-base-url
+ * in application.yml).
  */
 const TARGET = 'http://localhost:8051';
 const PROXIED_ORIGIN = 'http://localhost:4200';
@@ -24,18 +28,13 @@ module.exports = [
   {
     context: [
       '/api',
-      '/oauth2',
-      '/.well-known',
-      '/userinfo',         // OIDC userinfo (referenced from discovery doc)
-      '/connect',          // OIDC end-session ("/connect/logout")
       '/swagger-ui',
       '/v3',
       '/rapla',            // legacy iCal / calendar load-bearing URLs
       '/raplaclient',
       '/raplaclient.jnlp',
       '/webclient',
-      '/login',
-      '/logout',           // Spring form-login logout
+      '/logout',           // Spring form-login logout (sibling of OAuth /login but app-side)
       '/error',
       '/server',
       '/index',
@@ -49,22 +48,21 @@ module.exports = [
     onProxyReq(proxyReq) {
       // http-proxy's xfwd doesn't add X-Forwarded-Host. Without it, Spring's
       // forward-headers-strategy can't compute the original public origin —
-      // OAuthConfigController returns :8051 URLs instead of :4200, breaking
-      // the proxy. Set explicitly.
+      // OAuthConfigController would return :8051 URLs for the app API instead
+      // of :4200. Set explicitly.
       proxyReq.setHeader('X-Forwarded-Host', 'localhost:4200');
       proxyReq.setHeader('X-Forwarded-Proto', 'http');
       proxyReq.setHeader('X-Forwarded-Port', '4200');
     },
     onProxyRes(proxyRes) {
-      // Rewrite redirect targets so the browser stays on :4200 — Spring AS
-      // emits absolute http://localhost:8051/... URLs from getServerPort(),
-      // which would otherwise pop the browser out of the proxy.
+      // Rewrite redirect targets so the browser stays on :4200 — Spring emits
+      // absolute http://localhost:8051/... URLs from getServerPort(),
+      // which would otherwise pop the browser out of the proxy. (OAuth
+      // redirects no longer flow through here, but the rapla /api/* paths
+      // and legacy /rapla/* paths still can.)
       if (proxyRes.headers['location']) {
         proxyRes.headers['location'] = rewriteHeader(proxyRes.headers['location']);
       }
-      // Same for Content-Security-Policy / Set-Cookie domains if they leak the
-      // upstream host. Safe to apply blindly — TARGET is never legitimately in
-      // a header sent back to the SPA.
       if (proxyRes.headers['content-security-policy']) {
         proxyRes.headers['content-security-policy'] = rewriteHeader(
           proxyRes.headers['content-security-policy']

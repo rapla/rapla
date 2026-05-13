@@ -25,6 +25,7 @@ public class OAuthConfigController
     private final String clientId;
     private final List<String> scopes;
     private final boolean showPasteFallback;
+    private final String publicBaseUrlOverride;
     private final String authorizeUrlOverride;
     private final String tokenUrlOverride;
     private final String refreshUrlOverride;
@@ -40,6 +41,7 @@ public class OAuthConfigController
             @Value("${rapla.oauth.client-id:rapla-client}") String clientId,
             @Value("${rapla.oauth.scopes:openid,profile,offline_access}") List<String> scopes,
             @Value("${rapla.oauth.show-paste-fallback:false}") boolean showPasteFallback,
+            @Value("${rapla.oauth.public-base-url:}") String publicBaseUrlOverride,
             @Value("${rapla.oauth.authorize-url:}") String authorizeUrlOverride,
             @Value("${rapla.oauth.token-url:}") String tokenUrlOverride,
             @Value("${rapla.oauth.refresh-url:}") String refreshUrlOverride,
@@ -54,6 +56,7 @@ public class OAuthConfigController
         this.clientId = clientId;
         this.scopes = scopes;
         this.showPasteFallback = showPasteFallback;
+        this.publicBaseUrlOverride = nullToEmpty(publicBaseUrlOverride);
         this.authorizeUrlOverride = nullToEmpty(authorizeUrlOverride);
         this.tokenUrlOverride = nullToEmpty(tokenUrlOverride);
         this.refreshUrlOverride = nullToEmpty(refreshUrlOverride);
@@ -72,16 +75,24 @@ public class OAuthConfigController
         {
             return new OAuthConfig(false, null, null, null, null, null, null, null, null, null, List.of(), false);
         }
-        String base = baseUrl(request);
-        String issuer = issuerOverride.isEmpty() ? base : issuerOverride;
-        String authorizeUrl = authorizeUrlOverride.isEmpty() ? base + "/oauth2/authorize" : authorizeUrlOverride;
-        String tokenUrl = tokenUrlOverride.isEmpty() ? base + "/oauth2/token" : tokenUrlOverride;
-        // PRD 031 Phase 2: REST auth moved under /api/
-        String refreshUrl = refreshUrlOverride.isEmpty() ? base + "/api/auth/refresh" : refreshUrlOverride;
-        String logoutUrl = logoutUrlOverride.isEmpty() ? base + "/logout" : logoutUrlOverride;
-        String jwksUrl = jwksUrlOverride.isEmpty() ? base + "/oauth2/jwks" : jwksUrlOverride;
-        String userinfoUrl = userinfoUrlOverride.isEmpty() ? base + "/userinfo" : userinfoUrlOverride;
-        String endSessionUrl = endSessionUrlOverride.isEmpty() ? base + "/connect/logout" : endSessionUrlOverride;
+        // App-facing base: respects X-Forwarded-* so dev proxy on :4200 produces
+        // :4200 URLs. Used for the rapla REST API (/api/auth/refresh, /logout).
+        String appBase = baseUrl(request);
+        // OAuth-facing base: bypasses the dev proxy by default. When
+        // rapla.oauth.public-base-url is set, OAuth endpoints (authorize, token,
+        // jwks, userinfo, end-session) point at that absolute URL — typically
+        // http://localhost:8051 in dev, https://idp.example.com for external
+        // Keycloak. Empty falls back to appBase (production same-origin case).
+        String oauthBase = publicBaseUrlOverride.isEmpty() ? appBase : publicBaseUrlOverride;
+        String issuer = issuerOverride.isEmpty() ? oauthBase : issuerOverride;
+        String authorizeUrl = authorizeUrlOverride.isEmpty() ? oauthBase + "/oauth2/authorize" : authorizeUrlOverride;
+        String tokenUrl = tokenUrlOverride.isEmpty() ? oauthBase + "/oauth2/token" : tokenUrlOverride;
+        // PRD 031 Phase 2: REST auth moved under /api/. Stays on app origin.
+        String refreshUrl = refreshUrlOverride.isEmpty() ? appBase + "/api/auth/refresh" : refreshUrlOverride;
+        String logoutUrl = logoutUrlOverride.isEmpty() ? oauthBase + "/logout" : logoutUrlOverride;
+        String jwksUrl = jwksUrlOverride.isEmpty() ? oauthBase + "/oauth2/jwks" : jwksUrlOverride;
+        String userinfoUrl = userinfoUrlOverride.isEmpty() ? oauthBase + "/userinfo" : userinfoUrlOverride;
+        String endSessionUrl = endSessionUrlOverride.isEmpty() ? oauthBase + "/connect/logout" : endSessionUrlOverride;
         return new OAuthConfig(
                 true,
                 clientId,

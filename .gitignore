@@ -51,3 +51,7 @@ proxy.conf.local.json
 /rapla-angular/src/app/api/
 /rapla-angular/.angular/
 /rapla-app/src/main/resources/static/spa/
+# playwright-mcp browser-test session artefacts (PRD 033)
+/.playwright-mcp/*.yml
+/.playwright-mcp/*.yaml
+/.playwright-mcp/*.png
