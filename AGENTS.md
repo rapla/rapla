@@ -33,6 +33,13 @@ The reactor aggregator (`pom.xml` at the repo root, packaging=pom, artifactId=`r
 
 ## Rules
 
+### 0. Session discipline — context budget + risky-change branching
+
+Two practices that pay off on a codebase this size (rapla sessions tend to be long):
+
+- **Don't let context exceed ~60% of the window.** Quality starts degrading at 20–40% of 200 k tokens; auto-compact (~83% threshold) is lossy and retains only 20–30% of detail. When approaching the limit, run `/compact <hint>` — e.g. `/compact focus on PRD 029 phase 2 verification, drop the bootstrap chatter` — so the summary keeps the load-bearing context and drops the rest. Don't wait for auto-compact.
+- **Use `/branch` (or `/fork`) before a risky mechanical sweep.** Date→LocalDateTime, package renames, Jackson 3 migration, the kind of change the `bulk-refactor-scripts` skill records scars from. A branch is a session snapshot — try the experiment; if it works, keep the branch; if it doesn't, return to the original conversation with no rollback cost.
+
 ### 1. Test-First Approach
 
 The order is **(a) understand → (b) write failing test → (c) fix → (d) verify test passes**, then commit. Skipping the test step for "obvious" fixes is the most common form of slippage in this codebase — don't.
@@ -195,16 +202,17 @@ skill. Server must be running per §8 first.
 
 ### 10. Testing conventions — pyramid + nevers
 
-PRD 017's pyramid. Pick the cheapest tier that exercises your code path. **Java: default to tier 1 or 2; reach for tier 3/4 only when you actually need a Spring context. Angular: default to tier 5; only mount a component (tier 6) when behaviour depends on template/DOM.** Browser e2e for the SPA is planned per PRD 033 (Playwright MCP), not yet a tier.
+PRD 017's pyramid. Pick the cheapest tier that exercises your code path. **Java: default to tier 1 or 2; reach for tier 3/4 only when you actually need a Spring context. Angular: default to tier 5; only mount a component (tier 6) when behaviour depends on template/DOM. Browser e2e (tier 7) is the widest tier and the most expensive — keep the suite to ~5–15 tests covering critical user paths only.**
 
 | Tier | Where | Engine | Cost / first test | Use for |
 |---|---|---|---:|---|
 | 1. Pure unit | `rapla-core/src/test/...` | plain JUnit, **no Spring** | < 100 ms | Entities, util, date math, parsing, repeating-rule logic, permission rules, JSON wire-format |
 | 2. Facade / storage unit | `rapla-server/src/test/...` extending `FacadeTestSupport` | plain JUnit, **no Spring** | ~150 ms | `RaplaFacade`-level behaviour, XML round-trip, conflict detection, anything that needs real `LocalCache` over real `FileOperator` |
 | 3. Web slice | `rapla-app/src/test/...` with `@SpringBootTest` + `@AutoConfigureMockMvc` | Spring context (cached) | ~3–5 s amortised | Controllers, error-mapping, JWT gate, JSON DTO contracts |
-| 4. Full E2E | `rapla-app/src/test/...` with `@SpringBootTest(webEnvironment=RANDOM_PORT)` | Spring + Tomcat | 7–15 s | Server↔REST-client round-trips, login → query → mutate. Keep small. |
+| 4. Full Java E2E | `rapla-app/src/test/...` with `@SpringBootTest(webEnvironment=RANDOM_PORT)` | Spring + Tomcat | 7–15 s | Server↔REST-client round-trips, login → query → mutate. Keep small. |
 | 5. Angular unit (TS) | `rapla-angular/src/**/*.spec.ts` | Vitest, **no `TestBed`** | < 50 ms | Pure-TS services, validators, RxJS pipelines, formatters, route guards — anything you can construct with `new` |
 | 6. Angular component | `rapla-angular/src/**/*.spec.ts` with `TestBed.createComponent(...)` | Vitest + Angular TestBed + jsdom | ~200–500 ms first, ~50 ms subsequent in same `describe` | Template bindings, `@Input`/`@Output` wiring, directives, `*ngIf`/`*ngFor` rendering, Material-driven a11y. Don't reach for it to test logic a tier-5 test could cover. |
+| 7. Browser e2e | `rapla-angular/tests/**/*.spec.ts` (Playwright) | Real Chromium + live Spring Boot + live storage | 5–30 s | The full stack (browser → SPA → REST → facade → storage) for things only a real browser sees: OAuth + PKCE redirects, CORS, JS-side state (`sessionStorage`, JS caches), Material rendering, wire-format consumer mismatches. **Don't** use it for anything tiers 1–6 can prove — Playwright is the slowest, flakiest tier; reach for it only when its uniquely-broad coverage is what's required. Authored via Playwright Agents (Planner/Generator/Healer, 1.56+) — see `angular-frontend` skill. Not yet wired into CI (PRD 034 Phase 4). |
 
 #### Nevers (apply to every test you write)
 

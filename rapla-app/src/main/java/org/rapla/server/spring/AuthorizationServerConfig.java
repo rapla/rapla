@@ -44,8 +44,13 @@ import org.springframework.security.oauth2.server.authorization.authentication.O
 import org.springframework.security.oauth2.server.authorization.client.RegisteredClient;
 import org.springframework.security.oauth2.server.authorization.oidc.authentication.OidcLogoutAuthenticationContext;
 import org.springframework.security.oauth2.server.authorization.oidc.authentication.OidcLogoutAuthenticationProvider;
+import org.springframework.security.oauth2.server.authorization.oidc.web.authentication.OidcLogoutAuthenticationSuccessHandler;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.LoginUrlAuthenticationEntryPoint;
+import org.springframework.security.web.authentication.RememberMeServices;
+import org.springframework.security.web.authentication.logout.CompositeLogoutHandler;
+import org.springframework.security.web.authentication.logout.LogoutHandler;
+import org.springframework.security.web.authentication.logout.SecurityContextLogoutHandler;
 import org.springframework.security.web.util.matcher.MediaTypeRequestMatcher;
 import org.springframework.security.web.util.matcher.RequestMatcher;
 import org.springframework.web.context.request.RequestContextHolder;
@@ -99,7 +104,8 @@ public class AuthorizationServerConfig
 
     @Bean
     @Order(1)
-    public SecurityFilterChain authorizationServerSecurityFilterChain(HttpSecurity http) throws Exception
+    public SecurityFilterChain authorizationServerSecurityFilterChain(HttpSecurity http,
+                                                                      RememberMeServices rememberMeServices) throws Exception
     {
         OAuth2AuthorizationServerConfigurer authServerConfigurer =
                 new OAuth2AuthorizationServerConfigurer();
@@ -137,13 +143,28 @@ public class AuthorizationServerConfig
                 // separate IdP origin, CORS required. SecurityConfig already
                 // provides a CorsConfigurationSource bean that allows *.
                 .cors(Customizer.withDefaults())
-                .with(authServerConfigurer, c -> c.oidc(oidc -> oidc.logoutEndpoint(logout ->
-                        logout.authenticationProviders(providers -> providers.forEach(provider -> {
-                            if (provider instanceof OidcLogoutAuthenticationProvider logoutProvider)
-                            {
-                                logoutProvider.setAuthenticationValidator(permissivePostLogoutRedirectUriValidator());
-                            }
-                        })))))
+                .with(authServerConfigurer, c -> c.oidc(oidc -> oidc.logoutEndpoint(logout -> {
+                    logout.authenticationProviders(providers -> providers.forEach(provider -> {
+                        if (provider instanceof OidcLogoutAuthenticationProvider logoutProvider)
+                        {
+                            logoutProvider.setAuthenticationValidator(permissivePostLogoutRedirectUriValidator());
+                        }
+                    }));
+                    // Spring SAS's default OidcLogoutAuthenticationSuccessHandler only
+                    // clears the HttpSession + SecurityContext. It does NOT consult
+                    // RememberMeServices, so the rapla-remember-me cookie survives a
+                    // /connect/logout — and Spring's RememberMeAuthenticationFilter then
+                    // silently re-authenticates the next /oauth2/authorize ("sign out →
+                    // instantly signed back in" bug). Wrapping the success handler with
+                    // a CompositeLogoutHandler that includes the bean-promoted
+                    // RememberMeServices closes the gap: cookie cleared + persistent
+                    // token removed in one shot.
+                    OidcLogoutAuthenticationSuccessHandler successHandler = new OidcLogoutAuthenticationSuccessHandler();
+                    successHandler.setLogoutHandler(new CompositeLogoutHandler(
+                            new SecurityContextLogoutHandler(),
+                            (LogoutHandler) rememberMeServices));
+                    logout.logoutResponseHandler(successHandler);
+                })))
                 .exceptionHandling(exc -> exc.defaultAuthenticationEntryPointFor(
                         new LoginUrlAuthenticationEntryPoint("/login"),
                         htmlMatcher));

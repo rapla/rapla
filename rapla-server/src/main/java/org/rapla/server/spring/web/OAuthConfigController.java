@@ -89,7 +89,15 @@ public class OAuthConfigController
         String tokenUrl = tokenUrlOverride.isEmpty() ? oauthBase + "/oauth2/token" : tokenUrlOverride;
         // PRD 031 Phase 2: REST auth moved under /api/. Stays on app origin.
         String refreshUrl = refreshUrlOverride.isEmpty() ? appBase + "/api/auth/refresh" : refreshUrlOverride;
-        String logoutUrl = logoutUrlOverride.isEmpty() ? oauthBase + "/logout" : logoutUrlOverride;
+        // OIDC RP-initiated logout endpoint (OpenID Connect RP-Initiated Logout 1.0).
+        // Spring Authorization Server defaults to /connect/logout — also advertised
+        // by .well-known/openid-configuration as end_session_endpoint. Both the
+        // Swing client and Angular SPA hit this URL on logout: it clears the
+        // HttpSession AND honors post_logout_redirect_uri. Callers should include
+        // id_token_hint (or client_id) so the OP can authenticate the logout
+        // request per the spec. Override for external IdPs (Keycloak:
+        // /realms/{realm}/protocol/openid-connect/logout).
+        String logoutUrl = logoutUrlOverride.isEmpty() ? oauthBase + "/connect/logout" : logoutUrlOverride;
         String jwksUrl = jwksUrlOverride.isEmpty() ? oauthBase + "/oauth2/jwks" : jwksUrlOverride;
         String userinfoUrl = userinfoUrlOverride.isEmpty() ? oauthBase + "/userinfo" : userinfoUrlOverride;
         String endSessionUrl = endSessionUrlOverride.isEmpty() ? oauthBase + "/connect/logout" : endSessionUrlOverride;

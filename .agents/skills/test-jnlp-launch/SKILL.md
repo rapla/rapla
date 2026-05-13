@@ -1,7 +1,7 @@
 ---
 name: test-jnlp-launch
 description: |
-  Use when you want to verify the Spring Boot 4 deployable launches end-to-end via a real JNLP launcher (icedtea-netx in WSL, or OpenWebStart on Windows) — including self-signing for testing and the WSL2/Windows networking caveats. Skip when the user just wants to test the fat JAR boots and serves HTTP — that's `test-deployment`. Skip when the user is doing client-side work without JNLP — that's `mvn exec:java` (AGENTS.md §9).
+  Use when you want to verify the Spring Boot 4 deployable launches end-to-end via a real JNLP launcher (icedtea-netx in WSL, or OpenWebStart on Windows) — including self-signing for testing and the WSL2/Windows networking caveats. Skip when the user just wants to test the fat JAR boots and serves HTTP — that's `test-deployment`. Skip when the user is doing client-side work without JNLP — that's `mvn exec:java`, covered by the `swing-client-launch` skill.
 ---
 
 # Verifying the JNLP / OWS launch end-to-end
@@ -149,7 +149,7 @@ rm -rf /tmp/rapla-flat
 ## Related
 
 - [`AGENTS.md` §8](../../../AGENTS.md) — dev server lifecycle (the path you use most days)
-- [`AGENTS.md` §9](../../../AGENTS.md) — Swing client without JNLP (`mvn exec:java` — fastest end-to-end client check)
+- [`swing-client-launch` skill](../swing-client-launch/SKILL.md) — Swing client without JNLP (`mvn exec:java` — fastest end-to-end client check)
 - [`docs/development.md`](../../../docs/development.md) — long-form companion to this skill, including the WSL2↔Windows networking deep-dive
 - [PRD 018](../../../docs/prd/018-fat-jar-classloader-defect.md) — Spring Boot 4.0.6 LaunchedClassLoader defect that forces the extract-and-run shape used in step 3
 - [`test-deployment` skill](../test-deployment/SKILL.md) — fat-JAR smoke test without signing or OWS
