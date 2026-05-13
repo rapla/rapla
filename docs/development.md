@@ -13,6 +13,80 @@ This guide covers what's specific to developing rapla on **WSL2 with the OpenWeb
 | Spring Boot 4 LaunchedClassLoader workaround (extract-and-run) | [PRD 018](prd/018-fat-jar-classloader-defect.md) |
 | Six known JNLP build/code defects | [memory: project_jnlp_signing_pitfalls](#known-jnlp-defects) (also in agent memory) |
 
+## Bootstrap a fresh WSL2 Ubuntu environment
+
+Captured from a real WSL2 Ubuntu install — install order matters (SDKMAN/nvm install scripts both need `curl`; SDKMAN also needs `zip`/`unzip`).
+
+```bash
+# 1. Base apt prerequisites
+sudo apt-get update
+sudo apt-get install -y curl zip unzip jq
+
+# 2. SDKMAN → Java 21 + Maven (rapla targets Java 17 source, runs on Java 21)
+curl -s "https://get.sdkman.io" | bash
+source ~/.sdkman/bin/sdkman-init.sh   # or restart shell
+sdk install java 21.0.11-sem          # Eclipse Temurin via Semeru build
+sdk install maven                     # SDKMAN picks the current stable
+
+# 3. nvm → Node 24 (Angular 21 needs >= 20.19; pinned to 24.15.0 in this repo)
+curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/master/install.sh | bash
+source ~/.bashrc
+nvm install v24.15.0
+nvm use v24.15.0
+
+# 4. User-local npm prefix — avoids `sudo npm install -g`
+mkdir -p ~/.npm-global
+npm config set prefix ~/.npm-global
+echo 'export PATH=~/.npm-global/bin:$PATH' >> ~/.bashrc
+source ~/.bashrc
+
+# 5. Claude Code
+npm install -g @anthropic-ai/claude-code
+
+# 6. wsl-screenshot-cli — pastes Windows screenshots into Claude Code as image attachments.
+#    The daemon watches the Windows clipboard; when an image lands there, it
+#    saves a PNG under /tmp/.wsl-screenshot-cli/ and rewrites the clipboard so
+#    the WSL path is also available as text. Start the daemon once per boot.
+curl -fsSL https://nailu.dev/wscli/install.sh | bash
+wsl-screenshot-cli start --daemon --quiet
+```
+
+**Pasting a screenshot into Claude Code:** Win+Shift+S → snip an area → in the Claude Code prompt press **Ctrl+Shift+V** (terminal paste; plain Ctrl+V is copy in terminals). The path lands as text and Claude Code auto-attaches the image. PNGs accumulate in `/tmp/.wsl-screenshot-cli/` (tmpfs — cleared on reboot). `wsl-screenshot-cli status` shows daemon uptime + screenshot count.
+
+### 7. GitHub CLI (`gh`) — PRs, issues, reviews, releases
+
+Claude Code's system prompt routes all GitHub work through `gh` via the Bash tool (`gh pr create`, `gh pr view`, `gh issue list`, `gh run watch`, etc.). No GitHub MCP server needed for our scale — `gh` and the MCP wrap the same REST API; the MCP only pays off for line-anchored review-comment loops we don't run.
+
+Install (official keyring path — gets the up-to-date release, not Ubuntu's older universe build):
+
+```bash
+sudo apt-get install -y wget
+sudo mkdir -p -m 755 /etc/apt/keyrings
+wget -nv -O- https://cli.github.com/packages/githubcli-archive-keyring.gpg \
+  | sudo tee /etc/apt/keyrings/githubcli-archive-keyring.gpg > /dev/null
+sudo chmod go+r /etc/apt/keyrings/githubcli-archive-keyring.gpg
+
+# Use short variables to keep the `deb` line below the terminal wrap point —
+# pasting a single ~140-char line tends to inject literal newlines mid-line,
+# which produces "Malformed entry 1 in list file" on apt update.
+KEY=/etc/apt/keyrings/githubcli-archive-keyring.gpg
+URL=https://cli.github.com/packages
+echo "deb [arch=amd64 signed-by=$KEY] $URL stable main" \
+  | sudo tee /etc/apt/sources.list.d/github-cli.list > /dev/null
+
+sudo apt update
+sudo apt install -y gh
+
+gh auth login           # HTTPS + browser is fine
+gh auth status          # confirm
+```
+
+If the source-list file ever ends up split across two lines (apt complains "Malformed entry 1"), collapse it with `sudo sed -i ':a;N;$!ba;s/\n */ /g' /etc/apt/sources.list.d/github-cli.list` and re-run `sudo apt update`.
+
+WSL note: `gh auth login` defaults to a browser flow. If `xdg-open` can't launch the Windows browser, pick "Login with a web browser" anyway — `gh` prints a one-time code, and you open the URL manually in Windows.
+
+After step 5 you can `claude` to launch the agent. For an agent session that doesn't pause on every tool call, use `claude --dangerously-skip-permissions` (or `claude -c --dangerously-skip-permissions` to continue the last session). Only run this on a checkout you trust — it disables the per-tool prompt that lets you veto destructive commands. For Playwright MCP (browser-driven SPA debugging) see the dedicated section below — it builds on this base.
+
 ## WSL2 — running the dev server
 
 Most days `mvn -pl rapla-app -am spring-boot:run -Dspring-boot.run.fork=false` from the repo root is all you need ([AGENTS.md §8](../AGENTS.md#8-server-lifecycle---start-stop-restart-inspect)). The Maven reactor walks classpath in-tree; Spring Boot binds `*:8051`.
@@ -136,6 +210,32 @@ Three diagnostic shapes:
 | ~120 entries (HEAD+GET pairs for 63 jars) followed by `POST /rapla/auth/login 200` | Full launch succeeded |
 
 A `POST /rapla/rapla/auth/login 401` (note doubled `/rapla/`) is the path-doubling bug from item 5 above — make sure your build has the JNLP generator that emits the property without `/rapla/`.
+
+## Playwright MCP — install (browser-driven SPA debugging)
+
+For *how* an agent uses Playwright MCP to debug/prototype the SPA, see the `angular-frontend` skill. This section covers the one-off install on WSL2 Ubuntu.
+
+```bash
+# 1. System libs Playwright's bundled Chromium needs. Not present by default on WSL2.
+npx playwright install-deps   # apt-installs via sudo
+
+# 2. Browser binaries (~150 MB Chromium + optional Firefox / WebKit). Cached in ~/.cache/ms-playwright.
+npx playwright install
+
+# 3. Register the MCP server with Claude Code, scoped to this repo.
+cd /home/chris/git/rapla
+claude mcp add playwright npx '@playwright/mcp@latest' -- --browser chromium
+
+# 4. Restart Claude Code (or use /mcp in-session) so the new tools surface as mcp__playwright__browser_*.
+```
+
+WSL2 specifics:
+
+- **Headless mode works anywhere.** Add `-- --headless --isolated` to the `claude mcp add` line for the unattended default. Drop `--isolated` if you want auth cookies to survive restarts.
+- **Headed mode needs WSLg** (default on Windows 11). On Windows 10, set up VcXsrv + `DISPLAY=:0` or stay headless.
+- **Networking:** WSL2 `localhost` is host loopback for the Playwright subprocess. `http://localhost:4200` (ng serve) and `http://localhost:8051` (Spring Boot) resolve correctly.
+
+Once installed, `claude mcp list` should show `playwright: … ✓ Connected`. Per-session artefacts (screenshots, YAML snapshots, console logs) land in `.playwright-mcp/` and are gitignored.
 
 ## Known JNLP defects
 

@@ -68,6 +68,15 @@ spring:
                 - http://127.0.0.1/app/auth/callback
                 - http://localhost:4200/app/auth/callback
                 - http://127.0.0.1:4200/app/auth/callback
+              # No `post-logout-redirect-uris` listed here on purpose:
+              # AuthorizationServerConfig installs a permissive validator
+              # for /connect/logout that accepts any URI. Spring AS's default
+              # validator does exact `Set.contains()` matching with no
+              # wildcards — enumerating dev + prod variants of `/app/` per
+              # origin would mirror the redirect-uris block above and rot the
+              # same way. Logout doesn't issue credentials, only terminates
+              # them, and `id_token_hint` already authenticates the caller —
+              # so wildcarding the redirect target is safe.
               scopes:
                 - openid
                 - profile

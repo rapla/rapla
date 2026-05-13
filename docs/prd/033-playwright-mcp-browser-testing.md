@@ -1,6 +1,6 @@
 # 033 — Playwright MCP for browser-driven SPA testing
 
-**Status:** draft (proposal — not yet executing)
+**Status:** done (2026-05-13). MCP server installed and connected (`claude mcp list` shows `playwright: ✓ Connected`). Install steps moved to `docs/development.md` ("Playwright MCP — install"). Usage patterns folded into the `angular-frontend` skill ("Browser-driven debug + prototype — Playwright MCP"). AGENTS.md §14 carries the 2-line pointer. No dedicated `playwright` skill — usage lives with the SPA skill since that's where the agent already is.
 
 ## Goal
 

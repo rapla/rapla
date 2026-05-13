@@ -42,6 +42,8 @@ import org.springframework.security.oauth2.server.authorization.authentication.O
 import org.springframework.security.oauth2.server.authorization.authentication.OAuth2AuthorizationCodeRequestAuthenticationToken;
 import org.springframework.security.oauth2.server.authorization.authentication.OAuth2AuthorizationCodeRequestAuthenticationValidator;
 import org.springframework.security.oauth2.server.authorization.client.RegisteredClient;
+import org.springframework.security.oauth2.server.authorization.oidc.authentication.OidcLogoutAuthenticationContext;
+import org.springframework.security.oauth2.server.authorization.oidc.authentication.OidcLogoutAuthenticationProvider;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.LoginUrlAuthenticationEntryPoint;
 import org.springframework.security.web.util.matcher.MediaTypeRequestMatcher;
@@ -135,7 +137,13 @@ public class AuthorizationServerConfig
                 // separate IdP origin, CORS required. SecurityConfig already
                 // provides a CorsConfigurationSource bean that allows *.
                 .cors(Customizer.withDefaults())
-                .with(authServerConfigurer, c -> c.oidc(Customizer.withDefaults()))
+                .with(authServerConfigurer, c -> c.oidc(oidc -> oidc.logoutEndpoint(logout ->
+                        logout.authenticationProviders(providers -> providers.forEach(provider -> {
+                            if (provider instanceof OidcLogoutAuthenticationProvider logoutProvider)
+                            {
+                                logoutProvider.setAuthenticationValidator(permissivePostLogoutRedirectUriValidator());
+                            }
+                        })))))
                 .exceptionHandling(exc -> exc.defaultAuthenticationEntryPointFor(
                         new LoginUrlAuthenticationEntryPoint("/login"),
                         htmlMatcher));
@@ -187,6 +195,29 @@ public class AuthorizationServerConfig
             }
         };
         return withAllowances.andThen(scopeValidator);
+    }
+
+    /**
+     * Replaces Spring AS's default post-logout-redirect-uri validator
+     * (which does exact {@code Set.contains()} match against the registered
+     * client's {@code postLogoutRedirectUris}) with a permissive accept-any
+     * validator. Why this is safe:
+     * <ul>
+     *   <li>Logout terminates credentials; it doesn't issue any. The worst a
+     *       malicious redirect could do is land the user on an unexpected
+     *       page after they're already signed out.</li>
+     *   <li>The {@code id_token_hint} parameter is still validated by
+     *       {@link OidcLogoutAuthenticationProvider} — only a token issued
+     *       by this AS for this client gets past, so a third-party site
+     *       can't trigger logouts without already holding a valid token.</li>
+     * </ul>
+     * Enumerating dev + prod variants of {@code /app/} in
+     * {@code application.yml} would mirror the redirect-uris block and rot
+     * the same way; this validator eliminates that maintenance.
+     */
+    private static Consumer<OidcLogoutAuthenticationContext> permissivePostLogoutRedirectUriValidator()
+    {
+        return ctx -> { /* accept any post_logout_redirect_uri */ };
     }
 
     private static boolean isWslBridgeRedirect(OAuth2AuthorizationCodeRequestAuthenticationContext ctx)

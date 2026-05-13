@@ -58,10 +58,17 @@ export class AuthService {
   /**
    * Explicit user-driven sign-out: hit the IdP's end-session URL if available,
    * then land on /login. Use this for the toolbar "Sign out" button.
+   *
+   * `oauth.logOut()` clears local-storage tokens and triggers a top-level
+   * `window.location` navigation to /connect/logout?...&post_logout_redirect_uri=/app/.
+   * Spring AS terminates its session cookie and 302s back to /app/, where the
+   * route guard bounces unauthenticated to /login. Do NOT call
+   * `router.navigateByUrl('/login')` here — a same-origin SPA route change
+   * after `oauth.logOut()` aborts the in-flight cross-origin nav, the AS
+   * session survives, and the next /oauth2/authorize silently re-auths.
    */
   signOut(): void {
     this.oauth.logOut();
-    this.router.navigateByUrl('/login');
   }
 
   /**

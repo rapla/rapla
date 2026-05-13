@@ -50,14 +50,8 @@ The order is **(a) understand → (b) write failing test → (c) fix → (d) ver
 - When a PRD is fully complete (status `done`, all phases shipped): `git mv` to `docs/prd/done/` and update cross-references in still-active PRDs.
 
 ### 3. PRD Format
-- File naming: `docs/prd/NNN-short-name.md` (e.g., `docs/prd/001-spring-boot-migration.md`).
-- Each PRD must contain:
-  - **Title** and **Status** (draft / in-progress / done)
-  - **Goal** — what and why
-  - **Scope** — what files/packages are affected
-  - **Plan** — ordered implementation steps
-  - **Tests** — what tests to write and when
-  - **Open Questions** — unresolved decisions
+- File naming: `docs/prd/NNN-short-name.md` (e.g., `001-spring-boot-migration.md`).
+- Required sections: Title, Status (draft / in-progress / done), Goal, Scope, Plan, Tests, Open Questions.
 - Keep PRDs concise. Update the status as work progresses.
 
 ### 4. Code Style
@@ -71,7 +65,7 @@ The order is **(a) understand → (b) write failing test → (c) fix → (d) ver
 ### 5. Build Discipline
 
 **Reactor hard rules** (referenced from §8 and §9):
-- **NEVER `mvn install`** and **never run rapla JARs from `~/.m2/repository/`**. Both shadow in-reactor `target/classes` for sibling modules with stale code — an hours-of-debugging trap. The reactor's in-tree classpath handles all sibling resolution.
+- **NEVER `mvn install`** and **never run rapla JARs from `~/.m2/repository/`**. Both shadow in-reactor `target/classes` for sibling modules with stale code — an hours-of-debugging trap. The reactor's in-tree classpath handles all sibling resolution. Enforced by a `PreToolUse: Bash` hook in `.agents/settings.json` that exit-2's `mvn install` calls — see `.agents/hooks.md` for the wired hooks and how to add more.
 - **The `-am` ("also-make") flag is mandatory** for any cross-module compile/test/run. Without it, Maven resolves siblings from `~/.m2/repository`, which is stale or missing.
 - Run from the repo root with `-pl <module> -am` — never `cd <module>`.
 
@@ -175,149 +169,33 @@ Maven wrapper PID, not the JVM. The reliable PID source is
 below is kept for compatibility with the shell-user case, but for
 agents `pkill -f RaplaSpringBootApplication` is simpler and equivalent.
 
-#### Stop
+#### Stop / restart / status / log inspection — see the `server-lifecycle` skill
 
-> **Safe for ng-serve users:** the patterns below match `spring-boot:run`
-> and `RaplaSpringBootApplication` only. They will NOT touch `ng serve` /
-> `node` / Vite worker processes — feel free to run them while an Angular
-> dev server is up in another terminal.
+The longer snippets (graceful-shutdown stop, restart procedure, `jps`/HTTP status probes, `tail -F` log streaming, conventions) live in the `server-lifecycle` skill. Load it when managing server state.
 
-```bash
-if [ -f logs/rapla.pid ]; then
-  kill "$(cat logs/rapla.pid)" 2>/dev/null && echo "Sent SIGTERM to $(cat logs/rapla.pid)"
-  # Wait up to 10 s for graceful shutdown — never SIGKILL first; lets JDBC connections / file locks release.
-  for i in 1 2 3 4 5 6 7 8 9 10; do
-    if ! kill -0 "$(cat logs/rapla.pid)" 2>/dev/null; then break; fi
-    sleep 1
-  done
-  if kill -0 "$(cat logs/rapla.pid)" 2>/dev/null; then
-    kill -9 "$(cat logs/rapla.pid)" && echo "Sent SIGKILL after 10 s wait"
-  fi
-  rm -f logs/rapla.pid
-else
-  # Fallback when the PID file is missing/stale.
-  pkill -f 'spring-boot:run|RaplaSpringBootApplication' && echo "Killed by command-line match"
-fi
-```
+Quick essentials that stay inline:
+- Stop: `pkill -f RaplaSpringBootApplication` (10 s graceful window — never `kill -9` first).
+- One server per checkout (port 8051 binds once); use a worktree per §7 for parallel work.
+- Never start the server during a `mvn package` build (`spring-boot:repackage` rewrites the same JAR).
 
-#### Restart
+#### Default credentials + REST probing — see the `api-testing` skill
 
-Stop in one Bash call (returns immediately), then start in a separate Bash call with `run_in_background=true`. **Do not chain stop + start in one Bash call** — `kill ... ; sleep ; mvn spring-boot:run` makes the whole call a long-running process from the agent's perspective.
+Dev DB ships one admin (`admin` / empty password). For the JWT login recipe + bootstrap fetch + queryAppointments + the full URL-namespace map, load the `api-testing` skill.
 
-#### Status / health
+### 9. Swing client lifecycle — see the `swing-client-launch` skill
 
-```bash
-# Process alive? (Use jps for the Bash-tool flow; the PID file is unreliable
-# when started via run_in_background.)
-jps -l | grep RaplaSpringBoot && echo RUNNING || echo "NOT RUNNING"
+The Swing desktop client launches via `mvn exec:java` (NOT
+`spring-boot:run` — it uses plain `AnnotationConfigApplicationContext`),
+with `-Dexec.daemonThreadJoinTimeout=86400000` to keep the EDT alive
+past `main()` return. For the full start/stop/restart procedure, the
+two-log convention (`logs/rapla.log` + `logs/rapla-client.log`),
+`-Dexec.args="admin"` auto-login, and the "don't run two clients
+against the same server" rule, load the **`swing-client-launch`**
+skill. Server must be running per §8 first.
 
-# HTTP port answering? (no Actuator endpoint enabled today; hit a known URL.)
-curl -sf -o /dev/null -w '%{http_code}\n' "http://localhost:8051/raplaclient.jnlp" \
-  && echo "HTTP OK" || echo "HTTP DOWN"
-```
+### 10. Testing conventions — pyramid + nevers
 
-URL layout per PRD 031 (2026-05-12): context-path dropped; REST under
-`/api/`, SPA at `/app/`, legacy iCal/calendar load-bearing URLs at
-`/rapla/{calendar,ical,…}`. JNLP launcher at `/raplaclient.jnlp` (root).
-
-#### Default credentials (dev only)
-
-The bundled dev DB ships with one admin: **username `admin`, empty password**. To get a JWT for direct REST probing:
-
-```bash
-ACCESS=$(curl -s -X POST "http://localhost:8051/api/auth/login" \
-  -H "Content-Type: application/json" \
-  -d '{"username":"admin","password":""}' \
-  | python3 -c "import sys,json; print(json.load(sys.stdin)['accessToken'])")
-curl -s -H "Authorization: Bearer $ACCESS" "http://localhost:8051/api/storage/resources" | head -c 500
-```
-
-#### Inspect logs
-
-**One-shot snapshots:**
-
-```bash
-tail -100 logs/rapla.log                                          # last 100 lines
-grep -E 'ERROR|WARN' logs/rapla.log | tail -50                    # recent errors/warnings
-grep "Started.*in [0-9.]+ seconds" logs/rapla.log | tail -1       # is startup complete?
-```
-
-**Wait for a specific event** — faster than fixed `sleep`; returns the moment the line appears (median ~150 ms) or fails after the timeout:
-
-```bash
-# Wait up to 30 s for Spring Boot startup:
-timeout 30 sh -c 'until grep -q "Started.*in [0-9.]+ seconds" logs/rapla.log; do sleep 0.3; done' \
-  && echo "READY" || echo "TIMEOUT"
-```
-
-**Stream every new log line as a tool event:** start `tail -F logs/rapla.log` with `run_in_background=true`, then attach `Monitor` to the shell ID with an until-loop or content matcher. `-F` follows across log rotation.
-
-#### Conventions
-
-- **`logs/`** is the project-root directory (gitignored). PID file at `logs/rapla.pid`, log at `logs/rapla.log`.
-- **Never `kill -9` first** — the stop snippet gives 10 s for graceful shutdown so JDBC connections and file locks release cleanly.
-- **Never run two servers in the same checkout** — second one fails with `BindException` on 8051. Use a worktree (§7) with port offset and `logs/rapla-N.{pid,log}`.
-- **Never start the server during a `mvn package` build** that produces a fat JAR (`spring-boot:repackage` writes the same JAR `java -jar` reads). Not a concern for `spring-boot:run` alone.
-- Restart cycles use `mvn -pl rapla-app -am compile` only — never `install` (see §5).
-
-### 9. Swing client lifecycle
-
-**Lifecycle follows §8** — same `run_in_background` pattern, same PID-file convention, same log-inspection commands (substitute `logs/rapla-client.{pid,log}`). Stop snippet identical to §8 except the graceful window is **5 s** (no JDBC pool, no file locks).
-
-**Differences from the server:**
-- **Launch:** `mvn -pl rapla-client -am compile exec:java` — NOT `spring-boot:run` (client uses plain `AnnotationConfigApplicationContext`, not `@SpringBootApplication`; `spring-boot:run` silently no-ops). For auto-login: `-Dexec.args="user pass"` (e.g. `admin` with no password against the dev DB, or `admin admin-password` if changed; the bundled testdefault.xml additionally has `homer/duffs`). Without args, the Swing login dialog opens. Wait ~5–15 s for the Swing tier to come up.
-- **No HTTP probe** — the client is a window, not a server. Use log markers: `grep -q "Starting gui" logs/rapla-client.log` for readiness; `grep -E "(POST|GET) request"` for REST round-trips.
-- **Connects to `http://localhost:8051/`** (`RemoteConnectionInfo.serverURL`, defaulted from `StartupEnvironment.getDownloadURL()`). Start §8's server first, or the login dialog hangs at "Connection refused" / "401 Unauthorized".
-- **Two logs in play.** `logs/rapla.log` is server-side (Spring Boot, JDBC, REST handlers); `logs/rapla-client.log` is client-side (Swing, REST proxies, login). For end-to-end issues, check both — a 401 in the client log usually has a matching auth-failure entry server-side.
-- **Don't run two clients against the same server** — both try to login as the same admin, and the second sees stale data after the first mutates. Use worktrees.
-
-**Why the launch needs `-am compile exec:java`:** `mvn -pl rapla-client exec:java` (single-module) can't resolve rapla-core unless it's in m2. The fix lives in `rapla-bom/pom.xml`: `exec-maven-plugin` is bound with `<skip>true</skip>` and a placeholder `<mainClass>java.lang.Object</mainClass>` (the plugin validates `mainClass` before honouring `skip`). `rapla-client/pom.xml` overrides `skip=false` and the real `mainClass=SpringRaplaClient`. Net: `-am exec:java` walks the reactor, skips the goal on parents, runs only on rapla-client — which sees freshly-compiled in-reactor `target/classes` of every sibling. Per §5, never `mvn install`.
-
-#### Start — two modes
-
-**Foreground** — interactive, log streams to terminal, Ctrl-C stops cleanly. Use for human debugging or when you want stdout in your shell:
-
-```bash
-mvn -pl rapla-client -am compile exec:java -Dexec.args="admin" -Dexec.daemonThreadJoinTimeout=86400000
-```
-
-**Background** — returns immediately, log to file, PID tracked. Use this when an agent launches the client (Bash tool with `run_in_background=true`), or when you also want to keep using the shell:
-
-```bash
-mkdir -p logs
-mvn -pl rapla-client -am compile exec:java -Dexec.args="admin" \
-    -Dexec.daemonThreadJoinTimeout=86400000 \
-    > logs/rapla-client.log 2>&1 &
-CLIENT_PID=$!
-echo $CLIENT_PID > logs/rapla-client.pid
-echo "Started client, PID=$CLIENT_PID"
-```
-
-In both modes the Swing window opens on `$DISPLAY` regardless — `mvn exec:java` runs `main()` in the Maven JVM (no fork), so the EDT is alive whether or not stdout is on a TTY. `$!` in the background snippet is the actual app PID and SIGTERM triggers Spring's context shutdown hooks (e.g. `@PreDestroy` on `RaplaClientServiceImpl`) cleanly.
-
-**Why the long `daemonThreadJoinTimeout`:** `exec-maven-plugin` interrupts every thread (including the EDT and `raplascheduler-N` workers) after `main()` returns + this timeout (default 15 s). Since `clientService.start()` is async and `main()` returns immediately, the default kills the client ~15 s after login. 86 400 000 ms (24 h) effectively disables the kill so the JVM lives until the user closes the window or you SIGTERM the PID.
-
-#### Restart
-
-Two separate Bash calls (don't chain — start would hang the agent):
-
-```bash
-# 1) stop
-[ -f logs/rapla-client.pid ] && kill "$(cat logs/rapla-client.pid)" 2>/dev/null
-for i in 1 2 3 4 5; do
-  [ -f logs/rapla-client.pid ] && kill -0 "$(cat logs/rapla-client.pid)" 2>/dev/null || break
-  sleep 1
-done
-rm -f logs/rapla-client.pid
-```
-
-Then re-run the Background start snippet above.
-
-### 10. Testing conventions — pyramid + base classes
-
-PRD 017 establishes a four-tier pyramid; pick the cheapest tier that exercises
-your code path. **Default to tier 1 or 2; reach for tier 3/4 only when you
-actually need a Spring context.**
+PRD 017's pyramid. Pick the cheapest tier that exercises your code path. **Java: default to tier 1 or 2; reach for tier 3/4 only when you actually need a Spring context. Angular: default to tier 5; only mount a component (tier 6) when behaviour depends on template/DOM.** Browser e2e for the SPA is planned per PRD 033 (Playwright MCP), not yet a tier.
 
 | Tier | Where | Engine | Cost / first test | Use for |
 |---|---|---|---:|---|
@@ -325,88 +203,20 @@ actually need a Spring context.**
 | 2. Facade / storage unit | `rapla-server/src/test/...` extending `FacadeTestSupport` | plain JUnit, **no Spring** | ~150 ms | `RaplaFacade`-level behaviour, XML round-trip, conflict detection, anything that needs real `LocalCache` over real `FileOperator` |
 | 3. Web slice | `rapla-app/src/test/...` with `@SpringBootTest` + `@AutoConfigureMockMvc` | Spring context (cached) | ~3–5 s amortised | Controllers, error-mapping, JWT gate, JSON DTO contracts |
 | 4. Full E2E | `rapla-app/src/test/...` with `@SpringBootTest(webEnvironment=RANDOM_PORT)` | Spring + Tomcat | 7–15 s | Server↔REST-client round-trips, login → query → mutate. Keep small. |
+| 5. Angular unit (TS) | `rapla-angular/src/**/*.spec.ts` | Vitest, **no `TestBed`** | < 50 ms | Pure-TS services, validators, RxJS pipelines, formatters, route guards — anything you can construct with `new` |
+| 6. Angular component | `rapla-angular/src/**/*.spec.ts` with `TestBed.createComponent(...)` | Vitest + Angular TestBed + jsdom | ~200–500 ms first, ~50 ms subsequent in same `describe` | Template bindings, `@Input`/`@Output` wiring, directives, `*ngIf`/`*ngFor` rendering, Material-driven a11y. Don't reach for it to test logic a tier-5 test could cover. |
 
-**Speed numbers, measured 2026-05-09** (`mvn -pl <module> -am test -Dtest=Class`):
+#### Nevers (apply to every test you write)
 
-| Test | Wall (Surefire-reported) | Per test |
-|---|---:|---:|
-| `FacadeTestSupportTest` (tier 2, 6 tests) | 3.3 s | ~550 ms (incl. 150 ms fresh facade) |
-| `ServerServiceIntegrationTest` (tier 3, 2 tests, shared context) | 7.2 s | ~3.6 s (cold-boot dominates the first; second amortised) |
+- **Never add a constructor argument to `FacadeImpl` or `FileOperator` without updating `FacadeTestSupport` in the same change** — the rapla-app `@SpringBootTest` ring is the only CI signal that catches drift.
+- **Never tag inconsistently** — JDBC-hitting tests get `@Tag("db")`, `@SpringBootTest` acceptance tests get `@Tag("e2e")`. Both are excluded from the default `mvn test`; without the tag they break the fast lane.
+- **Never use `@SpringBootTest(webEnvironment=RANDOM_PORT)` when MockMvc would do.** MockMvc is ~5–10× faster.
 
-Net: **first-test cold ~45× faster at tier 2**; for a 6-test class, ~4× faster.
+#### Howtos — see the `testing-conventions` skill
 
-#### Using `FacadeTestSupport`
+For the `FacadeTestSupport` usage pattern, the "when NOT to use it" bullets, the `@Tag` table with currently-tagged classes, and the `mvn test -Dtest.excludedGroups=` recipes for running the full lane, load the `testing-conventions` skill.
 
-`org.rapla.test.util.FacadeTestSupport` (in `rapla-server/src/test/...`) gives
-each `@Test` a freshly-connected `RaplaFacade` over a temp-dir copy of
-`testdefault.xml`:
-
-```java
-class MyFacadeTest extends FacadeTestSupport {
-    @Test
-    void categoriesLoad() throws Exception {
-        Category[] children = facade.getSuperCategory().getCategories();
-        assertEquals(2, children.length);
-    }
-}
-```
-
-- JUnit 5 (`@TempDir`, `@BeforeEach`). Don't mix with JUnit 4 in the same class.
-- Override `fixtureResource()` to point at a smaller hand-written XML when
-  the 500-line default is overkill.
-- Mirrors production wiring in `ServerCoreConfig.raplaFacade()` +
-  `ServerStorageSelector.createFileOperator()`. **If you add a constructor
-  argument to `FacadeImpl` or `FileOperator`, update this base class in the
-  same change** — the rapla-app `@SpringBootTest` ring is the only thing that
-  catches drift in CI.
-
-#### When NOT to use `FacadeTestSupport`
-
-- Pure entity/util logic: stay in tier 1 (rapla-core). Don't pull in `FileOperator`
-  to test `DateTools` or appointment expansion.
-- Controller behaviour, JSON shape, error mapping, JWT gate: tier 3 with
-  `@AutoConfigureMockMvc`. MockMvc beats `RANDOM_PORT` ~5–10×.
-- The very few "does the bean graph wire end-to-end" smoke tests: tier 4. One
-  per major surface is enough.
-
-#### Tagging — fast lane vs. full lane
-
-Slow / environment-dependent tests carry a JUnit 5 `@Tag`:
-
-| Tag | Meaning | Currently tagged |
-|---|---|---|
-| `db` | Hits a JDBC target (HSQLDB embedded today; still seconds) | `ConcurrentTests` |
-| `e2e` | Full `@SpringBootTest` acceptance — cold context, often `RANDOM_PORT` | `RaplaSpringBootApplicationTest`, `ServerServiceIntegrationTest`, `HeadlessClientNameResolutionIntegrationTest`, `SwingClientStartIntegrationTest` |
-
-Default `mvn test` excludes both via surefire `<excludedGroups>${test.excludedGroups}</excludedGroups>`
-(default value `db,e2e` set in `rapla-bom/pom.xml`). To include them:
-
-```bash
-mvn test -Dtest.excludedGroups=         # run everything
-mvn test -Dtest.excludedGroups=db       # full + e2e, skip db
-```
-
-When you add a test that fits one of these categories, tag it. New tags need
-a row above and a corresponding entry in PRD 017's plan.
-
-#### Coverage report (JaCoCo)
-
-```bash
-mvn -Pcoverage test                                    # per-module reports only
-mvn -Pcoverage verify -Dtest.excludedGroups=           # per-module + aggregate (recommended)
-```
-
-- Per-module: `<module>/target/site/jacoco/index.html` — what each module's *own* test suite covers.
-- Aggregate: `target/site/jacoco-aggregate/index.html` — full-stack picture, rolls up @SpringBootTest contributions back to rapla-core / rapla-server bytecode.
-
-The profile flips surefire from `forkCount=0` to `forkCount=1` because
-JaCoCo's `-javaagent` argLine needs a forked JVM. Off by default — the fork
-costs ~10 s.
-
-The aggregate excludes rapla-app's `target/classes` from class-scanning
-(JNLP webclient/ jars crash JaCoCo's bundle analyzer). rapla-app's
-`jacoco.exec` is still folded in via a `merge` step, so its @SpringBootTest
-runs *do* attribute back to rapla-server/rapla-core in the aggregate.
+For JaCoCo coverage reports, load the `coverage-report` skill (release-prep only — off by default).
 
 ### 11. Never delete code to fix compile errors
 
@@ -454,151 +264,23 @@ When in doubt: behave as if the response were a CSV dump emailed to the
 user. If anything in the response is something they couldn't have got via
 the Swing client, the endpoint is broken.
 
-### 13. Mock-framework policy
+### 13. Mock-framework policy — nevers
 
-**Default: no mocks of internal rapla types.** Use the real thing —
-`FacadeTestSupport` (PRD 017) at tier 2, real Spring context +
-MockMvc at tier 3. Booting a real `FacadeImpl` over `testdefault.xml`
-costs ~150 ms; mocks save < 100 ms per test and silently bypass the
-class of bugs rapla actually ships (Jackson final-field round-trip,
-operator stub no-ops, permission leaks, MONTHLY semantic, constructor
-drift). Full rationale in **PRD 027**.
+**Default: no mocks of internal rapla types.** Use the real thing — `FacadeTestSupport` at tier 2, real Spring context + MockMvc at tier 3. Mocks save < 100 ms per test and silently bypass the bugs rapla actually ships (Jackson final-field round-trip, operator stub no-ops, permission leaks, MONTHLY semantic, constructor drift). Full rationale: PRD 027.
 
-**Allowed:**
-- Mockito for Servlet-API types you don't own
-  (`HttpServletRequest`/`Response`/`ServletContext`) — see
-  `RaplaJNLPPageGeneratorTest` for the canonical shape.
-- Hand-rolled test doubles for external integrations behind a
-  rapla-owned interface — see `MockMailer` (`MailInterface`),
-  `RecordingPanel` (`PreferencesPanel`). Prefer these over Mockito
-  when the interface has < ~6 methods.
+- **Never `mock(...)` any rapla facade, operator, cache, permission, entity, or storage type** (`RaplaFacade`, `LocalCache`, `PermissionController`, etc.). Construct the real one via `FacadeTestSupport`.
+- **Never `@MockBean` / `@SpyBean` in `@SpringBootTest`** — they bust the Spring context cache (fights PRD 007 Phase 2.7). Use a `@TestConfiguration` static class with hand-rolled stub beans (pattern: `PreferencesAdminControllerIntegrationTest.StubPanelsConfig`).
+- **Never mock pure-Java models from PRDs 023 / 024** (`AllocationConflictModel`, `RepeatingRuleValidator`, `RaplaBuilder`, layout strategies). No I/O — just construct them.
 
-**Not allowed:**
-- `mock(RaplaFacade.class)` / `mock(LocalCache.class)` /
-  `mock(PermissionController.class)` / any rapla entity, facade,
-  storage, or permission type. Construct the real one via
-  `FacadeTestSupport`.
-- `@MockBean` / `@SpyBean` in `@SpringBootTest` — they bust the
-  Spring context cache (fights PRD 007 Phase 2.7). Use a
-  `@TestConfiguration` static class with hand-rolled stub beans
-  instead — pattern in `PreferencesAdminControllerIntegrationTest`'s
-  `StubPanelsConfig`.
-- Mocks of pure-Java models from PRDs 023 / 024
-  (`AllocationConflictModel`, `RepeatingRuleValidator`,
-  `RaplaBuilder`, layout strategies). They have no I/O — just
-  construct them with the inputs the test needs.
+For the Allowed list (Servlet-API mocks, hand-rolled doubles for `MailInterface`/`PreferencesPanel`) and the audit-grep, load the `testing-conventions` skill.
 
-If a facade setup feels awkward, the answer is usually "extend
-`FacadeTestSupport` with the helper you wanted" (as `waitFor(Promise)`
-was promoted in PRD 017 Phase 4) — not "reach for Mockito".
+### 14. Angular frontend (`rapla-angular/`) — see the `angular-frontend` skill
 
-Audit grep at PR-review time:
-`grep -rE "mock\(.*(Facade|Operator|Cache|Permission|Conflict)\.class\)" rapla-*/src/test`
-Expected: zero matches outside `RaplaJNLPPageGeneratorTest`.
+The SPA lives in `rapla-angular/` (Angular 21, served at `/app/`). For build/lint commands, OpenAPI-client regeneration, code-style, Vitest/TestBed test patterns, and the wire-probe workflow, load the `angular-frontend` skill. Full layout + URL space is in `rapla-angular/README.md` and PRD 026.
 
-### 14. Angular frontend (`rapla-angular/`)
+For browser-driven SPA debug/prototype the `playwright` MCP server is wired (tools surface as `mcp__playwright__browser_*`) — usage patterns are in the `angular-frontend` skill, install steps in `docs/development.md`.
 
-The SPA lives in `rapla-angular/` (Angular 21, served at `/app/`).
-Full layout + URL space is in `rapla-angular/README.md` and PRD 026. Day-to-day
-rules for AI agents working in this module:
+Two rules that fire without the skill (footguns that catch agents who skim Angular files without loading the skill):
 
-#### Type-check on save — use `ng build` / `npm run build:fast`, NOT the test suite
-
-For routine type-check after an edit, use the fast path that skips lint:
-
-```bash
-cd rapla-angular && npx ng build --configuration development
-# equivalent: npm run build:fast
-```
-
-Time-box: ~15–25 s cold, ~5–10 s warm. Angular equivalent of `mvn compile` —
-surfaces TS errors and template-binding errors, no side effects.
-
-**`npm run build` chains `npm run lint && ng build`** (ESLint + Prettier
-formatting check, then build). Slower, but the right thing to run at
-session end or before handoff to confirm a clean state. During iteration
-use `build:fast` instead.
-
-**Do NOT run `npm test` / `ng test` during a session** — slow (Vitest spins
-up jsdom) and noisy. The user runs the suite at session end, or in CI.
-Mirrors §5's "`mvn test` only at session end" rule.
-
-**Do NOT run `npm run lint` repeatedly during a session** — also slow
-(walks the whole tree). One pass at session end (via `npm run build`) is
-enough. Auto-fix formatting via `npm run format` if needed.
-
-#### Never restart the `ng serve` dev server
-
-The user runs `npm start` (or `npm run start:ai`, see below) in their own
-terminal. **Do not start, stop, restart, or `kill` the ng server.** If a
-change isn't visible, ask the user to check their `ng serve` terminal for
-errors; don't try to "fix it" by relaunching.
-
-Spring Boot is fine to restart per §8 (stateless dev DB, AI doesn't do it
-often) — this no-restart rule applies only to the Angular dev server.
-
-#### `npm run start:ai` — quiet config for agent-driven development
-
-Default `npm start` rebuilds on every file change and pushes a live-reload
-to the browser. When an AI agent is editing files rapidly that produces
-tons of partial reloads, broken in-between states, and re-init traffic.
-
-The **`ai-develop` serve configuration** (in `angular.json`) tames this:
-
-- `liveReload: false` — browser does not auto-refresh. User reloads
-  manually when they want to see the latest.
-- `hmr: false` — no hot module replacement either.
-- `poll: 3000` — file watcher checks every 3 s rather than firing on every
-  fs event. Acts as a "grace period" — bursts of saves coalesce.
-
-User runs:
-
-```bash
-cd rapla-angular && npm run start:ai
-```
-
-The dev server still rebuilds in the background, but the page stays put
-until manually reloaded. Use this whenever an agent is the one making the
-edits.
-
-#### Regenerating the OpenAPI client
-
-`src/app/api/` is generated and gitignored. Regenerate after server REST
-surface changes (new controller, DTO field change, etc.):
-
-```bash
-cd rapla-angular && npm run gen:api
-```
-
-Requires the dev server to be running on `:8051` (the generator reads
-`/api/v3/api-docs` live). Generated files are excluded from ESLint
-(`eslint.config.js` ignores) and Prettier (`.prettierignore`).
-
-#### Code-style — same defaults as Java
-
-- No comments unless requested.
-- Constructor injection (Angular `inject()` or constructor params, not field
-  injection via `@Inject` decorator on a property).
-- Follow existing conventions in `src/app/auth/` and `src/app/reservations/`.
-- Prettier config in `.prettierrc` (100-col, single-quote). ESLint uses
-  the flat config in `eslint.config.js` (typescript-eslint recommended
-  + `@angular-eslint` recommended for `.ts` and template a11y for `.html`).
-
-#### Don't edit generated code
-
-`src/app/api/**` is regenerated by `npm run gen:api` — any edit there is
-lost on next regen. If a generated DTO is wrong, fix the server-side
-Spring/Jackson annotation, then regenerate.
-
-#### Probe the wire first — `curl` the REST call before coding against it
-
-Before writing SPA code that consumes a REST endpoint, `curl` it with the
-exact request the SPA will send (auth header, query params, JSON body) and
-inspect the response shape. Avoids guessing field names, missing required
-filters, or assuming the wrong JSON nesting. The **`api-testing`** skill
-(`.agents/skills/api-testing/SKILL.md`) bundles the login → bearer-token →
-request loop. Concretely: empty `resources` array on
-`POST /api/storage/queryAppointments` returns no events (saved hours of
-"why is the table empty" debugging); reservation links are under
-`links.resources`, not `links.allocatable` (different relation entirely).
-Probe first, then write to match.
+- **Never start, stop, restart, or `kill` the `ng serve` dev server.** The user runs it in their own terminal (`npm run start:ai` selects a no-live-reload config). If a change isn't visible, ask the user to check their terminal — don't relaunch.
+- **Never edit files under `rapla-angular/src/app/api/`.** That tree is generated by `npm run gen:api` from the live OpenAPI doc and gitignored — any edit is lost on next regen. If a generated DTO is wrong, fix the server-side Spring/Jackson annotation, then regenerate.
