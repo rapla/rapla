@@ -95,25 +95,14 @@ The order is **(a) understand → (b) write failing test → (c) fix → (d) ver
   that arrived via a script — needs an explicit "yes, restore X" from the user.
 - **Before ending a session, update outdated PRDs.** Any PRD whose Plan, Open Questions, or Status no longer matches what's actually in the codebase (because of work landed during the session) gets a brief edit reflecting the new reality — close the resolved OQs, mark phases done/in-progress, note any direction changes. PRDs are the long-term context for future sessions; if they're stale, the next session re-litigates decisions you already made.
 
-### 6a. Lessons learned — bulk-refactor scripts (Date migration, 2026-05-09)
+### 6a. Bulk-refactor scripts — see the `bulk-refactor-scripts` skill
 
-- **Signature regexes must anchor `<rt>` to `\w` and require typed args** (≥2 tokens per
-  arg). Otherwise call statements like `throwParseDateException(date);` get matched as
-  method declarations and silently deleted.
-- **Diff-based recovery against master is dangerous when working tree has diverged.**
-  `SequenceMatcher` `replace` opcodes interleave OLD-signature lines into the NEW body.
-  Only restore inside `insert` opcodes, and only single call-statement lines.
-- **No conversion wrappers in entity/facade/storage tier.** Once a `DateTools.toX(...)`
-  is stripped, fix the cascade by flipping the surrounding type — never re-wrap to
-  silence the error. Wrappers belong only at JDBC / Swing widget / ical4j / wire-format
-  boundaries.
-- **No parallel-named methods** (`*AsLocalDateTime`, `set*LocalDateTime`,
-  `ofLocalDateTime`). Flip the type at the master name; don't double the API surface.
-- **Strip script must distinguish overloads by arg shape.** `DateTools.toDate` has four
-  overloads; only `(LocalDateTime)` and `(LocalDate)` are conversions to strip. Skip if
-  arg has `.getTime()`, `MILLISECONDS_PER`, or top-level comma.
-- **Compile after every script, not after a chain.** Time-box each fix to one error
-  pattern; cascading three scripts blind leaves the tree unrecoverable by diff.
+Before writing a script that mechanically rewrites Java sources across the
+reactor (cross-module rename, signature-regex sweep, diff-based recovery),
+load the **`bulk-refactor-scripts`** skill. It encodes the scars from the
+2026-05-09 Date → LocalDateTime migration — anchor rules for signature
+regexes, the SequenceMatcher diff-recovery trap, the no-wrapper rule for
+entity/facade/storage tier, compile-after-every-script discipline.
 
 ### 7. Parallel Work — Use a Git Worktree
 
