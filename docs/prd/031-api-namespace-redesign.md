@@ -140,6 +140,22 @@ twice — not worth it.
 > **2026-05-14 update.** Phase 2 originally used `ApiPathPrefixConfig` (a `WebMvcConfigurer.addPathPrefix("/api", predicate)`) to inject the prefix at dispatcher time. That configurer is now deleted: the prefix is literal on each controller. Reason: discoverability (`grep '/api/storage'` finds the source), simpler reasoning (the wire URL is the source URL), and removes the SpringDoc-prefix coupling that needed dual `/api/v3/api-docs` + `/v3/api-docs` security entries. The architecture test in §15 is the mechanical safety net that the configurer's all-or-nothing default previously provided implicitly.
 | 3 — SPA entry on index | **DONE** | `RaplaSpaEntry` registered as `@Bean(name = "0_spa")` in `ServerServiceConfig`. Index page shows "Open web app → /app/" alongside JNLP, Status, Export entries. |
 | 4 — cleanup | **DONE** | `redirect.html` deleted. CSS audit done (all 6 files referenced by live HTML generators — kept). PRD URL example pass complete (PRD 026 updated). `frontend-maven-plugin` + `maven-resources-plugin` wired in `rapla-app/pom.xml` under `-Pspa` profile; `mvn -Pspa package` builds the SPA and bundles it into `target/classes/static/app/` for inclusion in the fat JAR. |
+| 5 — OpenAPI spec grouping | **DONE 2026-05-15** | The single `/api/v3/api-docs` spec is split into four `GroupedOpenApi` beans in `SpringDocGroupsConfig`: `auth`, `client`, `rest`, `exports`. Each group's spec is served at `/api/v3/api-docs/<group>` and shows up as a dropdown in Swagger UI. The Angular codegen (`rapla-angular/package.json` `gen:api`) targets `/api/v3/api-docs/client` so the SPA's generated client only ships services it actually uses. The default `/api/v3/api-docs` URL continues to serve a merged union spec (SpringDoc 2.x preserves it) — useful for external auditing tools. The `ApiPrefixArchitectureTest` is extended to assert every non-allow-listed `@RestController` belongs to exactly one group, with `auth ⊆ client` as the only permitted overlap (drift prevention). |
+
+### Phase 5 — group layout
+
+The four groups + their inclusion rules:
+
+| Group | URL | Includes | Why this audience |
+|---|---|---|---|
+| `auth` | `/api/v3/api-docs/auth` | `/api/auth/**` (AuthController, OAuthConfigController, OAuthExchangeController) | OAuth + JWT mechanics, stable contract for external integrators wiring SSO |
+| `client` | `/api/v3/api-docs/client` | `/api/auth/**` + everything SPA-internal / admin-UI (`/api/storage/**`, `/api/edit/**`, `/api/calendar/view`, `/api/table/**`, `/api/dynamictypes`, `/api/locale/**`, `/api/logger/**`, `/api/plugins/**`, `/api/settings/**`, `/api/admin/panels/**`, `/api/mail/**`, `/api/ical/config/**`, `/api/ical/timezones/**`, `/api/exchange/config/**`, `/api/jndi/**`, `/api/eventtimecalculator/**`, `/api/archiver/**`, `/api/urlencryption`) | The rapla SPA / Swing client — these endpoints change in lockstep with the UI and are not a stable third-party contract |
+| `rest` | `/api/v3/api-docs/rest` | `/api/events/**`, `/api/resources/**` (PRD 009 bulk REST) | External scripts and integrators — fine-grained CRUD with full REST verbs |
+| `exports` | `/api/v3/api-docs/exports` | `/api/export/**`, `/api/ical/import**`, `/api/externaleventimport/**`, `/rapla/calendar(.csv)?`, `/rapla/internal_calendar(.csv)?`, `/rapla/ical`, `/rapla/internal_ical` | Data in/out — file imports, table exports, calendar feeds (including the 🔒 legacy `/rapla/*` URLs external iCal subscribers depend on) |
+
+The `auth` group is intentionally **also a subset of `client`**: SpringDoc allows overlap between groups, and the SPA's codegen needs login endpoints in the same spec so generated `AuthControllerService` is part of the SPA's bundle.
+
+**Rule for new controllers** (also enforced by `ApiPrefixArchitectureTest`): when you add a new `@RestController`, decide which group(s) it belongs to and add its path to the group's `pathsToMatch` in `SpringDocGroupsConfig`. A controller missing from every group fails the architecture test; a controller in two groups (other than the deliberate `auth ⊆ client` overlap) also fails.
 
 ### Outstanding follow-ups
 

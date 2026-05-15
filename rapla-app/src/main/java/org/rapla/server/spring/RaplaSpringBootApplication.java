@@ -30,8 +30,8 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
                 type = SecuritySchemeType.OAUTH2,
                 flows = @OAuthFlows(
                         authorizationCode = @OAuthFlow(
-                                authorizationUrl = "/rapla/oauth2/authorize",
-                                tokenUrl = "/rapla/oauth2/token",
+                                authorizationUrl = "/oauth2/authorize",
+                                tokenUrl = "/oauth2/token",
                                 scopes = {
                                         @OAuthScope(name = "openid", description = "OIDC subject identity"),
                                         @OAuthScope(name = "profile", description = "User profile claims")
@@ -44,7 +44,7 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
                 type = SecuritySchemeType.HTTP,
                 scheme = "bearer",
                 bearerFormat = "JWT",
-                description = "Paste a raw access token (e.g. from POST /auth/login). Manual fallback when OAuth2 isn't convenient."
+                description = "Paste a raw access token (e.g. from POST /api/auth/login). Manual fallback when OAuth2 isn't convenient."
         )
 })
 public class RaplaSpringBootApplication

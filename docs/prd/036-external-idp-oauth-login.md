@@ -245,7 +245,15 @@ interface (`ExternalUserResolver`).
   interface and decoder logic are generic enough that adding a third
   resolver is a small follow-up. Shipping Microsoft + Google in v1
   exercises the abstraction enough to lock it in; later providers are
-  config + 50-LOC resolver each.
+  config + 50-LOC resolver each. **Keycloak is in scope for Phase 2 —
+  see "Phase 2: Keycloak + Shibboleth federation" below.**
+- **Shibboleth / SAML 2.0.** v1 is OIDC-only. Native Shibboleth /
+  SAML support in rapla would be a substantial separate effort. For
+  Phase 2 we plan to integrate Shibboleth via Keycloak SAML brokering
+  (Keycloak speaks SAML to the upstream Shibboleth IdP, rapla speaks
+  OIDC to Keycloak) — zero rapla code beyond the Keycloak provider.
+  Native SAML in rapla is deferred to a future PRD if Keycloak
+  brokering ever proves insufficient for a real deployment.
 - **Swing-side IdP picker.** Swing keeps its current "auto-fire the
   primary provider" behaviour for v1. A Swing picker is a clean UX
   problem but adds a new dialog state machine; defer to OQ §1 unless
@@ -694,6 +702,199 @@ internally but worse for deployments:
 | e2e (manual) | Real Google client, Angular login | Full stack via Google, including refresh after token expiry |
 | e2e (manual) | Both providers enabled, Angular picker | Three-button picker renders, each button leads to a valid signed-in state |
 | e2e (manual) | Both providers enabled, Swing login | Swing ignores them and signs in via rapla SAS unchanged (regression guard for the deprecation-window) |
+
+## Phase 2: Keycloak + Shibboleth federation
+
+The v1 architecture (multi-issuer `JwtDecoder`, provider-pluggable
+`ExternalUserResolver`, BFF token-exchange, picker UI) was designed
+provider-agnostic. Adding Keycloak is a small extension of the same
+shape. Shibboleth (SAML 2.0) is not OIDC and won't fit the existing
+framework — but the standard deployment pattern is to broker
+Shibboleth through Keycloak (Keycloak speaks SAML to the upstream
+Shibboleth IdP, rapla speaks OIDC to Keycloak). That keeps SAML out
+of rapla entirely.
+
+### 2.1 Keycloak as a first-class provider
+
+Keycloak is an open-source OIDC provider with realm-based isolation
+(one Keycloak server can host multiple "realms", each acting as a
+separate IdP). For rapla's purposes, one rapla deployment integrates
+with one Keycloak realm — same model as the Microsoft/Google blocks.
+
+#### In scope
+
+- **`Keycloak` config block** in `ExternalProvidersProperties`,
+  mirroring the Microsoft/Google block shape:
+  ```yaml
+  rapla:
+    oauth:
+      external:
+        keycloak:
+          enabled: false
+          base-url: https://keycloak.example.com   # the Keycloak server's public URL
+          realm: rapla                              # the realm name
+          client-id: rapla-app
+          client-secret: <optional — set for "confidential access type">
+          hosted-domain:                            # optional email-domain guard
+          auto-provision: true
+          display-name: "Sign in with university SSO"
+          icon: keycloak
+          order: 15
+          web-picker-visible: true
+          username-claim: preferred_username
+          email-claim: email
+          external-id-claim: sub
+  ```
+- **URL derivation** in `Keycloak.toProviderConfig()`:
+  ```
+  issuer       = {base-url}/realms/{realm}
+  authorizeUrl = {base-url}/realms/{realm}/protocol/openid-connect/auth
+  tokenUrl     = {base-url}/realms/{realm}/protocol/openid-connect/token
+  jwksUrl      = {base-url}/realms/{realm}/protocol/openid-connect/certs
+  endSessionUrl = {base-url}/realms/{realm}/protocol/openid-connect/logout
+  ```
+- **New `ExternalProviderId.KEYCLOAK`** + populate `enabledProviders()`.
+- **`ExternalUserResolver`** — no new resolver class needed. Keycloak's
+  default claims (`sub`, `preferred_username`, `email`, `name`,
+  `given_name`, `family_name`) are exactly what the existing generic
+  resolver already handles. Pass `ProviderConfig` with Keycloak's
+  claim names (which are the OIDC defaults).
+- **Confidential vs public client**:
+  - Keycloak "public" client (PKCE, no secret) → direct route, no BFF.
+    Default for SPAs.
+  - Keycloak "confidential" client (secret required) → BFF route,
+    same per-secret routing as Google Web app.
+  Detection is identical to existing logic — `clientSecret` empty →
+  direct, set → BFF.
+- **OIDC RP-initiated logout** at
+  `{base-url}/realms/{realm}/protocol/openid-connect/logout` — works
+  out of the box with the existing `AuthService.signOut()` logic.
+- **Multi-tenant**: out of scope for Keycloak. A Keycloak realm is
+  already a tenant; if a deployment needs multiple realms behind one
+  rapla, that's a future PRD (likely requires a list-based config
+  shape, similar to repeatable `redirect-uris` in Spring).
+
+#### Out of scope (Phase 2)
+
+- **Group / role sync** from Keycloak's `realm_access.roles` claim.
+  Stays deferred (same as for Entra/Google).
+- **Keycloak SPI / Admin REST API integration** — rapla only consumes
+  OIDC; managing Keycloak itself (creating users, assigning roles)
+  is the Keycloak admin's job.
+- **Multi-realm rapla** — one realm per deployment.
+
+#### Implementation tasks
+
+1. **Server: Keycloak provider class.**
+   - `ExternalProvidersProperties.Keycloak` POJO with the fields above.
+   - `toProviderConfig()` derives URLs from `base-url + realm`.
+   - Validation: both `base-url` and `realm` required when `enabled=true`.
+   - Estimated: ~100 LOC + boilerplate getters/setters.
+2. **Server: `ExternalProviderId.KEYCLOAK` enum entry.** Trivial.
+3. **Server: `enabledProviders()` updated.** Trivial.
+4. **Tests:**
+   - Tier-1 `KeycloakUserResolverTest` — reuse `ExternalUserResolver`
+     with Keycloak claim mapping; exercise external-id, email-match,
+     auto-provision paths.
+   - Tier-3 `DiscoveryWithKeycloakOnlyTest` — Keycloak alone, verify
+     URLs derived correctly from `base-url + realm`.
+   - Tier-3 `DiscoveryWithAllFourTest` — rapla + Microsoft + Google +
+     Keycloak, picker sorts and emits each correctly.
+   - Tier-3 `KeycloakTokenIntegrationTest` (MockMvc + stubbed
+     Keycloak JWKS) — Keycloak Bearer token unlocks rapla REST.
+5. **Angular: `LoginPickerComponent` icon for Keycloak.** Add
+   `keycloak` to the icon-name → glyph mapping (Material icon, custom
+   SVG, or fall back to the generic `login` icon).
+6. **Setup recipe in `docs/authentication.md`** — Keycloak admin setup
+   (Create realm → Create client (Settings tab: Access Type =
+   public/confidential, Valid Redirect URIs = `<rapla-base>/app/auth/callback`,
+   Web Origins for CORS) → copy realm + client-id → rapla
+   `application-local.yml` config).
+7. **Manual e2e**: real Keycloak (local Docker container or a real
+   deployment) — Angular login → main view; verify
+   `Authorization: Bearer <keycloak-id-token>` validates server-side.
+
+**Estimated total work:** ~400 LOC server + ~50 LOC test setup +
+~100 lines docs. Smaller than the Microsoft+Google initial work
+because the framework is already in place — most code is plumbing
+the new provider config through `enabledProviders()` and the resolver.
+
+### 2.2 Shibboleth via Keycloak SAML brokering
+
+Shibboleth is SAML 2.0. The federation pattern used by the academic
+community (DFN-AAI, eduGAIN, InCommon) is:
+
+```
+Browser → rapla SPA
+        → Keycloak (acting as SAML SP)
+        → Shibboleth IdP (the institution's existing SAML auth)
+        → SAML assertion back to Keycloak
+        → Keycloak mints an OIDC token from the SAML attributes
+        → Token flows back to rapla
+```
+
+For rapla this is **transparent — rapla only sees the OIDC flow
+between itself and Keycloak**. The SAML leg lives entirely inside
+Keycloak. Zero rapla code changes beyond what the Keycloak provider
+(2.1) needs.
+
+#### In scope
+
+- **Documentation recipe** in `docs/authentication.md`:
+  - Configure Keycloak as a SAML 2.0 service provider in your
+    Shibboleth IdP's metadata.
+  - In Keycloak admin: Realm settings → Identity providers → Add
+    SAML 2.0 → IdP entity ID, single sign-on service URL, SAML
+    signing certificate.
+  - Configure Keycloak SAML attribute mappers: `eduPersonPrincipalName`
+    → `preferred_username`, `mail` → `email`, etc.
+  - Federate with eduGAIN / DFN-AAI by importing the federation
+    metadata aggregate (one-line Keycloak admin operation).
+- **No rapla code** beyond the Phase 2.1 Keycloak provider.
+- **Recipe references** to standard documentation:
+  - Keycloak: <https://www.keycloak.org/docs/latest/server_admin/#_saml>
+  - DFN-AAI: <https://www.aai.dfn.de/>
+  - eduGAIN: <https://edugain.org/>
+
+#### Out of scope
+
+- **Native SAML in rapla.** Would require Spring Security SAML2 SP,
+  metadata management, SAML message signing, assertion consumer
+  service, single logout, attribute mapping. ~1500-2000 LOC + tests.
+  Deferred indefinitely — Keycloak brokering covers 100% of realistic
+  HE/academic deployments. Open as a future PRD only if a deployment
+  needs SAML without a Keycloak hop and has a strong reason.
+- **Discovery service / WAYF.** If multiple Shibboleth IdPs need
+  to be offered through one rapla, configure them in Keycloak (one
+  Identity Provider per upstream Shibboleth), then Keycloak shows
+  its built-in IdP-discovery screen on Keycloak's login page. Rapla
+  sees a single Keycloak entry in its picker.
+
+#### Implementation tasks
+
+1. **Verify Phase 2.1 Keycloak provider works.** Sets up the rapla
+   side of the equation.
+2. **Add a "Federate with Shibboleth via Keycloak" section** to
+   `docs/authentication.md`. Step-by-step Keycloak admin recipe,
+   typical SAML attribute mapping for `eduPersonPrincipalName` /
+   `mail` / `cn` → OIDC claims, and pointers to the upstream
+   Shibboleth IdP metadata.
+3. **Manual e2e** against a real Shibboleth IdP if one is available
+   (DFN-AAI Test, eduGAIN sandbox, or a local Shibboleth IdP). Tagged
+   `e2e`, manual only.
+
+**Estimated total work for Shibboleth via Keycloak:** ~100 lines of
+documentation. Zero rapla code beyond Phase 2.1.
+
+### 2.3 Sequencing
+
+The recommended sequence is:
+1. **Land Phase 2.1 (Keycloak provider)** as a follow-up PR to PRD 036.
+2. **Add the Shibboleth-via-Keycloak documentation** in the same PR
+   or a small follow-up.
+3. If a real deployment ever needs native SAML in rapla, open a new
+   PRD then — it's a separate scope and should not be folded into
+   PRD 036.
 
 ## Open Questions
 

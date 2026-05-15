@@ -288,3 +288,4 @@ Every `@RestController` in the rapla server has a class-level `@RequestMapping` 
 - Class-level: `@RequestMapping("/api/<name>")` — literal `/api/`, no helper constant.
 - If there's a `@HttpExchange` proxy interface for it (Swing client uses it), match the path exactly: `@HttpExchange("/api/<name>")`.
 - Do NOT add a `WebMvcConfigurer` that injects a prefix programmatically — the literal-prefix invariant is what the architecture test guards.
+- **Add the controller's path to exactly one group in `SpringDocGroupsConfig`** (PRD 031 Phase 5). Groups are: `auth` (login/OAuth), `client` (SPA + admin UI, codegen target), `rest` (PRD 009 bulk REST), `exports` (file in/out + legacy iCal feeds). The `auth` group is also a subset of `client` so SPA codegen has login covered — this is the only deliberate overlap. `ApiPrefixArchitectureTest` fails CI on controllers missing from every group or in two (non-`auth`) groups.

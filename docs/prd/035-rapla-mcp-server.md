@@ -132,6 +132,10 @@ Pin all three under `docs/showcases/` (or equivalent). Embed the lead (Track 1) 
 | LLM hallucinates a reservation, agent calls `book`, real meeting gets bumped | Same as above. Plus: server-side store a `created_via=mcp` flag on reservations created through this path so the user can find/revert them quickly. |
 | Spring AI MCP starter pulls in Jackson 2 (we run Jackson 3) | Spring AI 1.0+ targets Spring Framework 7 / Jackson 3. Verify before adoption — if it pulls Jackson 2, Phase 1 is "wait for upstream" instead. |
 
+## Open investigations (informing future tracks)
+
+- **Nextcloud Assistant integration** (potential Track 5; not yet committed). Source review of `nextcloud/context_agent` (`ex_app/lib/all_tools/mcp.py`) shows the outbound MCP loader uses a single admin-tenant credential — no per-user identity propagation. Drafted upstream issue requesting per-user / OBO / token-forward auth modes lives at [`docs/upstream/nextcloud-context-agent-per-user-mcp-auth.md`](../upstream/nextcloud-context-agent-per-user-mcp-auth.md). **Empirical verification against a running Nextcloud + Context Agent is the gating step before filing the issue or adding a Nextcloud showcase track.** If verification confirms the gap, AGENTS.md §12 forbids a production Nextcloud integration without an upstream fix or a federated-IdP workaround (Pattern B in the auth-pattern matrix discussion).
+
 ## Cross-references
 
 - [PRD 029 — Swing OAuth login](029-swing-oauth-login.md) — the OAuth surface MCP authenticates against.
@@ -139,6 +143,7 @@ Pin all three under `docs/showcases/` (or equivalent). Embed the lead (Track 1) 
 - [PRD 031 — API namespace redesign](031-api-namespace-redesign.md) — the `/api/` namespace; MCP will likely live at `/mcp/` per Spring AI convention.
 - [PRD 017 — Test coverage strategy](017-test-coverage-strategy.md) — pyramid tiers MCP tests slot into.
 - [PRD 034 — CI baseline workflow](034-ci-baseline-workflow.md) — MCP tier-4 tests would run in the e2e job once it exists.
+- [`docs/upstream/nextcloud-context-agent-per-user-mcp-auth.md`](../upstream/nextcloud-context-agent-per-user-mcp-auth.md) — draft upstream issue (unfiled) for the Nextcloud per-user MCP auth gap.
 - AGENTS.md §12 — permission-leak invariant; every MCP tool must comply.
 - AGENTS.md §13 — mock policy; MCP tests use real `RaplaFacade`, not mocks.
 

@@ -18,11 +18,10 @@ drift; check the source class when something doesn't deserialize.
 
 ### URL layout (post-PRD-031, 2026-05-12)
 
-No servlet context path. Spring's MVC dispatcher prepends `/api`
-to every `@RestController` via `ApiPathPrefixConfig`
-(`rapla-app/.../spring/ApiPathPrefixConfig.java`). All REST paths
-in this document include the `/api` prefix explicitly — what you
-see is what hits the wire.
+No servlet context path. Every `@RestController` carries the
+literal `/api/...` path in its class-level `@RequestMapping`. All
+REST paths in this document include the `/api` prefix explicitly —
+what you see is what hits the wire.
 
 Six controllers are excluded from the prefix:
 
@@ -37,9 +36,36 @@ Six controllers are excluded from the prefix:
 
 Root-by-convention endpoints (not @RestController, also unprefixed):
 `/oauth2/**`, `/.well-known/**`, `/connect/logout` (Spring
-Authorization Server), `/swagger-ui/**`, `/v3/api-docs` (SpringDoc
-also serves `/api/v3/api-docs` — both work, the `/api/` one is
-canonical), `/error`.
+Authorization Server), `/swagger-ui/**`, `/error`.
+
+### OpenAPI spec groups (post-PRD-031 Phase 5, 2026-05-15)
+
+The OpenAPI spec is split into four groups via
+`GroupedOpenApi` beans in
+`rapla-app/.../spring/SpringDocGroupsConfig.java`:
+
+| Group | URL | Audience | Includes |
+|---|---|---|---|
+| `auth` | `/api/v3/api-docs/auth` | External integrators wiring SSO | `/api/auth/**` |
+| `client` | `/api/v3/api-docs/client` | The rapla SPA / Swing client (codegen target) | `/api/auth/**` + every SPA-internal + admin-UI controller |
+| `rest` | `/api/v3/api-docs/rest` | Scripts / third-party integrators | `/api/events/**`, `/api/resources/**` (PRD 009 bulk REST) |
+| `exports` | `/api/v3/api-docs/exports` | Anyone doing data in/out | `/api/export/**`, `/api/ical/import**`, external-event import, legacy `/rapla/{calendar,ical}` feeds |
+
+**The default `/api/v3/api-docs` URL continues to serve a merged
+spec** (SpringDoc 2.x preserves it as a union of all paths even
+when groups are defined — verified 2026-05-15). The Angular
+codegen target was nonetheless moved to
+`/api/v3/api-docs/client` to give the SPA a tighter spec, but
+external tooling can still hit the default URL for a full view.
+
+The Swagger UI at `/swagger-ui/index.html` shows the groups in a
+dropdown selector and switches between specs automatically.
+
+**For SPA developers:** add new SPA-facing controllers to the
+`client` group's `pathsToMatch`. **For everyone else:** put new
+REST API endpoints in `rest`, new file in/out endpoints in
+`exports`, new auth endpoints in `auth`. The drift-prevention test
+in `ApiPrefixArchitectureTest` will tell you if you forgot.
 
 ### Auth header
 
@@ -56,7 +82,7 @@ list:
 /rapla/internal_calendar     /rapla/internal_calendar.csv
 /rapla/ical          /rapla/internal_ical
 /raplaclient        /raplaclient.jnlp
-/api/v3/api-docs/**  /v3/api-docs/**    /swagger-ui/**      /swagger-ui.html
+/api/v3/api-docs/**  /swagger-ui/**     /swagger-ui.html
 /oauth2/**           /.well-known/**    /login              /error
 /dhbw/status
 ```
@@ -259,15 +285,70 @@ with the property `rapla.jwt.secret` (dev default in
 The SPA pattern: on 401, attempt `/api/auth/refresh`; on a second
 401 or a 401 from refresh itself, redirect to the login form.
 
+### OIDC / SSO endpoints (Spring Authorization Server)
+
+rapla's embedded Spring Authorization Server (SAS) exposes the
+standard OIDC + OAuth 2.0 endpoints at the **root namespace** —
+NOT under `/api/`, and NOT auto-discovered by SpringDoc (they're
+served by Spring Security filters, not `@RestController`s, so the
+OpenAPI spec doesn't include them).
+
+Two URLs are all a client needs to bootstrap:
+
+| Endpoint | RFC / spec | Role |
+|---|---|---|
+| `GET /.well-known/openid-configuration` | [OIDC Discovery 1.0](https://openid.net/specs/openid-connect-discovery-1_0.html) | Discovery document — lists every other endpoint URL (`/oauth2/authorize`, `/oauth2/token`, `/oauth2/revoke`, `/oauth2/introspect`, `/connect/logout`, `/userinfo`, …) plus supported scopes, grant types, signing algorithms, and PKCE methods |
+| `GET /oauth2/jwks` | [RFC 7517](https://www.rfc-editor.org/rfc/rfc7517) | JSON Web Key Set — public keys for verifying access-token signatures. Resource servers cache this |
+
+OIDC client libraries fetch the discovery document and auto-configure from there; documenting the downstream endpoints individually here would just duplicate the discovery JSON and risk drift.
+
+**How to use them — don't roll your own.** Every mature OIDC
+client library auto-configures from the discovery URL:
+
+- Angular SPA → [`angular-oauth2-oidc`](https://github.com/manfredsteyer/angular-oauth2-oidc) (already wired in `rapla-angular`).
+- Browser-side vanilla → [`oidc-client-ts`](https://github.com/authts/oidc-client-ts).
+- Server-side Java client → Spring Security's [`spring-security-oauth2-client`](https://docs.spring.io/spring-security/reference/servlet/oauth2/client/index.html).
+- Microsoft stacks → [MSAL](https://learn.microsoft.com/entra/identity-platform/msal-overview).
+- CLI / scripts → [`oauth2c`](https://github.com/cloudentity/oauth2c) for Authorization Code + PKCE; plain `curl` works for Client Credentials.
+
+Point the library at rapla's discovery URL
+(`http://<host>/.well-known/openid-configuration`) and it will
+fill in every URL above + the supported scopes, response types,
+and PKCE methods.
+
+**rapla's client-id / scope conventions for the embedded SAS:**
+
+- Default public client id: `rapla-client` (configurable via
+  `RAPLA_OAUTH_CLIENT_ID`).
+- Required flow: Authorization Code + PKCE (no implicit, no
+  client-credentials for end-user logins).
+- Scopes: `openid` + `profile`. No custom scopes today.
+
+**External IdP (PRD 036).** When `rapla.oauth.external.providers[]`
+is configured (Google, Microsoft Entra, etc.), the SPA's login
+picker also lists those — and Google/Microsoft confidential-client
+secrets are handled by the BFF
+[`POST /api/auth/oauth/exchange/{providerId}`](#1-auth--authcontroller),
+documented in the `auth` SpringDoc group. The IdPs' own `/oauth2/*`
+endpoints (e.g. `https://login.microsoftonline.com/.../oauth2/v2.0/token`)
+are NOT proxied by rapla; only the token exchange step is.
+
+**Why not in OpenAPI?** Spring Authorization Server's filters
+don't register `HandlerMapping` entries, so SpringDoc skips them.
+We could hand-write `Paths` entries via an `OpenApiCustomizer`,
+but that risks drift from the RFC contract and from SAS upgrades.
+The discovery document is the canonical source. If you need a
+machine-readable spec for these endpoints, fetch
+`/.well-known/openid-configuration`.
+
 ---
 
 ## 2. Storage core — `RemoteStorageController`
 
-Base path `/api/storage` (controller mapping is `/storage`; the
-`/api` is added by `ApiPathPrefixConfig`). This is the SPA's main
-API surface. The controller deliberately bundles every read and
-write into a small number of high-leverage endpoints — `dispatch`
-for all writes, `refresh` for incremental sync.
+Base path `/api/storage`. This is the SPA's main API surface. The
+controller deliberately bundles every read and write into a small
+number of high-leverage endpoints — `dispatch` for all writes,
+`refresh` for incremental sync.
 
 Source: `rapla-server/.../web/RemoteStorageController.java`.
 
