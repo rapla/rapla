@@ -44,6 +44,7 @@ public class OAuthConfigController
     private final ExternalProvidersProperties externalProviders;
     private final String pickerMode;
     private final String pickerPrimary;
+    private final boolean raplaInPicker;
 
     public OAuthConfigController(
             @Value("${rapla.oauth.enabled:true}") boolean enabled,
@@ -62,6 +63,7 @@ public class OAuthConfigController
             @Value("${server.servlet.context-path:}") String contextPath,
             @Value("${rapla.oauth.web.picker.mode:auto}") String pickerMode,
             @Value("${rapla.oauth.web.picker.primary:rapla}") String pickerPrimary,
+            @Value("${rapla.oauth.web.rapla-in-picker:true}") boolean raplaInPicker,
             ExternalProvidersProperties externalProviders)
     {
         this.enabled = enabled;
@@ -81,6 +83,7 @@ public class OAuthConfigController
         this.externalProviders = externalProviders;
         this.pickerMode = pickerMode == null || pickerMode.isEmpty() ? "auto" : pickerMode;
         this.pickerPrimary = pickerPrimary == null || pickerPrimary.isEmpty() ? "rapla" : pickerPrimary;
+        this.raplaInPicker = raplaInPicker;
     }
 
     @GetMapping("/config")
@@ -149,12 +152,19 @@ public class OAuthConfigController
         List<ProviderEntry> out = new ArrayList<>();
         // The rapla SAS entry exposes the real local token endpoint — no BFF
         // needed because there's no client_secret in the rapla SAS path.
+        // Visible in the web picker by default (rapla.oauth.web.rapla-in-picker
+        // defaults to true) — every deployment has at least one rapla-local
+        // admin account, and break-glass access matters when external IdPs
+        // are misconfigured or unreachable. With only the rapla provider
+        // enabled and picker mode=auto, this still doesn't render a picker
+        // (mode=auto needs ≥2 visible providers); the SPA auto-fires
+        // rapla SAS. Set false for strict SSO-only deployments.
         out.add(new ProviderEntry(
                 "rapla",
                 "Sign in with rapla password",
                 "rapla",
                 0,
-                false,
+                raplaInPicker,
                 localClientId,
                 localIssuer,
                 localAuthorize,

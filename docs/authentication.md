@@ -292,6 +292,7 @@ All settable via the matching `RAPLA_OAUTH_EXTERNAL_*` env vars.
 | `rapla.oauth.external.google.revoke-on-logout` | `false` | POST to Google's `/revoke` on sign-out (off by default — logging out of rapla shouldn't uncouple the user's other Google services). |
 | `rapla.oauth.web.picker.mode` | `auto` | `auto` (show when ≥2 visible providers), `always`, or `never`. |
 | `rapla.oauth.web.picker.primary` | `rapla` | Which provider to auto-fire in `auto`/`never` modes. |
+| `rapla.oauth.web.rapla-in-picker` | `true` | Show the "Sign in with rapla password" entry in the web picker alongside external providers. Keeping it visible matters for admin break-glass access when an external IdP is misconfigured or down. Set `false` only for strict SSO-only deployments. With a single visible provider, the picker doesn't render at all (`mode=auto` needs ≥2). |
 
 Endpoint URLs (authorize, token, jwks, end-session) are derived per
 provider — for Entra from `tenant`, for Google these are static. All
@@ -397,11 +398,22 @@ To hide a provider from the picker without disabling token validation:
 RAPLA_OAUTH_EXTERNAL_GOOGLE_WEB_PICKER_VISIBLE=false
 ```
 
-The `rapla` (embedded SAS) entry is hidden from the web picker by
-default — it stays available for API clients via `/api/auth/login`,
-but the web SPA doesn't surface a password button. Showing it is not
-yet configurable (intentional: PRD 036 leaves the rapla password path
-web-hidden for SSO-focused deployments; tracked as an Open Question).
+The `rapla` (embedded SAS) entry is shown in the web picker by
+default (`rapla.oauth.web.rapla-in-picker=true`). Every deployment has
+at least one rapla-local admin account, and that path is the
+break-glass route when external IdPs are misconfigured, expired, or
+unreachable — hiding it by default makes a chicken-and-egg problem
+("can't reach SSO → can't fix SSO config because there's no way to
+sign in as admin"). To strictly enforce SSO-only and hide the rapla
+button, set `rapla.oauth.web.rapla-in-picker=false`. The legacy
+`/api/auth/login` endpoint stays available for API clients regardless
+of the picker visibility setting.
+
+When only the rapla provider is enabled (no external IdPs), the
+picker does not render at all (`mode=auto` requires ≥2 visible
+providers) — the SPA auto-fires the rapla SAS flow as before. The
+default is a no-op for single-IdP deployments and only kicks in once
+external providers are enabled.
 
 > **Default groups for auto-provisioned users.** New users get
 > `FacadeImpl.newUser()`'s standard groups: can-read-events-from-others,

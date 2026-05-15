@@ -190,7 +190,11 @@ export class AuthService {
       tokenEndpoint: useProvider.tokenUrl,
       userinfoEndpoint: cfg.userinfoUrl,
       logoutUrl: useProvider.endSessionUrl || cfg.endSessionUrl || cfg.logoutUrl,
-      postLogoutRedirectUri: origin + '/app/',
+      // After IdP RP-initiated logout, land directly on /app/login so the
+      // picker renders ready for the next sign-in. (Without this, the
+      // browser hits /app/, the auth guard sees no token, then bounces to
+      // /login — one extra navigation.)
+      postLogoutRedirectUri: origin + '/app/login',
       showDebugInformation: false,
       skipIssuerCheck: true,
       strictDiscoveryDocumentValidation: false,

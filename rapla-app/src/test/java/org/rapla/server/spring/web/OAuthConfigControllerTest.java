@@ -74,7 +74,11 @@ class OAuthConfigControllerTest
                 .andExpect(jsonPath("$.providers.length()").value(1))
                 .andExpect(jsonPath("$.providers[0].id").value("rapla"))
                 .andExpect(jsonPath("$.providers[0].icon").value("rapla"))
-                .andExpect(jsonPath("$.providers[0].webPickerVisible").value(false))
+                // Default: rapla password entry is visible in the web picker so
+                // admin break-glass access works even with external IdPs broken.
+                // Single-IdP deployments still don't render a picker (mode=auto
+                // needs >=2 visible providers) so no UX change for the common case.
+                .andExpect(jsonPath("$.providers[0].webPickerVisible").value(true))
                 .andExpect(jsonPath("$.providers[0].authorizeUrl").value(
                         org.hamcrest.Matchers.endsWith("/oauth2/authorize")));
     }
