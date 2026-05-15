@@ -17,7 +17,7 @@ import org.springframework.web.service.annotation.PostExchange;
  * {@code metadata.supportsCsvImport == true}, otherwise the impl may throw
  * {@link UnsupportedOperationException}.
  */
-@HttpExchange("/externaleventimport")
+@HttpExchange("/api/externaleventimport")
 public interface ExternalEventImportService
 {
     @GetExchange("/metadata")

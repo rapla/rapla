@@ -30,7 +30,7 @@ class TableViewServiceContractTest
     {
         HttpExchange root = TableViewService.class.getAnnotation(HttpExchange.class);
         assertNotNull(root, "Service must be annotated @HttpExchange");
-        assertEquals("/table", root.value());
+        assertEquals("/api/table", root.value());
     }
 
     @Test

@@ -18,7 +18,7 @@ import java.util.Set;
 
 @RestController
 @ConditionalOnBean(RemoteSession.class)
-@RequestMapping(value = "/locale", produces = "application/json")
+@RequestMapping(value = "/api/locale", produces = "application/json")
 public class RemoteLocaleController
 {
     private final RemoteLocaleServiceImpl service;

@@ -708,13 +708,17 @@ internally but worse for deployments:
    or (b) move the affected users to the Angular SPA. Not a
    future-PRD item.
 
-2. **Auto-provisioning default per provider.** Off (admin pre-creates
-   rapla users) is safer but doubles onboarding work. On (any valid
-   token = rapla account) matches the SSO expectation but means an
-   accidentally-multi-tenant Entra setup or a wide-open Google client
-   gets every Google user on Earth a rapla account. **Tentative**: off
-   by default per provider; document the `hosted-domain` /
-   single-tenant guards as preconditions for turning it on.
+2. ✅ **Auto-provisioning default per provider.** *Resolved 2026-05-14.*
+   Defaults to **on** for both providers, matching the rapla LDAP
+   precedent (`RaplaAuthentificationService.authenticate()` auto-creates
+   a rapla `User` on successful external auth — no opt-in flag in the
+   LDAP path). For Entra, single-tenant config (default) already scopes
+   the IdP to the deployment's directory. For Google, document that
+   `hosted-domain` is the practical scope guard — without it, every
+   verified Google account on Earth becomes a rapla user, so deployments
+   without a Workspace should explicitly set `auto-provision: false`.
+   Default groups: shared with the LDAP path via
+   `JNDIPlugin.USERGROUP_CONFIG` system preference (rename pending).
 
 3. **Cross-provider account collisions.** Same email signing in via
    Microsoft *and* Google: do we (a) attach both external-ids to the

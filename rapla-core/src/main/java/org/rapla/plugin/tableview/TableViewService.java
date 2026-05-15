@@ -26,7 +26,7 @@ import java.util.List;
  * HttpServiceProxyFactory has no built-in Promise adapter. Async callers
  * should wrap in {@code commandScheduler.supply(...)}.
  */
-@HttpExchange("/table")
+@HttpExchange("/api/table")
 public interface TableViewService
 {
     /**

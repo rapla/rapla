@@ -46,7 +46,7 @@ import java.util.concurrent.atomic.AtomicReference;
  */
 @RestController
 @ConditionalOnBean(RemoteSession.class)
-@RequestMapping(value = "/calendar", produces = "application/json")
+@RequestMapping(value = "/api/calendar", produces = "application/json")
 public class CalendarViewController implements CalendarViewService
 {
     private final RemoteSession session;

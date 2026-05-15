@@ -30,7 +30,7 @@ class CalendarViewServiceContractTest
     {
         HttpExchange root = CalendarViewService.class.getAnnotation(HttpExchange.class);
         assertNotNull(root, "Service must be annotated @HttpExchange");
-        assertEquals("/calendar", root.value());
+        assertEquals("/api/calendar", root.value());
     }
 
     @Test

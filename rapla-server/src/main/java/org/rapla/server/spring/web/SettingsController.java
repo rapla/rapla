@@ -41,7 +41,7 @@ import org.springframework.web.bind.annotation.RestController;
  */
 @RestController
 @ConditionalOnBean(RemoteSession.class)
-@RequestMapping(value = "/settings", produces = "application/json")
+@RequestMapping(value = "/api/settings", produces = "application/json")
 public class SettingsController
 {
     private final RaplaFacade facade;

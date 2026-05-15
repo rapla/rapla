@@ -18,7 +18,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @ConditionalOnBean(RemoteSession.class)
-@RequestMapping(value = "/ical/config", produces = "application/json")
+@RequestMapping(value = "/api/ical/config", produces = "application/json")
 public class ICalConfigController
 {
     private final RaplaFacade facade;

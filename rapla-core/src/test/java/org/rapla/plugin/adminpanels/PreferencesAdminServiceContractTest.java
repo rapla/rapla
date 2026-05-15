@@ -29,7 +29,7 @@ class PreferencesAdminServiceContractTest
     {
         HttpExchange root = PreferencesAdminService.class.getAnnotation(HttpExchange.class);
         assertNotNull(root, "Service must be annotated @HttpExchange");
-        assertEquals("/admin/panels", root.value());
+        assertEquals("/api/admin/panels", root.value());
     }
 
     @Test

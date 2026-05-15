@@ -23,7 +23,7 @@ import org.springframework.web.bind.annotation.RestController;
  */
 @RestController
 @ConditionalOnBean(RemoteSession.class)
-@RequestMapping(value = "/eventtimecalculator", produces = "application/json")
+@RequestMapping(value = "/api/eventtimecalculator", produces = "application/json")
 public class EventTimeCalculatorConfigController
 {
     private final RaplaFacade facade;

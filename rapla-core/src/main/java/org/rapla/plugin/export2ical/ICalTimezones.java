@@ -5,7 +5,7 @@ import org.springframework.web.service.annotation.HttpExchange;
 
 import java.util.List;
 
-@HttpExchange("/ical/timezones")
+@HttpExchange("/api/ical/timezones")
 public interface ICalTimezones
 {
     @GetExchange

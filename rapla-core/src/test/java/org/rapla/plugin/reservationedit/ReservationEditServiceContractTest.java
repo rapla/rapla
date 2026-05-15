@@ -25,7 +25,7 @@ class ReservationEditServiceContractTest
     {
         HttpExchange root = ReservationEditService.class.getAnnotation(HttpExchange.class);
         assertNotNull(root);
-        assertEquals("/edit", root.value());
+        assertEquals("/api/edit", root.value());
     }
 
     @Test

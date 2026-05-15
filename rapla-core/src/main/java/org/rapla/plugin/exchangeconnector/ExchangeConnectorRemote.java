@@ -10,7 +10,7 @@ import org.springframework.web.service.annotation.PostExchange;
 
 import java.util.Collection;
 
-@HttpExchange("/exchange/connect")
+@HttpExchange("/api/exchange/connect")
 public interface ExchangeConnectorRemote
 {
     TypedComponentRole<String> LAST_SYNC_ERROR_CHANGE = new TypedComponentRole<>("org.rapla.plugin.exchangconnector.last_sync_error_change");

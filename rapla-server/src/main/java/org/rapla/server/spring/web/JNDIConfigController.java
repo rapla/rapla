@@ -14,7 +14,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @ConditionalOnBean({JNDIConfig.class, RemoteSession.class})
-@RequestMapping(value = "/jndi", produces = "application/json")
+@RequestMapping(value = "/api/jndi", produces = "application/json")
 public class JNDIConfigController
 {
     private final RaplaJNDITestOnLocalhost service;

@@ -125,8 +125,8 @@ public class ClientProxyConfig
             org.springframework.http.client.ClientHttpResponse response = execution.execute(request, body);
             if (response.getStatusCode().value() != 401) return response;
             refreshAttempts.incrementAndGet();
-            // Don't recurse on /auth/* itself.
-            if (request.getURI().getPath().contains("/auth/")) return response;
+            // Don't recurse on /api/auth/* itself.
+            if (request.getURI().getPath().contains("/api/auth/")) return response;
             String refresh = info.getRefreshToken();
             if (refresh == null || refresh.isEmpty()) return response;
             // Single-flight refresh — concurrent 401-failed requests share one /auth/refresh hit.
@@ -152,11 +152,8 @@ public class ClientProxyConfig
         {
             String baseUrl = info.getServerURL();
             if (baseUrl == null || baseUrl.isEmpty()) return false;
-            // PRD 031 Phase 1: server-side context-path /rapla dropped; serverURL is the
-            // server root (no /rapla/ prefix). Auth lives at /auth/refresh until Phase 2
-            // moves it to /api/auth/refresh — at which point serverURL will end with /api.
             String trimmed = baseUrl.endsWith("/") ? baseUrl.substring(0, baseUrl.length() - 1) : baseUrl;
-            String refreshUrl = trimmed + "/auth/refresh";
+            String refreshUrl = trimmed + "/api/auth/refresh";
             byte[] reqBody = ("{\"refreshToken\":\"" + refreshToken + "\"}").getBytes(java.nio.charset.StandardCharsets.UTF_8);
             org.springframework.http.client.ClientHttpRequest req =
                     requestFactory.createRequest(java.net.URI.create(refreshUrl), org.springframework.http.HttpMethod.POST);

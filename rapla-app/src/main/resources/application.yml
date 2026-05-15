@@ -139,6 +139,12 @@ rapla:
     allow-same-origin-redirects: true
 
 springdoc:
+  # Serve the OpenAPI spec under the same /api prefix every other REST endpoint
+  # carries (PRD 031 / AGENTS.md §15). SpringDoc's default would put it at
+  # /v3/api-docs; we keep /api/v3/api-docs so generated Angular/TS clients use
+  # the same base path as runtime requests.
+  api-docs:
+    path: /api/v3/api-docs
   # Default response media type for endpoints that don't declare `produces`
   # explicitly. Controllers without an explicit @GetMapping(produces=...) end
   # up with Accept: */* in the generated OpenAPI spec, which makes the

@@ -11,7 +11,7 @@ import org.springframework.web.service.annotation.PostExchange;
  * Returns synchronous types — see {@link org.rapla.plugin.archiver.ArchiverService}
  * for the rationale (Spring's HttpServiceProxyFactory has no Promise adapter).
  */
-@HttpExchange("/jndi")
+@HttpExchange("/api/jndi")
 public interface JNDIConfig
 {
     @PostExchange

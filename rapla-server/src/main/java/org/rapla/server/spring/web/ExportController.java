@@ -52,7 +52,7 @@ import java.util.concurrent.atomic.AtomicReference;
  */
 @RestController
 @ConditionalOnBean(RemoteSession.class)
-@RequestMapping(value = "/export", produces = "application/json")
+@RequestMapping(value = "/api/export", produces = "application/json")
 public class ExportController implements ExportService
 {
     /** Same cap as the table endpoint — never exceed this even when

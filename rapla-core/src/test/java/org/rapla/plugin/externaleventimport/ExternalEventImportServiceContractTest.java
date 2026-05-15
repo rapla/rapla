@@ -29,7 +29,7 @@ class ExternalEventImportServiceContractTest
     {
         HttpExchange root = ExternalEventImportService.class.getAnnotation(HttpExchange.class);
         assertNotNull(root, "Service must be annotated @HttpExchange");
-        assertEquals("/externaleventimport", root.value(), "Service root path must be /externaleventimport");
+        assertEquals("/api/externaleventimport", root.value(), "Service root path must be /api/externaleventimport");
     }
 
     @Test

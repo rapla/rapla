@@ -14,14 +14,23 @@ import com.nimbusds.jose.jwk.source.JWKSource;
 import com.nimbusds.jose.proc.SecurityContext;
 import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.SignedJWT;
+import org.rapla.server.spring.oauth.external.ExternalProvidersProperties;
+import org.rapla.server.spring.oauth.external.IssuerAwareJwtDecoder;
+import org.rapla.server.spring.oauth.external.ProviderConfig;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.security.oauth2.core.OAuth2TokenValidator;
+import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
+import org.springframework.security.oauth2.jwt.JwtValidators;
 import org.springframework.security.oauth2.jwt.NimbusJwtDecoder;
 
 import java.security.interfaces.RSAPublicKey;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 /**
@@ -37,13 +46,107 @@ import java.util.UUID;
  * Option A executed it. Single algorithm, single key, single decoder.
  */
 @Configuration
+@EnableConfigurationProperties(ExternalProvidersProperties.class)
 @org.springframework.boot.autoconfigure.condition.ConditionalOnProperty(prefix = "rapla.file-datasources", name = "raplafile")
 public class JwtConfig
 {
+    /**
+     * Resource-server JWT decoder. With no external providers enabled (the
+     * default), produces a plain {@link NimbusJwtDecoder} keyed on rapla's
+     * own JWKS — behaviour identical to pre-PRD-036. With one or more
+     * external providers enabled, wraps each provider's decoder in an
+     * {@link IssuerAwareJwtDecoder} that routes per-token by {@code iss}.
+     */
     @Bean
-    public JwtDecoder jwtDecoder(JWKSource<SecurityContext> jwkSource)
+    public JwtDecoder jwtDecoder(JWKSource<SecurityContext> jwkSource,
+                                 ExternalProvidersProperties externalProviders,
+                                 @org.springframework.beans.factory.annotation.Value(
+                                         "${rapla.oauth.issuer:}") String localIssuerOverride)
     {
-        return NimbusJwtDecoder.withPublicKey(extractRsaPublicKey(jwkSource)).build();
+        NimbusJwtDecoder local = NimbusJwtDecoder.withPublicKey(extractRsaPublicKey(jwkSource)).build();
+        List<ProviderConfig> enabled = externalProviders.enabledProviders();
+        if (enabled.isEmpty())
+        {
+            return local;
+        }
+        Map<String, JwtDecoder> byIssuer = new HashMap<>();
+        // Local issuer: when rapla.oauth.issuer is configured we validate
+        // against it; otherwise the local decoder accepts any issuer (its
+        // tokens are still bound by signature + standard claims).
+        String localIssuer = localIssuerOverride == null || localIssuerOverride.isEmpty()
+                ? null : localIssuerOverride;
+        if (localIssuer != null)
+        {
+            local.setJwtValidator(JwtValidators.createDefaultWithIssuer(localIssuer));
+            byIssuer.put(localIssuer, local);
+        }
+        else
+        {
+            // No configured local issuer: fall back to wildcard local entry under
+            // the request-bound issuer "self" sentinel. Tokens minted by rapla
+            // SAS carry an `iss` derived from the request — without a stable
+            // config value here we can't pin a single map key, so we register
+            // ALL local-token issuers seen at runtime by exposing the wildcard
+            // route below. This keeps tier-3 tests (which use random local
+            // issuers) working without forcing a config change.
+            byIssuer.put("__LOCAL_SELF__", local);
+        }
+        for (ProviderConfig p : enabled)
+        {
+            NimbusJwtDecoder dec = NimbusJwtDecoder.withJwkSetUri(p.jwksUrl()).build();
+            OAuth2TokenValidator<Jwt> validator = JwtValidators.createDefaultWithIssuer(p.issuer());
+            dec.setJwtValidator(validator);
+            byIssuer.put(p.issuer(), dec);
+        }
+        return localIssuer == null
+                ? new LocalFallbackIssuerAwareDecoder(local, byIssuer)
+                : new IssuerAwareJwtDecoder(byIssuer);
+    }
+
+    /**
+     * Variant that falls back to the configured local decoder for any
+     * issuer not matching a registered external provider. Used when
+     * {@code rapla.oauth.issuer} is unset and the local SAS emits
+     * request-derived issuer URLs we can't pre-register at startup.
+     */
+    private static final class LocalFallbackIssuerAwareDecoder implements JwtDecoder
+    {
+        private final JwtDecoder local;
+        private final IssuerAwareJwtDecoder external;
+        private final java.util.Set<String> externalIssuers;
+
+        LocalFallbackIssuerAwareDecoder(JwtDecoder local, Map<String, JwtDecoder> byIssuer)
+        {
+            this.local = local;
+            Map<String, JwtDecoder> externalOnly = new HashMap<>(byIssuer);
+            externalOnly.remove("__LOCAL_SELF__");
+            this.externalIssuers = java.util.Set.copyOf(externalOnly.keySet());
+            this.external = externalOnly.isEmpty() ? null : new IssuerAwareJwtDecoder(externalOnly);
+        }
+
+        @Override
+        public Jwt decode(String token)
+        {
+            String iss = peekIssuer(token);
+            if (iss != null && externalIssuers.contains(iss) && external != null)
+            {
+                return external.decode(token);
+            }
+            return local.decode(token);
+        }
+
+        private static String peekIssuer(String token)
+        {
+            if (token == null) return null;
+            try
+            {
+                return com.nimbusds.jwt.JWTParser.parse(token).getJWTClaimsSet().getIssuer();
+            }
+            catch (java.text.ParseException e)
+            {
+                return null;
+            }
+        }
     }
 
     @Bean

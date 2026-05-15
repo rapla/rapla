@@ -18,7 +18,7 @@ import java.util.Set;
  * Promise instance and fail (Promise is an interface). Callers wanting async
  * dispatch should wrap the call site in {@code commandScheduler.supply(() -> ...)}.
  */
-@HttpExchange("/locale")
+@HttpExchange("/api/locale")
 public interface RemoteLocaleService
 {
     @GetExchange("/{id}")

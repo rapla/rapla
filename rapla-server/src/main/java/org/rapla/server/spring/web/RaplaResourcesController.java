@@ -21,7 +21,7 @@ import java.util.Map;
 
 @RestController
 @ConditionalOnBean(RemoteSession.class)
-@RequestMapping(value = "/resources", produces = "application/json")
+@RequestMapping(value = "/api/resources", produces = "application/json")
 public class RaplaResourcesController
 {
     private final RaplaResourcesRestPage page;

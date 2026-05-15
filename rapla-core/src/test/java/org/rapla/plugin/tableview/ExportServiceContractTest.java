@@ -25,7 +25,7 @@ class ExportServiceContractTest
     {
         HttpExchange root = ExportService.class.getAnnotation(HttpExchange.class);
         assertNotNull(root, "Service must be annotated @HttpExchange");
-        assertEquals("/export", root.value());
+        assertEquals("/api/export", root.value());
     }
 
     @Test

@@ -61,4 +61,21 @@ class OAuthConfigControllerTest
                 .andExpect(jsonPath("$.tokenUrl").value(org.hamcrest.Matchers.endsWith("/oauth2/token")))
                 .andExpect(jsonPath("$.scopes[0]").value("openid"));
     }
+
+    @Test
+    void discoveryEmitsProvidersArrayAndPickerByDefault() throws Exception
+    {
+        mockMvc.perform(get("/api/auth/oauth/config"))
+                .andExpect(status().isOk())
+                // Picker defaults
+                .andExpect(jsonPath("$.picker.mode").value("auto"))
+                .andExpect(jsonPath("$.picker.primary").value("rapla"))
+                // With no external providers enabled, only the rapla entry is present
+                .andExpect(jsonPath("$.providers.length()").value(1))
+                .andExpect(jsonPath("$.providers[0].id").value("rapla"))
+                .andExpect(jsonPath("$.providers[0].icon").value("rapla"))
+                .andExpect(jsonPath("$.providers[0].webPickerVisible").value(false))
+                .andExpect(jsonPath("$.providers[0].authorizeUrl").value(
+                        org.hamcrest.Matchers.endsWith("/oauth2/authorize")));
+    }
 }

@@ -34,6 +34,7 @@ Three independent signals converging in 2026:
 - Re-use the existing `PermissionController` so MCP tool calls respect the same "filter to user-readable scope" invariant as REST (AGENTS.md §12).
 - A new section in `docs/development.md` documenting how to add the rapla MCP server to a local Claude Code session (`claude mcp add rapla http://localhost:8051/mcp …`).
 - Smoke test: from a fresh Claude Code session, the agent can `find_free_slots` and `book` against a dev rapla instance.
+- **Three showcase recordings** per Phase 0 — OpenClaw + voice + multi-channel (lead), OpenCode + Ollama (dev/ops), Claude Desktop (polished consumer). Same demo script, three runtimes. Demonstrates rapla MCP is portable across agent runtimes and works fully local.
 
 **Out of scope:**
 
@@ -42,8 +43,22 @@ Three independent signals converging in 2026:
 - Multi-tenant isolation (PRD 002). MCP scope follows the same single-tenant model as REST for v1.
 - External-IdP integration (Keycloak / Azure AD). Inherits from the OAuth work in PRDs 029/031; "if REST auth works, MCP auth works."
 - Rate limiting or per-tool quotas. Add when there's a real consumer with a real rate.
+- **M365 Copilot deployment** — public-deployed MCP server + Entra integration + Copilot Studio agent. Defer to **PRD 036** (to be drafted) — it's the production end-user story but adds an order of magnitude more setup (public TLS, Entra app registration, paid Copilot Studio license) and is independently scoped.
 
 ## Plan
+
+### Phase 0 — Showcase scope (drives implementation priority)
+
+The purpose of this PRD lands as concrete *demos*, not just an MCP endpoint. Three showcase tracks ranked by strategic value. Each requires a specific subset of MCP tools, which dictates which tools land first in Phase 1+2+3.
+
+| # | Track | Stack | Required MCP tools | Why this matters |
+|---|---|---|---|---|
+| 1 | **OpenClaw + Ollama + multi-channel + voice** (lead) | OpenClaw onboard daemon → Ollama (`qwen3.5:9b` or NemoClaw) → rapla MCP (stdio); channels: WhatsApp + macOS/iOS voice + Slack | `find_free_slots`, `book`, `query_reservations` | "Talk to your phone or your existing chat app, your meetings happen." Highest visceral impact. Fully local-first, fully self-hosted. Strongest pitch for institutional / data-sovereign customers (universities, public sector). Sidesteps Microsoft + Anthropic infrastructure entirely. |
+| 2 | **OpenCode + Ollama (terminal)** | `opencode` CLI → Ollama → rapla MCP (stdio), config in `opencode.json` | Same | "Devs/ops can self-host the entire stack." Dev/ops audience. Cheap to record once Track 1 is wired (same MCP, different runtime). |
+| 3 | **Claude Desktop + Anthropic API** | Claude Desktop → Anthropic API → rapla MCP via `claude_desktop_config.json` (stdio) | Same | "Polished consumer experience." Reference benchmark for visual polish. Useful for technical evaluator demos. |
+| 4 | M365 Copilot in Outlook (deferred to PRD 036) | Public-deployed rapla MCP (Streamable HTTP) → Entra-federated OAuth → Copilot Studio agent | Same + write-side hardening | "Lives in the tools your enterprise already pays for." Production end-user story. Requires public deployment + Entra registration + Copilot Studio license — split into a follow-up PRD because it's an order of magnitude more setup. |
+
+**Implication for Phase ordering:** Tracks 1–3 share the same MCP surface (`find_free_slots`, `book`, `query_reservations`). Phase 1 + Phase 3 deliver this minimum set. Phase 2's other read tools (`who_is_free`, `check_conflicts`) are nice-to-have for the demos but not blocking. Phase 4's documentation closes the loop.
 
 ### Phase 1 — Skeleton + one tool end-to-end
 
@@ -65,6 +80,34 @@ Add `book(reservation)`. Triggers conflict detection, runs through the same vali
 1. `docs/development.md` — new section "rapla MCP server" with install (`claude mcp add ...`) and a smoke-test prompt.
 2. New skill `.agents/skills/rapla-mcp/SKILL.md` — when to use rapla's MCP tools vs. the REST API; the auth flow; common patterns.
 3. `README.md` mention — this is a user-facing feature.
+
+### Phase 5 — Showcase recording (per Phase 0 tracks)
+
+Once Phases 1+3 produce the minimum tool set (`find_free_slots`, `book`, `query_reservations`), record the three showcase tracks. Same demo script across all three; different runtimes. Each ~60–90 seconds.
+
+**Shared demo script:**
+
+```
+1. "Find me a conference room for 10 people next Tuesday afternoon."
+   → agent calls find_free_slots → presents 2 candidates
+2. "Book Conference Room A for 14:00–15:30, title 'Team retro',
+    invite Alice and Bob."
+   → agent calls book → confirmation
+3. "What's on my calendar next week?"
+   → agent calls query_reservations → formatted list
+```
+
+**Recording deliverables:**
+
+| Track | Recording target | Use |
+|---|---|---|
+| 1 (OpenClaw) | 60–90 s screencast of voice command on phone + WhatsApp DM with assistant. Plus a 30-second still-shot of Slack DM flow. | Lead pitch in PRD 035 + README + rapla.org. Conference / customer pitch lead. |
+| 2 (OpenCode) | 60 s terminal-cast (asciinema or video) of `opencode` driving the same flow. | Dev-audience evidence; embedded in `docs/development.md`. |
+| 3 (Claude Desktop) | 60 s screencast of Claude Desktop chat with explicit tool-approval cards visible. | Technical-evaluator reference; embedded in PRD 035. |
+
+Pin all three under `docs/showcases/` (or equivalent). Embed the lead (Track 1) in `README.md`, PRD 035 status block, and any future pitch deck.
+
+**Caveat to acknowledge in scripts:** local-LLM tool calling (Tracks 1 + 2) is solid for single-tool demos but rougher on multi-step orchestration. Stick to the script; don't ad-lib. Re-record cleanly if a take goes off-rails.
 
 ## Tests
 

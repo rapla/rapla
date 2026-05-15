@@ -151,7 +151,7 @@ production-mode hardening when it lands).
 After launching the server, hit the discovery endpoint:
 
 ```bash
-curl -s http://localhost:8051/rapla/auth/oauth/config | python3 -m json.tool
+curl -s http://localhost:8051/api/auth/oauth/config | python3 -m json.tool
 ```
 
 Expected response (defaults):
@@ -204,10 +204,354 @@ every startup, invalidating all previously-issued tokens — both
 as of the 2026-05-12 token unification. Persisting the keypair across
 restarts is planned hardening (see PRD 026 §5).
 
-## External IdP (Keycloak, Azure AD, Google Workspace)
+## External IdP (Microsoft Entra ID + Google)
 
-Not supported today. The bundled Spring Authorization Server is the
-only IdP. Planned for Phase 2 of [PRD 029](prd/029-swing-oauth-login.md);
-the discovery endpoint already exposes the right shape to be repointed
-at an external IdP via additional env vars (`RAPLA_OAUTH_AUTHORIZE_URL`,
-`RAPLA_OAUTH_TOKEN_URL`, `RAPLA_OAUTH_JWK_SET_URI`).
+Rapla can delegate authentication to **Microsoft Entra ID** (formerly
+Azure AD) and **Google** alongside — or instead of — the bundled Spring
+Authorization Server. Multiple providers can be enabled simultaneously;
+the Angular SPA shows a "Sign in with …" picker on `/login`. Swing
+always uses the embedded SAS (deprecation context — see
+[PRD 036](prd/036-external-idp-oauth-login.md)).
+
+> **Core concept**: every authenticated identity — local or external —
+> resolves to a rapla `User` entity (groups, permissions, ownership
+> live there, not in the token). Externally-authed users are matched
+> by stable external-id claim first, then by email, and optionally
+> auto-provisioned. See PRD 036 "Why we keep the rapla User".
+
+### How the SPA reaches the IdP — direct vs BFF
+
+The token-exchange leg of the OAuth flow happens through one of two
+routes, chosen per-provider by whether a `client-secret` is configured:
+
+| Configured `client-secret` | Token endpoint route | When this applies |
+|---|---|---|
+| **Empty / unset** | SPA POSTs directly to the IdP's `/token` (CORS, no secret) | Entra **Single-page application** platform, Google **Desktop app** type — true public PKCE clients |
+| **Set** | SPA POSTs to rapla's **BFF** (`/api/auth/oauth/exchange/{providerId}`); rapla adds the server-held `client_secret` and forwards to the IdP | Entra **Web** platform, Google **Web application** type — confidential clients that demand a secret even with PKCE |
+
+Either route preserves PKCE end-to-end. The BFF exists because Google's
+"Web application" client type *requires* `client_secret` on the token
+endpoint regardless of PKCE — sending that to the SPA would defeat the
+"secret" property. Routing through the BFF keeps it server-side.
+
+**Entra SPA platform forbids server-side token requests** with
+`AADSTS9002327: must be cross-origin`. So for Entra SPA-platform
+clients, the BFF is bypassed automatically (no secret configured →
+direct route). For Entra Web-platform clients (which support secrets),
+configure `client-secret` and the BFF takes over. Both work.
+
+### Bearer token choice on rapla API calls
+
+The Angular SPA sends `Authorization: Bearer <token>` on every rapla
+API call. The token *value* depends on the active provider:
+
+| Active provider | Bearer token sent | Why |
+|---|---|---|
+| rapla embedded SAS | `access_token` (a JWT signed by rapla with the user's UUID as `sub`) | Single-issuer setup, rapla's resource server validates against its own JWKS. |
+| Microsoft Entra | `id_token` (JWT, signed by Entra) | Entra's access_token is *not* always a JWT (it's resource-scoped); the OIDC id_token always is. |
+| Google | `id_token` (JWT, signed by Google) | Google's access_token is opaque, not a JWT. Only the id_token can be validated as a Bearer JWT against Google's JWKS. |
+
+Rapla's resource server runs an `IssuerAwareJwtDecoder` that routes JWT
+validation by the unverified `iss` claim — local tokens hit rapla's
+JWKS, Entra tokens hit Entra's tenant JWKS, Google tokens hit Google's
+JWKS. The Angular `AuthService.token()` picks `id_token` vs
+`access_token` based on which provider the user is signed in with.
+
+### Logout behaviour per provider
+
+| Provider | Logout |
+|---|---|
+| rapla SAS | OIDC RP-initiated logout at `/connect/logout` — accepts `id_token_hint` + `post_logout_redirect_uri`, terminates the rapla session and bounces back to `/app/`. |
+| Microsoft Entra | OIDC RP-initiated logout at `/oauth2/v2.0/logout` — same shape. |
+| Google | **No proper RP-initiated OIDC logout.** SPA clears local tokens and navigates back to `/login` without redirecting anywhere external. Optionally, set `rapla.oauth.external.google.revoke-on-logout=true` to revoke the Google grant via `/revoke` on logout (off by default — users typically expect "log out of rapla", not "uncouple my Google account"). |
+
+`AuthService.signOut()` checks each provider's `endSessionUrl`: if set,
+it triggers angular-oauth2-oidc's IdP redirect; if empty (Google), it
+clears tokens locally and routes to `/login`.
+
+### Config reference — external providers
+
+All settable via the matching `RAPLA_OAUTH_EXTERNAL_*` env vars.
+
+| Property | Default | Meaning |
+|---|---|---|
+| `rapla.oauth.external.microsoft.enabled` | `false` | Enable the Microsoft Entra provider. |
+| `rapla.oauth.external.microsoft.tenant` | *(required)* | Entra tenant GUID (single-tenant — recommended) or `common` (multi-tenant). |
+| `rapla.oauth.external.microsoft.client-id` | *(required)* | Application (client) ID from your Entra App Registration. |
+| `rapla.oauth.external.microsoft.client-secret` | *(empty)* | **Leave empty for Entra SPA platform** (default — true public PKCE client). Set only when using Entra Web platform (confidential client). When set, the BFF route is used. |
+| `rapla.oauth.external.microsoft.hosted-domain` | *(empty)* | Optional email-domain guard; rejects logins from any other domain. |
+| `rapla.oauth.external.microsoft.auto-provision` | `true` | Create a rapla `User` on first sign-in if no match. Matches the LDAP precedent. Single-tenant Entra is already scoped to your directory; set `false` to require admin pre-provisioning. |
+| `rapla.oauth.external.microsoft.display-name` | `Sign in with Microsoft` | Picker button label. |
+| `rapla.oauth.external.microsoft.order` | `10` | Sort key in the picker (lower = first). |
+| `rapla.oauth.external.microsoft.web-picker-visible` | `true` | Show on the web picker. Set `false` to keep token validation working but hide the button. |
+| `rapla.oauth.external.google.enabled` | `false` | Enable the Google provider. |
+| `rapla.oauth.external.google.client-id` | *(required)* | OAuth 2.0 Client ID from Google Cloud Console. |
+| `rapla.oauth.external.google.client-secret` | *(empty)* | **Required when using Google Web application client type** (Google enforces it even with PKCE). Leave empty for Google Desktop app type (no secret needed). When set, the BFF route is used. |
+| `rapla.oauth.external.google.hosted-domain` | *(empty)* | Restrict to a Google Workspace domain via the `hd` claim. |
+| `rapla.oauth.external.google.auto-provision` | `true` | Create a rapla `User` on first sign-in if no match. **For consumer Google (no `hosted-domain`), set this to `false`** — otherwise any verified Google account on Earth becomes a rapla user. With a `hosted-domain` set, this is scoped to your Workspace. |
+| `rapla.oauth.external.google.revoke-on-logout` | `false` | POST to Google's `/revoke` on sign-out (off by default — logging out of rapla shouldn't uncouple the user's other Google services). |
+| `rapla.oauth.web.picker.mode` | `auto` | `auto` (show when ≥2 visible providers), `always`, or `never`. |
+| `rapla.oauth.web.picker.primary` | `rapla` | Which provider to auto-fire in `auto`/`never` modes. |
+
+Endpoint URLs (authorize, token, jwks, end-session) are derived per
+provider — for Entra from `tenant`, for Google these are static. All
+URLs can be overridden via individual properties for sovereign-cloud
+Entra (China, GovCloud) or other special cases.
+
+> **Secrets handling.** `client-secret` values *never* appear in the
+> discovery response (`/api/auth/oauth/config`) — they stay server-side
+> and are added by the BFF on outbound token requests. The Angular SPA
+> never sees them. See "Managing secrets" below.
+
+### Recipe: Microsoft Entra ID (SPA platform — recommended)
+
+This is the cleaner path: a true public PKCE client, no secret to
+manage. Works because the SPA POSTs to Entra directly (CORS).
+
+1. **Register the application** in Entra:
+   - Azure portal → Microsoft Entra ID → App registrations → New registration.
+   - Name: `rapla` (or anything you like).
+   - Supported account types: **Accounts in this organizational directory only** (single-tenant — strongly recommended; multi-tenant requires `tenant=common` and accepts users from any Entra tenant).
+   - Redirect URI: select platform **Single-page application** from the dropdown, then enter `https://rapla.yourdomain.com/app/auth/callback`. For dev: `http://localhost:4200/app/auth/callback` (Angular dev server) and/or `http://localhost:8051/app/auth/callback` (rapla direct).
+   - Click **Register**.
+2. **Note the IDs** (Overview tab):
+   - **Application (client) ID** → `RAPLA_OAUTH_EXTERNAL_MICROSOFT_CLIENT_ID`.
+   - **Directory (tenant) ID** → `RAPLA_OAUTH_EXTERNAL_MICROSOFT_TENANT`.
+3. **API permissions**: the default delegated `User.Read` is fine. No admin consent needed.
+4. **Run rapla** with:
+   ```bash
+   export RAPLA_OAUTH_EXTERNAL_MICROSOFT_ENABLED=true
+   export RAPLA_OAUTH_EXTERNAL_MICROSOFT_TENANT=11111111-2222-3333-4444-555555555555
+   export RAPLA_OAUTH_EXTERNAL_MICROSOFT_CLIENT_ID=66666666-7777-8888-9999-aaaaaaaaaaaa
+   java -jar rapla-2.1-SNAPSHOT.jar
+   ```
+
+### Recipe: Microsoft Entra ID (Web platform — secret-based)
+
+Use this when your security policy mandates confidential clients, or
+when integrating with a legacy Entra registration that's already on the
+Web platform.
+
+1. Same as SPA recipe step 1, **except**: pick platform **Web** instead of Single-page application.
+2. Note the IDs (same as above).
+3. **Generate a client secret**: App Registration → Certificates & secrets → New client secret → copy the **Value** field (not the Secret ID).
+4. **Run rapla** with the extra secret env var:
+   ```bash
+   export RAPLA_OAUTH_EXTERNAL_MICROSOFT_ENABLED=true
+   export RAPLA_OAUTH_EXTERNAL_MICROSOFT_TENANT=<tenant-guid>
+   export RAPLA_OAUTH_EXTERNAL_MICROSOFT_CLIENT_ID=<client-guid>
+   export RAPLA_OAUTH_EXTERNAL_MICROSOFT_CLIENT_SECRET=<secret-value>
+   java -jar rapla-2.1-SNAPSHOT.jar
+   ```
+The BFF route is used automatically when `client-secret` is set.
+
+### Recipe: Google (Web application — requires secret + BFF)
+
+Google's Web application client type enforces `client_secret` on the
+token endpoint even with PKCE. The BFF route handles this.
+
+1. **Create OAuth credentials** in Google Cloud Console:
+   - https://console.cloud.google.com → APIs & Services → Credentials → Create credentials → OAuth client ID.
+   - Application type: **Web application**.
+   - **Authorised JavaScript origins**: `https://rapla.yourdomain.com` (and `http://localhost:4200` for Angular dev, `http://localhost:8051` for rapla direct).
+   - **Authorised redirect URIs**: `https://rapla.yourdomain.com/app/auth/callback` (and matching localhost variants for dev).
+2. **Configure the OAuth consent screen** (one-time): User type Internal (Workspace) or External (consumer Gmail). Scopes: `openid`, `profile`, `email`.
+3. **Copy both**:
+   - **Client ID** → `RAPLA_OAUTH_EXTERNAL_GOOGLE_CLIENT_ID`.
+   - **Client Secret** → `RAPLA_OAUTH_EXTERNAL_GOOGLE_CLIENT_SECRET`.
+4. **Run rapla** with:
+   ```bash
+   export RAPLA_OAUTH_EXTERNAL_GOOGLE_ENABLED=true
+   export RAPLA_OAUTH_EXTERNAL_GOOGLE_CLIENT_ID=000000000000-aaaa.apps.googleusercontent.com
+   export RAPLA_OAUTH_EXTERNAL_GOOGLE_CLIENT_SECRET=<secret>
+   export RAPLA_OAUTH_EXTERNAL_GOOGLE_HOSTED_DOMAIN=yourdomain.com
+   java -jar rapla-2.1-SNAPSHOT.jar
+   ```
+   `HOSTED_DOMAIN` is optional but **strongly recommended for Workspace
+   deployments** — without it, any verified Google account (including
+   `@gmail.com` consumers) can authenticate. With it, the server
+   rejects tokens whose `hd` claim doesn't match.
+
+### Recipe: Google (Desktop app — no secret, direct route)
+
+Alternative client type that avoids the secret entirely. Suitable for
+dev or smaller deployments; production may prefer Web application.
+
+1. Same as Web application recipe step 1, **except**:
+   - Application type: **Desktop app**.
+   - No JavaScript origins / redirect URIs to register — Desktop app allows any loopback URI by default.
+2. Copy the **Client ID** (no secret is generated for Desktop apps).
+3. **Run rapla** with `RAPLA_OAUTH_EXTERNAL_GOOGLE_CLIENT_ID` only — leave `RAPLA_OAUTH_EXTERNAL_GOOGLE_CLIENT_SECRET` unset. The direct (no-BFF) route is used automatically.
+
+### Multi-provider deployments
+
+Enable any combination by setting their respective `*_ENABLED=true`.
+The Angular login page renders one button per visible provider, sorted
+by `order`. With `web.picker.mode=auto` (default), the picker appears
+when ≥2 providers are visible; with a single visible provider it
+auto-fires.
+
+To hide a provider from the picker without disabling token validation:
+
+```bash
+RAPLA_OAUTH_EXTERNAL_GOOGLE_WEB_PICKER_VISIBLE=false
+```
+
+The `rapla` (embedded SAS) entry is hidden from the web picker by
+default — it stays available for API clients via `/api/auth/login`,
+but the web SPA doesn't surface a password button. Showing it is not
+yet configurable (intentional: PRD 036 leaves the rapla password path
+web-hidden for SSO-focused deployments; tracked as an Open Question).
+
+> **Default groups for auto-provisioned users.** New users get
+> `FacadeImpl.newUser()`'s standard groups: can-read-events-from-others,
+> can-create-events, modify-preferences. If you've already configured
+> the LDAP `USERGROUP_CONFIG` system preference (an admin-curated
+> `Category` list assigned to externally-authed users), those groups
+> are used instead — same knob serves LDAP and OAuth. *(The preference
+> key is currently plugin-namespaced as
+> `org.rapla.plugin.jndi.newusergroups` for historical reasons;
+> rename to a non-plugin name is tracked separately.)*
+
+### Migrating existing rapla-local users
+
+Existing rapla users keep working through `/api/auth/login` (legacy
+password form) regardless of which external providers are enabled.
+On first external login, the resolver attaches the external-id to
+the matching rapla user by email — subsequent logins skip the email
+lookup. No data migration required.
+
+When all users are migrated, set
+`RAPLA_OAUTH_LOCAL_ACCOUNTS_ENABLED=false` (planned — see PRD 029
+Phase 2 OQ §5) to disable the legacy endpoint. Today the legacy path
+stays available; remove rapla-local passwords from `data.xml` to
+disable per-user as a stopgap.
+
+## Managing secrets
+
+`client-secret` values (when configured for the BFF route) and tenant
+IDs are **deployment secrets** that should never be committed to git.
+Three patterns for local dev (pick one), all of which keep secrets out
+of git:
+
+### Pattern A: `application-local.yml` (recommended for local dev)
+
+Create `rapla-app/src/main/resources/application-local.yml` (gitignored
+— see `.gitignore` line 37):
+
+```yaml
+rapla:
+  oauth:
+    external:
+      microsoft:
+        enabled: true
+        tenant: <your-tenant-guid>
+        client-id: <your-client-id>
+        # client-secret only when using Entra Web platform; leave
+        # unset for SPA platform (true public PKCE client).
+      google:
+        enabled: true
+        client-id: <client-id>.apps.googleusercontent.com
+        client-secret: GOCSPX-...     # Google Web app needs this
+        # hosted-domain: yourdomain.com   # Workspace deployments
+```
+
+Spring Boot loads `application-{profile}.yml` **only when that profile
+is active**. Activate via `SPRING_PROFILES_ACTIVE=local`:
+
+```bash
+SPRING_PROFILES_ACTIVE=local \
+mvn -f /home/chris/git/rapla/pom.xml -pl rapla-app -am spring-boot:run \
+    -Dspring-boot.run.fork=false
+```
+
+Without `SPRING_PROFILES_ACTIVE=local`, the file is ignored and rapla
+falls back to `application.yml` defaults (external IdPs disabled).
+The `local` profile name is conventional and matches the gitignore
+pattern; you can also use other profile names (`dev`, `test`, etc.) —
+match the filename and the env var to whatever you pick.
+
+Verify the profile loaded:
+
+```bash
+grep "profile is active" logs/rapla.log
+# 2026-05-15T08:35:10.111+03:00 INFO ... The following 1 profile is active: "local"
+```
+
+### Pattern B: Env-var file outside the repo
+
+Keep secrets in a `.env` file in your home directory, sourced before
+launching rapla:
+
+```bash
+# ~/.rapla.env  (NOT in the repo — outside the git tree entirely)
+export RAPLA_OAUTH_EXTERNAL_MICROSOFT_ENABLED=true
+export RAPLA_OAUTH_EXTERNAL_MICROSOFT_TENANT=<tenant-guid>
+export RAPLA_OAUTH_EXTERNAL_MICROSOFT_CLIENT_ID=<client-id>
+export RAPLA_OAUTH_EXTERNAL_GOOGLE_ENABLED=true
+export RAPLA_OAUTH_EXTERNAL_GOOGLE_CLIENT_ID=<id>.apps.googleusercontent.com
+export RAPLA_OAUTH_EXTERNAL_GOOGLE_CLIENT_SECRET=GOCSPX-...
+```
+
+```bash
+source ~/.rapla.env && \
+mvn -f /home/chris/git/rapla/pom.xml -pl rapla-app -am spring-boot:run \
+    -Dspring-boot.run.fork=false
+```
+
+The repo's `.gitignore` excludes `.env` and `*.env` patterns to make
+accidental commits hard inside the working tree; placing the file
+outside the repo entirely (e.g. `$HOME/.rapla.env`) eliminates the
+risk completely.
+
+### Pattern C: OS keychain / platform secret manager
+
+For production deployments use the platform's standard secret
+mechanism — systemd `LoadCredential=`, Kubernetes Secrets injected as
+env vars, Vault agent sidecar, AWS Secrets Manager, etc. The rapla
+server reads env vars; how they arrive there is the deployment's
+choice. Never put production secrets in any file inside the repo
+working tree, even gitignored ones.
+
+### Universal rules
+
+1. **Never inline secrets in `application.yml`** (the tracked one) or
+   commit them to the repo in any form.
+2. **Don't paste real values into commit messages, PRs, issues, or
+   chat logs.** Once a secret is in git history (even a deleted file)
+   or a publicly-accessible log, rotate it.
+3. **Rotation**: Entra client secrets expire by default (12–24
+   months); Google client secrets don't expire automatically but
+   should be rotated periodically. rapla picks up the new value at
+   next restart.
+4. **Verify nothing leaks to the wire**: the
+   `/api/auth/oauth/config` endpoint returns `clientId` (public) but
+   **never** `clientSecret`:
+   ```bash
+   curl -s http://localhost:8051/api/auth/oauth/config \
+     | jq '[.providers[] | select(.clientSecret)] | length'
+   # 0 — secrets are never in the discovery response.
+   ```
+
+## Verifying the discovery shape
+
+After launching the server, hit the discovery endpoint:
+
+```bash
+curl -s http://localhost:8051/api/auth/oauth/config | jq
+```
+
+You should see:
+- Top-level flat fields point at rapla SAS (unchanged regardless of external providers — Swing's surface).
+- `providers[]` array with one entry per enabled provider, sorted by `order`.
+- Each external entry's `tokenUrl` either points at the IdP direct (no secret configured) or at `/api/auth/oauth/exchange/{providerId}` (secret configured → BFF).
+- No `clientSecret` field anywhere.
+
+Spot-check the per-provider token URL routing:
+
+```bash
+curl -s http://localhost:8051/api/auth/oauth/config | jq '.providers[] | {id, tokenUrl}'
+```
+
+`tokenUrl` showing `/api/auth/oauth/exchange/...` = BFF route active for
+that provider; otherwise it's the IdP's direct URL.

@@ -114,7 +114,7 @@ public class MyCustomConnector implements CustomConnector
     /**
      * Calls the configured refresh endpoint with the stored refresh token and
      * stashes the resulting access + refresh tokens on {@link #remoteConnectionInfo}.
-     * Default refresh endpoint is {@code <serverURL>/auth/refresh}; if discovery
+     * Default refresh endpoint is {@code <serverURL>/api/auth/refresh}; if discovery
      * provided a different URL (e.g. Keycloak's token endpoint when external IdP
      * is configured), uses that instead.
      *
@@ -127,7 +127,7 @@ public class MyCustomConnector implements CustomConnector
         {
             String serverUrl = remoteConnectionInfo.getServerURL();
             if (serverUrl == null || serverUrl.isEmpty()) return null;
-            url = serverUrl + "/auth/refresh";
+            url = serverUrl + "/api/auth/refresh";
         }
         String body = "{\"refreshToken\":\"" + refreshToken + "\"}";
         java.net.http.HttpClient http = java.net.http.HttpClient.newBuilder()

@@ -11,7 +11,7 @@ import org.springframework.web.service.annotation.PostExchange;
  * @author Jonas Kohlbrenner
  *
  */
-@HttpExchange("/urlencryption")
+@HttpExchange("/api/urlencryption")
 public interface UrlEncryption
 {
 	

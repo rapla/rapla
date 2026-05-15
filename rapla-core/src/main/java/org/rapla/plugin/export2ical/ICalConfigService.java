@@ -5,7 +5,7 @@ import org.rapla.framework.RaplaException;
 import org.springframework.web.service.annotation.GetExchange;
 import org.springframework.web.service.annotation.HttpExchange;
 
-@HttpExchange("/ical/config")
+@HttpExchange("/api/ical/config")
 public interface ICalConfigService
 {
     @GetExchange

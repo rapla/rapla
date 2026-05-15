@@ -7,7 +7,7 @@ import org.springframework.web.service.annotation.PostExchange;
 
 import java.util.Set;
 
-@HttpExchange("/ical/export")
+@HttpExchange("/api/ical/export")
 public interface ICalExport {
     @PostExchange
 	String export(@RequestBody Set<String> appointmentIds) throws RaplaException;

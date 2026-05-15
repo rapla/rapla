@@ -20,7 +20,7 @@ import java.util.Map;
  *  {@code RaplaConfiguration} tree, yaml fallback, etc.) — see PRD 020 §"Wire
  *  contract" for the design rule.
  */
-@HttpExchange("/admin/panels")
+@HttpExchange("/api/admin/panels")
 public interface PreferencesAdminService
 {
     /** List panels visible to the calling user, scoped by parameter.

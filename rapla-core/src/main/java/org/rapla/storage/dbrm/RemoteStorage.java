@@ -32,7 +32,7 @@ import java.util.List;
 import java.util.Map;
 
 import java.time.LocalDateTime;
-@HttpExchange("/storage")
+@HttpExchange("/api/storage")
 public interface RemoteStorage
 {
     String USER_WAS_NOT_AUTHENTIFIED = "User was not authentified";

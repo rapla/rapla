@@ -15,7 +15,7 @@ import org.springframework.web.service.annotation.PostExchange;
  * {@code InvalidDefinitionException}. Callers wanting async dispatch wrap the
  * call site in {@code commandScheduler.supply(() -> ...)}.
  */
-@HttpExchange("/archiver")
+@HttpExchange("/api/archiver")
 public interface ArchiverService
 {
 	String PLUGIN_ID = "org.rapla.plugin.archiver.server";

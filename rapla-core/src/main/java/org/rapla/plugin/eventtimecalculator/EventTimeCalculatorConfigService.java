@@ -21,7 +21,7 @@ import org.springframework.web.service.annotation.HttpExchange;
  * {@code preferences.getEntry(USER_CONFIG)} reads in
  * {@code EventTimeCalculatorUserOption}.
  */
-@HttpExchange("/eventtimecalculator")
+@HttpExchange("/api/eventtimecalculator")
 public interface EventTimeCalculatorConfigService
 {
     @GetExchange("/system-config")

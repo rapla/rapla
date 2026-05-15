@@ -32,7 +32,7 @@ import java.util.List;
  *  iff an impl is also active (impls in this codebase carry the same
  *  {@code @ConditionalOnProperty} gate). */
 @RestController
-@RequestMapping(value = "/externaleventimport", produces = "application/json")
+@RequestMapping(value = "/api/externaleventimport", produces = "application/json")
 @ConditionalOnProperty(ExternalEventImportPlugin.ENABLE_PROPERTY)
 public class ExternalEventImportController
 {

@@ -20,7 +20,7 @@ import java.util.List;
 
 @RestController
 @ConditionalOnBean(RemoteSession.class)
-@RequestMapping(value = "/exchange/config", produces = "application/json")
+@RequestMapping(value = "/api/exchange/config", produces = "application/json")
 public class ExchangeConnectorConfigController
 {
     private final RaplaFacade facade;

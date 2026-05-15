@@ -17,7 +17,7 @@ import java.util.List;
  * reads. Each factory should cache the result — these methods make an HTTP
  * round-trip on every call.
  */
-@HttpExchange("/plugins")
+@HttpExchange("/api/plugins")
 public interface PluginsService
 {
     @GetExchange

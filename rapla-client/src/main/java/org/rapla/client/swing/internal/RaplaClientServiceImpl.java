@@ -148,11 +148,9 @@ public class RaplaClientServiceImpl implements ClientService, UpdateErrorListene
         try
         {
             URL downloadURL = env.getDownloadURL();
-            // PRD 031 Phase 2: REST API moved to /api/* via WebMvcConfigurer.addPathPrefix.
-            // serverURL must end at /api so existing @Path("/auth/login") proxies hit /api/auth/login.
             String baseUrl = downloadURL.toExternalForm();
-            if (!baseUrl.endsWith("/")) baseUrl += "/";
-            connectionInfo.setServerURL(baseUrl + "api");
+            if (baseUrl.endsWith("/")) baseUrl = baseUrl.substring(0, baseUrl.length() - 1);
+            connectionInfo.setServerURL(baseUrl);
         }
         catch (RaplaException e)
         {
@@ -518,8 +516,8 @@ public class RaplaClientServiceImpl implements ClientService, UpdateErrorListene
         getLogger().info("startup: cached refresh token found — attempting silent reauth");
         try
         {
-            // The discovery refresh URL isn't known until we hit /auth/oauth/config —
-            // for the cached-token path we use the rapla default <server>/auth/refresh.
+            // The discovery refresh URL isn't known until we hit /api/auth/oauth/config —
+            // for the cached-token path we use the rapla default <server>/api/auth/refresh.
             // If discovery later changes the refresh URL (Keycloak), the cached token
             // from the embedded auth server won't validate there anyway — fall through.
             String serverUrl = connectionInfo.getServerURL();
@@ -528,7 +526,7 @@ public class RaplaClientServiceImpl implements ClientService, UpdateErrorListene
                 getLogger().info("startup: server URL not yet set — falling back to login dialog");
                 return false;
             }
-            String refreshEndpoint = serverUrl + "/auth/refresh";
+            String refreshEndpoint = serverUrl + "/api/auth/refresh";
             String body = "{\"refreshToken\":\"" + cachedRefresh + "\"}";
             java.net.http.HttpClient http = java.net.http.HttpClient.newBuilder()
                     .connectTimeout(java.time.Duration.ofSeconds(10)).build();
@@ -899,7 +897,7 @@ public class RaplaClientServiceImpl implements ClientService, UpdateErrorListene
 
     private OAuthConfig fetchOauthConfig() throws Exception
     {
-        URI discovery = URI.create(connectionInfo.getServerURL() + "/auth/oauth/config");
+        URI discovery = URI.create(connectionInfo.getServerURL() + "/api/auth/oauth/config");
         HttpRequest req = HttpRequest.newBuilder(discovery)
                 .timeout(Duration.ofSeconds(10))
                 .header("Accept", "application/json")
@@ -1029,7 +1027,7 @@ public class RaplaClientServiceImpl implements ClientService, UpdateErrorListene
             try
             {
                 HttpClient http = HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(3)).build();
-                HttpRequest req = HttpRequest.newBuilder(URI.create(serverUrl + "/auth/logout"))
+                HttpRequest req = HttpRequest.newBuilder(URI.create(serverUrl + "/api/auth/logout"))
                         .timeout(Duration.ofSeconds(3))
                         .header("Authorization", "Bearer " + accessToken)
                         .POST(HttpRequest.BodyPublishers.noBody())

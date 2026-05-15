@@ -5,7 +5,7 @@ import org.rapla.framework.TypedComponentRole;
 import org.springframework.web.service.annotation.HttpExchange;
 import org.springframework.web.service.annotation.PostExchange;
 
-@HttpExchange("/templateimport")
+@HttpExchange("/api/templateimport")
 public interface TemplateImport
 {
     TypedComponentRole<Boolean> TEMPLATE_IMPORT_ENABLED = new TypedComponentRole<>("org.rapla.plugin.eventimport.enabled");

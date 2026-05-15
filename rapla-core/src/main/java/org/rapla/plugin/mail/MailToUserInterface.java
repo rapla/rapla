@@ -7,7 +7,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.service.annotation.HttpExchange;
 import org.springframework.web.service.annotation.PostExchange;
 
-@HttpExchange("/mail/send")
+@HttpExchange("/api/mail/send")
 public interface MailToUserInterface
 {
     @PostExchange

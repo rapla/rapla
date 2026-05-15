@@ -21,7 +21,7 @@ import org.springframework.web.service.annotation.HttpExchange;
  * atomic-save contract over the shared preference clone makes a direct
  * PUT path risky (clone-overwrite issue — see SettingsController javadoc).
  */
-@HttpExchange("/settings")
+@HttpExchange("/api/settings")
 public interface SettingsService
 {
     @GetExchange("/system")

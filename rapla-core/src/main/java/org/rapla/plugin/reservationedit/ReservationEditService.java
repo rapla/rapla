@@ -18,7 +18,7 @@ import org.springframework.web.service.annotation.PostExchange;
  * {@code RemoteLocaleService}: Spring's HttpServiceProxyFactory has no
  * built-in Promise adapter.
  */
-@HttpExchange("/edit")
+@HttpExchange("/api/edit")
 public interface ReservationEditService
 {
     @PostExchange("/validate-recurrence")

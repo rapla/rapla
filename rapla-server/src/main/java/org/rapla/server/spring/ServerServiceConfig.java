@@ -114,10 +114,22 @@ public class ServerServiceConfig
     public RemoteSession remoteSession(Logger logger,
                                         TokenHandler tokenHandler,
                                         RaplaAuthentificationService authService,
-                                        org.rapla.storage.CachableStorageOperator operator)
+                                        org.rapla.storage.CachableStorageOperator operator,
+                                        ObjectProvider<org.rapla.server.spring.oauth.external.ExternalProvidersProperties> externalProvidersProvider,
+                                        ObjectProvider<org.rapla.server.spring.oauth.external.ExternalUserResolver> externalUserResolverProvider)
     {
         RemoteSession legacy = new RemoteSessionImpl(logger, tokenHandler, authService);
-        return new org.rapla.server.spring.SpringSecurityRemoteSession(legacy, operator, logger);
+        return new org.rapla.server.spring.SpringSecurityRemoteSession(
+                legacy, operator, logger,
+                externalProvidersProvider.getIfAvailable(),
+                externalUserResolverProvider.getIfAvailable());
+    }
+
+    @Bean
+    public org.rapla.server.spring.oauth.external.ExternalUserResolver externalUserResolver(
+            RaplaFacade facade, Logger logger)
+    {
+        return new org.rapla.server.spring.oauth.external.ExternalUserResolver(facade, logger);
     }
 
     @Bean
@@ -260,17 +272,6 @@ public class ServerServiceConfig
                                                                       AutowireCapableBeanFactory beanFactory)
     {
         org.rapla.plugin.mail.server.RaplaConfigServiceImpl impl = new org.rapla.plugin.mail.server.RaplaConfigServiceImpl(request);
-        beanFactory.autowireBean(impl);
-        return impl;
-    }
-
-    @Bean
-    @org.springframework.web.context.annotation.RequestScope
-    @org.springframework.boot.autoconfigure.condition.ConditionalOnProperty(prefix = "rapla.services", name = "org.rapla.plugin.export2ical", matchIfMissing = true)
-    public org.rapla.plugin.export2ical.ICalConfigService iCalConfigService(jakarta.servlet.http.HttpServletRequest request,
-                                                                             AutowireCapableBeanFactory beanFactory)
-    {
-        org.rapla.plugin.export2ical.server.ICalConfigServiceImpl impl = new org.rapla.plugin.export2ical.server.ICalConfigServiceImpl(request);
         beanFactory.autowireBean(impl);
         return impl;
     }

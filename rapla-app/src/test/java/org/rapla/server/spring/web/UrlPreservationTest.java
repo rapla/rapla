@@ -130,7 +130,7 @@ class UrlPreservationTest
         int status = mockMvc.perform(get("/api/auth/login"))
                 .andReturn().getResponse().getStatus();
         // POST endpoint; GET returns 405 — anything but 404 proves route exists.
-        assertNotEquals(404, status, "/api/auth/login must route — got 404 (verify ApiPathPrefixConfig + AuthController)");
+        assertNotEquals(404, status, "/api/auth/login must route — got 404 (verify AuthController @RequestMapping starts with /api/)");
     }
 
     @Test

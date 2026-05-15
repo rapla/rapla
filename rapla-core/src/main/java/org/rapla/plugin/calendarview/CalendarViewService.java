@@ -23,7 +23,7 @@ import java.util.List;
  * built-in Promise adapter. Async callers should wrap in
  * {@code commandScheduler.supply(...)}.
  */
-@HttpExchange("/calendar")
+@HttpExchange("/api/calendar")
 public interface CalendarViewService
 {
     /**

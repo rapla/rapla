@@ -7,20 +7,7 @@ import { OAuthService, provideOAuthClient } from 'angular-oauth2-oidc';
 import { routes } from './app.routes';
 import { BASE_PATH } from './api/variables';
 import { authInterceptor } from './auth/auth.interceptor';
-
-interface OAuthEndpoints {
-  enabled: boolean;
-  clientId: string;
-  issuer: string;
-  authorizeUrl: string;
-  tokenUrl: string;
-  refreshUrl: string;
-  logoutUrl: string;
-  jwksUrl: string;
-  userinfoUrl: string;
-  endSessionUrl: string;
-  scopes: string[];
-}
+import { AuthService, OAuthDiscovery } from './auth/auth.service';
 
 export const appConfig: ApplicationConfig = {
   providers: [
@@ -35,38 +22,32 @@ export const appConfig: ApplicationConfig = {
     provideOAuthClient(),
     provideAppInitializer(() => {
       const oauth = inject(OAuthService);
+      const authService = inject(AuthService);
       // Persist tokens across page reloads (default is sessionStorage which
       // clears on tab close; localStorage survives until explicit logout).
       oauth.setStorage(localStorage);
       // Endpoint set comes from /api/auth/oauth/config so the SPA is auth-server
-      // agnostic — swapping the bundled Spring Authorization Server for Keycloak
-      // / Auth0 / etc. is a server-side property change (rapla.oauth.*-url), no
-      // SPA rebuild needed. In dev (`ng serve` on :4200 proxying to :8051), the
-      // server returns :4200 URLs thanks to server.forward-headers-strategy=FRAMEWORK
-      // + the proxy's xfwd: true, so the OAuth library's calls stay same-origin
-      // and flow through the proxy. In prod or with external IdP, URLs are returned
-      // as-is and the library reaches them directly.
+      // agnostic. The `providers[]` + `picker` fields (PRD 036) let the SPA
+      // render a multi-IdP picker on /login when more than one provider is
+      // enabled. Top-level flat fields always reflect the rapla embedded SAS.
       const origin = window.location.origin;
       return fetch(origin + '/api/auth/oauth/config')
         .then(r => r.ok ? r.json() : Promise.reject(`oauth config http ${r.status}`))
-        .then((cfg: OAuthEndpoints) => {
+        .then((cfg: OAuthDiscovery) => {
           if (!cfg.enabled) return undefined;
-          oauth.configure({
-            issuer: cfg.issuer,
-            clientId: cfg.clientId,
-            redirectUri: origin + '/app/auth/callback',
-            responseType: 'code',
-            scope: (cfg.scopes ?? ['openid', 'profile', 'offline_access']).join(' '),
-            loginUrl: cfg.authorizeUrl,
-            tokenEndpoint: cfg.tokenUrl,
-            userinfoEndpoint: cfg.userinfoUrl,
-            logoutUrl: cfg.endSessionUrl ?? cfg.logoutUrl,
-            postLogoutRedirectUri: origin + '/app/',
-            showDebugInformation: false,
-            skipIssuerCheck: true,
-            strictDiscoveryDocumentValidation: false,
-          });
-          return fetch(cfg.jwksUrl)
+          authService.setDiscovery(cfg);
+          // Configure OAuthService with the user's most recent picker choice
+          // (persisted in localStorage), falling back to the primary provider.
+          // This is critical for the post-callback reload: when the browser
+          // comes back to /app/auth/callback?code=… after the IdP redirect,
+          // tryLoginCodeFlow() must exchange the code at the SAME token
+          // endpoint the authorize was issued against, not the default one.
+          const active = authService.activeProvider();
+          authService.applyProviderToOAuthService(active, cfg);
+          // Load the JWKS for the active provider so id_token signature
+          // verification uses the right keys.
+          const jwksUrl = active?.jwksUrl ?? cfg.jwksUrl;
+          return fetch(jwksUrl)
             .then(r => r.ok ? r.json() : null)
             .then(jwks => { if (jwks) (oauth as unknown as { jwks: unknown }).jwks = jwks; })
             .then(() => oauth.tryLoginCodeFlow());

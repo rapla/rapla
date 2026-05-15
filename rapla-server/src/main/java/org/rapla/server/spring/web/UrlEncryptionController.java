@@ -11,7 +11,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @ConditionalOnBean({UrlEncryption.class, RemoteSession.class})
-@RequestMapping(value = "/urlencryption", produces = "application/json")
+@RequestMapping(value = "/api/urlencryption", produces = "application/json")
 public class UrlEncryptionController
 {
     private final UrlEncryption service;

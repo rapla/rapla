@@ -8,7 +8,7 @@ import org.springframework.web.service.annotation.GetExchange;
 import org.springframework.web.service.annotation.HttpExchange;
 import org.springframework.web.service.annotation.PostExchange;
 
-@HttpExchange("/mail/config")
+@HttpExchange("/api/mail/config")
 public interface MailConfigService
 {
     @GetExchange("/external")

@@ -25,7 +25,7 @@ import java.util.List;
  * <p><b>Returns synchronous types</b> — see {@link TableViewService}
  * Promise caveat.
  */
-@HttpExchange("/export")
+@HttpExchange("/api/export")
 public interface ExportService
 {
     /**

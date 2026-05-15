@@ -27,7 +27,7 @@ import org.springframework.web.service.annotation.PostExchange;
  * Logout is no longer a server round-trip — JWT access tokens are stateless,
  * so client-side disconnect just drops the token reference.</p>
  */
-@HttpExchange("/auth")
+@HttpExchange("/api/auth")
 public interface RemoteAuthentificationService
 {
     @PostExchange("/login")

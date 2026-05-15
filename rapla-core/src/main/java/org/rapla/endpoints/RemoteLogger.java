@@ -6,7 +6,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.service.annotation.HttpExchange;
 import org.springframework.web.service.annotation.PutExchange;
 
-@HttpExchange("/logger")
+@HttpExchange("/api/logger")
 public interface RemoteLogger
 {
     @PutExchange("/{id}")
