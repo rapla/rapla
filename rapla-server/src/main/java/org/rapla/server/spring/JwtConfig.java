@@ -70,6 +70,7 @@ public class JwtConfig
             return local;
         }
         Map<String, JwtDecoder> byIssuer = new HashMap<>();
+        java.util.List<IssuerAwareJwtDecoder.Route> patternRoutes = new java.util.ArrayList<>();
         // Local issuer: when rapla.oauth.issuer is configured we validate
         // against it; otherwise the local decoder accepts any issuer (its
         // tokens are still bound by signature + standard claims).
@@ -94,13 +95,24 @@ public class JwtConfig
         for (ProviderConfig p : enabled)
         {
             NimbusJwtDecoder dec = NimbusJwtDecoder.withJwkSetUri(p.jwksUrl()).build();
-            OAuth2TokenValidator<Jwt> validator = JwtValidators.createDefaultWithIssuer(p.issuer());
-            dec.setJwtValidator(validator);
-            byIssuer.put(p.issuer(), dec);
+            if (p.isMultiTenant())
+            {
+                // Multi-tenant: skip the strict issuer validator (default
+                // accepts any iss); the IssuerAwareJwtDecoder pattern match
+                // is the iss check. Signature + standard claims still apply.
+                dec.setJwtValidator(JwtValidators.createDefault());
+                patternRoutes.add(new IssuerAwareJwtDecoder.Route(p::matchesIssuer, dec));
+            }
+            else
+            {
+                // Single-issuer provider: validator pins iss to p.issuer().
+                dec.setJwtValidator(JwtValidators.createDefaultWithIssuer(p.issuer()));
+                byIssuer.put(p.issuer(), dec);
+            }
         }
         return localIssuer == null
-                ? new LocalFallbackIssuerAwareDecoder(local, byIssuer)
-                : new IssuerAwareJwtDecoder(byIssuer);
+                ? new LocalFallbackIssuerAwareDecoder(local, byIssuer, patternRoutes)
+                : new IssuerAwareJwtDecoder(byIssuer, patternRoutes);
     }
 
     /**
@@ -114,23 +126,35 @@ public class JwtConfig
         private final JwtDecoder local;
         private final IssuerAwareJwtDecoder external;
         private final java.util.Set<String> externalIssuers;
+        private final java.util.List<IssuerAwareJwtDecoder.Route> externalPatterns;
 
-        LocalFallbackIssuerAwareDecoder(JwtDecoder local, Map<String, JwtDecoder> byIssuer)
+        LocalFallbackIssuerAwareDecoder(JwtDecoder local,
+                                        Map<String, JwtDecoder> byIssuer,
+                                        java.util.List<IssuerAwareJwtDecoder.Route> patternRoutes)
         {
             this.local = local;
             Map<String, JwtDecoder> externalOnly = new HashMap<>(byIssuer);
             externalOnly.remove("__LOCAL_SELF__");
             this.externalIssuers = java.util.Set.copyOf(externalOnly.keySet());
-            this.external = externalOnly.isEmpty() ? null : new IssuerAwareJwtDecoder(externalOnly);
+            this.externalPatterns = patternRoutes == null ? java.util.List.of() : java.util.List.copyOf(patternRoutes);
+            this.external = (externalOnly.isEmpty() && this.externalPatterns.isEmpty())
+                    ? null
+                    : new IssuerAwareJwtDecoder(
+                            externalOnly.isEmpty() ? Map.of("__UNUSED__", local) : externalOnly,
+                            this.externalPatterns);
         }
 
         @Override
         public Jwt decode(String token)
         {
             String iss = peekIssuer(token);
-            if (iss != null && externalIssuers.contains(iss) && external != null)
+            if (iss != null && external != null)
             {
-                return external.decode(token);
+                if (externalIssuers.contains(iss)) return external.decode(token);
+                for (IssuerAwareJwtDecoder.Route r : externalPatterns)
+                {
+                    if (r.matcher.test(iss)) return r.decoder.decode(token);
+                }
             }
             return local.decode(token);
         }

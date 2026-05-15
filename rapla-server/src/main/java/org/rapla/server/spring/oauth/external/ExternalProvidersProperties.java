@@ -7,6 +7,8 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
+import java.util.regex.Pattern;
 
 /**
  * Per-provider OIDC config. Each provider block is independently enabled.
@@ -37,7 +39,7 @@ public class ExternalProvidersProperties
     {
         if (issuer == null) return Optional.empty();
         return enabledProviders().stream()
-                .filter(p -> issuer.equals(p.issuer()))
+                .filter(p -> p.matchesIssuer(issuer))
                 .findFirst();
     }
 
@@ -119,6 +121,21 @@ public class ExternalProvidersProperties
         public List<String> getScopes() { return scopes; }
         public void setScopes(List<String> scopes) { this.scopes = scopes; }
 
+        /**
+         * Multi-tenant Entra placeholders that route through
+         * {@code login.microsoftonline.com/<placeholder>/...}. When tenant
+         * matches one of these, rapla switches to multi-tenant mode:
+         * tokens come back with the user's *home tenant GUID* in {@code iss},
+         * so validation uses a pattern matcher (any tenant GUID) instead of
+         * exact equals, and JWKS comes from the multi-tenant endpoint that
+         * serves keys for all tenants.
+         */
+        private static final Set<String> MULTI_TENANT_PLACEHOLDERS = Set.of("common", "organizations", "consumers");
+
+        /** Matches {@code https://login.microsoftonline.com/<tenant-guid>/v2.0}. */
+        private static final Pattern ENTRA_TENANT_ISSUER_PATTERN =
+                Pattern.compile("^https://login\\.microsoftonline\\.com/[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}/v2\\.0$");
+
         ProviderConfig toProviderConfig()
         {
             if (tenant == null || tenant.isEmpty())
@@ -131,16 +148,22 @@ public class ExternalProvidersProperties
                 throw new IllegalStateException(
                         "rapla.oauth.external.microsoft.enabled=true requires rapla.oauth.external.microsoft.client-id");
             }
+            boolean multiTenant = MULTI_TENANT_PLACEHOLDERS.contains(tenant);
             String base = "https://login.microsoftonline.com/" + tenant;
             String iss = orDefault(issuer, base + "/v2.0");
             String authorize = orDefault(authorizeUrl, base + "/oauth2/v2.0/authorize");
             String token = orDefault(tokenUrl, base + "/oauth2/v2.0/token");
+            // Multi-tenant: the per-tenant /discovery/v2.0/keys endpoint resolves
+            // to the same shared keyset that signs tokens from any tenant. Using
+            // /common (or /organizations etc.) for JWKS picks up all the keys
+            // we need. Single-tenant: scoped to that tenant's keys.
             String jwks = orDefault(jwksUrl, base + "/discovery/v2.0/keys");
             String endSession = orDefault(endSessionUrl, base + "/oauth2/v2.0/logout");
+            Pattern issPattern = multiTenant ? ENTRA_TENANT_ISSUER_PATTERN : null;
             return new ProviderConfig(
                     ExternalProviderId.MICROSOFT,
                     displayName, icon, order, webPickerVisible,
-                    clientId, clientSecret, iss, authorize, token, jwks, endSession,
+                    clientId, clientSecret, iss, issPattern, authorize, token, jwks, endSession,
                     postLogoutRedirectUri,
                     scopes,
                     new LinkedHashMap<>(),

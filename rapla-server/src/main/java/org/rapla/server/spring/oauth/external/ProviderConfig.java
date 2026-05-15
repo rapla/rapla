@@ -4,11 +4,19 @@ import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.regex.Pattern;
 
 /**
  * Immutable runtime view of one external OIDC provider. Built from
  * {@link ExternalProvidersProperties} by applying provider-specific URL
  * derivations (Entra endpoints from {@code tenant}) and defaults.
+ *
+ * <p>An {@code issuerPattern} can be set instead of relying solely on the
+ * literal {@code issuer} for matching. Used by Entra multi-tenant
+ * ({@code tenant=common}/{@code organizations}/{@code consumers}) where the
+ * {@code iss} claim in tokens carries the *user's home tenant*, not the
+ * configured "common" placeholder. With a pattern, {@link #matchesIssuer}
+ * accepts any tenant GUID at the matching position.
  */
 public final class ProviderConfig
 {
@@ -20,6 +28,7 @@ public final class ProviderConfig
     private final String clientId;
     private final String clientSecret;
     private final String issuer;
+    private final Pattern issuerPattern;
     private final String authorizeUrl;
     private final String tokenUrl;
     private final String jwksUrl;
@@ -57,6 +66,37 @@ public final class ProviderConfig
             boolean autoProvision,
             boolean revokeOnLogout)
     {
+        this(provider, displayName, icon, order, webPickerVisible, clientId, clientSecret,
+                issuer, null, authorizeUrl, tokenUrl, jwksUrl, endSessionUrl,
+                postLogoutRedirectUri, scopes, extraAuthorizeParams,
+                usernameClaim, emailClaim, externalIdClaim, hostedDomain,
+                autoProvision, revokeOnLogout);
+    }
+
+    public ProviderConfig(
+            ExternalProviderId provider,
+            String displayName,
+            String icon,
+            int order,
+            boolean webPickerVisible,
+            String clientId,
+            String clientSecret,
+            String issuer,
+            Pattern issuerPattern,
+            String authorizeUrl,
+            String tokenUrl,
+            String jwksUrl,
+            String endSessionUrl,
+            String postLogoutRedirectUri,
+            List<String> scopes,
+            Map<String, String> extraAuthorizeParams,
+            String usernameClaim,
+            String emailClaim,
+            String externalIdClaim,
+            String hostedDomain,
+            boolean autoProvision,
+            boolean revokeOnLogout)
+    {
         this.provider = provider;
         this.displayName = displayName;
         this.icon = icon;
@@ -65,6 +105,7 @@ public final class ProviderConfig
         this.clientId = clientId;
         this.clientSecret = clientSecret == null ? "" : clientSecret;
         this.issuer = issuer;
+        this.issuerPattern = issuerPattern;
         this.authorizeUrl = authorizeUrl;
         this.tokenUrl = tokenUrl;
         this.jwksUrl = jwksUrl;
@@ -89,6 +130,19 @@ public final class ProviderConfig
     public String clientId() { return clientId; }
     public String clientSecret() { return clientSecret; }
     public String issuer() { return issuer; }
+    public Pattern issuerPattern() { return issuerPattern; }
+    public boolean isMultiTenant() { return issuerPattern != null; }
+    /**
+     * True if {@code iss} matches this provider — either by exact-equals on
+     * {@link #issuer()} for fixed-issuer providers, or by regex match on
+     * {@link #issuerPattern()} for multi-tenant providers.
+     */
+    public boolean matchesIssuer(String iss)
+    {
+        if (iss == null) return false;
+        if (issuerPattern != null) return issuerPattern.matcher(iss).matches();
+        return issuer != null && issuer.equals(iss);
+    }
     public String authorizeUrl() { return authorizeUrl; }
     public String tokenUrl() { return tokenUrl; }
     public String jwksUrl() { return jwksUrl; }

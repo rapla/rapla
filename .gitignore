@@ -37,6 +37,15 @@ src/test/test.iml
 application-local.yml
 src/main/resources/application-local.yml
 proxy.conf.local.json
+# Deployment secrets — never commit. Use env vars or your platform's
+# secret manager. See docs/authentication.md "Managing secrets".
+.env
+.env.*
+*.env
+secrets.yml
+secrets.yaml
+**/secrets.yml
+**/secrets.yaml
 /rapla-app/jetty.home_IS_UNDEFINED/logs/rapla.log
 /rapla-client/jetty.home_IS_UNDEFINED/logs/rapla.log
 /rapla-server/jetty.home_IS_UNDEFINED/logs/rapla.log
