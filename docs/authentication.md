@@ -111,36 +111,136 @@ their refresh tokens become invalid.
 
 ## API keys (Personal Access Tokens)
 
-Long-lived JWTs that users can mint, list, and revoke for integrations
-(CI scripts, MCP servers, periodic exporters). GitHub-style PAT flow.
-See [PRD 043](prd/043-api-keys-jwt-pat.md) for the full design.
+Long-lived JWTs that users mint, list, and revoke for integrations
+(CI scripts, MCP servers, periodic exporters, external iCal subscribers).
+GitHub-style PAT flow. Full design: [PRD 043](prd/043-api-keys-jwt-pat.md).
+
+### How it works
+
+When you mint a key, **rapla generates an RSA-2048 keypair in memory,
+signs one JWT with the private half, and returns the JWT in the
+response — once.** Only the **public** key is persisted to
+`RaplaKeyStorage` (alongside the label, issuance time, and expiry).
+The private key is discarded at end-of-handler.
+
+The returned JWT is the credential: copy it, store it where your
+integration can read it, and use it as `Authorization: Bearer <jwt>`
+on subsequent calls. Same shape as a GitHub PAT — you see it once,
+then it's gone from the server's perspective. Rapla can't re-show it
+because the private key needed to mint another one is no longer in
+memory.
+
+**Security property:** a leaked rapla data file yields only public
+keys — useless for impersonation. To revoke a key, delete its prefs
+entry; the JWT's signature still verifies cryptographically, but the
+server-side membership check fails (`getAPIKeys` no longer returns it).
+
+### End-to-end curl flow
 
 ```bash
-# Mint (Bearer-authenticated as the user who will own the key)
-curl -X POST http://localhost:8051/api/auth/api-keys \
+# 0. Get a session access token (your normal login)
+ACCESS=$(curl -s -X POST http://localhost:8051/oauth2/token \
+  -H "Content-Type: application/x-www-form-urlencoded" \
+  -d "grant_type=password&username=homer&password=duffs&client_id=rapla-client" \
+  | jq -r .access_token)
+
+# 1. Mint a new API key (the response shows the JWT ONCE — save it now)
+RESPONSE=$(curl -s -X POST http://localhost:8051/api/auth/api-keys \
   -H "Authorization: Bearer $ACCESS" \
   -H "Content-Type: application/json" \
-  -d '{"label":"CI deploy","expiresInDays":365}'
+  -d '{"label":"CI deploy","expiresInDays":365}')
+echo "$RESPONSE" | jq .
+# {
+#   "id":         "<RFC 7638 thumbprint of the public JWK>",
+#   "label":      "CI deploy",
+#   "alg":        "RS256",
+#   "thumbprint": "<same as id>",
+#   "createdAt":  "2026-05-16T12:00:00Z",
+#   "expiresAt":  "2027-05-16T12:00:00Z",
+#   "key":        "eyJhbGc...<the signed JWT — shown ONLY here>"
+# }
+API_KEY=$(echo "$RESPONSE" | jq -r .key)
+KEY_ID=$( echo "$RESPONSE" | jq -r .id)
 
-# Response (the JWT is shown ONCE — save it now)
-# { "id":"<thumbprint>", "label":"CI deploy", "key":"<JWT>", "alg":"RS256",
-#   "createdAt":"...", "expiresAt":"..." }
+# 2. List your keys (metadata only — no JWT material)
+curl -s http://localhost:8051/api/auth/api-keys \
+  -H "Authorization: Bearer $ACCESS" | jq .
 
-# List
-curl http://localhost:8051/api/auth/api-keys -H "Authorization: Bearer $ACCESS"
+# 3. Use the API key as Bearer on any rapla endpoint
+curl -s http://localhost:8051/api/resources \
+  -H "Authorization: Bearer $API_KEY" | jq .
 
-# Use as Bearer on any rapla endpoint
-curl http://localhost:8051/api/resources -H "Authorization: Bearer $API_KEY_JWT"
-
-# Revoke
-curl -X DELETE http://localhost:8051/api/auth/api-keys/<id> \
+# 4. Revoke (idempotent — DELETE always returns 204)
+curl -X DELETE "http://localhost:8051/api/auth/api-keys/$KEY_ID" \
   -H "Authorization: Bearer $ACCESS"
 ```
 
-API keys are stored per-user in `RaplaKeyStorage` (multi-slot,
-independent of the single-slot session refresh token). Revocation is
-checked on every request; a deleted key is rejected even if its JWT
-signature is still cryptographically valid.
+> ⚠️ **The `key` field is shown exactly once.** Subsequent `GET
+> /api/auth/api-keys` calls return metadata only (id, label, alg,
+> thumbprint, createdAt, expiresAt) — never the JWT. Lose it and you
+> must mint a new one + revoke the old.
+
+### JWT shape
+
+```
+header:  { alg: "RS256", typ: "JWT", kid: "<RFC 7638 thumbprint>" }
+payload: {
+  sub:  "<userId>",
+  iat:  <issued-at>,
+  exp:  <expiresInDays·86400 from iat>  // absent if expiresInDays was null
+  typ:  "api_key",                      // distinguishes from access/refresh
+  name: "<label>"
+}
+```
+
+The JWT carries **no embedded public key**. The server looks up the
+trusted JWK from its own storage by matching `kid` — JWT-self-claimed
+key material is never trusted.
+
+### Endpoints
+
+| Verb | Path | Returns |
+|---|---|---|
+| `POST` | `/api/auth/api-keys` | `{id, label, alg, thumbprint, createdAt, expiresAt, key}` — `key` is the JWT, shown once |
+| `GET`  | `/api/auth/api-keys` | `[{id, label, alg, thumbprint, createdAt, expiresAt}, …]` — no key material |
+| `DELETE` | `/api/auth/api-keys/{id}` | `204 No Content` (idempotent) |
+
+All three require a valid access-token `Bearer` (you must be logged
+in to manage your own keys). The API key itself becomes usable on
+**every** authenticated rapla endpoint (`/api/resources`, `/api/events`,
+`/api/auth/api-keys`, etc.) once minted.
+
+### Storage layout
+
+Stored under the existing `RaplaKeyStorage.storeAPIKey` API — same
+prefs slot the legacy refresh-token mechanism uses, now actually
+multi-slot. One slot per registered key, keyed by the public JWK's
+RFC 7638 thumbprint:
+
+```json
+{
+  "refreshToken": "<the user's session refresh JWT — single slot, see above>",
+  "<thumbprint-1>": "{\"kid\":\"…\",\"jwk\":\"…public-JWK…\",\"alg\":\"RS256\",\"label\":\"CI deploy\",\"iat\":…,\"exp\":…}",
+  "<thumbprint-2>": "…"
+}
+```
+
+Note what's **not** stored: the JWT itself, the signature, the private
+key. Only the public JWK plus listing metadata.
+
+### Current limits (v1)
+
+- **Algorithm**: RS256 only. EdDSA / Ed25519 deferred to a future
+  iteration.
+- **Lifetime**: capped only by the user-supplied `expiresInDays`
+  (omit it for never-expire). No server-side ceiling.
+- **Per-key scopes**: not supported — every key carries the issuing
+  user's full access. Scope-restricted keys are a future PRD.
+- **No rotation**: to "rotate" a key, mint a fresh one and revoke the
+  old (two calls).
+- **No `last_used_at` tracking** — there's no "abandoned key" report
+  in v1.
+- **No UI yet** — Angular + Swing dialogs land in a follow-up PRD.
 
 ## Migration from `/api/auth/*` (pre-PRD-041)
 

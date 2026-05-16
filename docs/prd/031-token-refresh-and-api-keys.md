@@ -101,7 +101,102 @@ change** for refresh and **zero IdP involvement** for API keys.
   Worth doing in this PRD if cheap, skip otherwise.
 - Long-running daemon / service-account credentials beyond API keys.
 
-## Architecture
+## Architecture — final state (2026-05-16, PRD 041 consolidation)
+
+> The original design (kept in the "historical alternatives" section
+> below) had two refresh endpoints sharing a JWT format but separate
+> storage. PRD 041's session-driven consolidation collapsed the design
+> to a single endpoint family — `/oauth2/*` — with one storage backend
+> in `RefreshSessionService`. The rapla-custom `/api/auth/login`,
+> `/api/auth/refresh`, `/api/auth/logout` are deleted.
+
+### Single endpoint family: `/oauth2/*`
+
+| Endpoint | Grant / op | Role |
+|---|---|---|
+| `POST /oauth2/token` | `grant_type=authorization_code` | Browser-based interactive login (Swing OAuth dialog, SPA, explorers) |
+| `POST /oauth2/token` | `grant_type=password` | Direct-password integration (CI scripts) — replaces former `/api/auth/login`. OAuth 2.1 BCP deprecates this grant; re-enabled here for the transient legacy path. |
+| `POST /oauth2/token` | `grant_type=refresh_token` | Refresh — replaces former `/api/auth/refresh`. Same JWT format; same `RefreshSessionService.validate` backend. |
+| `POST /oauth2/revoke` | RFC 7009 | Logout / explicit revocation — replaces former `/api/auth/logout`. |
+
+All grants produce RSA-signed JWTs (RS256, `typ=access` or `typ=refresh`,
+persistent `RaplaKeyStorage` signing key). The resource server validates
+through a single `JwtDecoder` in `JwtConfig.java`.
+
+### `RefreshSessionService` — single source of truth
+
+Lives in `rapla-server/.../spring/RefreshSessionService.java`. Used by
+the Spring AS custom token generator (issuance) and the custom refresh
+provider (validation). Storage: full JWT in user prefs under
+`org.rapla.auth.session` (single slot per user).
+
+| Concern | Behavior |
+|---|---|
+| Storage | Full JWT in `org.rapla.auth.session` prefs entry, single slot |
+| Multi-tab share | `issueAndPersist(User)` returns the existing valid stored token instead of minting a new one — multiple devices share the same refresh JWT |
+| Rotation | **Never rotate** — refresh returns same token + fresh access token until refresh expires |
+| Restart-safe | Validation is stateless (signature + `typ=refresh` + exact match against prefs entry); persistent RSA key means restart preserves tokens |
+| Revocation | `/oauth2/revoke` clears the prefs entry → all user's refresh tokens invalidated. In-flight access tokens keep working until 1 h TTL |
+| Single-token-per-user | No per-session tracking; one prefs slot per user |
+
+Trade-offs (deliberately accepted):
+
+- **Pro:** constant-size storage, multi-device works trivially, no rotation
+  conflicts, no theft-detection complexity.
+- **Con:** no per-device revocation (logout kicks all devices), no theft
+  detection via rotation chain. For both → migrate to Keycloak (this PRD's
+  design goal: IdP swap is env-var only).
+
+### Custom Spring AS wiring (`AuthorizationServerConfig`)
+
+Six pieces — see [PRD 041](041-openapi-runtime-removal.md#oauth-refresh-consolidation--final-architecture-added-2026-05-16)
+for the full table. Summary:
+
+1. `tokenGenerator()` bean → `DelegatingOAuth2TokenGenerator` with custom
+   `JwtRefreshTokenGenerator` (issues via `RefreshSessionService`).
+2. `PublicClientRefreshTokenAuthenticationConverter` + `Provider` —
+   public-client auth for refresh/password/revoke (Spring AS stock only
+   handles PKCE).
+3. `RaplaRefreshTokenAuthenticationProvider` — refresh-grant logic via
+   `RefreshSessionService.validate`, never rotates.
+4. `PasswordGrantAuthenticationConverter` + `Provider` — re-enables OAuth
+   Resource Owner Password Credentials grant.
+5. `RaplaTokenRevocationAuthenticationProvider` — `/oauth2/revoke` hook
+   that clears the user's session entry.
+
+### Discovery endpoint (`/api/auth/oauth/config`)
+
+Survivors of the PRD 041 cleanup. Emits `tokenUrl` (used for both code
+exchange and refresh — single endpoint), `authorizeUrl`, `logoutUrl`
+(points at `/connect/logout` for OIDC RP-initiated logout), `jwksUrl`,
+etc. The previous `refreshUrl` field is **gone**; clients use `tokenUrl`
+for refresh (OAuth 2.0 standard).
+
+External-IdP providers list (PRD 036) is also in this response —
+unchanged.
+
+### Client-side wiring
+
+- **Swing** (`MyCustomConnector.refreshUsingToken`): POST `/oauth2/token
+  grant_type=refresh_token` form-encoded against `serverUrl + /oauth2/token`.
+  Response parses snake_case (`access_token`, `refresh_token`).
+- **Swing logout** (`RaplaClientServiceImpl`): POST `/oauth2/revoke`
+  form-encoded with the refresh JWT.
+- **SPA**: `angular-oauth2-oidc` uses `tokenEndpoint` (which is
+  `tokenUrl` from discovery) for both initial code exchange and refresh —
+  no client-side change from before the consolidation.
+- **`ClientProxyConfig.RefreshOn401Interceptor.doRefresh`**: same as Swing
+  pattern, form-encoded POST to `/oauth2/token`.
+
+---
+
+## Architecture — historical alternatives (pre-2026-05-16)
+
+> Retained for context. The "two refresh endpoints, one client view"
+> design below was the original PRD intent; PRD 041 collapsed it to a
+> single endpoint family. Reading the historical design helps understand
+> why some artifacts (the `jwtRefreshTokenCustomizer` `typ=refresh`
+> claim, `RaplaKeyStorage`'s persistent signing key) exist.
 
 ### Two refresh paths under embedded auth server, one client view
 

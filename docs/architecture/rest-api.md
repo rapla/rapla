@@ -116,7 +116,24 @@ the source. Getter-based discovery → infinite recursion →
 `StackOverflowError`. The `transient`-marker contract is exactly
 the rapla wire contract.
 
-### OpenAPI / Swagger spec caveat
+### OpenAPI / Swagger spec caveat (resolved 2026-05-16 by PRD 041)
+
+> **Historical record.** PRD 041 moved OpenAPI spec generation out of
+> runtime entirely. The captured specs in
+> `rapla-app/src/main/resources/openapi/{auth,client,rest,exports}.json`
+> are produced by `OpenApiSpecCaptureTest` (build-time, in the test
+> @SpringBootTest context where SpringDoc + the test-scope
+> `SwaggerJacksonConfig` are available). The captured JSON correctly
+> uses Jackson 3's field-based introspection — the bridge `ModelResolver`
+> in `SwaggerJacksonConfig` mirrors the Jackson 3 visibility rules onto
+> a Jackson 2 ObjectMapper for the capture run. At runtime,
+> `StaticOpenApiController` serves the captured JSON directly; no
+> SpringDoc, no swagger-core, no Jackson 2 on the production classpath.
+> The CI byte-equality check (`OpenApiSpecCaptureTest` default mode)
+> catches spec drift in PRs. See PRD 041 for the design.
+>
+> The historical caveat below is retained for context; everything in it
+> is now solved.
 
 **The OpenAPI spec at `/api/v3/api-docs` does NOT use Jackson 3's
 field-based introspection.** SpringDoc 3.0 builds the schema via
@@ -266,24 +283,86 @@ this only if you build a stripped-down deployment.
 
 ---
 
-## 1. Auth — `AuthController`
+## 1. Auth — OAuth 2.0 / OIDC only (PRD 041, 2026-05-16)
 
-`@ConditionalOnProperty(rapla.file-datasources=raplafile)` — i.e.,
-only when using the file backend; database backends pair with a
-different controller, but the wire shape matches.
+All token issuance, refresh, and revocation goes through Spring
+Authorization Server's `/oauth2/*` endpoints. The legacy rapla-custom
+`AuthController` (`/api/auth/login`, `/api/auth/refresh`,
+`/api/auth/logout`) is **deleted** — see PRD 041's adjacent-work
+section for the migration story. `/api/auth/oauth/config` (discovery),
+`/api/auth/oauth/exchange/{providerId}` (BFF for external IdPs),
+and `/api/auth/api-keys/*` (personal access tokens, PRD 043) remain
+under `/api/auth/`.
 
-| Method | Path | Body | Returns | Auth |
+### Token endpoints (`/oauth2/*`)
+
+Spring AS-served, NOT a `@RestController` — they live in the filter
+chain so SpringDoc doesn't list them. Wire-shape is OAuth 2.0 standard
+(RFC 6749 + 7009).
+
+| Method | Path | Body (form-encoded) | Returns | Auth |
 |---|---|---|---|---|
-| POST | `/api/auth/login` | `{ username, password }` | `{ accessToken, refreshToken }` | public |
-| POST | `/api/auth/refresh` | `{ refreshToken }` | `{ accessToken, refreshToken }` | public |
-| POST | `/api/auth/logout` | — | void | public |
+| POST | `/oauth2/token` `grant_type=authorization_code` | `code`, `redirect_uri`, `client_id`, `code_verifier` | `{access_token, refresh_token, id_token, expires_in, token_type, scope}` | PKCE |
+| POST | `/oauth2/token` `grant_type=refresh_token` | `refresh_token`, `client_id` | `{access_token, refresh_token, expires_in, token_type}` | refresh token = credential |
+| POST | `/oauth2/token` `grant_type=password` | `username`, `password`, `client_id` | same | username + password |
+| POST | `/oauth2/revoke` | `token`, `token_type_hint=refresh_token`, `client_id` | 200 (RFC 7009 — opaque) | the token itself |
+| GET | `/oauth2/authorize` | (browser flow) | 302 to redirect_uri with `code` | form-login |
+| GET | `/oauth2/jwks` | — | JWKS for signature verification | public |
 
-The JWT contains the user id as `sub`. Tokens are HS256-signed
-with the property `rapla.jwt.secret` (dev default in
-`application.yml`; production must override).
+All tokens are **RSA-signed JWTs** (RS256). The signing key is
+persistent (`RaplaKeyStorage`-backed) — tokens survive server restart.
+The `sub` claim is the user UUID; `typ` is `access`, `refresh`, or
+`api_key` (PRD 043).
 
-The SPA pattern: on 401, attempt `/api/auth/refresh`; on a second
-401 or a 401 from refresh itself, redirect to the login form.
+### Refresh + revocation model
+
+- **One refresh token per user.** Stored as the full JWT in user
+  preferences (`org.rapla.auth.session`, single slot). Each login
+  returns the existing valid token instead of minting a new one —
+  multi-tab / multi-device share trivially.
+- **Never rotate on refresh.** The refresh grant returns the same
+  refresh token + a fresh access token until the refresh token expires
+  (30 d). All sessions re-Authorize together at expiry.
+- **Revocation is explicit.** `POST /oauth2/revoke` clears the prefs
+  entry → every refresh token in circulation for the user becomes
+  invalid. In-flight access tokens keep working until their 1 h TTL.
+
+Validation is **stateless**: signature + `typ=refresh` claim + exact
+match against the full token stored in user prefs. No in-memory
+authorization state — survives JVM restart.
+
+Implementation: `RefreshSessionService` (`rapla-server`) is the single
+source of truth. Wired into Spring AS via custom providers in
+`AuthorizationServerConfig` (`JwtRefreshTokenGenerator`,
+`RaplaRefreshTokenAuthenticationProvider`, `PasswordGrantAuthenticationProvider`,
+`RaplaTokenRevocationAuthenticationProvider`, plus
+`PublicClientRefreshTokenAuthenticationConverter`/`Provider` for
+public-client client-auth).
+
+See [`docs/authentication.md`](../authentication.md) for the user-facing
+guide (curl examples, migration table from `/api/auth/*`).
+
+### SPA pattern for 401
+
+Outgoing API request returns 401 → the SPA's HTTP interceptor calls
+`POST /oauth2/token grant_type=refresh_token` with the stored refresh
+JWT → on success, retry the original request with the new access
+token; on failure, drop tokens and redirect to the login flow. The
+Swing client's `MyCustomConnector.refreshUsingToken` does the same.
+
+### Personal-access-token API keys (`/api/auth/api-keys/*`)
+
+GitHub-style PAT flow. Server generates an RSA keypair, signs **one**
+JWT with the private key, stores only the public key in user prefs,
+discards the private key. The single JWT is the API key — the user
+copies it like a GitHub PAT and uses it as `Authorization: Bearer
+<jwt>` on every API call. Server verifies incoming JWTs against the
+stored public key (lookup by `kid` thumbprint) and confirms the key
+hasn't been revoked. Backup leak yields useless public keys.
+
+See [PRD 043](../prd/043-api-keys-jwt-pat.md) for the full design
++ [`docs/authentication.md`](../authentication.md#api-keys-personal-access-tokens)
+for the user-facing curl flow.
 
 ### OIDC / SSO endpoints (Spring Authorization Server)
 

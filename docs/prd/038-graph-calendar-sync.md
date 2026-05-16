@@ -94,6 +94,17 @@ Already on rapla's Spring Boot 4.0.6 classpath; **zero new MB for the core path*
 
 **Avoided**: the official `com.microsoft.graph:microsoft-graph:6.64.0` SDK — 87 MB total (the SDK jar alone is 59 MB of Kiota-generated bindings for thousands of Graph endpoints we don't use).
 
+## Sequencing & dependencies
+
+PRD 038 is the **upstream definer** of `RaplaExportedEvent`, the identity-bridge table consumed by two downstream PRDs:
+
+- **PRD 039** (per-resource iCal subscriptions) — uses `RaplaExportedEvent` rows for its loopback filter to identify rapla's own writes coming back through subscribed feeds. PRD 039 degrades to "everything is `FOREIGN`" when `RaplaExportedEvent` is missing or empty, so it can ship before PRD 038 lands without breaking.
+- **PRD 042** (iCal import — Mode 2 read-only sync) — needs the same loopback logic when admins sync from a calendar rapla also writes to. Same fail-safe: degrades to no-loopback-filter if `RaplaExportedEvent` is absent.
+
+PRD 038 itself has no upstream dependency on any of the 039/042 family — its EWS path is the existing `org.rapla.plugin.exchangeconnector.server.*` code, and its Graph path is purely additive. It can ship first if the schedule favours it; or after PRD 039 if the loopback consumer wants to land first.
+
+**Implementation order within PRD 038**: Phase 1 (SPI extraction + UID survival spike) is the gate — the spike's output determines which detail levels of Exchange publish PRD 039's Tier-1 (UID match) works at, which then informs PRD 039's documentation but doesn't block its code.
+
 ## Plan
 
 ### Phase 1 — `CalendarBackend` SPI extraction + UID survival spike

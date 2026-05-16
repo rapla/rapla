@@ -24,12 +24,118 @@
 > - Discovery's `refreshUrl` re-pointed to `/oauth2/token`. SPA needs no
 >   client-side change (`angular-oauth2-oidc` already uses `tokenEndpoint` for
 >   refresh).
-> - `AuthController` kept as `@Deprecated` thin wrapper for tests + scripts;
->   delete in a follow-up PRD that migrates the dozen `loginAs` helpers to
->   `/oauth2/token grant_type=password`.
+> - `AuthController` **deleted** — same session migrated the ~12 test
+>   `loginAs` helpers to the new `OAuthTestSupport.loginAs(MockMvc, …)` helper
+>   that posts `/oauth2/token grant_type=password`. Swing logout migrated to
+>   `/oauth2/revoke`. `refreshUrl` field dropped from discovery + SPA + Swing.
 >
 > See PRD 031 (now mostly shipped) for the design discussion + PRD 043 for the
 > spun-off API-key work.
+>
+> ## OAuth-refresh consolidation — final architecture (added 2026-05-16)
+>
+> ### Single source of truth: `RefreshSessionService`
+>
+> Lives in `rapla-server/.../spring/RefreshSessionService.java` (autoconfig
+> picks it up via `@Service` + explicit `@Import` in
+> `RaplaServerAutoConfiguration` since the component-scan only covers
+> `org.rapla.server.spring.web`). Owns the entire refresh-token lifecycle —
+> both Spring AS's `/oauth2/token` and any future caller go through it.
+>
+> | Method | Purpose |
+> |---|---|
+> | `issueAndPersist(User)` | At login (any grant). If user has a stored valid refresh JWT, return THAT; else mint + persist. Multi-tab share. |
+> | `issueAndPersistRefreshToken(User)` | Hook for Spring AS's custom token generator on the authorization_code grant. |
+> | `issueAccessToken(User)` | Short access token mint during refresh. |
+> | `validate(presentedRefreshToken)` | JWT signature + `typ=refresh` + exact match against `SESSION` prefs entry. Throws on any failure. |
+> | `clearSession(User)` | Wipes the SESSION entry → all refresh tokens for user become invalid. Called by `/oauth2/revoke` hook. |
+> | `persistSession(User, refreshToken)` | Public for test fixtures + Spring AS issuance hooks. |
+>
+> Storage: full JWT in user prefs under `TypedComponentRole<String>
+> SESSION = "org.rapla.auth.session"`. Single slot. Defense-in-depth argument
+> for storing only a hash was moot because the persistent RSA signing key is
+> *also* in the data file — backup leak = game-over regardless. Storing the
+> full JWT lets `issueAndPersist` return the existing valid token on
+> subsequent logins (multi-tab/multi-device share).
+>
+> ### Custom Spring AS providers (`AuthorizationServerConfig`)
+>
+> Six bits of custom wiring:
+>
+> 1. **`tokenGenerator()` @Bean** — `DelegatingOAuth2TokenGenerator(JwtGenerator,
+>    OAuth2AccessTokenGenerator, JwtRefreshTokenGenerator)`. Replaces the
+>    stock chain so refresh tokens go through `JwtRefreshTokenGenerator` (JWT
+>    format with `typ=refresh`, persisted by `RefreshSessionService`).
+> 2. **`JwtRefreshTokenGenerator`** (private inner class) — generates the
+>    refresh JWT via `RefreshSessionService.issueAndPersistRefreshToken`.
+>    Spring AS's default `OAuth2RefreshTokenGenerator` suppresses for public
+>    clients (PKCE / `auth_method=NONE`); this one issues for everyone.
+> 3. **`PublicClientRefreshTokenAuthenticationConverter`** (client-auth) —
+>    recognises requests with `client_id` only (no `client_secret`, no
+>    `code_verifier`) and produces an unauthenticated
+>    `OAuth2ClientAuthenticationToken` with method NONE. Covers refresh,
+>    password, revoke, introspect. Required because Spring AS's stock
+>    `PublicClientAuthenticationConverter` only matches PKCE token requests
+>    (i.e. `authorization_code` with code_verifier).
+> 4. **`PublicClientRefreshTokenAuthenticationProvider`** (client-auth) —
+>    validates the converter's output: client_id resolves to a registered
+>    client, client's `client_authentication_methods` includes NONE.
+> 5. **`RaplaRefreshTokenAuthenticationProvider`** (token-endpoint) —
+>    replaces the stock `OAuth2RefreshTokenAuthenticationProvider`.
+>    Validates via `RefreshSessionService.validate` (stateless, restart-safe)
+>    instead of looking up in the in-memory `OAuth2AuthorizationService`.
+>    Never rotates: returns the same refresh token + a fresh access token.
+> 6. **`PasswordGrantAuthenticationConverter` +
+>    `PasswordGrantAuthenticationProvider`** (token-endpoint) — implements
+>    OAuth 2.0 Resource Owner Password Credentials grant (RFC 6749 §4.3).
+>    Spring AS removed it from defaults (OAuth 2.1 BCP deprecates); rapla
+>    re-enables it to replace the deleted `/api/auth/login`. Provider
+>    delegates credential check to `RaplaAuthentificationService`, then
+>    issues tokens via `RefreshSessionService`.
+> 7. **`RaplaTokenRevocationAuthenticationProvider`** (revoke-endpoint) —
+>    decodes the token JWT, resolves user from `sub`, calls
+>    `RefreshSessionService.clearSession`. RFC 7009 compliant (always
+>    returns 200, even for unknown tokens).
+>
+> Wired via `OAuth2AuthorizationServerConfigurer`'s `.tokenGenerator()`,
+> `.clientAuthentication()`, `.tokenEndpoint()`, `.tokenRevocationEndpoint()`.
+>
+> ### Rotation policy: never rotate
+>
+> Earlier design tried "rotate when within 7 d of expiry" (PRD 031 original).
+> Rejected during this session in favor of never-rotate: multi-tab works
+> trivially (tab A doesn't kick tab B off when it refreshes), all sessions
+> re-Authorize together at refresh-token expiry (30 d). Theft detection lost,
+> but `/oauth2/revoke` + the single-token-per-user store give clean explicit
+> revocation. For per-session rotation + theft detection, deploy against
+> Keycloak (PRD 031: IdP swap is env-var only).
+>
+> ### `application.yml` knob
+>
+> Only one new property under `spring.security.oauth2.authorizationserver.client.rapla-client.token`:
+>
+> - `access-token-time-to-live: 1h` — bumped from Spring AS's 5 min default
+>   so OAuth-aware explorers (Scalar, Swagger UI) don't re-Authorize every
+>   5 minutes for dev workflows. Refresh-token TTL is hard-coded
+>   (`REFRESH_TOKEN_TTL_SECONDS = 30 d` in `RefreshSessionService`).
+>
+> Plus `password` added to `rapla-client.authorization-grant-types` so the
+> grant is allowed for that client.
+>
+> ### Migration table (for future readers)
+>
+> | Deleted | Replaced by |
+> |---|---|
+> | `POST /api/auth/login` JSON `{username, password}` → `{accessToken, refreshToken}` (camelCase) | `POST /oauth2/token` form-encoded `grant_type=password&username=…&password=…&client_id=rapla-client` → `{access_token, refresh_token, expires_in, token_type}` (snake_case) |
+> | `POST /api/auth/refresh` JSON `{refreshToken}` | `POST /oauth2/token` form-encoded `grant_type=refresh_token&refresh_token=…&client_id=rapla-client` |
+> | `POST /api/auth/logout` Bearer | `POST /oauth2/revoke` form-encoded `token=…&token_type_hint=refresh_token&client_id=rapla-client` |
+> | `OAuthConfig.refreshUrl` discovery field | use `tokenUrl` (same endpoint serves both code-exchange and refresh per OAuth 2.0) |
+>
+> Survivors under `/api/auth/`:
+>
+> - `/api/auth/oauth/config` — discovery
+> - `/api/auth/oauth/exchange/{providerId}` — BFF for external IdPs (PRD 036)
+> - `/api/auth/api-keys/*` — personal-access-token CRUD (PRD 043)
 
 ## Goal
 

@@ -167,6 +167,15 @@ Three needs, three one-way solutions. Combining them gets bidirectional behaviou
 - Conflict-of-managed-Reservations resolution UI. If two sync sources both try to create reservations for the same allocatable at the same time, both are created and rapla's normal conflict detection surfaces them. Multi-sync coordination is a Phase-6 polish.
 - Authentication for sync source feeds (HTTP Basic, OAuth). v1 supports public/secret-URL feeds only, same as PRD 039.
 
+## Sequencing & dependencies
+
+PRD 042 is the **furthest downstream** in the iCal/Exchange family and has hard dependencies on both siblings:
+
+- **Hard dependency on PRD 039** — uses the `IcalFeedParser` service for all parsing (strict-mode config, size caps, recurrence expansion, `BUSYSTATUS`/`TRANSP` filtering, timezone normalisation). PRD 042 cannot ship without PRD 039's parser in place. Phase 1 step 1 explicitly gates on this.
+- **Soft dependency on PRD 038** — Mode 2's loopback handling needs the same `RaplaExportedEvent`-based logic PRD 039's loopback filter uses (a sync source pointing at a calendar rapla also writes to via PRD 038 would otherwise import rapla's own writes back as managed Reservations). Same fail-safe: degrades to no-loopback-filter when `RaplaExportedEvent` is absent, accepting that an admin who wires both 038 and 042 Mode 2 against the same target before PRD 038 lands will see duplicates until the table exists.
+
+**Implementation order**: PRD 039 must land first (or at minimum its `IcalFeedParser` service must be merged). PRD 038 can land before or after PRD 042 — if before, Mode 2's loopback is robust from day one; if after, Mode 2 ships with the "all FOREIGN" fail-safe and tightens once PRD 038 lands.
+
 ## Plan
 
 ### Phase 1 — Cleanup + shared infrastructure

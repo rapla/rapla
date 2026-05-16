@@ -397,10 +397,17 @@ Side tests verified green:
 
 ### What's missing
 
-- **`docs/authentication.md` API-key section** (Plan §5). End-to-end curl flow + "you can only see this once" callout. Untouched.
 - **Angular UI** for key management (Out-of-scope, deferred). The future UI is where the GitHub-PAT-style one-time copy-paste box lives.
 - **Swing UI** for key management (Out-of-scope, deferred).
 - **Cleanup**: the legacy `storeAPIKey`/`getAPIKeys`/`removeAPIKey` names in `RaplaKeyStorage` could be renamed (`storeApiKey` lowercase) once `TokenHandler` is retired. Not done — touching the interface name churns more than it helps.
+
+### What's done since session start
+
+- Storage refactor: `RaplaKeyStorageImpl` made actually multi-slot.
+- Endpoints: POST/GET/DELETE wired and authenticated.
+- Verification: `ApiKeyJwtDecoder` plumbed via `JwtConfig.jwtDecoder` wrap.
+- Tests: 8 tier-3 tests green, plus 14 adjacent tests still passing.
+- Docs: `docs/authentication.md` API-key section rewritten end-to-end (curl flow, security model, JWT shape, endpoint table, storage layout, v1 limits).
 
 ### Known limitations / Open Questions still pending
 

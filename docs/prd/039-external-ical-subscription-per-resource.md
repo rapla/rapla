@@ -194,6 +194,15 @@ A subscription's `visibility` field can be flipped to `FULL_DETAIL` per subscrip
 4. **Audit logging**: log the URL of every subscription fetch and the count of events parsed, but **never the event titles or descriptions** even at DEBUG level. A grep-test (`AuditLogPrivacyTest`) enforces this — fails CI if any `ExternalAppointment.summary` field appears in any log path.
 5. **Tier-3 leak test** (AGENTS.md §12 mandatory): non-admin user, mixed (visible / hidden / non-existent) resource ids in a calendar-view request, assert response body is byte-identical to the visible-only subset. Specifically asserts no event titles for `BUSY_ONLY` subscriptions of resources the user can read but doesn't own.
 
+## Sequencing & dependencies
+
+PRD 039 is **both consumer and producer** within the iCal/Exchange family:
+
+- **Consumes** `RaplaExportedEvent` from **PRD 038** for the loopback filter — see "Rapla-origin loopback filter" section. Soft dependency: when `RaplaExportedEvent` is missing/empty, the filter degrades cleanly to "everything is `FOREIGN`" with no crash. So PRD 039 can ship before PRD 038.
+- **Produces** `IcalFeedParser` as shared infrastructure — see Scope "Shared infrastructure for the future iCal-import rewrite." Consumed by **PRD 042** (both modes) for all iCal parsing concerns (strict-mode config, size caps, recurrence expansion, `BUSYSTATUS`/`TRANSP` filtering, timezone normalisation). PRD 042 cannot reasonably ship without `IcalFeedParser`; deliver this service alongside the rest of PRD 039 Phase 1.
+
+**Recommended implementation order across the family**: PRD 039 first (delivers `IcalFeedParser`, plus full subscription functionality), then PRD 038 (upgrades PRD 039's loopback filter from "all FOREIGN" to full three-pass matching), then PRD 042 (builds on `IcalFeedParser`). PRD 038 can also slot before PRD 039 with no breakage — both directions work.
+
 ## Plan
 
 ### Phase 1 — Data model + fetcher
