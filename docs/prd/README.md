@@ -1,17 +1,19 @@
 # PRD index
 
-37 PRDs total — **20 active** in this directory, **17 done** under `done/`. AGENTS.md §2 + §3 cover the lifecycle (move to `done/` when complete; `git mv` back if reopening). This index exists so agents and humans don't `ls` and guess.
+45 PRDs total — **28 active** in this directory, **17 done** under `done/`. AGENTS.md §2 + §3 cover the lifecycle (move to `done/` when complete; `git mv` back if reopening). This index exists so agents and humans don't `ls` and guess.
 
-> **Numbering note:** there are two `031` files (`031-api-namespace-redesign.md` and `031-token-refresh-and-api-keys.md`). Both are in-progress and on different tracks. Future PRDs should pick the next free number (035 → …) rather than reusing.
+> **Numbering note:** there are two `031` files (`031-api-namespace-redesign.md` and `031-token-refresh-and-api-keys.md`). Both are in-progress and on different tracks. Future PRDs should pick the next free number (currently 042) rather than reusing.
 
 ## Active — in-progress
 
-### Auth / OAuth
+### Auth / OAuth / IdP
 
 | File | Title | Status |
 |---|---|---|
 | [029-swing-oauth-login.md](029-swing-oauth-login.md) | Swing Login via OAuth 2.0 (Browser-based, PKCE Loopback) | phase 1 done 2026-05-12; phase 2 mostly landed |
 | [031-token-refresh-and-api-keys.md](031-token-refresh-and-api-keys.md) | Refresh Tokens & API Keys — IdP-portable design | refresh-token half shipped 2026-05-12 |
+| [036-external-idp-oauth-login.md](036-external-idp-oauth-login.md) | External IdP OAuth 2.0 Login (Microsoft Entra ID + Google) | draft 2026-05-14 |
+| [037-native-saml-shibboleth.md](037-native-saml-shibboleth.md) | Shibboleth via Reverse-Proxy Trusted Headers | draft 2026-05-15 |
 
 ### REST API / wire format
 
@@ -19,6 +21,7 @@
 |---|---|---|
 | [009-server-bulk-storage-rest-api.md](009-server-bulk-storage-rest-api.md) | Server-side bulk-storage REST API (port `RemoteStorage` to Spring controllers) | Phases 0–4 implemented; Phase 5 error-handling in progress |
 | [031-api-namespace-redesign.md](031-api-namespace-redesign.md) | API namespace redesign | Phases 1+2+3+4 landed 2026-05-12 |
+| [041-openapi-runtime-removal.md](041-openapi-runtime-removal.md) | OpenAPI — build-time generation + runtime plugin filtering (SpringDoc out of the runtime) | draft 2026-05-15 |
 
 ### Server-side rendering / models / views
 
@@ -35,6 +38,14 @@
 |---|---|---|
 | [026-angular-frontend.md](026-angular-frontend.md) | Angular frontend (reservation editing) | Phase 0 prototype landed 2026-05-12 |
 
+### External integrations / sync
+
+| File | Title | Status |
+|---|---|---|
+| [035-rapla-mcp-server.md](035-rapla-mcp-server.md) | External integration API + MCP server (GraphQL + MCP transports) | draft 2026-05-13; scope broadened 2026-05-15 |
+| [038-graph-calendar-sync.md](038-graph-calendar-sync.md) | Microsoft Graph calendar sync (Exchange Online / M365) — write-only push | draft 2026-05-15 |
+| [039-external-ical-subscription-per-resource.md](039-external-ical-subscription-per-resource.md) | Per-resource external iCal subscriptions for conflict awareness | draft 2026-05-15 |
+
 ### Testing / quality
 
 | File | Title | Status |
@@ -50,6 +61,7 @@
 | [003-custom-deployments-after-spring-migration.md](003-custom-deployments-after-spring-migration.md) | Custom Deployment Model After Spring Migration | major direction change 2026-05-07; rapla-side carve-out in progress |
 | [012-dhbwrapla-client-migration.md](012-dhbwrapla-client-migration.md) | Migrate dhbwrapla client-side plugin code to server pages / general rapla | rapla-side carve-out fully landed 2026-05-10 |
 | [022-architecture-documentation.md](022-architecture-documentation.md) | Architecture reference documentation | in-progress |
+| [040-dispatch-validate-before-lock.md](040-dispatch-validate-before-lock.md) | Dispatch validates against a stale cache before locking (multi-pod) | draft 2026-05-15 |
 
 ### Decisions / policies (no implementation phase)
 
@@ -67,7 +79,7 @@
 | [028-angular-power-search.md](028-angular-power-search.md) | Angular power search (single-calendar shell) | research / scoping only |
 | [032-angular-ui-library-evaluation.md](032-angular-ui-library-evaluation.md) | Angular calendar view + UI component library | research 2026-05-12 |
 
-## Done (16 PRDs)
+## Done (17 PRDs)
 
 ### Migration / modernization
 
@@ -113,6 +125,6 @@
 
 ## How to add a PRD
 
-See AGENTS.md §2 (PRD-Driven Development) and §3 (PRD Format). Pick the next free number (currently 034). File naming: `docs/prd/NNN-short-name.md`. Required sections: Title, Status, Goal, Scope, Plan, Tests, Open Questions.
+See AGENTS.md §2 (PRD-Driven Development) and §3 (PRD Format). Pick the next free number (currently **041**). File naming: `docs/prd/NNN-short-name.md`. Required sections: Title, Status, Goal, Scope, Plan, Tests, Open Questions.
 
 When a PRD finishes, `git mv` it to `docs/prd/done/` and update this index in the same change.

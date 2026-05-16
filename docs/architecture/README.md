@@ -28,6 +28,7 @@ references — pasting one into your IDE jumps to the right place.
 | [permissions.md](permissions.md) | AccessLevel, PermissionImpl, resolution algorithm, server enforcement, JWT |
 | [extension-points.md](extension-points.md) | Spring DI plugin wiring, extension-point catalog, plugin list |
 | [flows.md](flows.md) | Cross-cutting flows: login, query, store/dispatch, refresh poll |
+| [locking.md](locking.md) | The three lock layers (process / resource / global), the `WRITE_LOCK` table, multi-pod concurrency, the validate-before-lock ordering gotcha |
 | [mvp-pattern.md](mvp-pattern.md) | Presenter / View / pure-model carve-out pattern; headless test harness; AGENTS.md §12 leak-probe pattern |
 | [swing-platform-quirks.md](swing-platform-quirks.md) | Platform/compositor workarounds in the Swing client (WSLg popup input-region leak, FilterEditButton positioning, focus-dismiss handlers) |
 | [migration-from-master.md](migration-from-master.md) | What changed from the historical `master` branch to the current `spring-boot` tree (restinject removed, Spring Boot 4 + Angular added, 5-module reactor, carve-out programme); size comparison + intent for new contributors |

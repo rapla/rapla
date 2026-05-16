@@ -2,7 +2,11 @@
 
 ## Project Overview
 
-**Rapla** is a Java-based resource scheduling and event planning application (v2.1-SNAPSHOT, AGPL/Apache2). It uses Maven, targets Java 17, runs on Java 21. Key technologies: Spring Boot 3.2 (Tomcat 10), Swing, JAX-RS / Spring MVC, RxJava3, iCal4j, Exchange Web Services.
+**Rapla** is a Java-based resource scheduling and event planning application (v2.1-SNAPSHOT, AGPL/Apache2). It uses Maven, targets Java 17, runs on Java 21. Key technologies: Spring Boot 4.0 (Tomcat 11), Jackson 3, Swing, JAX-RS / Spring MVC, RxJava3, iCal4j 4.2, Exchange Web Services.
+
+**Jackson 3** (PRD 011, done): the runtime is Jackson 3 — databind/core live in the `tools.jackson.*` package, **not** `com.fasterxml.jackson.*`. Annotations (`@JsonIgnore`, `@JsonProperty`, …) stay in `com.fasterxml.jackson.annotation.*` (the version-shared package) — those imports are correct. Only `tools.jackson.databind.ObjectMapper` is the rapla mapper. Jackson 2 databind is still on the classpath transitively (springdoc-openapi 3.0.0 pulls `com.fasterxml.jackson:jackson-databind:2.x`); it is isolated to `SwaggerJacksonConfig` and must not be used for application code.
+
+**Deployment topology:** the server is multi-pod capable — multiple instances run against one shared store, coordinating via the update history (JSON change records, polled ~every 10 s) plus store-level locking; don't assume a single instance or a process-local shared cache (§8's "one server per checkout" is a dev convention only). Lock layers (process / resource / global) and the multi-pod concurrency model: [`docs/architecture/locking.md`](docs/architecture/locking.md).
 
 The codebase is a **5-module Maven reactor** (PRD 005, 2026-05-07) plus a **separate Angular SPA tree** (PRD 026, 2026-05-12):
 
