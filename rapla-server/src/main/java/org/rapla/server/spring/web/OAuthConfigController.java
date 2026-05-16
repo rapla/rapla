@@ -34,7 +34,7 @@ public class OAuthConfigController
     private final String publicBaseUrlOverride;
     private final String authorizeUrlOverride;
     private final String tokenUrlOverride;
-    private final String refreshUrlOverride;
+    // refreshUrl removed in PRD 041 — clients use tokenUrl for both code exchange + refresh.
     private final String logoutUrlOverride;
     private final String jwksUrlOverride;
     private final String userinfoUrlOverride;
@@ -54,7 +54,6 @@ public class OAuthConfigController
             @Value("${rapla.oauth.public-base-url:}") String publicBaseUrlOverride,
             @Value("${rapla.oauth.authorize-url:}") String authorizeUrlOverride,
             @Value("${rapla.oauth.token-url:}") String tokenUrlOverride,
-            @Value("${rapla.oauth.refresh-url:}") String refreshUrlOverride,
             @Value("${rapla.oauth.logout-url:}") String logoutUrlOverride,
             @Value("${rapla.oauth.jwks-url:}") String jwksUrlOverride,
             @Value("${rapla.oauth.userinfo-url:}") String userinfoUrlOverride,
@@ -73,7 +72,6 @@ public class OAuthConfigController
         this.publicBaseUrlOverride = nullToEmpty(publicBaseUrlOverride);
         this.authorizeUrlOverride = nullToEmpty(authorizeUrlOverride);
         this.tokenUrlOverride = nullToEmpty(tokenUrlOverride);
-        this.refreshUrlOverride = nullToEmpty(refreshUrlOverride);
         this.logoutUrlOverride = nullToEmpty(logoutUrlOverride);
         this.jwksUrlOverride = nullToEmpty(jwksUrlOverride);
         this.userinfoUrlOverride = nullToEmpty(userinfoUrlOverride);
@@ -91,7 +89,7 @@ public class OAuthConfigController
     {
         if (!enabled)
         {
-            return new OAuthConfig(false, null, null, null, null, null, null, null, null, null,
+            return new OAuthConfig(false, null, null, null, null, null, null, null, null,
                     List.of(), false, new Picker("never", "rapla"), List.of());
         }
         // App-facing base: respects X-Forwarded-* so dev proxy on :4200 produces
@@ -106,8 +104,9 @@ public class OAuthConfigController
         String issuer = issuerOverride.isEmpty() ? oauthBase : issuerOverride;
         String authorizeUrl = authorizeUrlOverride.isEmpty() ? oauthBase + "/oauth2/authorize" : authorizeUrlOverride;
         String tokenUrl = tokenUrlOverride.isEmpty() ? oauthBase + "/oauth2/token" : tokenUrlOverride;
-        // PRD 031 Phase 2: REST auth moved under /api/. Stays on app origin.
-        String refreshUrl = refreshUrlOverride.isEmpty() ? appBase + "/api/auth/refresh" : refreshUrlOverride;
+        // PRD 041: refresh consolidated onto /oauth2/token (OAuth 2.1 standard,
+        // form-encoded body) — same URL as tokenUrl. The legacy refreshUrl
+        // field was removed; clients use tokenUrl for both code exchange + refresh.
         // OIDC RP-initiated logout endpoint (OpenID Connect RP-Initiated Logout 1.0).
         // Spring Authorization Server defaults to /connect/logout — also advertised
         // by .well-known/openid-configuration as end_session_endpoint. Both the
@@ -133,7 +132,6 @@ public class OAuthConfigController
                 issuer,
                 authorizeUrl,
                 tokenUrl,
-                refreshUrl,
                 logoutUrl,
                 jwksUrl,
                 userinfoUrl,
@@ -239,7 +237,6 @@ public class OAuthConfigController
         public final String issuer;
         public final String authorizeUrl;
         public final String tokenUrl;
-        public final String refreshUrl;
         public final String logoutUrl;
         public final String jwksUrl;
         public final String userinfoUrl;
@@ -250,7 +247,7 @@ public class OAuthConfigController
         public final List<ProviderEntry> providers;
 
         public OAuthConfig(boolean enabled, String clientId, String issuer, String authorizeUrl,
-                           String tokenUrl, String refreshUrl, String logoutUrl, String jwksUrl,
+                           String tokenUrl, String logoutUrl, String jwksUrl,
                            String userinfoUrl, String endSessionUrl, List<String> scopes,
                            boolean showPasteFallback, Picker picker, List<ProviderEntry> providers)
         {
@@ -259,7 +256,6 @@ public class OAuthConfigController
             this.issuer = issuer;
             this.authorizeUrl = authorizeUrl;
             this.tokenUrl = tokenUrl;
-            this.refreshUrl = refreshUrl;
             this.logoutUrl = logoutUrl;
             this.jwksUrl = jwksUrl;
             this.userinfoUrl = userinfoUrl;
@@ -275,7 +271,6 @@ public class OAuthConfigController
         public String getIssuer() { return issuer; }
         public String getAuthorizeUrl() { return authorizeUrl; }
         public String getTokenUrl() { return tokenUrl; }
-        public String getRefreshUrl() { return refreshUrl; }
         public String getLogoutUrl() { return logoutUrl; }
         public String getJwksUrl() { return jwksUrl; }
         public String getUserinfoUrl() { return userinfoUrl; }

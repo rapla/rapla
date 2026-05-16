@@ -25,7 +25,8 @@ import org.springframework.scheduling.annotation.EnableScheduling;
         SecurityConfig.class,
         LegacyServerBridgeConfig.class,
         RaplaJacksonConfig.class,
-        AdminPanelsScanConfig.class
+        AdminPanelsScanConfig.class,
+        RefreshSessionService.class
 })
 @ComponentScan("org.rapla.server.spring.web")
 @EnableConfigurationProperties(RaplaServerProperties.class)

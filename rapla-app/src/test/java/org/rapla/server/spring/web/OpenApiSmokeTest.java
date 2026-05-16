@@ -104,7 +104,9 @@ class OpenApiSmokeTest
     void apiDocsListsAuthEndpoint() throws Exception
     {
         String body = fetchApiDocs();
-        assertContainsPath(body, "/api/auth/login");
+        // PRD 041: rapla-custom /api/auth/login deleted; login now via OAuth2-standard
+        // /oauth2/token grant_type=password. /api/auth/oauth/config (discovery) remains.
+        assertContainsPath(body, "/api/auth/oauth/config");
     }
 
     @Test

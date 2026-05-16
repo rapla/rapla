@@ -68,18 +68,7 @@ class TableViewControllerIntegrationTest
 
     private final JsonMapper json = JsonMapper.builder().build();
 
-    private String adminToken() throws Exception { return loginAs("homer", "duffs"); }
-
-    private String loginAs(String username, String password) throws Exception
-    {
-        MvcResult mvc = mockMvc.perform(post("/api/auth/login")
-                        .contentType("application/json")
-                        .content("{\"username\":\"" + username + "\",\"password\":\"" + password + "\"}"))
-                .andExpect(status().isOk())
-                .andReturn();
-        JsonNode tree = json.readTree(mvc.getResponse().getContentAsString());
-        return tree.get("accessToken").asString();
-    }
+    private String adminToken() throws Exception { return OAuthTestSupport.loginAs(mockMvc, "homer", "duffs"); }
 
     // ---------- requires auth ----------
 

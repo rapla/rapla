@@ -112,29 +112,28 @@ public class MyCustomConnector implements CustomConnector
     }
 
     /**
-     * Calls the configured refresh endpoint with the stored refresh token and
+     * Calls the OAuth2 token endpoint with the stored refresh token and
      * stashes the resulting access + refresh tokens on {@link #remoteConnectionInfo}.
-     * Default refresh endpoint is {@code <serverURL>/api/auth/refresh}; if discovery
-     * provided a different URL (e.g. Keycloak's token endpoint when external IdP
-     * is configured), uses that instead.
+     *
+     * <p>PRD 041: refresh consolidated onto {@code /oauth2/token grant_type=refresh_token}
+     * (OAuth2 standard form-encoded body). Same endpoint contract as a
+     * Keycloak deployment — env-var swap of {@code RAPLA_OAUTH_PUBLIC_BASE_URL}
+     * is the only change to point at an external IdP.
      *
      * @return the new access token, or null if refresh isn't available
      */
     private String refreshUsingToken(String refreshToken) throws Exception
     {
-        String url = remoteConnectionInfo.getRefreshUrl();
-        if (url == null || url.isEmpty())
-        {
-            String serverUrl = remoteConnectionInfo.getServerURL();
-            if (serverUrl == null || serverUrl.isEmpty()) return null;
-            url = serverUrl + "/api/auth/refresh";
-        }
-        String body = "{\"refreshToken\":\"" + refreshToken + "\"}";
+        String serverUrl = remoteConnectionInfo.getServerURL();
+        if (serverUrl == null || serverUrl.isEmpty()) return null;
+        String url = serverUrl + "/oauth2/token";
+        String encodedRefresh = java.net.URLEncoder.encode(refreshToken, java.nio.charset.StandardCharsets.UTF_8);
+        String body = "grant_type=refresh_token&refresh_token=" + encodedRefresh + "&client_id=rapla-client";
         java.net.http.HttpClient http = java.net.http.HttpClient.newBuilder()
                 .connectTimeout(java.time.Duration.ofSeconds(10)).build();
         java.net.http.HttpRequest req = java.net.http.HttpRequest.newBuilder(java.net.URI.create(url))
                 .timeout(java.time.Duration.ofSeconds(10))
-                .header("Content-Type", "application/json")
+                .header("Content-Type", "application/x-www-form-urlencoded")
                 .header("Accept", "application/json")
                 .POST(java.net.http.HttpRequest.BodyPublishers.ofString(body, java.nio.charset.StandardCharsets.UTF_8))
                 .build();

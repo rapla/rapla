@@ -41,14 +41,91 @@ The user has accepted breaking the current wire shape, so the rewrite is freed f
 
 A given allocatable can have any combination: PRD 038 writes (rapla → Exchange), PRD 039 subscriptions (busy-marker awareness), PRD 042 Mode 2 syncs (managed Reservations), and ordinary user-created Reservations. They compose; each carries its own provenance.
 
-## How Mode 2 differs from PRD 039 — concrete example
+## Three-way comparison — Mode 1 vs Mode 2 vs PRD 039
 
-A Dozent's published Outlook calendar URL:
+PRD 039 is an alternative path for "external iCal → rapla" that produces something *different* from a Reservation. The three options together cover the spectrum:
 
-- **PRD 039 subscription, `interpretationMode=BUSY_TIMES`**: events show as anonymous "busy 14:00–16:00" blocks in conflict-detection only. Don't appear in the Dozent's row in the schedule grid as full entries.
-- **PRD 042 Mode 2 sync**: events show as full Reservations in the schedule grid — with titles (if `visibility=FULL`), with the Dozent as an allocatable, participating in everything rapla shows. Visually distinct (badge/border indicating "externally managed") but functionally present everywhere.
+| | **PRD 039** — busy-marker subscription | **Mode 1** — one-time import | **Mode 2** — read-only sync |
+|---|---|---|---|
+| **What rapla creates** | `ExternalAppointment` (sidecar entity, NOT a Reservation) + optionally `AvailabilityWindow` | Normal `Reservation` | Managed `Reservation` (read-only flag) |
+| **Visible where?** | Conflict detection only — gray busy block on the resource's row | Everywhere Reservations appear (lists, schedule grid, reports, search) | Same as Mode 1 |
+| **Searchable / listable?** | No | Yes | Yes |
+| **Title visible?** | Owner sees title; others see "busy" only (built-in `BusyOnlyProjection`) | Yes, to anyone with read on the Reservation | Yes (same) |
+| **Editable?** | N/A — not a Reservation | Yes | No (admin can "break the sync") |
+| **Auto-refetch?** | Yes (subscription scheduler) | No (one-shot) | Yes (sync scheduler) |
+| **Vanish on source delete?** | Yes | No | Yes |
+| **Source authority** | Live (for conflict awareness) | None after import | Live (rapla mirrors) |
+| **Privacy default** | `BUSY_ONLY` — titles stripped for non-owners | Full detail visible | Full detail visible |
+| **Storage marker** | `ExternalCalendarSubscription` → `ExternalAppointment` | `KEY_EXTERNALID = UID` on the Reservation | `KEY_EXTERNALID = UID` + `KEY_EXTERNAL_SYNC_SOURCE = source-id` on the Reservation |
 
-Use Mode 2 when: the external feed *is* the schedule of record for those events, and rapla should expose them. Use PRD 039 when: the external feed represents constraints on someone's availability but the events themselves aren't rapla business.
+### The fundamental axis
+
+**Reservation or sidecar?**
+
+- **Sidecar** (PRD 039) — events exist only as constraints; invisible outside conflict detection. For "this person's availability matters to my planning, but their events aren't rapla business."
+- **Reservation** (PRD 042 either mode) — events ARE rapla business; listed, searchable, attached to allocatables, participating in everything reservations do.
+
+Once you pick Reservation, the secondary axis is one-shot vs ongoing:
+
+- **Mode 1** — rapla takes ownership after import; source is forgotten as authoritative.
+- **Mode 2** — source keeps ownership; rapla mirrors and re-fetches.
+
+### Decision tree
+
+```
+"Do I want these events to be real rapla entries
+ (in lists, in reports, with titles, attached to allocatables)?"
+   │
+   ├── No, just for conflict awareness ──► PRD 039 subscription
+   │       (BUSY_TIMES / AVAILABILITY_TIMES / MIXED interpretation)
+   │
+   └── Yes, they should be Reservations
+           │
+           ├── "Do I want rapla to keep them in sync with the source?"
+           │       │
+           │       ├── No, one-shot ──► PRD 042 Mode 1
+           │       └── Yes, ongoing ──► PRD 042 Mode 2
+```
+
+### Same source, three different choices — concrete example
+
+Dr. Schmidt's published Outlook iCal URL:
+
+| Choice | What appears in rapla |
+|---|---|
+| **PRD 039 (BUSY_TIMES)** | Her row in the schedule grid shows gray hatched blocks at the times she's busy in Outlook. No titles to other users. Not in any reservation list. Blocks future rapla bookings from being scheduled on top. |
+| **Mode 1** (one-time) | Click "import" → her Outlook events become editable Reservations in rapla with her as the allocatable. Titles visible. Searchable. If she moves an event in Outlook tomorrow, rapla doesn't notice. |
+| **Mode 2** (ongoing read-only) | Her Outlook events appear as Reservations with her as the allocatable. Titles visible. Searchable. Badge says "Managed by sync from Dr. Schmidt's Outlook." Read-only — no one in rapla can edit. When she moves an event in Outlook, the next sync updates the Reservation. Removing the event in Outlook removes it from rapla. |
+
+### Privacy distinction worth noting
+
+PRD 039 is **privacy-aware by default**: `BUSY_ONLY` strips titles for non-owners — appropriate for personal calendars where "Therapy session" shouldn't be visible to a course coordinator.
+
+PRD 042 (both modes) has **no built-in privacy stripping**: the Reservation's title is visible to anyone with read on the Reservation, same as any normal Reservation. So:
+
+- **Personal calendars** → PRD 039 (BUSY_ONLY default protects titles).
+- **Administrative/organizational calendars** where titles SHOULD be visible (dean's office holidays, central room schedule, official course calendar) → PRD 042 (Mode 1 or 2 depending on whether ongoing sync is wanted).
+
+Mirroring a personal calendar via Mode 2 would expose the person's appointment titles to everyone with read on the resource — usually not what you want.
+
+### Can they coexist?
+
+Yes — with care. Different sources for the same allocatable is fine and useful:
+
+- Mode 2 syncs the dean's master schedule into Dr. Schmidt's row as managed Reservations (administrative — titles visible by design).
+- PRD 039 subscription to her personal Outlook for busy-marker awareness (personal — titles hidden).
+
+Both contribute to her availability picture from different angles. **Don't wire both to the *same* source for the same allocatable** — that would create duplicate conflict signals (each event appears once as a managed Reservation via Mode 2 and once as a busy marker via PRD 039). Functionally redundant; cosmetically noisy.
+
+### When dual sync would be desired — and isn't supported
+
+The three options together also explain why "true dual sync" (bidirectional, with conflict resolution between both sides) isn't a v1 goal. The pattern people usually want when they say "dual sync" decomposes into independent one-way flows:
+
+- "I want rapla bookings in my Outlook calendar too" → PRD 038 (rapla → Exchange writes). One way.
+- "I want my personal calendar to block rapla bookings" → PRD 039 subscription. One way.
+- "I want my external schedule to appear as bookings in rapla" → PRD 042 Mode 2. One way.
+
+Three needs, three one-way solutions. Combining them gets bidirectional behaviour for the *user's* purposes without rapla having to solve the bidirectional-sync conflict-resolution problem.
 
 ## Scope
 

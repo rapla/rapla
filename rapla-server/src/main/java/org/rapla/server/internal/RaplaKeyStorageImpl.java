@@ -9,6 +9,9 @@ import org.rapla.framework.RaplaInitializationException;
 import org.rapla.framework.TypedComponentRole;
 import org.rapla.logger.Logger;
 import org.rapla.server.RaplaKeyStorage;
+import tools.jackson.core.type.TypeReference;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.json.JsonMapper;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import java.security.KeyPair;
@@ -17,7 +20,8 @@ import java.security.NoSuchAlgorithmException;
 import java.security.PrivateKey;
 import java.security.PublicKey;
 import java.util.Collection;
-import java.util.Collections;
+import java.util.LinkedHashMap;
+import java.util.Map;
 
 public class RaplaKeyStorageImpl implements RaplaKeyStorage
 {
@@ -28,6 +32,9 @@ public class RaplaKeyStorageImpl implements RaplaKeyStorage
 	private static final TypedComponentRole<String> PUBLIC_KEY = new TypedComponentRole<>("org.rapla.crypto.publicKey");
 	private static final TypedComponentRole<String> APIKEY = new TypedComponentRole<>("org.rapla.crypto.server.refreshToken");
 	private static final TypedComponentRole<String> PRIVATE_KEY = new TypedComponentRole<>("org.rapla.crypto.server.privateKey");
+
+	private static final ObjectMapper MAPPER = JsonMapper.builder().build();
+	private static final TypeReference<Map<String, String>> SLOT_MAP_TYPE = new TypeReference<>() {};
 
     private String rootKey;
 	private String rootPublicKey;
@@ -85,55 +92,61 @@ public class RaplaKeyStorageImpl implements RaplaKeyStorage
     }
     
     @Override
-    public void storeAPIKey(User user,String clientId, String newApiKey) throws RaplaException {
-        Preferences preferences = facade.getPreferences(user);
-        Preferences edit = facade.edit( preferences);
-        edit.putEntry(APIKEY, newApiKey);
-        facade.store( edit);
+    public void storeAPIKey(User user, String clientId, String newApiKey) throws RaplaException {
+        Map<String, String> slots = readSlots(user);
+        slots.put(clientId, newApiKey);
+        writeSlots(user, slots);
     }
 
     @Override
     public Collection<String> getAPIKeys(User user) throws RaplaException {
-        String annotation = facade.getPreferences(user).getEntryAsString(APIKEY, null);
-        if (annotation == null)
-        {
-            return Collections.emptyList();
-        }
-        Collection<String> keyList = Collections.singleton( annotation );
-        return keyList;
+        return readSlots(user).values();
     }
 
     @Override
-    public void removeAPIKey(User user, String apikey) throws RaplaException {
-        throw new UnsupportedOperationException();
-//        Allocatable key= getAllocatable(user);
-//        if ( key != null )
-//        {
-//            Collection<String> keyList = parseList(key.getAnnotation(APIKEY));
-//            if (keyList == null || !keyList.contains(apikey))
-//            {
-//                return;
-//            }
-//            key = facade.edit( key );
-//            keyList.remove( apikey);
-//            if ( keyList.size() > 0)
-//            {
-//                key.setAnnotation(APIKEY, null);
-//            }
-//            else
-//            {
-//                key.setAnnotation(APIKEY, serialize(keyList));
-//            }
-//            // remove when no more annotations set
-//            if (key.getAnnotationKeys().length == 0)
-//            {
-//                facade.remove( key);
-//            }
-//            else
-//            {
-//                facade.store( key);
-//            }
-//        }        
+    public void removeAPIKey(User user, String clientId) throws RaplaException {
+        Map<String, String> slots = readSlots(user);
+        if (slots.remove(clientId) != null)
+        {
+            writeSlots(user, slots);
+        }
+    }
+
+    private Map<String, String> readSlots(User user) throws RaplaException {
+        String raw = facade.getPreferences(user).getEntryAsString(APIKEY, null);
+        if (raw == null || raw.isEmpty()) return new LinkedHashMap<>();
+        // Legacy single-slot value (a bare JWT string, not JSON) — promote to
+        // the "refreshToken" slot so TokenHandler's read path keeps working.
+        if (!raw.startsWith("{"))
+        {
+            Map<String, String> legacy = new LinkedHashMap<>();
+            legacy.put("refreshToken", raw);
+            return legacy;
+        }
+        try
+        {
+            return new LinkedHashMap<>(MAPPER.readValue(raw, SLOT_MAP_TYPE));
+        }
+        catch (Exception e)
+        {
+            logger.warn("corrupt api-key slot map for user " + user.getUsername() + ": " + e.getMessage());
+            return new LinkedHashMap<>();
+        }
+    }
+
+    private void writeSlots(User user, Map<String, String> slots) throws RaplaException {
+        String json;
+        try
+        {
+            json = MAPPER.writeValueAsString(slots);
+        }
+        catch (Exception e)
+        {
+            throw new RaplaException("failed to serialise api-key slots: " + e.getMessage(), e);
+        }
+        Preferences edit = facade.edit(facade.getPreferences(user));
+        edit.putEntry(APIKEY, json);
+        facade.store(edit);
     }
     
   
@@ -186,7 +199,8 @@ public class RaplaKeyStorageImpl implements RaplaKeyStorage
         edit.putEntry(tagName, "");
         facade.store( edit);
     }
-//    
+
+//
 //    Allocatable getAllocatable(User user) throws RaplaException
 //    {
 //        Collection<Allocatable> store = getAllocatables();

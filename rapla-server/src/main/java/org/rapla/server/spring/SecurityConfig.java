@@ -34,6 +34,9 @@ public class SecurityConfig
         JwtDecoder decoder = jwtDecoderProvider.getIfAvailable();
         http
                 .authorizeHttpRequests(auth -> {
+                    // PRD 043: api-keys management requires a real Bearer access token —
+                    // must come BEFORE the broader /api/auth/** permit-all rule.
+                    auth.requestMatchers("/api/auth/api-keys", "/api/auth/api-keys/**").authenticated();
                     auth.requestMatchers("/api/auth/**", "/", "/index", "/server", "/static/**", "/*.html", "/*.css",
                             "/images/**", "/webclient/**", "/app/**",
                             "/api/logger/**", "/api/ical/timezones/**",
@@ -42,7 +45,7 @@ public class SecurityConfig
                             "/rapla/ical", "/rapla/internal_ical",
                             "/raplaclient", "/raplaclient.jnlp",
                             "/api/v3/api-docs/**", "/v3/api-docs/**",
-                            "/swagger-ui/**", "/swagger-ui.html",
+                            "/scalar/**", "/swagger-ui/**",
                             "/oauth2/**", "/.well-known/**", "/login", "/error",
                             "/dhbw/status").permitAll();
                     if (decoder != null)

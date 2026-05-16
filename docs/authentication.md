@@ -1,22 +1,161 @@
 # Rapla Authentication
 
-Rapla supports two authentication paths against the bundled Spring
-Authorization Server:
+Rapla uses **OAuth 2.0 / OIDC exclusively** for token issuance, refresh,
+and revocation (PRD 041, 2026-05-16). All three flows go through the
+bundled Spring Authorization Server's `/oauth2/*` endpoints:
 
 | Path | Used by | Credentials |
 |---|---|---|
-| `POST /auth/login` (legacy) | Swing client default, REST clients | username + password → HMAC JWT |
-| `GET /oauth2/authorize` + `POST /oauth2/token` (OAuth 2.0 + PKCE) | Swing "Sign in with browser…" button, future Angular SPA | redirected through system browser → RSA JWT |
+| `GET /oauth2/authorize` + `POST /oauth2/token` (code + PKCE) | Angular SPA, Swing "Sign in with browser…" button, Scalar/Swagger UI explorers | redirected through system browser → RSA JWT |
+| `POST /oauth2/token grant_type=password` | Direct-password integrators (CI scripts, curl) — replaces former `/api/auth/login` | username + password → RSA JWT |
+| `POST /oauth2/token grant_type=refresh_token` | Anything refreshing — Swing, SPA, scripts | refresh JWT → fresh access token |
+| `POST /oauth2/revoke` | Logout from any client | refresh (or access) token → server-side revocation |
 
-Both paths return RSA-signed JWTs (RS256) issued with the same key —
-Spring Authorization Server's `JWKSource`. The resource server validates
-them through a single decoder in `JwtConfig.java`. Tokens issued via
-`/auth/login` and via `/oauth2/token` are structurally interchangeable
-once issued: same `sub` claim (user UUID), same signature algorithm,
-same key.
+All access + refresh tokens are RSA-signed JWTs (RS256) issued with the
+**persistent** RSA key stored in `RaplaKeyStorage` (rapla preferences).
+A token issued before a server restart still validates after the JVM
+comes back up. The resource server validates them through a single
+decoder in `JwtConfig.java`.
+
+The legacy rapla-custom `/api/auth/login`, `/api/auth/refresh`, and
+`/api/auth/logout` endpoints are **deleted**. `/api/auth/oauth/config`
+(discovery) + `/api/auth/oauth/exchange/{providerId}` (BFF for external
+IdPs that need server-held client_secret) + `/api/auth/api-keys/*`
+(personal-access-token management, see [API keys](#api-keys-personal-access-tokens))
+remain.
 
 This document covers configuring authentication for a rapla
-deployment. For OAuth-specific architecture see [PRD 029](prd/029-swing-oauth-login.md).
+deployment. For the design rationale of the refresh-token model see
+[PRD 031](prd/031-token-refresh-and-api-keys.md) +
+[PRD 041](prd/041-openapi-runtime-removal.md); for the OAuth flow see
+[PRD 029](prd/029-swing-oauth-login.md) (Swing) and
+[PRD 036](prd/036-external-idp-oauth-login.md) (external IdPs).
+
+## The refresh-token model
+
+One refresh token per user. **Stored as the full JWT** in user
+preferences under `org.rapla.auth.session` (single slot). Each fresh
+login (any grant: code, password) returns the existing valid token
+instead of minting a new one — so opening rapla in a second tab or on
+a second device hands back the same refresh JWT both ends use.
+
+Refresh requests **never rotate** the token: `/oauth2/token grant_type=refresh_token`
+returns the same refresh token plus a fresh access token, until the
+refresh token expires (30 d default). At expiry, all sessions for the
+user re-Authorize together — predictable, no surprise "logged out in
+this tab but not that one" events.
+
+Revocation is **explicit only**: `POST /oauth2/revoke` (any client) or
+form-login `/logout` clears the prefs entry. All refresh tokens for
+that user are immediately invalid; in-flight access tokens keep working
+until their 1 h TTL elapses.
+
+| Property | Default | Where to override |
+|---|---|---|
+| Access-token TTL | 1 h | `spring.security.oauth2.authorizationserver.client.rapla-client.token.access-token-time-to-live` |
+| Refresh-token TTL | 30 d | (constant in `RefreshSessionService.REFRESH_TOKEN_TTL_SECONDS`) |
+| Rotation policy | never rotate | by design — see PRD 041 |
+
+For per-device revocation, theft detection via rotation conflict, and
+session inventory UI, deploy against Keycloak (PRD 031: IdP swap is an
+env-var override of the discovery endpoint URLs).
+
+## Direct password via OAuth2 password grant
+
+Replaces the deleted `/api/auth/login` rapla-custom JSON endpoint with
+the OAuth 2.0 standard form-encoded body (RFC 6749 §4.3). OAuth 2.1
+deprecates this grant; we re-enable it as a transient replacement for
+the legacy path until everyone migrates to interactive code+PKCE.
+
+```bash
+curl -X POST http://localhost:8051/oauth2/token \
+  -d "grant_type=password" \
+  -d "username=admin" \
+  -d "password=" \
+  -d "client_id=rapla-client"
+```
+
+Response:
+
+```json
+{
+  "access_token": "<JWT, typ=access, 1 h TTL>",
+  "refresh_token": "<JWT, typ=refresh, 30 d TTL>",
+  "scope": "openid profile",
+  "token_type": "Bearer",
+  "expires_in": 3599
+}
+```
+
+Refresh later:
+
+```bash
+curl -X POST http://localhost:8051/oauth2/token \
+  -d "grant_type=refresh_token" \
+  -d "refresh_token=<the refresh JWT>" \
+  -d "client_id=rapla-client"
+```
+
+Logout:
+
+```bash
+curl -X POST http://localhost:8051/oauth2/revoke \
+  -d "token=<refresh JWT>" \
+  -d "token_type_hint=refresh_token" \
+  -d "client_id=rapla-client"
+```
+
+Returns HTTP 200 either way (RFC 7009 — opaque "did this token exist?"
+non-disclosure). Side effect: clears the user's session entry; all
+their refresh tokens become invalid.
+
+## API keys (Personal Access Tokens)
+
+Long-lived JWTs that users can mint, list, and revoke for integrations
+(CI scripts, MCP servers, periodic exporters). GitHub-style PAT flow.
+See [PRD 043](prd/043-api-keys-jwt-pat.md) for the full design.
+
+```bash
+# Mint (Bearer-authenticated as the user who will own the key)
+curl -X POST http://localhost:8051/api/auth/api-keys \
+  -H "Authorization: Bearer $ACCESS" \
+  -H "Content-Type: application/json" \
+  -d '{"label":"CI deploy","expiresInDays":365}'
+
+# Response (the JWT is shown ONCE — save it now)
+# { "id":"<thumbprint>", "label":"CI deploy", "key":"<JWT>", "alg":"RS256",
+#   "createdAt":"...", "expiresAt":"..." }
+
+# List
+curl http://localhost:8051/api/auth/api-keys -H "Authorization: Bearer $ACCESS"
+
+# Use as Bearer on any rapla endpoint
+curl http://localhost:8051/api/resources -H "Authorization: Bearer $API_KEY_JWT"
+
+# Revoke
+curl -X DELETE http://localhost:8051/api/auth/api-keys/<id> \
+  -H "Authorization: Bearer $ACCESS"
+```
+
+API keys are stored per-user in `RaplaKeyStorage` (multi-slot,
+independent of the single-slot session refresh token). Revocation is
+checked on every request; a deleted key is rejected even if its JWT
+signature is still cryptographically valid.
+
+## Migration from `/api/auth/*` (pre-PRD-041)
+
+| Old | New | Body shape |
+|---|---|---|
+| `POST /api/auth/login` JSON `{username, password}` | `POST /oauth2/token` form-encoded `grant_type=password&username=…&password=…&client_id=rapla-client` | snake_case response (`access_token`, `refresh_token`, `expires_in`, `token_type`) |
+| `POST /api/auth/refresh` JSON `{refreshToken}` | `POST /oauth2/token` form-encoded `grant_type=refresh_token&refresh_token=…&client_id=rapla-client` | snake_case response |
+| `POST /api/auth/logout` with Bearer | `POST /oauth2/revoke` form-encoded `token=…&token_type_hint=refresh_token&client_id=rapla-client` | empty 200 |
+| `GET /api/auth/oauth/config` | **Unchanged** — discovery endpoint stays | unchanged |
+| `POST /api/auth/oauth/exchange/{providerId}` | **Unchanged** — BFF for external IdPs stays | unchanged |
+| (none) | `POST /api/auth/api-keys` (mint), `GET /api/auth/api-keys` (list), `DELETE /api/auth/api-keys/{id}` (revoke) | new — PRD 043 |
+
+The `refreshUrl` field is **gone** from the discovery response; clients
+use `tokenUrl` for both initial code exchange and subsequent refresh
+(OAuth standard).
 
 ## Quick start (default deployment)
 
@@ -46,7 +185,7 @@ be overridden with the matching env var.
 
 | Property | Env var | Default | Meaning |
 |---|---|---|---|
-| `rapla.oauth.enabled` | `RAPLA_OAUTH_ENABLED` | `true` | Master toggle for the OAuth flow. When `false`, the Swing "Sign in with browser…" button is hidden and the discovery endpoint reports `enabled: false`. Legacy `/auth/login` still works. |
+| `rapla.oauth.enabled` | `RAPLA_OAUTH_ENABLED` | `true` | Master toggle for the OAuth flow. When `false`, the Swing "Sign in with browser…" button is hidden and the discovery endpoint reports `enabled: false`. `/oauth2/token grant_type=password` direct-login still works. |
 | `rapla.oauth.client-id` | `RAPLA_OAUTH_CLIENT_ID` | `rapla-client` | OAuth client id. Both Swing and Angular use this single id; their redirect URIs differ. |
 | `rapla.oauth.scopes` | `RAPLA_OAUTH_SCOPES` | `openid,profile` | Scopes granted to issued tokens. Comma-separated. |
 | `rapla.oauth.show-paste-fallback` | `RAPLA_OAUTH_SHOW_PASTE_FALLBACK` | `false` | Show a "paste callback URL here" dialog alongside the browser launch. Enable only for environments where the automatic loopback redirect can't reach the client. |
@@ -191,18 +330,22 @@ specific network restriction.
 
 ### Token issued by `/oauth2/token` rejected as Bearer
 
-The composite JWT decoder (see `JwtConfig`) accepts both HMAC tokens
-from `/auth/login` and RSA tokens from `/oauth2/token`. If RSA tokens
-fail validation, check that the auth server is wired in (it is by
-default — see `AuthorizationServerConfig`).
+All tokens (access + refresh + API keys) are RSA-signed JWTs validated
+through a single `JwtDecoder` in `JwtConfig.java` against rapla's JWKS.
+If a token fails validation, check that `AuthorizationServerConfig`
+booted (Spring `@AutoConfiguration` loads it by default) — if it didn't,
+the `JWKSource` bean is missing and no tokens can be issued in the
+first place. With external IdPs configured (PRD 036), the decoder
+wraps an `IssuerAwareJwtDecoder` that routes by `iss` claim; check the
+provider's JWKS URL is reachable from the rapla server.
 
-### After server restart, all users are logged out
+### After server restart, sessions survive (PRD 029 Option A)
 
-Expected (today). The auth server's RSA keypair is regenerated on
-every startup, invalidating all previously-issued tokens — both
-`/auth/login` and `/oauth2/token` use this same in-memory keypair
-as of the 2026-05-12 token unification. Persisting the keypair across
-restarts is planned hardening (see PRD 026 §5).
+The auth server's RSA keypair is **persisted** in `RaplaKeyStorage`
+(rapla preferences, same data file as the rest of the application
+state). A token issued before a JVM restart still validates after the
+restart — same key, same signature. The refresh-token hash is also in
+preferences, so refresh requests after a restart also succeed.
 
 ## External IdP (Microsoft Entra ID + Google)
 

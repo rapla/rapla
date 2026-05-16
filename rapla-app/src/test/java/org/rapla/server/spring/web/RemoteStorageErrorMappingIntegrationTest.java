@@ -66,12 +66,7 @@ class RemoteStorageErrorMappingIntegrationTest
 
     private String adminToken() throws Exception
     {
-        MvcResult login = mockMvc.perform(post("/api/auth/login")
-                        .contentType("application/json")
-                        .content("{\"username\":\"homer\",\"password\":\"duffs\"}"))
-                .andExpect(status().isOk())
-                .andReturn();
-        return JsonMapper.builder().build().readTree(login.getResponse().getContentAsString()).get("accessToken").asText();
+        return OAuthTestSupport.loginAs(mockMvc, "homer", "duffs");
     }
 
     @Test
@@ -98,11 +93,13 @@ class RemoteStorageErrorMappingIntegrationTest
     }
 
     @Test
-    void postLogin_withBadCredentials_returns401() throws Exception
+    void postLogin_withBadCredentials_returns400() throws Exception
     {
-        mockMvc.perform(post("/api/auth/login")
-                        .contentType("application/json")
-                        .content("{\"username\":\"homer\",\"password\":\"wrong\"}"))
-                .andExpect(status().isUnauthorized());
+        // OAuth2 standard /oauth2/token returns 400 invalid_grant on bad creds (RFC 6749 §5.2),
+        // not 401. Different from rapla-custom /api/auth/login's 401 — but standard now.
+        mockMvc.perform(post("/oauth2/token")
+                        .contentType("application/x-www-form-urlencoded")
+                        .content("grant_type=password&username=homer&password=wrong&client_id=rapla-client"))
+                .andExpect(status().isBadRequest());
     }
 }

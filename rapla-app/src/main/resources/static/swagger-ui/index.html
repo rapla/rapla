@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Rapla REST API — Swagger UI</title>
+    <!--
+      PRD 041: Swagger UI as the alternative explorer alongside Scalar (/scalar/).
+      CDN-loaded from jsdelivr — no webjar in the fat JAR. Same offline-fallback
+      story as Scalar (npm install swagger-ui-dist + copy to static/).
+    -->
+    <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/swagger-ui-dist@5.30.1/swagger-ui.css">
+    <link rel="icon" type="image/png" href="https://cdn.jsdelivr.net/npm/swagger-ui-dist@5.30.1/favicon-32x32.png" sizes="32x32">
+    <style>
+        html { box-sizing: border-box; overflow: -moz-scrollbars-vertical; overflow-y: scroll; }
+        *, *:before, *:after { box-sizing: inherit; }
+        body { margin: 0; background: #fafafa; }
+    </style>
+</head>
+<body>
+<div id="swagger-ui"></div>
+<script src="https://cdn.jsdelivr.net/npm/swagger-ui-dist@5.30.1/swagger-ui-bundle.js" charset="UTF-8"></script>
+<script src="https://cdn.jsdelivr.net/npm/swagger-ui-dist@5.30.1/swagger-ui-standalone-preset.js" charset="UTF-8"></script>
+<script>
+    window.onload = function () {
+        window.ui = SwaggerUIBundle({
+            // Loads the group inventory served by StaticOpenApiController; the dropdown
+            // populates from its `urls` array (auth / client / rest / exports).
+            configUrl: "/api/v3/api-docs/swagger-config",
+            dom_id: "#swagger-ui",
+            deepLinking: true,
+            presets: [SwaggerUIBundle.presets.apis, SwaggerUIStandalonePreset],
+            plugins: [SwaggerUIBundle.plugins.DownloadUrl],
+            layout: "StandaloneLayout",
+            // OAuth2 code+PKCE — uses the single rapla-client public client.
+            // The /swagger-ui/oauth2-redirect.html URI is registered under
+            // rapla-client.registration.redirect-uris in application.yml.
+            oauth2RedirectUrl: window.location.origin + "/swagger-ui/oauth2-redirect.html"
+        });
+        ui.initOAuth({
+            clientId: "rapla-client",
+            usePkceWithAuthorizationCodeGrant: true
+        });
+    };
+</script>
+</body>
+</html>

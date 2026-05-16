@@ -95,23 +95,12 @@ class PreferencesAdminControllerIntegrationTest
      *  default in AGENTS.md §8 belongs to the production seed, not this fixture.) */
     private String adminToken() throws Exception
     {
-        return loginAs("homer", "duffs");
+        return OAuthTestSupport.loginAs(mockMvc, "homer", "duffs");
     }
 
     private String userToken() throws Exception
     {
-        return loginAs("monty", "burns");
-    }
-
-    private String loginAs(String username, String password) throws Exception
-    {
-        MvcResult mvc = mockMvc.perform(post("/api/auth/login")
-                        .contentType("application/json")
-                        .content("{\"username\":\"" + username + "\",\"password\":\"" + password + "\"}"))
-                .andExpect(status().isOk())
-                .andReturn();
-        JsonNode tree = json.readTree(mvc.getResponse().getContentAsString());
-        return tree.get("accessToken").asString();
+        return OAuthTestSupport.loginAs(mockMvc, "monty", "burns");
     }
 
     @Test

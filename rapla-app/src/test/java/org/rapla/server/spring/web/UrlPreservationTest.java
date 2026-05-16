@@ -124,14 +124,10 @@ class UrlPreservationTest
         assertNotEquals(404, status, "/app/ (SPA shell) must route — got 404 (verify SpaResourceConfig + ng build artifacts)");
     }
 
-    @Test
-    void apiAuthLoginRoutes() throws Exception
-    {
-        int status = mockMvc.perform(get("/api/auth/login"))
-                .andReturn().getResponse().getStatus();
-        // POST endpoint; GET returns 405 — anything but 404 proves route exists.
-        assertNotEquals(404, status, "/api/auth/login must route — got 404 (verify AuthController @RequestMapping starts with /api/)");
-    }
+    // PRD 041: removed /api/auth/login URL-preservation test; /oauth2/token is
+    // wired via Spring AS's filter chain, not as a @RestController, so MockMvc's
+    // simple GET-probe pattern doesn't apply. UnifiedRefreshIntegrationTest +
+    // RemoteStorageErrorMappingIntegrationTest cover the actual POST flow.
 
     @Test
     void apiStorageResourcesRoutes() throws Exception

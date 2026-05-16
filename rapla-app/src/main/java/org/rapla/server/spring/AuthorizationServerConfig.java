@@ -33,10 +33,32 @@ import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
+import org.springframework.security.oauth2.core.AuthorizationGrantType;
+import org.springframework.security.oauth2.core.ClientAuthenticationMethod;
+import org.springframework.security.oauth2.core.OAuth2AccessToken;
+import org.springframework.security.oauth2.core.OAuth2AuthenticationException;
+import org.springframework.security.oauth2.core.OAuth2ErrorCodes;
+import org.springframework.security.oauth2.core.OAuth2RefreshToken;
+import org.springframework.security.oauth2.core.OAuth2Token;
+import org.springframework.security.oauth2.core.endpoint.OAuth2ParameterNames;
+import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.oauth2.server.authorization.OAuth2TokenType;
-import org.springframework.security.oauth2.server.authorization.token.JwtEncodingContext;
-import org.springframework.security.oauth2.server.authorization.token.OAuth2TokenCustomizer;
+import org.springframework.security.oauth2.server.authorization.authentication.OAuth2AccessTokenAuthenticationToken;
 import org.springframework.security.oauth2.server.authorization.authentication.OAuth2AuthorizationCodeRequestAuthenticationContext;
+import org.springframework.security.oauth2.server.authorization.authentication.OAuth2ClientAuthenticationToken;
+import org.springframework.security.oauth2.server.authorization.authentication.OAuth2RefreshTokenAuthenticationToken;
+import org.springframework.security.oauth2.server.authorization.client.RegisteredClientRepository;
+import org.springframework.security.oauth2.server.authorization.token.DelegatingOAuth2TokenGenerator;
+import org.springframework.security.oauth2.server.authorization.token.JwtEncodingContext;
+import org.springframework.security.oauth2.server.authorization.token.JwtGenerator;
+import org.springframework.security.oauth2.server.authorization.token.OAuth2AccessTokenGenerator;
+import org.springframework.security.oauth2.server.authorization.token.OAuth2TokenContext;
+import org.springframework.security.oauth2.server.authorization.token.OAuth2TokenCustomizer;
+import org.springframework.security.oauth2.server.authorization.token.OAuth2TokenGenerator;
+import org.springframework.security.oauth2.jwt.JwtEncoder;
+import org.springframework.security.oauth2.jwt.NimbusJwtEncoder;
+import org.springframework.security.web.authentication.AuthenticationConverter;
+import org.springframework.util.StringUtils;
 import org.springframework.security.oauth2.server.authorization.authentication.OAuth2AuthorizationCodeRequestAuthenticationException;
 import org.springframework.security.oauth2.server.authorization.authentication.OAuth2AuthorizationCodeRequestAuthenticationProvider;
 import org.springframework.security.oauth2.server.authorization.authentication.OAuth2AuthorizationCodeRequestAuthenticationToken;
@@ -64,6 +86,7 @@ import java.security.interfaces.RSAPrivateKey;
 import java.security.interfaces.RSAPublicKey;
 import java.security.spec.PKCS8EncodedKeySpec;
 import java.security.spec.RSAPublicKeySpec;
+import java.time.Instant;
 import java.util.Arrays;
 import java.util.Base64;
 import java.util.Collections;
@@ -105,7 +128,13 @@ public class AuthorizationServerConfig
     @Bean
     @Order(1)
     public SecurityFilterChain authorizationServerSecurityFilterChain(HttpSecurity http,
-                                                                      RememberMeServices rememberMeServices) throws Exception
+                                                                      RememberMeServices rememberMeServices,
+                                                                      OAuth2TokenGenerator<?> tokenGenerator,
+                                                                      RegisteredClientRepository clientRepository,
+                                                                      RefreshSessionService refreshSessionService,
+                                                                      RaplaAuthentificationService raplaAuthService,
+                                                                      RaplaFacade facade,
+                                                                      org.springframework.security.oauth2.jwt.JwtDecoder jwtDecoder) throws Exception
     {
         OAuth2AuthorizationServerConfigurer authServerConfigurer =
                 new OAuth2AuthorizationServerConfigurer();
@@ -143,7 +172,29 @@ public class AuthorizationServerConfig
                 // separate IdP origin, CORS required. SecurityConfig already
                 // provides a CorsConfigurationSource bean that allows *.
                 .cors(Customizer.withDefaults())
-                .with(authServerConfigurer, c -> c.oidc(oidc -> oidc.logoutEndpoint(logout -> {
+                .with(authServerConfigurer, c -> {
+                    // PRD 041 — wire custom token generator (issues JWT refresh tokens with
+                    // typ=refresh, persists in user prefs via RefreshSessionService); custom
+                    // client auth converter + provider so PUBLIC clients can authenticate on
+                    // refresh_token AND password grants (Spring AS's stock
+                    // PublicClientAuthenticationConverter only handles PKCE); custom
+                    // refresh-token + password auth providers so issuance + validation goes
+                    // through RefreshSessionService. Result: /oauth2/token is the single
+                    // endpoint for all grants (code, refresh, password); tokens are
+                    // interchangeable across endpoints.
+                    c.tokenGenerator(tokenGenerator);
+                    c.clientAuthentication(client -> {
+                        client.authenticationConverter(new PublicClientRefreshTokenAuthenticationConverter());
+                        client.authenticationProvider(new PublicClientRefreshTokenAuthenticationProvider(clientRepository));
+                    });
+                    c.tokenEndpoint(token -> {
+                        token.accessTokenRequestConverter(new PasswordGrantAuthenticationConverter());
+                        token.authenticationProvider(new RaplaRefreshTokenAuthenticationProvider(refreshSessionService));
+                        token.authenticationProvider(new PasswordGrantAuthenticationProvider(refreshSessionService, raplaAuthService));
+                    });
+                    c.tokenRevocationEndpoint(revoke ->
+                            revoke.authenticationProvider(new RaplaTokenRevocationAuthenticationProvider(refreshSessionService, facade, jwtDecoder)));
+                    c.oidc(oidc -> oidc.logoutEndpoint(logout -> {
                     logout.authenticationProviders(providers -> providers.forEach(provider -> {
                         if (provider instanceof OidcLogoutAuthenticationProvider logoutProvider)
                         {
@@ -164,7 +215,8 @@ public class AuthorizationServerConfig
                             new SecurityContextLogoutHandler(),
                             (LogoutHandler) rememberMeServices));
                     logout.logoutResponseHandler(successHandler);
-                })))
+                }));
+                })
                 .exceptionHandling(exc -> exc.defaultAuthenticationEntryPointFor(
                         new LoginUrlAuthenticationEntryPoint("/login"),
                         htmlMatcher));
@@ -516,4 +568,425 @@ public class AuthorizationServerConfig
         };
     }
 
+    /**
+     * PRD 041 — token generator chain that issues JWT refresh tokens (signed
+     * by the persistent RSA key) for PUBLIC clients (PKCE / NONE auth method).
+     * Spring AS's stock {@code OAuth2RefreshTokenGenerator}:
+     * <ul>
+     *   <li>Issues opaque random tokens (not JWTs)</li>
+     *   <li>Suppresses for public clients on authorization_code grant</li>
+     * </ul>
+     * Both don't fit rapla's design — see {@link JwtRefreshTokenGenerator}'s
+     * Javadoc + PRD 031.
+     */
+    @Bean
+    public OAuth2TokenGenerator<OAuth2Token> tokenGenerator(JWKSource<SecurityContext> jwkSource,
+                                                            OAuth2TokenCustomizer<JwtEncodingContext> jwtCustomizer,
+                                                            RefreshSessionService refreshSessionService,
+                                                            RaplaFacade facade)
+    {
+        JwtEncoder jwtEncoder = new NimbusJwtEncoder(jwkSource);
+        JwtGenerator jwtGenerator = new JwtGenerator(jwtEncoder);
+        jwtGenerator.setJwtCustomizer(jwtCustomizer);
+        OAuth2AccessTokenGenerator accessTokenGenerator = new OAuth2AccessTokenGenerator();
+        return new DelegatingOAuth2TokenGenerator(
+                jwtGenerator,
+                accessTokenGenerator,
+                new JwtRefreshTokenGenerator(refreshSessionService, facade));
+    }
+
+    /**
+     * Issues JWT refresh tokens via {@link RefreshSessionService}.
+     * <ul>
+     *   <li>Signed by the persistent RSA key (same {@code JwtIssuer} that
+     *       {@code /api/auth/login} uses) → tokens survive server restart.</li>
+     *   <li>Carries {@code typ=refresh} claim → distinguishable from access tokens.</li>
+     *   <li>Hash persisted to user prefs ({@code RefreshSessionService.SESSION})
+     *       → single-token-per-user revocation, restart-safe, rotate-when-stale.</li>
+     *   <li>Issued for ALL clients including public ones (PKCE/NONE) — Spring AS's
+     *       default suppression for public clients is overridden here. Trade-off
+     *       documented in PRD 041.</li>
+     * </ul>
+     * Tokens issued here are interchangeable with those issued by
+     * {@code /api/auth/login} (legacy direct-password) — same JWT format, same
+     * hash store, redeemable at the same {@code /oauth2/token} refresh endpoint.
+     */
+    private static final class JwtRefreshTokenGenerator implements OAuth2TokenGenerator<OAuth2RefreshToken>
+    {
+        private final RefreshSessionService refreshSessionService;
+        private final RaplaFacade facade;
+
+        JwtRefreshTokenGenerator(RefreshSessionService refreshSessionService, RaplaFacade facade)
+        {
+            this.refreshSessionService = refreshSessionService;
+            this.facade = facade;
+        }
+
+        @Override
+        public OAuth2RefreshToken generate(OAuth2TokenContext context)
+        {
+            if (!OAuth2TokenType.REFRESH_TOKEN.equals(context.getTokenType())) return null;
+            String userId = context.getPrincipal().getName();
+            try
+            {
+                User user = facade.getOperator().tryResolve(userId, User.class);
+                if (user == null)
+                {
+                    throw new OAuth2AuthenticationException(new org.springframework.security.oauth2.core.OAuth2Error(
+                            OAuth2ErrorCodes.INVALID_GRANT,
+                            "Cannot resolve user for refresh-token issuance: " + userId, null));
+                }
+                String jwt = refreshSessionService.issueAndPersistRefreshToken(user);
+                Instant now = Instant.now();
+                return new OAuth2RefreshToken(jwt, now,
+                        now.plus(context.getRegisteredClient().getTokenSettings().getRefreshTokenTimeToLive()));
+            }
+            catch (Exception e)
+            {
+                if (e instanceof OAuth2AuthenticationException oae) throw oae;
+                throw new OAuth2AuthenticationException(new org.springframework.security.oauth2.core.OAuth2Error(
+                        OAuth2ErrorCodes.SERVER_ERROR,
+                        "Failed to issue refresh token: " + e.getMessage(), null));
+            }
+        }
+    }
+
+    /**
+     * Authenticates public clients on requests that carry just {@code client_id}
+     * (no {@code client_secret}, no PKCE {@code code_verifier}). Spring AS's
+     * stock {@code PublicClientAuthenticationConverter} only matches PKCE token
+     * requests (authorization_code with code_verifier); other public-client
+     * requests — refresh_token grant, password grant, /oauth2/revoke, /oauth2/introspect —
+     * have no built-in converter, so {@code OAuth2ClientAuthenticationFilter}
+     * returns 401 before the endpoint logic runs.
+     *
+     * <p>Match rules — return {@code null} (defer to other converters) unless ALL of:
+     * <ul>
+     *   <li>{@code client_id} present</li>
+     *   <li>NO {@code client_secret} (defer confidential clients to ClientSecret*Converter)</li>
+     *   <li>NO {@code code_verifier} (defer PKCE flows to the stock PublicClientAuthenticationConverter)</li>
+     * </ul>
+     * Method/URL not checked — deferring is safe because Spring AS's other
+     * converters take precedence when their conditions match.
+     */
+    private static final class PublicClientRefreshTokenAuthenticationConverter implements AuthenticationConverter
+    {
+        @Override
+        public Authentication convert(HttpServletRequest request)
+        {
+            String clientId = request.getParameter(OAuth2ParameterNames.CLIENT_ID);
+            if (!StringUtils.hasText(clientId)) return null;
+            if (request.getParameter(OAuth2ParameterNames.CLIENT_SECRET) != null) return null;
+            if (request.getParameter("code_verifier") != null) return null;
+            return new OAuth2ClientAuthenticationToken(clientId, ClientAuthenticationMethod.NONE, null, null);
+        }
+    }
+
+    /**
+     * Companion to {@link PublicClientRefreshTokenAuthenticationConverter} —
+     * validates the unauthenticated {@link OAuth2ClientAuthenticationToken} it
+     * produces. The stock {@code PublicClientAuthenticationProvider} hard-requires
+     * {@code code_verifier}; this provider doesn't (refresh_token grant has no
+     * PKCE parameters).
+     *
+     * <p>Validates: client_id resolves to a registered client; the registered
+     * client allows {@link ClientAuthenticationMethod#NONE}.
+     */
+    private static final class PublicClientRefreshTokenAuthenticationProvider implements AuthenticationProvider
+    {
+        private final RegisteredClientRepository clientRepository;
+
+        PublicClientRefreshTokenAuthenticationProvider(RegisteredClientRepository clientRepository)
+        {
+            this.clientRepository = clientRepository;
+        }
+
+        @Override
+        public Authentication authenticate(Authentication authentication) throws AuthenticationException
+        {
+            OAuth2ClientAuthenticationToken auth = (OAuth2ClientAuthenticationToken) authentication;
+            // Defer if not a NONE-method token (other providers handle confidential clients)
+            if (!ClientAuthenticationMethod.NONE.equals(auth.getClientAuthenticationMethod())) return null;
+            // Defer if credentials present (PKCE code_verifier flows handled by stock provider)
+            if (auth.getCredentials() != null) return null;
+            String clientId = auth.getPrincipal().toString();
+            org.springframework.security.oauth2.server.authorization.client.RegisteredClient client =
+                    clientRepository.findByClientId(clientId);
+            if (client == null
+                    || !client.getClientAuthenticationMethods().contains(ClientAuthenticationMethod.NONE))
+            {
+                throw new OAuth2AuthenticationException(new org.springframework.security.oauth2.core.OAuth2Error(
+                        OAuth2ErrorCodes.INVALID_CLIENT, "Unknown public client: " + clientId, null));
+            }
+            return new OAuth2ClientAuthenticationToken(client, ClientAuthenticationMethod.NONE, null);
+        }
+
+        @Override
+        public boolean supports(Class<?> authentication)
+        {
+            return OAuth2ClientAuthenticationToken.class.isAssignableFrom(authentication);
+        }
+    }
+
+    /**
+     * Replaces Spring AS's stock {@code OAuth2RefreshTokenAuthenticationProvider}.
+     * Validates the presented refresh token via {@link RefreshSessionService}
+     * (JWT signature + {@code typ=refresh} + hash matches user-prefs entry)
+     * instead of going through the in-memory {@code OAuth2AuthorizationService}
+     * (which would lose state on restart and doesn't know about
+     * {@code /api/auth/login}-issued tokens). Result: refresh tokens issued by
+     * EITHER endpoint are accepted at {@code /oauth2/token} and survive restart.
+     *
+     * <p>Honors {@link RefreshSessionService#shouldRotate} — most refreshes
+     * return the same refresh token (~1 prefs write per 30 days per active
+     * session, see RefreshSessionService Javadoc).
+     */
+    private static final class RaplaRefreshTokenAuthenticationProvider implements AuthenticationProvider
+    {
+        private final RefreshSessionService refreshSessionService;
+
+        RaplaRefreshTokenAuthenticationProvider(RefreshSessionService refreshSessionService)
+        {
+            this.refreshSessionService = refreshSessionService;
+        }
+
+        @Override
+        public Authentication authenticate(Authentication authentication) throws AuthenticationException
+        {
+            OAuth2RefreshTokenAuthenticationToken refreshAuth = (OAuth2RefreshTokenAuthenticationToken) authentication;
+            OAuth2ClientAuthenticationToken clientAuth = (OAuth2ClientAuthenticationToken) refreshAuth.getPrincipal();
+            String presentedRefreshToken = refreshAuth.getRefreshToken();
+
+            RefreshSessionService.ValidatedRefresh validated;
+            try
+            {
+                validated = refreshSessionService.validate(presentedRefreshToken);
+            }
+            catch (RaplaException e)
+            {
+                throw new OAuth2AuthenticationException(new org.springframework.security.oauth2.core.OAuth2Error(
+                        OAuth2ErrorCodes.INVALID_GRANT, e.getMessage(), null));
+            }
+
+            try
+            {
+                // Never rotate: the presented refresh token stays in circulation
+                // until expiry (30d). Multi-tab share works trivially.
+                Instant now = Instant.now();
+                String accessTokenValue = refreshSessionService.issueAccessToken(validated.user());
+                OAuth2AccessToken accessToken = new OAuth2AccessToken(
+                        OAuth2AccessToken.TokenType.BEARER, accessTokenValue, now,
+                        now.plusSeconds(RefreshSessionService.ACCESS_TOKEN_TTL_SECONDS));
+                OAuth2RefreshToken sameRefresh = new OAuth2RefreshToken(presentedRefreshToken, now);
+                return new OAuth2AccessTokenAuthenticationToken(
+                        clientAuth.getRegisteredClient(), clientAuth, accessToken, sameRefresh);
+            }
+            catch (Exception e)
+            {
+                if (e instanceof OAuth2AuthenticationException oae) throw oae;
+                throw new OAuth2AuthenticationException(new org.springframework.security.oauth2.core.OAuth2Error(
+                        OAuth2ErrorCodes.SERVER_ERROR,
+                        "Failed to issue tokens on refresh: " + e.getMessage(), null));
+            }
+        }
+
+        @Override
+        public boolean supports(Class<?> authentication)
+        {
+            return OAuth2RefreshTokenAuthenticationToken.class.isAssignableFrom(authentication);
+        }
+    }
+
+    /**
+     * Recognises the OAuth2 Resource Owner Password Credentials grant request
+     * (RFC 6749 §4.3) and produces an unauthenticated {@link PasswordGrantAuthenticationToken}.
+     * Spring AS 1.0+ removed this grant from the default chain (OAuth 2.1 BCP
+     * deprecates it); rapla re-enables it so the legacy direct-password
+     * integration path keeps working without rapla-custom endpoints. Will be
+     * fully removed when rapla migrates to Keycloak (per PRD 031).
+     */
+    private static final class PasswordGrantAuthenticationConverter implements AuthenticationConverter
+    {
+        @Override
+        public Authentication convert(HttpServletRequest request)
+        {
+            String grantType = request.getParameter(OAuth2ParameterNames.GRANT_TYPE);
+            if (!"password".equals(grantType)) return null;
+            String username = request.getParameter("username");
+            String password = request.getParameter("password");
+            if (!StringUtils.hasText(username) || password == null)
+            {
+                throw new OAuth2AuthenticationException(new org.springframework.security.oauth2.core.OAuth2Error(
+                        OAuth2ErrorCodes.INVALID_REQUEST,
+                        "username and password are required for grant_type=password", null));
+            }
+            String scope = request.getParameter(OAuth2ParameterNames.SCOPE);
+            return new PasswordGrantAuthenticationToken(username, password, scope);
+        }
+    }
+
+    /**
+     * Authenticates a {@link PasswordGrantAuthenticationToken}: delegates to
+     * {@link RaplaAuthentificationService} for username/password verification,
+     * then issues access + refresh JWTs via {@link RefreshSessionService}
+     * (sharing storage + format with {@code authorization_code} flows).
+     */
+    private static final class PasswordGrantAuthenticationProvider implements AuthenticationProvider
+    {
+        private final RefreshSessionService refreshSessionService;
+        private final RaplaAuthentificationService raplaAuthService;
+
+        PasswordGrantAuthenticationProvider(RefreshSessionService refreshSessionService,
+                                            RaplaAuthentificationService raplaAuthService)
+        {
+            this.refreshSessionService = refreshSessionService;
+            this.raplaAuthService = raplaAuthService;
+        }
+
+        @Override
+        public Authentication authenticate(Authentication authentication) throws AuthenticationException
+        {
+            PasswordGrantAuthenticationToken auth = (PasswordGrantAuthenticationToken) authentication;
+            // The OAuth2ClientAuthenticationFilter has already validated the client_id
+            // and bound the registered client into the security context as the principal
+            // of an OAuth2ClientAuthenticationToken. Pull it out of the context.
+            OAuth2ClientAuthenticationToken clientAuth = (OAuth2ClientAuthenticationToken)
+                    org.springframework.security.core.context.SecurityContextHolder
+                            .getContext().getAuthentication();
+            org.springframework.security.oauth2.server.authorization.client.RegisteredClient client =
+                    clientAuth != null ? clientAuth.getRegisteredClient() : null;
+            if (client == null)
+            {
+                throw new OAuth2AuthenticationException(new org.springframework.security.oauth2.core.OAuth2Error(
+                        OAuth2ErrorCodes.INVALID_CLIENT, "client must authenticate before password grant", null));
+            }
+            User user;
+            try
+            {
+                user = raplaAuthService.getUserFromCredentials(
+                        new org.rapla.storage.dbrm.LoginCredentials(auth.username, auth.password, null));
+            }
+            catch (Exception e)
+            {
+                throw new OAuth2AuthenticationException(new org.springframework.security.oauth2.core.OAuth2Error(
+                        OAuth2ErrorCodes.INVALID_GRANT, "Bad credentials", null));
+            }
+            if (user == null)
+            {
+                throw new OAuth2AuthenticationException(new org.springframework.security.oauth2.core.OAuth2Error(
+                        OAuth2ErrorCodes.INVALID_GRANT, "Bad credentials", null));
+            }
+            try
+            {
+                Instant now = Instant.now();
+                RefreshSessionService.IssuedTokens issued = refreshSessionService.issueAndPersist(user);
+                OAuth2AccessToken accessToken = new OAuth2AccessToken(
+                        OAuth2AccessToken.TokenType.BEARER, issued.accessToken(), now,
+                        now.plusSeconds(issued.expiresIn()));
+                OAuth2RefreshToken refreshToken = new OAuth2RefreshToken(issued.refreshToken(), now);
+                return new OAuth2AccessTokenAuthenticationToken(client, clientAuth, accessToken, refreshToken);
+            }
+            catch (Exception e)
+            {
+                throw new OAuth2AuthenticationException(new org.springframework.security.oauth2.core.OAuth2Error(
+                        OAuth2ErrorCodes.SERVER_ERROR, "Failed to issue tokens: " + e.getMessage(), null));
+            }
+        }
+
+        @Override
+        public boolean supports(Class<?> authentication)
+        {
+            return PasswordGrantAuthenticationToken.class.isAssignableFrom(authentication);
+        }
+    }
+
+    /**
+     * Custom Authentication token for the password grant — Spring AS doesn't
+     * ship one (the grant was removed from the default chain).
+     */
+    static final class PasswordGrantAuthenticationToken extends org.springframework.security.authentication.AbstractAuthenticationToken
+    {
+        final String username;
+        final String password;
+        final String scope;
+
+        PasswordGrantAuthenticationToken(String username, String password, String scope)
+        {
+            super(java.util.Collections.emptyList());
+            this.username = username;
+            this.password = password;
+            this.scope = scope;
+            setAuthenticated(false);
+        }
+
+        @Override public Object getCredentials() { return password; }
+        @Override public Object getPrincipal() { return username; }
+    }
+
+    /**
+     * PRD 041 — replaces Spring AS's stock {@code OAuth2TokenRevocationAuthenticationProvider}
+     * to also clear the user's session entry in
+     * {@link RefreshSessionService#SESSION} on revocation.
+     *
+     * <p>RFC 7009 says the revoke endpoint MUST return 200 regardless of
+     * whether the token was known. So this provider always returns success;
+     * the side effect (clear session) only fires if we can decode the token
+     * and resolve the user.
+     *
+     * <p>Single-token-per-user model: revoking ANY token (access or refresh)
+     * for a user clears the user's only session, so all tokens for that user
+     * become invalid. Same semantics as the legacy {@code /api/auth/logout}.
+     */
+    private static final class RaplaTokenRevocationAuthenticationProvider implements AuthenticationProvider
+    {
+        private final RefreshSessionService refreshSessionService;
+        private final RaplaFacade facade;
+        private final org.springframework.security.oauth2.jwt.JwtDecoder jwtDecoder;
+
+        RaplaTokenRevocationAuthenticationProvider(RefreshSessionService refreshSessionService,
+                                                   RaplaFacade facade,
+                                                   org.springframework.security.oauth2.jwt.JwtDecoder jwtDecoder)
+        {
+            this.refreshSessionService = refreshSessionService;
+            this.facade = facade;
+            this.jwtDecoder = jwtDecoder;
+        }
+
+        @Override
+        public Authentication authenticate(Authentication authentication) throws AuthenticationException
+        {
+            org.springframework.security.oauth2.server.authorization.authentication.OAuth2TokenRevocationAuthenticationToken revocationAuth =
+                    (org.springframework.security.oauth2.server.authorization.authentication.OAuth2TokenRevocationAuthenticationToken) authentication;
+            String token = revocationAuth.getToken();
+            try
+            {
+                org.springframework.security.oauth2.jwt.Jwt jwt = jwtDecoder.decode(token);
+                String userId = jwt.getSubject();
+                if (userId != null)
+                {
+                    User user = facade.getOperator().tryResolve(userId, User.class);
+                    if (user != null) refreshSessionService.clearSession(user);
+                }
+            }
+            catch (Exception ignore)
+            {
+                // RFC 7009: respond OK even for unknown / invalid tokens. No side effect to clear.
+            }
+            // Mark authenticated so the endpoint returns 200 OK with empty body.
+            org.springframework.security.oauth2.server.authorization.authentication.OAuth2TokenRevocationAuthenticationToken result =
+                    new org.springframework.security.oauth2.server.authorization.authentication.OAuth2TokenRevocationAuthenticationToken(
+                            token,
+                            (OAuth2ClientAuthenticationToken) revocationAuth.getPrincipal(),
+                            revocationAuth.getTokenTypeHint());
+            result.setAuthenticated(true);
+            return result;
+        }
+
+        @Override
+        public boolean supports(Class<?> authentication)
+        {
+            return org.springframework.security.oauth2.server.authorization.authentication.OAuth2TokenRevocationAuthenticationToken.class
+                    .isAssignableFrom(authentication);
+        }
+    }
 }

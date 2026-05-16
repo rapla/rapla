@@ -231,8 +231,9 @@ class HeadlessClientNameResolutionIntegrationTest
                     java.util.List<org.rapla.facade.internal.ConflictImpl> conflicts = rs.getConflicts();
                     assertNotNull(conflicts,
                             "/api/storage/conflicts must succeed after transparent refresh-on-401 — "
-                            + "interceptor should call /api/auth/refresh with the stored refreshToken, "
-                            + "update connectionInfo.accessToken, and retry the original request.");
+                            + "interceptor should call /oauth2/token grant_type=refresh_token (PRD 041) "
+                            + "with the stored refreshToken, update connectionInfo.accessToken, and retry "
+                            + "the original request.");
                 }
                 finally
                 {

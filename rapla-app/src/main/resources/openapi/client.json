@@ -1,0 +1,3453 @@
+{
+  "openapi" : "3.1.0",
+  "info" : {
+    "title" : "Rapla REST API",
+    "description" : "Resource scheduling and event planning. Authorize via OAuth2 (Authorization Code + PKCE) using Rapla's bundled Spring Authorization Server, or paste a raw bearer JWT.",
+    "version" : "2.1-SNAPSHOT"
+  },
+  "security" : [ {
+    "oauth2" : [ ]
+  }, {
+    "bearerAuth" : [ ]
+  } ],
+  "paths" : {
+    "/api/settings/system" : {
+      "get" : {
+        "tags" : [ "settings-controller" ],
+        "operationId" : "getSystem",
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/SystemSettings"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put" : {
+        "tags" : [ "settings-controller" ],
+        "operationId" : "setSystem",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/SystemSettings"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/SystemSettings"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/settings/me" : {
+      "get" : {
+        "tags" : [ "settings-controller" ],
+        "operationId" : "getMe",
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/UserSettings"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put" : {
+        "tags" : [ "settings-controller" ],
+        "operationId" : "setMe",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/UserSettings"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/UserSettings"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/settings/calendar" : {
+      "get" : {
+        "tags" : [ "settings-controller" ],
+        "operationId" : "getCalendar",
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/RaplaConfiguration"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put" : {
+        "tags" : [ "settings-controller" ],
+        "operationId" : "setCalendar",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/RaplaConfiguration"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/RaplaConfiguration"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/plugins/{id}/enabled" : {
+      "put" : {
+        "tags" : [ "plugins-controller" ],
+        "operationId" : "setEnabled",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/EnabledRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/PluginInfo"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/logger/{id}" : {
+      "put" : {
+        "tags" : [ "remote-logger-controller" ],
+        "operationId" : "info",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "type" : "string"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK"
+          }
+        }
+      }
+    },
+    "/api/urlencryption" : {
+      "post" : {
+        "tags" : [ "url-encryption-controller" ],
+        "operationId" : "encrypt",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "type" : "string"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/storage/restart" : {
+      "post" : {
+        "tags" : [ "remote-storage-controller" ],
+        "operationId" : "restartServer",
+        "responses" : {
+          "200" : {
+            "description" : "OK"
+          }
+        }
+      }
+    },
+    "/api/storage/refresh" : {
+      "post" : {
+        "tags" : [ "remote-storage-controller" ],
+        "operationId" : "refresh",
+        "parameters" : [ {
+          "name" : "lastValidated",
+          "in" : "query",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : { }
+          }
+        }
+      }
+    },
+    "/api/storage/refreshAllEvents" : {
+      "post" : {
+        "tags" : [ "remote-storage-controller" ],
+        "operationId" : "refreshAllEvents",
+        "parameters" : [ {
+          "name" : "lastValidated",
+          "in" : "query",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/UpdateEvent"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/storage/queryAppointments" : {
+      "post" : {
+        "tags" : [ "remote-storage-controller" ],
+        "operationId" : "queryAppointments",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/QueryAppointments"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/AppointmentMap"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/storage/merge" : {
+      "post" : {
+        "tags" : [ "remote-storage-controller" ],
+        "operationId" : "doMerge",
+        "parameters" : [ {
+          "name" : "lastSynched",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/MergeRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/UpdateEvent"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/storage/identifier" : {
+      "post" : {
+        "tags" : [ "remote-storage-controller" ],
+        "operationId" : "createIdentifier",
+        "parameters" : [ {
+          "name" : "raplaType",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "count",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int32"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "array",
+                  "items" : {
+                    "type" : "string"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/storage/entity/recursiveSync" : {
+      "post" : {
+        "tags" : [ "remote-storage-controller" ],
+        "operationId" : "getEntityRecursive",
+        "parameters" : [ {
+          "name" : "errorIfNotFound",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "boolean"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "type" : "array",
+                "items" : {
+                  "$ref" : "#/components/schemas/SerializableReferenceInfo"
+                }
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/UpdateEvent"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/storage/entity/dependent" : {
+      "post" : {
+        "tags" : [ "remote-storage-controller" ],
+        "operationId" : "getEntityDependencies",
+        "parameters" : [ {
+          "name" : "errorIfNotFound",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "boolean"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "type" : "array",
+                "items" : {
+                  "$ref" : "#/components/schemas/SerializableReferenceInfo"
+                }
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/UpdateEvent"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/storage/dispatch" : {
+      "post" : {
+        "tags" : [ "remote-storage-controller" ],
+        "operationId" : "dispatch",
+        "requestBody" : {
+          "content" : {
+            "application/json" : { }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/UpdateEvent"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/storage/confirm/email" : {
+      "post" : {
+        "tags" : [ "remote-storage-controller" ],
+        "operationId" : "confirmEmail",
+        "parameters" : [ {
+          "name" : "username",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "type" : "string"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK"
+          }
+        }
+      }
+    },
+    "/api/storage/change/password" : {
+      "post" : {
+        "tags" : [ "remote-storage-controller" ],
+        "operationId" : "changePassword",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/PasswordPost"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK"
+          }
+        }
+      }
+    },
+    "/api/storage/change/name" : {
+      "post" : {
+        "tags" : [ "remote-storage-controller" ],
+        "operationId" : "changeName",
+        "parameters" : [ {
+          "name" : "username",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "title",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "surename",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "type" : "string"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK"
+          }
+        }
+      }
+    },
+    "/api/storage/change/email" : {
+      "post" : {
+        "tags" : [ "remote-storage-controller" ],
+        "operationId" : "changeEmail",
+        "parameters" : [ {
+          "name" : "username",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "type" : "string"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK"
+          }
+        }
+      }
+    },
+    "/api/storage/allocatable/date/next" : {
+      "post" : {
+        "tags" : [ "remote-storage-controller" ],
+        "operationId" : "getNextAllocatableDate",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/NextAllocatableDateRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "string",
+                  "format" : "date-time"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/storage/allocatable/bindings/first" : {
+      "post" : {
+        "tags" : [ "remote-storage-controller" ],
+        "operationId" : "getFirstAllocatableBindings",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/AllocatableBindingsRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/BindingMap"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/storage/allocatable/bindings/all" : {
+      "post" : {
+        "tags" : [ "remote-storage-controller" ],
+        "operationId" : "getAllAllocatableBindings",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/AllocatableBindingsRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "array",
+                  "items" : {
+                    "$ref" : "#/components/schemas/ReservationImpl"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/mail/send" : {
+      "post" : {
+        "tags" : [ "mail-to-user-controller" ],
+        "operationId" : "sendMail",
+        "parameters" : [ {
+          "name" : "username",
+          "in" : "query",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "subject",
+          "in" : "header",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "type" : "string"
+              }
+            }
+          }
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK"
+          }
+        }
+      }
+    },
+    "/api/mail/config" : {
+      "get" : {
+        "tags" : [ "mail-config-controller" ],
+        "operationId" : "getConfig",
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/DefaultConfiguration"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post" : {
+        "tags" : [ "mail-config-controller" ],
+        "operationId" : "testMail",
+        "parameters" : [ {
+          "name" : "defaultSender",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/DefaultConfiguration"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK"
+          }
+        }
+      }
+    },
+    "/api/locale" : {
+      "post" : {
+        "tags" : [ "remote-locale-controller" ],
+        "operationId" : "countries",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "type" : "array",
+                "items" : {
+                  "type" : "string"
+                },
+                "uniqueItems" : true
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object",
+                  "additionalProperties" : {
+                    "type" : "array",
+                    "items" : {
+                      "type" : "string"
+                    },
+                    "uniqueItems" : true
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/jndi" : {
+      "get" : {
+        "tags" : [ "jndi-config-controller" ],
+        "operationId" : "getConfig_1",
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/DefaultConfiguration"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post" : {
+        "tags" : [ "jndi-config-controller" ],
+        "operationId" : "test",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/MailTestRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "boolean"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/edit/validate-recurrence" : {
+      "post" : {
+        "tags" : [ "reservation-edit-controller" ],
+        "operationId" : "validateRecurrence",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/RecurrenceRule"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/RecurrenceValidation"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/edit/expand-blocks" : {
+      "post" : {
+        "tags" : [ "reservation-edit-controller" ],
+        "operationId" : "expandBlocks",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/ExpandBlocksRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "array",
+                  "items" : {
+                    "$ref" : "#/components/schemas/AppointmentBlockDto"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/edit/check-conflicts" : {
+      "post" : {
+        "tags" : [ "reservation-edit-controller" ],
+        "operationId" : "checkConflicts",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/ConflictCheckRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ConflictReport"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/auth/refresh" : {
+      "post" : {
+        "tags" : [ "auth-controller" ],
+        "operationId" : "refresh_1",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/RefreshRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/TokenResponse"
+                }
+              }
+            }
+          }
+        },
+        "deprecated" : true
+      }
+    },
+    "/api/auth/oauth/exchange/{providerId}" : {
+      "post" : {
+        "tags" : [ "o-auth-exchange-controller" ],
+        "operationId" : "exchange",
+        "parameters" : [ {
+          "name" : "providerId",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/x-www-form-urlencoded" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/MultiValueMapStringString"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/auth/logout" : {
+      "post" : {
+        "tags" : [ "auth-controller" ],
+        "operationId" : "logout",
+        "parameters" : [ {
+          "name" : "Authorization",
+          "in" : "header",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK"
+          }
+        },
+        "deprecated" : true
+      }
+    },
+    "/api/auth/login" : {
+      "post" : {
+        "tags" : [ "auth-controller" ],
+        "operationId" : "login",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/LoginCredentials"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/TokenResponse"
+                }
+              }
+            }
+          }
+        },
+        "deprecated" : true
+      }
+    },
+    "/api/auth/api-keys" : {
+      "get" : {
+        "tags" : [ "api-key-controller" ],
+        "operationId" : "list",
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "array",
+                  "items" : {
+                    "$ref" : "#/components/schemas/KeyMetadata"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post" : {
+        "tags" : [ "api-key-controller" ],
+        "operationId" : "create",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/CreateRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/CreateResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/archiver" : {
+      "get" : {
+        "tags" : [ "archiver-controller" ],
+        "operationId" : "isExportEnabled",
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "boolean"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post" : {
+        "tags" : [ "archiver-controller" ],
+        "operationId" : "delete",
+        "parameters" : [ {
+          "name" : "olderThanInDays",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int32"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK"
+          }
+        }
+      }
+    },
+    "/api/archiver/restore" : {
+      "post" : {
+        "tags" : [ "archiver-controller" ],
+        "operationId" : "restore",
+        "responses" : {
+          "200" : {
+            "description" : "OK"
+          }
+        }
+      }
+    },
+    "/api/archiver/backup" : {
+      "post" : {
+        "tags" : [ "archiver-controller" ],
+        "operationId" : "backupNow",
+        "responses" : {
+          "200" : {
+            "description" : "OK"
+          }
+        }
+      }
+    },
+    "/api/admin/panels/{id}/save" : {
+      "post" : {
+        "tags" : [ "preferences-admin-controller" ],
+        "operationId" : "savePanel",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "type" : "object",
+                "additionalProperties" : { }
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/PanelDefinition"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/admin/panels/{id}/action/{actionId}" : {
+      "post" : {
+        "tags" : [ "preferences-admin-controller" ],
+        "operationId" : "invokeAction",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "actionId",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "type" : "object",
+                "additionalProperties" : { }
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ActionResult"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/table/reservations" : {
+      "get" : {
+        "tags" : [ "table-view-controller" ],
+        "operationId" : "reservations",
+        "parameters" : [ {
+          "name" : "from",
+          "in" : "query",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "to",
+          "in" : "query",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "columns",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "array",
+            "items" : {
+              "type" : "string"
+            }
+          }
+        }, {
+          "name" : "sort",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "array",
+            "items" : {
+              "type" : "string"
+            }
+          }
+        }, {
+          "name" : "cursor",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "pageSize",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int32"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/TablePage"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/table/config" : {
+      "get" : {
+        "tags" : [ "table-view-controller" ],
+        "operationId" : "config",
+        "parameters" : [ {
+          "name" : "tableName",
+          "in" : "query",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/TableColumnsResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/table/columns/catalog" : {
+      "get" : {
+        "tags" : [ "table-view-controller" ],
+        "operationId" : "columnsCatalog",
+        "parameters" : [ {
+          "name" : "tableName",
+          "in" : "query",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/TableColumnsResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/table/appointments" : {
+      "get" : {
+        "tags" : [ "table-view-controller" ],
+        "operationId" : "appointments",
+        "parameters" : [ {
+          "name" : "from",
+          "in" : "query",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "to",
+          "in" : "query",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "columns",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "array",
+            "items" : {
+              "type" : "string"
+            }
+          }
+        }, {
+          "name" : "sort",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "array",
+            "items" : {
+              "type" : "string"
+            }
+          }
+        }, {
+          "name" : "cursor",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "pageSize",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int32"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/TablePage"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/storage/user" : {
+      "get" : {
+        "tags" : [ "remote-storage-controller" ],
+        "operationId" : "getUsername",
+        "parameters" : [ {
+          "name" : "userId",
+          "in" : "query",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/storage/resources" : {
+      "get" : {
+        "tags" : [ "remote-storage-controller" ],
+        "operationId" : "getResources",
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/UpdateEvent"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/storage/conflicts" : {
+      "get" : {
+        "tags" : [ "remote-storage-controller" ],
+        "operationId" : "getConflicts",
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "array",
+                  "items" : {
+                    "$ref" : "#/components/schemas/ConflictImpl"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/storage/change/canchangepassword" : {
+      "get" : {
+        "tags" : [ "remote-storage-controller" ],
+        "operationId" : "canChangePassword",
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "boolean"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/plugins" : {
+      "get" : {
+        "tags" : [ "plugins-controller" ],
+        "operationId" : "list_1",
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "array",
+                  "items" : {
+                    "$ref" : "#/components/schemas/PluginInfo"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/plugins/{id}" : {
+      "get" : {
+        "tags" : [ "plugins-controller" ],
+        "operationId" : "get",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/PluginInfo"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/mail/config/external" : {
+      "get" : {
+        "tags" : [ "mail-config-controller" ],
+        "operationId" : "isExternalConfigEnabled",
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "boolean"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/locale/{id}" : {
+      "get" : {
+        "tags" : [ "remote-locale-controller" ],
+        "operationId" : "locale",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "locale",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/LocalePackage"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/ical/timezones" : {
+      "get" : {
+        "tags" : [ "i-cal-timezones-controller" ],
+        "operationId" : "getICalTimezones",
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "array",
+                  "items" : {
+                    "type" : "string"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/ical/timezones/default" : {
+      "get" : {
+        "tags" : [ "i-cal-timezones-controller" ],
+        "operationId" : "getDefaultTimezone",
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/ical/config" : {
+      "get" : {
+        "tags" : [ "i-cal-config-controller" ],
+        "operationId" : "getConfig_2",
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/DefaultConfiguration"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/ical/config/user" : {
+      "get" : {
+        "tags" : [ "i-cal-config-controller" ],
+        "operationId" : "getUserSettings",
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/UserICalSettings"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/ical/config/default" : {
+      "get" : {
+        "tags" : [ "i-cal-config-controller" ],
+        "operationId" : "getUserDefaultConfig",
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/DefaultConfiguration"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/exchange/config/user" : {
+      "get" : {
+        "tags" : [ "exchange-connector-config-controller" ],
+        "operationId" : "getUserSettings_1",
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ExchangeUserSettings"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/exchange/config/timezones" : {
+      "get" : {
+        "tags" : [ "exchange-connector-config-controller" ],
+        "operationId" : "getTimezones",
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "array",
+                  "items" : {
+                    "type" : "string"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/exchange/config/default" : {
+      "get" : {
+        "tags" : [ "exchange-connector-config-controller" ],
+        "operationId" : "getConfig_3",
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/RaplaConfiguration"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/eventtimecalculator/user-config" : {
+      "get" : {
+        "tags" : [ "event-time-calculator-config-controller" ],
+        "operationId" : "getUserConfig",
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/DefaultConfiguration"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/eventtimecalculator/system-config" : {
+      "get" : {
+        "tags" : [ "event-time-calculator-config-controller" ],
+        "operationId" : "getSystemConfig",
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/DefaultConfiguration"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/dynamictypes" : {
+      "get" : {
+        "tags" : [ "rapla-dynamic-types-controller" ],
+        "operationId" : "list_2",
+        "parameters" : [ {
+          "name" : "classificationType",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "array",
+                  "items" : {
+                    "$ref" : "#/components/schemas/DynamicTypeImpl"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/calendar/view" : {
+      "get" : {
+        "tags" : [ "calendar-view-controller" ],
+        "operationId" : "view",
+        "parameters" : [ {
+          "name" : "from",
+          "in" : "query",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "to",
+          "in" : "query",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "strategy",
+          "in" : "query",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "enum" : [ "GROUP_START_TIMES", "BEST_FIT" ]
+          }
+        }, {
+          "name" : "groupBy",
+          "in" : "query",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "enum" : [ "DAY", "RESOURCE" ]
+          }
+        }, {
+          "name" : "allocatables",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "array",
+            "items" : {
+              "type" : "string"
+            }
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/CalendarPage"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/auth/oauth/config" : {
+      "get" : {
+        "tags" : [ "o-auth-config-controller" ],
+        "operationId" : "config_1",
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/OAuthConfig"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/admin/panels" : {
+      "get" : {
+        "tags" : [ "preferences-admin-controller" ],
+        "operationId" : "listPanels",
+        "parameters" : [ {
+          "name" : "scope",
+          "in" : "query",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "enum" : [ "SYSTEM", "PER_USER" ]
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "array",
+                  "items" : {
+                    "$ref" : "#/components/schemas/PanelSummary"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/admin/panels/{id}" : {
+      "get" : {
+        "tags" : [ "preferences-admin-controller" ],
+        "operationId" : "getPanel",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/PanelDefinition"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/auth/api-keys/{id}" : {
+      "delete" : {
+        "tags" : [ "api-key-controller" ],
+        "operationId" : "delete_1",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK"
+          }
+        }
+      }
+    }
+  },
+  "components" : {
+    "schemas" : {
+      "SystemSettings" : {
+        "properties" : {
+          "title" : {
+            "type" : "string"
+          },
+          "timezone" : {
+            "type" : "string"
+          },
+          "locale" : {
+            "type" : "string"
+          },
+          "csvCharset" : {
+            "type" : "string"
+          },
+          "htmlCharset" : {
+            "type" : "string"
+          },
+          "refreshIntervalMs" : {
+            "type" : "integer",
+            "format" : "int32"
+          }
+        }
+      },
+      "UserSettings" : {
+        "properties" : {
+          "language" : {
+            "type" : "string"
+          },
+          "showConflictWarning" : {
+            "type" : "boolean"
+          },
+          "showNotInCalendarWarning" : {
+            "type" : "boolean"
+          },
+          "showAbortEditWarning" : {
+            "type" : "boolean"
+          },
+          "showHolidayWarning" : {
+            "type" : "boolean"
+          },
+          "showHolidayWarningSingleAppointment" : {
+            "type" : "boolean"
+          }
+        }
+      },
+      "DefaultConfiguration" : {
+        "properties" : {
+          "attributes" : {
+            "type" : "object",
+            "additionalProperties" : {
+              "type" : "string"
+            }
+          },
+          "value" : {
+            "type" : "string"
+          },
+          "name" : {
+            "type" : "string"
+          }
+        }
+      },
+      "RaplaConfiguration" : {
+        "properties" : {
+          "attributes" : {
+            "type" : "object",
+            "additionalProperties" : {
+              "type" : "string"
+            }
+          },
+          "children" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/DefaultConfiguration"
+            }
+          },
+          "value" : {
+            "type" : "string"
+          },
+          "name" : {
+            "type" : "string"
+          }
+        }
+      },
+      "EnabledRequest" : {
+        "properties" : {
+          "enabled" : {
+            "type" : "boolean"
+          }
+        }
+      },
+      "PluginInfo" : {
+        "properties" : {
+          "id" : {
+            "type" : "string"
+          },
+          "displayName" : {
+            "type" : "string"
+          },
+          "enabled" : {
+            "type" : "boolean"
+          },
+          "adminOnlyConfig" : {
+            "type" : "boolean"
+          }
+        }
+      },
+      "AttributeImpl" : {
+        "properties" : {
+          "links" : {
+            "type" : "object",
+            "additionalProperties" : {
+              "type" : "array",
+              "items" : {
+                "type" : "string"
+              }
+            }
+          },
+          "id" : {
+            "type" : "string"
+          },
+          "name" : {
+            "$ref" : "#/components/schemas/MultiLanguageName"
+          },
+          "type" : {
+            "type" : "string",
+            "enum" : [ "string", "int", "date", "boolean", "rapla:category", "rapla:allocatable" ]
+          },
+          "key" : {
+            "type" : "string"
+          },
+          "multiSelect" : {
+            "type" : "boolean"
+          },
+          "belongsTo" : {
+            "type" : "boolean"
+          },
+          "packages" : {
+            "type" : "boolean"
+          },
+          "optional" : {
+            "type" : "boolean"
+          },
+          "annotations" : {
+            "type" : "object",
+            "additionalProperties" : {
+              "type" : "string"
+            }
+          },
+          "defaultValue" : {
+            "type" : "string"
+          }
+        }
+      },
+      "DynamicTypeImpl" : {
+        "properties" : {
+          "links" : {
+            "type" : "object",
+            "additionalProperties" : {
+              "type" : "array",
+              "items" : {
+                "type" : "string"
+              }
+            }
+          },
+          "id" : {
+            "type" : "string"
+          },
+          "lastChanged" : {
+            "type" : "string",
+            "format" : "date-time"
+          },
+          "createDate" : {
+            "type" : "string",
+            "format" : "date-time"
+          },
+          "attributes" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/AttributeImpl"
+            }
+          },
+          "permissions" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/PermissionImpl"
+            }
+          },
+          "name" : {
+            "$ref" : "#/components/schemas/MultiLanguageName"
+          },
+          "key" : {
+            "type" : "string"
+          },
+          "annotations" : {
+            "type" : "object",
+            "additionalProperties" : {
+              "$ref" : "#/components/schemas/ParsedText"
+            }
+          }
+        }
+      },
+      "MultiLanguageName" : {
+        "properties" : {
+          "mapLocales" : {
+            "type" : "object",
+            "additionalProperties" : {
+              "type" : "string"
+            }
+          }
+        }
+      },
+      "ParsedText" : {
+        "properties" : {
+          "formatString" : {
+            "type" : "string"
+          }
+        }
+      },
+      "PermissionImpl" : {
+        "properties" : {
+          "links" : {
+            "type" : "object",
+            "additionalProperties" : {
+              "type" : "array",
+              "items" : {
+                "type" : "string"
+              }
+            }
+          },
+          "pEnd" : {
+            "type" : "string",
+            "format" : "date-time"
+          },
+          "pStart" : {
+            "type" : "string",
+            "format" : "date-time"
+          },
+          "maxAdvance" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "minAdvance" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "accessLevel" : {
+            "type" : "string",
+            "enum" : [ "DENIED", "READ_TYPE", "CREATE", "READ_NO_ALLOCATION", "READ", "REQUEST", "ALLOCATE", "ALLOCATE_CONFLICTS", "EDIT", "ADMIN" ]
+          }
+        }
+      },
+      "UpdateEvent" : { },
+      "QueryAppointments" : {
+        "properties" : {
+          "ownerIds" : {
+            "type" : "array",
+            "items" : {
+              "type" : "string"
+            }
+          },
+          "resources" : {
+            "type" : "array",
+            "items" : {
+              "type" : "string"
+            }
+          },
+          "start" : {
+            "type" : "string",
+            "format" : "date-time"
+          },
+          "end" : {
+            "type" : "string",
+            "format" : "date-time"
+          },
+          "annotations" : {
+            "type" : "object",
+            "additionalProperties" : {
+              "type" : "string"
+            }
+          },
+          "requestsOnly" : {
+            "type" : "boolean"
+          }
+        }
+      },
+      "AppointmentImpl" : {
+        "properties" : {
+          "links" : {
+            "type" : "object",
+            "additionalProperties" : {
+              "type" : "array",
+              "items" : {
+                "type" : "string"
+              }
+            }
+          },
+          "id" : {
+            "type" : "string"
+          },
+          "start" : {
+            "type" : "string",
+            "format" : "date-time"
+          },
+          "end" : {
+            "type" : "string",
+            "format" : "date-time"
+          },
+          "repeating" : {
+            "$ref" : "#/components/schemas/RepeatingImpl"
+          },
+          "isWholeDaysSet" : {
+            "type" : "boolean"
+          }
+        }
+      },
+      "AppointmentMap" : {
+        "properties" : {
+          "reservations" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/ReservationImpl"
+            },
+            "uniqueItems" : true
+          },
+          "entityIdToAppointmentIds" : {
+            "type" : "object",
+            "additionalProperties" : {
+              "type" : "array",
+              "items" : {
+                "type" : "string"
+              },
+              "uniqueItems" : true
+            }
+          }
+        }
+      },
+      "ClassificationImpl" : {
+        "properties" : {
+          "typeId" : {
+            "type" : "string"
+          },
+          "type" : {
+            "type" : "string"
+          },
+          "data" : {
+            "type" : "object",
+            "additionalProperties" : {
+              "type" : "array",
+              "items" : {
+                "type" : "string"
+              }
+            }
+          }
+        }
+      },
+      "RepeatingImpl" : {
+        "properties" : {
+          "interval" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "isFixedNumber" : {
+            "type" : "boolean"
+          },
+          "number" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "end" : {
+            "type" : "string",
+            "format" : "date-time"
+          },
+          "repeatingType" : {
+            "type" : "string",
+            "enum" : [ "weekly", "daily", "monthly", "yearly" ]
+          },
+          "exceptions" : {
+            "type" : "array",
+            "items" : {
+              "type" : "string",
+              "format" : "date-time"
+            },
+            "uniqueItems" : true
+          },
+          "weekdays" : {
+            "type" : "array",
+            "items" : {
+              "type" : "integer",
+              "format" : "int32"
+            },
+            "uniqueItems" : true
+          },
+          "frequency" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "monthly" : {
+            "type" : "boolean"
+          },
+          "yearly" : {
+            "type" : "boolean"
+          }
+        }
+      },
+      "ReservationImpl" : {
+        "properties" : {
+          "links" : {
+            "type" : "object",
+            "additionalProperties" : {
+              "type" : "array",
+              "items" : {
+                "type" : "string"
+              }
+            }
+          },
+          "id" : {
+            "type" : "string"
+          },
+          "classification" : {
+            "$ref" : "#/components/schemas/ClassificationImpl"
+          },
+          "appointments" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/AppointmentImpl"
+            }
+          },
+          "permissions" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/PermissionImpl"
+            }
+          },
+          "restrictions" : {
+            "type" : "object",
+            "additionalProperties" : {
+              "type" : "array",
+              "items" : {
+                "type" : "string"
+              }
+            }
+          },
+          "annotations" : {
+            "type" : "object",
+            "additionalProperties" : {
+              "type" : "string"
+            }
+          },
+          "lastChanged" : {
+            "type" : "string",
+            "format" : "date-time"
+          },
+          "createDate" : {
+            "type" : "string",
+            "format" : "date-time"
+          },
+          "requestStatus" : {
+            "type" : "object",
+            "additionalProperties" : {
+              "type" : "string",
+              "enum" : [ "requested" ]
+            }
+          }
+        }
+      },
+      "AllocatableImpl" : {
+        "properties" : {
+          "links" : {
+            "type" : "object",
+            "additionalProperties" : {
+              "type" : "array",
+              "items" : {
+                "type" : "string"
+              }
+            }
+          },
+          "id" : {
+            "type" : "string"
+          },
+          "classification" : {
+            "$ref" : "#/components/schemas/ClassificationImpl"
+          },
+          "permissions" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/PermissionImpl"
+            }
+          },
+          "lastChanged" : {
+            "type" : "string",
+            "format" : "date-time"
+          },
+          "createDate" : {
+            "type" : "string",
+            "format" : "date-time"
+          },
+          "annotations" : {
+            "type" : "object",
+            "additionalProperties" : {
+              "type" : "string"
+            }
+          }
+        }
+      },
+      "MergeRequest" : {
+        "properties" : {
+          "allocatable" : {
+            "$ref" : "#/components/schemas/AllocatableImpl"
+          },
+          "allocatableIds" : {
+            "type" : "array",
+            "items" : {
+              "type" : "string"
+            }
+          }
+        }
+      },
+      "SerializableReferenceInfo" : {
+        "properties" : {
+          "id" : {
+            "type" : "string"
+          },
+          "localname" : {
+            "type" : "string"
+          }
+        }
+      },
+      "PasswordPost" : {
+        "properties" : {
+          "username" : {
+            "type" : "string"
+          },
+          "oldPassword" : {
+            "type" : "string"
+          },
+          "newPassword" : {
+            "type" : "string"
+          }
+        }
+      },
+      "NextAllocatableDateRequest" : {
+        "properties" : {
+          "allocatableIds" : {
+            "type" : "array",
+            "items" : {
+              "type" : "string"
+            }
+          },
+          "appointment" : {
+            "$ref" : "#/components/schemas/AppointmentImpl"
+          },
+          "reservationIds" : {
+            "type" : "array",
+            "items" : {
+              "type" : "string"
+            }
+          },
+          "worktimeStartMinutes" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "worktimeEndMinutes" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "excludedDays" : {
+            "type" : "array",
+            "items" : {
+              "type" : "integer",
+              "format" : "int32"
+            }
+          },
+          "rowsPerHour" : {
+            "type" : "integer",
+            "format" : "int32"
+          }
+        }
+      },
+      "AllocatableBindingsRequest" : {
+        "properties" : {
+          "allocatableIds" : {
+            "type" : "array",
+            "items" : {
+              "type" : "string"
+            }
+          },
+          "appointments" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/AppointmentImpl"
+            }
+          },
+          "reservationIds" : {
+            "type" : "array",
+            "items" : {
+              "type" : "string"
+            }
+          }
+        }
+      },
+      "BindingMap" : {
+        "properties" : {
+          "bindings" : {
+            "type" : "object",
+            "additionalProperties" : {
+              "type" : "array",
+              "items" : {
+                "type" : "string"
+              }
+            }
+          }
+        }
+      },
+      "MailTestRequest" : {
+        "properties" : {
+          "config" : {
+            "$ref" : "#/components/schemas/DefaultConfiguration"
+          },
+          "username" : {
+            "type" : "string"
+          },
+          "password" : {
+            "type" : "string"
+          }
+        }
+      },
+      "RecurrenceRule" : {
+        "properties" : {
+          "type" : {
+            "type" : "string",
+            "enum" : [ "weekly", "daily", "monthly", "yearly" ]
+          },
+          "interval" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "weekdays" : {
+            "type" : "array",
+            "items" : {
+              "type" : "integer",
+              "format" : "int32"
+            },
+            "uniqueItems" : true
+          },
+          "endingMode" : {
+            "type" : "string",
+            "enum" : [ "UNTIL", "N_TIMES", "FOREVER" ]
+          },
+          "endDate" : {
+            "type" : "string",
+            "format" : "date-time"
+          },
+          "repeatCount" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "appointmentStart" : {
+            "type" : "string",
+            "format" : "date-time"
+          }
+        }
+      },
+      "Issue" : {
+        "properties" : {
+          "code" : {
+            "type" : "string"
+          },
+          "detail" : {
+            "type" : "string"
+          }
+        }
+      },
+      "RecurrenceValidation" : {
+        "properties" : {
+          "valid" : {
+            "type" : "boolean"
+          },
+          "issues" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/Issue"
+            }
+          }
+        }
+      },
+      "AppointmentSpec" : {
+        "properties" : {
+          "start" : {
+            "type" : "string",
+            "format" : "date-time"
+          },
+          "end" : {
+            "type" : "string",
+            "format" : "date-time"
+          },
+          "recurrence" : {
+            "$ref" : "#/components/schemas/RecurrenceRule"
+          }
+        }
+      },
+      "ExpandBlocksRequest" : {
+        "properties" : {
+          "appointment" : {
+            "$ref" : "#/components/schemas/AppointmentSpec"
+          },
+          "windowStart" : {
+            "type" : "string",
+            "format" : "date-time"
+          },
+          "windowEnd" : {
+            "type" : "string",
+            "format" : "date-time"
+          },
+          "excludeExceptions" : {
+            "type" : "boolean"
+          }
+        }
+      },
+      "AppointmentBlockDto" : {
+        "properties" : {
+          "start" : {
+            "type" : "string",
+            "format" : "date-time"
+          },
+          "end" : {
+            "type" : "string",
+            "format" : "date-time"
+          }
+        }
+      },
+      "ConflictCheckRequest" : {
+        "properties" : {
+          "allocatableIds" : {
+            "type" : "array",
+            "items" : {
+              "type" : "string"
+            }
+          },
+          "appointments" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/AppointmentSpec"
+            }
+          },
+          "today" : {
+            "type" : "string",
+            "format" : "date"
+          }
+        }
+      },
+      "AllocationOutcomeDto" : {
+        "properties" : {
+          "allocatableId" : {
+            "type" : "string"
+          },
+          "conflictingAppointments" : {
+            "type" : "array",
+            "items" : {
+              "type" : "boolean"
+            }
+          },
+          "conflictCount" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "permissionConflictCount" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "aggregateRequestStatus" : {
+            "type" : "string"
+          }
+        }
+      },
+      "ConflictReport" : {
+        "properties" : {
+          "outcomes" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/AllocationOutcomeDto"
+            }
+          }
+        }
+      },
+      "RefreshRequest" : {
+        "properties" : {
+          "refreshToken" : {
+            "type" : "string"
+          }
+        }
+      },
+      "TokenResponse" : {
+        "properties" : {
+          "accessToken" : {
+            "type" : "string"
+          },
+          "refreshToken" : {
+            "type" : "string"
+          },
+          "expiresIn" : {
+            "type" : "integer",
+            "format" : "int64"
+          }
+        }
+      },
+      "MultiValueMapStringString" : {
+        "type" : "object",
+        "additionalProperties" : {
+          "type" : "array",
+          "items" : {
+            "type" : "string"
+          }
+        }
+      },
+      "LoginCredentials" : {
+        "properties" : {
+          "username" : {
+            "type" : "string"
+          },
+          "password" : {
+            "type" : "string"
+          },
+          "connectAs" : {
+            "type" : "string"
+          }
+        }
+      },
+      "CreateRequest" : {
+        "properties" : {
+          "label" : {
+            "type" : "string"
+          },
+          "expiresInDays" : {
+            "type" : "integer",
+            "format" : "int64"
+          }
+        }
+      },
+      "CreateResponse" : {
+        "properties" : {
+          "id" : {
+            "type" : "string"
+          },
+          "label" : {
+            "type" : "string"
+          },
+          "alg" : {
+            "type" : "string"
+          },
+          "thumbprint" : {
+            "type" : "string"
+          },
+          "createdAt" : {
+            "type" : "string"
+          },
+          "expiresAt" : {
+            "type" : "string"
+          },
+          "key" : {
+            "type" : "string"
+          }
+        }
+      },
+      "ActionButton" : {
+        "properties" : {
+          "key" : {
+            "type" : "string"
+          },
+          "label" : {
+            "type" : "string"
+          },
+          "description" : {
+            "type" : "string"
+          },
+          "confirmRequired" : {
+            "type" : "boolean"
+          },
+          "confirmMessage" : {
+            "type" : "string"
+          }
+        }
+      },
+      "Field" : {
+        "properties" : {
+          "key" : {
+            "type" : "string"
+          },
+          "label" : {
+            "type" : "string"
+          },
+          "type" : {
+            "type" : "string",
+            "enum" : [ "BOOL", "TEXT", "LONG_TEXT", "PASSWORD", "INT", "SELECT", "RADIO_GROUP", "DISPLAY_ONLY", "ACTION_BUTTON", "JSON_EDITOR" ]
+          },
+          "helpText" : {
+            "type" : "string"
+          },
+          "readOnly" : {
+            "type" : "boolean"
+          },
+          "typeConfig" : {
+            "type" : "object",
+            "additionalProperties" : {
+              "type" : "object"
+            }
+          }
+        }
+      },
+      "PanelDefinition" : {
+        "properties" : {
+          "id" : {
+            "type" : "string"
+          },
+          "scope" : {
+            "type" : "string",
+            "enum" : [ "SYSTEM", "PER_USER" ]
+          },
+          "path" : {
+            "type" : "array",
+            "items" : {
+              "type" : "string"
+            }
+          },
+          "title" : {
+            "type" : "string"
+          },
+          "description" : {
+            "type" : "string"
+          },
+          "fields" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/Field"
+            }
+          },
+          "actions" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/ActionButton"
+            }
+          },
+          "values" : {
+            "type" : "object",
+            "additionalProperties" : {
+              "type" : "object"
+            }
+          }
+        }
+      },
+      "ActionResult" : {
+        "properties" : {
+          "success" : {
+            "type" : "boolean"
+          },
+          "message" : {
+            "type" : "string"
+          },
+          "updatedValues" : {
+            "type" : "object",
+            "additionalProperties" : {
+              "type" : "object"
+            }
+          }
+        }
+      },
+      "TableColumnDescriptor" : {
+        "properties" : {
+          "id" : {
+            "type" : "string"
+          },
+          "label" : {
+            "type" : "string"
+          },
+          "type" : {
+            "type" : "string",
+            "enum" : [ "STRING", "INTEGER", "LONG", "DOUBLE", "DATE", "BOOLEAN" ]
+          }
+        }
+      },
+      "TablePage" : {
+        "properties" : {
+          "columns" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/TableColumnDescriptor"
+            }
+          },
+          "rows" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/TableRow"
+            }
+          },
+          "totalCount" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "nextCursor" : {
+            "type" : "string"
+          },
+          "incomplete" : {
+            "type" : "boolean"
+          }
+        }
+      },
+      "TableRow" : {
+        "properties" : {
+          "id" : {
+            "type" : "string"
+          },
+          "cells" : {
+            "type" : "object",
+            "additionalProperties" : {
+              "type" : "object"
+            }
+          }
+        }
+      },
+      "TableColumnsResponse" : {
+        "properties" : {
+          "tableName" : {
+            "type" : "string"
+          },
+          "columns" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/TableColumnDescriptor"
+            }
+          }
+        }
+      },
+      "ConflictImpl" : {
+        "properties" : {
+          "links" : {
+            "type" : "object",
+            "additionalProperties" : {
+              "type" : "array",
+              "items" : {
+                "type" : "string"
+              }
+            }
+          },
+          "id" : {
+            "type" : "string"
+          },
+          "startDate" : {
+            "type" : "string",
+            "format" : "date-time"
+          },
+          "lastChanged" : {
+            "type" : "string",
+            "format" : "date-time"
+          },
+          "reservation1Name" : {
+            "type" : "string"
+          },
+          "reservation2Name" : {
+            "type" : "string"
+          },
+          "repeatingType1" : {
+            "type" : "string",
+            "enum" : [ "weekly", "daily", "monthly", "yearly" ]
+          },
+          "repeatingType2" : {
+            "type" : "string",
+            "enum" : [ "weekly", "daily", "monthly", "yearly" ]
+          },
+          "appointment1Enabled" : {
+            "type" : "boolean"
+          },
+          "appointment2Enabled" : {
+            "type" : "boolean"
+          },
+          "appointment1Editable" : {
+            "type" : "boolean"
+          },
+          "appointment2Editable" : {
+            "type" : "boolean"
+          }
+        }
+      },
+      "I18nLocaleFormats" : {
+        "properties" : {
+          "isAmPm" : {
+            "type" : "boolean"
+          },
+          "amPm" : {
+            "type" : "array",
+            "items" : {
+              "type" : "string"
+            }
+          },
+          "formatDateShort" : {
+            "type" : "string"
+          },
+          "formatDateLong" : {
+            "type" : "string"
+          },
+          "weekdays" : {
+            "type" : "array",
+            "items" : {
+              "type" : "string"
+            }
+          },
+          "shortWeekdays" : {
+            "type" : "array",
+            "items" : {
+              "type" : "string"
+            }
+          },
+          "months" : {
+            "type" : "array",
+            "items" : {
+              "type" : "string"
+            }
+          },
+          "shortMonths" : {
+            "type" : "array",
+            "items" : {
+              "type" : "string"
+            }
+          },
+          "formatHour" : {
+            "type" : "string"
+          },
+          "formatMonthYear" : {
+            "type" : "string"
+          },
+          "formatTime" : {
+            "type" : "string"
+          }
+        }
+      },
+      "LocalePackage" : {
+        "properties" : {
+          "formats" : {
+            "$ref" : "#/components/schemas/I18nLocaleFormats"
+          },
+          "bundles" : {
+            "type" : "object",
+            "additionalProperties" : {
+              "type" : "object",
+              "additionalProperties" : {
+                "type" : "string"
+              }
+            }
+          },
+          "availableLanguages" : {
+            "type" : "array",
+            "items" : {
+              "type" : "string"
+            },
+            "uniqueItems" : true
+          },
+          "language" : {
+            "type" : "string"
+          },
+          "country" : {
+            "type" : "string"
+          }
+        }
+      },
+      "UserICalSettings" : {
+        "properties" : {
+          "daysBefore" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "daysAfter" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "exportAttendees" : {
+            "type" : "boolean"
+          },
+          "participationStatus" : {
+            "type" : "string"
+          }
+        }
+      },
+      "ExchangeUserSettings" : {
+        "properties" : {
+          "sendInvitationAndCancellation" : {
+            "type" : "boolean"
+          }
+        }
+      },
+      "CalendarPage" : {
+        "properties" : {
+          "from" : {
+            "type" : "string",
+            "format" : "date"
+          },
+          "to" : {
+            "type" : "string",
+            "format" : "date"
+          },
+          "groupBy" : {
+            "type" : "string",
+            "enum" : [ "DAY", "RESOURCE" ]
+          },
+          "strategy" : {
+            "type" : "string",
+            "enum" : [ "GROUP_START_TIMES", "BEST_FIT" ]
+          },
+          "columns" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/Column"
+            }
+          },
+          "blocks" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/RenderedBlock"
+            }
+          }
+        }
+      },
+      "Column" : {
+        "properties" : {
+          "id" : {
+            "type" : "string"
+          },
+          "label" : {
+            "type" : "string"
+          },
+          "index" : {
+            "type" : "integer",
+            "format" : "int32"
+          }
+        }
+      },
+      "RenderedBlock" : {
+        "properties" : {
+          "reservationId" : {
+            "type" : "string"
+          },
+          "appointmentId" : {
+            "type" : "string"
+          },
+          "columnIndex" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "slotIndex" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "slotCount" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "start" : {
+            "type" : "string",
+            "format" : "date-time"
+          },
+          "end" : {
+            "type" : "string",
+            "format" : "date-time"
+          },
+          "colorsHex" : {
+            "type" : "array",
+            "items" : {
+              "type" : "string"
+            }
+          },
+          "isException" : {
+            "type" : "boolean"
+          },
+          "isRequest" : {
+            "type" : "boolean"
+          },
+          "name" : {
+            "type" : "string"
+          },
+          "tooltip" : {
+            "type" : "string"
+          }
+        }
+      },
+      "OAuthConfig" : {
+        "properties" : {
+          "enabled" : {
+            "type" : "boolean"
+          },
+          "clientId" : {
+            "type" : "string"
+          },
+          "issuer" : {
+            "type" : "string"
+          },
+          "authorizeUrl" : {
+            "type" : "string"
+          },
+          "tokenUrl" : {
+            "type" : "string"
+          },
+          "logoutUrl" : {
+            "type" : "string"
+          },
+          "jwksUrl" : {
+            "type" : "string"
+          },
+          "userinfoUrl" : {
+            "type" : "string"
+          },
+          "endSessionUrl" : {
+            "type" : "string"
+          },
+          "scopes" : {
+            "type" : "array",
+            "items" : {
+              "type" : "string"
+            }
+          },
+          "showPasteFallback" : {
+            "type" : "boolean"
+          },
+          "picker" : {
+            "$ref" : "#/components/schemas/Picker"
+          },
+          "providers" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/ProviderEntry"
+            }
+          }
+        }
+      },
+      "Picker" : {
+        "properties" : {
+          "mode" : {
+            "type" : "string"
+          },
+          "primary" : {
+            "type" : "string"
+          }
+        }
+      },
+      "ProviderEntry" : {
+        "properties" : {
+          "id" : {
+            "type" : "string"
+          },
+          "displayName" : {
+            "type" : "string"
+          },
+          "icon" : {
+            "type" : "string"
+          },
+          "order" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "webPickerVisible" : {
+            "type" : "boolean"
+          },
+          "clientId" : {
+            "type" : "string"
+          },
+          "issuer" : {
+            "type" : "string"
+          },
+          "authorizeUrl" : {
+            "type" : "string"
+          },
+          "tokenUrl" : {
+            "type" : "string"
+          },
+          "jwksUrl" : {
+            "type" : "string"
+          },
+          "endSessionUrl" : {
+            "type" : "string"
+          },
+          "scopes" : {
+            "type" : "array",
+            "items" : {
+              "type" : "string"
+            }
+          },
+          "extraAuthorizeParams" : {
+            "type" : "object",
+            "additionalProperties" : {
+              "type" : "string"
+            }
+          }
+        }
+      },
+      "KeyMetadata" : {
+        "properties" : {
+          "id" : {
+            "type" : "string"
+          },
+          "label" : {
+            "type" : "string"
+          },
+          "alg" : {
+            "type" : "string"
+          },
+          "thumbprint" : {
+            "type" : "string"
+          },
+          "createdAt" : {
+            "type" : "string"
+          },
+          "expiresAt" : {
+            "type" : "string"
+          }
+        }
+      },
+      "PanelSummary" : {
+        "properties" : {
+          "id" : {
+            "type" : "string"
+          },
+          "scope" : {
+            "type" : "string",
+            "enum" : [ "SYSTEM", "PER_USER" ]
+          },
+          "path" : {
+            "type" : "array",
+            "items" : {
+              "type" : "string"
+            }
+          },
+          "title" : {
+            "type" : "string"
+          }
+        }
+      }
+    },
+    "securitySchemes" : {
+      "oauth2" : {
+        "type" : "oauth2",
+        "flows" : {
+          "authorizationCode" : {
+            "authorizationUrl" : "/oauth2/authorize",
+            "tokenUrl" : "/oauth2/token",
+            "scopes" : {
+              "openid" : "OIDC subject identity",
+              "profile" : "User profile claims"
+            }
+          }
+        }
+      },
+      "bearerAuth" : {
+        "type" : "http",
+        "description" : "Paste a raw access token (e.g. from POST /api/auth/login). Manual fallback when OAuth2 isn't convenient.",
+        "scheme" : "bearer",
+        "bearerFormat" : "JWT"
+      }
+    }
+  }
+}

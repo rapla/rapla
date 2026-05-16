@@ -9,7 +9,6 @@ public class RemoteConnectionInfo
     String accessToken;
     String refreshToken;
     String idToken;
-    String refreshUrl;
     String logoutUrl;
     String serverURL;
     transient StatusUpdater statusUpdater;
@@ -63,14 +62,6 @@ public class RemoteConnectionInfo
 
     public String getIdToken() {
         return idToken;
-    }
-
-    public void setRefreshUrl(String refreshUrl) {
-        this.refreshUrl = refreshUrl;
-    }
-
-    public String getRefreshUrl() {
-        return refreshUrl;
     }
 
     public void setLogoutUrl(String logoutUrl) {

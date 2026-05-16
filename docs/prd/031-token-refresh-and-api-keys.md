@@ -1,7 +1,16 @@
 # PRD 031: Refresh Tokens & API Keys — IdP-portable design
 
-**Status:** in-progress — refresh-token half shipped 2026-05-12 (awaits e2e verification 2026-05-13); API-keys half still draft.
+**Status:** in-progress — refresh-token half consolidated onto `/oauth2/token` 2026-05-16 (PRD 041); API-keys half **superseded by [PRD 043](043-api-keys-jwt-pat.md)** (server-minted asymmetric JWT, GitHub-PAT flow).
 **Date:** 2026-05-12
+
+> **2026-05-16 update.** Refresh-token consolidation done in PRD 041 — both
+> `/api/auth/login`-issued and `/oauth2/authorize`-issued refresh tokens now
+> share `RefreshSessionService` (single hash slot per user, never-rotate, full
+> JWT in user prefs for multi-tab share). The API-key half of THIS PRD is
+> superseded by PRD 043 (server generates a one-shot asymmetric keypair, signs
+> a single JWT with the private key, stores only the public key, discards the
+> private key — a stolen backup yields public keys only, useless for
+> impersonation). Below text retained for historical context.
 
 **Shipped 2026-05-12 (refresh-token half):**
 - `/api/auth/login` mints access (1h) + refresh (30d) as RSA-signed JWTs (signing key from `RaplaKeyStorage`, survives restart).

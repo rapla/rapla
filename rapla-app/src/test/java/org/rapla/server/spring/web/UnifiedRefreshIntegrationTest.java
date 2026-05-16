@@ -17,6 +17,8 @@ import tools.jackson.databind.json.JsonMapper;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
@@ -31,15 +33,23 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 /**
- * Locks in the PRD 031 unified-refresh design: a refresh token issued at
- * {@code /auth/login} can be redeemed at {@code /auth/refresh}, yielding a
- * new access token that unlocks protected endpoints. After the OAuth token
- * customizer (typ=refresh claim), this also has to be true for refresh
- * tokens issued by Spring Authorization Server's {@code /oauth2/token} —
- * verified indirectly via the {@code typ=refresh} claim being present on
- * SAS-issued tokens. Driving the full PKCE flow under MockMvc is harder
- * than the value justifies; the discovery shape + AuthControllerIntegrationTest
- * already cover that side.
+ * Locks in the PRD 041 unified-refresh design: a refresh token issued at
+ * {@code /oauth2/token grant_type=password} can be redeemed at
+ * {@code /oauth2/token grant_type=refresh_token}, yielding a new access
+ * token that unlocks protected endpoints. Same JWT format ({@code typ=refresh},
+ * persistent RSA-signed) for both grants — single mechanism in
+ * {@code RefreshSessionService}.
+ *
+ * <p>Behaviour locked in:
+ * <ul>
+ *   <li>Multi-tab share: refresh returns the SAME token (never-rotate);
+ *       a second login also returns the same stored token.</li>
+ *   <li>Restart-safe: validation is stateless (signature + {@code typ=refresh}
+ *       + match against full token in user prefs).</li>
+ *   <li>Single-token-per-user: revocation via {@code /oauth2/revoke} clears
+ *       the prefs entry → all subsequent refreshes fail.</li>
+ *   <li>{@code typ=access} cannot be redeemed at the refresh grant.</li>
+ * </ul>
  */
 @SpringBootTest(classes = RaplaSpringBootApplication.class)
 @AutoConfigureMockMvc
@@ -74,37 +84,31 @@ class UnifiedRefreshIntegrationTest
     {
         ObjectMapper mapper = JsonMapper.builder().build();
 
-        // 1. Login
-        MvcResult login = mockMvc.perform(post("/api/auth/login")
-                        .contentType("application/json")
-                        .content("{\"username\":\"homer\",\"password\":\"duffs\"}"))
-                .andExpect(status().isOk())
-                .andReturn();
-        JsonNode tokens = mapper.readTree(login.getResponse().getContentAsString());
-        String firstAccess = tokens.get("accessToken").asString();
-        String refreshToken = tokens.get("refreshToken").asString();
-        assertNotNull(firstAccess);
-        assertNotNull(refreshToken);
+        // 1. Login via /oauth2/token grant_type=password
+        OAuthTestSupport.TokenPair pair = OAuthTestSupport.loginAsWithRefresh(mockMvc, "homer", "duffs");
+        String firstAccess = pair.accessToken();
+        String refreshToken = pair.refreshToken();
 
-        // 2. Old access token unlocks /resources (baseline)
+        // 2. First access token unlocks /resources (baseline)
         mockMvc.perform(get("/api/resources").header("Authorization", "Bearer " + firstAccess))
                 .andExpect(status().isOk());
 
-        // 3. Redeem refresh token for a new access token
-        MvcResult refreshed = mockMvc.perform(post("/api/auth/refresh")
-                        .contentType("application/json")
-                        .content("{\"refreshToken\":\"" + refreshToken + "\"}"))
+        // 3. Redeem refresh token at /oauth2/token grant_type=refresh_token
+        MvcResult refreshed = mockMvc.perform(post("/oauth2/token")
+                        .contentType("application/x-www-form-urlencoded")
+                        .content("grant_type=refresh_token"
+                                + "&refresh_token=" + URLEncoder.encode(refreshToken, StandardCharsets.UTF_8)
+                                + "&client_id=rapla-client"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.accessToken").exists())
-                .andExpect(jsonPath("$.refreshToken").exists())
+                .andExpect(jsonPath("$.access_token").exists())
+                .andExpect(jsonPath("$.refresh_token").exists())
                 .andReturn();
         JsonNode rotated = mapper.readTree(refreshed.getResponse().getContentAsString());
-        String secondAccess = rotated.get("accessToken").asString();
-        String secondRefresh = rotated.get("refreshToken").asString();
-        assertNotEquals(firstAccess, secondAccess, "access token must rotate on every refresh");
-        // PRD 031 rotate-when-stale design: fresh refresh token (>7d remaining) is kept;
-        // it would only rotate when within the renewal window.
-        assertEquals(refreshToken, secondRefresh, "refresh token kept when not stale");
+        String secondAccess = rotated.get("access_token").asString();
+        String secondRefresh = rotated.get("refresh_token").asString();
+        assertNotEquals(firstAccess, secondAccess, "access token must be fresh on every refresh");
+        // PRD 041 never-rotate: same refresh token returned (multi-tab share works).
+        assertEquals(refreshToken, secondRefresh, "refresh token kept (never-rotate)");
 
         // 4. New access token also unlocks /resources
         mockMvc.perform(get("/api/resources").header("Authorization", "Bearer " + secondAccess))
@@ -114,56 +118,77 @@ class UnifiedRefreshIntegrationTest
     @Test
     void refreshAcceptsLoginIssuedTokenAcrossRestarts() throws Exception
     {
-        // Tokens are signed by the persistent JWK (RaplaKeyStorage-backed). A
-        // refresh token issued before a hypothetical restart would still
-        // validate, because /auth/refresh is stateless — signature + typ=refresh
-        // claim only, no SAS-state lookup. Surrogate: just refresh twice using
-        // the previous refresh token, ensuring the chain works through rotation.
+        // Tokens are signed by the persistent JWK (RaplaKeyStorage-backed) and
+        // validated against the full token stored in user prefs. Both survive a
+        // hypothetical server restart. Surrogate: refresh twice using the
+        // (same) refresh token — proves the validation is stateless against
+        // any in-memory authorization store.
         ObjectMapper mapper = JsonMapper.builder().build();
+        OAuthTestSupport.TokenPair pair = OAuthTestSupport.loginAsWithRefresh(mockMvc, "homer", "duffs");
+        String refresh = pair.refreshToken();
 
-        MvcResult login = mockMvc.perform(post("/api/auth/login")
-                        .contentType("application/json")
-                        .content("{\"username\":\"homer\",\"password\":\"duffs\"}"))
-                .andExpect(status().isOk())
-                .andReturn();
-        String refresh1 = mapper.readTree(login.getResponse().getContentAsString())
-                .get("refreshToken").asString();
-
-        MvcResult firstRefresh = mockMvc.perform(post("/api/auth/refresh")
-                        .contentType("application/json")
-                        .content("{\"refreshToken\":\"" + refresh1 + "\"}"))
-                .andExpect(status().isOk())
-                .andReturn();
-        String refresh2 = mapper.readTree(firstRefresh.getResponse().getContentAsString())
-                .get("refreshToken").asString();
-
-        MvcResult secondRefresh = mockMvc.perform(post("/api/auth/refresh")
-                        .contentType("application/json")
-                        .content("{\"refreshToken\":\"" + refresh2 + "\"}"))
-                .andExpect(status().isOk())
-                .andReturn();
-        String access3 = mapper.readTree(secondRefresh.getResponse().getContentAsString())
-                .get("accessToken").asString();
-        assertTrue(access3.split("\\.").length == 3, "result is a JWT");
+        for (int i = 0; i < 2; i++)
+        {
+            MvcResult result = mockMvc.perform(post("/oauth2/token")
+                            .contentType("application/x-www-form-urlencoded")
+                            .content("grant_type=refresh_token"
+                                    + "&refresh_token=" + URLEncoder.encode(refresh, StandardCharsets.UTF_8)
+                                    + "&client_id=rapla-client"))
+                    .andExpect(status().isOk())
+                    .andReturn();
+            JsonNode body = mapper.readTree(result.getResponse().getContentAsString());
+            String access = body.get("access_token").asString();
+            assertTrue(access.split("\\.").length == 3, "result is a JWT");
+        }
     }
 
     @Test
     void accessTokenRejectedByRefreshEndpoint() throws Exception
     {
-        // typ=access claim must not be accepted by /auth/refresh — that would
+        // typ=access claim must not be accepted at the refresh grant — that would
         // let a leaked access token mint indefinite new tokens.
-        ObjectMapper mapper = JsonMapper.builder().build();
-        MvcResult login = mockMvc.perform(post("/api/auth/login")
-                        .contentType("application/json")
-                        .content("{\"username\":\"homer\",\"password\":\"duffs\"}"))
-                .andExpect(status().isOk())
-                .andReturn();
-        String accessToken = mapper.readTree(login.getResponse().getContentAsString())
-                .get("accessToken").asString();
+        OAuthTestSupport.TokenPair pair = OAuthTestSupport.loginAsWithRefresh(mockMvc, "homer", "duffs");
+        String accessToken = pair.accessToken();
 
-        mockMvc.perform(post("/api/auth/refresh")
-                        .contentType("application/json")
-                        .content("{\"refreshToken\":\"" + accessToken + "\"}"))
+        mockMvc.perform(post("/oauth2/token")
+                        .contentType("application/x-www-form-urlencoded")
+                        .content("grant_type=refresh_token"
+                                + "&refresh_token=" + URLEncoder.encode(accessToken, StandardCharsets.UTF_8)
+                                + "&client_id=rapla-client"))
+                .andExpect(status().is4xxClientError());
+    }
+
+    @Test
+    void revokeEndpointInvalidatesRefreshToken() throws Exception
+    {
+        // Single-token-per-user: /oauth2/revoke clears the user-prefs SESSION
+        // entry → the previously-issued refresh token (and any other token in
+        // circulation for the user) becomes invalid.
+        OAuthTestSupport.TokenPair pair = OAuthTestSupport.loginAsWithRefresh(mockMvc, "homer", "duffs");
+        String refresh = pair.refreshToken();
+
+        // Confirm the refresh works first
+        mockMvc.perform(post("/oauth2/token")
+                        .contentType("application/x-www-form-urlencoded")
+                        .content("grant_type=refresh_token"
+                                + "&refresh_token=" + URLEncoder.encode(refresh, StandardCharsets.UTF_8)
+                                + "&client_id=rapla-client"))
+                .andExpect(status().isOk());
+
+        // Revoke
+        mockMvc.perform(post("/oauth2/revoke")
+                        .contentType("application/x-www-form-urlencoded")
+                        .content("token=" + URLEncoder.encode(refresh, StandardCharsets.UTF_8)
+                                + "&token_type_hint=refresh_token"
+                                + "&client_id=rapla-client"))
+                .andExpect(status().isOk());
+
+        // Refresh now fails
+        mockMvc.perform(post("/oauth2/token")
+                        .contentType("application/x-www-form-urlencoded")
+                        .content("grant_type=refresh_token"
+                                + "&refresh_token=" + URLEncoder.encode(refresh, StandardCharsets.UTF_8)
+                                + "&client_id=rapla-client"))
                 .andExpect(status().is4xxClientError());
     }
 }

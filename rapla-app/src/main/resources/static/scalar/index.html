@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Rapla REST API — Scalar</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <!--
+      PRD 041: Scalar API Reference, CDN-loaded.
+
+      Why CDN and not bundled:
+        - com.scalar.maven:scalar-webmvc drags Jackson 2 via scalar-core (would
+          re-introduce the dep this PRD removes).
+        - org.webjars.npm:scalar__api-reference has unresolvable nanoid version
+          conflicts in its npm dep tree.
+        - The standalone CDN bundle is ~3.4 MiB raw / ~1 MiB gzipped, paid by the
+          browser. Dev/admin tooling — few sessions, server doesn't carry the
+          bandwidth, fat JAR stays clean.
+
+      Offline / self-hosted fallback (if jsdelivr access is blocked):
+        1. Add an npm install step under rapla-app (or fold into rapla-angular's
+           package.json) for `@scalar/api-reference@1.57.1`. Use frontend-maven-plugin
+           — same pattern as the `spa` profile in rapla-app/pom.xml.
+        2. Copy `node_modules/@scalar/api-reference/dist/browser/standalone.js` to
+           src/main/resources/static/scalar/standalone.js during build.
+        3. Change the script src below to "/scalar/standalone.js".
+    -->
+    <style>body { margin: 0; }</style>
+</head>
+<body>
+<!--
+  Multi-source dropdown comes from the `sources` array passed to
+  Scalar.createApiReference below. Each source URL is served by
+  StaticOpenApiController from src/main/resources/openapi/*.json
+  (regenerated via OpenApiSpecCaptureTest).
+-->
+<div id="app"></div>
+<script src="https://cdn.jsdelivr.net/npm/@scalar/api-reference@1.57.1"></script>
+<script>
+    // Scalar 1.5x mounts via Scalar.createApiReference(target, config). The older
+    // <script id="api-reference" data-configuration="..."> embed has been less
+    // reliable across versions; explicit createApiReference is the documented
+    // path for multi-source and works across recent releases.
+    Scalar.createApiReference("#app", {
+        sources: [
+            { url: "/api/v3/api-docs/client",  title: "SPA / Swing client",     slug: "client",  default: true },
+            { url: "/api/v3/api-docs/auth",    title: "Authentication & OIDC",  slug: "auth"  },
+            { url: "/api/v3/api-docs/rest",    title: "Public REST API",        slug: "rest"  },
+            { url: "/api/v3/api-docs/exports", title: "Imports / Exports",      slug: "exports" }
+        ],
+        theme: "default",
+        layout: "modern",
+        showSidebar: true,
+        metaData: { title: "Rapla REST API" },
+        // Pre-fill the OAuth2 panel so users don't have to type client_id by hand.
+        // Uses the single rapla-client public client registered in application.yml
+        // (shared by SPA, Swing, and the dev explorers). The /scalar/index.html
+        // redirect URI is listed under rapla-client.registration.redirect-uris.
+        // Schema (v1.57.x): authentication.securitySchemes.<schemeName>.flows.<flow>.x-scalar-client-id
+        // — schemeName "oauth2" matches @SecurityScheme(name="oauth2") on RaplaSpringBootApplication.
+        //
+        // NOTE: Scalar's "Refresh" button won't work against embedded Spring AS — it
+        // uses /oauth2/token grant_type=refresh_token, which embedded SAS suppresses
+        // for public clients (see PRD 041 design note + PRD 031). User re-Authorizes
+        // when the access token expires (1h TTL). Production deployments using
+        // Keycloak get full OAuth refresh out of the box.
+        authentication: {
+            preferredSecurityScheme: "oauth2",
+            securitySchemes: {
+                oauth2: {
+                    flows: {
+                        authorizationCode: {
+                            "x-scalar-client-id": "rapla-client",
+                            selectedScopes: ["openid", "profile"]
+                        }
+                    }
+                }
+            }
+        }
+    });
+</script>
+<!-- Pinned to 1.57.1 (latest as of 2026-05-16). Bump deliberately — Scalar releases
+     frequently and major versions can break the data-configuration shape. -->
+<script src="https://cdn.jsdelivr.net/npm/@scalar/api-reference@1.57.1"></script>
+</body>
+</html>

@@ -37,7 +37,6 @@ export interface OAuthDiscovery {
   issuer: string;
   authorizeUrl: string;
   tokenUrl: string;
-  refreshUrl: string;
   logoutUrl: string;
   jwksUrl: string;
   userinfoUrl: string;

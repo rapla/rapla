@@ -14,6 +14,8 @@ import com.nimbusds.jose.jwk.source.JWKSource;
 import com.nimbusds.jose.proc.SecurityContext;
 import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.SignedJWT;
+import org.rapla.facade.RaplaFacade;
+import org.rapla.server.RaplaKeyStorage;
 import org.rapla.server.spring.oauth.external.ExternalProvidersProperties;
 import org.rapla.server.spring.oauth.external.IssuerAwareJwtDecoder;
 import org.rapla.server.spring.oauth.external.ProviderConfig;
@@ -60,8 +62,21 @@ public class JwtConfig
     @Bean
     public JwtDecoder jwtDecoder(JWKSource<SecurityContext> jwkSource,
                                  ExternalProvidersProperties externalProviders,
+                                 RaplaKeyStorage keyStore,
+                                 RaplaFacade facade,
                                  @org.springframework.beans.factory.annotation.Value(
                                          "${rapla.oauth.issuer:}") String localIssuerOverride)
+    {
+        JwtDecoder base = buildBaseDecoder(jwkSource, externalProviders, localIssuerOverride);
+        // PRD 043: outer wrapper dispatches typ=api_key JWTs to their own
+        // verification path (per-key public JWK embedded in the JWT header,
+        // membership check against RaplaKeyStorage.getAPIKeys for revocation).
+        return new ApiKeyJwtDecoder(base, keyStore, facade);
+    }
+
+    private static JwtDecoder buildBaseDecoder(JWKSource<SecurityContext> jwkSource,
+                                               ExternalProvidersProperties externalProviders,
+                                               String localIssuerOverride)
     {
         NimbusJwtDecoder local = NimbusJwtDecoder.withPublicKey(extractRsaPublicKey(jwkSource)).build();
         List<ProviderConfig> enabled = externalProviders.enabledProviders();

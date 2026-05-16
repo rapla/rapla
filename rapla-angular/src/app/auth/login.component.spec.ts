@@ -33,7 +33,6 @@ function discovery(mode: 'auto' | 'always' | 'never', providers: OAuthProviderEn
     issuer: 'http://localhost:8051',
     authorizeUrl: 'http://localhost:8051/oauth2/authorize',
     tokenUrl: 'http://localhost:8051/oauth2/token',
-    refreshUrl: 'http://localhost:8051/api/auth/refresh',
     logoutUrl: 'http://localhost:8051/connect/logout',
     jwksUrl: 'http://localhost:8051/oauth2/jwks',
     userinfoUrl: 'http://localhost:8051/userinfo',

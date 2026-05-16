@@ -1,0 +1,309 @@
+{
+  "openapi" : "3.1.0",
+  "info" : {
+    "title" : "Rapla REST API",
+    "description" : "Resource scheduling and event planning. Authorize via OAuth2 (Authorization Code + PKCE) using Rapla's bundled Spring Authorization Server, or paste a raw bearer JWT.",
+    "version" : "2.1-SNAPSHOT"
+  },
+  "security" : [ {
+    "oauth2" : [ ]
+  }, {
+    "bearerAuth" : [ ]
+  } ],
+  "paths" : {
+    "/rapla/internal_ical" : {
+      "get" : {
+        "tags" : [ "export-2i-cal-controller" ],
+        "operationId" : "internalIcalExport",
+        "parameters" : [ {
+          "name" : "file",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "user",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK"
+          }
+        }
+      },
+      "head" : {
+        "tags" : [ "export-2i-cal-controller" ],
+        "operationId" : "internalIcalExport_1",
+        "parameters" : [ {
+          "name" : "file",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "user",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK"
+          }
+        }
+      }
+    },
+    "/rapla/ical" : {
+      "get" : {
+        "tags" : [ "export-2i-cal-controller" ],
+        "operationId" : "icalExport",
+        "parameters" : [ {
+          "name" : "file",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "user",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK"
+          }
+        }
+      },
+      "head" : {
+        "tags" : [ "export-2i-cal-controller" ],
+        "operationId" : "icalExport_1",
+        "parameters" : [ {
+          "name" : "file",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "user",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK"
+          }
+        }
+      }
+    },
+    "/api/ical/import" : {
+      "post" : {
+        "tags" : [ "i-cal-import-controller" ],
+        "operationId" : "importICal",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/Import"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "array",
+                  "items" : {
+                    "type" : "integer",
+                    "format" : "int32"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/rapla/internal_calendar" : {
+      "get" : {
+        "tags" : [ "calendar-page-controller" ],
+        "operationId" : "internalCalendarHtml",
+        "responses" : {
+          "200" : {
+            "description" : "OK"
+          }
+        }
+      }
+    },
+    "/rapla/internal_calendar.csv" : {
+      "get" : {
+        "tags" : [ "calendar-page-controller" ],
+        "operationId" : "internalCalendarCsv",
+        "responses" : {
+          "200" : {
+            "description" : "OK"
+          }
+        }
+      }
+    },
+    "/rapla/calendar" : {
+      "get" : {
+        "tags" : [ "calendar-page-controller" ],
+        "operationId" : "calendarHtml",
+        "responses" : {
+          "200" : {
+            "description" : "OK"
+          }
+        }
+      }
+    },
+    "/rapla/calendar.csv" : {
+      "get" : {
+        "tags" : [ "calendar-page-controller" ],
+        "operationId" : "calendarCsv",
+        "responses" : {
+          "200" : {
+            "description" : "OK"
+          }
+        }
+      }
+    },
+    "/api/export/csv" : {
+      "get" : {
+        "tags" : [ "export-controller" ],
+        "operationId" : "csv",
+        "parameters" : [ {
+          "name" : "tableName",
+          "in" : "query",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "from",
+          "in" : "query",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "to",
+          "in" : "query",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "columns",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "array",
+            "items" : {
+              "type" : "string"
+            }
+          }
+        }, {
+          "name" : "sort",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "array",
+            "items" : {
+              "type" : "string"
+            }
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "text/csv" : {
+                "schema" : {
+                  "type" : "string"
+                }
+              },
+              "application/json" : {
+                "schema" : {
+                  "type" : "string"
+                }
+              },
+              "text/csv;charset=UTF-8" : {
+                "schema" : {
+                  "type" : "string",
+                  "format" : "byte"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components" : {
+    "schemas" : {
+      "Import" : {
+        "properties" : {
+          "content" : {
+            "type" : "string"
+          },
+          "isURL" : {
+            "type" : "boolean"
+          },
+          "allocatableIds" : {
+            "type" : "array",
+            "items" : {
+              "type" : "string"
+            }
+          },
+          "eventTypeKey" : {
+            "type" : "string"
+          },
+          "eventTypeNameAttributeKey" : {
+            "type" : "string"
+          }
+        }
+      }
+    },
+    "securitySchemes" : {
+      "oauth2" : {
+        "type" : "oauth2",
+        "flows" : {
+          "authorizationCode" : {
+            "authorizationUrl" : "/oauth2/authorize",
+            "tokenUrl" : "/oauth2/token",
+            "scopes" : {
+              "openid" : "OIDC subject identity",
+              "profile" : "User profile claims"
+            }
+          }
+        }
+      },
+      "bearerAuth" : {
+        "type" : "http",
+        "description" : "Paste a raw access token (e.g. from POST /api/auth/login). Manual fallback when OAuth2 isn't convenient.",
+        "scheme" : "bearer",
+        "bearerFormat" : "JWT"
+      }
+    }
+  }
+}

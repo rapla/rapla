@@ -11,9 +11,25 @@ public interface RaplaKeyStorage {
     LoginInfo getSecrets(User user, TypedComponentRole<String> tagName) throws RaplaException;
     void storeLoginInfo(User user, TypedComponentRole<String> tagName, String login, String secret) throws RaplaException;
     void removeLoginInfo(User user, TypedComponentRole<String> tagName) throws RaplaException;
+
+    /**
+     * Stores or replaces a per-user API key, identified by {@code clientId}
+     * (the storage slot key). Multi-slot: different {@code clientId}s
+     * coexist for the same user. Re-storing the same {@code clientId}
+     * overwrites the previous value.
+     *
+     * <p>Used by PRD 043's asymmetric flow ({@code clientId} = RFC 7638
+     * thumbprint, value = signed JWT) and by the legacy
+     * {@code TokenHandler.refresh} path ({@code clientId} = "refreshToken").
+     */
     void storeAPIKey(User user, String clientId, String apiKey) throws RaplaException;
+
+    /** All API keys stored for the user — values only, across every {@code clientId}. */
     Collection<String> getAPIKeys(User user) throws RaplaException;
-    void removeAPIKey(User user, String key) throws RaplaException;
+
+    /** Removes the slot identified by {@code clientId}. Idempotent (no-op if absent). */
+    void removeAPIKey(User user, String clientId) throws RaplaException;
+
     class LoginInfo
     {
     	public String login;

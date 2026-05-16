@@ -775,10 +775,9 @@ public class RaplaClientServiceImpl implements ClientService, UpdateErrorListene
             {
                 throw new IllegalStateException("OAuth login not enabled on the server");
             }
-            if (cfg.getRefreshUrl() != null)
-            {
-                connectionInfo.setRefreshUrl(cfg.getRefreshUrl());
-            }
+            // PRD 041: refreshUrl no longer in discovery — refresh uses tokenUrl
+            // (/oauth2/token grant_type=refresh_token). MyCustomConnector derives
+            // the URL as serverUrl + /oauth2/token.
             if (cfg.getLogoutUrl() != null)
             {
                 connectionInfo.setLogoutUrl(cfg.getLogoutUrl());
@@ -920,8 +919,8 @@ public class RaplaClientServiceImpl implements ClientService, UpdateErrorListene
         {
             tree.get("scopes").forEach(n -> scopes.add(n.asString()));
         }
-        String refreshUrl = tree.has("refreshUrl") && !tree.get("refreshUrl").isNull()
-                ? tree.get("refreshUrl").asString() : null;
+        // PRD 041: discovery dropped refreshUrl — refresh uses tokenUrl
+        // (/oauth2/token grant_type=refresh_token, OAuth 2.1 standard).
         String logoutUrl = tree.has("logoutUrl") && !tree.get("logoutUrl").isNull()
                 ? tree.get("logoutUrl").asString() : null;
         return new OAuthConfig(
@@ -929,7 +928,6 @@ public class RaplaClientServiceImpl implements ClientService, UpdateErrorListene
                 tree.path("clientId").asString(),
                 tree.path("authorizeUrl").asString(),
                 tree.path("tokenUrl").asString(),
-                refreshUrl,
                 logoutUrl,
                 scopes,
                 tree.path("showPasteFallback").asBoolean(false));
@@ -1020,17 +1018,24 @@ public class RaplaClientServiceImpl implements ClientService, UpdateErrorListene
         // we drop the local tokens. If the server is unreachable the local
         // logout still proceeds — never block the user-visible logout on a
         // network call.
-        String accessToken = connectionInfo.getAccessToken();
+        // PRD 041: revoke via OAuth 2.0 standard /oauth2/revoke (RFC 7009)
+        // with form-encoded body; replaces the legacy /api/auth/logout. The
+        // server-side hook in AuthorizationServerConfig.RaplaTokenRevocationAuthenticationProvider
+        // clears the user-prefs SESSION entry, invalidating every refresh
+        // token in circulation for the user (single-token-per-user model).
+        String refreshToken = connectionInfo.getRefreshToken();
         String serverUrl = connectionInfo.getServerURL();
-        if (accessToken != null && serverUrl != null && !serverUrl.isEmpty())
+        if (refreshToken != null && serverUrl != null && !serverUrl.isEmpty())
         {
             try
             {
+                String body = "token=" + java.net.URLEncoder.encode(refreshToken, java.nio.charset.StandardCharsets.UTF_8)
+                        + "&token_type_hint=refresh_token&client_id=rapla-client";
                 HttpClient http = HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(3)).build();
-                HttpRequest req = HttpRequest.newBuilder(URI.create(serverUrl + "/api/auth/logout"))
+                HttpRequest req = HttpRequest.newBuilder(URI.create(serverUrl + "/oauth2/revoke"))
                         .timeout(Duration.ofSeconds(3))
-                        .header("Authorization", "Bearer " + accessToken)
-                        .POST(HttpRequest.BodyPublishers.noBody())
+                        .header("Content-Type", "application/x-www-form-urlencoded")
+                        .POST(HttpRequest.BodyPublishers.ofString(body, java.nio.charset.StandardCharsets.UTF_8))
                         .build();
                 HttpResponse<Void> resp = http.send(req, HttpResponse.BodyHandlers.discarding());
                 if (resp.statusCode() / 100 == 2)

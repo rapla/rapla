@@ -46,7 +46,8 @@ class ApiPrefixArchitectureTest
             "org.rapla.server.spring.web.CalendarPageController",    // /rapla/calendar* — external iCal subscribers (HARD)
             "org.rapla.server.spring.web.Export2iCalController",     // /rapla/(internal_)?ical — external subscribers (HARD)
             "org.rapla.server.spring.web.RaplaJNLPController",       // /raplaclient.jnlp, /webclient/** — Java Web Start
-            "org.rapla.server.spring.web.StatusPageController"       // /server — status HTML page
+            "org.rapla.server.spring.web.StatusPageController",      // /server — status HTML page
+            "org.rapla.server.spring.web.StaticOpenApiController"    // /api/v3/api-docs — meta endpoint, describes the API rather than being part of it (PRD 041)
     );
 
     /**

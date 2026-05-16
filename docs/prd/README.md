@@ -22,6 +22,7 @@
 | [009-server-bulk-storage-rest-api.md](009-server-bulk-storage-rest-api.md) | Server-side bulk-storage REST API (port `RemoteStorage` to Spring controllers) | Phases 0–4 implemented; Phase 5 error-handling in progress |
 | [031-api-namespace-redesign.md](031-api-namespace-redesign.md) | API namespace redesign | Phases 1+2+3+4 landed 2026-05-12 |
 | [041-openapi-runtime-removal.md](041-openapi-runtime-removal.md) | OpenAPI — build-time generation + runtime plugin filtering (SpringDoc out of the runtime) | draft 2026-05-15 |
+| [043-api-keys-jwt-pat.md](043-api-keys-jwt-pat.md) | API Keys — GitHub-PAT flow, server-minted asymmetric JWT (supersedes PRD 031 §"API key surface") | draft 2026-05-16 |
 
 ### Server-side rendering / models / views
 

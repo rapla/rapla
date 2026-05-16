@@ -1,6 +1,6 @@
 # PRD 035: rapla external integration API + MCP server
 
-**Status:** draft (2026-05-13; scope broadened 2026-05-15 after design review)
+**Status:** draft — **design complete 2026-05-16; implementation not started** (2026-05-13; scope broadened 2026-05-15 after design review)
 **Date:** 2026-05-13
 
 > **2026-05-15 scope change.** This PRD originally covered only an MCP server
@@ -11,6 +11,42 @@
 > single permission boundary. MCP becomes a thin hybrid on top of the GraphQL
 > surface rather than a hand-written set of RPC tools. The showcase tracks
 > (Phase 0) are unchanged.
+
+## Design status & handoff (2026-05-16)
+
+**The design is complete.** Every section below is settled — data model,
+schema design + implementation, the GraphQL transport decision, the filter &
+query language, write mutations, write-side validation, the compute
+operations, the operation surface, the MCP hybrid transport, auth — and all
+14 Open Questions are resolved. The next step is **implementation**, per the
+Plan (Phase 1 onward); no further design work is required to start.
+
+**Deferred — not v1, by deliberate decision** (so a later reader does not read
+these as gaps):
+
+- Group **output** interfaces — input groups (typed cross-type *filtering*)
+  are v1; output interfaces (typed shared *output* fields) are deferred.
+- `findFreeSlots` multiple independent pools + one-call embedded `poolFilter`
+  — v1 has a single explicit-id `poolIds`.
+- Resource (allocatable) **writes** — v1 is booking-focused (read resources,
+  write reservations).
+- Subscriptions / streaming — Phase 2.
+- Rate limiting / per-key quotas — add with a real consumer.
+- Plugin-contributed schema types — OQ#8, Phase-N.
+- SPA → GraphQL migration — a separate track gated on PRDs 023/030; v1 ships
+  GraphQL for external + MCP without it.
+
+**Implementation-gating item:** the Spring AI MCP starter's Spring Boot 4 /
+Jackson 3 alignment (OQ#2 residual) is a Phase-1 spike — verify before
+committing to the MCP transport.
+
+**Tier-C — settles during implementation, not design:** pagination cursor
+encoding, the full error-`code` taxonomy.
+
+**Related PRDs:** [PRD 040](040-dispatch-validate-before-lock.md) and
+[PRD 041](041-openapi-runtime-removal.md) are independent spun-out cleanups;
+[PRD 043](043-api-keys-jwt-pat.md) details the scoped-API-key mechanism this
+PRD's Auth section sits on (supersedes PRD 031 §"API key surface").
 
 ## Goal
 
@@ -688,9 +724,9 @@ transports sit on.
 | `node(id): Node` | global opaque-id refetch |
 | `types: [DynamicType!]` | runtime schema descriptor for data-driven clients |
 | `me: User` | the authenticated principal |
-| `findFreeSlots(window, durationMinutes, resources, attendees): [Slot!]` | candidate booking windows — **needs A2** |
-| `checkConflicts(proposed): ConflictReport` | dry-run conflict check on an unsaved reservation — **needs A2** |
-| `whoIsFree(userIds \| group, window): AvailabilityMatrix` | availability matrix for a group — **needs A2** |
+| `findFreeSlots(window, durationMinutes, resourceIds, attendeeIds): [Slot!]` | candidate booking windows — see Compute operations |
+| `checkConflicts(reservationId \| proposed): ConflictReport` | dry-run conflict check — see Compute operations |
+| `whoIsFree(subjectIds, window): AvailabilityMatrix` | per-subject availability — see Compute operations |
 
 The three computes are **Query** fields — side-effect-free, even
 `checkConflicts` (takes a proposed reservation, writes nothing).
@@ -714,6 +750,100 @@ streaming (Phase 2). Calendar-sync operations (PRDs 038/039).
 `graphql_query` → every Query root (reads + computes). `graphql_schema` →
 `types` + introspection. Curated mutation tools (`book` = wraps
 `create<Type>`) → the Mutation roots.
+
+## Compute operations
+
+The three task-level computes — side-effect-free **Query** fields, reachable
+via the MCP `graphql_query` tool. Shared input:
+`input TimeWindow { from: DateTime!  to: DateTime! }`.
+
+### `findFreeSlots` — find a slot, and a room
+
+```graphql
+findFreeSlots(
+  window: TimeWindow!
+  durationMinutes: Int!
+  requiredIds: [ID!]          # all must be free for the whole slot
+  poolIds: [ID!]              # any ONE must be free; the slot reports which
+  stepMinutes: Int = 15       # slot-start alignment
+  limit: Int = 20
+): [Slot!]!
+
+type Slot { start: DateTime!  end: DateTime!  picked: Allocatable }
+```
+
+Two requirement kinds, because a real booking mixes them:
+
+- **`requiredIds`** — specific resources/people (the lecturer, a named
+  projector) — *all* free for the whole slot. (A person is an allocatable, so
+  there is no separate `attendeeIds` — people and rooms are both ids here.)
+- **`poolIds`** — a candidate pool ("any room that fits 10") — *any one*
+  free; `Slot.picked` names the chosen member. `picked` may differ across
+  slots (14:00 → room A, 15:30 → room B if A is then busy). Tie-break: first
+  free in the given order — the caller passes the pool ordered by preference.
+
+The resolver requires at least one of `requiredIds` / `poolIds`. The pool is
+an **explicit id list** — the agent composes `rooms(filter: …) →
+findFreeSlots(poolIds: …)`. *Deferred (not v1):* multiple independent pools
+(a requirement-list form) and a one-call embedded `poolFilter`.
+
+### `checkConflicts` — dry-run conflict check
+
+```graphql
+checkConflicts(reservationId: ID, proposed: ProposedReservationInput): ConflictReport!
+
+input ProposedReservationInput { appointments: [AppointmentInput!]!  allocatableIds: [ID!]! }
+type ConflictReport { hasConflicts: Boolean!  conflicts: [Conflict!]! }
+type Conflict {
+  allocatable: Allocatable!          # the double-booked resource (stub)
+  start: DateTime!  end: DateTime!   # the overlapping window
+  withReservation: Reservation       # §12 — null if the caller cannot read it
+}
+```
+
+Checks an existing reservation *or* a proposed (unsaved) shape. Classification
+is irrelevant to conflicts — the input is appointments × allocatables only.
+
+### `whoIsFree` — availability picture
+
+```graphql
+whoIsFree(subjectIds: [ID!]!, window: TimeWindow!): AvailabilityMatrix!
+
+type AvailabilityMatrix { window: TimeRange!  entries: [AvailabilityEntry!]! }
+type AvailabilityEntry { subject: Allocatable!  busy: [BusyInterval!]! }
+type BusyInterval { start: DateTime!  end: DateTime! }
+```
+
+Returns per-subject **busy intervals** — not a bucketed grid; the client
+buckets for display. `findFreeSlots` *computes the answer*, `whoIsFree`
+*shows the picture* — kept separate (more discoverable for an LLM agent).
+
+### §12 — applies to all three
+
+- An unreadable **or** nonexistent input id → the *same* error
+  (`UNKNOWN_RESOURCE`) — indistinguishable, so existence cannot be probed;
+  never silently dropped (that would yield a silently-wrong answer).
+- `checkConflicts.withReservation` → null if the caller cannot read the
+  conflicting reservation; the conflict (allocatable + window) still surfaces.
+- `whoIsFree.busy` is **time-only** — no reservation identity (privacy;
+  matches PRD 039 `BusyOnlyProjection`).
+
+### Execution
+
+No new core algorithms — these compose existing facade operations + interval
+math: `whoIsFree` / `findFreeSlots` from `queryReservations(allocatables,
+window)` + `getNextAllocatableDate`; `checkConflicts` from `ConflictFinder`.
+Once PRD 039 lands, external-calendar `ExternalAppointment` busy times feed
+into all three.
+
+### Open questions
+
+1. **`findFreeSlots` pool-picking.** *Resolved 2026-05-16 — pool-picking is
+   v1.* `findFreeSlots` takes `requiredIds` (all free) + `poolIds` (any one
+   free; `Slot.picked` names it; tie-break first-in-order). Deferred:
+   multiple independent pools, and a one-call embedded `poolFilter`.
+2. **`whoIsFree` by category.** v1 takes explicit `subjectIds`; expanding a
+   category (e.g. a department) to subject ids is the agent's job for v1.
 
 ## MCP transport shape — hybrid, not six fixed tools
 

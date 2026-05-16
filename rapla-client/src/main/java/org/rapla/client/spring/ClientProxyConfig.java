@@ -150,21 +150,26 @@ public class ClientProxyConfig
 
         private boolean doRefresh(String refreshToken) throws java.io.IOException
         {
+            // PRD 041: refresh via OAuth2-standard /oauth2/token grant_type=refresh_token
+            // (form-encoded body, snake_case response). Replaces the rapla-custom
+            // JSON /api/auth/refresh path.
             String baseUrl = info.getServerURL();
             if (baseUrl == null || baseUrl.isEmpty()) return false;
             String trimmed = baseUrl.endsWith("/") ? baseUrl.substring(0, baseUrl.length() - 1) : baseUrl;
-            String refreshUrl = trimmed + "/api/auth/refresh";
-            byte[] reqBody = ("{\"refreshToken\":\"" + refreshToken + "\"}").getBytes(java.nio.charset.StandardCharsets.UTF_8);
+            String tokenUrl = trimmed + "/oauth2/token";
+            String encoded = java.net.URLEncoder.encode(refreshToken, java.nio.charset.StandardCharsets.UTF_8);
+            byte[] reqBody = ("grant_type=refresh_token&refresh_token=" + encoded
+                    + "&client_id=rapla-client").getBytes(java.nio.charset.StandardCharsets.UTF_8);
             org.springframework.http.client.ClientHttpRequest req =
-                    requestFactory.createRequest(java.net.URI.create(refreshUrl), org.springframework.http.HttpMethod.POST);
-            req.getHeaders().setContentType(org.springframework.http.MediaType.APPLICATION_JSON);
+                    requestFactory.createRequest(java.net.URI.create(tokenUrl), org.springframework.http.HttpMethod.POST);
+            req.getHeaders().setContentType(org.springframework.http.MediaType.APPLICATION_FORM_URLENCODED);
             req.getBody().write(reqBody);
             try (org.springframework.http.client.ClientHttpResponse resp = req.execute())
             {
                 if (resp.getStatusCode().value() != 200) return false;
                 String json = new String(resp.getBody().readAllBytes(), java.nio.charset.StandardCharsets.UTF_8);
-                String newAccess = extractJsonStringField(json, "accessToken");
-                String newRefresh = extractJsonStringField(json, "refreshToken");
+                String newAccess = extractJsonStringField(json, "access_token");
+                String newRefresh = extractJsonStringField(json, "refresh_token");
                 if (newAccess == null) return false;
                 info.setAccessToken(newAccess);
                 if (newRefresh != null) info.setRefreshToken(newRefresh);

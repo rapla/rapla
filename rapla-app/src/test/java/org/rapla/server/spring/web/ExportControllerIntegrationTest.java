@@ -68,13 +68,7 @@ class ExportControllerIntegrationTest
 
     private String adminToken() throws Exception
     {
-        MvcResult mvc = mockMvc.perform(post("/api/auth/login")
-                        .contentType("application/json")
-                        .content("{\"username\":\"homer\",\"password\":\"duffs\"}"))
-                .andExpect(status().isOk())
-                .andReturn();
-        JsonNode tree = json.readTree(mvc.getResponse().getContentAsString());
-        return tree.get("accessToken").asString();
+        return OAuthTestSupport.loginAs(mockMvc, "homer", "duffs");
     }
 
     // ---------- auth ----------

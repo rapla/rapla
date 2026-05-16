@@ -23,26 +23,12 @@ spring:
     oauth2:
       authorizationserver:
         client:
-          swagger-ui:
-            registration:
-              client-id: swagger-ui
-              client-authentication-methods:
-                - none
-              authorization-grant-types:
-                - authorization_code
-                - refresh_token
-              redirect-uris:
-                - http://localhost:8051/swagger-ui/oauth2-redirect.html
-              scopes:
-                - openid
-                - profile
-            require-proof-key: true
-            require-authorization-consent: false
-          # Single public OAuth client for both rapla UIs (Swing desktop and
-          # Angular SPA). All loopback redirects → Spring's loopback any-port
-          # match applies, so the Swing client can bind a random port and the
-          # Angular dev server can run on any local port. Production deployments
-          # behind a real hostname add their URI via env override:
+          # Single public OAuth client for ALL rapla UIs (Swing desktop, Angular SPA,
+          # plus the Scalar + Swagger UI dev explorers — PRD 041). One client,
+          # one registration, every redirect URI listed below. All loopback redirects
+          # → Spring's loopback any-port match applies, so the Swing client can bind
+          # a random port and the Angular dev server can run on any local port.
+          # Production deployments behind a real hostname add their URI via env override:
           #   SPRING_SECURITY_OAUTH2_AUTHORIZATIONSERVER_CLIENT_RAPLA-CLIENT_REGISTRATION_REDIRECT-URIS_3=https://rapla.example.com/auth/callback
           rapla-client:
             registration:
@@ -52,6 +38,12 @@ spring:
               authorization-grant-types:
                 - authorization_code
                 - refresh_token
+                # password grant — direct username/password exchange. OAuth 2.1 BCP
+                # deprecates this; we re-enable it as a transient replacement for the
+                # legacy /api/auth/login endpoint until rapla migrates to Keycloak
+                # (PRD 031). Custom converter + provider in AuthorizationServerConfig
+                # delegate credential checking to RaplaAuthentificationService.
+                - password
               redirect-uris:
                 - http://127.0.0.1/login/oauth2/code/rapla
                 - http://localhost/auth/callback
@@ -68,6 +60,11 @@ spring:
                 - http://127.0.0.1/app/auth/callback
                 - http://localhost:4200/app/auth/callback
                 - http://127.0.0.1:4200/app/auth/callback
+                # PRD 041 — explorer callbacks (Scalar reads window.location.href; Swagger UI uses
+                # its dedicated oauth2-redirect.html). Loopback-only; the loopback any-port match
+                # validates these against any local port.
+                - http://localhost:8051/scalar/index.html
+                - http://localhost:8051/swagger-ui/oauth2-redirect.html
               # No `post-logout-redirect-uris` listed here on purpose:
               # AuthorizationServerConfig installs a permissive validator
               # for /connect/logout that accepts any URI. Spring AS's default
@@ -86,6 +83,16 @@ spring:
                 - offline_access
             require-proof-key: true
             require-authorization-consent: false
+            # PRD 041 — bump the access-token TTL from Spring AS's default (5m) to
+            # 1h. Embedded SAS does NOT issue refresh tokens to public clients
+            # (Spring AS suppression by design — see PRD 031 + the design note in
+            # PRD 041), so OAuth-aware clients (Scalar, Swagger UI, SPA via
+            # /oauth2/token, Swing OAuth dialog) can't silently refresh. Bumping
+            # the access-token TTL softens the re-Authorize cadence to once per
+            # hour. Production deployments using Keycloak get full OAuth refresh
+            # via the env-overridden discovery (PRD 031).
+            token:
+              access-token-time-to-live: 1h
 
 rapla:
   file-datasources:
@@ -153,10 +160,11 @@ springdoc:
   # application/json makes responses default to JSON at both spec and runtime.
   default-produces-media-type: application/json
   swagger-ui:
-    # OAuth2 code+PKCE wiring — Swagger UI's "Authorize" button calls /oauth2/authorize
-    # with the pre-filled client_id and a fresh PKCE verifier on every login attempt.
+    # OAuth2 code+PKCE wiring — used only at test capture time (springdoc is test-scope
+    # in production per PRD 041). The runtime swagger-ui at /swagger-ui/index.html
+    # is the static page under static/swagger-ui/ which has its own clientId in JS.
     oauth:
-      client-id: swagger-ui
+      client-id: rapla-client
       use-pkce-with-authorization-code-grant: true
 
 logging:

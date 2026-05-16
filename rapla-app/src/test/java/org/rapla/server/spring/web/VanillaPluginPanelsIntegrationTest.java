@@ -78,12 +78,7 @@ class VanillaPluginPanelsIntegrationTest
 
     private String adminToken() throws Exception
     {
-        MvcResult mvc = mockMvc.perform(post("/api/auth/login")
-                        .contentType("application/json")
-                        .content("{\"username\":\"homer\",\"password\":\"duffs\"}"))
-                .andExpect(status().isOk())
-                .andReturn();
-        return json.readTree(mvc.getResponse().getContentAsString()).get("accessToken").asString();
+        return OAuthTestSupport.loginAs(mockMvc, "homer", "duffs");
     }
 
     @Test

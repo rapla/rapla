@@ -353,33 +353,59 @@
             <artifactId>jcl-over-slf4j</artifactId>
             <scope>runtime</scope>
         </dependency>
-        <!-- SpringDoc / OpenAPI: serves /v3/api-docs (machine-readable spec) and
-             /swagger-ui/index.html (interactive explorer). Auto-discovers @RestController
-             classes across the reactor; no controller-side annotations required to start.
-             Runtime-only — no compile-time imports needed yet. PRD 026 (Angular precursor)
-             relies on this for TypeScript client generation.
-             Exclusion: SpringDoc only reflects on jakarta.validation-api annotation classes
-             (which stay via swagger-core-jakarta's independent dep). The validator engine
-             (hibernate-validator + classmate + jboss-logging + spring-boot-validation) is
-             ~1.5 MiB of dead weight here — Rapla has zero @Valid usage today. Re-add
-             (and remove this exclusion) if/when we adopt bean validation. -->
         <!-- Spring Authorization Server: hosts OAuth2 / OIDC endpoints (/oauth2/authorize,
              /oauth2/token, /oauth2/jwks, /.well-known/openid-configuration). Used by the
-             Swagger UI's code+PKCE flow and the future Angular SPA. ~0.62 MiB in fat JAR
+             Swagger UI's code+PKCE flow and the Angular SPA. ~0.62 MiB in fat JAR
              on top of the existing OAuth2 resource server (which contributes its own
              Spring Security jars; this just adds the auth-server module). PRD 026 §5. -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-oauth2-authorization-server</artifactId>
         </dependency>
+        <!-- PRD 041: OpenAPI spec is generated ONCE at build time (capture-in-test
+             pattern, OpenApiSpecCaptureTest writes to src/main/resources/openapi/).
+             At runtime StaticOpenApiController serves those files — no SpringDoc on
+             the production classpath, no reflective generation, no Jackson 2 island.
+             SpringDoc itself stays in test scope (the capture test needs it).         -->
+        <!-- Annotations only — RaplaSpringBootApplication's @OpenAPIDefinition + bearer
+             JWT @SecurityScheme are read by SpringDoc during the build-time capture run.
+             Provided scope: visible at compile + test, NOT bundled in BOOT-INF/lib (the
+             annotations are inert metadata at runtime — nothing in production reflects
+             on them). ~30 KiB jar. No transitive Jackson 2.                             -->
+        <dependency>
+            <groupId>io.swagger.core.v3</groupId>
+            <artifactId>swagger-annotations-jakarta</artifactId>
+            <version>2.2.38</version>
+            <scope>provided</scope>
+        </dependency>
+        <!-- PRD 041: runtime API-doc explorers (Scalar + Swagger UI) are CDN-loaded
+             from static/scalar/index.html and static/swagger-ui/index.html. NO Java
+             dependency on the production classpath: zero bytes added to the fat JAR,
+             the JS bundles ship from jsdelivr to the dev's browser. Both pages serve
+             the same captured static specs at /api/v3/api-docs/{auth,client,rest,exports}.
+             Considered + rejected alternatives (PRD 041 OQ5):
+             - com.scalar.maven:scalar-webmvc — drags Jackson 2.19.2 via scalar-core
+               (would re-introduce the exact dep this PRD removes).
+             - org.webjars.npm:scalar__api-reference — unresolvable nanoid version
+               conflicts in the npm dep tree.
+             - org.webjars:swagger-ui — viable clean webjar but bundling cost
+               (~1.2 MiB in the fat JAR) vs CDN's zero. CDN wins for a dev/admin
+               tool with few sessions.
+             Offline self-host fallback for both: see comments in the respective
+             static/{scalar,swagger-ui}/index.html files.                              -->
+
+        <!-- SpringDoc — TEST SCOPE ONLY. Used by OpenApiSpecCaptureTest +
+             ApiPrefixArchitectureTest to discover @RestControllers and emit the
+             machine-readable spec for the four PRD 031 groups. Production runtime
+             never sees it; the captured static JSON is what gets served at
+             /api/v3/api-docs (StaticOpenApiController). Brings in Jackson 2.x
+             transitively (swagger-core-jakarta dep) — fine in test scope, would
+             be a contamination of the Jackson 3 runtime if compile-scope.            -->
         <dependency>
             <groupId>org.springdoc</groupId>
             <artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
             <version>3.0.0</version>
-            <!-- compile scope (was runtime): RaplaSpringBootApplication imports
-                 io.swagger.v3.oas.annotations.* to declare the OpenAPI info and
-                 the bearer-JWT security scheme. Same runtime cost — only the
-                 compile classpath widens. -->
+            <scope>test</scope>
             <exclusions>
                 <exclusion>
                     <groupId>org.springframework.boot</groupId>
