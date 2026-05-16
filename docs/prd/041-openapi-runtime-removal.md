@@ -28,6 +28,13 @@
 >   `loginAs` helpers to the new `OAuthTestSupport.loginAs(MockMvc, …)` helper
 >   that posts `/oauth2/token grant_type=password`. Swing logout migrated to
 >   `/oauth2/revoke`. `refreshUrl` field dropped from discovery + SPA + Swing.
+> - **Client-side follow-up (2026-05-16):** the Swing *direct-password* path
+>   (the fallback login dialog + `MyCustomConnector` password-reauth) still
+>   called the removed `POST /api/auth/login` via the
+>   `RemoteAuthentificationService` `@HttpExchange` proxy. Fixed by swapping
+>   that bean for `ClientProxyConfig.OAuth2RemoteAuthentificationService`,
+>   which posts `/oauth2/token grant_type=password`. Dead
+>   `RemoteAuthentificationServiceImpl` removed. See `docs/authentication.md`.
 >
 > See PRD 031 (now mostly shipped) for the design discussion + PRD 043 for the
 > spun-off API-key work.

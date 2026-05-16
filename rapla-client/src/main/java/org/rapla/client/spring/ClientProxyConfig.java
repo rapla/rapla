@@ -1,7 +1,12 @@
 package org.rapla.client.spring;
 
+import org.rapla.framework.RaplaException;
 import org.rapla.plugin.export2ical.ICalTimezones;
 import org.rapla.rest.JacksonObjectMapperFactory;
+import org.rapla.storage.RaplaSecurityException;
+import org.rapla.storage.dbrm.LoginCredentials;
+import org.rapla.storage.dbrm.LoginTokens;
+import org.rapla.storage.dbrm.RemoteAuthentificationService;
 import org.rapla.storage.dbrm.RemoteConnectionInfo;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -236,6 +241,146 @@ public class ClientProxyConfig
         }
     }
 
+    /**
+     * {@link RemoteAuthentificationService} backed by the OAuth 2.0 token
+     * endpoint. PRD 041 removed the rapla-custom {@code POST /api/auth/login};
+     * direct username/password login now POSTs {@code grant_type=password} to
+     * {@code /oauth2/token} (RFC 6749 §4.3), and {@link #refresh} POSTs
+     * {@code grant_type=refresh_token}. The base URL is read from
+     * {@link RemoteConnectionInfo} per call (set after context refresh).
+     *
+     * <p>No JSON library here on purpose — the token response is flat, so two
+     * tiny field extractors avoid dragging a mapper into this seam (same
+     * approach as {@code MyCustomConnector.refreshUsingToken}).</p>
+     */
+    static final class OAuth2RemoteAuthentificationService implements RemoteAuthentificationService
+    {
+        private final RemoteConnectionInfo info;
+
+        OAuth2RemoteAuthentificationService(RemoteConnectionInfo info)
+        {
+            this.info = info;
+        }
+
+        @Override
+        public LoginTokens login(LoginCredentials credentials) throws RaplaException
+        {
+            String connectAs = credentials.getConnectAs();
+            if (connectAs != null && !connectAs.isEmpty())
+            {
+                // The OAuth2 password grant has no connectAs/impersonation
+                // parameter — fail loudly rather than log the user in as
+                // themselves and silently drop the "su" intent.
+                throw new RaplaSecurityException(
+                        "Impersonation (\" su \") is not supported via the OAuth2 password grant.");
+            }
+            String body = "grant_type=password"
+                    + "&username=" + enc(credentials.getUsername())
+                    + "&password=" + enc(credentials.getPassword())
+                    + "&client_id=rapla-client";
+            return tokenRequest(body);
+        }
+
+        @Override
+        public LoginTokens refresh(RefreshRequest body) throws RaplaException
+        {
+            String form = "grant_type=refresh_token"
+                    + "&refresh_token=" + enc(body == null ? null : body.refreshToken)
+                    + "&client_id=rapla-client";
+            return tokenRequest(form);
+        }
+
+        private LoginTokens tokenRequest(String body) throws RaplaException
+        {
+            String serverUrl = info.getServerURL();
+            if (serverUrl == null || serverUrl.isEmpty())
+            {
+                throw new RaplaException("Server URL not set — cannot reach the OAuth2 token endpoint.");
+            }
+            String trimmed = serverUrl.endsWith("/") ? serverUrl.substring(0, serverUrl.length() - 1) : serverUrl;
+            String url = trimmed + "/oauth2/token";
+            java.net.http.HttpResponse<String> resp;
+            try
+            {
+                java.net.http.HttpClient http = java.net.http.HttpClient.newBuilder()
+                        .connectTimeout(java.time.Duration.ofSeconds(10)).build();
+                java.net.http.HttpRequest req = java.net.http.HttpRequest.newBuilder(java.net.URI.create(url))
+                        .timeout(java.time.Duration.ofSeconds(15))
+                        .header("Content-Type", "application/x-www-form-urlencoded")
+                        .header("Accept", "application/json")
+                        .POST(java.net.http.HttpRequest.BodyPublishers.ofString(
+                                body, java.nio.charset.StandardCharsets.UTF_8))
+                        .build();
+                resp = http.send(req, java.net.http.HttpResponse.BodyHandlers.ofString(
+                        java.nio.charset.StandardCharsets.UTF_8));
+            }
+            catch (java.io.IOException ex)
+            {
+                throw new RaplaException("Could not reach the OAuth2 token endpoint at " + url + ": " + ex.getMessage(), ex);
+            }
+            catch (InterruptedException ex)
+            {
+                Thread.currentThread().interrupt();
+                throw new RaplaException("Interrupted contacting the OAuth2 token endpoint at " + url, ex);
+            }
+            int status = resp.statusCode();
+            if (status == 400 || status == 401)
+            {
+                // OAuth2 invalid_grant / invalid credentials.
+                throw new RaplaSecurityException("Login failed.");
+            }
+            if (status / 100 != 2)
+            {
+                throw new RaplaException("OAuth2 token endpoint error (HTTP " + status + "): " + resp.body());
+            }
+            String json = resp.body();
+            String access = jsonString(json, "access_token");
+            if (access == null)
+            {
+                throw new RaplaException("OAuth2 token response missing access_token: " + json);
+            }
+            return new LoginTokens(access, jsonString(json, "refresh_token"), jsonNumber(json, "expires_in"));
+        }
+
+        private static String enc(String s)
+        {
+            return java.net.URLEncoder.encode(s == null ? "" : s, java.nio.charset.StandardCharsets.UTF_8);
+        }
+
+        /** Flat-JSON string-field extractor — the token response is flat, so this
+         *  avoids pulling a JSON mapper into the auth seam. */
+        private static String jsonString(String json, String field)
+        {
+            String key = "\"" + field + "\"";
+            int k = json.indexOf(key);
+            if (k < 0) return null;
+            int colon = json.indexOf(':', k + key.length());
+            if (colon < 0) return null;
+            int q1 = json.indexOf('"', colon + 1);
+            if (q1 < 0) return null;
+            int q2 = json.indexOf('"', q1 + 1);
+            if (q2 < 0) return null;
+            return json.substring(q1 + 1, q2);
+        }
+
+        /** Flat-JSON numeric-field extractor for {@code expires_in}; 0 if absent. */
+        private static long jsonNumber(String json, String field)
+        {
+            String key = "\"" + field + "\"";
+            int k = json.indexOf(key);
+            if (k < 0) return 0;
+            int colon = json.indexOf(':', k + key.length());
+            if (colon < 0) return 0;
+            int i = colon + 1;
+            while (i < json.length() && Character.isWhitespace(json.charAt(i))) i++;
+            int start = i;
+            while (i < json.length() && Character.isDigit(json.charAt(i))) i++;
+            if (i == start) return 0;
+            try { return Long.parseLong(json.substring(start, i)); }
+            catch (NumberFormatException e) { return 0; }
+        }
+    }
+
     @Bean
     public ICalTimezones iCalTimezonesProxy(HttpServiceProxyFactory factory)
     {
@@ -345,9 +490,13 @@ public class ClientProxyConfig
     }
 
     @Bean
-    public org.rapla.storage.dbrm.RemoteAuthentificationService remoteAuthentificationServiceProxy(HttpServiceProxyFactory factory)
+    public RemoteAuthentificationService remoteAuthentificationServiceProxy(RemoteConnectionInfo info)
     {
-        return factory.createClient(org.rapla.storage.dbrm.RemoteAuthentificationService.class);
+        // PRD 041: the rapla-custom POST /api/auth/login endpoint was removed
+        // with AuthController. Direct username/password login — the Swing
+        // fallback dialog and MyCustomConnector's password-reauth path — now
+        // goes through the OAuth 2.0 token endpoint. See docs/authentication.md.
+        return new OAuth2RemoteAuthentificationService(info);
     }
 
     @Bean

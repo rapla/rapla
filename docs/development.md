@@ -246,26 +246,94 @@ A `POST /rapla/rapla/auth/login 401` (note doubled `/rapla/`) is the path-doubli
 For *how* an agent uses Playwright MCP to debug/prototype the SPA, see the `angular-frontend` skill. This section covers the one-off install on WSL2 Ubuntu.
 
 ```bash
-# 1. System libs Playwright's bundled Chromium needs. Not present by default on WSL2.
-npx playwright install-deps   # apt-installs via sudo
+# 1. System Chrome (Linux). Use the official .deb — NOT `npx playwright install`.
+#    Playwright's bundled-Chromium download has no build for Ubuntu 26.04
+#    ("does not support chromium on ubuntu26.04-x64"), and `npx playwright
+#    install-deps` doesn't recognise the OS either. The Chrome .deb's apt
+#    dependencies pull in the system libs that install-deps would have.
+cd /tmp
+wget https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb
+sudo apt-get install -y ./google-chrome-stable_current_amd64.deb
+google-chrome --version   # verify
 
-# 2. Browser binaries (~150 MB Chromium + optional Firefox / WebKit). Cached in ~/.cache/ms-playwright.
-npx playwright install
-
-# 3. Register the MCP server with Claude Code, scoped to this repo.
+# 2. Register the MCP server with Claude Code, scoped to this repo.
+#    --browser chrome (not chromium) uses the system Chrome installed above
+#    and skips the missing bundled-Chromium download.
 cd /home/chris/git/rapla
-claude mcp add playwright npx '@playwright/mcp@latest' -- --browser chromium
+claude mcp add playwright npx '@playwright/mcp@latest' -- --browser chrome
 
-# 4. Restart Claude Code (or use /mcp in-session) so the new tools surface as mcp__playwright__browser_*.
+# 3. Restart Claude Code (or use /mcp in-session) so the new tools surface as mcp__playwright__browser_*.
 ```
 
 WSL2 specifics:
 
-- **Headless mode works anywhere.** Add `-- --headless --isolated` to the `claude mcp add` line for the unattended default. Drop `--isolated` if you want auth cookies to survive restarts.
-- **Headed mode needs WSLg** (default on Windows 11). On Windows 10, set up VcXsrv + `DISPLAY=:0` or stay headless.
+- **Headless vs headed.** Add `--headless` to the `claude mcp add` line (`-- --browser chrome --headless`) for unattended runs — renders perfectly, no display needed. Omit it for a visible window (default; needs WSLg working — see below). Add `--isolated` to keep the profile in memory; omit it so auth cookies survive restarts.
 - **Networking:** WSL2 `localhost` is host loopback for the Playwright subprocess. `http://localhost:4200` (ng serve) and `http://localhost:8051` (Spring Boot) resolve correctly.
 
 Once installed, `claude mcp list` should show `playwright: … ✓ Connected`. Per-session artefacts (screenshots, YAML snapshots, console logs) land in `.playwright-mcp/` and are gitignored.
+
+### Headed windows don't display under WSLg
+
+Symptom: a headed browser (or *any* Linux GUI app — test with `xeyes`) shows a
+taskbar entry captioned `[WARN:COPY MODE]` but no actual window appears on the
+desktop. This is **not** a Chrome/Playwright problem — it's host-side WSLg.
+
+- `[WARN:COPY MODE]` itself is **benign** — WSLg stamps it on every window's
+  taskbar caption (it just means copy-mode RDP transport). Ignore it.
+- The real cause: `msrdc.exe` — the RDP client that *renders* WSLg windows —
+  fails to open `wslg.rdp`. Check `/mnt/wslg/stderr.log`; repeated
+  `WSLGd: Run:108: pid … exited … msrdc.exe … wslg.rdp` lines confirm it
+  (microsoft/wslg#1372, #471).
+
+Fixes, in order:
+
+1. **`wsl --shutdown` from a Windows terminal, then restart WSL.** Recreates the
+   WSLg/`msrdc` session — usually enough. Verify with `xeyes`: if the window
+   shows, headed Chrome will too.
+2. **If still broken on a domain-managed machine**, it's the Group Policy
+   *"Allow .rdp files from unknown publishers"* being Disabled (WSLg's
+   `wslg.rdp` is unsigned). Enable it under `gpedit.msc` → Computer
+   Configuration → Administrative Templates → Windows Components → Remote
+   Desktop Services → Remote Desktop Connection Client, or set
+   `HKLM\SOFTWARE\Policies\Microsoft\Windows NT\Terminal Services\Client`
+   `AllowUnsignedFiles`=`1`. On a domain machine the GPO re-applies — needs IT.
+3. **Fallback:** run with `--headless` (renders fine, use screenshots), or run
+   Chrome on the Windows side and connect the MCP via `--cdp-endpoint`.
+
+## Playwright Agents — tier-7 e2e test authoring
+
+Separate from the Playwright **MCP** above (which drives a browser
+interactively): the Playwright **Agents** layer authors and maintains
+`*.spec.ts` browser e2e tests. Set up by PRD 044; all of it lives under
+`rapla-angular/`.
+
+```bash
+cd rapla-angular
+npm install -D @playwright/test         # already in package.json
+npx playwright init-agents --loop claude # already run — scaffolds the files below
+```
+
+`init-agents` produced:
+
+| Path | Role |
+|---|---|
+| `.claude/agents/playwright-test-{planner,generator,healer}.md` | Three Claude Code **subagents** |
+| `.mcp.json` | Registers the `playwright-test` MCP server (`npx playwright run-test-mcp-server`) the subagents drive |
+| `playwright.config.ts` | `channel: 'chrome'` (system Chrome — no bundled Chromium), `testDir: tests/`, `baseURL` `:8051` |
+| `tests/seed.spec.ts` | Environment seed the generator builds from |
+| `specs/` | Where the planner writes test plans |
+
+Key facts:
+
+- The agents are **Claude Code subagents** — invoke them via the Agent
+  mechanism. There is **no `npx playwright agent` command** (a common myth).
+- For Claude Code to discover the subagents + the `playwright-test` MCP, run
+  the session **rooted at `rapla-angular/`** — moving the files to the repo
+  root breaks the relative `tests/`/`specs/` paths the agents write to.
+- Run the authored specs with `npm run e2e` (= `playwright test`) or
+  `npm run e2e:ui`. The rapla dev server must be up (AGENTS.md §8) — specs hit
+  `http://localhost:8051/app/`; there is no `webServer` auto-start.
+- Tier-7 in AGENTS.md §10's pyramid. Not wired into CI yet — PRD 034 Phase 4.
 
 ## Known JNLP defects
 

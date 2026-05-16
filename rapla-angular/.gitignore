@@ -39,6 +39,13 @@ testem.log
 /typings
 __screenshots__/
 
+# Playwright (e2e) — generated artefacts
+/test-results
+/playwright-report
+/blob-report
+/playwright/.cache
+.last-run.json
+
 # System files
 .DS_Store
 Thumbs.db

@@ -6,8 +6,8 @@ proxy) and prod (via Spring Boot static handler).
 ## Quick start
 
 ```bash
-# 1) one-time install
-cd rapla-angular && npm install
+# 1) one-time install + generate the typed API client
+cd rapla-angular && npm install && npm run gen:api
 
 # 2) Terminal A — Spring Boot (REST + OAuth2 on :8051)
 mvn -pl rapla-app -am spring-boot:run -Dspring-boot.run.fork=false
@@ -33,7 +33,7 @@ Default login on the bundled dev DB: **user `admin`, empty password**.
 | `npm run lint` | ESLint + Prettier `--check` | Run via `build`; rarely directly |
 | `npm run format` | Prettier `--write` | Auto-fix formatting before commit |
 | `npm test` | Vitest (`ng test`) | Session end / CI |
-| `npm run gen:api` | Regenerate `src/app/api/` from live `/api/v3/api-docs` | After server REST changes |
+| `npm run gen:api` | Generate `src/app/api/` from the committed OpenAPI spec (`rapla-app/src/main/resources/openapi/client.json`) | One-time setup + after server REST changes |
 
 ## Prerequisites (once-off)
 
@@ -50,7 +50,13 @@ npm install -g @angular/cli @openapitools/openapi-generator-cli
 ```bash
 cd rapla-angular
 npm install
+npm run gen:api   # generates src/app/api/ — the build won't compile without it
 ```
+
+`src/app/api/` is gitignored and **not** part of a fresh checkout, but
+several components import from it (`app.config.ts`, the reservations
+component, …). A fresh clone must run `npm run gen:api` once before the
+first `npm start` / `npm run build`.
 
 ## Dev workflow A — HMR via `ng serve` (recommended for humans)
 
@@ -116,15 +122,20 @@ Open **http://localhost:8051/app/**. Manual browser refresh required
 
 ## Regenerating the typed client
 
-The TypeScript client under `src/app/api/` is generated from the live
-server's `/api/v3/api-docs`:
+The TypeScript client under `src/app/api/` is generated from the
+committed OpenAPI spec `rapla-app/src/main/resources/openapi/client.json`
+(no running server needed):
 
 ```bash
 npm run gen:api
 ```
 
-Generated files are gitignored — regenerate whenever the REST surface
-changes (controller added, request/response DTO changed, etc.).
+Generated files are gitignored, so `src/app/api/` is absent from a fresh
+checkout — run `gen:api` once during setup, then again whenever the REST
+surface changes (controller added, request/response DTO changed, etc.).
+The `client.json` spec itself is committed and refreshed server-side; if
+the server's REST surface changed, regenerate `client.json` first, then
+run `gen:api`.
 
 `BASE_PATH` is set to `''` (empty) in `app.config.ts` because SpringDoc
 emits absolute paths that already include the `/api` prefix — adding

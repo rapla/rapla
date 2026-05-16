@@ -15,11 +15,10 @@ import java.time.Instant;
 
 /**
  * Single-source-of-truth for rapla's refresh-token lifecycle. Used by
- * {@code /api/auth/login} (legacy direct-password issuance), Spring AS's
- * {@code /oauth2/token} grants (code + refresh + future password), and
- * {@code /api/auth/logout} / {@code /oauth2/revoke} (revocation). One JWT
- * format ({@code typ=refresh}), one storage slot per user, one revocation
- * model.
+ * Spring AS's {@code /oauth2/token} grants ({@code authorization_code},
+ * {@code refresh_token}, {@code password}) and {@code /oauth2/revoke}
+ * (revocation). One JWT format ({@code typ=refresh}), one storage slot
+ * per user, one revocation model.
  *
  * <h2>Design (PRD 031, refined PRD 041)</h2>
  * <ul>

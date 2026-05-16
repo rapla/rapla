@@ -1,33 +1,37 @@
 ---
 name: oauth-flow
-description: Use when working on rapla's authentication — password login at `/api/auth/login`, the OAuth 2.0 Authorization Code + PKCE flow against Spring Authorization Server, refresh-token mechanics, remember-me cookies, JWT signing/verification, or the discovery endpoint at `/api/auth/oauth/config`. Covers both client surfaces (Swing via `SwingOAuthLoginFlow`, Angular via `angular-oauth2-oidc`). Skip for purely-server endpoints that don't deal with auth (queryAppointments, storage/resources, etc.) — those need the `api-testing` skill instead.
+description: Use when working on rapla's authentication — the OAuth 2.0 flows against Spring Authorization Server (`/oauth2/token` grants: authorization_code + PKCE, password, refresh_token), refresh-token mechanics, remember-me cookies, JWT signing/verification, or the discovery endpoint at `/api/auth/oauth/config`. Covers both client surfaces (Swing via `SwingOAuthLoginFlow`, Angular via `angular-oauth2-oidc`). Skip for purely-server endpoints that don't deal with auth (queryAppointments, storage/resources, etc.) — those need the `api-testing` skill instead.
 ---
 
 # Auth in rapla — the full picture
 
-Two parallel login paths live side-by-side: classic username/password and OAuth 2.0 Authorization Code + PKCE. Both produce structurally identical JWTs so REST endpoints don't have to know which path the caller used. PRDs 029 (Swing OAuth) and 031 (token refresh) carry the design history; this skill captures what an agent needs to *use* the system.
+All authentication goes through Spring Authorization Server's `/oauth2/token` endpoint — three grants: `authorization_code` + PKCE (interactive browser login), `password` (direct username/password), and `refresh_token`. All produce structurally identical RSA-signed JWTs so REST endpoints don't have to know which grant the caller used. PRDs 029 (Swing OAuth), 031 (token refresh) and 041 (OAuth-only consolidation) carry the design history; this skill captures what an agent needs to *use* the system.
 
 ## URL surface (post PRD 031 namespace redesign)
 
 | Path | Purpose | Auth required |
 |---|---|---|
-| `/api/auth/login` | Password login. POST `{username, password}` → `{accessToken, expiresIn, refreshToken}`. | none |
-| `/api/auth/refresh` | Mint a new access token from a refresh token. POST `{refreshToken}` → fresh JWT pair. | refresh JWT in body |
-| `/api/auth/logout` | Clear the user's `org.rapla.auth.session` preference; revokes all sessions for the user. | Bearer access token |
-| `/api/auth/oauth/config` | Discovery — emits `enabled`, `refreshUrl`, `logoutUrl`, `authorizationUrl`, etc. Lets clients avoid hardcoding paths. | none |
-| `/oauth2/authorize` | RFC 6749 — start of Authorization Code flow. PKCE required. | session cookie or form-login |
-| `/oauth2/token` | RFC 6749 — code → token exchange. | PKCE verifier |
+| `/oauth2/authorize` | RFC 6749 — start of the Authorization Code flow. PKCE required. | session cookie or form-login |
+| `/oauth2/token` `grant_type=authorization_code` | Code → token exchange (interactive login). | PKCE verifier |
+| `/oauth2/token` `grant_type=password` | Direct username/password login. Form-encoded `username` / `password` / `client_id=rapla-client` → `{access_token, refresh_token, expires_in, token_type}` (snake_case). | none |
+| `/oauth2/token` `grant_type=refresh_token` | Mint a fresh access token from a refresh token. | refresh JWT in body |
+| `/oauth2/revoke` | Revoke a token; clears the user's `org.rapla.auth.session` preference (all that user's sessions). | the token being revoked |
+| `/api/auth/oauth/config` | Discovery — emits `enabled`, `clientId`, `authorizeUrl`, `tokenUrl`, `logoutUrl`, etc. Lets clients avoid hardcoding paths. | none |
 | `/.well-known/openid-configuration` | Standard OIDC discovery (Spring AS exposes it). | none |
-| `/login` | HTML login page rendered by `LoginPageController` (used during the OAuth browser bounce). | none |
+| `/login` | HTML form login page rendered by `LoginPageController` (form login + the OAuth browser bounce). | none |
+
+> The rapla-custom `/api/auth/login`, `/api/auth/refresh`, `/api/auth/logout`
+> endpoints were removed in PRD 041 — all token issuance, refresh and
+> revocation is now on the `/oauth2/*` endpoints above.
 
 ## Token system
 
 - **RSA-signed JWTs** (no HMAC). Signing key read from `RaplaKeyStorage` (system preferences) at startup — persisted to the data file, **survives server restart**. Pre-PRD 031 the key was regenerated every boot, invalidating all live tokens.
-- Same RSA `JWKSource` signs `/api/auth/login` output and `/oauth2/token` output. The composite HMAC+RSA decoder was collapsed to a single RSA decoder — both login paths produce structurally identical tokens.
+- A single RSA `JWKSource` signs all `/oauth2/token` output; one RSA decoder validates it (the old composite HMAC+RSA decoder is gone). Every grant produces structurally identical tokens.
 - **Access token TTL: 1 h.** Refresh token TTL: 30 d.
-- **Rotate-when-stale.** `/api/auth/refresh` reissues a refresh token only when within `REFRESH_RENEWAL_THRESHOLD_SECONDS` (7 d) of expiry. Bounds DB writes to ~1/user/week.
-- **Single-token-per-user model.** Server stores `sha256(refreshToken)` under `user.preferences["org.rapla.auth.session"]`. `/api/auth/logout` clears it; any older refresh token from that user becomes invalid.
-- **JWT claims to know about:** `sub` (UUID), `username`, `typ` (`access` vs `refresh`), `exp`, `iss`, `aud`. The `typ=refresh` claim is what `/api/auth/refresh` validates.
+- **Rotate-when-stale.** `/oauth2/token grant_type=refresh_token` reissues a refresh token only when within `REFRESH_RENEWAL_THRESHOLD_SECONDS` (7 d) of expiry. Bounds DB writes to ~1/user/week.
+- **Single-token-per-user model.** Server stores `sha256(refreshToken)` under `user.preferences["org.rapla.auth.session"]`. `/oauth2/revoke` clears it; any older refresh token from that user becomes invalid.
+- **JWT claims to know about:** `sub` (UUID), `username`, `typ` (`access` vs `refresh`), `exp`, `iss`, `aud`. The `typ=refresh` claim is what `grant_type=refresh_token` validates.
 
 ## Authorization Code + PKCE flow (the OAuth path)
 
@@ -75,7 +79,7 @@ Spring's default `RegisteredClient` only allows exact-match redirect URIs. `Auth
 - Flow: spawn an ephemeral loopback server on a random port → open Windows browser to the authorize URL → user logs in → browser is redirected to `http://127.0.0.1:<port>/callback?code=…` → loopback server captures the code → exchanges it at `/oauth2/token`.
 - **Paste-URL fallback** when browser auto-launch fails (e.g. headless WSL): a dialog shows the authorize URL and accepts the returned `?code=…` URL by paste. Server-driven toggle: `rapla.oauth.show-paste-fallback` (default `false`).
 - **Refresh-token cache:** hybrid `TokenStore` (JNLP `PersistenceService` → `~/.rapla/tokens.json` 0600 → NoOp). All operations `catch(Throwable)` — never surfaces storage errors as login failures.
-- **Logout** (`RaplaClientServiceImpl.logout()`) POSTs `/api/auth/logout`, opens a browser tab to discovery's `logoutUrl`, clears `TokenStore`, then `SwingUtilities.invokeLater(start(null))` to in-JVM relaunch. After logout, the next `runOauthLogin` adds `prompt=login` to defeat the race where the browser keeps the cookie.
+- **Logout** (`RaplaClientServiceImpl.logout()`) POSTs `/oauth2/revoke`, opens a browser tab to discovery's `logoutUrl`, clears `TokenStore`, then `SwingUtilities.invokeLater(start(null))` to in-JVM relaunch. After logout, the next `runOauthLogin` adds `prompt=login` to defeat the race where the browser keeps the cookie.
 
 ### Angular — `angular-oauth2-oidc`
 
@@ -105,7 +109,7 @@ Spring's default `RegisteredClient` only allows exact-match redirect URIs. `Auth
 
 ## Probing the wire
 
-For a hands-on `curl` workflow against `/api/auth/login`, see the `api-testing` skill — it has the full login → bearer-token → request loop, including the `admin` / empty password dev credentials.
+For a hands-on `curl` workflow against `/oauth2/token`, see the `api-testing` skill — it has the full login → bearer-token → request loop, including the `admin` / empty password dev credentials.
 
 For browser-side OAuth debugging (CORS, redirect chains, cookie state, JS-side state), use Playwright MCP via the `angular-frontend` skill. `browser_network_requests` is the right tool for "where exactly did the flow break" — replaces guessing at HAR exports.
 
@@ -113,7 +117,7 @@ For browser-side OAuth debugging (CORS, redirect chains, cookie state, JS-side s
 
 | Test | What it covers |
 |---|---|
-| `AuthControllerIntegrationTest` (`rapla-app/src/test/java/.../web/`) | Canonical tier-3 MockMvc tests for `/api/auth/*` — login, refresh, logout, error cases. Read this before adding a new auth endpoint test. |
+| `UnifiedRefreshIntegrationTest`, `OAuthConfigControllerTest` (`rapla-app/src/test/java/.../web/`) | Tier-3 MockMvc tests for the `/oauth2/token` grants + discovery. `OAuthTestSupport.loginAs(...)` is the shared password-grant login helper — use it in new auth tests. |
 | `OpenApiSmokeTest` | Confirms the OpenAPI spec exposes all auth endpoints with the right content-types. |
 
 Both tests use the real `AuthorizationServerConfig` — no mocks (per PRD 027 / AGENTS.md §13).

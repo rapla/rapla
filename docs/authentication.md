@@ -109,6 +109,98 @@ Returns HTTP 200 either way (RFC 7009 — opaque "did this token exist?"
 non-disclosure). Side effect: clears the user's session entry; all
 their refresh tokens become invalid.
 
+## Client login flows — browser, SPA, Swing
+
+Three client surfaces authenticate against rapla — all on OAuth 2.0.
+
+### Browser form login — `POST /login`
+
+A server-rendered **session** login, not a token flow. `LoginPageController`
+(`@RequestMapping("/login")`, rapla-app) renders a minimal form; the POST is
+intercepted by Spring Security's `UsernamePasswordAuthenticationFilter`
+(`SecurityConfig` → `formLogin().loginPage("/login")`). Success → `302` to
+the saved request (or `/`) plus a `JSESSIONID` cookie; failure → `302` to
+`/login?error`. This backs the `/oauth2/authorize` consent step and direct
+server-page access. `admin` / empty password works here — the form
+deliberately omits `required` on the password field.
+
+### Angular SPA — OAuth2 authorization_code + PKCE
+
+`GET /oauth2/authorize` → system browser → `/auth/callback` →
+`POST /oauth2/token grant_type=authorization_code`. Refresh via
+`grant_type=refresh_token`. Entirely on the `/oauth2/*` endpoints.
+
+### Swing client — default OAuth, fallback password dialog
+
+`RaplaClientServiceImpl.startLoginInThread()` drives Swing login:
+
+1. Builds a `LoginDialog` (username/password fields + an OAuth button) and
+   probes discovery via `fetchOauthConfig()`.
+2. **Default — OAuth enabled** (`cfg.isEnabled()`): the dialog shows in
+   "browser login in progress" mode (credential fields hidden) and
+   auto-fires `SwingOAuthLoginFlow` — the standard authorization_code +
+   PKCE flow against `/oauth2/token` (`RaplaClientServiceImpl.java:735-742`,
+   PRD 029 Phase 2). The credential fields are never shown.
+3. **Fallback — OAuth disabled or discovery probe fails**: the dialog is
+   shown in full state with username/password fields
+   (`RaplaClientServiceImpl.java:743-752`).
+
+Token refresh for every client kind is OAuth-standard:
+`POST /oauth2/token grant_type=refresh_token` (`MyCustomConnector.java:129`,
+`ClientProxyConfig.java:159`, PRD 041).
+
+### Swing fallback password dialog → OAuth2 password grant
+
+When the fallback dialog is used, `loginAction` builds a
+`ConnectInfo(username, password, connectAs)` with no access token
+(`RaplaClientServiceImpl.java:651-696`) and calls `RemoteOperator.connect()`.
+With a null access token, `connect()` takes the password else-branch
+(`RemoteOperator.java:144-152`) and calls `RemoteAuthentificationService.login()`.
+
+That seam is implemented by `ClientProxyConfig.OAuth2RemoteAuthentificationService`,
+which POSTs `grant_type=password` to `/oauth2/token` (RFC 6749 §4.3) and parses
+the snake_case token response into a `LoginTokens`. `MyCustomConnector`'s
+password-reauth path (`MyCustomConnector.java:96`) calls the same seam.
+
+> **Historical note.** Before PRD 041's client-side cleanup,
+> `RemoteAuthentificationService` was a Spring HTTP-interface proxy
+> (`@HttpExchange("/api/auth")` + `@PostExchange("/login")`) pointing at the
+> rapla-custom `POST /api/auth/login`. That server endpoint was deleted with
+> `AuthController` (commit `d64e8553`), so the fallback dialog returned **404**
+> until the proxy was swapped for the OAuth2-backed implementation. The
+> interface and both call sites (`RemoteOperator`, `MyCustomConnector`) were
+> left untouched — only the `ClientProxyConfig` bean implementation changed.
+
+**Limitation:** the OAuth2 password grant has no `connectAs` parameter, so the
+dialog's `" su "` impersonation shorthand is rejected with a clear error
+rather than silently logging in as the typed user. Restoring impersonation
+needs a dedicated change — a `connect_as` parameter on
+`PasswordGrantAuthenticationConverter`, threaded into
+`RaplaAuthentificationService`.
+
+**Remaining dead code.** The JAX-RS `org.rapla.endpoints.server.RaplaAuthRestPage`
+(`@Path("login")`) is unmounted — its `AuthController` is gone. It is *not*
+freely removable: `RemoteSessionImpl` still reads its `LOGIN_COOKIE` constant
+for an (also-dead) `raplaLoginToken`-cookie auth branch, so deleting it means
+retiring that branch too — a separate cleanup. The orphaned
+`RemoteAuthentificationServiceImpl` (an unused `RemoteAuthentificationService`
+subclass — no bean, no callers) **has been removed**. Note the sibling
+`RaplaEventsRestPage` / `RaplaResourcesRestPage` / `RaplaDynamicTypesRestPage`
+are **not** dead — they are live beans the matching `@RestController`s
+delegate to.
+
+### Auth endpoint reference
+
+| Path | Status | Handler |
+|---|---|---|
+| `POST /login`, `POST /logout` (form/session) | live | Spring Security filters; `LoginPageController` renders the page |
+| `GET /oauth2/authorize`, `POST /oauth2/token`, `POST /oauth2/revoke` | live | Spring Authorization Server (`AuthorizationServerConfig`) |
+| `POST /oauth2/token grant_type=password` | live | `PasswordGrantAuthenticationConverter` + `…Provider` |
+| `GET /api/auth/oauth/config`, `POST /api/auth/oauth/exchange/{id}` | live | `OAuthConfigController`, `OAuthExchangeController` |
+| `POST`/`GET`/`DELETE` `/api/auth/api-keys[/{id}]` | live | `ApiKeyController` |
+| `POST /api/auth/login`, `/api/auth/refresh`, `/api/auth/logout` | **removed** — PRD 041, commit `d64e8553` (was `AuthController`) | none — no replacement route |
+| JAX-RS `RaplaAuthRestPage` `@Path("login")` | **dead code** — never mounted, 404 | legacy pre-Spring-Boot |
+
 ## API keys (Personal Access Tokens)
 
 Long-lived JWTs that users mint, list, and revoke for integrations
@@ -648,9 +740,9 @@ break-glass route when external IdPs are misconfigured, expired, or
 unreachable — hiding it by default makes a chicken-and-egg problem
 ("can't reach SSO → can't fix SSO config because there's no way to
 sign in as admin"). To strictly enforce SSO-only and hide the rapla
-button, set `rapla.oauth.web.rapla-in-picker=false`. The legacy
-`/api/auth/login` endpoint stays available for API clients regardless
-of the picker visibility setting.
+button, set `rapla.oauth.web.rapla-in-picker=false`. The OAuth2
+password grant (`POST /oauth2/token grant_type=password`) stays
+available for API clients regardless of the picker visibility setting.
 
 When only the rapla provider is enabled (no external IdPs), the
 picker does not render at all (`mode=auto` requires ≥2 visible
@@ -670,15 +762,16 @@ external providers are enabled.
 
 ### Migrating existing rapla-local users
 
-Existing rapla users keep working through `/api/auth/login` (legacy
-password form) regardless of which external providers are enabled.
+Existing rapla users keep working through the OAuth2 password grant
+(`POST /oauth2/token grant_type=password`) regardless of which external
+providers are enabled.
 On first external login, the resolver attaches the external-id to
 the matching rapla user by email — subsequent logins skip the email
 lookup. No data migration required.
 
 When all users are migrated, set
 `RAPLA_OAUTH_LOCAL_ACCOUNTS_ENABLED=false` (planned — see PRD 029
-Phase 2 OQ §5) to disable the legacy endpoint. Today the legacy path
+Phase 2 OQ §5) to disable the password grant. Today the password grant
 stays available; remove rapla-local passwords from `data.xml` to
 disable per-user as a stopgap.
 

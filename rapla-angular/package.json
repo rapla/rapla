@@ -9,6 +9,8 @@
     "build:fast": "ng build",
     "watch": "ng build --watch --configuration development",
     "test": "ng test",
+    "e2e": "playwright test",
+    "e2e:ui": "playwright test --ui",
     "gen:api": "openapi-generator-cli generate -i ../rapla-app/src/main/resources/openapi/client.json -g typescript-angular -o src/app/api --additional-properties=ngVersion=21.2.0,supportsES6=true,withInterfaces=true,fileNaming=kebab-case,enumPropertyNaming=original",
     "lint": "ng lint && prettier --check \"src/**/*.{ts,html,css,json}\"",
     "format": "prettier --write \"src/**/*.{ts,html,css,json}\""
@@ -34,6 +36,7 @@
     "@angular/cli": "^21.2.10",
     "@angular/compiler-cli": "^21.2.0",
     "@eslint/js": "^10.0.1",
+    "@playwright/test": "^1.60.0",
     "angular-eslint": "21.3.1",
     "eslint": "^10.0.3",
     "jsdom": "^28.0.0",

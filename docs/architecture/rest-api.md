@@ -704,7 +704,7 @@ won't need the JNLP at all.
 ### App boot
 
 ```
-1. POST /api/auth/login                              → tokens
+1. POST /oauth2/token grant_type=password            → tokens
 2. GET  /api/storage/resources                       → cache: types, allocatables, periods, categories, self
 3. GET  /api/dynamictypes                            → form schemas
 4. GET  /api/locale/<userLocale>                     → message catalog

@@ -16,7 +16,7 @@ URL layout post PRD 031 (2026-05-12):
 
 | Namespace | Examples |
 |---|---|
-| `/api/...` | REST API — `/api/auth/login`, `/api/storage/resources`, `/api/v3/api-docs`, etc. |
+| `/api/...` | REST API — `/api/storage/resources`, `/api/v3/api-docs`, `/api/auth/api-keys`, etc. |
 | `/oauth2/...`, `/.well-known/...` | OAuth2 / OIDC (RFC paths, root) |
 | `/rapla/{calendar,ical,internal_calendar,internal_ical,*.csv}` | Six legacy load-bearing URLs (external iCal subscribers, calendar embeds) |
 | `/raplaclient.jnlp`, `/webclient/**` | JNLP Swing launcher (root) |
@@ -26,17 +26,17 @@ The historical `/rapla` context-path was dropped — no global prefix.
 
 ## Login (admin / empty password — dev only)
 
-The bundled dev DB ships with one user: **`admin`** with **empty password**. The `/auth/login` endpoint returns a JSON body `{accessToken, expiresIn, refreshToken}`. The `accessToken` is a JWT (HS256) used as a Bearer token for all subsequent requests.
+The bundled dev DB ships with one user: **`admin`** with **empty password**. Direct username/password login uses the OAuth 2.0 password grant at `/oauth2/token` (the rapla-custom `/api/auth/login` was removed — PRD 041). It returns a JSON body `{access_token, refresh_token, expires_in, token_type}` (snake_case). The `access_token` is an RSA-signed (RS256) JWT used as a Bearer token for all subsequent requests.
 
 ```bash
-ACCESS=$(curl -s -X POST "http://localhost:8051/api/auth/login" \
-  -H "Content-Type: application/json" \
-  -d '{"username":"admin","password":""}' \
-  | python3 -c "import sys,json; print(json.load(sys.stdin)['accessToken'])")
+ACCESS=$(curl -s -X POST "http://localhost:8051/oauth2/token" \
+  -H "Content-Type: application/x-www-form-urlencoded" \
+  -d "grant_type=password&username=admin&password=&client_id=rapla-client" \
+  | python3 -c "import sys,json; print(json.load(sys.stdin)['access_token'])")
 echo "Got token: ${ACCESS:0:40}..."
 ```
 
-Tokens expire after `expiresIn` seconds (3600 by default). Re-run the login if you get 401 mid-session, or use `/auth/refresh` with the `refreshToken`.
+Tokens expire after `expires_in` seconds (3600 by default). Re-run the login if you get 401 mid-session, or refresh with `grant_type=refresh_token&refresh_token=…&client_id=rapla-client` against the same endpoint.
 
 ## Bootstrap payload — `GET /storage/resources`
 

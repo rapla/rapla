@@ -79,7 +79,7 @@ Concretely: empty `resources` array on `POST /api/storage/queryAppointments` ret
 
 ## Browser-driven debug + prototype — Playwright MCP
 
-Setup is in `docs/development.md` (one-off `npx playwright install` + `claude mcp add playwright`). When installed, the agent has `mcp__playwright__browser_*` tools.
+Setup is in `docs/development.md` § "Playwright MCP — install" (one-off: system Chrome `.deb` + `claude mcp add playwright … --browser chrome` — that section also has the WSLg headed-window troubleshooting). When installed, the agent has `mcp__playwright__browser_*` tools.
 
 **Reach for Playwright when** the bug or the prototype lives in the browser — OAuth redirects, CORS, cookies / `sessionStorage`, JS-side state, Material theming, what-the-DOM-actually-renders. `curl` proves wire shape; Playwright shows what the browser does with it.
 
@@ -109,24 +109,35 @@ Setup is in `docs/development.md` (one-off `npx playwright install` + `claude mc
 
 **Artefacts (`.playwright-mcp/*.yml`, `*.png`) are gitignored.** Don't commit them.
 
-### Playwright Agents (Planner / Generator / Healer) — available since 1.56
+### Playwright Agents (Planner / Generator / Healer)
 
-rapla-angular is on Playwright **1.60** (`npx playwright --version`), so the agentic test layer that shipped in 1.56 is available — separate from the Playwright MCP that drives the browser interactively. Three agents, each runnable via `npx playwright agent <name>`:
+Set up by PRD 044 (`npx playwright init-agents`). They live **under `rapla-angular/`**
+and are **Claude Code subagents**, not a CLI — there is no `npx playwright agent`
+command. Use them with a session rooted at `rapla-angular/` so the subagents,
+`.mcp.json`, and the relative `tests/`/`specs/` paths resolve.
 
-| Agent | Input | Output |
+| Subagent (`.claude/agents/`) | Input | Output |
 |---|---|---|
-| Planner | Natural-language scenario + seed test | A structured test plan with steps + expected outcomes, validated against the live SPA |
-| Generator | A plan from Planner | An executable `.spec.ts` Playwright test, using stable locators it verifies against the live app |
-| Healer | Failing test + DOM | Patched selectors / assertions to fix flake from SPA changes |
+| `playwright-test-planner` | NL scenario + `tests/seed.spec.ts` | A test plan under `specs/` |
+| `playwright-test-generator` | A plan | An executable `tests/**/*.spec.ts` |
+| `playwright-test-healer` | A failing spec | Patched selectors / assertions |
 
-Reach for these when authoring tier-6-equivalent **browser e2e tests** (a layer above PRD 017's pyramid; not yet wired into CI per PRD 034 Phase 4). Don't reach for them to write Vitest `TestBed` component tests — that's tier 6 and the Generator can't see the DI graph.
+They drive the browser via a *second* MCP server, **`playwright-test`**
+(`npx playwright run-test-mcp-server`, declared in `rapla-angular/.mcp.json`) —
+tools surface as `mcp__playwright-test__*`, distinct from the interactive
+`playwright` MCP (`mcp__playwright__*`).
+
+Reach for these when authoring tier-7 **browser e2e tests** (AGENTS.md §10; not
+yet wired into CI per PRD 034 Phase 4). Don't reach for them for Vitest
+`TestBed` component tests — that's tier 6.
 
 **Workflow for adding a new e2e test:**
 
-1. Have the dev stack up (`npm run start:ai` + Spring Boot per AGENTS.md §8).
-2. Author a seed `.spec.ts` that just logs in via OAuth and navigates to the page under test. Keep it 10–20 lines — it's the entry context.
-3. `npx playwright agent planner --seed <seed.spec.ts> --scenario "..."` → produces a plan file.
-4. `npx playwright agent generator --plan <plan.json>` → produces a test file.
-5. Run `npx playwright test`; if it fails for a real reason, fix the SPA. If it fails because a selector drifted, `npx playwright agent healer --test <failing.spec.ts>` → patches the selectors.
-
-Cited gains from the 2026 literature: **3–5× faster test authoring** and **60–80% reduction in selector-maintenance PRs** with auto-healing. We have no in-repo measurement yet — log timings on the first few uses to validate before scaling out.
+1. Dev stack up (Spring Boot per AGENTS.md §8 — specs hit `:8051/app/`).
+2. Delegate to the `playwright-test-planner` subagent with a scenario → it
+   writes a plan into `rapla-angular/specs/`.
+3. Delegate to `playwright-test-generator` with that plan → it writes a
+   `rapla-angular/tests/**/*.spec.ts`.
+4. `cd rapla-angular && npm run e2e` (= `playwright test`, system Chrome via
+   `channel: 'chrome'`). If a spec fails on selector drift, delegate to
+   `playwright-test-healer`.

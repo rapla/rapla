@@ -598,8 +598,8 @@ public class AuthorizationServerConfig
     /**
      * Issues JWT refresh tokens via {@link RefreshSessionService}.
      * <ul>
-     *   <li>Signed by the persistent RSA key (same {@code JwtIssuer} that
-     *       {@code /api/auth/login} uses) → tokens survive server restart.</li>
+     *   <li>Signed by the persistent RSA key (same {@code JwtIssuer} the
+     *       {@code /oauth2/token} password grant uses) → tokens survive server restart.</li>
      *   <li>Carries {@code typ=refresh} claim → distinguishable from access tokens.</li>
      *   <li>Hash persisted to user prefs ({@code RefreshSessionService.SESSION})
      *       → single-token-per-user revocation, restart-safe, rotate-when-stale.</li>
@@ -607,8 +607,8 @@ public class AuthorizationServerConfig
      *       default suppression for public clients is overridden here. Trade-off
      *       documented in PRD 041.</li>
      * </ul>
-     * Tokens issued here are interchangeable with those issued by
-     * {@code /api/auth/login} (legacy direct-password) — same JWT format, same
+     * Tokens issued here are interchangeable with those issued by the
+     * {@code /oauth2/token} password grant — same JWT format, same
      * hash store, redeemable at the same {@code /oauth2/token} refresh endpoint.
      */
     private static final class JwtRefreshTokenGenerator implements OAuth2TokenGenerator<OAuth2RefreshToken>
@@ -734,8 +734,8 @@ public class AuthorizationServerConfig
      * (JWT signature + {@code typ=refresh} + hash matches user-prefs entry)
      * instead of going through the in-memory {@code OAuth2AuthorizationService}
      * (which would lose state on restart and doesn't know about
-     * {@code /api/auth/login}-issued tokens). Result: refresh tokens issued by
-     * EITHER endpoint are accepted at {@code /oauth2/token} and survive restart.
+     * password-grant-issued tokens). Result: refresh tokens issued by
+     * ANY {@code /oauth2/token} grant are accepted there and survive restart.
      *
      * <p>Honors {@link RefreshSessionService#shouldRotate} — most refreshes
      * return the same refresh token (~1 prefs write per 30 days per active

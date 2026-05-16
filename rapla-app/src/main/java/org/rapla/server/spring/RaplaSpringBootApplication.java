@@ -44,7 +44,7 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
                 type = SecuritySchemeType.HTTP,
                 scheme = "bearer",
                 bearerFormat = "JWT",
-                description = "Paste a raw access token (e.g. from POST /api/auth/login). Manual fallback when OAuth2 isn't convenient."
+                description = "Paste a raw access token (e.g. from POST /oauth2/token grant_type=password). Manual fallback when OAuth2 isn't convenient."
         )
 })
 public class RaplaSpringBootApplication
