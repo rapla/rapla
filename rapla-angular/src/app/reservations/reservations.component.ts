@@ -29,8 +29,17 @@ interface AppointmentLite {
  * `any` by the generated client, so the bundle is described here; the
  * reservation/appointment shapes come from the generated AppointmentMap model.
  */
+interface BundleUser {
+  id?: string;
+  username?: string;
+  name?: string;
+  email?: string;
+}
+
 interface ResourceBundle {
   resources?: AllocatableImpl[];
+  users?: BundleUser[];
+  userId?: string;
 }
 
 interface Classified {
@@ -53,8 +62,11 @@ interface Classified {
   ],
   template: `
     <mat-toolbar color="primary">
-      <span>Reservations</span>
+      <span>My Reservations</span>
       <span class="spacer"></span>
+      @if (username()) {
+        <span class="username">{{ username() }}</span>
+      }
       <button matButton (click)="auth.signOut()">
         <mat-icon>logout</mat-icon>
         Sign out
@@ -123,6 +135,10 @@ interface Classified {
       .spacer {
         flex: 1 1 auto;
       }
+      .username {
+        margin-right: 1rem;
+        font-size: 0.95rem;
+      }
       .content {
         max-width: 1100px;
         margin: 1.5rem auto;
@@ -170,6 +186,7 @@ export class ReservationsComponent implements OnInit, AfterViewInit {
   loading = signal(true);
   error = signal<string | null>(null);
   resourceCount = signal(0);
+  username = signal('');
 
   @ViewChild(MatSort) sort!: MatSort;
   @ViewChild(MatPaginator) paginator!: MatPaginator;
@@ -185,9 +202,13 @@ export class ReservationsComponent implements OnInit, AfterViewInit {
         switchMap((bundle: ResourceBundle) => {
           const resources = this.buildResourceIndex(bundle);
           this.resourceCount.set(resources.size);
-          const resourceIds = Array.from(resources.keys());
+          this.username.set(this.resolveUsername(bundle));
+          // Scope to the logged-in user's own events: getResources() reports
+          // the current user's id, which queryAppointments accepts as an owner
+          // filter — the same query as selecting that user in the Swing client.
+          const ownerIds = bundle.userId ? [bundle.userId] : [];
           return this.api
-            .queryAppointments({ start, end, resources: resourceIds })
+            .queryAppointments({ start, end, ownerIds })
             .pipe(map((appts) => ({ appts, resources })));
         }),
       )
@@ -214,6 +235,11 @@ export class ReservationsComponent implements OnInit, AfterViewInit {
       width: '480px',
       autoFocus: 'dialog',
     });
+  }
+
+  private resolveUsername(bundle: ResourceBundle): string {
+    const me = (bundle.users ?? []).find((u) => u.id === bundle.userId);
+    return me?.username || me?.name || me?.email || '';
   }
 
   private buildResourceIndex(bundle: ResourceBundle): Map<string, string> {

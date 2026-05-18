@@ -1,11 +1,13 @@
 # PRD 018: Spring Boot 4.0.6 Fat-JAR Classloader Defect — Extract-and-Run Workaround
 
-**Status:** draft
-**Date:** 2026-05-10
+**Status:** draft — ⚠️ the canonical reproduction below **could not be reproduced** on a 2026-05-18 re-check (same Spring Boot 4.0.6 / Tomcat 11.0.21 / JDK 21). Severity and root cause are now in doubt — see "Reproduction status".
+**Date:** 2026-05-10 (re-checked 2026-05-18)
 
 ## Goal
 
-Make the deployable `rapla-app/target/rapla-2.1-SNAPSHOT.jar` runnable in production. As of Spring Boot 4.0.6, running it directly via `java -jar` collapses the HTTP layer minutes after start, on real-world request shapes (h2c upgrade probes, Tomcat error paths, JNLP launcher traffic). The dev path (`mvn spring-boot:run`) is unaffected.
+Make the deployable `rapla-app/target/rapla-2.1-SNAPSHOT.jar` runnable in production. On 2026-05-10, running it directly via `java -jar` was observed to collapse the HTTP layer minutes after start, on real-world request shapes (h2c upgrade probes, Tomcat error paths, JNLP launcher traffic). The dev path (`mvn spring-boot:run`) is unaffected.
+
+> ⚠️ **A 2026-05-18 re-check could not reproduce this** — see "Reproduction status" below. The original observation is recorded here as-is, but its severity ("collapses minutes after start", "every deployment needs an extract step") is no longer substantiated and may have been environment-specific or already resolved by a dependency bump.
 
 ## Background — what's broken
 
@@ -49,6 +51,44 @@ java -cp "$CP" org.rapla.server.spring.RaplaSpringBootApplication
 ```
 
 → same h2c probe returns HTTP/1.1 200 cleanly; server stays healthy.
+
+## Reproduction status — 2026-05-18 re-check: COULD NOT REPRODUCE
+
+The reproduction above was re-run on 2026-05-18 and **did not reproduce**:
+
+- Build: `mvn -pl rapla-app -am package -DskipTests` → `rapla-2.1-SNAPSHOT.jar`,
+  **Spring Boot 4.0.6, Tomcat 11.0.21, JDK 21.0.11** — identical stack to the
+  original report.
+- Launched via `java -jar … --server.port=8061`, run from a normal CWD.
+- Load fired at it:
+  - the canonical 5-probe h2c sequence,
+  - ~300 h2c-upgrade probes (20-way concurrent),
+  - 45 s of sustained mixed load — h2c-upgrade probes + 404 error-page traffic
+    + normal requests, 40-way concurrent (thousands of requests).
+- Result: **0** `NoClassDefFoundError` / `ClassNotFoundException`, **0**
+  "Error reading request", no exec-pool exhaustion. Server stayed healthy
+  throughout — `HTTP 200` in < 1 ms after the load.
+
+So the canonical repro's claimed signature ("first NCDFE within ~1 s",
+"pool exhaustion over the next minutes") **did not hold** on the current build.
+
+What this does and does not mean:
+- It does **not** prove the bug never happens — every report of this loader
+  family (incl. #40096) describes it as **non-deterministic and timing-
+  dependent**, "not 100% reproducible." Absence under ~45 s of load is evidence,
+  not proof.
+- It **does** mean PRD 018's severity framing is not currently substantiated,
+  and the A/B "extraction fixes it" claim cannot be demonstrated while the
+  baseline does not fail.
+- Plausible: the original failure was the interrupt-driven loader bug
+  (#40096-family) and a dependency bump between 2026-05-10 and 2026-05-18
+  pulled in the fix; or it was environment-specific; or it is simply rare.
+
+**Recommendation:** do not treat extract-and-run as mandatory on the strength of
+this PRD. Either (a) catch the failure live (capture a full log + thread dump
+when it next occurs) and only then pin the cause, or (b) keep extract-and-run as
+an optional, low-cost hardening measure — *not* a must-fix blocker — until there
+is a current, reproducible failure.
 
 ## Suspected cause — Spring Boot nested-jar loader (UNCONFIRMED)
 
