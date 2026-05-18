@@ -653,6 +653,33 @@ uses the embedded SAS") — Phase 4 reopens it for Keycloak only.
 - Automated tests for the dropdown — Swing/EDT UI, no headless harness
   (see Phase 3 out-of-scope). Verified by compile + live smoke test.
 
+### Deadlock fix found during Phase 4 testing (2026-05-18)
+
+Phase 4 testing surfaced a hang — the Swing client froze on "loading
+data" after login. Root cause is a **pre-existing lock-order inversion
+in `RemoteOperator`, unrelated to OAuth**: it held its intrinsic
+`synchronized` monitor while calling `fireStorageUpdated`, whose
+listeners re-enter Spring bean creation. A concurrent GUI-bean
+constructor holding the Spring singleton lock and calling back into a
+`synchronized` `RemoteOperator` method (`isRestartPossible` from
+`RaplaMenuBar.<init>`) deadlocks against it.
+
+It is a timing race, most easily triggered by **switching the UI
+language at login** — that persists `org.rapla.language` to the user's
+preferences, a client-side store whose `refresh` continuation fires the
+storage-update event concurrently with `Application.start`. (Not
+Keycloak-specific; not the multi-pod refresh poll.)
+
+Fix: `RemoteOperator.refresh(UpdateEvent)` / `refreshAll()` compute the
+`UpdateResult` under `synchronized (this)` and call `fireStorageUpdated`
+*outside* the monitor, ordered by a dedicated `fireLock`; the no-arg
+`refresh()` is de-`synchronized`. Full write-up of the rule —
+"never fire listener events under a lock" — added to
+[`docs/architecture/locking.md`](../architecture/locking.md). No unit
+test: `RemoteOperator` is not unit-instantiable without a connected
+server; verified by reproducing the exact repro (login + language
+switch) live. `rapla-core` test suite (512 tests) stays green.
+
 ## Open Questions
 
 1. **Multiple IdPs.** Does any rapla deployment today need to offer the

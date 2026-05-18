@@ -75,6 +75,43 @@ time-of-check-to-time-of-use window — see PRD 035's OQ#10 / the
 multi-pod-validation discussion for the analysis and the
 lock-then-fetch-then-validate fix.
 
+## Gotcha — never fire listener events under a lock
+
+`RemoteOperator` (the client-side operator) carries an intrinsic
+`synchronized` monitor *in addition to* its `RaplaLock` — coarse mutual
+exclusion on lifecycle / refresh methods (`connect`, `disconnect`,
+`refresh`, `isRestartPossible`, the storage-update-listener list, …).
+
+Storage-update events reach listeners via `fireStorageUpdated`. **That
+callout must never run while the `RemoteOperator` monitor is held.**
+Listeners (`ClientFacadeImpl` → the Swing `Application`) re-enter
+arbitrary code — Spring lazy-bean resolution, GUI construction — which
+calls back into `synchronized` `RemoteOperator` methods (e.g. a
+`RaplaMenuBar` constructor calling `isRestartPossible`). Holding the
+monitor across the callout is a lock-order inversion:
+
+- the firing thread holds the `RemoteOperator` monitor and waits for the
+  Spring singleton-bean lock;
+- a concurrent GUI-bean constructor holds the Spring singleton lock and
+  waits for the `RemoteOperator` monitor.
+
+→ deadlock; the Swing client hangs on "loading data". It is a timing
+race — most easily triggered by a login that also switches the UI
+language, because that persists `org.rapla.language` to the user's
+preferences (a client-side store whose `refresh` continuation fires the
+update event right as `Application.start` builds the GUI).
+
+**Fix pattern** (PRD 029 Phase 4, 2026-05-18): `refresh(UpdateEvent)` /
+`refreshAll()` compute the `UpdateResult` under `synchronized (this)`,
+release the monitor, then call `fireStorageUpdated`. A dedicated
+`fireLock` keeps the events ordered without putting the `this` monitor
+back on the callout path. The no-arg `refresh()` is no longer
+`synchronized` — its compute is still serialised by
+`refresh(UpdateEvent)`'s own block.
+
+**Rule:** compute under the lock, fire outside it. Never invoke a
+listener / observer callback while holding an internal rapla lock.
+
 ## Multi-pod note
 
 Rapla can run as multiple pods against one shared store. Each pod keeps

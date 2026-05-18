@@ -50,19 +50,37 @@ java -cp "$CP" org.rapla.server.spring.RaplaSpringBootApplication
 
 → same h2c probe returns HTTP/1.1 200 cleanly; server stays healthy.
 
-## Root cause — Spring Boot 4.0 nested-jar loader
+## Suspected cause — Spring Boot nested-jar loader (UNCONFIRMED)
 
-The new `LaunchedClassLoader` + `JarUrlClassLoader` + `jar:nested:` URL protocol introduced in Spring Boot **3.2.0** has a defect: under runtime conditions Spring couldn't pin down, classes that haven't yet been loaded fail to resolve through `URLClassLoader.findClass` even though the bytes are in `BOOT-INF/lib/` and the jar is in `BOOT-INF/classpath.idx`. Tracked upstream:
+The failure surfaces through Spring Boot's rewritten nested-jar loader
+(`LaunchedClassLoader` + `JarUrlClassLoader` + `jar:nested:`, introduced in
+**3.2.0**): a not-yet-loaded class fails to resolve through
+`URLClassLoader.findClass` even though the bytes are in `BOOT-INF/lib/` and the
+jar is in `BOOT-INF/classpath.idx`. **The root cause has not been confirmed** —
+neither pinned by us nor by Spring.
 
-- [spring-boot#49341](https://github.com/spring-projects/spring-boot/issues/49341) — exact stack signature on Spring Boot 4.0.3 + JDK 25, triggered via Tomcat error-page handling. **Closed as "not planned"**, with the official mitigation being extract-and-run.
-- [spring-boot#38719](https://github.com/spring-projects/spring-boot/issues/38719) — same loader chain on Spring Boot 3.2 with virtual threads. Closed as duplicate.
-- [spring-boot#31853](https://github.com/spring-projects/spring-boot/issues/31853) — predecessor 2.x-era CNFE in nested jars under GC pressure (different loader, fixed).
+Related upstream issues — note these are *similar-shape* failures, not confirmed
+to be the same bug as ours:
 
-Affects **all** Spring Boot 3.2.x – 4.0.x releases. We hit it on Spring Boot 4.0.6 + JDK 21.0.11.
+- [spring-boot#49341](https://github.com/spring-projects/spring-boot/issues/49341) — a `ClassNotFoundException` out of `JarUrlClassLoader` on Spring Boot 4.0.3 + JDK 25. **Different stack** from ours (`ApplicationContext$DispatchData`, via Tomcat error-page handling) and a different JDK. Closed **for lack of a reproduction** ("Closing due to lack of requested feedback") — *not* won't-fix; the maintainer offered to reopen given a sample. The `extract` snippet in that issue is the **reporter's own workaround**, not a Spring statement.
+- [spring-boot#40096](https://github.com/spring-projects/spring-boot/issues/40096) — `NoClassDefFoundError` from `LaunchedClassLoader` when threads are interrupted. **Fixed in 3.2.5** (commits `4203e1f2f`, `9b0593efe` — fall back to `RandomAccessFile` on `ClosedByInterruptException`).
+- [spring-boot#38719](https://github.com/spring-projects/spring-boot/issues/38719) — same loader chain on 3.2 with virtual threads. Duplicate of #38611, **fixed in 3.2.1**.
+- [spring-boot#31853](https://github.com/spring-projects/spring-boot/issues/31853) — 2.x-era CNFE in nested jars under GC pressure (different, older loader). **Fixed in 2.6.11**.
+
+We hit our failure on Spring Boot 4.0.6 + JDK 21.0.11. **Every diagnosed bug in
+this family above was fixed in a patch release, and those fixes are present in
+4.0.6.** So our failure is either a *new/distinct trigger* the existing fixes
+don't cover, or a *regression* — unconfirmed. It is **not** established that
+this is #49341, nor that the JDK version is causal (the #49341 reporter happened
+to be on JDK 25; we are on 21).
 
 ## Plan — extract-and-run
 
-The Spring-team-blessed escape hatch is to extract the fat JAR before launching:
+Extracting the fat JAR before launching is **observed to avoid the failure** in
+our testing. It is an **empirical mitigation**, not a Spring-documented fix for
+this symptom: Spring's docs recommend extraction for *startup performance* and
+*container-image packaging*, and Spring's response to every *diagnosed* loader
+bug (#38611, #40096, #31853) was a code fix in a patch release — not "extract".
 
 ```bash
 java -Djarmode=tools -jar rapla-2.1-SNAPSHOT.jar extract --destination ./extracted --force
