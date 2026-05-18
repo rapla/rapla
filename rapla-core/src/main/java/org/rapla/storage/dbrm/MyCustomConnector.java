@@ -115,20 +115,31 @@ public class MyCustomConnector implements CustomConnector
      * Calls the OAuth2 token endpoint with the stored refresh token and
      * stashes the resulting access + refresh tokens on {@link #remoteConnectionInfo}.
      *
-     * <p>PRD 041: refresh consolidated onto {@code /oauth2/token grant_type=refresh_token}
-     * (OAuth2 standard form-encoded body). Same endpoint contract as a
-     * Keycloak deployment — env-var swap of {@code RAPLA_OAUTH_PUBLIC_BASE_URL}
-     * is the only change to point at an external IdP.
+     * <p>PRD 041: refresh uses the standard {@code grant_type=refresh_token}
+     * form-encoded body. PRD 029 Phase 4: the endpoint + client_id are taken
+     * from {@link RemoteConnectionInfo} when a browser-OAuth provider was used
+     * — for a secret-backed provider like Keycloak that is the BFF URL
+     * ({@code /api/auth/oauth/exchange/{id}}), which injects the server-held
+     * {@code client_secret}. For a rapla-SAS / password session those fields
+     * are null and we fall back to {@code serverURL + /oauth2/token} with
+     * {@code client_id=rapla-client}.
      *
      * @return the new access token, or null if refresh isn't available
      */
     private String refreshUsingToken(String refreshToken) throws Exception
     {
-        String serverUrl = remoteConnectionInfo.getServerURL();
-        if (serverUrl == null || serverUrl.isEmpty()) return null;
-        String url = serverUrl + "/oauth2/token";
+        String url = remoteConnectionInfo.getRefreshUrl();
+        if (url == null || url.isEmpty())
+        {
+            String serverUrl = remoteConnectionInfo.getServerURL();
+            if (serverUrl == null || serverUrl.isEmpty()) return null;
+            url = serverUrl + "/oauth2/token";
+        }
+        String clientId = remoteConnectionInfo.getOauthClientId();
+        if (clientId == null || clientId.isEmpty()) clientId = "rapla-client";
         String encodedRefresh = java.net.URLEncoder.encode(refreshToken, java.nio.charset.StandardCharsets.UTF_8);
-        String body = "grant_type=refresh_token&refresh_token=" + encodedRefresh + "&client_id=rapla-client";
+        String body = "grant_type=refresh_token&refresh_token=" + encodedRefresh
+                + "&client_id=" + java.net.URLEncoder.encode(clientId, java.nio.charset.StandardCharsets.UTF_8);
         java.net.http.HttpClient http = java.net.http.HttpClient.newBuilder()
                 .connectTimeout(java.time.Duration.ofSeconds(10)).build();
         java.net.http.HttpRequest req = java.net.http.HttpRequest.newBuilder(java.net.URI.create(url))

@@ -108,12 +108,24 @@
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-jdbc</artifactId>
         </dependency>
-        <!-- JDBC drivers -->
+        <!-- JDBC drivers. HSQLDB is the embedded, zero-external-server default
+             backend (PRD 045) — runtime scope so it lands in the rapla-app fat
+             JAR's BOOT-INF/lib/. PostgreSQL / MariaDB / MS SQL Server drivers
+             are NOT bundled; they ship in an external ./lib/ (PRD 045 §3). -->
         <dependency>
             <groupId>org.hsqldb</groupId>
             <artifactId>hsqldb</artifactId>
             <classifier>jdk8</classifier>
-            <scope>provided</scope>
+            <scope>runtime</scope>
+        </dependency>
+        <!-- Connection pool for the rapla.db-datasources.* DataSources (PRD 045
+             Phase 3). spring-boot-jdbc (above) does not pull a pool — only the
+             starter does — so DataSourceBuilder finds no DataSource type. Hikari
+             is Spring Boot's default pool; runtime scope so it bundles. -->
+        <dependency>
+            <groupId>com.zaxxer</groupId>
+            <artifactId>HikariCP</artifactId>
+            <scope>runtime</scope>
         </dependency>
         <!-- Tests -->
         <dependency>

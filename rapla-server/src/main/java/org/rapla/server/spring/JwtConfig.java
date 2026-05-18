@@ -49,7 +49,7 @@ import java.util.UUID;
  */
 @Configuration
 @EnableConfigurationProperties(ExternalProvidersProperties.class)
-@org.springframework.boot.autoconfigure.condition.ConditionalOnProperty(prefix = "rapla.file-datasources", name = "raplafile")
+@org.springframework.context.annotation.Conditional(DatasourceConfiguredCondition.class)
 public class JwtConfig
 {
     /**

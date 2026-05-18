@@ -23,7 +23,6 @@ import org.springframework.scheduling.annotation.EnableScheduling;
         ServerServiceConfig.class,
         JwtConfig.class,
         SecurityConfig.class,
-        LegacyServerBridgeConfig.class,
         RaplaJacksonConfig.class,
         AdminPanelsScanConfig.class,
         RefreshSessionService.class

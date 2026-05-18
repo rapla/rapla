@@ -3,7 +3,8 @@ package org.rapla.server.spring.oauth.external;
 public enum ExternalProviderId
 {
     MICROSOFT("microsoft"),
-    GOOGLE("google");
+    GOOGLE("google"),
+    KEYCLOAK("keycloak");
 
     private final String id;
 

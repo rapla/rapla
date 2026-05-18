@@ -36,6 +36,12 @@ public interface CachableStorageOperator extends StorageOperator {
     LocalDateTime getConnectStart();
 
     void connect() throws RaplaException;
+
+    /** PRD 048: logical restart — reloads all data from the store, clears and
+     *  rebuilds the caches and re-arms the operator's scheduled tasks, without
+     *  a JVM/Spring restart. Reloads only the serving pod; other pods re-sync
+     *  via the update history. */
+    void reload() throws RaplaException;
 	void runWithReadLock(CachableStorageOperatorCommand cmd) throws RaplaException;
     void dispatch(UpdateEvent evt) throws RaplaException;
     String authenticate(String username,String password) throws RaplaException;

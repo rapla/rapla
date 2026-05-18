@@ -63,6 +63,18 @@ class OAuthConfigControllerTest
     }
 
     @Test
+    void discoveryReportsSwingLegacyLoginDisabledByDefault() throws Exception
+    {
+        // PRD 029 Phase 3: with neither rapla.oauth.swing-legacy-login nor
+        // rapla.oauth.swing-legacy-show-sso-button set, discovery reports both
+        // false — the Swing client keeps the Phase-2 OAuth-first behaviour.
+        mockMvc.perform(get("/api/auth/oauth/config"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.swingLegacyLogin").value(false))
+                .andExpect(jsonPath("$.swingLegacyShowSsoButton").value(false));
+    }
+
+    @Test
     void discoveryEmitsProvidersArrayAndPickerByDefault() throws Exception
     {
         mockMvc.perform(get("/api/auth/oauth/config"))

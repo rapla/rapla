@@ -50,6 +50,7 @@ import org.rapla.scheduler.CommandScheduler;
 import org.rapla.scheduler.Promise;
 import org.rapla.storage.RaplaSecurityException;
 import org.rapla.storage.dbrm.LoginTokens;
+import org.rapla.storage.dbrm.TokenStore;
 import org.rapla.storage.dbrm.RemoteAuthentificationService;
 import org.rapla.storage.dbrm.RemoteConnectionInfo;
 import org.rapla.storage.dbrm.RemoteOperator;
@@ -111,6 +112,10 @@ public class RaplaClientServiceImpl implements ClientService, UpdateErrorListene
      *  prompt=login to the authorize URL to defeat the cookie-reuse race
      *  when logout-and-restart happen in quick succession in the same JVM. */
     private volatile boolean nextOauthForcesLogin = false;
+
+    /** The login dialog's language chooser for the current login attempt, so a
+     *  successful login can persist the chosen language (PRD 029 Phase 4). */
+    private LanguageChooser activeLanguageChooser;
 
     @Autowired
     public RaplaClientServiceImpl(StartupEnvironment env, Logger logger, DialogUiFactoryInterface dialogUiFactory, ClientFacade facade, RaplaResources i18n, RaplaSystemInfo systemInfo,
@@ -614,9 +619,25 @@ public class RaplaClientServiceImpl implements ClientService, UpdateErrorListene
         try
         {
             final Logger logger = getLogger();
-            final LanguageChooser languageChooser = new LanguageChooser(logger, i18n, raplaLocale);
             final AbstractBundleManager localeSelector = (AbstractBundleManager) bundleManager;
+            // PRD 029 Phase 4: restore the language used at the last successful
+            // login (TokenStore pref) before building the dialog, so it renders
+            // in that language straight away.
+            final String savedLanguage = readLoginPref(TokenStore.KEY_LANGUAGE);
+            if (!savedLanguage.isEmpty())
+            {
+                try { localeSelector.setLanguage(savedLanguage); }
+                catch (Exception ex) { getLogger().debug("could not restore saved language '" + savedLanguage + "': " + ex); }
+            }
+            final LanguageChooser languageChooser = new LanguageChooser(logger, i18n, raplaLocale);
+            activeLanguageChooser = languageChooser;
             final LoginDialog dlg = LoginDialog.create(env, i18n, localeSelector, logger, raplaLocale, languageChooser.getComponent());
+            // Holds the OAuth providers offered in the method dropdown, in
+            // dropdown order (entry 0 = Password is not in this list), so the
+            // Login button's action can resolve the picked provider (PRD 029
+            // Phase 4).
+            final java.util.concurrent.atomic.AtomicReference<java.util.List<OAuthConfig>> dropdownProviders =
+                    new java.util.concurrent.atomic.AtomicReference<>(java.util.List.of());
 
             Action languageChanged = new AbstractAction()
             {
@@ -647,6 +668,10 @@ public class RaplaClientServiceImpl implements ClientService, UpdateErrorListene
 
             };
             languageChooser.setChangeAction(languageChanged);
+            if (!savedLanguage.isEmpty())
+            {
+                languageChooser.setSelectedLanguage(savedLanguage);
+            }
             //dlg.setIcon( i18n.getIcon("icon.rapla-small"));
             Action loginAction = new AbstractAction()
             {
@@ -654,6 +679,19 @@ public class RaplaClientServiceImpl implements ClientService, UpdateErrorListene
 
                 public void actionPerformed(ActionEvent evt)
                 {
+                    // PRD 029 Phase 4: the Login button is method-aware. Index 0
+                    // is the local username/password grant; any other index is a
+                    // browser-based OAuth provider from discovery.
+                    int methodIndex = dlg.getSelectedMethodIndex();
+                    if (methodIndex > 0)
+                    {
+                        java.util.List<OAuthConfig> providers = dropdownProviders.get();
+                        if (methodIndex - 1 < providers.size())
+                        {
+                            runOauthLogin(dlg, loginMutex, providers.get(methodIndex - 1));
+                        }
+                        return;
+                    }
                     String username = dlg.getUsername();
                     char[] password = dlg.getPassword();
                     final String[] split = username.split(" su ");
@@ -675,6 +713,8 @@ public class RaplaClientServiceImpl implements ClientService, UpdateErrorListene
                         }
                         else
                         {
+                            // PRD 029 Phase 4: remember language + "password" method.
+                            persistLoginPrefs("password");
                             dlg.idle();
                             loginMutex.release();
                             dlg.busy(i18n.getString("load"));
@@ -708,47 +748,53 @@ public class RaplaClientServiceImpl implements ClientService, UpdateErrorListene
                     fireClientAborted();
                 }
             };
-            Action oauthAction = new AbstractAction()
-            {
-                private static final long serialVersionUID = 1L;
-
-                public void actionPerformed(ActionEvent evt)
-                {
-                    runOauthLogin(dlg, loginMutex);
-                }
-            };
             loginAction.putValue(Action.NAME, i18n.getString("login"));
             exitAction.putValue(Action.NAME, i18n.getString("exit"));
-            oauthAction.putValue(Action.NAME, i18n.getString("login.oauth.button"));
             dlg.setIconImage(RaplaImages.getImage(i18n.getIcon("icon.rapla_small")));
             dlg.setLoginAction(loginAction);
             dlg.setExitAction(exitAction);
-            dlg.setOauthAction(oauthAction);
             centerWindowOnScreen(dlg);
 
-            // PRD 029 Phase 2: OAuth is the primary login path. If discovery
-            // says OAuth is enabled, show the dialog in "browser login in
-            // progress" mode (status message, no credential fields, Exit
-            // still enabled to abort) and auto-launch the browser flow.
-            // If OAuth is disabled OR the probe fails, show the dialog in
-            // its normal full state as a fallback.
+            // PRD 029 Phase 2/3/4: OAuth is the primary login path by default.
+            // When discovery says OAuth is enabled AND the admin has not opted
+            // into the legacy dialog (rapla.oauth.swing-legacy-login), show the
+            // dialog in "browser login in progress" mode and auto-launch the
+            // browser flow against the rapla SAS.
+            // Otherwise the legacy dialog is shown. When the admin also set
+            // rapla.oauth.swing-legacy-show-sso-button, the dialog offers a
+            // sign-in-method dropdown (Password + every discovery provider —
+            // rapla SAS, Keycloak, …); picking a browser provider greys out the
+            // username/password fields. Without that flag, or when OAuth is
+            // unavailable, only the plain password form is shown.
             commandScheduler.supply(this::fetchOauthConfig).thenAccept(cfg -> SwingUtilities.invokeLater(() -> {
-                if (cfg != null && cfg.isEnabled())
+                boolean oauthEnabled = cfg != null && cfg.isEnabled();
+                boolean legacyLogin = cfg != null && cfg.isSwingLegacyLogin();
+                if (oauthEnabled && !legacyLogin)
                 {
                     getLogger().info("startup: discovery confirms OAuth enabled — auto-launching browser flow (Swing dialog stays in waiting mode)");
                     dlg.setBrowserLoginInProgress(i18n.getString("login.oauth.waiting"));
                     dlg.setVisible(true);
-                    oauthAction.actionPerformed(null);
+                    runOauthLogin(dlg, loginMutex, cfg);
                 }
                 else
                 {
-                    getLogger().info("startup: OAuth not enabled — showing Swing login dialog as fallback");
+                    boolean showProviders = oauthEnabled && legacyLogin && cfg.isSwingLegacyShowSsoButton();
+                    java.util.List<OAuthConfig> methodProviders = configureLoginMethods(dlg, showProviders ? cfg : null);
+                    dropdownProviders.set(methodProviders);
+                    // PRD 029 Phase 4: pre-select the method used at the last login.
+                    applySavedLoginMethod(dlg, methodProviders);
+                    getLogger().info("startup: showing legacy Swing login dialog"
+                            + (oauthEnabled ? " (admin set rapla.oauth.swing-legacy-login)" : " (OAuth disabled server-side)")
+                            + (showProviders ? " with the sign-in-method dropdown" : ""));
                     dlg.setVisible(true);
                 }
             })).exceptionally(ex -> SwingUtilities.invokeLater(() -> {
                 Throwable root = ex;
                 while (root.getCause() != null && root.getCause() != root) root = root.getCause();
-                getLogger().info("startup: discovery failed (" + root.getClass().getSimpleName() + ": " + root.getMessage() + ") — showing Swing login dialog as fallback");
+                getLogger().info("startup: discovery failed (" + root.getClass().getSimpleName() + ": " + root.getMessage() + ") — showing legacy Swing login dialog as fallback");
+                // Discovery failed — OAuth support can't be confirmed, so offer
+                // only the local password method.
+                dropdownProviders.set(configureLoginMethods(dlg, null));
                 dlg.setVisible(true);
             }));
 
@@ -766,23 +812,143 @@ public class RaplaClientServiceImpl implements ClientService, UpdateErrorListene
         }
     }
 
-    private void runOauthLogin(LoginDialog dlg, Semaphore loginMutex)
+    /** Best-effort read of a stored login preference. Never throws. */
+    private String readLoginPref(String key)
     {
-        dlg.busy(i18n.getString("login.oauth.button"));
+        try { return tokenStore.readPref(key).orElse(""); }
+        catch (Throwable t) { return ""; }
+    }
+
+    /** Persists the language + sign-in method of a successful login so the next
+     *  launch can default the dialog to them (PRD 029 Phase 4). Best-effort. */
+    private void persistLoginPrefs(String loginMethod)
+    {
+        try
+        {
+            LanguageChooser chooser = activeLanguageChooser;
+            String lang = chooser != null ? chooser.getSelectedLanguage() : null;
+            // null = "default" — stored as empty, which clears the pref.
+            tokenStore.tryWritePref(TokenStore.KEY_LANGUAGE, lang == null ? "" : lang);
+            if (loginMethod != null && !loginMethod.isEmpty())
+            {
+                tokenStore.tryWritePref(TokenStore.KEY_LOGIN_METHOD, loginMethod);
+            }
+        }
+        catch (Throwable t)
+        {
+            getLogger().debug("could not persist login prefs: " + t);
+        }
+    }
+
+    /** Pre-selects the method dropdown to the provider used at the last login.
+     *  No-op for "password" / unknown / absent (index 0 is the default). */
+    private void applySavedLoginMethod(LoginDialog dlg, java.util.List<OAuthConfig> providers)
+    {
+        String saved = readLoginPref(TokenStore.KEY_LOGIN_METHOD);
+        if (saved.isEmpty() || "password".equals(saved)) return;
+        for (int i = 0; i < providers.size(); i++)
+        {
+            if (saved.equals(providers.get(i).getId()))
+            {
+                dlg.setSelectedMethodIndex(i + 1);
+                return;
+            }
+        }
+    }
+
+    // PRD 029 Phase 4 — providers that can complete the desktop loopback PKCE
+    // flow today. The rapla SAS and Keycloak are public PKCE clients with a
+    // loopback redirect registered. Microsoft (Entra SPA-platform) and Google
+    // (BFF/Web-app) can't reuse their SPA discovery entries — bringing them to
+    // Swing needs separate native-app registrations; deferred.
+    private static final java.util.Set<String> SWING_OAUTH_PROVIDERS = java.util.Set.of("rapla", "keycloak");
+
+    /** Populates the login-method dropdown: index 0 is the local username/password
+     *  grant, the rest are the Swing-capable discovery providers (rapla SAS,
+     *  Keycloak). When {@code cfg} is null only the password method is offered
+     *  (no dropdown). Returns the providers behind dropdown indices 1..N, in
+     *  order, so the Login button can resolve the selection. PRD 029 Phase 4. */
+    private java.util.List<OAuthConfig> configureLoginMethods(LoginDialog dlg, OAuthConfig cfg)
+    {
+        java.util.List<String> labels = new java.util.ArrayList<>();
+        java.util.List<OAuthConfig> usable = new java.util.ArrayList<>();
+        labels.add(i18n.getString("password"));
+        if (cfg != null)
+        {
+            for (OAuthConfig provider : cfg.getProviders())
+            {
+                if (provider.getId() != null && SWING_OAUTH_PROVIDERS.contains(provider.getId()))
+                {
+                    labels.add(providerLabel(provider));
+                    usable.add(provider);
+                }
+            }
+        }
+        dlg.setLoginMethods(labels);
+        // Greying the username/password fields whenever a browser provider is
+        // picked makes it obvious they don't apply to that method.
+        dlg.setMethodChangeListener(e -> dlg.setCredentialsEnabled(dlg.getSelectedMethodIndex() == 0));
+        return usable;
+    }
+
+    private static String providerLabel(OAuthConfig provider)
+    {
+        String id = provider.getId();
+        if (id != null && !id.isEmpty())
+        {
+            return Character.toUpperCase(id.charAt(0)) + id.substring(1);
+        }
+        return provider.getDisplayName() != null ? provider.getDisplayName() : "OAuth";
+    }
+
+    private void runOauthLogin(LoginDialog dlg, Semaphore loginMutex, OAuthConfig provider)
+    {
+        // While the browser-login flow runs, the dialog sits in "waiting for
+        // browser sign-in" mode. Abort cancels the SwingOAuthLoginFlow session
+        // (CancellationException → the loopback listener is stopped via the
+        // flow's whenComplete) and the exceptionally branch below restores the
+        // credential dialog. Distinct from Exit, which quits the application.
+        final java.util.concurrent.atomic.AtomicReference<SwingOAuthLoginFlow.Session> sessionRef =
+                new java.util.concurrent.atomic.AtomicReference<>();
+        final java.util.concurrent.atomic.AtomicBoolean aborted =
+                new java.util.concurrent.atomic.AtomicBoolean(false);
+        dlg.setAbortAction(new AbstractAction(i18n.getString("abort"))
+        {
+            private static final long serialVersionUID = 1L;
+
+            public void actionPerformed(ActionEvent evt)
+            {
+                getLogger().info("OAuth login: user clicked Abort — cancelling the browser-login wait");
+                aborted.set(true);
+                SwingOAuthLoginFlow.Session s = sessionRef.get();
+                if (s != null)
+                {
+                    s.future().cancel(true);
+                }
+                else
+                {
+                    // flow.start() hasn't returned yet (discovery probe still
+                    // in flight). Restore the dialog now; the worker cancels
+                    // the session as soon as it is created (aborted check below).
+                    dlg.clearBrowserLoginInProgress();
+                }
+            }
+        });
+        dlg.setBrowserLoginInProgress(i18n.getString("login.oauth.waiting"));
         commandScheduler.supply(() -> {
-            OAuthConfig cfg = fetchOauthConfig();
-            if (cfg == null || !cfg.isEnabled())
+            getLogger().info("OAuth login: starting browser flow for provider '"
+                    + (provider.getId() != null ? provider.getId() : "rapla") + "'");
+            if (provider.getLogoutUrl() != null)
             {
-                throw new IllegalStateException("OAuth login not enabled on the server");
+                connectionInfo.setLogoutUrl(provider.getLogoutUrl());
             }
-            // PRD 041: refreshUrl no longer in discovery — refresh uses tokenUrl
-            // (/oauth2/token grant_type=refresh_token). MyCustomConnector derives
-            // the URL as serverUrl + /oauth2/token.
-            if (cfg.getLogoutUrl() != null)
-            {
-                connectionInfo.setLogoutUrl(cfg.getLogoutUrl());
-            }
-            SwingOAuthLoginFlow flow = new SwingOAuthLoginFlow(cfg, getLogger());
+            // PRD 029 Phase 4: remember this provider's token endpoint + client_id
+            // so MyCustomConnector refreshes against the right place — the BFF
+            // (/api/auth/oauth/exchange/{id}) for a secret-backed provider like
+            // Keycloak, the rapla SAS /oauth2/token for the rapla provider.
+            connectionInfo.setRefreshUrl(provider.getTokenUrl());
+            connectionInfo.setOauthClientId(provider.getClientId());
+            SwingOAuthLoginFlow flow = new SwingOAuthLoginFlow(provider, getLogger());
             boolean force = nextOauthForcesLogin;
             nextOauthForcesLogin = false;
             if (force)
@@ -791,12 +957,19 @@ public class RaplaClientServiceImpl implements ClientService, UpdateErrorListene
                 getLogger().info("OAuth flow: forcing IdP login (prompt=login) — post-logout restart");
             }
             SwingOAuthLoginFlow.Session session = flow.start();
-            if (cfg.isShowPasteFallback())
+            sessionRef.set(session);
+            if (aborted.get())
+            {
+                // User clicked Abort during the discovery probe, before the
+                // session existed — honour it now.
+                session.future().cancel(true);
+            }
+            if (provider.isShowPasteFallback())
             {
                 scheduleDelayedPasteHelper(dlg, session);
             }
             return session.future().get();
-        }).thenAccept(tokens -> SwingUtilities.invokeLater(() -> finishOauthLogin(dlg, loginMutex, tokens)))
+        }).thenAccept(tokens -> SwingUtilities.invokeLater(() -> finishOauthLogin(dlg, loginMutex, tokens, provider)))
                 .exceptionally(ex -> SwingUtilities.invokeLater(() -> {
                     Throwable root = unwrap(ex);
                     if (root instanceof java.util.concurrent.CancellationException)
@@ -861,7 +1034,7 @@ public class RaplaClientServiceImpl implements ClientService, UpdateErrorListene
                 }));
     }
 
-    private void finishOauthLogin(LoginDialog dlg, Semaphore loginMutex, OAuthTokens tokens)
+    private void finishOauthLogin(LoginDialog dlg, Semaphore loginMutex, OAuthTokens tokens, OAuthConfig provider)
     {
         ConnectInfo info = ConnectInfo.withAccessToken(tokens.getAccessToken(), tokens.getRefreshToken());
         reconnectInfo = info;
@@ -877,6 +1050,8 @@ public class RaplaClientServiceImpl implements ClientService, UpdateErrorListene
                 dialogUiFactory.showWarning(i18n.getString("error.login"), new SwingPopupContext(dlg, null));
                 return;
             }
+            // PRD 029 Phase 4: remember the language + provider for next launch.
+            persistLoginPrefs(provider != null && provider.getId() != null ? provider.getId() : "rapla");
             dlg.idle();
             loginMutex.release();
             dlg.busy(i18n.getString("load"));
@@ -923,6 +1098,42 @@ public class RaplaClientServiceImpl implements ClientService, UpdateErrorListene
         // (/oauth2/token grant_type=refresh_token, OAuth 2.1 standard).
         String logoutUrl = tree.has("logoutUrl") && !tree.get("logoutUrl").isNull()
                 ? tree.get("logoutUrl").asString() : null;
+        // PRD 029 Phase 3: admin-selectable legacy Swing login. Absent on older
+        // servers — default false keeps the OAuth-first behaviour.
+        boolean swingLegacyLogin = tree.path("swingLegacyLogin").asBoolean(false);
+        boolean swingLegacyShowSsoButton = tree.path("swingLegacyShowSsoButton").asBoolean(false);
+        boolean showPasteFallback = tree.path("showPasteFallback").asBoolean(false);
+        // PRD 029 Phase 4: parse the providers[] array so the Swing login dialog
+        // can offer a method dropdown (rapla SAS, Keycloak, …). Each entry is
+        // turned into a provider-level OAuthConfig that SwingOAuthLoginFlow can
+        // consume directly. Absent on older servers → empty list, no dropdown.
+        List<OAuthConfig> providers = new java.util.ArrayList<>();
+        if (tree.has("providers") && tree.get("providers").isArray())
+        {
+            for (tools.jackson.databind.JsonNode p : tree.get("providers"))
+            {
+                List<String> pScopes = new java.util.ArrayList<>();
+                if (p.has("scopes") && p.get("scopes").isArray())
+                {
+                    p.get("scopes").forEach(n -> pScopes.add(n.asString()));
+                }
+                String pEndSession = p.has("endSessionUrl") && !p.get("endSessionUrl").isNull()
+                        ? p.get("endSessionUrl").asString() : null;
+                providers.add(new OAuthConfig(
+                        true,
+                        p.path("clientId").asString(),
+                        p.path("authorizeUrl").asString(),
+                        p.path("tokenUrl").asString(),
+                        pEndSession,
+                        pScopes,
+                        showPasteFallback,
+                        false,
+                        false,
+                        p.path("id").asString(),
+                        p.path("displayName").asString(),
+                        List.of()));
+            }
+        }
         return new OAuthConfig(
                 true,
                 tree.path("clientId").asString(),
@@ -930,7 +1141,12 @@ public class RaplaClientServiceImpl implements ClientService, UpdateErrorListene
                 tree.path("tokenUrl").asString(),
                 logoutUrl,
                 scopes,
-                tree.path("showPasteFallback").asBoolean(false));
+                showPasteFallback,
+                swingLegacyLogin,
+                swingLegacyShowSsoButton,
+                "rapla",
+                null,
+                providers);
     }
 
     /** centers the window around the specified center */

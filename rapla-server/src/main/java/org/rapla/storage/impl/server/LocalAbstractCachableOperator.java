@@ -1236,11 +1236,38 @@ public abstract class LocalAbstractCachableOperator extends AbstractCachableOper
             {
                 task.cancel();
             }
+            // PRD 048: clear the list so a subsequent connect() (e.g. via
+            // reload()) does not accumulate handles to already-cancelled tasks.
+            scheduledTasks.clear();
         }
         finally
         {
             this.disconnectLock.unlock(disconnectWrite);
         }
+    }
+
+    /**
+     * PRD 048: logical restart. {@code disconnect()} clears the caches and
+     * cancels the operator's scheduled tasks; {@code connect()} reloads all
+     * data from the store and re-arms those tasks.
+     *
+     * <p>Lock contract: this method holds only the operator monitor
+     * ({@code synchronized}), which serialises it against {@code disconnect()}
+     * and {@code connect()} (both also {@code synchronized}). It deliberately
+     * does <em>not</em> hold {@code lockManager.write} or
+     * {@code disconnectLock.write} across the disconnect/connect pair —
+     * {@code disconnect()} acquires and releases both internally, and holding
+     * either here would violate the audited lock ordering (see
+     * {@code LockOrderingAuditTest}). The brief {@code Disconnected} window is
+     * acceptable: a concurrent request during it fails cleanly, exactly as for
+     * any {@code disconnect()}.
+     */
+    @Override
+    synchronized public void reload() throws RaplaException
+    {
+        getLogger().info("Reloading server data store (logical restart)");
+        disconnect();
+        connect();
     }
 
     /*

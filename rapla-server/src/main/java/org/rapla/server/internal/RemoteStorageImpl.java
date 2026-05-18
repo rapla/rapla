@@ -67,7 +67,7 @@ public class RemoteStorageImpl implements RemoteStorage
     @Autowired CachableStorageOperator operator;
     @Autowired org.rapla.storage.SyncStorageOperator syncOperator;
     @Autowired SecurityManager security;
-    @Autowired ShutdownService shutdownService;
+    @Autowired ReloadService reloadService;
     @Autowired Set<PrePostDispatchProcessor> prePostDispatchProcessors;
     @Autowired Logger logger;
     @Autowired Set<AuthenticationStore> authenticationStore;
@@ -250,7 +250,7 @@ public class RemoteStorageImpl implements RemoteStorage
         final User user = checkSessionUser();
         if (!user.isAdmin())
             throw new RaplaSecurityException("Only admins can restart the server");
-        shutdownService.shutdown(true);
+        reloadService.reload();
     }
 
     public UpdateEvent store(UpdateEvent event) throws RaplaException

@@ -11,6 +11,14 @@ import java.util.Map;
 @ConfigurationProperties(prefix = "rapla")
 public class RaplaServerProperties
 {
+    /** Canonical key of the primary database datasource &mdash; bound from
+     *  {@code rapla.db-datasources.rapladb}. */
+    public static final String MAIN_DB_DATASOURCE = "rapladb";
+
+    /** Canonical key of the primary file datasource &mdash; bound from
+     *  {@code rapla.file-datasources.raplafile}. */
+    public static final String MAIN_FILE_DATASOURCE = "raplafile";
+
     private Map<String, DataSourceProperties> dbDatasources = new LinkedHashMap<>();
     private Map<String, String> fileDatasources = new LinkedHashMap<>();
     private Map<String, Boolean> services = new LinkedHashMap<>();
@@ -38,6 +46,12 @@ public class RaplaServerProperties
         this.fileDatasources = fileDatasources;
     }
 
+    /** Path of the primary XML file store, or {@code null} if none configured. */
+    public String getMainFilesource()
+    {
+        return fileDatasources.get(MAIN_FILE_DATASOURCE);
+    }
+
     public Map<String, Boolean> getServices()
     {
         return services;
@@ -46,6 +60,17 @@ public class RaplaServerProperties
     public void setServices(Map<String, Boolean> services)
     {
         this.services = services;
+    }
+
+    /**
+     * Whether the named service/plugin is enabled. A service absent from the
+     * {@code rapla.services} map counts as enabled &mdash; matching the legacy
+     * {@code ServerContainerContext.isServiceEnabled} default (PRD 048).
+     */
+    public boolean isServiceEnabled(String serviceKey)
+    {
+        Boolean enabled = services.get(serviceKey);
+        return enabled == null || enabled;
     }
 
     public String getMailSession()

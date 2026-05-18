@@ -79,4 +79,44 @@ class FileTokenStoreTest
         store.tryWrite("");
         assertFalse(Files.exists(file), "null/empty tokens are silently ignored");
     }
+
+    @Test
+    void prefsSurviveTokenClear()
+    {
+        // PRD 029 Phase 4: tryClear() (logout) drops the token but keeps the
+        // login preferences, so the next login dialog still defaults sensibly.
+        FileTokenStore store = new FileTokenStore(tempDir.resolve("tokens.json"), null);
+        store.tryWritePref(TokenStore.KEY_LANGUAGE, "de");
+        store.tryWrite("eyJ.refresh.tok");
+        assertEquals("eyJ.refresh.tok", store.read().orElse(null));
+        assertEquals("de", store.readPref(TokenStore.KEY_LANGUAGE).orElse(null));
+
+        store.tryClear();
+        assertTrue(store.read().isEmpty(), "token gone after clear");
+        assertEquals("de", store.readPref(TokenStore.KEY_LANGUAGE).orElse(null),
+                "language preference survives logout");
+    }
+
+    @Test
+    void tokenAndPrefWritesDoNotClobberEachOther()
+    {
+        FileTokenStore store = new FileTokenStore(tempDir.resolve("tokens.json"), null);
+        store.tryWrite("tok1");
+        store.tryWritePref(TokenStore.KEY_LOGIN_METHOD, "keycloak");
+        store.tryWritePref(TokenStore.KEY_LANGUAGE, "fr");
+        store.tryWrite("tok2");   // re-writing the token must keep the prefs
+
+        assertEquals("tok2", store.read().orElse(null));
+        assertEquals("keycloak", store.readPref(TokenStore.KEY_LOGIN_METHOD).orElse(null));
+        assertEquals("fr", store.readPref(TokenStore.KEY_LANGUAGE).orElse(null));
+    }
+
+    @Test
+    void emptyPrefValueClearsThePref()
+    {
+        FileTokenStore store = new FileTokenStore(tempDir.resolve("tokens.json"), null);
+        store.tryWritePref(TokenStore.KEY_LANGUAGE, "de");
+        store.tryWritePref(TokenStore.KEY_LANGUAGE, "");
+        assertTrue(store.readPref(TokenStore.KEY_LANGUAGE).isEmpty());
+    }
 }

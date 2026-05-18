@@ -2,7 +2,7 @@ package org.rapla.plugin.javasciptpatch.server;
 
 import org.rapla.facade.RaplaFacade;
 import org.rapla.logger.Logger;
-import org.rapla.server.internal.ServerContainerContext;
+import org.rapla.server.spring.RaplaServerProperties;
 import org.rapla.storage.CachableStorageOperator;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -24,23 +24,23 @@ public class JavascriptPatcher
 {
     final RaplaFacade facade;
     final Logger logger;
-    final ServerContainerContext serverContainerContext;
+    final RaplaServerProperties properties;
     final CachableStorageOperator cachableStorageOperator;
 
     @Autowired
-    public JavascriptPatcher(RaplaFacade facade, Logger logger, ServerContainerContext serverContainerContext,
+    public JavascriptPatcher(RaplaFacade facade, Logger logger, RaplaServerProperties properties,
                              CachableStorageOperator cachableStorageOperator)
     {
         this.facade = facade;
         this.logger = logger;
-        this.serverContainerContext = serverContainerContext;
+        this.properties = properties;
         this.cachableStorageOperator = cachableStorageOperator;
     }
 
     @EventListener(ApplicationReadyEvent.class)
     public void runPatchScript()
     {
-        final String patchScript = serverContainerContext.getPatchScript();
+        final String patchScript = properties.getPatchScript();
         if (patchScript == null) return;
         File file = new File(patchScript);
         try (final FileReader reader = new FileReader(file))

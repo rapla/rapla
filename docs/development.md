@@ -10,6 +10,7 @@ This guide covers what's specific to developing rapla on **WSL2 with the OpenWeb
 | Swing client launched directly (no JNLP) | [AGENTS.md](../AGENTS.md) §9 |
 | Fat-JAR test (no signing, no OWS) | `.agents/skills/test-deployment/SKILL.md` |
 | **Full JNLP + OWS launch with self-signing** (this guide) | `.agents/skills/test-jnlp-launch/SKILL.md` |
+| JNLP code signing — YubiKey (`sign-pkcs11`) & self-signed (`sign-jks`) profiles | [docs/signing.md](signing.md) |
 | Spring Boot 4 LaunchedClassLoader workaround (extract-and-run) | [PRD 018](prd/018-fat-jar-classloader-defect.md) |
 | Six known JNLP build/code defects | [memory: project_jnlp_signing_pitfalls](#known-jnlp-defects) (also in agent memory) |
 
@@ -119,9 +120,55 @@ After step 5 you can `claude` to launch the agent. For an agent session that doe
 
 ## WSL2 — running the dev server
 
-Most days `mvn -pl rapla-app -am spring-boot:run -Dspring-boot.run.fork=false` from the repo root is all you need ([AGENTS.md §8](../AGENTS.md#8-server-lifecycle---start-stop-restart-inspect)). The Maven reactor walks classpath in-tree; Spring Boot binds `*:8051`.
+Most days `mvn -pl rapla-app -am spring-boot:run -Dspring-boot.run.fork=false -Dspring-boot.run.profiles=local` from the repo root is all you need ([AGENTS.md §8](../AGENTS.md#8-server-lifecycle---start-stop-restart-inspect)). The Maven reactor walks classpath in-tree; Spring Boot binds `*:8051`.
 
 **Don't** `mvn install` and **don't** run jars from `~/.m2/repository/` — they shadow in-reactor `target/classes`. AGENTS.md §5 has the full hard rules.
+
+### Local dev overrides — `application-local.yml`
+
+`rapla-app/src/main/resources/application.yml` carries **production-sane**
+defaults. Dev-only conveniences live in `application-local.yml` in the same
+directory, loaded only when the `local` Spring profile is active. The dev-server
+recipe passes `-Dspring-boot.run.profiles=local`, so the file is picked up
+automatically.
+
+`application-local.yml` is **gitignored** — it holds machine-local values and
+IdP test-app secrets, so it is not committed and a fresh checkout does not have
+it. Without the file the server simply runs on the production `application.yml`
+defaults (`INFO` logging, request-derived OAuth origin, external IdPs off) —
+harmless for server/Swing work. Create it when you need verbose security logs
+or are doing Angular SPA / external-IdP work. Paste-ready starting point:
+
+```yaml
+# rapla-app/src/main/resources/application-local.yml
+# Local development overrides — NOT committed (gitignored). Loaded only under
+# the `local` profile (the dev-server recipe passes -Dspring-boot.run.profiles=local).
+rapla:
+  oauth:
+    # SPA needs :8051 explicitly so it bypasses the ng-serve proxy, which does
+    # not forward /oauth2/*. Empty/absent in production (request-derived origin).
+    public-base-url: http://localhost:8051
+    # External IdP test apps — fill in your own client/tenant IDs and (for the
+    # BFF route) client-secrets. See docs/authentication.md "Managing secrets".
+    external:
+      microsoft:
+        enabled: true
+        tenant: common
+        client-id: <your-entra-app-client-id>
+      google:
+        enabled: true
+        client-id: <your-google-oauth-client-id>
+        client-secret: <your-google-client-secret>
+
+# Verbose Spring Security logging — handy for auth-server / OAuth debugging.
+logging:
+  level:
+    org.springframework.security: DEBUG
+```
+
+Drop the `external:` block if you are not testing external IdPs; with only the
+rapla provider enabled the web picker does not render and the SPA auto-fires the
+rapla authorization server.
 
 ## Windows-side OpenWebStart — networking caveats
 

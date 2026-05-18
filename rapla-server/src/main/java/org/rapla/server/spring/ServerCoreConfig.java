@@ -19,21 +19,54 @@ import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.internal.DefaultScheduler;
 import org.rapla.framework.internal.RaplaLocaleImpl;
 import org.rapla.logger.Logger;
+import org.rapla.logger.RaplaBootstrapLogger;
 import org.rapla.scheduler.CommandScheduler;
 import org.rapla.framework.TimeZoneConverter;
 import org.rapla.server.internal.RemoteLoggerImpl;
-import org.rapla.server.internal.ServerContainerContext;
 import org.rapla.server.internal.ServerStorageSelector;
 import org.rapla.framework.internal.TimeZoneConverterImpl;
 
+import javax.sql.DataSource;
 import java.util.Map;
 import java.util.Set;
+import org.springframework.beans.factory.ObjectProvider;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.boot.jdbc.autoconfigure.DataSourceProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Primary;
 
 @Configuration
 public class ServerCoreConfig
 {
+    @Bean
+    public Logger raplaLogger()
+    {
+        return RaplaBootstrapLogger.createRaplaLogger();
+    }
+
+    /** Bean name / qualifier of the primary rapla database {@link DataSource}.
+     *  Consumers (notably {@code serverStorageSelector}) must qualify by this
+     *  name so a deployment-private secondary {@code DataSource} &mdash; e.g.
+     *  dhbwrapla's Dualis DB &mdash; is never mistaken for the rapla store. */
+    public static final String RAPLA_DATASOURCE_BEAN = "raplaDataSource";
+
+    /**
+     * PRD 048: the primary database {@link DataSource}, built from
+     * {@code rapla.db-datasources.rapladb} (HikariCP via Spring Boot's
+     * {@code DataSourceBuilder}; driver auto-derived from the JDBC URL).
+     * Absent when running file-backed &mdash; {@code ServerStorageSelector}
+     * then selects the {@code FileOperator}.
+     */
+    @Bean(name = RAPLA_DATASOURCE_BEAN)
+    @Primary
+    @ConditionalOnProperty(prefix = "rapla.db-datasources", name = RaplaServerProperties.MAIN_DB_DATASOURCE + ".url")
+    public DataSource raplaDataSource(RaplaServerProperties properties)
+    {
+        DataSourceProperties dbProps = properties.getDbDatasources().get(RaplaServerProperties.MAIN_DB_DATASOURCE);
+        return dbProps.initializeDataSourceBuilder().build();
+    }
+
     @Bean
     public ServerBundleManager bundleManager()
     {
@@ -112,10 +145,12 @@ public class ServerCoreConfig
         return new org.rapla.plugin.eventtimecalculator.DurationFunctions(factory);
     }
 
+    // PRD 048: the mail session is dead today (nothing ever set it). Kept as a
+    // null-returning supplier — MailapiClient falls back to JNDI / system mail.
     @Bean(name = org.rapla.server.ServerService.ENV_RAPLAMAIL_ID)
-    public java.util.function.Supplier<Object> mailSessionProvider(org.rapla.server.internal.ServerContainerContext containerContext)
+    public java.util.function.Supplier<Object> mailSessionProvider()
     {
-        return containerContext::getMailSession;
+        return () -> null;
     }
 
     @Bean
@@ -336,7 +371,8 @@ public class ServerCoreConfig
     }
 
     @Bean
-    public ServerStorageSelector serverStorageSelector(ServerContainerContext containerContext,
+    public ServerStorageSelector serverStorageSelector(
+                                                       @org.springframework.beans.factory.annotation.Qualifier(RAPLA_DATASOURCE_BEAN) ObjectProvider<DataSource> raplaDataSourceProvider,
                                                        Logger logger,
                                                        RaplaResources i18n,
                                                        RaplaLocale raplaLocale,
@@ -345,7 +381,11 @@ public class ServerCoreConfig
                                                        Set<PermissionExtension> permissionExtensions,
                                                        RaplaServerProperties properties)
     {
-        return new ServerStorageSelector(containerContext, logger, i18n, raplaLocale, scheduler,
+        // PRD 048: the @Qualifier narrows resolution to the raplaDataSource bean —
+        // getIfAvailable() yields it when db-backed, or null when file-backed (no
+        // such bean). Qualifying is mandatory: a deployment may register other
+        // DataSource beans (dhbwrapla's Dualis DB) that must NOT be picked here.
+        return new ServerStorageSelector(raplaDataSourceProvider.getIfAvailable(), logger, i18n, raplaLocale, scheduler,
                 functionFactoryMap, permissionExtensions, properties);
     }
 }

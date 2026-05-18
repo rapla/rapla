@@ -14,8 +14,9 @@ import org.rapla.entities.User;
 import org.rapla.facade.RaplaFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.server.RaplaKeyStorage;
+import org.rapla.server.spring.DatasourceConfiguredCondition;
 import org.rapla.storage.RaplaSecurityException;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.context.annotation.Conditional;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
@@ -57,7 +58,7 @@ import java.util.List;
  * DELETE removes by thumbprint (the storage {@code clientId}).
  */
 @RestController
-@ConditionalOnProperty(prefix = "rapla.file-datasources", name = "raplafile")
+@Conditional(DatasourceConfiguredCondition.class)
 @RequestMapping(value = "/api/auth/api-keys", produces = "application/json")
 public class ApiKeyController
 {

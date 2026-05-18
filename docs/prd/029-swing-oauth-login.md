@@ -419,12 +419,14 @@ server.
    remember-me actually buy us anything beyond what the browser does
    automatically? Probably yes: session cookies clear when the
    browser closes; remember-me persists across browser restarts.
-8. **Should "auto-start OAuth flow" be configurable?** A deployment
-   might want the explicit dialog for compliance reasons (visual
-   confirmation that the user is about to enter credentials, even
-   though they actually enter them in the browser).
-   `rapla.oauth.auto-start: true` default, set `false` to keep the
-   Phase-1 dialog UX. Cheap to add.
+8. ✅ **Should "auto-start OAuth flow" be configurable?** *Resolved
+   2026-05-18 — see Phase 3 above.* Shipped as two server-side booleans
+   (`rapla.oauth.swing-legacy-login`, `rapla.oauth.swing-legacy-show-sso-button`)
+   delivered through the discovery endpoint, rather than the single
+   `rapla.oauth.auto-start` originally sketched here — the two-flag
+   shape lets an admin keep the legacy dialog *and* optionally surface
+   the SSO button on it for opt-in user testing. Both default `false`
+   (Phase-2 OAuth-first behaviour unchanged).
 9. **What about Swing client restarts in offline mode?** If the
    server is unreachable, discovery fails. The fallback must give the
    user a way to retry. Today's "Exit" button is fine; consider also
@@ -485,6 +487,171 @@ server.
     flow then runs every launch as if persistence didn't exist, which
     is the Phase-1 behaviour. Worst-case degradation is "we never
     persist", not "the app crashes on startup".
+
+## Phase 3 — Admin-selectable legacy Swing login
+
+**Status:** in-progress (2026-05-18).
+
+Phase 2 made the browser-OAuth flow the *only* Swing login UX when
+discovery reports `enabled: true` — the username/password dialog never
+shows. This is the right default, but two deployment situations need the
+old dialog back:
+
+1. **Rollout / pilot.** An admin wants to keep end-users on the familiar
+   password dialog while OAuth is being validated, then flip the whole
+   estate over once confident.
+2. **Letting users opt into testing SSO.** While still defaulting to the
+   password dialog, the admin wants a *"Sign in with browser…"* button
+   on that dialog so willing users can try the new flow without it being
+   forced on everyone.
+
+This resolves Open Question 8 (below) with two server-side booleans,
+delivered to the Swing client through the existing
+`GET /api/auth/oauth/config` discovery endpoint (no new endpoint, no JNLP
+change — the client already probes discovery at startup):
+
+| Property | Env var | Default | Effect |
+|---|---|---|---|
+| `rapla.oauth.swing-legacy-login` | `RAPLA_OAUTH_SWING_LEGACY_LOGIN` | `false` | `false` → Phase-2 behaviour: auto-fire the browser OAuth flow, no dialog. `true` → show the legacy username/password dialog instead. |
+| `rapla.oauth.swing-legacy-show-sso-button` | `RAPLA_OAUTH_SWING_LEGACY_SHOW_SSO_BUTTON` | `false` | Only effective when `swing-legacy-login=true`. `true` → also render the "Sign in with browser…" button on the legacy dialog so users can try SSO. `false` → password fields only. |
+
+Both default `false`, so an unconfigured deployment keeps today's
+OAuth-first behaviour exactly. The flags are independent of
+`rapla.oauth.enabled`: when OAuth is disabled entirely, the legacy dialog
+shows with no SSO button regardless of these flags (an SSO button would
+have nothing to talk to). When discovery is unreachable, the client falls
+back to the legacy dialog with no SSO button — discovery failure means
+OAuth support can't be confirmed.
+
+Decision matrix the Swing client applies in `startLoginInThread`:
+
+| `enabled` | `swing-legacy-login` | `swing-legacy-show-sso-button` | Swing UX |
+|---|---|---|---|
+| `true` | `false` | (ignored) | Auto-fire browser OAuth (Phase-2 default) |
+| `true` | `true` | `false` | Legacy password dialog, no SSO button |
+| `true` | `true` | `true` | Legacy password dialog **+** SSO button |
+| `false` | (ignored) | (ignored) | Legacy password dialog, no SSO button |
+| discovery fails | — | — | Legacy password dialog, no SSO button |
+
+### Scope (Phase 3)
+
+- **Server**: two `@Value` props on `OAuthConfigController`; two boolean
+  fields (`swingLegacyLogin`, `swingLegacyShowSsoButton`) on the
+  `OAuthConfig` discovery DTO; `application.yml` documentation. Both
+  fields emitted on the wire even when `enabled: false` (as `false`).
+- **Client**: `OAuthConfig` (rapla-client) gains the two flags;
+  `fetchOauthConfig` parses them; `startLoginInThread` applies the
+  decision matrix above. The legacy dialog's SSO button is hidden via
+  the existing `LoginDialog.setOauthAction(null)`.
+- **Abort button on the browser-login wait.** While the browser OAuth
+  flow runs, the dialog's "waiting for browser sign-in" state previously
+  offered only **Exit** (which quits the whole app). Added an **Abort**
+  button (`LoginDialog.setAbortAction`, i18n key `abort`) that cancels
+  the `SwingOAuthLoginFlow` session future — `CancellationException`
+  propagates, the loopback listener is stopped, and the existing
+  exceptionally branch in `runOauthLogin` restores the credential
+  dialog. `runOauthLogin` now drives the wait via
+  `setBrowserLoginInProgress` (Exit + Abort row) instead of the
+  glass-pane `busy()` overlay, which would have covered the new button.
+  Applies to both the auto-OAuth (Phase 2) and SSO-button (Phase 3)
+  paths.
+- **Tests**: tier-3 MockMvc — discovery emits both fields `false` by
+  default (`OAuthConfigControllerTest`), and both `true` when the
+  properties are set (`OAuthConfigControllerSwingLegacyLoginTest`).
+
+### Out of scope (Phase 3)
+
+- Unit-testing the EDT-bound `startLoginInThread` decision branch — no
+  test harness exists for it (Phase 2's planned `AutoStartOauthFlowTest`
+  was never written); covered by manual smoke under `test-jnlp-launch`.
+- Per-user / per-group selection of the login mode — this is a
+  deployment-wide toggle.
+
+## Phase 4 — Sign-in method dropdown (Swing + Keycloak)
+
+**Status:** in-progress (2026-05-18).
+
+Phase 3 gave the legacy dialog a single "Sign in with browser…" button for
+the rapla SAS. Phase 4 replaces that button with a **sign-in method
+dropdown** so the Swing client can offer multiple providers — starting
+with **Keycloak** alongside the rapla SAS and the local password.
+
+### UX
+
+- A **method dropdown** sits above the username/password fields. Entry 0
+  is **Password** (local `grant_type=password`, typed credentials); the
+  remaining entries are the browser-based OAuth providers from discovery's
+  `providers[]` (rapla SAS, Keycloak, …), labelled by capitalised provider
+  id (`Rapla`, `Keycloak`).
+- Picking a browser provider **greys out the username/password fields**
+  (they don't apply); the **Login** button runs that provider's PKCE
+  browser flow. Picking Password re-enables them.
+- The dropdown only appears when `swing-legacy-login=true` **and**
+  `swing-legacy-show-sso-button=true` — it supersedes the Phase-3 SSO
+  button. Without the SSO flag, or when OAuth is unavailable / discovery
+  fails, only the plain password form shows (no dropdown).
+
+### Scope (Phase 4) — Keycloak only
+
+- **Client only.** The server already emits a per-provider `providers[]`
+  array (PRD 036), the resource server already validates external-IdP
+  JWTs by `iss` (`IssuerAwareJwtDecoder`), and the Keycloak realm's
+  `rapla-app` client already lists the Swing loopback redirect URI
+  (`http://127.0.0.1/login/oauth2/code/rapla`) — so no server or realm
+  change was needed.
+- `OAuthConfig` (rapla-client) gained `id` / `displayName` / `providers`
+  (each provider is itself an `OAuthConfig`). `fetchOauthConfig` parses
+  the `providers[]` array.
+- `LoginDialog`: the standalone OAuth button (`oauthBtn` /
+  `setOauthAction`) is removed; replaced by a `JComboBox`
+  (`setLoginMethods` / `getSelectedMethodIndex` / `setMethodChangeListener`
+  / `setCredentialsEnabled`).
+- `runOauthLogin` is now provider-aware — takes the chosen provider's
+  `OAuthConfig` and feeds it straight to `SwingOAuthLoginFlow` (which was
+  already endpoint-driven, so it needed no change).
+- **Confidential Keycloak client via the BFF.** The Keycloak `rapla-app`
+  client can run confidential (secret held server-side). When
+  `rapla.oauth.external.keycloak.client-secret` is set, `OAuthConfigController`
+  routes its `tokenUrl` through the BFF (`/api/auth/oauth/exchange/keycloak`),
+  which injects the secret — the Swing client never sees it. The token leg
+  needed no `SwingOAuthLoginFlow` change: it POSTs the standard
+  `authorization_code` form body to whatever `tokenUrl` discovery gives, and
+  the BFF already accepts that shape.
+- **Provider-aware refresh.** `RemoteConnectionInfo` gained `refreshUrl` +
+  `oauthClientId`; `runOauthLogin` stores the chosen provider's token endpoint
+  + client_id; `MyCustomConnector.refreshUsingToken` refreshes against them
+  (the BFF, for Keycloak), falling back to rapla SAS `/oauth2/token` +
+  `rapla-client` for password / rapla-SAS sessions. Closes the pre-existing
+  gap where every external-IdP Swing session silently re-logged-in on
+  access-token expiry.
+- **Login dialog remembers language + method.** The `TokenStore` (file /
+  JNLP-`PersistenceService`) was extended from a single-token store to a
+  flat key/value document — refresh token plus `language` and `loginMethod`
+  preferences. On a successful login `RaplaClientServiceImpl` persists the
+  selected language + sign-in method; on next launch the dialog renders in
+  that language and pre-selects that method in the dropdown. `tryClear()`
+  (logout) drops only the token — the preferences survive so the dialog
+  still defaults well after a logout.
+
+### Why Keycloak first
+
+Keycloak's `providers[]` discovery entry is **directly usable by Swing**:
+it's a public PKCE client, no `client_secret`, so `tokenUrl` points at
+Keycloak's real token endpoint (no BFF), and loopback redirects just need
+a realm redirect-URI entry. Microsoft and Google can't reuse their SPA
+discovery entries — Entra's registration is SPA-platform (rejects desktop
+loopback) and Google's routes through the BFF. Bringing them to Swing
+needs separate **native/desktop** OAuth client registrations at each IdP;
+deferred until asked. This is the part PRD 036 deferred ("Swing always
+uses the embedded SAS") — Phase 4 reopens it for Keycloak only.
+
+### Out of scope (Phase 4)
+
+- Microsoft / Google in the Swing dropdown — needs native-app client
+  registrations at Entra/Google (IdP-side config) + discovery changes to
+  carry native-client values.
+- Automated tests for the dropdown — Swing/EDT UI, no headless harness
+  (see Phase 3 out-of-scope). Verified by compile + live smoke test.
 
 ## Open Questions
 

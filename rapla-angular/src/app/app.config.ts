@@ -1,4 +1,9 @@
-import { ApplicationConfig, inject, provideAppInitializer, provideBrowserGlobalErrorListeners } from '@angular/core';
+import {
+  ApplicationConfig,
+  inject,
+  provideAppInitializer,
+  provideBrowserGlobalErrorListeners,
+} from '@angular/core';
 import { provideRouter } from '@angular/router';
 import { provideHttpClient, withInterceptors } from '@angular/common/http';
 import { provideAnimationsAsync } from '@angular/platform-browser/animations/async';
@@ -32,7 +37,7 @@ export const appConfig: ApplicationConfig = {
       // enabled. Top-level flat fields always reflect the rapla embedded SAS.
       const origin = window.location.origin;
       return fetch(origin + '/api/auth/oauth/config')
-        .then(r => r.ok ? r.json() : Promise.reject(`oauth config http ${r.status}`))
+        .then((r) => (r.ok ? r.json() : Promise.reject(`oauth config http ${r.status}`)))
         .then((cfg: OAuthDiscovery) => {
           if (!cfg.enabled) return undefined;
           authService.setDiscovery(cfg);
@@ -48,13 +53,15 @@ export const appConfig: ApplicationConfig = {
           // verification uses the right keys.
           const jwksUrl = active?.jwksUrl ?? cfg.jwksUrl;
           return fetch(jwksUrl)
-            .then(r => r.ok ? r.json() : null)
-            .then(jwks => { if (jwks) (oauth as unknown as { jwks: unknown }).jwks = jwks; })
+            .then((r) => (r.ok ? r.json() : null))
+            .then((jwks) => {
+              if (jwks) (oauth as unknown as { jwks: unknown }).jwks = jwks;
+            })
             .then(() => oauth.tryLoginCodeFlow());
         })
-        .catch(err => {
+        .catch((err) => {
           console.warn('OAuth init failed; SPA will require manual auth via /login:', err);
         });
     }),
-  ]
+  ],
 };

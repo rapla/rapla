@@ -1,7 +1,14 @@
 # PRD 036: External IdP OAuth 2.0 Login (Microsoft Entra ID + Google)
 
-**Status:** draft
+**Status:** in-progress
 **Date:** 2026-05-14
+
+> **Progress (2026-05-18):** v1 (Microsoft + Google) is implemented and wired.
+> Phase 2.1 (Keycloak as a first-class provider) server + Angular code has
+> landed — see the Phase 2.1 "Implementation tasks" checklist below. A local
+> Keycloak for testing lives in `tools/keycloak/` (PRD-independent dev tooling,
+> started on demand via `keycloak.sh`). Remaining: Phase 2.1 manual e2e and
+> Phase 2.2 (Shibboleth-via-Keycloak docs).
 
 ## Goal
 
@@ -785,34 +792,34 @@ with one Keycloak realm — same model as the Microsoft/Google blocks.
 
 #### Implementation tasks
 
-1. **Server: Keycloak provider class.**
-   - `ExternalProvidersProperties.Keycloak` POJO with the fields above.
-   - `toProviderConfig()` derives URLs from `base-url + realm`.
-   - Validation: both `base-url` and `realm` required when `enabled=true`.
-   - Estimated: ~100 LOC + boilerplate getters/setters.
-2. **Server: `ExternalProviderId.KEYCLOAK` enum entry.** Trivial.
-3. **Server: `enabledProviders()` updated.** Trivial.
+1. ✅ **Server: Keycloak provider class.** `ExternalProvidersProperties.Keycloak`
+   nested POJO; `toProviderConfig()` derives every OIDC URL from
+   `base-url + realm`; validation requires `base-url`, `realm`, and
+   `client-id` when `enabled=true`.
+2. ✅ **Server: `ExternalProviderId.KEYCLOAK` enum entry.**
+3. ✅ **Server: `enabledProviders()` updated** to include the Keycloak block.
+   No `JwtConfig` / `OAuthConfigController` change needed — both already
+   iterate `enabledProviders()` generically, so Keycloak slots into the
+   multi-issuer decoder and the discovery `providers[]` array automatically.
 4. **Tests:**
-   - Tier-1 `KeycloakUserResolverTest` — reuse `ExternalUserResolver`
-     with Keycloak claim mapping; exercise external-id, email-match,
-     auto-provision paths.
-   - Tier-3 `DiscoveryWithKeycloakOnlyTest` — Keycloak alone, verify
-     URLs derived correctly from `base-url + realm`.
-   - Tier-3 `DiscoveryWithAllFourTest` — rapla + Microsoft + Google +
-     Keycloak, picker sorts and emits each correctly.
-   - Tier-3 `KeycloakTokenIntegrationTest` (MockMvc + stubbed
-     Keycloak JWKS) — Keycloak Bearer token unlocks rapla REST.
-5. **Angular: `LoginPickerComponent` icon for Keycloak.** Add
-   `keycloak` to the icon-name → glyph mapping (Material icon, custom
-   SVG, or fall back to the generic `login` icon).
-6. **Setup recipe in `docs/authentication.md`** — Keycloak admin setup
-   (Create realm → Create client (Settings tab: Access Type =
-   public/confidential, Valid Redirect URIs = `<rapla-base>/app/auth/callback`,
-   Web Origins for CORS) → copy realm + client-id → rapla
-   `application-local.yml` config).
-7. **Manual e2e**: real Keycloak (local Docker container or a real
-   deployment) — Angular login → main view; verify
-   `Authorization: Bearer <keycloak-id-token>` validates server-side.
+   - ✅ Tier-1 `ExternalProvidersPropertiesKeycloakTest` — URL derivation,
+     trailing-slash strip, required-field validation, default OIDC claims,
+     `enabledProviders()` inclusion.
+   - ✅ Tier-3 `OAuthConfigControllerKeycloakTest` — Keycloak alone: discovery
+     emits a rapla + keycloak `providers[]`, URLs derived from `base-url +
+     realm`, top-level fields stay rapla SAS, no `clientSecret` on the wire.
+   - ⏳ `KeycloakUserResolverTest` not added separately — Keycloak uses the
+     standard OIDC claims, so the generic `ExternalUserResolver` (already
+     covered by `ExternalUserResolverTest`) handles it with no new code.
+   - ⏳ `DiscoveryWithAllFourTest`, `KeycloakTokenIntegrationTest` — deferred;
+     not blocking the local-dev use case.
+5. ✅ **Angular: login picker icon for Keycloak.** `keycloak` → `shield`
+   Material glyph in `LoginComponent.iconNameFor()`; tier-6 spec covers it.
+6. ✅ **Setup recipe** — `docs/authentication.md` "External IdP — Keycloak"
+   section + `tools/keycloak/README.md` for the local-dev path.
+7. ⏳ **Manual e2e**: local Keycloak (`tools/keycloak/keycloak.sh start`) —
+   Angular login → main view; verify `Authorization: Bearer
+   <keycloak-id-token>` validates server-side.
 
 **Estimated total work:** ~400 LOC server + ~50 LOC test setup +
 ~100 lines docs. Smaller than the Microsoft+Google initial work

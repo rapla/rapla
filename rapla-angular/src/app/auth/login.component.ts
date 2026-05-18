@@ -34,17 +34,23 @@ import { AuthService, OAuthProviderEntry } from './auth.service';
               <p>Redirecting to sign-in…</p>
             </div>
           } @else {
-            <p [class.error]="errorMessage">{{ errorMessage ?? 'Sign in to access your reservations.' }}</p>
+            <p [class.error]="errorMessage">
+              {{ errorMessage ?? 'Sign in to access your reservations.' }}
+            </p>
             @if (auth.lastOAuthError(); as oauthErr) {
-              <p class="detail">OAuth library reported: <code>{{ oauthErr }}</code></p>
+              <p class="detail">
+                OAuth library reported: <code>{{ oauthErr }}</code>
+              </p>
             }
             @if (showPicker()) {
               <div class="picker">
                 @for (provider of pickerProviders(); track provider.id) {
-                  <button matButton="filled"
-                          class="provider-btn"
-                          [attr.data-provider-id]="provider.id"
-                          (click)="signInWithProvider(provider.id)">
+                  <button
+                    matButton="filled"
+                    class="provider-btn"
+                    [attr.data-provider-id]="provider.id"
+                    (click)="signInWithProvider(provider.id)"
+                  >
                     <mat-icon class="provider-icon" [attr.aria-hidden]="true">
                       {{ iconNameFor(provider) }}
                     </mat-icon>
@@ -56,27 +62,75 @@ import { AuthService, OAuthProviderEntry } from './auth.service';
               <button matButton="filled" (click)="retry()">Sign in</button>
             }
             @if (errorMessage) {
-              <button matButton (click)="forceFreshLogin()">Force fresh sign-in (prompt=login)</button>
+              <button matButton (click)="forceFreshLogin()">
+                Force fresh sign-in (prompt=login)
+              </button>
             }
           }
         </mat-card-content>
       </mat-card>
     </div>
   `,
-  styles: [`
-    .login-wrap { display: flex; justify-content: center; padding: 4rem 1rem; }
-    mat-card { max-width: 360px; width: 100%; }
-    p { margin: 0 0 1rem; }
-    .error { color: #c62828; }
-    .detail { font-size: 0.85rem; color: rgba(0, 0, 0, 0.7); }
-    .detail code { background: rgba(0, 0, 0, 0.05); padding: 0.15rem 0.35rem; border-radius: 3px; font-family: monospace; }
-    button + button { margin-top: 0.5rem; }
-    .centered { display: flex; flex-direction: column; align-items: center; gap: 0.75rem; padding: 1rem 0; }
-    .centered p { margin: 0; color: rgba(0, 0, 0, 0.6); font-size: 0.9rem; }
-    .picker { display: flex; flex-direction: column; gap: 0.5rem; }
-    .provider-btn { display: flex; align-items: center; justify-content: center; gap: 0.5rem; }
-    .provider-icon { font-size: 1.1rem; height: 1.1rem; width: 1.1rem; }
-  `]
+  styles: [
+    `
+      .login-wrap {
+        display: flex;
+        justify-content: center;
+        padding: 4rem 1rem;
+      }
+      mat-card {
+        max-width: 360px;
+        width: 100%;
+      }
+      p {
+        margin: 0 0 1rem;
+      }
+      .error {
+        color: #c62828;
+      }
+      .detail {
+        font-size: 0.85rem;
+        color: rgba(0, 0, 0, 0.7);
+      }
+      .detail code {
+        background: rgba(0, 0, 0, 0.05);
+        padding: 0.15rem 0.35rem;
+        border-radius: 3px;
+        font-family: monospace;
+      }
+      button + button {
+        margin-top: 0.5rem;
+      }
+      .centered {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 0.75rem;
+        padding: 1rem 0;
+      }
+      .centered p {
+        margin: 0;
+        color: rgba(0, 0, 0, 0.6);
+        font-size: 0.9rem;
+      }
+      .picker {
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+      }
+      .provider-btn {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.5rem;
+      }
+      .provider-icon {
+        font-size: 1.1rem;
+        height: 1.1rem;
+        width: 1.1rem;
+      }
+    `,
+  ],
 })
 export class LoginComponent implements OnInit {
   protected readonly auth = inject(AuthService);
@@ -134,15 +188,21 @@ export class LoginComponent implements OnInit {
 
   /**
    * Maps the discovery-emitted icon name (well-known: `microsoft`, `google`,
-   * `rapla`) to a Material Icons code-point. Falls back to a generic
-   * key/login icon for custom / unknown values.
+   * `rapla`, `keycloak`) to a Material Icons code-point. Falls back to a
+   * generic key/login icon for custom / unknown values.
    */
   iconNameFor(provider: OAuthProviderEntry): string {
     switch (provider.icon) {
-      case 'microsoft': return 'window';      // Material doesn't ship a Microsoft logo
-      case 'google':    return 'g_translate'; // Closest Google-branded Material icon
-      case 'rapla':     return 'key';
-      default:          return 'login';
+      case 'microsoft':
+        return 'window'; // Material doesn't ship a Microsoft logo
+      case 'google':
+        return 'g_translate'; // Closest Google-branded Material icon
+      case 'rapla':
+        return 'key';
+      case 'keycloak':
+        return 'shield'; // Material has no Keycloak logo
+      default:
+        return 'login';
     }
   }
 }

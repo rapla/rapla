@@ -15,7 +15,7 @@ import org.rapla.storage.dbsql.DBOperator;
 import org.rapla.storage.impl.server.ImportExportManagerImpl;
 import org.rapla.storage.impl.server.LocalAbstractCachableOperator;
 
-import org.springframework.beans.factory.annotation.Autowired;
+import org.jetbrains.annotations.Nullable;
 import java.util.function.Supplier;
 import javax.sql.DataSource;
 import java.util.Map;
@@ -24,7 +24,8 @@ import java.util.Set;
 
 public class ServerStorageSelector implements Supplier<CachableStorageOperator>
 {
-    final ServerContainerContext containerContext;
+    /** Primary database datasource, or {@code null} when running file-backed (PRD 048). */
+    @Nullable final DataSource primaryDbDatasource;
     FileOperator file;
     DBOperator db;
 
@@ -37,11 +38,11 @@ public class ServerStorageSelector implements Supplier<CachableStorageOperator>
     final RaplaServerProperties properties;
     ImportExportManager manager;
 
-    @Autowired public ServerStorageSelector(ServerContainerContext containerContext, Logger logger, RaplaResources i18n, RaplaLocale raplaLocale, CommandScheduler scheduler, Map<String, FunctionFactory> functionFactoryMap,
+    public ServerStorageSelector(@Nullable DataSource primaryDbDatasource, Logger logger, RaplaResources i18n, RaplaLocale raplaLocale, CommandScheduler scheduler, Map<String, FunctionFactory> functionFactoryMap,
             Set<PermissionExtension> permissionExtensions, RaplaServerProperties properties)
     {
 
-        this.containerContext = containerContext;
+        this.primaryDbDatasource = primaryDbDatasource;
         this.logger = logger;
         this.i18n = i18n;
         this.raplaLocale = raplaLocale;
@@ -61,7 +62,7 @@ public class ServerStorageSelector implements Supplier<CachableStorageOperator>
 
     @NotNull private FileOperator createFileOperator()
     {
-        final String raplafile = containerContext.getMainFilesource();
+        final String raplafile = properties.getMainFilesource();
         final String fileDatasource = raplafile != null ? raplafile : "data/data.xml";
         FileOperator op = new FileOperator(logger, i18n, raplaLocale, scheduler, functionFactoryMap, fileDatasource, permissionExtensions);
         applyMergeConfig(op);
@@ -85,8 +86,7 @@ public class ServerStorageSelector implements Supplier<CachableStorageOperator>
     @NotNull private DBOperator createDbOperator()
     {
         Supplier<ImportExportManager> importExportMananger = getImportExportManager();
-        final DataSource dbDatasource = containerContext.getMainDbDatasource();
-        DBOperator op = new DBOperator(logger, i18n, raplaLocale, scheduler, functionFactoryMap, importExportMananger, dbDatasource, permissionExtensions);
+        DBOperator op = new DBOperator(logger, i18n, raplaLocale, scheduler, functionFactoryMap, importExportMananger, primaryDbDatasource, permissionExtensions);
         applyMergeConfig(op);
         return op;
     }
@@ -95,7 +95,7 @@ public class ServerStorageSelector implements Supplier<CachableStorageOperator>
 
     synchronized public CachableStorageOperator get()
     {
-        if (containerContext.isDbDatasource())
+        if (primaryDbDatasource != null)
         {
             return getDb();
         }

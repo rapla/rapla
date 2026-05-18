@@ -1,4 +1,15 @@
 @import '@angular/material/prebuilt-themes/azure-blue.css';
+/* Self-hosted Material Icons font — <mat-icon> renders ligature glyphs from
+   this. Self-hosted (not the Google Fonts CDN) so the SPA has no runtime
+   third-party dependency: works offline and avoids the GDPR concern of the
+   browser calling fonts.googleapis.com. */
+@import 'material-icons/iconfont/material-icons.css';
 
-html, body { height: 100%; margin: 0; }
-body { font-family: Roboto, "Helvetica Neue", sans-serif; }
+html,
+body {
+  height: 100%;
+  margin: 0;
+}
+body {
+  font-family: Roboto, 'Helvetica Neue', sans-serif;
+}

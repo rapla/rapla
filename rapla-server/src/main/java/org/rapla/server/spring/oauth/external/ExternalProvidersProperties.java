@@ -20,6 +20,7 @@ public class ExternalProvidersProperties
 {
     private Microsoft microsoft = new Microsoft();
     private Google google = new Google();
+    private Keycloak keycloak = new Keycloak();
 
     public Microsoft getMicrosoft() { return microsoft; }
     public void setMicrosoft(Microsoft microsoft) { this.microsoft = microsoft; }
@@ -27,11 +28,15 @@ public class ExternalProvidersProperties
     public Google getGoogle() { return google; }
     public void setGoogle(Google google) { this.google = google; }
 
+    public Keycloak getKeycloak() { return keycloak; }
+    public void setKeycloak(Keycloak keycloak) { this.keycloak = keycloak; }
+
     public List<ProviderConfig> enabledProviders()
     {
-        List<ProviderConfig> out = new ArrayList<>(2);
+        List<ProviderConfig> out = new ArrayList<>(3);
         if (microsoft.isEnabled()) out.add(microsoft.toProviderConfig());
         if (google.isEnabled()) out.add(google.toProviderConfig());
+        if (keycloak.isEnabled()) out.add(keycloak.toProviderConfig());
         return out;
     }
 
@@ -268,6 +273,106 @@ public class ExternalProvidersProperties
                     extraAuthorizeParams == null ? new LinkedHashMap<>() : extraAuthorizeParams,
                     usernameClaim, emailClaim, externalIdClaim,
                     hostedDomain, autoProvision, revokeOnLogout);
+        }
+    }
+
+    /**
+     * Keycloak — a self-hosted OIDC provider (PRD 036 Phase 2.1). Every OIDC
+     * endpoint is derived from {@code base-url + realm}; a Keycloak realm is
+     * already a tenant, so one rapla deployment maps to one realm. A "public"
+     * Keycloak client (PKCE, no secret) uses the direct token route; a
+     * "confidential" client (secret set) routes through the BFF — same
+     * per-secret logic as Google "Web application".
+     */
+    public static class Keycloak
+    {
+        private boolean enabled = false;
+        // The Keycloak server's public base URL, e.g. https://keycloak.example.com.
+        private String baseUrl = "";
+        // The realm name. issuer = {base-url}/realms/{realm}.
+        private String realm = "";
+        private String clientId = "";
+        // Empty for a Keycloak "public" client (PKCE-only). Set for a
+        // "confidential" client — then the BFF adds it server-side.
+        private String clientSecret = "";
+        private String hostedDomain = "";
+        // Matches the rapla LDAP / Entra / Google precedent — see Microsoft.autoProvision.
+        private boolean autoProvision = true;
+        private String displayName = "Sign in with Keycloak";
+        private String icon = "keycloak";
+        private int order = 15;
+        private boolean webPickerVisible = true;
+        // Keycloak issues the standard OIDC claims out of the box.
+        private String usernameClaim = "preferred_username";
+        private String emailClaim = "email";
+        private String externalIdClaim = "sub";
+        private String postLogoutRedirectUri = "";
+        private List<String> scopes = List.of("openid", "profile", "email");
+
+        public boolean isEnabled() { return enabled; }
+        public void setEnabled(boolean enabled) { this.enabled = enabled; }
+        public String getBaseUrl() { return baseUrl; }
+        public void setBaseUrl(String baseUrl) { this.baseUrl = baseUrl; }
+        public String getRealm() { return realm; }
+        public void setRealm(String realm) { this.realm = realm; }
+        public String getClientId() { return clientId; }
+        public void setClientId(String clientId) { this.clientId = clientId; }
+        public String getClientSecret() { return clientSecret; }
+        public void setClientSecret(String clientSecret) { this.clientSecret = clientSecret; }
+        public String getHostedDomain() { return hostedDomain; }
+        public void setHostedDomain(String hostedDomain) { this.hostedDomain = hostedDomain; }
+        public boolean isAutoProvision() { return autoProvision; }
+        public void setAutoProvision(boolean autoProvision) { this.autoProvision = autoProvision; }
+        public String getDisplayName() { return displayName; }
+        public void setDisplayName(String displayName) { this.displayName = displayName; }
+        public String getIcon() { return icon; }
+        public void setIcon(String icon) { this.icon = icon; }
+        public int getOrder() { return order; }
+        public void setOrder(int order) { this.order = order; }
+        public boolean isWebPickerVisible() { return webPickerVisible; }
+        public void setWebPickerVisible(boolean webPickerVisible) { this.webPickerVisible = webPickerVisible; }
+        public String getUsernameClaim() { return usernameClaim; }
+        public void setUsernameClaim(String usernameClaim) { this.usernameClaim = usernameClaim; }
+        public String getEmailClaim() { return emailClaim; }
+        public void setEmailClaim(String emailClaim) { this.emailClaim = emailClaim; }
+        public String getExternalIdClaim() { return externalIdClaim; }
+        public void setExternalIdClaim(String externalIdClaim) { this.externalIdClaim = externalIdClaim; }
+        public String getPostLogoutRedirectUri() { return postLogoutRedirectUri; }
+        public void setPostLogoutRedirectUri(String postLogoutRedirectUri) { this.postLogoutRedirectUri = postLogoutRedirectUri; }
+        public List<String> getScopes() { return scopes; }
+        public void setScopes(List<String> scopes) { this.scopes = scopes; }
+
+        ProviderConfig toProviderConfig()
+        {
+            if (baseUrl == null || baseUrl.isEmpty())
+            {
+                throw new IllegalStateException(
+                        "rapla.oauth.external.keycloak.enabled=true requires rapla.oauth.external.keycloak.base-url");
+            }
+            if (realm == null || realm.isEmpty())
+            {
+                throw new IllegalStateException(
+                        "rapla.oauth.external.keycloak.enabled=true requires rapla.oauth.external.keycloak.realm");
+            }
+            if (clientId == null || clientId.isEmpty())
+            {
+                throw new IllegalStateException(
+                        "rapla.oauth.external.keycloak.enabled=true requires rapla.oauth.external.keycloak.client-id");
+            }
+            String base = baseUrl.endsWith("/") ? baseUrl.substring(0, baseUrl.length() - 1) : baseUrl;
+            String realmBase = base + "/realms/" + realm;
+            String oidc = realmBase + "/protocol/openid-connect";
+            return new ProviderConfig(
+                    ExternalProviderId.KEYCLOAK,
+                    displayName, icon, order, webPickerVisible,
+                    clientId, clientSecret,
+                    realmBase,
+                    oidc + "/auth", oidc + "/token", oidc + "/certs", oidc + "/logout",
+                    postLogoutRedirectUri,
+                    scopes,
+                    new LinkedHashMap<>(),
+                    usernameClaim, emailClaim, externalIdClaim,
+                    hostedDomain, autoProvision, false);
         }
     }
 

@@ -1,6 +1,6 @@
 # PRD index
 
-45 PRDs total — **28 active** in this directory, **17 done** under `done/`. AGENTS.md §2 + §3 cover the lifecycle (move to `done/` when complete; `git mv` back if reopening). This index exists so agents and humans don't `ls` and guess.
+48 PRDs total — **31 active** in this directory, **17 done** under `done/`. AGENTS.md §2 + §3 cover the lifecycle (move to `done/` when complete; `git mv` back if reopening). This index exists so agents and humans don't `ls` and guess.
 
 > **Numbering note:** there are two `031` files (`031-api-namespace-redesign.md` and `031-token-refresh-and-api-keys.md`). Both are in-progress and on different tracks. Future PRDs should pick the next free number (currently 042) rather than reusing.
 
@@ -38,6 +38,7 @@
 | File | Title | Status |
 |---|---|---|
 | [026-angular-frontend.md](026-angular-frontend.md) | Angular frontend (reservation editing) | Phase 0 prototype landed 2026-05-12 |
+| [047-angular-frontend-plugin-model.md](047-angular-frontend-plugin-model.md) | Angular frontend plugin model (Native Federation remotes) | draft 2026-05-18 |
 
 ### External integrations / sync
 
@@ -63,6 +64,9 @@
 | [012-dhbwrapla-client-migration.md](012-dhbwrapla-client-migration.md) | Migrate dhbwrapla client-side plugin code to server pages / general rapla | rapla-side carve-out fully landed 2026-05-10 |
 | [022-architecture-documentation.md](022-architecture-documentation.md) | Architecture reference documentation | in-progress |
 | [040-dispatch-validate-before-lock.md](040-dispatch-validate-before-lock.md) | Dispatch validates against a stale cache before locking (multi-pod) | draft 2026-05-15 |
+| [045-end-user-deployment-and-db-config.md](045-end-user-deployment-and-db-config.md) | End-user deployment model & database configuration | in-progress — Phases 1+2+3 landed 2026-05-18; OQ5 packaging deferred |
+| [046-drop-in-plugin-model.md](046-drop-in-plugin-model.md) | Drop-in server plugin / extension model (`./plugins/` autoconfig jars) | draft 2026-05-18 |
+| [048-eliminate-server-container-context.md](048-eliminate-server-container-context.md) | Eliminate `ServerContainerContext` + implement reload-on-restart | design complete 2026-05-18; ready to implement |
 
 ### Decisions / policies (no implementation phase)
 
@@ -126,6 +130,6 @@
 
 ## How to add a PRD
 
-See AGENTS.md §2 (PRD-Driven Development) and §3 (PRD Format). Pick the next free number (currently **041**). File naming: `docs/prd/NNN-short-name.md`. Required sections: Title, Status, Goal, Scope, Plan, Tests, Open Questions.
+See AGENTS.md §2 (PRD-Driven Development) and §3 (PRD Format). Pick the next free number (currently **048**). File naming: `docs/prd/NNN-short-name.md`. Required sections: Title, Status, Goal, Scope, Plan, Tests, Open Questions.
 
 When a PRD finishes, `git mv` it to `docs/prd/done/` and update this index in the same change.

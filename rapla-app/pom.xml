@@ -491,38 +491,51 @@
                 </plugins>
             </build>
         </profile>
+        <!-- Sign the JNLP webclient jars with a hardware token (YubiKey PIV via
+             OpenSC PKCS#11). NOT the maven-jarsigner-plugin: it forks one
+             jarsigner process per jar, and a YubiKey whose signing slot has
+             touch policy CACHED (a touch is valid 15 s) then demands a fresh
+             physical touch every few jars. SignWebclientJars signs the whole
+             set in ONE JVM (one login, one PKCS#11 session) in ~8 s, so a
+             single touch covers the build. See docs/signing.md. -->
         <profile>
             <id>sign-pkcs11</id>
             <build>
                 <plugins>
                     <plugin>
-                        <groupId>org.apache.maven.plugins</groupId>
-                        <artifactId>maven-jarsigner-plugin</artifactId>
-                        <version>3.1.0</version>
+                        <groupId>org.codehaus.mojo</groupId>
+                        <artifactId>exec-maven-plugin</artifactId>
+                        <!-- version inherited from rapla-bom pluginManagement -->
                         <executions>
                             <execution>
                                 <id>sign-webclient-pkcs11</id>
                                 <phase>prepare-package</phase>
                                 <goals>
-                                    <goal>sign</goal>
+                                    <goal>exec</goal>
                                 </goals>
+                                <configuration>
+                                    <!-- rapla-bom defaults exec-maven-plugin to skip=true
+                                         (so reactor walks don't fire exec:java everywhere);
+                                         re-enable it for this signing execution. -->
+                                    <skip>false</skip>
+                                    <executable>${java.home}/bin/java</executable>
+                                    <arguments>
+                                        <argument>--add-modules</argument>
+                                        <argument>jdk.jartool</argument>
+                                        <argument>${project.basedir}/src/build/SignWebclientJars.java</argument>
+                                        <!-- pkcs11.cfg / pkcs11.certchain / pkcs11.pin are
+                                             NOT committed. The maintainer defines them in the
+                                             machine-local ~/.m2/settings.xml; the cfg + cert
+                                             files live in ~/.m2/. See docs/signing.md. -->
+                                        <argument>${pkcs11.cfg}</argument>
+                                        <argument>${pkcs11.certchain}</argument>
+                                        <argument>Certificate for PIV Authentication</argument>
+                                        <argument>${pkcs11.pin}</argument>
+                                        <argument>${project.build.directory}/webclient</argument>
+                                    </arguments>
+                                </configuration>
                             </execution>
                         </executions>
-                        <configuration>
-                            <!-- PKCS#11/YubiKey instead of JKS -->
-                            <keystore>NONE</keystore>
-                            <storetype>PKCS11</storetype>
-                            <providerClass>sun.security.pkcs11.SunPKCS11</providerClass>
-                            <providerArg>${project.basedir}/pkcs11.cfg</providerArg>
-                            <storepass>123456</storepass>
-                            <alias>Certificate for PIV Authentication</alias>
-                            <certchain>${project.basedir}/certificate-chain.pem</certchain>
-                            <archiveDirectory>${project.build.directory}/webclient</archiveDirectory>
-                            <includes>
-                                <include>*.jar</include>
-                            </includes>
-                            <verbose>true</verbose>
-                        </configuration>
                     </plugin>
                 </plugins>
             </build>

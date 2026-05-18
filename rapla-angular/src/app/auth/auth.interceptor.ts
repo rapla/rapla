@@ -19,16 +19,18 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
   const auth = inject(AuthService);
   const token = auth.token();
 
-  const authedReq = token
-    ? req.clone({ setHeaders: { Authorization: `Bearer ${token}` } })
-    : req;
+  const authedReq = token ? req.clone({ setHeaders: { Authorization: `Bearer ${token}` } }) : req;
 
   return next(authedReq).pipe(
     catchError((err: HttpErrorResponse) => {
-      if (err.status === 401 && !req.url.includes('/oauth2/') && !req.url.includes('/.well-known/')) {
+      if (
+        err.status === 401 &&
+        !req.url.includes('/oauth2/') &&
+        !req.url.includes('/.well-known/')
+      ) {
         auth.handleUnauthenticated();
       }
       return throwError(() => err);
-    })
+    }),
   );
 };

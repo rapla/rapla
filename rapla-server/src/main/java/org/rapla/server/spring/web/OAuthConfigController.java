@@ -31,6 +31,11 @@ public class OAuthConfigController
     private final String clientId;
     private final List<String> scopes;
     private final boolean showPasteFallback;
+    // PRD 029 Phase 3 — admin-selectable legacy Swing login. Both default false
+    // (Phase-2 OAuth-first behaviour). Delivered to the Swing client via this
+    // discovery endpoint; see startLoginInThread in RaplaClientServiceImpl.
+    private final boolean swingLegacyLogin;
+    private final boolean swingLegacyShowSsoButton;
     private final String publicBaseUrlOverride;
     private final String authorizeUrlOverride;
     private final String tokenUrlOverride;
@@ -51,6 +56,8 @@ public class OAuthConfigController
             @Value("${rapla.oauth.client-id:rapla-client}") String clientId,
             @Value("${rapla.oauth.scopes:openid,profile,offline_access}") List<String> scopes,
             @Value("${rapla.oauth.show-paste-fallback:false}") boolean showPasteFallback,
+            @Value("${rapla.oauth.swing-legacy-login:false}") boolean swingLegacyLogin,
+            @Value("${rapla.oauth.swing-legacy-show-sso-button:false}") boolean swingLegacyShowSsoButton,
             @Value("${rapla.oauth.public-base-url:}") String publicBaseUrlOverride,
             @Value("${rapla.oauth.authorize-url:}") String authorizeUrlOverride,
             @Value("${rapla.oauth.token-url:}") String tokenUrlOverride,
@@ -69,6 +76,8 @@ public class OAuthConfigController
         this.clientId = clientId;
         this.scopes = scopes;
         this.showPasteFallback = showPasteFallback;
+        this.swingLegacyLogin = swingLegacyLogin;
+        this.swingLegacyShowSsoButton = swingLegacyShowSsoButton;
         this.publicBaseUrlOverride = nullToEmpty(publicBaseUrlOverride);
         this.authorizeUrlOverride = nullToEmpty(authorizeUrlOverride);
         this.tokenUrlOverride = nullToEmpty(tokenUrlOverride);
@@ -90,7 +99,8 @@ public class OAuthConfigController
         if (!enabled)
         {
             return new OAuthConfig(false, null, null, null, null, null, null, null, null,
-                    List.of(), false, new Picker("never", "rapla"), List.of());
+                    List.of(), false, swingLegacyLogin, swingLegacyShowSsoButton,
+                    new Picker("never", "rapla"), List.of());
         }
         // App-facing base: respects X-Forwarded-* so dev proxy on :4200 produces
         // :4200 URLs. Used for the rapla REST API (/api/auth/refresh, /logout).
@@ -138,6 +148,8 @@ public class OAuthConfigController
                 endSessionUrl,
                 scopes,
                 showPasteFallback,
+                swingLegacyLogin,
+                swingLegacyShowSsoButton,
                 new Picker(pickerMode, pickerPrimary),
                 providers);
     }
@@ -243,13 +255,17 @@ public class OAuthConfigController
         public final String endSessionUrl;
         public final List<String> scopes;
         public final boolean showPasteFallback;
+        public final boolean swingLegacyLogin;
+        public final boolean swingLegacyShowSsoButton;
         public final Picker picker;
         public final List<ProviderEntry> providers;
 
         public OAuthConfig(boolean enabled, String clientId, String issuer, String authorizeUrl,
                            String tokenUrl, String logoutUrl, String jwksUrl,
                            String userinfoUrl, String endSessionUrl, List<String> scopes,
-                           boolean showPasteFallback, Picker picker, List<ProviderEntry> providers)
+                           boolean showPasteFallback, boolean swingLegacyLogin,
+                           boolean swingLegacyShowSsoButton, Picker picker,
+                           List<ProviderEntry> providers)
         {
             this.enabled = enabled;
             this.clientId = clientId;
@@ -262,6 +278,8 @@ public class OAuthConfigController
             this.endSessionUrl = endSessionUrl;
             this.scopes = scopes;
             this.showPasteFallback = showPasteFallback;
+            this.swingLegacyLogin = swingLegacyLogin;
+            this.swingLegacyShowSsoButton = swingLegacyShowSsoButton;
             this.picker = picker;
             this.providers = providers;
         }
@@ -277,6 +295,8 @@ public class OAuthConfigController
         public String getEndSessionUrl() { return endSessionUrl; }
         public List<String> getScopes() { return scopes; }
         public boolean isShowPasteFallback() { return showPasteFallback; }
+        public boolean isSwingLegacyLogin() { return swingLegacyLogin; }
+        public boolean isSwingLegacyShowSsoButton() { return swingLegacyShowSsoButton; }
         public Picker getPicker() { return picker; }
         public List<ProviderEntry> getProviders() { return providers; }
     }

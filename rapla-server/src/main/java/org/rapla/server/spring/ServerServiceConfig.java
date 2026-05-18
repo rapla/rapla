@@ -17,16 +17,16 @@ import org.rapla.server.AuthenticationStore;
 import org.rapla.server.extensionpoints.ServletRequestPreprocessor;
 import org.rapla.server.internal.RaplaAuthentificationService;
 import org.rapla.server.internal.RaplaKeyStorageImpl;
+import org.rapla.server.internal.ReloadService;
 import org.rapla.server.internal.RemoteSessionImpl;
-import org.rapla.server.internal.ServerContainerContext;
 import org.rapla.server.internal.ServerServiceImpl;
 import org.rapla.server.internal.ServerStorageSelector;
 import org.rapla.server.internal.TokenHandler;
 import org.rapla.storage.CachableStorageOperator;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.config.AutowireCapableBeanFactory;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Conditional;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.DependsOn;
 
@@ -35,7 +35,7 @@ import java.util.Map;
 import java.util.Set;
 
 @Configuration
-@ConditionalOnProperty(prefix = "rapla.file-datasources", name = "raplafile")
+@Conditional(DatasourceConfiguredCondition.class)
 public class ServerServiceConfig
 {
     @Bean
@@ -59,7 +59,6 @@ public class ServerServiceConfig
             Logger logger,
             ObjectProvider<Set<ServletRequestPreprocessor>> requestPreProcessorsProvider,
             CommandScheduler scheduler,
-            ServerContainerContext containerContext,
             RaplaResources i18n,
             RaplaSystemInfo systemInfo,
             ServerBundleManager bundleManager) throws RaplaInitializationException
@@ -69,7 +68,7 @@ public class ServerServiceConfig
         // PRD 019 Phase 4: ServerExtension Map<> arg dropped. Scheduling/startup work
         // is now driven by @Scheduled / @EventListener.
         return new ServerServiceImpl(operator, facade, raplaLocale, timeZoneConverter, logger,
-                setProvider, scheduler, containerContext, i18n, systemInfo, bundleManager);
+                setProvider, scheduler, i18n, systemInfo, bundleManager);
     }
 
     @Bean
@@ -182,10 +181,13 @@ public class ServerServiceConfig
         return impl;
     }
 
+    // PRD 048: the real client-triggered restart — a logical reload of the
+    // server data store (operator disconnect + reconnect), replacing the dead
+    // ShutdownService stub.
     @Bean
-    public org.rapla.server.internal.ShutdownService shutdownService(ServerContainerContext containerContext)
+    public ReloadService reloadService(CachableStorageOperator operator)
     {
-        return containerContext.getShutdownService();
+        return new ReloadService(operator);
     }
 
     @Bean
@@ -370,16 +372,16 @@ public class ServerServiceConfig
     @Bean
     public org.rapla.server.servletpages.RaplaIndexPageGenerator raplaIndexPageGenerator(
             java.util.Map<String, org.rapla.server.extensionpoints.HtmlMainMenu> entries,
-            RaplaResources i18n, RaplaFacade facade, ServerContainerContext serverContainerContext)
+            RaplaResources i18n, RaplaFacade facade, RaplaServerProperties properties)
     {
-        return new org.rapla.server.servletpages.RaplaIndexPageGenerator(entries, i18n, facade, serverContainerContext);
+        return new org.rapla.server.servletpages.RaplaIndexPageGenerator(entries, i18n, facade, properties);
     }
 
     @Bean
     public org.rapla.server.servletpages.RaplaStatusPageGenerator raplaStatusPageGenerator(
-            RaplaSystemInfo systemInfo, ServerContainerContext serverContainerContext)
+            RaplaSystemInfo systemInfo, RaplaServerProperties properties)
     {
-        return new org.rapla.server.servletpages.RaplaStatusPageGenerator(systemInfo, serverContainerContext);
+        return new org.rapla.server.servletpages.RaplaStatusPageGenerator(systemInfo, properties);
     }
 
     // --- ServerExtension impls registered with their @Extension id as bean name ---
@@ -393,11 +395,11 @@ public class ServerServiceConfig
     @org.springframework.boot.autoconfigure.condition.ConditionalOnProperty(
             prefix = "rapla.services", name = "org.rapla.plugin.javascriptpatch", matchIfMissing = true)
     public org.rapla.plugin.javasciptpatch.server.JavascriptPatcher javascriptPatcher(RaplaFacade facade, Logger logger,
-                                                      ServerContainerContext serverContainerContext,
+                                                      RaplaServerProperties properties,
                                                       org.rapla.storage.CachableStorageOperator cachableStorageOperator)
     {
         return new org.rapla.plugin.javasciptpatch.server.JavascriptPatcher(
-                facade, logger, serverContainerContext, cachableStorageOperator);
+                facade, logger, properties, cachableStorageOperator);
     }
 
     // PRD 019 Phase 3c: ArchiverServiceTask uses @Scheduled internally.

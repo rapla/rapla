@@ -107,17 +107,19 @@ rapla:
     client-id: rapla-client
     # Origin the SPA should call for OAuth2/OIDC endpoints (authorize, token,
     # jwks, userinfo, end-session). Returned by /api/auth/oauth/config so the
-    # SPA reads it at boot. When empty, falls back to the request-derived origin
-    # — i.e. same-origin as the rapla REST API, which is correct in production
-    # (SPA at :8051/app/ calls :8051/oauth2/token).
+    # SPA reads it at boot. Default is empty → falls back to the request-derived
+    # origin, i.e. same-origin as the rapla REST API, which is correct in
+    # production (SPA at :8051/app/ calls :8051/oauth2/token).
     #
-    # In dev with the `ng serve` proxy (SPA at :4200, Spring at :8051), set this
-    # to http://localhost:8051 so the SPA bypasses the proxy for OAuth and hits
-    # Spring AS directly — same shape as cross-origin Keycloak. proxy.conf.js
-    # intentionally does NOT forward /oauth2/*.
+    # Dev with the `ng serve` proxy (SPA at :4200, Spring at :8051) needs this
+    # set to http://localhost:8051 so the SPA bypasses the proxy for OAuth and
+    # hits Spring AS directly (proxy.conf.js intentionally does NOT forward
+    # /oauth2/*) — that dev override lives in application-local.yml (`local`
+    # profile), not here.
     #
-    # External IdP: set to the IdP's origin, e.g. https://keycloak.example.com.
-    public-base-url: ${RAPLA_OAUTH_PUBLIC_BASE_URL:http://localhost:8051}
+    # External IdP: set to the IdP's origin, e.g. https://keycloak.example.com,
+    # via the RAPLA_OAUTH_PUBLIC_BASE_URL env var.
+    public-base-url: ${RAPLA_OAUTH_PUBLIC_BASE_URL:}
     # Show a "paste callback URL here" dialog alongside the OAuth browser launch
     # as a fallback for environments where the automatic loopback redirect can't
     # reach the Swing client (WSL2 NAT, corporate firewalls blocking inbound
@@ -125,14 +127,30 @@ rapla:
     # via RAPLA_OAUTH_SHOW_PASTE_FALLBACK=true if your users hit "site can't be
     # reached" after sign-in.
     show-paste-fallback: false
-    # Dev-only convenience: accept redirect URIs whose host is in 172.16.0.0/12
+    # PRD 029 Phase 3 — admin-selectable legacy Swing login. Delivered to the
+    # Swing desktop client via /api/auth/oauth/config (the client probes
+    # discovery at startup; no JNLP change).
+    #
+    # swing-legacy-login=false (default): the Swing client auto-fires the
+    # browser OAuth flow — the username/password dialog is never shown.
+    # swing-legacy-login=true: the Swing client shows the legacy
+    # username/password dialog instead. Use this to keep end-users on the
+    # familiar dialog while OAuth is being rolled out.
+    swing-legacy-login: ${RAPLA_OAUTH_SWING_LEGACY_LOGIN:false}
+    # Only effective when swing-legacy-login=true. When true, the legacy
+    # dialog also shows the "Sign in with browser…" button so willing users
+    # can opt into testing the SSO flow without it being forced on everyone.
+    swing-legacy-show-sso-button: ${RAPLA_OAUTH_SWING_LEGACY_SHOW_SSO_BUTTON:false}
+    # Developer convenience: accept redirect URIs whose host is in 172.16.0.0/12
     # (the default Hyper-V WSL2 bridge range) with any port, provided the path
     # matches one of the registered URIs. Lets a developer run the Swing client
-    # inside WSL2 without configuring WSL2 mirrored networking. The Windows
-    # browser routes directly to the WSL bridge IP, bypassing the NAT
-    # forwarder. PKCE still mandatory.
-    # PRODUCTION DEPLOYMENTS MUST SET THIS TO false (or unset). Set via env:
-    #   RAPLA_OAUTH_ALLOW_WSL_BRIDGE_REDIRECTS=false
+    # inside WSL2 without configuring WSL2 mirrored networking — the Windows
+    # browser routes directly to the WSL bridge IP, bypassing the NAT forwarder.
+    # Not a production concern: 172.16.0.0/12 is private and non-routable, the
+    # path must still match a registered URI, and PKCE is mandatory — so the
+    # flag is inert in any non-WSL deployment regardless of its value. A secure
+    # rapla installation uses a proper external IdP (see docs/authentication.md).
+    # Override with RAPLA_OAUTH_ALLOW_WSL_BRIDGE_REDIRECTS=false if desired.
     allow-wsl-bridge-redirects: true
     # Production convenience: accept any redirect URI whose scheme/host/port
     # match the public origin the auth-server request came in on (honoring
@@ -171,5 +189,3 @@ logging:
   level:
     root: INFO
     org.rapla: INFO
-    # TEMPORARY: troubleshoot auth-server form login. Remove after POC works.
-    org.springframework.security: DEBUG

@@ -11,6 +11,14 @@ public class RemoteConnectionInfo
     String idToken;
     String logoutUrl;
     String serverURL;
+    // PRD 029 Phase 4 — the token endpoint + client_id this session must use
+    // for refresh-token reauth. For a rapla-SAS / password session these stay
+    // null and MyCustomConnector falls back to serverURL + /oauth2/token with
+    // client_id=rapla-client. For a browser-OAuth provider login they hold the
+    // provider's token endpoint (the BFF URL for a secret-backed provider like
+    // Keycloak) and the provider's client_id.
+    String refreshUrl;
+    String oauthClientId;
     transient StatusUpdater statusUpdater;
     ConnectInfo connectInfo;
 
@@ -70,6 +78,28 @@ public class RemoteConnectionInfo
 
     public String getLogoutUrl() {
         return logoutUrl;
+    }
+
+    /** Token endpoint for refresh-token reauth (PRD 029 Phase 4). When a
+     *  browser-OAuth provider was used this is the provider's token endpoint —
+     *  the BFF URL for a secret-backed provider like Keycloak. Null for
+     *  rapla-SAS / password sessions (MyCustomConnector then falls back to
+     *  serverURL + /oauth2/token). */
+    public void setRefreshUrl(String refreshUrl) {
+        this.refreshUrl = refreshUrl;
+    }
+
+    public String getRefreshUrl() {
+        return refreshUrl;
+    }
+
+    /** OAuth client_id to send on the refresh request. Null → rapla-client. */
+    public void setOauthClientId(String oauthClientId) {
+        this.oauthClientId = oauthClientId;
+    }
+
+    public String getOauthClientId() {
+        return oauthClientId;
     }
 
     public String getServerURL() {

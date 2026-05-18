@@ -6,6 +6,8 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.attribute.PosixFilePermissions;
+import java.util.LinkedHashMap;
+import java.util.Map;
 import java.util.Optional;
 
 /**
@@ -13,17 +15,18 @@ import java.util.Optional;
  * on POSIX systems. Matches the {@code ~/.aws/credentials} convention.
  * Falls back gracefully when the home directory isn't writable.
  *
- * <p>No encryption: the contents are RSA-signed JWTs (~700 bytes) with a
- * 30-day TTL, not passwords. App-level encryption with a system-derived
- * key would be defeated by any same-user attacker who can read the file
- * AND derive the same key, so it provides no real protection. OS-layer
- * tools (file permissions, full-disk encryption) handle the realistic
- * threats. See PRD 029 Open Question 10 for the full reasoning.
+ * <p>The file is a flat JSON object (see {@link TokenStoreCodec}) holding the
+ * refresh token plus the non-secret login preferences (language, sign-in
+ * method). No encryption: the contents are RSA-signed JWTs (~700 bytes) with
+ * a 30-day TTL, not passwords. App-level encryption with a system-derived key
+ * would be defeated by any same-user attacker who can read the file AND
+ * derive the same key, so it provides no real protection. OS-layer tools
+ * (file permissions, full-disk encryption) handle the realistic threats.
+ * See PRD 029 Open Question 10 for the full reasoning.
  */
 public final class FileTokenStore implements TokenStore
 {
-    private static final String FILE_BODY_PREFIX = "{\"refreshToken\":\"";
-    private static final String FILE_BODY_SUFFIX = "\"}\n";
+    private static final String KEY_REFRESH_TOKEN = "refreshToken";
 
     private final Path tokenFile;
     private final Logger logger;
@@ -42,29 +45,92 @@ public final class FileTokenStore implements TokenStore
     @Override
     public Optional<String> read()
     {
-        try
-        {
-            if (!Files.exists(tokenFile)) return Optional.empty();
-            String content = Files.readString(tokenFile, StandardCharsets.UTF_8);
-            return extractRefreshToken(content);
-        }
-        catch (Throwable t)
-        {
-            if (logger != null) logger.debug("file token-store read failed: " + t.getMessage());
-            return Optional.empty();
-        }
+        return value(KEY_REFRESH_TOKEN);
     }
 
     @Override
     public void tryWrite(String token)
     {
         if (token == null || token.isEmpty()) return;
+        Map<String, String> doc = load();
+        doc.put(KEY_REFRESH_TOKEN, token);
+        save(doc);
+    }
+
+    @Override
+    public void tryClear()
+    {
+        Map<String, String> doc = load();
+        boolean hadToken = doc.remove(KEY_REFRESH_TOKEN) != null;
+        if (!hadToken && doc.isEmpty()) return;
+        if (doc.isEmpty())
+        {
+            try
+            {
+                Files.deleteIfExists(tokenFile);
+            }
+            catch (Throwable t)
+            {
+                if (logger != null) logger.warn("file token-store clear failed: " + t.getMessage());
+            }
+        }
+        else
+        {
+            // Token removed, but language / login-method preferences remain —
+            // rewrite without the token so the next launch still defaults well.
+            save(doc);
+        }
+    }
+
+    @Override
+    public Optional<String> readPref(String key)
+    {
+        return value(key);
+    }
+
+    @Override
+    public void tryWritePref(String key, String value)
+    {
+        if (key == null || key.isEmpty()) return;
+        Map<String, String> doc = load();
+        if (value == null || value.isEmpty())
+        {
+            doc.remove(key);
+        }
+        else
+        {
+            doc.put(key, value);
+        }
+        save(doc);
+    }
+
+    private Optional<String> value(String key)
+    {
+        String v = load().get(key);
+        return (v == null || v.isEmpty()) ? Optional.empty() : Optional.of(v);
+    }
+
+    private Map<String, String> load()
+    {
+        try
+        {
+            if (!Files.exists(tokenFile)) return new LinkedHashMap<>();
+            return TokenStoreCodec.parse(Files.readString(tokenFile, StandardCharsets.UTF_8));
+        }
+        catch (Throwable t)
+        {
+            if (logger != null) logger.debug("file token-store read failed: " + t.getMessage());
+            return new LinkedHashMap<>();
+        }
+    }
+
+    private void save(Map<String, String> doc)
+    {
         try
         {
             Path parent = tokenFile.getParent();
             if (parent != null) Files.createDirectories(parent);
-            String content = FILE_BODY_PREFIX + token + FILE_BODY_SUFFIX;
-            Files.writeString(tokenFile, content, StandardCharsets.UTF_8);
+            Files.writeString(tokenFile, TokenStoreCodec.toJson(doc) + "\n", StandardCharsets.UTF_8);
             try
             {
                 // 0600 — readable + writable by owner only
@@ -77,41 +143,7 @@ public final class FileTokenStore implements TokenStore
         }
         catch (Throwable t)
         {
-            if (logger != null) logger.warn("file token-store write failed (token NOT persisted): " + t.getMessage());
+            if (logger != null) logger.warn("file token-store write failed (NOT persisted): " + t.getMessage());
         }
-    }
-
-    @Override
-    public void tryClear()
-    {
-        try
-        {
-            Files.deleteIfExists(tokenFile);
-        }
-        catch (Throwable t)
-        {
-            if (logger != null) logger.warn("file token-store clear failed: " + t.getMessage());
-        }
-    }
-
-    /**
-     * Minimal JSON extraction — the file shape is fixed and rapla-owned,
-     * so we avoid pulling in a JSON dependency on the core module.
-     * Returns empty on any parse anomaly.
-     */
-    private static Optional<String> extractRefreshToken(String content)
-    {
-        if (content == null) return Optional.empty();
-        int idx = content.indexOf("\"refreshToken\"");
-        if (idx < 0) return Optional.empty();
-        int colon = content.indexOf(':', idx);
-        if (colon < 0) return Optional.empty();
-        int firstQuote = content.indexOf('"', colon + 1);
-        if (firstQuote < 0) return Optional.empty();
-        int closingQuote = content.indexOf('"', firstQuote + 1);
-        if (closingQuote < 0) return Optional.empty();
-        String value = content.substring(firstQuote + 1, closingQuote);
-        if (value.isEmpty()) return Optional.empty();
-        return Optional.of(value);
     }
 }

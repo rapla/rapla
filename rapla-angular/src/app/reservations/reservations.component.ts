@@ -11,6 +11,9 @@ import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import { switchMap, map } from 'rxjs';
 
 import { RemoteStorageControllerService } from '../api/api/remote-storage-controller.service';
+import { AppointmentMap } from '../api/model/appointment-map';
+import { AllocatableImpl } from '../api/model/allocatable-impl';
+import { ClassificationImpl } from '../api/model/classification-impl';
 import { AuthService } from '../auth/auth.service';
 import { ReservationDialogComponent } from './reservation-dialog.component';
 
@@ -19,6 +22,20 @@ interface AppointmentLite {
   end: string;
   reservationName: string;
   allocatables: string[];
+}
+
+/**
+ * Local shapes for the REST payloads this view reads. getResources() is typed
+ * `any` by the generated client, so the bundle is described here; the
+ * reservation/appointment shapes come from the generated AppointmentMap model.
+ */
+interface ResourceBundle {
+  resources?: AllocatableImpl[];
+}
+
+interface Classified {
+  id?: string;
+  classification?: ClassificationImpl;
 }
 
 @Component({
@@ -51,19 +68,18 @@ interface AppointmentLite {
         <p class="error">{{ error() }}</p>
       } @else {
         <p class="meta">
-          {{ dataSource.data.length }} appointment(s),
-          {{ resourceCount() }} resource(s) hydrated.
+          {{ dataSource.data.length }} appointment(s), {{ resourceCount() }} resource(s) hydrated.
         </p>
 
         <table mat-table [dataSource]="dataSource" matSort class="mat-elevation-z1">
           <ng-container matColumnDef="start">
             <th mat-header-cell *matHeaderCellDef mat-sort-header>Start</th>
-            <td mat-cell *matCellDef="let r">{{ r.start | date:'medium' }}</td>
+            <td mat-cell *matCellDef="let r">{{ r.start | date: 'medium' }}</td>
           </ng-container>
 
           <ng-container matColumnDef="end">
             <th mat-header-cell *matHeaderCellDef mat-sort-header>End</th>
-            <td mat-cell *matCellDef="let r">{{ r.end | date:'medium' }}</td>
+            <td mat-cell *matCellDef="let r">{{ r.end | date: 'medium' }}</td>
           </ng-container>
 
           <ng-container matColumnDef="reservationName">
@@ -77,10 +93,12 @@ interface AppointmentLite {
           </ng-container>
 
           <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
-          <tr mat-row
-              *matRowDef="let r; columns: displayedColumns;"
-              class="row-clickable"
-              (click)="openDialog(r)"></tr>
+          <tr
+            mat-row
+            *matRowDef="let r; columns: displayedColumns"
+            class="row-clickable"
+            (click)="openDialog(r)"
+          ></tr>
 
           <tr class="mat-row" *matNoDataRow>
             <td class="empty" [attr.colspan]="displayedColumns.length">
@@ -89,24 +107,57 @@ interface AppointmentLite {
           </tr>
         </table>
 
-        <mat-paginator [pageSizeOptions]="[10, 25, 50, 100]"
-                       [pageSize]="25"
-                       showFirstLastButtons></mat-paginator>
+        <mat-paginator
+          [pageSizeOptions]="[10, 25, 50, 100]"
+          [pageSize]="25"
+          showFirstLastButtons
+        ></mat-paginator>
       }
     </section>
   `,
-  styles: [`
-    :host { display: block; }
-    .spacer { flex: 1 1 auto; }
-    .content { max-width: 1100px; margin: 1.5rem auto; padding: 0 1rem; }
-    .meta { color: rgba(0, 0, 0, 0.6); font-size: 0.85rem; margin: 0 0 0.5rem; }
-    table { width: 100%; }
-    .row-clickable { cursor: pointer; }
-    .row-clickable:hover { background: rgba(0, 0, 0, 0.04); }
-    .empty { padding: 1rem; color: rgba(0, 0, 0, 0.5); text-align: center; font-style: italic; }
-    .centered { display: flex; justify-content: center; padding: 2rem; }
-    .error { color: #c62828; }
-  `]
+  styles: [
+    `
+      :host {
+        display: block;
+      }
+      .spacer {
+        flex: 1 1 auto;
+      }
+      .content {
+        max-width: 1100px;
+        margin: 1.5rem auto;
+        padding: 0 1rem;
+      }
+      .meta {
+        color: rgba(0, 0, 0, 0.6);
+        font-size: 0.85rem;
+        margin: 0 0 0.5rem;
+      }
+      table {
+        width: 100%;
+      }
+      .row-clickable {
+        cursor: pointer;
+      }
+      .row-clickable:hover {
+        background: rgba(0, 0, 0, 0.04);
+      }
+      .empty {
+        padding: 1rem;
+        color: rgba(0, 0, 0, 0.5);
+        text-align: center;
+        font-style: italic;
+      }
+      .centered {
+        display: flex;
+        justify-content: center;
+        padding: 2rem;
+      }
+      .error {
+        color: #c62828;
+      }
+    `,
+  ],
 })
 export class ReservationsComponent implements OnInit, AfterViewInit {
   private readonly api = inject(RemoteStorageControllerService);
@@ -128,24 +179,28 @@ export class ReservationsComponent implements OnInit, AfterViewInit {
     const start = new Date(now.getFullYear() - 1, 0, 1).toISOString().replace(/\.\d{3}Z$/, '');
     const end = new Date(now.getFullYear() + 2, 11, 31).toISOString().replace(/\.\d{3}Z$/, '');
 
-    this.api.getResources().pipe(
-      switchMap((bundle: any) => {
-        const resources = this.buildResourceIndex(bundle);
-        this.resourceCount.set(resources.size);
-        const resourceIds = Array.from(resources.keys());
-        return this.api.queryAppointments({ start, end, resources: resourceIds })
-          .pipe(map((appts: any) => ({ appts, resources })));
-      })
-    ).subscribe({
-      next: ({ appts, resources }) => {
-        this.dataSource.data = this.flattenAppointments(appts, resources);
-        this.loading.set(false);
-      },
-      error: (err) => {
-        this.error.set(err?.error?.message ?? `Request failed (HTTP ${err?.status ?? '?'})`);
-        this.loading.set(false);
-      }
-    });
+    this.api
+      .getResources()
+      .pipe(
+        switchMap((bundle: ResourceBundle) => {
+          const resources = this.buildResourceIndex(bundle);
+          this.resourceCount.set(resources.size);
+          const resourceIds = Array.from(resources.keys());
+          return this.api
+            .queryAppointments({ start, end, resources: resourceIds })
+            .pipe(map((appts) => ({ appts, resources })));
+        }),
+      )
+      .subscribe({
+        next: ({ appts, resources }) => {
+          this.dataSource.data = this.flattenAppointments(appts, resources);
+          this.loading.set(false);
+        },
+        error: (err) => {
+          this.error.set(err?.error?.message ?? `Request failed (HTTP ${err?.status ?? '?'})`);
+          this.loading.set(false);
+        },
+      });
   }
 
   ngAfterViewInit() {
@@ -161,38 +216,40 @@ export class ReservationsComponent implements OnInit, AfterViewInit {
     });
   }
 
-  private buildResourceIndex(bundle: any): Map<string, string> {
+  private buildResourceIndex(bundle: ResourceBundle): Map<string, string> {
     const out = new Map<string, string>();
-    for (const r of (bundle?.resources ?? []) as any[]) {
-      out.set(r.id, this.labelFor(r));
+    for (const r of bundle.resources ?? []) {
+      if (r.id) out.set(r.id, this.labelFor(r));
     }
     return out;
   }
 
-  private labelFor(resource: any): string {
-    const data = resource?.classification?.data ?? {};
+  private labelFor(resource: Classified): string {
+    const data = resource.classification?.data ?? {};
     for (const key of ['name', 'surname', 'firstname', 'title']) {
       const v = data[key];
       if (Array.isArray(v) && v[0]) return String(v[0]);
     }
     const firstKey = Object.keys(data)[0];
     const v = firstKey ? data[firstKey] : null;
-    return Array.isArray(v) && v[0] ? String(v[0]) : resource.id;
+    return Array.isArray(v) && v[0] ? String(v[0]) : (resource.id ?? '');
   }
 
-  private flattenAppointments(payload: any, resources: Map<string, string>): AppointmentLite[] {
+  private flattenAppointments(
+    payload: AppointmentMap,
+    resources: Map<string, string>,
+  ): AppointmentLite[] {
     const result: AppointmentLite[] = [];
-    const reservations = (payload?.reservations ?? []) as any[];
-    for (const res of reservations) {
-      const name = this.labelFor(res) ?? '(no name)';
-      const allocIds: string[] = (res?.links?.resources ?? res?.links?.allocatable ?? []) as string[];
+    for (const res of payload.reservations ?? []) {
+      const name = this.labelFor(res) || '(no name)';
+      const allocIds = res.links?.['resources'] ?? res.links?.['allocatable'] ?? [];
       const allocNames = allocIds.map((id) => resources.get(id) ?? id);
-      for (const appt of (res.appointments ?? []) as any[]) {
+      for (const appt of res.appointments ?? []) {
         result.push({
-          start: appt.start,
-          end: appt.end,
+          start: appt.start ?? '',
+          end: appt.end ?? '',
           reservationName: name,
-          allocatables: allocNames
+          allocatables: allocNames,
         });
       }
     }

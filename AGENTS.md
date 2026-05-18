@@ -29,7 +29,7 @@ The repo-root `pom.xml` is the reactor aggregator (artifactId `rapla-aggregator`
 - Per-module compile: `mvn -pl rapla-server -am compile`  *(use `-am` to also build module deps in-tree; otherwise Maven looks in `~/.m2/repository`)*
 - Per-module test: `mvn -pl rapla-server -am test`
 - Targeted test: `mvn -pl rapla-app -am test -Dtest=RaplaSpringBootApplicationTest`
-- Run the dev server: `mvn -pl rapla-app -am spring-boot:run -Dspring-boot.run.fork=false` *(must use `-am` from repo root — see §8 hard rules; do not `cd rapla-app`, do not `mvn install`)*
+- Run the dev server: `mvn -pl rapla-app -am spring-boot:run -Dspring-boot.run.fork=false -Dspring-boot.run.profiles=local` *(must use `-am` from repo root — see §8 hard rules; do not `cd rapla-app`, do not `mvn install`)*
 - Full server lifecycle (background, PID/logs, graceful stop): see §8 below
 - Test the deployable fat JAR + signed JNLP webclient: load the **`test-deployment`** skill
 - Probe the running server's REST API directly (login, getResources, queryAppointments, etc.) — load the **`api-testing`** skill
@@ -150,6 +150,7 @@ The Bash tool waits for the spawned process to exit. A long-running server start
 > /home/chris/git/rapla/logs/rapla.log    # truncate so stale "Started" lines don't match
 mvn -f /home/chris/git/rapla/pom.xml -pl rapla-app -am spring-boot:run \
     -Dspring-boot.run.fork=false \
+    -Dspring-boot.run.profiles=local \
     -Dspring-boot.run.jvmArguments="-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=localhost:5005" \
     > /home/chris/git/rapla/logs/rapla.log 2>&1 &
 echo "spawned"
@@ -161,6 +162,13 @@ Run with `run_in_background=true` on the Bash tool call. The `-agentlib:jdwp=…
 classpath stays in-reactor (`rapla-{core,client,server,app}/target/classes`)
 rather than dropping back to `~/.m2/repository`.
 `-pl rapla-app -am` is mandatory.
+
+`-Dspring-boot.run.profiles=local` activates the `local` Spring profile so
+`application-local.yml` loads — dev overrides (verbose Spring Security logging,
+`rapla.oauth.public-base-url=http://localhost:8051` for the `ng serve` proxy,
+external-IdP test config). The file is gitignored; a fresh checkout without it
+just runs on the production `application.yml` defaults, which is harmless.
+See `docs/development.md` for the dev `application-local.yml` content.
 
 If you're a shell user (not the Bash tool), use `nohup ... < /dev/null &` + `disown` instead — same effect.
 

@@ -7,6 +7,7 @@ import java.io.OutputStream;
 import java.lang.reflect.Method;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
+import java.util.Map;
 import java.util.Optional;
 
 /**
@@ -64,8 +65,79 @@ public final class JnlpTokenStore implements TokenStore
         this.logger = logger;
     }
 
+    private static final String KEY_REFRESH_TOKEN = "refreshToken";
+
     @Override
     public Optional<String> read()
+    {
+        return value(KEY_REFRESH_TOKEN);
+    }
+
+    @Override
+    public void tryWrite(String token)
+    {
+        if (token == null || token.isEmpty()) return;
+        Map<String, String> doc = load();
+        doc.put(KEY_REFRESH_TOKEN, token);
+        save(doc);
+    }
+
+    @Override
+    public void tryClear()
+    {
+        Map<String, String> doc = load();
+        boolean hadToken = doc.remove(KEY_REFRESH_TOKEN) != null;
+        if (!hadToken && doc.isEmpty()) return;
+        if (doc.isEmpty())
+        {
+            try
+            {
+                persistenceService.getClass()
+                        .getMethod("delete", URL.class).invoke(persistenceService, key);
+            }
+            catch (Throwable t)
+            {
+                if (logger != null) logger.warn("JNLP token-store clear failed: " + t.getMessage());
+            }
+        }
+        else
+        {
+            // Token gone, but language / login-method preferences remain.
+            save(doc);
+        }
+    }
+
+    @Override
+    public Optional<String> readPref(String key)
+    {
+        return value(key);
+    }
+
+    @Override
+    public void tryWritePref(String prefKey, String prefValue)
+    {
+        if (prefKey == null || prefKey.isEmpty()) return;
+        Map<String, String> doc = load();
+        if (prefValue == null || prefValue.isEmpty())
+        {
+            doc.remove(prefKey);
+        }
+        else
+        {
+            doc.put(prefKey, prefValue);
+        }
+        save(doc);
+    }
+
+    private Optional<String> value(String mapKey)
+    {
+        String v = load().get(mapKey);
+        return (v == null || v.isEmpty()) ? Optional.empty() : Optional.of(v);
+    }
+
+    /** Reads the persistence entry and parses it as the flat JSON store doc.
+     *  Empty map on a missing entry or any failure (never throws). */
+    private Map<String, String> load()
     {
         try
         {
@@ -75,8 +147,7 @@ public final class JnlpTokenStore implements TokenStore
                     .getMethod("getInputStream").invoke(fileContents))
             {
                 byte[] bytes = in.readAllBytes();
-                if (bytes.length == 0) return Optional.empty();
-                return Optional.of(new String(bytes, StandardCharsets.UTF_8));
+                return TokenStoreCodec.parse(new String(bytes, StandardCharsets.UTF_8));
             }
         }
         catch (Throwable t)
@@ -84,14 +155,12 @@ public final class JnlpTokenStore implements TokenStore
             // get() throws FileNotFoundException-equivalent when the entry doesn't
             // exist yet — that's the empty case, not a real failure.
             if (logger != null) logger.debug("JNLP token-store read miss: " + t.getClass().getSimpleName());
-            return Optional.empty();
+            return new java.util.LinkedHashMap<>();
         }
     }
 
-    @Override
-    public void tryWrite(String token)
+    private void save(Map<String, String> doc)
     {
-        if (token == null || token.isEmpty()) return;
         try
         {
             // create() throws if the entry already exists; swallow that, then write.
@@ -110,26 +179,12 @@ public final class JnlpTokenStore implements TokenStore
             try (OutputStream out = (OutputStream) fileContents.getClass()
                     .getMethod("getOutputStream", boolean.class).invoke(fileContents, true))
             {
-                out.write(token.getBytes(StandardCharsets.UTF_8));
+                out.write(TokenStoreCodec.toJson(doc).getBytes(StandardCharsets.UTF_8));
             }
         }
         catch (Throwable t)
         {
-            if (logger != null) logger.warn("JNLP token-store write failed (token NOT persisted): " + t.getMessage());
-        }
-    }
-
-    @Override
-    public void tryClear()
-    {
-        try
-        {
-            persistenceService.getClass()
-                    .getMethod("delete", URL.class).invoke(persistenceService, key);
-        }
-        catch (Throwable t)
-        {
-            if (logger != null) logger.warn("JNLP token-store clear failed: " + t.getMessage());
+            if (logger != null) logger.warn("JNLP token-store write failed (NOT persisted): " + t.getMessage());
         }
     }
 }

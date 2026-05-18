@@ -10,7 +10,7 @@ import org.rapla.framework.RaplaException;
 import org.rapla.framework.internal.AbstractRaplaLocale;
 import org.rapla.plugin.abstractcalendar.server.AbstractHTMLCalendarPage;
 import org.rapla.server.extensionpoints.HtmlMainMenu;
-import org.rapla.server.internal.ServerContainerContext;
+import org.rapla.server.spring.RaplaServerProperties;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import jakarta.servlet.ServletException;
@@ -32,16 +32,16 @@ public class RaplaIndexPageGenerator
     private final Map<String, HtmlMainMenu> entries;
     private final RaplaResources i18n;
     private final RaplaFacade facade;
-    private final ServerContainerContext serverContainerContext;
+    private final RaplaServerProperties properties;
 
     @Autowired
     public RaplaIndexPageGenerator(Map<String, HtmlMainMenu> entries, RaplaResources i18n,
-                                   RaplaFacade facade, ServerContainerContext serverContainerContext)
+                                   RaplaFacade facade, RaplaServerProperties properties)
     {
         this.entries = entries;
         this.i18n = i18n;
         this.facade = facade;
-        this.serverContainerContext = serverContainerContext;
+        this.properties = properties;
     }
 
     @GET
@@ -94,7 +94,7 @@ public class RaplaIndexPageGenerator
         {
             final String key = entry.getKey();
             final RaplaMenuGenerator value = entry.getValue();
-            if ( !serverContainerContext.isServiceEnabled(key) || !value.isEnabled())
+            if ( !properties.isServiceEnabled(key) || !value.isEnabled())
             {
                 continue;
             }

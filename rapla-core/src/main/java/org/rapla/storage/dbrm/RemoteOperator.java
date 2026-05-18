@@ -254,7 +254,10 @@ public class RemoteOperator
     }
 
     @Override
-    synchronized public void refresh() throws RaplaException {
+    public void refresh() throws RaplaException {
+        // Not synchronized: the remote serv.refresh() call must not hold the
+        // RemoteOperator monitor, and refresh(UpdateEvent) self-locks only the
+        // compute. See refresh(UpdateEvent) / docs/architecture/locking.md.
         String clientRepoVersion = getLastValidatedTimeServer();
         RemoteStorage serv = getRemoteStorage();
         try {
@@ -775,12 +778,30 @@ public class RemoteOperator
         return ids;
     }
 
-    synchronized private void refresh(UpdateEvent evt) throws RaplaException {
+    private void refresh(UpdateEvent evt) throws RaplaException {
+        final PendingFire pending;
+        synchronized (this) {
+            pending = refreshLocked(evt);
+        }
+        // fireStorageUpdated MUST run without the RemoteOperator monitor held:
+        // listeners re-enter arbitrary code (Spring lazy-bean resolution, Swing
+        // GUI construction) that calls back into synchronized RemoteOperator
+        // methods (e.g. isRestartPossible). Holding the monitor across that
+        // callout deadlocks against a thread building a GUI bean. fireLock
+        // keeps update events ordered without reintroducing that risk.
+        // See docs/architecture/locking.md.
+        synchronized (fireLock) {
+            firePending(pending);
+        }
+    }
 
+    /** The locked part of {@link #refresh(UpdateEvent)} — computes the update
+     *  result; must run with {@code this} held. Returns null when there is
+     *  nothing to fire. */
+    private PendingFire refreshLocked(UpdateEvent evt) throws RaplaException {
         updateTimestamps(evt);
         if (evt.isNeedResourcesRefresh()) {
-            refreshAll();
-            return;
+            return refreshAllLocked();
         }
         UpdateResult result = null;
 
@@ -807,9 +828,7 @@ public class RemoteOperator
                 result = createUpdateResult(Collections.emptyMap(), Collections.emptyList(), Collections.emptyList(), since, until);
             }
         }
-        if (result != null) {
-            fireStorageUpdated(result, evt.getInvalidateInterval());
-        }
+        return result == null ? null : new PendingFire(result, evt.getInvalidateInterval());
     }
 
     @Override
@@ -824,6 +843,15 @@ public class RemoteOperator
     }
 
     protected void refreshAll() throws RaplaException {
+        PendingFire pending = refreshAllLocked();
+        synchronized (fireLock) {
+            firePending(pending);
+        }
+    }
+
+    /** The full data-reload work of {@link #refreshAll()} without firing the
+     *  storage-update event — the caller fires it outside the monitor. */
+    private PendingFire refreshAllLocked() throws RaplaException {
         UpdateResult result;
         Collection<Entity> oldEntities;
         RaplaLock.ReadLock readLock = lockManager.readLock(getClass(),"refreshAll");
@@ -881,7 +909,23 @@ public class RemoteOperator
         LocalDateTime until = getLastRefreshed();
         result = createUpdateResult(oldEntityMap, updated, removeInfo, since, until);
         TimeInterval invalidateInterval = new TimeInterval(null, null);
-        fireStorageUpdated(result, invalidateInterval);
+        return new PendingFire(result, invalidateInterval);
+    }
+
+    /** Lock dedicated to serialising {@link #fireStorageUpdated} so update
+     *  events still reach listeners in order — held instead of the {@code this}
+     *  monitor, which must NOT be held across the listener callout (deadlock
+     *  with Spring bean creation; see {@link #refresh(UpdateEvent)}). */
+    private final Object fireLock = new Object();
+
+    /** What {@link #refresh(UpdateEvent)} / {@link #refreshAll()} computed under
+     *  the monitor and must fire afterwards, outside it. */
+    private record PendingFire(UpdateResult result, TimeInterval interval) {}
+
+    private void firePending(PendingFire pending) {
+        if (pending != null && pending.result() != null) {
+            fireStorageUpdated(pending.result(), pending.interval());
+        }
     }
 
     public synchronized void addStorageUpdateListener(StorageUpdateListener listener) {

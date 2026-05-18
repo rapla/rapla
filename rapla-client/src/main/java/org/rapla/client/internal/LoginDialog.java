@@ -29,6 +29,7 @@ import org.rapla.logger.Logger;
 import javax.swing.Action;
 import javax.swing.BorderFactory;
 import javax.swing.JButton;
+import javax.swing.JComboBox;
 import javax.swing.JComponent;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
@@ -49,11 +50,12 @@ import java.awt.event.FocusEvent;
 import java.awt.event.WindowEvent;
 import java.awt.image.ImageObserver;
 import java.net.URL;
+import java.util.List;
 
 public final class LoginDialog extends JFrame implements LocaleChangeListener
 {
 	private static final long	serialVersionUID	= -1887723833652617352L;
-	
+
 	Container					container;
 	JPanel						upperpanel			= new JPanel();
 	JPanel						lowerpanel			= new JPanel();
@@ -64,9 +66,13 @@ public final class LoginDialog extends JFrame implements LocaleChangeListener
 	JPasswordField				password			= new JPasswordField(15);
 	JLabel						usernameLabel		= new JLabel();
 	JLabel						passwordLabel		= new JLabel();
+	// PRD 029 Phase 4 — sign-in method chooser (Password, rapla, Keycloak, …),
+	// populated from OAuth discovery. Replaces the standalone OAuth button.
+	JLabel						methodLabel			= new JLabel();
+	JComboBox<String>			methodChooser		= new JComboBox<>();
 	JButton						loginBtn			= new JButton();
 	JButton						exitBtn				= new JButton();
-	JButton						oauthBtn			= new JButton();
+	JButton						abortBtn			= new JButton();
 	JLabel						statusLabel			= new JLabel();
 	RaplaResources				i18n;
 	ImageObserver				observer;
@@ -77,6 +83,10 @@ public final class LoginDialog extends JFrame implements LocaleChangeListener
     // we have to add an extra gui component here because LoginDialog extends RaplaFrame and therefore can't extent RaplaGUIComponent
     private final RaplaLocale raplaLocale;
     private final Logger logger;
+    // Whether the method chooser row should be shown — true once more than one
+    // sign-in method is available. Remembered so clearBrowserLoginInProgress
+    // can restore it.
+    private boolean methodChooserVisible = false;
 
     private LoginDialog(StartupEnvironment env, RaplaResources i18n, AbstractBundleManager bundleManager, Logger logger, RaplaLocale raplaLocale) throws RaplaException
 	{
@@ -107,7 +117,7 @@ public final class LoginDialog extends JFrame implements LocaleChangeListener
 		dlg.init(languageSelector);
 		return dlg;
 	}
-	
+
 	Action exitAction;
 
 	@Override
@@ -130,21 +140,75 @@ public final class LoginDialog extends JFrame implements LocaleChangeListener
 		exitBtn.setAction( action );
 	}
 
-	public void setOauthAction(Action action)
+	/** The "Abort" button shown in "browser sign-in in progress" mode — cancels
+	 *  the browser-login wait and returns to the credential dialog, as opposed
+	 *  to Exit which quits the application. */
+	public void setAbortAction(Action action)
 	{
-		if (action == null)
-		{
-			oauthBtn.setVisible(false);
-			return;
-		}
-		oauthBtn.setAction(action);
-		oauthBtn.setVisible(true);
+		abortBtn.setAction(action);
 	}
 
 	/**
-	 * "Browser sign-in in progress" mode. The credential fields and the
-	 * Login / Sign-in-with-browser buttons are disabled, a status message is
-	 * shown, and the Exit button stays clickable so the user can abort.
+	 * Populates the sign-in method chooser (PRD 029 Phase 4). Index 0 is the
+	 * local username/password method; the remaining entries are browser-based
+	 * OAuth providers (rapla SAS, Keycloak, …) from discovery. The chooser is
+	 * only shown when more than one method is available.
+	 */
+	public void setLoginMethods(List<String> methodLabels)
+	{
+		methodChooser.removeAllItems();
+		for (String label : methodLabels)
+		{
+			methodChooser.addItem(label);
+		}
+		methodChooserVisible = methodLabels.size() > 1;
+		methodLabel.setVisible(methodChooserVisible);
+		methodChooser.setVisible(methodChooserVisible);
+	}
+
+	/** Index of the selected sign-in method (0 = local username/password). */
+	public int getSelectedMethodIndex()
+	{
+		return Math.max(0, methodChooser.getSelectedIndex());
+	}
+
+	/** Pre-selects a sign-in method (e.g. the one used at the last login).
+	 *  Out-of-range indices are ignored. */
+	public void setSelectedMethodIndex(int index)
+	{
+		if (index >= 0 && index < methodChooser.getItemCount())
+		{
+			methodChooser.setSelectedIndex(index);
+		}
+	}
+
+	/** Registers a listener fired whenever the user picks a different sign-in method. */
+	public void setMethodChangeListener(ActionListener listener)
+	{
+		methodChooser.addActionListener(listener);
+	}
+
+	/** Greys out (or re-enables) the username/password fields — used to disable
+	 *  them when a browser-based provider is selected in the method chooser. */
+	public void setCredentialsEnabled(boolean enabled)
+	{
+		username.setEnabled(enabled);
+		password.setEnabled(enabled);
+		usernameLabel.setEnabled(enabled);
+		passwordLabel.setEnabled(enabled);
+	}
+
+	private static GridLayout buttonGrid(int columns)
+	{
+		GridLayout g = new GridLayout(1, columns);
+		g.setHgap(20);
+		return g;
+	}
+
+	/**
+	 * "Browser sign-in in progress" mode. The credential fields and the method
+	 * chooser are hidden, a status message is shown, and the Exit + Abort
+	 * buttons stay clickable.
 	 *
 	 * @param message status text displayed where the username/password rows
 	 *                normally are (e.g. "Sign in via the browser tab that just opened")
@@ -157,14 +221,20 @@ public final class LoginDialog extends JFrame implements LocaleChangeListener
 		password.setVisible(false);
 		usernameLabel.setVisible(false);
 		passwordLabel.setVisible(false);
-		loginBtn.setVisible(false);
-		oauthBtn.setVisible(false);
-		// Exit button stays visible + enabled — it's the user's way to abort.
+		methodLabel.setVisible(false);
+		methodChooser.setVisible(false);
+		// Button row becomes Exit + Abort. Abort cancels the browser-login
+		// wait and returns to the credential dialog; Exit quits the app.
+		buttonPanel.removeAll();
+		buttonPanel.setLayout(buttonGrid(2));
+		buttonPanel.add(exitBtn);
+		buttonPanel.add(abortBtn);
 		revalidate();
 		repaint();
 	}
 
-	/** Restore the dialog to its normal state (e.g. when OAuth fails and we want the user to type credentials). */
+	/** Restore the dialog to its normal state (e.g. when OAuth fails or is
+	 *  aborted and we want the user to type credentials). */
 	public void clearBrowserLoginInProgress()
 	{
 		statusLabel.setVisible(false);
@@ -173,19 +243,24 @@ public final class LoginDialog extends JFrame implements LocaleChangeListener
 		usernameLabel.setVisible(true);
 		passwordLabel.setVisible(true);
 		loginBtn.setVisible(true);
-		oauthBtn.setVisible(true);
+		methodLabel.setVisible(methodChooserVisible);
+		methodChooser.setVisible(methodChooserVisible);
+		buttonPanel.removeAll();
+		buttonPanel.setLayout(buttonGrid(2));
+		buttonPanel.add(exitBtn);
+		buttonPanel.add(loginBtn);
 		revalidate();
 		repaint();
 	}
-	
+
 	private void init(JComponent languageSelector)
 	{
 		container = getContentPane();
 		container.setLayout(new BorderLayout());
 		((JComponent) container).setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
-		
+
 		// ################## BEGIN LOGO ###################
-		
+
 		observer = (img, flags, x, y, w, h) -> {
             if ((flags & ALLBITS) != 0)
             {
@@ -193,25 +268,25 @@ public final class LoginDialog extends JFrame implements LocaleChangeListener
             }
             return (flags & (ALLBITS | ABORT | ERROR)) == 0;
         };
-		
+
 		canvas = new JPanel()
 		{
 			private static final long	serialVersionUID	= 1L;
-			
+
 			public void paint(Graphics g)
 			{
 				g.drawImage(image, 0, 0, observer);
 			}
 		};
-		
+
 		Toolkit toolkit = Toolkit.getDefaultToolkit();
 		// creating an URL to the path of the picture
 		URL url = LoginDialog.class.getResource("/org/rapla/gui/images/tafel.png");
 		// getting it as image object
 		image = toolkit.createImage(url);
-		
+
 		container.add(canvas, BorderLayout.CENTER);
-		
+
 		MediaTracker mt = new MediaTracker(container);
 		mt.addImage(image, 0);
 		try
@@ -221,29 +296,34 @@ public final class LoginDialog extends JFrame implements LocaleChangeListener
 		catch (InterruptedException e)
 		{
 		}
-		
+
 		// ################## END LOGO ###################
-		
+
 		// ################## BEGIN LABELS AND TEXTFIELDS ###################
-		
+
 		container.add(lowerpanel, BorderLayout.SOUTH);
 		lowerpanel.setLayout(new BorderLayout());
 		lowerpanel.add(userandpassword, BorderLayout.NORTH);
 		double pre = TableLayout.PREFERRED;
 		double fill = TableLayout.FILL;
-		double[][] sizes = { { pre, 10, fill }, { pre, 5, pre, 5, pre, 5 } };
+		// Rows: 0 language, 2 sign-in method, 4 username, 6 password.
+		double[][] sizes = { { pre, 10, fill }, { pre, 5, pre, 5, pre, 5, pre, 5 } };
 		TableLayout tableLayout = new TableLayout(sizes);
 		userandpassword.setLayout(tableLayout);
 		userandpassword.add(chooseLanguageLabel,"0,0");
 		userandpassword.add(languageSelector, "2,0");
-		userandpassword.add(usernameLabel, "0,2");
-		userandpassword.add(passwordLabel, "0,4");
-		userandpassword.add(username, "2,2");
-		userandpassword.add(password, "2,4");
+		userandpassword.add(methodLabel, "0,2");
+		userandpassword.add(methodChooser, "2,2");
+		userandpassword.add(usernameLabel, "0,4");
+		userandpassword.add(passwordLabel, "0,6");
+		userandpassword.add(username, "2,4");
+		userandpassword.add(password, "2,6");
 		// statusLabel occupies the same horizontal slot as the username/password rows
 		// but spans both columns; only shown in "browser login in progress" mode.
-		userandpassword.add(statusLabel, "0,2,2,4");
+		userandpassword.add(statusLabel, "0,4,2,6");
 		statusLabel.setVisible(false);
+		methodLabel.setVisible(false);
+		methodChooser.setVisible(false);
 		username.setColumns(14);
 		password.setColumns(14);
 		Listener listener = new Listener();
@@ -253,21 +333,16 @@ public final class LoginDialog extends JFrame implements LocaleChangeListener
         RaplaGUIComponent.addCopyPaste(username, i18n, raplaLocale, service, logger);
         RaplaGUIComponent.addCopyPaste(password, i18n, raplaLocale, service, logger);
 		// ################## END LABELS AND TEXTFIELDS ###################
-		
+
 		// ################## BEGIN BUTTONS ###################
-		
+
 		// this is a separate JPanel for the buttons at the bottom
-		GridLayout gridLayout = new GridLayout(1, 3);
-		gridLayout.setHgap(20);
-		buttonPanel.setLayout(gridLayout);
+		buttonPanel.setLayout(buttonGrid(2));
 		buttonPanel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
 		// adding a button for exiting
 		buttonPanel.add(exitBtn);
 		// and to login
 		buttonPanel.add(loginBtn);
-		// optional OAuth login (browser-based); hidden until setOauthAction is called
-		oauthBtn.setVisible(false);
-		buttonPanel.add(oauthBtn);
 		setLocale();
 		username.requestFocus();
 
@@ -281,42 +356,42 @@ public final class LoginDialog extends JFrame implements LocaleChangeListener
         	}
         	catch (SecurityException ex)
         	{
-        	    // Not sure if it is needed, to catch this. I don't know if a custom system property is by default protected in a sandbox environment 
+        	    // Not sure if it is needed, to catch this. I don't know if a custom system property is by default protected in a sandbox environment
         	}
         }
 
 		lowerpanel.add(buttonPanel, BorderLayout.SOUTH);
-		
+
 		// ################## END BUTTONS ###################
-		
+
 		// ################## BEGIN FRAME ###################
-		
+
 		// these are the dimensions of the rapla picture
 		int picturewidth = 372;
 		int pictureheight = 182;
 		// and a border around it
 		int border = 10;
 		// canvas.setBounds(0, 0, picturewidth, pictureheight);
-		
+
 		this.getRootPane().setDefaultButton(loginBtn);
 		// with the picture dimensions as basis we determine the size
 		// of the frame, including some additional space below the picture
-		this.setSize(picturewidth + 2 * border, pictureheight + 210);
+		this.setSize(picturewidth + 2 * border, pictureheight + 240);
 		this.setResizable(false);
-		
+
 		// ################## END FRAME ###################
-		
+
 	}
 
 	/*
 	boolean closeCalledFromOutside = false;
-	
+
 	@Override
 	public void close() {
 		closeCalledFromOutside = true;
 		super.close();
 	}
-	
+
 	protected void fireFrameClosing() throws PropertyVetoException {
 		super.fireFrameClosing();
 		if ( !closeCalledFromOutside && exitAction != null)
@@ -325,17 +400,17 @@ public final class LoginDialog extends JFrame implements LocaleChangeListener
 		}
 	}
 	*/
-	
+
 	public String getUsername()
 	{
 		return username.getText();
 	}
-	
+
 	public char[] getPassword()
 	{
 		return password.getPassword();
 	}
-	
+
     public void resetPassword() {
     	password.setText("");
     }
@@ -345,40 +420,41 @@ public final class LoginDialog extends JFrame implements LocaleChangeListener
 	{
 		setLocale();
 	}
-	
+
 	private I18nBundle getI18n()
 	{
 		return i18n;
 	}
-	
+
 	private void setLocale()
 	{
 		chooseLanguageLabel.setText(getI18n().getString("choose_language"));
 		exitBtn.setText(getI18n().getString("exit"));
 		loginBtn.setText(getI18n().getString("login"));
-		oauthBtn.setText(getI18n().getString("login.oauth.button"));
+		abortBtn.setText(getI18n().getString("abort"));
+		methodLabel.setText(getI18n().getString("login.method") + ":");
 		usernameLabel.setText(getI18n().getString("username") + ":");
 		passwordLabel.setText(getI18n().getString("password") + ":");
 		setTitle(getI18n().getString("logindialog.title"));
 		repaint();
 	}
-	
+
 	public void dispose()
 	{
 		super.dispose();
 		localeSelector.removeLocaleChangeListener(this);
 	}
-	
+
 	public void testEnter(String newUsername, String newPassword)
 	{
 		username.setText(newUsername);
 		password.setText(newPassword);
 	}
-	
+
 	class Listener extends FocusAdapter implements ActionListener
 	{
 		boolean	bInit	= false;
-		
+
 		public void focusGained(FocusEvent e)
 		{
 			if (!bInit)
@@ -387,7 +463,7 @@ public final class LoginDialog extends JFrame implements LocaleChangeListener
 				bInit = true;
 			}
 		}
-		
+
 		public void actionPerformed(ActionEvent event)
 		{
 			if (event.getSource() == password)
@@ -396,5 +472,5 @@ public final class LoginDialog extends JFrame implements LocaleChangeListener
             }
 		}
 	}
-	
+
 }

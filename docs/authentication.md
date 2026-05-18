@@ -136,14 +136,20 @@ deliberately omits `required` on the password field.
 
 1. Builds a `LoginDialog` (username/password fields + an OAuth button) and
    probes discovery via `fetchOauthConfig()`.
-2. **Default — OAuth enabled** (`cfg.isEnabled()`): the dialog shows in
-   "browser login in progress" mode (credential fields hidden) and
-   auto-fires `SwingOAuthLoginFlow` — the standard authorization_code +
-   PKCE flow against `/oauth2/token` (`RaplaClientServiceImpl.java:735-742`,
-   PRD 029 Phase 2). The credential fields are never shown.
-3. **Fallback — OAuth disabled or discovery probe fails**: the dialog is
-   shown in full state with username/password fields
-   (`RaplaClientServiceImpl.java:743-752`).
+2. **Default — OAuth enabled, `swing-legacy-login=false`**: the dialog
+   shows in "browser login in progress" mode (credential fields hidden)
+   and auto-fires `SwingOAuthLoginFlow` — the standard authorization_code
+   + PKCE flow against `/oauth2/token` (PRD 029 Phase 2). The credential
+   fields are never shown.
+3. **Admin opted into the legacy dialog — OAuth enabled,
+   `swing-legacy-login=true`**: the dialog is shown in full state with
+   username/password fields (PRD 029 Phase 3). When
+   `swing-legacy-show-sso-button=true`, the "Sign in with browser…"
+   button is also rendered so users can try SSO; otherwise it's hidden.
+4. **Fallback — OAuth disabled server-side, or the discovery probe
+   fails**: the dialog is shown in full state with username/password
+   fields and no SSO button (a button would have no auth server to
+   reach).
 
 Token refresh for every client kind is OAuth-standard:
 `POST /oauth2/token grant_type=refresh_token` (`MyCustomConnector.java:129`,
@@ -381,6 +387,8 @@ be overridden with the matching env var.
 | `rapla.oauth.client-id` | `RAPLA_OAUTH_CLIENT_ID` | `rapla-client` | OAuth client id. Both Swing and Angular use this single id; their redirect URIs differ. |
 | `rapla.oauth.scopes` | `RAPLA_OAUTH_SCOPES` | `openid,profile` | Scopes granted to issued tokens. Comma-separated. |
 | `rapla.oauth.show-paste-fallback` | `RAPLA_OAUTH_SHOW_PASTE_FALLBACK` | `false` | Show a "paste callback URL here" dialog alongside the browser launch. Enable only for environments where the automatic loopback redirect can't reach the client. |
+| `rapla.oauth.swing-legacy-login` | `RAPLA_OAUTH_SWING_LEGACY_LOGIN` | `false` | When `true`, the Swing client shows the legacy username/password dialog instead of auto-firing the browser OAuth flow. Use it to keep end-users on the familiar dialog during an OAuth rollout. The browser flow still works from the dialog when the SSO button is also enabled (below). |
+| `rapla.oauth.swing-legacy-show-sso-button` | `RAPLA_OAUTH_SWING_LEGACY_SHOW_SSO_BUTTON` | `false` | Only effective when `swing-legacy-login=true`. Adds a "Sign in with browser…" button to the legacy dialog so willing users can opt into testing SSO without it being forced on everyone. |
 | `rapla.oauth.allow-wsl-bridge-redirects` | `RAPLA_OAUTH_ALLOW_WSL_BRIDGE_REDIRECTS` | `true` | **Dev-only**: accept any port for redirect URIs in `172.16.0.0/12` (Hyper-V WSL2 bridge). Lets developers run the Swing client in WSL2 without enabling mirrored networking. **Set to `false` in production.** |
 | `rapla.oauth.allow-same-origin-redirects` | `RAPLA_OAUTH_ALLOW_SAME_ORIGIN_REDIRECTS` | `true` | Accept any redirect URI whose scheme/host/port match the auth-server request's public origin (honoring `X-Forwarded-*`), provided the path matches a registered URI. Lets Angular at any deployment hostname auto-register. Safe with PKCE — recommend keeping on. |
 
@@ -539,11 +547,12 @@ state). A token issued before a JVM restart still validates after the
 restart — same key, same signature. The refresh-token hash is also in
 preferences, so refresh requests after a restart also succeed.
 
-## External IdP (Microsoft Entra ID + Google)
+## External IdP (Microsoft Entra ID + Google + Keycloak)
 
 Rapla can delegate authentication to **Microsoft Entra ID** (formerly
-Azure AD) and **Google** alongside — or instead of — the bundled Spring
-Authorization Server. Multiple providers can be enabled simultaneously;
+Azure AD), **Google**, and **Keycloak** alongside — or instead of — the
+bundled Spring Authorization Server. Multiple providers can be enabled
+simultaneously;
 the Angular SPA shows a "Sign in with …" picker on `/login`. Swing
 always uses the embedded SAS (deprecation context — see
 [PRD 036](prd/036-external-idp-oauth-login.md)).
@@ -625,6 +634,16 @@ All settable via the matching `RAPLA_OAUTH_EXTERNAL_*` env vars.
 | `rapla.oauth.external.google.hosted-domain` | *(empty)* | Restrict to a Google Workspace domain via the `hd` claim. |
 | `rapla.oauth.external.google.auto-provision` | `true` | Create a rapla `User` on first sign-in if no match. **For consumer Google (no `hosted-domain`), set this to `false`** — otherwise any verified Google account on Earth becomes a rapla user. With a `hosted-domain` set, this is scoped to your Workspace. |
 | `rapla.oauth.external.google.revoke-on-logout` | `false` | POST to Google's `/revoke` on sign-out (off by default — logging out of rapla shouldn't uncouple the user's other Google services). |
+| `rapla.oauth.external.keycloak.enabled` | `false` | Enable the Keycloak provider. |
+| `rapla.oauth.external.keycloak.base-url` | *(required)* | The Keycloak server's public base URL, e.g. `https://keycloak.example.com`. Every OIDC endpoint is derived from `base-url` + `realm`. |
+| `rapla.oauth.external.keycloak.realm` | *(required)* | The Keycloak realm name. A realm is already a tenant — one rapla deployment maps to one realm. |
+| `rapla.oauth.external.keycloak.client-id` | *(required)* | Client ID registered in the realm. |
+| `rapla.oauth.external.keycloak.client-secret` | *(empty)* | Leave empty for a Keycloak **public** client (PKCE-only — recommended for SPAs). Set it for a **confidential** client; the BFF route is then used, same as Google Web app. |
+| `rapla.oauth.external.keycloak.hosted-domain` | *(empty)* | Optional email-domain guard. |
+| `rapla.oauth.external.keycloak.auto-provision` | `true` | Create a rapla `User` on first sign-in if no match. A Keycloak realm is already scoped, so on is the expected SSO behaviour. |
+| `rapla.oauth.external.keycloak.display-name` | `Sign in with Keycloak` | Picker button label. |
+| `rapla.oauth.external.keycloak.order` | `15` | Sort key in the picker (lower = first). |
+| `rapla.oauth.external.keycloak.web-picker-visible` | `true` | Show on the web picker. |
 | `rapla.oauth.web.picker.mode` | `auto` | `auto` (show when ≥2 visible providers), `always`, or `never`. |
 | `rapla.oauth.web.picker.primary` | `rapla` | Which provider to auto-fire in `auto`/`never` modes. |
 | `rapla.oauth.web.rapla-in-picker` | `true` | Show the "Sign in with rapla password" entry in the web picker alongside external providers. Keeping it visible matters for admin break-glass access when an external IdP is misconfigured or down. Set `false` only for strict SSO-only deployments. With a single visible provider, the picker doesn't render at all (`mode=auto` needs ≥2). |
@@ -718,6 +737,54 @@ dev or smaller deployments; production may prefer Web application.
    - No JavaScript origins / redirect URIs to register — Desktop app allows any loopback URI by default.
 2. Copy the **Client ID** (no secret is generated for Desktop apps).
 3. **Run rapla** with `RAPLA_OAUTH_EXTERNAL_GOOGLE_CLIENT_ID` only — leave `RAPLA_OAUTH_EXTERNAL_GOOGLE_CLIENT_SECRET` unset. The direct (no-BFF) route is used automatically.
+
+### Recipe: Keycloak
+
+[Keycloak](https://www.keycloak.org/) is a self-hosted OIDC provider with
+realm-based isolation. One rapla deployment integrates with one Keycloak
+realm. Unlike Microsoft/Google, rapla derives every OIDC endpoint from just
+`base-url` + `realm` — no per-URL config.
+
+1. **Create a realm** in the Keycloak admin console: *Realms → Create realm*
+   → name it (e.g. `rapla`).
+2. **Create a client** in that realm: *Clients → Create client*.
+   - Client type: **OpenID Connect**, Client ID e.g. `rapla-app`.
+   - *Capability config*: **Standard flow** on. Leave **Client
+     authentication** OFF for a public PKCE client (recommended for the SPA);
+     turn it ON for a confidential client (then set `client-secret`).
+   - *Login settings*:
+     - **Valid redirect URIs**: `https://rapla.yourdomain.com/app/auth/callback`
+       (for dev also `http://localhost:4200/app/auth/callback` and
+       `http://localhost:8051/app/auth/callback`).
+     - **Web origins**: the rapla origin(s), or `+` to reuse the redirect-URI
+       origins (CORS).
+3. **Run rapla** with:
+   ```bash
+   export RAPLA_OAUTH_EXTERNAL_KEYCLOAK_ENABLED=true
+   export RAPLA_OAUTH_EXTERNAL_KEYCLOAK_BASE_URL=https://keycloak.yourdomain.com
+   export RAPLA_OAUTH_EXTERNAL_KEYCLOAK_REALM=rapla
+   export RAPLA_OAUTH_EXTERNAL_KEYCLOAK_CLIENT_ID=rapla-app
+   # Confidential client only — omit for a public PKCE client:
+   # export RAPLA_OAUTH_EXTERNAL_KEYCLOAK_CLIENT_SECRET=<secret>
+   java -jar rapla-2.1-SNAPSHOT.jar
+   ```
+
+rapla derives the endpoints as:
+
+```
+issuer        = {base-url}/realms/{realm}
+authorizeUrl  = {base-url}/realms/{realm}/protocol/openid-connect/auth
+tokenUrl      = {base-url}/realms/{realm}/protocol/openid-connect/token
+jwksUrl       = {base-url}/realms/{realm}/protocol/openid-connect/certs
+endSessionUrl = {base-url}/realms/{realm}/protocol/openid-connect/logout
+```
+
+> **Local testing.** The repo ships a ready-to-run local Keycloak under
+> `tools/keycloak/` — `./keycloak.sh start` boots Keycloak 26 on
+> `:8080` with a pre-imported `rapla` realm, a public `rapla-app` client,
+> and test users. It is not auto-started. See `tools/keycloak/README.md`.
+> The matching `rapla.oauth.external.keycloak` block is already in the
+> gitignored `application-local.yml`.
 
 ### Multi-provider deployments
 

@@ -50,6 +50,8 @@ public final class TokenStores
             @Override public Optional<String> read() { return Optional.empty(); }
             @Override public void tryWrite(String token) { /* no-op */ }
             @Override public void tryClear() { /* no-op */ }
+            @Override public Optional<String> readPref(String key) { return Optional.empty(); }
+            @Override public void tryWritePref(String key, String value) { /* no-op */ }
         };
     }
 }

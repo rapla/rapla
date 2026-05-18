@@ -8,7 +8,12 @@ import { provideAnimationsAsync } from '@angular/platform-browser/animations/asy
 import { LoginComponent } from './login.component';
 import { AuthService, OAuthDiscovery, OAuthProviderEntry } from './auth.service';
 
-function provider(id: string, order = 10, webPickerVisible = true, extraParams: Record<string, string> = {}): OAuthProviderEntry {
+function provider(
+  id: string,
+  order = 10,
+  webPickerVisible = true,
+  extraParams: Record<string, string> = {},
+): OAuthProviderEntry {
   return {
     id,
     displayName: 'Sign in with ' + id,
@@ -26,7 +31,11 @@ function provider(id: string, order = 10, webPickerVisible = true, extraParams: 
   };
 }
 
-function discovery(mode: 'auto' | 'always' | 'never', providers: OAuthProviderEntry[], primary = 'rapla'): OAuthDiscovery {
+function discovery(
+  mode: 'auto' | 'always' | 'never',
+  providers: OAuthProviderEntry[],
+  primary = 'rapla',
+): OAuthDiscovery {
   return {
     enabled: true,
     clientId: 'rapla-client',
@@ -66,11 +75,13 @@ describe('LoginComponent picker (PRD 036)', () => {
 
   it('renders a button per webPickerVisible:true provider in mode=auto with >=2 providers', () => {
     const auth = TestBed.inject(AuthService);
-    auth.setDiscovery(discovery('auto', [
-      provider('rapla', 0, false),
-      provider('microsoft', 10),
-      provider('google', 20),
-    ]));
+    auth.setDiscovery(
+      discovery('auto', [
+        provider('rapla', 0, false),
+        provider('microsoft', 10),
+        provider('google', 20),
+      ]),
+    );
 
     const fixture = TestBed.createComponent(LoginComponent);
     fixture.detectChanges();
@@ -83,10 +94,7 @@ describe('LoginComponent picker (PRD 036)', () => {
 
   it('does NOT render picker in mode=auto with a single visible provider (auto-fires instead)', () => {
     const auth = TestBed.inject(AuthService);
-    auth.setDiscovery(discovery('auto', [
-      provider('rapla', 0, false),
-      provider('microsoft', 10),
-    ]));
+    auth.setDiscovery(discovery('auto', [provider('rapla', 0, false), provider('microsoft', 10)]));
     vi.spyOn(auth, 'signIn').mockImplementation(() => undefined);
 
     const fixture = TestBed.createComponent(LoginComponent);
@@ -98,9 +106,7 @@ describe('LoginComponent picker (PRD 036)', () => {
 
   it('renders picker in mode=always even with a single visible provider', () => {
     const auth = TestBed.inject(AuthService);
-    auth.setDiscovery(discovery('always', [
-      provider('microsoft', 10),
-    ]));
+    auth.setDiscovery(discovery('always', [provider('microsoft', 10)]));
 
     const fixture = TestBed.createComponent(LoginComponent);
     fixture.detectChanges();
@@ -112,10 +118,7 @@ describe('LoginComponent picker (PRD 036)', () => {
 
   it('does NOT render picker in mode=never even with many providers', () => {
     const auth = TestBed.inject(AuthService);
-    auth.setDiscovery(discovery('never', [
-      provider('microsoft', 10),
-      provider('google', 20),
-    ]));
+    auth.setDiscovery(discovery('never', [provider('microsoft', 10), provider('google', 20)]));
     vi.spyOn(auth, 'signIn').mockImplementation(() => undefined);
 
     const fixture = TestBed.createComponent(LoginComponent);
@@ -127,44 +130,64 @@ describe('LoginComponent picker (PRD 036)', () => {
 
   it('sorts picker buttons by `order` ascending', () => {
     const auth = TestBed.inject(AuthService);
-    auth.setDiscovery(discovery('always', [
-      provider('google', 20),
-      provider('microsoft', 10),
-      provider('thirdparty', 30),
-    ]));
+    auth.setDiscovery(
+      discovery('always', [
+        provider('google', 20),
+        provider('microsoft', 10),
+        provider('thirdparty', 30),
+      ]),
+    );
 
     const fixture = TestBed.createComponent(LoginComponent);
     fixture.detectChanges();
 
     const buttons = fixture.nativeElement.querySelectorAll('button[data-provider-id]');
-    const ids = Array.from(buttons).map((b: unknown) => (b as HTMLElement).getAttribute('data-provider-id'));
+    const ids = Array.from(buttons).map((b: unknown) =>
+      (b as HTMLElement).getAttribute('data-provider-id'),
+    );
     expect(ids).toEqual(['microsoft', 'google', 'thirdparty']);
   });
 
   it('clicking a provider button calls signInWithProvider with the right id', () => {
     const auth = TestBed.inject(AuthService);
-    auth.setDiscovery(discovery('always', [
-      provider('microsoft', 10),
-      provider('google', 20),
-    ]));
+    auth.setDiscovery(discovery('always', [provider('microsoft', 10), provider('google', 20)]));
     const spy = vi.spyOn(auth, 'signInWithProvider').mockImplementation(() => undefined);
 
     const fixture = TestBed.createComponent(LoginComponent);
     fixture.detectChanges();
 
-    const googleBtn = fixture.nativeElement.querySelector('button[data-provider-id="google"]') as HTMLButtonElement;
+    const googleBtn = fixture.nativeElement.querySelector(
+      'button[data-provider-id="google"]',
+    ) as HTMLButtonElement;
     googleBtn.click();
 
     expect(spy).toHaveBeenCalledWith('google');
   });
 
+  it('renders the Keycloak provider button with the shield icon (PRD 036 Phase 2.1)', () => {
+    const auth = TestBed.inject(AuthService);
+    auth.setDiscovery(discovery('always', [provider('rapla', 0, false), provider('keycloak', 15)]));
+
+    const fixture = TestBed.createComponent(LoginComponent);
+    fixture.detectChanges();
+
+    const btn = fixture.nativeElement.querySelector(
+      'button[data-provider-id="keycloak"]',
+    ) as HTMLButtonElement;
+    expect(btn).toBeTruthy();
+    const icon = btn.querySelector('mat-icon') as HTMLElement;
+    expect(icon.textContent?.trim()).toBe('shield');
+  });
+
   it('filters out providers with webPickerVisible:false', () => {
     const auth = TestBed.inject(AuthService);
-    auth.setDiscovery(discovery('always', [
-      provider('rapla', 0, false),       // hidden
-      provider('microsoft', 10, true),   // visible
-      provider('google', 20, false),     // hidden
-    ]));
+    auth.setDiscovery(
+      discovery('always', [
+        provider('rapla', 0, false), // hidden
+        provider('microsoft', 10, true), // visible
+        provider('google', 20, false), // hidden
+      ]),
+    );
 
     const fixture = TestBed.createComponent(LoginComponent);
     fixture.detectChanges();

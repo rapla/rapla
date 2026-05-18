@@ -83,7 +83,7 @@ export class AuthService {
     const d = this.discovery();
     if (!d) return [];
     return d.providers
-      .filter(p => p.webPickerVisible)
+      .filter((p) => p.webPickerVisible)
       .slice()
       .sort((a, b) => a.order - b.order);
   });
@@ -100,10 +100,13 @@ export class AuthService {
     if (!d) return false;
     const count = this.pickerProviders().length;
     switch (d.picker.mode) {
-      case 'always': return count > 0;
-      case 'never':  return false;
+      case 'always':
+        return count > 0;
+      case 'never':
+        return false;
       case 'auto':
-      default:       return count >= 2;
+      default:
+        return count >= 2;
     }
   });
 
@@ -127,7 +130,7 @@ export class AuthService {
   primaryProvider(): OAuthProviderEntry | null {
     const d = this.discovery();
     if (!d) return null;
-    return d.providers.find(p => p.id === d.picker.primary) ?? d.providers[0] ?? null;
+    return d.providers.find((p) => p.id === d.picker.primary) ?? d.providers[0] ?? null;
   }
 
   /**
@@ -144,7 +147,7 @@ export class AuthService {
     if (!d) return null;
     const stored = localStorage.getItem(AuthService.ACTIVE_PROVIDER_KEY);
     if (stored) {
-      const p = d.providers.find(p => p.id === stored);
+      const p = d.providers.find((p) => p.id === stored);
       if (p) return p;
     }
     return this.primaryProvider();
@@ -158,8 +161,11 @@ export class AuthService {
   signInWithProvider(providerId: string): void {
     if (this.redirecting) return;
     const d = this.discovery();
-    if (!d) { console.warn('[oauth] signInWithProvider before discovery loaded'); return; }
-    const provider = d.providers.find(p => p.id === providerId) ?? null;
+    if (!d) {
+      console.warn('[oauth] signInWithProvider before discovery loaded');
+      return;
+    }
+    const provider = d.providers.find((p) => p.id === providerId) ?? null;
     if (provider) {
       // Persist BEFORE the redirect so the post-redirect appInitializer applies
       // the matching provider and exchanges the code at the right token endpoint.
@@ -184,7 +190,9 @@ export class AuthService {
       clientId: useProvider.clientId,
       redirectUri: origin + '/app/auth/callback',
       responseType: 'code',
-      scope: (useProvider.scopes ?? cfg.scopes ?? ['openid', 'profile', 'offline_access']).join(' '),
+      scope: (useProvider.scopes ?? cfg.scopes ?? ['openid', 'profile', 'offline_access']).join(
+        ' ',
+      ),
       loginUrl: useProvider.authorizeUrl,
       tokenEndpoint: useProvider.tokenUrl,
       userinfoEndpoint: cfg.userinfoUrl,
@@ -242,7 +250,10 @@ export class AuthService {
     this.redirecting = true;
     this.lastOAuthError.set(null);
     const primary = this.primaryProvider();
-    this.oauth.initCodeFlow(undefined, { ...(primary?.extraAuthorizeParams ?? {}), prompt: 'login' });
+    this.oauth.initCodeFlow(undefined, {
+      ...(primary?.extraAuthorizeParams ?? {}),
+      prompt: 'login',
+    });
   }
 
   /**
@@ -264,7 +275,8 @@ export class AuthService {
    */
   signOut(): void {
     const active = this.activeProvider();
-    const hasIdpLogout = active != null && !!active.endSessionUrl && active.endSessionUrl.length > 0;
+    const hasIdpLogout =
+      active != null && !!active.endSessionUrl && active.endSessionUrl.length > 0;
     localStorage.removeItem(AuthService.ACTIVE_PROVIDER_KEY);
     if (hasIdpLogout) {
       this.oauth.logOut();

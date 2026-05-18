@@ -14,7 +14,9 @@ import { OAuthService } from 'angular-oauth2-oidc';
  */
 @Component({
   selector: 'app-callback',
-  template: `<p style="text-align:center; padding:2rem; font-family:system-ui,sans-serif;">Signing in…</p>`
+  template: `<p style="text-align:center; padding:2rem; font-family:system-ui,sans-serif;">
+    Signing in…
+  </p>`,
 })
 export class CallbackComponent implements OnInit {
   private readonly oauth = inject(OAuthService);
