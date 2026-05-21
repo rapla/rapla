@@ -34,6 +34,11 @@ describe('ReservationsComponent', () => {
           useValue: {
             signOut: vi.fn(),
             identityClaims: () => ({ preferred_username: 'testadmin' }),
+            // PRD 051 — the toolbar reads these to decide whether to
+            // render the "Impersonating X" badge. Default: no
+            // impersonation; individual tests can override.
+            isImpersonating: () => false,
+            impersonationOverride: () => null,
           },
         },
       ],

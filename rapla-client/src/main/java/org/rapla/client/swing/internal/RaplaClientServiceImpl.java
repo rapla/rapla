@@ -108,6 +108,8 @@ public class RaplaClientServiceImpl implements ClientService, UpdateErrorListene
     RemoteAuthentificationService authentificationService;
     RemoteConnectionInfo connectionInfo;
     final org.rapla.storage.dbrm.TokenStore tokenStore;
+    @Autowired
+    org.rapla.storage.dbrm.ImpersonationService impersonationService;
     /** Set by logout(); read+cleared by the next runOauthLogin call. Adds
      *  prompt=login to the authorize URL to defeat the cookie-reuse race
      *  when logout-and-restart happen in quick succession in the same JVM. */
@@ -397,45 +399,57 @@ public class RaplaClientServiceImpl implements ClientService, UpdateErrorListene
         return started;
     }
 
+    /**
+     * PRD 051 — admin "switch to user". Calls
+     * {@code POST /api/auth/impersonate} via the {@link
+     * org.rapla.storage.dbrm.ImpersonationService} proxy, stashes the
+     * returned access token on {@link RemoteConnectionInfo} as the
+     * effective Bearer, then refreshes the facade so the UI repaints
+     * against the impersonated identity. {@code switchTo(null)} clears
+     * the impersonation token; outbound requests revert to the admin's
+     * own Bearer on the very next call.
+     *
+     * <p>No login restart, no stashed admin password, no
+     * password-based reconnect — the admin's tokens stay in their
+     * normal slot throughout. See PRD 051 § "Token renewal model".
+     */
     public void switchTo(User user) throws RaplaException
     {
         ClientFacade facade = getClientFacade();
         if (user == null)
         {
-            if (reconnectInfo == null || reconnectInfo.getConnectAs() == null)
+            if (!connectionInfo.hasImpersonationToken())
             {
-                throw new RaplaException("Can't switch back because there were no previous logins.");
+                throw new RaplaException("Not currently switched to another user.");
             }
-            final String oldUser = facade.getUser().getUsername();
-            String newUser = reconnectInfo.getUsername();
-            char[] password = reconnectInfo.getPassword();
-            getLogger().info("Login From:" + oldUser + " To:" + newUser);
-            ConnectInfo reconnectInfo = new ConnectInfo(newUser, password);
-            stop(reconnectInfo);
+            String oldTarget = connectionInfo.getImpersonationTargetUsername();
+            connectionInfo.clearImpersonationToken();
+            getLogger().info("Switching back from '" + oldTarget + "' to admin");
         }
         else
         {
-            if (reconnectInfo == null)
+            if (connectionInfo.hasImpersonationToken())
             {
-                throw new RaplaException("Can't switch to user, because admin login information not provided due missing login.");
-
+                throw new RaplaException("Already switched to a user; switch back first.");
             }
-            if (reconnectInfo.getConnectAs() != null)
+            org.rapla.storage.dbrm.ImpersonationResponse resp = impersonationService.impersonate(user.getUsername());
+            if (resp == null || resp.getAccessToken() == null || resp.getAccessToken().isEmpty())
             {
-                throw new RaplaException("Can't switch to user, because already switched.");
+                throw new RaplaException("Impersonation endpoint returned no access token.");
             }
-            final String oldUser = reconnectInfo.getUsername();
-            final String newUser = user.getUsername();
-            getLogger().info("Login From:" + oldUser + " To:" + newUser);
-            ConnectInfo newInfo = new ConnectInfo(oldUser, reconnectInfo.getPassword(), newUser);
-            stop(newInfo);
+            connectionInfo.setImpersonationToken(resp.getAccessToken(), user.getUsername());
+            getLogger().info("Switched from admin to '" + user.getUsername() + "'");
         }
-        // fireUpdateEvent(new ModificationEvent());
+        // Trigger a facade refresh so subscribed UI components re-render
+        // for the new effective identity. The next REST call automatically
+        // uses the swapped Bearer via RefreshOn401Interceptor reading
+        // connectionInfo.getEffectiveAccessToken().
+        facade.getRaplaFacade().refresh();
     }
 
     public boolean canSwitchBack()
     {
-        return reconnectInfo != null && reconnectInfo.getConnectAs() != null;
+        return connectionInfo.hasImpersonationToken();
     }
 
     private void stop()
@@ -1306,6 +1320,10 @@ public class RaplaClientServiceImpl implements ClientService, UpdateErrorListene
             }
         }
         tokenStore.tryClear();
+        // PRD 051 — discard any active impersonation. Logout is a clean
+        // state-change boundary; surviving impersonation into the next
+        // login session would surprise the next admin.
+        connectionInfo.clearImpersonationToken();
         // Tell the next OAuth flow to force the IdP login form regardless of
         // the browser's session cookie. The cookie SHOULD be cleared by the
         // logoutUrl tab opened above, but there's a race: that tab may not

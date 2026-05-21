@@ -65,6 +65,11 @@ public class SecurityConfig
                     // PRD 043: api-keys management requires a real Bearer access token —
                     // must come BEFORE the broader /api/auth/** permit-all rule.
                     auth.requestMatchers("/api/auth/api-keys", "/api/auth/api-keys/**").authenticated();
+                    // PRD 051: admin "switch to user" — requires a valid Bearer
+                    // (any issuer) belonging to a user who can canAdminUser the
+                    // target. The controller runs the per-target authorization
+                    // check; this matcher only enforces "must be authenticated".
+                    auth.requestMatchers("/api/auth/impersonate").authenticated();
                     auth.requestMatchers("/api/auth/**", "/", "/index", "/server", "/static/**", "/*.html", "/*.css",
                             "/images/**", "/webclient/**", "/app/**",
                             "/api/logger/**", "/api/ical/timezones/**",

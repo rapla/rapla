@@ -1,4 +1,4 @@
-import { HttpErrorResponse, HttpInterceptorFn, HttpRequest } from '@angular/common/http';
+import { HttpErrorResponse, HttpEvent, HttpInterceptorFn, HttpRequest } from '@angular/common/http';
 import { inject } from '@angular/core';
 import { MatDialog } from '@angular/material/dialog';
 import { catchError, from, Observable, switchMap, throwError } from 'rxjs';
@@ -110,6 +110,11 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
     );
   };
 
+  // Capture impersonation state at the time the request was built so
+  // the catchError below can tell "was this 401 for the impersonation
+  // Bearer or for the admin's own?" — the renewal path is different.
+  const wasImpersonating = auth.isImpersonating();
+
   return next(authedReq).pipe(
     catchError((err: HttpErrorResponse) => {
       if (err.status !== 401 || preAuth) {
@@ -121,29 +126,62 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
         auth.handleUnauthenticated();
         return throwError(() => err);
       }
-      // First 401 with a Bearer: try refresh, then replay once. The replay
-      // is called via `next(...)` directly — it does NOT re-enter this
-      // interceptor — so a 401 on the replay is caught by the inner
-      // catchError, never a second refresh.
+
+      // PRD 051 — 401 with the impersonation Bearer attached. Try to
+      // renew the impersonation token first (it's the short-lived one
+      // most likely to have expired). On success, replay. On failure
+      // (admin's Bearer also stale), fall into the admin-refresh chain,
+      // then re-attempt the impersonation renewal, then replay.
+      if (wasImpersonating) {
+        return from(auth.renewImpersonation()).pipe(
+          switchMap((renewed) => {
+            if (renewed) {
+              return replayWith(auth.token());
+            }
+            // Renewal failed — admin's access token is probably also
+            // stale. Refresh admin, then re-attempt impersonation, then
+            // replay (or surface the failure via dialog).
+            return from(auth.refreshAccessToken()).pipe(
+              switchMap((adminRefreshed) => {
+                if (!adminRefreshed) return openDialogAndBounce(err);
+                return from(auth.renewImpersonation()).pipe(
+                  switchMap((retryRenewed) => {
+                    if (!retryRenewed) return openDialogAndBounce(err);
+                    return replayWith(auth.token());
+                  }),
+                );
+              }),
+            );
+          }),
+        );
+      }
+
+      // Standard 401 with admin Bearer attached: refresh then replay.
+      // The replay is called via `next(...)` directly — it does NOT
+      // re-enter this interceptor — so a 401 on the replay is caught
+      // by the inner catchError, never a second refresh.
       return from(auth.refreshAccessToken()).pipe(
         switchMap((refreshed) => {
           if (!refreshed) {
             return openDialogAndBounce(err);
           }
-          const fresh = auth.token();
-          const replay = fresh
-            ? authedReq.clone({ setHeaders: { Authorization: `Bearer ${fresh}` } })
-            : authedReq;
-          return next(replay).pipe(
-            catchError((replayErr: HttpErrorResponse) => {
-              if (replayErr.status === 401) {
-                return openDialogAndBounce(replayErr);
-              }
-              return throwError(() => replayErr);
-            }),
-          );
+          return replayWith(auth.token());
         }),
       );
+
+      function replayWith(token: string | null): Observable<HttpEvent<unknown>> {
+        const replay = token
+          ? authedReq.clone({ setHeaders: { Authorization: `Bearer ${token}` } })
+          : authedReq;
+        return next(replay).pipe(
+          catchError((replayErr: HttpErrorResponse) => {
+            if (replayErr.status === 401) {
+              return openDialogAndBounce(replayErr);
+            }
+            return throwError(() => replayErr);
+          }),
+        );
+      }
     }),
   );
 };

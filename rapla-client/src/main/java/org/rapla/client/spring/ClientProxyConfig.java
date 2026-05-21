@@ -125,13 +125,38 @@ public class ClientProxyConfig
                 org.springframework.http.client.ClientHttpRequestExecution execution) throws java.io.IOException
         {
             interceptCount.incrementAndGet();
-            String token = info.getAccessToken();
+            // PRD 051: use effective access token (impersonation if set,
+            // else admin's). getAccessToken() is the admin token, read
+            // separately below by the renewal/refresh paths.
+            String token = info.getEffectiveAccessToken();
             if (token != null && !token.isEmpty()) request.getHeaders().setBearerAuth(token);
             org.springframework.http.client.ClientHttpResponse response = execution.execute(request, body);
             if (response.getStatusCode().value() != 401) return response;
             refreshAttempts.incrementAndGet();
             // Don't recurse on /api/auth/* itself.
             if (request.getURI().getPath().contains("/api/auth/")) return response;
+
+            // PRD 051 — impersonation renewal precedes the refresh chain.
+            // If we're impersonating and got 401, the impersonation
+            // token expired; try to renew it via /api/auth/impersonate.
+            // If that itself 401s (admin's access also stale), fall into
+            // the refresh-then-retry path which refreshes the admin
+            // token, then we retry impersonation, then retry the
+            // original request.
+            if (info.hasImpersonationToken())
+            {
+                if (tryRenewImpersonation())
+                {
+                    response.close();
+                    request.getHeaders().setBearerAuth(info.getEffectiveAccessToken());
+                    return execution.execute(request, body);
+                }
+                // Fall through — impersonation renewal failed, probably
+                // because admin's access token also stale. Refresh admin
+                // (below), then re-attempt impersonation renewal, then
+                // retry the original request.
+            }
+
             String refresh = info.getRefreshToken();
             if (refresh == null || refresh.isEmpty())
             {
@@ -147,7 +172,9 @@ public class ClientProxyConfig
             try
             {
                 String currentToken = info.getAccessToken();
-                if (java.util.Objects.equals(currentToken, token))
+                // Compare to admin's stored token: refresh is about renewing
+                // the admin token, not the impersonation override.
+                if (java.util.Objects.equals(currentToken, info.getAccessToken()))
                 {
                     refreshOk = doRefresh(refresh);
                 }
@@ -168,12 +195,73 @@ public class ClientProxyConfig
                 // broken pair, and notify the Swing UI to re-show the login dialog.
                 info.setAccessToken(null);
                 info.setRefreshToken(null);
+                info.clearImpersonationToken();
                 fireAuthDeadOnce();
                 return response;
             }
+            // Admin token refreshed. If we were impersonating, try the
+            // impersonation-renewal again now that the admin Bearer is
+            // valid. If that still fails, fall through to retry with the
+            // admin token (which will likely 403 on the original request
+            // — at which point the audit log explains why and the user
+            // sees the dialog via fireAuthDeadOnce).
+            if (info.hasImpersonationToken())
+            {
+                tryRenewImpersonation();
+            }
             response.close();
-            request.getHeaders().setBearerAuth(info.getAccessToken());
+            request.getHeaders().setBearerAuth(info.getEffectiveAccessToken());
             return execution.execute(request, body);
+        }
+
+        /**
+         * Call POST /api/auth/impersonate with the admin's current
+         * access token and the stashed target username. On success,
+         * updates the impersonation slot in {@link RemoteConnectionInfo}
+         * and returns true. On failure (any non-2xx), returns false —
+         * the caller decides whether to clear the impersonation or fall
+         * into the admin-refresh path. Errors are swallowed so the
+         * request-thread doesn't surface them; the next outbound
+         * request will trigger another attempt.
+         */
+        private boolean tryRenewImpersonation()
+        {
+            String adminToken = info.getAccessToken();
+            if (adminToken == null || adminToken.isEmpty()) return false;
+            String target = info.getImpersonationTargetUsername();
+            if (target == null || target.isEmpty()) return false;
+            String baseUrl = info.getServerURL();
+            if (baseUrl == null || baseUrl.isEmpty()) return false;
+            String trimmed = baseUrl.endsWith("/") ? baseUrl.substring(0, baseUrl.length() - 1) : baseUrl;
+            java.net.URI uri = java.net.URI.create(trimmed + "/api/auth/impersonate");
+            try
+            {
+                org.springframework.http.client.ClientHttpRequest req = requestFactory.createRequest(
+                        uri, org.springframework.http.HttpMethod.POST);
+                req.getHeaders().setBearerAuth(adminToken);
+                req.getHeaders().set("Content-Type", "application/x-www-form-urlencoded");
+                req.getHeaders().set("Accept", "application/json");
+                String reqBody = "target_username=" + java.net.URLEncoder.encode(
+                        target, java.nio.charset.StandardCharsets.UTF_8);
+                try (java.io.OutputStream out = req.getBody())
+                {
+                    out.write(reqBody.getBytes(java.nio.charset.StandardCharsets.UTF_8));
+                }
+                try (org.springframework.http.client.ClientHttpResponse renewResp = req.execute())
+                {
+                    if (renewResp.getStatusCode().value() / 100 != 2) return false;
+                    String json = new String(renewResp.getBody().readAllBytes(),
+                            java.nio.charset.StandardCharsets.UTF_8);
+                    String newToken = extractJsonStringField(json, "access_token");
+                    if (newToken == null || newToken.isEmpty()) return false;
+                    info.setImpersonationToken(newToken, target);
+                    return true;
+                }
+            }
+            catch (Exception ex)
+            {
+                return false;
+            }
         }
 
         private void fireAuthDeadOnce()
@@ -441,6 +529,23 @@ public class ClientProxyConfig
     public org.rapla.plugin.mail.MailConfigService mailConfigServiceProxy(HttpServiceProxyFactory factory)
     {
         return factory.createClient(org.rapla.plugin.mail.MailConfigService.class);
+    }
+
+    /**
+     * PRD 051 — admin "switch to user". The proxy lets
+     * {@link org.rapla.client.swing.internal.RaplaClientServiceImpl#switchTo}
+     * call {@code POST /api/auth/impersonate} via the same Spring
+     * RestClient machinery used by every other typed proxy. Bearer
+     * attachment is via {@link RefreshOn401Interceptor}, which reads
+     * {@code info.getEffectiveAccessToken()} — i.e. the impersonation
+     * token if set, otherwise the admin's access token. The renewal
+     * path (impersonation expired → call impersonate again) is also
+     * handled inside the interceptor.
+     */
+    @Bean
+    public org.rapla.storage.dbrm.ImpersonationService impersonationServiceProxy(HttpServiceProxyFactory factory)
+    {
+        return factory.createClient(org.rapla.storage.dbrm.ImpersonationService.class);
     }
 
     @Bean

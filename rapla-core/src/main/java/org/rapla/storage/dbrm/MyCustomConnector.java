@@ -48,6 +48,30 @@ public class MyCustomConnector implements CustomConnector
             return null;
         }
 
+        // PRD 051 — step 0: impersonation renewal. If an impersonation
+        // is active, the 401 we just got is for the impersonation token;
+        // try to renew it via /api/auth/impersonate with the admin's
+        // Bearer. On success return the new impersonation token; on
+        // failure fall into the existing refresh-then-password chain
+        // (which renews the admin Bearer, after which the next 401
+        // round-trip will retry impersonation step 0).
+        if (remoteConnectionInfo.hasImpersonationToken())
+        {
+            try
+            {
+                String renewed = renewImpersonationToken();
+                if (renewed != null)
+                {
+                    return renewed;
+                }
+            }
+            catch (Exception ex)
+            {
+                logger.info("impersonation renewal failed (" + ex.getMessage()
+                        + "), falling back to admin refresh");
+            }
+        }
+
         // Prefer refresh-token reauth (silent, works for both password and
         // OAuth-logged-in sessions) before falling back to re-running the
         // password login (which needs cached credentials we may not have).
@@ -170,6 +194,49 @@ public class MyCustomConnector implements CustomConnector
         return newAccess;
     }
 
+    /**
+     * PRD 051 — call {@code POST /api/auth/impersonate} with the admin's
+     * current Bearer to mint a fresh impersonation access token. On
+     * success, stashes the new token on {@link #remoteConnectionInfo}
+     * and returns it; the caller (the {@code reauth} chain) treats it
+     * as the new Bearer to retry the failing request with. On failure
+     * (no admin Bearer, no target name, non-2xx response), returns
+     * null so the caller falls through to admin-refresh.
+     */
+    private String renewImpersonationToken() throws Exception
+    {
+        String adminToken = remoteConnectionInfo.getAccessToken();
+        if (adminToken == null || adminToken.isEmpty()) return null;
+        String target = remoteConnectionInfo.getImpersonationTargetUsername();
+        if (target == null || target.isEmpty()) return null;
+        String serverUrl = remoteConnectionInfo.getServerURL();
+        if (serverUrl == null || serverUrl.isEmpty()) return null;
+        String trimmed = serverUrl.endsWith("/")
+                ? serverUrl.substring(0, serverUrl.length() - 1) : serverUrl;
+        String url = trimmed + "/api/auth/impersonate";
+        String body = "target_username="
+                + java.net.URLEncoder.encode(target, java.nio.charset.StandardCharsets.UTF_8);
+        java.net.http.HttpClient http = java.net.http.HttpClient.newBuilder()
+                .connectTimeout(java.time.Duration.ofSeconds(10)).build();
+        java.net.http.HttpRequest req = java.net.http.HttpRequest.newBuilder(java.net.URI.create(url))
+                .timeout(java.time.Duration.ofSeconds(10))
+                .header("Authorization", "Bearer " + adminToken)
+                .header("Content-Type", "application/x-www-form-urlencoded")
+                .header("Accept", "application/json")
+                .POST(java.net.http.HttpRequest.BodyPublishers.ofString(
+                        body, java.nio.charset.StandardCharsets.UTF_8))
+                .build();
+        java.net.http.HttpResponse<String> resp = http.send(req,
+                java.net.http.HttpResponse.BodyHandlers.ofString(java.nio.charset.StandardCharsets.UTF_8));
+        if (resp.statusCode() / 100 != 2) return null;
+        String respBody = resp.body();
+        String newToken = extractJsonString(respBody, "access_token");
+        if (newToken == null) return null;
+        remoteConnectionInfo.setImpersonationToken(newToken, target);
+        logger.info("impersonation renewal succeeded (target=" + target + ")");
+        return newToken;
+    }
+
     /** Minimal JSON field extractor — both rapla and OAuth refresh responses
      *  have flat top-level shape so we can avoid pulling in a JSON dependency. */
     private static String extractJsonString(String body, String field)
@@ -239,7 +306,11 @@ public class MyCustomConnector implements CustomConnector
 
     @Override public String getAccessToken()
     {
-        return remoteConnectionInfo.getAccessToken();
+        // PRD 051 — use the effective Bearer (impersonation if active,
+        // else admin's). The reauth() chain reads getAccessToken() on
+        // RemoteConnectionInfo directly when it needs the admin token
+        // for the renewal call.
+        return remoteConnectionInfo.getEffectiveAccessToken();
     }
 
     @Override

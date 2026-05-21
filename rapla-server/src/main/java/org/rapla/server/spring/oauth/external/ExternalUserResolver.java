@@ -48,11 +48,11 @@ public class ExternalUserResolver
         // already does the equalsIgnoreCase fallback). Stop at first hit.
         String upn = jwt.getClaimAsString("upn");
         User byUsername = findUserByUsername(upn);
-        if (byUsername != null) return stampSourceIfMissing(byUsername, provider);
+        if (byUsername != null) return syncFromIdp(byUsername, jwt, provider);
 
         String preferredUsername = jwt.getClaimAsString(provider.usernameClaim());
         byUsername = findUserByUsername(preferredUsername);
-        if (byUsername != null) return stampSourceIfMissing(byUsername, provider);
+        if (byUsername != null) return syncFromIdp(byUsername, jwt, provider);
 
         String email = jwt.getClaimAsString(provider.emailClaim());
         // Allow the email claim as a username fallback only for IdPs where the
@@ -61,10 +61,10 @@ public class ExternalUserResolver
         if (email != null && !email.isEmpty() && emailIsVerified(jwt))
         {
             byUsername = findUserByUsername(email);
-            if (byUsername != null) return stampSourceIfMissing(byUsername, provider);
+            if (byUsername != null) return syncFromIdp(byUsername, jwt, provider);
 
             User byEmail = findUserByEmail(email);
-            if (byEmail != null) return stampSourceIfMissing(byEmail, provider);
+            if (byEmail != null) return syncFromIdp(byEmail, jwt, provider);
         }
 
         if (provider.autoProvision())
@@ -80,31 +80,82 @@ public class ExternalUserResolver
     }
 
     /**
-     * PRD 050: on successful external-IdP match, stamp the user's
-     * {@code authenticationSource} so future self password / name / email
-     * change attempts are blocked at the server (and the UI hides the
-     * buttons). Idempotent — skips the write when already stamped with the
-     * same provider, so subsequent logins don't churn the entity.
-     *
-     * <p>Once stamped, the marker survives subsequent logins through other
-     * paths (e.g. the user briefly authenticating via LDAP would not
-     * overwrite their existing Keycloak marker — see PRD 050 §"don't
-     * overwrite an existing marker"). The only way back to local is the
-     * admin "disconnect from external auth" action.
+     * PRD 050: on every successful external-IdP match,
+     * <ol>
+     *   <li>stamp the user's {@code authenticationSource} if it's not already set —
+     *       gates future self password / name / email change attempts at the
+     *       server and hides the UI buttons;</li>
+     *   <li>refresh name + email from the JWT claims so the local rapla copy
+     *       stays in sync with the IdP-side values (the IdP is authoritative
+     *       for externally-authenticated users — mirrors what dhbwrapla's
+     *       {@code DhbwNtlmAuthStore.initUser} does for the NTLM/LDAP path).</li>
+     * </ol>
+     * Idempotent — when nothing changed, no write to storage. The marker
+     * itself is sticky: once set (e.g. by a previous OAuth login), it
+     * survives later authentication paths; the only way back to local is
+     * the admin "disconnect from external auth" action.
      */
-    private User stampSourceIfMissing(User user, ProviderConfig provider) throws RaplaException
+    private User syncFromIdp(User user, Jwt jwt, ProviderConfig provider) throws RaplaException
     {
-        String expected = provider.id();
-        if (expected.equals(user.getAuthenticationSource()))
+        String expectedSource = provider.id();
+        String currentSource = user.getAuthenticationSource();
+        String idpName = readDisplayName(jwt);
+        String idpEmail = jwt.getClaimAsString(provider.emailClaim());
+
+        boolean sourceNeedsUpdate = !expectedSource.equals(currentSource);
+        boolean nameNeedsUpdate = idpName != null && !idpName.isEmpty() && !idpName.equals(user.getName());
+        boolean emailNeedsUpdate = idpEmail != null && !idpEmail.isEmpty() && !idpEmail.equals(user.getEmail());
+
+        if (!sourceNeedsUpdate && !nameNeedsUpdate && !emailNeedsUpdate)
         {
             return user;
         }
+
         User edit = facade.edit(user);
-        edit.setAuthenticationSource(expected);
+        if (sourceNeedsUpdate)
+        {
+            edit.setAuthenticationSource(expectedSource);
+            logger.info("Stamped authentication-source='" + expectedSource + "' on rapla user '"
+                    + user.getUsername() + "' (external login from " + provider.id() + ")");
+        }
+        // Only refresh name/email when the IdP is the authoritative source.
+        // If currentSource is null and we just stamped it, this login is the
+        // promotion event — sync. If currentSource was non-null and matched,
+        // the IdP claims are authoritative going forward; sync. If
+        // currentSource was non-null and DIFFERENT (e.g. user has ldap stamp
+        // but is suddenly logging in via keycloak), the existing source wins
+        // — don't overwrite name/email until admin disconnects first.
+        boolean canSync = currentSource == null || expectedSource.equals(currentSource);
+        if (canSync)
+        {
+            if (nameNeedsUpdate)
+            {
+                edit.setName(idpName);
+                logger.info("Synced name from " + provider.id() + " for rapla user '" + user.getUsername() + "'");
+            }
+            if (emailNeedsUpdate)
+            {
+                edit.setEmail(idpEmail);
+                logger.info("Synced email from " + provider.id() + " for rapla user '" + user.getUsername() + "'");
+            }
+        }
         facade.store(edit);
-        logger.info("Stamped authentication-source='" + expected + "' on rapla user '"
-                + user.getUsername() + "' (first external login from " + provider.id() + ")");
         return facade.getUser(user.getUsername());
+    }
+
+    /**
+     * Same priority as {@link #autoProvisionUser} for the display name:
+     * {@code name} → {@code given_name} + {@code family_name} → null
+     * (don't fall back to username on refresh — username is already there).
+     */
+    private String readDisplayName(Jwt jwt)
+    {
+        String displayName = jwt.getClaimAsString("name");
+        if (displayName != null && !displayName.isEmpty()) return displayName;
+        String given = jwt.getClaimAsString("given_name");
+        String family = jwt.getClaimAsString("family_name");
+        if (given == null && family == null) return null;
+        return ((given == null ? "" : given) + " " + (family == null ? "" : family)).trim();
     }
 
     private void enforceHostedDomain(Jwt jwt, ProviderConfig provider) throws RaplaSecurityException

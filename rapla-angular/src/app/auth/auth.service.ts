@@ -78,6 +78,21 @@ export class AuthService {
   readonly lastOAuthError = signal<string | null>(null);
   readonly discovery = signal<OAuthDiscovery | null>(null);
 
+  /**
+   * PRD 051 — admin "switch to user". Holds the impersonation access
+   * token returned by {@code POST /api/auth/impersonate}, alongside
+   * the target's username (for the renewal path that needs it as a
+   * form parameter). Set by {@link impersonate}, cleared by
+   * {@link endImpersonation} and every logout path (signOut,
+   * handleUnauthenticated, handleAuthRejection). In-memory only —
+   * discarded on cold restart per PRD 051 § "Edge case: client restart
+   * mid-impersonation".
+   */
+  readonly impersonationOverride = signal<{ accessToken: string; targetUsername: string } | null>(null);
+
+  /** True while an impersonation is active (admin acting as another user). */
+  readonly isImpersonating = computed(() => this.impersonationOverride() !== null);
+
   /** Providers visible to the web picker, sorted by `order`. */
   readonly pickerProviders = computed<OAuthProviderEntry[]>(() => {
     const d = this.discovery();
@@ -274,6 +289,10 @@ export class AuthService {
    * </ul>
    */
   signOut(): void {
+    // PRD 051 — clear impersonation override before the IdP redirect.
+    // The new tab the IdP logout opens may take seconds to complete
+    // and we don't want a window where the override is still live.
+    this.endImpersonation();
     const active = this.activeProvider();
     const hasIdpLogout =
       active != null && !!active.endSessionUrl && active.endSessionUrl.length > 0;
@@ -323,6 +342,10 @@ export class AuthService {
    * silently; auto-redirect to /oauth2/authorize takes over there.
    */
   handleUnauthenticated(): void {
+    // PRD 051 — clear any active impersonation override; logout is a
+    // session boundary, surviving impersonation into the next login
+    // would be a privilege-escalation surprise.
+    this.endImpersonation();
     localStorage.removeItem(AuthService.ACTIVE_PROVIDER_KEY);
     this.oauth.logOut(true);
     this.router.navigateByUrl('/login');
@@ -354,12 +377,93 @@ export class AuthService {
    * that path unchanged.
    */
   token(): string | null {
+    // PRD 051: impersonation override takes precedence over the admin's
+    // own access token. The override is a rapla-SAS-signed JWT (`sub`
+    // = target's UUID, `act` = admin) and validates against rapla's
+    // resource server like any other access token.
+    const override = this.impersonationOverride();
+    if (override) return override.accessToken;
+
     const activeProviderId = localStorage.getItem(AuthService.ACTIVE_PROVIDER_KEY);
     if (activeProviderId && activeProviderId !== 'rapla') {
       const idToken = this.oauth.getIdToken();
       if (idToken) return idToken;
     }
     return this.oauth.getAccessToken() || null;
+  }
+
+  /**
+   * The admin's own access token, irrespective of any active
+   * impersonation. The interceptor uses this when calling
+   * {@code POST /api/auth/impersonate} for renewal — that endpoint
+   * needs the admin's Bearer to authenticate the actor, not the
+   * impersonation token (which would loop).
+   */
+  adminToken(): string | null {
+    const activeProviderId = localStorage.getItem(AuthService.ACTIVE_PROVIDER_KEY);
+    if (activeProviderId && activeProviderId !== 'rapla') {
+      const idToken = this.oauth.getIdToken();
+      if (idToken) return idToken;
+    }
+    return this.oauth.getAccessToken() || null;
+  }
+
+  /**
+   * PRD 051 — call {@code POST /api/auth/impersonate} with the
+   * admin's current Bearer, stash the returned access token as the
+   * impersonation override. Subsequent rapla API calls automatically
+   * carry the override (via {@link token}). Returns false on any
+   * failure; the caller surfaces the error and remains in admin mode.
+   */
+  async impersonate(targetUsername: string): Promise<boolean> {
+    const adminBearer = this.adminToken();
+    if (!adminBearer) return false;
+    try {
+      const resp = await fetch('/api/auth/impersonate', {
+        method: 'POST',
+        headers: {
+          Authorization: 'Bearer ' + adminBearer,
+          'Content-Type': 'application/x-www-form-urlencoded',
+          Accept: 'application/json',
+        },
+        body: 'target_username=' + encodeURIComponent(targetUsername),
+      });
+      if (!resp.ok) return false;
+      const body = (await resp.json()) as { access_token?: string };
+      if (!body.access_token) return false;
+      this.impersonationOverride.set({
+        accessToken: body.access_token,
+        targetUsername,
+      });
+      return true;
+    } catch (err) {
+      console.warn('[impersonate] request failed:', err);
+      return false;
+    }
+  }
+
+  /**
+   * PRD 051 — call {@code POST /api/auth/impersonate} again with the
+   * admin's Bearer to refresh an expired impersonation token (same
+   * target). Used by the auth interceptor on 401 when the impersonation
+   * Bearer is the one that got rejected. Returns true iff the renewal
+   * produced a fresh token; on false the caller falls into the
+   * admin-refresh path before trying again.
+   */
+  async renewImpersonation(): Promise<boolean> {
+    const override = this.impersonationOverride();
+    if (!override) return false;
+    return this.impersonate(override.targetUsername);
+  }
+
+  /**
+   * Clear the impersonation override; admin's normal Bearer becomes
+   * the effective token again on the next outbound request. Called
+   * by switch-back UX, and (defensively) by every logout-style path
+   * so a stale override doesn't survive into the next login session.
+   */
+  endImpersonation(): void {
+    this.impersonationOverride.set(null);
   }
 
   isLoggedIn(): boolean {

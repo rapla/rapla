@@ -249,6 +249,46 @@ public class JwtConfig
             return issue(subject, expiresInSeconds, "refresh");
         }
 
+        /**
+         * Mint an access token carrying an {@code act} claim per
+         * RFC 8693 § 4.1 — the token's effective subject is
+         * {@code targetUserId} (with display username
+         * {@code targetUsername}), but the originating actor is
+         * preserved in the {@code act} object for audit/traceability.
+         * Used by PRD 051 "switch to user". Same key, same algorithm
+         * as {@link #issueAccessToken} — validates against the same
+         * JWKS the resource server already trusts.
+         *
+         * @param targetUserId   the impersonated user's UUID (becomes {@code sub})
+         * @param targetUsername the impersonated user's username (becomes {@code username})
+         * @param actorUserId    the admin's UUID (becomes {@code act.sub})
+         * @param actorUsername  the admin's username (becomes {@code act.username})
+         * @param expiresInSeconds TTL in seconds (1 h matches {@code access-token-time-to-live})
+         */
+        public String issueImpersonationToken(String targetUserId, String targetUsername,
+                                              String actorUserId, String actorUsername,
+                                              long expiresInSeconds) throws JOSEException
+        {
+            long now = System.currentTimeMillis();
+            java.util.Map<String, Object> actClaim = new java.util.LinkedHashMap<>();
+            actClaim.put("sub", actorUserId);
+            actClaim.put("username", actorUsername);
+            JWTClaimsSet claims = new JWTClaimsSet.Builder()
+                    .subject(targetUserId)
+                    .issueTime(new Date(now))
+                    .expirationTime(new Date(now + expiresInSeconds * 1000))
+                    .jwtID(UUID.randomUUID().toString())
+                    .claim("typ", "access")
+                    .claim("username", targetUsername)
+                    .claim("act", actClaim)
+                    .build();
+            SignedJWT jwt = new SignedJWT(
+                    new JWSHeader.Builder(JWSAlgorithm.RS256).keyID(keyId).build(),
+                    claims);
+            jwt.sign(signer);
+            return jwt.serialize();
+        }
+
         private String issue(String subject, long expiresInSeconds, String type) throws JOSEException
         {
             long now = System.currentTimeMillis();

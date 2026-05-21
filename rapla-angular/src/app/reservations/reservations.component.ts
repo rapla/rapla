@@ -42,7 +42,12 @@ import { AuthService } from '../auth/auth.service';
     <mat-toolbar color="primary">
       <span>Reservations</span>
       <span class="spacer"></span>
-      @if (username()) {
+      @if (auth.isImpersonating()) {
+        <span class="impersonation-badge" title="Admin {{ adminUsername() }} is acting as {{ impersonatedUsername() }}">
+          <mat-icon>person_search</mat-icon>
+          Impersonating {{ impersonatedUsername() }}
+        </span>
+      } @else if (username()) {
         <span class="username">{{ username() }}</span>
       }
       <button matButton (click)="auth.signOut()">
@@ -102,6 +107,23 @@ import { AuthService } from '../auth/auth.service';
         margin-right: 1rem;
         font-size: 0.95rem;
       }
+      .impersonation-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.35rem;
+        margin-right: 1rem;
+        padding: 0.2rem 0.6rem;
+        background: rgba(255, 193, 7, 0.85);
+        color: rgba(0, 0, 0, 0.87);
+        border-radius: 4px;
+        font-size: 0.9rem;
+        font-weight: 500;
+      }
+      .impersonation-badge mat-icon {
+        font-size: 1.1rem;
+        height: 1.1rem;
+        width: 1.1rem;
+      }
       .content {
         max-width: 1100px;
         margin: 1.5rem auto;
@@ -146,6 +168,29 @@ export class ReservationsComponent implements OnInit, AfterViewInit {
   incomplete = signal(false);
   username = signal('');
 
+  /**
+   * PRD 051 — when an impersonation is active, the toolbar shows
+   * "Impersonating <target>" instead of the admin's normal username
+   * badge. The target name comes straight from the override (which
+   * the admin set when they clicked "Switch to user"); the
+   * {@link adminUsername} resolves from the JWT `act.username` claim
+   * for the tooltip, so an admin always knows whose authority is
+   * being used.
+   */
+  readonly impersonatedUsername = computed(
+    () => this.auth.impersonationOverride()?.targetUsername ?? '',
+  );
+
+  /** The actor's username, decoded from the impersonation token's
+   *  `act.username` claim. Used in the tooltip on the badge. Empty
+   *  when no impersonation is active. */
+  readonly adminUsername = computed(() => {
+    const override = this.auth.impersonationOverride();
+    if (!override) return '';
+    const claim = decodeActUsername(override.accessToken);
+    return claim ?? '';
+  });
+
   @ViewChild(MatSort) sort!: MatSort;
   @ViewChild(MatPaginator) paginator!: MatPaginator;
 
@@ -189,5 +234,29 @@ export class ReservationsComponent implements OnInit, AfterViewInit {
       if (!isNaN(d.getTime())) return d.toLocaleString();
     }
     return String(v);
+  }
+}
+
+/**
+ * Decode the {@code act.username} claim from a rapla-SAS-minted
+ * impersonation token. Used for the tooltip on the
+ * "Impersonating X" badge so admins can see whose authority is being
+ * used. Signature isn't checked here — that's the resource server's
+ * job; we just want to render the claim. Returns null on any parse
+ * failure (don't fall back to noisy errors in the toolbar).
+ */
+function decodeActUsername(jwt: string): string | null {
+  try {
+    const parts = jwt.split('.');
+    if (parts.length < 2) return null;
+    const padded = parts[1] + '='.repeat((4 - (parts[1].length % 4)) % 4);
+    const json = JSON.parse(atob(padded.replace(/-/g, '+').replace(/_/g, '/')));
+    const act = json.act;
+    if (act && typeof act === 'object' && typeof act.username === 'string') {
+      return act.username;
+    }
+    return null;
+  } catch {
+    return null;
   }
 }

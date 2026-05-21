@@ -13,9 +13,13 @@ describe('authInterceptor', () => {
   let httpMock: HttpTestingController;
   let authStub: {
     token: ReturnType<typeof vi.fn>;
+    adminToken: ReturnType<typeof vi.fn>;
     refreshAccessToken: ReturnType<typeof vi.fn>;
     handleUnauthenticated: ReturnType<typeof vi.fn>;
     handleAuthRejection: ReturnType<typeof vi.fn>;
+    isImpersonating: ReturnType<typeof vi.fn>;
+    renewImpersonation: ReturnType<typeof vi.fn>;
+    endImpersonation: ReturnType<typeof vi.fn>;
   };
   let dialogStub: { open: ReturnType<typeof vi.fn> };
   let dialogRefAfterClosed: ReturnType<typeof vi.fn>;
@@ -23,9 +27,13 @@ describe('authInterceptor', () => {
   beforeEach(() => {
     authStub = {
       token: vi.fn(() => 'access-1'),
+      adminToken: vi.fn(() => 'access-1'),
       refreshAccessToken: vi.fn(async () => false),
       handleUnauthenticated: vi.fn(),
       handleAuthRejection: vi.fn(),
+      isImpersonating: vi.fn(() => false),
+      renewImpersonation: vi.fn(async () => false),
+      endImpersonation: vi.fn(),
     };
 
     dialogRefAfterClosed = vi.fn(() => of(undefined));
@@ -231,6 +239,95 @@ describe('authInterceptor', () => {
     expect(dialogStub.open.mock.calls[0][1].data.message).toContain(
       'could not link it to a user account',
     );
+  });
+
+  it('PRD 051: on 401 with impersonation Bearer attached, renews impersonation first, then replays', async () => {
+    // Simulate active impersonation: token() returns the override, adminToken() returns admin's.
+    authStub.token.mockReturnValue('imp-1');
+    authStub.adminToken.mockReturnValue('admin-1');
+    authStub.isImpersonating.mockReturnValue(true);
+    authStub.renewImpersonation.mockImplementation(async () => {
+      authStub.token.mockReturnValue('imp-2'); // fresh override
+      return true;
+    });
+
+    let observed: unknown = null;
+    http.get('/api/reservations').subscribe((res) => (observed = res));
+
+    httpMock
+      .expectOne((r) => r.headers.get('Authorization') === 'Bearer imp-1')
+      .flush({}, { status: 401, statusText: 'Unauthorized' });
+    await flushMicrotasks();
+
+    const replay = httpMock.expectOne(
+      (r) => r.headers.get('Authorization') === 'Bearer imp-2',
+    );
+    replay.flush({ ok: true });
+    await flushMicrotasks();
+
+    expect(authStub.renewImpersonation).toHaveBeenCalledTimes(1);
+    expect(authStub.refreshAccessToken).not.toHaveBeenCalled();
+    expect(dialogStub.open).not.toHaveBeenCalled();
+    expect(observed).toEqual({ ok: true });
+  });
+
+  it('PRD 051: on 401 with impersonation Bearer + admin also stale, refreshes admin then re-renews', async () => {
+    authStub.token.mockReturnValue('imp-1');
+    authStub.adminToken.mockReturnValue('admin-1');
+    authStub.isImpersonating.mockReturnValue(true);
+    // First renewImpersonation fails (admin Bearer stale), then admin refresh
+    // succeeds, then second renewImpersonation succeeds with new token.
+    let renewCallCount = 0;
+    authStub.renewImpersonation.mockImplementation(async () => {
+      renewCallCount++;
+      if (renewCallCount === 1) return false;
+      authStub.token.mockReturnValue('imp-2');
+      return true;
+    });
+    authStub.refreshAccessToken.mockResolvedValue(true);
+
+    http.get('/api/reservations').subscribe();
+
+    httpMock
+      .expectOne((r) => r.headers.get('Authorization') === 'Bearer imp-1')
+      .flush({}, { status: 401, statusText: 'Unauthorized' });
+    await flushMicrotasks();
+
+    const replay = httpMock.expectOne(
+      (r) => r.headers.get('Authorization') === 'Bearer imp-2',
+    );
+    replay.flush({ ok: true });
+    await flushMicrotasks();
+
+    expect(authStub.renewImpersonation).toHaveBeenCalledTimes(2);
+    expect(authStub.refreshAccessToken).toHaveBeenCalledTimes(1);
+    expect(dialogStub.open).not.toHaveBeenCalled();
+  });
+
+  it('PRD 051: on 401 with impersonation Bearer + both renewals fail → dialog', async () => {
+    authStub.token.mockReturnValue('imp-1');
+    authStub.adminToken.mockReturnValue('admin-1');
+    authStub.isImpersonating.mockReturnValue(true);
+    authStub.renewImpersonation.mockResolvedValue(false);
+    authStub.refreshAccessToken.mockResolvedValue(false);
+
+    http.get('/api/reservations').subscribe({
+      next: () => {},
+      error: () => {},
+    });
+
+    httpMock
+      .expectOne((r) => r.headers.get('Authorization') === 'Bearer imp-1')
+      .flush(
+        { error_description: 'name already taken' },
+        { status: 401, statusText: 'Unauthorized' },
+      );
+    await flushMicrotasks();
+
+    expect(authStub.renewImpersonation).toHaveBeenCalledTimes(1);
+    expect(authStub.refreshAccessToken).toHaveBeenCalledTimes(1);
+    expect(dialogStub.open).toHaveBeenCalledTimes(1);
+    expect(authStub.handleAuthRejection).toHaveBeenCalledTimes(1);
   });
 
   it('does not fire dialog/redirect on non-401 errors', () => {

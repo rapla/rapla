@@ -2,6 +2,8 @@ import { Component, inject, OnInit } from '@angular/core';
 import { Router } from '@angular/router';
 import { OAuthService } from 'angular-oauth2-oidc';
 
+import { AuthService } from './auth.service';
+
 /**
  * OAuth2 redirect landing. The library has already processed the `?code=...`
  * URL params during app bootstrap (see app.config.ts initializer). We just
@@ -21,8 +23,14 @@ import { OAuthService } from 'angular-oauth2-oidc';
 export class CallbackComponent implements OnInit {
   private readonly oauth = inject(OAuthService);
   private readonly router = inject(Router);
+  private readonly auth = inject(AuthService);
 
   ngOnInit() {
+    // PRD 051 — landing on /callback means a fresh OAuth flow just
+    // completed. Any pre-existing impersonation override belongs to
+    // the previous session; discard it before continuing or the next
+    // outbound request would surprise-impersonate.
+    this.auth.endImpersonation();
     if (this.oauth.hasValidAccessToken()) {
       sessionStorage.removeItem('oauthFailures');
       this.router.navigateByUrl('/reservations');

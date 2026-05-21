@@ -11,6 +11,14 @@ public class RemoteConnectionInfo
     String idToken;
     String logoutUrl;
     String serverURL;
+    // PRD 051 — admin "switch to user". When non-null, holds the
+    // rapla-SAS-signed impersonation access token; the effective Bearer
+    // for outbound requests is this token (carries sub=target, act=admin).
+    // No refresh-token counterpart by design — renewal is via another
+    // call to /api/auth/impersonate when the token expires.
+    // Cleared on switch-back, on logout, and on the auth-dead hook.
+    String impersonationToken;
+    String impersonationTargetUsername;
     // PRD 029 Phase 4 — the token endpoint + client_id this session must use
     // for refresh-token reauth. For a rapla-SAS / password session these stay
     // null and MyCustomConnector falls back to serverURL + /oauth2/token with
@@ -123,14 +131,65 @@ public class RemoteConnectionInfo
         return onAuthDead;
     }
 
-    public void setReconnectInfo(ConnectInfo connectInfo) 
+    public void setReconnectInfo(ConnectInfo connectInfo)
     {
         this.connectInfo = connectInfo;
     }
-    
-    public ConnectInfo getConnectInfo() 
+
+    public ConnectInfo getConnectInfo()
     {
         return connectInfo;
     }
-    
+
+    /**
+     * PRD 051 — stash the impersonation access token returned by
+     * {@code POST /api/auth/impersonate}. The admin's own
+     * {@link #accessToken} stays intact for renewal calls; outbound
+     * requests use {@link #getEffectiveAccessToken()} which prefers
+     * this token when set.
+     *
+     * @param impersonationToken the rapla-SAS-signed access JWT, or
+     *   {@code null} to clear (switch back to admin's identity)
+     * @param targetUsername the impersonated user's username, for UI
+     *   indicators and for renewal calls that need the {@code
+     *   target_username} form parameter
+     */
+    public void setImpersonationToken(String impersonationToken, String targetUsername)
+    {
+        this.impersonationToken = impersonationToken;
+        this.impersonationTargetUsername = (impersonationToken == null) ? null : targetUsername;
+    }
+
+    public void clearImpersonationToken()
+    {
+        setImpersonationToken(null, null);
+    }
+
+    public String getImpersonationToken()
+    {
+        return impersonationToken;
+    }
+
+    public String getImpersonationTargetUsername()
+    {
+        return impersonationTargetUsername;
+    }
+
+    public boolean hasImpersonationToken()
+    {
+        return impersonationToken != null && !impersonationToken.isEmpty();
+    }
+
+    /**
+     * The Bearer to send on outbound API requests. Returns the
+     * impersonation token when set, otherwise the admin's regular
+     * access token. The renewal-on-401 path reads
+     * {@link #getAccessToken()} directly (the admin token) so it can
+     * authenticate the {@code /api/auth/impersonate} call even while
+     * an impersonation is active.
+     */
+    public String getEffectiveAccessToken()
+    {
+        return hasImpersonationToken() ? impersonationToken : accessToken;
+    }
 }
