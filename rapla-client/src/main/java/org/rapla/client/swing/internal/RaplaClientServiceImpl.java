@@ -29,6 +29,7 @@ import org.rapla.client.internal.OAuthConfig;
 import org.rapla.client.internal.OAuthTokens;
 import org.rapla.client.internal.SwingOAuthLoginFlow;
 import org.rapla.client.swing.RaplaGUIComponent;
+import org.rapla.client.swing.SwingSafe;
 import org.rapla.client.swing.SwingSchedulerImpl;
 import org.rapla.client.swing.images.RaplaImages;
 import org.rapla.client.swing.i18n.SwingBundleManager;
@@ -60,10 +61,8 @@ import java.util.function.Supplier;
 import javax.swing.AbstractAction;
 import javax.swing.Action;
 import javax.swing.SwingUtilities;
-import java.awt.AWTEvent;
 import java.awt.Component;
 import java.awt.Dimension;
-import java.awt.EventQueue;
 import java.awt.Toolkit;
 import java.awt.Window;
 import java.awt.event.ActionEvent;
@@ -108,6 +107,8 @@ public class RaplaClientServiceImpl implements ClientService, UpdateErrorListene
     RemoteAuthentificationService authentificationService;
     RemoteConnectionInfo connectionInfo;
     final org.rapla.storage.dbrm.TokenStore tokenStore;
+    final org.rapla.client.event.RaplaEventBus eventBus;
+    final org.rapla.client.spring.LogoutSignal logoutSignal;
     @Autowired
     org.rapla.storage.dbrm.ImpersonationService impersonationService;
     /** Set by logout(); read+cleared by the next runOauthLogin call. Adds
@@ -123,7 +124,8 @@ public class RaplaClientServiceImpl implements ClientService, UpdateErrorListene
     public RaplaClientServiceImpl(StartupEnvironment env, Logger logger, DialogUiFactoryInterface dialogUiFactory, ClientFacade facade, RaplaResources i18n, RaplaSystemInfo systemInfo,
                                   RaplaLocale raplaLocale, BundleManager bundleManager, CommandScheduler commandScheduler, final RemoteOperator storageOperator,
                                   Supplier<Application> applicationProvider, RemoteConnectionInfo connectionInfo, RemoteAuthentificationService authentificationService,
-                                  org.rapla.storage.dbrm.TokenStore tokenStore)
+                                  org.rapla.storage.dbrm.TokenStore tokenStore, org.rapla.client.event.RaplaEventBus eventBus,
+                                  org.rapla.client.spring.LogoutSignal logoutSignal)
     {
         this.tokenStore = tokenStore == null ? org.rapla.storage.dbrm.TokenStores.noOp() : tokenStore;
         this.env = env;
@@ -150,6 +152,8 @@ public class RaplaClientServiceImpl implements ClientService, UpdateErrorListene
         this.bundleManager = bundleManager;
         this.commandScheduler = commandScheduler;
         this.applicationProvider = applicationProvider;
+        this.eventBus = eventBus;
+        this.logoutSignal = logoutSignal;
         ((ClientFacadeImpl) this.facade).setOperator(storageOperator);
         this.connectionInfo = connectionInfo;
         try
@@ -195,33 +199,6 @@ public class RaplaClientServiceImpl implements ClientService, UpdateErrorListene
             }
         }
 
-        // EDT exceptions bypass Thread.setDefaultUncaughtExceptionHandler — they go through
-        // EventDispatchThread.processException, which only consults the legacy sun.awt.exception.handler
-        // system property and otherwise prints to System.err. Wrap the system event queue so every
-        // dispatched AWT event runs inside our try/catch and uncaughts surface through the rapla logger.
-        try
-        {
-            Toolkit.getDefaultToolkit().getSystemEventQueue().push(new EventQueue()
-            {
-                @Override
-                protected void dispatchEvent(AWTEvent event)
-                {
-                    try
-                    {
-                        super.dispatchEvent(event);
-                    }
-                    catch (Throwable t)
-                    {
-                        logger.error("Uncaught exception in AWT event dispatch", t);
-                    }
-                }
-            });
-        }
-        catch (Throwable ex)
-        {
-            logger.error("Can't install AWT event-queue exception handler", ex);
-        }
-
         ApplicationViewSwing.setLookandFeel();
         defaultLanguageChosen = true;
         getLogger().info("Starting gui ");
@@ -261,7 +238,10 @@ public class RaplaClientServiceImpl implements ClientService, UpdateErrorListene
         advanceLoading(true);
 
         logoutAvailable = true;
-        if (connectInfo != null && connectInfo.getUsername() != null)
+        // Auto-login when the ConnectInfo carries any credential — username +
+        // password (legacy), or an access token (PRD 052 Phase 2 switch-to-user
+        // path: impersonation ConnectInfo has only an access token, no username).
+        if (connectInfo != null && (connectInfo.getUsername() != null || connectInfo.getAccessToken() != null))
         {
             login(connectInfo).thenAccept( (result)-> {
                 getLogger().info("Login successfull");
@@ -415,20 +395,24 @@ public class RaplaClientServiceImpl implements ClientService, UpdateErrorListene
      */
     public void switchTo(User user) throws RaplaException
     {
-        ClientFacade facade = getClientFacade();
         if (user == null)
         {
-            if (!connectionInfo.hasImpersonationToken())
+            // PRD 052 Phase 2 — "are we impersonating?" comes from LogoutSignal,
+            // not connectionInfo.hasImpersonationToken(). The close+recreate
+            // model carries the impersonation token in the regular accessToken
+            // slot, not the dual-slot the old in-place switchTo populated.
+            if (!logoutSignal.isImpersonationSession())
             {
                 throw new RaplaException("Not currently switched to another user.");
             }
-            String oldTarget = connectionInfo.getImpersonationTargetUsername();
-            connectionInfo.clearImpersonationToken();
-            getLogger().info("Switching back from '" + oldTarget + "' to admin");
+            getLogger().info("Switching back to admin — closing impersonation context, restoring admin session");
+            // Fire the close+recreate signal; main() restores the previously-saved
+            // admin ConnectInfo on the next iteration.
+            logoutSignal.next(org.rapla.client.spring.NextSession.switchBack());
         }
         else
         {
-            if (connectionInfo.hasImpersonationToken())
+            if (logoutSignal.isImpersonationSession())
             {
                 throw new RaplaException("Already switched to a user; switch back first.");
             }
@@ -437,19 +421,37 @@ public class RaplaClientServiceImpl implements ClientService, UpdateErrorListene
             {
                 throw new RaplaException("Impersonation endpoint returned no access token.");
             }
-            connectionInfo.setImpersonationToken(resp.getAccessToken(), user.getUsername());
-            getLogger().info("Switched from admin to '" + user.getUsername() + "'");
+            getLogger().info("Switching from admin to '" + user.getUsername() + "' — closing admin context, opening impersonation context");
+            // PRD 052 Phase 2 — close the admin context and build a fresh one
+            // for the impersonation session. Avoids the "non system preferences
+            // for other users" cache-integrity error that the old in-place
+            // token swap hit because admin's LocalCache contained data the
+            // impersonated user shouldn't see.
+            //
+            // PRD 051 § "Token renewal model" — impersonation tokens are not
+            // refreshable; the new ConnectInfo carries only the access token.
+            // When it expires, the user re-clicks switch-to-user (or we add a
+            // re-impersonate hook later).
+            ConnectInfo impersonationInfo = ConnectInfo.withAccessToken(resp.getAccessToken(), null);
+            // Capture admin's current credentials NOW — connectionInfo dies with
+            // the context. Without this the launcher can't restore the admin
+            // session on switch-back, especially when admin logged in via the
+            // interactive dialog (then there's no startup-supplied ConnectInfo
+            // to fall back to).
+            ConnectInfo adminRestoreInfo = ConnectInfo.withAccessToken(
+                    connectionInfo.getAccessToken(),
+                    connectionInfo.getRefreshToken());
+            logoutSignal.next(org.rapla.client.spring.NextSession.switchTo(impersonationInfo, adminRestoreInfo));
         }
-        // Trigger a facade refresh so subscribed UI components re-render
-        // for the new effective identity. The next REST call automatically
-        // uses the swapped Bearer via RefreshOn401Interceptor reading
-        // connectionInfo.getEffectiveAccessToken().
-        facade.getRaplaFacade().refresh();
     }
 
     public boolean canSwitchBack()
     {
-        return connectionInfo.hasImpersonationToken();
+        // PRD 052 Phase 2 — under the close+recreate model the impersonation
+        // session has a fresh connectionInfo without a dual-slot impersonation
+        // token; the launcher (SpringRaplaClient.main) flags the new context
+        // as an impersonation session via LogoutSignal. Read from there.
+        return logoutSignal.isImpersonationSession();
     }
 
     private void stop()
@@ -510,17 +512,17 @@ public class RaplaClientServiceImpl implements ClientService, UpdateErrorListene
                     if (restored)
                     {
                         getLogger().info("startup: silent reauth succeeded — main view loading, no dialog");
-                        SwingUtilities.invokeLater(this::beginRaplaSessionAfterRestore);
+                        SwingSafe.invokeLater(logger, this::beginRaplaSessionAfterRestore);
                     }
                     else
                     {
                         getLogger().info("startup: falling back to login dialog (Swing dialog is the emergency fallback path)");
-                        SwingUtilities.invokeLater(this::startLoginInThread);
+                        SwingSafe.invokeLater(logger, this::startLoginInThread);
                     }
                 })
                 .exceptionally(ex -> {
                     getLogger().info("startup: restore failed (" + ex.getMessage() + ") — falling back to login dialog");
-                    SwingUtilities.invokeLater(this::startLoginInThread);
+                    SwingSafe.invokeLater(logger, this::startLoginInThread);
                 });
     }
 
@@ -639,7 +641,7 @@ public class RaplaClientServiceImpl implements ClientService, UpdateErrorListene
             getLogger().error("post-restore session start failed; falling back to login dialog", ex);
             // Drop the cached token if the session can't start with it for any reason
             tokenStore.tryClear();
-            SwingUtilities.invokeLater(this::startLoginInThread);
+            SwingSafe.invokeLater(logger, this::startLoginInThread);
         });
     }
 
@@ -796,7 +798,7 @@ public class RaplaClientServiceImpl implements ClientService, UpdateErrorListene
             // rapla SAS, Keycloak, …); picking a browser provider greys out the
             // username/password fields. Without that flag, or when OAuth is
             // unavailable, only the plain password form is shown.
-            commandScheduler.supply(this::fetchOauthConfig).thenAccept(cfg -> SwingUtilities.invokeLater(() -> {
+            commandScheduler.supply(this::fetchOauthConfig).thenAccept(cfg -> SwingSafe.invokeLater(logger, () -> {
                 boolean oauthEnabled = cfg != null && cfg.isEnabled();
                 boolean legacyLogin = cfg != null && cfg.isSwingLegacyLogin();
                 if (oauthEnabled && !legacyLogin)
@@ -818,7 +820,7 @@ public class RaplaClientServiceImpl implements ClientService, UpdateErrorListene
                             + (showProviders ? " with the sign-in-method dropdown" : ""));
                     dlg.setVisible(true);
                 }
-            })).exceptionally(ex -> SwingUtilities.invokeLater(() -> {
+            })).exceptionally(ex -> SwingSafe.invokeLater(logger, () -> {
                 Throwable root = ex;
                 while (root.getCause() != null && root.getCause() != root) root = root.getCause();
                 getLogger().info("startup: discovery failed (" + root.getClass().getSimpleName() + ": " + root.getMessage() + ") — showing legacy Swing login dialog as fallback");
@@ -999,8 +1001,8 @@ public class RaplaClientServiceImpl implements ClientService, UpdateErrorListene
                 scheduleDelayedPasteHelper(dlg, session);
             }
             return session.future().get();
-        }).thenAccept(tokens -> SwingUtilities.invokeLater(() -> finishOauthLogin(dlg, loginMutex, tokens, provider)))
-                .exceptionally(ex -> SwingUtilities.invokeLater(() -> {
+        }).thenAccept(tokens -> SwingSafe.invokeLater(logger, () -> finishOauthLogin(dlg, loginMutex, tokens, provider)))
+                .exceptionally(ex -> SwingSafe.invokeLater(logger, () -> {
                     Throwable root = unwrap(ex);
                     if (root instanceof java.util.concurrent.CancellationException)
                     {
@@ -1037,7 +1039,7 @@ public class RaplaClientServiceImpl implements ClientService, UpdateErrorListene
         // their browser is stuck on.
         java.util.concurrent.CompletableFuture
                 .runAsync(() -> {}, java.util.concurrent.CompletableFuture.delayedExecutor(12, java.util.concurrent.TimeUnit.SECONDS))
-                .thenRun(() -> SwingUtilities.invokeLater(() -> {
+                .thenRun(() -> SwingSafe.invokeLater(logger, () -> {
                     if (session.future().isDone())
                     {
                         return;
@@ -1060,7 +1062,7 @@ public class RaplaClientServiceImpl implements ClientService, UpdateErrorListene
                                 // without waiting the 5-minute callback timeout.
                                 session.future().cancel(true);
                             });
-                    session.future().whenComplete((t, e) -> SwingUtilities.invokeLater(paste::dispose));
+                    session.future().whenComplete((t, e) -> SwingSafe.invokeLater(logger, paste::dispose));
                 }));
     }
 
@@ -1222,7 +1224,7 @@ public class RaplaClientServiceImpl implements ClientService, UpdateErrorListene
         this.schedule = null;
         if (started)
         {
-            SwingUtilities.invokeLater(() -> {
+            SwingSafe.invokeLater(logger, () -> {
                 boolean modal = false;
                 String title = i18n.getString("restart_client");
                 try
@@ -1324,6 +1326,12 @@ public class RaplaClientServiceImpl implements ClientService, UpdateErrorListene
         // state-change boundary; surviving impersonation into the next
         // login session would surprise the next admin.
         connectionInfo.clearImpersonationToken();
+        // PRD 052 Phase 1b — complete the current event-bus subjects so observers
+        // disposed cleanly and the observer-list entries the subjects retain
+        // don't accumulate across logouts. Recreates fresh subjects for the next
+        // session. Becomes redundant when Phase 2 lands (the whole context dies
+        // on logout — the bus's @PreDestroy fires for free).
+        eventBus.reset();
         // Tell the next OAuth flow to force the IdP login form regardless of
         // the browser's session cookie. The cookie SHOULD be cleared by the
         // logoutUrl tab opened above, but there's a race: that tab may not
@@ -1331,20 +1339,13 @@ public class RaplaClientServiceImpl implements ClientService, UpdateErrorListene
         // the race deterministically.
         nextOauthForcesLogin = true;
         stop(new ConnectInfo(null, "".toCharArray()));
-        // After logout, re-enter the login flow in the same JVM so the user
-        // sees the login dialog / browser flow without needing to relaunch.
-        // start() guards on `started == false` (which stop() just set), so this
-        // is safe.
-        SwingUtilities.invokeLater(() -> {
-            try
-            {
-                this.start(null);
-            }
-            catch (Exception ex)
-            {
-                getLogger().error("Failed to restart login flow after logout", ex);
-            }
-        });
+        // PRD 052 Phase 2 — signal SpringRaplaClient.main() to close this
+        // Spring context and build a fresh one for the next login. main()
+        // disposes JFrames, runs ctx.close() (which fires DisposableBean /
+        // @PreDestroy across every bean), and rebuilds the context. The user
+        // sees a fresh login dialog in a fresh context with zero carry-over
+        // of cached entities, UI state, or singleton listener registrations.
+        logoutSignal.next(org.rapla.client.spring.NextSession.showLoginDialog());
     }
 
     private Promise<Boolean> login(ConnectInfo connectInfo)

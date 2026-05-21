@@ -8,6 +8,8 @@ import org.springframework.beans.factory.config.BeanFactoryPostProcessor;
 import org.springframework.beans.factory.config.ConfigurableListableBeanFactory;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
 
+import java.awt.Frame;
+
 /**
  * Spring-based bootstrap for the Swing client.
  *
@@ -15,6 +17,12 @@ import org.springframework.context.annotation.AnnotationConfigApplicationContext
  * {@link ClientConfig} and {@link ClientProxyConfig}, wires the full Swing UI
  * graph via component scan (see {@link SwingClientConfig}), and exposes the
  * client facade.
+ *
+ * <p>PRD 052: {@link #main(String[])} owns the context lifecycle in a loop.
+ * Logout, switch-to-user, switch-back, and exit all flow through
+ * {@link LogoutSignal} — each one closes the current context and either
+ * builds a fresh one (clean slate per session, no carry-over of cached
+ * entities or singleton UI state) or breaks the loop.
  */
 public class SpringRaplaClient implements AutoCloseable
 {
@@ -28,12 +36,18 @@ public class SpringRaplaClient implements AutoCloseable
 
     public SpringRaplaClient(Class<?>... configClasses)
     {
-        this.context = new AnnotationConfigApplicationContext();
-        context.addBeanFactoryPostProcessor(globalLazyInitPostProcessor());
-        context.addBeanFactoryPostProcessor(new org.rapla.spring.SupplierAutoWrapperBeanFactoryPostProcessor());
-        context.register(configClasses);
-        context.refresh();
+        this.context = buildContext(configClasses);
         this.facade = context.getBean(ClientFacade.class);
+    }
+
+    private static AnnotationConfigApplicationContext buildContext(Class<?>... configClasses)
+    {
+        AnnotationConfigApplicationContext ctx = new AnnotationConfigApplicationContext();
+        ctx.addBeanFactoryPostProcessor(globalLazyInitPostProcessor());
+        ctx.addBeanFactoryPostProcessor(new org.rapla.spring.SupplierAutoWrapperBeanFactoryPostProcessor());
+        ctx.register(configClasses);
+        ctx.refresh();
+        return ctx;
     }
 
     /**
@@ -77,9 +91,13 @@ public class SpringRaplaClient implements AutoCloseable
     }
 
     /**
-     * Entry point for the Swing client. Boots the Spring context and launches
-     * the {@link ClientService} (which puts up the login dialog and, on
-     * successful login, opens the main application window).
+     * Entry point for the Swing client. Owns the Spring-context lifecycle
+     * loop: each iteration constructs a fresh
+     * {@link AnnotationConfigApplicationContext}, starts the
+     * {@link ClientService} with the current session's {@link ConnectInfo},
+     * and blocks on {@link LogoutSignal#take()} until logout / switch-user /
+     * exit. On logout: dispose all Swing frames, close the context, build a
+     * new one. On exit: close and break the loop.
      *
      * <p>Usage:
      * <pre>
@@ -88,20 +106,79 @@ public class SpringRaplaClient implements AutoCloseable
      *   java -cp ... org.rapla.client.spring.SpringRaplaClient username password
      * </pre>
      *
-     * <p>If a username (and optionally password) is supplied, the client
-     * attempts auto-login; otherwise it shows the interactive login dialog.
+     * <p>If a username (and optionally password) is supplied, the first
+     * iteration attempts auto-login; otherwise the login dialog appears.
      */
     public static void main(String[] args) throws Exception
     {
-        SpringRaplaClient client = new SpringRaplaClient();
-        ClientService clientService = client.getContext().getBean(ClientService.class);
-        ConnectInfo connectInfo = null;
-        if (args.length >= 1)
+        ConnectInfo initial = parseConnectInfo(args);
+        NextSession next = initial != null ? NextSession.reconnectAs(initial) : NextSession.showLoginDialog();
+
+        // Admin's session info saved during switch-to-user. The launcher
+        // owns this because the Spring context (and connectionInfo with it)
+        // dies on close, so context-internal storage would be lost.
+        ConnectInfo savedAdminInfo = null;
+
+        while (!next.isExit())
         {
-            String user = args[0];
-            char[] password = args.length >= 2 ? args[1].toCharArray() : new char[0];
-            connectInfo = new ConnectInfo(user, password);
+            // An iteration is an impersonation session when we have a saved
+            // admin ConnectInfo AND we're NOT currently switching back (the
+            // switch-back iteration restores admin). The flag controls
+            // RaplaClientServiceImpl.canSwitchBack() in the new context so
+            // the "Switch back" admin-menu entry only appears under
+            // impersonation.
+            boolean isImpersonationSession = savedAdminInfo != null && !next.isSwitchBack();
+
+            ConnectInfo currentInfo;
+            if (next.isSwitchBack())
+            {
+                currentInfo = savedAdminInfo;
+                savedAdminInfo = null;
+            }
+            else
+            {
+                currentInfo = next.info();
+            }
+
+            try (AnnotationConfigApplicationContext ctx = buildContext(
+                    ClientConfig.class, ClientProxyConfig.class, SwingClientConfig.class,
+                    EditTaskPresenterConfig.class, PluginResourcesConfig.class))
+            {
+                ctx.getBean(LogoutSignal.class).setImpersonationSession(isImpersonationSession);
+                ClientService clientService = ctx.getBean(ClientService.class);
+                clientService.start(currentInfo);
+
+                NextSession received = ctx.getBean(LogoutSignal.class).take();
+                disposeAllFrames();
+
+                // Capture admin restore info from the signal — the impersonation
+                // call (RaplaClientServiceImpl.switchTo) reads connectionInfo
+                // and packs the admin's tokens into restoreInfo() BEFORE the
+                // context closes. Can't read it from `currentInfo` because that
+                // is null when admin logged in via the interactive dialog.
+                if (received.restoreInfo() != null)
+                {
+                    savedAdminInfo = received.restoreInfo();
+                }
+
+                next = received;
+            }   // ctx.close() — fires DisposableBean / @PreDestroy across every bean
         }
-        clientService.start(connectInfo);
+    }
+
+    private static ConnectInfo parseConnectInfo(String[] args)
+    {
+        if (args.length == 0) return null;
+        String user = args[0];
+        char[] password = args.length >= 2 ? args[1].toCharArray() : new char[0];
+        return new ConnectInfo(user, password);
+    }
+
+    private static void disposeAllFrames()
+    {
+        for (Frame f : Frame.getFrames())
+        {
+            try { f.dispose(); } catch (Throwable ignored) {}
+        }
     }
 }

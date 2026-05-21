@@ -402,22 +402,62 @@ public class AuthorizationServerConfig
     }
 
     /**
-     * Adds a {@code typ=refresh} claim to refresh tokens issued by Spring
-     * Authorization Server. The stateless rapla {@code /auth/refresh}
-     * endpoint validates this claim before re-issuing tokens; with the
-     * customizer in place, OAuth-issued refresh tokens are accepted by the
-     * same endpoint as legacy {@code /auth/login} refresh tokens. Net:
-     * one refresh endpoint, two issuance paths, refresh tokens survive
-     * server restart for both (since {@code /auth/refresh} doesn't
-     * consult SAS's in-memory authorization state).
+     * Single {@link OAuth2TokenCustomizer} that Spring Authorization
+     * Server invokes immediately before signing every JWT it produces
+     * — access tokens, id tokens, and (JWT-shaped) refresh tokens.
+     * Spring AS allows only one bean of this type in the context, so
+     * this is where ALL of rapla's per-token-type customizations live,
+     * branched on {@code ctx.getTokenType()}:
+     *
+     * <ul>
+     *   <li><b>Refresh tokens:</b> add {@code typ=refresh}. PRD 041 —
+     *       lets the stateless refresh path distinguish refresh JWTs
+     *       from access JWTs without consulting SAS's in-memory
+     *       authorization state.</li>
+     *   <li><b>Access + ID tokens:</b> resolve the principal UUID to a
+     *       rapla {@link org.rapla.entities.User} and inject
+     *       {@code preferred_username} (OIDC standard claim for a
+     *       mutable display name) and {@code name}. PRD 051 — the SPA's
+     *       toolbar reads these for the user chip; cross-issuer
+     *       symmetry with Keycloak/Entra/Google tokens which already
+     *       carry the same claims; audit consistency with impersonation
+     *       tokens (which set their own {@code username} claim
+     *       directly).</li>
+     * </ul>
      */
     @Bean
-    public OAuth2TokenCustomizer<JwtEncodingContext> jwtRefreshTokenCustomizer()
+    public OAuth2TokenCustomizer<JwtEncodingContext> jwtTokenCustomizer(RaplaFacade facade)
     {
         return ctx -> {
             if (OAuth2TokenType.REFRESH_TOKEN.equals(ctx.getTokenType()))
             {
                 ctx.getClaims().claim("typ", "refresh");
+                return;
+            }
+            // Access + id token path: add preferred_username + name.
+            String tokenTypeValue = ctx.getTokenType() == null ? null : ctx.getTokenType().getValue();
+            boolean isAccessOrId = "id_token".equals(tokenTypeValue)
+                    || OAuth2TokenType.ACCESS_TOKEN.equals(ctx.getTokenType());
+            if (!isAccessOrId) return;
+            String subject = ctx.getPrincipal() != null ? ctx.getPrincipal().getName() : null;
+            if (subject == null || subject.isEmpty()) return;
+            try
+            {
+                org.rapla.entities.User user = facade.getOperator().tryResolve(
+                        subject, org.rapla.entities.User.class);
+                if (user != null)
+                {
+                    ctx.getClaims().claim("preferred_username", user.getUsername());
+                    if (user.getName() != null && !user.getName().isEmpty())
+                    {
+                        ctx.getClaims().claim("name", user.getName());
+                    }
+                }
+            }
+            catch (RuntimeException ignored)
+            {
+                // Operator lookup may throw if the subject isn't a UUID
+                // (e.g. legacy code paths) — leave claims untouched.
             }
         };
     }

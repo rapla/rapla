@@ -15,11 +15,15 @@ import { MatToolbarModule } from '@angular/material/toolbar';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 
+import { MatDialog } from '@angular/material/dialog';
+
 import { TableViewControllerService } from '../api/api/table-view-controller.service';
 import { TablePage } from '../api/model/table-page';
 import { TableRow } from '../api/model/table-row';
 import { TableColumnDescriptor } from '../api/model/table-column-descriptor';
 import { AuthService } from '../auth/auth.service';
+import { UsersService } from '../auth/users.service';
+import { SwitchToUserDialogComponent } from '../auth/switch-to-user-dialog.component';
 
 /**
  * Reservation table — a thin viewer over the server-side table renderer
@@ -42,18 +46,41 @@ import { AuthService } from '../auth/auth.service';
     <mat-toolbar color="primary">
       <span>Reservations</span>
       <span class="spacer"></span>
-      @if (auth.isImpersonating()) {
-        <span class="impersonation-badge" title="Admin {{ adminUsername() }} is acting as {{ impersonatedUsername() }}">
-          <mat-icon>person_search</mat-icon>
-          Impersonating {{ impersonatedUsername() }}
-        </span>
-      } @else if (username()) {
-        <span class="username">{{ username() }}</span>
+      @if (effectiveUsername()) {
+        @if (canImpersonate() || auth.isImpersonating()) {
+          <button
+            matButton
+            class="username username-clickable"
+            [class.impersonating]="auth.isImpersonating()"
+            [title]="
+              auth.isImpersonating()
+                ? 'Acting as ' + effectiveUsername() + ' via admin ' + adminUsername() + ' — click to switch to another user'
+                : 'Click to switch to another user'
+            "
+            (click)="openSwitchToUser()"
+          >
+            @if (auth.isImpersonating()) {
+              <mat-icon class="impersonation-marker">person_search</mat-icon>
+            } @else {
+              <mat-icon class="switch-marker">swap_horiz</mat-icon>
+            }
+            {{ effectiveUsername() }}
+          </button>
+        } @else {
+          <span class="username">{{ effectiveUsername() }}</span>
+        }
       }
-      <button matButton (click)="auth.signOut()">
-        <mat-icon>logout</mat-icon>
-        Sign out
-      </button>
+      @if (auth.isImpersonating()) {
+        <button matButton (click)="switchBack()" title="Return to admin identity">
+          <mat-icon>undo</mat-icon>
+          Switch back
+        </button>
+      } @else {
+        <button matButton (click)="auth.signOut()">
+          <mat-icon>logout</mat-icon>
+          Sign out
+        </button>
+      }
     </mat-toolbar>
 
     <section class="content">
@@ -106,23 +133,33 @@ import { AuthService } from '../auth/auth.service';
       .username {
         margin-right: 1rem;
         font-size: 0.95rem;
-      }
-      .impersonation-badge {
         display: inline-flex;
         align-items: center;
-        gap: 0.35rem;
-        margin-right: 1rem;
-        padding: 0.2rem 0.6rem;
+        gap: 0.3rem;
+      }
+      .username-clickable {
+        cursor: pointer;
+      }
+      .username.impersonating {
         background: rgba(255, 193, 7, 0.85);
         color: rgba(0, 0, 0, 0.87);
+        padding: 0.15rem 0.6rem;
         border-radius: 4px;
-        font-size: 0.9rem;
         font-weight: 500;
       }
-      .impersonation-badge mat-icon {
-        font-size: 1.1rem;
-        height: 1.1rem;
-        width: 1.1rem;
+      .username.impersonating:hover {
+        background: rgba(255, 193, 7, 1);
+      }
+      .impersonation-marker {
+        font-size: 1.05rem;
+        height: 1.05rem;
+        width: 1.05rem;
+      }
+      .switch-marker {
+        font-size: 1.05rem;
+        height: 1.05rem;
+        width: 1.05rem;
+        opacity: 0.7;
       }
       .content {
         max-width: 1100px;
@@ -157,6 +194,8 @@ import { AuthService } from '../auth/auth.service';
 export class ReservationsComponent implements OnInit, AfterViewInit {
   private readonly table = inject(TableViewControllerService);
   protected readonly auth = inject(AuthService);
+  private readonly usersService = inject(UsersService);
+  private readonly dialog = inject(MatDialog);
 
   readonly dataSource = new MatTableDataSource<TableRow>([]);
   readonly columns = signal<TableColumnDescriptor[]>([]);
@@ -169,17 +208,27 @@ export class ReservationsComponent implements OnInit, AfterViewInit {
   username = signal('');
 
   /**
-   * PRD 051 — when an impersonation is active, the toolbar shows
-   * "Impersonating <target>" instead of the admin's normal username
-   * badge. The target name comes straight from the override (which
-   * the admin set when they clicked "Switch to user"); the
-   * {@link adminUsername} resolves from the JWT `act.username` claim
-   * for the tooltip, so an admin always knows whose authority is
-   * being used.
+   * PRD 051 — effective user shown in the toolbar chip. While
+   * impersonating, this is the target's username (from the
+   * impersonation override). Otherwise the admin's own preferred
+   * username from JWT identity claims (the {@code username()} signal
+   * set in {@link ngOnInit}). One source of truth so the badge,
+   * marker, and tooltip all agree.
    */
-  readonly impersonatedUsername = computed(
-    () => this.auth.impersonationOverride()?.targetUsername ?? '',
+  readonly effectiveUsername = computed(
+    () => this.auth.impersonationOverride()?.targetUsername ?? this.username(),
   );
+
+  /**
+   * PRD 051 — `true` if the caller can {@code canAdminUser} over ≥1
+   * other user (i.e. is a global admin or a group admin). Derived
+   * from {@code GET /api/users} returning a non-empty list — that
+   * endpoint is server-side filtered by the same {@code canAdminUser}
+   * rule. Refreshed on init; static for the session (group-admin
+   * status doesn't change mid-session — if it does, the next
+   * impersonate call's 403 surfaces it).
+   */
+  readonly canImpersonate = signal(false);
 
   /** The actor's username, decoded from the impersonation token's
    *  `act.username` claim. Used in the tooltip on the badge. Empty
@@ -197,7 +246,18 @@ export class ReservationsComponent implements OnInit, AfterViewInit {
   ngOnInit() {
     const claims = this.auth.identityClaims() ?? {};
     this.username.set(String(claims['preferred_username'] ?? claims['name'] ?? ''));
+    // PRD 051 — probe /api/users to decide whether the username chip
+    // is clickable. Empty list = caller has no admin authority;
+    // non-empty = chip becomes a "Switch to user" trigger.
+    this.usersService.list().subscribe((list) => {
+      this.canImpersonate.set(list.length > 0);
+    });
+    this.fetchReservations();
+  }
 
+  private fetchReservations(): void {
+    this.loading.set(true);
+    this.error.set(null);
     const year = new Date().getFullYear();
     const from = `${year - 1}-01-01`;
     const to = `${year + 2}-12-31`;
@@ -224,6 +284,34 @@ export class ReservationsComponent implements OnInit, AfterViewInit {
       const v: unknown = row.cells?.[columnId];
       return typeof v === 'number' ? v : String(v ?? '');
     };
+  }
+
+  /**
+   * PRD 051 — click handler on the "Impersonating X" badge. Clears
+   * the override in {@link AuthService}; next outbound request uses
+   * the admin's own Bearer. Reloads the table so the user sees their
+   * own (admin's) data again.
+   */
+  switchBack(): void {
+    this.auth.endImpersonation();
+    this.fetchReservations();
+  }
+
+  /**
+   * PRD 051 — opens the "Switch to user" dialog. On successful
+   * impersonation (dialog closes with a {target} result) the toolbar
+   * re-renders and the table reloads for the new identity.
+   */
+  openSwitchToUser(): void {
+    const ref = this.dialog.open(SwitchToUserDialogComponent, {
+      width: '420px',
+      autoFocus: true,
+    });
+    ref.afterClosed().subscribe((result: { target: string } | undefined) => {
+      if (result?.target) {
+        this.fetchReservations();
+      }
+    });
   }
 
   formatCell(row: TableRow, col: TableColumnDescriptor): string {

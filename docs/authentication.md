@@ -582,6 +582,185 @@ See [PRD 051](prd/051-switch-user-with-oauth.md) § "Rapla's
 group-administration policy — the authorization rule" for the
 specific implication for the "switch to user" feature.
 
+## Admin impersonation ("switch to user")
+
+Admins can temporarily act as another user to troubleshoot
+"why can't user X see resource Y" issues. The feature is invoked
+from the Swing client's user editor (right-click a user → *Switch to
+user*) and, once the SPA admin surface lands, from the Angular UI.
+Authorization runs through
+[`PermissionController.canAdminUser`](../rapla-core/src/main/java/org/rapla/storage/PermissionController.java)
+— global admins can impersonate anyone, group admins can impersonate
+users whose group list intersects their `can_admin_parent` scope
+(see § "Group administration policy" above).
+
+### Wire format
+
+```
+POST /api/auth/impersonate                 HTTP/1.1
+Authorization: Bearer <admin's current access token, any issuer>
+Content-Type: application/x-www-form-urlencoded
+
+target_username=alice
+```
+
+```
+HTTP/1.1 200 OK
+Content-Type: application/json
+
+{
+  "access_token": "<rapla-SAS-signed JWT, sub=alice's UUID, act={sub: admin UUID, username: admin}>",
+  "token_type":   "Bearer",
+  "expires_in":   3600
+}
+```
+
+| Field / behaviour | Value |
+|---|---|
+| Path | `/api/auth/impersonate` |
+| Auth required | Yes — any rapla-accepted Bearer (rapla-SAS, Keycloak, Entra, Google) |
+| Authorization | `canAdminUser(actor, target)` — runs in rapla code against rapla data |
+| Issued by | rapla-SAS (always, regardless of which IdP the actor authenticated with) |
+| TTL | 1 h (`access-token-time-to-live` in `application.yml`) |
+| **No `refresh_token`** | Renewal is via repeat call to the same endpoint with the admin's Bearer |
+| `act` claim | `{sub: <admin UUID>, username: <admin>}` per RFC 8693 delegation semantics |
+
+Failure codes:
+
+| HTTP | Cause |
+|---|---|
+| 401 | No Bearer presented (or Bearer doesn't resolve to a rapla user) |
+| 403 | Actor authenticated but `canAdminUser(actor, target)` is false |
+| 404 | `target_username` is not a known rapla user |
+
+### Audit log
+
+Every successful issuance — initial and every renewal — emits one
+INFO line to the standard rapla log:
+
+```
+INFO  rapla - Impersonation: actor=admin (uuid=u5d2ad2b-…) target=alice (uuid=uc0fc61a-…)
+```
+
+The audit trail is the renewal cadence: an hour-long impersonation
+session produces one initial line plus one renewal line per hour.
+
+### What's NOT stored anywhere
+
+The 2026-05-21 design (PRD 051) deliberately ships *zero* impersonation
+state outside the issued JWT itself:
+
+| | Stored where? |
+|---|---|
+| Impersonation **refresh** token | **Nowhere.** Not issued. |
+| Impersonation **access** token (client-side) | In-memory only; discarded on client cold restart, on logout, and on switch-back |
+| Admin's password | Never stored anywhere by the impersonation feature (the legacy `ConnectInfo.password` field is unused; the admin's existing refresh token is the only credential needed for renewal) |
+| Per-impersonation server-side session record | **None.** Each `/api/auth/impersonate` call is independent; authorization is re-checked from scratch |
+
+If an admin loses their group-admin rights mid-session (e.g. an
+admin removes them from `/groups/department-1/admins`), the next
+hourly renewal returns 403 and the impersonation ends within
+~1 hour — `canAdminUser` is fresh-evaluated each call.
+
+### Renewal model
+
+Impersonation tokens are short-lived (1 h matching rapla's standard
+access TTL) and there is no impersonation refresh token. When the
+impersonation token nears expiry the next API call gets 401, and the
+client (Angular `auth.interceptor` / Swing `RefreshOn401Interceptor`
++ `MyCustomConnector.reauth`) calls `/api/auth/impersonate` again
+with the admin's current Bearer. If the admin's own access token
+has also expired, the standard refresh chain (against the admin's
+original IdP) runs first, then the impersonation renewal retries.
+Net cost: ~1 extra POST per hour of active impersonation; the
+renewal is invisible to the user (no UI prompt) until and unless
+the admin's refresh token has also expired — then the auth-error
+dialog opens.
+
+### Switch back
+
+Clearing the impersonation override is the entire operation —
+the admin's tokens are already in their normal slots (OAuth library
+on the SPA, `RemoteConnectionInfo.accessToken` on Swing) throughout
+the impersonation lifetime. Active Bearer reverts to the admin's
+own on the very next outbound request.
+
+### Switching from one target to another mid-impersonation
+
+If an admin is impersonating user A and wants to switch to user B
+(without first switching back to admin), the client UI flow is:
+
+1. The admin clicks the user chip in the toolbar (it still shows
+   "Impersonating A" — but it's still clickable while impersonating).
+2. The "Switch to user" dialog opens.
+3. The dialog's typeahead — `GET /api/users` — **must be called with
+   the admin's Bearer, NOT the impersonation Bearer.** Otherwise the
+   server's `canAdminUser` filter runs against A's authority instead
+   of the admin's, and the list returns A's admin-scope (usually
+   empty) rather than the admin's.
+4. The admin picks B; the SPA POSTs `/api/auth/impersonate` —
+   **also with the admin's Bearer** (same reason: authorisation is
+   the admin's, not A's).
+5. On success, the impersonation override is replaced (A → B). One
+   uninterrupted session, only the effective Bearer swaps.
+
+**Authoritative rule: impersonation tokens cannot themselves invoke
+the impersonation endpoints.** Specifically:
+
+- `GET /api/users` called with an impersonation Bearer returns the
+  *target's* admin-scope (usually empty for non-admin targets) —
+  never the original admin's scope. The SPA mitigates by always
+  attaching the admin Bearer for this call (`UsersService.list()`
+  in `rapla-angular/src/app/auth/users.service.ts`).
+- `POST /api/auth/impersonate` called with an impersonation Bearer
+  resolves the actor to the impersonated user; if that user isn't
+  themselves admin/group-admin (the typical case), the server returns
+  403. The SPA mitigates by always reading `AuthService.adminToken()`
+  for this call.
+- This is intentional: an impersonation token grants *exactly* the
+  target user's permissions for the duration of the impersonation.
+  It does NOT grant the admin's "switch to another user" capability
+  — that authority belongs to the admin alone, and is reachable only
+  through the admin's own Bearer.
+
+Implementation cross-reference: the SPA's `AuthService.adminToken()`
+returns the OAuth library's stored access/id token regardless of
+whether an impersonation override is active; the SPA's
+`UsersService` and `AuthService.impersonate()` /
+`renewImpersonation()` all go through `adminToken()` to attach the
+right Bearer.
+
+### Visual indicator
+
+Both clients render an "Impersonating &lt;target&gt;" badge while
+the override is active:
+
+| Client | Where |
+|---|---|
+| Angular SPA | Right side of the top toolbar — amber pill replaces the regular username chip |
+| Swing | Right side of the menu bar — amber status label (same colour as the SPA) |
+
+Tooltip on the Swing label and the SPA badge both say "Acting as
+another user — choose 'Switch back' from the admin menu to return".
+
+### Why not RFC 8693 token exchange?
+
+PRD 051 § "Alternatives Considered" lists ten established
+impersonation patterns and the reasons each was rejected. Short
+answer: RFC 8693 token-exchange requires either the target's token
+(unbuildable — admin doesn't know the target's password) or a
+realm-level Keycloak `impersonate-users` permission that's
+all-or-nothing at realm scope. Rapla's per-group
+`canAdminUser` scoping isn't expressible at the IdP at all — it
+lives only in rapla data. So the authorization check has to run in
+rapla code, and the token issuance has to happen on the same side
+as the check.
+
+See [PRD 051](prd/051-switch-user-with-oauth.md) for the full design,
+including the comparison table and the deferred Option 3b (hybrid
+IdP-issued tokens via Keycloak's `requested_subject` extension —
+documented as a future enhancement, not v1).
+
 ## Verifying the setup
 
 After launching the server, hit the discovery endpoint:

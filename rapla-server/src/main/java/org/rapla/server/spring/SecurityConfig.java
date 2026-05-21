@@ -70,6 +70,10 @@ public class SecurityConfig
                     // target. The controller runs the per-target authorization
                     // check; this matcher only enforces "must be authenticated".
                     auth.requestMatchers("/api/auth/impersonate").authenticated();
+                    // PRD 051: GET /api/users returns the list of users the
+                    // caller can admin. Requires auth; the controller
+                    // applies canAdminUser per entry server-side.
+                    auth.requestMatchers("/api/users", "/api/users/**").authenticated();
                     auth.requestMatchers("/api/auth/**", "/", "/index", "/server", "/static/**", "/*.html", "/*.css",
                             "/images/**", "/webclient/**", "/app/**",
                             "/api/logger/**", "/api/ical/timezones/**",

@@ -94,7 +94,12 @@ public class RefreshSessionService
      */
     public IssuedTokens issueAndPersist(User user) throws RaplaException, JOSEException
     {
-        String accessToken = jwtIssuer.issueAccessToken(user.getId(), ACCESS_TOKEN_TTL_SECONDS);
+        // PRD 051 — emit preferred_username + name claims so the SPA
+        // toolbar's user chip works for tokens minted via this custom
+        // path (refresh + password grants both go through here and
+        // bypass Spring AS's encoder + customizer).
+        String accessToken = jwtIssuer.issueAccessToken(
+                user.getId(), user.getUsername(), user.getName(), ACCESS_TOKEN_TTL_SECONDS);
         String refreshToken = obtainOrMintRefreshToken(user);
         return new IssuedTokens(accessToken, refreshToken, ACCESS_TOKEN_TTL_SECONDS);
     }
@@ -185,7 +190,10 @@ public class RefreshSessionService
      */
     public String issueAccessToken(User user) throws JOSEException
     {
-        return jwtIssuer.issueAccessToken(user.getId(), ACCESS_TOKEN_TTL_SECONDS);
+        // PRD 051 — same username/name claim injection as
+        // issueAndPersist; used by the custom refresh-grant provider.
+        return jwtIssuer.issueAccessToken(
+                user.getId(), user.getUsername(), user.getName(), ACCESS_TOKEN_TTL_SECONDS);
     }
 
     /**

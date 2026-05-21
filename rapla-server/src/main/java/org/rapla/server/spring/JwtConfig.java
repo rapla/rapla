@@ -241,12 +241,35 @@ public class JwtConfig
 
         public String issueAccessToken(String subject, long expiresInSeconds) throws JOSEException
         {
-            return issue(subject, expiresInSeconds, "access");
+            return issue(subject, null, null, expiresInSeconds, "access");
+        }
+
+        /**
+         * Mint an access token carrying {@code preferred_username} and
+         * {@code name} claims. PRD 051 — the SPA toolbar reads
+         * {@code preferred_username} for the chip; cross-issuer
+         * consistency with Keycloak/Entra tokens which already carry
+         * the same OIDC standard claims; covers the refresh-grant +
+         * password-grant code paths that bypass Spring AS's encoder
+         * (and therefore bypass {@link
+         * org.springframework.security.oauth2.server.authorization.token.OAuth2TokenCustomizer}).
+         *
+         * @param subject       rapla User UUID (becomes {@code sub})
+         * @param username      rapla username (becomes
+         *                      {@code preferred_username}); null/empty
+         *                      omitted
+         * @param displayName   rapla display name (becomes {@code name});
+         *                      null/empty omitted
+         */
+        public String issueAccessToken(String subject, String username, String displayName,
+                                       long expiresInSeconds) throws JOSEException
+        {
+            return issue(subject, username, displayName, expiresInSeconds, "access");
         }
 
         public String issueRefreshToken(String subject, long expiresInSeconds) throws JOSEException
         {
-            return issue(subject, expiresInSeconds, "refresh");
+            return issue(subject, null, null, expiresInSeconds, "refresh");
         }
 
         /**
@@ -289,16 +312,25 @@ public class JwtConfig
             return jwt.serialize();
         }
 
-        private String issue(String subject, long expiresInSeconds, String type) throws JOSEException
+        private String issue(String subject, String username, String displayName,
+                              long expiresInSeconds, String type) throws JOSEException
         {
             long now = System.currentTimeMillis();
-            JWTClaimsSet claims = new JWTClaimsSet.Builder()
+            JWTClaimsSet.Builder builder = new JWTClaimsSet.Builder()
                     .subject(subject)
                     .issueTime(new Date(now))
                     .expirationTime(new Date(now + expiresInSeconds * 1000))
                     .jwtID(UUID.randomUUID().toString())
-                    .claim("typ", type)
-                    .build();
+                    .claim("typ", type);
+            if (username != null && !username.isEmpty())
+            {
+                builder.claim("preferred_username", username);
+            }
+            if (displayName != null && !displayName.isEmpty())
+            {
+                builder.claim("name", displayName);
+            }
+            JWTClaimsSet claims = builder.build();
             SignedJWT jwt = new SignedJWT(
                     new JWSHeader.Builder(JWSAlgorithm.RS256).keyID(keyId).build(),
                     claims);

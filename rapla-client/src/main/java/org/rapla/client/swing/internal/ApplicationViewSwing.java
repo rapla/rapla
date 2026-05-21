@@ -64,11 +64,16 @@ public class ApplicationViewSwing implements ApplicationView<JComponent>
     JLabel statusBar = new JLabel("");
     private final DialogUiFactoryInterface dialogUiFactory;
     CommandScheduler scheduler;
+    /** PRD 051 — read on every updateView to surface impersonation
+     *  state in the top-bar status label. Cleared (status="") when no
+     *  impersonation is active so the bar doesn't carry stale text. */
+    private final org.rapla.storage.dbrm.RemoteConnectionInfo connectionInfo;
 
     @Autowired
     public ApplicationViewSwing(RaplaMenuBarContainer menuBarContainer, RaplaResources i18n, RaplaFrame frame, RaplaLocale raplaLocale, Logger logger,
             RaplaMenuBar raplaMenuBar, CommandScheduler scheduler,
-            DialogUiFactoryInterface dialogUiFactory) throws RaplaInitializationException
+            DialogUiFactoryInterface dialogUiFactory,
+            org.rapla.storage.dbrm.RemoteConnectionInfo connectionInfo) throws RaplaInitializationException
     {
         this.i18n = i18n;
         this.scheduler = scheduler;
@@ -76,6 +81,7 @@ public class ApplicationViewSwing implements ApplicationView<JComponent>
         this.menuBar = raplaMenuBar;
         this.dialogUiFactory = dialogUiFactory;
         this.frame = frame;
+        this.connectionInfo = connectionInfo;
         // CKO TODO Title should be set in config along with the facade used
 
         JMenuBar menuBar = menuBarContainer.getMenubar();
@@ -86,13 +92,43 @@ public class ApplicationViewSwing implements ApplicationView<JComponent>
 
         getContentPane().setLayout(new BorderLayout());
         //  getContentPane().add ( statusBar, BorderLayout.SOUTH);
-
+        refreshImpersonationStatus();
     }
 
     // FIXME should be moved to Presenter
     public void updateView(ModificationEvent event) throws RaplaException
     {
         menuBar.updateView(event);
+        refreshImpersonationStatus();
+    }
+
+    /**
+     * PRD 051 — render "Impersonating &lt;target&gt;" in the menu bar's
+     * right-aligned status label when the old in-place impersonation
+     * model was active. Under PRD 052 Phase 2 (close+recreate) the
+     * impersonation token lives in the regular accessToken slot, so
+     * {@link RemoteConnectionInfo#hasImpersonationToken()} returns
+     * {@code false} and this method becomes a no-op. The
+     * impersonation-session indicator is now the "Switch back" admin
+     * menu entry; the statusBar is reserved for the username display.
+     *
+     * <p>The no-impersonation branch deliberately does NOT clear the
+     * statusBar — that branch previously wiped the username on every
+     * {@link #updateView(ModificationEvent)} call.
+     */
+    private void refreshImpersonationStatus()
+    {
+        if (connectionInfo != null && connectionInfo.hasImpersonationToken())
+        {
+            String target = connectionInfo.getImpersonationTargetUsername();
+            statusBar.setText("  Impersonating " + (target == null ? "" : target) + "  ");
+            statusBar.setOpaque(true);
+            statusBar.setBackground(new Color(0xFF, 0xC1, 0x07));
+            statusBar.setForeground(Color.BLACK);
+            statusBar.setToolTipText("Acting as another user — choose 'Switch back' from the admin menu to return");
+            statusBar.repaint();
+        }
+        // else: leave the statusBar alone — the username display owns it.
     }
 
     @Override
@@ -169,20 +205,22 @@ public class ApplicationViewSwing implements ApplicationView<JComponent>
     {
         SwingUtilities.invokeLater(() ->
         {
-            fadeOut(statusBar);
             statusBar.setText(message);
             final Font boldFont = statusBar.getFont().deriveFont(Font.BOLD);
             statusBar.setFont(boldFont);
+            // Fully-opaque foreground — the historic fadeIn/fadeOut ran without
+            // sleep so it never animated, and the end alpha of 250 left the
+            // permanent username display visibly translucent. Explicit RGB
+            // (no alpha component) ensures alpha=255.
             if (highlight)
             {
-                final Color highlightColor = AWTColorUtil.getColorForHex(RaplaColors.HIGHLICHT_COLOR);
-                statusBar.setForeground(highlightColor);
+                statusBar.setForeground(AWTColorUtil.getColorForHex(RaplaColors.HIGHLICHT_COLOR));
             }
             else
             {
                 statusBar.setForeground(new Color(30, 30, 30));
             }
-            SwingUtilities.invokeLater(() -> fadeIn(statusBar));
+            statusBar.repaint();
         });
     }
 
