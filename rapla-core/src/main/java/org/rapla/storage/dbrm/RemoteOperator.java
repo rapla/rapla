@@ -552,10 +552,11 @@ public class RemoteOperator
     }
 
     public boolean canChangePassword() throws RaplaException {
+        // PRD 050: routes via the unified capabilities endpoint so the
+        // external-IdP block surfaces consistently with name/email gates.
         RemoteStorage remoteMethod = getRemoteStorage();
         try {
-            boolean canChangePassword = remoteMethod.canChangePassword();
-            return canChangePassword;
+            return remoteMethod.getProfileEditCapabilities().canChangePassword();
         } catch (RaplaException ex) {
             throw ex;
         } catch (Exception ex) {
@@ -605,7 +606,7 @@ public class RemoteOperator
         try {
             RemoteStorage remoteMethod = getRemoteStorage();
             String username = user.getUsername();
-            remoteMethod.changeEmail(username, newEmail);
+            remoteMethod.changeEmail(new RemoteStorage.ChangeEmailPost(username, newEmail));
             refresh();
         } catch (RaplaException ex) {
             throw ex;
@@ -619,7 +620,7 @@ public class RemoteOperator
         try {
             RemoteStorage remoteMethod = getRemoteStorage();
             String username = user.getUsername();
-            remoteMethod.confirmEmail(username, newEmail);
+            remoteMethod.confirmEmail(new RemoteStorage.ChangeEmailPost(username, newEmail));
         } catch (RaplaException ex) {
             throw ex;
         } catch (Exception ex) {
@@ -632,7 +633,7 @@ public class RemoteOperator
         try {
             RemoteStorage remoteMethod = getRemoteStorage();
             String username = user.getUsername();
-            remoteMethod.changeName(username, newTitle, newFirstname, newSurname);
+            remoteMethod.changeName(new RemoteStorage.ChangeNamePost(username, newTitle, newFirstname, newSurname));
             refresh();
         } catch (RaplaException ex) {
             throw ex;

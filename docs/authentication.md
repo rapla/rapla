@@ -485,6 +485,103 @@ There is no production-mode lockout enforcing a non-empty admin
 password today — that's planned hardening (see issue/PRD on
 production-mode hardening when it lands).
 
+## Group administration policy
+
+Rapla has two layers of admin authority — a **global admin** flag on
+the User entity, and a **per-group admin** mechanism keyed off a
+category annotation. Both feed into the same authorization rule,
+[`PermissionController.canAdminUser`](../rapla-core/src/main/java/org/rapla/storage/PermissionController.java)
+(line 697 in `rapla-core`):
+
+```java
+public static boolean canAdminUser(User adminUser, User target) {
+    if (adminUser.isAdmin()) return true;                       // global admin → all
+    if (getAdminGroups(adminUser).isEmpty()) return false;      // not a group-admin → none
+    if (target.isAdmin()) return false;                         // group-admin can't admin global admin
+    for (Category scope : getGroupsToAdmin(adminUser)) {
+        if (target.belongsTo(scope)) return true;
+    }
+    return false;
+}
+```
+
+This rule governs every admin operation: changing another user's
+password, switching to a user, deleting / disabling another user,
+editing another user's preferences, etc.
+
+### Layer 1 — global admin
+
+`User.isAdmin() == true` on the User entity. A global admin can
+admin every other user, including another global admin. There is
+always at least one global admin in the system (the bundled `admin`
+account, on a fresh deployment).
+
+### Layer 2 — group admin via `can_admin_parent` annotation
+
+A `Category` carries a `can_admin_parent="true"` annotation
+([`CategoryAnnotations.CAN_ADMIN_PARENT`](../rapla-core/src/main/java/org/rapla/entities/CategoryAnnotations.java)).
+Any user whose group list contains that category is treated as
+**admin of the category's parent**, and transitively of every user
+whose group list belongs (transitively) to that parent.
+
+Worked example — suppose the category tree is:
+
+```
+/groups
+  /groups/department-1
+    /groups/department-1/admins        ← annotation: can_admin_parent=true
+    /groups/department-1/students
+  /groups/department-2
+    /groups/department-2/admins        ← annotation: can_admin_parent=true
+    /groups/department-2/staff
+```
+
+Then:
+
+| User | Group list | Effect |
+|---|---|---|
+| `alice` | `[/groups/department-1/admins]` | Admin of `/groups/department-1` (the parent of `admins`). Can admin every user in department-1, including students and fellow admins. Cannot admin anyone in department-2. |
+| `bob` | `[/groups/department-1/students]` | Not a group-admin (the student category has no `can_admin_parent` annotation). Cannot admin anyone. |
+| `carol` | `[/groups/department-1/admins, /groups/department-2/admins]` | Admin of both `/groups/department-1` AND `/groups/department-2`. Effectively two scopes. |
+
+### Setting up group admins via the Swing client
+
+1. Open the **resource editor** in the Swing client (admin only).
+2. Navigate to the `Groups` / `Categories` tree (left pane).
+3. Right-click the group whose members should be admins of its
+   parent — e.g. `/groups/department-1/admins` — and choose
+   *Edit annotations*.
+4. Add an annotation: key `can_admin_parent`, value `true`. Save.
+5. Add users to that group via the user editor. They become group
+   admins of the parent on next login.
+
+### How `belongsTo` transitivity works
+
+`User.belongsTo(Category group)`
+([`UserImpl.java:215–222`](../rapla-core/src/main/java/org/rapla/entities/internal/UserImpl.java))
+returns true when **any** of the user's groups equals `group` *or* is
+a descendant of `group`, walking the category tree via
+`getGroupsIncludingParents`. So a user in
+`/groups/department-1/students` `belongsTo(/groups/department-1)`
+returns true — which is why a department-1 admin can admin students
+in the department, not just other admins.
+
+### Implications for OAuth / external IdPs
+
+**The scoping information lives entirely in rapla data.** Keycloak
+(or Entra, or Google) sees no rapla categories, no `can_admin_parent`
+annotations, no admin-scope tree. A Keycloak realm can't model rapla
+group-admin scoping at all — its `impersonate-users` permission is
+realm-global, all-or-nothing.
+
+That means **every operation gated by `canAdminUser` must run in
+rapla code**, including impersonation, admin-resets-password, and
+admin-disables-user. Even when the deployment migrates to Keycloak
+for primary auth, these admin operations stay rapla-server-side.
+See [PRD 051](prd/051-switch-user-with-oauth.md) § "Rapla's
+group-administration policy — the authorization rule" for the
+specific implication for the "switch to user" feature.
+
 ## Verifying the setup
 
 After launching the server, hit the discovery endpoint:
@@ -559,9 +656,22 @@ always uses the embedded SAS (deprecation context — see
 
 > **Core concept**: every authenticated identity — local or external —
 > resolves to a rapla `User` entity (groups, permissions, ownership
-> live there, not in the token). Externally-authed users are matched
-> by stable external-id claim first, then by email, and optionally
-> auto-provisioned. See PRD 036 "Why we keep the rapla User".
+> live there, not in the token). The rapla **username is the identity**:
+> the resolver matches the token's `upn` → `preferred_username` → `email`
+> claims case-insensitively against `user.getUsername()`. Falls back to
+> email-against-`user.getEmail()`; otherwise (and if `auto-provision: true`)
+> creates a new rapla user with the lowercased UPN/preferred_username/email
+> as the username. See PRD 036 "Why we keep the rapla User".
+>
+> *History (2026-05-21)*: previously rapla matched on a per-provider
+> `org.rapla.auth.external-id.<provider>` preference holding the IdP's
+> `sub`. That design broke down on first login for any user not provisioned
+> via the IdP (CSV-imported, hand-created, LDAP-migrated), and silently
+> broke when an IdP realm rotated (`sub` changes but the stale pref
+> doesn't). Username-as-identity matches what rapla already uses
+> internally for permissions and ownership; the tradeoff is that an
+> IdP-side username rename produces an orphaned rapla user that an admin
+> renames manually — same operator burden as the legacy LDAP path.
 
 ### How the SPA reaches the IdP — direct vs BFF
 
@@ -612,6 +722,38 @@ JWKS. The Angular `AuthService.token()` picks `id_token` vs
 `AuthService.signOut()` checks each provider's `endSessionUrl`: if set,
 it triggers angular-oauth2-oidc's IdP redirect; if empty (Google), it
 clears tokens locally and routes to `/login`.
+
+### 401 handling on the SPA — refresh-then-retry, dialog on real rejection
+
+The Angular HTTP interceptor (`rapla-angular/src/app/auth/auth.interceptor.ts`)
+runs a three-tier policy on every response:
+
+| Condition | Action |
+|---|---|
+| 401, **no** Bearer was attached (user just not logged in) | Silently clear local state, route to `/login`. No dialog, no failure-counter bump. |
+| 401, Bearer **was** attached | Call `oauth.refreshToken()` once. On success, replay the original request with the new access token; on failure (no refresh_token, refresh itself returned an error, or the replay also 401s), **open `AuthErrorDialogComponent`** with the server's `error_description` from the body or `WWW-Authenticate` header. The dialog blocks until acknowledged; closing it bumps `sessionStorage.oauthFailures` and routes to `/login` so the login page doesn't auto-fire the IdP again (that would loop). |
+| Non-401 | Pass through. |
+
+Pre-authentication paths skip the whole machinery — `Bearer` is never attached and 401s do not show the dialog:
+- `/oauth2/*` — Spring AS endpoints
+- `/.well-known/*` — OIDC discovery
+- `/api/auth/oauth/*` — BFF code exchange + provider discovery (these endpoints are *how* you obtain a token; attaching a stale Bearer would cause the resource-server JWT filter to reject before the controller runs — see [`SecurityConfig`](../rapla-server/src/main/java/org/rapla/server/spring/SecurityConfig.java)'s dedicated `@Order(0)` filter chain matching `/api/auth/oauth/**`)
+
+The server propagates the resolver's actual exception message in the
+401 body so the dialog can show the real reason (e.g.
+"The name 'alice@example.org' is already taken") instead of a generic
+"No user found in session." This is done in
+[`SpringSecurityRemoteSession.resolveJwtOrThrow`](../rapla-server/src/main/java/org/rapla/server/spring/SpringSecurityRemoteSession.java)
+— when a JWT is present, a resolver failure throws the original
+`RaplaSecurityException` instead of returning null and falling back to
+the legacy session path.
+
+**Proactive refresh** is also wired: `app.config.ts` calls
+`oauth.setupAutomaticSilentRefresh({}, 'access_token')` at boot when a
+valid token is present. The library schedules a refresh ahead of expiry,
+so most users never see the 401-then-refresh path — it's purely a
+safety net for clock skew, missed timer fires, and the first request
+after a long idle.
 
 ### Config reference — external providers
 
@@ -786,6 +928,44 @@ endSessionUrl = {base-url}/realms/{realm}/protocol/openid-connect/logout
 > The matching `rapla.oauth.external.keycloak` block is already in the
 > gitignored `application-local.yml`.
 
+#### Refresh tokens and `offline_access` — the distinction
+
+Keycloak emits **two different kinds of refresh tokens**:
+
+| Kind | Scope required | Lifetime | Survives logout? | Use case |
+|---|---|---|---|---|
+| **SSO-session refresh** | none — issued by default with any login | governed by realm's *SSO Session Idle/Max* (typically ~8 h sliding) | no — invalidated on logout | normal interactive web/SPA login |
+| **Offline refresh** | `offline_access` (must be in client's allowed scopes AND requested) | governed by realm's *Offline Session Idle/Max* (typically days to months) | yes — survives logout | CLI tools, background jobs |
+
+**Rapla's default scopes are `["openid","profile","email"]` — no `offline_access`.** The SPA still gets a refresh_token (the SSO-session kind), and the interceptor's refresh-then-retry plus `setupAutomaticSilentRefresh` work fine. Sliding-window refresh extends the session indefinitely as long as the user keeps the tab open within the idle window; the absolute deadline is the realm's SSO Session Max.
+
+To request **offline** refresh tokens (only useful if a deployment specifically needs sessions that survive logout — e.g. an iframe in a portal that's allowed to re-establish rapla state across browser restarts), override the scopes in `application-local.yml`:
+
+```yaml
+rapla.oauth.external.keycloak.scopes:
+  - openid
+  - profile
+  - email
+  - offline_access
+```
+
+…AND ensure the realm's `rapla-app` client has `offline_access` in its
+**Optional client scopes** list. If it doesn't, Keycloak rejects the
+entire `/authorize` call with `error=invalid_scope` — login completely
+fails. There is no graceful degradation: it's all-or-nothing per client.
+
+**Querying the IdP for these settings.** The values are *not* in the
+discovery doc (`/.well-known/openid-configuration`) — OIDC keeps them
+private to the IdP. To learn them at runtime:
+1. The `expires_in` and `refresh_expires_in` fields on every `/token`
+   response give the access and refresh lifetimes authoritatively.
+2. The absolute *SSO Session Max* is only observable empirically (keep
+   refreshing until refresh fails) or via Keycloak's Admin REST API
+   (`/admin/realms/{realm}` returns `ssoSessionMaxLifespan`,
+   `ssoSessionIdleTimeout`, `accessTokenLifespan`,
+   `offlineSessionIdleTimeout`, `offlineSessionMaxLifespan`).
+3. Easier: ask the realm admin.
+
 ### Multi-provider deployments
 
 Enable any combination by setting their respective `*_ENABLED=true`.
@@ -832,9 +1012,28 @@ external providers are enabled.
 Existing rapla users keep working through the OAuth2 password grant
 (`POST /oauth2/token grant_type=password`) regardless of which external
 providers are enabled.
-On first external login, the resolver attaches the external-id to
-the matching rapla user by email — subsequent logins skip the email
-lookup. No data migration required.
+On first external login, the resolver looks the user up by username
+(`upn` → `preferred_username` → `email`, case-insensitive against
+`user.getUsername()`), falling back to email-against-`user.getEmail()`.
+**No data migration required**, as long as the rapla username matches
+what the IdP emits for one of those claims. For AD-federated Keycloak
+deployments this is the UPN form (e.g.
+`firstname.lastname@intern.example.org`); for Entra it's the
+`preferred_username` / UPN; for Google it's the email.
+
+If your existing rapla usernames are in a different shape (e.g. bare
+`firstname.lastname` while the IdP emits the full UPN), the existing
+users won't match — auto-provision creates duplicates. Two ways to
+fix:
+1. **Rename rapla users** to match what the IdP emits (admin UI: User
+   editor → change username). One-time operator task.
+2. **Disable auto-provision** (`auto-provision: false`) and admin-create
+   the matching usernames before users log in. Same effect, more manual.
+
+Stale `org.rapla.auth.external-id.<provider>` and
+`org.rapla.auth.provider` preferences from the pre-2026-05-21 resolver
+design are now dead data — the new resolver doesn't read them. Safe to
+leave in place; they don't affect anything.
 
 When all users are migrated, set
 `RAPLA_OAUTH_LOCAL_ACCOUNTS_ENABLED=false` (planned — see PRD 029

@@ -7,33 +7,33 @@ import org.rapla.entities.configuration.RaplaConfiguration;
 import org.rapla.facade.RaplaFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.plugin.exchangeconnector.ExchangeConnectorConfig;
+import org.rapla.plugin.exchangeconnector.ExchangeConnectorConfigRemote;
 import org.rapla.plugin.exchangeconnector.ExchangeUserSettings;
 import org.rapla.plugin.exchangeconnector.server.ExchangeConnectorServerPlugin;
 import org.rapla.server.RemoteSession;
 import org.rapla.storage.RaplaSecurityException;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
 
 @RestController
 @ConditionalOnBean(RemoteSession.class)
-@RequestMapping(value = "/api/exchange/config", produces = "application/json")
-public class ExchangeConnectorConfigController
+public class ExchangeConnectorConfigController implements ExchangeConnectorConfigRemote
 {
     private final RaplaFacade facade;
     private final RemoteSession session;
+    private final HttpServletRequest request;
 
-    public ExchangeConnectorConfigController(RaplaFacade facade, RemoteSession session)
+    public ExchangeConnectorConfigController(RaplaFacade facade, RemoteSession session, HttpServletRequest request)
     {
         this.facade = facade;
         this.session = session;
+        this.request = request;
     }
 
-    @GetMapping("/default")
-    public RaplaConfiguration getConfig(HttpServletRequest request) throws RaplaException
+    @Override
+    public RaplaConfiguration getConfig() throws RaplaException
     {
         User user = session.checkAndGetUser(request);
         if (!user.isAdmin())
@@ -44,15 +44,15 @@ public class ExchangeConnectorConfigController
         return preferences.getEntry(ExchangeConnectorConfig.EXCHANGESERVER_CONFIG, new RaplaConfiguration());
     }
 
-    @GetMapping("/timezones")
-    public List<String> getTimezones(HttpServletRequest request) throws RaplaException
+    @Override
+    public List<String> getTimezones() throws RaplaException
     {
         session.checkAndGetUser(request);
         return ExchangeConnectorServerPlugin.TIMEZONES;
     }
 
-    @GetMapping("/user")
-    public ExchangeUserSettings getUserSettings(HttpServletRequest request) throws RaplaException
+    @Override
+    public ExchangeUserSettings getUserSettings() throws RaplaException
     {
         User user = session.checkAndGetUser(request);
         Preferences prefs = facade.getPreferences(user);

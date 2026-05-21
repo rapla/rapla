@@ -37,8 +37,32 @@ public interface RemoteStorage
 {
     String USER_WAS_NOT_AUTHENTIFIED = "User was not authentified";
 
-    @GetExchange("/change/canchangepassword")
-    boolean canChangePassword() throws RaplaException;
+    /**
+     * PRD 050: self-edit capabilities for the current user. Replaces the
+     * legacy single-boolean {@code canChangePassword()} endpoint
+     * (removed 2026-05-21). Returns all-true with
+     * {@code externalIdpLabel == null} for locally-authenticated users;
+     * all-false with a label like {@code "keycloak"} or {@code "ldap"} for
+     * externally-authenticated users. The UI disables the corresponding
+     * buttons + shows "Managed by &lt;label&gt; — change there".
+     */
+    @GetExchange("/profile/capabilities")
+    ProfileEditCapabilities getProfileEditCapabilities() throws RaplaException;
+
+    /** PRD 050: admin-only. Clears {@code authenticationSource} on the target
+     *  user, converting them back to local-only. After disconnect the admin
+     *  (or the user) can set a local password via the usual change-password
+     *  path. No "set password atomically with disconnect" endpoint — the
+     *  two-step flow is intentional so each action is independently auditable. */
+    @PostExchange("/user/{userId}/disconnect-external-auth")
+    void disconnectExternalAuth(@PathVariable("userId") String userId) throws RaplaException;
+
+    record ProfileEditCapabilities(
+            boolean canChangePassword,
+            boolean canChangeName,
+            boolean canChangeEmail,
+            String externalIdpLabel  // null when local; "keycloak" / "ldap" / "google" / etc. when external
+    ) {}
 
     @PostExchange("/change/password")
     void changePassword(@RequestBody PasswordPost job) throws RaplaException;
@@ -78,14 +102,53 @@ public interface RemoteStorage
     }
 
     @PostExchange("/change/name")
-    void changeName(@RequestParam(value = "username", required = false) String username, @RequestParam(value = "title", required = false) String newTitle, @RequestParam(value = "surename", required = false) String newSurename,
-            String newLastname) throws RaplaException;
+    void changeName(@RequestBody ChangeNamePost job) throws RaplaException;
+
+    class ChangeNamePost
+    {
+        private String username;
+        private String newTitle;
+        private String newSurename;
+        private String newLastname;
+
+        public ChangeNamePost() {}
+
+        public ChangeNamePost(String username, String newTitle, String newSurename, String newLastname)
+        {
+            this.username = username;
+            this.newTitle = newTitle;
+            this.newSurename = newSurename;
+            this.newLastname = newLastname;
+        }
+
+        public String getUsername() { return username; }
+        public String getNewTitle() { return newTitle; }
+        public String getNewSurename() { return newSurename; }
+        public String getNewLastname() { return newLastname; }
+    }
 
     @PostExchange("/change/email")
-    void changeEmail(@RequestParam(value = "username", required = false) String username, String newEmail) throws RaplaException;
+    void changeEmail(@RequestBody ChangeEmailPost job) throws RaplaException;
 
     @PostExchange("/confirm/email")
-    void confirmEmail(@RequestParam(value = "username", required = false) String username, String newEmail) throws RaplaException;
+    void confirmEmail(@RequestBody ChangeEmailPost job) throws RaplaException;
+
+    class ChangeEmailPost
+    {
+        private String username;
+        private String newEmail;
+
+        public ChangeEmailPost() {}
+
+        public ChangeEmailPost(String username, String newEmail)
+        {
+            this.username = username;
+            this.newEmail = newEmail;
+        }
+
+        public String getUsername() { return username; }
+        public String getNewEmail() { return newEmail; }
+    }
 
     @GetExchange("/resources")
     UpdateEvent getResources() throws RaplaException;
@@ -158,10 +221,10 @@ public interface RemoteStorage
     UpdateEvent getEntityDependencies(@RequestParam(value = "errorIfNotFound", required = false)Boolean errorIfNotFound, @RequestBody UpdateEvent.SerializableReferenceInfo[] infos) throws RaplaException;
 
     @PostExchange("/refreshAllEvents")
-    UpdateEvent refreshAllEvents(@RequestParam(value = "lastValidated", required = false) String lastSyncedTime) throws RaplaException;
+    UpdateEvent refreshAllEvents(@RequestParam("lastValidated") String lastSyncedTime) throws RaplaException;
 
     @PostExchange("/refresh")
-    UpdateEvent refresh(@RequestParam(value = "lastValidated", required = false) String lastValidated) throws RaplaException;
+    UpdateEvent refresh(@RequestParam("lastValidated") String lastValidated) throws RaplaException;
 
     @PostExchange("/restart")
     void restartServer() throws RaplaException;
@@ -283,7 +346,7 @@ public interface RemoteStorage
     }
 
     @GetExchange("/user")
-    String getUsername(@RequestParam(value = "userId", required = false) String userId) throws RaplaException;
+    String getUsername(@RequestParam("userId") String userId) throws RaplaException;
 
     //void logEntityNotFound(String logMessage,String... referencedIds) throws RaplaException;
 

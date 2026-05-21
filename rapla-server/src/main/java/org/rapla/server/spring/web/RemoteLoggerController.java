@@ -2,26 +2,29 @@ package org.rapla.server.spring.web;
 
 import org.rapla.endpoints.RemoteLogger;
 import org.rapla.framework.RaplaException;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PutMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
+import org.rapla.logger.Logger;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-@RequestMapping(value = "/api/logger", produces = "application/json")
-public class RemoteLoggerController
+public class RemoteLoggerController implements RemoteLogger
 {
-    private final RemoteLogger remoteLogger;
+    private final Logger logger;
 
-    public RemoteLoggerController(RemoteLogger remoteLogger)
+    public RemoteLoggerController(Logger logger)
     {
-        this.remoteLogger = remoteLogger;
+        this.logger = logger;
     }
 
-    @PutMapping("/{id}")
-    public void info(@PathVariable("id") String id, @RequestBody String message) throws RaplaException
+    @Override
+    public void info(String id, String message) throws RaplaException
     {
-        remoteLogger.info(id, message);
+        if (id == null)
+        {
+            String message2 = "Id missing in logging call";
+            logger.error(message2);
+            throw new RaplaException(message);
+        }
+        Logger childLogger = logger.getChildLogger(id);
+        childLogger.info(message);
     }
 }

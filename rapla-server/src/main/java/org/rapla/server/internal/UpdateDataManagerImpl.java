@@ -83,7 +83,7 @@ public class UpdateDataManagerImpl implements  UpdateDataManager
         return logger;
     }
 
-    static Preferences removeServerOnlyPreferences(Preferences preferences)
+    public static Preferences removeServerOnlyPreferences(Preferences preferences)
     {
         Preferences clone = preferences.clone();
         {
@@ -470,12 +470,12 @@ public class UpdateDataManagerImpl implements  UpdateDataManager
         }
     }
 
-    static boolean isTransferedToClient(RaplaObject obj)
+    public static boolean isTransferedToClient(RaplaObject obj)
     {
         return isTransferedToClient(obj, false);
     }
 
-    static boolean isTransferedToClient(RaplaObject obj, boolean addReservations)
+    public static boolean isTransferedToClient(RaplaObject obj, boolean addReservations)
     {
         Class<? extends RaplaObject> raplaType = obj.getTypeClass();
 

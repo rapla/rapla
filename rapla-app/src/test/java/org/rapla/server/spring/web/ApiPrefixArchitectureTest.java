@@ -9,6 +9,7 @@ import org.springframework.core.type.filter.AnnotationTypeFilter;
 import org.springframework.util.AntPathMatcher;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.service.annotation.HttpExchange;
 
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -143,6 +144,82 @@ class ApiPrefixArchitectureTest
         }
     }
 
+    /**
+     * PRD 049: JAX-RS is gone from rapla — every endpoint routes via Spring
+     * (controller {@code @RequestMapping}/{@code @GetMapping} or inherited
+     * {@code @HttpExchange} on an implemented interface). Imports of
+     * {@code jakarta.ws.rs.*} are dead weight and must not creep back in.
+     */
+    @Test
+    void noJakartaWsRsImportsAnywhereInReactor() throws java.io.IOException
+    {
+        java.util.List<java.nio.file.Path> moduleSourceRoots = locateReactorMainSourceRoots();
+        java.util.List<String> violations = new java.util.ArrayList<>();
+        for (java.nio.file.Path src : moduleSourceRoots)
+        {
+            try (java.util.stream.Stream<java.nio.file.Path> walk = java.nio.file.Files.walk(src))
+            {
+                walk.filter(p -> p.toString().endsWith(".java"))
+                        .forEach(p -> {
+                            try
+                            {
+                                String text = java.nio.file.Files.readString(p);
+                                if (text.contains("import jakarta.ws.rs"))
+                                {
+                                    violations.add(p.toString());
+                                }
+                            }
+                            catch (java.io.IOException e)
+                            {
+                                // ignore unreadable file
+                            }
+                        });
+            }
+        }
+        if (!violations.isEmpty())
+        {
+            fail("PRD 049 violation — `import jakarta.ws.rs.*` is forbidden in the rapla reactor "
+                    + "(JAX-RS was removed; use Spring routing annotations or inherit them from an "
+                    + "`@HttpExchange` interface). Offending files:\n  "
+                    + String.join("\n  ", violations));
+        }
+    }
+
+    /** Walk up from the test-class location to the reactor root, then enumerate
+     *  the canonical 5 module source roots. The Keycloak NTLM submodule
+     *  ({@code tools/keycloak/ntlm-authenticator/}) is intentionally NOT
+     *  included — it lives outside the reactor and uses Keycloak's own JAX-RS
+     *  runtime. */
+    private static java.util.List<java.nio.file.Path> locateReactorMainSourceRoots()
+    {
+        try
+        {
+            java.nio.file.Path testClassesDir = java.nio.file.Paths.get(ApiPrefixArchitectureTest.class
+                    .getProtectionDomain().getCodeSource().getLocation().toURI());
+            java.nio.file.Path moduleRoot = testClassesDir;
+            while (moduleRoot != null && !java.nio.file.Files.exists(moduleRoot.resolve("pom.xml")))
+            {
+                moduleRoot = moduleRoot.getParent();
+            }
+            if (moduleRoot == null) return java.util.List.of();
+            java.nio.file.Path reactorRoot = moduleRoot.getParent();
+            java.util.List<java.nio.file.Path> out = new java.util.ArrayList<>();
+            for (String module : java.util.List.of("rapla-core", "rapla-client", "rapla-server", "rapla-app"))
+            {
+                java.nio.file.Path src = reactorRoot.resolve(module).resolve("src/main/java");
+                if (java.nio.file.Files.isDirectory(src))
+                {
+                    out.add(src);
+                }
+            }
+            return out;
+        }
+        catch (java.net.URISyntaxException e)
+        {
+            return java.util.List.of();
+        }
+    }
+
     // --- helpers ---
 
     /** Scan rapla packages for production-tier @RestController classes. */
@@ -171,12 +248,21 @@ class ApiPrefixArchitectureTest
         return out;
     }
 
-    /** Class-level @RequestMapping value, or "" if none. */
+    /**
+     * Class-level routing prefix. Returns @RequestMapping value on the controller,
+     * or — per PRD 049 — the @HttpExchange value declared on an implemented
+     * interface (Spring 6 inherits it as routing metadata). Empty string if neither.
+     */
     private static String classLevelPath(Class<?> cls)
     {
         RequestMapping rm = cls.getAnnotation(RequestMapping.class);
-        if (rm == null || rm.value().length == 0) return "";
-        return rm.value()[0];
+        if (rm != null && rm.value().length > 0) return rm.value()[0];
+        for (Class<?> iface : cls.getInterfaces())
+        {
+            HttpExchange hx = iface.getAnnotation(HttpExchange.class);
+            if (hx != null && hx.value().length() > 0) return hx.value();
+        }
+        return "";
     }
 
     /** Spin up just SpringDocGroupsConfig and read each group's pathsToMatch. */

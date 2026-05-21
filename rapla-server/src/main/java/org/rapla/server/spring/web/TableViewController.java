@@ -27,9 +27,6 @@ import org.rapla.plugin.tableview.internal.TableConfig.TableColumnConfig;
 import org.rapla.scheduler.Promise;
 import org.rapla.server.RemoteSession;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.time.LocalDate;
@@ -58,7 +55,6 @@ import java.util.concurrent.atomic.AtomicReference;
  */
 @RestController
 @ConditionalOnBean(RemoteSession.class)
-@RequestMapping(value = "/api/table", produces = "application/json")
 public class TableViewController implements TableViewService
 {
     /** Server-side safety cap on the no-{@code pageSize} response. */
@@ -86,13 +82,12 @@ public class TableViewController implements TableViewService
     // ---------- /reservations ----------
 
     @Override
-    @GetMapping("/reservations")
-    public TablePage reservations(@RequestParam("from") String fromIso,
-                                  @RequestParam("to") String toIso,
-                                  @RequestParam(value = "columns", required = false) List<String> columnIds,
-                                  @RequestParam(value = "sort", required = false) List<String> sortSpecs,
-                                  @RequestParam(value = "cursor", required = false) String cursor,
-                                  @RequestParam(value = "pageSize", required = false) Integer pageSize)
+    public TablePage reservations(String fromIso,
+                                  String toIso,
+                                  List<String> columnIds,
+                                  List<String> sortSpecs,
+                                  String cursor,
+                                  Integer pageSize)
             throws RaplaException
     {
         User user = session.checkAndGetUser(request);
@@ -116,13 +111,12 @@ public class TableViewController implements TableViewService
     // ---------- /appointments ----------
 
     @Override
-    @GetMapping("/appointments")
-    public TablePage appointments(@RequestParam("from") String fromIso,
-                                  @RequestParam("to") String toIso,
-                                  @RequestParam(value = "columns", required = false) List<String> columnIds,
-                                  @RequestParam(value = "sort", required = false) List<String> sortSpecs,
-                                  @RequestParam(value = "cursor", required = false) String cursor,
-                                  @RequestParam(value = "pageSize", required = false) Integer pageSize)
+    public TablePage appointments(String fromIso,
+                                  String toIso,
+                                  List<String> columnIds,
+                                  List<String> sortSpecs,
+                                  String cursor,
+                                  Integer pageSize)
             throws RaplaException
     {
         User user = session.checkAndGetUser(request);
@@ -186,8 +180,7 @@ public class TableViewController implements TableViewService
             TableConfig.APPOINTMENTS_PER_DAY_VIEW);
 
     @Override
-    @GetMapping("/config")
-    public TableColumnsResponse config(@RequestParam("tableName") String tableName) throws RaplaException
+    public TableColumnsResponse config(String tableName) throws RaplaException
     {
         User user = session.checkAndGetUser(request);
         if (!KNOWN_TABLE_NAMES.contains(tableName))
@@ -210,8 +203,7 @@ public class TableViewController implements TableViewService
     }
 
     @Override
-    @GetMapping("/columns/catalog")
-    public TableColumnsResponse columnsCatalog(@RequestParam("tableName") String tableName) throws RaplaException
+    public TableColumnsResponse columnsCatalog(String tableName) throws RaplaException
     {
         User user = session.checkAndGetUser(request);
         if (!KNOWN_TABLE_NAMES.contains(tableName))

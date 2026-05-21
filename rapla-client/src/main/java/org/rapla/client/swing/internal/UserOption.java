@@ -37,6 +37,7 @@ import org.rapla.framework.RaplaLocale;
 import org.rapla.logger.Logger;
 import org.rapla.rest.SettingsService;
 import org.rapla.rest.dto.UserSettings;
+import org.rapla.storage.dbrm.RemoteStorage;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Service;
 
@@ -77,17 +78,19 @@ public class UserOption extends RaplaGUIComponent implements UserOptionPanel
     private final IOInterface ioInterface;
     private final Supplier<PasswordChangeAction> passwordChangeAction;
     private final SettingsService settings;
+    private final RemoteStorage remoteStorage;
 
     @Autowired
     public UserOption(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger,
             DialogUiFactoryInterface dialogUiFactory, IOInterface ioInterface,Supplier<PasswordChangeAction> passwordChangeAction,
-            SettingsService settings)
+            SettingsService settings, RemoteStorage remoteStorage)
     {
         super(facade, i18n, raplaLocale, logger);
         this.passwordChangeAction = passwordChangeAction;
         this.dialogUiFactory = dialogUiFactory;
         this.ioInterface = ioInterface;
         this.settings = settings;
+        this.remoteStorage = remoteStorage;
     }
 
     @Override
@@ -136,6 +139,53 @@ public class UserOption extends RaplaGUIComponent implements UserOptionPanel
         changePasswordButton.setText(getString("change"));
         changePasswordButton.addActionListener((evt)->passwordChangeAction.actionPerformed());
         usernameLabel.setText(user.getUsername());
+
+        // PRD 050: probe self-edit capabilities; for external-auth users
+        // (managed by Keycloak / LDAP / etc.) disable the three change
+        // buttons and explain why. Server-side guards already reject the
+        // calls; this just removes the dead-click affordance.
+        applyEditCapabilities(changeNameButton, changeEmailButton, changePasswordButton);
+    }
+
+    private void applyEditCapabilities(RaplaButton changeNameButton, RaplaButton changeEmailButton, RaplaButton changePasswordButton)
+    {
+        RemoteStorage.ProfileEditCapabilities caps;
+        try
+        {
+            caps = remoteStorage.getProfileEditCapabilities();
+        }
+        catch (Exception ex)
+        {
+            getLogger().warn("getProfileEditCapabilities failed; leaving change buttons enabled: " + ex.getMessage());
+            return;
+        }
+        if (caps.externalIdpLabel() == null)
+        {
+            // Local user — no changes. canChangePassword may still be false
+            // (e.g. operator disabled it deployment-wide); honour that.
+            changePasswordButton.setEnabled(caps.canChangePassword());
+            return;
+        }
+        String hint = "Managed by " + caps.externalIdpLabel() + " — change there";
+        if (!caps.canChangeName())
+        {
+            changeNameButton.setEnabled(false);
+            changeNameButton.setToolTipText(hint);
+        }
+        if (!caps.canChangeEmail())
+        {
+            changeEmailButton.setEnabled(false);
+            changeEmailButton.setToolTipText(hint);
+        }
+        if (!caps.canChangePassword())
+        {
+            changePasswordButton.setEnabled(false);
+            changePasswordButton.setToolTipText(hint);
+        }
+        // Visible per-row hint so the user understands without hovering.
+        superPanel.add(new JLabel(hint), "6,4");
+        superPanel.add(new JLabel(hint), "6,6");
+        superPanel.add(new JLabel(hint), "6,8");
     }
 
     public void show() throws RaplaException

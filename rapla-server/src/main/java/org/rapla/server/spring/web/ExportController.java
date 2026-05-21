@@ -10,7 +10,6 @@ import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.plugin.tableview.CsvSerializer;
 import org.rapla.plugin.tableview.EngineColumn;
-import org.rapla.plugin.tableview.ExportService;
 import org.rapla.plugin.tableview.PageSpec;
 import org.rapla.plugin.tableview.SortSpec;
 import org.rapla.plugin.tableview.TablePage;
@@ -53,7 +52,7 @@ import java.util.concurrent.atomic.AtomicReference;
 @RestController
 @ConditionalOnBean(RemoteSession.class)
 @RequestMapping(value = "/api/export", produces = "application/json")
-public class ExportController implements ExportService
+public class ExportController
 {
     /** Same cap as the table endpoint — never exceed this even when
      *  serialising an "all rows" CSV. */
@@ -76,16 +75,6 @@ public class ExportController implements ExportService
         this.facade = facade;
         this.raplaLocale = raplaLocale;
         this.tableConfigLoader = tableConfigLoader;
-    }
-
-    @Override
-    public String csv(String tableName, String fromIso, String toIso,
-                      List<String> columnIds, List<String> sortSpecs) throws RaplaException
-    {
-        // The wire interface method exists for HttpExchange contract testing.
-        // The Spring entry point is csvDownload(...) below, which adds a
-        // Content-Disposition header for browser download.
-        return renderCsv(tableName, fromIso, toIso, columnIds, sortSpecs);
     }
 
     @GetMapping(value = "/csv", produces = "text/csv;charset=UTF-8")

@@ -500,19 +500,11 @@
       "post" : {
         "tags" : [ "remote-storage-controller" ],
         "operationId" : "confirmEmail",
-        "parameters" : [ {
-          "name" : "username",
-          "in" : "query",
-          "required" : false,
-          "schema" : {
-            "type" : "string"
-          }
-        } ],
         "requestBody" : {
           "content" : {
             "application/json" : {
               "schema" : {
-                "type" : "string"
+                "$ref" : "#/components/schemas/ChangeEmailPost"
               }
             }
           },
@@ -550,33 +542,11 @@
       "post" : {
         "tags" : [ "remote-storage-controller" ],
         "operationId" : "changeName",
-        "parameters" : [ {
-          "name" : "username",
-          "in" : "query",
-          "required" : false,
-          "schema" : {
-            "type" : "string"
-          }
-        }, {
-          "name" : "title",
-          "in" : "query",
-          "required" : false,
-          "schema" : {
-            "type" : "string"
-          }
-        }, {
-          "name" : "surename",
-          "in" : "query",
-          "required" : false,
-          "schema" : {
-            "type" : "string"
-          }
-        } ],
         "requestBody" : {
           "content" : {
             "application/json" : {
               "schema" : {
-                "type" : "string"
+                "$ref" : "#/components/schemas/ChangeNamePost"
               }
             }
           },
@@ -593,19 +563,11 @@
       "post" : {
         "tags" : [ "remote-storage-controller" ],
         "operationId" : "changeEmail",
-        "parameters" : [ {
-          "name" : "username",
-          "in" : "query",
-          "required" : false,
-          "schema" : {
-            "type" : "string"
-          }
-        } ],
         "requestBody" : {
           "content" : {
             "application/json" : {
               "schema" : {
-                "type" : "string"
+                "$ref" : "#/components/schemas/ChangeEmailPost"
               }
             }
           },
@@ -956,35 +918,6 @@
         }
       }
     },
-    "/api/auth/refresh" : {
-      "post" : {
-        "tags" : [ "auth-controller" ],
-        "operationId" : "refresh_1",
-        "requestBody" : {
-          "content" : {
-            "application/json" : {
-              "schema" : {
-                "$ref" : "#/components/schemas/RefreshRequest"
-              }
-            }
-          },
-          "required" : true
-        },
-        "responses" : {
-          "200" : {
-            "description" : "OK",
-            "content" : {
-              "application/json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/TokenResponse"
-                }
-              }
-            }
-          }
-        },
-        "deprecated" : true
-      }
-    },
     "/api/auth/oauth/exchange/{providerId}" : {
       "post" : {
         "tags" : [ "o-auth-exchange-controller" ],
@@ -1019,55 +952,6 @@
             }
           }
         }
-      }
-    },
-    "/api/auth/logout" : {
-      "post" : {
-        "tags" : [ "auth-controller" ],
-        "operationId" : "logout",
-        "parameters" : [ {
-          "name" : "Authorization",
-          "in" : "header",
-          "required" : false,
-          "schema" : {
-            "type" : "string"
-          }
-        } ],
-        "responses" : {
-          "200" : {
-            "description" : "OK"
-          }
-        },
-        "deprecated" : true
-      }
-    },
-    "/api/auth/login" : {
-      "post" : {
-        "tags" : [ "auth-controller" ],
-        "operationId" : "login",
-        "requestBody" : {
-          "content" : {
-            "application/json" : {
-              "schema" : {
-                "$ref" : "#/components/schemas/LoginCredentials"
-              }
-            }
-          },
-          "required" : true
-        },
-        "responses" : {
-          "200" : {
-            "description" : "OK",
-            "content" : {
-              "application/json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/TokenResponse"
-                }
-              }
-            }
-          }
-        },
-        "deprecated" : true
       }
     },
     "/api/auth/api-keys" : {
@@ -2522,6 +2406,16 @@
           }
         }
       },
+      "ChangeEmailPost" : {
+        "properties" : {
+          "username" : {
+            "type" : "string"
+          },
+          "newEmail" : {
+            "type" : "string"
+          }
+        }
+      },
       "PasswordPost" : {
         "properties" : {
           "username" : {
@@ -2531,6 +2425,22 @@
             "type" : "string"
           },
           "newPassword" : {
+            "type" : "string"
+          }
+        }
+      },
+      "ChangeNamePost" : {
+        "properties" : {
+          "username" : {
+            "type" : "string"
+          },
+          "newTitle" : {
+            "type" : "string"
+          },
+          "newSurename" : {
+            "type" : "string"
+          },
+          "newLastname" : {
             "type" : "string"
           }
         }
@@ -2779,45 +2689,11 @@
           }
         }
       },
-      "RefreshRequest" : {
-        "properties" : {
-          "refreshToken" : {
-            "type" : "string"
-          }
-        }
-      },
-      "TokenResponse" : {
-        "properties" : {
-          "accessToken" : {
-            "type" : "string"
-          },
-          "refreshToken" : {
-            "type" : "string"
-          },
-          "expiresIn" : {
-            "type" : "integer",
-            "format" : "int64"
-          }
-        }
-      },
       "MultiValueMapStringString" : {
         "type" : "object",
         "additionalProperties" : {
           "type" : "array",
           "items" : {
-            "type" : "string"
-          }
-        }
-      },
-      "LoginCredentials" : {
-        "properties" : {
-          "username" : {
-            "type" : "string"
-          },
-          "password" : {
-            "type" : "string"
-          },
-          "connectAs" : {
             "type" : "string"
           }
         }
@@ -3314,6 +3190,12 @@
           "showPasteFallback" : {
             "type" : "boolean"
           },
+          "swingLegacyLogin" : {
+            "type" : "boolean"
+          },
+          "swingLegacyShowSsoButton" : {
+            "type" : "boolean"
+          },
           "picker" : {
             "$ref" : "#/components/schemas/Picker"
           },
@@ -3444,7 +3326,7 @@
       },
       "bearerAuth" : {
         "type" : "http",
-        "description" : "Paste a raw access token (e.g. from POST /api/auth/login). Manual fallback when OAuth2 isn't convenient.",
+        "description" : "Paste a raw access token (e.g. from POST /oauth2/token grant_type=password). Manual fallback when OAuth2 isn't convenient.",
         "scheme" : "bearer",
         "bearerFormat" : "JWT"
       }

@@ -48,11 +48,11 @@ public class ExternalUserResolver
         // already does the equalsIgnoreCase fallback). Stop at first hit.
         String upn = jwt.getClaimAsString("upn");
         User byUsername = findUserByUsername(upn);
-        if (byUsername != null) return byUsername;
+        if (byUsername != null) return stampSourceIfMissing(byUsername, provider);
 
         String preferredUsername = jwt.getClaimAsString(provider.usernameClaim());
         byUsername = findUserByUsername(preferredUsername);
-        if (byUsername != null) return byUsername;
+        if (byUsername != null) return stampSourceIfMissing(byUsername, provider);
 
         String email = jwt.getClaimAsString(provider.emailClaim());
         // Allow the email claim as a username fallback only for IdPs where the
@@ -61,10 +61,10 @@ public class ExternalUserResolver
         if (email != null && !email.isEmpty() && emailIsVerified(jwt))
         {
             byUsername = findUserByUsername(email);
-            if (byUsername != null) return byUsername;
+            if (byUsername != null) return stampSourceIfMissing(byUsername, provider);
 
             User byEmail = findUserByEmail(email);
-            if (byEmail != null) return byEmail;
+            if (byEmail != null) return stampSourceIfMissing(byEmail, provider);
         }
 
         if (provider.autoProvision())
@@ -77,6 +77,34 @@ public class ExternalUserResolver
                         + " (upn=" + upn
                         + ", " + provider.usernameClaim() + "=" + preferredUsername
                         + ", email=" + email + "); auto-provision is disabled.");
+    }
+
+    /**
+     * PRD 050: on successful external-IdP match, stamp the user's
+     * {@code authenticationSource} so future self password / name / email
+     * change attempts are blocked at the server (and the UI hides the
+     * buttons). Idempotent — skips the write when already stamped with the
+     * same provider, so subsequent logins don't churn the entity.
+     *
+     * <p>Once stamped, the marker survives subsequent logins through other
+     * paths (e.g. the user briefly authenticating via LDAP would not
+     * overwrite their existing Keycloak marker — see PRD 050 §"don't
+     * overwrite an existing marker"). The only way back to local is the
+     * admin "disconnect from external auth" action.
+     */
+    private User stampSourceIfMissing(User user, ProviderConfig provider) throws RaplaException
+    {
+        String expected = provider.id();
+        if (expected.equals(user.getAuthenticationSource()))
+        {
+            return user;
+        }
+        User edit = facade.edit(user);
+        edit.setAuthenticationSource(expected);
+        facade.store(edit);
+        logger.info("Stamped authentication-source='" + expected + "' on rapla user '"
+                + user.getUsername() + "' (first external login from " + provider.id() + ")");
+        return facade.getUser(user.getUsername());
     }
 
     private void enforceHostedDomain(Jwt jwt, ProviderConfig provider) throws RaplaSecurityException
@@ -191,6 +219,9 @@ public class ExternalUserResolver
         created.setUsername(username);
         created.setName(displayName);
         if (email != null) created.setEmail(email);
+        // PRD 050: stamp the external IdP marker at provisioning so the user
+        // is immediately gated from self password / name / email changes.
+        created.setAuthenticationSource(provider.id());
         applyConfiguredGroupsIfPresent(created);
         facade.store(created);
 

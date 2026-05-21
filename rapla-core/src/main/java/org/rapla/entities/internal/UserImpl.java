@@ -34,6 +34,9 @@ public class UserImpl extends SimpleEntity implements User, ModifiableTimestamp
     private String email = "";
     private String name = "";
     private boolean admin = false;
+    /** PRD 050: external IdP marker. {@code null} = local password.
+     *  Format: {@code "<scheme>:<tag>"}, e.g. {@code "keycloak:realm-vrz"}. */
+    private String authenticationSource = null;
     
     private java.time.LocalDateTime lastChanged;
     private java.time.LocalDateTime createDate;
@@ -122,6 +125,16 @@ public class UserImpl extends SimpleEntity implements User, ModifiableTimestamp
     public void setAdmin(boolean bAdmin)  {
         checkWritable();
         this.admin=bAdmin;
+    }
+
+    @Override
+    public String getAuthenticationSource() { return authenticationSource; }
+
+    @Override
+    public void setAuthenticationSource(String authenticationSource)
+    {
+        checkWritable();
+        this.authenticationSource = authenticationSource;
     }
 
     public String getName(Locale locale) 
@@ -221,6 +234,7 @@ public class UserImpl extends SimpleEntity implements User, ModifiableTimestamp
         clone.name = name;
         clone.email = email;
         clone.admin = admin;
+        clone.authenticationSource = authenticationSource;
         clone.lastChanged = lastChanged;
         clone.createDate = createDate;
         return clone;

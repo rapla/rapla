@@ -9,7 +9,7 @@ Phases:
 - Phase 2: `TableViewService` (`/table/reservations`, `/table/appointments`) + `TableViewController` + 9 contract + 8 MockMvc tests
 - Phase 3: `/table/config` + `/table/columns/catalog` + 5 contract + 7 MockMvc tests
 - Phase 4: `BlockColors` helper (12 tier-1) + `BlockDecorator` interface + `RaplaBlockDecorator` + engine overload + `RaplaBlock.getColorsAsHex()` refactored to delegate + `CalendarViewController` wired to ship colors
-- Phase 5: `CsvSerializer` (12 tier-1) + `ExportService` (`/export/csv`) + `ExportController` + 4 contract + 6 MockMvc tests
+- Phase 5: `CsvSerializer` (12 tier-1) + `/export/csv` route on `ExportController` + 6 MockMvc tests. ~~`ExportService` interface~~ **removed 2026-05-21 (PRD 049)** — had zero Java consumers (no Swing proxy, no Angular codegen consumer, no `implements` outside the controller); only the now-deleted `ExportServiceContractTest` referenced it. `ExportController.csvDownload(...)` is the single source of truth for `/api/export/csv` — its `ResponseEntity<byte[]>` return type with `Content-Disposition` headers was always richer than the interface's `String` return, so the interface was a misleading contract.
 - Phase 6: `LocalCache.cachedReservations` documented as Swing-legacy + `NoRaplaClientImportInServerTest` arch-test pinning the no-back-edge state + three stale `javax.swing.table.TableColumn` imports cleaned out of the table-view-server pages
 **Author:** Christopher Kohlhaas (with AI assistance)
 **Created:** 2026-05-12
@@ -217,13 +217,14 @@ Refactor `RaplaBlock.getColorsAsHex()` to delegate to a new `BlockColors.resolve
 
 This is the natural completion of PRD 023's Phase 4 row.
 
-### Phase 5 — CSV export (≈3 days)
+### Phase 5 — CSV export (≈3 days, landed 2026-05-12; `ExportService` interface deleted 2026-05-21 per PRD 049)
 
-- `/export/csv` GET → CSV body (streaming).
+- `/api/export/csv` GET → CSV body with `Content-Disposition: attachment` (browser download).
 - Reuses `TableViewEngine.project(...)` then a CSV serializer.
 - Headers from `TableColumnConfig.label` honour `Accept-Language`.
 - Client menu becomes a download link / browser GET — no in-process serialization.
 - Tier-3 MockMvc test covers: column header line, row count, comma-escaping, locale-aware dates.
+- **`ExportService` interface removed 2026-05-21** — the original Phase 5 introduced it as the wire contract, but the actual wire is served by `ExportController.csvDownload(...)` (returns `ResponseEntity<byte[]>` with `Content-Disposition`; the interface's `String csv()` was always a narrower, never-matching shape). Audit found zero callers in Java production code, no Swing-side `HttpServiceProxyFactory` proxy, no Angular OpenAPI codegen consumer — only the deleted `ExportServiceContractTest` referenced it. SpringDoc reads the controller annotations directly, so the OpenAPI spec is unaffected.
 - Bonus: the HTML autoexport plugin can switch to `CalendarLayoutEngine` + `TableViewEngine` instead of its bespoke loop. Deferrable.
 
 ### Phase 6 — Architectural cleanup (post-Angular, ≈3 days)

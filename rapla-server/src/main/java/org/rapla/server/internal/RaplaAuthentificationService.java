@@ -164,6 +164,18 @@ public class RaplaAuthentificationService
             {
                 throw new RaplaSecurityException( i18n.getString("error.login")+ex.getMessage());
             }
+            // PRD 050: stamp the authentication source so the user is gated
+            // from self-changing password / name / email locally. Format
+            // mirrors the OAuth path: "ldap" today (single-store deployments);
+            // multi-LDAP-store setups can append the store id later if needed.
+            // Don't overwrite an existing marker — once set (e.g. by an
+            // earlier OAuth login), the source is sticky until admin
+            // disconnects.
+            if (user.getAuthenticationSource() == null)
+            {
+                user.setAuthenticationSource("ldap");
+                initUser = true;
+            }
             if (initUser)
             {
                 logger.info("Udating rapla user '" + username + "' from external source.");

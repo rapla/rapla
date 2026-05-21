@@ -41,6 +41,23 @@ public interface User extends Entity<User>, Named, Comparable, Timestamp
     void setEmail(String email);
     void setAdmin(boolean isAdmin);
 
+    /**
+     * The authentication source for this user, or {@code null} when the
+     * user's password lives in rapla's local DB.
+     *
+     * <p>Format: {@code "<scheme>:<tag>"} — e.g. {@code "keycloak:realm-vrz"},
+     * {@code "ldap:vrz-corp"}. Operator-readable; surfaces directly in
+     * "managed by Keycloak (realm-vrz)" UI hints. Set at first external
+     * authentication and not overwritten on subsequent logins.
+     *
+     * <p>When non-null, rapla blocks self password / name / email changes
+     * (the IdP owns those values; a local change would create shadow state).
+     * Admin can clear it via the "disconnect from external auth" flow,
+     * converting the user back to local-only. See PRD 050.
+     */
+    String getAuthenticationSource();
+    void setAuthenticationSource(String authenticationSource);
+
     void addGroup(Category group);
     boolean removeGroup(Category group);
 

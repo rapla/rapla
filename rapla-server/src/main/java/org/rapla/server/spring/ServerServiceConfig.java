@@ -101,8 +101,9 @@ public class ServerServiceConfig
         return Collections.emptySet();
     }
 
-    /** PRD 009: empty default so {@code RemoteStorageImpl}'s field injection succeeds.
-     *  Plugins can override by registering their own {@code @Bean Set<PrePostDispatchProcessor>}. */
+    /** PRD 009: empty default so the constructor of {@code RemoteStorageController}
+     *  resolves. Plugins can override by registering their own
+     *  {@code @Bean Set<PrePostDispatchProcessor>}. */
     @Bean
     public Set<org.rapla.server.PrePostDispatchProcessor> prePostDispatchProcessors()
     {
@@ -132,16 +133,6 @@ public class ServerServiceConfig
     }
 
     @Bean
-    @org.springframework.web.context.annotation.RequestScope
-    public org.rapla.server.internal.RemoteLocaleServiceImpl remoteLocaleService(jakarta.servlet.http.HttpServletRequest request,
-                                                                      AutowireCapableBeanFactory beanFactory)
-    {
-        org.rapla.server.internal.RemoteLocaleServiceImpl impl = new org.rapla.server.internal.RemoteLocaleServiceImpl(request);
-        beanFactory.autowireBean(impl);
-        return impl;
-    }
-
-    @Bean
     public org.rapla.server.internal.SecurityManager securityManager(Logger logger,
                                                                       org.rapla.RaplaResources i18n,
                                                                       org.rapla.entities.domain.AppointmentFormater appointmentFormater,
@@ -151,35 +142,7 @@ public class ServerServiceConfig
         return new org.rapla.server.internal.SecurityManager(logger, i18n, appointmentFormater, operator, syncOperator);
     }
 
-    @Bean
-    @org.springframework.web.context.annotation.RequestScope
-    public org.rapla.endpoints.server.RaplaResourcesRestPage raplaResourcesRestPage(jakarta.servlet.http.HttpServletRequest request,
-                                                                                    AutowireCapableBeanFactory beanFactory)
-    {
-        org.rapla.endpoints.server.RaplaResourcesRestPage impl = new org.rapla.endpoints.server.RaplaResourcesRestPage(request);
-        beanFactory.autowireBean(impl);
-        return impl;
-    }
 
-    @Bean
-    @org.springframework.web.context.annotation.RequestScope
-    public org.rapla.endpoints.server.RaplaDynamicTypesRestPage raplaDynamicTypesRestPage(jakarta.servlet.http.HttpServletRequest request,
-                                                                                          AutowireCapableBeanFactory beanFactory)
-    {
-        org.rapla.endpoints.server.RaplaDynamicTypesRestPage impl = new org.rapla.endpoints.server.RaplaDynamicTypesRestPage(request);
-        beanFactory.autowireBean(impl);
-        return impl;
-    }
-
-    @Bean
-    @org.springframework.web.context.annotation.RequestScope
-    public org.rapla.endpoints.server.RaplaEventsRestPage raplaEventsRestPage(jakarta.servlet.http.HttpServletRequest request,
-                                                                              AutowireCapableBeanFactory beanFactory)
-    {
-        org.rapla.endpoints.server.RaplaEventsRestPage impl = new org.rapla.endpoints.server.RaplaEventsRestPage(request);
-        beanFactory.autowireBean(impl);
-        return impl;
-    }
 
     // PRD 048: the real client-triggered restart — a logical reload of the
     // server data store (operator disconnect + reconnect), replacing the dead
@@ -196,27 +159,6 @@ public class ServerServiceConfig
                                                                           org.rapla.server.internal.SecurityManager securityManager)
     {
         return new org.rapla.server.internal.UpdateDataManagerImpl(logger, operator, securityManager);
-    }
-
-    @Bean
-    @org.springframework.web.context.annotation.RequestScope
-    public org.rapla.server.internal.RemoteStorageImpl remoteStorage(jakarta.servlet.http.HttpServletRequest request,
-                                                               AutowireCapableBeanFactory beanFactory)
-    {
-        org.rapla.server.internal.RemoteStorageImpl impl = new org.rapla.server.internal.RemoteStorageImpl(request);
-        beanFactory.autowireBean(impl);
-        return impl;
-    }
-
-    @Bean
-    @org.springframework.web.context.annotation.RequestScope
-    @org.springframework.boot.autoconfigure.condition.ConditionalOnProperty(prefix = "rapla.services", name = "org.rapla.plugin.jndi", matchIfMissing = true)
-    public org.rapla.plugin.jndi.server.RaplaJNDITestOnLocalhost jndiConfig(jakarta.servlet.http.HttpServletRequest request,
-                                                                 AutowireCapableBeanFactory beanFactory)
-    {
-        org.rapla.plugin.jndi.server.RaplaJNDITestOnLocalhost impl = new org.rapla.plugin.jndi.server.RaplaJNDITestOnLocalhost(request);
-        beanFactory.autowireBean(impl);
-        return impl;
     }
 
     @Bean
@@ -240,17 +182,6 @@ public class ServerServiceConfig
     }
 
     @Bean
-    @org.springframework.web.context.annotation.RequestScope
-    @org.springframework.boot.autoconfigure.condition.ConditionalOnProperty(prefix = "rapla.services", name = "org.rapla.plugin.urlencryption", matchIfMissing = true)
-    public org.rapla.plugin.urlencryption.UrlEncryption urlEncryption(jakarta.servlet.http.HttpServletRequest request,
-                                                                       AutowireCapableBeanFactory beanFactory) throws org.rapla.framework.RaplaInitializationException
-    {
-        org.rapla.plugin.urlencryption.server.UrlEncryptionService impl = new org.rapla.plugin.urlencryption.server.UrlEncryptionService(request);
-        beanFactory.autowireBean(impl);
-        return impl;
-    }
-
-    @Bean
     public org.rapla.storage.ImportExportManager importExportManager(ServerStorageSelector selector)
     {
         return selector.getImportExportManager().get();
@@ -268,17 +199,6 @@ public class ServerServiceConfig
     }
 
     @Bean
-    @org.springframework.web.context.annotation.RequestScope
-    @org.springframework.boot.autoconfigure.condition.ConditionalOnProperty(prefix = "rapla.services", name = "org.rapla.plugin.mail", matchIfMissing = true)
-    public org.rapla.plugin.mail.MailConfigService mailConfigService(jakarta.servlet.http.HttpServletRequest request,
-                                                                      AutowireCapableBeanFactory beanFactory)
-    {
-        org.rapla.plugin.mail.server.RaplaConfigServiceImpl impl = new org.rapla.plugin.mail.server.RaplaConfigServiceImpl(request);
-        beanFactory.autowireBean(impl);
-        return impl;
-    }
-
-    @Bean
     @org.springframework.boot.autoconfigure.condition.ConditionalOnProperty(prefix = "rapla.services", name = "org.rapla.plugin.export2ical", matchIfMissing = true)
     public org.rapla.plugin.export2ical.server.Export2iCalConverter export2iCalConverter(org.rapla.framework.TimeZoneConverter timezoneConverter,
                                                                                           Logger logger,
@@ -286,41 +206,6 @@ public class ServerServiceConfig
                                                                                           org.rapla.RaplaResources i18n)
     {
         return new org.rapla.plugin.export2ical.server.Export2iCalConverter(timezoneConverter, logger, facade, i18n);
-    }
-
-    @Bean
-    @org.springframework.boot.autoconfigure.condition.ConditionalOnProperty(prefix = "rapla.services", name = "org.rapla.plugin.export2ical", matchIfMissing = true)
-    public org.rapla.plugin.export2ical.server.Export2iCalServlet export2iCalServlet(AutowireCapableBeanFactory beanFactory)
-    {
-        org.rapla.plugin.export2ical.server.Export2iCalServlet impl = new org.rapla.plugin.export2ical.server.Export2iCalServlet();
-        beanFactory.autowireBean(impl);
-        return impl;
-    }
-
-    @Bean
-    public org.rapla.server.servletpages.RaplaJNLPPageGenerator raplaJNLPPageGenerator(RaplaFacade facade, RaplaResources i18n)
-    {
-        return new org.rapla.server.servletpages.RaplaJNLPPageGenerator(facade, i18n);
-    }
-
-    @Bean
-    @org.springframework.boot.autoconfigure.condition.ConditionalOnProperty(prefix = "rapla.services", name = "org.rapla.plugin.autoexport", matchIfMissing = true)
-    public org.rapla.plugin.autoexport.server.CalendarPageGenerator calendarPageGenerator(AutowireCapableBeanFactory beanFactory)
-    {
-        org.rapla.plugin.autoexport.server.CalendarPageGenerator impl = new org.rapla.plugin.autoexport.server.CalendarPageGenerator();
-        beanFactory.autowireBean(impl);
-        return impl;
-    }
-
-    @Bean
-    @org.springframework.web.context.annotation.RequestScope
-    @org.springframework.boot.autoconfigure.condition.ConditionalOnProperty(prefix = "rapla.services", name = "org.rapla.plugin.ical", matchIfMissing = true)
-    public org.rapla.plugin.ical.ICalImport iCalImport(jakarta.servlet.http.HttpServletRequest request,
-                                                        AutowireCapableBeanFactory beanFactory)
-    {
-        org.rapla.plugin.ical.server.RaplaICalImport impl = new org.rapla.plugin.ical.server.RaplaICalImport(request);
-        beanFactory.autowireBean(impl);
-        return impl;
     }
 
     @Bean
@@ -367,21 +252,6 @@ public class ServerServiceConfig
             org.rapla.facade.RaplaFacade facade)
     {
         return new org.rapla.plugin.autoexport.server.ExportMenuEntry(i18n, facade);
-    }
-
-    @Bean
-    public org.rapla.server.servletpages.RaplaIndexPageGenerator raplaIndexPageGenerator(
-            java.util.Map<String, org.rapla.server.extensionpoints.HtmlMainMenu> entries,
-            RaplaResources i18n, RaplaFacade facade, RaplaServerProperties properties)
-    {
-        return new org.rapla.server.servletpages.RaplaIndexPageGenerator(entries, i18n, facade, properties);
-    }
-
-    @Bean
-    public org.rapla.server.servletpages.RaplaStatusPageGenerator raplaStatusPageGenerator(
-            RaplaSystemInfo systemInfo, RaplaServerProperties properties)
-    {
-        return new org.rapla.server.servletpages.RaplaStatusPageGenerator(systemInfo, properties);
     }
 
     // --- ServerExtension impls registered with their @Extension id as bean name ---

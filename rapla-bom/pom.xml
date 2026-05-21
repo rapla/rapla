@@ -23,7 +23,6 @@
         <commons-io.version>2.14.0</commons-io.version>
 		<commons-codec.version>1.14</commons-codec.version>
 		<commons-collections.version>4.1</commons-collections.version>
-		<jakarta.ws.rs.version>3.1.0</jakarta.ws.rs.version>
 		<hsqldb.version>2.7.1</hsqldb.version>
 		<postgresql.version>9.1-901-1.jdbc4</postgresql.version>
 		<mysql.version>8.0.28</mysql.version>
@@ -319,11 +318,6 @@
 				<groupId>org.apache.httpcomponents</groupId>
 				<artifactId>httpclient</artifactId>
 				<version>4.5.14</version>
-			</dependency>
-			<dependency>
-				<groupId>jakarta.ws.rs</groupId>
-				<artifactId>jakarta.ws.rs-api</artifactId>
-				<version>${jakarta.ws.rs.version}</version>
 			</dependency>
 			<dependency>
 				<groupId>commons-codec</groupId>

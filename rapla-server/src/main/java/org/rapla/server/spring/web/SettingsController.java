@@ -10,53 +10,31 @@ import org.rapla.facade.internal.CalendarOptionsImpl;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.internal.AbstractRaplaLocale;
+import org.rapla.rest.SettingsService;
 import org.rapla.rest.dto.SystemSettings;
 import org.rapla.rest.dto.UserSettings;
 import org.rapla.server.RemoteSession;
 import org.rapla.storage.RaplaSecurityException;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PutMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-/**
- * REST surface for non-plugin Rapla settings. Replaces the bulk-bootstrap
- * preference reads in the Swing client's RaplaStartOption, CalendarOption,
- * WarningsOption, and UserOption screens. Three scopes:
- *
- * <ul>
- *   <li>{@code /settings/system}  — deployment-wide (title, timezone, locale,
- *       charsets, refresh-interval). GET: any authenticated user; PUT: admin.</li>
- *   <li>{@code /settings/calendar} — system-default calendar view options
- *       (CALENDAR_OPTIONS blob). GET: any user; PUT: admin.</li>
- *   <li>{@code /settings/me}      — per-user preferences (language + UI warnings).
- *       Self-scope: caller's own preferences only.</li>
- * </ul>
- *
- * <p>Each PUT goes through {@link RaplaFacade#edit} / {@link RaplaFacade#store},
- * the same write path the Swing screens used to take. {@code null}-valued
- * strings remove the entry (lets future default changes propagate).
- */
 @RestController
 @ConditionalOnBean(RemoteSession.class)
-@RequestMapping(value = "/api/settings", produces = "application/json")
-public class SettingsController
+public class SettingsController implements SettingsService
 {
     private final RaplaFacade facade;
     private final RemoteSession session;
+    private final HttpServletRequest request;
 
-    public SettingsController(RaplaFacade facade, RemoteSession session)
+    public SettingsController(RaplaFacade facade, RemoteSession session, HttpServletRequest request)
     {
         this.facade = facade;
         this.session = session;
+        this.request = request;
     }
 
-    // ============ system (admin) ============
-
-    @GetMapping("/system")
-    public SystemSettings getSystem(HttpServletRequest request) throws RaplaException
+    @Override
+    public SystemSettings getSystem() throws RaplaException
     {
         session.checkAndGetUser(request);
         Preferences p = facade.getSystemPreferences();
@@ -70,8 +48,8 @@ public class SettingsController
         );
     }
 
-    @PutMapping("/system")
-    public SystemSettings setSystem(@RequestBody SystemSettings body, HttpServletRequest request) throws RaplaException
+    @Override
+    public SystemSettings setSystem(SystemSettings body) throws RaplaException
     {
         User user = session.checkAndGetUser(request);
         if (!user.isAdmin())
@@ -86,21 +64,19 @@ public class SettingsController
         putOrRemoveDefault(edit, AbstractRaplaLocale.HTML_CHARSET, body.htmlCharset(), AbstractRaplaLocale.HTML_CHARSET_DEFAULT);
         putOrRemoveIntDefault(edit, ClientFacade.REFRESH_INTERVAL_ENTRY, body.refreshIntervalMs(), ClientFacade.REFRESH_INTERVAL_DEFAULT);
         facade.store(edit);
-        return getSystem(request);
+        return getSystem();
     }
 
-    // ============ calendar (admin write / any user read) ============
-
-    @GetMapping("/calendar")
-    public RaplaConfiguration getCalendar(HttpServletRequest request) throws RaplaException
+    @Override
+    public RaplaConfiguration getCalendar() throws RaplaException
     {
         session.checkAndGetUser(request);
         RaplaConfiguration c = facade.getSystemPreferences().getEntry(CalendarOptionsImpl.CALENDAR_OPTIONS);
         return c != null ? c : new RaplaConfiguration("calendar");
     }
 
-    @PutMapping("/calendar")
-    public RaplaConfiguration setCalendar(@RequestBody RaplaConfiguration body, HttpServletRequest request) throws RaplaException
+    @Override
+    public RaplaConfiguration setCalendar(RaplaConfiguration body) throws RaplaException
     {
         User user = session.checkAndGetUser(request);
         if (!user.isAdmin())
@@ -110,13 +86,11 @@ public class SettingsController
         Preferences edit = facade.edit(facade.getSystemPreferences());
         edit.putEntry(CalendarOptionsImpl.CALENDAR_OPTIONS, body);
         facade.store(edit);
-        return getCalendar(request);
+        return getCalendar();
     }
 
-    // ============ me (per-user) ============
-
-    @GetMapping("/me")
-    public UserSettings getMe(HttpServletRequest request) throws RaplaException
+    @Override
+    public UserSettings getMe() throws RaplaException
     {
         User user = session.checkAndGetUser(request);
         Preferences p = facade.getPreferences(user);
@@ -130,8 +104,8 @@ public class SettingsController
         );
     }
 
-    @PutMapping("/me")
-    public UserSettings setMe(@RequestBody UserSettings body, HttpServletRequest request) throws RaplaException
+    @Override
+    public UserSettings setMe(UserSettings body) throws RaplaException
     {
         User user = session.checkAndGetUser(request);
         Preferences edit = facade.edit(facade.getPreferences(user));
@@ -142,10 +116,8 @@ public class SettingsController
         putOrRemoveBool(edit, CalendarOptionsImpl.SHOW_HOLIDAY_WARNING, body.showHolidayWarning(), true);
         putOrRemoveBool(edit, CalendarOptionsImpl.SHOW_HOLIDAY_WARNING_SINGLE_APPOINTMENT, body.showHolidayWarningSingleAppointment(), true);
         facade.store(edit);
-        return getMe(request);
+        return getMe();
     }
-
-    // ============ helpers (mirror AbstractPluginPreferencesPanel.putOrRemove) ============
 
     private static void putOrRemove(Preferences prefs, org.rapla.framework.TypedComponentRole<String> role, String value)
     {

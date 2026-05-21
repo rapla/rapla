@@ -19,7 +19,6 @@ import org.rapla.server.RemoteSession;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import jakarta.servlet.http.HttpServletRequest;
-import jakarta.ws.rs.core.Context;
 
 public class RaplaMailToUserOnLocalhost implements MailToUserInterface
 {
@@ -28,7 +27,7 @@ public class RaplaMailToUserOnLocalhost implements MailToUserInterface
     @Autowired
     RemoteSession session;
     private final HttpServletRequest request;
-    @Autowired public RaplaMailToUserOnLocalhost(@Context HttpServletRequest request)
+    @Autowired public RaplaMailToUserOnLocalhost(HttpServletRequest request)
     {
         this.request = request;
     }

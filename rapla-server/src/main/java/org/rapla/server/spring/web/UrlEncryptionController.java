@@ -1,29 +1,31 @@
 package org.rapla.server.spring.web;
 
+import jakarta.servlet.http.HttpServletRequest;
 import org.rapla.framework.RaplaException;
 import org.rapla.plugin.urlencryption.UrlEncryption;
+import org.rapla.plugin.urlencryption.server.UrlEncryptor;
 import org.rapla.server.RemoteSession;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-@ConditionalOnBean({UrlEncryption.class, RemoteSession.class})
-@RequestMapping(value = "/api/urlencryption", produces = "application/json")
-public class UrlEncryptionController
+@ConditionalOnBean(RemoteSession.class)
+@ConditionalOnProperty(prefix = "rapla.services", name = "org.rapla.plugin.urlencryption", matchIfMissing = true)
+public class UrlEncryptionController implements UrlEncryption
 {
-    private final UrlEncryption service;
+    private final UrlEncryptor urlEncryptor;
+    private final HttpServletRequest request;
 
-    public UrlEncryptionController(UrlEncryption service)
+    public UrlEncryptionController(UrlEncryptor urlEncryptor, HttpServletRequest request)
     {
-        this.service = service;
+        this.urlEncryptor = urlEncryptor;
+        this.request = request;
     }
 
-    @PostMapping
-    public String encrypt(@RequestBody String plain) throws RaplaException
+    @Override
+    public String encrypt(String plain) throws RaplaException
     {
-        return service.encrypt(plain);
+        return urlEncryptor.encrypt(plain, request);
     }
 }

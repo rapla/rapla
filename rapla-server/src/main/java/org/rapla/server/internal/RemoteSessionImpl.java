@@ -4,7 +4,6 @@ import org.rapla.entities.EntityNotFoundException;
 import org.rapla.entities.User;
 import org.rapla.framework.RaplaException;
 import org.rapla.logger.Logger;
-import org.rapla.endpoints.server.RaplaAuthRestPage;
 import org.rapla.server.RemoteSession;
 import org.rapla.storage.RaplaSecurityException;
 import org.rapla.storage.dbrm.LoginTokens;
@@ -15,6 +14,8 @@ import jakarta.servlet.http.HttpServletRequest;
 
 public class RemoteSessionImpl implements RemoteSession
 {
+    private static final String LOGIN_COOKIE = "raplaLoginToken";
+
     private User user;
     final private Logger logger;
     private TokenHandler tokenHandler;
@@ -57,7 +58,7 @@ public class RemoteSessionImpl implements RemoteSession
                 {
                     for (Cookie cookie : cookies)
                     {
-                        if (RaplaAuthRestPage.LOGIN_COOKIE.equals(cookie.getName()))
+                        if (LOGIN_COOKIE.equals(cookie.getName()))
                         {
                             final String value = cookie.getValue();
                             try

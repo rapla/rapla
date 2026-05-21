@@ -49,6 +49,12 @@ public class UserWriter extends RaplaXMLWriter {
 //            att("person", person.getId());
 //        }
         att("isAdmin",String.valueOf(user.isAdmin()));
+        if (user.getAuthenticationSource() != null)
+        {
+            // PRD 050: persist the external IdP marker so reload-from-XML
+            // keeps the same "managed by Keycloak / LDAP / …" gates.
+            att("authentication-source", user.getAuthenticationSource());
+        }
         closeTag();
         
         for (Category group:user.getGroupList()) {

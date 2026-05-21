@@ -61,6 +61,9 @@ public class UserReader extends RaplaXMLReader
             user.setName( getString( atts, "name", "" ) );
             user.setEmail( getString( atts, "email", "" ) );
             user.setAdmin( getString( atts, "isAdmin", "false" ).equals( "true" ) );
+            // PRD 050: external IdP marker. Absent attribute (including pre-PRD-050
+            // XML files) → null → user is locally authenticated.
+            user.setAuthenticationSource( getString( atts, "authentication-source", null ) );
             String password = getString( atts, "password", null );
             preferenceHandler.setUser( user );
             if ( password != null)

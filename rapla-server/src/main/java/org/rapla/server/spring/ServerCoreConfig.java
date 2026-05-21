@@ -4,7 +4,6 @@ import org.rapla.RaplaResources;
 import org.rapla.RaplaSystemInfo;
 import org.rapla.components.i18n.BundleManager;
 import org.rapla.components.i18n.server.ServerBundleManager;
-import org.rapla.endpoints.RemoteLogger;
 import org.rapla.entities.domain.permission.PermissionExtension;
 import org.rapla.entities.domain.permission.impl.RaplaDefaultPermissionImpl;
 import org.rapla.entities.dynamictype.internal.StandardFunctions;
@@ -12,8 +11,6 @@ import org.rapla.entities.extensionpoints.FunctionFactory;
 import org.rapla.plugin.appointmentnote.AppointmentNoteFunctions;
 import org.rapla.facade.RaplaFacade;
 import org.rapla.facade.internal.FacadeImpl;
-import org.rapla.plugin.export2ical.ICalTimezones;
-import org.rapla.plugin.export2ical.server.RaplaICalTimezones;
 import org.springframework.beans.factory.config.AutowireCapableBeanFactory;
 import org.rapla.framework.RaplaLocale;
 import org.rapla.framework.internal.DefaultScheduler;
@@ -22,7 +19,6 @@ import org.rapla.logger.Logger;
 import org.rapla.logger.RaplaBootstrapLogger;
 import org.rapla.scheduler.CommandScheduler;
 import org.rapla.framework.TimeZoneConverter;
-import org.rapla.server.internal.RemoteLoggerImpl;
 import org.rapla.server.internal.ServerStorageSelector;
 import org.rapla.framework.internal.TimeZoneConverterImpl;
 
@@ -101,14 +97,6 @@ public class ServerCoreConfig
     public CommandScheduler commandScheduler(Logger logger, TimeZoneConverter timeZoneConverter)
     {
         return new DefaultScheduler(logger, timeZoneConverter);
-    }
-
-    @Bean
-    public RemoteLogger remoteLogger(AutowireCapableBeanFactory beanFactory)
-    {
-        RemoteLoggerImpl impl = new RemoteLoggerImpl();
-        beanFactory.autowireBean(impl);
-        return impl;
     }
 
     @Bean(name = StandardFunctions.NAMESPACE)
@@ -360,14 +348,6 @@ public class ServerCoreConfig
         FacadeImpl facade = new FacadeImpl(i18n, scheduler, logger);
         facade.setOperator(operator);
         return facade;
-    }
-
-    @Bean
-    public ICalTimezones iCalTimezones(AutowireCapableBeanFactory beanFactory)
-    {
-        RaplaICalTimezones impl = new RaplaICalTimezones();
-        beanFactory.autowireBean(impl);
-        return impl;
     }
 
     @Bean

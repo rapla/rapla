@@ -26,7 +26,6 @@ import org.rapla.server.RemoteSession;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import jakarta.servlet.http.HttpServletRequest;
-import jakarta.ws.rs.core.Context;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
@@ -46,7 +45,7 @@ public class RaplaICalExport implements ICalExport
     private final HttpServletRequest request;
 
     @Autowired
-    public RaplaICalExport( @Context HttpServletRequest request)
+    public RaplaICalExport( HttpServletRequest request)
     {
         this.request = request;
     }

@@ -21,9 +21,6 @@ import org.rapla.plugin.calendarview.RaplaBlockDecorator;
 import org.rapla.scheduler.Promise;
 import org.rapla.server.RemoteSession;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.time.LocalDate;
@@ -46,7 +43,6 @@ import java.util.concurrent.atomic.AtomicReference;
  */
 @RestController
 @ConditionalOnBean(RemoteSession.class)
-@RequestMapping(value = "/api/calendar", produces = "application/json")
 public class CalendarViewController implements CalendarViewService
 {
     private final RemoteSession session;
@@ -66,12 +62,11 @@ public class CalendarViewController implements CalendarViewService
     }
 
     @Override
-    @GetMapping("/view")
-    public CalendarPage view(@RequestParam("from") String fromIso,
-                             @RequestParam("to") String toIso,
-                             @RequestParam("strategy") LayoutStrategyId strategy,
-                             @RequestParam("groupBy") GroupBy groupBy,
-                             @RequestParam(value = "allocatables", required = false) List<String> allocatableIds)
+    public CalendarPage view(String fromIso,
+                             String toIso,
+                             LayoutStrategyId strategy,
+                             GroupBy groupBy,
+                             List<String> allocatableIds)
             throws RaplaException
     {
         User user = session.checkAndGetUser(request);

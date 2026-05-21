@@ -27,9 +27,6 @@ import org.rapla.scheduler.Promise;
 import org.rapla.server.RemoteSession;
 import org.rapla.storage.PermissionController;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.time.LocalDate;
@@ -51,7 +48,6 @@ import java.util.stream.Collectors;
  */
 @RestController
 @ConditionalOnBean(RemoteSession.class)
-@RequestMapping(value = "/api/edit", produces = "application/json")
 public class ReservationEditController implements ReservationEditService
 {
     private final RemoteSession session;
@@ -66,8 +62,7 @@ public class ReservationEditController implements ReservationEditService
     }
 
     @Override
-    @PostMapping("/validate-recurrence")
-    public RecurrenceValidation validateRecurrence(@RequestBody RecurrenceRule rule) throws RaplaException
+    public RecurrenceValidation validateRecurrence(RecurrenceRule rule) throws RaplaException
     {
         // JWT-gate even though the validator has no permission-side-effect —
         // we don't want anonymous callers probing the endpoint.
@@ -94,8 +89,7 @@ public class ReservationEditController implements ReservationEditService
     }
 
     @Override
-    @PostMapping("/check-conflicts")
-    public ConflictReport checkConflicts(@RequestBody ConflictCheckRequest req) throws RaplaException
+    public ConflictReport checkConflicts(ConflictCheckRequest req) throws RaplaException
     {
         User user = session.checkAndGetUser(request);
         PermissionController permissionController = facade.getPermissionController();
@@ -140,8 +134,7 @@ public class ReservationEditController implements ReservationEditService
     }
 
     @Override
-    @PostMapping("/expand-blocks")
-    public List<AppointmentBlockDto> expandBlocks(@RequestBody ExpandBlocksRequest req) throws RaplaException
+    public List<AppointmentBlockDto> expandBlocks(ExpandBlocksRequest req) throws RaplaException
     {
         session.checkAndGetUser(request);   // JWT gate
         if (req == null || req.appointment() == null)

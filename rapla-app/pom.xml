@@ -103,7 +103,7 @@
                             <!-- micrometer-observation/-commons: Spring 7's RestClient.Builder
                                  factory hard-requires io.micrometer.observation.ObservationRegistry
                                  even with no metrics configured. Was optional in Spring 6. -->
-                            <includeArtifactIds>rapla-client,rapla-core,spring-aop,spring-beans,spring-context,spring-core,spring-expression,spring-web,jackson-core,jackson-databind,jackson-annotations,jakarta.ws.rs-api,jakarta.annotation-api,slf4j-api,logback-classic,logback-core,jul-to-slf4j,jcl-over-slf4j,jspecify,rxjava,reactive-streams,micrometer-observation,micrometer-commons</includeArtifactIds>
+                            <includeArtifactIds>rapla-client,rapla-core,spring-aop,spring-beans,spring-context,spring-core,spring-expression,spring-web,jackson-core,jackson-databind,jackson-annotations,jakarta.annotation-api,slf4j-api,logback-classic,logback-core,jul-to-slf4j,jcl-over-slf4j,jspecify,rxjava,reactive-streams,micrometer-observation,micrometer-commons</includeArtifactIds>
                             <overWriteReleases>false</overWriteReleases>
                             <overWriteSnapshots>true</overWriteSnapshots>
                         </configuration>

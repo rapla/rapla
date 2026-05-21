@@ -8,53 +8,33 @@ import org.rapla.entities.configuration.RaplaConfiguration;
 import org.rapla.facade.RaplaFacade;
 import org.rapla.framework.RaplaException;
 import org.rapla.framework.TypedComponentRole;
+import org.rapla.rest.PluginsService;
 import org.rapla.rest.dto.PluginInfo;
 import org.rapla.server.RemoteSession;
 import org.rapla.storage.RaplaSecurityException;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PutMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
 import java.util.stream.Collectors;
 
-/**
- * Generic plugin enable / disable controller. Replaces the bulk
- * /storage/resources reads that Swing factories did to decide whether
- * to register a feature. The SPA equivalent is one HTTP call to /plugins
- * at boot — returns each plugin's id, name, and current enabled state.
- *
- * <p>Toggle is admin-only and goes through {@link RaplaFacade#edit}/
- * {@link RaplaFacade#store}, so it lands in the normal storage path
- * with permission and version checks. No bypass.
- *
- * <p>Plugins with additional config (mail / jndi / exchange / ical)
- * have the rest of their config behind dedicated endpoints — this
- * controller is only for the enabled-flag dimension.
- */
 @RestController
 @ConditionalOnBean(RemoteSession.class)
-@RequestMapping(value = "/api/plugins", produces = "application/json")
-public class PluginsController
+public class PluginsController implements PluginsService
 {
-    public record EnabledRequest(boolean enabled) {}
-
     private final RaplaFacade facade;
     private final RemoteSession session;
+    private final HttpServletRequest request;
 
-    public PluginsController(RaplaFacade facade, RemoteSession session)
+    public PluginsController(RaplaFacade facade, RemoteSession session, HttpServletRequest request)
     {
         this.facade = facade;
         this.session = session;
+        this.request = request;
     }
 
-    /** List all known plugins with their current enabled state. Any authenticated user. */
-    @GetMapping
-    public List<PluginInfo> list(HttpServletRequest request) throws RaplaException
+    @Override
+    public List<PluginInfo> list() throws RaplaException
     {
         session.checkAndGetUser(request);
         Preferences prefs = facade.getSystemPreferences();
@@ -67,9 +47,8 @@ public class PluginsController
                 .collect(Collectors.toList());
     }
 
-    /** Read one plugin's enabled state. Any authenticated user. */
-    @GetMapping("/{id}")
-    public PluginInfo get(@PathVariable("id") String id, HttpServletRequest request) throws RaplaException
+    @Override
+    public PluginInfo get(String id) throws RaplaException
     {
         session.checkAndGetUser(request);
         PluginRegistry.PluginEntry entry = lookup(id);
@@ -77,11 +56,8 @@ public class PluginsController
         return new PluginInfo(entry.id(), entry.displayName(), isEnabled(prefs, entry), entry.adminOnlyConfig());
     }
 
-    /** Toggle enabled. Admin only. Body: {"enabled": true|false}. */
-    @PutMapping("/{id}/enabled")
-    public PluginInfo setEnabled(@PathVariable("id") String id,
-                                  @RequestBody EnabledRequest body,
-                                  HttpServletRequest request) throws RaplaException
+    @Override
+    public PluginInfo setEnabled(String id, EnabledRequest body) throws RaplaException
     {
         User user = session.checkAndGetUser(request);
         if (!user.isAdmin())
@@ -95,8 +71,6 @@ public class PluginsController
         facade.store(edit);
         return new PluginInfo(entry.id(), entry.displayName(), body.enabled(), entry.adminOnlyConfig());
     }
-
-    // ---------- helpers ----------
 
     private static PluginRegistry.PluginEntry lookup(String id) throws EntityNotFoundException
     {
@@ -127,10 +101,9 @@ public class PluginsController
 
     private static void applyEnabled(Preferences edit, PluginRegistry.PluginEntry entry, boolean value)
     {
-        // Match the AbstractPluginPreferencesPanel.putOrRemove pattern: if the
-        // value equals the deployment's default, remove the entry rather than
-        // pinning a copy of the current default. Lets future default changes
-        // propagate automatically.
+        // Mirror AbstractPluginPreferencesPanel.putOrRemove: if value matches the
+        // deployment default, drop the entry instead of pinning a copy of it,
+        // so future default changes propagate automatically.
         if (entry.boolEnabledKey() != null)
         {
             TypedComponentRole<Boolean> role = new TypedComponentRole<>(entry.boolEnabledKey());

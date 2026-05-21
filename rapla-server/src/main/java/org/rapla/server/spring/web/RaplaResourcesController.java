@@ -1,65 +1,137 @@
 package org.rapla.server.spring.web;
 
+import jakarta.servlet.http.HttpServletRequest;
+import org.rapla.entities.Entity;
+import org.rapla.entities.User;
+import org.rapla.entities.domain.Allocatable;
 import org.rapla.entities.domain.internal.AllocatableImpl;
-import org.rapla.endpoints.server.RaplaResourcesRestPage;
+import org.rapla.entities.dynamictype.Classification;
+import org.rapla.entities.dynamictype.ClassificationFilter;
+import org.rapla.entities.dynamictype.DynamicType;
+import org.rapla.entities.dynamictype.DynamicTypeAnnotations;
+import org.rapla.entities.storage.ReferenceInfo;
+import org.rapla.facade.RaplaFacade;
 import org.rapla.framework.RaplaException;
+import org.rapla.rest.RaplaResourcesService;
 import org.rapla.server.RemoteSession;
+import org.rapla.server.internal.SecurityManager;
+import org.rapla.storage.PermissionController;
+import org.rapla.storage.RaplaSecurityException;
+import org.rapla.storage.StorageOperator;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
-import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.PutMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
 @RestController
 @ConditionalOnBean(RemoteSession.class)
-@RequestMapping(value = "/api/resources", produces = "application/json")
-public class RaplaResourcesController
+public class RaplaResourcesController implements RaplaResourcesService
 {
-    private final RaplaResourcesRestPage page;
+    private static final Collection<String> CLASSIFICATION_TYPES = Arrays.asList(
+            DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_RESOURCE,
+            DynamicTypeAnnotations.VALUE_CLASSIFICATION_TYPE_PERSON);
 
-    public RaplaResourcesController(RaplaResourcesRestPage page)
+    private final RaplaFacade facade;
+    private final StorageOperator operator;
+    private final RemoteSession session;
+    private final SecurityManager securityManager;
+    private final HttpServletRequest request;
+
+    public RaplaResourcesController(RaplaFacade facade,
+                                    StorageOperator operator,
+                                    RemoteSession session,
+                                    SecurityManager securityManager,
+                                    HttpServletRequest request)
     {
-        this.page = page;
+        this.facade = facade;
+        this.operator = operator;
+        this.session = session;
+        this.securityManager = securityManager;
+        this.request = request;
     }
 
-    @GetMapping
-    public List<AllocatableImpl> list(@RequestParam(value = "resourceTypes", required = false) List<String> resourceTypes,
-                                       @RequestParam(value = "attributeFilter", required = false) Map<String, String> attributeFilter) throws RaplaException
+    @Override
+    public List<AllocatableImpl> list(List<String> resourceTypes, Map<String, String> attributeFilter) throws RaplaException
     {
-        return page.list(resourceTypes != null ? resourceTypes : Collections.emptyList(),
-                attributeFilter != null ? attributeFilter : Collections.emptyMap());
+        final User user = session.checkAndGetUser(request);
+        if (resourceTypes == null) resourceTypes = Collections.emptyList();
+        if (attributeFilter == null) attributeFilter = Collections.emptyMap();
+        ClassificationFilter[] filters = ClassificationFilterUtil.getClassificationFilter(
+                facade, attributeFilter, CLASSIFICATION_TYPES, resourceTypes);
+        Collection<Allocatable> resources = operator.getAllocatables(filters);
+        List<AllocatableImpl> result = new ArrayList<>();
+        PermissionController permissionController = facade.getPermissionController();
+        for (Allocatable r : resources)
+        {
+            if (permissionController.canRead(r, user))
+            {
+                result.add((AllocatableImpl) r);
+            }
+        }
+        return result;
     }
 
-    @GetMapping("/{id}")
-    public AllocatableImpl get(@PathVariable("id") String id) throws RaplaException
+    @Override
+    public AllocatableImpl get(String id) throws RaplaException
     {
-        return page.get(id);
+        final User user = session.checkAndGetUser(request);
+        AllocatableImpl resource = (AllocatableImpl) operator.resolve(id, Allocatable.class);
+        securityManager.checkRead(user, resource);
+        return resource;
     }
 
-    @DeleteMapping("/{id}")
-    public void delete(@PathVariable("id") String id) throws RaplaException
+    @Override
+    public void delete(String id) throws RaplaException
     {
-        page.delete(id);
+        final User user = session.checkAndGetUser(request);
+        AllocatableImpl resource = (AllocatableImpl) operator.resolve(id, Allocatable.class);
+        securityManager.checkDeletePermissions(user, resource);
+        Collection<ReferenceInfo<Allocatable>> removeObjects = Collections.singleton(resource.getReference());
+        List<Allocatable> storeObjects = Collections.emptyList();
+        operator.storeAndRemove(storeObjects, removeObjects, user, false);
     }
 
-    @PutMapping
-    public AllocatableImpl update(@RequestBody AllocatableImpl resource) throws RaplaException
+    @Override
+    public AllocatableImpl update(AllocatableImpl resource) throws RaplaException
     {
-        return page.update(resource);
+        final User user = session.checkAndGetUser(request);
+        securityManager.checkWritePermissions(user, resource);
+        PermissionController permissionController = facade.getPermissionController();
+        if (!permissionController.canModify(resource, user))
+        {
+            throw new RaplaSecurityException("User " + user + " can't modify  " + resource);
+        }
+        resource.setResolver(operator);
+        securityManager.checkWritePermissions(user, resource);
+        facade.store(resource);
+        return facade.getPersistent(resource);
     }
 
-    @PostMapping
-    public AllocatableImpl create(@RequestBody AllocatableImpl resource) throws RaplaException
+    @Override
+    public AllocatableImpl create(AllocatableImpl resource) throws RaplaException
     {
-        return page.create(resource);
+        final User user = session.checkAndGetUser(request);
+        resource.setResolver(operator);
+        Classification classification = resource.getClassification();
+        DynamicType type = classification.getType();
+        if (!facade.getPermissionController().canCreate(type, user))
+        {
+            throw new RaplaSecurityException("User " + user + " can't modify  " + resource);
+        }
+        if (resource.getId() != null)
+        {
+            throw new RaplaException("Id has to be null for new resources");
+        }
+        ReferenceInfo<Allocatable> resourceRef = operator.createIdentifier(Allocatable.class, 1).get(0);
+        resource.setId(resourceRef.getId());
+        resource.setResolver(operator);
+        resource.setOwner(user);
+        facade.storeAndRemove(new Entity[]{resource}, Entity.ENTITY_ARRAY, user);
+        return facade.getPersistent(resource);
     }
 }

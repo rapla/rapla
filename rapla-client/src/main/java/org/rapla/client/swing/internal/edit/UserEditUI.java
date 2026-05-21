@@ -87,6 +87,7 @@ public class UserEditUI  extends AbstractEditUI<User> {
     TextField emailField;
     AdminBooleanField adminField;
     GroupListField groupField;
+    AuthenticationSourceField authenticationSourceField;
     private final TreeFactory treeFactory;
     private final DialogUiFactoryInterface dialogUiFactory;
     private final TreeCellRenderer treeCellRenderer;
@@ -113,6 +114,8 @@ public class UserEditUI  extends AbstractEditUI<User> {
         fields.add(adminField);
         this.groupField = groupField;
         fields.add(this.groupField);
+        authenticationSourceField = new AuthenticationSourceField(facade, i18n, raplaLocale, logger);
+        fields.add(authenticationSourceField);
         setFields(fields);
     }
 
@@ -355,6 +358,12 @@ public class UserEditUI  extends AbstractEditUI<User> {
 	        user.setEmail( emailField.getValue());
 	        user.setUsername( usernameField.getValue());
 	        user.setAdmin( adminField.getValue());
+	        // PRD 050: if admin clicked "Disconnect", clear the marker so the
+	        // user's password / name / email become editable again on next open.
+	        if (authenticationSourceField.disconnectRequested())
+	        {
+	            user.setAuthenticationSource(null);
+	        }
 	        // personselect stays in sync
         }
 	    groupField.mapTo( objectList);
@@ -377,6 +386,7 @@ public class UserEditUI  extends AbstractEditUI<User> {
             usernameField.setValue(user.getUsername( ));
             adminField.setValue( user.isAdmin( ));
             personSelect.setUser( user);
+            authenticationSourceField.setUser(user);
         }
         groupField.mapFrom( objectList);
 
@@ -389,5 +399,52 @@ public class UserEditUI  extends AbstractEditUI<User> {
                 field.getComponent().setVisible(false);
             }
         }
+    }
+
+    /**
+     * PRD 050: shows the user's current authentication source ("Keycloak",
+     * "LDAP", etc.) or "Local" when null. For external users an admin can
+     * click "Disconnect" to clear the marker — the field flips to local and
+     * the password / name / email become editable again on the user's next
+     * open. The disconnect doesn't take effect until the admin saves the
+     * dialog (mapToObjects writes the cleared field), matching every other
+     * field in the user-edit UI.
+     */
+    static class AuthenticationSourceField extends AbstractEditField {
+        private final JPanel panel = new JPanel(new BorderLayout());
+        private final javax.swing.JLabel sourceLabel = new javax.swing.JLabel();
+        private final RaplaButton disconnectButton = new RaplaButton(RaplaButton.SMALL);
+        private boolean disconnectRequested = false;
+
+        AuthenticationSourceField(ClientFacade facade, RaplaResources i18n, RaplaLocale raplaLocale, Logger logger) throws RaplaInitializationException {
+            super(facade, i18n, raplaLocale, logger);
+            setFieldName("Authentication");
+            disconnectButton.setText("Disconnect");
+            disconnectButton.addActionListener(e -> {
+                disconnectRequested = true;
+                sourceLabel.setText("Local (will apply on save)");
+                disconnectButton.setEnabled(false);
+            });
+            panel.add(sourceLabel, BorderLayout.CENTER);
+            panel.add(disconnectButton, BorderLayout.EAST);
+        }
+
+        void setUser(User user) {
+            disconnectRequested = false;
+            String source = user.getAuthenticationSource();
+            if (source == null) {
+                sourceLabel.setText("Local");
+                disconnectButton.setVisible(false);
+            } else {
+                sourceLabel.setText("External: " + source);
+                disconnectButton.setVisible(true);
+                disconnectButton.setEnabled(true);
+            }
+        }
+
+        boolean disconnectRequested() { return disconnectRequested; }
+
+        @Override
+        public JComponent getComponent() { return panel; }
     }
 }

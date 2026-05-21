@@ -99,6 +99,42 @@ class XmlRoundTripTest extends FacadeTestSupport
     }
 
     @Test
+    void userAuthenticationSourceSurvivesRoundTrip() throws Exception
+    {
+        // PRD 050: stamp the external-auth marker on a user, round-trip,
+        // verify it's intact. Catches the same encoder/decoder drift this
+        // test class targets for other entity fields — the marker drives
+        // self-change blocks, so silent loss would re-open the shadow-
+        // password footgun the PRD was designed to close.
+        User homer = findUser("homer");
+        assertNotNull(homer, "fixture expected to expose user 'homer'");
+        org.rapla.entities.User editHomer = facade.edit(homer);
+        editHomer.setAuthenticationSource("keycloak:realm-vrz");
+        facade.store(editHomer);
+
+        roundTrip();
+
+        User after = findUser("homer");
+        assertEquals("keycloak:realm-vrz", after.getAuthenticationSource(),
+                "authentication-source must survive XML round-trip (PRD 050)");
+
+        // Negative control — local-only user stays null.
+        User monty = findUser("monty");
+        assertNotNull(monty, "fixture expected to expose user 'monty'");
+        assertEquals(null, monty.getAuthenticationSource(),
+                "untouched user must keep authentication-source null after round-trip");
+    }
+
+    private User findUser(String username) throws Exception
+    {
+        for (User u : facade.getUsers())
+        {
+            if (username.equals(u.getUsername())) return u;
+        }
+        return null;
+    }
+
+    @Test
     void allocatableClassificationTypeKeySurvivesRoundTrip() throws Exception
     {
         // The classification → DynamicType resolver wiring is what failed in

@@ -18,7 +18,6 @@ import org.rapla.storage.dbsql.DBOperator;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import jakarta.servlet.http.HttpServletRequest;
-import jakarta.ws.rs.core.Context;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -41,7 +40,7 @@ public class ArchiverServiceImpl  implements ArchiverService
     private final HttpServletRequest request;
 
     @Autowired
-    public ArchiverServiceImpl(@Context HttpServletRequest request)
+    public ArchiverServiceImpl(HttpServletRequest request)
     {
         this.request = request;
     }
